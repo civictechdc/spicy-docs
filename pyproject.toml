@@ -1,0 +1,54 @@
+[project]
+name = "spicy-docs"
+version = "0.1.0"
+description = "Faithful acquisition from government sources and immutable source-native release publication"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "rulespec-artifacts==1.0.9",
+    "boto3",
+    "httpx",
+    "jsonschema>=4.23",
+    "loguru",
+    "polars",
+    "tqdm",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "ty",
+]
+
+[project.scripts]
+spicy-docs-source-native = "spicy_docs.source_native_cli:main"
+build-source-profile-artifacts = "spicy_docs.source_profile_artifacts_cli:main"
+
+[build-system]
+requires = ["uv_build<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+rulespec-artifacts = { path = "vendor/rulespec_artifacts-1.0.9-py3-none-any.whl" }
+
+[tool.pytest.ini_options]
+# Integration tests hit external services (the public Mirrulations S3 mirror,
+# federalregister.gov) and are excluded from the default run so the unit suite
+# stays hermetic.
+addopts = "-m 'not integration'"
+testpaths = ["tests"]
+markers = [
+    "integration: live test against external data; not run by default",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ty.src]
+exclude = [
+    ".venv",
+]

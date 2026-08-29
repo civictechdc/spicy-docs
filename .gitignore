@@ -1,0 +1,14 @@
+*.pyc
+__pycache__
+.venv
+*.egg-info
+.env
+.env.local
+.env*.local
+*.log
+*.db
+.DS_Store
+.pytest_cache
+.ruff_cache
+/data
+output
