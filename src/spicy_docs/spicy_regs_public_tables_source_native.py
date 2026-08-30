@@ -433,12 +433,20 @@ def _partition_rows(content: bytes) -> list[dict[str, Any]]:
         raise PublicTableSourceError(f"public comments partition is not readable Parquet: {error}") from error
     validate_partition_columns(tuple(schema.keys()), tuple(schema.values()))
     try:
+        # Count from the file's own metadata, so an oversized partition is
+        # refused before its text is ever materialized.
+        height = int(pl.scan_parquet(BytesIO(content)).select(pl.len()).collect().item())
+    except Exception as error:  # any reader refusal is one source refusal
+        raise PublicTableSourceError(f"public comments partition is not readable Parquet: {error}") from error
+    if height > MAX_PARTITION_ROWS:
+        raise PublicTableSourceError("public comments partition exceeds its capture row bound")
+    try:
         frame = pl.read_parquet(BytesIO(content))
     except Exception as error:  # any reader refusal is one source refusal
         raise PublicTableSourceError(f"public comments partition is not readable Parquet: {error}") from error
     validate_partition_columns(tuple(frame.columns), tuple(frame.dtypes))
-    if frame.height > MAX_PARTITION_ROWS:
-        raise PublicTableSourceError("public comments partition exceeds its capture row bound")
+    if frame.height != height:
+        raise PublicTableSourceError("public comments partition row count differs from its own metadata")
     return frame.to_dicts()
 
 
