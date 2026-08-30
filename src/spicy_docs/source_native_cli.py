@@ -38,6 +38,7 @@ from spicy_docs.regulations_gov_source_native import (
 )
 from spicy_docs.schemas import COMMENT, DOCKET, DOCUMENT
 from spicy_docs.source_native import (
+    CURRENT_PRODUCER_PRODUCT,
     VERIFIER_ID,
     VERIFIER_VERSION,
     SourceNativeReleaseBuild,
@@ -66,7 +67,7 @@ SOURCE_CHOICES: Final = (
     SOURCE_REGULATIONS_COMMENTS,
 )
 
-_USER_AGENT = "spicy-regs-source-native/1.0 (https://github.com/civictechdc/spicy-regs)"
+_USER_AGENT = "spicy-docs-source-native/1.0 (https://github.com/civictechdc/spicy-docs)"
 _MAX_HTTP_ATTEMPTS = 5
 
 RegulationsReaderFactory = Callable[[str, str], MirrulationsObjectReader]
@@ -315,7 +316,7 @@ def _publish(
         raise FileExistsError(f"refusing to replace immutable release: {args.destination}")
     started_at = _instant(clock)
     producer = Producer(
-        product="spicy-regs",
+        product=CURRENT_PRODUCER_PRODUCT,
         implementation_id=args.implementation_id,
         verifier_id=VERIFIER_ID,
         verifier_version=VERIFIER_VERSION,

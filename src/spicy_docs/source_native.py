@@ -60,6 +60,13 @@ FORMAT_VERSION: Final = "1.0"
 RELEASE_SCHEMA_ID: Final = "urn:spicy-regs:schema:source-native-release:1.0"
 VERIFIER_ID: Final = "urn:spicy-regs:source-native-release-verifier"
 VERIFIER_VERSION: Final = "1.0"
+
+#: Producer identities this release format recognizes: the historical
+#: publisher (spicy-regs) and the current one (spicy-docs), which now owns
+#: faithful acquisition and source-native publication. See the adoption note
+#: atop docs/superpowers/specs/2026-08-25-source-native-release-spec.md.
+SUPPORTED_PRODUCER_PRODUCTS: Final = frozenset({"spicy-regs", "spicy-docs"})
+CURRENT_PRODUCER_PRODUCT: Final = "spicy-docs"
 MAX_EVIDENCE_BYTES: Final = 24 * 1024 * 1024
 MAX_ROW_BYTES: Final = 4 * 1024 * 1024
 PARTITION_BUCKET_COUNT: Final = 64
@@ -139,8 +146,8 @@ class SourceNativeReleaseBuild:
 
     def __post_init__(self) -> None:
         _utc(self.started_at, "started_at")
-        if self.producer.product != "spicy-regs":
-            raise SourceNativeReleaseError("producer product must be spicy-regs")
+        if self.producer.product not in SUPPORTED_PRODUCER_PRODUCTS:
+            raise SourceNativeReleaseError(f"producer product must be one of {sorted(SUPPORTED_PRODUCER_PRODUCTS)}")
         if self.producer.verifier_id != VERIFIER_ID or self.producer.verifier_version != VERIFIER_VERSION:
             raise SourceNativeReleaseError("producer names an unsupported source-native verifier")
 
@@ -1654,7 +1661,7 @@ def verify_source_native_admission(
     if not isinstance(producer, Mapping):
         raise SourceNativeReleaseError("source-native producer record is absent")
     if (
-        producer.get("product") != "spicy-regs"
+        producer.get("product") not in SUPPORTED_PRODUCER_PRODUCTS
         or producer.get("verifierId") != VERIFIER_ID
         or producer.get("verifierVersion") != VERIFIER_VERSION
     ):

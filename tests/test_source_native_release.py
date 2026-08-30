@@ -44,9 +44,9 @@ from spicy_docs.source_native import (
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 
-IMPLEMENTATION_ID = "git+https://example.test/spicy-regs@" + "a" * 40
+IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 PRODUCER = Producer(
-    product="spicy-regs",
+    product="spicy-docs",
     implementation_id=IMPLEMENTATION_ID,
     verifier_id="urn:spicy-regs:source-native-release-verifier",
     verifier_version="1.0",
@@ -284,6 +284,37 @@ def test_stable_release_preserves_source_value_and_streams(tmp_path: Path) -> No
         ("html_url", "https://www.federalregister.gov/d/2026-00001", "text/html"),
         ("pdf_url", None, "application/pdf"),
     ]
+
+
+def test_build_refuses_an_unrecognized_producer_product() -> None:
+    with pytest.raises(SourceNativeReleaseError, match="producer product must be one of"):
+        SourceNativeReleaseBuild(
+            query_scope=QUERY_SCOPE,
+            producer=replace(PRODUCER, product="spicy-widgets"),
+            started_at="2026-08-25T00:00:00Z",
+        )
+
+
+def test_reader_accepts_a_historical_spicy_regs_producer(tmp_path: Path) -> None:
+    """spicy-regs minted releases before the acquisition layer moved to spicy-docs;
+    consumer admission must keep reading them under their original producer identity."""
+    published = SourceNativeReleasePublisher(
+        FEDERAL_REGISTER_PROFILE,
+        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+        clock=_completed_at,
+    ).publish(
+        _stable_pages(_document()),
+        build=SourceNativeReleaseBuild(
+            query_scope=QUERY_SCOPE,
+            producer=replace(PRODUCER, product="spicy-regs"),
+            started_at="2026-08-25T00:00:00Z",
+        ),
+        destination=tmp_path / "release",
+    )
+
+    reader = _reader(published.root, published.artifact.pin)
+
+    assert len(list(reader.iter_records())) == 1
 
 
 def test_identical_evidence_pages_keep_distinct_page_inventories(

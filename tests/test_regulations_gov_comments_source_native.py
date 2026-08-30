@@ -34,9 +34,9 @@ from spicy_docs.source_native_cli import main as source_native_main
 from spicy_docs.source_native_profiles import REGULATIONS_GOV_COMMENT_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 
-_IMPLEMENTATION_ID = "git+https://example.test/spicy-regs@" + "a" * 40
+_IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _PRODUCER = Producer(
-    product="spicy-regs",
+    product="spicy-docs",
     implementation_id=_IMPLEMENTATION_ID,
     verifier_id="urn:spicy-regs:source-native-release-verifier",
     verifier_version="1.0",
