@@ -529,6 +529,19 @@ def test_attachment_locators_become_renditions_in_declared_order() -> None:
     assert field_diagnostics(record) == []
 
 
+def test_attachment_renditions_reach_the_published_release(tmp_path: Path) -> None:
+    published = _publish(tmp_path, [_capture("EPA", 0, [_row()])])
+    renditions = list(_reader(published.root, published.artifact.pin).iter_renditions())
+
+    assert [row["locator"] for row in renditions] == [
+        "https://downloads.regulations.gov/EPA-2026-0001-0001/attachment.pdf",
+        "https://downloads.regulations.gov/EPA-2026-0001-0001/attachment.txt",
+    ]
+    assert {row["sourceRecordId"] for row in renditions} == {"EPA-2026-0001-0001"}
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["renditionIndexCount"] == 2
+
+
 @pytest.mark.parametrize(
     ("attachments", "code"),
     [

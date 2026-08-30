@@ -113,7 +113,7 @@ class PublicTableCapture:
     last_modified: str | None = None
 
 
-PublicTableFetch = Callable[[str], "PublicTableCapture | None"]
+PublicTableFetch = Callable[[str], PublicTableCapture | None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -262,7 +262,8 @@ def _instant(value: object, label: str) -> str:
         parsed = datetime.fromisoformat(value)
     except ValueError as error:
         raise PublicTableSourceError(f"public-table {label} is invalid") from error
-    if parsed.tzinfo is None or parsed.utcoffset() is None or parsed.utcoffset().total_seconds() != 0:
+    offset = parsed.utcoffset()
+    if parsed.tzinfo is None or offset is None or offset.total_seconds() != 0:
         raise PublicTableSourceError(f"public-table {label} must be a UTC instant")
     return value
 
