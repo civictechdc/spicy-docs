@@ -687,7 +687,7 @@ class PublicTableAcquisitionCheck:
         records_included: bool,
         response_bytes: bytes,
     ) -> None:
-        del response_bytes, records_included
+        del response_bytes
         if not isinstance(page_window, PublicTableWindow) or page_window.table != self.table:
             raise PublicTableSourceError("public-table capture request table differs")
         capture = response.get("_capture")
@@ -698,6 +698,7 @@ class PublicTableAcquisitionCheck:
             or response.get("_partIndex") != page_window.part_index
             or response.get("_terminal") is not page_window.terminal
             or not isinstance(capture, Mapping)
+            or records_included is not bool(response.get("results"))
         ):
             raise PublicTableSourceError("public-table capture request and bytes differ")
         agency = page_window.agency
