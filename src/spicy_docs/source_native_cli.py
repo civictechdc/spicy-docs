@@ -52,15 +52,34 @@ from spicy_docs.source_native_profiles import (
     REGULATIONS_GOV_COMMENT_PROFILE,
     REGULATIONS_GOV_DOCKET_PROFILE,
     REGULATIONS_GOV_DOCUMENT_PROFILE,
+    SPICY_REGS_PUBLIC_COMMENT_PROFILE,
 )
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 from spicy_docs.sources import mirrulations
+from spicy_docs.spicy_regs_public_tables_source_native import (
+    COMMENT_TABLE,
+    MAX_PARTITION_BYTES,
+    PublicTableCapture,
+    PublicTableFetch,
+    PublicTableSourceError,
+    iter_spicy_regs_public_comment_pages,
+)
 
 SOURCE_FEDERAL_REGISTER: Final = "federal-register"
 SOURCE_REGULATIONS_DOCUMENTS: Final = "regulations-documents"
 SOURCE_REGULATIONS_DOCKETS: Final = "regulations-dockets"
 SOURCE_REGULATIONS_COMMENTS: Final = "regulations-comments"
+SOURCE_SPICY_REGS_PUBLIC_COMMENTS: Final = "spicy-regs-public-comments"
 SOURCE_CHOICES: Final = (
+    SOURCE_FEDERAL_REGISTER,
+    SOURCE_REGULATIONS_DOCUMENTS,
+    SOURCE_REGULATIONS_DOCKETS,
+    SOURCE_REGULATIONS_COMMENTS,
+    SOURCE_SPICY_REGS_PUBLIC_COMMENTS,
+)
+# The community mirror is the default supply rung; the origin-API sources
+# above are the fallback for what its tables cannot carry.
+DATED_SOURCES: Final = (
     SOURCE_FEDERAL_REGISTER,
     SOURCE_REGULATIONS_DOCUMENTS,
     SOURCE_REGULATIONS_DOCKETS,
@@ -92,12 +111,20 @@ def _parser() -> argparse.ArgumentParser:
         help="Acquire, publish, and producer-verify one release",
     )
     publish.add_argument("--source", choices=SOURCE_CHOICES, required=True)
-    publish.add_argument("--since", type=_date, required=True)
-    publish.add_argument("--until", type=_date, required=True)
+    publish.add_argument(
+        "--since",
+        type=_date,
+        help="Start of the source date window; required by every dated source",
+    )
+    publish.add_argument(
+        "--until",
+        type=_date,
+        help="End of the source date window; required by every dated source",
+    )
     publish.add_argument(
         "--agency",
         action="append",
-        help="Regulations.gov agency code; repeat for multiple agencies",
+        help="Agency code; repeat for multiple agencies",
     )
     publish.add_argument("--destination", type=Path, required=True)
     publish.add_argument(
@@ -139,6 +166,8 @@ def _profile(source: str) -> SourceNativeProfile:
         return REGULATIONS_GOV_DOCKET_PROFILE
     if source == SOURCE_REGULATIONS_COMMENTS:
         return REGULATIONS_GOV_COMMENT_PROFILE
+    if source == SOURCE_SPICY_REGS_PUBLIC_COMMENTS:
+        return SPICY_REGS_PUBLIC_COMMENT_PROFILE
     raise SourceNativeReleaseError(f"unsupported source {source!r}")
 
 
@@ -185,6 +214,60 @@ def _fetcher(injected: FederalRegisterFetch | None) -> Iterator[FederalRegisterF
         follow_redirects=True,
     ) as client:
         yield lambda url: _fetch_with_retries(client, url)
+
+
+def _fetch_public_table(
+    client: httpx.Client,
+    locator: str,
+    *,
+    clock: Callable[[], datetime],
+) -> PublicTableCapture | None:
+    """Fetch one whole partition object, or report that the mirror has none."""
+
+    for attempt in range(1, _MAX_HTTP_ATTEMPTS + 1):
+        try:
+            response = client.get(locator)
+            if response.status_code == 404:
+                return None
+            if response.status_code == 429 or response.status_code >= 500:
+                raise httpx.HTTPStatusError(
+                    "retryable spicy-regs public-table response",
+                    request=response.request,
+                    response=response,
+                )
+            response.raise_for_status()
+            if not response.content:
+                raise PublicTableSourceError("the spicy-regs public tables returned an empty partition")
+            if len(response.content) > MAX_PARTITION_BYTES:
+                raise PublicTableSourceError("public-table partition exceeds its capture byte bound")
+            return PublicTableCapture(
+                locator=locator,
+                content=response.content,
+                fetched_at=_instant(clock),
+                etag=response.headers.get("etag"),
+                last_modified=response.headers.get("last-modified"),
+            )
+        except (httpx.HTTPError, PublicTableSourceError):
+            if attempt == _MAX_HTTP_ATTEMPTS:
+                raise
+            time.sleep(min(2**attempt, 30))
+    raise AssertionError("unreachable")
+
+
+@contextmanager
+def _public_table_fetcher(
+    injected: PublicTableFetch | None,
+    clock: Callable[[], datetime],
+) -> Iterator[PublicTableFetch]:
+    if injected is not None:
+        yield injected
+        return
+    with httpx.Client(
+        headers={"Accept": "application/octet-stream", "User-Agent": _USER_AGENT},
+        timeout=httpx.Timeout(120.0, connect=30.0),
+        follow_redirects=True,
+    ) as client:
+        yield lambda locator: _fetch_public_table(client, locator, clock=clock)
 
 
 def _default_regulations_reader(agency: str, collection: str) -> MirrulationsObjectReader:
@@ -248,6 +331,18 @@ def _require_separate_paths(left: Path, right: Path, *, labels: tuple[str, str])
 
 
 def _query_scope(args: argparse.Namespace) -> dict[str, Any]:
+    dated = args.source in DATED_SOURCES
+    if dated and (args.since is None or args.until is None):
+        raise SourceNativeReleaseError(f"--since and --until are required for {args.source}")
+    if not dated and (args.since is not None or args.until is not None):
+        raise SourceNativeReleaseError(
+            f"--since and --until are not valid for {args.source}; its scope names partitions, not dates"
+        )
+    if args.source == SOURCE_SPICY_REGS_PUBLIC_COMMENTS:
+        agencies = sorted(set(args.agency or []))
+        if not agencies:
+            raise SourceNativeReleaseError("at least one --agency is required for the spicy-regs public tables")
+        return {"agencies": agencies, "table": COMMENT_TABLE}
     if args.source == SOURCE_FEDERAL_REGISTER:
         if args.agency:
             raise SourceNativeReleaseError("--agency is only valid for Regulations.gov")
@@ -302,6 +397,7 @@ def _publish(
     args: argparse.Namespace,
     *,
     fetch: FederalRegisterFetch | None,
+    fetch_public_table: PublicTableFetch | None,
     read_regulations: RegulationsReaderFactory | None,
     clock: Callable[[], datetime],
 ) -> dict[str, object]:
@@ -336,6 +432,17 @@ def _publish(
                 clock=clock,
             ).publish(
                 iter_federal_register_pages(active_fetch, query_scope=query_scope),
+                build=build,
+                destination=args.destination,
+            )
+    elif args.source == SOURCE_SPICY_REGS_PUBLIC_COMMENTS:
+        with _public_table_fetcher(fetch_public_table, clock) as active_table_fetch:
+            published = SourceNativeReleasePublisher(
+                profile,
+                blob_store=blob_store,
+                clock=clock,
+            ).publish(
+                iter_spicy_regs_public_comment_pages(active_table_fetch, query_scope=query_scope),
                 build=build,
                 destination=args.destination,
             )
@@ -396,7 +503,10 @@ def _verify(args: argparse.Namespace) -> dict[str, object]:
 def _error_code(error: Exception) -> str:
     if isinstance(error, (FileExistsError, ImmutablePublicationError)):
         return "destination-exists"
-    if isinstance(error, (FederalRegisterSourceError, RegulationsGovSourceError)):
+    if isinstance(
+        error,
+        (FederalRegisterSourceError, RegulationsGovSourceError, PublicTableSourceError),
+    ):
         return "acquisition-failed"
     if isinstance(error, SourceNativeReleaseError):
         return "release-invalid"
@@ -409,6 +519,7 @@ def main(
     argv: list[str] | None = None,
     *,
     fetch: FederalRegisterFetch | None = None,
+    fetch_public_table: PublicTableFetch | None = None,
     read_regulations: RegulationsReaderFactory | None = None,
     clock: Callable[[], datetime] = _now,
     stdout: TextIO | None = None,
@@ -424,6 +535,7 @@ def main(
             _publish(
                 args,
                 fetch=fetch,
+                fetch_public_table=fetch_public_table,
                 read_regulations=read_regulations,
                 clock=clock,
             )
@@ -435,6 +547,7 @@ def main(
         ImmutablePublicationError,
         FederalRegisterSourceError,
         RegulationsGovSourceError,
+        PublicTableSourceError,
         SourceNativeReleaseError,
         httpx.HTTPError,
         OSError,
