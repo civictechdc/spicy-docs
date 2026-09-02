@@ -144,11 +144,12 @@ def _page(
     response: bytes,
     *,
     cursor: str | None = None,
+    window: dict[str, str] | None = None,
 ) -> FederalRegisterPage:
     return FederalRegisterPage(
         traversal_index=traversal,
         page_index=page,
-        request_key=cursor or federal_register_documents_url(QUERY_SCOPE),
+        request_key=cursor or federal_register_documents_url(window or QUERY_SCOPE),
         source_cursor=cursor,
         response_bytes=response,
         window_index=0,
@@ -164,9 +165,12 @@ def _build(*, query_scope: dict[str, str] | None = None) -> SourceNativeReleaseB
     )
 
 
-def _stable_pages(*documents: dict[str, object]) -> list[FederalRegisterPage]:
+def _stable_pages(
+    *documents: dict[str, object],
+    window: dict[str, str] | None = None,
+) -> list[FederalRegisterPage]:
     response = _response(*documents)
-    return [_page(0, 0, response), _page(1, 0, response)]
+    return [_page(0, 0, response, window=window), _page(1, 0, response, window=window)]
 
 
 def _stable_paged_pages(
@@ -217,6 +221,7 @@ def _publish(
     pages: list[FederalRegisterPage],
     *,
     profile: SourceNativeProfile = FEDERAL_REGISTER_PROFILE,
+    query_scope: dict[str, str] | None = None,
 ):
     return SourceNativeReleasePublisher(
         profile,
@@ -224,7 +229,7 @@ def _publish(
         clock=_completed_at,
     ).publish(
         pages,
-        build=_build(),
+        build=_build(query_scope=query_scope),
         destination=tmp_path / "release",
     )
 
@@ -1094,3 +1099,80 @@ def test_a_repeated_version_among_three_observations_refuses_the_tie(tmp_path: P
 
     with pytest.raises(SourceNativeReleaseError, match="source-version tie"):
         _publish(tmp_path, pages, profile=_collapsing_profile(refuse_equal_observation_versions=True))
+
+
+def test_reused_document_number_keeps_the_newer_observation_and_counts_one_discard(
+    tmp_path: Path,
+) -> None:
+    """The source reuses document_number across unrelated documents: 00-111
+    resolves (via the API's own /documents/00-111.json) to a 2000-01-18 notice,
+    while the full-history crawl also discovers an older 2000-01-14 rule filed
+    under the same number. The shipped profile keeps the newer publication_date
+    and counts the older observation as discarded, retained in evidence."""
+    number = "00-111"
+    window = {"publishedFrom": "2000-01-14", "publishedThrough": "2000-01-18"}
+    pages = _stable_pages(
+        _document(
+            number,
+            publication_date="2000-01-14",
+            title="Compliance Monitoring and Enforcement Priorities",
+        ),
+        _document(
+            number,
+            publication_date="2000-01-18",
+            title="Notice of Filing of Plat of an Island; Minnesota",
+        ),
+        window=window,
+    )
+
+    published = _publish(tmp_path, pages, query_scope=window)
+    reader = _reader(published.root, published.artifact.pin)
+
+    assert [row["record"]["title"] for row in reader.iter_records()] == [
+        "Notice of Filing of Plat of an Island; Minnesota"
+    ]
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["discardedObservationCount"] == 1
+    # Both observations stay in acquisition evidence; only selection collapses.
+    accepted = [row for row in _payload_rows(published.root, "acquisition-pages") if row["accepted"]]
+    discovered = [record for row in accepted for record in row["discoveredRecords"]]
+    assert [record["sourceRecordId"] for record in discovered] == [number, number]
+    assert len({record["recordDigest"] for record in discovered}) == 2
+
+
+def test_reused_document_number_with_identical_digests_collapses_without_tying(
+    tmp_path: Path,
+) -> None:
+    """A source refetch of the exact same object under one document_number is
+    not a tie: two byte-identical objects at one publication_date collapse to
+    one published record, and the repeat still counts as a discarded
+    observation (raw bytes need not match, only the canonical record digest)."""
+    number = "00-222"
+    pages = _stable_pages(_document(number), _document(number))
+
+    published = _publish(tmp_path, pages)
+    reader = _reader(published.root, published.artifact.pin)
+
+    assert len(list(reader.iter_records())) == 1
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["discardedObservationCount"] == 1
+
+
+def test_reused_document_number_with_differing_digests_at_one_date_refuses_the_tie(
+    tmp_path: Path,
+) -> None:
+    """Two different objects sharing one document_number and one
+    publication_date are a genuine ambiguity, not a refetch or a window
+    overlap: the shipped profile refuses instead of inventing a winner."""
+    number = "00-333"
+    window = {"publishedFrom": "2000-01-14", "publishedThrough": "2000-01-14"}
+    pages = _stable_pages(
+        _document(number, publication_date="2000-01-14", title="First filing"),
+        _document(number, publication_date="2000-01-14", title="Second filing"),
+        window=window,
+    )
+
+    with pytest.raises(SourceNativeReleaseError, match="source-version tie"):
+        _publish(tmp_path, pages, query_scope=window)

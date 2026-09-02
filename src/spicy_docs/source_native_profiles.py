@@ -96,6 +96,15 @@ FEDERAL_REGISTER_PROFILE: Final = SourceNativeProfile(
     records_included=federal_register.federal_register_records_included,
     acquisition_check=federal_register.FederalRegisterAcquisitionCheck,
     page_window=federal_register.federal_register_request_window,
+    # document_number is reused across unrelated documents: 00-111 resolves to
+    # a 2000-01-18 "Notice of Filing of Plat of an Island; Minnesota" and also
+    # discovers an older 2000-01-14 "Compliance Monitoring..." rule filed under
+    # the same number. Collapse to the newest publication_date exactly as
+    # dockets and documents do (2026-09-02, spec §4 amendment).
+    observation_version=federal_register.federal_register_observation_version,
+    # A same-day collision under one document_number still refuses unless the
+    # two records share a canonical digest.
+    refuse_equal_observation_versions=False,
 )
 
 REGULATIONS_GOV_DOCUMENT_PROFILE: Final = SourceNativeProfile(

@@ -328,6 +328,16 @@ def federal_register_acquisition_policy(
         "initialQueryScope": federal_register_query_scope(query_scope),
         "maxTraversals": MAX_RECONCILIATION_TRAVERSALS,
         "maxWindowDays": MAX_WINDOW_DAYS,
+        # document_number is reused across unrelated documents (00-111: a
+        # 2000-01-18 filing and an older 2000-01-14 rule); keep the newest
+        # publication_date exactly as the API's own /documents/<number>
+        # resolution does, and refuse a same-day collision whose record
+        # digests differ instead of inventing a tie-breaker (2026-09-02).
+        "observationSelection": {
+            "groupBy": "/document_number",
+            "orderBy": "/publication_date DESC NULLS LAST",
+            "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
+        },
         "resultCap": RESULT_CAP,
         "strategy": "date-window-cap-split-stable-reconciliation",
     }
@@ -587,6 +597,27 @@ def classify_document(value: object) -> dict[str, Any]:
     return record
 
 
+def federal_register_observation_version(record: Mapping[str, Any]) -> str | None:
+    """Normalize the record's exact ``publication_date`` only for deterministic comparison.
+
+    Mirrors :func:`regulations_gov_source_native.observation_version`'s shape: the
+    source-issued value stays in the record untouched; this returns the same
+    canonical text used to order and collapse repeat observations. The source
+    reuses ``document_number`` across unrelated documents: ``00-111`` resolves
+    (via the API's own ``/documents/00-111.json``) to a 2000-01-18 "Notice of
+    Filing of Plat of an Island; Minnesota", while the full-history crawl also
+    discovers an older 2000-01-14 "Compliance Monitoring..." rule filed under
+    the same number. ``publication_date`` is required and already
+    source-issued-canonical by the time :func:`classify_document` returns it, so
+    this never observes an undated record (2026-09-02).
+    """
+
+    value = record.get("publication_date")
+    if not isinstance(value, str) or not value:
+        raise FederalRegisterSourceError("Federal Register publication_date must be nonempty text")
+    return date.fromisoformat(value).isoformat()
+
+
 def field_diagnostics(record: Mapping[str, Any]) -> list[dict[str, Any]]:
     """Describe malformed RIN values without removing their source evidence."""
 
@@ -770,6 +801,7 @@ __all__ = [
     "federal_register_acquisition_policy",
     "federal_register_documents_url",
     "federal_register_next_page_url",
+    "federal_register_observation_version",
     "federal_register_query_scope",
     "federal_register_records_included",
     "federal_register_request_window",

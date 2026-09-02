@@ -195,6 +195,13 @@ apply to Federal Register.
 **Amendment (2026-09-02):** it applies to Regulations.gov documents and dockets
 too; the mirror holds a 2021-02-12 and a newer "(1)" 2024-06-12 observation of
 docket ACF-2007-0125, and a filename filter would have discarded the newer one.
+**Amendment (2026-09-02):** it now applies to Federal Register too. The source
+reuses `document_number` across unrelated documents — `00-111` resolves (via the
+API's own `/documents/00-111.json`) to a 2000-01-18 "Notice of Filing of Plat of
+an Island; Minnesota", while the full-history crawl also discovers an older
+2000-01-14 "Compliance Monitoring..." rule filed under the same number — so the
+profile groups by `/document_number`, orders by `/publication_date DESC NULLS
+LAST`, and refuses a same-date collision whose record digests differ.
 
 Source-specific observation collapse is acquisition meaning, not a catalog
 derivation: every Regulations.gov profile — comments, dockets, and documents —
