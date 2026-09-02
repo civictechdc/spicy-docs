@@ -99,7 +99,12 @@ a changed ETag, missing or duplicate key, omitted object, mismatched size,
 unsupported key, incomplete agency set, or unclassified raw field. The
 enumeration evidence is preserved independently from the records selected by
 the release's bounded date scope, so an out-of-scope source object remains
-evidence but contributes no record.
+evidence but contributes no record. **Amendment (2026-09-02):** a
+Regulations.gov document with a null `postedDate` — the live mirror holds
+exactly three such FMCSA documents, e.g. FMCSA-2007-0006-0015, each with
+`modifyDate` present — is undatable and therefore outside every date scope;
+it stays in evidence and contributes no record, the same disposition as any
+other out-of-scope object.
 
 Each Regulations.gov query covers at most 14,640 inclusive calendar days
 (~40 years). The adapter rejects a reversed or wider range before it opens the
@@ -201,11 +206,12 @@ strict-ASCII record identity, non-null before null, and normalized UTC instant
 descending. For comments, any repeated `(record identity, normalized UTC
 instant)` pair, including two nulls, fails instead of inventing a
 tie-breaker. **Amendment (2026-09-02):** for dockets and documents, a
-repeated pair whose canonical record digests are identical is one observation,
-not a tie; only a repeated pair with differing record digests fails (raw bytes
-may differ in key order alone). Docket ACF-2026-0199 holds
-byte-identical objects "(18)" and "(19)" at one modifyDate instant —
-Mirrulations refetching an active docket, not two observations to
+repeated pair with an identical canonical record digest — raw bytes need not
+match — selects one published record; every redundant input remains counted
+as a discarded observation and retained in evidence. Only a repeated pair
+with differing record digests still fails as a tie. Docket ACF-2026-0199
+holds two identical-digest objects "(18)" and "(19)" at one modifyDate
+instant — Mirrulations refetching an active docket, not two observations to
 tie-break.
 `inputObservationDigest` consumes that sequence through the installed shared
 framed-section digester. Every older observation counts as discarded and stays
@@ -495,9 +501,11 @@ timestamp conflicts, multiple source versions, shuffled enumeration order,
 digest/count replay, deterministic output order, schema drift, and a one-row
 mutation that changes the digest. Document and docket fixtures extend that
 executable coverage to the document `postedDate` fallback, offset-equivalent
-instants that tie, a repeated docket instant, byte-identical objects at one
-instant collapsing to a single observation instead of tying (2026-09-02), and
-the discarded observations retained in acquisition evidence.
+instants that tie, a repeated docket instant, and a repeated pair with an
+identical canonical record digest but differing raw bytes (key order alone)
+at one instant selecting one published record instead of tying (2026-09-02),
+with every redundant input counted as a discarded observation and retained
+in acquisition evidence.
 Generation tests refuse broken superseded identities, an empty successor reason,
 unrelated pointer replacement, and a byte-for-byte no-op successor. A
 physical-only correction preserves logical identity and moves exact artifact

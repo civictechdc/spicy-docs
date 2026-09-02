@@ -667,7 +667,7 @@ def classify_document(value: object) -> dict[str, Any]:
         required=frozenset({"agencyId", "postedDate"}),
     )
     _validate_document_attributes(attributes)
-    _record_date(attributes.get("postedDate"), "document postedDate")
+    _optional_record_date(attributes.get("postedDate"), "document postedDate")
     observation_version(top, collection=DOCUMENT_COLLECTION)
     canonical_json_bytes(top)
     return dict(top)
@@ -721,6 +721,21 @@ def _record_date(value: object, label: str) -> date:
     if parsed.isoformat() != value[:10]:
         raise RegulationsGovSourceError(f"Regulations.gov {label} is not canonical")
     return parsed
+
+
+def _optional_record_date(value: object, label: str) -> date | None:
+    """Return the parsed date, or ``None`` when the source left the field null.
+
+    A present, non-null value must still be canonical-date text; only an
+    explicit source null (2026-09-02: three FMCSA documents, e.g.
+    FMCSA-2007-0006-0015, publish ``postedDate: null`` with ``modifyDate``
+    present) is tolerated. A malformed non-null value is still corrupt data,
+    not an undated observation, so it still refuses.
+    """
+
+    if value is None:
+        return None
+    return _record_date(value, label)
 
 
 # Label and instant fields per collection. Documents fall back to postedDate,
@@ -1380,7 +1395,12 @@ def _record_in_scope(
     if record_agency not in query_scope["agencies"]:
         return False
     if collection == DOCUMENT_COLLECTION:
-        value = _record_date(attributes.get("postedDate"), "document postedDate")
+        value = _optional_record_date(attributes.get("postedDate"), "document postedDate")
+        if value is None:
+            # An undated document (2026-09-02: FMCSA-2007-0006-0015 and two
+            # siblings publish postedDate: null) falls outside every date
+            # scope; §3 keeps it as evidence while it contributes no record.
+            return False
         start = date.fromisoformat(str(query_scope["publishedFrom"]))
         end = date.fromisoformat(str(query_scope["publishedThrough"]))
     elif collection == DOCKET_COLLECTION:
@@ -1503,12 +1523,15 @@ def _acquisition_policy(
     collection: str,
 ) -> dict[str, Any]:
     # Every collection groups by ``/data/id`` and keeps the greatest normalized
-    # UTC instant, refusing a repeated (id, instant) pair with differing bytes
-    # rather than inventing a tie-breaker; a repeated pair with identical bytes
-    # is one observation for documents and dockets, but comments still refuse
-    # any repeat (spec 2026-08-25 §4, 2026-09-02 amendments: newest-observation
-    # collapse and the ACF-2026-0199 identical-bytes case). Documents order
-    # by ``modifyDate`` falling back to ``postedDate``, as
+    # UTC instant, refusing a repeated (id, instant) pair with differing
+    # canonical record digests rather than inventing a tie-breaker (raw bytes
+    # need not match); for documents and dockets a repeated pair with an
+    # identical canonical record digest selects one published record, and
+    # every redundant input remains counted as a discarded observation and
+    # retained in evidence, but comments still refuse any repeat (spec
+    # 2026-08-25 §4, 2026-09-02 amendments: newest-observation collapse and
+    # the ACF-2026-0199 identical-digest case). Documents order by
+    # ``modifyDate`` falling back to ``postedDate``, as
     # :func:`source_issued_version` does; the other two order by ``modifyDate``.
     order_by = (
         "coalesce(/data/attributes/modifyDate, /data/attributes/postedDate) DESC NULLS LAST"

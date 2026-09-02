@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator, Mapping
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -27,8 +27,10 @@ from spicy_docs.regulations_gov_source_native import (
     classify_docket,
     classify_document,
     docket_acquisition_policy,
+    docket_source_record_digest,
     document_acquisition_policy,
     document_rendition_rows,
+    document_source_record_digest,
     iter_regulations_gov_docket_pages,
     iter_regulations_gov_document_pages,
     observation_version,
@@ -409,6 +411,49 @@ def test_out_of_scope_objects_remain_evidence_without_becoming_records(tmp_path:
     assert [item["included"] for item in parsed["_packedRecords"]] == [True, False]
 
 
+def test_undated_document_stays_in_evidence_without_aborting_the_agency(tmp_path: Path) -> None:
+    """A live FMCSA publish (53,156 documents) aborted outright: exactly three
+    objects, e.g. FMCSA-2007-0006-0015, carry ``postedDate: null`` with
+    ``modifyDate`` present, and the strict date parse raised for the whole
+    agency instead of treating one undatable document as evidence-only
+    (2026-09-02 fix). A null ``postedDate`` is outside every date scope, the
+    same disposition as any other out-of-scope object: it stays in evidence
+    and contributes no record, and the dated documents still publish.
+    """
+    dated = _document_object()
+    undated_record = _document("EPA-2026-0001-0002", postedDate=None)
+    undated = _document_object(
+        "EPA-2026-0001-0002",
+        value=undated_record,
+        etag='"undated-etag"',
+    )
+    release = tmp_path / "undated"
+    published = SourceNativeReleasePublisher(
+        REGULATIONS_GOV_DOCUMENT_PROFILE,
+        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+        clock=_completed_at,
+    ).publish(
+        iter_regulations_gov_document_pages(
+            lambda _agency: _Reader([dated, undated]),
+            query_scope=_document_scope(),
+        ),
+        build=_build(_document_scope()),
+        destination=release,
+    )
+    reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)
+    pages = _payload_rows(release, "acquisition-pages")
+
+    assert [row["sourceRecordId"] for row in reader.iter_records()] == ["EPA-2026-0001-0001"]
+    assert [row["recordsIncluded"] for row in pages] == [True]
+    store = LocalSourceNativeBlobStore(tmp_path / "blobs")
+    with store.open(pages[0]["evidenceBlobRef"]) as stream:
+        parsed = parse_document_page_response(stream.read())
+    assert [item["included"] for item in parsed["_packedRecords"]] == [True, False]
+    undated_evidence = parsed["_packedRecords"][1]["record"]
+    assert undated_evidence["data"]["id"] == "EPA-2026-0001-0002"
+    assert undated_evidence["data"]["attributes"]["postedDate"] is None
+
+
 def test_missing_or_changed_enumerated_object_refuses_complete_snapshot(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -625,44 +670,126 @@ def test_docket_release_selects_newest_observation_and_counts_discard(tmp_path: 
     assert len({record["recordDigest"] for record in discovered}) == 2
 
 
-def test_docket_release_collapses_byte_identical_observations_at_one_instant(tmp_path: Path) -> None:
-    """A live publish surfaced docket ACF-2026-0199 with two byte-identical
-    Mirrulations objects ("(18)" and "(19)": same 1811 bytes, same sha256,
-    same modifyDate 2026-08-20T13:03:09Z) among its 31 observations — a
-    re-fetch of one instant, not a tie to refuse. Two identical observations
-    of one record at one instant are one observation: they collapse to a
-    single published record, count as one discarded observation together,
-    and both stay in acquisition evidence alongside the older, genuinely
-    distinct observation (2026-09-02 fix).
+def _reordered(value: Any) -> Any:
+    """Rebuild a JSON-decodable value with every mapping's keys reversed.
+
+    Content-equal to ``value`` — a JSON parser decodes the identical record
+    either way — but serializing this alongside the original produces two
+    byte-different encodings of that one record, proving the collapse keys
+    equality on the canonical record digest, not raw bytes.
     """
+    if isinstance(value, dict):
+        return {key: _reordered(value[key]) for key in reversed(list(value))}
+    if isinstance(value, list):
+        return [_reordered(item) for item in value]
+    return value
+
+
+@dataclass(frozen=True)
+class _CollapseFixture:
+    collection: str
+    profile: Any
+    scope: dict[str, object]
+    identity: str
+    iter_pages: Callable[..., Iterator[RegulationsGovPage]]
+    record_digest: Callable[[Mapping[str, Any]], str]
+    older: dict[str, Any]
+    newest: dict[str, Any]
+    build_object: Callable[..., _Object]
+
+
+def _docket_collapse_fixture() -> _CollapseFixture:
     identity = "ACF-2007-0125"
-    older = _docket(identity, agencyId="ACF", modifyDate="2021-02-12T01:00:50Z", title="older observation")
-    newest = _docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="newest observation")
-    scope = _acf_docket_scope()
-    release = tmp_path / "dockets"
+    return _CollapseFixture(
+        collection="docket",
+        profile=REGULATIONS_GOV_DOCKET_PROFILE,
+        scope=_acf_docket_scope(),
+        identity=identity,
+        iter_pages=iter_regulations_gov_docket_pages,
+        record_digest=docket_source_record_digest,
+        older=_docket(identity, agencyId="ACF", modifyDate="2021-02-12T01:00:50Z", title="older observation"),
+        newest=_docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="newest observation"),
+        build_object=lambda *, value, tag: _docket_object(identity, value=value, tag=tag, agency="ACF"),
+    )
+
+
+def _document_collapse_fixture() -> _CollapseFixture:
+    identity = "ACF-2021-0001-0001"
+    return _CollapseFixture(
+        collection="document",
+        profile=REGULATIONS_GOV_DOCUMENT_PROFILE,
+        scope=_acf_document_scope(),
+        identity=identity,
+        iter_pages=iter_regulations_gov_document_pages,
+        record_digest=document_source_record_digest,
+        older=_document(
+            identity,
+            agencyId="ACF",
+            docketId="ACF-2021-0001",
+            modifyDate="2021-03-01T00:00:00Z",
+            postedDate="2021-02-15T00:00:00Z",
+            title="older observation",
+        ),
+        newest=_document(
+            identity,
+            agencyId="ACF",
+            docketId="ACF-2021-0001",
+            modifyDate="2024-06-12T01:16:04Z",
+            postedDate="2021-02-15T00:00:00Z",
+            title="newest observation",
+        ),
+        build_object=lambda *, value, tag: _document_object(
+            identity, value=value, tag=tag, agency="ACF", docket_id="ACF-2021-0001"
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    [_docket_collapse_fixture(), _document_collapse_fixture()],
+    ids=["docket", "document"],
+)
+def test_release_collapses_identical_record_digests_with_differing_raw_bytes(
+    tmp_path: Path, fixture: _CollapseFixture
+) -> None:
+    """A live docket publish surfaced ACF-2026-0199 with two Mirrulations
+    objects ("(18)" and "(19)") at one modifyDate instant — a re-fetch of one
+    active docket, not a tie to refuse. Equality for the collapse is the
+    canonical record digest, not raw bytes (2026-09-02 fix): this fixture
+    proves it directly by serializing the second "newest" observation with
+    reversed JSON key order, so its raw bytes differ from the first while its
+    record digest is identical. Two observations of one record at one instant
+    with equal record digests select one published record; every redundant
+    input remains counted as a discarded observation and stays byte-exact in
+    acquisition evidence, alongside the older, genuinely distinct
+    observation.
+    """
+    reordered_newest = _reordered(fixture.newest)
+    assert reordered_newest == fixture.newest
+    first_bytes = _bytes(fixture.newest, indent=2)
+    second_bytes = _bytes(reordered_newest, indent=2)
+    assert first_bytes != second_bytes
+    assert fixture.record_digest(fixture.newest) == fixture.record_digest(reordered_newest)
+
+    objects = [
+        fixture.build_object(value=fixture.older, tag="1"),
+        fixture.build_object(value=fixture.newest, tag="2"),
+        fixture.build_object(value=reordered_newest, tag="3"),
+    ]
+    release = tmp_path / fixture.collection
     published = SourceNativeReleasePublisher(
-        REGULATIONS_GOV_DOCKET_PROFILE,
+        fixture.profile,
         blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
         clock=_completed_at,
     ).publish(
-        iter_regulations_gov_docket_pages(
-            lambda agency: (
-                _Reader(
-                    [
-                        _docket_object(identity, value=older, tag="1", agency="ACF"),
-                        _docket_object(identity, value=newest, tag="2", agency="ACF"),
-                        _docket_object(identity, value=newest, tag="3", agency="ACF"),
-                    ]
-                )
-                if agency == "ACF"
-                else pytest.fail("wrong agency")
-            ),
-            query_scope=scope,
+        fixture.iter_pages(
+            lambda agency: (_Reader(objects) if agency == "ACF" else pytest.fail("wrong agency")),
+            query_scope=fixture.scope,
         ),
-        build=_build(scope),
+        build=_build(fixture.scope),
         destination=release,
     )
-    reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCKET_PROFILE)
+    reader = _reader(release, published.artifact.pin, fixture.profile)
 
     assert [row["record"]["data"]["attributes"]["title"] for row in reader.iter_records()] == ["newest observation"]
     receipt = json.loads((release / "receipts/publication.json").read_bytes())
@@ -670,10 +797,23 @@ def test_docket_release_collapses_byte_identical_observations_at_one_instant(tmp
     assert receipt["inputObservationCount"] == 3
     assert receipt["publishedRecordCount"] == 1
     assert receipt["discardedObservationCount"] == 2
-    # All three observations stay in evidence, including both identical repeats.
-    discovered = [record for row in _payload_rows(release, "acquisition-pages") for record in row["discoveredRecords"]]
-    assert [record["sourceRecordId"] for record in discovered] == [identity, identity, identity]
-    assert len({record["recordDigest"] for record in discovered}) == 2
+
+    pages = _payload_rows(release, "acquisition-pages")
+    discovered = [record for row in pages for record in row["discoveredRecords"]]
+    assert [record["sourceRecordId"] for record in discovered] == [fixture.identity] * 3
+    digests = {record["recordDigest"] for record in discovered}
+    assert len(digests) == 2
+    assert fixture.record_digest(fixture.newest) in digests
+
+    # Both exact objects — differing raw bytes, equal record digest — stay
+    # byte-for-byte in acquisition evidence; the same-instant pair is
+    # deduplicated only at selection, not at the evidence layer.
+    store = LocalSourceNativeBlobStore(tmp_path / "blobs")
+    with store.open(pages[0]["evidenceBlobRef"]) as stream:
+        evidence_bytes = stream.read()
+    with ZipFile(BytesIO(evidence_bytes)) as archive:
+        assert archive.read("objects/000001.json") == first_bytes
+        assert archive.read("objects/000002.json") == second_bytes
 
 
 def test_document_release_selects_newest_observation_and_counts_discard(tmp_path: Path) -> None:
@@ -737,9 +877,9 @@ def test_document_release_selects_newest_observation_and_counts_discard(tmp_path
 
 def test_repeated_normalized_docket_versions_refuse_a_tie(tmp_path: Path) -> None:
     """Two DIFFERENT bodies at the same normalized instant are a genuine tie
-    and still refuse (2026-09-02): only identical bytes at one instant
-    collapse, per
-    ``test_docket_release_collapses_byte_identical_observations_at_one_instant``.
+    and still refuse (2026-09-02): only a repeated pair with an identical
+    canonical record digest at one instant collapses, per
+    ``test_release_collapses_identical_record_digests_with_differing_raw_bytes``.
     """
     identity = "ACF-2007-0125"
     first = _docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="first")
@@ -769,8 +909,9 @@ def test_repeated_normalized_docket_versions_refuse_a_tie(tmp_path: Path) -> Non
 def test_repeated_normalized_document_versions_refuse_a_tie(tmp_path: Path) -> None:
     """Comparison is on the normalized UTC instant, so two differently offset
     stamps denoting the same instant still tie. The bodies differ (title
-    "first" vs "second"), so this still refuses (2026-09-02): only identical
-    bytes at one instant collapse."""
+    "first" vs "second"), so their record digests differ too, and this still
+    refuses (2026-09-02): only a repeated pair with an identical canonical
+    record digest at one instant collapses."""
     identity = "ACF-2021-0001-0001"
     first = _document(
         identity,
@@ -815,6 +956,21 @@ def test_document_source_issued_version_falls_back_to_posted_date_when_modify_da
 
     assert source_issued_version(raw, collection=DOCUMENT_COLLECTION) == "2026-08-24T04:00:00Z"
     assert observation_version(raw, collection=DOCUMENT_COLLECTION) == "2026-08-24T04:00:00.000000Z"
+
+
+def test_classify_document_accepts_a_null_posted_date_but_refuses_a_malformed_one() -> None:
+    """Three live FMCSA documents publish ``postedDate: null`` with
+    ``modifyDate`` present (2026-09-02 fix), e.g. FMCSA-2007-0006-0015.
+    Undatable is tolerated; corrupt is not — a present, non-null value that
+    fails canonical-date parsing still refuses, since that is malformed
+    source data, not a legitimate undated observation.
+    """
+    undated = classify_document(_document(postedDate=None))
+    assert undated["data"]["attributes"]["postedDate"] is None
+    assert observation_version(undated, collection=DOCUMENT_COLLECTION) is not None
+
+    with pytest.raises(RegulationsGovSourceError, match="document postedDate is invalid"):
+        classify_document(_document(postedDate="not-a-date"))
 
 
 def test_docket_source_issued_version_matches_the_raw_modify_date() -> None:
