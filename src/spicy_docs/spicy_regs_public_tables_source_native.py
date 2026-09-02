@@ -35,7 +35,6 @@ from typing import Any, Final, Literal, cast
 from urllib.parse import parse_qs, quote, urlencode, urlparse
 from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile
 
-import polars as pl
 from rulespec_artifacts import (
     FramedSection,
     canonical_json_bytes,
@@ -407,7 +406,13 @@ def validate_partition_columns(columns: Sequence[str], dtypes: Sequence[object])
     changing type all fail closed here.  The published tree encodes the
     partition key in the directory name, so a file that carries an
     ``agency_code`` column is itself drift.
+
+    polars is imported here, not at module scope, so importing
+    ``spicy_docs.source_native_profiles`` does not require it: DocSpec's
+    read/verify path never parses a SpicyRegs public-table partition.
     """
+
+    import polars as pl
 
     observed = tuple(str(name) for name in columns)
     if observed != PUBLIC_COMMENT_FILE_COLUMNS:
@@ -421,6 +426,8 @@ def validate_partition_columns(columns: Sequence[str], dtypes: Sequence[object])
 
 
 def _partition_rows(content: bytes) -> list[dict[str, Any]]:
+    import polars as pl
+
     try:
         schema = pl.read_parquet_schema(BytesIO(content))
     except Exception as error:  # any reader refusal is one source refusal

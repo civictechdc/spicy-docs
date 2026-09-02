@@ -6,7 +6,7 @@ from json import dumps
 import pytest
 
 from spicy_docs.schemas import COMMENT, DOCKET, DOCUMENT
-from spicy_docs.sources import MirrulationsReader
+from spicy_docs.sources.mirrulations import MirrulationsReader
 
 BUCKET = "mirrulations"
 PREFIX = "raw-data"
