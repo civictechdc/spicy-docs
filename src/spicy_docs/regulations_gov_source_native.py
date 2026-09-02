@@ -17,7 +17,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, Final, Literal, Protocol, cast
 from urllib.parse import parse_qs, urlencode, urlparse
-from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile, ZipInfo
+from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile
 
 from rulespec_artifacts import (
     FramedSection,
@@ -25,6 +25,8 @@ from rulespec_artifacts import (
     framed_section_digest,
     schema_bundle_digest,
 )
+
+from spicy_docs.source_native_zip import deterministic_zip_entry
 
 DOCUMENT_COLLECTION: Final = "documents"
 DOCKET_COLLECTION: Final = "dockets"
@@ -970,13 +972,6 @@ class _PackedObject:
     included: bool
 
 
-def _zip_entry(name: str) -> ZipInfo:
-    entry = ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
-    entry.compress_type = ZIP_DEFLATED
-    entry.external_attr = 0o100644 << 16
-    return entry
-
-
 def _pack_bytes(
     objects: Sequence[_PackedObject],
     *,
@@ -1012,9 +1007,9 @@ def _pack_bytes(
     )
     output = BytesIO()
     with ZipFile(output, "w", compression=ZIP_DEFLATED, compresslevel=6) as archive:
-        archive.writestr(_zip_entry("manifest.json"), manifest)
+        archive.writestr(deterministic_zip_entry("manifest.json"), manifest)
         for item, descriptor in zip(objects, manifest_objects, strict=True):
-            archive.writestr(_zip_entry(str(descriptor["entry"])), item.content)
+            archive.writestr(deterministic_zip_entry(str(descriptor["entry"])), item.content)
     return output.getvalue()
 
 

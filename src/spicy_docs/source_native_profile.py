@@ -8,14 +8,29 @@ from typing import Any, Literal, Protocol
 
 
 class SourceNativePage(Protocol):
-    traversal_index: int
-    page_index: int
-    window_index: int
-    window_page_index: int
-    request_key: str
-    source_cursor: str | None
-    response_bytes: bytes
-    evidence_media_type: str
+    @property
+    def traversal_index(self) -> int: ...
+
+    @property
+    def page_index(self) -> int: ...
+
+    @property
+    def window_index(self) -> int: ...
+
+    @property
+    def window_page_index(self) -> int: ...
+
+    @property
+    def request_key(self) -> str: ...
+
+    @property
+    def source_cursor(self) -> str | None: ...
+
+    @property
+    def response_bytes(self) -> bytes: ...
+
+    @property
+    def evidence_media_type(self) -> str: ...
 
 
 class TraversalCheck(Protocol):

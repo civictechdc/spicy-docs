@@ -33,7 +33,7 @@ from datetime import datetime
 from io import BytesIO
 from typing import Any, Final, Literal, cast
 from urllib.parse import parse_qs, quote, urlencode, urlparse
-from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile, ZipInfo
+from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile
 
 import polars as pl
 from rulespec_artifacts import (
@@ -51,6 +51,7 @@ from spicy_docs.schemas.spicy_regs_public_tables import (
     PUBLIC_COMMENT_VERSION_COLUMN,
     project_public_comment_row,
 )
+from spicy_docs.source_native_zip import deterministic_zip_entry
 
 PUBLIC_TABLE_BASE_URL: Final = "https://data.spicy-regs.dev"
 PUBLIC_TABLE_HOST: Final = "data.spicy-regs.dev"
@@ -276,13 +277,6 @@ def _header_or_null(value: object, label: str) -> str | None:
     return value
 
 
-def _zip_entry(name: str) -> ZipInfo:
-    entry = ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
-    entry.compress_type = ZIP_DEFLATED
-    entry.external_attr = 0o100644 << 16
-    return entry
-
-
 def capture_manifest(
     capture: PublicTableCapture,
     *,
@@ -330,8 +324,8 @@ def capture_pack_bytes(
     manifest = capture_manifest(capture, agency=agency, part_index=part_index, terminal=terminal)
     output = BytesIO()
     with ZipFile(output, "w", compression=ZIP_DEFLATED, compresslevel=6) as archive:
-        archive.writestr(_zip_entry(MANIFEST_ENTRY), canonical_json_bytes(manifest))
-        archive.writestr(_zip_entry(PARTITION_ENTRY), capture.content)
+        archive.writestr(deterministic_zip_entry(MANIFEST_ENTRY), canonical_json_bytes(manifest))
+        archive.writestr(deterministic_zip_entry(PARTITION_ENTRY), capture.content)
     return output.getvalue()
 
 

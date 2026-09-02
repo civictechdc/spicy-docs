@@ -25,6 +25,18 @@ from spicy_docs.federal_register_source_native import (
     FederalRegisterSourceError,
     iter_federal_register_pages,
 )
+from spicy_docs.gao_product_pages_source_native import (
+    FETCH_TIMEOUT_SECONDS as GAO_FETCH_TIMEOUT_SECONDS,
+)
+from spicy_docs.gao_product_pages_source_native import (
+    MAX_PAGE_BYTES as GAO_MAX_PAGE_BYTES,
+)
+from spicy_docs.gao_product_pages_source_native import (
+    GaoProductFetch,
+    GaoProductSourceError,
+    gao_product_query_scope,
+    iter_gao_product_pages,
+)
 from spicy_docs.publication import ImmutablePublicationError
 from spicy_docs.regulations_gov_source_native import (
     COMMENT_COLLECTION,
@@ -49,6 +61,7 @@ from spicy_docs.source_native import (
 from spicy_docs.source_native_profile import SourceNativePage, SourceNativeProfile
 from spicy_docs.source_native_profiles import (
     FEDERAL_REGISTER_PROFILE,
+    GAO_PRODUCT_PAGE_PROFILE,
     REGULATIONS_GOV_COMMENT_PROFILE,
     REGULATIONS_GOV_DOCKET_PROFILE,
     REGULATIONS_GOV_DOCUMENT_PROFILE,
@@ -56,6 +69,7 @@ from spicy_docs.source_native_profiles import (
 )
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 from spicy_docs.sources import mirrulations
+from spicy_docs.sources.zyte import ZyteHttpFetcher, ZyteTransportError
 from spicy_docs.spicy_regs_public_tables_source_native import (
     COMMENT_TABLE,
     MAX_PARTITION_BYTES,
@@ -66,12 +80,14 @@ from spicy_docs.spicy_regs_public_tables_source_native import (
 )
 
 SOURCE_FEDERAL_REGISTER: Final = "federal-register"
+SOURCE_GAO_PRODUCT_PAGES: Final = "gao-product-pages"
 SOURCE_REGULATIONS_DOCUMENTS: Final = "regulations-documents"
 SOURCE_REGULATIONS_DOCKETS: Final = "regulations-dockets"
 SOURCE_REGULATIONS_COMMENTS: Final = "regulations-comments"
 SOURCE_SPICY_REGS_PUBLIC_COMMENTS: Final = "spicy-regs-public-comments"
 SOURCE_CHOICES: Final = (
     SOURCE_FEDERAL_REGISTER,
+    SOURCE_GAO_PRODUCT_PAGES,
     SOURCE_REGULATIONS_DOCUMENTS,
     SOURCE_REGULATIONS_DOCKETS,
     SOURCE_REGULATIONS_COMMENTS,
@@ -126,6 +142,11 @@ def _parser() -> argparse.ArgumentParser:
         action="append",
         help="Agency code; repeat for multiple agencies",
     )
+    publish.add_argument(
+        "--product-id",
+        action="append",
+        help="Closed GAO product ID; repeat for multiple product pages",
+    )
     publish.add_argument("--destination", type=Path, required=True)
     publish.add_argument(
         "--blob-store",
@@ -160,6 +181,8 @@ def _parser() -> argparse.ArgumentParser:
 def _profile(source: str) -> SourceNativeProfile:
     if source == SOURCE_FEDERAL_REGISTER:
         return FEDERAL_REGISTER_PROFILE
+    if source == SOURCE_GAO_PRODUCT_PAGES:
+        return GAO_PRODUCT_PAGE_PROFILE
     if source == SOURCE_REGULATIONS_DOCUMENTS:
         return REGULATIONS_GOV_DOCUMENT_PROFILE
     if source == SOURCE_REGULATIONS_DOCKETS:
@@ -255,6 +278,21 @@ def _fetch_public_table(
 
 
 @contextmanager
+def _gao_fetcher(injected: GaoProductFetch | None) -> Iterator[GaoProductFetch]:
+    """Use an injected fixture or the secret-safe SpicyDocs Zyte adapter."""
+
+    if injected is not None:
+        yield injected
+        return
+    fetcher = ZyteHttpFetcher.from_environment()
+    yield lambda url: fetcher.fetch(
+        url,
+        timeout_seconds=GAO_FETCH_TIMEOUT_SECONDS,
+        max_bytes=GAO_MAX_PAGE_BYTES,
+    )
+
+
+@contextmanager
 def _public_table_fetcher(
     injected: PublicTableFetch | None,
     clock: Callable[[], datetime],
@@ -338,6 +376,17 @@ def _query_scope(args: argparse.Namespace) -> dict[str, Any]:
         raise SourceNativeReleaseError(
             f"--since and --until are not valid for {args.source}; its scope names partitions, not dates"
         )
+    if args.source != SOURCE_GAO_PRODUCT_PAGES and args.product_id:
+        raise SourceNativeReleaseError("--product-id is only valid for GAO product pages")
+    if args.source == SOURCE_GAO_PRODUCT_PAGES:
+        if args.agency:
+            raise SourceNativeReleaseError("--agency is not valid for GAO product pages")
+        product_ids = args.product_id or []
+        if not product_ids:
+            raise SourceNativeReleaseError("at least one --product-id is required for GAO product pages")
+        if len(set(product_ids)) != len(product_ids):
+            raise SourceNativeReleaseError("GAO --product-id values must be distinct")
+        return gao_product_query_scope({"productIds": sorted(product_ids)})
     if args.source == SOURCE_SPICY_REGS_PUBLIC_COMMENTS:
         agencies = sorted(set(args.agency or []))
         if not agencies:
@@ -397,6 +446,7 @@ def _publish(
     args: argparse.Namespace,
     *,
     fetch: FederalRegisterFetch | None,
+    fetch_gao: GaoProductFetch | None,
     fetch_public_table: PublicTableFetch | None,
     read_regulations: RegulationsReaderFactory | None,
     clock: Callable[[], datetime],
@@ -432,6 +482,17 @@ def _publish(
                 clock=clock,
             ).publish(
                 iter_federal_register_pages(active_fetch, query_scope=query_scope),
+                build=build,
+                destination=args.destination,
+            )
+    elif args.source == SOURCE_GAO_PRODUCT_PAGES:
+        with _gao_fetcher(fetch_gao) as active_fetch:
+            published = SourceNativeReleasePublisher(
+                profile,
+                blob_store=blob_store,
+                clock=clock,
+            ).publish(
+                iter_gao_product_pages(active_fetch, query_scope=query_scope),
                 build=build,
                 destination=args.destination,
             )
@@ -505,12 +566,17 @@ def _error_code(error: Exception) -> str:
         return "destination-exists"
     if isinstance(
         error,
-        (FederalRegisterSourceError, RegulationsGovSourceError, PublicTableSourceError),
+        (
+            FederalRegisterSourceError,
+            GaoProductSourceError,
+            RegulationsGovSourceError,
+            PublicTableSourceError,
+        ),
     ):
         return "acquisition-failed"
     if isinstance(error, SourceNativeReleaseError):
         return "release-invalid"
-    if isinstance(error, httpx.HTTPError):
+    if isinstance(error, (httpx.HTTPError, ZyteTransportError)):
         return "transport-failed"
     return "operation-failed"
 
@@ -519,6 +585,7 @@ def main(
     argv: list[str] | None = None,
     *,
     fetch: FederalRegisterFetch | None = None,
+    fetch_gao: GaoProductFetch | None = None,
     fetch_public_table: PublicTableFetch | None = None,
     read_regulations: RegulationsReaderFactory | None = None,
     clock: Callable[[], datetime] = _now,
@@ -535,6 +602,7 @@ def main(
             _publish(
                 args,
                 fetch=fetch,
+                fetch_gao=fetch_gao,
                 fetch_public_table=fetch_public_table,
                 read_regulations=read_regulations,
                 clock=clock,
@@ -546,9 +614,11 @@ def main(
         FileExistsError,
         ImmutablePublicationError,
         FederalRegisterSourceError,
+        GaoProductSourceError,
         RegulationsGovSourceError,
         PublicTableSourceError,
         SourceNativeReleaseError,
+        ZyteTransportError,
         httpx.HTTPError,
         OSError,
         ValueError,

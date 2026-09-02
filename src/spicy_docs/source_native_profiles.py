@@ -7,6 +7,7 @@ from datetime import date
 from typing import Any, Final, cast
 
 from spicy_docs import federal_register_source_native as federal_register
+from spicy_docs import gao_product_pages_source_native as gao
 from spicy_docs import regulations_gov_source_native as regulations_gov
 from spicy_docs import spicy_regs_public_tables_source_native as spicy_regs_tables
 from spicy_docs.source_native_profile import SourceNativeProfile
@@ -14,6 +15,37 @@ from spicy_docs.source_native_profile import SourceNativeProfile
 FEDERAL_REGISTER_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:federal-register-paginated"
 FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION: Final = "1.0"
 FEDERAL_REGISTER_SOURCE_SCHEMA_KEY: Final = "schemas/federal-register-document-1.0.schema.json"
+
+
+GAO_PRODUCT_PAGE_PROFILE: Final = SourceNativeProfile(
+    name="GAO product pages",
+    source_system_id=gao.SOURCE_SYSTEM_ID,
+    source_system_version=gao.SOURCE_SYSTEM_VERSION,
+    acquisition_policy_id=gao.ACQUISITION_POLICY_ID,
+    acquisition_policy_version=gao.ACQUISITION_POLICY_VERSION,
+    scope_id=gao.SCOPE_ID,
+    source_schema_key=gao.SOURCE_SCHEMA_KEY,
+    source_schema=gao.GAO_PRODUCT_PAGE_SCHEMA,
+    record_stem=gao.RECORD_STEM,
+    max_traversals=gao.MAX_TRAVERSALS,
+    source_state_scope="complete-snapshot",
+    traversal_acceptance="source-enumeration",
+    acquisition_policy=gao.gao_product_acquisition_policy,
+    validate_query_scope=gao.gao_product_query_scope,
+    parse_page_response=gao.parse_gao_product_page_response,
+    next_page=gao.gao_product_next_page_url,
+    traversal_check=gao.GaoProductTraversalCheck,
+    classify_record=gao.classify_gao_product_page,
+    wrap_record=gao.source_record,
+    record_digest=gao.source_record_digest,
+    rendition_rows=gao.rendition_rows,
+    source_schema_declaration=gao.source_schema_declaration,
+    source_schema_digest=gao.source_schema_digest,
+    validate_record_scope=gao.validate_record_scope,
+    records_included=gao.gao_product_records_included,
+    acquisition_check=gao.GaoProductAcquisitionCheck,
+    page_window=gao.parse_gao_product_request,
+)
 
 
 def _federal_register_record_scope(
@@ -200,6 +232,7 @@ __all__ = [
     "FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION",
     "FEDERAL_REGISTER_PROFILE",
     "FEDERAL_REGISTER_SOURCE_SCHEMA_KEY",
+    "GAO_PRODUCT_PAGE_PROFILE",
     "REGULATIONS_GOV_COMMENT_PROFILE",
     "REGULATIONS_GOV_DOCKET_PROFILE",
     "REGULATIONS_GOV_DOCUMENT_PROFILE",

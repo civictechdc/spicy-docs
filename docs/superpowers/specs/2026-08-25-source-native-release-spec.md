@@ -2,11 +2,12 @@
 
 > **Adoption note (2026-08-30).** This specification was authored in the spicy-regs working branch (`spicy-regs@integrate/payload-prereqs`, commit 8d9e7a2) and is adopted verbatim by spicy-docs, the repository that now owns faithful acquisition and source-native publication (see the platform plan's 2026-08-30 ownership amendment and REF-048). Producer identities, URNs, and digest domains named inside (`spicy-regs`, `urn:spicy-regs:...`, `pkg:pypi/spicy-regs@0.1.7`) are sealed protocol identifiers and historical facts; they are NOT renamed by adoption. New releases minted by this repo declare their own producer identity per the spec's own producer rules.
 
-Status: normative target. The shared release path, Federal Register and
-Regulations.gov source profiles, and their immutable public Parquet views are
-implemented in the current worktree. External object-store publication, a live
-Iceberg catalog run, final installed-wheel interoperability, consumer cutover,
-and scale conformance remain incomplete.
+Status: normative target. The shared release path, Federal Register,
+Regulations.gov, and explicit GAO product-page source profiles, plus their
+immutable public Parquet views, are implemented in the current worktree.
+External object-store publication, a live Iceberg catalog run, final
+installed-wheel interoperability, consumer cutover, and scale conformance
+remain incomplete.
 
 ## 1. Purpose and boundary
 
@@ -138,6 +139,25 @@ are carried as evidence. In each traversal those leaf windows MUST cover the req
 interval once, in order, with no gap or overlap, and every returned record's
 `publication_date` MUST fall inside its leaf. Stable reconciliation compares
 the complete ordered union across all leaves, not each leaf independently.
+
+The GAO product-page profile enumerates one explicit, closed set of sorted,
+distinct product IDs. Its `complete-snapshot` claim covers exactly that named
+set, not the complete GAO catalog. The migrated campaign observed GAO refusing
+its ordinary direct client, so the profile uses a SpicyDocs-owned,
+environment-credentialed Zyte raw-HTTP adapter; no credential or provider
+request metadata enters release evidence. Each product contributes one
+deterministic, bounded ZIP whose first member is a canonical capture manifest
+and whose second member is the exact HTML. The
+manifest pins the requested and resolved GAO URL, target status, content type,
+HTML byte length, and SHA-256 digest. Replay requires one source canonical URL
+matching the requested product and exactly one literal `/topics/<slug>` anchor
+inside `views-field-field-topic`; missing, duplicate, redirected, oversized, or
+changed fields fail the release rather than dropping a product. SpicyDocs
+preserves the publisher slug and label but does not map either to RefSpec or
+mint a search tag. For `N` product IDs, `H` total HTML bytes, and largest page
+`B`, the CLI publication path is `O(N log N + H)` time and `O(N + B)` working
+space (the source iterator itself is linear after canonical ordering), with closed
+bounds of 1,000 IDs, 8 MiB per page, and 1 GiB total HTML.
 
 Regulations.gov documents and dockets are separate source profiles and separate
 releases. Each uses one exact Mirrulations enumeration traversal for its own
