@@ -26,14 +26,17 @@ from spicy_docs.regulations_gov_source_native import (
     RegulationsGovSourceError,
     classify_docket,
     classify_document,
+    docket_acquisition_policy,
     document_acquisition_policy,
     document_rendition_rows,
     iter_regulations_gov_docket_pages,
     iter_regulations_gov_document_pages,
+    observation_version,
     parse_document_page_response,
     parse_mirrulations_request,
     regulations_gov_docket_query_scope,
     regulations_gov_document_query_scope,
+    source_issued_version,
 )
 from spicy_docs.source_native import (
     SourceNativeReleaseBuild,
@@ -169,9 +172,12 @@ def _document_object(
     *,
     value: dict[str, Any] | None = None,
     etag: str = '"document-etag"',
+    tag: str = "1",
+    agency: str = "EPA",
+    docket_id: str = "EPA-2026-0001",
 ) -> _Object:
     return _Object(
-        key=(f"raw-data/EPA/EPA-2026-0001/text-1/documents/{identity}.json"),
+        key=(f"raw-data/{agency}/{docket_id}/text-{tag}/documents/{identity}.json"),
         etag=etag,
         version_id="document-version-1",
         content=_bytes(value or _document(identity), indent=2),
@@ -182,10 +188,13 @@ def _docket_object(
     identity: str = "EPA-2026-0001",
     *,
     value: dict[str, Any] | None = None,
+    etag: str = '"docket-etag"',
+    tag: str = "1",
+    agency: str = "EPA",
 ) -> _Object:
     return _Object(
-        key=f"raw-data/EPA/{identity}/text-1/docket/{identity}.json",
-        etag='"docket-etag"',
+        key=f"raw-data/{agency}/{identity}/text-{tag}/docket/{identity}.json",
+        etag=etag,
         version_id=None,
         content=_bytes(value or _docket(identity), indent=2),
     )
@@ -550,3 +559,245 @@ def test_query_scope_spans_a_full_source_history_up_to_the_inclusive_bound() -> 
 
     # The bound is a sealed acquisition-policy member, not just a guard.
     assert document_acquisition_policy(_document_scope())["maxQueryDays"] == 14_640
+
+
+def _acf_docket_scope() -> dict[str, object]:
+    return {
+        "agencies": ["ACF"],
+        "modifiedFrom": "2021-01-01",
+        "modifiedThrough": "2024-12-31",
+    }
+
+
+def _acf_document_scope() -> dict[str, object]:
+    return {
+        "agencies": ["ACF"],
+        "publishedFrom": "2021-01-01",
+        "publishedThrough": "2024-12-31",
+    }
+
+
+def test_docket_release_selects_newest_observation_and_counts_discard(tmp_path: Path) -> None:
+    """The live Mirrulations mirror holds two objects for docket
+    ACF-2007-0125 (``.../docket/ACF-2007-0125.json``, modifyDate
+    2021-02-12, and the newer ``...(1).json``, modifyDate 2024-06-12) — a
+    later observation of the same record, not a duplicate to filter out by
+    filename. The publisher must collapse to the newest exactly as comments
+    do (2026-09-02 fix), instead of refusing the repeated id.
+    """
+    identity = "ACF-2007-0125"
+    older = _docket(identity, agencyId="ACF", modifyDate="2021-02-12T01:00:50Z", title="older observation")
+    newer = _docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="newer observation")
+    scope = _acf_docket_scope()
+    release = tmp_path / "dockets"
+    published = SourceNativeReleasePublisher(
+        REGULATIONS_GOV_DOCKET_PROFILE,
+        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+        clock=_completed_at,
+    ).publish(
+        iter_regulations_gov_docket_pages(
+            lambda agency: (
+                _Reader(
+                    [
+                        _docket_object(identity, value=older, tag="1", agency="ACF"),
+                        _docket_object(identity, value=newer, tag="2", agency="ACF"),
+                    ]
+                )
+                if agency == "ACF"
+                else pytest.fail("wrong agency")
+            ),
+            query_scope=scope,
+        ),
+        build=_build(scope),
+        destination=release,
+    )
+    reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCKET_PROFILE)
+
+    assert [row["record"]["data"]["attributes"]["title"] for row in reader.iter_records()] == ["newer observation"]
+    receipt = json.loads((release / "receipts/publication.json").read_bytes())
+    assert receipt["discoveredRecordCount"] == 2
+    assert receipt["inputObservationCount"] == 2
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["discardedObservationCount"] == 1
+    # The discarded older observation stays in the acquisition evidence.
+    discovered = [record for row in _payload_rows(release, "acquisition-pages") for record in row["discoveredRecords"]]
+    assert [record["sourceRecordId"] for record in discovered] == [identity, identity]
+    assert len({record["recordDigest"] for record in discovered}) == 2
+
+
+def test_document_release_selects_newest_observation_and_counts_discard(tmp_path: Path) -> None:
+    """Documents collapse the same way as dockets and comments: a repeat
+    object for one document id keeps only the newest observed modifyDate,
+    with every older observation counted as discarded (2026-09-02 fix).
+    """
+    identity = "ACF-2021-0001-0001"
+    older = _document(
+        identity,
+        agencyId="ACF",
+        docketId="ACF-2021-0001",
+        modifyDate="2021-03-01T00:00:00Z",
+        postedDate="2021-02-15T00:00:00Z",
+        title="older observation",
+    )
+    newer = _document(
+        identity,
+        agencyId="ACF",
+        docketId="ACF-2021-0001",
+        modifyDate="2024-06-12T01:16:04Z",
+        postedDate="2021-02-15T00:00:00Z",
+        title="newer observation",
+    )
+    scope = _acf_document_scope()
+    release = tmp_path / "documents"
+    published = SourceNativeReleasePublisher(
+        REGULATIONS_GOV_DOCUMENT_PROFILE,
+        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+        clock=_completed_at,
+    ).publish(
+        iter_regulations_gov_document_pages(
+            lambda agency: (
+                _Reader(
+                    [
+                        _document_object(
+                            identity, value=older, tag="1", agency="ACF", docket_id="ACF-2021-0001"
+                        ),
+                        _document_object(
+                            identity, value=newer, tag="2", agency="ACF", docket_id="ACF-2021-0001"
+                        ),
+                    ]
+                )
+                if agency == "ACF"
+                else pytest.fail("wrong agency")
+            ),
+            query_scope=scope,
+        ),
+        build=_build(scope),
+        destination=release,
+    )
+    reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)
+
+    assert [row["record"]["data"]["attributes"]["title"] for row in reader.iter_records()] == ["newer observation"]
+    receipt = json.loads((release / "receipts/publication.json").read_bytes())
+    assert receipt["discoveredRecordCount"] == 2
+    assert receipt["inputObservationCount"] == 2
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["discardedObservationCount"] == 1
+
+
+def test_repeated_normalized_docket_versions_refuse_a_tie(tmp_path: Path) -> None:
+    identity = "ACF-2007-0125"
+    first = _docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="first")
+    second = _docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="second")
+    scope = _acf_docket_scope()
+
+    with pytest.raises(SourceNativeReleaseError, match="source-version tie"):
+        SourceNativeReleasePublisher(
+            REGULATIONS_GOV_DOCKET_PROFILE,
+            blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+            clock=_completed_at,
+        ).publish(
+            iter_regulations_gov_docket_pages(
+                lambda _agency: _Reader(
+                    [
+                        _docket_object(identity, value=first, tag="1", agency="ACF"),
+                        _docket_object(identity, value=second, tag="2", agency="ACF"),
+                    ]
+                ),
+                query_scope=scope,
+            ),
+            build=_build(scope),
+            destination=tmp_path / "docket-tie",
+        )
+
+
+def test_repeated_normalized_document_versions_refuse_a_tie(tmp_path: Path) -> None:
+    """Comparison is on the normalized UTC instant, so two differently offset
+    stamps denoting the same instant tie and refuse just like identical text."""
+    identity = "ACF-2021-0001-0001"
+    first = _document(
+        identity,
+        agencyId="ACF",
+        docketId="ACF-2021-0001",
+        modifyDate="2024-06-12T01:16:04Z",
+        postedDate="2021-02-15T00:00:00Z",
+        title="first",
+    )
+    second = _document(
+        identity,
+        agencyId="ACF",
+        docketId="ACF-2021-0001",
+        modifyDate="2024-06-11T21:16:04-04:00",
+        postedDate="2021-02-15T00:00:00Z",
+        title="second",
+    )
+    scope = _acf_document_scope()
+
+    with pytest.raises(SourceNativeReleaseError, match="source-version tie"):
+        SourceNativeReleasePublisher(
+            REGULATIONS_GOV_DOCUMENT_PROFILE,
+            blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+            clock=_completed_at,
+        ).publish(
+            iter_regulations_gov_document_pages(
+                lambda _agency: _Reader(
+                    [
+                        _document_object(identity, value=first, tag="1", agency="ACF", docket_id="ACF-2021-0001"),
+                        _document_object(identity, value=second, tag="2", agency="ACF", docket_id="ACF-2021-0001"),
+                    ]
+                ),
+                query_scope=scope,
+            ),
+            build=_build(scope),
+            destination=tmp_path / "document-tie",
+        )
+
+
+def test_document_source_issued_version_falls_back_to_posted_date_when_modify_date_is_null() -> None:
+    raw = _document(modifyDate=None, postedDate="2026-08-24T04:00:00Z")
+
+    assert source_issued_version(raw, collection=DOCUMENT_COLLECTION) == "2026-08-24T04:00:00Z"
+    assert observation_version(raw, collection=DOCUMENT_COLLECTION) == "2026-08-24T04:00:00.000000Z"
+
+
+def test_docket_source_issued_version_matches_the_raw_modify_date() -> None:
+    raw = _docket(modifyDate="2021-02-12T01:00:50Z")
+
+    assert source_issued_version(raw, collection=DOCKET_COLLECTION) == "2021-02-12T01:00:50Z"
+    assert observation_version(raw, collection=DOCKET_COLLECTION) == "2021-02-12T01:00:50.000000Z"
+
+
+def test_an_unknown_collection_refuses_instead_of_raising_a_lookup_error() -> None:
+    with pytest.raises(RegulationsGovSourceError, match="not a source-native collection"):
+        source_issued_version(_docket(), collection="rulemakings")
+
+
+def test_docket_and_document_acquisition_policies_declare_the_newest_observation_collapse() -> None:
+    document_selection = document_acquisition_policy(_document_scope())["observationSelection"]
+    assert document_selection == {
+        "groupBy": "/data/id",
+        "orderBy": "coalesce(/data/attributes/modifyDate, /data/attributes/postedDate) DESC NULLS LAST",
+        "tieDisposition": "refuse-repeated-normalized-instant",
+    }
+
+    docket_selection = docket_acquisition_policy(_docket_scope())["observationSelection"]
+    assert docket_selection == {
+        "groupBy": "/data/id",
+        "orderBy": "/data/attributes/modifyDate DESC NULLS LAST",
+        "tieDisposition": "refuse-repeated-normalized-instant",
+    }
+
+
+def test_document_attribute_cfr_part_accepts_a_string_or_null_and_refuses_an_array() -> None:
+    """The regulations.gov v4 API documents ``cfrPart`` as a string, and the
+    live mirror carries only strings or nulls (sampled 2026-09-02, 120
+    documents across ACF/FMCSA/SEC: 106 null, 14 str, 0 arrays) — never the
+    text array the schema previously required.
+    """
+    textual = classify_document(_document(cfrPart="45 CFR 302,303,307"))
+    assert textual["data"]["attributes"]["cfrPart"] == "45 CFR 302,303,307"
+
+    null_valued = classify_document(_document(cfrPart=None))
+    assert null_valued["data"]["attributes"]["cfrPart"] is None
+
+    with pytest.raises(RegulationsGovSourceError, match="cfrPart must be text or null"):
+        classify_document(_document(cfrPart=["45 CFR 302", "45 CFR 303"]))

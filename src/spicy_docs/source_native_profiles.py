@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import date
+from functools import partial
 from typing import Any, Final, cast
 
 from spicy_docs import federal_register_source_native as federal_register
@@ -125,6 +126,12 @@ REGULATIONS_GOV_DOCUMENT_PROFILE: Final = SourceNativeProfile(
     records_included=regulations_gov.document_records_included,
     acquisition_check=lambda: regulations_gov.MirrulationsAcquisitionCheck(regulations_gov.DOCUMENT_COLLECTION),
     page_window=regulations_gov.parse_mirrulations_request,
+    # The mirror carries repeat observations of the same document id (a newer
+    # modifyDate/postedDate object alongside an older one, e.g. Mirrulations'
+    # "(1)" suffix files); collapse to the newest exactly as comments do
+    # (2026-09-02, spec §4 amendment).
+    observation_version=partial(regulations_gov.observation_version, collection=regulations_gov.DOCUMENT_COLLECTION),
+    refuse_equal_observation_versions=True,
 )
 
 REGULATIONS_GOV_DOCKET_PROFILE: Final = SourceNativeProfile(
@@ -155,6 +162,11 @@ REGULATIONS_GOV_DOCKET_PROFILE: Final = SourceNativeProfile(
     records_included=regulations_gov.docket_records_included,
     acquisition_check=lambda: regulations_gov.MirrulationsAcquisitionCheck(regulations_gov.DOCKET_COLLECTION),
     page_window=regulations_gov.parse_mirrulations_request,
+    # The mirror carries repeat observations of the same docket id (ACF-2007-0125:
+    # a 2021-02-12 object and a newer 2024-06-12 "(1)" object); collapse to the
+    # newest exactly as comments do (2026-09-02, spec §4 amendment).
+    observation_version=partial(regulations_gov.observation_version, collection=regulations_gov.DOCKET_COLLECTION),
+    refuse_equal_observation_versions=True,
 )
 
 REGULATIONS_GOV_COMMENT_PROFILE: Final = SourceNativeProfile(

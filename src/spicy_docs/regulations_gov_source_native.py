@@ -247,7 +247,9 @@ COMMENT_ATTRIBUTE_FIELDS: Final = frozenset(
 )
 _DOCUMENT_BOOLEAN_FIELDS: Final = frozenset({"allowLateComments", "openForComment", "withdrawn", "withinCommentPeriod"})
 _DOCUMENT_INTEGER_FIELDS: Final = frozenset({"pageCount", "paperLength", "paperWidth"})
-_DOCUMENT_TEXT_ARRAY_FIELDS: Final = frozenset({"additionalRins", "authors", "cfrPart"})
+# cfrPart is text or null, never an array, in the v4 API and the mirror alike
+# (sampled 2026-09-02, 120 ACF/FMCSA/SEC documents: 106 null, 14 str, 0 arrays).
+_DOCUMENT_TEXT_ARRAY_FIELDS: Final = frozenset({"additionalRins", "authors"})
 _TOPIC_FIELDS: Final = frozenset({"id", "label", "name", "slug"})
 _COMMENT_BOOLEAN_FIELDS: Final = frozenset({"openForComment", "withdrawn"})
 _COMMENT_INTEGER_FIELDS: Final = frozenset({"duplicateComments"})
@@ -666,6 +668,7 @@ def classify_document(value: object) -> dict[str, Any]:
     )
     _validate_document_attributes(attributes)
     _record_date(attributes.get("postedDate"), "document postedDate")
+    observation_version(top, collection=DOCUMENT_COLLECTION)
     canonical_json_bytes(top)
     return dict(top)
 
@@ -680,6 +683,7 @@ def classify_docket(value: object) -> dict[str, Any]:
     )
     _validate_docket_attributes(attributes)
     _record_date(attributes.get("modifyDate"), "docket modifyDate")
+    observation_version(top, collection=DOCKET_COLLECTION)
     canonical_json_bytes(top)
     return dict(top)
 
@@ -719,27 +723,50 @@ def _record_date(value: object, label: str) -> date:
     return parsed
 
 
-def comment_source_issued_version(record: Mapping[str, Any]) -> str | None:
-    """Return the exact source value; null is a valid public observation."""
-
-    value = _data_attributes(record).get("modifyDate")
-    if value is None:
-        return None
-    if not isinstance(value, str) or not value:
-        raise RegulationsGovSourceError("Regulations.gov comment modifyDate must be nonempty text or null")
-    try:
-        parsed = datetime.fromisoformat(value)
-    except ValueError as error:
-        raise RegulationsGovSourceError("Regulations.gov comment modifyDate is invalid") from error
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise RegulationsGovSourceError("Regulations.gov comment modifyDate lacks a UTC offset")
-    return value
+# Label and instant fields per collection. Documents fall back to postedDate,
+# their only other date-stamped field, when modifyDate is null (2026-09-02: the
+# ACF-2007-0125 docket collapse extends to documents and dockets; postedDate is
+# required at classify time, so a document's instant is never null).
+_OBSERVATION_INSTANTS: Final = {
+    COMMENT_COLLECTION: ("comment", ("modifyDate",)),
+    DOCKET_COLLECTION: ("docket", ("modifyDate",)),
+    DOCUMENT_COLLECTION: ("document", ("modifyDate", "postedDate")),
+}
 
 
-def comment_observation_version(record: Mapping[str, Any]) -> str | None:
+def source_issued_version(record: Mapping[str, Any], *, collection: str) -> str | None:
+    """Return the exact source instant that orders one record's public observations.
+
+    Null is a valid public observation. This is acquisition meaning shared by
+    every Regulations.gov collection (spec 2026-08-25 §4, 2026-09-02
+    amendment): comments and dockets order by ``modifyDate``; documents fall
+    back to ``postedDate`` when ``modifyDate`` is null.
+    """
+
+    if collection not in _OBSERVATION_INSTANTS:
+        raise RegulationsGovSourceError(f"Regulations.gov {collection!r} is not a source-native collection")
+    label, fields = _OBSERVATION_INSTANTS[collection]
+    attributes = _data_attributes(record)
+    for name in fields:
+        value = attributes.get(name)
+        if value is None:
+            continue
+        if not isinstance(value, str) or not value:
+            raise RegulationsGovSourceError(f"Regulations.gov {label} {name} must be nonempty text or null")
+        try:
+            parsed = datetime.fromisoformat(value)
+        except ValueError as error:
+            raise RegulationsGovSourceError(f"Regulations.gov {label} {name} is invalid") from error
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise RegulationsGovSourceError(f"Regulations.gov {label} {name} lacks a UTC offset")
+        return value
+    return None
+
+
+def observation_version(record: Mapping[str, Any], *, collection: str) -> str | None:
     """Normalize the exact source instant only for deterministic comparison."""
 
-    value = comment_source_issued_version(record)
+    value = source_issued_version(record, collection=collection)
     if value is None:
         return None
     parsed = datetime.fromisoformat(value)
@@ -753,14 +780,16 @@ def comment_observation_version(record: Mapping[str, Any]) -> str | None:
     )
 
 
-def source_issued_version(record: Mapping[str, Any], *, collection: str) -> str:
-    attributes = _data_attributes(record)
-    fields = ("modifyDate", "postedDate") if collection == DOCUMENT_COLLECTION else ("modifyDate",)
-    for name in fields:
-        value = attributes.get(name)
-        if isinstance(value, str) and value:
-            return value
-    raise RegulationsGovSourceError(f"Regulations.gov {collection} lacks a source-issued version")
+def comment_source_issued_version(record: Mapping[str, Any]) -> str | None:
+    """Return the exact source value; null is a valid public observation."""
+
+    return source_issued_version(record, collection=COMMENT_COLLECTION)
+
+
+def comment_observation_version(record: Mapping[str, Any]) -> str | None:
+    """Normalize the exact source instant only for deterministic comparison."""
+
+    return observation_version(record, collection=COMMENT_COLLECTION)
 
 
 def _source_record(
@@ -1473,6 +1502,16 @@ def _acquisition_policy(
     validator: Callable[[Mapping[str, Any]], Mapping[str, Any]],
     collection: str,
 ) -> dict[str, Any]:
+    # Every collection groups by ``/data/id`` and keeps the greatest normalized
+    # UTC instant, refusing a repeated (id, instant) pair rather than inventing
+    # a tie-breaker (spec 2026-08-25 §4, 2026-09-02 amendment). Documents order
+    # by ``modifyDate`` falling back to ``postedDate``, as
+    # :func:`source_issued_version` does; the other two order by ``modifyDate``.
+    order_by = (
+        "coalesce(/data/attributes/modifyDate, /data/attributes/postedDate) DESC NULLS LAST"
+        if collection == DOCUMENT_COLLECTION
+        else "/data/attributes/modifyDate DESC NULLS LAST"
+    )
     return {
         "collection": collection,
         "dateSelection": "after-full-agency-object-acquisition",
@@ -1483,6 +1522,11 @@ def _acquisition_policy(
         "maxRawBytesPerEvidencePack": MAX_EVIDENCE_PACK_RAW_BYTES,
         "maxObjectBytes": MAX_OBJECT_BYTES,
         "maxTraversals": MAX_TRAVERSALS,
+        "observationSelection": {
+            "groupBy": "/data/id",
+            "orderBy": order_by,
+            "tieDisposition": "refuse-repeated-normalized-instant",
+        },
         "strategy": "complete-mirrulations-source-enumeration",
     }
 
@@ -1504,17 +1548,11 @@ def docket_acquisition_policy(query_scope: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def comment_acquisition_policy(query_scope: Mapping[str, Any]) -> dict[str, Any]:
-    policy = _acquisition_policy(
+    return _acquisition_policy(
         query_scope,
         validator=regulations_gov_comment_query_scope,
         collection=COMMENT_COLLECTION,
     )
-    policy["observationSelection"] = {
-        "groupBy": "/data/id",
-        "orderBy": "/data/attributes/modifyDate DESC NULLS LAST",
-        "tieDisposition": "refuse-repeated-normalized-instant",
-    }
-    return policy
 
 
 def _iter_pages(
@@ -2027,6 +2065,7 @@ __all__ = [
     "iter_regulations_gov_comment_pages",
     "iter_regulations_gov_docket_pages",
     "iter_regulations_gov_document_pages",
+    "observation_version",
     "parse_comment_page_response",
     "parse_docket_page_response",
     "parse_document_page_response",

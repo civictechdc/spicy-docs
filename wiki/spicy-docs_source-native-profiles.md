@@ -175,9 +175,9 @@ The classifiers preserve the raw Regulations.gov `{data, included, meta}` shape.
 
 Document and comment rendition rows preserve every direct and included attachment `fileUrl`, media type, and stated nonnegative size. The source does not provide a content digest, so `expectedSha256` remains null. Dockets declare no renditions ([rendition functions](../src/spicy_docs/regulations_gov_source_native.py#L819-L909)).
 
-### Comment observation selection
+### Observation selection
 
-Comments are the only Mirrulations profile with `observation_version`. The profile keeps the exact source `modifyDate` in the record, normalizes valid offset timestamps to UTC microseconds only for comparison, and selects the newest observation per `data.id`. A null version loses to a nonnull version but remains valid when it is the only observation. Equal normalized versions fail, including two differently offset timestamps that denote the same instant and two null versions ([version functions](../src/spicy_docs/regulations_gov_source_native.py#L710-L759), [selection tests](../tests/test_regulations_gov_comments_source_native.py#L210-L307)).
+Every Mirrulations profile (comments, dockets, documents; the latter two since the 2026-09-02 spec §4 amendment, documents falling back to `postedDate`) carries `observation_version`. The profile keeps the exact source `modifyDate` in the record, normalizes valid offset timestamps to UTC microseconds only for comparison, and selects the newest observation per `data.id`. A null version loses to a nonnull version but remains valid when it is the only observation. Equal normalized versions fail, including two differently offset timestamps that denote the same instant and two null versions ([version functions](../src/spicy_docs/regulations_gov_source_native.py#L710-L759), [selection tests](../tests/test_regulations_gov_comments_source_native.py#L210-L307)).
 
 This refusal avoids silently choosing between observations for which the source supplies no ordering fact.
 

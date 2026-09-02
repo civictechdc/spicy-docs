@@ -41,6 +41,7 @@ from spicy_docs.source_native import (
     installed_release_schema_bundle,
     release_schema_bundle,
 )
+from spicy_docs.source_native_profile import SourceNativeProfile
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 
@@ -197,9 +198,28 @@ def _stable_paged_pages(
     return pages
 
 
-def _publish(tmp_path: Path, pages: list[FederalRegisterPage]):
-    return SourceNativeReleasePublisher(
+def _collapsing_profile(*, refuse_equal_observation_versions: bool = False) -> SourceNativeProfile:
+    """The Federal Register profile taught to collapse repeated observations."""
+
+    return replace(
         FEDERAL_REGISTER_PROFILE,
+        acquisition_check=_PassAcquisitionCheck,
+        observation_version=_publication_version,
+        page_window=_request_window,
+        records_included=_accept_all_records,
+        refuse_equal_observation_versions=refuse_equal_observation_versions,
+        validate_record_scope=_accept_record_scope,
+    )
+
+
+def _publish(
+    tmp_path: Path,
+    pages: list[FederalRegisterPage],
+    *,
+    profile: SourceNativeProfile = FEDERAL_REGISTER_PROFILE,
+):
+    return SourceNativeReleasePublisher(
+        profile,
         blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
         clock=_completed_at,
     ).publish(
@@ -209,11 +229,11 @@ def _publish(tmp_path: Path, pages: list[FederalRegisterPage]):
     )
 
 
-def _reader(root: Path, pin):
+def _reader(root: Path, pin, *, profile: SourceNativeProfile = FEDERAL_REGISTER_PROFILE):
     return SourceNativeReleaseReader(
         LocalMemberSource(root),
         blob_source=LocalSourceNativeBlobStore(root.parent / "blobs"),
-        profile=FEDERAL_REGISTER_PROFILE,
+        profile=profile,
         expected_pin=pin,
         accepted_verifier_implementation_ids=frozenset({IMPLEMENTATION_ID}),
     )
@@ -334,23 +354,8 @@ def test_identical_evidence_pages_keep_distinct_page_inventories(
         for traversal in range(2)
         for window in range(2)
     ]
-    profile = replace(
-        FEDERAL_REGISTER_PROFILE,
-        acquisition_check=_PassAcquisitionCheck,
-        observation_version=_publication_version,
-        page_window=_request_window,
-        records_included=_accept_all_records,
-        validate_record_scope=_accept_record_scope,
-    )
-    published = SourceNativeReleasePublisher(
-        profile,
-        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
-        clock=_completed_at,
-    ).publish(
-        pages,
-        build=_build(),
-        destination=tmp_path / "release",
-    )
+    profile = _collapsing_profile()
+    published = _publish(tmp_path, pages, profile=profile)
     page_rows = sorted(
         _payload_rows(published.root, "acquisition-pages"),
         key=lambda row: (row["traversalIndex"], row["pageIndex"]),
@@ -358,13 +363,7 @@ def test_identical_evidence_pages_keep_distinct_page_inventories(
 
     assert len({row["evidenceBlobRef"] for row in page_rows}) == 1
     assert [len(row["discoveredRecords"]) for row in page_rows] == [1, 1, 1, 1]
-    reader = SourceNativeReleaseReader(
-        LocalMemberSource(published.root),
-        blob_source=LocalSourceNativeBlobStore(tmp_path / "blobs"),
-        profile=profile,
-        expected_pin=published.artifact.pin,
-        accepted_verifier_implementation_ids=frozenset({IMPLEMENTATION_ID}),
-    )
+    reader = _reader(published.root, published.artifact.pin, profile=profile)
     assert len(list(reader.iter_records())) == 1
 
 
@@ -1052,3 +1051,46 @@ def test_publisher_independently_refuses_a_false_source_count(tmp_path: Path) ->
 
     with pytest.raises(FederalRegisterSourceError, match="declared and observed record counts"):
         _publish(tmp_path, [_page(0, 0, response)])
+
+
+def test_three_observations_of_one_identity_keep_the_newest_and_count_the_discards(
+    tmp_path: Path,
+) -> None:
+    """Selection is a grouped maximum, not a pairwise search: three observations
+    of one identity collapse to the newest and count the other two as discarded,
+    whatever order the source enumerated them in."""
+    number = "2026-00001"
+    pages = _stable_pages(
+        _document(number, publication_date="2026-08-24", title="middle observation"),
+        _document(number, publication_date="2026-08-23", title="oldest observation"),
+        _document(number, publication_date="2026-08-25", title="newest observation"),
+    )
+    profile = _collapsing_profile(refuse_equal_observation_versions=True)
+
+    published = _publish(tmp_path, pages, profile=profile)
+    reader = _reader(published.root, published.artifact.pin, profile=profile)
+
+    assert [row["record"]["title"] for row in reader.iter_records()] == ["newest observation"]
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["discardedObservationCount"] == receipt["inputObservationCount"] - 1
+    assert receipt["discardedObservationCount"] == 2
+    # Every discarded observation stays in the acquisition evidence.
+    accepted = [row for row in _payload_rows(published.root, "acquisition-pages") if row["accepted"]]
+    discovered = [record for row in accepted for record in row["discoveredRecords"]]
+    assert [record["sourceRecordId"] for record in discovered] == [number] * 3
+    assert len({record["recordDigest"] for record in discovered}) == 3
+
+
+def test_a_repeated_version_among_three_observations_refuses_the_tie(tmp_path: Path) -> None:
+    """A refused tie is not weakened by a third, newer-looking observation: the
+    repeated (identity, normalized instant) pair still fails the publication."""
+    number = "2026-00001"
+    pages = _stable_pages(
+        _document(number, publication_date="2026-08-24", title="tied observation"),
+        _document(number, publication_date="2026-08-24", title="other tied observation"),
+        _document(number, publication_date="2026-08-25", title="newest observation"),
+    )
+
+    with pytest.raises(SourceNativeReleaseError, match="source-version tie"):
+        _publish(tmp_path, pages, profile=_collapsing_profile(refuse_equal_observation_versions=True))

@@ -185,20 +185,25 @@ ledger, and counts. Ambient network state is never proof of completeness.
 
 ## 4. Source state and profile-owned collapse
 
-This source-owned comment collapse preserves the existing public behavior. It
-does not apply to Federal Register, Regulations.gov documents, or dockets.
+This source-owned collapse preserves the existing public behavior. It does not
+apply to Federal Register.
+**Amendment (2026-09-02):** it applies to Regulations.gov documents and dockets
+too; the mirror holds a 2021-02-12 and a newer "(1)" 2024-06-12 observation of
+docket ACF-2007-0125, and a filename filter would have discarded the newer one.
 
 Source-specific observation collapse is acquisition meaning, not a catalog
-derivation: the Regulations.gov comments profile selects the newest observed
-row per `comment_id` by `modifyDate DESC NULLS LAST`. It preserves the exact
-source-issued `modifyDate` in the raw record and normalizes that instant to UTC
-only for comparison. The canonical observation sequence sorts by strict-ASCII
-`comment_id`, non-null before null, and normalized UTC instant descending.
-Any repeated `(comment_id, normalized UTC instant)` pair, including two nulls,
-fails instead of inventing a tie-breaker. `inputObservationDigest` consumes
-that sequence through the installed shared framed-section digester. Every
-older observation counts as discarded; the profile records that count and
-owns the executable equivalence test for the public current-comments view.
+derivation: every Regulations.gov profile — comments, dockets, and documents —
+selects the newest observed row per `/data/id` by `modifyDate DESC NULLS LAST`,
+documents falling back to `postedDate` when `modifyDate` is null. Each
+preserves the exact source-issued instant in the raw record and normalizes that
+instant to UTC only for comparison. The canonical observation sequence sorts by
+strict-ASCII record identity, non-null before null, and normalized UTC instant
+descending. Any repeated `(record identity, normalized UTC instant)` pair,
+including two nulls, fails instead of inventing a tie-breaker.
+`inputObservationDigest` consumes that sequence through the installed shared
+framed-section digester. Every older observation counts as discarded and stays
+in the acquisition evidence; the profile records that count and owns the
+executable equivalence test for its public current view.
 The thin reader contains none of this policy.
 These source digests call the installed `rulespec-artifacts` streaming
 framed-section digester; SpicyRegs does not implement or restate its byte
@@ -481,7 +486,10 @@ snapshot test, and smoke tests for each retained anonymous consumer.
 Role-closure tests reject an extra role. Comment fixtures cover equal and null
 timestamp conflicts, multiple source versions, shuffled enumeration order,
 digest/count replay, deterministic output order, schema drift, and a one-row
-mutation that changes the digest.
+mutation that changes the digest. Document and docket fixtures extend that
+executable coverage to the document `postedDate` fallback, offset-equivalent
+instants that tie, a repeated docket instant, and the discarded observations
+retained in acquisition evidence.
 Generation tests refuse broken superseded identities, an empty successor reason,
 unrelated pointer replacement, and a byte-for-byte no-op successor. A
 physical-only correction preserves logical identity and moves exact artifact
