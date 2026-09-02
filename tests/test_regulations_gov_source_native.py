@@ -178,9 +178,10 @@ def _document_object(
     tag: str = "1",
     agency: str = "EPA",
     docket_id: str = "EPA-2026-0001",
+    key_suffix: str = "",
 ) -> _Object:
     return _Object(
-        key=(f"raw-data/{agency}/{docket_id}/text-{tag}/documents/{identity}.json"),
+        key=(f"raw-data/{agency}/{docket_id}/text-{tag}/documents/{identity}{key_suffix}.json"),
         etag=etag,
         version_id="document-version-1",
         content=_bytes(value or _document(identity), indent=2),
@@ -194,9 +195,10 @@ def _docket_object(
     etag: str = '"docket-etag"',
     tag: str = "1",
     agency: str = "EPA",
+    key_suffix: str = "",
 ) -> _Object:
     return _Object(
-        key=f"raw-data/{agency}/{identity}/text-{tag}/docket/{identity}.json",
+        key=f"raw-data/{agency}/{identity}/text-{tag}/docket/{identity}{key_suffix}.json",
         etag=etag,
         version_id=None,
         content=_bytes(value or _docket(identity), indent=2),
@@ -586,6 +588,76 @@ def test_strict_ascii_ids_and_keys_make_declared_order_unambiguous() -> None:
                 query_scope=_document_scope(),
             )
         )
+
+
+@pytest.mark.parametrize(
+    "key_suffix",
+    ["", "(1)", "(1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)(12)"],
+    ids=["no-suffix", "single-refetch-suffix", "twelve-stacked-refetch-suffixes"],
+)
+def test_key_identity_matching_body_admits_refetch_suffixes(key_suffix: str) -> None:
+    """The key decides which agency and collection an object is admitted
+    into; the body decides what it is. A refetch suffix is key-only
+    bookkeeping -- Mirrulations appends one ``(N)`` group per refetch of the
+    same object without deleting the earlier copy, and a BIS document
+    (sampled 2026-09-02) carries twelve stacked groups -- so it must not
+    stop the key's claimed identity from matching the body's once every
+    trailing group is stripped.
+    """
+    refetched = _document_object(key_suffix=key_suffix)
+    pages = list(
+        iter_regulations_gov_document_pages(
+            lambda _agency: _Reader([refetched]),
+            query_scope=_document_scope(),
+        )
+    )
+    parsed = parse_document_page_response(pages[-1].response_bytes)
+    assert [item["record"]["data"]["id"] for item in parsed["_packedRecords"]] == ["EPA-2026-0001-0001"]
+    assert [item["included"] for item in parsed["_packedRecords"]] == [True]
+
+
+def test_key_identity_mismatched_body_refuses_naming_both_key_and_identity() -> None:
+    """An object filed under one key whose body declares a different
+    identity must be refused outright -- admitting it would let the key
+    decide which agency and collection it lands in while the body silently
+    substitutes what it is.
+    """
+    key = "raw-data/EPA/EPA-2026-0001/text-1/documents/EPA-2026-0001-0001.json"
+    mismatched = _document_object(
+        "EPA-2026-0001-0001",
+        value=_document("EPA-2026-0001-0099"),
+    )
+    assert mismatched.key == key
+    with pytest.raises(RegulationsGovSourceError) as excinfo:
+        list(
+            iter_regulations_gov_document_pages(
+                lambda _agency: _Reader([mismatched]),
+                query_scope=_document_scope(),
+            )
+        )
+    assert key in str(excinfo.value)
+    assert "EPA-2026-0001-0099" in str(excinfo.value)
+
+
+def test_docket_key_identity_mismatched_body_refuses() -> None:
+    """The same key-versus-body identity check applies to dockets: the
+    admission logic is shared across collections, not document-specific.
+    """
+    key = "raw-data/EPA/EPA-2026-0001/text-1/docket/EPA-2026-0001.json"
+    mismatched = _docket_object(
+        "EPA-2026-0001",
+        value=_docket("EPA-2026-9999"),
+    )
+    assert mismatched.key == key
+    with pytest.raises(RegulationsGovSourceError) as excinfo:
+        list(
+            iter_regulations_gov_docket_pages(
+                lambda _agency: _Reader([mismatched]),
+                query_scope=_docket_scope(),
+            )
+        )
+    assert key in str(excinfo.value)
+    assert "EPA-2026-9999" in str(excinfo.value)
 
 
 @pytest.mark.parametrize(

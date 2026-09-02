@@ -67,6 +67,14 @@ EVIDENCE_PACK_MEDIA_TYPE: Final = "application/zip"
 
 _ASCII_ID: Final = re.compile(r"^[A-Za-z0-9._-]+$")
 _ASCII_KEY: Final = re.compile(r"^[\x21-\x7e]+$")
+# Mirrulations refetches an object under the same identity without deleting
+# the earlier copy, appending one ``(N)`` group per refetch to the filename:
+# ``NAME.json``, ``NAME(1).json``, and (a BIS document, sampled 2026-09-02)
+# ``NAME(1)(2)(3)(4)(5)(6)(7)(8)(9)(10)(11)(12).json`` with twelve stacked
+# groups. The groups are key-only bookkeeping and never change the record's
+# own identity, so strip every trailing group -- not just one -- before
+# comparing the key's claimed identity to the body's.
+_KEY_REFETCH_SUFFIX: Final = re.compile(r"(?:\(\d+\))+$")
 _DISPLAY_PROPERTY_FIELDS: Final = frozenset({"label", "name", "tooltip"})
 _FILE_FORMAT_FIELDS: Final = frozenset({"fileUrl", "format", "size"})
 _LINK_FIELDS: Final = frozenset({"related", "self"})
@@ -724,6 +732,19 @@ def _data_attributes(record: Mapping[str, Any]) -> Mapping[str, Any]:
 
 def source_record_id(record: Mapping[str, Any]) -> str:
     return str(cast(Mapping[str, Any], record["data"])["id"])
+
+
+def _key_claimed_identity(key: str) -> str:
+    """Return the record identity a Mirrulations object key's filename claims.
+
+    The key decides which agency and collection an object is admitted into;
+    the body decides what it is. Nothing else compares the two, so this is
+    the one place that does: strip the filename's ``.json`` extension and
+    any trailing refetch suffix (see :data:`_KEY_REFETCH_SUFFIX`), and the
+    caller requires what remains to equal :func:`source_record_id`.
+    """
+    name = key.rsplit("/", 1)[-1].removesuffix(".json")
+    return _KEY_REFETCH_SUFFIX.sub("", name)
 
 
 def _record_date(value: object, label: str) -> date:
@@ -1666,6 +1687,11 @@ def _iter_pages(
             if not isinstance(content, bytes) or not content or len(content) > MAX_OBJECT_BYTES:
                 raise RegulationsGovSourceError(f"Mirrulations object {key} bytes are invalid")
             record = classifier(_decode_json(content))
+            identity = source_record_id(record)
+            if _key_claimed_identity(key) != identity:
+                raise RegulationsGovSourceError(
+                    f"Mirrulations object key {key} does not match body identity {identity}"
+                )
             included = _record_in_scope(
                 record,
                 query_scope=scope,
