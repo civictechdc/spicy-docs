@@ -726,11 +726,9 @@ def _record_date(value: object, label: str) -> date:
 def _optional_record_date(value: object, label: str) -> date | None:
     """Return the parsed date, or ``None`` when the source left the field null.
 
-    A present, non-null value must still be canonical-date text; only an
-    explicit source null (2026-09-02: three FMCSA documents, e.g.
-    FMCSA-2007-0006-0015, publish ``postedDate: null`` with ``modifyDate``
-    present) is tolerated. A malformed non-null value is still corrupt data,
-    not an undated observation, so it still refuses.
+    Only an explicit source null is undated (2026-09-02: three FMCSA documents
+    publish ``postedDate: null``, e.g. FMCSA-2007-0006-0015); a malformed
+    non-null value is corrupt data and still refuses.
     """
 
     if value is None:
@@ -740,8 +738,8 @@ def _optional_record_date(value: object, label: str) -> date | None:
 
 # Label and instant fields per collection. Documents fall back to postedDate,
 # their only other date-stamped field, when modifyDate is null (2026-09-02: the
-# ACF-2007-0125 docket collapse extends to documents and dockets; postedDate is
-# required at classify time, so a document's instant is never null).
+# ACF-2007-0125 docket collapse extends to documents and dockets). Both may be
+# null, and the collapse tolerates a null instant.
 _OBSERVATION_INSTANTS: Final = {
     COMMENT_COLLECTION: ("comment", ("modifyDate",)),
     DOCKET_COLLECTION: ("docket", ("modifyDate",)),

@@ -958,16 +958,29 @@ def test_document_source_issued_version_falls_back_to_posted_date_when_modify_da
     assert observation_version(raw, collection=DOCUMENT_COLLECTION) == "2026-08-24T04:00:00.000000Z"
 
 
-def test_classify_document_accepts_a_null_posted_date_but_refuses_a_malformed_one() -> None:
+@pytest.mark.parametrize(
+    ("modify_date", "expected_version"),
+    [
+        ("2024-11-07T22:18:46Z", "2024-11-07T22:18:46.000000Z"),
+        (None, None),
+    ],
+    ids=["modify-date-present", "both-dates-null"],
+)
+def test_classify_document_accepts_a_null_posted_date_but_refuses_a_malformed_one(
+    modify_date: str | None,
+    expected_version: str | None,
+) -> None:
     """Three live FMCSA documents publish ``postedDate: null`` with
     ``modifyDate`` present (2026-09-02 fix), e.g. FMCSA-2007-0006-0015.
     Undatable is tolerated; corrupt is not — a present, non-null value that
     fails canonical-date parsing still refuses, since that is malformed
-    source data, not a legitimate undated observation.
+    source data, not a legitimate undated observation. A document with no
+    instant at all classifies too, and its observation version is null, which
+    the collapse orders last rather than refusing.
     """
-    undated = classify_document(_document(postedDate=None))
+    undated = classify_document(_document(postedDate=None, modifyDate=modify_date))
     assert undated["data"]["attributes"]["postedDate"] is None
-    assert observation_version(undated, collection=DOCUMENT_COLLECTION) is not None
+    assert observation_version(undated, collection=DOCUMENT_COLLECTION) == expected_version
 
     with pytest.raises(RegulationsGovSourceError, match="document postedDate is invalid"):
         classify_document(_document(postedDate="not-a-date"))
