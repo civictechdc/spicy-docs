@@ -14,7 +14,7 @@ from spicy_docs.federal_register_source_native import FederalRegisterPage, feder
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
-from tools.observation_census import census
+from tools.observation_census import LEGACY_NUMBER_PATTERN, MODERN_NUMBER_PATTERN, census
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 PRODUCER = Producer(
@@ -66,17 +66,13 @@ def _clock() -> datetime:
     return datetime(2026, 9, 2, 0, 0, 1, tzinfo=UTC)
 
 
-def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> None:
-    """A fixture release carrying the real 00-111 collision -- a 2000-01-14 rule and
-    a newer 2000-01-18 notice sharing one document_number -- reports one
-    multi-observation identity, both raw instants, the newer winner, and the
-    discarded-observation count the receipt independently agrees on."""
-    number = "00-111"
-    response = _response(
-        _document(number, publication_date="2000-01-14", title="Compliance Monitoring"),
-        _document(number, publication_date="2000-01-18", title="Notice of Filing of Plat of an Island; Minnesota"),
-    )
-    request_key = federal_register_documents_url(WINDOW)
+def _publish(
+    tmp_path: Path, window: dict[str, str], *documents: dict[str, object]
+) -> tuple[argparse.Namespace, dict[str, object]]:
+    """Publish a two-traversal fixture release for ``documents`` and return its census args
+    plus the publication receipt, mirroring the shape every acceptance-fixture publish needs."""
+    response = _response(*documents)
+    request_key = federal_register_documents_url(window)
     pages = [
         FederalRegisterPage(
             traversal_index=traversal,
@@ -93,7 +89,7 @@ def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> N
         clock=_clock,
     ).publish(
         pages,
-        build=SourceNativeReleaseBuild(query_scope=WINDOW, producer=PRODUCER, started_at="2026-09-02T00:00:00Z"),
+        build=SourceNativeReleaseBuild(query_scope=window, producer=PRODUCER, started_at="2026-09-02T00:00:00Z"),
         destination=tmp_path / "release",
     )
     receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
@@ -101,6 +97,23 @@ def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> N
         tmp_path,
         logical_id=published.artifact.pin.logical_id,
         artifact_digest=published.artifact.pin.artifact_digest,
+    )
+    return args, receipt
+
+
+def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> None:
+    """A fixture release carrying the real 00-111 collision -- a 2000-01-14 rule and
+    a newer 2000-01-18 notice sharing one document_number -- reports one
+    multi-observation identity, both raw instants, the newer winner, and the
+    discarded-observation count the receipt independently agrees on. 00-111 is
+    legacy-form (it fails the modern \\d{4}-... pattern), so this release also proves
+    the shape of every other collision field's EMPTY case: they are emitted, not omitted."""
+    number = "00-111"
+    args, receipt = _publish(
+        tmp_path,
+        WINDOW,
+        _document(number, publication_date="2000-01-14", title="Compliance Monitoring"),
+        _document(number, publication_date="2000-01-18", title="Notice of Filing of Plat of an Island; Minnesota"),
     )
 
     result = census(args)
@@ -118,3 +131,86 @@ def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> N
     assert entry["winner"] == "2000-01-18"
     assert entry["distinctDigests"] == 2
     assert entry["post2000"] is True
+
+    assert result["numberAndDateUniquelyIdentify"] is True
+    assert result["sameNumberDifferentDateCount"] == 1
+    assert result["sameNumberSameDateIdenticalDigestCount"] == 0
+    assert result["sameNumberSameDateDifferingDigestCount"] == 0
+    assert "counted over unnormalized document numbers, no prefix or case folding applied" in cast(
+        "str", result["collisionCountingBasis"]
+    )
+    # 00-111 is legacy-form, so the modern-form and dual-form fields stay empty here.
+    assert result["modernFormCollisions"] == []
+    assert result["modernFormCollisionCount"] == 0
+    assert result["legacyFormAlsoParsesAsModern"] is False
+    assert result["legacyFormAlsoParsesAsModernCount"] == 0
+    assert result["legacyFormAlsoParsesAsModernExamples"] == []
+    letter_collisions = cast("dict[str, object]", result["letterPrefixStripCollisions"])
+    assert letter_collisions["totalCount"] == 0
+    assert letter_collisions["differingDateCount"] == 0
+    assert letter_collisions["sameDateCount"] == 0
+    assert letter_collisions["sameDateExamples"] == []
+    assert result["xFormDateEncodingMismatches"] == []
+    assert result["xFormDateEncodingMismatchCount"] == 0
+    coverage = cast("dict[str, object]", result["coverage"])
+    assert coverage["queryScope"] == WINDOW
+    assert coverage["distinctNumberCount"] == 1
+    assert "caveat" in coverage
+    assert "eFamilySpilloverNote" in coverage
+
+
+def test_modern_form_number_collision_is_counted_and_listed(tmp_path: Path) -> None:
+    """A modern-form (YYYY-NNNNN) number reused across two dates is a real collision --
+    unlike legacy-form 00-111 above -- so it must be counted and listed by name."""
+    number = "2015-30555"
+    window = {"publishedFrom": "2015-03-01", "publishedThrough": "2015-03-10"}
+    args, _receipt = _publish(
+        tmp_path,
+        window,
+        _document(number, publication_date="2015-03-01", title="First filing"),
+        _document(number, publication_date="2015-03-10", title="Unrelated later filing"),
+    )
+
+    result = census(args)
+
+    assert result["sameNumberDifferentDateCount"] == 1
+    assert result["modernFormCollisionCount"] == 1
+    [collision] = cast("list[dict[str, object]]", result["modernFormCollisions"])
+    assert collision["recordId"] == number
+    assert collision["dates"] == ["2015-03-01", "2015-03-10"]
+
+
+def test_legacy_number_that_also_parses_as_modern_is_detected(tmp_path: Path) -> None:
+    """A 4-digit-year, 4-digit-suffix number (2015-1234) fullmatches both the legacy
+    and the modern pattern; the census must flag the ambiguity by name."""
+    number = "2015-1234"
+    window = {"publishedFrom": "2016-05-01", "publishedThrough": "2016-05-01"}
+    args, _receipt = _publish(
+        tmp_path, window, _document(number, publication_date="2016-05-01", title="Ambiguous-form filing")
+    )
+
+    result = census(args)
+
+    assert result["legacyFormAlsoParsesAsModern"] is True
+    assert result["legacyFormAlsoParsesAsModernCount"] == 1
+    assert result["legacyFormAlsoParsesAsModernExamples"] == [number]
+    assert result["legacyPattern"] == LEGACY_NUMBER_PATTERN.pattern
+    assert result["modernPattern"] == MODERN_NUMBER_PATTERN.pattern
+
+
+def test_x_form_date_encoding_mismatch_is_reported(tmp_path: Path) -> None:
+    """X94-10503 self-encodes 1994-05-03 (YY-{seq}{MM}{DD}); a record filed under
+    that number but a different publication_date is a self-encoding mismatch."""
+    number = "X94-10503"
+    window = {"publishedFrom": "1994-01-01", "publishedThrough": "1994-01-01"}
+    args, _receipt = _publish(
+        tmp_path, window, _document(number, publication_date="1994-01-01", title="Mismatched filing")
+    )
+
+    result = census(args)
+
+    assert result["xFormDateEncodingMismatchCount"] == 1
+    [mismatch] = cast("list[dict[str, object]]", result["xFormDateEncodingMismatches"])
+    assert mismatch["recordId"] == number
+    assert mismatch["encodedDate"] == "1994-05-03"
+    assert mismatch["publicationDates"] == ["1994-01-01"]
