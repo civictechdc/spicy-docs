@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import random
 import sys
 import time
 from collections.abc import Callable, Iterator, Mapping
@@ -103,7 +104,16 @@ DATED_SOURCES: Final = (
 )
 
 _USER_AGENT = "spicy-docs-source-native/1.0 (https://github.com/civictechdc/spicy-docs)"
-_MAX_HTTP_ATTEMPTS = 5
+# 2026-09-02: a full-history Federal Register crawl lost hours of work to one
+# `_ssl.c:993: The handshake operation timed out` — the crawl was competing
+# with a heavy S3 fan-out, and 5 attempts capped at 30s of total sleep gave up
+# long before the network recovered. 14 attempts (13 possible sleeps) with a
+# doubling backoff capped at 60s gives ~542s (~9 minutes) of worst-case
+# patience -- on the order of ten minutes, not thirty seconds -- while a
+# terminal refusal (a non-429 4xx, or the day's result cap) still fails on
+# the first attempt; see `_RetryableHTTPStatusError` and `_retry_http` below.
+_MAX_HTTP_ATTEMPTS = 14
+_RETRY_BACKOFF_CEILING_SECONDS = 60.0
 
 RegulationsReaderFactory = Callable[[str, str], MirrulationsObjectReader]
 
@@ -205,25 +215,71 @@ def _instant(clock: Callable[[], datetime]) -> str:
     return value.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def _fetch_with_retries(client: httpx.Client, url: str) -> bytes:
+class _RetryableHTTPStatusError(httpx.HTTPStatusError):
+    """A 429 or 5xx response -- worth retrying, unlike any other 4xx.
+
+    A distinct subclass (rather than the plain ``httpx.HTTPStatusError`` that
+    ``response.raise_for_status()`` raises) lets ``_retry_http`` tell "the
+    server asked us to back off or is failing" apart from "this request is
+    simply wrong" without inspecting exception messages. Both still satisfy
+    ``isinstance(error, httpx.HTTPError)``, so a persistent 429/5xx that
+    outlasts every attempt is still classified as ``transport-failed`` same
+    as before.
+    """
+
+
+def _retry_http[FetchResult](
+    operation: Callable[[], FetchResult],
+    *,
+    retryable: tuple[type[Exception], ...],
+) -> FetchResult:
+    """Run ``operation`` with capped exponential backoff and full jitter.
+
+    See the ``_MAX_HTTP_ATTEMPTS`` comment for why the budget is what it is.
+    Full jitter -- a uniform draw between 0 and the deterministic ceiling --
+    keeps concurrent fetchers (Federal Register pages, public-table
+    partitions) from retrying in lockstep against the same struggling host.
+    Each retry is logged to stderr with the attempt number, the chosen delay,
+    and the exception that triggered it, so a long retry reads as "working"
+    rather than "hung" in an operator's log.
+    """
+
     for attempt in range(1, _MAX_HTTP_ATTEMPTS + 1):
         try:
-            response = client.get(url)
-            if response.status_code == 429 or response.status_code >= 500:
-                raise httpx.HTTPStatusError(
-                    "retryable Federal Register response",
-                    request=response.request,
-                    response=response,
-                )
-            response.raise_for_status()
-            if not response.content:
-                raise FederalRegisterSourceError("Federal Register returned an empty response")
-            return response.content
-        except (httpx.HTTPError, FederalRegisterSourceError):
+            return operation()
+        except retryable as error:
             if attempt == _MAX_HTTP_ATTEMPTS:
                 raise
-            time.sleep(min(2**attempt, 30))
+            ceiling = min(2**attempt, _RETRY_BACKOFF_CEILING_SECONDS)
+            delay = random.uniform(0.0, ceiling)
+            print(
+                f"source-native fetch: retry {attempt}/{_MAX_HTTP_ATTEMPTS - 1} "
+                f"in {delay:.1f}s (cap {ceiling:.0f}s) after "
+                f"{type(error).__name__}: {error}",
+                file=sys.stderr,
+            )
+            time.sleep(delay)
     raise AssertionError("unreachable")
+
+
+def _fetch_with_retries(client: httpx.Client, url: str) -> bytes:
+    def _attempt() -> bytes:
+        response = client.get(url)
+        if response.status_code == 429 or response.status_code >= 500:
+            raise _RetryableHTTPStatusError(
+                "retryable Federal Register response",
+                request=response.request,
+                response=response,
+            )
+        response.raise_for_status()
+        if not response.content:
+            raise FederalRegisterSourceError("Federal Register returned an empty response")
+        return response.content
+
+    return _retry_http(
+        _attempt,
+        retryable=(httpx.RequestError, _RetryableHTTPStatusError, FederalRegisterSourceError),
+    )
 
 
 @contextmanager
@@ -247,34 +303,33 @@ def _fetch_public_table(
 ) -> PublicTableCapture | None:
     """Fetch one whole partition object, or report that the mirror has none."""
 
-    for attempt in range(1, _MAX_HTTP_ATTEMPTS + 1):
-        try:
-            response = client.get(locator)
-            if response.status_code == 404:
-                return None
-            if response.status_code == 429 or response.status_code >= 500:
-                raise httpx.HTTPStatusError(
-                    "retryable spicy-regs public-table response",
-                    request=response.request,
-                    response=response,
-                )
-            response.raise_for_status()
-            if not response.content:
-                raise PublicTableSourceError("the spicy-regs public tables returned an empty partition")
-            if len(response.content) > MAX_PARTITION_BYTES:
-                raise PublicTableSourceError("public-table partition exceeds its capture byte bound")
-            return PublicTableCapture(
-                locator=locator,
-                content=response.content,
-                fetched_at=_instant(clock),
-                etag=response.headers.get("etag"),
-                last_modified=response.headers.get("last-modified"),
+    def _attempt() -> PublicTableCapture | None:
+        response = client.get(locator)
+        if response.status_code == 404:
+            return None
+        if response.status_code == 429 or response.status_code >= 500:
+            raise _RetryableHTTPStatusError(
+                "retryable spicy-regs public-table response",
+                request=response.request,
+                response=response,
             )
-        except (httpx.HTTPError, PublicTableSourceError):
-            if attempt == _MAX_HTTP_ATTEMPTS:
-                raise
-            time.sleep(min(2**attempt, 30))
-    raise AssertionError("unreachable")
+        response.raise_for_status()
+        if not response.content:
+            raise PublicTableSourceError("the spicy-regs public tables returned an empty partition")
+        if len(response.content) > MAX_PARTITION_BYTES:
+            raise PublicTableSourceError("public-table partition exceeds its capture byte bound")
+        return PublicTableCapture(
+            locator=locator,
+            content=response.content,
+            fetched_at=_instant(clock),
+            etag=response.headers.get("etag"),
+            last_modified=response.headers.get("last-modified"),
+        )
+
+    return _retry_http(
+        _attempt,
+        retryable=(httpx.RequestError, _RetryableHTTPStatusError, PublicTableSourceError),
+    )
 
 
 @contextmanager
