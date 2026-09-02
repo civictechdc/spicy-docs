@@ -246,6 +246,21 @@ COMMENT_ATTRIBUTE_FIELDS: Final = frozenset(
     }
 )
 _DOCUMENT_BOOLEAN_FIELDS: Final = frozenset({"allowLateComments", "openForComment", "withdrawn", "withinCommentPeriod"})
+# `openForComment` and `withinCommentPeriod` are both computed at read time
+# from the fixed commentStartDate/commentEndDate pair (and, for
+# openForComment, allowLateComments) against "now" -- they are not stored
+# document facts, so two mirror objects for the same document version can
+# report opposite values depending solely on what day each was fetched.
+# Measured twice: BIS-2023-0021-0001 has two objects at modifyDate
+# 2023-10-13T01:04:10Z differing only in openForComment, and
+# EPA-HQ-OAR-2006-0894-0021 has two objects at modifyDate
+# 2024-04-25T01:00:59Z with the same single-field difference -- in both
+# cases the mirror's later refetch crossed the comment deadline while the
+# document's own modifyDate did not move. `allowLateComments` and
+# `withdrawn` are lifecycle facts the source writes once, not clock-derived
+# on every read, so they are excluded: a difference in either still refuses
+# as a tie (2026-09-02).
+DOCUMENT_TIE_VOLATILE_FIELDS: Final = frozenset({"openForComment", "withinCommentPeriod"})
 _DOCUMENT_INTEGER_FIELDS: Final = frozenset({"pageCount", "paperLength", "paperWidth"})
 # cfrPart is text or null, never an array, in the v4 API and the mirror alike
 # (sampled 2026-09-02, 120 ACF/FMCSA/SEC documents: 106 null, 14 str, 0 arrays).
@@ -2038,6 +2053,25 @@ def document_source_record_digest(record: Mapping[str, Any]) -> str:
     )
 
 
+def document_tie_comparison_digest(record: Mapping[str, Any]) -> str:
+    """Second, narrower digest used only to judge same-instant ties.
+
+    Equal to :func:`document_source_record_digest` except
+    ``DOCUMENT_TIE_VOLATILE_FIELDS`` are dropped from ``data.attributes``
+    first, so two mirror objects for one document version that differ only
+    in those read-time-derived fields compare equal. Never published and
+    never stored: this does not change what ``document_source_record_digest``
+    covers, which stays a sealed identity over the exact record.
+    """
+    data = dict(record["data"])
+    data["attributes"] = {
+        key: value for key, value in dict(data["attributes"]).items() if key not in DOCUMENT_TIE_VOLATILE_FIELDS
+    }
+    stripped = dict(record)
+    stripped["data"] = data
+    return document_source_record_digest(stripped)
+
+
 def docket_source_record_digest(record: Mapping[str, Any]) -> str:
     return framed_section_digest(
         "spicyregs-regulations-gov-docket-record/1",
@@ -2075,6 +2109,7 @@ __all__ = [
     "DOCUMENT_SCOPE_ID",
     "DOCUMENT_SOURCE_SCHEMA_KEY",
     "DOCUMENT_SOURCE_SYSTEM_ID",
+    "DOCUMENT_TIE_VOLATILE_FIELDS",
     "MAX_OBJECT_BYTES",
     "MAX_TRAVERSALS",
     "REGULATIONS_GOV_COMMENT_SCHEMA",
@@ -2112,6 +2147,7 @@ __all__ = [
     "document_source_record_digest",
     "document_source_schema_declaration",
     "document_source_schema_digest",
+    "document_tie_comparison_digest",
     "iter_regulations_gov_comment_pages",
     "iter_regulations_gov_docket_pages",
     "iter_regulations_gov_document_pages",

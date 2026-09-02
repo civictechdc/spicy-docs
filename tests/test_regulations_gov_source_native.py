@@ -21,6 +21,7 @@ from spicy_docs.regulations_gov_source_native import (
     DOCKET_SOURCE_SYSTEM_ID,
     DOCUMENT_COLLECTION,
     DOCUMENT_SOURCE_SYSTEM_ID,
+    DOCUMENT_TIE_VOLATILE_FIELDS,
     MAX_QUERY_DAYS,
     RegulationsGovPage,
     RegulationsGovSourceError,
@@ -987,6 +988,148 @@ def test_repeated_normalized_document_versions_refuse_a_tie(tmp_path: Path) -> N
                     [
                         _document_object(identity, value=first, tag="1", agency="ACF", docket_id="ACF-2021-0001"),
                         _document_object(identity, value=second, tag="2", agency="ACF", docket_id="ACF-2021-0001"),
+                    ]
+                ),
+                query_scope=scope,
+            ),
+            build=_build(scope),
+            destination=tmp_path / "document-tie",
+        )
+
+
+def _bis_document_scope() -> dict[str, object]:
+    return {
+        "agencies": ["BIS"],
+        "publishedFrom": "2023-01-01",
+        "publishedThrough": "2023-12-31",
+    }
+
+
+def _epa_hq_document_scope() -> dict[str, object]:
+    return {
+        "agencies": ["EPA"],
+        "publishedFrom": "2024-01-01",
+        "publishedThrough": "2024-12-31",
+    }
+
+
+def test_read_time_derived_field_only_difference_collapses_without_tying(tmp_path: Path) -> None:
+    """A live agency fan-out lost BIS after 85 minutes on exactly this
+    shape: BIS-2023-0021-0001 has two Mirrulations objects at one modifyDate
+    instant (2023-10-13T01:04:10Z) whose only difference is
+    ``openForComment`` -- a field regulations.gov computes at read time from
+    commentStartDate/commentEndDate against "now", not a stored document
+    fact, so a later refetch after the comment window closed flips it while
+    the document's own modifyDate does not move. Two such observations
+    collapse to one published record instead of refusing a tie (2026-09-02
+    fix); every redundant observation still counts as discarded and stays in
+    evidence. The mirror's own listing order is the only signal of fetch
+    recency, so the last-listed object -- ``openForComment: True`` here --
+    is the one published.
+    """
+    assert DOCUMENT_TIE_VOLATILE_FIELDS == {"openForComment", "withinCommentPeriod"}
+    identity = "BIS-2023-0021-0001"
+    closed = _document(
+        identity,
+        agencyId="BIS",
+        docketId="BIS-2023-0021",
+        modifyDate="2023-10-13T01:04:10Z",
+        postedDate="2023-10-01T00:00:00Z",
+        openForComment=False,
+    )
+    reopened = _document(
+        identity,
+        agencyId="BIS",
+        docketId="BIS-2023-0021",
+        modifyDate="2023-10-13T01:04:10Z",
+        postedDate="2023-10-01T00:00:00Z",
+        openForComment=True,
+    )
+    scope = _bis_document_scope()
+    release = tmp_path / "documents"
+
+    published = SourceNativeReleasePublisher(
+        REGULATIONS_GOV_DOCUMENT_PROFILE,
+        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+        clock=_completed_at,
+    ).publish(
+        iter_regulations_gov_document_pages(
+            lambda _agency: _Reader(
+                [
+                    _document_object(identity, value=closed, tag="1", agency="BIS", docket_id="BIS-2023-0021"),
+                    _document_object(identity, value=reopened, tag="2", agency="BIS", docket_id="BIS-2023-0021"),
+                ]
+            ),
+            query_scope=scope,
+        ),
+        build=_build(scope),
+        destination=release,
+    )
+    reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)
+
+    published_records = list(reader.iter_records())
+    assert len(published_records) == 1
+    assert published_records[0]["record"]["data"]["attributes"]["openForComment"] is True
+
+    receipt = json.loads((release / "receipts/publication.json").read_bytes())
+    assert receipt["discoveredRecordCount"] == 2
+    assert receipt["inputObservationCount"] == 2
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["discardedObservationCount"] == 1
+
+    # Both mirror objects -- differing only in openForComment -- stay
+    # byte-exact in acquisition evidence; the collapse happens only at
+    # selection.
+    discovered = [record for row in _payload_rows(release, "acquisition-pages") for record in row["discoveredRecords"]]
+    assert [record["sourceRecordId"] for record in discovered] == [identity, identity]
+    assert len({record["recordDigest"] for record in discovered}) == 2
+
+
+def test_read_time_derived_field_difference_with_a_substantive_difference_still_refuses_the_tie(
+    tmp_path: Path,
+) -> None:
+    """The same read-time-derived shape measured for
+    EPA-HQ-OAR-2006-0894-0021 (two objects at modifyDate
+    2024-04-25T01:00:59Z, one difference being ``openForComment``) still
+    refuses when a second, substantive field -- here ``title`` -- also
+    differs: only a difference confined to ``DOCUMENT_TIE_VOLATILE_FIELDS``
+    collapses."""
+    identity = "EPA-HQ-OAR-2006-0894-0021"
+    first = _document(
+        identity,
+        agencyId="EPA",
+        docketId="EPA-HQ-OAR-2006-0894",
+        modifyDate="2024-04-25T01:00:59Z",
+        postedDate="2024-04-01T00:00:00Z",
+        openForComment=False,
+        title="first",
+    )
+    second = _document(
+        identity,
+        agencyId="EPA",
+        docketId="EPA-HQ-OAR-2006-0894",
+        modifyDate="2024-04-25T01:00:59Z",
+        postedDate="2024-04-01T00:00:00Z",
+        openForComment=True,
+        title="second",
+    )
+    scope = _epa_hq_document_scope()
+
+    with pytest.raises(SourceNativeReleaseError, match="source-version tie"):
+        SourceNativeReleasePublisher(
+            REGULATIONS_GOV_DOCUMENT_PROFILE,
+            blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+            clock=_completed_at,
+        ).publish(
+            iter_regulations_gov_document_pages(
+                lambda _agency: _Reader(
+                    [
+                        _document_object(
+                            identity, value=first, tag="1", agency="EPA", docket_id="EPA-HQ-OAR-2006-0894"
+                        ),
+                        _document_object(
+                            identity, value=second, tag="2", agency="EPA", docket_id="EPA-HQ-OAR-2006-0894"
+                        ),
                     ]
                 ),
                 query_scope=scope,

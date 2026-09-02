@@ -133,6 +133,12 @@ class SourceNativeProfile:
     page_window: Callable[[str], object] | None = None
     observation_version: ObservationVersion | None = None
     refuse_equal_observation_versions: bool = False
+    # Judges whether a same-instant tie is substantive or confined to fields
+    # the source derives at read time (never carried by the record itself).
+    # Used only to decide whether two observations collapse instead of
+    # refusing as an unresolved tie -- its result is never published or
+    # stored, and it must not change what record_digest covers.
+    tie_comparison_digest: Callable[[Mapping[str, Any]], str] | None = None
 
     def __post_init__(self) -> None:
         if not self.name or not self.source_system_id or not self.source_system_version:
@@ -145,6 +151,8 @@ class SourceNativeProfile:
             raise ValueError("source-native profile traversal bound must be positive")
         if self.refuse_equal_observation_versions and self.observation_version is None:
             raise ValueError("equal observation versions can be refused only by a versioned profile")
+        if self.tie_comparison_digest is not None and self.observation_version is None:
+            raise ValueError("a tie comparison digest can only judge ties on a versioned profile")
 
         if self.source_state_scope == "complete-snapshot" and self.traversal_acceptance != "source-enumeration":
             raise ValueError("complete source state requires a source-enumeration acceptance proof")

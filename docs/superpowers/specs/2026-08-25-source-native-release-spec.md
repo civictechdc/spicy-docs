@@ -222,6 +222,12 @@ with differing record digests still fails as a tie. Docket ACF-2026-0199
 holds two identical-digest objects "(18)" and "(19)" at one modifyDate
 instant — Mirrulations refetching an active docket, not two observations to
 tie-break.
+**Amendment (2026-09-02):** for documents, two observations at one instant
+differing only in `openForComment` or `withinCommentPeriod` — fields
+regulations.gov derives at read time against "now", not stored document
+facts — are one observation, not a tie. BIS-2023-0021-0001 and
+EPA-HQ-OAR-2006-0894-0021 each surfaced exactly this shape; any other
+difference still refuses as a tie.
 `inputObservationDigest` consumes that sequence through the installed shared
 framed-section digester. Every older observation counts as discarded and stays
 in the acquisition evidence; the profile records that count and owns the

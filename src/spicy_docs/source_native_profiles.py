@@ -143,6 +143,11 @@ REGULATIONS_GOV_DOCUMENT_PROFILE: Final = SourceNativeProfile(
     # ACF-2026-0199 (18)/(19) are byte-identical objects at one modifyDate
     # instant (Mirrulations refetch); collapse them, don't refuse the tie.
     refuse_equal_observation_versions=False,
+    # BIS-2023-0021-0001 and EPA-HQ-OAR-2006-0894-0021 each have two objects
+    # at one modifyDate instant differing only in a read-time-derived field
+    # (openForComment); judge those ties on the narrower digest instead of
+    # refusing (2026-09-02, spec §4 amendment).
+    tie_comparison_digest=regulations_gov.document_tie_comparison_digest,
 )
 
 REGULATIONS_GOV_DOCKET_PROFILE: Final = SourceNativeProfile(

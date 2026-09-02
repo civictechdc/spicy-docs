@@ -636,6 +636,40 @@ def _observation_version(
     return value
 
 
+def _tie_group_is_volatile_only(
+    connection: sqlite3.Connection,
+    *,
+    traversal: int,
+    source_record_id: str,
+    source_version: str | None,
+    tie_comparison_digest: Callable[[Mapping[str, Any]], str],
+) -> bool:
+    """One same-instant group collapses when every observed record shares
+    one ``tie_comparison_digest`` -- a profile's narrower, tie-judging-only
+    view of the record (see ``SourceNativeProfile.tie_comparison_digest``)
+    that omits fields derived at read time rather than carried by the
+    document. Bounded to the rows of one tied identity, never the whole
+    corpus.
+    """
+
+    reference: str | None = None
+    for (payload,) in connection.execute(
+        "SELECT record_payload FROM observations "
+        "WHERE traversal = ? AND source_record_id = ? AND source_version IS ?",
+        (traversal, source_record_id, source_version),
+    ):
+        wrapped = parse_canonical_json(bytes(payload))
+        record = wrapped.get("record") if isinstance(wrapped, Mapping) else None
+        if not isinstance(record, Mapping):
+            raise SourceNativeReleaseError("indexed source-native record is not an object")
+        digest = tie_comparison_digest(record)
+        if reference is None:
+            reference = digest
+        elif digest != reference:
+            return False
+    return True
+
+
 def _select_observations(
     connection: sqlite3.Connection,
     *,
@@ -648,6 +682,7 @@ def _select_observations(
         "CREATE INDEX IF NOT EXISTS observations_selection "
         "ON observations (traversal, source_record_id, source_version, record_digest, ordinal)"
     )
+    volatile_groups: list[tuple[int, str, str | None]] = []
     if profile.observation_version is None:
         duplicate = connection.execute(
             "SELECT traversal, source_record_id FROM observations "
@@ -660,16 +695,29 @@ def _select_observations(
         duplicate_condition = (
             "count(*) > 1" if profile.refuse_equal_observation_versions else "count(DISTINCT record_digest) > 1"
         )
-        duplicate = connection.execute(
+        # A profile may declare tie_comparison_digest -- a second, narrower
+        # digest that omits fields derived at read time rather than stored
+        # on the record. Every other profile leaves it None, which
+        # reproduces today's refusal exactly.
+        tie_comparison_digest = profile.tie_comparison_digest
+        for traversal, source_record_id, source_version in connection.execute(
             "SELECT traversal, source_record_id, source_version FROM observations "
             "GROUP BY traversal, source_record_id, source_version HAVING "
             f"{duplicate_condition} "
             "ORDER BY traversal, source_record_id, source_version IS NULL, "
-            "source_version DESC LIMIT 1"
-        ).fetchone()
-        if duplicate is not None:
+            "source_version DESC"
+        ):
+            if tie_comparison_digest is not None and _tie_group_is_volatile_only(
+                connection,
+                traversal=traversal,
+                source_record_id=source_record_id,
+                source_version=source_version,
+                tie_comparison_digest=tie_comparison_digest,
+            ):
+                volatile_groups.append((traversal, source_record_id, source_version))
+                continue
             raise SourceNativeReleaseError(
-                f"{profile.name} has an unresolved source-version tie for {str(duplicate[1])!r} at {duplicate[2]!r}"
+                f"{profile.name} has an unresolved source-version tie for {str(source_record_id)!r} at {source_version!r}"
             )
 
     # One grouped maximum over the file-backed index above, not a correlated
@@ -689,6 +737,37 @@ def _select_observations(
         "AND candidate.source_version IS preferred.newest "
         "GROUP BY candidate.traversal, candidate.source_record_id)"
     )
+
+    # A volatile-only group's members share one source_version (the group-by
+    # above) and only differ in read-time-derived fields, so which one is
+    # "the" record is otherwise arbitrary; prefer the one the source listed
+    # last (max ordinal) as the later, more current fetch. Re-point selection
+    # only within the exact tied identity, and only if the block above just
+    # made it the winner (selected = 1 already present) -- an older,
+    # non-newest volatile-only group is left untouched.
+    for traversal, source_record_id, source_version in volatile_groups:
+        already_preferred = connection.execute(
+            "SELECT 1 FROM observations WHERE traversal = ? AND source_record_id = ? "
+            "AND source_version IS ? AND selected = 1",
+            (traversal, source_record_id, source_version),
+        ).fetchone()
+        if already_preferred is None:
+            continue
+        connection.execute(
+            "UPDATE observations SET selected = CASE WHEN ordinal = ("
+            "SELECT max(ordinal) FROM observations "
+            "WHERE traversal = ? AND source_record_id = ? AND source_version IS ?"
+            ") THEN 1 ELSE 0 END "
+            "WHERE traversal = ? AND source_record_id = ? AND source_version IS ?",
+            (
+                traversal,
+                source_record_id,
+                source_version,
+                traversal,
+                source_record_id,
+                source_version,
+            ),
+        )
 
 
 def _accepted_traversal(
