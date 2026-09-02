@@ -454,6 +454,51 @@ def test_undated_document_stays_in_evidence_without_aborting_the_agency(tmp_path
     assert undated_evidence["data"]["attributes"]["postedDate"] is None
 
 
+def test_malformed_posted_date_document_stays_in_evidence_without_aborting_the_agency(
+    tmp_path: Path,
+) -> None:
+    """A live FAA full-history publish (205,696 documents) aborted outright
+    nine minutes in: one document carries a non-null ``postedDate`` that
+    fails canonical-date parsing, and the strict date parse raised for the
+    whole agency instead of treating one unusable document as evidence-only
+    (2026-09-02 fix). A malformed ``postedDate`` gets the same disposition as
+    a null one: it stays in evidence, contributes no record, and the dated
+    documents still publish.
+    """
+    dated = _document_object()
+    malformed_record = _document("EPA-2026-0001-0002", postedDate="not-a-date")
+    malformed = _document_object(
+        "EPA-2026-0001-0002",
+        value=malformed_record,
+        etag='"malformed-etag"',
+    )
+    release = tmp_path / "malformed"
+    published = SourceNativeReleasePublisher(
+        REGULATIONS_GOV_DOCUMENT_PROFILE,
+        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+        clock=_completed_at,
+    ).publish(
+        iter_regulations_gov_document_pages(
+            lambda _agency: _Reader([dated, malformed]),
+            query_scope=_document_scope(),
+        ),
+        build=_build(_document_scope()),
+        destination=release,
+    )
+    reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)
+    pages = _payload_rows(release, "acquisition-pages")
+
+    assert [row["sourceRecordId"] for row in reader.iter_records()] == ["EPA-2026-0001-0001"]
+    assert [row["recordsIncluded"] for row in pages] == [True]
+    store = LocalSourceNativeBlobStore(tmp_path / "blobs")
+    with store.open(pages[0]["evidenceBlobRef"]) as stream:
+        parsed = parse_document_page_response(stream.read())
+    assert [item["included"] for item in parsed["_packedRecords"]] == [True, False]
+    malformed_evidence = parsed["_packedRecords"][1]["record"]
+    assert malformed_evidence["data"]["id"] == "EPA-2026-0001-0002"
+    assert malformed_evidence["data"]["attributes"]["postedDate"] == "not-a-date"
+
+
 def test_missing_or_changed_enumerated_object_refuses_complete_snapshot(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -959,31 +1004,39 @@ def test_document_source_issued_version_falls_back_to_posted_date_when_modify_da
 
 
 @pytest.mark.parametrize(
-    ("modify_date", "expected_version"),
+    ("posted_date", "modify_date", "expected_version"),
     [
-        ("2024-11-07T22:18:46Z", "2024-11-07T22:18:46.000000Z"),
-        (None, None),
+        (None, "2024-11-07T22:18:46Z", "2024-11-07T22:18:46.000000Z"),
+        (None, None, None),
+        ("not-a-date", "2024-11-07T22:18:46Z", "2024-11-07T22:18:46.000000Z"),
+        ("not-a-date", None, None),
     ],
-    ids=["modify-date-present", "both-dates-null"],
+    ids=[
+        "null-posted-date-modify-date-present",
+        "null-posted-date-both-dates-null",
+        "malformed-posted-date-modify-date-present",
+        "malformed-posted-date-both-dates-unusable",
+    ],
 )
-def test_classify_document_accepts_a_null_posted_date_but_refuses_a_malformed_one(
+def test_classify_document_tolerates_an_unusable_posted_date(
+    posted_date: str | None,
     modify_date: str | None,
     expected_version: str | None,
 ) -> None:
     """Three live FMCSA documents publish ``postedDate: null`` with
-    ``modifyDate`` present (2026-09-02 fix), e.g. FMCSA-2007-0006-0015.
-    Undatable is tolerated; corrupt is not — a present, non-null value that
-    fails canonical-date parsing still refuses, since that is malformed
-    source data, not a legitimate undated observation. A document with no
-    instant at all classifies too, and its observation version is null, which
-    the collapse orders last rather than refusing.
+    ``modifyDate`` present, e.g. FMCSA-2007-0006-0015. A live FAA
+    full-history publish (205,696 documents) later surfaced a document with a
+    non-null ``postedDate`` that fails canonical-date parsing, and the strict
+    parse aborted the whole agency nine minutes in (2026-09-02 fix): null and
+    unparseable are both undatable, not corrupt, so classification tolerates
+    either without coercing or repairing the raw value. A document whose
+    ``postedDate`` is unusable but whose ``modifyDate`` is present still
+    orders by ``modifyDate``; one where both are unusable has a null
+    instant, which the collapse orders last rather than refusing.
     """
-    undated = classify_document(_document(postedDate=None, modifyDate=modify_date))
-    assert undated["data"]["attributes"]["postedDate"] is None
-    assert observation_version(undated, collection=DOCUMENT_COLLECTION) == expected_version
-
-    with pytest.raises(RegulationsGovSourceError, match="document postedDate is invalid"):
-        classify_document(_document(postedDate="not-a-date"))
+    record = classify_document(_document(postedDate=posted_date, modifyDate=modify_date))
+    assert record["data"]["attributes"]["postedDate"] == posted_date
+    assert observation_version(record, collection=DOCUMENT_COLLECTION) == expected_version
 
 
 def test_docket_source_issued_version_matches_the_raw_modify_date() -> None:

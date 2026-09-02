@@ -100,11 +100,13 @@ unsupported key, incomplete agency set, or unclassified raw field. The
 enumeration evidence is preserved independently from the records selected by
 the release's bounded date scope, so an out-of-scope source object remains
 evidence but contributes no record. **Amendment (2026-09-02):** a
-Regulations.gov document with a null `postedDate` — the live mirror holds
-exactly three such FMCSA documents, e.g. FMCSA-2007-0006-0015, each with
-`modifyDate` present — is undatable and therefore outside every date scope;
-it stays in evidence and contributes no record, the same disposition as any
-other out-of-scope object.
+Regulations.gov document `postedDate` that is null or present but not
+canonical-date text is unusable and therefore outside every date scope; it
+stays in evidence and contributes no record, the same disposition as any
+other out-of-scope object. The live mirror holds exactly three null
+`postedDate` FMCSA documents, e.g. FMCSA-2007-0006-0015, each with
+`modifyDate` present, and the FAA full-history publish surfaced a malformed
+non-null `postedDate` that had aborted the whole agency nine minutes in.
 
 Each Regulations.gov query covers at most 14,640 inclusive calendar days
 (~40 years). The adapter rejects a reversed or wider range before it opens the

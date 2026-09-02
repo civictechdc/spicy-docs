@@ -724,16 +724,24 @@ def _record_date(value: object, label: str) -> date:
 
 
 def _optional_record_date(value: object, label: str) -> date | None:
-    """Return the parsed date, or ``None`` when the source left the field null.
+    """Return the parsed date, or ``None`` when the field is unusable for date scope.
 
-    Only an explicit source null is undated (2026-09-02: three FMCSA documents
-    publish ``postedDate: null``, e.g. FMCSA-2007-0006-0015); a malformed
-    non-null value is corrupt data and still refuses.
+    An explicit source null (2026-09-02: three FMCSA documents publish
+    ``postedDate: null``, e.g. FMCSA-2007-0006-0015) and a present value that
+    fails canonical-date parsing (2026-09-02: the FAA full-history publish,
+    205,696 documents, surfaced a malformed non-null ``postedDate`` that
+    aborted the whole agency nine minutes in) are both undatable, not
+    corrupt: this is the sole caller of ``_record_date`` for the document
+    postedDate that gates date scope, so relaxing it here does not loosen
+    docket ``modifyDate`` or comment ``postedDate``, which still refuse.
     """
 
     if value is None:
         return None
-    return _record_date(value, label)
+    try:
+        return _record_date(value, label)
+    except RegulationsGovSourceError:
+        return None
 
 
 # Label and instant fields per collection. Documents fall back to postedDate,
@@ -753,7 +761,12 @@ def source_issued_version(record: Mapping[str, Any], *, collection: str) -> str 
     Null is a valid public observation. This is acquisition meaning shared by
     every Regulations.gov collection (spec 2026-08-25 §4, 2026-09-02
     amendment): comments and dockets order by ``modifyDate``; documents fall
-    back to ``postedDate`` when ``modifyDate`` is null.
+    back to ``postedDate`` when ``modifyDate`` is null. A document
+    ``postedDate`` that is present but unparseable is treated the same as a
+    null one and skipped rather than refused (2026-09-02: the FAA
+    full-history publish), since §3 already puts that document outside every
+    date scope; ``modifyDate`` — for documents and every other collection —
+    still refuses a malformed value.
     """
 
     if collection not in _OBSERVATION_INSTANTS:
@@ -764,13 +777,20 @@ def source_issued_version(record: Mapping[str, Any], *, collection: str) -> str 
         value = attributes.get(name)
         if value is None:
             continue
+        tolerate_unusable = collection == DOCUMENT_COLLECTION and name == "postedDate"
         if not isinstance(value, str) or not value:
+            if tolerate_unusable:
+                continue
             raise RegulationsGovSourceError(f"Regulations.gov {label} {name} must be nonempty text or null")
         try:
             parsed = datetime.fromisoformat(value)
         except ValueError as error:
+            if tolerate_unusable:
+                continue
             raise RegulationsGovSourceError(f"Regulations.gov {label} {name} is invalid") from error
         if parsed.tzinfo is None or parsed.utcoffset() is None:
+            if tolerate_unusable:
+                continue
             raise RegulationsGovSourceError(f"Regulations.gov {label} {name} lacks a UTC offset")
         return value
     return None
@@ -1396,8 +1416,10 @@ def _record_in_scope(
         value = _optional_record_date(attributes.get("postedDate"), "document postedDate")
         if value is None:
             # An undated document (2026-09-02: FMCSA-2007-0006-0015 and two
-            # siblings publish postedDate: null) falls outside every date
-            # scope; §3 keeps it as evidence while it contributes no record.
+            # siblings publish postedDate: null) or one whose postedDate is
+            # present but unparseable (2026-09-02: the FAA full-history
+            # publish surfaced this) falls outside every date scope; §3
+            # keeps it as evidence while it contributes no record.
             return False
         start = date.fromisoformat(str(query_scope["publishedFrom"]))
         end = date.fromisoformat(str(query_scope["publishedThrough"]))
