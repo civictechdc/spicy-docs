@@ -1503,8 +1503,11 @@ def _acquisition_policy(
     collection: str,
 ) -> dict[str, Any]:
     # Every collection groups by ``/data/id`` and keeps the greatest normalized
-    # UTC instant, refusing a repeated (id, instant) pair rather than inventing
-    # a tie-breaker (spec 2026-08-25 §4, 2026-09-02 amendment). Documents order
+    # UTC instant, refusing a repeated (id, instant) pair with differing bytes
+    # rather than inventing a tie-breaker; a repeated pair with identical bytes
+    # is one observation for documents and dockets, but comments still refuse
+    # any repeat (spec 2026-08-25 §4, 2026-09-02 amendments: newest-observation
+    # collapse and the ACF-2026-0199 identical-bytes case). Documents order
     # by ``modifyDate`` falling back to ``postedDate``, as
     # :func:`source_issued_version` does; the other two order by ``modifyDate``.
     order_by = (
@@ -1525,7 +1528,11 @@ def _acquisition_policy(
         "observationSelection": {
             "groupBy": "/data/id",
             "orderBy": order_by,
-            "tieDisposition": "refuse-repeated-normalized-instant",
+            "tieDisposition": (
+                "refuse-repeated-normalized-instant"
+                if collection == COMMENT_COLLECTION
+                else "refuse-differing-record-digest-at-normalized-instant"
+            ),
         },
         "strategy": "complete-mirrulations-source-enumeration",
     }

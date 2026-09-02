@@ -198,8 +198,15 @@ documents falling back to `postedDate` when `modifyDate` is null. Each
 preserves the exact source-issued instant in the raw record and normalizes that
 instant to UTC only for comparison. The canonical observation sequence sorts by
 strict-ASCII record identity, non-null before null, and normalized UTC instant
-descending. Any repeated `(record identity, normalized UTC instant)` pair,
-including two nulls, fails instead of inventing a tie-breaker.
+descending. For comments, any repeated `(record identity, normalized UTC
+instant)` pair, including two nulls, fails instead of inventing a
+tie-breaker. **Amendment (2026-09-02):** for dockets and documents, a
+repeated pair whose canonical record digests are identical is one observation,
+not a tie; only a repeated pair with differing record digests fails (raw bytes
+may differ in key order alone). Docket ACF-2026-0199 holds
+byte-identical objects "(18)" and "(19)" at one modifyDate instant —
+Mirrulations refetching an active docket, not two observations to
+tie-break.
 `inputObservationDigest` consumes that sequence through the installed shared
 framed-section digester. Every older observation counts as discarded and stays
 in the acquisition evidence; the profile records that count and owns the
@@ -488,8 +495,9 @@ timestamp conflicts, multiple source versions, shuffled enumeration order,
 digest/count replay, deterministic output order, schema drift, and a one-row
 mutation that changes the digest. Document and docket fixtures extend that
 executable coverage to the document `postedDate` fallback, offset-equivalent
-instants that tie, a repeated docket instant, and the discarded observations
-retained in acquisition evidence.
+instants that tie, a repeated docket instant, byte-identical objects at one
+instant collapsing to a single observation instead of tying (2026-09-02), and
+the discarded observations retained in acquisition evidence.
 Generation tests refuse broken superseded identities, an empty successor reason,
 unrelated pointer replacement, and a byte-for-byte no-op successor. A
 physical-only correction preserves logical identity and moves exact artifact

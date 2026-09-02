@@ -131,7 +131,9 @@ REGULATIONS_GOV_DOCUMENT_PROFILE: Final = SourceNativeProfile(
     # "(1)" suffix files); collapse to the newest exactly as comments do
     # (2026-09-02, spec §4 amendment).
     observation_version=partial(regulations_gov.observation_version, collection=regulations_gov.DOCUMENT_COLLECTION),
-    refuse_equal_observation_versions=True,
+    # ACF-2026-0199 (18)/(19) are byte-identical objects at one modifyDate
+    # instant (Mirrulations refetch); collapse them, don't refuse the tie.
+    refuse_equal_observation_versions=False,
 )
 
 REGULATIONS_GOV_DOCKET_PROFILE: Final = SourceNativeProfile(
@@ -166,7 +168,9 @@ REGULATIONS_GOV_DOCKET_PROFILE: Final = SourceNativeProfile(
     # a 2021-02-12 object and a newer 2024-06-12 "(1)" object); collapse to the
     # newest exactly as comments do (2026-09-02, spec §4 amendment).
     observation_version=partial(regulations_gov.observation_version, collection=regulations_gov.DOCKET_COLLECTION),
-    refuse_equal_observation_versions=True,
+    # ACF-2026-0199 (18)/(19) are byte-identical objects at one modifyDate
+    # instant (Mirrulations refetch); collapse them, don't refuse the tie.
+    refuse_equal_observation_versions=False,
 )
 
 REGULATIONS_GOV_COMMENT_PROFILE: Final = SourceNativeProfile(

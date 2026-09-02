@@ -625,6 +625,57 @@ def test_docket_release_selects_newest_observation_and_counts_discard(tmp_path: 
     assert len({record["recordDigest"] for record in discovered}) == 2
 
 
+def test_docket_release_collapses_byte_identical_observations_at_one_instant(tmp_path: Path) -> None:
+    """A live publish surfaced docket ACF-2026-0199 with two byte-identical
+    Mirrulations objects ("(18)" and "(19)": same 1811 bytes, same sha256,
+    same modifyDate 2026-08-20T13:03:09Z) among its 31 observations — a
+    re-fetch of one instant, not a tie to refuse. Two identical observations
+    of one record at one instant are one observation: they collapse to a
+    single published record, count as one discarded observation together,
+    and both stay in acquisition evidence alongside the older, genuinely
+    distinct observation (2026-09-02 fix).
+    """
+    identity = "ACF-2007-0125"
+    older = _docket(identity, agencyId="ACF", modifyDate="2021-02-12T01:00:50Z", title="older observation")
+    newest = _docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="newest observation")
+    scope = _acf_docket_scope()
+    release = tmp_path / "dockets"
+    published = SourceNativeReleasePublisher(
+        REGULATIONS_GOV_DOCKET_PROFILE,
+        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+        clock=_completed_at,
+    ).publish(
+        iter_regulations_gov_docket_pages(
+            lambda agency: (
+                _Reader(
+                    [
+                        _docket_object(identity, value=older, tag="1", agency="ACF"),
+                        _docket_object(identity, value=newest, tag="2", agency="ACF"),
+                        _docket_object(identity, value=newest, tag="3", agency="ACF"),
+                    ]
+                )
+                if agency == "ACF"
+                else pytest.fail("wrong agency")
+            ),
+            query_scope=scope,
+        ),
+        build=_build(scope),
+        destination=release,
+    )
+    reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCKET_PROFILE)
+
+    assert [row["record"]["data"]["attributes"]["title"] for row in reader.iter_records()] == ["newest observation"]
+    receipt = json.loads((release / "receipts/publication.json").read_bytes())
+    assert receipt["discoveredRecordCount"] == 3
+    assert receipt["inputObservationCount"] == 3
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["discardedObservationCount"] == 2
+    # All three observations stay in evidence, including both identical repeats.
+    discovered = [record for row in _payload_rows(release, "acquisition-pages") for record in row["discoveredRecords"]]
+    assert [record["sourceRecordId"] for record in discovered] == [identity, identity, identity]
+    assert len({record["recordDigest"] for record in discovered}) == 2
+
+
 def test_document_release_selects_newest_observation_and_counts_discard(tmp_path: Path) -> None:
     """Documents collapse the same way as dockets and comments: a repeat
     object for one document id keeps only the newest observed modifyDate,
@@ -685,6 +736,11 @@ def test_document_release_selects_newest_observation_and_counts_discard(tmp_path
 
 
 def test_repeated_normalized_docket_versions_refuse_a_tie(tmp_path: Path) -> None:
+    """Two DIFFERENT bodies at the same normalized instant are a genuine tie
+    and still refuse (2026-09-02): only identical bytes at one instant
+    collapse, per
+    ``test_docket_release_collapses_byte_identical_observations_at_one_instant``.
+    """
     identity = "ACF-2007-0125"
     first = _docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="first")
     second = _docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="second")
@@ -712,7 +768,9 @@ def test_repeated_normalized_docket_versions_refuse_a_tie(tmp_path: Path) -> Non
 
 def test_repeated_normalized_document_versions_refuse_a_tie(tmp_path: Path) -> None:
     """Comparison is on the normalized UTC instant, so two differently offset
-    stamps denoting the same instant tie and refuse just like identical text."""
+    stamps denoting the same instant still tie. The bodies differ (title
+    "first" vs "second"), so this still refuses (2026-09-02): only identical
+    bytes at one instant collapse."""
     identity = "ACF-2021-0001-0001"
     first = _document(
         identity,
@@ -776,14 +834,14 @@ def test_docket_and_document_acquisition_policies_declare_the_newest_observation
     assert document_selection == {
         "groupBy": "/data/id",
         "orderBy": "coalesce(/data/attributes/modifyDate, /data/attributes/postedDate) DESC NULLS LAST",
-        "tieDisposition": "refuse-repeated-normalized-instant",
+        "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
     }
 
     docket_selection = docket_acquisition_policy(_docket_scope())["observationSelection"]
     assert docket_selection == {
         "groupBy": "/data/id",
         "orderBy": "/data/attributes/modifyDate DESC NULLS LAST",
-        "tieDisposition": "refuse-repeated-normalized-instant",
+        "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
     }
 
 
