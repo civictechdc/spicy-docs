@@ -13,6 +13,7 @@ in spicy-regs.
 """
 
 import re
+from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Sized
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
@@ -450,6 +451,56 @@ def download_keys(
                         raise
 
 
+_EXHAUSTED = object()
+
+
+def _bounded_ordered_results(
+    executor: ThreadPoolExecutor,
+    items: Iterator[Any],
+    work: Callable[[Any], Any],
+    window: int,
+) -> Iterator[tuple[Any, Any]]:
+    """Run ``work`` over ``items`` on ``executor``, yielding ``(item, result)``
+    in ``items`` order with at most ``window`` futures in flight.
+
+    ``download_keys`` above fans out unordered and doesn't care which key
+    finishes first; :meth:`MirrulationsReader.iter_source_objects` is
+    complete-snapshot evidence and must preserve listing order and abort on
+    the first failure. Popping the window's head and calling ``.result()``
+    blocks only on that item, so the failure that aborts is the first *listed*
+    one even when a later item failed sooner.
+
+    Once any in-flight future is done with an exception, no further work is
+    submitted; leaving this generator — by that failure or by an early close —
+    cancels every not-yet-started future. Work already running drains under its
+    own timeouts while the caller's executor shuts down.
+    """
+    pending: deque[tuple[Any, Future[Any]]] = deque()
+
+    def failure_observed() -> bool:
+        # Bounded by ``window`` futures, so this stays a constant-factor scan.
+        return any(future.done() and future.exception() is not None for _item, future in pending)
+
+    def fill() -> None:
+        while len(pending) < window and not failure_observed():
+            item = next(items, _EXHAUSTED)
+            if item is _EXHAUSTED:
+                return
+            pending.append((item, executor.submit(work, item)))
+
+    try:
+        fill()
+        while pending:
+            item, future = pending.popleft()
+            result = future.result()
+            fill()
+            yield item, result
+    finally:
+        for _item, future in pending:
+            future.cancel()
+        pending.clear()
+
+
 class MirrulationsReader(Reader):
     """Reads one agency's records of a single record type from Mirrulations S3.
 
@@ -502,7 +553,11 @@ class MirrulationsReader(Reader):
 
         This path is deliberately fail-fast: a missing listing ETag, changed
         object, failed GET, or incomplete body makes the enumeration unusable
-        as complete-snapshot evidence.
+        as complete-snapshot evidence. Listing stays serial (the strict-
+        ascending-key assert needs it), but GETs fan out over a thread pool
+        bounded to ``self.download_workers`` in flight via
+        :func:`_bounded_ordered_results`, and are yielded back in listing
+        order regardless of which GET completes first.
         """
 
         if self.record_type.path_pattern is None:
@@ -517,41 +572,47 @@ class MirrulationsReader(Reader):
             rf"{re.escape(self.agency)}-(\d{{4}})-"
         )
         bucket = self.s3_resource.Bucket(self.bucket)
-        previous_key: str | None = None
-        for summary in bucket.objects.filter(Prefix=f"{self.prefix}/{self.agency}/"):
-            key = summary.key
-            if "/text-" not in key or self.record_type.path_pattern not in key or not key.endswith(".json"):
-                continue
-            if self.since_year:
-                match = year_pattern.search(key)
-                if match and int(match.group(1)) < self.since_year:
+
+        def listed_entries() -> Iterator[tuple[str, str, int | None]]:
+            previous_key: str | None = None
+            for summary in bucket.objects.filter(Prefix=f"{self.prefix}/{self.agency}/"):
+                key = summary.key
+                if "/text-" not in key or self.record_type.path_pattern not in key or not key.endswith(".json"):
                     continue
-            if previous_key is not None and key <= previous_key:
-                raise ValueError("Mirrulations listing keys are not strictly ordered")
-            previous_key = key
-            etag = getattr(summary, "e_tag", None)
-            if not isinstance(etag, str) or not etag:
-                raise ValueError(f"Mirrulations listing lacks an ETag for {key}")
-            listed_size = getattr(summary, "size", None)
-            if listed_size is not None and (
-                isinstance(listed_size, bool) or not isinstance(listed_size, int) or listed_size < 0
+                if self.since_year:
+                    match = year_pattern.search(key)
+                    if match and int(match.group(1)) < self.since_year:
+                        continue
+                if previous_key is not None and key <= previous_key:
+                    raise ValueError("Mirrulations listing keys are not strictly ordered")
+                previous_key = key
+                etag = getattr(summary, "e_tag", None)
+                if not isinstance(etag, str) or not etag:
+                    raise ValueError(f"Mirrulations listing lacks an ETag for {key}")
+                listed_size = getattr(summary, "size", None)
+                if listed_size is not None and (
+                    isinstance(listed_size, bool) or not isinstance(listed_size, int) or listed_size < 0
+                ):
+                    raise ValueError(f"Mirrulations listing size is invalid for {key}")
+                yield key, etag, listed_size
+
+        def get(entry: tuple[str, str, int | None]) -> DownloadedObject:
+            key, etag, _listed_size = entry
+            return download_object_bytes(self.s3_resource, self.bucket, key, if_match=etag, max_bytes=max_bytes)
+
+        workers = max(1, self.download_workers)
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for (key, etag, listed_size), downloaded in _bounded_ordered_results(
+                executor, listed_entries(), get, workers
             ):
-                raise ValueError(f"Mirrulations listing size is invalid for {key}")
-            downloaded = download_object_bytes(
-                self.s3_resource,
-                self.bucket,
-                key,
-                if_match=etag,
-                max_bytes=max_bytes,
-            )
-            if listed_size is not None and listed_size != len(downloaded.content):
-                raise ValueError(f"Mirrulations listed size differs from bytes for {key}")
-            yield MirrulationsSourceObject(
-                key=key,
-                etag=etag,
-                version_id=downloaded.version_id,
-                content=downloaded.content,
-            )
+                if listed_size is not None and listed_size != len(downloaded.content):
+                    raise ValueError(f"Mirrulations listed size differs from bytes for {key}")
+                yield MirrulationsSourceObject(
+                    key=key,
+                    etag=etag,
+                    version_id=downloaded.version_id,
+                    content=downloaded.content,
+                )
 
     def iter_records(self) -> Iterator[dict]:
         if self.record_type.path_pattern is None:

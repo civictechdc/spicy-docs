@@ -95,9 +95,9 @@ class _FakeS3Resource:
 class _RaisingObj:
     """An S3 object whose body read fails — a transient download error."""
 
-    def get(self) -> dict:
+    def get(self, **kwargs: str) -> dict:
         class _Body:
-            def read(self) -> bytes:
+            def read(self, size: int | None = None) -> bytes:
                 raise OSError("connection reset by peer")
 
             def close(self) -> None:
@@ -130,6 +130,15 @@ class _FlakyResource(_FakeS3Resource):
 
 def _docket_key(docket_id: str) -> str:
     return f"{PREFIX}/{AGENCY}/{docket_id}/text-{docket_id}/docket/{docket_id}.json"
+
+
+def _numbered_store(count: int) -> tuple[list[str], dict[str, bytes]]:
+    """``count`` dockets whose keys already sort in listing order."""
+    store = {
+        _docket_key(f"EPA-2024-{index:04d}"): dumps(_docket_payload(f"EPA-2024-{index:04d}")).encode()
+        for index in range(count)
+    }
+    return list(store), store
 
 
 def _make_store() -> dict[str, bytes]:
@@ -170,7 +179,12 @@ def test_exact_source_enumeration_pins_listing_etags_versions_and_bytes() -> Non
     assert [value.content for value in objects] == [store[key] for key in expected_keys]
     assert [value.etag for value in objects] == [f'"etag:{key}"' for key in expected_keys]
     assert [value.version_id for value in objects] == [f"version:{key}" for key in expected_keys]
-    assert resource.get_requests == [(key, {"IfMatch": f'"etag:{key}"'}) for key in expected_keys]
+    # GETs fan out over a thread pool, so dispatch order isn't guaranteed —
+    # only the yielded object order (asserted above) is. Every key was still
+    # fetched exactly once, pinned to its listed ETag.
+    assert sorted(resource.get_requests, key=lambda r: r[0]) == [
+        (key, {"IfMatch": f'"etag:{key}"'}) for key in expected_keys
+    ]
 
 
 def test_exact_source_enumeration_refuses_changed_object_metadata() -> None:
@@ -196,6 +210,123 @@ def test_exact_source_enumeration_refuses_changed_object_metadata() -> None:
 
     with pytest.raises(ValueError, match="returned ETag"):
         list(reader.iter_source_objects())
+
+
+def test_iter_source_objects_yields_in_listing_order_despite_out_of_order_completion() -> None:
+    """GETs run concurrently, so they may complete out of order; the objects
+    yielded back must still match listing order, not completion order."""
+    import threading
+
+    keys, store = _numbered_store(3)
+    first_key_may_finish = threading.Event()
+
+    class _OrderedObj(_FakeObj):
+        def get(self, **kwargs: str) -> dict:
+            if self.key == keys[0]:
+                # The first-listed key's GET can't finish until a later one has —
+                # proof that completion order is reversed relative to listing order.
+                assert first_key_may_finish.wait(timeout=5)
+                return super().get(**kwargs)
+            response = super().get(**kwargs)
+            first_key_may_finish.set()
+            return response
+
+    class _OrderedResource(_FakeS3Resource):
+        def Object(self, name: str, key: str) -> _OrderedObj:
+            return _OrderedObj(key, self._store[key])
+
+    reader = MirrulationsReader(_OrderedResource(store), BUCKET, PREFIX, AGENCY, DOCKET, download_workers=3)
+    objects = list(reader.iter_source_objects())
+
+    assert [value.key for value in objects] == keys
+
+
+def test_iter_source_objects_fails_fast_on_a_failed_get() -> None:
+    """The first failed GET aborts the enumeration instead of skipping ahead.
+
+    An unreadable object makes the enumeration unusable as complete-snapshot
+    evidence, so it must not be silently dropped in favor of later keys.
+    """
+    keys, store = _numbered_store(3)
+
+    class _FailingResource(_FakeS3Resource):
+        def Object(self, name: str, key: str):
+            if key == keys[1]:
+                return _RaisingObj()
+            return _FakeObj(key, self._store[key])
+
+    reader = MirrulationsReader(_FailingResource(store), BUCKET, PREFIX, AGENCY, DOCKET, download_workers=1)
+    iterator = reader.iter_source_objects()
+
+    first = next(iterator)
+    assert first.key == keys[0]  # the key listed before the failure is still yielded
+    with pytest.raises(OSError, match="connection reset"):
+        next(iterator)  # the failing key aborts; the third key is never reached
+
+
+def test_iter_source_objects_stops_dispatching_gets_once_a_failure_is_visible() -> None:
+    """A failed GET must not keep the pool fetching the keys queued behind it.
+
+    Keys 0-2 open the window together; the head is held until key 1 has failed,
+    so a window refilled after the head is yielded would dispatch key 3 and the
+    executor would then run it while the failure propagates. Nothing past the
+    opening window may be fetched.
+    """
+    import threading
+    from time import sleep
+
+    keys, store = _numbered_store(8)
+    failed = threading.Event()
+    fetched: list[str] = []
+    lock = threading.Lock()
+
+    class _CountingFailingResource(_FakeS3Resource):
+        def Object(self, name: str, key: str):
+            with lock:
+                fetched.append(key)
+            if key == keys[1]:
+                failed.set()
+                return _RaisingObj()
+            if key == keys[0]:
+                assert failed.wait(timeout=5)
+                sleep(0.05)  # long enough for the executor to record key 1's exception
+            return _FakeObj(key, self._store[key])
+
+    reader = MirrulationsReader(_CountingFailingResource(store), BUCKET, PREFIX, AGENCY, DOCKET, download_workers=3)
+    iterator = reader.iter_source_objects()
+
+    assert next(iterator).key == keys[0]
+    with pytest.raises(OSError, match="connection reset"):
+        next(iterator)
+
+    assert set(fetched) <= set(keys[:3])
+
+
+def test_iter_source_objects_closes_early_without_fetching_the_rest_of_the_agency() -> None:
+    """A consumer that stops after one object must not pay for the whole listing.
+
+    Closing the generator has to return rather than drain every remaining key:
+    only the GETs already in flight when it closed may complete.
+    """
+    import threading
+
+    keys, store = _numbered_store(8)
+    fetched: list[str] = []
+    lock = threading.Lock()
+
+    class _CountingResource(_FakeS3Resource):
+        def Object(self, name: str, key: str) -> _FakeObj:
+            with lock:
+                fetched.append(key)
+            return _FakeObj(key, self._store[key])
+
+    reader = MirrulationsReader(_CountingResource(store), BUCKET, PREFIX, AGENCY, DOCKET, download_workers=2)
+    iterator = reader.iter_source_objects()
+
+    assert next(iterator).key == keys[0]
+    iterator.close()
+
+    assert set(fetched) <= set(keys[:3])
 
 
 def test_processed_keys_are_skipped() -> None:
