@@ -62,8 +62,11 @@ MODERN_NUMBER_PATTERN = re.compile(r"^\d{4}-\d+$")
 LEGACY_NUMBER_PATTERN = re.compile(r"^\d{2,4}-[0-9A-Za-z]{1,4}$")
 # X94-11209 is well-formed-legacy once its leading letter is stripped; group(1) is that stripped form.
 LETTER_PREFIXED_LEGACY_PATTERN = re.compile(r"^[A-Za-z](\d{2}-[0-9A-Za-z]+)$")
-# X##-##### encodes YY-{seq}{MM}{DD} (X94-10503 is 1994-05-03; X05-10916 is 2005-09-16, verified live).
-X_FORM_PATTERN = re.compile(r"^X(\d{2})-(\d{5})$")
+# X##-<tail> encodes YY-{seq}{MM}{DD} (X94-10503 is 1994-05-03; X05-10916 is 2005-09-16, verified
+# live). The date is the tail's LAST four digits and the sequence is whatever precedes it, so the
+# tail is matched by width range and read right-anchored: a fixed five-digit pattern with
+# left-anchored slicing silently excluded the six-digit tails and misread any longer one.
+X_FORM_PATTERN = re.compile(r"^X(\d{2})-(\d{5,7})$")
 
 
 def _federal_register_findings(date_digests: dict[str, dict[str, list[str]]]) -> dict[str, object]:
@@ -93,7 +96,7 @@ def _federal_register_findings(date_digests: dict[str, dict[str, list[str]]]) ->
             year_prefix = int(x_match.group(1))
             year = year_prefix + (1900 if year_prefix >= 50 else 2000)
             suffix = x_match.group(2)
-            encoded = f"{year:04d}-{suffix[1:3]}-{suffix[3:5]}"
+            encoded = f"{year:04d}-{suffix[-4:-2]}-{suffix[-2:]}"
             if encoded not in by_date:
                 x_form_mismatches.append({"recordId": number, "encodedDate": encoded, "publicationDates": dates})
         letter_match = LETTER_PREFIXED_LEGACY_PATTERN.fullmatch(number)

@@ -14,7 +14,7 @@ from spicy_docs.federal_register_source_native import FederalRegisterPage, feder
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
-from tools.observation_census import LEGACY_NUMBER_PATTERN, MODERN_NUMBER_PATTERN, census
+from tools.observation_census import LEGACY_NUMBER_PATTERN, MODERN_NUMBER_PATTERN, X_FORM_PATTERN, census
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 PRODUCER = Producer(
@@ -214,3 +214,74 @@ def test_x_form_date_encoding_mismatch_is_reported(tmp_path: Path) -> None:
     assert mismatch["recordId"] == number
     assert mismatch["encodedDate"] == "1994-05-03"
     assert mismatch["publicationDates"] == ["1994-01-01"]
+
+
+def test_x_form_five_digit_tail_matching_date_is_not_reported(tmp_path: Path) -> None:
+    """X94-10503's five-digit tail encodes 1994-05-03 (YY-{seq}{MM}{DD}); a record filed
+    under that number with a matching publication_date is not a mismatch."""
+    number = "X94-10503"
+    window = {"publishedFrom": "1994-05-03", "publishedThrough": "1994-05-03"}
+    args, _receipt = _publish(
+        tmp_path, window, _document(number, publication_date="1994-05-03", title="Matching five-digit filing")
+    )
+
+    result = census(args)
+
+    assert result["xFormDateEncodingMismatchCount"] == 0
+    assert result["xFormDateEncodingMismatches"] == []
+
+
+def test_x_form_six_digit_tail_matching_date_is_not_reported(tmp_path: Path) -> None:
+    """The old X_FORM_PATTERN fixed the tail at exactly five digits, so it silently
+    excluded every six- and seven-digit tail from this census -- 206 of them in the real
+    corpus -- rather than reporting them matched or mismatched. X94-101207 is six digits
+    (sequence "10", date the last four "1207"); its matching publication_date must be
+    reported as a match now that the pattern's width covers it."""
+    number = "X94-101207"
+    window = {"publishedFrom": "1994-12-07", "publishedThrough": "1994-12-07"}
+    args, _receipt = _publish(
+        tmp_path, window, _document(number, publication_date="1994-12-07", title="Matching six-digit filing")
+    )
+
+    result = census(args)
+
+    assert result["xFormDateEncodingMismatchCount"] == 0
+    assert result["xFormDateEncodingMismatches"] == []
+
+
+def test_x_form_seven_digit_tail_matching_date_is_not_reported(tmp_path: Path) -> None:
+    """The widened pattern admits tails up to seven digits; X94-1121207 (sequence "112",
+    date the last four "1207") must be recognized and matched too."""
+    number = "X94-1121207"
+    window = {"publishedFrom": "1994-12-07", "publishedThrough": "1994-12-07"}
+    args, _receipt = _publish(
+        tmp_path, window, _document(number, publication_date="1994-12-07", title="Matching seven-digit filing")
+    )
+
+    result = census(args)
+
+    assert result["xFormDateEncodingMismatchCount"] == 0
+    assert result["xFormDateEncodingMismatches"] == []
+
+
+def test_x_form_six_digit_tail_mismatch_is_reported_right_anchored(tmp_path: Path) -> None:
+    """X94-101207's tail must be read right-anchored (sequence "10", date "1207"), not
+    left-anchored: left-anchored slicing of this same six-digit tail reads "01" and "20",
+    which is exactly this record's (wrong) publication_date below -- so a left-anchored
+    reader would call this a match even after the pattern is widened to admit six digits.
+    Only the right-anchored fix reports the real mismatch. Also pins that the emitted
+    xFormPattern field is the widened pattern actually used, not a stale copy."""
+    number = "X94-101207"
+    window = {"publishedFrom": "1994-01-20", "publishedThrough": "1994-01-20"}
+    args, _receipt = _publish(
+        tmp_path, window, _document(number, publication_date="1994-01-20", title="Mismatched six-digit filing")
+    )
+
+    result = census(args)
+
+    assert result["xFormDateEncodingMismatchCount"] == 1
+    [mismatch] = cast("list[dict[str, object]]", result["xFormDateEncodingMismatches"])
+    assert mismatch["recordId"] == number
+    assert mismatch["encodedDate"] == "1994-12-07"
+    assert mismatch["publicationDates"] == ["1994-01-20"]
+    assert result["xFormPattern"] == X_FORM_PATTERN.pattern
