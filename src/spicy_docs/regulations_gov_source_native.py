@@ -59,7 +59,9 @@ MAX_TRAVERSALS: Final = 1
 MAX_EVIDENCE_PACK_OBJECTS: Final = 1_000
 MAX_EVIDENCE_PACK_RAW_BYTES: Final = 16 * 1024 * 1024
 MAX_OBJECT_BYTES: Final = 16 * 1024 * 1024
-MAX_QUERY_DAYS: Final = 366
+# Every query re-acquires the whole agency prefix, so one window covering a
+# source's whole history is the cheap shape (2026-08-25 spec, 2026-09-02 amendment).
+MAX_QUERY_DAYS: Final = 40 * 366  # ~40 years, counting every year as a leap year
 EVIDENCE_PACK_TYPE: Final = "mirrulations-evidence-pack-v1"
 EVIDENCE_PACK_MEDIA_TYPE: Final = "application/zip"
 

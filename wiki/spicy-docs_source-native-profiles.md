@@ -167,7 +167,7 @@ This source-issued listing supports `source-enumeration`, so all three profiles 
 | Dockets | `modifyDate` | `agencyId`, `modifyDate` | `data.id`; no cross-object version collapse | None |
 | Comments | `postedDate` | `agencyId`, `postedDate` | `data.id`; choose newest `modifyDate` after UTC normalization | Direct `fileFormats` plus included attachment formats |
 
-The external scope names use `publishedFrom`/`publishedThrough` for documents, `modifiedFrom`/`modifiedThrough` for dockets, and `postedFrom`/`postedThrough` for comments. Every scope also requires a nonempty, ASCII, sorted, distinct agency list. A range must span fewer than 366 day boundaries, which permits at most 366 calendar dates inclusive ([scope functions](../src/spicy_docs/regulations_gov_source_native.py#L328-L381)).
+The external scope names use `publishedFrom`/`publishedThrough` for documents, `modifiedFrom`/`modifiedThrough` for dockets, and `postedFrom`/`postedThrough` for comments. Every scope also requires a nonempty, ASCII, sorted, distinct agency list. A range must span fewer than 14,640 day boundaries, which permits at most 14,640 calendar dates inclusive (~40 years, widened from 366 by the 2026-09-02 amendment to the 2026-08-25 source-native release spec) ([scope functions](../src/spicy_docs/regulations_gov_source_native.py#L328-L381)).
 
 ### Closed source schemas and renditions
 
@@ -189,7 +189,7 @@ This refusal avoids silently choosing between observations for which the source 
 | Objects per evidence pack | 1,000 |
 | Raw object bytes per pack | 16 MiB |
 | Bytes per object | 16 MiB |
-| Date range | Fewer than 366 day boundaries |
+| Date range | Fewer than 14,640 day boundaries (14,640 inclusive calendar days, ~40 years; 2026-09-02 amendment) |
 
 Publication fails if listing metadata is missing, an ETag-pinned read changes, an object is empty or oversized, keys or packs are missing/reordered/repeated, an agency or collection path differs, the terminal pack is absent, the scope drifts, the ZIP is altered, source JSON or schema fields drift, or comment versions tie. Focused tests show that out-of-date-scope objects remain in evidence ([document tests](../tests/test_regulations_gov_source_native.py#L366-L399)) and that documents and dockets remain separate releases ([collection tests](../tests/test_regulations_gov_source_native.py#L306-L363)).
 

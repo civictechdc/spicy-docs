@@ -101,8 +101,16 @@ enumeration evidence is preserved independently from the records selected by
 the release's bounded date scope, so an out-of-scope source object remains
 evidence but contributes no record.
 
-Each Regulations.gov query covers at most 366 inclusive calendar days. The
-adapter rejects a reversed or wider range before it opens the source reader.
+Each Regulations.gov query covers at most 14,640 inclusive calendar days
+(~40 years). The adapter rejects a reversed or wider range before it opens the
+source reader.
+
+> **Amendment (2026-09-02, source-supply consolidation A0.3).** 366 → 14,640,
+> ~40 years: docket IDs embed a year and source history starts in the 1990s.
+> For an identical scope and bytes only `acquisitionPolicyDigest` moves in §2's
+> closed `spec`; a wider scope in use also moves `sourceStateDigest`,
+> `logicalId`, and `artifactDigest`, since release state stores the scope. One
+> window replacing W makes acquisition O(objects), not O(W × objects).
 
 SpicyRegs stores that proof in deterministic, bounded ZIP members. Each member
 contains one canonical manifest followed by the listed object bytes in the same

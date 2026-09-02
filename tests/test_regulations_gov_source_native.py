@@ -6,7 +6,7 @@ import json
 from collections.abc import Iterator
 from copy import deepcopy
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -21,10 +21,12 @@ from spicy_docs.regulations_gov_source_native import (
     DOCKET_SOURCE_SYSTEM_ID,
     DOCUMENT_COLLECTION,
     DOCUMENT_SOURCE_SYSTEM_ID,
+    MAX_QUERY_DAYS,
     RegulationsGovPage,
     RegulationsGovSourceError,
     classify_docket,
     classify_document,
+    document_acquisition_policy,
     document_rendition_rows,
     iter_regulations_gov_docket_pages,
     iter_regulations_gov_document_pages,
@@ -510,7 +512,9 @@ def test_strict_ascii_ids_and_keys_make_declared_order_unambiguous() -> None:
         (
             {
                 "agencies": ["EPA"],
-                "publishedFrom": "2024-01-01",
+                # MAX_QUERY_DAYS is ~40 years (regulations.gov/FDMS source
+                # history begins in the 1990s); this span exceeds it.
+                "publishedFrom": "1900-01-01",
                 "publishedThrough": "2026-08-24",
             },
             regulations_gov_document_query_scope,
@@ -521,3 +525,28 @@ def test_strict_ascii_ids_and_keys_make_declared_order_unambiguous() -> None:
 def test_query_scopes_are_closed_ascii_and_bounded(scope, validator, message: str) -> None:
     with pytest.raises(RegulationsGovSourceError, match=message):
         validator(scope)
+
+
+def test_query_scope_spans_a_full_source_history_up_to_the_inclusive_bound() -> None:
+    """One window per agency must cover a source's whole history (2026-09-02
+    amendment); the superseded 366-day bound refused every such scope.
+    """
+    start = date(1990, 1, 1)
+    full_history = regulations_gov_document_query_scope(
+        {"agencies": ["EPA"], "publishedFrom": start.isoformat(), "publishedThrough": "2026-09-02"}
+    )
+    assert full_history["publishedFrom"] == "1990-01-01"
+    assert full_history["publishedThrough"] == "2026-09-02"
+
+    def scope(inclusive_days: int) -> dict[str, object]:
+        through = start + timedelta(days=inclusive_days - 1)
+        return {"agencies": ["EPA"], "publishedFrom": start.isoformat(), "publishedThrough": through.isoformat()}
+
+    assert MAX_QUERY_DAYS == 14_640
+    widest = regulations_gov_document_query_scope(scope(MAX_QUERY_DAYS))
+    assert widest["publishedThrough"] == "2030-01-30"  # 1990-01-01 + 14,639 days
+    with pytest.raises(RegulationsGovSourceError, match="date bound"):
+        regulations_gov_document_query_scope(scope(MAX_QUERY_DAYS + 1))
+
+    # The bound is a sealed acquisition-policy member, not just a guard.
+    assert document_acquisition_policy(_document_scope())["maxQueryDays"] == 14_640
