@@ -329,6 +329,226 @@ def test_iter_source_objects_closes_early_without_fetching_the_rest_of_the_agenc
     assert set(fetched) <= set(keys[:3])
 
 
+class _TransientFlakyObj(_FakeObj):
+    """Raises a genuine transient transport error for its first ``fail_first_n``
+    GETs on this key, then succeeds like a normal ``_FakeObj``."""
+
+    def __init__(
+        self,
+        key: str,
+        content: bytes,
+        attempts: dict[str, int],
+        fail_first_n: int,
+        exc_factory,
+    ) -> None:
+        super().__init__(key, content)
+        self._attempts = attempts
+        self._fail_first_n = fail_first_n
+        self._exc_factory = exc_factory
+
+    def get(self, **kwargs: str) -> dict:
+        self._attempts[self.key] = self._attempts.get(self.key, 0) + 1
+        if self._attempts[self.key] <= self._fail_first_n:
+            raise self._exc_factory()
+        return super().get(**kwargs)
+
+
+class _TransientFlakyResource(_FakeS3Resource):
+    """Fake S3 whose GETs for chosen keys raise a transient transport error for
+    a fixed number of attempts before succeeding (or never, for an exhausted-
+    budget test)."""
+
+    def __init__(
+        self,
+        store: dict[str, bytes],
+        transient_fail_keys: Iterable[str],
+        fail_first_n: int,
+        exc_factory,
+    ) -> None:
+        super().__init__(store)
+        self._transient_fail_keys = set(transient_fail_keys)
+        self._fail_first_n = fail_first_n
+        self._exc_factory = exc_factory
+        self.attempts: dict[str, int] = {}
+
+    def Object(self, name: str, key: str):
+        if key in self._transient_fail_keys:
+            return _TransientFlakyObj(key, self._store[key], self.attempts, self._fail_first_n, self._exc_factory)
+        return _FakeObj(key, self._store[key])
+
+
+def _read_timeout() -> Exception:
+    from botocore.exceptions import ReadTimeoutError
+
+    return ReadTimeoutError(endpoint_url="https://mirrulations.s3.amazonaws.com/raw-data/EPA/x.json")
+
+
+def test_iter_source_objects_retries_a_transient_transport_failure_then_succeeds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A read timeout (the exact failure behind the 47 lost agencies) retries
+    with backoff and then succeeds; every listed object is still yielded, in
+    listing order."""
+    from spicy_docs.sources import mirrulations
+
+    delays: list[float] = []
+    monkeypatch.setattr(mirrulations.time, "sleep", lambda seconds: delays.append(seconds))
+    monkeypatch.setattr(mirrulations.random, "uniform", lambda _lo, hi: hi)
+
+    keys, store = _numbered_store(3)
+    flaky_key = keys[1]
+    resource = _TransientFlakyResource(store, [flaky_key], fail_first_n=2, exc_factory=_read_timeout)
+
+    reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, DOCKET, download_workers=1)
+    objects = list(reader.iter_source_objects())
+
+    assert [value.key for value in objects] == keys  # nothing dropped, listing order preserved
+    assert resource.attempts[flaky_key] == 3  # two failures, then a succeeding third attempt
+    # Full jitter pinned to the ceiling by the monkeypatch above: 2**1, 2**2.
+    assert delays == [2.0, 4.0]
+
+
+def test_iter_source_objects_aborts_after_the_transient_retry_budget_is_exhausted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A transient failure that never recovers still aborts -- patience is
+    bounded, not infinite -- and the original exception surfaces unwrapped."""
+    from botocore.exceptions import ReadTimeoutError
+
+    from spicy_docs.sources import mirrulations
+
+    delays: list[float] = []
+    monkeypatch.setattr(mirrulations.time, "sleep", lambda seconds: delays.append(seconds))
+    monkeypatch.setattr(mirrulations.random, "uniform", lambda _lo, hi: hi)
+
+    keys, store = _numbered_store(1)
+    resource = _TransientFlakyResource(
+        store, keys, fail_first_n=mirrulations._MAX_TRANSIENT_ATTEMPTS + 1, exc_factory=_read_timeout
+    )
+
+    reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, DOCKET, download_workers=1)
+
+    with pytest.raises(ReadTimeoutError):
+        list(reader.iter_source_objects())
+
+    assert resource.attempts[keys[0]] == mirrulations._MAX_TRANSIENT_ATTEMPTS
+    assert len(delays) == mirrulations._MAX_TRANSIENT_ATTEMPTS - 1  # one sleep between each pair of attempts
+
+
+def test_retry_transient_does_not_retry_a_payload_parse_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Deterministic corruption must never be retried, even though it shares
+    the module's failure-classification apparatus with transient errors."""
+    from spicy_docs.sources import mirrulations
+    from spicy_docs.sources.mirrulations import PayloadParseError
+
+    delays: list[float] = []
+    monkeypatch.setattr(mirrulations.time, "sleep", lambda seconds: delays.append(seconds))
+
+    calls = 0
+
+    def op() -> None:
+        nonlocal calls
+        calls += 1
+        raise PayloadParseError("some/key.json")
+
+    with pytest.raises(PayloadParseError):
+        mirrulations._retry_transient("some/key.json", op)
+
+    assert calls == 1
+    assert delays == []
+
+
+def test_iter_source_objects_aborts_immediately_on_a_changed_etag_with_no_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A changed object under If-Match is a data fact -- the snapshot would be
+    unfaithful -- not a busy network, so it must not be retried."""
+    from spicy_docs.sources import mirrulations
+
+    delays: list[float] = []
+    monkeypatch.setattr(mirrulations.time, "sleep", lambda seconds: delays.append(seconds))
+
+    store = {_docket_key("EPA-2024-0001"): b"{}"}
+
+    class _ChangedObject(_FakeObj):
+        def get(self, **kwargs: str) -> dict:
+            response = super().get(**kwargs)
+            response["ETag"] = '"changed-after-listing"'
+            return response
+
+    class _ChangedResource(_FakeS3Resource):
+        def Object(self, name: str, key: str) -> _ChangedObject:
+            return _ChangedObject(key, self._store[key], self.get_requests)
+
+    reader = MirrulationsReader(_ChangedResource(store), BUCKET, PREFIX, AGENCY, DOCKET)
+
+    with pytest.raises(ValueError, match="returned ETag"):
+        list(reader.iter_source_objects())
+    assert delays == []
+
+
+def test_iter_source_objects_aborts_immediately_on_a_listed_size_mismatch_with_no_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A listed size that disagrees with the downloaded bytes is a data fact,
+    not a busy network, so it must not be retried."""
+    from spicy_docs.sources import mirrulations
+
+    delays: list[float] = []
+    monkeypatch.setattr(mirrulations.time, "sleep", lambda seconds: delays.append(seconds))
+
+    store = {_docket_key("EPA-2024-0001"): b"{}"}
+
+    class _WrongListedSizeObjects(_FakeObjects):
+        def filter(self, Prefix: str):
+            for entry in super().filter(Prefix=Prefix):
+                entry.size = entry.size + 1  # listing lied about the object's size
+                yield entry
+
+    class _WrongListedSizeResource(_FakeS3Resource):
+        def Bucket(self, name: str) -> _FakeBucket:
+            bucket = super().Bucket(name)
+            bucket.objects = _WrongListedSizeObjects(self._store)
+            return bucket
+
+    reader = MirrulationsReader(_WrongListedSizeResource(store), BUCKET, PREFIX, AGENCY, DOCKET)
+
+    with pytest.raises(ValueError, match="listed size differs"):
+        list(reader.iter_source_objects())
+    assert delays == []
+
+
+def test_iter_source_objects_aborts_immediately_on_a_missing_listing_etag_with_no_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A listing with no ETag can't be pinned by a later GET -- a data fact,
+    not a busy network -- so it must not be retried."""
+    from spicy_docs.sources import mirrulations
+
+    delays: list[float] = []
+    monkeypatch.setattr(mirrulations.time, "sleep", lambda seconds: delays.append(seconds))
+
+    store = {_docket_key("EPA-2024-0001"): b"{}"}
+
+    class _MissingETagObjects(_FakeObjects):
+        def filter(self, Prefix: str):
+            for entry in super().filter(Prefix=Prefix):
+                entry.e_tag = None
+                yield entry
+
+    class _MissingETagResource(_FakeS3Resource):
+        def Bucket(self, name: str) -> _FakeBucket:
+            bucket = super().Bucket(name)
+            bucket.objects = _MissingETagObjects(self._store)
+            return bucket
+
+    reader = MirrulationsReader(_MissingETagResource(store), BUCKET, PREFIX, AGENCY, DOCKET)
+
+    with pytest.raises(ValueError, match="lacks an ETag"):
+        list(reader.iter_source_objects())
+    assert delays == []
+
+
 def test_processed_keys_are_skipped() -> None:
     already = {_docket_key("EPA-2024-0001")}
     reader = MirrulationsReader(_FakeS3Resource(_make_store()), BUCKET, PREFIX, AGENCY, DOCKET, processed_keys=already)
