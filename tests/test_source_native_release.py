@@ -846,13 +846,13 @@ def test_base_package_keeps_legacy_platform_dependencies_out_of_source_native_pa
 
     assert project["version"] == "0.1.0"
     dependencies = project["dependencies"]
-    assert "rulespec-artifacts==1.0.9" in dependencies
+    assert "rulespec-artifacts==1.0.10" in dependencies
     assert configuration["tool"]["uv"]["sources"]["rulespec-artifacts"] == {
-        "path": "vendor/rulespec_artifacts-1.0.9-py3-none-any.whl"
+        "path": "vendor/rulespec_artifacts-1.0.10-py3-none-any.whl"
     }
-    rulespec_wheel = project_root / "vendor/rulespec_artifacts-1.0.9-py3-none-any.whl"
+    rulespec_wheel = project_root / "vendor/rulespec_artifacts-1.0.10-py3-none-any.whl"
     assert hashlib.sha256(rulespec_wheel.read_bytes()).hexdigest() == (
-        "67cb33bf63c11bc6812ad0e8f0a8b73e89501fa6d4242acf75a7cc6612f5d6c6"
+        "b09be0b2e9ca1700e55ebbbf9374402c9345a7b50a130d0f7f04814c7222856e"
     )
     assert not any(dependency.startswith(("refspec", "rdflib", "rulespec-conformance")) for dependency in dependencies)
     assert "build-source-catalog" not in project["scripts"]
