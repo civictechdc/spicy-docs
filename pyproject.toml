@@ -15,6 +15,11 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    # Optional accelerator for rulespec-artifacts' canonical encoder, which
+    # imports it defensively and falls back to json.dumps when it is absent.
+    # The artifacts wheel declares no extra for it, so a consumer that wants
+    # the acceleration installs it directly.
+    "msgspec>=0.18,<1",
     "pytest",
     "ruff",
     "ty",
