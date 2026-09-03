@@ -120,6 +120,27 @@ def _resume_receipt(path: Path, destination: Path) -> dict[str, Any] | None:
         return None
     return receipt if Path(named).resolve() == destination.resolve() else None
 
+def _publication_verifier_id(destination: Path) -> tuple[str | None, str | None]:
+    """Read the id that actually published this release from its own publication receipt.
+
+    A campaign can span several builds, so the accepted verifier id has to come from the
+    release being verified, never from the runner's own current ``--implementation-id`` --
+    that value is correct for publish (the runner is the publisher there) but would silently
+    re-accept the wrong build if reused for verify. Returns ``(verifier id, None)`` on success,
+    or ``(None, what was missing)`` so the caller can fail closed with a clear reason.
+    """
+    path = destination / "receipts" / "publication.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError:
+        return None, f"{path} does not exist"
+    except json.JSONDecodeError as error:
+        return None, f"{path} is not valid JSON ({error})"
+    verifier_id = payload.get("verifierImplementationId") if isinstance(payload, dict) else None
+    if isinstance(verifier_id, str) and verifier_id:
+        return verifier_id, None
+    return None, f"{path} is missing verifierImplementationId"
+
 def _append_log(log_path: Path, text: str) -> None:
     with log_path.open("a", encoding="utf-8") as log:  # append: a previous attempt's log is history, not waste
         log.write(text)
@@ -163,6 +184,16 @@ def _execute(ctx: RunContext, command: list[str], *, release: str, agency: str, 
     })
     return payload if ok else {}
 
+def _fail_verify(ctx: RunContext, *, release: str, agency: str, source: str, reason: str) -> None:
+    """Record a verify that never ran because the release's own publisher id could not be read."""
+    now = _instant(ctx.clock)
+    _append_log(ctx.logs_dir / f"{release}.verify.log", f"\n{now} cannot verify {release}: {reason}\n")
+    _append_row(ctx, {
+        "release": f"{release}.verify", "agency": agency, "source": source, "startedAt": now, "finishedAt": now,
+        "elapsedSeconds": 0.0, "exitCode": None, "ok": False, "logicalId": None, "artifactDigest": None,
+        "status": "verify-failed", "error": reason,
+    })
+
 def _run_one_release(ctx: RunContext, *, agency: str, source: str, args: argparse.Namespace) -> ReleaseOutcome:
     destination = _destination(args.destination_root, source, agency)
     release = destination.name
@@ -180,9 +211,13 @@ def _run_one_release(ctx: RunContext, *, agency: str, source: str, args: argpars
             return release, agency, source, "failed"
     if not args.verify or _resume_receipt(verify_path, destination) is not None:
         return release, agency, source, "done" if published else "skipped"
+    verifier_id, missing = _publication_verifier_id(destination)
+    if verifier_id is None:
+        _fail_verify(ctx, release=release, agency=agency, source=source, reason=missing or "unknown reason")
+        return release, agency, source, "verify-failed"
     verify_command = _cli(args.python, "verify", source=source, release=destination, blob_store=args.blob_store,
                           logical_id=receipt["logicalId"], artifact_digest=receipt["artifactDigest"],
-                          accepted_verifier_implementation_id=args.implementation_id)
+                          accepted_verifier_implementation_id=verifier_id)
     verified = _execute(ctx, verify_command, release=f"{release}.verify", agency=agency, source=source)
     return release, agency, source, "done" if verified else "verify-failed"
 
@@ -297,7 +332,9 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--window-until", type=date.fromisoformat, required=True, help=_WINDOW_HELP.format("End"))
     parser.add_argument("--destination-root", type=Path, required=True)
     parser.add_argument("--blob-store", type=Path, required=True, help="Persistent content-addressed payload store")
-    parser.add_argument("--implementation-id", required=True)
+    parser.add_argument("--implementation-id", required=True,
+                        help="Passed to each publish; verify instead reads its accepted id from "
+                             "the release's own receipts/publication.json")
     parser.add_argument("--concurrency", type=int, default=1, help="Concurrent agency slots")
     parser.add_argument("--python", type=Path, default=DEFAULT_PYTHON, help="Interpreter to run the source-native CLI with")
     parser.add_argument("--sizes", type=Path, help="JSON {agency: object count}; schedules largest-first when given")

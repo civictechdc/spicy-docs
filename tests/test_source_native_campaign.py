@@ -55,6 +55,13 @@ class FakeRunner:
             destination = Path(_flag(command, "--destination"))
             destination.mkdir(parents=True)  # the real CLI publishes its release files here
             (destination / "release.json").write_text("{}", encoding="utf-8")
+            # The release's own publication receipt -- distinct from the one-line success JSON
+            # streamed below, which carries no implementation id.
+            receipts_dir = destination / "receipts"
+            receipts_dir.mkdir()
+            (receipts_dir / "publication.json").write_text(
+                json.dumps({"verifierImplementationId": _flag(command, "--implementation-id")}), encoding="utf-8",
+            )
             payload = {
                 "ok": True, "command": "publish", "source": source, "release": str(destination.resolve()),
                 "logicalId": f"urn:spicy-docs:test:{source}:{agency}",
@@ -109,6 +116,15 @@ def _seed_receipt(tmp_path: Path, name: str, *, release: Path, logical_id: str =
         encoding="utf-8",
     )
     return path
+
+
+def _seed_publication_receipt(destination: Path, *, verifier_implementation_id: str) -> None:
+    """Fabricate a release's own receipts/publication.json, as a prior publish would leave it."""
+    receipts_dir = destination / "receipts"
+    receipts_dir.mkdir(parents=True, exist_ok=True)
+    (receipts_dir / "publication.json").write_text(
+        json.dumps({"verifierImplementationId": verifier_implementation_id}), encoding="utf-8",
+    )
 
 
 def test_dockets_before_documents_order_within_agency(tmp_path: Path) -> None:
@@ -183,6 +199,68 @@ def test_verify_command_arguments_from_publish_receipt(tmp_path: Path) -> None:
     assert (tmp_path / "out" / "receipts" / "regs-dockets-EPA.verify.json").is_file()
 
 
+def test_verify_uses_the_id_that_actually_published_an_older_release(tmp_path: Path) -> None:
+    """A campaign can span several builds; verify must accept the id that published THIS release,
+    not the runner's own current --implementation-id (a later build, here)."""
+    out_root = tmp_path / "out"
+    destination = out_root / "regs-dockets-EPA"
+    destination.mkdir(parents=True)
+    _seed_receipt(tmp_path, "regs-dockets-EPA", release=destination, logical_id="urn:published-by-old-build")
+    _seed_publication_receipt(destination, verifier_implementation_id="git+file://spicy-docs@oldsha")
+
+    runner = FakeRunner()  # this run's own --implementation-id is testsha, a newer build
+    exit_code = main(_argv(tmp_path, agencies=["EPA"], verify=True), run_subprocess=runner, clock=_clock)
+    assert exit_code == 0
+
+    docket_verify = next(call for call in runner.calls if call[3] == "verify" and _flag(call, "--source") == "regulations-dockets")
+    assert _flag(docket_verify, "--accepted-verifier-implementation-id") == "git+file://spicy-docs@oldsha"
+
+
+def test_verify_fails_clearly_when_publication_receipt_is_missing_the_id(tmp_path: Path) -> None:
+    out_root = tmp_path / "out"
+    destination = out_root / "regs-dockets-EPA"
+    destination.mkdir(parents=True)
+    _seed_receipt(tmp_path, "regs-dockets-EPA", release=destination, logical_id="urn:published-somehow")
+    # No receipts/publication.json at all -- the release was never given one, or it was lost.
+
+    runner = FakeRunner()
+    exit_code = main(_argv(tmp_path, agencies=["EPA"], verify=True), run_subprocess=runner, clock=_clock)
+    assert exit_code == 1
+
+    assert not any(call[3] == "verify" and _flag(call, "--source") == "regulations-dockets" for call in runner.calls)
+    assert not (out_root / "receipts" / "regs-dockets-EPA.verify.json").exists()
+
+    rows = [json.loads(line) for line in (out_root / "campaign.jsonl").read_text(encoding="utf-8").splitlines()]
+    failed = next(row for row in rows if row["release"] == "regs-dockets-EPA.verify")
+    assert failed["ok"] is False
+    assert "regs-dockets-EPA" in failed["error"]
+    assert "publication.json" in failed["error"]
+
+    log_text = (out_root / "logs" / "regs-dockets-EPA.verify.log").read_text(encoding="utf-8")
+    assert "regs-dockets-EPA" in log_text
+    assert "publication.json" in log_text
+
+
+def test_verify_fails_clearly_when_publication_receipt_lacks_the_field(tmp_path: Path) -> None:
+    out_root = tmp_path / "out"
+    destination = out_root / "regs-dockets-EPA"
+    destination.mkdir(parents=True)
+    _seed_receipt(tmp_path, "regs-dockets-EPA", release=destination, logical_id="urn:published-somehow")
+    receipts_dir = destination / "receipts"
+    receipts_dir.mkdir()
+    (receipts_dir / "publication.json").write_text(json.dumps({"logicalId": "urn:published-somehow"}), encoding="utf-8")
+
+    runner = FakeRunner()
+    exit_code = main(_argv(tmp_path, agencies=["EPA"], verify=True), run_subprocess=runner, clock=_clock)
+    assert exit_code == 1
+
+    assert not any(call[3] == "verify" and _flag(call, "--source") == "regulations-dockets" for call in runner.calls)
+    rows = [json.loads(line) for line in (out_root / "campaign.jsonl").read_text(encoding="utf-8").splitlines()]
+    failed = next(row for row in rows if row["release"] == "regs-dockets-EPA.verify")
+    assert failed["ok"] is False
+    assert "verifierImplementationId" in failed["error"]
+
+
 def test_publish_failure_skips_verify_and_exits_one(tmp_path: Path) -> None:
     runner = FakeRunner()
     runner.publish_failures.add(("regulations-dockets", "EPA"))
@@ -202,6 +280,7 @@ def test_skip_when_already_receipted_but_still_verifies(tmp_path: Path) -> None:
     destination.mkdir(parents=True)
     (destination / "marker.txt").write_text("already published", encoding="utf-8")
     _seed_receipt(tmp_path, "regs-dockets-EPA", release=destination, logical_id="urn:pre-existing:dockets")
+    _seed_publication_receipt(destination, verifier_implementation_id="git+file://spicy-docs@testsha")
 
     runner = FakeRunner()
     exit_code = main(_argv(tmp_path, agencies=["EPA"], verify=True), run_subprocess=runner, clock=_clock)
@@ -214,6 +293,7 @@ def test_skip_when_already_receipted_but_still_verifies(tmp_path: Path) -> None:
     docket_verify = next(call for call in runner.calls if call[3] == "verify" and _flag(call, "--source") == "regulations-dockets")
     assert _flag(docket_verify, "--logical-id") == "urn:pre-existing:dockets"
     assert _flag(docket_verify, "--artifact-digest") == "sha256:pre-existing"
+    assert _flag(docket_verify, "--accepted-verifier-implementation-id") == "git+file://spicy-docs@testsha"
     assert (destination / "marker.txt").read_text(encoding="utf-8") == "already published"
 
 
