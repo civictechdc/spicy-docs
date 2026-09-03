@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import tomllib
 from collections.abc import Iterator, Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -1176,3 +1177,37 @@ def test_reused_document_number_with_differing_digests_at_one_date_refuses_the_t
 
     with pytest.raises(SourceNativeReleaseError, match="source-version tie"):
         _publish(tmp_path, pages, query_scope=window)
+
+
+def test_the_vendored_wheel_is_tracked_by_git() -> None:
+    """A bumped wheel that git ignores is invisible until someone clones.
+
+    ``vendor/.gitignore`` ignores everything and re-admits exactly one wheel by
+    name, so bumping the vendored version silently requires moving that
+    allowlist line too. Miss it and ``git add`` stages the deletion of the old
+    wheel and nothing else: the working tree still has the file, every local
+    check passes, and only a fresh checkout -- a worktree, a clone, CI -- gets
+    an empty vendor directory that cannot install. That failure has happened
+    three times on this dependency, so it is checked here rather than
+    remembered.
+
+    The pin test above reads the wheel from the working tree, which is exactly
+    what cannot see this; this one asks git what it would hand a new checkout.
+    """
+
+    project_root = Path(__file__).parents[1]
+    configuration = tomllib.loads(
+        (project_root / "pyproject.toml").read_text(encoding="utf-8")
+    )
+    wheel = configuration["tool"]["uv"]["sources"]["rulespec-artifacts"]["path"]
+    tracked = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", wheel],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert tracked.returncode == 0, (
+        f"{wheel} is declared in pyproject.toml but git does not track it; "
+        f"add it to vendor/.gitignore's allowlist. {tracked.stderr.strip()}"
+    )
