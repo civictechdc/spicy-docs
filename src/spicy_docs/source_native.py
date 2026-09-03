@@ -41,6 +41,7 @@ from rulespec_artifacts import (
     describe_member_from_receipt,
     framed_section_digest,
     iter_member_descriptors,
+    parse_admitted_json,
     parse_canonical_json,
     schema_bundle_digest,
 )
@@ -444,12 +445,23 @@ def installed_release_schema_bundle() -> dict[str, Mapping[str, Any]]:
 
 
 def _jsonl_rows(stream: BinaryIO, *, label: str) -> Iterator[Mapping[str, Any]]:
+    """Stream one payload member's rows, parsed but not re-canonicalised.
+
+    Every caller reaches this through a reader whose constructor has already
+    run ``admit_artifact``, which streams each member, hashes it, and refuses
+    the release unless the bytes match the digest its manifest declares. The
+    canonical form of a row is therefore already pinned by the time it is read,
+    so ``parse_admitted_json`` keeps the parse-time refusals and drops the
+    re-encode that used to prove it a second time -- 7x the cost of the parse
+    it followed, and 85 s of one profiled catalog build over 1.33M rows.
+    """
+
     while raw := stream.readline(MAX_ROW_BYTES + 2):
         if len(raw) > MAX_ROW_BYTES + 1:
             raise SourceNativeReleaseError(f"{label} contains an oversized row")
         if not raw.endswith(b"\n"):
             raise SourceNativeReleaseError(f"{label} contains an unterminated row")
-        value = parse_canonical_json(raw[:-1], path=label)
+        value = parse_admitted_json(raw[:-1], path=label)
         if not isinstance(value, Mapping):
             raise SourceNativeReleaseError(f"{label} row is not an object")
         yield value

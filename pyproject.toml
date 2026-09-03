@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Faithful acquisition from government sources and immutable source-native release publication"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "rulespec-artifacts==1.0.10",
+    "rulespec-artifacts==1.0.11",
     "boto3",
     "httpx",
     "jsonschema>=4.23",
@@ -29,7 +29,7 @@ requires = ["uv_build<0.12"]
 build-backend = "uv_build"
 
 [tool.uv.sources]
-rulespec-artifacts = { path = "vendor/rulespec_artifacts-1.0.10-py3-none-any.whl" }
+rulespec-artifacts = { path = "vendor/rulespec_artifacts-1.0.11-py3-none-any.whl" }
 
 [tool.pytest.ini_options]
 # Integration tests hit external services (the public Mirrulations S3 mirror,
