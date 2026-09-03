@@ -1,10 +1,10 @@
 {
     "generation_info": {
-        "timestamp": "2026-09-02T19:21:00.365430+00:00",
+        "timestamp": "2026-09-03T00:14:12.339168+00:00",
         "main_model": "gpt-5.6-sol",
         "generator_version": "1.0.1",
         "repo_path": "/Users/mikewolfd/Work/spicy-docs",
-        "commit_id": "c178e6b427a91a90688967d72fe4a0a31d40e0e7"
+        "commit_id": "78b8565b936981308e8816821aefc59fab13635b"
     },
     "statistics": {
         "total_components": 521,
@@ -15,9 +15,22 @@
         "overview.md",
         "module_tree.json",
         "first_module_tree.json",
-        "spicy-docs_source-native-release.md",
-        "spicy-docs_source-native-profiles.md",
-        "spicy-docs_source-connectors.md",
-        "spicy-docs_source-definitions.md"
+        "source_native_profile_api.md",
+        "mirrulations_connector.md",
+        "source_native_release_lifecycle.md",
+        "source_profile_catalog_artifacts.md",
+        "source_native_release_engine.md",
+        "gao_product_page_source_native.md",
+        "source_connector_contracts_and_projections.md",
+        "source_native_acquisition_profiles.md",
+        "regulations_gov_source_native.md",
+        "connector_ingestion_and_record_projection.md",
+        "source_native_storage_and_publication.md",
+        "source_domain_drift_gate.md",
+        "spicy_regs_public_table_source_native.md",
+        "federal_register_source_native.md",
+        "source_native_operator_cli.md",
+        "courtlistener_bulk_connector.md",
+        "source_definition_governance_and_validation.md"
     ]
 }
