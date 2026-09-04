@@ -225,10 +225,18 @@ def _closed_schema(properties: Mapping[str, Any], *, required: Sequence[str] | N
 
 @dataclass(frozen=True, slots=True)
 class _ClosedObjectShape:
-    """One declaration for schema generation, writing, and structural parsing."""
+    """One declaration for schema generation, writing, and structural parsing.
+
+    ``required`` defaults to every declared property (today's closed-shape
+    behaviour, unchanged). A shape may narrow it so a newly added property
+    can be read from an old, already-published instance that never carried
+    that key -- see ``_RECEIPT_SHAPE``, whose three failure-summary counts
+    are optional for exactly this reason.
+    """
 
     name: str
     properties: Mapping[str, Any]
+    required: Sequence[str] | None = None
 
     @property
     def fields(self) -> frozenset[str]:
@@ -236,7 +244,7 @@ class _ClosedObjectShape:
 
     @property
     def schema(self) -> dict[str, Any]:
-        return _closed_schema(self.properties)
+        return _closed_schema(self.properties, required=self.required)
 
     def parse(self, value: object) -> dict[str, Any]:
         if not isinstance(value, Mapping):
@@ -258,6 +266,29 @@ class _ClosedObjectShape:
 _NULLABLE_TEXT_SCHEMA: Final = {"type": ["string", "null"]}
 _UINT_SCHEMA: Final = {"minimum": 0, "type": "integer"}
 _DIGEST_SCHEMA: Final = {"pattern": "^sha256:[0-9a-f]{64}$", "type": "string"}
+_NONEMPTY_TEXT_SCHEMA: Final = {"minLength": 1, "type": "string"}
+
+#: The two failure classes a source-native release may record today. The
+#: class boundary asks whether the identical, unchanged request would
+#: plausibly succeed if retried -- a property of *this acquisition attempt*,
+#: not of the item, so the same sourceRecordId can be "deterministic" in one
+#: release and simply absent, having since succeeded, in the next. A value
+#: outside this pair is treated as unclassed, never as a silent third kind of
+#: "safe to publish".
+FAILURE_CLASS_DETERMINISTIC: Final = "deterministic"
+FAILURE_CLASS_TRANSIENT: Final = "transient"
+
+#: One recorded acquisition-attempt failure. Structurally this is any
+#: nonempty class/reasonCode with evidence of the attempt; which classes are
+#: *publishable* is a semantic policy decision made by the reader and
+#: verifier below, not by this shape.
+_LEDGER_FAILURE_SCHEMA: Final = _closed_schema(
+    {
+        "class": _NONEMPTY_TEXT_SCHEMA,
+        "evidenceDigest": _DIGEST_SCHEMA,
+        "reasonCode": _NONEMPTY_TEXT_SCHEMA,
+    }
+)
 
 _BYTE_MEASUREMENTS_SCHEMA: Final = _closed_schema(
     {
@@ -303,44 +334,58 @@ _PAGE_SHAPE: Final = _ClosedObjectShape(
     },
 )
 
+#: The receipt's failure-summary counts are new and absent from every
+#: already-published receipt, so they must stay optional in the schema
+#: below -- see ``_RECEIPT_OPTIONAL_FIELDS``. Reader code treats an absent
+#: count as zero, which reproduces an all-success receipt's summary exactly.
+_RECEIPT_OPTIONAL_FIELDS: Final = frozenset(
+    {"deterministicFailureCount", "transientFailureCount", "unclassedFailureCount"}
+)
+
+_RECEIPT_PROPERTIES: Final = {
+    "acquisitionEvidenceCount": _UINT_SCHEMA,
+    "acquisitionLedgerDigest": _DIGEST_SCHEMA,
+    "acquisitionPolicyDigest": _DIGEST_SCHEMA,
+    "byteMeasurements": _BYTE_MEASUREMENTS_SCHEMA,
+    "completedAt": {"type": "string"},
+    "deterministicFailureCount": _UINT_SCHEMA,
+    "discoveredRecordCount": _UINT_SCHEMA,
+    "discardedObservationCount": _UINT_SCHEMA,
+    "failedRecordCount": _UINT_SCHEMA,
+    "format": {"type": "string"},
+    "formatVersion": {"type": "string"},
+    "inputObservationCount": _UINT_SCHEMA,
+    "inputObservationDigest": _DIGEST_SCHEMA,
+    "partitionPolicy": _PARTITION_POLICY_SCHEMA,
+    "payloadPartitions": {
+        "items": _PAYLOAD_PARTITION_SCHEMA,
+        "maxItems": len(PARTITION_KINDS) * PARTITION_BUCKET_COUNT,
+        "type": "array",
+    },
+    "publishedRecordCount": _UINT_SCHEMA,
+    "reconciliationDigest": _DIGEST_SCHEMA,
+    "reconciliationPassCount": _UINT_SCHEMA,
+    "releaseSchemaDigest": _DIGEST_SCHEMA,
+    "releaseSchemaId": {"type": "string"},
+    "renditionIndexCount": _UINT_SCHEMA,
+    "semanticVerdict": {"const": "pass"},
+    "sourceNativeSchemaSetDigest": _DIGEST_SCHEMA,
+    "sourceStateDigest": _DIGEST_SCHEMA,
+    "sourceStateScope": {"type": "string"},
+    "sourceSystemId": {"type": "string"},
+    "startedAt": {"type": "string"},
+    "transientFailureCount": _UINT_SCHEMA,
+    "unclassedFailureCount": _UINT_SCHEMA,
+    "verifierId": {"type": "string"},
+    "verifierImplementationId": {"type": "string"},
+    "verifierVersion": {"type": "string"},
+    "warnings": {"type": "array"},
+}
+
 _RECEIPT_SHAPE: Final = _ClosedObjectShape(
     "publication receipt",
-    {
-        "acquisitionEvidenceCount": _UINT_SCHEMA,
-        "acquisitionLedgerDigest": _DIGEST_SCHEMA,
-        "acquisitionPolicyDigest": _DIGEST_SCHEMA,
-        "byteMeasurements": _BYTE_MEASUREMENTS_SCHEMA,
-        "completedAt": {"type": "string"},
-        "discoveredRecordCount": _UINT_SCHEMA,
-        "discardedObservationCount": _UINT_SCHEMA,
-        "failedRecordCount": _UINT_SCHEMA,
-        "format": {"type": "string"},
-        "formatVersion": {"type": "string"},
-        "inputObservationCount": _UINT_SCHEMA,
-        "inputObservationDigest": _DIGEST_SCHEMA,
-        "partitionPolicy": _PARTITION_POLICY_SCHEMA,
-        "payloadPartitions": {
-            "items": _PAYLOAD_PARTITION_SCHEMA,
-            "maxItems": len(PARTITION_KINDS) * PARTITION_BUCKET_COUNT,
-            "type": "array",
-        },
-        "publishedRecordCount": _UINT_SCHEMA,
-        "reconciliationDigest": _DIGEST_SCHEMA,
-        "reconciliationPassCount": _UINT_SCHEMA,
-        "releaseSchemaDigest": _DIGEST_SCHEMA,
-        "releaseSchemaId": {"type": "string"},
-        "renditionIndexCount": _UINT_SCHEMA,
-        "semanticVerdict": {"const": "pass"},
-        "sourceNativeSchemaSetDigest": _DIGEST_SCHEMA,
-        "sourceStateDigest": _DIGEST_SCHEMA,
-        "sourceStateScope": {"type": "string"},
-        "sourceSystemId": {"type": "string"},
-        "startedAt": {"type": "string"},
-        "verifierId": {"type": "string"},
-        "verifierImplementationId": {"type": "string"},
-        "verifierVersion": {"type": "string"},
-        "warnings": {"type": "array"},
-    },
+    _RECEIPT_PROPERTIES,
+    required=tuple(name for name in _RECEIPT_PROPERTIES if name not in _RECEIPT_OPTIONAL_FIELDS),
 )
 
 
@@ -390,7 +435,7 @@ def release_schema_bundle() -> dict[str, Mapping[str, Any]]:
         "acquisition-ledger.schema.json": _closed_schema(
             {
                 "evidenceBlobRef": digest,
-                "failure": {"type": "null"},
+                "failure": {"oneOf": [{"type": "null"}, _LEDGER_FAILURE_SCHEMA]},
                 "observationRef": {"type": "object"},
                 "sourceRecordId": {"type": "string"},
             }
@@ -419,6 +464,33 @@ def release_schema_bundle() -> dict[str, Mapping[str, Any]]:
         ),
     }
     return schemas
+
+
+#: Release schema bundles this project has published under, newest last, as
+#: literal digests. A release embeds the bundle it was built with; admission
+#: accepts any bundle named here, not only the one today's code generates.
+#:
+#: Without this, widening any schema makes every already-published release
+#: inadmissible: the check below used to require byte-equality with
+#: ``installed_release_schema_bundle()``. Measured when the acquisition-ledger
+#: ``failure`` shape widened -- 668 published releases embed
+#: ``sha256:a7e0dba5...`` and would all have been refused by the code that had
+#: just been upgraded to read them.
+#:
+#: Every entry is a LITERAL, deliberately. An entry computed from the installed
+#: schema files is not a historical record: it moves when those files move, so
+#: the first release built under a widened schema would silently redefine the
+#: version it was meant to preserve, and the releases the table exists to admit
+#: would be refused again under the table's own error. The same trap was hit
+#: twice in ``ACCEPTED_DOCUMENT_FIELD_SETS`` before that table was written this
+#: way. Add an entry; never edit one a release was published under.
+KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS: Final[Mapping[str, str]] = {
+    # Pre-failure-shape. 668 releases published under this bundle.
+    "1.0": "sha256:a7e0dba5e0b26f69ad3a41901a08eb158d21eb59b856f9faf83d48640a85abdb",
+    # Acquisition-ledger ``failure`` widened to permit a recorded failure, and
+    # the receipt gained the optional per-class failure counts.
+    "1.1": "sha256:4c32416532f34a8bb7fbb4009c6324881495b9a6038c61931f8cf05694e1e164",
+}
 
 
 def installed_release_schema_bundle() -> dict[str, Mapping[str, Any]]:
@@ -1699,6 +1771,23 @@ def _payload_partitions(
     return {kind: tuple(values) for kind, values in result.items()}
 
 
+def _failure_summary_counts(receipt: Mapping[str, Any]) -> tuple[int, int, int]:
+    """Return the receipt's (deterministic, transient, unclassed) tally.
+
+    All three are optional (``_RECEIPT_OPTIONAL_FIELDS``); an absent count
+    reads as zero, so an old, all-success receipt reconciles trivially
+    against ``failedRecordCount == 0`` without carrying these keys at all.
+    """
+
+    counts: list[int] = []
+    for field in ("deterministicFailureCount", "transientFailureCount", "unclassedFailureCount"):
+        value = receipt.get(field, 0)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise SourceNativeReleaseError(f"source-native receipt count is invalid at {field}")
+        counts.append(value)
+    return counts[0], counts[1], counts[2]
+
+
 def verify_source_native_admission(
     artifact: VerifiedArtifact,
     source: MemberSource,
@@ -1766,8 +1855,21 @@ def verify_source_native_admission(
     ):
         if receipt.get(receipt_field) != producer.get(producer_field):
             raise SourceNativeReleaseError(f"receipt differs from producer at {receipt_field}")
-    if receipt.get("semanticVerdict") != "pass" or receipt.get("failedRecordCount") != 0:
+    if receipt.get("semanticVerdict") != "pass":
         raise SourceNativeReleaseError("source-native receipt is not publishable")
+    failed_record_count = receipt.get("failedRecordCount")
+    if failed_record_count != 0:
+        deterministic, transient, unclassed = _failure_summary_counts(receipt)
+        if deterministic + transient + unclassed != failed_record_count:
+            raise SourceNativeReleaseError("source-native failure summary does not reconcile with failedRecordCount")
+        if unclassed:
+            raise SourceNativeReleaseError("source-native receipt records an unclassed acquisition failure")
+        if transient:
+            raise SourceNativeReleaseError("source-native receipt records a transient acquisition failure")
+        # A deterministic failure is a fact about this one acquisition
+        # attempt, not a fact about the item: no consumer may cache "no
+        # body, do not ask again" from it, because a later release that
+        # succeeds for the same sourceRecordId supersedes it outright.
     if (
         receipt.get("format") != FORMAT
         or receipt.get("formatVersion") != FORMAT_VERSION
@@ -1802,7 +1904,7 @@ def verify_source_native_admission(
     if (
         partition_counts[PARTITION_RECORDS] != receipt["publishedRecordCount"]
         or partition_counts[PARTITION_RENDITIONS] != receipt["renditionIndexCount"]
-        or partition_counts[PARTITION_LEDGER] != receipt["publishedRecordCount"]
+        or partition_counts[PARTITION_LEDGER] != receipt["publishedRecordCount"] + receipt["failedRecordCount"]
         or receipt["acquisitionEvidenceCount"] != len(by_role[ROLE_EVIDENCE])
     ):
         raise SourceNativeReleaseError("source-native receipt counts differ from payload membership")
@@ -1847,11 +1949,11 @@ def verify_source_native_admission(
     if profile.source_schema_key not in by_key or RELEASE_SCHEMA_KEY not in by_key:
         raise SourceNativeReleaseError("source-native schema members are absent")
     release_schemas = _read_one_json(source, RELEASE_SCHEMA_KEY)
-    if (
-        release_schemas != installed_release_schema_bundle()
-        or schema_bundle_digest(release_schemas) != spec["releaseSchemaDigest"]
-    ):
-        raise SourceNativeReleaseError("installed release schema bundle differs")
+    embedded_bundle_digest = schema_bundle_digest(release_schemas)
+    if embedded_bundle_digest != spec["releaseSchemaDigest"]:
+        raise SourceNativeReleaseError("release schema bundle digest differs from the spec")
+    if embedded_bundle_digest not in KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS.values():
+        raise SourceNativeReleaseError("release schema bundle is not one this project published")
     source_schema = _read_one_json(source, profile.source_schema_key)
     if source_schema != profile.source_schema:
         raise SourceNativeReleaseError(f"installed {profile.name} source schema differs")
@@ -2251,13 +2353,55 @@ def verify_source_native_release(
                     partitions[PARTITION_LEDGER],
                 )
 
-            observed_ledger_count = 0
-            for actual, expected in zip_longest(admitted_ledger(), expected_ledger(), fillvalue=sentinel):
-                if actual is sentinel or expected is sentinel or actual != expected:
-                    raise SourceNativeReleaseError("acquisition ledger differs from replayed evidence")
-                observed_ledger_count += 1
-            if observed_ledger_count != published_record_count:
+            # A ledger row with `failure: null` is one replayed, published
+            # observation and is proven byte-for-byte against that replay,
+            # exactly as before this release shape could record a failure at
+            # all. A row with `failure` set records one failed acquisition
+            # attempt instead; nothing here replays failures (no acquisition
+            # step in this codebase yet produces one, and no source evidence
+            # exists to reconstruct one from), so this walk instead proves
+            # each failure row well-formed and proves the receipt's own
+            # per-class summary reconciles with what the ledger actually
+            # holds -- the one proof available, at the one place (this
+            # build-gate check, not the cheap admission check) allowed to
+            # walk every ledger row once.
+            failure_validator = Draft202012Validator(_LEDGER_FAILURE_SCHEMA)
+            expected_ledger_iterator = expected_ledger()
+            observed_success_count = 0
+            observed_deterministic_count = 0
+            observed_transient_count = 0
+            observed_unclassed_count = 0
+            for row in admitted_ledger():
+                failure = row.get("failure")
+                if failure is None:
+                    expected = next(expected_ledger_iterator, sentinel)
+                    if expected is sentinel or row != expected:
+                        raise SourceNativeReleaseError("acquisition ledger differs from replayed evidence")
+                    observed_success_count += 1
+                    continue
+                if not failure_validator.is_valid(failure):
+                    raise SourceNativeReleaseError("acquisition-ledger failure entry is malformed")
+                failure_class = failure["class"]
+                if failure_class == FAILURE_CLASS_DETERMINISTIC:
+                    observed_deterministic_count += 1
+                elif failure_class == FAILURE_CLASS_TRANSIENT:
+                    observed_transient_count += 1
+                else:
+                    observed_unclassed_count += 1
+            if next(expected_ledger_iterator, sentinel) is not sentinel:
+                raise SourceNativeReleaseError("acquisition ledger differs from replayed evidence")
+            if observed_success_count != published_record_count:
                 raise SourceNativeReleaseError("acquisition-ledger count differs")
+            observed_failed_count = (
+                observed_deterministic_count + observed_transient_count + observed_unclassed_count
+            )
+            if (
+                receipt.get("deterministicFailureCount", 0) != observed_deterministic_count
+                or receipt.get("transientFailureCount", 0) != observed_transient_count
+                or receipt.get("unclassedFailureCount", 0) != observed_unclassed_count
+            ):
+                raise SourceNativeReleaseError("source-native failure summary differs from acquisition ledger")
+            observed_ledger_count = observed_success_count + observed_failed_count
 
             state_digest = _source_state_digest(
                 (len(scopes), scopes),
@@ -2291,7 +2435,7 @@ def verify_source_native_release(
                 (
                     FramedSection(
                         "entries",
-                        published_record_count,
+                        observed_ledger_count,
                         admitted_ledger(),
                     ),
                 ),
@@ -2311,9 +2455,9 @@ def verify_source_native_release(
                 raise SourceNativeReleaseError("source-reconciliation digest differs")
             counts = {
                 "acquisitionEvidenceCount": len(evidence_members),
-                "discoveredRecordCount": input_observation_count,
+                "discoveredRecordCount": input_observation_count + observed_failed_count,
                 "discardedObservationCount": (input_observation_count - published_record_count),
-                "failedRecordCount": 0,
+                "failedRecordCount": observed_failed_count,
                 "inputObservationCount": input_observation_count,
                 "publishedRecordCount": published_record_count,
                 "renditionIndexCount": rendition_count,
