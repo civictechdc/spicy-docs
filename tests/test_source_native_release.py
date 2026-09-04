@@ -35,6 +35,9 @@ from spicy_docs.federal_register_source_native import (
 )
 from spicy_docs.publication import ImmutablePublicationError
 from spicy_docs.source_native import (
+    FAILURE_CLASS_DETERMINISTIC,
+    PARTITION_LEDGER,
+    REASON_RECORD_UNCLASSIFIABLE,
     SourceNativeReleaseBuild,
     SourceNativeReleaseError,
     SourceNativeReleasePublisher,
@@ -403,9 +406,45 @@ def test_source_native_record_preserves_predecessor_source_facts(tmp_path: Path)
 
 
 @pytest.mark.parametrize("publication_date", [None, "", "not-a-date", "2026-08-25T00:00:00Z"])
-def test_source_issued_publication_date_is_required(tmp_path: Path, publication_date: object) -> None:
-    with pytest.raises(FederalRegisterSourceError, match="publication_date"):
-        _publish(tmp_path, _stable_pages(_document(publication_date=publication_date)))
+def test_malformed_publication_date_is_a_deterministic_failure_not_an_abort(
+    tmp_path: Path, publication_date: object
+) -> None:
+    """SD-22 step 2: a record that fails classification is deterministic --
+    the identical bytes reparse identically, so retrying changes nothing --
+    and no longer aborts the whole publish. This is the defect step 2 fixes:
+    one unparseable date once aborted a 205,696-document agency publish.
+    Publication completes, the malformed record contributes no published
+    record, and its failure is recorded in the ledger with both receipt
+    count invariants intact.
+    """
+    good = _document("2026-00001")
+    bad = _document("2026-00002", publication_date=publication_date)
+    published = _publish(tmp_path, _stable_pages(good, bad))
+    reader = _reader(published.root, published.artifact.pin)
+
+    assert [record["record"]["document_number"] for record in reader.iter_records()] == ["2026-00001"]
+
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["failedRecordCount"] == 1
+    assert receipt["deterministicFailureCount"] == 1
+    assert receipt["transientFailureCount"] == 0
+    assert receipt["unclassedFailureCount"] == 0
+    # inputObservationCount == publishedRecordCount + discardedObservationCount:
+    # a classification failure never becomes an input observation at all, so
+    # it is neither published nor discarded -- it is absent from both sides
+    # of this equation, which is why it needs no term of its own here.
+    assert receipt["inputObservationCount"] == receipt["publishedRecordCount"] + receipt["discardedObservationCount"]
+    # discoveredRecordCount == inputObservationCount + failedRecordCount:
+    # everything discovered in evidence either became an input observation
+    # or failed outright before it could.
+    assert receipt["discoveredRecordCount"] == receipt["inputObservationCount"] + receipt["failedRecordCount"]
+
+    failures = [row for row in _payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
+    assert len(failures) == 1
+    assert failures[0]["failure"]["class"] == FAILURE_CLASS_DETERMINISTIC
+    assert failures[0]["failure"]["reasonCode"]
+    assert failures[0]["failure"]["evidenceDigest"].startswith("sha256:")
 
 
 def test_acquisition_exception_cannot_publish_partial_release(tmp_path: Path) -> None:
@@ -696,11 +735,23 @@ def test_stable_federal_reconciliation_exposes_observed_crawl_scope(tmp_path: Pa
     assert _reader(published.root, published.artifact.pin).source_state_scope == "observed-crawl"
 
 
-def test_unclassified_source_field_fails_publication(tmp_path: Path) -> None:
-    drifted = _document(new_upstream_field="unclassified")
+def test_unclassified_source_field_is_a_deterministic_failure_not_an_abort(tmp_path: Path) -> None:
+    good = _document("2026-00001")
+    drifted = _document("2026-00002", new_upstream_field="unclassified")
 
-    with pytest.raises(FederalRegisterSourceError, match="unclassified.*document fields"):
-        _publish(tmp_path, _stable_pages(drifted))
+    published = _publish(tmp_path, _stable_pages(good, drifted))
+    reader = _reader(published.root, published.artifact.pin)
+
+    assert [record["record"]["document_number"] for record in reader.iter_records()] == ["2026-00001"]
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["failedRecordCount"] == 1
+    assert receipt["deterministicFailureCount"] == 1
+
+    failures = [row for row in _payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
+    assert len(failures) == 1
+    assert failures[0]["failure"]["class"] == FAILURE_CLASS_DETERMINISTIC
+    assert failures[0]["failure"]["reasonCode"] == REASON_RECORD_UNCLASSIFIABLE
 
 
 @pytest.mark.parametrize(
@@ -712,15 +763,105 @@ def test_unclassified_source_field_fails_publication(tmp_path: Path) -> None:
         ({"topics": [7]}, "topics must be a text array or null"),
     ],
 )
-def test_source_field_type_drift_fails_publication(
+def test_source_field_type_drift_is_a_deterministic_failure_not_an_abort(
     tmp_path: Path,
     changes: dict[str, object],
     message: str,
 ) -> None:
-    document = _document()
-    document.update(changes)
-    with pytest.raises(FederalRegisterSourceError, match=message):
-        _publish(tmp_path, _stable_pages(document))
+    good = _document("2026-00001")
+    drifted = _document("2026-00002")
+    drifted.update(changes)
+
+    published = _publish(tmp_path, _stable_pages(good, drifted))
+    reader = _reader(published.root, published.artifact.pin)
+
+    assert [record["record"]["document_number"] for record in reader.iter_records()] == ["2026-00001"]
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["publishedRecordCount"] == 1
+    assert receipt["failedRecordCount"] == 1
+    assert receipt["deterministicFailureCount"] == 1
+
+    failures = [row for row in _payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
+    assert len(failures) == 1
+    assert failures[0]["failure"]["class"] == FAILURE_CLASS_DETERMINISTIC
+    # The reason code is a stable identifier, not the exception text: these are
+    # counted downstream. What varies per case is that each distinct malformation
+    # is RECORDED rather than aborting the publish, which the assertions above
+    # prove. The specific cause stays diagnosable from the retained evidence.
+    assert failures[0]["failure"]["reasonCode"] == REASON_RECORD_UNCLASSIFIABLE
+
+
+def test_every_record_failing_still_publishes_with_zero_published_records(tmp_path: Path) -> None:
+    """The boundary at the other end from a single bad record among many
+    good ones: nothing here survives classification, so the release is a
+    pure failure record -- still a complete, admissible release, never a
+    partial or aborted one.
+    """
+    bad = _document("2026-00001", publication_date="not-a-date")
+
+    published = _publish(tmp_path, _stable_pages(bad))
+    reader = _reader(published.root, published.artifact.pin)
+
+    assert list(reader.iter_records()) == []
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["publishedRecordCount"] == 0
+    assert receipt["failedRecordCount"] == 1
+    assert receipt["deterministicFailureCount"] == 1
+    assert receipt["discardedObservationCount"] == 0
+    assert receipt["inputObservationCount"] == 0
+    assert receipt["discoveredRecordCount"] == 1
+
+
+def test_well_formed_corpus_still_reports_zero_failures(tmp_path: Path) -> None:
+    published = _publish(tmp_path, _stable_pages(_document("2026-00001"), _document("2026-00002")))
+
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["publishedRecordCount"] == 2
+    assert receipt["failedRecordCount"] == 0
+    assert receipt["deterministicFailureCount"] == 0
+    assert receipt["transientFailureCount"] == 0
+    assert receipt["unclassedFailureCount"] == 0
+    assert receipt["discoveredRecordCount"] == receipt["inputObservationCount"]
+    assert not [row for row in _payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
+
+
+def test_scattered_failures_interleave_correctly_across_partition_buckets(tmp_path: Path) -> None:
+    """Enough records that both real and synthetic (``unclassified:...``)
+    source-record identities land in the same partition bucket somewhere,
+    proving the ledger's success/failure merge keeps every bucket in
+    strictly increasing sourceRecordId order -- exactly what the partition
+    reader enforces on the other end.
+    """
+    documents = []
+    expected_failures = 0
+    for number in range(1, 141):
+        document = _document(f"2026-{number:05d}")
+        if number % 7 == 0:
+            document["publication_date"] = "not-a-date"
+            expected_failures += 1
+        documents.append(document)
+
+    published = _publish(tmp_path, _stable_pages(*documents))
+    reader = _reader(published.root, published.artifact.pin)
+
+    published_numbers = [record["record"]["document_number"] for record in reader.iter_records()]
+    assert len(published_numbers) == len(documents) - expected_failures
+    assert len(set(published_numbers)) == len(published_numbers)
+
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert receipt["publishedRecordCount"] == len(documents) - expected_failures
+    assert receipt["failedRecordCount"] == expected_failures
+    assert receipt["deterministicFailureCount"] == expected_failures
+    assert receipt["transientFailureCount"] == 0
+    assert receipt["unclassedFailureCount"] == 0
+    assert receipt["inputObservationCount"] == receipt["publishedRecordCount"] + receipt["discardedObservationCount"]
+    assert receipt["discoveredRecordCount"] == receipt["inputObservationCount"] + receipt["failedRecordCount"]
+
+    ledger_rows = _payload_rows(published.root, PARTITION_LEDGER)
+    assert len(ledger_rows) == len(documents)
+    failure_rows = [row for row in ledger_rows if row["failure"] is not None]
+    assert len(failure_rows) == expected_failures
+    assert all(row["failure"]["class"] == FAILURE_CLASS_DETERMINISTIC for row in failure_rows)
 
 
 def test_missing_or_forked_page_chain_fails(tmp_path: Path) -> None:

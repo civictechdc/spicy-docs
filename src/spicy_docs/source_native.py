@@ -276,7 +276,22 @@ _NONEMPTY_TEXT_SCHEMA: Final = {"minLength": 1, "type": "string"}
 #: outside this pair is treated as unclassed, never as a silent third kind of
 #: "safe to publish".
 FAILURE_CLASS_DETERMINISTIC: Final = "deterministic"
+#: Why a record was recorded as failed rather than published. A stable
+#: identifier, not the exception text: these are counted and aggregated
+#: downstream, and every other reason code in this platform is a dotted
+#: identifier. The exception message is deliberately not carried -- it varies
+#: per record, can echo record content into a sealed artifact, and is
+#: reproducible anyway, since the page's evidence blob is retained and
+#: reclassifying those bytes raises the same error.
+REASON_RECORD_UNCLASSIFIABLE: Final = "source.record-unclassifiable"
 FAILURE_CLASS_TRANSIENT: Final = "transient"
+
+#: Stands in for a sourceRecordId on a record that never reached
+#: :func:`SourceNativeProfile.wrap_record` -- a record that fails
+#: classification or scope validation has, by definition, no source-issued
+#: identity this code can trust, which is exactly why it stopped there. See
+#: :func:`_unclassified_source_record_id`.
+_UNCLASSIFIED_RECORD_ID_PREFIX: Final = "unclassified"
 
 #: One recorded acquisition-attempt failure. Structurally this is any
 #: nonempty class/reasonCode with evidence of the attempt; which classes are
@@ -960,6 +975,67 @@ def _ledger_rows(
         }
 
 
+def _unclassified_source_record_id(traversal_index: int, page_index: int, record_index: int) -> str:
+    """A deterministic stand-in identity for a record that failed classification.
+
+    Its position in evidence already retained -- traversal, page, and index
+    within that page's declared results -- is the one identity available
+    without asking the profile for anything new, and it is stable for the
+    same bytes replayed the same way.
+    """
+
+    return f"{_UNCLASSIFIED_RECORD_ID_PREFIX}:{traversal_index}:{page_index}:{record_index}"
+
+
+def _failure_ledger_rows(
+    connection: sqlite3.Connection,
+    accepted_traversal: int,
+    partition_id: str | None = None,
+) -> Iterator[Mapping[str, Any]]:
+    query = (
+        "SELECT source_record_id, failure_class, reason_code, evidence_ref FROM failures "
+        "WHERE traversal = ? "
+        + ("AND partition_id = ? " if partition_id is not None else "")
+        + "ORDER BY source_record_id"
+    )
+    parameters: tuple[object, ...] = (
+        (accepted_traversal, partition_id) if partition_id is not None else (accepted_traversal,)
+    )
+    for source_record_id, failure_class, reason_code, evidence_ref in connection.execute(query, parameters):
+        yield {
+            "evidenceBlobRef": evidence_ref,
+            "failure": {
+                "class": failure_class,
+                "evidenceDigest": evidence_ref,
+                "reasonCode": reason_code,
+            },
+            "observationRef": {"sourceRecordId": source_record_id},
+            "sourceRecordId": source_record_id,
+        }
+
+
+def _full_ledger_rows(
+    connection: sqlite3.Connection,
+    accepted_traversal: int,
+    partition_id: str | None = None,
+) -> Iterator[Mapping[str, Any]]:
+    """Every ledger row for one accepted traversal: published successes and
+    recorded failures, interleaved in one global sourceRecordId order.
+
+    ``_ledger_rows`` and ``_failure_ledger_rows`` are each already sorted by
+    ``sourceRecordId`` (one SQL query, one ``ORDER BY``, per function), so
+    merging the two needs no sort of its own -- it matches what the
+    partition reader enforces on the other end (:func:`_partition_rows`,
+    which refuses a partition whose identity does not strictly increase).
+    """
+
+    return heapq.merge(
+        _ledger_rows(connection, accepted_traversal, partition_id),
+        _failure_ledger_rows(connection, accepted_traversal, partition_id),
+        key=lambda row: row["sourceRecordId"],
+    )
+
+
 def _page_rows(
     connection: sqlite3.Connection,
     accepted_traversal: int,
@@ -1107,6 +1183,9 @@ class SourceNativeReleasePublisher:
             "source_version TEXT, selected INTEGER NOT NULL DEFAULT 0, record_digest TEXT, "
             "record_payload BLOB, rendition_payload BLOB, evidence_ref TEXT, partition_id TEXT, "
             "PRIMARY KEY (traversal, ordinal));"
+            "CREATE TABLE failures (traversal INTEGER, page INTEGER, record_index INTEGER, "
+            "source_record_id TEXT, failure_class TEXT, reason_code TEXT, evidence_ref TEXT, "
+            "partition_id TEXT, PRIMARY KEY (traversal, page, record_index));"
         )
         previous: SourceNativePage | None = None
         previous_next: str | None = None
@@ -1232,13 +1311,41 @@ class SourceNativeReleasePublisher:
                     _partition_id(f"{page.traversal_index}:{page.page_index}"),
                 ),
             )
-            for raw_record in response["results"] if records_included else ():
-                record = profile.classify_record(raw_record)
-                profile.validate_record_scope(
-                    record,
-                    query_scope=query_scope,
-                    page_window=current_window,
-                )
+            for record_index, raw_record in enumerate(response["results"] if records_included else ()):
+                try:
+                    record = profile.classify_record(raw_record)
+                    profile.validate_record_scope(
+                        record,
+                        query_scope=query_scope,
+                        page_window=current_window,
+                    )
+                except ValueError:
+                    # This record fails to classify or falls outside its
+                    # declared scope. The identical bytes reparse identically,
+                    # so the failure is deterministic by the ruled boundary
+                    # ("would the identical unchanged request plausibly
+                    # succeed?") -- no judgment is coded here, only that one
+                    # fixed answer. The page's own evidence blob already
+                    # holds this record's bytes (evidence_ref, above), so
+                    # nothing new needs writing to keep "the object" in
+                    # evidence; only a ledger row naming the failure does.
+                    failure_source_record_id = _unclassified_source_record_id(
+                        page.traversal_index, page.page_index, record_index
+                    )
+                    connection.execute(
+                        "INSERT INTO failures VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        (
+                            page.traversal_index,
+                            page.page_index,
+                            record_index,
+                            failure_source_record_id,
+                            FAILURE_CLASS_DETERMINISTIC,
+                            REASON_RECORD_UNCLASSIFIABLE,
+                            evidence_ref,
+                            _partition_id(failure_source_record_id),
+                        ),
+                    )
+                    continue
                 wrapped = profile.wrap_record(
                     record,
                     schema_digest=profile.source_schema_digest(),
@@ -1325,6 +1432,12 @@ class SourceNativeReleasePublisher:
                 (accepted_traversal,),
             ).fetchone()[0]
         )
+        failed_record_count = int(
+            connection.execute(
+                "SELECT count(*) FROM failures WHERE traversal = ?",
+                (accepted_traversal,),
+            ).fetchone()[0]
+        )
 
         def records() -> Iterator[Mapping[str, Any]]:
             return _query_mappings(connection, selected_record_query, (accepted_traversal,))
@@ -1346,7 +1459,7 @@ class SourceNativeReleasePublisher:
             rows_by_kind: tuple[tuple[str, Iterable[Mapping[str, Any]]], ...] = (
                 (
                     PARTITION_LEDGER,
-                    _ledger_rows(connection, accepted_traversal, partition_id),
+                    _full_ledger_rows(connection, accepted_traversal, partition_id),
                 ),
                 (
                     PARTITION_PAGES,
@@ -1391,7 +1504,7 @@ class SourceNativeReleasePublisher:
         if (
             partition_counts[PARTITION_RECORDS] != published_record_count
             or partition_counts[PARTITION_RENDITIONS] != rendition_count
-            or partition_counts[PARTITION_LEDGER] != published_record_count
+            or partition_counts[PARTITION_LEDGER] != published_record_count + failed_record_count
             or partition_counts[PARTITION_PAGES] != page_count
         ):
             raise SourceNativeReleaseError("partitioned source-native accounting differs")
@@ -1418,8 +1531,8 @@ class SourceNativeReleasePublisher:
             (
                 FramedSection(
                     "entries",
-                    published_record_count,
-                    _ledger_rows(connection, accepted_traversal),
+                    published_record_count + failed_record_count,
+                    _full_ledger_rows(connection, accepted_traversal),
                 ),
             ),
         )
@@ -1463,9 +1576,10 @@ class SourceNativeReleasePublisher:
                 "publicationBytesWritten": 0,
             },
             "completedAt": completed_at,
-            "discoveredRecordCount": input_observation_count,
+            "deterministicFailureCount": failed_record_count,
+            "discoveredRecordCount": input_observation_count + failed_record_count,
             "discardedObservationCount": (input_observation_count - published_record_count),
-            "failedRecordCount": 0,
+            "failedRecordCount": failed_record_count,
             "format": FORMAT,
             "formatVersion": FORMAT_VERSION,
             "inputObservationCount": input_observation_count,
@@ -1484,6 +1598,8 @@ class SourceNativeReleasePublisher:
             "sourceStateScope": profile.source_state_scope,
             "sourceSystemId": profile.source_system_id,
             "startedAt": build.started_at,
+            "transientFailureCount": 0,
+            "unclassedFailureCount": 0,
             "verifierId": build.producer.verifier_id,
             "verifierImplementationId": build.producer.verifier_implementation_id,
             "verifierVersion": build.producer.verifier_version,
@@ -2112,12 +2228,26 @@ def _replay_acquisition(
             raise SourceNativeReleaseError("acquisition page discoveredRecords is not an array")
         expected_discovered = []
         for raw in response["results"] if records_included else ():
-            classified = profile.classify_record(raw)
-            profile.validate_record_scope(
-                classified,
-                query_scope=query_scope,
-                page_window=current_window,
-            )
+            try:
+                classified = profile.classify_record(raw)
+                profile.validate_record_scope(
+                    classified,
+                    query_scope=query_scope,
+                    page_window=current_window,
+                )
+            except ValueError:
+                # Reproduces the writer's own outcome on this same evidence
+                # (_index_pages skips this record for the identical reason,
+                # deterministically, given the same bytes) rather than
+                # aborting the whole build-gate replay. The ledger walk in
+                # verify_source_native_release proves the admitted failure
+                # rows well-formed and reconciles their per-class counts; it
+                # does not ask this replay to reconstruct them, so nothing
+                # further is recorded here -- the record is simply absent
+                # from both expected_discovered and the replayed
+                # observations table, exactly as it is absent from the
+                # writer's.
+                continue
             wrapped = profile.wrap_record(
                 classified,
                 schema_digest=profile.source_schema_digest(),
