@@ -40,7 +40,7 @@ API_RESPONSE_FIELDS: Final = frozenset(
         "total_pages",
     }
 )
-DOCUMENT_FIELDS: Final = frozenset(
+_DOCUMENT_FIELDS_1_0: Final = frozenset(
     {
         "abstract",
         "agencies",
@@ -66,6 +66,35 @@ DOCUMENT_FIELDS: Final = frozenset(
         "volume",
     }
 )
+# Field sets a stored acquisition request is allowed to declare, keyed by the
+# acquisition policy version each was minted under. A rebuild replays retained
+# evidence with no refetch, so `federal_register_request_window` below must
+# accept requests recorded under an older (or, once one exists, a newer)
+# policy without regenerating the "current" URL and demanding byte equality.
+# The evidence itself carries no version stamp to look one up by --
+# acquisition-ledger rows carry only evidenceBlobRef, failure, observationRef
+# and sourceRecordId, and the acquisition policy version lives on the release
+# spec, which is regenerated fresh on every rebuild. So the check below is
+# "does the stored request declare one of the sets this project has ever
+# accepted", not a lookup by version; the version keys here exist so a reader
+# can see which policy introduced each set. Add an entry -- never rewrite an
+# existing one -- when a new acquisition policy version changes which fields
+# are requested.
+ACCEPTED_DOCUMENT_FIELD_SETS: Final[Mapping[str, frozenset[str]]] = {
+    "1.0": _DOCUMENT_FIELDS_1_0,
+}
+#: Which entry above the acquirer requests today. Changing the fields means
+#: adding a table entry and repointing this key -- there is no other way to do
+#: it, because DOCUMENT_FIELDS below is a lookup rather than a literal.
+_CURRENT_FIELD_POLICY: Final = "1.0"
+#: The field set the current acquisition policy requests. Deliberately derived
+#: from the table rather than written out: a fresh literal here could silently
+#: alias a historical entry and refuse evidence recorded under it, which is the
+#: defect this table exists to prevent and which two earlier drafts reintroduced
+#: -- once at 1.0, and once latent at 1.1 with every test still green. A lookup
+#: leaves nothing to alias from. Keep it in step with
+#: FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION; a test asserts they agree.
+DOCUMENT_FIELDS: Final = ACCEPTED_DOCUMENT_FIELD_SETS[_CURRENT_FIELD_POLICY]
 _RIN: Final = re.compile(r"^[0-9]{4}-[A-Z][A-Z0-9]{3}$")
 _ASCII_ID: Final = re.compile(r"^[A-Za-z0-9._-]+$")
 _AGENCY_FIELDS: Final = frozenset({"id", "json_url", "name", "parent_id", "raw_name", "slug", "url"})
@@ -178,8 +207,17 @@ def federal_register_documents_url(
     query_scope: Mapping[str, Any],
     *,
     per_page: int = MAX_RESULTS_PER_PAGE,
+    fields: frozenset[str] = DOCUMENT_FIELDS,
 ) -> str:
-    """Build the deterministic initial API request for a source date window."""
+    """Build the deterministic initial API request for a source date window.
+
+    ``fields`` defaults to the current :data:`DOCUMENT_FIELDS`, so every caller
+    that does not pass it keeps building today's canonical URL unchanged. A
+    caller replaying stored evidence passes the field set that evidence's
+    request actually declares (see :data:`ACCEPTED_DOCUMENT_FIELD_SETS`), so
+    canonicality is checked against the request the evidence made, not the
+    request today's code would make.
+    """
 
     scope = federal_register_query_scope(query_scope)
     if isinstance(per_page, bool) or not isinstance(per_page, int) or not 1 <= per_page <= MAX_RESULTS_PER_PAGE:
@@ -189,7 +227,7 @@ def federal_register_documents_url(
         ("order", "newest"),
         ("conditions[publication_date][gte]", scope["publishedFrom"]),
         ("conditions[publication_date][lte]", scope["publishedThrough"]),
-        *(("fields[]", field) for field in sorted(DOCUMENT_FIELDS)),
+        *(("fields[]", field) for field in sorted(fields)),
     ]
     return f"{FEDERAL_REGISTER_DOCUMENTS_URL}?{urlencode(parameters)}"
 
@@ -232,9 +270,14 @@ def federal_register_request_window(value: str) -> tuple[date, date]:
             else "",
         }
     )
-    if parameters["order"] != ["newest"] or parameters["fields[]"] != sorted(DOCUMENT_FIELDS):
+    if parameters["order"] != ["newest"]:
         raise FederalRegisterSourceError("Federal Register window request policy differs")
-    if federal_register_documents_url(scope, per_page=per_page) != value:
+    requested_fields = frozenset(parameters["fields[]"])
+    if requested_fields not in ACCEPTED_DOCUMENT_FIELD_SETS.values():
+        raise FederalRegisterSourceError(
+            "Federal Register window request declares a field set this project has not accepted"
+        )
+    if federal_register_documents_url(scope, per_page=per_page, fields=requested_fields) != value:
         raise FederalRegisterSourceError("Federal Register window request is not canonical")
     return date.fromisoformat(scope["publishedFrom"]), date.fromisoformat(scope["publishedThrough"])
 
@@ -778,6 +821,7 @@ def source_record_digest(record: Mapping[str, Any]) -> str:
 
 
 __all__ = [
+    "ACCEPTED_DOCUMENT_FIELD_SETS",
     "API_RESPONSE_FIELDS",
     "DOCUMENT_FIELDS",
     "FEDERAL_REGISTER_DOCUMENTS_URL",
