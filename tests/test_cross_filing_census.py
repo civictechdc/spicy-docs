@@ -1,4 +1,4 @@
-"""Fixture coverage for the ``tools/cross_filing_census.py`` receipt helper (SD-16)."""
+"""Fixture coverage for the ``tools/cross_filing_census.py`` receipt helper (SD-16, SD-17)."""
 
 from __future__ import annotations
 
@@ -10,9 +10,12 @@ from typing import Any, cast
 
 from rulespec_artifacts import Producer
 
-from spicy_docs.regulations_gov_source_native import iter_regulations_gov_document_pages
+from spicy_docs.regulations_gov_source_native import (
+    iter_regulations_gov_docket_pages,
+    iter_regulations_gov_document_pages,
+)
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
-from spicy_docs.source_native_profiles import REGULATIONS_GOV_DOCUMENT_PROFILE
+from spicy_docs.source_native_profiles import REGULATIONS_GOV_DOCKET_PROFILE, REGULATIONS_GOV_DOCUMENT_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 from tools.cross_filing_census import census
 
@@ -79,10 +82,48 @@ def _publish(tmp_path: Path, agency: str, *objects: _Object) -> tuple[str, str]:
     return str(published.root), published.artifact.pin.artifact_digest
 
 
-def _run_census(tmp_path: Path, releases: list[list[str]]) -> dict[str, Any]:
+# Dockets have no docketId or frDocNum attribute of their own -- their id IS the
+# docket -- and are scoped by modifiedFrom/modifiedThrough, not
+# publishedFrom/publishedThrough (REGULATIONS_GOV_DOCKET_PROFILE).
+_DOCKET_WINDOW = {"agencies": ["placeholder"], "modifiedFrom": "2020-01-01", "modifiedThrough": "2025-12-31"}
+
+
+def _docket(identity: str, *, agency: str, modify_date: str, **attributes: object) -> dict:
+    values: dict[str, object] = {"agencyId": agency, "modifyDate": modify_date}
+    values.update(attributes)
+    return {"data": {"id": identity, "type": "dockets", "attributes": values}}
+
+
+def _docket_object(docket: dict, *, agency: str) -> _Object:
+    identity = docket["data"]["id"]
+    content = json.dumps(docket).encode()
+    return _Object(
+        key=f"raw-data/{agency}/{identity}/text-1/docket/{identity}.json",
+        etag=f'"{identity}-etag"',
+        version_id=None,
+        content=content,
+    )
+
+
+def _publish_dockets(tmp_path: Path, agency: str, *objects: _Object) -> tuple[str, str]:
+    """Publish one agency's regulations-gov-dockets release and return its (root, artifactDigest)."""
+    window = {**_DOCKET_WINDOW, "agencies": [agency]}
+    published = SourceNativeReleasePublisher(
+        REGULATIONS_GOV_DOCKET_PROFILE,
+        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+        clock=_clock,
+    ).publish(
+        iter_regulations_gov_docket_pages(lambda _agency: _Reader(list(objects)), query_scope=window),
+        build=SourceNativeReleaseBuild(query_scope=window, producer=_PRODUCER, started_at="2026-09-02T00:00:00Z"),
+        destination=tmp_path / f"regs-dockets-{agency}",
+    )
+    return str(published.root), published.artifact.pin.artifact_digest
+
+
+def _run_census(tmp_path: Path, releases: list[list[str]], *, profile: str = "documents") -> dict[str, Any]:
     releases_path = tmp_path / "releases.json"
     releases_path.write_text(json.dumps(releases))
-    return census(releases_path, tmp_path / "blobs")
+    return census(releases_path, tmp_path / "blobs", profile)
 
 
 def _fixture(tmp_path: Path) -> dict[str, Any]:
@@ -297,6 +338,109 @@ def _fixture(tmp_path: Path) -> dict[str, Any]:
     )
 
 
+def _docket_duplicate_fixture(tmp_path: Path) -> dict[str, Any]:
+    """Publish two agencies' worth of dockets covering the duplicate-identity question for dockets (SD-17).
+
+    OBJ-DOCK-FOO: two FOO dockets sharing an objectId, identical content (same-agency, content
+      agrees) -- and the FOO release is listed twice in the input list, so every row -- and every
+      id -- is observed twice (a repeated sourceRecordId within the group; also two agency-level
+      repeats), exactly as OBJ-E proves for documents.
+    OBJ-DOCK-DOT: DOT's single docket, unique objectId -- present so distinctObjectIds counts more
+      than the duplicate group alone, but it never forms a duplicate group by itself.
+    A regulations-gov-documents entry is included and must be skipped -- never opened -- proving a
+    dockets-profile run does not silently fold in the documents selector.
+    """
+    foo_root, foo_digest = _publish_dockets(
+        tmp_path,
+        "FOO",
+        _docket_object(
+            _docket(
+                "FOO-2024-0001",
+                agency="FOO",
+                modify_date="2024-01-01T00:00:00Z",
+                objectId="OBJ-DOCK-FOO",
+                title="Repeated Filing Docket",
+                shortTitle="Repeated Filing",
+                dkAbstract="Exact docket abstract",
+                docketType="Rulemaking",
+            ),
+            agency="FOO",
+        ),
+        _docket_object(
+            _docket(
+                "FOO-2024-0002",
+                agency="FOO",
+                modify_date="2024-01-01T00:00:00Z",
+                objectId="OBJ-DOCK-FOO",
+                title="Repeated Filing Docket",
+                shortTitle="Repeated Filing",
+                dkAbstract="Exact docket abstract",
+                docketType="Rulemaking",
+            ),
+            agency="FOO",
+        ),
+    )
+    dot_root, dot_digest = _publish_dockets(
+        tmp_path,
+        "DOT",
+        _docket_object(
+            _docket(
+                "DOT-2022-0020",
+                agency="DOT",
+                modify_date="2022-01-01T00:00:00Z",
+                objectId="OBJ-DOCK-DOT",
+                title="Clean Docket",
+            ),
+            agency="DOT",
+        ),
+    )
+
+    return _run_census(
+        tmp_path,
+        [
+            [foo_root, foo_digest, "regulations-gov-dockets"],
+            [foo_root, foo_digest, "regulations-gov-dockets"],  # listed twice on purpose: see OBJ-DOCK-FOO
+            [dot_root, dot_digest, "regulations-gov-dockets"],
+            ["/does/not/exist", "sha256:" + "0" * 64, "regulations-gov-documents"],  # must be skipped, never opened
+        ],
+        profile="dockets",
+    )
+
+
+def _docket_clean_fixture(tmp_path: Path) -> dict[str, Any]:
+    """Publish one agency's worth of dockets with no repeats or shared objectIds at all."""
+    epa_root, epa_digest = _publish_dockets(
+        tmp_path,
+        "EPA",
+        _docket_object(
+            _docket(
+                "EPA-2020-0001",
+                agency="EPA",
+                modify_date="2020-01-01T00:00:00Z",
+                objectId="OBJ-DOCK-CLEAN-1",
+                title="First Clean Docket",
+            ),
+            agency="EPA",
+        ),
+        _docket_object(
+            _docket(
+                "EPA-2021-0002",
+                agency="EPA",
+                modify_date="2021-01-01T00:00:00Z",
+                objectId="OBJ-DOCK-CLEAN-2",
+                title="Second Clean Docket",
+            ),
+            agency="EPA",
+        ),
+    )
+
+    return _run_census(
+        tmp_path,
+        [[epa_root, epa_digest, "regulations-gov-dockets"]],
+        profile="dockets",
+    )
+
+
 def test_scope_reports_records_not_items_and_the_documents_only_filter(tmp_path: Path) -> None:
     result = _fixture(tmp_path)
 
@@ -400,6 +544,117 @@ def test_document_id_repeats_within_agency_counts_the_doubly_listed_foo_release(
     assert "same sourceRecordId" in repeats["population"]
 
 
+def test_docket_profile_scope_names_the_dockets_selector_and_skips_documents(tmp_path: Path) -> None:
+    result = _docket_duplicate_fixture(tmp_path)
+
+    scope = cast("dict[str, Any]", result["scope"])
+    assert scope["profileConsidered"] == "regulations-gov-dockets"
+    assert scope["releasesConsidered"] == 3  # FOO listed twice + DOT
+    assert scope["releasesSkipped"] == 1
+    assert "regulations-gov-documents" in scope["releasesSkippedPopulation"]
+
+
+def test_docket_profile_counts_a_docket_id_appearing_in_two_releases(tmp_path: Path) -> None:
+    """SD-17: a docket id can appear in more than one release entry exactly as a document id can
+    (here, because the FOO release is listed twice); the same duplicate-identity machinery must
+    catch it, re-deriving what a throwaway script once measured only in a chat log."""
+    result = _docket_duplicate_fixture(tmp_path)
+
+    totals = cast("dict[str, Any]", result["totals"])
+    # FOO's two dockets x 2 listings + DOT's one docket.
+    assert totals["docketsScanned"] == 5
+    assert totals["distinctObjectIds"] == 2  # OBJ-DOCK-FOO, OBJ-DOCK-DOT
+
+    groups = cast("dict[str, Any]", result["duplicateGroups"])
+    assert groups["count"] == 1  # OBJ-DOCK-FOO only; OBJ-DOCK-DOT is a singleton
+    assert groups["withRepeatedSourceRecordId"]["count"] == 1  # both FOO ids repeat via the doubled listing
+    assert groups["sameAgency"]["count"] == 1
+    assert groups["crossAgency"]["count"] == 0
+    for subset in (groups, groups["withRepeatedSourceRecordId"], groups["sameAgency"], groups["crossAgency"]):
+        assert isinstance(subset["population"], str) and subset["population"]
+
+    repeats = cast("dict[str, Any]", result["docketIdRepeatsWithinAgency"])
+    # Both FOO docket ids (FOO-2024-0001, FOO-2024-0002) are each observed twice.
+    assert repeats["count"] == 2
+    assert "same sourceRecordId" in repeats["population"]
+
+    comparison = cast("dict[str, Any]", result["contentComparison"])
+    assert comparison["fieldsCompared"] == ["title", "shortTitle", "dkAbstract", "docketType", "modifyDate"]
+    assert comparison["agree"] == 1  # OBJ-DOCK-FOO's two dockets are identical on every compared field
+
+
+def test_docket_profile_document_specific_analyses_are_marked_not_applicable(tmp_path: Path) -> None:
+    """The id-grammar census and the co-issued/parent-child split key on a document-id shape and a
+    document's own docketId attribute respectively; a docket record has neither. suspects narrows
+    on frDocNum/pageCount, which a docket record also lacks. All three must say so, not vanish."""
+    result = _docket_duplicate_fixture(tmp_path)
+
+    assert "idGrammar" not in result
+    assert isinstance(result["idGrammarNotApplicable"], str) and result["idGrammarNotApplicable"]
+
+    assert "suspects" not in result
+    assert isinstance(result["suspectsNotApplicable"], str) and result["suspectsNotApplicable"]
+
+    breakdown = cast("dict[str, Any]", result["crossAgencyBreakdown"])
+    assert "coIssued" not in breakdown
+    assert "singleRealDocket" not in breakdown
+    assert (
+        isinstance(breakdown["coIssuedAndSingleRealDocketNotApplicable"], str)
+        and breakdown["coIssuedAndSingleRealDocketNotApplicable"]
+    )
+
+    totals = cast("dict[str, Any]", result["totals"])
+    assert "documentsInFrdocCatchAllDockets" not in totals
+    assert isinstance(totals["catchAllDocketMembershipNotApplicable"], str) and totals["catchAllDocketMembershipNotApplicable"]
+
+
+def test_docket_profile_clean_set_reports_zero(tmp_path: Path) -> None:
+    result = _docket_clean_fixture(tmp_path)
+
+    totals = cast("dict[str, Any]", result["totals"])
+    assert totals["docketsScanned"] == 2
+    assert totals["distinctObjectIds"] == 2
+
+    groups = cast("dict[str, Any]", result["duplicateGroups"])
+    assert groups["count"] == 0
+    assert groups["withRepeatedSourceRecordId"]["count"] == 0
+    assert groups["sameAgency"]["count"] == 0
+    assert groups["crossAgency"]["count"] == 0
+    assert result["docketIdRepeatsWithinAgency"]["count"] == 0
+
+
+def test_documents_profile_default_is_unchanged_by_dockets_support(tmp_path: Path) -> None:
+    """The --profile addition must not alter a single byte of the pre-existing documents behavior:
+    the default (no profile passed) and an explicit profile="documents" must agree exactly."""
+    epa_root, epa_digest = _publish(
+        tmp_path,
+        "EPA",
+        _object(
+            _document(
+                "EPA-2020-0001-0001",
+                agency="EPA",
+                docket_id="EPA-2020-0001",
+                posted_date="2020-01-01T00:00:00Z",
+                objectId="OBJ-UNCHANGED",
+                title="Unchanged Path Filing",
+                pageCount=1,
+                frDocNum="2020-10001",
+                documentType="Rule",
+            ),
+            agency="EPA",
+            docket_id="EPA-2020-0001",
+        ),
+    )
+    releases = [[epa_root, epa_digest, "regulations-gov-documents"]]
+    releases_path = tmp_path / "releases.json"
+    releases_path.write_text(json.dumps(releases))
+
+    default_result = census(releases_path, tmp_path / "blobs")
+    explicit_result = census(releases_path, tmp_path / "blobs", "documents")
+    assert default_result == explicit_result
+    assert default_result["scope"]["profileConsidered"] == "regulations-gov-documents"
+
+
 def _walk_subsets_with_counts(node: object) -> list[dict[str, Any]]:
     """Every dict carrying a ``count`` key, found anywhere in the report -- used to prove
     the CRITICAL rule: no count is reported without a population string beside it."""
@@ -416,9 +671,17 @@ def _walk_subsets_with_counts(node: object) -> list[dict[str, Any]]:
 
 
 def test_every_subset_with_a_count_states_its_population(tmp_path: Path) -> None:
-    result = _fixture(tmp_path)
+    documents_result = _fixture(tmp_path)
+    documents_subsets = _walk_subsets_with_counts(documents_result)
+    assert len(documents_subsets) >= 10  # duplicateGroups (x4), crossAgencyBreakdown (x2), suspects (x2), and more
+    for subset in documents_subsets:
+        assert isinstance(subset.get("population"), str) and subset["population"].strip()
 
-    subsets = _walk_subsets_with_counts(result)
-    assert len(subsets) >= 10  # duplicateGroups (x4), crossAgencyBreakdown (x2), suspects (x2), and more
-    for subset in subsets:
+    # SD-17: the same rule must hold for the dockets profile's (smaller) output -- it carries no
+    # coIssued/singleRealDocket, suspects, or idGrammar subsets (see the module docstring for why),
+    # so only duplicateGroups (x4) and docketIdRepeatsWithinAgency carry a "count".
+    dockets_result = _docket_duplicate_fixture(tmp_path)
+    dockets_subsets = _walk_subsets_with_counts(dockets_result)
+    assert len(dockets_subsets) == 5
+    for subset in dockets_subsets:
         assert isinstance(subset.get("population"), str) and subset["population"].strip()
