@@ -189,6 +189,66 @@ def _granule_ids(client: httpx.Client, date: str, page_size: int) -> tuple[list[
     return ids, 1, len(ids)
 
 
+def _release_digest(release_root: Path) -> str:
+    """The pinned identity of the corpus a row's counts were computed against.
+
+    Every row carries this. Without it a resumed file can silently mix two
+    corpora: on 2026-09-05 a resume ran against the pre-composite release while
+    rows 1-391 had been computed against composite-2, and the 483 recovered
+    documents -- 364 of them pre-2000 -- would have surfaced as "govinfo has it,
+    we do not", inflating the column whose real signal is single digits.
+
+    A single date cannot detect that swap. 1994-01-03 holds 105 documents in
+    BOTH releases; only 380 of 8,170 dates differ at all. The digest is checked
+    instead of the counts for exactly that reason.
+    """
+    artifact = json.loads((release_root / "artifact.json").read_text())
+    digest = artifact.get("artifactDigest")
+    if not isinstance(digest, str) or not digest.startswith("sha256:"):
+        raise SystemExit(f"{release_root}/artifact.json carries no usable artifactDigest")
+    return digest
+
+
+def _guard_resume_release(output: Path, digest: str, assume_legacy: str | None) -> None:
+    """Refuse to append rows computed against a different corpus.
+
+    Rows written before this field existed carry no digest. Rather than guess
+    what they were built against, the operator states it with
+    ``--assume-legacy-release-digest``; a wrong statement then fails here rather
+    than silently producing a mixed file.
+    """
+    if not output.exists():
+        return
+    seen: set[str] = set()
+    legacy = 0
+    for line in output.read_text().splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        found = row.get("sourceReleaseDigest")
+        if found is None:
+            legacy += 1
+        else:
+            seen.add(found)
+    if legacy and assume_legacy is None:
+        raise SystemExit(
+            f"{output} has {legacy:,} rows written before sourceReleaseDigest existed. "
+            "State what they were computed against with --assume-legacy-release-digest "
+            "<sha256:...>; it must equal this run's release digest to resume."
+        )
+    if legacy and assume_legacy != digest:
+        raise SystemExit(
+            f"{output}'s {legacy:,} undigested rows are declared as {assume_legacy}, but this "
+            f"run's release is {digest}. Resuming would mix two corpora in one file."
+        )
+    other = seen - {digest}
+    if other:
+        raise SystemExit(
+            f"{output} holds rows from {sorted(other)} and this run's release is {digest}. "
+            "Resuming would mix two corpora in one file."
+        )
+
+
 def _resume_state(output: Path) -> tuple[set[str], set[str]]:
     """Split what is already recorded into settled issues and ones to retry.
 
@@ -234,10 +294,14 @@ def census(
     through: str,
     page_size: int,
     min_interval_seconds: float,
+    assume_legacy_release_digest: str | None = None,
     transport: httpx.BaseTransport | None = None,
 ) -> int:
+    release_digest = _release_digest(release_root)
+    _guard_resume_release(output, release_digest, assume_legacy_release_digest)
     by_date = _our_numbers_by_date(release_root, blob_store)
     dates = sorted(d for d in by_date if d <= through)
+    print(f"corpus: {release_root.name} {release_digest}", file=sys.stderr)
     done, retry = _resume_state(output)
     if output.exists():
         print(
@@ -266,6 +330,7 @@ def census(
             except httpx.HTTPStatusError as error:
                 row = {
                     "publicationDate": date,
+                    "sourceReleaseDigest": release_digest,
                     "status": "listing-failed",
                     "httpStatus": error.response.status_code,
                     "ourDocumentCount": len(ours),
@@ -275,6 +340,7 @@ def census(
                 complete = declared is None or len(ids) >= declared
                 row = {
                     "publicationDate": date,
+                    "sourceReleaseDigest": release_digest,
                     # A listing that returned fewer granules than the issue
                     # declares is evidence we truncated, not evidence of a
                     # mismatch; keep it out of the rates.
@@ -312,6 +378,12 @@ def main(argv: list[str] | None = None) -> int:
         "2000 onward is enumerable keylessly from bulk XML, so spending a keyed quota on it "
         "would be waste.",
     )
+    parser.add_argument(
+        "--assume-legacy-release-digest",
+        default=None,
+        help="the release digest that rows written before this field existed were computed "
+        "against; must equal this run's, or the resume is refused",
+    )
     parser.add_argument("--page-size", type=int, default=1000)
     parser.add_argument(
         "--min-interval-seconds",
@@ -329,6 +401,7 @@ def main(argv: list[str] | None = None) -> int:
         through=args.through,
         page_size=args.page_size,
         min_interval_seconds=args.min_interval_seconds,
+        assume_legacy_release_digest=args.assume_legacy_release_digest,
     )
 
 

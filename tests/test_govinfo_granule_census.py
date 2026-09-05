@@ -196,7 +196,14 @@ def test_a_resumed_run_refetches_nothing_already_recorded(tmp_path: Path) -> Non
     pages = {"1995-04-10": _mods(["95-1"]), "1995-04-11": _mods(["95-2"])}
     root, blobs = records_release(tmp_path, "release", records)
     output = tmp_path / "out.jsonl"
-    output.write_text(json.dumps({"publicationDate": "1995-04-10", "status": "listed"}) + "\n")
+    # A row as a real run writes it, carrying the corpus it was computed against.
+    digest = json.loads((root / "artifact.json").read_text())["artifactDigest"]
+    output.write_text(
+        json.dumps(
+            {"publicationDate": "1995-04-10", "status": "listed", "sourceReleaseDigest": digest}
+        )
+        + "\n"
+    )
 
     seen: list[httpx.Request] = []
     census(
@@ -300,3 +307,38 @@ def test_a_later_listing_supersedes_an_earlier_failure(tmp_path) -> None:
     listed, retry = _resume_state(output)
     assert listed == {"1995-07-13"}
     assert retry == {"1995-07-14"}
+
+
+def test_resume_refuses_a_file_from_another_release(tmp_path) -> None:
+    """Two corpora in one file is the failure this guard exists for.
+
+    On 2026-09-05 a resume ran against the pre-composite release while the file's
+    existing rows had been computed against composite-2. The 483 recovered
+    documents, 364 of them pre-2000, would have surfaced as "govinfo has it, we
+    do not" -- inflating the column whose real signal is single digits.
+
+    Counts cannot detect the swap: 1994-01-03 holds 105 documents in both
+    releases and only 380 of 8,170 dates differ at all. Hence a digest.
+    """
+    from tools.govinfo_granule_census import _guard_resume_release
+
+    output = tmp_path / "census.jsonl"
+    output.write_text(
+        json.dumps({"publicationDate": "1994-01-03", "sourceReleaseDigest": "sha256:aaa"}) + "\n"
+    )
+    _guard_resume_release(output, "sha256:aaa", None)  # same corpus: fine
+    with pytest.raises(SystemExit, match="mix two corpora"):
+        _guard_resume_release(output, "sha256:bbb", None)
+
+
+def test_rows_without_a_digest_must_be_declared_not_guessed(tmp_path) -> None:
+    """Legacy rows predate the field; the operator states their corpus rather than the tool assuming it."""
+    from tools.govinfo_granule_census import _guard_resume_release
+
+    output = tmp_path / "census.jsonl"
+    output.write_text(json.dumps({"publicationDate": "1994-01-03", "status": "listed"}) + "\n")
+    with pytest.raises(SystemExit, match="written before sourceReleaseDigest existed"):
+        _guard_resume_release(output, "sha256:aaa", None)
+    with pytest.raises(SystemExit, match="declared as"):
+        _guard_resume_release(output, "sha256:aaa", "sha256:bbb")
+    _guard_resume_release(output, "sha256:aaa", "sha256:aaa")
