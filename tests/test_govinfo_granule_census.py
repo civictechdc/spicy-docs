@@ -18,7 +18,7 @@ import httpx
 import pytest
 
 from tests.source_native_release_fixtures import records_release
-from tools.govinfo_granule_census import _read_api_key, census
+from tools.govinfo_granule_census import CredentialRefusedError, _read_api_key, census
 
 KEY = "test-key-not-a-real-one"
 
@@ -223,3 +223,65 @@ def test_a_missing_key_name_refuses_rather_than_running_unauthenticated(tmp_path
 
     with pytest.raises(SystemExit, match="API_GOV not found"):
         _read_api_key(env, "API_GOV")
+
+
+def test_a_401_aborts_the_run_rather_than_being_recorded_and_passed_over(
+    tmp_path: Path,
+) -> None:
+    """The keyless premise failing must stop the census, not become a column.
+
+    A per-issue "listing-failed" row would walk all 1,502 issues collecting
+    refusals and hide a change of terms behind zeros that read like coverage.
+    A run authorized on "this spends nothing" must not continue once that has
+    stopped being true.
+    """
+    records = [_line("95-1", "1995-04-10"), _line("95-2", "1995-04-11")]
+    root, blobs = records_release(tmp_path, "release", records)
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(401, json={"message": "api key required"})
+
+    with pytest.raises(CredentialRefusedError, match="keyless enumeration premise has failed"):
+        census(
+            root, blobs, tmp_path / "out.jsonl",
+            api_key=KEY, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+            transport=httpx.MockTransport(handler),
+        )
+
+    # Stopped on the first refusal, not after walking every issue.
+    assert len(seen) == 1
+
+
+def test_a_403_aborts_the_run_too(tmp_path: Path) -> None:
+    root, blobs = records_release(tmp_path, "release", [_line("95-1", "1995-04-10")])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(403, json={"message": "forbidden"})
+
+    with pytest.raises(CredentialRefusedError):
+        census(
+            root, blobs, tmp_path / "out.jsonl",
+            api_key=KEY, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+            transport=httpx.MockTransport(handler),
+        )
+
+
+def test_a_401_is_never_retried(tmp_path: Path) -> None:
+    """Retrying a refusal wastes the publisher's time and changes nothing."""
+    root, blobs = records_release(tmp_path, "release", [_line("95-1", "1995-04-10")])
+    attempts: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        attempts.append(1)
+        return httpx.Response(401)
+
+    with pytest.raises(CredentialRefusedError):
+        census(
+            root, blobs, tmp_path / "out.jsonl",
+            api_key=KEY, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+            transport=httpx.MockTransport(handler),
+        )
+
+    assert len(attempts) == 1

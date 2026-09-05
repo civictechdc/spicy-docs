@@ -72,6 +72,21 @@ class _RetryableStatus(httpx.HTTPStatusError):
     """A 429 or 5xx worth retrying, as distinct from a 404 that is an answer."""
 
 
+class CredentialRefusedError(RuntimeError):
+    """A 401 or 403 aborts the run instead of being recorded and passed over.
+
+    The enumeration route was verified keyless. If the publisher starts
+    answering 401 or 403, the premise that this census spends no credential has
+    failed, and the only safe response is to stop and say so. Recording it as a
+    per-issue failure and continuing would walk all 1,502 issues collecting
+    refusals, and -- worse -- would hide a change of terms behind a column of
+    zeros that reads like coverage.
+
+    Never retry these and never fall back to sending a key. A run authorized on
+    "this spends nothing" must not quietly become a run that spends something.
+    """
+
+
 def _read_api_key(env_file: Path, name: str) -> str:
     for line in env_file.read_text().splitlines():
         key, sep, value = line.partition("=")
@@ -95,6 +110,12 @@ def _our_numbers_by_date(release_root: Path, blob_store: Path) -> dict[str, set[
 def _fetch_page(client: httpx.Client, date: str, params: dict[str, str]) -> dict[str, Any]:
     def _attempt() -> dict[str, Any]:
         response = client.get(GRANULES_URL.format(date=date), params=params)
+        if response.status_code in (401, 403):
+            raise CredentialRefusedError(
+                f"govinfo answered {response.status_code} for FR-{date}: the keyless "
+                "enumeration premise has failed. Stopping rather than continuing or "
+                "sending a key."
+            )
         if response.status_code == 429 or response.status_code >= 500:
             raise _RetryableStatus(
                 "retryable govinfo response", request=response.request, response=response
