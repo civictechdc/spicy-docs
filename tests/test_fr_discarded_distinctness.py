@@ -13,32 +13,11 @@ JSONL (one ``{"sourceRecordId": ..., "record": {...}}`` per line).
 
 from __future__ import annotations
 
-import hashlib
-import json
 from pathlib import Path
 from typing import Any, cast
 
-from spicy_docs.source_native import ROLE_EVIDENCE, ROLE_RECORDS
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from tests.source_native_release_fixtures import evidence_and_records_release
 from tools.fr_discarded_distinctness import census
-
-
-def _store(tmp_path: Path) -> LocalSourceNativeBlobStore:
-    return LocalSourceNativeBlobStore(tmp_path / "blobs")
-
-
-def _put_bytes(store: LocalSourceNativeBlobStore, data: bytes) -> str:
-    blob_ref = "sha256:" + hashlib.sha256(data).hexdigest()
-    store.put_blob(blob_ref, len(data), [data])
-    return blob_ref
-
-
-def _put_json(store: LocalSourceNativeBlobStore, obj: Any) -> str:
-    return _put_bytes(store, json.dumps(obj).encode())
-
-
-def _put_jsonl(store: LocalSourceNativeBlobStore, rows: list[dict[str, Any]]) -> str:
-    return _put_bytes(store, ("\n".join(json.dumps(row) for row in rows) + "\n").encode())
 
 
 def _evidence_row(
@@ -81,10 +60,6 @@ def _record_line(
     }
 
 
-def _member(role: str, blob_ref: str) -> dict[str, str]:
-    return {"role": role, "blobRef": blob_ref}
-
-
 def _write_release(
     tmp_path: Path,
     *,
@@ -92,21 +67,9 @@ def _write_release(
     record_lines: list[dict[str, Any]],
     receipt: dict[str, int],
 ) -> tuple[Path, Path]:
-    store = _store(tmp_path)
-    evidence_blob = _put_json(store, {"results": evidence_rows})
-    records_blob = _put_jsonl(store, record_lines)
-
-    release_root = tmp_path / "release"
-    manifests_dir = release_root / "manifests"
-    manifests_dir.mkdir(parents=True)
-    (manifests_dir / "source-native.json").write_text(
-        json.dumps({"members": [_member(ROLE_EVIDENCE, evidence_blob), _member(ROLE_RECORDS, records_blob)]})
+    return evidence_and_records_release(
+        tmp_path, evidence_rows=evidence_rows, record_lines=record_lines, receipt=receipt
     )
-    receipts_dir = release_root / "receipts"
-    receipts_dir.mkdir(parents=True)
-    (receipts_dir / "publication.json").write_text(json.dumps(receipt))
-
-    return release_root, tmp_path / "blobs"
 
 
 def _fixture(tmp_path: Path) -> dict[str, Any]:
