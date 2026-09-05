@@ -1918,11 +1918,21 @@ def _failure_summary_counts(receipt: Mapping[str, Any]) -> tuple[int, int, int]:
 #: computed from the live profile is not a history, because it moves when the
 #: profile moves. A policy id absent here keeps the old exact-match behaviour.
 #:
-#: KNOWINGLY LEFT IN PLACE: the same identity block still compares
-#: sourceSystemVersion and sourceStateScope against the live values, so either
-#: moving would repeat this. Fixing that surface once, rather than adding a
-#: fourth table, is its own change with its own review; the decision to defer it
-#: is recorded in this commit's message, not left as an oversight.
+#: Which fields belong in a table like this, and which correctly do not: ask
+#: whether the field says *which thing this is* or *how this one was made*.
+#: sourceSystemId and acquisitionPolicyId are identifiers -- a release naming a
+#: different source system is a different kind of release, and exact-match
+#: against the live profile is the right check for them forever. Versions and
+#: scope declarations describe how one release was produced, and those
+#: legitimately change over time while every release made under the old value
+#: stays valid; those are the ones that need an accepted history rather than a
+#: comparison against today's value.
+#:
+#: KNOWINGLY LEFT IN PLACE: by that rule the same identity block still checks
+#: two fields the wrong way -- sourceSystemVersion and sourceStateScope -- so
+#: either one moving would repeat this. Fixing that surface once, rather than
+#: adding a fourth table, is its own change with its own review; the decision to
+#: defer it is recorded in this commit's message, not left as an oversight.
 KNOWN_ACQUISITION_POLICY_VERSIONS: Final[Mapping[str, frozenset[str]]] = {
     # 1.0 published the Federal Register corpus on disk; 1.1 is composite
     # identity, (document_number, publication_date).
