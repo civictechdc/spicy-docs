@@ -61,6 +61,23 @@ def unmatched_from_census(census: Path) -> dict[str, list[str]]:
     }
 
 
+def _is_fusion_of(granule_id: str, number: str) -> bool:
+    """Does this granule id carry `number` as a whole identifier, fused with a suffix?
+
+    A plain substring test is wrong for short numbers: `94-2050` occurs inside
+    `94-20508`, `94-20509` and `94-20500`, which are three OTHER documents, and
+    reporting them as fusions of `94-2050` would invent a defect that is not
+    there. The number must be the whole id or be followed by a non-digit, which
+    is what a fused colophon looks like -- `94-8046-Filed`, `94-10956Filed`,
+    `94-2050F` -- while a longer number simply continues in digits.
+    """
+    if granule_id == number:
+        return True
+    if not granule_id.startswith(number):
+        return False
+    return not granule_id[len(number):len(number) + 1].isdigit()
+
+
 def granule_ids(date: str, key: str, timeout: float) -> tuple[list[str], int | None, int | None]:
     request = urllib.request.Request(
         GRANULES.format(date=date),
@@ -111,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
                     # 200 with an empty listing. Indeterminate, never absence.
                     verdict, matched = "listing-empty", None
                 else:
-                    hits = [g for g in ids if number in g]
+                    hits = [g for g in ids if _is_fusion_of(g, number)]
                     verdict = "fused-match" if hits else "not-listed"
                     matched = hits or None
                 verdicts[verdict] += 1

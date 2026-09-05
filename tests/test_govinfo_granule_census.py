@@ -342,3 +342,25 @@ def test_rows_without_a_digest_must_be_declared_not_guessed(tmp_path) -> None:
     with pytest.raises(SystemExit, match="declared as"):
         _guard_resume_release(output, "sha256:aaa", "sha256:bbb")
     _guard_resume_release(output, "sha256:aaa", "sha256:aaa")
+
+
+def test_a_short_number_does_not_fuse_with_a_longer_one() -> None:
+    """94-2050 occurs inside 94-20508, which is a different document.
+
+    The first run of the resolver used a plain substring test and reported
+    94-20508, 94-20509, 94-20500 and 94-20503 as fusions of 94-2050. They are
+    four other documents, and the only real fusion in that listing was 94-2050F.
+    A defect invented by the instrument is worse than the one it was looking for.
+    """
+    from tools.govinfo_resolve_unmatched import _is_fusion_of
+
+    assert _is_fusion_of("94-2050F", "94-2050")
+    assert _is_fusion_of("94-8046-Filed", "94-8046")
+    assert _is_fusion_of("94-10956Filed", "94-10956")
+    assert _is_fusion_of("94-94-30552", "94-94")
+    assert _is_fusion_of("94-2050", "94-2050")
+
+    assert not _is_fusion_of("94-20508", "94-2050")
+    assert not _is_fusion_of("94-20500", "94-2050")
+    assert not _is_fusion_of("94-9484", "94-94")
+    assert not _is_fusion_of("95-8641-Filed", "94-8641")
