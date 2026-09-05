@@ -1,6 +1,19 @@
+"""Checks over the committed source-profile artifacts.
+
+RefSpec's resource catalog is **vendored**, not read from the sibling checkout.
+Reading ``~/Work/RefSpec/portfolio/resource-catalog-v0.json`` directly made this
+suite fail whenever RefSpec had uncommitted work -- a red build in this
+repository with its cause in another one, and no way to tell that from the
+failure. The pinned copy and its provenance live beside this file; the digest is
+asserted, so a refresh that forgets to update the provenance fails loudly rather
+than drifting.
+"""
+
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -13,13 +26,25 @@ from spicy_docs.source_profile_artifacts import (
     load_json,
     validate_source_profile_artifacts,
 )
-from tests.repository_paths import REFSPEC_ROOT
 
 ROOT = Path(__file__).resolve().parents[1]
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
 INPUT = ROOT / "policies" / "profile-resource-applicability-input-v0.json"
 PROFILE_CATALOG = ROOT / "policies" / "source-profile-catalog-v0.json"
 APPLICABILITY = ROOT / "policies" / "profile-resource-applicability-v0.json"
-REFSPEC_CATALOG = REFSPEC_ROOT / "portfolio" / "resource-catalog-v0.json"
+REFSPEC_CATALOG = FIXTURES / "refspec-resource-catalog-v0.json"
+REFSPEC_PROVENANCE = FIXTURES / "refspec-resource-catalog-v0.provenance.json"
+
+
+def test_the_vendored_refspec_catalog_is_the_pinned_bytes() -> None:
+    """The vendored copy is only trustworthy while it matches its recorded digest."""
+    provenance = json.loads(REFSPEC_PROVENANCE.read_text())
+    raw = REFSPEC_CATALOG.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == provenance["sha256"]
+    assert len(raw) == provenance["byteSize"]
+    assert provenance["sourceRepository"] == "RefSpec"
+    assert provenance["sourcePath"] == "portfolio/resource-catalog-v0.json"
+    assert len(provenance["sourceCommit"]) == 40
 
 
 def test_checked_source_profile_artifacts_are_exact_and_closed() -> None:
