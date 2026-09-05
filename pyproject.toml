@@ -13,6 +13,14 @@ dependencies = [
     "tqdm",
 ]
 
+[project.optional-dependencies]
+# The public-table publisher reads and writes Parquet directly; the rest of
+# this package -- acquisition, publish, verify -- does not import pyarrow at
+# all. Optional so the core closure stays tight and a consumer vendoring this
+# package does not inherit a large binary wheel it may not want. The CLI
+# imports the publisher lazily and reports dependency-missing when absent.
+public-table = ["pyarrow"]
+
 [dependency-groups]
 dev = [
     # Optional accelerator for rulespec-artifacts' canonical encoder, which
@@ -20,6 +28,13 @@ dev = [
     # The artifacts wheel declares no extra for it, so a consumer that wants
     # the acceleration installs it directly.
     "msgspec>=0.18,<1",
+    # test_public_table.py proves the public-table module docstring's claim
+    # that DuckDB reads the declared Parquet members directly; the module
+    # itself never imports duckdb, so it stays test-only rather than runtime.
+    "duckdb",
+    # Also in the public-table extra: without it here the publisher is
+    # untested in the default suite, which is why it appears in both places.
+    "pyarrow",
     "pytest",
     "ruff",
     "ty",
@@ -40,10 +55,19 @@ rulespec-artifacts = { path = "vendor/rulespec_artifacts-1.0.11-py3-none-any.whl
 # Integration tests hit external services (the public Mirrulations S3 mirror,
 # federalregister.gov) and are excluded from the default run so the unit suite
 # stays hermetic.
-addopts = "-m 'not integration'"
+addopts = "-m 'not integration and not httpfs'"
 testpaths = ["tests"]
 markers = [
     "integration: live test against external data; not run by default",
+    # DuckDB's httpfs client stalls against a local ThreadingHTTPServer when
+    # the server and query run inside a function scope; an equivalent
+    # top-level script with the same request/response pattern finishes in
+    # milliseconds. The in-test timeout cannot cut it short -- the stall is
+    # inside a C call that never yields to Python's signal handler, so the
+    # alarm is only delivered when DuckDB's own ~120s timeout returns. Kept,
+    # unmodified, and deselected by default so one environment quirk does not
+    # add two minutes to every run. Run it with -m httpfs.
+    "httpfs: DuckDB httpfs range reads; stalls in this environment, not run by default",
 ]
 
 [tool.ruff]

@@ -1,4 +1,16 @@
-"""Publish or independently verify one SpicyRegs source-native release."""
+"""Publish or independently verify one SpicyRegs source-native release, or one
+public Parquet table projected from an already-admitted release.
+
+The public-table commands (``publish-public-table``/``verify-public-table``)
+import ``spicy_docs.public_table`` lazily, inside their own handlers, rather
+than at module scope like everything else here. That module has an
+unconditional ``import pyarrow``, and pyarrow is not yet declared anywhere in
+this package's dependency closure (SD-23 brought the publisher across but was
+authorized to add only ``duckdb``, dev/test-only). The lazy import keeps
+``publish``/``verify`` -- and this whole module's importability -- unaffected
+by that gap; only the two public-table commands fail, cleanly, as
+``dependency-missing``, until pyarrow is added to ``[project] dependencies``.
+"""
 
 from __future__ import annotations
 
@@ -38,6 +50,13 @@ from spicy_docs.gao_product_pages_source_native import (
     gao_product_query_scope,
     iter_gao_product_pages,
 )
+from spicy_docs.public_table_profiles import (
+    FEDERAL_REGISTER_PUBLIC_TABLE,
+    REGULATIONS_GOV_COMMENT_PUBLIC_TABLE,
+    REGULATIONS_GOV_DOCKET_PUBLIC_TABLE,
+    REGULATIONS_GOV_DOCUMENT_PUBLIC_TABLE,
+    PublicTableProfile,
+)
 from spicy_docs.publication import ImmutablePublicationError
 from spicy_docs.regulations_gov_source_native import (
     COMMENT_COLLECTION,
@@ -57,6 +76,7 @@ from spicy_docs.source_native import (
     SourceNativeReleaseBuild,
     SourceNativeReleaseError,
     SourceNativeReleasePublisher,
+    SourceNativeReleaseReader,
     verify_source_native_release,
 )
 from spicy_docs.source_native_profile import SourceNativePage, SourceNativeProfile
@@ -97,6 +117,16 @@ SOURCE_CHOICES: Final = (
 # The community mirror is the default supply rung; the origin-API sources
 # above are the fallback for what its tables cannot carry.
 DATED_SOURCES: Final = (
+    SOURCE_FEDERAL_REGISTER,
+    SOURCE_REGULATIONS_DOCUMENTS,
+    SOURCE_REGULATIONS_DOCKETS,
+    SOURCE_REGULATIONS_COMMENTS,
+)
+# The public-table projection only exists for the sources that publish a
+# faithful flat public view; GAO product pages and the spicy-regs public-table
+# mirror (itself a *source* fed into a source-native release, not a public
+# table this CLI can build) have no PublicTableProfile.
+PUBLIC_TABLE_CHOICES: Final = (
     SOURCE_FEDERAL_REGISTER,
     SOURCE_REGULATIONS_DOCUMENTS,
     SOURCE_REGULATIONS_DOCKETS,
@@ -185,6 +215,46 @@ def _parser() -> argparse.ArgumentParser:
         action="append",
         required=True,
     )
+
+    publish_public_table = subparsers.add_parser(
+        "publish-public-table",
+        help="Project one admitted source-native release into one immutable public Parquet table",
+    )
+    publish_public_table.add_argument("--table", choices=PUBLIC_TABLE_CHOICES, required=True)
+    publish_public_table.add_argument(
+        "--source-release",
+        type=Path,
+        required=True,
+        help="Root of the admitted source-native release this table projects",
+    )
+    publish_public_table.add_argument(
+        "--source-blob-store",
+        type=Path,
+        required=True,
+        help="Explicit persistent content-addressed payload store for the source-native release",
+    )
+    publish_public_table.add_argument(
+        "--source-accepted-verifier-implementation-id",
+        action="append",
+        required=True,
+        help="Verifier implementation id(s) accepted for the admitted source-native release",
+    )
+    publish_public_table.add_argument("--destination", type=Path, required=True)
+    publish_public_table.add_argument("--implementation-id", required=True)
+
+    verify_public_table = subparsers.add_parser(
+        "verify-public-table",
+        help="Independently replay and verify one immutable public Parquet table",
+    )
+    verify_public_table.add_argument("--table", choices=PUBLIC_TABLE_CHOICES, required=True)
+    verify_public_table.add_argument("--release", type=Path, required=True)
+    verify_public_table.add_argument("--logical-id", required=True)
+    verify_public_table.add_argument("--artifact-digest", required=True)
+    verify_public_table.add_argument(
+        "--accepted-verifier-implementation-id",
+        action="append",
+        required=True,
+    )
     return parser
 
 
@@ -202,6 +272,24 @@ def _profile(source: str) -> SourceNativeProfile:
     if source == SOURCE_SPICY_REGS_PUBLIC_COMMENTS:
         return SPICY_REGS_PUBLIC_COMMENT_PROFILE
     raise SourceNativeReleaseError(f"unsupported source {source!r}")
+
+
+def _public_table_profile(table: str) -> PublicTableProfile:
+    """Pair one ``--table`` choice with its public projection.
+
+    ``_profile`` above resolves the same name to the source-native profile
+    that admits the *input* release; a public-table build needs both.
+    """
+
+    if table == SOURCE_FEDERAL_REGISTER:
+        return FEDERAL_REGISTER_PUBLIC_TABLE
+    if table == SOURCE_REGULATIONS_DOCUMENTS:
+        return REGULATIONS_GOV_DOCUMENT_PUBLIC_TABLE
+    if table == SOURCE_REGULATIONS_DOCKETS:
+        return REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
+    if table == SOURCE_REGULATIONS_COMMENTS:
+        return REGULATIONS_GOV_COMMENT_PUBLIC_TABLE
+    raise SourceNativeReleaseError(f"unsupported public table {table!r}")
 
 
 def _now() -> datetime:
@@ -405,6 +493,34 @@ def _success(
         "sourceStateScope": spec["sourceStateScope"],
         "sourceSystemId": spec["sourceSystemId"],
         "sourceSystemVersion": spec["sourceSystemVersion"],
+    }
+
+
+def _success_public_table(
+    command: str,
+    table: str,
+    release: Path,
+    *,
+    pin: ArtifactPin,
+    spec: Mapping[str, Any],
+) -> dict[str, object]:
+    """Mirror ``_success`` for the public-table spec shape, which carries no
+    ``sourceNativeSchemaSetDigest``/``sourceSystemVersion`` -- those describe
+    the source-native release this table was built from, not the table
+    itself."""
+
+    return {
+        "artifactDigest": pin.artifact_digest,
+        "command": command,
+        "logicalId": pin.logical_id,
+        "maxRowsPerMember": spec["maxRowsPerMember"],
+        "ok": True,
+        "release": str(Path(release).resolve()),
+        "sourceStateDigest": spec["sourceStateDigest"],
+        "sourceStateScope": spec["sourceStateScope"],
+        "sourceSystemId": spec["sourceSystemId"],
+        "table": table,
+        "tableName": spec["tableName"],
     }
 
 
@@ -616,6 +732,103 @@ def _verify(args: argparse.Namespace) -> dict[str, object]:
     )
 
 
+def _publish_public_table(args: argparse.Namespace) -> dict[str, object]:
+    """Project one already-admitted source-native release into a public table.
+
+    ``public_table.py`` imports pyarrow unconditionally, which this package's
+    pyproject.toml does not yet declare (see the migration note atop this
+    module); importing it here, inside the handler, keeps every other command
+    in this CLI working in an environment that lacks it. Only this command --
+    and ``verify-public-table`` below -- fail (cleanly, as
+    ``dependency-missing``) until pyarrow is added as a runtime dependency.
+    """
+
+    from spicy_docs.public_table import (
+        VERIFIER_ID as PUBLIC_TABLE_VERIFIER_ID,
+    )
+    from spicy_docs.public_table import (
+        VERIFIER_VERSION as PUBLIC_TABLE_VERIFIER_VERSION,
+    )
+    from spicy_docs.public_table import (
+        PublicTableBuild,
+        PublicTablePublisher,
+    )
+
+    source_profile = _profile(args.table)
+    public_profile = _public_table_profile(args.table)
+    _require_separate_paths(
+        args.source_release,
+        args.source_blob_store,
+        labels=("--source-release", "--source-blob-store"),
+    )
+    _require_separate_paths(
+        args.destination,
+        args.source_release,
+        labels=("--destination", "--source-release"),
+    )
+    if args.destination.exists() or args.destination.is_symlink():
+        raise FileExistsError(f"refusing to replace immutable public table: {args.destination}")
+    source = SourceNativeReleaseReader(
+        LocalMemberSource(args.source_release),
+        blob_source=LocalSourceNativeBlobStore(args.source_blob_store, create=False),
+        profile=source_profile,
+        accepted_verifier_implementation_ids=frozenset(args.source_accepted_verifier_implementation_id),
+    )
+    producer = Producer(
+        product=CURRENT_PRODUCER_PRODUCT,
+        implementation_id=args.implementation_id,
+        verifier_id=PUBLIC_TABLE_VERIFIER_ID,
+        verifier_version=PUBLIC_TABLE_VERIFIER_VERSION,
+        verifier_implementation_id=args.implementation_id,
+    )
+    published = PublicTablePublisher(public_profile).publish(
+        source,
+        build=PublicTableBuild(producer),
+        destination=args.destination,
+    )
+    return _success_public_table(
+        "publish-public-table",
+        args.table,
+        published.root,
+        pin=published.artifact.pin,
+        spec=published.artifact.root["spec"],
+    )
+
+
+def _verify_public_table(args: argparse.Namespace) -> dict[str, object]:
+    """Independently replay and verify one immutable public Parquet table.
+
+    See the pyarrow note on ``_publish_public_table`` -- the same lazy import
+    applies here.
+    """
+
+    from spicy_docs.public_table import verify_public_table_admission
+
+    profile = _public_table_profile(args.table)
+    expected_pin = ArtifactPin(args.logical_id, args.artifact_digest)
+    source = LocalMemberSource(args.release)
+    artifact = admit_artifact(
+        source,
+        expected_pin=expected_pin,
+        semantic_verifier=lambda artifact, source: verify_public_table_admission(
+            artifact,
+            source,
+            profile=profile,
+        ),
+    )
+    accepted = frozenset(args.accepted_verifier_implementation_id)
+    producer = artifact.root["producer"]
+    if producer["verifierImplementationId"] not in accepted:
+        raise SourceNativeReleaseError("public-table verifier implementation is not accepted")
+    return _success_public_table(
+        "verify-public-table",
+        args.table,
+        args.release,
+        pin=artifact.pin,
+        spec=artifact.root["spec"],
+    )
+
+
 def _error_code(error: Exception) -> str:
     if isinstance(error, (FileExistsError, ImmutablePublicationError)):
         return "destination-exists"
@@ -633,6 +846,8 @@ def _error_code(error: Exception) -> str:
         return "release-invalid"
     if isinstance(error, (httpx.HTTPError, ZyteTransportError)):
         return "transport-failed"
+    if isinstance(error, ImportError):
+        return "dependency-missing"
     return "operation-failed"
 
 
@@ -653,8 +868,8 @@ def main(
     errors = stderr or sys.stderr
     args = _parser().parse_args(argv)
     try:
-        result = (
-            _publish(
+        if args.command == "publish":
+            result = _publish(
                 args,
                 fetch=fetch,
                 fetch_gao=fetch_gao,
@@ -662,9 +877,12 @@ def main(
                 read_regulations=read_regulations,
                 clock=clock,
             )
-            if args.command == "publish"
-            else _verify(args)
-        )
+        elif args.command == "verify":
+            result = _verify(args)
+        elif args.command == "publish-public-table":
+            result = _publish_public_table(args)
+        else:
+            result = _verify_public_table(args)
     except (
         FileExistsError,
         ImmutablePublicationError,
@@ -675,6 +893,7 @@ def main(
         SourceNativeReleaseError,
         ZyteTransportError,
         httpx.HTTPError,
+        ImportError,
         OSError,
         ValueError,
     ) as error:
