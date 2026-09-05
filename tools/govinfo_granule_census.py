@@ -47,7 +47,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Any
+from xml.etree import ElementTree
 
 import httpx
 
@@ -64,8 +64,51 @@ from spicy_docs.source_native_cli import _retry_http
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 
 MANIFEST_PATH: tuple[str, str] = ("manifests", "source-native.json")
+#: The KEYLESS enumeration route, and the complete one. Measured 2026-09-05:
+#: the keyed api.govinfo.gov granules endpoint returned ZERO granules for 33 of
+#: 58 sampled 1994 issues while reporting HTTP 200 and its own declared count of
+#: 0 -- so it looked like a clean answer and was missing metadata. mods.xml
+#: returned all 105 granules for FR-1994-01-03, where the keyed route returned
+#: none. The patchy route was also the one that spent the credential.
+MODS_URL = "https://www.govinfo.gov/metadata/pkg/FR-{date}/mods.xml"
 GRANULES_URL = "https://api.govinfo.gov/packages/FR-{date}/granules"
 USER_AGENT = "spicy-docs-govinfo-granule-census/1.0"
+MODS_NS = {"m": "http://www.loc.gov/mods/v3"}
+
+
+def _granules_from_mods(xml: bytes) -> list[tuple[str, str | None]]:
+    """Every granule of an issue, as (accessId, FR Doc No.).
+
+    Written against a saved sample rather than a description of the format,
+    which is why it does not look like the description: ``accessId`` is an
+    element under ``extension`` in the MODS namespace, not an
+    ``identifier[@type='accessId']``. An XPath built from the prose found 105
+    constituents and zero ids.
+
+    BOTH values are returned on purpose. ``accessId`` is GPO's own granule id
+    and is what a content URL is keyed on, so it is what a fetch 404s against
+    -- it carries the printed-colophon fusion (``95-8641-Filed``). The
+    ``FR Doc No.`` identifier is the parsed number. Keying the census on the
+    parsed number would compare our document numbers against document numbers
+    and agree with itself; the defect only shows against the accessId.
+    """
+    root = ElementTree.fromstring(xml)
+    out: list[tuple[str, str | None]] = []
+    for item in root.findall(".//m:relatedItem[@type='constituent']", MODS_NS):
+        access = next(
+            (e.text.strip() for e in item.iter()
+             if e.tag == "{http://www.loc.gov/mods/v3}accessId" and e.text),
+            None,
+        )
+        if access is None:
+            continue
+        frdoc = next(
+            (e.text.strip() for e in item.findall("m:identifier[@type='FR Doc No.']", MODS_NS)
+             if e.text),
+            None,
+        )
+        out.append((access, frdoc))
+    return out
 
 
 class _RetryableStatus(httpx.HTTPStatusError):
@@ -107,13 +150,13 @@ def _our_numbers_by_date(release_root: Path, blob_store: Path) -> dict[str, set[
     return dict(by_date)
 
 
-def _fetch_page(client: httpx.Client, date: str, params: dict[str, str]) -> dict[str, Any]:
-    def _attempt() -> dict[str, Any]:
-        response = client.get(GRANULES_URL.format(date=date), params=params)
+def _fetch_mods(client: httpx.Client, date: str) -> bytes:
+    def _attempt() -> bytes:
+        response = client.get(MODS_URL.format(date=date))
         if response.status_code in (401, 403):
             raise CredentialRefusedError(
-                f"govinfo answered {response.status_code} for FR-{date}: the keyless "
-                "enumeration premise has failed. Stopping rather than continuing or "
+                f"govinfo answered {response.status_code} for FR-{date}: this route is "
+                "supposed to need no credential. Stopping rather than continuing or "
                 "sending a key."
             )
         if response.status_code == 429 or response.status_code >= 500:
@@ -121,37 +164,29 @@ def _fetch_page(client: httpx.Client, date: str, params: dict[str, str]) -> dict
                 "retryable govinfo response", request=response.request, response=response
             )
         response.raise_for_status()
-        return response.json()
+        return response.content
 
     return _retry_http(_attempt, retryable=(httpx.RequestError, _RetryableStatus))
 
 
 def _granule_ids(client: httpx.Client, date: str, page_size: int) -> tuple[list[str], int, int | None]:
-    """Every granuleId for one issue, following the offsetMark pages.
+    """Every granule id for one issue, from the issue's MODS record.
 
-    Returns the ids, the calls spent, and the issue's own declared granule
-    count. The caller reconciles the two: a listing that stopped early is
-    missing evidence, and silently reporting its short list as the issue's
-    granules would manufacture unmatched numbers that are really our own
-    truncation.
+    One request, no pagination: a MODS package record lists every constituent
+    in a single document, which is the other reason this route beats the keyed
+    granules endpoint it replaced -- that one paged, and paging was where a
+    short read could masquerade as a complete answer.
+
+    Returns ids, calls spent, and the declared count. The declared count is the
+    constituent count from the same document, so unlike the keyed route it
+    cannot report "0 of 0" for an issue whose metadata is simply absent: a
+    missing record is a 404 and is recorded as a failure, not as an empty
+    success.
     """
-    ids: list[str] = []
-    declared: int | None = None
-    offset_mark = "*"
-    calls = 0
-    while True:
-        payload = _fetch_page(client, date, {"pageSize": str(page_size), "offsetMark": offset_mark})
-        calls += 1
-        if declared is None:
-            count = payload.get("count")
-            declared = int(count) if isinstance(count, int | str) else None
-        granules = payload.get("granules") or []
-        ids.extend(g["granuleId"] for g in granules if "granuleId" in g)
-        next_mark = payload.get("offsetMark")
-        if not granules or not payload.get("nextPage") or not next_mark or next_mark == offset_mark:
-            break
-        offset_mark = next_mark
-    return ids, calls, declared
+    xml = _fetch_mods(client, date)
+    granules = _granules_from_mods(xml)
+    ids = [access for access, _frdoc in granules]
+    return ids, 1, len(ids)
 
 
 def census(
@@ -159,7 +194,7 @@ def census(
     blob_store: Path,
     output: Path,
     *,
-    api_key: str,
+    api_key: str | None,
     through: str,
     page_size: int,
     min_interval_seconds: float,
@@ -178,7 +213,7 @@ def census(
     print(f"{len(dates):,} issues in scope, {len(todo):,} to fetch", file=sys.stderr)
 
     with httpx.Client(
-        headers={"Accept": "application/json", "User-Agent": USER_AGENT, "X-Api-Key": api_key},
+        headers={"Accept": "application/xml", "User-Agent": USER_AGENT},
         timeout=httpx.Timeout(60.0, connect=30.0),
         follow_redirects=True,
         transport=transport,
@@ -229,7 +264,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--blob-store", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="JSONL, appended, resumable")
     parser.add_argument(
-        "--env-file", type=Path, required=True, help="File holding the API key assignment"
+        "--env-file", type=Path, default=None,
+        help="Unused: this route is keyless. Kept so old invocations fail loudly "
+        "rather than silently sending a key.",
     )
     parser.add_argument("--env-var", default="API_GOV")
     parser.add_argument(
@@ -252,7 +289,7 @@ def main(argv: list[str] | None = None) -> int:
         args.release_root,
         args.blob_store,
         args.output,
-        api_key=_read_api_key(args.env_file, args.env_var),
+        api_key=None,  # keyless by construction; there is no fallback
         through=args.through,
         page_size=args.page_size,
         min_interval_seconds=args.min_interval_seconds,
