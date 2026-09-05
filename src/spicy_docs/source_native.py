@@ -1043,6 +1043,20 @@ def _page_rows(
     accepted_only: bool = False,
     partition_id: str | None = None,
 ) -> Iterator[Mapping[str, Any]]:
+    # The inner query below runs once per page and filters on (traversal, page),
+    # but the table's primary key is (traversal, ordinal) and the selection index
+    # leads (traversal, source_record_id). SQLite therefore narrowed on traversal
+    # alone and then examined every observation in it -- once per page. Measured
+    # by EXPLAIN QUERY PLAN and by timing the loop at the composite release's own
+    # cardinality (1,007,639 observations over 1,072 pages): 39.8 ms/page without
+    # this index and 0.2 ms/page with it, about 200x on the query.
+    #
+    # Created here rather than beside `observations_selection`, because that
+    # function also serves the producer replay gate's observations table, which
+    # has no `page` column at all -- the statement would raise there.
+    connection.execute(
+        "CREATE INDEX IF NOT EXISTS observations_page ON observations (traversal, page, ordinal)"
+    )
     conditions: list[str] = []
     parameters: list[object] = []
     if accepted_only:
