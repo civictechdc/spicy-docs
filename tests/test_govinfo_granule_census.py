@@ -250,3 +250,53 @@ def test_the_key_reader_still_refuses_a_missing_name(tmp_path: Path) -> None:
 
     with pytest.raises(SystemExit, match="API_GOV not found"):
         _read_api_key(env, "API_GOV")
+
+
+def test_resume_retries_a_failed_listing_instead_of_settling_it(tmp_path) -> None:
+    """An outage must not become a permanent census answer.
+
+    govinfo's backend went down mid-run on 2026-09-05 and nine issues were
+    written as `listing-failed` with HTTP 502. Resume used to treat every
+    recorded date as done, which would have left those nine unvisited forever
+    and shipped a transient outage as a finding.
+    """
+    from tools.govinfo_granule_census import _resume_state
+
+    output = tmp_path / "census.jsonl"
+    output.write_text(
+        "\n".join(
+            json.dumps(row)
+            for row in (
+                {"publicationDate": "1994-01-03", "status": "listed"},
+                {"publicationDate": "1995-07-13", "status": "listing-failed", "httpStatus": 502},
+                {"publicationDate": "1995-07-14", "status": "listing-incomplete"},
+            )
+        )
+        + "\n"
+    )
+    listed, retry = _resume_state(output)
+    assert listed == {"1994-01-03"}
+    # A short read is untrustworthy for the same reason a failure is.
+    assert retry == {"1995-07-13", "1995-07-14"}
+
+
+def test_a_later_listing_supersedes_an_earlier_failure(tmp_path) -> None:
+    """The file is append-only, so the last row for a date is the current one."""
+    from tools.govinfo_granule_census import _resume_state
+
+    output = tmp_path / "census.jsonl"
+    output.write_text(
+        "\n".join(
+            json.dumps(row)
+            for row in (
+                {"publicationDate": "1995-07-13", "status": "listing-failed", "httpStatus": 502},
+                {"publicationDate": "1995-07-13", "status": "listed"},
+                {"publicationDate": "1995-07-14", "status": "listed"},
+                {"publicationDate": "1995-07-14", "status": "listing-failed", "httpStatus": 502},
+            )
+        )
+        + "\n"
+    )
+    listed, retry = _resume_state(output)
+    assert listed == {"1995-07-13"}
+    assert retry == {"1995-07-14"}

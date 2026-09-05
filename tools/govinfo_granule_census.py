@@ -189,6 +189,42 @@ def _granule_ids(client: httpx.Client, date: str, page_size: int) -> tuple[list[
     return ids, 1, len(ids)
 
 
+def _resume_state(output: Path) -> tuple[set[str], set[str]]:
+    """Split what is already recorded into settled issues and ones to retry.
+
+    Resume used to treat every recorded date as done, which is right for a
+    listing and wrong for a failure: an outage writes `listing-failed` rows, and
+    skipping them makes a transient 502 permanent in the census. Nine such rows
+    were written on 2026-09-05 when govinfo's backend went down mid-run, and
+    without this they would never be revisited.
+
+    Only a complete listing settles a date. `listing-failed` and
+    `listing-incomplete` are both returned for retry -- the second because a
+    short read is exactly the case the status exists to mark as untrustworthy.
+
+    The file stays append-only, and the LAST row for a date is the current one.
+    A superseded failure is kept rather than rewritten, so the census carries
+    the evidence that an issue once failed and what it answered when it did.
+    """
+
+    listed: set[str] = set()
+    retry: set[str] = set()
+    if not output.exists():
+        return listed, retry
+    for line in output.read_text().splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        date = row["publicationDate"]
+        if row.get("status") == "listed":
+            listed.add(date)
+            retry.discard(date)
+        else:
+            retry.add(date)
+            listed.discard(date)
+    return listed, retry
+
+
 def census(
     release_root: Path,
     blob_store: Path,
@@ -202,12 +238,12 @@ def census(
 ) -> int:
     by_date = _our_numbers_by_date(release_root, blob_store)
     dates = sorted(d for d in by_date if d <= through)
-    done: set[str] = set()
+    done, retry = _resume_state(output)
     if output.exists():
-        for line in output.read_text().splitlines():
-            if line.strip():
-                done.add(json.loads(line)["publicationDate"])
-        print(f"resuming: {len(done):,} issues already recorded", file=sys.stderr)
+        print(
+            f"resuming: {len(done):,} issues listed, {len(retry):,} to retry",
+            file=sys.stderr,
+        )
 
     todo = [d for d in dates if d not in done]
     print(f"{len(dates):,} issues in scope, {len(todo):,} to fetch", file=sys.stderr)
