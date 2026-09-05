@@ -1904,6 +1904,32 @@ def _failure_summary_counts(receipt: Mapping[str, Any]) -> tuple[int, int, int]:
     return counts[0], counts[1], counts[2]
 
 
+#: Acquisition policy versions each policy has published under, as literals.
+#: A release records the policy version it was acquired under; admission used to
+#: require that to equal the version the running code declares, so bumping a
+#: policy made every release published under the previous one inadmissible --
+#: found when a rebuild could not admit the release holding the evidence it was
+#: replaying. A release acquired under 1.0 IS a 1.0 release: that is a fact about
+#: how it was acquired, not a defect to refuse.
+#:
+#: Third instance of one assumption, not a third bug: the stored-request field
+#: list and the embedded schema bundle had the same defect and the same remedy.
+#: Literal entries for the same reason those tables are literal -- an entry
+#: computed from the live profile is not a history, because it moves when the
+#: profile moves. A policy id absent here keeps the old exact-match behaviour.
+#:
+#: KNOWINGLY LEFT IN PLACE: the same identity block still compares
+#: sourceSystemVersion and sourceStateScope against the live values, so either
+#: moving would repeat this. Fixing that surface once, rather than adding a
+#: fourth table, is its own change with its own review; the decision to defer it
+#: is recorded in this commit's message, not left as an oversight.
+KNOWN_ACQUISITION_POLICY_VERSIONS: Final[Mapping[str, frozenset[str]]] = {
+    # 1.0 published the Federal Register corpus on disk; 1.1 is composite
+    # identity, (document_number, publication_date).
+    "urn:spicy-regs:acquisition:federal-register-paginated": frozenset({"1.0", "1.1"}),
+}
+
+
 def verify_source_native_admission(
     artifact: VerifiedArtifact,
     source: MemberSource,
@@ -1927,10 +1953,17 @@ def verify_source_native_admission(
         spec.get("sourceSystemId") != profile.source_system_id
         or spec.get("sourceSystemVersion") != profile.source_system_version
         or spec.get("acquisitionPolicyId") != profile.acquisition_policy_id
-        or spec.get("acquisitionPolicyVersion") != profile.acquisition_policy_version
         or spec.get("sourceStateScope") != profile.source_state_scope
     ):
         raise SourceNativeReleaseError(f"source-native root names an unsupported {profile.name} profile")
+    accepted_versions = KNOWN_ACQUISITION_POLICY_VERSIONS.get(
+        profile.acquisition_policy_id, frozenset({profile.acquisition_policy_version})
+    )
+    if spec.get("acquisitionPolicyVersion") not in accepted_versions:
+        raise SourceNativeReleaseError(
+            f"source-native root names a {profile.name} acquisition policy version this project "
+            f"has not published under: {spec.get('acquisitionPolicyVersion')!r}"
+        )
     receipts = by_role[ROLE_RECEIPT]
     if len(receipts) != 1 or receipts[0].object_key != RECEIPT_KEY:
         raise SourceNativeReleaseError("source-native release must carry one publication receipt")
