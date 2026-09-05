@@ -6,7 +6,7 @@ import hashlib
 import json
 import subprocess
 import tomllib
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import replace
@@ -30,6 +30,7 @@ from spicy_docs.federal_register_source_native import (
     FederalRegisterPage,
     FederalRegisterSourceError,
     federal_register_documents_url,
+    federal_register_source_record_id,
     iter_federal_register_pages,
     parse_page_response,
 )
@@ -104,6 +105,20 @@ def _request_window(request_key: str) -> object:
 
 def _publication_version(record: Mapping[str, Any]) -> str | None:
     return str(record["publication_date"])
+
+
+def _signing_date_version(record: Mapping[str, Any]) -> str | None:
+    """A version proxy independent of publication_date.
+
+    Composite identity folds publication_date into sourceRecordId itself, so
+    it can no longer serve as an observation_version that varies *within* one
+    identity (see SD-24). Tests that want three observations of one identity
+    to carry three different versions -- to exercise the grouped-max
+    selection, not the Federal Register field semantics -- hold
+    publication_date fixed and vary this stand-in instead.
+    """
+
+    return str(record["signing_date"])
 
 
 def _document(number: str = "2026-00001", **changes: object) -> dict[str, object]:
@@ -206,13 +221,17 @@ def _stable_paged_pages(
     return pages
 
 
-def _collapsing_profile(*, refuse_equal_observation_versions: bool = False) -> SourceNativeProfile:
+def _collapsing_profile(
+    *,
+    refuse_equal_observation_versions: bool = False,
+    observation_version: Callable[[Mapping[str, Any]], str | None] = _publication_version,
+) -> SourceNativeProfile:
     """The Federal Register profile taught to collapse repeated observations."""
 
     return replace(
         FEDERAL_REGISTER_PROFILE,
         acquisition_check=_PassAcquisitionCheck,
-        observation_version=_publication_version,
+        observation_version=observation_version,
         page_window=_request_window,
         records_included=_accept_all_records,
         refuse_equal_observation_versions=refuse_equal_observation_versions,
@@ -507,7 +526,7 @@ def test_successor_reuses_unchanged_buckets_and_writes_only_new_payloads(
 
     initial_partitions = _partition_map(initial.root)
     successor_partitions = _partition_map(successor.root)
-    changed_record_id = str(documents[changed_index]["document_number"])
+    changed_record_id = federal_register_source_record_id(documents[changed_index])
     changed_bucket = int.from_bytes(hashlib.sha256(changed_record_id.encode()).digest(), "big") % 64
     expected_changed = {
         ("records", f"{changed_bucket:02d}"),
@@ -934,9 +953,9 @@ def test_records_and_renditions_stream_across_fixed_identity_buckets(
     reader = _reader(published.root, published.artifact.pin)
 
     assert [row["sourceRecordId"] for row in reader.iter_records()] == [
-        "2026-00001",
-        "2026-00002",
-        "2026-00003",
+        "2026-00001@2026-08-25",
+        "2026-00002@2026-08-25",
+        "2026-00003@2026-08-25",
     ]
     assert len(list(reader.iter_renditions())) == 9
     receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
@@ -1101,7 +1120,10 @@ def test_capped_interval_splits_into_exact_ordered_leaf_evidence(tmp_path: Path)
     )
     reader = _reader(published.root, published.artifact.pin)
 
-    assert [row["sourceRecordId"] for row in reader.iter_records()] == ["2026-00013", "2026-00014"]
+    assert [row["sourceRecordId"] for row in reader.iter_records()] == [
+        "2026-00013@2026-04-13",
+        "2026-00014@2026-04-14",
+    ]
     assert (
         requests
         == [
@@ -1205,14 +1227,21 @@ def test_three_observations_of_one_identity_keep_the_newest_and_count_the_discar
 ) -> None:
     """Selection is a grouped maximum, not a pairwise search: three observations
     of one identity collapse to the newest and count the other two as discarded,
-    whatever order the source enumerated them in."""
+    whatever order the source enumerated them in.
+
+    SD-24: "one identity" for the Federal Register profile is now
+    (document_number, publication_date) (composite identity), so all three
+    observations share one publication_date here, and signing_date -- a field
+    composite identity does not touch -- stands in for the version an
+    upstream re-observation would actually vary.
+    """
     number = "2026-00001"
     pages = _stable_pages(
-        _document(number, publication_date="2026-08-24", title="middle observation"),
-        _document(number, publication_date="2026-08-23", title="oldest observation"),
-        _document(number, publication_date="2026-08-25", title="newest observation"),
+        _document(number, signing_date="2026-08-24", title="middle observation"),
+        _document(number, signing_date="2026-08-23", title="oldest observation"),
+        _document(number, signing_date="2026-08-25", title="newest observation"),
     )
-    profile = _collapsing_profile(refuse_equal_observation_versions=True)
+    profile = _collapsing_profile(refuse_equal_observation_versions=True, observation_version=_signing_date_version)
 
     published = _publish(tmp_path, pages, profile=profile)
     reader = _reader(published.root, published.artifact.pin, profile=profile)
@@ -1225,7 +1254,7 @@ def test_three_observations_of_one_identity_keep_the_newest_and_count_the_discar
     # Every discarded observation stays in the acquisition evidence.
     accepted = [row for row in _payload_rows(published.root, "acquisition-pages") if row["accepted"]]
     discovered = [record for row in accepted for record in row["discoveredRecords"]]
-    assert [record["sourceRecordId"] for record in discovered] == [number] * 3
+    assert [record["sourceRecordId"] for record in discovered] == [f"{number}@2026-08-25"] * 3
     assert len({record["recordDigest"] for record in discovered}) == 3
 
 
@@ -1243,14 +1272,16 @@ def test_a_repeated_version_among_three_observations_refuses_the_tie(tmp_path: P
         _publish(tmp_path, pages, profile=_collapsing_profile(refuse_equal_observation_versions=True))
 
 
-def test_reused_document_number_keeps_the_newer_observation_and_counts_one_discard(
+def test_reused_document_number_with_different_dates_are_two_distinct_records(
     tmp_path: Path,
 ) -> None:
-    """The source reuses document_number across unrelated documents: 00-111
-    resolves (via the API's own /documents/00-111.json) to a 2000-01-18 notice,
-    while the full-history crawl also discovers an older 2000-01-14 rule filed
-    under the same number. The shipped profile keeps the newer publication_date
-    and counts the older observation as discarded, retained in evidence."""
+    """SD-24 / composite identity: the source reuses document_number across
+    unrelated documents -- 00-111 resolves (via the API's own
+    /documents/00-111.json) to a 2000-01-18 notice, while the full-history
+    crawl also discovers an older 2000-01-14 rule filed under the same
+    number -- and identity is now (document_number, publication_date), so
+    neither document evicts the other: both are distinct records and both
+    survive. This is the specimen the composite-identity decision names."""
     number = "00-111"
     window = {"publishedFrom": "2000-01-14", "publishedThrough": "2000-01-18"}
     pages = _stable_pages(
@@ -1270,17 +1301,47 @@ def test_reused_document_number_keeps_the_newer_observation_and_counts_one_disca
     published = _publish(tmp_path, pages, query_scope=window)
     reader = _reader(published.root, published.artifact.pin)
 
-    assert [row["record"]["title"] for row in reader.iter_records()] == [
-        "Notice of Filing of Plat of an Island; Minnesota"
+    records = list(reader.iter_records())
+    assert [row["sourceRecordId"] for row in records] == [
+        "00-111@2000-01-14",
+        "00-111@2000-01-18",
+    ]
+    assert [row["record"]["title"] for row in records] == [
+        "Compliance Monitoring and Enforcement Priorities",
+        "Notice of Filing of Plat of an Island; Minnesota",
     ]
     receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
-    assert receipt["publishedRecordCount"] == 1
-    assert receipt["discardedObservationCount"] == 1
-    # Both observations stay in acquisition evidence; only selection collapses.
+    assert receipt["publishedRecordCount"] == 2
+    assert receipt["discardedObservationCount"] == 0
+    # Both observations stay in acquisition evidence; neither is discarded now.
     accepted = [row for row in _payload_rows(published.root, "acquisition-pages") if row["accepted"]]
     discovered = [record for row in accepted for record in row["discoveredRecords"]]
-    assert [record["sourceRecordId"] for record in discovered] == [number, number]
+    assert [record["sourceRecordId"] for record in discovered] == [
+        "00-111@2000-01-14",
+        "00-111@2000-01-18",
+    ]
     assert len({record["recordDigest"] for record in discovered}) == 2
+
+
+def test_federal_register_source_record_id_is_canonical_and_reversible() -> None:
+    """The composite identity's spelling is a public contract (SD-24): the same
+    two source-issued fields always produce the same string (canonical), and
+    the string can always be split back into exactly those two fields
+    (reversible) -- a lossless pairing, not a hash or a digest."""
+    record = {"document_number": "00-111", "publication_date": "2000-01-14", "title": "irrelevant"}
+
+    identity = federal_register_source_record_id(record)
+
+    assert identity == "00-111@2000-01-14"
+    # Canonical: recomputing from the same two fields is byte-identical.
+    assert federal_register_source_record_id(dict(record)) == identity
+    # Reversible: document_number can never contain '@' (classify_document
+    # enforces _ASCII_ID) and publication_date is canonical ISO text, so the
+    # composite has exactly one '@' and splitting on it recovers both fields.
+    assert identity.count("@") == 1
+    number, published = identity.split("@")
+    assert number == record["document_number"]
+    assert published == record["publication_date"]
 
 
 def test_reused_document_number_with_identical_digests_collapses_without_tying(

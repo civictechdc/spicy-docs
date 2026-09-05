@@ -372,13 +372,20 @@ def federal_register_acquisition_policy(
         "maxTraversals": MAX_RECONCILIATION_TRAVERSALS,
         "maxWindowDays": MAX_WINDOW_DAYS,
         # document_number is reused across unrelated documents (00-111: a
-        # 2000-01-18 filing and an older 2000-01-14 rule); keep the newest
-        # publication_date exactly as the API's own /documents/<number>
-        # resolution does, and refuse a same-day collision whose record
-        # digests differ instead of inventing a tie-breaker (2026-09-02).
+        # 2000-01-18 filing and an older 2000-01-14 rule). Identity is
+        # composite (the composite-identity decision, 2026-09-04): grouping on
+        # document_number alone silently evicted the older document every
+        # time a number was reused, so the group is the full pair below and
+        # a same-number, different-date pair is two records, not one
+        # collapsed to the newer. publication_date is now inside the group
+        # key rather than a tiebreak across it, so there is nothing left to
+        # order across dates -- orderBy is gone, not merely unused. The only
+        # residual tie is an exact repeat of one (document_number,
+        # publication_date) identity: refuse it unless every observed
+        # record shares one canonical digest, exactly as before, just
+        # scoped to a narrower, correct group.
         "observationSelection": {
-            "groupBy": "/document_number",
-            "orderBy": "/publication_date DESC NULLS LAST",
+            "groupBy": ["/document_number", "/publication_date"],
             "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
         },
         "resultCap": RESULT_CAP,
@@ -645,12 +652,19 @@ def federal_register_observation_version(record: Mapping[str, Any]) -> str | Non
 
     Mirrors :func:`regulations_gov_source_native.observation_version`'s shape: the
     source-issued value stays in the record untouched; this returns the same
-    canonical text used to order and collapse repeat observations. The source
-    reuses ``document_number`` across unrelated documents: ``00-111`` resolves
-    (via the API's own ``/documents/00-111.json``) to a 2000-01-18 "Notice of
-    Filing of Plat of an Island; Minnesota", while the full-history crawl also
-    discovers an older 2000-01-14 "Compliance Monitoring..." rule filed under
-    the same number. ``publication_date`` is required and already
+    canonical text used to order and collapse repeat observations.
+
+    Identity is composite (the composite-identity decision, 2026-09-04):
+    ``publication_date`` is part of :func:`federal_register_source_record_id`
+    now, not merely a version compared within it, so within one identity this
+    can no longer distinguish anything -- every observation of one
+    ``(document_number, publication_date)`` pair returns the same value by
+    construction, and that is coherent rather than broken. It still selects
+    among repeat observations of one identity (a source refetch, or a
+    publisher correction that changes the record without changing its number
+    or date), where an identical digest collapses silently and a differing
+    one meets ``tieDisposition`` and refuses the release rather than picking
+    a winner. ``publication_date`` is required and already
     source-issued-canonical by the time :func:`classify_document` returns it, so
     this never observes an undated record (2026-09-02).
     """
@@ -688,10 +702,33 @@ def field_diagnostics(record: Mapping[str, Any]) -> list[dict[str, Any]]:
     return diagnostics
 
 
+def federal_register_source_record_id(record: Mapping[str, Any]) -> str:
+    """Compose the record's identity: the two fields that actually identify it.
+
+    The composite-identity decision (2026-09-04): the source reuses ``document_number``
+    across unrelated documents -- ``00-111`` is both a 2000-01-18 notice and an
+    older 2000-01-14 rule (see :func:`federal_register_observation_version`'s
+    docstring) -- so ``document_number`` alone is not identity. Every record
+    that reaches this function has already passed :func:`classify_document`,
+    which requires ``document_number`` to fullmatch ``_ASCII_ID`` (letters,
+    digits, ``.``, ``_``, ``-``, never ``@``) and requires ``publication_date``
+    to be canonical ISO ``YYYY-MM-DD`` text. Joining them with ``@`` is
+    therefore both canonical (the same two source-issued values always
+    produce the same string) and reversible (``@`` cannot occur in either
+    half, so it occurs exactly once in the result and splitting on it
+    recovers both fields exactly) -- a lossless pairing, not a hash or a
+    digest. This is a public contract: every Federal Register
+    ``sourceRecordId`` changes shape under this release.
+    """
+
+    document_number = str(record["document_number"])
+    publication_date = str(record["publication_date"])
+    return f"{document_number}@{publication_date}"
+
+
 def source_record(record: Mapping[str, Any], *, schema_digest: str) -> dict[str, Any]:
     """Wrap classified source fields with their source schema reference."""
 
-    document_number = str(record["document_number"])
     return {
         "fieldDiagnostics": field_diagnostics(record),
         "record": dict(record),
@@ -699,14 +736,14 @@ def source_record(record: Mapping[str, Any], *, schema_digest: str) -> dict[str,
         "schemaName": SCHEMA_NAME,
         "schemaVersion": SCHEMA_VERSION,
         "scopeId": SCOPE_ID,
-        "sourceRecordId": document_number,
+        "sourceRecordId": federal_register_source_record_id(record),
     }
 
 
 def rendition_rows(record: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
     """Preserve every source-stated locator field, including explicit absence."""
 
-    source_record_id = str(record["document_number"])
+    source_record_id = federal_register_source_record_id(record)
     definitions = (
         ("body-html", "body_html_url", "text/html"),
         ("html", "html_url", "text/html"),
@@ -849,6 +886,7 @@ __all__ = [
     "federal_register_query_scope",
     "federal_register_records_included",
     "federal_register_request_window",
+    "federal_register_source_record_id",
     "field_diagnostics",
     "iter_federal_register_pages",
     "parse_page_response",

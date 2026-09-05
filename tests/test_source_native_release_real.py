@@ -20,6 +20,13 @@ from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 
 _SCOPE = {"publishedFrom": "2026-04-13", "publishedThrough": "2026-04-13"}
 _IMPLEMENTATION_ID = "pkg:pypi/spicy-regs@0.1.7?checksum=sha256:" + "a" * 64
+# SD-24: composite identity changes every record's sourceRecordId, so this
+# pinned digest is stale under the new (document_number, publication_date)
+# encoding. This test is network-gated (@pytest.mark.integration, deselected
+# by default -- see pyproject.toml's addopts) and could not be re-run to
+# mint a fresh digest without violating the no-network constraint this
+# change was made under. Re-pin by running this test once, live, and
+# updating this constant from its (expected) failure message.
 _SOURCE_STATE_DIGEST = "sha256:e170cf3ddf2819b0f33ced07e050e18cef0adc43f57c5dfde51e04535ebf13bc"
 
 
@@ -74,6 +81,7 @@ def test_pinned_federal_register_day_publishes_and_replays_exactly(tmp_path: Pat
     assert reader.source_state_digest == _SOURCE_STATE_DIGEST
     assert len(records) == 93
     assert len(renditions) == 279
-    assert records[0]["sourceRecordId"] == "2026-07034"
-    assert records[-1]["sourceRecordId"] == "2026-07143"
+    # _SCOPE is one closed day, so every record's publication_date is 2026-04-13.
+    assert records[0]["sourceRecordId"] == "2026-07034@2026-04-13"
+    assert records[-1]["sourceRecordId"] == "2026-07143@2026-04-13"
     assert sum(not record["record"].get("topics") for record in records) == 84

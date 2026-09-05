@@ -189,8 +189,14 @@ def census(args: argparse.Namespace) -> dict[str, object]:
                 identity = discovered["sourceRecordId"]
                 observations[identity].append(pair)
                 digests[identity].add(discovered["recordDigest"])
+                # SD-24: sourceRecordId is composite (document_number,
+                # publication_date) and never repeats across dates, so the
+                # number/date findings below key on the classified record's
+                # own document_number instead -- independent of whatever
+                # shape sourceRecordId happens to have, exactly as this
+                # section's own numbers (not identities) always meant.
                 if is_federal_register and pair[0] is not None:
-                    date_digests[identity][pair[0]].append(discovered["recordDigest"])
+                    date_digests[str(classified["document_number"])][pair[0]].append(discovered["recordDigest"])
     multi_observation: list[dict[str, object]] = []
     discarded = 0
     for identity, seen in sorted(observations.items()):
@@ -222,7 +228,11 @@ def census(args: argparse.Namespace) -> dict[str, object]:
         scope = json.loads((args.release / "records/scopes.jsonl").read_text().splitlines()[0])
         result["coverage"] = {
             "queryScope": scope["fields"],
-            "distinctNumberCount": len(observations),
+            # SD-24: distinct document_numbers, not distinct identities --
+            # composite sourceRecordId means len(observations) now counts
+            # (number, date) pairs, which overcounts a number reused across
+            # dates. date_digests is keyed by document_number (see above).
+            "distinctNumberCount": len(date_digests),
             "caveat": (
                 "this census describes the crawled Federal Register (1994 onward, the API's own "
                 "coverage) and is not evidence about the printed Register before that"

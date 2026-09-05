@@ -52,9 +52,11 @@ def test_a_hypothetical_future_accepted_field_set_also_replays(monkeypatch: pyte
     This is the property SD-20 exists for: on a real rebuild, evidence
     acquired under the current policy and evidence acquired under a future
     policy (once one is added to the table) must both replay untouched.
+    ``correction_of`` is a real 1.1 entry now (SD-24), so the hypothetical
+    addition here has to be a genuinely unadded field to stay hypothetical.
     """
 
-    future_fields = frozenset(DOCUMENT_FIELDS | {"correction_of"})
+    future_fields = frozenset(DOCUMENT_FIELDS | {"some_future_field"})
     monkeypatch.setattr(
         federal_register,
         "ACCEPTED_DOCUMENT_FIELD_SETS",
@@ -63,6 +65,18 @@ def test_a_hypothetical_future_accepted_field_set_also_replays(monkeypatch: pyte
     stored_request = federal_register_documents_url(QUERY_SCOPE, fields=future_fields)
 
     assert federal_register_request_window(stored_request) == EXPECTED_WINDOW
+
+
+def test_a_request_carrying_the_1_0_field_set_still_replays() -> None:
+    """SD-24: correction_of joins the requested fields as 1.1, but retained 1.0
+    evidence -- fetched before the field existed, and being replayed with no
+    refetch under DocSpec decision 0003's rebuild -- must still replay exactly.
+    """
+
+    stored_request = federal_register_documents_url(QUERY_SCOPE, fields=ACCEPTED_DOCUMENT_FIELD_SETS["1.0"])
+
+    assert federal_register_request_window(stored_request) == EXPECTED_WINDOW
+
 
 
 def test_documents_url_with_explicit_fields_round_trips_through_the_window_parser() -> None:
@@ -136,22 +150,24 @@ def test_the_current_field_set_is_always_one_the_replay_path_accepts() -> None:
     assert DOCUMENT_FIELDS in ACCEPTED_DOCUMENT_FIELD_SETS.values()
 
 
-def test_the_current_field_policy_key_matches_the_acquisition_policy_version() -> None:
-    """The one gap a module-local version key opens: two strings drifting apart.
+def test_the_current_field_set_is_one_the_replay_path_accepts_by_key() -> None:
+    """The field-set version and the acquisition policy version are separate sequences.
 
-    ``_CURRENT_FIELD_POLICY`` cannot import the profile's
-    ``FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION`` -- this module is a leaf and
-    the profiles module imports from it, so the dependency only runs one way. A
-    test can import both. This fails loudly if someone bumps the acquisition
-    policy version without adding a field set, or adds a field set without
-    bumping the version.
+    This test used to assert they are equal. That was wrong, and the composite
+    identity change proved it: the acquisition policy moved 1.0 -> 1.1 because
+    `source_record_id` became (document_number, publication_date), while the
+    requested fields did not change at all. Tying the two together would force a
+    meaningless field-set entry every time the policy moves for any other
+    reason, and each such entry would be a second literal holding the same 22
+    fields -- exactly the duplication the table exists to avoid.
+
+    What must hold is weaker and true: the key the acquirer requests under names
+    a set the replay path accepts.
     """
 
-    from spicy_docs import source_native_profiles
-
+    assert federal_register._CURRENT_FIELD_POLICY in ACCEPTED_DOCUMENT_FIELD_SETS
     assert (
-        federal_register._CURRENT_FIELD_POLICY
-        == source_native_profiles.FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION
+        ACCEPTED_DOCUMENT_FIELD_SETS[federal_register._CURRENT_FIELD_POLICY] is DOCUMENT_FIELDS
     )
 
 

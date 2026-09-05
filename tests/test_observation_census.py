@@ -103,9 +103,13 @@ def _publish(
 
 def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> None:
     """A fixture release carrying the real 00-111 collision -- a 2000-01-14 rule and
-    a newer 2000-01-18 notice sharing one document_number -- reports one
-    multi-observation identity, both raw instants, the newer winner, and the
-    discarded-observation count the receipt independently agrees on. 00-111 is
+    a newer 2000-01-18 notice sharing one document_number -- reports two distinct
+    records and zero discards under composite identity (SD-24): neither document
+    evicts the other, so there is no multi-observation identity and nothing to
+    collapse. The number/date findings below are unaffected -- they key on the
+    classified record's own document_number, independent of sourceRecordId's
+    shape -- so 00-111 still surfaces as one number reused across two dates, now
+    as an informational fact about the source rather than a loss. 00-111 is
     legacy-form (it fails the modern \\d{4}-... pattern), so this release also proves
     the shape of every other collision field's EMPTY case: they are emitted, not omitted."""
     number = "00-111"
@@ -120,17 +124,13 @@ def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> N
 
     assert result["profile"] == "federal-register"
     assert result["totals"] == {
-        "records": 1,
-        "multiObservationIds": 1,
+        "records": 2,
+        "multiObservationIds": 0,
         "discardedObservations": receipt["discardedObservationCount"],
     }
-    [entry] = cast("list[dict[str, object]]", result["multiObservationRecords"])
-    assert entry["recordId"] == number
-    assert entry["observationCount"] == 2
-    assert sorted(cast("list[str]", entry["versions"])) == ["2000-01-14", "2000-01-18"]
-    assert entry["winner"] == "2000-01-18"
-    assert entry["distinctDigests"] == 2
-    assert entry["post2000"] is True
+    assert result["multiObservationRecords"] == []
+    assert receipt["publishedRecordCount"] == 2
+    assert receipt["discardedObservationCount"] == 0
 
     assert result["numberAndDateUniquelyIdentify"] is True
     assert result["sameNumberDifferentDateCount"] == 1
