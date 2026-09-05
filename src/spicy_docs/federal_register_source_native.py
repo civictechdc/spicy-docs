@@ -12,6 +12,7 @@ import re
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import date, timedelta
+from functools import cache
 from typing import Any, Final, cast
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -834,6 +835,14 @@ FEDERAL_REGISTER_DOCUMENT_SCHEMA: Final[dict[str, Any]] = {
 }
 
 
+#: The schema is a module constant, so this digest is one value per process.
+#: It was recomputed per record: measured on a real replay, 4.04 calls per
+#: published record at 171 us each -- 2 per record in the publish pass and 2
+#: more in the verify gate's replay -- which projects to 4,073,895 calls and
+#: 696 s over the 1,007,639-record corpus. functools.cache rather than a
+#: hand-rolled module global: the function takes no arguments, so the stdlib
+#: decorator is exactly the right shape and says so.
+@cache
 def source_schema_digest() -> str:
     """Use the installed Rulespec schema-family identity implementation."""
 

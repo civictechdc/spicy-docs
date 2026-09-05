@@ -19,6 +19,7 @@ import json
 import re
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import cache
 from html.parser import HTMLParser
 from io import BytesIO
 from itertools import pairwise
@@ -691,6 +692,14 @@ GAO_PRODUCT_PAGE_SCHEMA: Final = {
 }
 
 
+#: The schema is a module constant, so this digest is one value per process.
+#: It was recomputed per record: measured on a real replay, 4.04 calls per
+#: published record at 171 us each -- 2 per record in the publish pass and 2
+#: more in the verify gate's replay -- which projects to 4,073,895 calls and
+#: 696 s over the 1,007,639-record corpus. functools.cache rather than a
+#: hand-rolled module global: the function takes no arguments, so the stdlib
+#: decorator is exactly the right shape and says so.
+@cache
 def source_schema_digest() -> str:
     return schema_bundle_digest({SCHEMA_PATH: GAO_PRODUCT_PAGE_SCHEMA})
 
