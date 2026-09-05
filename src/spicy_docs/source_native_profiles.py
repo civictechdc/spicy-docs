@@ -14,10 +14,19 @@ from spicy_docs import spicy_regs_public_tables_source_native as spicy_regs_tabl
 from spicy_docs.source_native_profile import SourceNativeProfile
 
 FEDERAL_REGISTER_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:federal-register-paginated"
-# SD-24: moved from 1.0 to 1.1 by two changes landed together -- correction_of
-# joins the requested fields, and identity becomes composite (document_number,
-# publication_date) -- so this must equal federal_register._CURRENT_FIELD_POLICY
-# (a test asserts they agree).
+# SD-24: moved from 1.0 to 1.1 by ONE change -- identity becomes composite
+# (document_number, publication_date). The companion this comment used to
+# claim, correction_of joining the requested fields, was authorized that
+# morning and deferred out the same day (DocSpec 0003), so it never landed:
+# ACCEPTED_DOCUMENT_FIELD_SETS carries only "1.0" and the schema is
+# additionalProperties: false over 22 properties that do not include it.
+#
+# This must NOT equal federal_register._CURRENT_FIELD_POLICY, and no test
+# asserts they agree. They are "1.1" and "1.0" today, and the version that
+# once paired them was disproved by the first change to touch it: the
+# acquisition policy version moves when the ACQUISITION moves, the field
+# policy when the requested FIELDS move, and composite identity moved only
+# the first. Reopening correction_of is policy 1.2.
 FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION: Final = "1.1"
 FEDERAL_REGISTER_SOURCE_SCHEMA_KEY: Final = "schemas/federal-register-document-1.0.schema.json"
 

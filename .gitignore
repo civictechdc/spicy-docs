@@ -12,3 +12,6 @@ __pycache__
 .ruff_cache
 /data
 output
+
+# Generated dependency-graph dumps; machine output no code reads.
+wiki/temp/

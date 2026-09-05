@@ -52,8 +52,10 @@ def test_a_hypothetical_future_accepted_field_set_also_replays(monkeypatch: pyte
     This is the property SD-20 exists for: on a real rebuild, evidence
     acquired under the current policy and evidence acquired under a future
     policy (once one is added to the table) must both replay untouched.
-    ``correction_of`` is a real 1.1 entry now (SD-24), so the hypothetical
-    addition here has to be a genuinely unadded field to stay hypothetical.
+    ``correction_of`` was deferred out and never became a table entry (DocSpec
+    0003), so the table holds only "1.0" and the addition here is hypothetical
+    against a table of one. Keep it a field the schema genuinely does not
+    carry.
     """
 
     future_fields = frozenset(DOCUMENT_FIELDS | {"some_future_field"})
@@ -68,9 +70,13 @@ def test_a_hypothetical_future_accepted_field_set_also_replays(monkeypatch: pyte
 
 
 def test_a_request_carrying_the_1_0_field_set_still_replays() -> None:
-    """SD-24: correction_of joins the requested fields as 1.1, but retained 1.0
-    evidence -- fetched before the field existed, and being replayed with no
-    refetch under DocSpec decision 0003's rebuild -- must still replay exactly.
+    """SD-24: 1.0 evidence must replay exactly, which is what the rebuild did.
+
+    This docstring claimed correction_of joins the requested fields as 1.1. It
+    was deferred out and never landed, so "1.0" is not a historical entry being
+    kept alive beside a newer one -- it is the only entry, and the property
+    under test is that replay reads the field list from the evidence rather
+    than from today's constant.
     """
 
     stored_request = federal_register_documents_url(QUERY_SCOPE, fields=ACCEPTED_DOCUMENT_FIELD_SETS["1.0"])
