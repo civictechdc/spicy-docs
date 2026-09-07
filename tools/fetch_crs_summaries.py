@@ -26,12 +26,21 @@ project hit:
 4. **Every row carries its provenance** -- the run id and the source parquet it
    was drawn from -- because a file whose rows came from two different inputs
    cannot be reconciled after the fact.
+5. **A recorded error is scrubbed before it is written.** This API takes its
+   credential as an ``api_key`` *query parameter*, and httpx's
+   ``HTTPStatusError`` renders the full request URL, so the unmodified
+   exception text carries the key into the data file and from there into a
+   receipt -- one 404 on ``R43434`` did exactly that on 2026-09-07, and the
+   receipt printed 120 characters of the error, which is long enough to reach
+   past ``api_key=``. The credential is never printed, never in a URL, never in
+   a receipt, and an error string is a URL in disguise.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -71,6 +80,23 @@ def report_ids(parquet: Path) -> list[str]:
 
     table = pq.read_table(parquet, columns=["report_id"])
     return [r for r in table.column("report_id").to_pylist() if r]
+
+
+def scrub_credential(text: str, api_key: str) -> str:
+    """Remove the credential from anything this tool records or prints.
+
+    Two passes, because either alone leaves a hole. The pattern catches a
+    credential this function was not handed -- a redirect to a different
+    keyed host, a nested URL inside a message -- while the literal catches
+    the key wherever it appears in a form the pattern does not match, such
+    as a header echoed back in a response body. Scrubbing happens before
+    truncation, never after: truncating first can cut a key in half and
+    leave the front of it standing.
+    """
+    scrubbed = re.sub(r"(api_key=)[^&\s'\"]+", r"\1<redacted>", text)
+    if len(api_key) >= 8:
+        scrubbed = scrubbed.replace(api_key, "<redacted>")
+    return scrubbed
 
 
 def fetch_one(client: httpx.Client, report_id: str, api_key: str) -> dict[str, Any]:
@@ -156,7 +182,9 @@ def run(
                 row = {
                     "reportId": report_id,
                     "status": "failed",
-                    "error": f"{type(error).__name__}: {error}"[:300],
+                    "error": scrub_credential(
+                        f"{type(error).__name__}: {error}", api_key
+                    )[:300],
                     "sourceParquet": str(parquet),
                 }
                 failed += 1

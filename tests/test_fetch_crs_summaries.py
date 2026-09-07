@@ -145,3 +145,72 @@ def test_a_missing_key_name_refuses_rather_than_running_unauthenticated(tmp_path
 
     with pytest.raises(SystemExit, match="API_GOV not found"):
         read_api_key(env, "API_GOV")
+
+
+def test_a_recorded_error_does_not_carry_the_credential(tmp_path: Path) -> None:
+    """The credential never reaches the data file, and so never a receipt.
+
+    Not a hand-built string: this drives the real 404 path so the error text
+    is whatever ``httpx.HTTPStatusError`` actually renders, which is the
+    shape that leaked. congress.gov takes its key as a query *parameter*, and
+    that exception renders the full request URL, so the unmodified message
+    carries the key into the row -- as it did for ``R43434`` on 2026-09-07,
+    and from there into a receipt that printed 120 characters of it.
+    """
+    secret = "DEADBEEF" * 5  # 40 chars, the length congress.gov issues
+    parquet = _parquet(tmp_path, ["R43434"])
+    output = tmp_path / "out.jsonl"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert secret in str(request.url), "the key must really be on the wire"
+        return httpx.Response(404, json={"error": "not found"})
+
+    run(parquet, output, api_key=secret, delay_seconds=0.0, transport=_transport(handler))
+
+    row = _rows(output)[0]
+    assert row["status"] == "failed"
+    assert secret not in row["error"]
+    assert secret not in output.read_text()
+    # Redacted, not merely truncated away: the error stays useful, and the
+    # marker survives the 120-character window a receipt prints.
+    assert "api_key=<redacted>" in row["error"]
+    assert "404" in row["error"]
+    assert "api_key=<redacted>" in row["error"][:120]
+
+
+def test_the_scrub_removes_a_key_it_was_not_handed(tmp_path: Path) -> None:
+    """The pattern half, which the literal half cannot cover.
+
+    A redirect to another keyed host, or a nested URL quoted inside a
+    message, carries a credential this function was never told about.
+    """
+    from tools.fetch_crs_summaries import scrub_credential
+
+    text = "GET https://other.example/v3/x?api_key=SOME-OTHER-SECRET&format=json failed"
+    assert "SOME-OTHER-SECRET" not in scrub_credential(text, "the-configured-key")
+    assert "api_key=<redacted>" in scrub_credential(text, "the-configured-key")
+    # And a short or empty configured key must not scrub unrelated text away.
+    assert scrub_credential("no credential here", "") == "no credential here"
+
+
+def test_the_scrub_removes_the_configured_key_in_a_form_the_pattern_misses() -> None:
+    """The literal half, which the pattern half cannot cover.
+
+    Written because mutation said it was needed: deleting the literal pass
+    left every other test in this file green, so the docstring's claim that
+    both passes earn their place was unbacked. A credential does not only
+    appear as ``api_key=<value>``. An upstream error body that echoes the key
+    back, a header rendered into a message, or a redirect that moves it into
+    the path all present it bare, and the query-parameter pattern matches
+    none of those.
+    """
+    from tools.fetch_crs_summaries import scrub_credential
+
+    secret = "DEADBEEF" * 5
+    for carrier in (
+        f"invalid credential: {secret}",
+        f"X-Api-Key: {secret}",
+        f"https://api.congress.gov/v3/{secret}/crsreport",
+    ):
+        assert secret not in scrub_credential(carrier, secret), carrier
+        assert "<redacted>" in scrub_credential(carrier, secret), carrier
