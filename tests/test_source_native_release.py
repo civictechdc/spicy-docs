@@ -49,6 +49,7 @@ from spicy_docs.source_native import (
 from spicy_docs.source_native_profile import SourceNativeProfile
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from tests.source_fixtures import federal_response, payload_rows
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 PRODUCER = Producer(
@@ -138,25 +139,6 @@ def _document(number: str = "2026-00001", **changes: object) -> dict[str, object
     return value
 
 
-def _response(
-    *documents: dict[str, object],
-    next_page_url: str | None = None,
-    count: int | None = None,
-    total_pages: int | None = None,
-) -> bytes:
-    return json.dumps(
-        {
-            "count": len(documents) if count is None else count,
-            "next_page_url": next_page_url,
-            "results": list(documents),
-            "total_pages": (1 if next_page_url is None else 2) if total_pages is None else total_pages,
-        },
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
-
-
 def _page(
     traversal: int,
     page: int,
@@ -188,7 +170,7 @@ def _stable_pages(
     *documents: dict[str, object],
     window: dict[str, str] | None = None,
 ) -> list[FederalRegisterPage]:
-    response = _response(*documents)
+    response = federal_response(*documents)
     return [_page(0, 0, response, window=window), _page(1, 0, response, window=window)]
 
 
@@ -208,7 +190,7 @@ def _stable_paged_pages(
                 _page(
                     traversal,
                     page_index,
-                    _response(
+                    federal_response(
                         document,
                         next_page_url=next_cursor,
                         count=len(documents),
@@ -265,18 +247,6 @@ def _reader(root: Path, pin, *, profile: SourceNativeProfile = FEDERAL_REGISTER_
         expected_pin=pin,
         accepted_verifier_implementation_ids=frozenset({IMPLEMENTATION_ID}),
     )
-
-
-def _payload_rows(root: Path, partition_kind: str) -> list[dict[str, Any]]:
-    receipt = json.loads((root / "receipts/publication.json").read_bytes())
-    store = LocalSourceNativeBlobStore(root.parent / "blobs")
-    rows: list[dict[str, Any]] = []
-    for partition in receipt["payloadPartitions"]:
-        if partition["partitionKind"] != partition_kind:
-            continue
-        with store.open(partition["blobRef"]) as stream:
-            rows.extend(json.loads(line) for line in stream)
-    return rows
 
 
 def _partition_map(root: Path) -> dict[tuple[str, str], dict[str, object]]:
@@ -368,7 +338,7 @@ def test_reader_accepts_a_historical_spicy_regs_producer(tmp_path: Path) -> None
 def test_identical_evidence_pages_keep_distinct_page_inventories(
     tmp_path: Path,
 ) -> None:
-    response = _response(_document())
+    response = federal_response(_document())
     pages = [
         FederalRegisterPage(
             traversal_index=traversal,
@@ -385,7 +355,7 @@ def test_identical_evidence_pages_keep_distinct_page_inventories(
     profile = _collapsing_profile()
     published = _publish(tmp_path, pages, profile=profile)
     page_rows = sorted(
-        _payload_rows(published.root, "acquisition-pages"),
+        payload_rows(published.root, "acquisition-pages"),
         key=lambda row: (row["traversalIndex"], row["pageIndex"]),
     )
 
@@ -459,7 +429,7 @@ def test_malformed_publication_date_is_a_deterministic_failure_not_an_abort(
     # or failed outright before it could.
     assert receipt["discoveredRecordCount"] == receipt["inputObservationCount"] + receipt["failedRecordCount"]
 
-    failures = [row for row in _payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
+    failures = [row for row in payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
     assert len(failures) == 1
     assert failures[0]["failure"]["class"] == FAILURE_CLASS_DETERMINISTIC
     assert failures[0]["failure"]["reasonCode"]
@@ -470,7 +440,7 @@ def test_acquisition_exception_cannot_publish_partial_release(tmp_path: Path) ->
     destination = tmp_path / "interrupted"
 
     def interrupted_pages() -> Iterator[FederalRegisterPage]:
-        yield _page(0, 0, _response(_document()))
+        yield _page(0, 0, federal_response(_document()))
         raise RuntimeError("source stopped")
 
     with pytest.raises(RuntimeError, match="source stopped"):
@@ -735,13 +705,13 @@ def test_stale_publication_lock_file_does_not_poison_retry(tmp_path: Path) -> No
 
 def test_observed_crawl_refuses_one_unreconciled_traversal(tmp_path: Path) -> None:
     with pytest.raises(SourceNativeReleaseError, match="two stable consecutive traversals"):
-        _publish(tmp_path, [_page(0, 0, _response(_document()))])
+        _publish(tmp_path, [_page(0, 0, federal_response(_document()))])
 
 
 def test_complete_snapshot_refuses_different_reconciliation_passes(tmp_path: Path) -> None:
     pages = [
-        _page(0, 0, _response(_document("2026-00001"))),
-        _page(1, 0, _response(_document("2026-00002"))),
+        _page(0, 0, federal_response(_document("2026-00001"))),
+        _page(1, 0, federal_response(_document("2026-00002"))),
     ]
 
     with pytest.raises(SourceNativeReleaseError, match="stable consecutive traversals"):
@@ -767,7 +737,7 @@ def test_unclassified_source_field_is_a_deterministic_failure_not_an_abort(tmp_p
     assert receipt["failedRecordCount"] == 1
     assert receipt["deterministicFailureCount"] == 1
 
-    failures = [row for row in _payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
+    failures = [row for row in payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
     assert len(failures) == 1
     assert failures[0]["failure"]["class"] == FAILURE_CLASS_DETERMINISTIC
     assert failures[0]["failure"]["reasonCode"] == REASON_RECORD_UNCLASSIFIABLE
@@ -800,7 +770,7 @@ def test_source_field_type_drift_is_a_deterministic_failure_not_an_abort(
     assert receipt["failedRecordCount"] == 1
     assert receipt["deterministicFailureCount"] == 1
 
-    failures = [row for row in _payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
+    failures = [row for row in payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
     assert len(failures) == 1
     assert failures[0]["failure"]["class"] == FAILURE_CLASS_DETERMINISTIC
     # The reason code is a stable identifier, not the exception text: these are
@@ -841,7 +811,7 @@ def test_well_formed_corpus_still_reports_zero_failures(tmp_path: Path) -> None:
     assert receipt["transientFailureCount"] == 0
     assert receipt["unclassedFailureCount"] == 0
     assert receipt["discoveredRecordCount"] == receipt["inputObservationCount"]
-    assert not [row for row in _payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
+    assert not [row for row in payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
 
 
 def test_scattered_failures_interleave_correctly_across_partition_buckets(tmp_path: Path) -> None:
@@ -876,7 +846,7 @@ def test_scattered_failures_interleave_correctly_across_partition_buckets(tmp_pa
     assert receipt["inputObservationCount"] == receipt["publishedRecordCount"] + receipt["discardedObservationCount"]
     assert receipt["discoveredRecordCount"] == receipt["inputObservationCount"] + receipt["failedRecordCount"]
 
-    ledger_rows = _payload_rows(published.root, PARTITION_LEDGER)
+    ledger_rows = payload_rows(published.root, PARTITION_LEDGER)
     assert len(ledger_rows) == len(documents)
     failure_rows = [row for row in ledger_rows if row["failure"] is not None]
     assert len(failure_rows) == expected_failures
@@ -885,8 +855,8 @@ def test_scattered_failures_interleave_correctly_across_partition_buckets(tmp_pa
 
 def test_missing_or_forked_page_chain_fails(tmp_path: Path) -> None:
     next_url = "https://www.federalregister.gov/api/v1/documents?format=json&page=2&cursor=stable"
-    first = _page(0, 0, _response(_document(), next_page_url=next_url))
-    second = _page(0, 1, _response(_document("2026-00002")), cursor="wrong")
+    first = _page(0, 0, federal_response(_document(), next_page_url=next_url))
+    second = _page(0, 1, federal_response(_document("2026-00002")), cursor="wrong")
 
     with pytest.raises(SourceNativeReleaseError, match="missing or forked"):
         _publish(tmp_path, [first, second])
@@ -901,14 +871,14 @@ def test_publisher_refuses_a_cyclic_source_cursor(tmp_path: Path) -> None:
             0,
             initial,
             None,
-            _response(_document("2026-00001"), next_page_url=second, count=3, total_pages=3),
+            federal_response(_document("2026-00001"), next_page_url=second, count=3, total_pages=3),
         ),
         FederalRegisterPage(
             0,
             1,
             second,
             second,
-            _response(_document("2026-00002"), next_page_url=initial, count=3, total_pages=3),
+            federal_response(_document("2026-00002"), next_page_url=initial, count=3, total_pages=3),
             window_page_index=1,
         ),
     ]
@@ -1029,13 +999,13 @@ def test_injected_page_fetcher_builds_the_closed_query_and_reconciles() -> None:
     initial = federal_register_documents_url(scope, per_page=1000)
     next_url = "https://www.federalregister.gov/api/v1/documents?format=json&page=2&cursor=stable"
     responses = {
-        initial: _response(
+        initial: federal_response(
             _document("2026-00002"),
             next_page_url=next_url,
             count=2,
             total_pages=2,
         ),
-        next_url: _response(
+        next_url: federal_response(
             _document("2026-00001"),
             count=2,
             total_pages=2,
@@ -1069,7 +1039,7 @@ def test_injected_page_fetcher_refuses_incomplete_or_cyclic_inventory() -> None:
     with pytest.raises(FederalRegisterSourceError, match="declared and observed record counts"):
         list(
             iter_federal_register_pages(
-                lambda _url: _response(_document(), count=2, total_pages=1),
+                lambda _url: federal_response(_document(), count=2, total_pages=1),
                 query_scope=scope,
             )
         )
@@ -1077,7 +1047,7 @@ def test_injected_page_fetcher_refuses_incomplete_or_cyclic_inventory() -> None:
     with pytest.raises(FederalRegisterSourceError, match="cyclic page cursor"):
         list(
             iter_federal_register_pages(
-                lambda _url: _response(
+                lambda _url: federal_response(
                     _document(),
                     next_page_url=initial,
                     count=2,
@@ -1101,13 +1071,13 @@ def test_capped_interval_splits_into_exact_ordered_leaf_evidence(tmp_path: Path)
         )
         requests.append(window)
         if window[0] != window[1]:
-            return _response(
+            return federal_response(
                 _document("2026-cap-probe", publication_date=window[0]),
                 count=10_000,
                 total_pages=10,
             )
         number = "2026-00013" if window[0].endswith("13") else "2026-00014"
-        return _response(_document(number, publication_date=window[0]))
+        return federal_response(_document(number, publication_date=window[0]))
 
     destination = tmp_path / "split-release"
     published = SourceNativeReleasePublisher(
@@ -1135,7 +1105,7 @@ def test_capped_interval_splits_into_exact_ordered_leaf_evidence(tmp_path: Path)
         * 2
     )
     pages = sorted(
-        _payload_rows(destination, "acquisition-pages"),
+        payload_rows(destination, "acquisition-pages"),
         key=lambda row: (row["traversalIndex"], row["pageIndex"]),
     )
     assert [
@@ -1168,7 +1138,7 @@ def test_capped_interval_splits_into_exact_ordered_leaf_evidence(tmp_path: Path)
 def test_capped_single_day_refuses_ambiguous_source_state() -> None:
     scope = {"publishedFrom": "2026-04-13", "publishedThrough": "2026-04-13"}
     pages = iter_federal_register_pages(
-        lambda _url: _response(
+        lambda _url: federal_response(
             _document("2026-cap", publication_date="2026-04-13"),
             count=10_000,
             total_pages=10,
@@ -1197,7 +1167,7 @@ def test_publisher_refuses_missing_or_reordered_date_windows(tmp_path: Path, day
             page_index=index,
             request_key=federal_register_documents_url({"publishedFrom": day, "publishedThrough": day}),
             source_cursor=None,
-            response_bytes=_response(_document(f"2026-{day[-2:]}", publication_date=day)),
+            response_bytes=federal_response(_document(f"2026-{day[-2:]}", publication_date=day)),
             window_index=index,
             window_page_index=0,
         )
@@ -1217,7 +1187,7 @@ def test_publisher_refuses_missing_or_reordered_date_windows(tmp_path: Path, day
 
 
 def test_publisher_independently_refuses_a_false_source_count(tmp_path: Path) -> None:
-    response = _response(_document(), count=2, total_pages=1)
+    response = federal_response(_document(), count=2, total_pages=1)
 
     with pytest.raises(FederalRegisterSourceError, match="declared and observed record counts"):
         _publish(tmp_path, [_page(0, 0, response)])
@@ -1253,7 +1223,7 @@ def test_three_observations_of_one_identity_keep_the_newest_and_count_the_discar
     assert receipt["discardedObservationCount"] == receipt["inputObservationCount"] - 1
     assert receipt["discardedObservationCount"] == 2
     # Every discarded observation stays in the acquisition evidence.
-    accepted = [row for row in _payload_rows(published.root, "acquisition-pages") if row["accepted"]]
+    accepted = [row for row in payload_rows(published.root, "acquisition-pages") if row["accepted"]]
     discovered = [record for row in accepted for record in row["discoveredRecords"]]
     assert [record["sourceRecordId"] for record in discovered] == [f"{number}@2026-08-25"] * 3
     assert len({record["recordDigest"] for record in discovered}) == 3
@@ -1315,7 +1285,7 @@ def test_reused_document_number_with_different_dates_are_two_distinct_records(
     assert receipt["publishedRecordCount"] == 2
     assert receipt["discardedObservationCount"] == 0
     # Both observations stay in acquisition evidence; neither is discarded now.
-    accepted = [row for row in _payload_rows(published.root, "acquisition-pages") if row["accepted"]]
+    accepted = [row for row in payload_rows(published.root, "acquisition-pages") if row["accepted"]]
     discovered = [record for row in accepted for record in row["discoveredRecords"]]
     assert [record["sourceRecordId"] for record in discovered] == [
         "00-111@2000-01-14",

@@ -52,6 +52,7 @@ from spicy_docs.source_native_profiles import (
 )
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 from spicy_docs.sources.regulations_gov import acquisition
+from tests.source_fixtures import payload_rows
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _PRODUCER = Producer(
@@ -239,18 +240,6 @@ def _reader(root: Path, pin, profile) -> SourceNativeReleaseReader:
     )
 
 
-def _payload_rows(root: Path, partition_kind: str) -> list[dict[str, Any]]:
-    receipt = json.loads((root / "receipts/publication.json").read_bytes())
-    store = LocalSourceNativeBlobStore(root.parent / "blobs")
-    rows: list[dict[str, Any]] = []
-    for partition in receipt["payloadPartitions"]:
-        if partition["partitionKind"] != partition_kind:
-            continue
-        with store.open(partition["blobRef"]) as stream:
-            rows.extend(json.loads(line) for line in stream)
-    return rows
-
-
 def test_document_record_preserves_source_facts_and_join_keys_without_prejoining() -> None:
     raw = _document()
 
@@ -404,7 +393,7 @@ def test_out_of_scope_objects_remain_evidence_without_becoming_records(tmp_path:
         destination=release,
     )
     reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)
-    pages = _payload_rows(release, "acquisition-pages")
+    pages = payload_rows(release, "acquisition-pages")
 
     assert [row["sourceRecordId"] for row in reader.iter_records()] == ["EPA-2026-0001-0001"]
     assert [row["recordsIncluded"] for row in pages] == [True]
@@ -444,7 +433,7 @@ def test_undated_document_stays_in_evidence_without_aborting_the_agency(tmp_path
         destination=release,
     )
     reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)
-    pages = _payload_rows(release, "acquisition-pages")
+    pages = payload_rows(release, "acquisition-pages")
 
     assert [row["sourceRecordId"] for row in reader.iter_records()] == ["EPA-2026-0001-0001"]
     assert [row["recordsIncluded"] for row in pages] == [True]
@@ -489,7 +478,7 @@ def test_malformed_posted_date_document_stays_in_evidence_without_aborting_the_a
         destination=release,
     )
     reader = _reader(release, published.artifact.pin, REGULATIONS_GOV_DOCUMENT_PROFILE)
-    pages = _payload_rows(release, "acquisition-pages")
+    pages = payload_rows(release, "acquisition-pages")
 
     assert [row["sourceRecordId"] for row in reader.iter_records()] == ["EPA-2026-0001-0001"]
     assert [row["recordsIncluded"] for row in pages] == [True]
@@ -783,7 +772,7 @@ def test_docket_release_selects_newest_observation_and_counts_discard(tmp_path: 
     assert receipt["publishedRecordCount"] == 1
     assert receipt["discardedObservationCount"] == 1
     # The discarded older observation stays in the acquisition evidence.
-    discovered = [record for row in _payload_rows(release, "acquisition-pages") for record in row["discoveredRecords"]]
+    discovered = [record for row in payload_rows(release, "acquisition-pages") for record in row["discoveredRecords"]]
     assert [record["sourceRecordId"] for record in discovered] == [identity, identity]
     assert len({record["recordDigest"] for record in discovered}) == 2
 
@@ -916,7 +905,7 @@ def test_release_collapses_identical_record_digests_with_differing_raw_bytes(
     assert receipt["publishedRecordCount"] == 1
     assert receipt["discardedObservationCount"] == 2
 
-    pages = _payload_rows(release, "acquisition-pages")
+    pages = payload_rows(release, "acquisition-pages")
     discovered = [record for row in pages for record in row["discoveredRecords"]]
     assert [record["sourceRecordId"] for record in discovered] == [fixture.identity] * 3
     digests = {record["recordDigest"] for record in discovered}
@@ -1148,7 +1137,7 @@ def test_read_time_derived_field_only_difference_collapses_without_tying(tmp_pat
     # Both mirror objects -- differing only in openForComment -- stay
     # byte-exact in acquisition evidence; the collapse happens only at
     # selection.
-    discovered = [record for row in _payload_rows(release, "acquisition-pages") for record in row["discoveredRecords"]]
+    discovered = [record for row in payload_rows(release, "acquisition-pages") for record in row["discoveredRecords"]]
     assert [record["sourceRecordId"] for record in discovered] == [identity, identity]
     assert len({record["recordDigest"] for record in discovered}) == 2
 

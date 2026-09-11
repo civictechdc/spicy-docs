@@ -20,7 +20,6 @@ per traversal) even though it is one distinct request.
 
 from __future__ import annotations
 
-import json
 import re
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -41,6 +40,7 @@ from spicy_docs.source_native import (
 )
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from tests.source_fixtures import federal_response
 from tools.replay_federal_register_release import (
     ReplayEvidenceMissingError,
     build_replay_fetch,
@@ -84,30 +84,11 @@ def _document(number: str, **changes: object) -> dict[str, object]:
     return value
 
 
-def _response(
-    *documents: dict[str, object],
-    next_page_url: str | None = None,
-    count: int | None = None,
-    total_pages: int | None = None,
-) -> bytes:
-    return json.dumps(
-        {
-            "count": len(documents) if count is None else count,
-            "next_page_url": next_page_url,
-            "results": list(documents),
-            "total_pages": (1 if next_page_url is None else 2) if total_pages is None else total_pages,
-        },
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    ).encode("utf-8")
-
-
 def _single_page_fetch_map(*documents: dict[str, object]) -> tuple[dict[str, bytes], str]:
     """One window, one page, one distinct requestKey."""
 
     url = federal_register_documents_url(QUERY_SCOPE)
-    return {url: _response(*documents)}, url
+    return {url: federal_response(*documents)}, url
 
 
 def _two_page_fetch_map(first: dict[str, object], second: dict[str, object]) -> tuple[dict[str, bytes], list[str]]:
@@ -116,8 +97,8 @@ def _two_page_fetch_map(first: dict[str, object], second: dict[str, object]) -> 
     page_one_url = federal_register_documents_url(QUERY_SCOPE)
     page_two_url = "https://www.federalregister.gov/api/v1/documents.json?cursor=page-2"
     fetch_map = {
-        page_one_url: _response(first, next_page_url=page_two_url, count=2, total_pages=2),
-        page_two_url: _response(second, next_page_url=None, count=2, total_pages=2),
+        page_one_url: federal_response(first, next_page_url=page_two_url, count=2, total_pages=2),
+        page_two_url: federal_response(second, next_page_url=None, count=2, total_pages=2),
     }
     return fetch_map, [page_one_url, page_two_url]
 

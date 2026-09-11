@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
+from tests.source_fixtures import counted_subsets
 from tests.source_native_release_fixtures import evidence_and_records_release
 from tools.fr_discarded_distinctness import census
 
@@ -285,26 +286,10 @@ def test_single_date_number_never_enters_the_multi_date_population(tmp_path: Pat
     assert "FR-2000-SINGLE" not in {e["documentNumber"] for e in result["examples"]}
 
 
-def _walk_subsets_with_counts(node: object) -> list[dict[str, Any]]:
-    """Every dict carrying a ``count`` key, found anywhere in the report -- the same walk
-    ``tests/test_cross_filing_census.py`` uses to prove no count is reported without a
-    population string beside it."""
-    found: list[dict[str, Any]] = []
-    if isinstance(node, dict):
-        if "count" in node:
-            found.append(cast("dict[str, Any]", node))
-        for value in node.values():
-            found.extend(_walk_subsets_with_counts(value))
-    elif isinstance(node, list):
-        for item in node:
-            found.extend(_walk_subsets_with_counts(item))
-    return found
-
-
 def test_every_subset_with_a_count_states_its_population(tmp_path: Path) -> None:
     result = _fixture(tmp_path)
 
-    subsets = _walk_subsets_with_counts(result)
+    subsets = counted_subsets(result)
     assert len(subsets) >= 1  # likelyRepublications is the one {"count", "population"} subset
     for subset in subsets:
         assert isinstance(subset.get("population"), str) and subset["population"].strip()

@@ -17,6 +17,7 @@ from spicy_docs.regulations_gov_source_native import (
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
 from spicy_docs.source_native_profiles import REGULATIONS_GOV_DOCKET_PROFILE, REGULATIONS_GOV_DOCUMENT_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from tests.source_fixtures import counted_subsets
 from tools.cross_filing_census import census
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
@@ -658,24 +659,9 @@ def test_documents_profile_default_is_unchanged_by_dockets_support(tmp_path: Pat
     assert default_result["scope"]["profileConsidered"] == "regulations-gov-documents"
 
 
-def _walk_subsets_with_counts(node: object) -> list[dict[str, Any]]:
-    """Every dict carrying a ``count`` key, found anywhere in the report -- used to prove
-    the CRITICAL rule: no count is reported without a population string beside it."""
-    found: list[dict[str, Any]] = []
-    if isinstance(node, dict):
-        if "count" in node:
-            found.append(cast("dict[str, Any]", node))
-        for value in node.values():
-            found.extend(_walk_subsets_with_counts(value))
-    elif isinstance(node, list):
-        for item in node:
-            found.extend(_walk_subsets_with_counts(item))
-    return found
-
-
 def test_every_subset_with_a_count_states_its_population(tmp_path: Path) -> None:
     documents_result = _fixture(tmp_path)
-    documents_subsets = _walk_subsets_with_counts(documents_result)
+    documents_subsets = counted_subsets(documents_result)
     assert len(documents_subsets) >= 10  # duplicateGroups (x4), crossAgencyBreakdown (x2), suspects (x2), and more
     for subset in documents_subsets:
         assert isinstance(subset.get("population"), str) and subset["population"].strip()
@@ -684,7 +670,7 @@ def test_every_subset_with_a_count_states_its_population(tmp_path: Path) -> None
     # coIssued/singleRealDocket, suspects, or idGrammar subsets (see the module docstring for why),
     # so only duplicateGroups (x4) and docketIdRepeatsWithinAgency carry a "count".
     dockets_result = _docket_duplicate_fixture(tmp_path)
-    dockets_subsets = _walk_subsets_with_counts(dockets_result)
+    dockets_subsets = counted_subsets(dockets_result)
     assert len(dockets_subsets) == 5
     for subset in dockets_subsets:
         assert isinstance(subset.get("population"), str) and subset["population"].strip()
