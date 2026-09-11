@@ -6,8 +6,8 @@ from collections.abc import Mapping
 from datetime import date
 from typing import Any, Final, cast
 
-from spicy_docs import federal_register_source_native as federal_register
-from spicy_docs.source_native_profile import SourceNativeProfile
+from spicy_docs.releases.profile import SourceNativeProfile
+from spicy_docs.sources.federal_register import native as federal_register
 
 FEDERAL_REGISTER_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:federal-register-paginated"
 # Policy 1.1 makes identity composite (document_number, publication_date).

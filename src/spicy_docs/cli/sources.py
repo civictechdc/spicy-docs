@@ -10,49 +10,57 @@ from datetime import datetime
 from functools import partial
 from typing import Any
 
-from spicy_docs.federal_register_source_native import (
-    FederalRegisterFetch,
-    FederalRegisterSourceError,
-    iter_federal_register_pages,
-)
-from spicy_docs.gao_product_pages_source_native import (
-    GaoProductFetch,
-    GaoProductSourceError,
-    gao_product_query_scope,
-    iter_gao_product_pages,
-)
-from spicy_docs.public_table_profiles import (
+from spicy_docs.public_tables.profiles import (
     FEDERAL_REGISTER_PUBLIC_TABLE,
     REGULATIONS_GOV_COMMENT_PUBLIC_TABLE,
     REGULATIONS_GOV_DOCKET_PUBLIC_TABLE,
     REGULATIONS_GOV_DOCUMENT_PUBLIC_TABLE,
     PublicTableProfile,
 )
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.releases.format import SourceNativeReleaseError
+from spicy_docs.releases.profile import SourceNativePage, SourceNativeProfile
+from spicy_docs.sources.federal_register.native import (
+    FederalRegisterFetch,
+    FederalRegisterSourceError,
+    iter_federal_register_pages,
+)
+from spicy_docs.sources.federal_register.profile import (
+    FEDERAL_REGISTER_PROFILE,
+)
+from spicy_docs.sources.gao.native import (
+    GaoProductFetch,
+    GaoProductSourceError,
+    gao_product_query_scope,
+    iter_gao_product_pages,
+)
+from spicy_docs.sources.gao.profile import (
+    GAO_PRODUCT_PAGE_PROFILE,
+)
+from spicy_docs.sources.public_comments.native import (
+    COMMENT_TABLE,
+    PublicTableFetch,
+    PublicTableSourceError,
+    iter_spicy_regs_public_comment_pages,
+)
+from spicy_docs.sources.public_comments.profile import (
+    SPICY_REGS_PUBLIC_COMMENT_PROFILE,
+)
+from spicy_docs.sources.regulations_gov.acquisition import (
+    iter_regulations_gov_comment_pages,
+    iter_regulations_gov_docket_pages,
+    iter_regulations_gov_document_pages,
+)
+from spicy_docs.sources.regulations_gov.definitions import (
     COMMENT_COLLECTION,
     DOCKET_COLLECTION,
     DOCUMENT_COLLECTION,
     MirrulationsObjectReader,
     RegulationsGovSourceError,
-    iter_regulations_gov_comment_pages,
-    iter_regulations_gov_docket_pages,
-    iter_regulations_gov_document_pages,
 )
-from spicy_docs.releases.format import SourceNativeReleaseError
-from spicy_docs.source_native_profile import SourceNativePage, SourceNativeProfile
-from spicy_docs.source_native_profiles import (
-    FEDERAL_REGISTER_PROFILE,
-    GAO_PRODUCT_PAGE_PROFILE,
+from spicy_docs.sources.regulations_gov.profile import (
     REGULATIONS_GOV_COMMENT_PROFILE,
     REGULATIONS_GOV_DOCKET_PROFILE,
     REGULATIONS_GOV_DOCUMENT_PROFILE,
-    SPICY_REGS_PUBLIC_COMMENT_PROFILE,
-)
-from spicy_docs.spicy_regs_public_tables_source_native import (
-    COMMENT_TABLE,
-    PublicTableFetch,
-    PublicTableSourceError,
-    iter_spicy_regs_public_comment_pages,
 )
 from spicy_docs.transport.acquisition import (
     default_regulations_reader,

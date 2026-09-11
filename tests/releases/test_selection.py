@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from spicy_docs.federal_register_source_native import (
-    federal_register_source_record_id,
-)
 from spicy_docs.source_native import (
     SourceNativeReleaseError,
+)
+from spicy_docs.sources.federal_register.native import (
+    federal_register_source_record_id,
 )
 from tests.releases.fixtures import (
     _collapsing_profile,

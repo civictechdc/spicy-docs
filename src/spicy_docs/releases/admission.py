@@ -55,7 +55,7 @@ from spicy_docs.releases.partitions import (
     _payload_partitions,
     _read_one_json,
 )
-from spicy_docs.source_native_profile import (
+from spicy_docs.releases.profile import (
     SourceNativeProfile,
 )
 

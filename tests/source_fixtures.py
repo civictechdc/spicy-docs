@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 
 def federal_response(

@@ -34,7 +34,7 @@ from spicy_docs.releases.format import (
     ROLE_RENDITIONS,
     SourceNativeReleaseError,
 )
-from spicy_docs.source_native_store import SourceNativeBlobStore
+from spicy_docs.storage.blobs import SourceNativeBlobStore
 
 
 @dataclass(slots=True)

@@ -15,7 +15,7 @@ from spicy_docs.source_native import (
 
 def test_new_path_uses_only_shared_artifact_implementation() -> None:
     source_native = Path(__file__).parents[2] / "src/spicy_docs/source_native.py"
-    profile = Path(__file__).parents[2] / "src/spicy_docs/federal_register_source_native.py"
+    profile = Path(__file__).parents[2] / "src/spicy_docs/sources/federal_register/native.py"
     implementations = sorted(source_native.with_name("releases").glob("*.py"))
     text = source_native.read_text() + profile.read_text() + "".join(path.read_text() for path in implementations)
 

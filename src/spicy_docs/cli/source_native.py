@@ -32,29 +32,35 @@ from spicy_docs.cli.sources import (
     public_table_profile,
     source_registration,
 )
-from spicy_docs.federal_register_source_native import (
-    FederalRegisterFetch,
-)
-from spicy_docs.gao_product_pages_source_native import (
-    GaoProductFetch,
-)
-from spicy_docs.publication import ImmutablePublicationError
-from spicy_docs.releases.paths import require_separate_paths
-from spicy_docs.source_native import (
+from spicy_docs.releases.format import (
     CURRENT_PRODUCER_PRODUCT,
     VERIFIER_ID,
     VERIFIER_VERSION,
     SourceNativeReleaseBuild,
     SourceNativeReleaseError,
+)
+from spicy_docs.releases.paths import require_separate_paths
+from spicy_docs.releases.publish import (
     SourceNativeReleasePublisher,
+)
+from spicy_docs.releases.reader import (
     SourceNativeReleaseReader,
+)
+from spicy_docs.releases.verify import (
     verify_source_native_release,
 )
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
-from spicy_docs.sources.zyte import ZyteTransportError
-from spicy_docs.spicy_regs_public_tables_source_native import (
+from spicy_docs.sources.federal_register.native import (
+    FederalRegisterFetch,
+)
+from spicy_docs.sources.gao.native import (
+    GaoProductFetch,
+)
+from spicy_docs.sources.public_comments.native import (
     PublicTableFetch,
 )
+from spicy_docs.sources.zyte import ZyteTransportError
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+from spicy_docs.storage.publication import ImmutablePublicationError
 from spicy_docs.transport.acquisition import capture_instant
 
 
@@ -208,13 +214,13 @@ def _publish_public_table(args: argparse.Namespace) -> dict[str, object]:
     ``public-table`` extra. Missing dependencies produce ``dependency-missing``.
     """
 
-    from spicy_docs.public_table import (
+    from spicy_docs.public_tables.api import (
         VERIFIER_ID as PUBLIC_TABLE_VERIFIER_ID,
     )
-    from spicy_docs.public_table import (
+    from spicy_docs.public_tables.api import (
         VERIFIER_VERSION as PUBLIC_TABLE_VERIFIER_VERSION,
     )
-    from spicy_docs.public_table import (
+    from spicy_docs.public_tables.api import (
         PublicTableBuild,
         PublicTablePublisher,
     )
@@ -267,7 +273,7 @@ def _verify_public_table(args: argparse.Namespace) -> dict[str, object]:
     applies here.
     """
 
-    from spicy_docs.public_table import verify_public_table_admission
+    from spicy_docs.public_tables.api import verify_public_table_admission
 
     profile = public_table_profile(args.table)
     expected_pin = ArtifactPin(args.logical_id, args.artifact_digest)

@@ -13,14 +13,19 @@ from typing import Any, Final
 
 from rulespec_artifacts import canonical_json_bytes
 
-from spicy_docs.federal_register_source_native import (
+from spicy_docs.schemas.federal_register import (
+    FEDERAL_REGISTER_COLUMNS,
+    project_federal_register_document,
+)
+from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT
+from spicy_docs.sources.federal_register.native import (
     SCHEMA_NAME as FEDERAL_REGISTER_SCHEMA_NAME,
 )
-from spicy_docs.federal_register_source_native import (
+from spicy_docs.sources.federal_register.native import (
     SOURCE_SYSTEM_ID as FEDERAL_REGISTER_SOURCE_SYSTEM_ID,
 )
-from spicy_docs.federal_register_source_native import federal_register_source_record_id
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.sources.federal_register.native import federal_register_source_record_id
+from spicy_docs.sources.regulations_gov.definitions import (
     COMMENT_SCHEMA_NAME,
     COMMENT_SOURCE_SYSTEM_ID,
     DOCKET_SCHEMA_NAME,
@@ -28,11 +33,6 @@ from spicy_docs.regulations_gov_source_native import (
     DOCUMENT_SCHEMA_NAME,
     DOCUMENT_SOURCE_SYSTEM_ID,
 )
-from spicy_docs.schemas.federal_register import (
-    FEDERAL_REGISTER_COLUMNS,
-    project_federal_register_document,
-)
-from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT
 
 
 class PublicTableProjectionError(ValueError):

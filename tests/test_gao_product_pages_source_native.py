@@ -11,8 +11,8 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 import pytest
 
-import spicy_docs.gao_product_pages_source_native as gao
-from spicy_docs.gao_product_pages_source_native import (
+import spicy_docs.sources.gao.native as gao
+from spicy_docs.sources.gao.native import (
     MAX_PAGE_BYTES,
     GaoProductSourceError,
     GaoProductWindow,
@@ -264,7 +264,7 @@ def test_gao_profile_imports_without_spicysearch_or_refspec() -> None:
             sys.executable,
             "-c",
             (
-                "import sys; import spicy_docs.gao_product_pages_source_native; "
+                "import sys; import spicy_docs.sources.gao.native; "
                 "unexpected=[name for name in sys.modules if name.startswith(('spicysearch', 'refspec'))]; "
                 "print(','.join(unexpected)); raise SystemExit(bool(unexpected))"
             ),

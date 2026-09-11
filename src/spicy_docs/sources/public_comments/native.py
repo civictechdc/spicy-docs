@@ -50,7 +50,7 @@ from spicy_docs.schemas.spicy_regs_public_tables import (
     PUBLIC_COMMENT_VERSION_COLUMN,
     project_public_comment_row,
 )
-from spicy_docs.source_native_zip import deterministic_zip_entry
+from spicy_docs.sources.evidence_zip import deterministic_zip_entry
 from spicy_docs.sources.json_input import load_integer_json
 from spicy_docs.sources.media_types import media_type
 

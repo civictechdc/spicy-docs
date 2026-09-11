@@ -8,38 +8,38 @@ from datetime import UTC, datetime
 
 import httpx
 
-from spicy_docs.federal_register_source_native import (
+from spicy_docs.releases.format import (
+    SourceNativeReleaseError,
+)
+from spicy_docs.schemas import COMMENT, DOCKET, DOCUMENT
+from spicy_docs.sources import mirrulations
+from spicy_docs.sources.federal_register.native import (
     FederalRegisterFetch,
     FederalRegisterSourceError,
 )
-from spicy_docs.gao_product_pages_source_native import (
+from spicy_docs.sources.gao.native import (
     FETCH_TIMEOUT_SECONDS as GAO_FETCH_TIMEOUT_SECONDS,
 )
-from spicy_docs.gao_product_pages_source_native import (
+from spicy_docs.sources.gao.native import (
     MAX_PAGE_BYTES as GAO_MAX_PAGE_BYTES,
 )
-from spicy_docs.gao_product_pages_source_native import (
+from spicy_docs.sources.gao.native import (
     GaoProductFetch,
 )
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.sources.public_comments.native import (
+    MAX_PARTITION_BYTES,
+    PublicTableCapture,
+    PublicTableFetch,
+    PublicTableSourceError,
+)
+from spicy_docs.sources.regulations_gov.definitions import (
     COMMENT_COLLECTION,
     DOCKET_COLLECTION,
     DOCUMENT_COLLECTION,
     MirrulationsObjectReader,
     RegulationsGovSourceError,
 )
-from spicy_docs.releases.format import (
-    SourceNativeReleaseError,
-)
-from spicy_docs.schemas import COMMENT, DOCKET, DOCUMENT
-from spicy_docs.sources import mirrulations
 from spicy_docs.sources.zyte import ZyteHttpFetcher
-from spicy_docs.spicy_regs_public_tables_source_native import (
-    MAX_PARTITION_BYTES,
-    PublicTableCapture,
-    PublicTableFetch,
-    PublicTableSourceError,
-)
 from spicy_docs.transport.retry import retry_http
 
 _USER_AGENT = "spicy-docs-source-native/1.0 (https://github.com/civictechdc/spicy-docs)"

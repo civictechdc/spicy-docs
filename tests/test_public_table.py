@@ -28,13 +28,13 @@ from rulespec_artifacts import (
     Producer,
 )
 
-from spicy_docs.public_table import (
+from spicy_docs.public_tables.api import (
     VERIFIER_ID as PUBLIC_VERIFIER_ID,
 )
-from spicy_docs.public_table import (
+from spicy_docs.public_tables.api import (
     VERIFIER_VERSION as PUBLIC_VERIFIER_VERSION,
 )
-from spicy_docs.public_table import (
+from spicy_docs.public_tables.api import (
     IcebergPublicTableSink,
     PublicTableArtifactLocation,
     PublicTableBuild,
@@ -42,14 +42,13 @@ from spicy_docs.public_table import (
     PublicTablePublisher,
     PublicTableReader,
 )
-from spicy_docs.public_table_profiles import (
+from spicy_docs.public_tables.profiles import (
     FEDERAL_REGISTER_PUBLIC_TABLE,
     REGULATIONS_GOV_COMMENT_PUBLIC_TABLE,
     REGULATIONS_GOV_DOCKET_PUBLIC_TABLE,
     REGULATIONS_GOV_DOCUMENT_PUBLIC_TABLE,
     PublicTableProfile,
 )
-from spicy_docs.publication import ImmutablePublicationError
 from spicy_docs.regulations_gov_source_native import (
     COMMENT_COLLECTION,
     iter_regulations_gov_comment_pages,
@@ -64,7 +63,8 @@ from spicy_docs.source_native import (
     SourceNativeReleaseReader,
 )
 from spicy_docs.source_native_profiles import REGULATIONS_GOV_COMMENT_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+from spicy_docs.storage.publication import ImmutablePublicationError
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _SOURCE_PRODUCER = Producer(
@@ -809,11 +809,7 @@ def test_public_table_module_has_no_sibling_product_imports() -> None:
     repository = Path(__file__).resolve().parents[1]
     imported: set[str] = set()
     implementations = sorted(repository.glob("src/spicy_docs/public_tables/*.py"))
-    for relative in (
-        *implementations,
-        "src/spicy_docs/public_table.py",
-        "src/spicy_docs/public_table_profiles.py",
-    ):
+    for relative in implementations:
         tree = ast.parse((repository / relative).read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):

@@ -23,7 +23,6 @@ from rulespec_artifacts import (
     schema_bundle_digest,
 )
 
-from spicy_docs.publication import publish_directory_once, write_bytes_once
 from spicy_docs.releases.format import (
     _RECEIPT_SHAPE,
     FORMAT,
@@ -71,14 +70,15 @@ from spicy_docs.releases.partitions import (
     _PayloadPartition,
     _stage_partition,
 )
-from spicy_docs.releases.verify import (
-    verify_source_native_release,
-)
-from spicy_docs.source_native_profile import (
+from spicy_docs.releases.profile import (
     SourceNativePage,
     SourceNativeProfile,
 )
-from spicy_docs.source_native_store import SourceNativeBlobStore
+from spicy_docs.releases.verify import (
+    verify_source_native_release,
+)
+from spicy_docs.storage.blobs import SourceNativeBlobStore
+from spicy_docs.storage.publication import publish_directory_once, write_bytes_once
 
 
 class SourceNativeReleasePublisher:

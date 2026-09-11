@@ -15,18 +15,18 @@ from rulespec_artifacts import (
     Producer,
 )
 
-from spicy_docs.federal_register_source_native import (
-    FederalRegisterPage,
-    federal_register_documents_url,
-)
+from spicy_docs.releases.profile import SourceNativeProfile
 from spicy_docs.source_native import (
     SourceNativeReleaseBuild,
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
-from spicy_docs.source_native_profile import SourceNativeProfile
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.sources.federal_register.native import (
+    FederalRegisterPage,
+    federal_register_documents_url,
+)
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.source_fixtures import federal_response
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40

@@ -34,7 +34,7 @@ from rulespec_artifacts import (
     schema_bundle_digest,
 )
 
-from spicy_docs.source_native_zip import (
+from spicy_docs.sources.evidence_zip import (
     deterministic_zip_entry,
     has_deterministic_zip_metadata,
 )

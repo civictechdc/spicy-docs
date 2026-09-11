@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from spicy_docs.source_profiles import SOURCE_PROFILES, STEP4_ACTIVE_SOURCE_TABLES
+from spicy_docs.catalog.profiles import SOURCE_PROFILES, STEP4_ACTIVE_SOURCE_TABLES
 
 PROFILE_CATALOG_FORMAT = "spicyregs-source-profile-catalog/experimental-v0"
 APPLICABILITY_INPUT_FORMAT = "spicyregs-profile-resource-applicability-input/experimental-v0"

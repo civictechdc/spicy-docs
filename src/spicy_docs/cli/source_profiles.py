@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from spicy_docs.source_profile_artifacts import (
+from spicy_docs.catalog.artifacts import (
     SourceProfileArtifactError,
     build_profile_resource_applicability,
     build_source_profile_catalog,

@@ -19,7 +19,7 @@ from spicy_docs.releases.format import (
     SourceNativeReleaseBuild,
     SourceNativeReleaseError,
 )
-from spicy_docs.source_native_profile import (
+from spicy_docs.releases.profile import (
     SourceNativePage,
     SourceNativeProfile,
 )

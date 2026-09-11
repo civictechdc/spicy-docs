@@ -1,4 +1,4 @@
-"""Fixture coverage for the ``tools/cross_filing_census.py`` receipt helper (SD-16, SD-17)."""
+"""Fixture coverage for the ``tools/analysis/cross_filing_census.py`` receipt helper (SD-16, SD-17)."""
 
 from __future__ import annotations
 
@@ -16,9 +16,9 @@ from spicy_docs.regulations_gov_source_native import (
 )
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
 from spicy_docs.source_native_profiles import REGULATIONS_GOV_DOCKET_PROFILE, REGULATIONS_GOV_DOCUMENT_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.source_fixtures import counted_subsets
-from tools.cross_filing_census import census
+from tools.analysis.cross_filing_census import census
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _PRODUCER = Producer(

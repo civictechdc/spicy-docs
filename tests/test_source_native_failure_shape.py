@@ -35,6 +35,7 @@ from rulespec_artifacts import (
     schema_bundle_digest,
 )
 
+from spicy_docs.releases.profile import SourceNativeProfile
 from spicy_docs.source_native import (
     FAILURE_CLASS_DETERMINISTIC,
     FAILURE_CLASS_TRANSIENT,
@@ -63,7 +64,6 @@ from spicy_docs.source_native import (
     verify_source_native_admission,
     verify_source_native_release,
 )
-from spicy_docs.source_native_profile import SourceNativeProfile
 
 IMPLEMENTATION_ID: Final = "git+https://example.test/spicy-docs@" + "b" * 40
 _SOURCE_SCHEMA_KEY: Final = "schemas/fixture-source.json"

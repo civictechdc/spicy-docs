@@ -16,7 +16,7 @@ from rulespec_artifacts import (
     VerifiedArtifact,
 )
 
-from spicy_docs.public_table_profiles import PublicTableProfile
+from spicy_docs.public_tables.profiles import PublicTableProfile
 from spicy_docs.releases.format import SUPPORTED_PRODUCER_PRODUCTS
 
 KIND = "spicyregs-public-table"

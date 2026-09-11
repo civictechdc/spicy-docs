@@ -23,8 +23,8 @@ from spicy_docs.source_native import (
 from spicy_docs.source_native_profiles import (
     REGULATIONS_GOV_DOCUMENT_PROFILE,
 )
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 from spicy_docs.sources.regulations_gov import acquisition
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.regulations_gov.fixtures import (
     _build,
     _completed_at,

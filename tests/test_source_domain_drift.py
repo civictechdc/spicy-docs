@@ -42,7 +42,7 @@ from spicy_docs.sources.source_domains import (
 
 ROOT = Path(__file__).resolve().parents[1]
 DOMAIN_DIR = ROOT / DEFAULT_SOURCE_DOMAIN_DIR
-TOOL = ROOT / "tools" / "check_source_domain_drift.py"
+TOOL = ROOT / "scripts" / "check_source_domain_drift.py"
 
 
 @pytest.fixture(scope="module")

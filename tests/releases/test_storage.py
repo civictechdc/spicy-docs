@@ -14,8 +14,8 @@ from rulespec_artifacts import (
     admit_artifact,
 )
 
-from spicy_docs.publication import ImmutablePublicationError
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+from spicy_docs.storage.publication import ImmutablePublicationError
 from tests.releases.fixtures import (
     _document,
     _publish,

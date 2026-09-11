@@ -22,7 +22,7 @@ from spicy_docs.source_native_profiles import (
     REGULATIONS_GOV_DOCKET_PROFILE,
     REGULATIONS_GOV_DOCUMENT_PROFILE,
 )
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.regulations_gov.fixtures import (
     _acf_docket_scope,
     _acf_document_scope,

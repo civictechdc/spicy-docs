@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gate: published column values against the value lists their publishers document.
 
-``--check`` (the default) diffs the documented domains parsed from the pinned
+With no options, diffs the documented domains parsed from the pinned
 publisher captures against the checked-in observed snapshot, and fails on any
 finding the ledger in :mod:`spicy_docs.sources.source_domains` does not record —
 in either direction. It reads no network and no parquet, so it runs anywhere.

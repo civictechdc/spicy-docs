@@ -12,11 +12,6 @@ from threading import Barrier
 
 import pytest
 
-from spicy_docs.federal_register_source_native import (
-    FederalRegisterPage,
-    federal_register_source_record_id,
-)
-from spicy_docs.publication import ImmutablePublicationError
 from spicy_docs.source_native import (
     FAILURE_CLASS_DETERMINISTIC,
     PARTITION_LEDGER,
@@ -25,7 +20,12 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
 )
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.sources.federal_register.native import (
+    FederalRegisterPage,
+    federal_register_source_record_id,
+)
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+from spicy_docs.storage.publication import ImmutablePublicationError
 from tests.releases.fixtures import (
     PRODUCER,
     QUERY_SCOPE,

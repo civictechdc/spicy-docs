@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Shard-by-agency campaign runner for Phase A of the source supply consolidation plan.
 
-Publishes docket and document releases per agency through ``spicy_docs.source_native_cli``
+Publishes docket and document releases per agency through ``spicy_docs.cli.source_native``
 subprocesses, N agencies at a time (Phase A of
 ``spicysearch/docs/source-supply-consolidation-plan-2026-09-01.md``). Each child streams its
 stdout and stderr into ``logs/<release>.log``, appended per attempt, and the CLI's one JSON
@@ -37,8 +37,7 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Final, NamedTuple, TextIO
 
-ROOT: Final = Path(__file__).resolve().parents[1]
-DEFAULT_PYTHON: Final = ROOT / ".venv" / "bin" / "python"
+DEFAULT_PYTHON: Final = Path(sys.executable)
 SOURCE_DOCKETS: Final = "regulations-dockets"
 SOURCE_DOCUMENTS: Final = "regulations-documents"
 _DESTINATION_PREFIX: Final = {SOURCE_DOCKETS: "regs-dockets", SOURCE_DOCUMENTS: "regs-documents"}
@@ -98,7 +97,7 @@ def _destination(root: Path, source: str, agency: str) -> Path:
 
 
 def _cli(python: Path, subcommand: str, **flags: object) -> list[str]:
-    command = [str(python), "-m", "spicy_docs.source_native_cli", subcommand]
+    command = [str(python), "-m", "spicy_docs.cli.source_native", subcommand]
     for name, value in flags.items():
         command += [f"--{name.replace('_', '-')}", str(value)]
     return command

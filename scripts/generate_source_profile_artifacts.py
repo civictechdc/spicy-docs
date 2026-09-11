@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from spicy_docs.source_profile_artifacts import (
+from spicy_docs.catalog.artifacts import (
     SourceProfileArtifactError,
     build_profile_resource_applicability,
     build_source_profile_catalog,
@@ -21,7 +21,7 @@ from spicy_docs.source_profile_artifacts import (
 INPUT = ROOT / "policies" / "profile-resource-applicability-input-v0.json"
 PROFILE_CATALOG = ROOT / "policies" / "source-profile-catalog-v0.json"
 APPLICABILITY = ROOT / "policies" / "profile-resource-applicability-v0.json"
-DEFAULT_REFSPEC_CATALOG = ROOT / "RefSpec" / "portfolio" / "resource-catalog-v0.json"
+DEFAULT_REFSPEC_CATALOG = ROOT / "tests" / "fixtures" / "refspec-resource-catalog-v0.json"
 
 
 def _arguments() -> argparse.Namespace:
@@ -57,9 +57,13 @@ def main() -> int:
             if not path.is_file() or path.read_text(encoding="utf-8") != content:
                 raise SourceProfileArtifactError(
                     f"{path.relative_to(ROOT)} differs from deterministic generation; "
-                    "run tools/generate_source_profile_artifacts.py --write"
+                    "run scripts/generate_source_profile_artifacts.py --write"
                 )
-        print("source-profile artifacts are current: 17 profiles, 16 active")
+        summary = profile_catalog["summary"]
+        print(
+            f"source-profile artifacts are current: {summary['profileCount']} profiles, "
+            f"{summary['activeProfileCount']} active"
+        )
         return 0
     except (KeyError, OSError, SourceProfileArtifactError, ValueError) as error:
         print(f"source-profile artifact error: {error}", file=sys.stderr)

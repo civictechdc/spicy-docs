@@ -13,7 +13,7 @@ from rulespec_artifacts import (
     canonical_json_bytes,
 )
 
-from spicy_docs.source_native_zip import deterministic_zip_entry
+from spicy_docs.sources.evidence_zip import deterministic_zip_entry
 from spicy_docs.sources.json_input import load_integer_json
 from spicy_docs.sources.regulations_gov.definitions import (
     _ASCII_ID,

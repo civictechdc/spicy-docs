@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Final
 
-from spicy_docs import gao_product_pages_source_native as gao
-from spicy_docs.source_native_profile import SourceNativeProfile
+from spicy_docs.releases.profile import SourceNativeProfile
+from spicy_docs.sources.gao import native as gao
 
 GAO_PRODUCT_PAGE_PROFILE: Final = SourceNativeProfile(
     name="GAO product pages",

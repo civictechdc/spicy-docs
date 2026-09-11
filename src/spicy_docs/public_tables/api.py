@@ -1,4 +1,4 @@
-"""Supported public-table imports; implementations live in ``public_tables``.
+"""Public-table entry points collected for callers that need the full table API.
 
 Public-table operations require the optional PyArrow dependency. Source-native
 commands import this API only when a table operation is requested.

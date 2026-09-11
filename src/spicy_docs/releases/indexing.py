@@ -31,12 +31,12 @@ from spicy_docs.releases.partitions import (
     _ByteAccounting,
     _partition_id,
 )
-from spicy_docs.source_native_profile import (
+from spicy_docs.releases.profile import (
     AcquisitionCheck,
     SourceNativePage,
     SourceNativeProfile,
 )
-from spicy_docs.source_native_store import SourceNativeBlobStore
+from spicy_docs.storage.blobs import SourceNativeBlobStore
 
 
 def index_pages(

@@ -18,7 +18,6 @@ from rulespec_artifacts import (
     iter_member_descriptors,
 )
 
-from spicy_docs.public_table_profiles import PublicTableProfile, PublicTableProjectionError
 from spicy_docs.public_tables.format import (
     _SPEC_FIELDS,
     INPUT_ROLE,
@@ -35,6 +34,7 @@ from spicy_docs.public_tables.format import (
     _member_position,
     _validate_profile,
 )
+from spicy_docs.public_tables.profiles import PublicTableProfile, PublicTableProjectionError
 from spicy_docs.releases.format import SUPPORTED_PRODUCER_PRODUCTS
 
 

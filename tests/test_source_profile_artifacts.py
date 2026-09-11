@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from spicy_docs.source_profile_artifacts import (
+from spicy_docs.catalog.artifacts import (
     SourceProfileArtifactError,
     build_profile_resource_applicability,
     load_json,
@@ -113,7 +113,7 @@ def test_profile_declarations_import_without_pipeline_or_refspec() -> None:
             sys.executable,
             "-c",
             (
-                "import sys; import spicy_docs.source_profile_artifacts; "
+                "import sys; import spicy_docs.catalog.artifacts; "
                 "unexpected=[name for name in sys.modules if "
                 "name.startswith(('spicy_docs.docpipeline', 'spicy_docs.ontology', 'refspec'))]; "
                 "print(','.join(unexpected)); raise SystemExit(bool(unexpected))"

@@ -7,7 +7,11 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from spicy_docs.federal_register_source_native import (
+from spicy_docs.source_native import (
+    SourceNativeReleasePublisher,
+)
+from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
+from spicy_docs.sources.federal_register.native import (
     DOCUMENT_FIELDS,
     FederalRegisterPage,
     FederalRegisterSourceError,
@@ -15,11 +19,7 @@ from spicy_docs.federal_register_source_native import (
     iter_federal_register_pages,
     parse_page_response,
 )
-from spicy_docs.source_native import (
-    SourceNativeReleasePublisher,
-)
-from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.releases.fixtures import (
     _build,
     _completed_at,

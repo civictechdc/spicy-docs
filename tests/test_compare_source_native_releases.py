@@ -1,4 +1,4 @@
-"""Fixture coverage for ``tools/compare_source_native_releases.py``.
+"""Fixture coverage for ``tools/analysis/compare_source_native_releases.py``.
 
 The tool's job is to answer, after a producer change republishes a release,
 whether the change ADDED records or also PERTURBED existing ones. The
@@ -19,7 +19,7 @@ from typing import Any
 import pytest
 
 from tests.source_native_release_fixtures import records_release
-from tools.compare_source_native_releases import compare
+from tools.analysis.compare_source_native_releases import compare
 
 IDENTITY = ("document_number", "publication_date")
 COMPARE = ("type", "title", "agencies", "abstract")

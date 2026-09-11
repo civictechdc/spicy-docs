@@ -9,14 +9,14 @@ import httpx
 import pytest
 from rulespec_artifacts import LocalMemberSource, Producer
 
-from spicy_docs.federal_register_source_native import iter_federal_register_pages
 from spicy_docs.source_native import (
     SourceNativeReleaseBuild,
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.sources.federal_register.native import iter_federal_register_pages
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 _SCOPE = {"publishedFrom": "2026-04-13", "publishedThrough": "2026-04-13"}
 _IMPLEMENTATION_ID = "pkg:pypi/spicy-regs@0.1.7?checksum=sha256:" + "a" * 64

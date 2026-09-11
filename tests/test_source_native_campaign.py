@@ -1,6 +1,6 @@
 """Fake-subprocess tests for the Phase A shard-by-agency campaign runner.
 
-No network and no real ``spicy_docs.source_native_cli`` subprocess: every test injects a fake
+No network and no real ``spicy_docs.cli.source_native`` subprocess: every test injects a fake
 runner in place of the Popen one and a fixed clock, then inspects the campaign runner's own
 filesystem output (the root lock, receipts, logs, campaign.jsonl) and its exit code. The fake
 runner has the real runner's contract -- it streams its output into the log the campaign
@@ -18,7 +18,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.source_native_campaign import main
+from spicy_docs.cli.campaign import main
 
 FIXED_INSTANT = "2026-09-02T12:00:00Z"
 
@@ -183,7 +183,7 @@ def test_receipt_log_and_jsonl_written(tmp_path: Path) -> None:
 
     docket_log = (out_root / "logs" / "regs-dockets-EPA.log").read_text(encoding="utf-8")
     assert docket_log.splitlines()[0] == ""  # each attempt starts with a blank separator line
-    assert docket_log.splitlines()[1].startswith(f"$ {FIXED_INSTANT} python3 -m spicy_docs.source_native_cli publish")
+    assert docket_log.splitlines()[1].startswith(f"$ {FIXED_INSTANT} python3 -m spicy_docs.cli.source_native publish")
     assert json.loads(docket_log.splitlines()[-1])["ok"] is True  # the child's own streamed receipt line
 
     rows = [json.loads(line) for line in (out_root / "campaign.jsonl").read_text(encoding="utf-8").splitlines()]
@@ -406,7 +406,7 @@ def test_retry_appends_to_the_release_log_instead_of_truncating_it(tmp_path: Pat
     assert main(argv, run_subprocess=FakeRunner(), clock=_clock) == 0
 
     log_text = (tmp_path / "out" / "logs" / "regs-dockets-EPA.log").read_text(encoding="utf-8")
-    assert log_text.count(f"$ {FIXED_INSTANT} python3 -m spicy_docs.source_native_cli publish") == 2
+    assert log_text.count(f"$ {FIXED_INSTANT} python3 -m spicy_docs.cli.source_native publish") == 2
 
 
 def test_second_runner_refuses_a_locked_root(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

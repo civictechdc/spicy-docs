@@ -21,7 +21,6 @@ from rulespec_artifacts import (
     parse_canonical_json,
 )
 
-from spicy_docs.public_table_profiles import PublicTableProfile
 from spicy_docs.public_tables.format import (
     INPUT_ROLE,
     KIND,
@@ -39,10 +38,11 @@ from spicy_docs.public_tables.format import (
     _spec,
     _validate_profile,
 )
+from spicy_docs.public_tables.profiles import PublicTableProfile
 from spicy_docs.public_tables.verify import (
     verify_public_table_release,
 )
-from spicy_docs.publication import (
+from spicy_docs.storage.publication import (
     ImmutablePublicationError,
     publish_directory_once,
     write_bytes_once,

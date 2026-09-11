@@ -51,11 +51,11 @@ from xml.etree import ElementTree
 
 import httpx
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from spicy_docs.source_native import ROLE_RECORDS
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 # Shared capped exponential backoff with full jitter; this tool decides which
 # status and transport errors are retryable.

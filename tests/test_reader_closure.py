@@ -73,7 +73,7 @@ def test_each_reader_module_is_guarded_individually() -> None:
 
 @pytest.mark.parametrize(
     "module",
-    ["spicy_docs.sources.federal_register.profile", "tools.replay_federal_register_release"],
+    ["spicy_docs.sources.federal_register.profile", "spicy_docs.sources.federal_register.replay"],
 )
 def test_federal_register_replay_imports_no_live_transport(module: str) -> None:
     """One source's policy must be usable without another source's transport."""
@@ -83,8 +83,8 @@ def test_federal_register_replay_imports_no_live_transport(module: str) -> None:
         "ssl",
         "socket",
         "spicy_docs.sources.zyte",
-        "spicy_docs.gao_product_pages_source_native",
-        "spicy_docs.source_native_cli",
+        "spicy_docs.sources.gao.native",
+        "spicy_docs.cli.source_native",
     )
     completed = subprocess.run(
         [

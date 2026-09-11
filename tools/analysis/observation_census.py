@@ -15,12 +15,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from collections import defaultdict
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 from rulespec_artifacts import ArtifactPin, LocalMemberSource
 
@@ -30,15 +26,15 @@ from spicy_docs.regulations_gov_source_native import (
     comment_source_issued_version,
     source_issued_version,
 )
+from spicy_docs.releases.profile import SourceNativeProfile
 from spicy_docs.source_native import SourceNativeReleaseReader
-from spicy_docs.source_native_profile import SourceNativeProfile
 from spicy_docs.source_native_profiles import (
     FEDERAL_REGISTER_PROFILE,
     REGULATIONS_GOV_COMMENT_PROFILE,
     REGULATIONS_GOV_DOCKET_PROFILE,
     REGULATIONS_GOV_DOCUMENT_PROFILE,
 )
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 PROFILES: dict[str, SourceNativeProfile] = {
     "federal-register": FEDERAL_REGISTER_PROFILE,

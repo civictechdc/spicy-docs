@@ -1,4 +1,4 @@
-"""Fixture coverage for ``tools/fetch_crs_summaries.py``.
+"""Fixture coverage for ``src/spicy_docs/sources/congress/crs_summaries.py``.
 
 Each test pins one discipline the tool exists to carry, and each discipline
 comes from a defect this project hit rather than from a checklist. No network:
@@ -16,7 +16,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-from tools.fetch_crs_summaries import CredentialRefusedError, read_api_key, run
+from spicy_docs.sources.congress.crs_summaries import CredentialRefusedError, run
+from spicy_docs.transport.credentials import read_api_key
 
 
 def _parquet(tmp_path: Path, ids: list[str]) -> Path:
@@ -185,7 +186,7 @@ def test_the_scrub_removes_a_key_it_was_not_handed(tmp_path: Path) -> None:
     A redirect to another keyed host, or a nested URL quoted inside a
     message, carries a credential this function was never told about.
     """
-    from tools.fetch_crs_summaries import scrub_credential
+    from spicy_docs.transport.credentials import scrub_credential
 
     text = "GET https://other.example/v3/x?api_key=SOME-OTHER-SECRET&format=json failed"
     assert "SOME-OTHER-SECRET" not in scrub_credential(text, "the-configured-key")
@@ -205,7 +206,7 @@ def test_the_scrub_removes_the_configured_key_in_a_form_the_pattern_misses() -> 
     the path all present it bare, and the query-parameter pattern matches
     none of those.
     """
-    from tools.fetch_crs_summaries import scrub_credential
+    from spicy_docs.transport.credentials import scrub_credential
 
     secret = "DEADBEEF" * 5
     for carrier in (

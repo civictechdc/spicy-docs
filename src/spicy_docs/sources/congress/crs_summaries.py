@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Fetch CRS report summaries from the Congress.gov v3 API, one row per report.
 
-Tier 1 of the CRS item: the API returns metadata plus a ``summary`` that is
-substantive text -- measured at a 3,500-character median with 100% coverage over
-24 reports stratified by type and decade, about 21x the regulations.gov comment
-field's 164. Tier 2, the full report, is PDF-only at 1.5-1.9 MB each and is a
-separate item.
+The API supplies report metadata and summary text. Fetching full report PDFs is
+a separate operation. The input Parquet supplies report ids; the output JSONL
+retains one success or failure row per attempt and resumes from that output.
 
-Four disciplines are built in rather than added after, each from a defect this
+Five disciplines are built in rather than added after, each from a defect this
 project hit:
 
 1. **Assert on what success looks like, not on what one failure looks like.**
@@ -40,7 +38,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 import time
 from pathlib import Path
@@ -48,9 +45,7 @@ from typing import Any
 
 import httpx
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-
+from spicy_docs.transport.credentials import read_api_key, scrub_credential
 from spicy_docs.transport.retry import retry_http
 
 API = "https://api.congress.gov/v3/crsreport/{report_id}"
@@ -67,36 +62,11 @@ class _RetryableStatus(httpx.HTTPStatusError):
     """429 or 5xx, worth retrying, as distinct from a 404 that is an answer."""
 
 
-def read_api_key(env_file: Path, name: str) -> str:
-    for line in env_file.read_text().splitlines():
-        key, sep, value = line.partition("=")
-        if sep and key.strip() == name:
-            return value.strip().strip("'\"")
-    raise SystemExit(f"{name} not found in {env_file}")
-
-
 def report_ids(parquet: Path) -> list[str]:
     import pyarrow.parquet as pq
 
     table = pq.read_table(parquet, columns=["report_id"])
     return [r for r in table.column("report_id").to_pylist() if r]
-
-
-def scrub_credential(text: str, api_key: str) -> str:
-    """Remove the credential from anything this tool records or prints.
-
-    Two passes, because either alone leaves a hole. The pattern catches a
-    credential this function was not handed -- a redirect to a different
-    keyed host, a nested URL inside a message -- while the literal catches
-    the key wherever it appears in a form the pattern does not match, such
-    as a header echoed back in a response body. Scrubbing happens before
-    truncation, never after: truncating first can cut a key in half and
-    leave the front of it standing.
-    """
-    scrubbed = re.sub(r"(api_key=)[^&\s'\"]+", r"\1<redacted>", text)
-    if len(api_key) >= 8:
-        scrubbed = scrubbed.replace(api_key, "<redacted>")
-    return scrubbed
 
 
 def fetch_one(client: httpx.Client, report_id: str, api_key: str) -> dict[str, Any]:

@@ -42,11 +42,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-
 from spicy_docs.source_native import ROLE_RECORDS
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 MANIFEST_PATH: tuple[str, str] = ("manifests", "source-native.json")
 RECEIPT_PATH: tuple[str, str] = ("receipts", "publication.json")

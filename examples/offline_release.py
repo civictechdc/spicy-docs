@@ -15,11 +15,11 @@ from pathlib import Path
 
 from rulespec_artifacts import ArtifactPin, LocalMemberSource
 
+from spicy_docs.cli.source_native import main as source_native_main
 from spicy_docs.source_native import SourceNativeReleaseReader
-from spicy_docs.source_native_cli import main as source_native_main
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 from spicy_docs.sources.gao.profile import GAO_PRODUCT_PAGE_PROFILE
 from spicy_docs.sources.zyte import ZyteHttpResponse
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 PRODUCT_ID = "gao-26-107693"

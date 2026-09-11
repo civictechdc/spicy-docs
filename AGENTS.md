@@ -37,7 +37,7 @@ there" are often the same bytes.**
 
 ## Writing a fetcher
 
-Implemented end to end in `tools/fetch_crs_summaries.py`; its module docstring
+Implemented end to end in `src/spicy_docs/sources/congress/crs_summaries.py`; its module docstring
 carries the reason behind each. Read it before writing a new one.
 
 1. **A credential refusal aborts.** 401/403 stops the run rather than being
@@ -57,8 +57,9 @@ in the request URL, and `httpx.HTTPStatusError` renders that URL into its
 message — so anything recording, logging, or reporting exception text from a
 keyed client is a publication surface.
 
-- Call `scrub_credential(text, api_key)`; do not re-derive it. If a second
-  module needs it, move it to `src/spicy_docs/` rather than copying it.
+- Call `scrub_credential(text, api_key)` from
+  `spicy_docs.transport.credentials`; reuse its `read_api_key` helper for
+  env-file credentials rather than copying either implementation.
 - **Scrub before truncating.** Truncating first can cut a key in half and leave
   the front standing.
 - **Mutate it when you touch it.** Both of its passes are pinned by tests

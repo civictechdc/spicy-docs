@@ -28,7 +28,7 @@ from spicy_docs.source_native_profiles import (
     REGULATIONS_GOV_DOCKET_PROFILE,
     REGULATIONS_GOV_DOCUMENT_PROFILE,
 )
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _PRODUCER = Producer(

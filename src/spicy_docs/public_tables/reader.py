@@ -14,11 +14,11 @@ from rulespec_artifacts import (
     admit_artifact,
 )
 
-from spicy_docs.public_table_profiles import PublicTableProfile
 from spicy_docs.public_tables.format import (
     PublicTableError,
     _member_position,
 )
+from spicy_docs.public_tables.profiles import PublicTableProfile
 from spicy_docs.public_tables.verify import (
     _validate_root,
     verify_public_table_admission,

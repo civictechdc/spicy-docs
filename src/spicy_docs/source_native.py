@@ -1,7 +1,7 @@
 """Supported source-native API; implementations live in :mod:`spicy_docs.releases`.
 
-Historical identifiers and public import paths remain stable while the release
-operations have separate implementation homes.
+Current consumers use these imports; release operations have separate
+implementation homes.
 """
 
 # Public constants also support explicit imports outside historical __all__.

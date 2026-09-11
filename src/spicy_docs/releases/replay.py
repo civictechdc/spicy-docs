@@ -28,7 +28,7 @@ from spicy_docs.releases.partitions import (
     _partition_rows,
     _PayloadPartition,
 )
-from spicy_docs.source_native_profile import (
+from spicy_docs.releases.profile import (
     AcquisitionCheck,
     SourceNativeProfile,
     TraversalCheck,

@@ -7,7 +7,7 @@ from io import StringIO
 from pathlib import Path
 
 from examples.offline_release import FIXED_NOW, IMPLEMENTATION_ID, PRODUCT_ID, capture, run_example
-from spicy_docs.source_native_cli import main
+from spicy_docs.cli.source_native import main
 
 
 def _publish_args(destination: Path, *product_ids: str) -> list[str]:

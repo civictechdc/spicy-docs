@@ -1,4 +1,4 @@
-"""Fixture coverage for the ``tools/fr_discarded_distinctness.py`` receipt helper (SD-18).
+"""Fixture coverage for the ``tools/analysis/fr_discarded_distinctness.py`` receipt helper (SD-18).
 
 Builds synthetic Federal Register source-native releases the way
 ``tests/test_cross_filing_census.py`` builds synthetic regulations.gov releases: a real
@@ -18,7 +18,7 @@ from typing import Any, cast
 
 from tests.source_fixtures import counted_subsets
 from tests.source_native_release_fixtures import evidence_and_records_release
-from tools.fr_discarded_distinctness import census
+from tools.analysis.fr_discarded_distinctness import census
 
 
 def _evidence_row(

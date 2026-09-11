@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Final
 
-from spicy_docs import spicy_regs_public_tables_source_native as spicy_regs_tables
-from spicy_docs.source_native_profile import SourceNativeProfile
+from spicy_docs.releases.profile import SourceNativeProfile
+from spicy_docs.sources.public_comments import native as spicy_regs_tables
 
 SPICY_REGS_PUBLIC_COMMENT_PROFILE: Final = SourceNativeProfile(
     name="SpicyRegs public comments",

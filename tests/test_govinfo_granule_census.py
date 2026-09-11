@@ -20,7 +20,7 @@ import httpx
 import pytest
 
 from tests.source_native_release_fixtures import records_release
-from tools.govinfo_granule_census import (
+from tools.analysis.govinfo_granule_census import (
     CredentialRefusedError,
     _granules_from_mods,
     _read_api_key,
@@ -284,7 +284,7 @@ def test_resume_retries_a_failed_listing_instead_of_settling_it(tmp_path) -> Non
     recorded date as done, which would have left those nine unvisited forever
     and shipped a transient outage as a finding.
     """
-    from tools.govinfo_granule_census import _resume_state
+    from tools.analysis.govinfo_granule_census import _resume_state
 
     output = tmp_path / "census.jsonl"
     output.write_text(
@@ -306,7 +306,7 @@ def test_resume_retries_a_failed_listing_instead_of_settling_it(tmp_path) -> Non
 
 def test_a_later_listing_supersedes_an_earlier_failure(tmp_path) -> None:
     """The file is append-only, so the last row for a date is the current one."""
-    from tools.govinfo_granule_census import _resume_state
+    from tools.analysis.govinfo_granule_census import _resume_state
 
     output = tmp_path / "census.jsonl"
     output.write_text(
@@ -337,7 +337,7 @@ def test_resume_refuses_a_file_from_another_release(tmp_path) -> None:
     Counts cannot detect the swap: 1994-01-03 holds 105 documents in both
     releases and only 380 of 8,170 dates differ at all. Hence a digest.
     """
-    from tools.govinfo_granule_census import _guard_resume_release
+    from tools.analysis.govinfo_granule_census import _guard_resume_release
 
     output = tmp_path / "census.jsonl"
     output.write_text(json.dumps({"publicationDate": "1994-01-03", "sourceReleaseDigest": "sha256:aaa"}) + "\n")
@@ -348,7 +348,7 @@ def test_resume_refuses_a_file_from_another_release(tmp_path) -> None:
 
 def test_rows_without_a_digest_must_be_declared_not_guessed(tmp_path) -> None:
     """Legacy rows predate the field; the operator states their corpus rather than the tool assuming it."""
-    from tools.govinfo_granule_census import _guard_resume_release
+    from tools.analysis.govinfo_granule_census import _guard_resume_release
 
     output = tmp_path / "census.jsonl"
     output.write_text(json.dumps({"publicationDate": "1994-01-03", "status": "listed"}) + "\n")
@@ -367,7 +367,7 @@ def test_a_short_number_does_not_fuse_with_a_longer_one() -> None:
     four other documents, and the only real fusion in that listing was 94-2050F.
     A defect invented by the instrument is worse than the one it was looking for.
     """
-    from tools.govinfo_resolve_unmatched import _is_fusion_of
+    from tools.analysis.govinfo_resolve_unmatched import _is_fusion_of
 
     assert _is_fusion_of("94-2050F", "94-2050")
     assert _is_fusion_of("94-8046-Filed", "94-8046")

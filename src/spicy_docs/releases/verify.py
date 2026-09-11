@@ -47,11 +47,11 @@ from spicy_docs.releases.partitions import (
     _read_jsonl,
     _read_one_json,
 )
+from spicy_docs.releases.profile import (
+    SourceNativeProfile,
+)
 from spicy_docs.releases.replay import (
     _replay_acquisition,
-)
-from spicy_docs.source_native_profile import (
-    SourceNativeProfile,
 )
 
 

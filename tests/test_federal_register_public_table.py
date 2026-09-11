@@ -10,13 +10,13 @@ from rulespec_artifacts import ArtifactPin
 
 pytest.importorskip("pyarrow.parquet")
 
-from spicy_docs.public_table import PublicTableBuild, PublicTableError, PublicTablePublisher
-from spicy_docs.public_table_profiles import (
+from spicy_docs.cli.source_native import main
+from spicy_docs.public_tables.api import PublicTableBuild, PublicTableError, PublicTablePublisher
+from spicy_docs.public_tables.profiles import (
     FEDERAL_REGISTER_PUBLIC_TABLE,
     PublicTableProjectionError,
 )
 from spicy_docs.schemas.federal_register import FEDERAL_REGISTER_COLUMNS
-from spicy_docs.source_native_cli import main
 from tests.releases.fixtures import IMPLEMENTATION_ID, _document, _publish, _reader, _stable_pages
 from tests.test_public_table import _PUBLIC_PRODUCER, _public_reader, _source_row, _SourceStub
 

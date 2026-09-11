@@ -57,15 +57,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 from rulespec_artifacts import (
     LocalMemberSource,
@@ -77,7 +73,6 @@ from rulespec_artifacts import (
     iter_member_descriptors,
 )
 
-from spicy_docs.federal_register_source_native import iter_federal_register_pages
 from spicy_docs.releases.paths import require_separate_paths
 from spicy_docs.source_native import (
     CURRENT_PRODUCER_PRODUCT,
@@ -90,13 +85,14 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
     verify_source_native_admission,
 )
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.sources.federal_register.native import iter_federal_register_pages
 from spicy_docs.sources.federal_register.profile import FEDERAL_REGISTER_PROFILE
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 #: Publication receipt path, relative to a release root. Not imported from
 #: ``spicy_docs.source_native`` (its ``RECEIPT_KEY`` is private to that
 #: module) -- mirrors the same hardcoded-path convention already used by
-#: ``tools/fr_discarded_distinctness.py``'s ``RECEIPT_PATH``.
+#: ``tools/analysis/fr_discarded_distinctness.py``'s ``RECEIPT_PATH``.
 _RECEIPT_PATH: tuple[str, str] = ("receipts", "publication.json")
 
 

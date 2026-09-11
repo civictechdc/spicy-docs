@@ -25,7 +25,7 @@ one date.
 SD-18: promoted from a session-scratch script whose one measured output lived
 only in a receipt JSON in the corpora tree, not a committed tool -- the same
 "measured once by a throwaway script whose output lived in a chat log" gap that
-``tools/cross_filing_census.py`` (SD-16, SD-17) was built to close. This module
+``tools/analysis/cross_filing_census.py`` (SD-16, SD-17) was built to close. This module
 takes ``--release-root``/``--blob-store`` in place of the original's hardcoded
 ``~/Work/corpora`` paths so the same measurement is re-derivable against any
 Federal Register source-native release, and reads blobs through
@@ -43,11 +43,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-
 from spicy_docs.source_native import ROLE_EVIDENCE, ROLE_RECORDS
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 FIELDS: tuple[str, ...] = ("type", "title", "agencies", "abstract")
 MANIFEST_PATH: tuple[str, str] = ("manifests", "source-native.json")

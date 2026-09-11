@@ -1,8 +1,8 @@
-"""Hermetic coverage for ``tools/replay_federal_register_release.py`` (SD-25).
+"""Hermetic coverage for ``src/spicy_docs/sources/federal_register/replay.py`` (SD-25).
 
 Every release built below goes through the real, unmodified
 ``FEDERAL_REGISTER_PROFILE`` and ``iter_federal_register_pages`` -- the same
-pipeline ``spicy_docs.source_native_cli``'s ``publish`` command drives -- with
+pipeline ``spicy_docs.cli.source_native``'s ``publish`` command drives -- with
 a small in-memory ``{url: bytes}`` fake standing in for the live Federal
 Register API. No test here makes, or could make, an HTTP request: the fake
 fetch below is a plain dict lookup, and the tool under test imports no HTTP
@@ -28,25 +28,25 @@ from typing import Any
 import pytest
 from rulespec_artifacts import LocalMemberSource, Producer
 
-import tools.replay_federal_register_release as replay_tool
-from spicy_docs.federal_register_source_native import (
-    federal_register_documents_url,
-    iter_federal_register_pages,
-)
+import spicy_docs.sources.federal_register.replay as replay_tool
 from spicy_docs.source_native import (
     SourceNativeReleaseBuild,
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
-from tests.source_fixtures import federal_response
-from tools.replay_federal_register_release import (
+from spicy_docs.sources.federal_register.native import (
+    federal_register_documents_url,
+    iter_federal_register_pages,
+)
+from spicy_docs.sources.federal_register.replay import (
     ReplayEvidenceMissingError,
     build_replay_fetch,
     build_request_map,
     replay,
 )
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+from tests.source_fixtures import federal_response
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 PRODUCER = Producer(
@@ -231,7 +231,7 @@ def test_replay_uses_the_shared_source_profile() -> None:
 
 
 def test_record_scope_validator_refuses_a_record_outside_its_window() -> None:
-    from spicy_docs.federal_register_source_native import FederalRegisterSourceError
+    from spicy_docs.sources.federal_register.native import FederalRegisterSourceError
 
     window = (date(2026, 8, 25), date(2026, 8, 25))
     validate = FEDERAL_REGISTER_PROFILE.validate_record_scope

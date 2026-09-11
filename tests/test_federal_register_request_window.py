@@ -18,8 +18,8 @@ from datetime import date
 
 import pytest
 
-import spicy_docs.federal_register_source_native as federal_register
-from spicy_docs.federal_register_source_native import (
+import spicy_docs.sources.federal_register.native as federal_register
+from spicy_docs.sources.federal_register.native import (
     ACCEPTED_DOCUMENT_FIELD_SETS,
     DOCUMENT_FIELDS,
     FederalRegisterSourceError,

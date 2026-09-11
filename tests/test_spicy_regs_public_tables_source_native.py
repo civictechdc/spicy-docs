@@ -25,6 +25,7 @@ import polars as pl
 import pytest
 from rulespec_artifacts import LocalMemberSource, Producer
 
+from spicy_docs.cli.source_native import main as source_native_main
 from spicy_docs.schemas.spicy_regs_public_tables import (
     PUBLIC_COMMENT_COLUMNS,
     PUBLIC_COMMENT_FILE_COLUMNS,
@@ -35,10 +36,8 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
-from spicy_docs.source_native_cli import main as source_native_main
 from spicy_docs.source_native_profiles import SPICY_REGS_PUBLIC_COMMENT_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
-from spicy_docs.spicy_regs_public_tables_source_native import (
+from spicy_docs.sources.public_comments.native import (
     CAPTURE_PACK_TYPE,
     MANIFEST_ENTRY,
     PARTITION_ENTRY,
@@ -58,6 +57,7 @@ from spicy_docs.spicy_regs_public_tables_source_native import (
     parse_public_table_request,
     spicy_regs_public_comment_query_scope,
 )
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _PRODUCER = Producer(
@@ -680,7 +680,7 @@ def test_public_table_source_boundary_has_no_sibling_product_imports() -> None:
     repository = Path(__file__).resolve().parents[1]
     imported: set[str] = set()
     for relative in (
-        "src/spicy_docs/spicy_regs_public_tables_source_native.py",
+        "src/spicy_docs/sources/public_comments/native.py",
         "src/spicy_docs/schemas/spicy_regs_public_tables.py",
     ):
         tree = ast.parse((repository / relative).read_text(encoding="utf-8"))

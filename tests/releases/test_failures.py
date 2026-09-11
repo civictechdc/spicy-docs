@@ -7,16 +7,16 @@ from pathlib import Path
 
 import pytest
 
-from spicy_docs.federal_register_source_native import (
-    FederalRegisterPage,
-    FederalRegisterSourceError,
-    federal_register_documents_url,
-)
 from spicy_docs.source_native import (
     FAILURE_CLASS_DETERMINISTIC,
     PARTITION_LEDGER,
     REASON_RECORD_UNCLASSIFIABLE,
     SourceNativeReleaseError,
+)
+from spicy_docs.sources.federal_register.native import (
+    FederalRegisterPage,
+    FederalRegisterSourceError,
+    federal_register_documents_url,
 )
 from tests.releases.fixtures import (
     QUERY_SCOPE,
