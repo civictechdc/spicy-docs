@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Source-native profile API
 
 The source-native profile API is the source-specific plug-in point for one shared release publisher. A `SourceNativeProfile` identifies a source and supplies the functions that parse preserved evidence, prove acquisition coverage, classify records, enforce scope, select observations, and derive published rows. `SourceNativePage` describes the exact evidence pages that a source iterator gives the publisher.

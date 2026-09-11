@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Mirrulations connector
 
 The Mirrulations connector reads Regulations.gov records from the public

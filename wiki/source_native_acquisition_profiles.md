@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Source-native acquisition profiles
 
 ## Purpose

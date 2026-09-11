@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Source-domain drift gate
 
 The `source_domain_drift_gate` module checks whether selected values in published SpicyRegs tables still agree with the closed value lists documented by their government publishers. It parses those lists from digest-pinned Regulations.gov OpenAPI and reginfo.gov XML Schema (XSD) captures, compares them with a dated summary of observed Parquet values, and requires every difference to have a current, written explanation.

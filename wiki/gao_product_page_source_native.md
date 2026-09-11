@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # GAO product page source native
 
 The GAO product-page source-native module captures exact HTML for a closed list of U.S. Government Accountability Office (GAO) product IDs. It proves that each requested page has the expected identity, preserves the page bytes in deterministic ZIP evidence, and publishes one structured record containing capture metadata and GAO's one literal publisher topic.

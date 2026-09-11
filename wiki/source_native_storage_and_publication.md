@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Source-native storage and publication
 
 The source-native storage and publication module provides the filesystem boundary for immutable source evidence. It gives the release engine three shared capabilities: create small files and directories once, store large payloads under their SHA-256 content identity, and give generated ZIP members one stable metadata shape.

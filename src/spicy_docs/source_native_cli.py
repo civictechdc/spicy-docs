@@ -225,7 +225,7 @@ def _parser() -> argparse.ArgumentParser:
 
     verify_public_table = subparsers.add_parser(
         "verify-public-table",
-        help="Independently replay and verify one immutable public Parquet table",
+        help="Check the pin, profile, and admission of one immutable public Parquet table",
     )
     verify_public_table.add_argument("--table", choices=PUBLIC_TABLE_CHOICES, required=True)
     verify_public_table.add_argument("--release", type=Path, required=True)
@@ -680,14 +680,10 @@ def _verify(args: argparse.Namespace) -> dict[str, object]:
 
 
 def _publish_public_table(args: argparse.Namespace) -> dict[str, object]:
-    """Project one already-admitted source-native release into a public table.
+    """Project an admitted source release using the optional PyArrow dependency.
 
-    ``public_table.py`` imports pyarrow unconditionally, which this package's
-    pyproject.toml does not yet declare (see the migration note atop this
-    module); importing it here, inside the handler, keeps every other command
-    in this CLI working in an environment that lacks it. Only this command --
-    and ``verify-public-table`` below -- fail (cleanly, as
-    ``dependency-missing``) until pyarrow is added as a runtime dependency.
+    Import here so commands that do not produce tables work without the
+    ``public-table`` extra. Missing dependencies produce ``dependency-missing``.
     """
 
     from spicy_docs.public_table import (
@@ -743,7 +739,7 @@ def _publish_public_table(args: argparse.Namespace) -> dict[str, object]:
 
 
 def _verify_public_table(args: argparse.Namespace) -> dict[str, object]:
-    """Independently replay and verify one immutable public Parquet table.
+    """Check public-table admission under an accepted producer identity.
 
     See the pyarrow note on ``_publish_public_table`` -- the same lazy import
     applies here.

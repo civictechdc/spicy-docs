@@ -1,8 +1,8 @@
 """Exact spicy-regs public-table captures as a source-native release.
 
 Acquisition begins at the spicy-regs public tables — the community's already
-collected data — captured and digest-pinned like any other source (PLAN.md,
-"Supply-precedence ruling", accepted 2026-08-31).  spicy-docs reaches an origin
+collected data — captured and digest-pinned like any other source (see
+``docs/decisions.md`` for the supply-precedence rule and its provenance).  spicy-docs reaches an origin
 API only for what those tables cannot supply.
 
 The acquisition unit is one Hive partition file:

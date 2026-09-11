@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Federal Register source-native acquisition
 
 The Federal Register source-native module turns a closed publication-date query into replayable Federal Register API evidence and source-owned document records. It builds deterministic requests, divides large date ranges into bounded windows, follows trusted page cursors, preserves every response byte, rejects unexplained source changes, and derives schema-tagged records and rendition locators.

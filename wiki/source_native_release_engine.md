@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Source-native release engine
 
 The source-native release engine turns an ordered stream of preserved source pages into one immutable, digest-pinned release. It applies source-specific rules through an injected `SourceNativeProfile`, selects an acceptable traversal and one observation per source identity, stores evidence and payload partitions by content digest, writes the small release directory, and replays the saved evidence before publication.

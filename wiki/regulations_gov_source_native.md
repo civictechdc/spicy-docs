@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Regulations.gov source-native acquisition
 
 The Regulations.gov source-native module turns a closed agency-and-date request into replayable evidence from the Mirrulations S3 mirror. It enumerates every source object for each requested agency and collection, validates the object's key and JSON body, preserves the exact bytes with the S3 listing metadata, and marks which records fall inside the requested date range.

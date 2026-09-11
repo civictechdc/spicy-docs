@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # SpicyRegs public table source-native acquisition
 
 The SpicyRegs public-table source-native module captures the community's published Regulations.gov comment table as exact, replayable evidence. It fetches each requested agency's complete Hive-partitioned Parquet tree, pins every partition by SHA-256, seals the bytes and capture metadata into a deterministic ZIP, and reconstructs faithful logical comment rows during publication and independent verification.

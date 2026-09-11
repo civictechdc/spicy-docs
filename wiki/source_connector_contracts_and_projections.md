@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Source connector contracts and projections
 
 This module defines the small interfaces between source acquisition and flat-record processing. It supplies the abstract `Reader` API, the `RecordType` description used to name and locate record families, three Regulations.gov flat-record definitions, and a stable Federal Register document projection.
@@ -60,7 +63,7 @@ The solid flat-record routes use this module's projections. The dotted source-na
 | `sources.base.Reader` | Python `abc`, `collections.abc`, and `typing` | `MirrulationsReader`, `CourtListenerBulkReader` |
 | `schemas.base.RecordType` | Python `dataclasses`, `collections.abc`, and `typing` | Regulations.gov record definitions and the Mirrulations connector |
 | `schemas.regulations` | `RecordType` and `json.dumps` | Schema-package exports, Mirrulations configuration, and the source-native CLI's collection selection |
-| `schemas.federal_register` | Python `json`, `Mapping`, and `Any` | Optional flat-record consumers; no in-repository runtime caller currently imports it |
+| `schemas.federal_register` | Python `json`, `Mapping`, and `Any` | Flat-record consumers, including the Federal Register profile in `public_table_profiles.py` |
 
 These files use only the Python standard library. Keep that property when changing the interfaces: lightweight imports let read and verification code load without pulling acquisition-only packages into the process. The concrete transport and retry dependencies belong in the [Mirrulations connector](mirrulations_connector.md) and [CourtListener bulk connector](courtlistener_bulk_connector.md).
 

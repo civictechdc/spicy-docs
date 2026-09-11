@@ -1,3 +1,6 @@
+> Generated reference snapshot; see [current architecture](../docs/architecture.md),
+> [operator commands](../docs/cli.md), and [reference maintenance](../docs/documentation.md).
+
 # Source-profile catalog artifacts
 
 The `source_profile_catalog_artifacts` module publishes a deterministic description of SpicyRegs source tables and their relationships to RefSpec controlled resources. It turns side-effect-free Python declarations and a reviewed applicability input into two digest-pinned JSON artifacts: a source-profile catalog and a profile-resource applicability document.
