@@ -279,18 +279,6 @@ def test_an_xsd_with_a_doctype_is_refused():
 # --- the observed snapshot's own provenance ---------------------------------
 
 
-@pytest.mark.skip(
-    reason=(
-        "expected_schemas() lives in spicy_regs.data_dictionary, a rollup/public-table "
-        "module deliberately left out of spicy-docs (acquisition only, no published-table "
-        "schemas). Cross-checking domain columns against DocSpec's/spicy-regs' published "
-        "table shapes is that product's job, not this one's."
-    )
-)
-def test_every_domain_names_a_real_published_column(documented):
-    pass
-
-
 def test_the_snapshot_states_where_its_rows_came_from(snapshot):
     assert snapshot.observed_at == "2026-08-03T22:35:00Z"
     assert snapshot.producer_revision == "f1fcb8c9c8838071e9c45462799db788971baca4"
@@ -360,3 +348,47 @@ def test_the_snapshot_file_is_small_enough_to_read(snapshot):
     """A domain snapshot is a summary, not a copy of the table it summarizes."""
 
     assert (DOMAIN_DIR / OBSERVED_SNAPSHOT_FILENAME).stat().st_size < 16_384
+
+
+def test_local_reobservation_preserves_values_nulls_and_file_provenance(tmp_path):
+    import hashlib
+
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    from scripts import check_source_domain_drift as diagnostic
+
+    directory = tmp_path / "publisher's tables"
+    directory.mkdir()
+    tables = {}
+    for domain in documented_domains(DOMAIN_DIR).values():
+        tables.setdefault(domain.table, {})[domain.column] = [" Exact 'source' value ", None]
+    for table, columns in tables.items():
+        pq.write_table(pa.table(columns), directory / f"{table}.parquet")
+
+    observed = diagnostic.observe(directory, observed_at="2026-09-11T00:00:00Z", producer_revision="a" * 40)
+
+    assert observed.observed_at == "2026-09-11T00:00:00Z"
+    assert observed.producer_revision == "a" * 40
+    for domain in observed.domains.values():
+        assert domain.value_counts == ((" Exact 'source' value ", 1),)
+        assert domain.null_count == 1
+        assert domain.row_count == 2
+    for source in observed.sources:
+        payload = (directory / f"{source['table']}.parquet").read_bytes()
+        assert source["bytes_digest"] == "sha256:" + hashlib.sha256(payload).hexdigest()
+        assert source["byte_length"] == len(payload)
+        assert source["row_count"] == 2
+
+
+def test_local_reobservation_closes_database_on_missing_input(tmp_path, monkeypatch):
+    import duckdb
+
+    from scripts import check_source_domain_drift as diagnostic
+
+    connection = duckdb.connect()
+    monkeypatch.setattr(diagnostic, "_connect", lambda: connection)
+    with pytest.raises(SourceDomainError, match="lacks the published table"):
+        diagnostic.observe(tmp_path, observed_at="2026-09-11T00:00:00Z", producer_revision="a" * 40)
+    with pytest.raises(duckdb.ConnectionException, match="closed"):
+        connection.execute("SELECT 1")

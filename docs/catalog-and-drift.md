@@ -60,6 +60,13 @@ failure. Use a private output directory for an independent build; the repository
 
 ## Review documented-value drift
 
+SpicyDocs source maintainers own this optional offline diagnostic. Use it when
+publisher documentation or a retained SpicyRegs table observation changes. It is
+not a live-source monitor, a publication prerequisite, or a DocSpec execution
+gate. Its fixture checks protect this diagnostic's evidence, not the current
+publisher population. The [ownership decision](source-ownership.md#e-documented-value-drift)
+keeps it here; upstream adoption remains conditional on a named maintenance user.
+
 [`sources/source_domains.py`](../src/spicy_docs/sources/source_domains.py)
 parses selected closed-value domains from pinned publisher captures in
 [`sample-data/source-domains/`](../sample-data/source-domains/). The manifest
@@ -99,10 +106,16 @@ uv run --frozen python scripts/check_source_domain_drift.py \
 
 After reviewing the pins and findings, add `--write-snapshot` to retain the new
 observation. Writing requires both provenance options. **The snapshot is
-written before the finding check returns its exit status:** a failing gate can
+written before the finding check returns its exit status:** a failing diagnostic can
 still change the checked snapshot. Inspect that diff and update the ledger only
 for reviewed source conditions. Refresh publisher captures with their manifest
 when the documented source changes; do not hand-edit extracted value lists.
+Preserve the original response and capture URL/time, recompute its size and digest,
+then inspect parser changes and the resulting value diff together. Keep observation
+time and producing revision tied to the local files actually supplied. Local table
+paths may contain spaces or apostrophes; they are passed as data to DuckDB.
+A finding explains a difference between those two retained inputs, not a verdict
+about the completeness or health of the public service.
 
 Run `uv run --frozen pytest -q tests/test_source_domain_drift.py` for capture,
 parser, observation, comparison, and accepted-finding changes. See the

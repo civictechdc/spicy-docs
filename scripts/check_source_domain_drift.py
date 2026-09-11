@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate: published column values against the value lists their publishers document.
+"""Offline diagnostic: compare retained table values with pinned publisher documentation.
 
 With no options, diffs the documented domains parsed from the pinned
 publisher captures against the checked-in observed snapshot, and fails on any
@@ -7,7 +7,7 @@ finding the ledger in :mod:`spicy_docs.sources.source_domains` does not record â
 in either direction. It reads no network and no parquet, so it runs anywhere.
 
 ``--observe --data-dir DIR`` re-observes the published tables from parquet and
-prints the same report against live data; add ``--write-snapshot`` to re-pin the
+prints the same report against those local files; add ``--write-snapshot`` to re-pin the
 checked-in snapshot from that observation. ``DIR`` holds the published tables
 under their own names (``documents.parquet`` and so on) â€” a fresh download of
 the R2 tables, or any directory built from them.
@@ -21,7 +21,7 @@ import argparse
 import hashlib
 import json
 import sys
-import tempfile
+from contextlib import closing
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,9 +58,7 @@ PUBLISHED_TABLE_URLS = {
 def _connect():
     import duckdb
 
-    connection = duckdb.connect()
-    connection.execute(f"SET home_directory='{tempfile.gettempdir()}'")
-    return connection
+    return duckdb.connect()
 
 
 def _file_identity(path: Path) -> tuple[str, int]:
@@ -78,44 +76,44 @@ def observe(data_dir: Path, *, observed_at: str, producer_revision: str) -> Obse
 
     documented = documented_domains(SOURCE_DOMAIN_DIR)
     tables = sorted({domain.table for domain in documented.values()})
-    connection = _connect()
     sources = []
     row_counts: dict[str, int] = {}
-    for table in tables:
-        if table not in PUBLISHED_TABLE_URLS:
-            raise SourceDomainError(f"no publisher URL is recorded for the published table {table!r}")
-        path = data_dir / f"{table}.parquet"
-        if not path.is_file():
-            raise SourceDomainError(f"{data_dir} lacks the published table {table}.parquet")
-        digest, byte_length = _file_identity(path)
-        (row_count,) = connection.execute(f"SELECT count(*) FROM read_parquet('{path}')").fetchone()
-        row_counts[table] = int(row_count)
-        sources.append(
-            {
-                "byte_length": byte_length,
-                "bytes_digest": digest,
-                "publisher_url": PUBLISHED_TABLE_URLS[table],
-                "row_count": int(row_count),
-                "table": table,
-            }
-        )
+    with closing(_connect()) as connection:
+        for table in tables:
+            if table not in PUBLISHED_TABLE_URLS:
+                raise SourceDomainError(f"no publisher URL is recorded for the published table {table!r}")
+            path = data_dir / f"{table}.parquet"
+            if not path.is_file():
+                raise SourceDomainError(f"{data_dir} lacks the published table {table}.parquet")
+            digest, byte_length = _file_identity(path)
+            (row_count,) = connection.execute("SELECT count(*) FROM read_parquet(?)", [str(path)]).fetchone()
+            row_counts[table] = int(row_count)
+            sources.append(
+                {
+                    "byte_length": byte_length,
+                    "bytes_digest": digest,
+                    "publisher_url": PUBLISHED_TABLE_URLS[table],
+                    "row_count": int(row_count),
+                    "table": table,
+                }
+            )
 
-    observed: dict[str, ObservedDomain] = {}
-    for key, domain in documented.items():
-        path = data_dir / f"{domain.table}.parquet"
-        rows = connection.execute(
-            f"SELECT \"{domain.column}\" AS value, count(*) AS n FROM read_parquet('{path}') "
-            f"GROUP BY 1 ORDER BY n DESC, 1"
-        ).fetchall()
-        null_count = sum(int(count) for value, count in rows if value is None)
-        observed[key] = ObservedDomain(
-            key=key,
-            table=domain.table,
-            column=domain.column,
-            value_counts=tuple((str(value), int(count)) for value, count in rows if value is not None),
-            null_count=null_count,
-            row_count=row_counts[domain.table],
-        )
+        observed: dict[str, ObservedDomain] = {}
+        for key, domain in documented.items():
+            path = data_dir / f"{domain.table}.parquet"
+            rows = connection.execute(
+                f'SELECT "{domain.column}" AS value, count(*) AS n FROM read_parquet(?) GROUP BY 1 ORDER BY n DESC, 1',
+                [str(path)],
+            ).fetchall()
+            null_count = sum(int(count) for value, count in rows if value is None)
+            observed[key] = ObservedDomain(
+                key=key,
+                table=domain.table,
+                column=domain.column,
+                value_counts=tuple((str(value), int(count)) for value, count in rows if value is not None),
+                null_count=null_count,
+                row_count=row_counts[domain.table],
+            )
     return ObservedSnapshot(
         observed_at=observed_at,
         producer_revision=producer_revision,
