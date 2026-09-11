@@ -4,7 +4,7 @@ Created September 11, 2026 from the blind product-boundary review (`blind-produc
 
 **Updated September 11, 2026 following the owner's product clarification and checklist sync.** DocSpec is an iterative dataset and catalog platform: accept sources, select documents, use injected fetchers, process now or later, reuse previous work, and compare results. SpicyRegs remains an independently usable source-data product. SpicyDocs may remain separate; share source improvements where they remove duplicate effort or improve a supported workflow. Package placement remains open and is not a prerequisite for useful integration. The prior blanket recommendation to merge SpicyDocs into DocSpec is withdrawn. The additional duplication review (`docspec-spicy-docs-duplication-review.md`) and coordination review (`docspec-spicy-docs-coordination-review.md`) supply useful findings, but their merger addenda do not define this plan.
 
-**Progress: 2 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
+**Progress: 4 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
 
 The intended result is reusable upstream source data and an approachable platform for dataset experiments. A user can build a catalog, fetch selected documents once, process them inline or later, change processors or reference resources, add documents, and compare reproducible results. Every useful stopping point exposes what was requested, received, accepted, rejected, and unresolved. Search is one consumer; catalog-only, acquisition-only, and later-processing workflows have independent value.
 
@@ -85,7 +85,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s01"></a>
 
-- [ ] **S01 — Expose collection outcomes through the reader and CLI.** **Change; owner: SpicyDocs; beneficiary: acquisition operators and catalog builders.** Reuse existing receipt and ledger data to expose requested scope, discovered/published/failed/discarded counts, and a bounded way to inspect failures. Explain the units and relationships between counts; discovered observations, selected records, and rejected records are not interchangeable. **Done when:** valid empty input, partial rejection, total record rejection, and ordinary success are distinguishable through supported interfaces, without inspecting internal files or building a second status store. Failure iteration and ordinary opening remain bounded. **Evidence:** product review finding 1; `releases/reader.py`, `cli/source_native.py`, `releases/publish.py`.
+- [x] **S01 — Expose collection outcomes through the reader and CLI.** **Change; owner: SpicyDocs; beneficiary: acquisition operators and catalog builders.** Reuse existing receipt and ledger data to expose requested scope, discovered/published/failed/discarded counts, and a bounded way to inspect failures. Explain the units and relationships between counts; discovered observations, selected records, and rejected records are not interchangeable. **Done when:** valid empty input, partial rejection, total record rejection, and ordinary success are distinguishable through supported interfaces, without inspecting internal files or building a second status store. Failure iteration and ordinary opening remain bounded. **Evidence:** product review finding 1; `releases/reader.py`, `cli/source_native.py`, `releases/publish.py`.
 
 <a id="s02"></a>
 
@@ -180,7 +180,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s13"></a>
 
-- [ ] **S13 — Resolve SpicyDocs' public-table and Iceberg surfaces.**
+- [x] **S13 — Resolve SpicyDocs' public-table and Iceberg surfaces.**
   **Decision and selected local changes; owner: SpicyDocs; beneficiary: source-data users.**
   Compare local outputs with SpicyRegs' actual publishing workflow before
   retaining, sharing, or retiring them. Keep public-table output distinct from
@@ -510,3 +510,22 @@ work: keep independent source publication, remove unused generated policy and
 Iceberg attachment machinery, share the strict source parser through its wheel,
 and qualify shared storage before replacing callers. S25 handoffs and every
 selected removal remain open; this decision does not claim consumer adoption.
+
+
+**September 11, 2026 — S01 and S13 complete.** Commit `6341d04` adds the
+collection outcome API and `inspect`, with bounded failure iteration and the same
+scope/count mapping on publish/verify. The local source/CLI checks passed
+(58 tests); Ruff and formatting checks passed. Independent review corrected the
+count wording: included-page observations can fail scope validation, so
+`discoveredRecordCount` must not claim every observation was in scope.
+
+Commit `5f09f1b` removes the unused Iceberg attachment helper, public exports,
+and URI plumbing while retaining immutable Parquet publication and DuckDB reads.
+The table input protocol now accepts read-only source facts. The retained local
+table checks passed (22 tests; one environment-sensitive HTTP range case excluded);
+focused types, Ruff, and formatting passed. Independent review approved both
+changes after the documentation fixes. Architecture/inventory commit `fe541c9`
+records the S11 decision. Review reports are retained in the local planning
+session as `s01-outcomes-review.md`, `s13-iceberg-retirement-review.md`, and
+`s07-failure-provenance-review.md`. No consumer adoption or remote publication is
+claimed by these local changes.
