@@ -475,6 +475,56 @@ def test_public_table_refuses_a_row_larger_than_its_batch_bound(tmp_path: Path) 
     assert not (tmp_path / "oversize").exists()
 
 
+def test_public_table_closes_open_writer_without_flushing_after_later_failure(tmp_path: Path, monkeypatch) -> None:
+    from spicy_docs.public_tables import publish
+
+    profile = REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
+    source = _SourceStub(
+        profile,
+        [
+            _source_row(
+                profile,
+                identity,
+                {"data": {"id": identity, "type": "dockets", "attributes": {"agencyId": "EPA", "dkAbstract": text}}},
+            )
+            for identity, text in (("EPA-2026-0001", "small"), ("EPA-2026-0002", "x" * 5000))
+        ],
+    )
+    writer_type = publish.pq.ParquetWriter
+    opened = []
+    events = []
+
+    class TrackedWriter:
+        def __init__(self, *args, **kwargs):
+            self.delegate = writer_type(*args, **kwargs)
+            opened.append(self)
+
+        def write_table(self, table):
+            events.append("write")
+            self.delegate.write_table(table)
+
+        def close(self):
+            events.append("close")
+            self.delegate.close()
+
+    monkeypatch.setattr(publish.pq, "ParquetWriter", TrackedWriter)
+    destination = tmp_path / "later-oversize"
+    try:
+        with pytest.raises(PublicTableError, match="batch-byte bound"):
+            PublicTablePublisher(profile).publish(
+                source,
+                build=PublicTableBuild(_PUBLIC_PRODUCER, max_batch_bytes=4096),
+                destination=destination,
+            )
+        assert len(opened) == 1
+        assert events == ["close"]
+        assert not destination.exists()
+        assert not list(tmp_path.glob(".later-oversize.build-*"))
+    finally:
+        for writer in opened:
+            writer.delegate.close()
+
+
 def test_public_table_is_immutable_and_tamper_fails_before_read(tmp_path: Path) -> None:
     source = _source_release(tmp_path)
     destination = tmp_path / "public"

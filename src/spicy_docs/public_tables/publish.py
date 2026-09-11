@@ -205,23 +205,28 @@ def _write_partition(
         writer = None
         member_rows = 0
 
-    for (raw_payload,) in cursor:
-        payload = bytes(raw_payload)
-        if len(payload) > build.max_batch_bytes:
-            raise PublicTableError("one public-table row exceeds the configured batch-byte bound")
-        if writer is None:
-            open_writer()
-        if member_rows == build.max_rows_per_member:
-            close_writer()
-            part += 1
-            open_writer()
-        if batch and (len(batch) == build.max_rows_per_batch or batch_bytes + len(payload) > build.max_batch_bytes):
-            flush_batch()
-        batch.append(_decode_row(payload))
-        batch_bytes += len(payload)
-        member_rows += 1
-    close_writer()
-    return completed
+    try:
+        for (raw_payload,) in cursor:
+            payload = bytes(raw_payload)
+            if len(payload) > build.max_batch_bytes:
+                raise PublicTableError("one public-table row exceeds the configured batch-byte bound")
+            if writer is None:
+                open_writer()
+            if member_rows == build.max_rows_per_member:
+                close_writer()
+                part += 1
+                open_writer()
+            if batch and (len(batch) == build.max_rows_per_batch or batch_bytes + len(payload) > build.max_batch_bytes):
+                flush_batch()
+            batch.append(_decode_row(payload))
+            batch_bytes += len(payload)
+            member_rows += 1
+        close_writer()
+        return completed
+    finally:
+        if writer is not None:
+            # Release the handle on failure without flushing an unfinished batch.
+            writer.close()
 
 
 def _write_members(
