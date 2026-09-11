@@ -4,7 +4,7 @@ Created September 11, 2026 from the blind product-boundary review (`blind-produc
 
 **Updated September 11, 2026 following the owner's product clarification and checklist sync.** DocSpec is an iterative dataset and catalog platform: accept sources, select documents, use injected fetchers, process now or later, reuse previous work, and compare results. SpicyRegs remains an independently usable source-data product. SpicyDocs may remain separate; share source improvements where they remove duplicate effort or improve a supported workflow. Package placement remains open and is not a prerequisite for useful integration. The prior blanket recommendation to merge SpicyDocs into DocSpec is withdrawn. The additional duplication review (`docspec-spicy-docs-duplication-review.md`) and coordination review (`docspec-spicy-docs-coordination-review.md`) supply useful findings, but their merger addenda do not define this plan.
 
-**Progress: 6 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
+**Progress: 9 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
 
 The intended result is reusable upstream source data and an approachable platform for dataset experiments. A user can build a catalog, fetch selected documents once, process them inline or later, change processors or reference resources, add documents, and compare reproducible results. Every useful stopping point exposes what was requested, received, accepted, rejected, and unresolved. Search is one consumer; catalog-only, acquisition-only, and later-processing workflows have independent value.
 
@@ -115,7 +115,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s05"></a>
 
-- [ ] **S05 — Require current schemas, policies, and source receipt shapes.**
+- [x] **S05 — Require current schemas, policies, and source receipt shapes.**
   **Owner: SpicyDocs; beneficiary: source-package maintainers.** Remove local
   historical allowlists, absent-count defaults, optional fields required only
   for legacy inputs, and obsolete producer acceptance. Agree intentional source
@@ -129,7 +129,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s06"></a>
 
-- [ ] **S06 — Move operational byte accounting into run reporting.** **Change; owner: SpicyDocs, coordinated with DocSpec; beneficiary: operators and format maintainers. Depends on the S05 format decision.** Move read/reused/written-byte measurements and publication-size telemetry out of the source release into the existing operator result or run receipt where useful. Calculate publication size after writing. Remove the loop that rebuilds metadata until its self-reported size stabilizes and the associated admission obligations. Keep exact member sizes/hashes, source counts, scope, and evidence links. **Done when:** equivalent source content remains correctly identifiable under the declared format, storage reuse is still observable where required, and metadata construction has no self-size fixed point. Updated format documentation and focused fixtures explain the intentional change. **Evidence:** simplification recommendation 4; `releases/publish.py:396`, `releases/admission.py:241`.
+- [x] **S06 — Move operational byte accounting into run reporting.** **Change; owner: SpicyDocs, coordinated with DocSpec; beneficiary: operators and format maintainers. Depends on the S05 format decision.** Move read/reused/written-byte measurements and publication-size telemetry out of the source release into the existing operator result or run receipt where useful. Calculate publication size after writing. Remove the loop that rebuilds metadata until its self-reported size stabilizes and the associated admission obligations. Keep exact member sizes/hashes, source counts, scope, and evidence links. **Done when:** equivalent source content remains correctly identifiable under the declared format, storage reuse is still observable where required, and metadata construction has no self-size fixed point. Updated format documentation and focused fixtures explain the intentional change. **Evidence:** simplification recommendation 4; `releases/publish.py:396`, `releases/admission.py:241`.
 
 <a id="s07"></a>
 
@@ -194,7 +194,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s14"></a>
 
-- [ ] **S14 — Expose one retained CourtListener publisher parser.**
+- [x] **S14 — Expose one retained CourtListener publisher parser.**
   **Decision and selected local changes; owner: SpicyDocs; beneficiary: bulk-data users.**
   Check local and upstream use against S11/S25. If retained, expose strict pure
   listing/filename parsing with source-owned live acquisition. Preserve ETags,
@@ -227,6 +227,11 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
   S12–S15/S25 decisions and selected replacements, recheck callers and delete
   local dead helpers, old commands, replaced parsers/encoders, unused extras,
   and stale links. Preserve required source-only APIs and injection points.
+  Align the CLI acquisition return types with their existing close requirement
+  (`cli/source_native.py` and `cli/sources.py`); the runtime close-order test
+  passes, but the iterator annotation hides that capability from type checking.
+  The retained CourtListener CSV stream also has existing response/dialect type
+  annotations to correct when simplifying that reader; its new parser is clean.
   **Done when:** local retained APIs have clear responsibilities, optional
   dependencies load only when needed, and clean installs cover supported source
   users. File length prompts an ownership review rather than a quota. Counterpart
@@ -554,3 +559,64 @@ cases deselected by the default configuration**. This is local validation;
 remote CI, pushing these commits, and wheel qualification are not claimed.
 The independent reports remain in the local planning session as
 `implementation-review-s03.md` and `s15-drift-diagnostic-review.md`.
+
+
+**September 11, 2026 — S05 and S06 complete.** Commit `b828101` requires
+source-native format, schema, and verifier 2.0; removes historical schema,
+producer, and acquisition-policy acceptance; and requires all failure counts.
+The counts must reconcile even when total failures are zero. Source-state
+framing and source-specific policy versions retain their meaning. Public-table
+format and verifier stay at 1.0, with the same current-producer restriction.
+The [format decision](maintenance-decisions.md#current-source-release-format-and-retained-evidence)
+and [specification](superpowers/specs/2026-08-25-source-native-release-spec.md)
+record the intentional boundary. Retained old artifacts are not converted or
+removed. DocSpec D10 must update its old producer-acceptance probe before using
+this candidate; downstream adoption is not complete.
+
+Storage measurements now belong to the returned publication result and publish
+CLI output. Metadata is written once and its size measured afterward. Tests
+prove an identical artifact pin for fixed sealed inputs despite actual blob
+reuse, and preserve staging-write accounting, exact member integrity, the root
+size bound, mandatory independent replay, and immutable publication. Two
+existing generator return annotations now expose their close capability.
+
+The focused source/release/CLI/campaign/table checks passed (200 tests, one
+HTTP range case deselected), and independent architecture and code reviews
+approved the result. Scoped Ruff, formatting, and type checks passed; the
+unchanged CLI acquisition type annotation is recorded under S16. The current
+candidate wheel was installed outside the checkout from frozen runtime
+dependencies: all nine current schemas are packaged, historical schema resources
+are absent, reader imports avoid acquisition libraries, and the synthetic GAO
+example publishes and independently verifies. The combined default repository
+check, including the CourtListener work under review, passed: 624 tests, two
+opt-in cases deselected. Review reports and wheel receipts remain in the local
+planning session. This records local checks, not remote CI or release publication.
+
+
+**September 11, 2026 — S14 complete.** Commit `29701d1` moves CourtListener's
+listing and filename rules into the standard-library-only
+`sources/courtlistener_listing.py` public API and uses it from live acquisition.
+It preserves exact keys, ETags, required size/timestamps, and dated or undated
+exports; bounds listing pages; and refuses missing continuation, duplicate keys,
+and repeated tokens. Full-key URLs preserve nested objects and escape URL
+punctuation. Dot-segment keys remain source facts but refuse URL construction
+rather than silently identifying different bytes. The endpoint rationale remains
+beside the constants. Streaming CSV behavior is unchanged; listing ETags do not
+claim to pin a later HTTP transfer.
+
+The 56 focused parser/reader tests passed. Independent semi-formal review
+approved the implementation. The public parser installed without dependencies
+and matched the retained CourtListener capture's exact object metadata;
+`validation/courtlistener-parser/final-result.json` in the local planning session
+records the input/check results. The final source-native and parser wheel probes
+both passed after restoring the endpoint comment, and every packaged source
+member matches the working source tree. The candidate wheel SHA-256 is
+`92b326c4e458ea5e16b2d2de6dde2544c9489df616b5788ff5d4b43865593a0a`;
+`validation/source-native-v2/final/result.json` records the installed format and
+example result. The default full check passed 624 tests with two opt-in cases
+deselected; the subsequent source change only restored that comment.
+
+The checklist now has nine completed local items. DocSpec D42 and SpicyRegs SR03
+still own consumer adoption and copy removal; the source API and wheel checks do
+not complete those destination tasks. These commits are local; no push, remote
+CI, package release, or production cutover is claimed.
