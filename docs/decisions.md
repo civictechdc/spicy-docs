@@ -13,7 +13,7 @@ A live query result cannot substitute for pinned input.
 The former README cited a platform `PLAN.md`, “Supply-precedence ruling,”
 accepted 2026-08-31. That plan is not retained here. Available evidence is in
 commits `48dac81` (capture) and `b25a3e9` (ruling tests),
-`spicy_regs_public_tables_source_native.py`, and its tests. This note records
+`sources/public_comments/native.py`, and its tests. This note records
 implemented behavior, not a reconstruction of the missing plan. Sources remain
 explicit CLI choices; fallback is not automatic.
 
@@ -29,7 +29,7 @@ This is the implemented result of SD-24 / DocSpec decision 0003,
 `docs/decisions/0003-federal-register-record-identity.md` in the DocSpec repository.
 That record includes superseded proposals. Local authority is
 `sources/federal_register/profile.py`, accepted field sets in
-`federal_register_source_native.py`, and identity/replay tests. The adopted
+`sources/federal_register/native.py`, and identity/replay tests. The adopted
 [release specification](superpowers/specs/2026-08-25-source-native-release-spec.md)
 defines shared publication requirements.
 
@@ -72,4 +72,4 @@ Capture a closed, sorted set of at most 1,000 product IDs through the bounded
 Zyte raw-HTTP transport. Each HTML body is at most 8 MiB; total HTML is at most
 1 GiB. Preserve exact bytes and the one literal publisher topic anchor. A release
 covers its named products, not the whole catalog. Topic interpretation belongs
-downstream. See `gao_product_pages_source_native.py` and the offline example.
+downstream. See `sources/gao/native.py` and the offline example.

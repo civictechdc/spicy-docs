@@ -9,6 +9,8 @@ For an installed package, `spicy-docs-source-native` is the same entry point.
 Public-table commands require the `public-table` extra (PyArrow); `uv sync --frozen`
 includes it through the development dependencies. Other commands load it lazily.
 The [offline example](../examples/offline_release.py) needs no credentials.
+Library and module ownership are in the [architecture map](architecture.md).
+The module form of this command is `python -m spicy_docs.cli.source_native`.
 
 ## publish
 
@@ -118,6 +120,30 @@ repeat the accepted-ID option as needed.
 For Federal Register this command selects the supported `1.1` profile.
 The old `1.0` table projection is no longer supported. See the
 [compatibility decision](decisions.md#federal-register-public-tables-preserve-composite-identity).
+
+## Campaigns, replay, and source tools
+
+Reusable operations live beside their owning source or CLI package. Their
+`--help` output lists explicit paths and required inputs:
+
+```sh
+uv run --frozen python -m spicy_docs.cli.campaign --help
+uv run --frozen python -m spicy_docs.sources.federal_register.replay --help
+uv run --frozen python -m spicy_docs.sources.congress.crs_summaries --help
+```
+
+Use the [operation index](../tools/README.md#related-operations) for each
+command's purpose, output, and prerequisites. Campaigns publish agency-scoped
+releases with attempt logs and receipts; start with their `--dry-run`.
+Federal Register replay publishes saved responses under the current profile
+without a source request. CRS acquisition writes resumable Congress.gov summary
+records and requires an explicit credential file.
+
+[Corpus diagnostics](../tools/README.md) remain checkout tools under
+`tools/analysis/`, where each report states the bounded question it answers.
+[Repository maintenance](../scripts/README.md) lives under `scripts/`.
+The installed catalog builder is described in the
+[catalog guide](catalog-and-drift.md#update-a-source-catalog).
 
 ## Output and failures
 

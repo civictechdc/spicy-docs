@@ -21,9 +21,9 @@ flowchart LR
 
 | Type | What it describes | What it does not own |
 | --- | --- | --- |
-| `SourceProfile` in `source_profiles.py` | Declared fields, source capabilities, access scope, and observed drift | Release publication and record selection |
-| `SourceNativeProfile` in `source_native_profile.py` | Source scope, evidence decoding, schema, identity, observation selection, and completeness | Generic artifact hashing or downstream interpretation |
-| `PublicTableProfile` in `public_table_profiles.py` | Flat columns, projection, partitioning, and ordering | Acquiring source evidence |
+| `SourceProfile` in `catalog/profiles.py` | Declared fields, source capabilities, access scope, and observed drift | Release publication and record selection |
+| `SourceNativeProfile` in `releases/profile.py` | Source scope, evidence decoding, schema, identity, observation selection, and completeness | Generic artifact hashing or downstream interpretation |
+| `PublicTableProfile` in `public_tables/profiles.py` | Flat columns, projection, partitioning, and ordering | Acquiring source evidence |
 
 Rulespec Artifacts owns canonical byte identity, manifests, and structural
 artifact admission. Reuse its functions; a second canonical encoder would make
@@ -34,38 +34,49 @@ identity depend on the caller.
 | Responsibility | Implementation |
 | --- | --- |
 | Source profiles | `sources/federal_register/profile.py`, `sources/regulations_gov/profile.py`, `sources/gao/profile.py`, `sources/public_comments/profile.py` |
-| Federal Register acquisition | `federal_register_source_native.py` |
-| Regulations.gov | `sources/regulations_gov/`: `definitions.py` declares fields and data shapes; `validation.py` checks source structures; `records.py` classifies records; `schemas.py` declares schemas; `scope.py` checks scope and completeness; `evidence.py` packs/decodes captures; `acquisition.py` captures pages. `regulations_gov_source_native.py` preserves public imports. |
-| GAO exact-page capture | `gao_product_pages_source_native.py` |
-| Captured public comments | `spicy_regs_public_tables_source_native.py` |
+| Federal Register acquisition | `sources/federal_register/native.py` |
+| Regulations.gov | `sources/regulations_gov/`: `definitions.py` declares fields and data shapes; `validation.py` checks source structures; `records.py` classifies records; `schemas.py` declares schemas; `scope.py` checks scope and completeness; `evidence.py` packs/decodes captures; `acquisition.py` captures pages. |
+| GAO exact-page capture | `sources/gao/native.py` |
+| Captured public comments | `sources/public_comments/native.py` |
 | Raw readers | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |
 | Shared source mechanics | `sources/json_input.py`, `sources/media_types.py` |
-| Public release API | `source_native.py` preserves existing imports; implementations live in `releases/` |
-| Release format and payloads | `releases/format.py`, `releases/partitions.py`; blob access in `source_native_store.py` |
-| Observation selection and publication | `releases/observations.py`, `releases/indexing.py`, `releases/publish.py`; path preflight in `releases/paths.py`; immutable filesystem publication in `publication.py` |
+| Public release API and source profile interface | `source_native.py` exports the current reader/publisher API; implementations and `profile.py` live in `releases/` |
+| Release format and payloads | `releases/format.py`, `releases/partitions.py`; blob access in `storage/blobs.py` |
+| Observation selection and publication | `releases/observations.py`, `releases/indexing.py`, `releases/publish.py`; path preflight in `releases/paths.py`; immutable filesystem publication in `storage/publication.py` |
 | Full offline verification | `releases/replay.py` reconstructs evidence; `releases/verify.py` compares published output |
 | Bounded admission and reading | `releases/admission.py`, `releases/reader.py` |
-| Public-table output | `public_tables/format.py` defines layout; `publish.py` indexes and writes; `verify.py` owns admission and the full row gate. `public_table_profiles.py` owns source projections. |
-| Public-table consumption | `public_tables/reader.py` owns locations and reading; `iceberg.py` adopts exact files through an injected table. `public_table.py` preserves public imports. |
-| Transport | `transport/acquisition.py`, `transport/retry.py`, `sources/zyte.py` |
-| Operator commands | `source_native_cli.py` handles commands; `cli/arguments.py` defines syntax; `cli/sources.py` registers scope, acquisition, errors, and optional tables |
+| Public-table output | `public_tables/format.py` defines layout; `publish.py` indexes and writes; `verify.py` owns admission and the full row gate. `public_tables/profiles.py` owns source projections. |
+| Public-table consumption | `public_tables/api.py` exports the library API; `reader.py` owns locations and reading; `iceberg.py` adopts exact files through an injected table. |
+| Source catalogs and applicability | `catalog/profiles.py` declares source-table capabilities; `catalog/artifacts.py` validates and builds the catalog artifacts. |
+| Publisher-domain drift | `sources/source_domains.py` owns pinned document parsing and exact-value comparisons. |
+| Shared evidence encoding | `sources/evidence_zip.py` defines deterministic ZIP member metadata. |
+| Transport | `transport/acquisition.py`, `transport/retry.py`, `transport/credentials.py`, `sources/zyte.py` |
+| Operator commands | `cli/source_native.py` handles commands; `cli/arguments.py` defines syntax; `cli/sources.py` registers scope, acquisition, errors, and optional tables |
+| Campaigns and source-specific operational acquisition | `cli/campaign.py`, `sources/federal_register/replay.py`, and `sources/congress/crs_summaries.py`; see [operator commands](cli.md#campaigns-replay-and-source-tools) |
+| Repository checks and receipt analysis | [scripts](../scripts/README.md) update/check repository inputs; [tools/analysis](../tools/README.md) answers bounded questions about retained evidence. |
 
 Dependencies point from commands to sources and release operations, then to
 format definitions, stores, and Rulespec. Package initializers stay lightweight.
-Directly importing a source-owned profile must not import unrelated sources or
-live transports. `source_native_profiles.py` remains a compatibility re-export
-for callers that compose all supported sources.
+Directly importing a source-owned profile avoids unrelated sources. Federal
+Register's profile and offline replay also avoid live transport imports, as
+checked by the reader dependency tests. GAO imports its own Zyte response type;
+that import does not perform a request. The package root keeps `__init__.py`
+and five export modules
+used by current downstream consumers: `federal_register_source_native.py`,
+`regulations_gov_source_native.py`, `source_native.py`,
+`source_native_profiles.py`, and `source_native_store.py`. These are import
+surfaces; source, release, and storage packages own the implementation. New
+internal code imports the owner directly. See the
+[supported entry points](maintenance-decisions.md#supported-entry-points).
 
 ## Checks have distinct purposes
 
-Publication indexes observations on disk, selects according to source policy,
-stages members, verifies the staged result, then makes a new directory visible
-once. A destination is never overwritten.
-
-Full verification reconstructs records from retained evidence and compares the
-result to published data. Consumer admission performs bounded opening checks
-under an accepted verifier identity; it does not replay the corpus on each open.
-Reader dependency tests protect this distinction for DocSpec.
+Publication verifies its staged result before making a new directory visible
+once. Full verification reconstructs successful observations from retained
+evidence; bounded admission checks an artifact for opening under an accepted
+verifier identity. The [release guide](releases.md#choose-the-right-check)
+explains each check and its limits. Reader dependency tests protect the bounded
+opening path for DocSpec.
 
 Source tests own publisher-specific meaning. Shared release tests own selection,
 tampering, failure records, bounds, and publication. Independently constructed

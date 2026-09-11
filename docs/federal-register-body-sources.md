@@ -1,7 +1,7 @@
 # Federal Register body-source knowledge
 
 SpicyDocs now preserves the source-specific rules from the former SpicySearch
-body-fetch campaigns in `spicy_docs.federal_register_body_sources`. The module
+body-fetch campaigns in `spicy_docs.sources.federal_register.body_sources`. The module
 derives locators and verifies already fetched bytes. It does not select a
 rendition, perform network I/O, or store a document body. DocSpec owns candidate
 choice; a future SpicyDocs adapter must own bounded acquisition, exact capture,

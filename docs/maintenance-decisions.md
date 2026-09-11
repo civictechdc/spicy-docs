@@ -11,9 +11,11 @@ selection, immutable publication, and bounded consumer opening. The
 | `spicy_docs.source_native` | Preserve public build, publisher, reader, error, schema-bundle, admission, and verification imports, format constants, and declared public exports. Implementations live in `releases/`. |
 | `spicy_docs.regulations_gov_source_native` | Preserve collection constants, data types, scope, classification, evidence parsing, iteration, digest functions, and declared public exports. Implementations live in `sources/regulations_gov/`. |
 | `spicy_docs.source_native_profiles` | Preserve profile exports. A caller needing one source can import its source-owned `profile.py` without loading unrelated sources. |
-| `spicy_docs.public_table` | Preserve table build, publisher, reader, location, verifier, and injected Iceberg APIs. Implementations live in `public_tables/`. |
-| Other public reader modules | Keep Federal Register, source profiles, blob stores, Mirrulations, and CourtListener imports stable. |
-| Operator commands | Keep both installed entry points in `pyproject.toml`. The source-native command retains its four subcommands, injected operations, exit codes, and result shapes. |
+| `spicy_docs.federal_register_source_native` | Preserve the Federal Register imports used by current reader probes. Source acquisition and classification live in `sources/federal_register/native.py`. |
+| `spicy_docs.source_native_store` | Preserve the current consumer's blob-store imports. Their implementation lives in `storage/blobs.py`. |
+| Newly organized library APIs | Public tables use `spicy_docs.public_tables.api`; table profiles use `spicy_docs.public_tables.profiles`; source-table declarations and artifact builders use `spicy_docs.catalog`. Their former root paths have no forwarding wrappers. |
+| Raw reader modules | Mirrulations and CourtListener remain under `sources/`. |
+| Operator commands | Keep both installed entry points in `pyproject.toml`; their implementations live in `cli/`. The source-native command retains its four subcommands, injected operations, exit codes, and result shapes. `python -m` callers use the owning module paths in the [operator guide](cli.md). |
 | Private test hooks | Tests now patch the implementation owner, such as Regulations.gov acquisition's pack limit. Private imports are not retained as forwarding wrappers. |
 
 The five modules in `tests/test_reader_closure.py` match DocSpec's installed-wheel
@@ -27,7 +29,9 @@ The caller inventory covered this repository and the local DocSpec, spicy-regs,
 spicysearch, RefSpec, and rulespec checkouts. DocSpec's installed-wheel probe
 imports spicy-docs through these entry modules. They remain discoverable public
 APIs with one implementation behind each exported operation. Current callers
-and documented use define the supported entry points.
+and documented use define the supported entry points. The organization follow-up
+keeps only those five export modules at the package root; it adds no wrappers
+for moved internal modules. The current code and guides use the owning packages.
 
 ## Unused-code dispositions
 
@@ -83,7 +87,7 @@ this refactor preserves the cache and its purpose.
 | Mirrulations reader | Retain distinct incremental and complete-enumeration paths sharing download primitives. Their failure and coverage promises differ. The largest function is 80 lines. |
 
 The module split increases physical Python lines through explicit imports and
-compatibility exports; it does not establish a net line-count reduction.
+public API exports; it does not establish a net line-count reduction.
 Repeated implementation was removed, and changes can now be reviewed within
 bounded responsibilities. File size remains a review prompt, not a quota.
 
@@ -99,7 +103,7 @@ policy versions `1.0` and `1.1` in the bounded admission allowlist. Recomputing 
 historical entry from today's schema or profile would change the identity of
 the data it is meant to recognize.
 
-The [offline replay tool](../tools/replay_federal_register_release.py) admits
+The [offline replay tool](../src/spicy_docs/sources/federal_register/replay.py) admits
 retained evidence before publishing it under the current source profile.
 Admission of an older release does not promise successful full verification
 under an old policy: full verification recomputes the current profile's policy
@@ -113,10 +117,11 @@ The historical schema and admission tests protect this boundary.
 
 ## Remaining observations
 
-Exact regeneration of the original wiki generator remains unavailable because
-its command and configuration were not retained. The documented manual refresh
-procedure preserves original provenance and separates current task guides from
-the dated reference snapshot.
+The former generated wiki has been consolidated into maintained task guides.
+[Documentation provenance](documentation.md#former-generated-wiki) records the
+original generator metadata, the recoverable Git snapshot, and each topic's
+current home. Reproducing the missing generator is no longer a prerequisite for
+maintaining the documentation.
 
 At the user's request, the contributor exercise used fresh blind subagents
 assigned Python-developer and government-records-analyst personas. Both followed

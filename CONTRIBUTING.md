@@ -10,10 +10,11 @@ checks. You do not need a sibling checkout or source credentials.
 | Job | Start with | Evidence and focused checks |
 | --- | --- | --- |
 | Correct a source behavior | The source's acquisition module and `sources/<source>/profile.py`; see the [module map](docs/architecture.md) | Add a small response fixture demonstrating the difference. Use the source checks below; add `tests/releases/` when selection or identity changes. |
-| Add a source | `source_native_profile.py`, an existing source profile, and `cli/sources.py` registration | Define scope, exact evidence, classification, identities, and completeness. Test success, malformed success, incomplete enumeration, duplicate observations, and offline replay. Reuse the release engine. |
+| Add a source | [Release extension guide](docs/releases.md#add-or-change-a-source-profile), `releases/profile.py`, an existing source profile, and `cli/sources.py` registration | Define scope, exact evidence, classification, identities, and completeness. Test success, malformed success, incomplete enumeration, duplicate observations, and offline replay. Reuse the release engine. |
 | Change shared release behavior | `source_native.py`, the [release specification](docs/superpowers/specs/2026-08-25-source-native-release-spec.md), and reader tests | Preserve output identities, schema bytes, bounded reading, immutable publication, and independent replay. Run `tests/releases/`, `test_source_native_failure_shape.py`, CLI, and reader-closure tests. Test the built wheel when imports or bundled schemas move. |
 
-Source checks:
+The [documentation index](docs/README.md) links the source rules, raw-reader
+limits, catalog workflows, and release checks. Source checks:
 
 - Federal Register: `tests/releases/test_acquisition.py` and `tests/test_federal_register_request_window.py`.
 - Regulations.gov: `tests/regulations_gov/`.

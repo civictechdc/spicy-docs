@@ -28,7 +28,7 @@ example, not a production build. See [the example](examples/offline_release.py).
 - [Publish and verify releases or public tables](docs/cli.md)
 - [Understand the acquisition decisions](docs/decisions.md)
 - [Read the adopted release specification](docs/superpowers/specs/2026-08-25-source-native-release-spec.md)
-- [Use the dated source references](wiki/overview.md) and [maintain documentation](docs/documentation.md)
+- [Browse source behavior, raw readers, and maintenance workflows](docs/README.md)
 
 ## Sources and supply
 
