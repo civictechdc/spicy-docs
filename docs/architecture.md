@@ -70,3 +70,13 @@ Reader dependency tests protect this distinction for DocSpec.
 Source tests own publisher-specific meaning. Shared release tests own selection,
 tampering, failure records, bounds, and publication. Independently constructed
 malformed artifacts remain independent of the publisher under test.
+
+## Test map
+
+`tests/releases/` groups publication, selection, acquisition, failures, storage,
+reading, and compatibility. `tests/regulations_gov/` groups record rules, scope,
+evidence, release integration, and observation selection. Each has a focused
+`fixtures.py`. Routine cross-source encoding and inspection live in
+`tests/source_fixtures.py`; independent malformed artifact construction remains
+in `tests/source_native_release_fixtures.py`. Other source, CLI, and import-boundary
+tests remain directly under `tests/`.

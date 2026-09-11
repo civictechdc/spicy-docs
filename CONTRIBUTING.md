@@ -9,9 +9,9 @@ checks. You do not need a sibling checkout or source credentials.
 
 | Job | Start with | Evidence and focused checks |
 | --- | --- | --- |
-| Correct a source behavior | The source's acquisition module and `sources/<source>/profile.py`; see the [module map](docs/architecture.md) | Add a small response fixture demonstrating the difference. Run its `test_*source_native*` tests and shared release tests if selection or identity changes. |
+| Correct a source behavior | The source's acquisition module and `sources/<source>/profile.py`; see the [module map](docs/architecture.md) | Add a small response fixture demonstrating the difference. Run `tests/regulations_gov/` for Regulations.gov, or the corresponding `test_*source_native*` source tests. Add `tests/releases/` when selection or identity changes. |
 | Add a source | `source_native_profile.py`, an existing source profile, and `cli/sources.py` registration | Define scope, exact evidence, classification, identities, and completeness. Test success, malformed success, incomplete enumeration, duplicate observations, and offline replay. Reuse the release engine. |
-| Change shared release behavior | `source_native.py`, the [release specification](docs/superpowers/specs/2026-08-25-source-native-release-spec.md), and reader tests | Preserve output identities, schema bytes, bounded reading, immutable publication, and independent replay. Run release, failure, CLI, and reader-closure tests. Test the built wheel when imports or bundled schemas move. |
+| Change shared release behavior | `source_native.py`, the [release specification](docs/superpowers/specs/2026-08-25-source-native-release-spec.md), and reader tests | Preserve output identities, schema bytes, bounded reading, immutable publication, and independent replay. Run `tests/releases/`, `test_source_native_failure_shape.py`, CLI, and reader-closure tests. Test the built wheel when imports or bundled schemas move. |
 
 Public-table changes also need `test_public_table.py` and its CLI tests. Raw
 reader changes belong with the Mirrulations or CourtListener tests. Find exact

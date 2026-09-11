@@ -739,7 +739,7 @@ def test_mixed_published_record_and_deterministic_failure_are_accepted(tmp_path:
 def test_zero_count_null_failure_release_reads_unchanged(tmp_path: Path) -> None:
     """The existing shape (no failures at all) must still read and verify
     exactly as before -- proven directly here, and already proven at scale
-    by the untouched federal-register fixtures in test_source_native_release.py
+    by the untouched Federal Register fixtures in tests/releases/
     (53 cases, all still passing after this change).
     """
 
