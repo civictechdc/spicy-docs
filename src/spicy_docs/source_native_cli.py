@@ -39,6 +39,7 @@ from spicy_docs.gao_product_pages_source_native import (
     GaoProductFetch,
 )
 from spicy_docs.publication import ImmutablePublicationError
+from spicy_docs.releases.paths import require_separate_paths
 from spicy_docs.source_native import (
     CURRENT_PRODUCER_PRODUCT,
     VERIFIER_ID,
@@ -116,17 +117,6 @@ def _emit(stream: TextIO, value: Mapping[str, object]) -> None:
     stream.write(canonical_json_bytes(value).decode("utf-8") + "\n")
 
 
-def _require_separate_paths(left: Path, right: Path, *, labels: tuple[str, str]) -> None:
-    selected_left = Path(left).absolute().resolve(strict=False)
-    selected_right = Path(right).absolute().resolve(strict=False)
-    if (
-        selected_left == selected_right
-        or selected_left.is_relative_to(selected_right)
-        or selected_right.is_relative_to(selected_left)
-    ):
-        raise SourceNativeReleaseError(f"{labels[0]} and {labels[1]} must not overlap")
-
-
 def _publish(
     args: argparse.Namespace,
     *,
@@ -138,7 +128,7 @@ def _publish(
 ) -> dict[str, object]:
     profile = source_registration(args.source).profile
     query_scope = source_registration(args.source).query_scope(args)
-    _require_separate_paths(
+    require_separate_paths(
         args.destination,
         args.blob_store,
         labels=("--destination", "--blob-store"),
@@ -179,7 +169,7 @@ def _publish(
 
 def _verify(args: argparse.Namespace) -> dict[str, object]:
     profile = source_registration(args.source).profile
-    _require_separate_paths(
+    require_separate_paths(
         args.release,
         args.blob_store,
         labels=("--release", "--blob-store"),
@@ -231,12 +221,12 @@ def _publish_public_table(args: argparse.Namespace) -> dict[str, object]:
 
     source_profile = source_registration(args.table).profile
     public_profile = public_table_profile(args.table)
-    _require_separate_paths(
+    require_separate_paths(
         args.source_release,
         args.source_blob_store,
         labels=("--source-release", "--source-blob-store"),
     )
-    _require_separate_paths(
+    require_separate_paths(
         args.destination,
         args.source_release,
         labels=("--destination", "--source-release"),

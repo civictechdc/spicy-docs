@@ -64,6 +64,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from spicy_docs.releases.paths import require_separate_paths
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
@@ -119,24 +121,6 @@ class ReplayFetchStats:
 
     call_count: int = 0
     served_urls: set[str] = field(default_factory=set)
-
-
-def _require_separate_paths(left: Path, right: Path, *, labels: tuple[str, str]) -> None:
-    """Refuse two CLI paths that alias or nest one another.
-
-    Mirrors ``spicy_docs.source_native_cli._require_separate_paths`` -- that
-    helper is private to a module this tool's writable scope excludes, so
-    the same small check is reproduced here rather than imported.
-    """
-
-    resolved_left = Path(left).absolute().resolve(strict=False)
-    resolved_right = Path(right).absolute().resolve(strict=False)
-    if (
-        resolved_left == resolved_right
-        or resolved_left.is_relative_to(resolved_right)
-        or resolved_right.is_relative_to(resolved_left)
-    ):
-        raise SourceNativeReleaseError(f"{labels[0]} and {labels[1]} must not overlap")
 
 
 def _utc_now() -> datetime:
@@ -317,9 +301,9 @@ def replay(
     release_root = Path(release_root)
     blob_store = Path(blob_store)
     destination = Path(destination)
-    _require_separate_paths(release_root, blob_store, labels=("--release-root", "--blob-store"))
-    _require_separate_paths(destination, blob_store, labels=("--destination", "--blob-store"))
-    _require_separate_paths(destination, release_root, labels=("--destination", "--release-root"))
+    require_separate_paths(release_root, blob_store, labels=("--release-root", "--blob-store"))
+    require_separate_paths(destination, blob_store, labels=("--destination", "--blob-store"))
+    require_separate_paths(destination, release_root, labels=("--destination", "--release-root"))
     if destination.exists() or destination.is_symlink():
         raise FileExistsError(f"refusing to replace immutable release: {destination}")
 
