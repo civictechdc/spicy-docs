@@ -4,7 +4,7 @@ Created September 11, 2026 from the blind product-boundary review (`blind-produc
 
 **Updated September 11, 2026 following the owner's product clarification and checklist sync.** DocSpec is an iterative dataset and catalog platform: accept sources, select documents, use injected fetchers, process now or later, reuse previous work, and compare results. SpicyRegs remains an independently usable source-data product. SpicyDocs may remain separate; share source improvements where they remove duplicate effort or improve a supported workflow. Package placement remains open and is not a prerequisite for useful integration. The prior blanket recommendation to merge SpicyDocs into DocSpec is withdrawn. The additional duplication review (`docspec-spicy-docs-duplication-review.md`) and coordination review (`docspec-spicy-docs-coordination-review.md`) supply useful findings, but their merger addenda do not define this plan.
 
-**Progress: 0 of 31 items complete.** S01–S24 retain their IDs with revised scope; S25–S31 cover ownership, experiment capabilities, and reuse through the DocSpec wheel made explicit by the clarification and follow-up reviews. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
+**Progress: 0 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
 
 The intended result is reusable upstream source data and an approachable platform for dataset experiments. A user can build a catalog, fetch selected documents once, process them inline or later, change processors or reference resources, add documents, and compare reproducible results. Every useful stopping point exposes what was requested, received, accepted, rejected, and unresolved. Search is one consumer; catalog-only, acquisition-only, and later-processing workflows have independent value.
 
@@ -35,7 +35,7 @@ Reuse works in both directions at the application boundary: DocSpec consumes sou
 
 DocSpec owns dataset capture and transactions. S22/D31 choose the owner of any shared physical blob writer based on independent source callers as well as dataset callers. Reuse suitable existing primitives where possible; provider storage must not acquire a DocSpec lifecycle dependency solely to remove a writer copy.
 
-Rulespec supplies the existing shared encoding and generic artifact/atomic-publication primitives; S30/D28 resolve the remaining encoding differences together. Publisher parsers, source identities, and public-data transforms remain with their source owner. Keep the dependency direction explicit:
+Rulespec supplies the existing shared encoding and generic artifact/atomic-publication primitives; Rulespec RS01 owns the remaining encoding decision; S30/D28 own producer/consumer adoption. Publisher parsers, source identities, and public-data transforms remain with their source owner. Keep the dependency direction explicit:
 
 - The independent provider package uses shared primitives and remains usable without DocSpec.
 - An optional DocSpec integration or a separate experiment caller uses both packages' public APIs and injects source operations and fetchers. Dataset-specific source-tool loops can move to that caller and use DocSpec's wheel.
@@ -43,16 +43,22 @@ Rulespec supplies the existing shared encoding and generic artifact/atomic-publi
 
 ## How to use this list
 
+**Tasks live where their implementation changes.** This list owns SpicyDocs
+work; each affected sibling owns its own code, packaging, documentation, and
+validation tasks. A dependency link or moved ID is not a second checkbox. Update
+status and evidence at the destination. If ownership changes, place the task in
+the selected destination before implementation.
+
 Items have stable IDs, an owner, a beneficiary, dependencies, and completion criteria. **Change** means implementation is required. **Decision** means inspect the stated evidence, record the choice and reason, and distinguish any resulting implementation from the decision itself. **Conditional change** remains open until implemented; if its prerequisite establishes no present need, mark it deferred explicitly and report it separately from completed work.
 
-Owner names identify the current implementation lead unless a destination is stated. S25 records final component ownership; it does not require all source code to move or make source improvements depend on completing the experiment platform first.
+Open checkboxes describe local work only. S25 records SpicyDocs ownership and handoffs; it does not require source code to move or make source improvements depend on the experiment platform.
 
 Use a solutions architect subagent for ownership, format, and scope judgments. Record the agreed approach before implementing those decisions. Use independent semi-formal code reviews for the resulting changes. Commit coherent changes and update the affected checklist entries with commit IDs and validation evidence as work proceeds. Keep local validation, CI, push, and release state distinct.
 
 Organize delivery around three user workflows, with the numbered items serving as coverage and acceptance details:
 
 1. **Reusable source data and clear catalog inputs:** establish responsibility and interface decisions in S25 alongside S01–S04/S11, then qualify SpicyRegs and independent source inputs through S18/S26. Package moves are optional and do not gate source improvements or integration. Establish reusable public APIs and both wheel directions in S31 alongside DocSpec D41–D46. Coordinate source-format changes in S05–S10 and encoding in S30 with those owners.
-2. **An iterative dataset experiment:** S26–S29 make fetcher/processor injection, later processing, incremental reuse, comparison, configuration, and useful stopping points work through supported interfaces. Preserve existing working mechanisms and simplify their public use.
+2. **An iterative dataset experiment:** Follow the destination tasks linked from S02/S18/S20/S27–S29 for fetcher/processor injection, later processing, reuse, comparison, configuration, and useful stopping points; S26 supplies the independent provider API. Preserve existing working mechanisms and simplify their public use.
 3. **A recoverable run with less duplicated machinery:** S20–S22 use the existing Dagster/execution boundary and consolidate only replaced mechanics. S12–S16 remove or relocate obligations after checking both upstream users and the owner's experiment requirements. S23–S24 validate the resulting workflows.
 
 An absent current search caller does not invalidate an intended experiment capability or an upstream SpicyRegs use. Avoid speculative framework expansion, while preserving source/fetcher/processor injection, dependency tracking, selective reprocessing, and incremental datasets as core capabilities.
@@ -77,118 +83,371 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 ## First: make ordinary collection understandable and remove repeated work
 
+<a id="s01"></a>
+
 - [ ] **S01 — Expose collection outcomes through the reader and CLI.** **Change; owner: SpicyDocs; beneficiary: acquisition operators and catalog builders.** Reuse existing receipt and ledger data to expose requested scope, discovered/published/failed/discarded counts, and a bounded way to inspect failures. Explain the units and relationships between counts; discovered observations, selected records, and rejected records are not interchangeable. **Done when:** valid empty input, partial rejection, total record rejection, and ordinary success are distinguishable through supported interfaces, without inspecting internal files or building a second status store. Failure iteration and ordinary opening remain bounded. **Evidence:** product review finding 1; `releases/reader.py`, `cli/source_native.py`, `releases/publish.py`.
 
-- [ ] **S02 — Carry source outcomes into DocSpec's catalog and experiment interfaces.** **Change; owner: DocSpec with the source owner; beneficiary: catalog builders and experiment authors. Depends on S01.** Extend the supported source description/adapter with the outcome facts its callers need. DocSpec chooses and records the partial-input policy; the source provider reports acquisition facts. Apply the same distinction to SpicyRegs and other injected sources without requiring every provider to produce a SpicyDocs-specific bundle first. **Done when:** installed-package examples distinguish observed empty input, rejected rows, and unrequested work; catalog-only and later processing preserve source scope and failure information. Consumer code uses supported interfaces rather than source-package internals. **Evidence:** product review finding 1; DocSpec `ports/source_catalog.py`; owner clarification that SpicyRegs is one source among others.
+<a id="s02"></a>
+
+- **S02 — Moved to [DocSpec D08](../../DocSpec/docs/dataset-experiments-todo.md#d08).**
+  Carrying source outcomes and choosing partial-input policy is DocSpec work.
+  SpicyDocs implements the supplying reader in S01/S26 and coverage facts in S09.
+  This ID remains a dependency reference; it is not completed implementation.
+
+<a id="s03"></a>
 
 - [ ] **S03 — Remove the default second full campaign verification.** **Change; owner: SpicyDocs; beneficiary: acquisition operators.** Keep the full staged-publication verifier mandatory. Use the existing bounded opening and expected artifact pin where a visible-destination or resume check is needed. Retain full replay as an explicit audit operation, with an independently supplied expected pin and accepted verifier identity. Simplify the extra verification subprocess, receipts, and resume states that become unnecessary. **Done when:** ordinary publication runs full replay once; interrupted runs, stale receipts, mismatched pins, and tampered destinations cannot be mistaken for completed work. Explicit audit still works. Record pass counts and any measured cost reduction without claiming unmeasured speedups. **Evidence:** simplification recommendation 1; `cli/campaign.py:252`, `releases/publish.py:328`.
 
-- [ ] **S04 — Correct the product promises and supported-workflow map.** **Change; owner: SpicyDocs, SpicyRegs, and DocSpec documentation; beneficiary: users choosing a workflow and new contributors.** Explain inputs, operations, outputs, and checks for reusable upstream data, catalog building, document acquisition, inline processing, and later experiments. Distinguish accepted evidence from every response, links from captured bodies, declarations from working adapters, and raw/flat outputs from verified releases. State community-first supply precedence. Source modules preserve publisher facts; supplied processors own their analysis; DocSpec manages execution and result provenance. Describe GAO's topic as a literal publisher label. **Done when:** the guides reflect the ownership decisions in S25, preserve useful stopping points, and identify current gaps without claiming universal coverage, publisher truth, a mandatory search destination, or a blanket package merger. **Evidence:** product review claim assessment; owner clarification; DocSpec decision 0002:28–45.
+<a id="s04"></a>
+
+- [ ] **S04 — Correct SpicyDocs' product promises and workflow map.**
+  **Owner: SpicyDocs; beneficiary: source users and contributors.** Explain source
+  inputs, acquisition, outputs, and checks; distinguish accepted evidence from
+  every response, links from captured bodies, raw/table outputs from verified
+  releases, and declarations from working adapters. Preserve community-first
+  supply precedence and GAO topics as literal publisher labels. **Done when:**
+  source guides show actual coverage and useful source-only stopping points,
+  and link to dataset workflows owned by
+  [DocSpec D01/D36](../../DocSpec/docs/dataset-experiments-todo.md#d01). S25 governs
+  selected local ownership; neither a merger nor a search destination is required.
 
 ## Second: simplify the current format and close evidence gaps
 
-- [ ] **S05 — Require the current supported schemas, policies, and receipt shapes.** **Change; owner: source-release owners and DocSpec; beneficiary: maintainers of the supported package set. Depends on the ownership decision in S25.** Remove historical allowlists, optional failure-count fields, absent-count defaults, and obsolete producer acceptance required only for legacy inputs. Coordinate actual producer/consumer expectations and installed-package fixtures. Agree format/version changes alongside S06–S10 and S30; retain useful source, catalog, and document distinctions. SpicyRegs public-table reuse does not require adopting every source-native format mechanism. **Done when:** current writers, readers, schemas, examples, and consumers agree; counts are required where declared; unsupported historical inputs receive clear refusals; no fallback or conversion layer restores obsolete behavior. Current experiments still retain their own reproducible revisions. **Evidence:** simplification recommendation 2; coordination review finding 2; owner clarification.
+<a id="s05"></a>
+
+- [ ] **S05 — Require current schemas, policies, and source receipt shapes.**
+  **Owner: SpicyDocs; beneficiary: source-package maintainers.** Remove local
+  historical allowlists, absent-count defaults, optional fields required only
+  for legacy inputs, and obsolete producer acceptance. Agree intentional source
+  format changes alongside S06–S10/S30 and qualify this repository's candidate
+  wheel. **Done when:** current source writers, readers, schemas, and fixtures
+  agree; required counts are present; historical inputs receive clear refusals;
+  no fallback restores retired behavior. Consumer acceptance belongs to
+  [DocSpec D10](../../DocSpec/docs/dataset-experiments-todo.md#d10); common encoding
+  belongs to [Rulespec RS01](../../rulespec/TODO.md#rs01). Depends on S25's relevant
+  interface decision, never a mandatory package move.
+
+<a id="s06"></a>
 
 - [ ] **S06 — Move operational byte accounting into run reporting.** **Change; owner: SpicyDocs, coordinated with DocSpec; beneficiary: operators and format maintainers. Depends on the S05 format decision.** Move read/reused/written-byte measurements and publication-size telemetry out of the source release into the existing operator result or run receipt where useful. Calculate publication size after writing. Remove the loop that rebuilds metadata until its self-reported size stabilizes and the associated admission obligations. Keep exact member sizes/hashes, source counts, scope, and evidence links. **Done when:** equivalent source content remains correctly identifiable under the declared format, storage reuse is still observable where required, and metadata construction has no self-size fixed point. Updated format documentation and focused fixtures explain the intentional change. **Evidence:** simplification recommendation 4; `releases/publish.py:396`, `releases/admission.py:241`.
 
+<a id="s07"></a>
+
 - [ ] **S07 — Reconstruct deterministic failure provenance during full replay.** **Change; owner: SpicyDocs release verification; beneficiary: users investigating omitted records.** During the existing evidence pass, independently reconstruct rejected-record positions, identifiers, reason/class, and evidence references, then compare the failure ledger. Keep transport failures separate where retained response bytes cannot reproduce them. Avoid sharing the writer's failure-ledger construction in a way that makes the check circular. **Done when:** omitted, injected, duplicated, misclassified, or relinked failures are rejected even in an otherwise consistently resealed artifact. Genuine deterministic failures replay successfully. Ordinary reader admission gains no whole-corpus scan. **Evidence:** product review finding 2; `releases/replay.py:183`, `releases/verify.py:213`.
+
+<a id="s08"></a>
 
 - [ ] **S08 — Retain bounded evidence for refused responses.** **Change; owner: SpicyDocs acquisition and release code; beneficiary: operators repairing source drift.** Cover GAO identity/topic/markup failures and shared page parsing or inventory failures that currently occur before evidence persistence. Reuse the blob store and failed-run outcome to reference captured bytes; keep them separate from admitted records. Agree the smallest retention/reference design with the architect. Apply existing credential safeguards and byte bounds, and record when a bound or transport failure prevents capture. **Done when:** an operator can inspect the original refused response and diagnose these cases offline; failed runs retain discoverable evidence references; malformed pages remain refused; no second acquisition framework or valid-looking partial release is introduced. **Evidence:** product review finding 3; `sources/gao/native.py:623`, `releases/indexing.py:92`.
 
-- [ ] **S09 — Expose what each coverage claim actually establishes.** **Change; owner: SpicyDocs with DocSpec; beneficiary: dataset users assessing omissions. Depends on S01–S02.** Carry exact selectors, discovery rules, and material assumptions alongside broad scope labels. Distinguish Federal Register's stable observed crawls, GAO's explicit requested IDs, and Mirrulations' live listing with individually pinned objects. Identify requested, unrequested, observed-empty, rejected, and unresolved outcomes where evidence supports those distinctions. **Done when:** supported APIs and examples explain each source's coverage without implying one frozen publisher-wide instant or treating a transport error as source absence. Reuse existing scope/policy declarations where possible. **Evidence:** product review finding 4.
+<a id="s09"></a>
+
+- [ ] **S09 — Expose what each coverage claim actually establishes.** **Change; owner: SpicyDocs; beneficiary: dataset users assessing omissions. Depends on S01 and the relevant S25 interface decision.** Carry exact selectors, discovery rules, and material assumptions alongside broad scope labels. Distinguish Federal Register's stable observed crawls, GAO's explicit requested IDs, and Mirrulations' live listing with individually pinned objects. Identify requested, unrequested, observed-empty, rejected, and unresolved outcomes where evidence supports those distinctions. **Done when:** supported source APIs and examples explain each source's coverage without implying one frozen publisher-wide instant or treating a transport error as source absence. Reuse existing scope/policy declarations where possible. [DocSpec D08](../../DocSpec/docs/dataset-experiments-todo.md#d08) consumes these facts; implementing the provider does not depend on its consumer. **Evidence:** product review finding 4.
+
+<a id="s10"></a>
 
 - [ ] **S10 — Make public-comment completeness match its discovery evidence.** **Change with architecture decision; owner: SpicyDocs; beneficiary: public-comment dataset users. Depends on S09 and the S05 format decision.** The current first-missing-part rule establishes discovery under a contiguous-name assumption. Prefer an observation-level claim unless a named consumer needs complete membership and a publisher inventory/version can establish it. Do not invent an endless search for later part numbers to preserve the old label. **Done when:** the profile, executable checks, downstream description, and guide agree; retained cases cover the first missing part, gaps, empty input, and request failures. If authoritative inventory is adopted, membership is checked against that inventory. **Evidence:** product review finding 4; `sources/public_comments/profile.py:20`, `sources/public_comments/native.py:785`.
 
 ## Third: place source capabilities with their users and remove unused obligations
 
-- [ ] **S11 — Inventory present users, intended experiments, and upstream destinations.** **Decision; owner: coordinating maintainer with SpicyRegs and DocSpec; beneficiary: source contributors and experiment authors.** Inspect source code and maintained operating instructions in SpicyRegs, SpicyDocs, DocSpec, SpicySearch, Rulespec, and relevant clients. Cover auxiliary catalogs, public tables, Iceberg, CourtListener, drift checks, imports, and extension points. Distinguish runtime use, operational use, tests, and the owner's stated product requirements. Injection, selective reprocessing, and Dagster support are core requirements even where the default CLI exposes few implementations. **Done when:** candidates have a beneficiary, destination, removal consequence, evidence, and KEEP/MOVE/DELETE/DEFER choice. Missing DocSpec or search callers alone do not justify deleting useful SpicyRegs work or intended experiment capabilities. **Evidence:** simplification recommendations 3 and 5, revised by the owner clarification; SpicyRegs README; DocSpec extension and reprocessing paths.
+<a id="s11"></a>
 
-- [ ] **S12 — Remove unused auxiliary catalog obligations and put policy with its owner.** **Change; owner: source owners and supported processing/tagging consumers; beneficiary: source contributors and experiment authors. Depends on S11 and the ownership decision in S25.** Remove unused source-side `allowed_schemes`, processor/region selections, and stage flags. Put active processor choices in the DocSpec experiment plan and active tagging rules in the supplied processor or consuming product. Preserve useful source fields, identities, access evidence, and native vocabulary relationships. Retire an unused standalone generator, command, custom seal, outputs, and maintenance gates together; narrow any retained artifact around its actual use. **Done when:** declaration and policy ownership are clear, generic DocSpec catalog construction remains supported, and no required SpicyRegs publication path is lost. **Evidence:** simplification recommendation 3; product review post-review point 2; duplication review finding 6.
+- [ ] **S11 — Inventory SpicyDocs users and repeated source work.**
+  **Decision; owner: SpicyDocs; beneficiary: source contributors and experiment authors.**
+  Inspect local auxiliary catalogs, tables/Iceberg, CourtListener, drift tools,
+  imports, and extension points against actual sibling callers and intended
+  workflows. Distinguish runtime, operational, test, and stated product use.
+  **Done when:** each local candidate has evidence, a beneficiary, removal
+  consequence, and KEEP/MOVE/DELETE/DEFER disposition. Any destination change
+  has its own local task before implementation. Counterpart inventories are
+  [DocSpec D41](../../DocSpec/docs/dataset-experiments-todo.md#d41) and
+  [SpicyRegs SR01](../../spicy-regs/PLAN.md#sr01). Missing search callers alone do
+  not justify removing useful source capabilities or intended injection/reuse.
 
-- [ ] **S13 — Place public-table and Iceberg improvements with the users they serve.** **Decision and implementation of its disposition; owner: SpicyRegs and the current SpicyDocs table owner; beneficiary: public-data analysts and maintainers. Depends on S11 and S25.** Assess the existing SpicyRegs publishing workflow before retiring source-side exports. Identify useful improvements to move upstream and remove replaced parallel implementations after validation. Keep public-table output distinct from consuming a captured table as experiment input. Retain optional standalone adapters only where their use or intended upstream adoption is explicit. **Done when:** each table/Iceberg surface has a destination and supported use; upstream output remains usable independently of DocSpec; approved moves/removals include tests, dependency changes, and accurate data guarantees. No current DocSpec reader is required to justify a SpicyRegs public-data feature. **Evidence:** simplification recommendation 5, qualified by SpicyRegs README and the owner's intended upstream adoption.
+<a id="s12"></a>
 
-- [ ] **S14 — Resolve CourtListener ownership and consolidate its publisher parser if retained.** **Decision and implementation of its disposition; owner: source owner with SpicyRegs and DocSpec callers; beneficiary: bulk-data users. Depends on S11 and S25.** Check upstream use and the DocSpec retained-capture tool. If retained, share a strict pure listing/filename parser with source-owned live acquisition; preserve ETags, required size/date fields, bounds, duplicate-key checks, and refusal of truncated pages without continuation. Keep DocSpec's captured-input admission and selection/disposition rules local. If no required use or upstream destination remains, retire the unused path. **Done when:** live and retained parsing agree on publisher facts, incomplete listings are refused, and replaced grammar/tests/dependencies are removed. Preserve Mirrulations mechanics used by Regulations.gov. **Evidence:** duplication review finding 1; simplification recommendation 5.
+- [ ] **S12 — Remove unused local catalogs and misplaced policy declarations.**
+  **Owner: SpicyDocs; beneficiary: source contributors and experiment authors.**
+  After S11/S25's relevant decisions, retire unused `allowed_schemes`, processor/
+  region selections, stage flags, generators, commands, custom seals, outputs,
+  and maintenance gates together. Preserve faithful fields, identities, access
+  evidence, and native vocabulary relationships. **Done when:** each retained
+  local declaration has a source responsibility and supported use; selected
+  removals leave source publication usable. Active experiment configuration is
+  owned by [DocSpec D32/D34](../../DocSpec/docs/dataset-experiments-todo.md#d32);
+  any selected Search recipe policy belongs to [SC04](../../spicysearch/PLAN.md#sc04).
+  Add a destination task before moving a rule to any other processor. Source
+  removal alone does not complete that consumer's adoption.
 
-- [ ] **S15 — Keep documented-value drift proportional to source-maintenance use.** **Decision; owner: the source maintainer selected in S25; beneficiary: operators and upstream contributors. Depends on S11.** Identify who uses the diagnostic to compare observed values with publisher documentation, including SpicyRegs maintenance. Keep exact strings, pinned inputs, and undocumented/unobserved distinctions where useful. Move suitable diagnostics upstream and reduce unused mandatory obligations. **Done when:** command, owner, input-refresh process, and disposition are explicit; results make no claim of complete publisher coverage or runtime enforcement. A lack of DocSpec runtime calls does not invalidate a source-quality maintenance tool. **Evidence:** simplification ownership analysis; product review's narrow KEEP of source facts; owner clarification.
+<a id="s13"></a>
 
-- [ ] **S16 — Remove orphaned code and dependencies while preserving useful extension points.** **Change; owner: affected source packages and DocSpec; beneficiary: contributors and package consumers. Depends on implemented S12–S15 dispositions and S25.** Recheck callers after moves/removals. Delete dead helpers, replaced parsers/encoders, obsolete commands, unused extras, and stale links. Preserve source adapters, injected fetchers/processors, Dagster composition, and source-only/public-data entry points required by the product direction. Keep imports lightweight; optional analysis, transport, and table libraries load only when used. **Done when:** retained APIs have stated responsibilities, clean installs cover their intended users, and no dependency survives solely for a removed feature. File length remains a prompt to examine ownership, not a quota. **Evidence:** simplification recommendations 2–5, constrained by the owner's experiment-platform and upstream requirements.
+- [ ] **S13 — Resolve SpicyDocs' public-table and Iceberg surfaces.**
+  **Decision and selected local changes; owner: SpicyDocs; beneficiary: source-data users.**
+  Compare local outputs with SpicyRegs' actual publishing workflow before
+  retaining, sharing, or retiring them. Keep public-table output distinct from
+  consuming captured table bytes as input. **Done when:** each local surface has
+  a supported use and disposition, and selected local changes include package
+  dependencies, tests, and accurate data guarantees. SpicyRegs assessment and
+  adoption live in [SR01](../../spicy-regs/PLAN.md#sr01) and
+  [SR03](../../spicy-regs/PLAN.md#sr03). Retire local copies only after selected
+  consumers switch; retaining SpicyDocs separately is valid. Depends on S11/S25's
+  relevant decisions; DocSpec use is not required to justify source publication.
+
+<a id="s14"></a>
+
+- [ ] **S14 — Expose one retained CourtListener publisher parser.**
+  **Decision and selected local changes; owner: SpicyDocs; beneficiary: bulk-data users.**
+  Check local and upstream use against S11/S25. If retained, expose strict pure
+  listing/filename parsing with source-owned live acquisition. Preserve ETags,
+  required size/date fields, bounds, duplicate-key checks, and refusal of truncated
+  pages without continuation. **Done when:** the public parser represents publisher
+  facts faithfully and replaced local grammar/tests/dependencies are removed.
+  Captured-input admission and selection stay in
+  [DocSpec D31/D42](../../DocSpec/docs/dataset-experiments-todo.md#d31); selected
+  SpicyRegs adoption is [SR03](../../spicy-regs/PLAN.md#sr03). If no supported use
+  remains, document and implement local retirement. Preserve Mirrulations mechanics
+  used by Regulations.gov.
+
+<a id="s15"></a>
+
+- [ ] **S15 — Keep local documented-value diagnostics proportionate to use.**
+  **Decision and selected local changes; owner: SpicyDocs; beneficiary: source maintainers.**
+  Identify who uses the diagnostic to compare observed values with publisher
+  documentation, including SpicyRegs maintenance. Keep exact strings, pinned
+  inputs, and undocumented/unobserved distinctions where useful. **Done when:**
+  the local command, owner, refresh process, and KEEP/SHARE/REMOVE/DEFER decision
+  are explicit; selected changes reduce unused obligations without claiming
+  complete publisher coverage or runtime enforcement. SpicyRegs adoption, if
+  selected, lives in [SR03](../../spicy-regs/PLAN.md#sr03). Missing DocSpec runtime
+  calls do not invalidate a useful source-quality tool. Depends on S11.
+
+<a id="s16"></a>
+
+- [ ] **S16 — Remove superseded SpicyDocs code and dependencies.**
+  **Owner: SpicyDocs; beneficiary: contributors and package consumers.** After
+  S12–S15/S25 decisions and selected replacements, recheck callers and delete
+  local dead helpers, old commands, replaced parsers/encoders, unused extras,
+  and stale links. Preserve required source-only APIs and injection points.
+  **Done when:** local retained APIs have clear responsibilities, optional
+  dependencies load only when needed, and clean installs cover supported source
+  users. File length prompts an ownership review rather than a quota. Counterpart
+  removal lives in [DocSpec D34](../../DocSpec/docs/dataset-experiments-todo.md#d34)
+  and [SpicyRegs SR03](../../spicy-regs/PLAN.md#sr03).
 
 ## Fourth: connect source and experiment workflows and consolidate repeated mechanics
 
-- [ ] **S17 — Prove GAO topic preservation in one useful dataset example.** **Change; owner: source owner and DocSpec, with the selected processor or consumer; beneficiary: users selecting or analyzing GAO material. Depends on S02, S09, and S26.** Carry the literal topic from a small retained page through a catalog and a supported result or processor. An exact topic filter is one useful example; search publication is not the required destination of every experiment. Add only missing fields or byte access demonstrated by this example. **Done when:** matching, missing, and unexpected topic cases retain source provenance and demonstrate the intended selection or analysis; requirement extraction is not inferred from a topic label. Distinguish offline integration from live/deployed use and defer unrelated source expansion. **Evidence:** product review finding 5; owner clarification.
+<a id="s17"></a>
 
-- [ ] **S18 — Build a usable catalog from SpicyRegs public-comment data.** **Change; owner: DocSpec with the SpicyRegs/source adapter owner; beneficiary: researchers reusing community data. Depends on S02, S09–S10, and S26.** Use a bounded retained table input through the supported adapter. Preserve its exact identity, field provenance, coverage assumptions, and distinction from other Regulations.gov representations. Support catalog inspection before optional document fetching or processing. **Done when:** the installed workflow builds and reads the catalog, reports unavailable fields and rejected rows, and exposes any supported candidate documents without requiring an immediate analysis run. Demonstrate table reuse without recreating SpicyRegs' public-data pipeline inside DocSpec. **Evidence:** product review finding 5; owner's explicit catalog-from-SpicyRegs requirement.
+- [ ] **S17 — Supply faithful GAO topics and retained example evidence.**
+  **Owner: SpicyDocs; beneficiary: dataset users selecting GAO material.** Expose
+  the literal publisher topic and required byte/evidence references through the
+  supported source API. Keep a small retained fixture with matching, missing,
+  and unexpected topic cases. **Done when:** fields preserve exact publisher
+  values and provenance, missing topics remain explicit, and no inferred
+  requirements are introduced. Add only source fields/byte access required by
+  [DocSpec D51](../../DocSpec/docs/dataset-experiments-todo.md#d51), which owns the
+  catalog/filter/processor example. Depends on S01/S09/S26; search is optional.
 
-- [ ] **S19 — Connect injected fetchers with source-specific document identity checks.** **Change with architecture decision; owner: DocSpec's fetcher interface and the source implementation selected in S25; beneficiary: experiment authors fetching the intended document. Depends on S26.** DocSpec selects candidates and injects the fetcher. The provider owns publisher routes and identity rules; generic HTTP/storage mechanics are reused. Integrate the existing Federal Register locator, soft-404, printed-marker, and MODS-resolution helpers around one retained capture where possible. **Done when:** a selected candidate is fetched with explicit request/retry/byte bounds, wrong-document responses are refused, and original/resolved identities remain inspectable. A source-specific fetcher can be supplied without modifying DocSpec core. Specialized acquisition stays with the source owner; no mandatory second downloader or blanket all-attachment crawl is added. **Evidence:** product review post-review point 3; duplication review finding 7; owner clarification.
+<a id="s18"></a>
 
-- [ ] **S20 — Run a representative dataset workflow through the existing Dagster boundary.** **Change with architecture decision; owner: DocSpec execution composition with source/fetcher providers; beneficiary: operators running interruptible experiments. Depends on the interface decisions in S26 and S28.** Reuse the thin Dagster adapter and existing dataset operations. Keep task semantics, valid-reuse checks, and cumulative work accounting in DocSpec; let Dagster own scheduling, workers, execution events, and its agreed retry layer. Define bounded source/stage attempts and outer task retries so budgets cannot multiply or reset. Support the concrete acquisition/catalog/document work needed by a representative experiment without a new general workflow engine. **Done when:** injected resources reconstruct in workers; interruption/restart, failed-task retry, pin-aware reuse, locking, cancellation, and stage completion work. Actual running work stops correctly, and source refusals retain their meaning. **Evidence:** DocSpec `adapters/dagster.py`, its multiprocess/retry tests, decision 0002, and owner clarification.
+- **S18 — Moved to [DocSpec D52](../../DocSpec/docs/dataset-experiments-todo.md#d52).**
+  The retained public-comment catalog adapter and example belong to DocSpec.
+  Public table facts/API work belongs to [SpicyRegs SR02](../../spicy-regs/PLAN.md#sr02);
+  applicable SpicyDocs coverage work remains S09–S10. This is a dependency reference.
 
-- [ ] **S21 — Retire only the experiment campaign machinery replaced by the supported executor.** **Conditional change; owner: DocSpec with the current campaign owner; beneficiary: operators and maintainers. Depends on S20 and S25's ownership decision.** Replace the applicable SpicyDocs experiment campaign, then remove its duplicate pool, retry/run policy, receipts, locking, and recovery branches. Keep thin diagnostics and source acquisition functions. Assess independent source publishing schedules separately; they are not automatically replaced by a DocSpec experiment. **Done when:** the selected experiment has one execution owner, its recovery path works, and removed code has no required callers. SpicyDocs/SpicyRegs can still acquire/publish independently, and DocSpec can run against supplied data without starting those pipelines. **Evidence:** both campaign reviews, qualified by the owner's separate upstream-product requirement.
+<a id="s19"></a>
 
-- [ ] **S22 — Consolidate shared physical blob writes through the appropriate library.** **Change with architecture decision; owner: source-storage, DocSpec, and existing shared-library maintainers. Depends on the ownership decision in S25. Beneficiary: operators relying on safe reuse and maintainers of storage code.** Compare the two writers directly with DocSpec D31/D41. Preserve DocSpec's hard streaming bound and unknown-digest support together with SpicyDocs' early verified reuse, directory pinning, no-follow behavior, cleanup, and durability. DocSpec owns reusable dataset/capture operations and transactions; expose those through its wheel in S31. Select the shared physical writer's owner around independent source callers too, preferring suitable existing shared primitives. Provider storage must not depend on DocSpec's lifecycle solely to share a writer. Keep media-type/reference mapping and source semantics with their respective callers. A current interface mismatch is design work, not a reason to preserve duplication indefinitely. **Done when:** the bounded common operation serves both required use cases with race/corruption/bound tests and replaced physical writer code is deleted. If independent requirements prevent a useful common implementation, record the concrete evidence and defer the change in both lists. No new storage platform or forced package merger is introduced. **Evidence:** duplication review finding 4 and its topology-dependent clarification; owner clarification supersedes its merged-package placement.
+- [ ] **S19 — Package publisher-specific acquisition and identity checks.**
+  **Owner: SpicyDocs; beneficiary: consumers fetching the intended document.**
+  Expose existing Federal Register locators, soft-404/printed-marker checks, and
+  MODS resolution through a bounded public provider API where the selected route
+  needs them. **Done when:** explicit request/retry/byte bounds, wrong-document
+  refusal, and original/resolved identities are preserved in the installed wheel;
+  standalone source use remains possible. Reuse generic HTTP/storage mechanics
+  and avoid a mandatory second download. DocSpec owns candidate preference and
+  the injected adapter in [D11/D12](../../DocSpec/docs/dataset-experiments-todo.md#d11)
+  and [D44](../../DocSpec/docs/dataset-experiments-todo.md#d44). Depends on S25/S26's
+  relevant interface decisions, not relocation to SpicyRegs.
+
+<a id="s20"></a>
+
+- **S20 — Moved to [DocSpec D21](../../DocSpec/docs/dataset-experiments-todo.md#d21).**
+  DocSpec owns the representative Dagster integration, with interruption in
+  [D20](../../DocSpec/docs/dataset-experiments-todo.md#d20), bounded retry/accounting
+  in [D23](../../DocSpec/docs/dataset-experiments-todo.md#d23), and any minimal
+  acquisition task adaptation in [D22](../../DocSpec/docs/dataset-experiments-todo.md#d22).
+  SpicyDocs supplies bounded source operations; S21 owns its local caller retirement.
+
+<a id="s21"></a>
+
+- [ ] **S21 — Retire the SpicyDocs experiment campaign after replacement.**
+  **Conditional change; owner: SpicyDocs; beneficiary: operators and maintainers.**
+  Once [DocSpec D22](../../DocSpec/docs/dataset-experiments-todo.md#d22) qualifies
+  the selected workflow, switch this repository's caller and remove replaced
+  pools, retry/run policy, receipts, locking, and recovery branches. Keep useful
+  diagnostics and source acquisition functions. **Done when:** the local caller
+  has one execution owner, recovery works, and removed code has no required users.
+  Assess independent source publishing separately; it remains usable without
+  DocSpec. Depends on S25's relevant decision and the accepted destination
+  evidence; if replacement adds no value, defer with the reason.
+
+<a id="s22"></a>
+
+- [ ] **S22 — Adopt the chosen shared physical writer in SpicyDocs.**
+  **Conditional change; owner: SpicyDocs; beneficiary: source operators and maintainers.**
+  Supply known-digest, early reuse, directory pinning, no-follow, cleanup, and
+  durability requirements to [Rulespec RS03](../../rulespec/TODO.md#rs03)'s
+  suitability/ownership review. Compare them with DocSpec's unknown-digest and
+  hard streaming-bound needs. **Done when:** this repository uses the agreed
+  bounded operation, local race/corruption/bound checks pass, and its replaced
+  physical writer is removed. Keep source references and result meaning here;
+  provider storage must not depend on DocSpec's lifecycle. DocSpec's caller and
+  transactions belong to [D31](../../DocSpec/docs/dataset-experiments-todo.md#d31).
+  Record any differently selected implementation in that destination's backlog
+  before work starts. If sharing adds no value, defer explicitly; no storage
+  platform or package move is required.
 
 ## Finish: prove the simpler product and make its status reviewable
 
-- [ ] **S23 — Align documentation, package handoffs, and validation with the final ownership.** **Change; owner: each affected repository; beneficiary: contributors, source users, and experiment authors. Depends on completed changes and recorded dispositions in S01–S22/S25–S31.** Update specifications, source guides, extension docs, CLI help, ownership maps, and examples. Build current candidate packages and test their exact bytes outside source checkouts; an older pinned wheel's passing test does not qualify a changed producer. Exercise applicable SpicyRegs and DocSpec interfaces and replace obsolete tests with meaningful current behavior checks. **Done when:** clean setup, source-only use, catalog building, injected fetching/processing, later reuse, and retained optional outputs work as documented. Current format and dependency decisions agree across actual packages. Report normal CI and focused checks without duplicating broad verification unnecessarily. **Evidence:** coordination review finding 4; owner clarification; validation follows the implemented scope.
+<a id="s23"></a>
 
-- [ ] **S24 — Independently review and demonstrate both source-user and experiment-user value.** **Review and delivery record; owner: coordinating maintainer and independent subagents. Depends on S23.** Obtain semi-formal code reviews and architecture consensus on judgment calls. Give fresh dataset-researcher and SpicyRegs-contributor personas the supported instructions. The researcher builds a catalog, acquires a bounded input, processes now/later, changes one processor or resource, adds documents, compares results, and inspects failures. The source contributor locates and verifies an upstream acquisition/publication fix without running DocSpec. **Done when:** remaining findings have explicit resolutions; retained bytes and unaffected work are reused; relevant pipelines have one owner; measured reductions in steps or duplicate code preserve the intended capabilities. Record commits, validation, pending upstream work, CI, and PR/push state separately. Simulated checks do not establish human timing or production scale; deferred implementation stays open. **Evidence:** the owner's clarified value and review instructions; both reviews' falsifiability criteria.
+- [ ] **S23 — Qualify SpicyDocs' documentation and installed package.**
+  **Owner: SpicyDocs; beneficiary: source contributors and consumers.** Update
+  local specs, source guides, public API docs, CLI help, ownership maps, and
+  examples as local changes land. Build the current candidate wheel and check
+  its exact bytes outside source checkouts. **Done when:** clean source-only
+  setup, publication/reading, and selected public capabilities work as documented;
+  schemas/resources are packaged; useful regression/refusal checks remain.
+  Coordinate consumer requirements without maintaining their test suites here:
+  [DocSpec D10/D46](../../DocSpec/docs/dataset-experiments-todo.md#d10),
+  [SpicyRegs SR03](../../spicy-regs/PLAN.md#sr03). Existing green checks do not
+  qualify changed producer bytes. Report local validation, CI, and release separately.
+
+<a id="s24"></a>
+
+- [ ] **S24 — Independently review SpicyDocs changes and source-user value.**
+  **Owner: SpicyDocs; beneficiary: source users and contributors.** Obtain
+  independent semi-formal code review and architecture advice for local judgment
+  calls. Give a fresh source-contributor persona the supported instructions and
+  verify that an acquisition/publication change is understandable without running
+  DocSpec. **Done when:** findings have explicit resolutions and selected source
+  workflows retain evidence with fewer steps or duplicate implementations.
+  Record commits, checks, deferred work, and publication state separately.
+  DocSpec's experiment demonstration/reviews live in
+  [D38–D39](../../DocSpec/docs/dataset-experiments-todo.md#d38); simulated personas
+  do not complete [D40](../../DocSpec/docs/dataset-experiments-todo.md#d40)'s human exercise.
+  Depends on applicable S23 checks.
 
 ## Additional ownership and experiment requirements
 
-S25–S31 are additional acceptance items. Their position preserves the original IDs; the delivery order above places the ownership and interface decisions early.
+S25–S31 retain their original IDs. Open checkboxes now cover SpicyDocs implementation; moved items point to their destination. The delivery order places relevant ownership and interface decisions early.
 
-- [ ] **S25 — Assign shared responsibilities and implement the selected handoffs.** **Change with architecture decision; owner: coordinating maintainer with SpicyRegs, SpicyDocs, and DocSpec; beneficiary: public-data users and contributors. Uses S11's inventory; coordinates DocSpec D41–D46.** Map source connectors, strict parsers, source-specific body rules, table publication, source-release evidence, diagnostics, generic storage, and experiment-run code to their appropriate owners. Inspect both source products' actual workflows and identify repeated implementations or maintenance steps to remove. Retaining SpicyDocs separately is valid; a move to SpicyRegs is optional. Move dataset-specific work behind DocSpec APIs where that removes duplicate effort. **Done when:** the component map records reasons and the selected handoffs are implemented and validated with affected consumers; shared fixes preserve source facts and independently usable public data; replaced copies are removed only after consumers switch. Record deferred moves separately without counting them as completed, and distinguish prepared, committed, proposed-upstream, and accepted-upstream changes. Dependencies on S25 require its relevant ownership/interface decision, not completion of every handoff or any particular repository move. Add DocSpec only to callers using dataset capabilities, keeping provider packages independent. **Evidence:** the owner's latest open package choice and deduplication priority; both source products' workflows; duplication review's parser and ownership findings.
+<a id="s25"></a>
 
-- [ ] **S26 — Make catalog inputs and document fetchers practical to inject.** **Change; owner: DocSpec with source/fetcher providers; beneficiary: authors building datasets from different sources. Coordinate with S25's ownership decision.** Use the existing interfaces to expose stable source identities, fields, provenance, candidate locators, and honest scope. Support a SpicyRegs-derived input and an independent supplied source, such as a small local manifest. Allow a caller to supply a fetcher with explicit identity/configuration, bounded streaming, metadata, errors, and cleanup. Avoid requiring all inputs to publish a SpicyDocs bundle or changing DocSpec core to register each experiment. **Done when:** installed-package examples build and inspect both catalogs, fetch selected candidates through supplied implementations, and preserve source outcomes. Source choice and fetcher choice are separate. Unsupported claims are refused or reported explicitly; existing source-native guarantees remain intact where used. **Evidence:** owner clarification; DocSpec `ports/source_catalog.py`, `ports/content_fetcher.py`, and injected application composition.
+- [ ] **S25 — Assign SpicyDocs responsibilities and implement local handoffs.**
+  **Decision and selected changes; owner: SpicyDocs; beneficiary: source users and contributors.**
+  Use S11's inventory to identify repeated source rules, table publication,
+  evidence, diagnostics, storage, and experiment loops. **Done when:** the local
+  component map records selected implementations, public capabilities, and copies
+  to remove, and selected SpicyDocs handoffs are validated. Keep SpicyDocs
+  independently usable; retaining this package is valid and a SpicyRegs move is
+  optional. Receiver work belongs to [SpicyRegs SR01/SR03](../../spicy-regs/PLAN.md#sr01),
+  [DocSpec D41–D46](../../DocSpec/docs/dataset-experiments-todo.md#d41), or
+  [Rulespec RS02–RS03](../../rulespec/TODO.md#rs02), as selected. Remove local
+  copies after their consumers switch. Dependencies require the relevant decision,
+  not every handoff. Deferred moves are not completed changes; keep prepared,
+  committed, and accepted-upstream status separate.
 
-- [ ] **S27 — Demonstrate iterative processing, selective reuse, and dataset growth.** **Change and qualification of existing behavior; owner: DocSpec with supplied processor implementations; beneficiary: experiment authors avoiding repeated acquisition and computation. Depends on S26.** Support processing during acquisition and later against a retained dataset. Exercise a changed processor, a changed reference resource, an unaffected processor, and a dependent processor. Include a supplied processor using pinned RefSpec resources or another explicit resource provider without making that provider mandatory in DocSpec core. Add a new source item and preserve previous work where its inputs remain valid. **Done when:** prior result revisions remain inspectable; changed work and dependents rerun; unchanged fetch/extract/segment/processor work is reused; resource changes cannot accept stale results; new documents acquire only the newly required bytes. Compare revisions with source, implementation, configuration, resource, failure, and result differences visible. Meaningful examples supplement existing synthetic tests; they do not replace working reuse logic with a new framework. **Evidence:** owner clarification; DocSpec decision 0002:28–45; `tests/test_processor_reprocessing.py`; planner and checkpoint implementation.
+<a id="s26"></a>
 
-- [ ] **S28 — Provide a simple experiment configuration and supported stage-result references.** **Change with architecture decision; owner: DocSpec's public API/CLI and execution composition; beneficiary: people running dataset experiments.** Give users one understandable configuration for selected source/scope, fetcher, processors/resources, stages, execution backend, limits, and failure policy. Generate internal profile declarations and identity records from real choices instead of requiring several files for fixed defaults. Preserve injected implementations and supported backend options. Pass exact supported result references between stages, replacing parallel lists of roots, digests, stores, and profiles where possible. **Done when:** a new user can start, inspect, stop, resume, or extend the selected workflow through supported interfaces; changing meaningful configuration changes the appropriate identity; accepted verifier policy remains independently configured. Dagster resources and a simple local entry point compose the same dataset operations without a second dataset lifecycle. **Evidence:** owner clarification; coordination review's source-input handoff finding; DocSpec simplification review's runtime-configuration finding.
+- [ ] **S26 — Publish the independent source-provider API through its wheel.**
+  **Owner: SpicyDocs; beneficiary: catalog builders and source users.** Expose
+  profiles, stable source descriptions, faithful fields, provenance, records,
+  candidate renditions, scope/outcomes, and bounded evidence/failure inspection
+  through the existing public source API. Combine S01/S19 capabilities without
+  inventing a second reader. Keep full replay with the producer and ordinary
+  opening bounded. **Done when:** the exact candidate wheel includes required
+  schemas/resources and supports these imports without sibling paths or DocSpec;
+  optional acquisition/analytics dependencies are proportionate. Record version,
+  revision, and wheel digest separately from dataset pins. Source choice and
+  fetcher choice remain independent. DocSpec implements intake/injection in
+  [D06/D11](../../DocSpec/docs/dataset-experiments-todo.md#d06) and provider
+  integration in [D43–D46](../../DocSpec/docs/dataset-experiments-todo.md#d43);
+  supplied local records need not become SpicyDocs bundles.
 
-- [ ] **S29 — Finish the selected stage and compare reproducible dataset revisions.** **Change with architecture decision; owner: DocSpec with its chosen artifact consumers; beneficiary: catalog users and experiment authors. Depends on S26–S28.** Make catalog-only, retained-document, and processed-result stopping points usable independently, using the existing suitable artifacts rather than inventing a format for every command. Keep working checkpoints internal and remove competing external representations of the same completed document result. Later processing must refer to the retained dataset and produce an identifiable result revision without reacquisition. Completion accounts for selected work, including named failures under the explicit experiment/publication policy. **Done when:** users can reopen the selected stage, compare revisions, and resume or extend it through supported APIs. A document-processing run can produce the supported portable document output without a historical mint tool; catalog or acquisition work can finish without a search build. Portable export remains optional and applies its own admission policy; an inspectable retained attempt may contain failures that prevent consumer admission. Partial results and serving eligibility remain explicit, and unqualified text does not silently become ordinary search input. **Evidence:** owner clarification; DocSpec's two documented release representations; coordination and DocSpec simplification reviews; existing compare/reprocessing interfaces.
+<a id="s27"></a>
 
-- [ ] **S30 — Converge canonical encoding on one explicit supported value rule.** **Change with architecture decision; owner: DocSpec and Rulespec, coordinated with source-format owners; beneficiary: dataset builders relying on stable, exact identities.** Make one decision with DocSpec D28. Retain DocSpec's useful domain conversion and validation context while replacing its separate JSON emission with the shared encoder. Establish numeric requirements from supported source and processor values. Rulespec's existing key-order and number rules are the starting point; a large-integer optimization test alone does not require widening them. If required values exceed the current domain, agree an exact shared representation/profile and verify supported readers before changing it. **Done when:** one emission implementation handles the required values consistently; exact source values are neither rounded nor indiscriminately converted to strings; Unicode, duplicate-key, number-boundary, and domain-conversion cases use shared evidence. Update format identities and current package checks together, remove the replaced encoder without a compatibility mode, and measure relevant hot paths before claiming speedups. If required value domains prevent convergence, record the evidence and defer the shared-emitter change in both lists; retaining separate encoders does not complete it. **Evidence:** duplication review finding 3 as narrowed by the independent encoding assessment; Rulespec `spec/platform-artifacts.md:24`; DocSpec `tests/test_canonical_encoding_equivalence.py:1`.
+- **S27 — Moved to [DocSpec D13–D19](../../DocSpec/docs/dataset-experiments-todo.md#d13)
+  and [D38](../../DocSpec/docs/dataset-experiments-todo.md#d38).** Processor/resource
+  injection, inline/later processing, selective dependent reuse, dataset growth,
+  and revision comparison are owned and qualified in DocSpec. No source-package
+  processing loop is assigned here.
 
-- [ ] **S31 — Publish supported DocSpec wheel APIs and replace their local copies.** **Change with architecture decision; owner: DocSpec and each consuming source/experiment tool; beneficiary: maintainers reusing tested dataset capabilities. Coordinate with S25–S30 and S20–S22.** Inventory the capabilities in the wheel map, distinguishing existing public APIs, internal implementations needing a public surface, and missing behavior. Move dataset-owned implementations into DocSpec, then consume its exact built wheel from thin callers. Expose the smallest useful operations and references; preserve injected sources, fetchers, processors, resources, and execution backends. Coordinate with DocSpec D45–D46's provider-wheel integration. An optional integration or separate experiment caller can consume both wheels; the independent provider package must not depend on DocSpec. Check package metadata as well as imports before locating that caller. Keep wheel identity separate from source dataset/artifact pins. **Done when:** a fresh environment outside the source checkouts installs the candidate wheel and runs representative catalog, capture/reuse, later-processing, and run/resume operations; transferred implementations and obsolete local wrappers/loops are removed after parity checks. Imports use supported APIs, with no sibling paths, private reaches, vendored source copies, circular package dependency, or unqualified same-version wheel replacement. Record producer revision, package version, wheel digest, optional dependencies, consumer changes, and validation. SpicyRegs' independent public-data workflow remains usable. **Evidence:** owner's explicit wheel-reuse request; coordination review's package-qualification and handoff findings; duplication review's reusable-mechanics findings.
+<a id="s28"></a>
 
-## Coordination with DocSpec's implementation checklist
+- **S28 — Moved to [DocSpec D02–D04](../../DocSpec/docs/dataset-experiments-todo.md#d02),
+  [D19–D21](../../DocSpec/docs/dataset-experiments-todo.md#d19), and
+  [D32](../../DocSpec/docs/dataset-experiments-todo.md#d32).** Simple experiment
+  configuration, supported stage references, and local/Dagster composition belong
+  to DocSpec. This is a dependency reference.
 
-The canonical companion is `DocSpec/docs/dataset-experiments-todo.md`, reviewed at
-planning revision `da5e227` for this September 11 sync against SpicyDocs `5f04771`.
-The earlier session checklist is historical. A solutions architect independently
-compared both plans. D items detail DocSpec implementation; S items retain source
-work and cross-product acceptance. The reciprocal mapping identifies shared work,
-not duplicate implementations or blanket blocking dependencies. Completing one
-item closes a mapped item only when its own acceptance criteria are also met.
+<a id="s29"></a>
 
-| SpicyDocs items | DocSpec items | Coordination and implementation lead |
-| --- | --- | --- |
-| S01–S02, S09 | D08, D43 | Source owner exposes outcomes and coverage; DocSpec carries them and selects partial-input policy. |
-| S03, S06–S08, S10 | D08, D23, D43 | Source owner fixes replay, reporting, retained refusals, and discovery; DocSpec consumes relevant facts, with distinct count units. |
-| S04 | D01, D36 | Each product documents its actual behavior and useful stopping points. |
-| S05, S23 | D10, D27–D29, D36–D37, D45–D46 | Qualify current formats and installed packages; share applicable evidence, not unrun completion claims. |
-| S11–S16, S25 | D30–D35, D41–D42 | Inventory real callers and repeated work; keep package placement open and remove copies after selected replacements work. |
-| S17–S18 | D06–D08, D38, D43, D46 | Source owners and DocSpec prove GAO-topic and captured-comment examples; source-only use remains independent. |
-| S19, S26 | D04, D06–D07, D11–D12, D44 | DocSpec accepts independent inputs/fetchers; providers retain publisher routes and identity checks. |
-| S20 | D20–D21, D23 | DocSpec and executor owners agree bounded retries, interruption, and cumulative accounting. |
-| S21 | D22 | Replace the selected experiment campaign only; independently useful source publishing remains separate. |
-| S22 | D31, D41 | Decide one useful physical writer with its callers; DocSpec owns dataset capture and transactions. |
-| S24 | D38–D40 | Reuse independent review and workflow evidence; simulated personas do not complete D40's human exercise. |
-| S27 | D07, D13–D19, D38 | DocSpec exposes processing, dataset growth, dependency-aware reuse, and comparison. |
-| S28 | D02–D04, D19–D21, D32 | DocSpec simplifies configuration and public references while retaining one dataset lifecycle. |
-| S29 | D02, D19, D24–D29, D38 | Retained catalog/capture/processing stages are useful independently; portable export has separate admission checks. |
-| S30 | D28 | DocSpec, Rulespec, and source owners make one exact-value encoding decision; unresolved convergence is deferred in both lists. |
-| S31 | D04, D09, D11, D13, D19, D21, D29, D45–D46 | Replace dataset loops with public DocSpec wheel APIs; compose independent provider APIs without circular package dependencies. |
-| Optional search extension | D47–D50 | Search owns dataset definitions and transformations, DocSpec supplies reusable execution, and Engine owns indexing/serving. Adoption must remove duplicate lifecycle work. |
+- **S29 — Moved to [DocSpec D19](../../DocSpec/docs/dataset-experiments-todo.md#d19)
+  and [D24–D29](../../DocSpec/docs/dataset-experiments-todo.md#d24).** Usable retained
+  stages, revision comparison, optional portable export, and consumer admission
+  are DocSpec work. Catalog-only and acquisition-only use retain independent value;
+  a retained attempt may include failures that prevent serving admission.
 
-Search integration is tracked in D47–D50 instead of adding a second backlog here.
-Dataset-wide recipes extend DocSpec beyond segment processors. Search retains
-its transformations and semantic producer identity; DocSpec supplies reusable
-execution and records its runner identity separately; Engine owns native indexing
-and serving. Adoption must demonstrably remove duplicate lifecycle work. These
-items do not gate source-only use, ordinary document experiments, or S20's Dagster
-example. Source-side replay, refused-response retention, discovery, and optional
-raw/table outputs remain source responsibilities.
+<a id="s30"></a>
+
+- [ ] **S30 — Adopt the agreed shared encoding in source production.**
+  **Owner: SpicyDocs; beneficiary: consumers relying on exact stable source identities.**
+  Supply required source-value cases to [Rulespec RS01](../../rulespec/TODO.md#rs01),
+  which owns the supported-value decision and shared emitter. **Done when:** local
+  producers/readers use the agreed shared implementation, exact values survive,
+  and relevant Unicode/duplicate-key/number-boundary cases pass through the
+  current candidate wheel. Update source format identities and S05 checks only
+  where the agreed behavior changes; remove any replaced local emission code
+  without a compatibility mode. DocSpec adoption lives in
+  [D28](../../DocSpec/docs/dataset-experiments-todo.md#d28). Unresolved convergence
+  remains an explicit deferral; do not round or indiscriminately stringify values.
+
+<a id="s31"></a>
+
+- [ ] **S31 — Replace SpicyDocs' selected dataset loops with DocSpec wheel calls.**
+  **Conditional change; owner: SpicyDocs; beneficiary: experiment-tool maintainers.**
+  Identify local callers using dataset capabilities and replace their catalog,
+  capture/reuse, processing, or run/resume loops with public operations published
+  by [DocSpec D04/D45](../../DocSpec/docs/dataset-experiments-todo.md#d04). Keep
+  composition separate from the independent provider package; check declared
+  dependencies as well as imports. **Done when:** the selected local caller uses
+  exact installed wheel bytes, preserves source/fetcher/processor injection, and
+  removes its obsolete loops after relevant parity checks. No private imports,
+  sibling paths, vendored source copies, or package cycle remain. If composition
+  moves to DocSpec instead, link its destination task and retire only replaced
+  local code here. Source-only users remain independent. Record package versions,
+  wheel/revision pins, local checks, and deferred capabilities; provider packaging
+  is S26, and DocSpec's public API/qualification work is D45–D46.
+
+## Destination-owned implementation tasks
+
+The former reciprocal mapping table is replaced by destination links. Splitting
+an effort gives each repository a concrete local obligation; it does not create
+another copy of the whole feature or imply any implementation is complete.
+
+| Destination | Authoritative work referenced by this checklist |
+| --- | --- |
+| [DocSpec checklist](../../DocSpec/docs/dataset-experiments-todo.md) | D08 owns source-outcome consumption (S02); D21 owns Dagster (S20); D13–D19/D38 own iterative processing (S27); D02–D04 own configuration (S28); D24–D29 own retained stages/export (S29); D45 owns public wheel packaging; D51–D52 own GAO/comment examples (S17–S18). |
+| [SpicyRegs plan](../../spicy-regs/PLAN.md#sr01) | SR01 reviews local source overlap; SR02 supplies retained public-comment input facts/APIs; SR03 implements only selected local improvements and handoffs. A repository move stays optional. |
+| [Rulespec backlog](../../rulespec/TODO.md#rs01) | RS01 owns shared encoding; RS02 assesses needed generic artifact capabilities; RS03 assesses physical writer suitability. S30/S22 own SpicyDocs adoption. |
+| [SpicySearch plan](../../spicysearch/PLAN.md#sc01) | SC01–SC05 own Search reader adoption, schema-helper reuse, shared definitions, optional recipe composition, and Search parity/removal. |
+| [SpicyEngine plan](../../spicyengine/PLAN.md#ec01) | EC01–EC03 own Engine definition adoption, output admission, and native-only rebuilding. |
+
+Search retains its transformations and semantic producer identity. DocSpec's
+D48–D50 provide generic dataset execution and its qualification; Engine retains
+native indexing and serving. Optional search integration does not gate source-only
+use, ordinary document experiments, or DocSpec's Dagster example. Consuming an
+unchanged RefSpec resource package assigns no implementation work to RefSpec.
 
 ## Finding coverage
 
@@ -230,5 +489,7 @@ raw/table outputs remain source responsibilities.
 **September 11, 2026 — planning revision only.** Updated S01–S24's governing scope and 17 individual items after the owner clarified DocSpec's experiment-platform purpose and SpicyRegs' independent role. Added S25–S30 for component destinations/upstream work, source/fetcher injection, iterative processing and dataset growth, configuration, stage completion/comparison, and shared encoding. Added S31 and a capability map for moving DocSpec-owned work behind supported wheel APIs and removing local copies. Rejected the blanket package-merger assumption and strengthened Dagster, processor/reuse, source-only, and package-dependency acceptance. All implementation items remain open.
 
 **September 11, 2026 — reciprocal checklist sync, planning only.** Aligned this canonical repository checklist with DocSpec's 50-item plan. Added shared ID mappings and reconciled open package placement, both wheel directions, independent source storage, the encoding decision, optional export, and conditional search integration. S25 no longer requires a SpicyRegs move or patch as a prerequisite for unrelated work. No implementation checkbox changed; source-side acceptance remains here and DocSpec implementation detail remains in its checklist.
+
+**September 11, 2026 — destination ownership correction, planning only.** Split shared work into local tasks in DocSpec, SpicyDocs, SpicyRegs, Rulespec, SpicySearch, and SpicyEngine. Replaced six source-side descriptions of DocSpec work with moved-ID links; narrowed remaining checkboxes to this repository's work. DocSpec D51–D52 now own the named GAO/comment examples. The 25 remaining local checkboxes are open; no implementation was completed or dropped by this routing change.
 
 Append concise implementation entries as work proceeds: item IDs, agreed decision, changed repositories, commit IDs, focused validation, upstream status, and remaining dependencies. Decisions to defer optional features need a beneficiary and revisit condition; they do not count as delivered implementation. The owner's stated experiment capabilities and SpicyRegs uses are requirements, not speculative features to remove solely because today's search pipeline does not exercise them.
