@@ -58,8 +58,10 @@ the final chunk.
 Use a new reader for each pass. For a full network pass:
 
 1. Select the dump with `list_bulk_dumps()` and `published_object_pin()`;
-   retain the dataset, date, URL, stated bytes, modification time, and listing
-   provenance. Discovery is separate from reading.
+   retain the dataset, date, full-key URL, stated bytes, exact ETag (including
+   quotes), modification time, and listing provenance. `expect_bytes`,
+   `expect_last_modified`, and `expect_etag` compare independently retained
+   listing values. Discovery is separate from reading.
 2. Exhaust the reader without a record or byte bound, require no exception and
    `stopped_early=False`, then compare `compressed_bytes` with the selected
    object's size.
@@ -70,18 +72,59 @@ Network read failures resume at the compressed-byte offset. A nonzero-offset
 response must return HTTP 206; a server that restarts at byte zero is refused
 because splicing it into the existing decompressor would corrupt the stream.
 
-These checks have limits. The connector records no content digest or ETag and
-does not explicitly require bzip2 end-of-stream after input exhaustion. CSV
-decoding replaces invalid UTF-8 and tolerates row-width mismatches. Listing can
-return a partial inventory when a truncated response lacks its continuation
-token. Counters are final only after normal completion or a configured stop;
+These checks have limits. Listed ETags are publisher revision markers, not
+content digests, and the streaming reader does not send an `If-Match` condition
+or hash the downloaded object. Matching a listing pin does not bind the later
+transfer to those bytes. The reader does not explicitly require bzip2
+end-of-stream after input exhaustion. CSV decoding replaces invalid UTF-8 and
+tolerates row-width mismatches. Counters are final only after normal completion
+or a configured stop;
 an exception or caller-initiated close can leave partial values. Preserve the
 byte comparison and describe filtered, bounded, or interrupted work accurately.
+
+
+### Reuse listing rules through the installed wheel
+
+[`sources/courtlistener_listing.py`](../../src/spicy_docs/sources/courtlistener_listing.py)
+is the public, standard-library-only parser. Importing it starts no transport,
+loads no CSV reader or third-party package, and changes no CSV limits:
+
+```python
+from spicy_docs.sources.courtlistener_listing import BulkObject, parse_listing_page
+
+objects, next_token = parse_listing_page(retained_page_bytes)
+for obj in objects:
+    print(obj.key, obj.size, obj.etag, obj.last_modified)
+    print(obj.dataset, obj.dump_date, obj.media_type, obj.url)
+```
+
+`BulkObject(key, size, etag, last_modified)` requires all four facts. ETags and
+keys retain the exact XML-decoded text. Filename rules recognize dated exports,
+retain undated and unknown exports, and provide media types for known suffixes.
+URLs retain nested keys and escape URL punctuation. Keys containing `.` or `..`
+path segments remain listing facts, but requesting their `url` raises
+`ValueError`; this reader has no proven URL representation for those keys.
+`transport_version` combines the exact ETag, size, and timestamp as a revision
+marker, never as a content hash.
+
+The parser requires the CourtListener S3 root and bucket, the requested prefix,
+an explicit `IsTruncated`, and every object's size, ETag, and timestamp. It
+rejects duplicate keys within a page and truncated pages without a continuation
+token. `MAX_LISTING_PAGE_BYTES` is 8 MiB; live listing reads at most that bound
+plus one byte before parsing. Live traversal also rejects duplicate keys across
+pages and repeated continuation tokens. A narrower `prefix` must stay under
+`bulk-data/`; it must match the page's declared prefix.
+
+The page parser does not admit an entire captured population. DocSpec retains
+capture pins, ordered-page completion checks, dataset selection, and withdrawn
+versus excluded states. Its D42 task and SpicyRegs' SR03 task cover adoption of
+this wheel API and removal of their copies; publishing this API alone does not
+establish that either consumer has switched.
 
 ## Change and check
 
 ```sh
-uv run --frozen pytest -q tests/test_mirrulations_reader.py tests/test_courtlistener_bulk.py
+uv run --frozen pytest -q tests/test_mirrulations_reader.py tests/test_courtlistener_bulk.py tests/test_courtlistener_listing.py
 ```
 
 Add a focused fixture for the transport or parsing condition. Keep raw-reader

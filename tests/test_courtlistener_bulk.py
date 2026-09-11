@@ -22,11 +22,11 @@ from pathlib import Path
 import pytest
 
 from spicy_docs.sources.courtlistener_bulk import (
-    BulkObject,
     CourtListenerBulkReader,
     find_dump,
     latest_dump_date,
 )
+from spicy_docs.sources.courtlistener_listing import BulkObject
 
 
 def _csv_bz2(tmp_path: Path, name: str, header: str, rows: list[str]) -> Path:
@@ -42,7 +42,9 @@ def _csv_bz2(tmp_path: Path, name: str, header: str, rows: list[str]) -> Path:
 
 def test_bulk_object_splits_dataset_from_dump_date():
     """Coverage is checked per dataset per dump, so both must parse out of the key."""
-    obj = BulkObject("bulk-data/opinion-clusters-2026-06-30.csv.bz2", 2_457_231_057, "2026-06-30T04:11:47.000Z")
+    obj = BulkObject(
+        "bulk-data/opinion-clusters-2026-06-30.csv.bz2", 2_457_231_057, '"etag"', "2026-06-30T04:11:47.000Z"
+    )
     assert obj.dataset == "opinion-clusters"
     assert obj.dump_date == date(2026, 6, 30)
     assert obj.filename == "opinion-clusters-2026-06-30.csv.bz2"
@@ -50,7 +52,7 @@ def test_bulk_object_splits_dataset_from_dump_date():
 
     # The bucket also holds undated one-off exports; those must not masquerade
     # as a dated dump of some dataset.
-    undated = BulkObject("bulk-data/scotus_network.csv", 7_000, "2024-04-04T00:00:00.000Z")
+    undated = BulkObject("bulk-data/scotus_network.csv", 7_000, '"etag"', "2024-04-04T00:00:00.000Z")
     assert undated.dump_date is None
     assert undated.dataset == "scotus_network"
 
@@ -71,9 +73,10 @@ def test_published_object_pin_identifies_what_a_capture_read():
         BulkObject(
             "bulk-data/opinions-2026-06-30.csv.bz2",
             54_561_543_156,
+            '"multipart-etag-25"',
             "2026-06-30T09:56:48.000Z",
         ),
-        BulkObject("bulk-data/courts-2026-06-30.csv.bz2", 81_180, "2026-06-30T09:00:26.000Z"),
+        BulkObject("bulk-data/courts-2026-06-30.csv.bz2", 81_180, '"etag"', "2026-06-30T09:00:26.000Z"),
     ]
 
     pin = published_object_pin("opinions", date(2026, 6, 30), objects=listing)
@@ -81,6 +84,7 @@ def test_published_object_pin_identifies_what_a_capture_read():
     assert pin["last_modified"] == "2026-06-30T09:56:48.000Z"
     assert pin["filename"] == "opinions-2026-06-30.csv.bz2"
     assert pin["listing_object_count"] == 2
+    assert pin["etag"] == '"multipart-etag-25"'
 
     # Held against an expectation, it is a precondition rather than a note —
     # which is the only useful place to discover a changed object when reading
@@ -91,6 +95,7 @@ def test_published_object_pin_identifies_what_a_capture_read():
         objects=listing,
         expect_bytes=54_561_543_156,
         expect_last_modified="2026-06-30T09:56:48.000Z",
+        expect_etag='"multipart-etag-25"',
     )
     with pytest.raises(RuntimeError, match="the publisher's object changed"):
         published_object_pin("opinions", date(2026, 6, 30), objects=listing, expect_bytes=1)
@@ -101,15 +106,17 @@ def test_published_object_pin_identifies_what_a_capture_read():
             objects=listing,
             expect_last_modified="2026-07-01T00:00:00.000Z",
         )
+    with pytest.raises(RuntimeError, match="publisher's listing changed"):
+        published_object_pin("opinions", date(2026, 6, 30), objects=listing, expect_etag="multipart-etag-25")
     with pytest.raises(RuntimeError, match="no opinions dump published"):
         published_object_pin("opinions", date(2026, 3, 31), objects=listing)
 
 
 def test_latest_dump_date_and_find_dump_pick_one_published_object():
     objects = [
-        BulkObject("bulk-data/opinions-2026-03-31.csv.bz2", 54_190_000_000, ""),
-        BulkObject("bulk-data/opinions-2026-06-30.csv.bz2", 54_561_543_156, ""),
-        BulkObject("bulk-data/courts-2026-06-30.csv.bz2", 81_180, ""),
+        BulkObject("bulk-data/opinions-2026-03-31.csv.bz2", 54_190_000_000, '"etag"', "2026-03-31T00:00:00Z"),
+        BulkObject("bulk-data/opinions-2026-06-30.csv.bz2", 54_561_543_156, '"etag"', "2026-06-30T00:00:00Z"),
+        BulkObject("bulk-data/courts-2026-06-30.csv.bz2", 81_180, '"etag"', "2026-06-30T00:00:00Z"),
     ]
     assert latest_dump_date(objects, "opinions") == date(2026, 6, 30)
     assert latest_dump_date(objects, "nonexistent") is None

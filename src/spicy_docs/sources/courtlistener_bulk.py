@@ -36,26 +36,21 @@ import sys
 import time
 import urllib.parse
 import urllib.request
-import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterator
-from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
 from loguru import logger
 
 from spicy_docs.sources.base import Reader
-
-#: Public read endpoint for the dumps themselves.
-BULK_BASE_URL = "https://storage.courtlistener.com/bulk-data"
-
-#: S3 REST endpoint for the same bucket. ``storage.courtlistener.com`` is a
-#: CloudFront-style alias that does not answer the list API; the bucket host
-#: does, so enumeration goes here and byte reads go to ``BULK_BASE_URL``.
-BULK_LIST_URL = "https://com-courtlistener-storage.s3.amazonaws.com/"
-BULK_PREFIX = "bulk-data/"
-
-_S3_NS = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
+from spicy_docs.sources.courtlistener_listing import (
+    BULK_BASE_URL,
+    BULK_LIST_URL,
+    BULK_PREFIX,
+    MAX_LISTING_PAGE_BYTES,
+    BulkObject,
+    parse_listing_page,
+)
 
 #: Identify honestly. CourtListener publishes this data for public reuse; the
 #: least we owe them is a contactable agent string.
@@ -80,56 +75,6 @@ csv.field_size_limit(sys.maxsize)
 #: ``escapechar`` set, the same 3,000 rows parse clean and every one keeps its
 #: docket. ``doublequote`` stays True so a literal ``""`` empty field still reads.
 CSV_DIALECT: dict[str, object] = {"escapechar": "\\", "doublequote": True}
-
-
-@dataclass(frozen=True)
-class BulkObject:
-    """One published object in the bulk-data prefix."""
-
-    key: str
-    size: int
-    last_modified: str
-
-    @property
-    def filename(self) -> str:
-        return self.key.rsplit("/", 1)[-1]
-
-    @property
-    def dataset(self) -> str | None:
-        """Dataset name with the dump date stripped (``opinions``, ``courts``...)."""
-        name = self.filename
-        for suffix in (".csv.bz2", ".sql", ".sh", ".csv", ".zip"):
-            if name.endswith(suffix):
-                name = name[: -len(suffix)]
-                break
-        if len(name) > 11 and name[-11] == "-":
-            stem, tail = name[:-11], name[-10:]
-            if _is_iso_date(tail):
-                return stem
-        return name or None
-
-    @property
-    def dump_date(self) -> date | None:
-        """The dump's date stamp, or None for the undated one-off exports."""
-        name = self.filename
-        for suffix in (".csv.bz2", ".sql", ".sh", ".csv", ".zip"):
-            if name.endswith(suffix):
-                name = name[: -len(suffix)]
-                break
-        tail = name[-10:]
-        return date.fromisoformat(tail) if _is_iso_date(tail) else None
-
-    @property
-    def url(self) -> str:
-        return f"{BULK_BASE_URL}/{self.filename}"
-
-
-def _is_iso_date(value: str) -> bool:
-    try:
-        date.fromisoformat(value)
-    except ValueError:
-        return False
-    return True
 
 
 def _request(url: str, *, extra_headers: dict[str, str] | None = None):
@@ -167,27 +112,28 @@ def list_bulk_dumps(prefix: str = BULK_PREFIX) -> list[BulkObject]:
     This is the publisher's own enumeration of what exists. Coverage claims are
     checked against it, so it is fetched rather than assumed.
     """
+    if not isinstance(prefix, str) or not prefix.startswith(BULK_PREFIX):
+        raise ValueError("bulk listing prefix must stay under bulk-data/")
     found: list[BulkObject] = []
+    seen_keys: set[str] = set()
+    seen_tokens: set[str] = set()
     token: str | None = None
     while True:
         query = {"list-type": "2", "prefix": prefix, "max-keys": "1000"}
         if token:
             query["continuation-token"] = token
         with _open(BULK_LIST_URL + "?" + urllib.parse.urlencode(query)) as response:
-            root = ET.fromstring(response.read())
-        for node in root.findall("s3:Contents", _S3_NS):
-            found.append(
-                BulkObject(
-                    key=node.findtext("s3:Key", "", _S3_NS),
-                    size=int(node.findtext("s3:Size", "0", _S3_NS)),
-                    last_modified=node.findtext("s3:LastModified", "", _S3_NS),
-                )
-            )
-        if root.findtext("s3:IsTruncated", "false", _S3_NS) != "true":
+            objects, token = parse_listing_page(response.read(MAX_LISTING_PAGE_BYTES + 1), prefix=prefix)
+        for obj in objects:
+            if obj.key in seen_keys:
+                raise ValueError(f"bulk listing repeats object key across pages: {obj.key}")
+            seen_keys.add(obj.key)
+            found.append(obj)
+        if token is None:
             break
-        token = root.findtext("s3:NextContinuationToken", None, _S3_NS)
-        if not token:
-            break
+        if token in seen_tokens:
+            raise ValueError("bulk listing repeats a continuation token")
+        seen_tokens.add(token)
     logger.info("CourtListener bulk: listing has {:,} objects", len(found))
     return found
 
@@ -199,6 +145,7 @@ def published_object_pin(
     objects: list[BulkObject] | None = None,
     expect_bytes: int | None = None,
     expect_last_modified: str | None = None,
+    expect_etag: str | None = None,
 ) -> dict[str, object]:
     """Identify the published object a capture read, in receipt form.
 
@@ -213,8 +160,10 @@ def published_object_pin(
     digests it, and distinguishes an object the publisher withdrew from one we
     declined. This function does not re-derive any of that. It records the one
     object a run actually read, and ``expect_bytes`` / ``expect_last_modified``
-    let a caller hold that record against DocSpec's pin *before* spending 8.6
-    hours reading it.
+    let a caller compare that record before reading it. ``expect_etag`` compares
+    the exact listed ETag, including quotes. These are listing preconditions;
+    this helper does not bind subsequent HTTP reads with If-Match or hash their
+    content.
     """
     listing = objects if objects is not None else list_bulk_dumps()
     published = find_dump(listing, dataset, dump_date)
@@ -231,6 +180,11 @@ def published_object_pin(
             f"{published.last_modified}, not the pinned {expect_last_modified} — "
             f"the publisher's object changed"
         )
+    if expect_etag is not None and published.etag != expect_etag:
+        raise RuntimeError(
+            f"CourtListener bulk: {published.filename} has ETag {published.etag!r}, "
+            f"not the pinned {expect_etag!r} — the publisher's listing changed"
+        )
     return {
         "dataset": dataset,
         "dump_date": dump_date.isoformat(),
@@ -238,6 +192,7 @@ def published_object_pin(
         "url": published.url,
         "bytes": published.size,
         "last_modified": published.last_modified,
+        "etag": published.etag,
         "listing_object_count": len(listing),
         "listing_host": BULK_LIST_URL,
     }
