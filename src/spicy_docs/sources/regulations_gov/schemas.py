@@ -263,13 +263,8 @@ REGULATIONS_GOV_COMMENT_SCHEMA: Final = _raw_schema(
 )
 
 
-#: The schema is a module constant, so this digest is one value per process.
-#: It was recomputed per record: measured on a real replay, 4.04 calls per
-#: published record at 171 us each -- 2 per record in the publish pass and 2
-#: more in the verify gate's replay -- which projects to 4,073,895 calls and
-#: 696 s over the 1,007,639-record corpus. functools.cache rather than a
-#: hand-rolled module global: the function takes no arguments, so the stdlib
-#: decorator is exactly the right shape and says so.
+# Schemas are immutable constants. Cache their digests across publication and
+# replay rather than recomputing per record; see docs/maintenance-decisions.md.
 @cache
 def document_source_schema_digest() -> str:
     return schema_bundle_digest({DOCUMENT_SCHEMA_PATH: REGULATIONS_GOV_DOCUMENT_SCHEMA})

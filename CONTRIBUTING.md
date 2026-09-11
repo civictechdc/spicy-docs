@@ -59,6 +59,7 @@ and compatibility effects in the change description. Explain deliberate
 exceptions and preserved historical rules. Follow [documentation maintenance](docs/documentation.md).
 Package publication, downstream pin changes, and deployment are separate actions.
 
-Repository owner [@mikewolfd](https://github.com/mikewolfd) is the initial review-routing
-contact. Source, release-format, and operations reviewer assignments still need
-maintainer confirmation; do not infer ownership from who last edited a file.
+[@mikewolfd](https://github.com/mikewolfd) is the review contact for source behavior,
+shared release formats, and operational tools. This routing follows the current
+repository ownership and administrator assignment. Include the evidence above
+so the maintainer can review the behavior and compatibility effects.

@@ -413,26 +413,12 @@ def release_schema_bundle() -> dict[str, Mapping[str, Any]]:
     return schemas
 
 
-#: Release schema bundles this project has published under, newest last, as
-#: literal digests. A release embeds the bundle it was built with; admission
-#: accepts any bundle named here, not only the one today's code generates.
-#:
-#: Without this, widening any schema makes every already-published release
-#: inadmissible: the check below used to require byte-equality with
-#: ``installed_release_schema_bundle()``. Measured when the acquisition-ledger
-#: ``failure`` shape widened -- 668 published releases embed
-#: ``sha256:a7e0dba5...`` and would all have been refused by the code that had
-#: just been upgraded to read them.
-#:
-#: Every entry is a LITERAL, deliberately. An entry computed from the installed
-#: schema files is not a historical record: it moves when those files move, so
-#: the first release built under a widened schema would silently redefine the
-#: version it was meant to preserve, and the releases the table exists to admit
-#: would be refused again under the table's own error. The same trap was hit
-#: twice in ``ACCEPTED_DOCUMENT_FIELD_SETS`` before that table was written this
-#: way. Add an entry; never edit one a release was published under.
+# Historical bundles are literal digests, never computed from today's files.
+# Add accepted entries without changing published ones: widening the failure
+# ledger must not invalidate releases carrying the prior schema. See
+# docs/maintenance-decisions.md and the historical schema-bundle tests.
 KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS: Final[Mapping[str, str]] = {
-    # Pre-failure-shape. 668 releases published under this bundle.
+    # Published before the failure shape widened.
     "1.0": "sha256:a7e0dba5e0b26f69ad3a41901a08eb158d21eb59b856f9faf83d48640a85abdb",
     # Acquisition-ledger ``failure`` widened to permit a recorded failure, and
     # the receipt gained the optional per-class failure counts.
@@ -463,35 +449,12 @@ def installed_release_schema_bundle() -> dict[str, Mapping[str, Any]]:
     return installed
 
 
-#: Acquisition policy versions each policy has published under, as literals.
-#: A release records the policy version it was acquired under; admission used to
-#: require that to equal the version the running code declares, so bumping a
-#: policy made every release published under the previous one inadmissible --
-#: found when a rebuild could not admit the release holding the evidence it was
-#: replaying. A release acquired under 1.0 IS a 1.0 release: that is a fact about
-#: how it was acquired, not a defect to refuse.
-#:
-#: Third instance of one assumption, not a third bug: the stored-request field
-#: list and the embedded schema bundle had the same defect and the same remedy.
-#: Literal entries for the same reason those tables are literal -- an entry
-#: computed from the live profile is not a history, because it moves when the
-#: profile moves. A policy id absent here keeps the old exact-match behaviour.
-#:
-#: Which fields belong in a table like this, and which correctly do not: ask
-#: whether the field says *which thing this is* or *how this one was made*.
-#: sourceSystemId and acquisitionPolicyId are identifiers -- a release naming a
-#: different source system is a different kind of release, and exact-match
-#: against the live profile is the right check for them forever. Versions and
-#: scope declarations describe how one release was produced, and those
-#: legitimately change over time while every release made under the old value
-#: stays valid; those are the ones that need an accepted history rather than a
-#: comparison against today's value.
-#:
-#: KNOWINGLY LEFT IN PLACE: by that rule the same identity block still checks
-#: two fields the wrong way -- sourceSystemVersion and sourceStateScope -- so
-#: either one moving would repeat this. Fixing that surface once, rather than
-#: adding a fourth table, is its own change with its own review; the decision to
-#: defer it is recorded in this commit's message, not left as an oversight.
+# Admission accepts the policy that acquired a release, independently of the
+# running profile's current version. Keep literal history for the same reason
+# as schema bundles. Unlisted policy IDs retain exact-match behavior.
+# sourceSystemVersion and sourceStateScope still match the live profile;
+# changing them needs the deferred compatibility design recorded in
+# docs/maintenance-decisions.md. Identity IDs continue to match exactly.
 KNOWN_ACQUISITION_POLICY_VERSIONS: Final[Mapping[str, frozenset[str]]] = {
     # 1.0 published the Federal Register corpus on disk; 1.1 is composite
     # identity, (document_number, publication_date).

@@ -1,5 +1,7 @@
 # Source-native operator CLI
 
+Command behavior reviewed against refactor `a8f0da9`.
+
 The maintained [operator guide](../docs/cli.md) now covers all four commands:
 `publish`, `verify`, `publish-public-table`, and `verify-public-table`. It includes
 source selectors, dependency requirements, examples, output, errors, and the

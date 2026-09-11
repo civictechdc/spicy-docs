@@ -1,27 +1,9 @@
-"""The source-native reader closure imports no acquisition-only dependency.
+"""Reader imports stay independent of acquisition and optional table libraries.
 
-DocSpec installs the producer wheel with ``uv pip install --no-deps`` and
-imports five modules from it to read and verify Federal Register and
-Regulations.gov releases -- ``federal_register_source_native``,
-``regulations_gov_source_native``, ``source_native``, ``source_native_profiles``
-and ``source_native_store`` (DocSpec ``tests/test_source_catalog_installed_wheel.py``,
-which is the authority for this list). None may reach polars, httpx,
-boto3/botocore, loguru, or tqdm at import time: those belong to acquisition
-(Zyte, Mirrulations/S3, the public-table Parquet reader) and the legacy ETL
-``RecordType`` schemas, none of which run on the read/verify path.
-
-The list was two modules until 2026-09-05, when spicyregZ2 read it against
-DocSpec's probe and found it named two of the five. All five passed already, so
-this widening fixes no failure -- it closes the gap where three modules could
-have grown a heavy import with nothing to catch it. A guard that covers less
-than the contract it protects reports success about the part nobody was going
-to break.
-
-This is an eager-import guard, not an installability proof — the modules could
-still fail on a machine without those libraries for some other reason.
-DocSpec's installed-wheel test is the installability proof. Here a subprocess
-imports all five modules and fails if any of the six names landed in
-``sys.modules``.
+The five public paths match DocSpec's installed-wheel probe. Import each alone
+as well as together: a clean combined import can hide an order-dependent leak.
+This guard checks eager imports; the installed-wheel consumer probe separately
+checks operation without the producer's acquisition dependencies installed.
 """
 
 from __future__ import annotations
@@ -41,7 +23,7 @@ _READER_MODULES = (
     "spicy_docs.source_native_store",
 )
 
-_HEAVY_MODULES = ("polars", "httpx", "boto3", "botocore", "loguru", "tqdm")
+_HEAVY_MODULES = ("polars", "httpx", "boto3", "botocore", "loguru", "tqdm", "pyarrow", "duckdb")
 
 
 def test_reader_closure_imports_without_heavy_third_party_modules() -> None:

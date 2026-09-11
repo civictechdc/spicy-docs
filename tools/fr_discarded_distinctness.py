@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """How many of the Federal Register's discarded observations are distinct documents?
 
-The acquisition policy collapses by /document_number keeping the newest
+Historical acquisition policy 1.0 collapses by /document_number keeping the newest
 /publication_date, so where the Register reuses a number the older document is
 discarded. The release therefore cannot answer this question -- the discarded
 records are only in the acquisition evidence, which is the pre-collapse
 population.
+
+Policy 1.1 now retains (document_number, publication_date); see docs/decisions.md.
+This diagnostic still compares the pre-selection evidence across dates.
 
 Method fixed by doc1 in DocSpec 0003: compare a discarded observation against
 the survivor on type, title, agencies and abstract. Deliberately NOT on

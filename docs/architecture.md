@@ -42,7 +42,7 @@ identity depend on the caller.
 | Shared source mechanics | `sources/json_input.py`, `sources/media_types.py` |
 | Public release API | `source_native.py` preserves existing imports; implementations live in `releases/` |
 | Release format and payloads | `releases/format.py`, `releases/partitions.py`; blob access in `source_native_store.py` |
-| Observation selection and publication | `releases/observations.py`, `releases/indexing.py`, `releases/publish.py`; immutable filesystem publication in `publication.py` |
+| Observation selection and publication | `releases/observations.py`, `releases/indexing.py`, `releases/publish.py`; path preflight in `releases/paths.py`; immutable filesystem publication in `publication.py` |
 | Full offline verification | `releases/replay.py` reconstructs evidence; `releases/verify.py` compares published output |
 | Bounded admission and reading | `releases/admission.py`, `releases/reader.py` |
 | Public-table output | `public_tables/format.py` defines layout; `publish.py` indexes and writes; `verify.py` owns admission and the full row gate. `public_table_profiles.py` owns source projections. |
@@ -80,3 +80,6 @@ evidence, release integration, and observation selection. Each has a focused
 `tests/source_fixtures.py`; independent malformed artifact construction remains
 in `tests/source_native_release_fixtures.py`. Other source, CLI, and import-boundary
 tests remain directly under `tests/`.
+
+See [maintenance decisions](maintenance-decisions.md) for public API dispositions,
+preserved historical rules, and the review of remaining long functions.
