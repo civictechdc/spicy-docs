@@ -34,7 +34,7 @@ PRODUCER = Producer(
     product="spicy-docs",
     implementation_id=IMPLEMENTATION_ID,
     verifier_id="urn:spicy-regs:source-native-release-verifier",
-    verifier_version="1.0",
+    verifier_version="2.0",
     verifier_implementation_id=IMPLEMENTATION_ID,
 )
 QUERY_SCOPE = {"publishedFrom": "2026-08-25", "publishedThrough": "2026-08-25"}

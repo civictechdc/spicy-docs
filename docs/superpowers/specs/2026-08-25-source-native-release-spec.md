@@ -1,6 +1,6 @@
-# SpicyRegs source-native release 1.0
+# SpicyDocs source-native release 2.0
 
-> **Adoption note (2026-08-30).** This specification was authored in the spicy-regs working branch (`spicy-regs@integrate/payload-prereqs`, commit 8d9e7a2) and is adopted verbatim by spicy-docs, the repository that now owns faithful acquisition and source-native publication (see the platform plan's 2026-08-30 ownership amendment and REF-048). Producer identities, URNs, and digest domains named inside (`spicy-regs`, `urn:spicy-regs:...`, `pkg:pypi/spicy-regs@0.1.7`) are sealed protocol identifiers and historical facts; they are NOT renamed by adoption. New releases minted by this repo declare their own producer identity per the spec's own producer rules.
+> **Current-format amendment (2026-09-11).** SpicyDocs owns this specification and source-native publication. Source-native format, schema, and verifier versions are `2.0`; only producer `spicy-docs`, the installed current schema bundle, and the selected profile's current acquisition policy are accepted. The artifact kind, format name, verifier ID, and digest domains retain their existing `spicyregs` / `urn:spicy-regs:...` identifiers. Historical artifacts remain retained but are not accepted or automatically converted by current readers. Public-table format and verifier remain `1.0`, with current producer `spicy-docs`.
 
 Status: normative target. The shared release path, Federal Register,
 Regulations.gov, and explicit GAO product-page source profiles, plus their
@@ -11,7 +11,7 @@ remain incomplete.
 
 ## 1. Purpose and boundary
 
-SpicyRegs owns source-specific acquisition, faithful source-native records,
+SpicyDocs owns source-specific acquisition, faithful source-native records,
 immutable source-data publication, and thin raw-data readers. This specification
 defines its one retained artifact, `spicyregs-source-native-release`. It uses
 the Rulespec platform container and does not define another root, canonical
@@ -24,7 +24,17 @@ meaning enters this artifact.
 
 ## 2. Artifact, identity, and schema
 
-kind `spicyregs-source-native-release`. Its closed product `spec` has exactly
+The current receipt declares `formatVersion: "2.0"`,
+`releaseSchemaId: "urn:spicy-regs:schema:source-native-release:2.0"`, and
+`verifierVersion: "2.0"`. Its release-schema member is
+`schemas/source-native-release-2.0.json`. Admission compares the embedded schema
+with the sole current installed bundle, with no historical allowlist.
+Logical digest framing is unchanged. Because the logical identity includes
+`releaseSchemaDigest`, equivalent source data can have different logical IDs
+across the `1.0` to `2.0` boundary. Within `2.0`, fixed sealed inputs produce the
+same exact artifact pin regardless of payload-store reuse.
+
+The artifact kind is `spicyregs-source-native-release`. Its closed product `spec` has exactly
 `releaseSchemaDigest`, `sourceSystemId`,
 `sourceSystemVersion`, `acquisitionPolicyId`, `acquisitionPolicyVersion`,
 `acquisitionPolicyDigest`, `sourceStateScope`,
@@ -34,9 +44,10 @@ A successor records the exact superseded logical ID and artifact digest only
 as publication evidence in the Rulespec root `supersedes` record. Lineage therefore changes
 `artifactDigest`, not logical identity: a correction or repack with identical
 logical state preserves `logicalId`, while a changed source state moves it. A
-physical-only rebuild may preserve `logicalId` while moving `artifactDigest`
-because its sealed byte-effect receipt differs. Publication never replaces an
-existing artifact destination.
+rebuild with identical logical state may still change `artifactDigest` when
+sealed timestamps or publication evidence change. Storage accounting alone
+changes only the run result. Publication never replaces an existing artifact
+destination.
 
 The release carries one generated `release-schema` bundle, canonical
 `source-native-scopes`, their closed `source-native-schema` members, one
@@ -69,13 +80,13 @@ and `source-acquisition-evidence`. This is the complete required product-role
 set; any other role fails. `source-native-records` and `rendition-index` are
 absent only when their corresponding receipt counts are zero.
 The installed spicy-docs package generates and ships the closed bundle at
-`spicy_docs/schemas/source_native_release/1.0/` from the same typed records
+`spicy_docs/schemas/source_native_release/2.0/` from the same typed records
 used by its serializers and parsers. It contains the release, scope,
 source-schema-declaration, rendition-index, acquisition-ledger, failure, and
 publication-receipt schemas. `releaseSchemaDigest` calls the
 installed `rulespec-artifacts` `schemaBundleDigest` over the complete normalized
 product-relative path-to-schema map. The same helper computes every
-source-native `schemaDigest`; SpicyRegs defines no second `$id` omission,
+source-native `schemaDigest`; SpicyDocs defines no second `$id` omission,
 reference rewriting, bundle ordering, or digest preimage. Duplicate paths,
 path escape, unresolved targets, and external references fail. The carried
 `release-schema` member contains those exact generated bytes. Declared IDs
@@ -119,7 +130,7 @@ source reader.
 > `logicalId`, and `artifactDigest`, since release state stores the scope. One
 > window replacing W makes acquisition O(objects), not O(W × objects).
 
-SpicyRegs stores that proof in deterministic, bounded ZIP members. Each member
+SpicyDocs stores that proof in deterministic, bounded ZIP members. Each member
 contains one canonical manifest followed by the listed object bytes in the same
 order. A member carries at most 1,000 objects and 16 MiB of uncompressed object
 bytes; a single object may not exceed 16 MiB. Pack indexes start at zero for
@@ -180,7 +191,7 @@ collection and agency set. Document records preserve their raw
 `data.attributes.docketId` and `frDocNum`, withdrawal and withdrawal-reason
 fields, topics, file formats, attachments, relationships, and source locators.
 Docket records preserve their raw `data.id` and complete docket attributes.
-SpicyRegs performs no document-to-docket or Federal Register join; DocSpec owns
+SpicyDocs performs no document-to-docket or Federal Register join; DocSpec owns
 those joins using the preserved exact source keys.
 
 The ledger maps every published current record in the accepted traversal
@@ -237,7 +248,7 @@ in the acquisition evidence; the profile records that count and owns the
 executable equivalence test for its public current view.
 The thin reader contains none of this policy.
 These source digests call the installed `rulespec-artifacts` streaming
-framed-section digester; SpicyRegs does not implement or restate its byte
+framed-section digester; SpicyDocs does not implement or restate its byte
 framing.
 `inputObservationDigest` declares domain
 `spicyregs-input-observations/1`, one `observations` section, and the exact
@@ -304,30 +315,33 @@ exactly `format`, `formatVersion`, `releaseSchemaId`,
 `discoveredRecordCount`,
 `sourceNativeSchemaSetDigest`, `sourceStateDigest`, `verifierId`,
 `verifierVersion`, `verifierImplementationId`, `semanticVerdict`, `warnings`,
-`partitionPolicy`, `payloadPartitions`, `byteMeasurements`, `startedAt`, and
+`partitionPolicy`, `payloadPartitions`, `startedAt`, and
 `completedAt`. `partitionPolicy` fixes the algorithm, bucket count, and UTF-8
 identity encoding. `payloadPartitions` is bounded to the four partition kinds
 times 64 buckets and records each nonempty member's kind, bucket, `blobRef`,
-byte size, and record count in strict order. `byteMeasurements` contains
-exactly `payloadBytesRead`, `payloadBytesReused`, `payloadBytesWritten`, and
-`publicationBytesWritten`.
+byte size, and record count in strict order.
 
+Operational byte measurements are returned as
+`PublishedSourceNativeRelease.byte_measurements` and as `byteMeasurements` in
+the publish CLI result. They are not sealed receipt fields and cannot be
+reconstructed by admission. The result contains exactly `payloadBytesRead`,
+`payloadBytesReused`, `payloadBytesWritten`, and `publicationBytesWritten`.
 `payloadBytesRead` is the sum of distinct external payload bytes presented to
 the store by this build. `payloadBytesReused` counts payload bytes whose exact
 digest already existed or won a concurrent no-replace race.
 `payloadBytesWritten` counts bytes this build actually wrote to store staging,
-including a losing concurrent write that was discarded after verifying the
-winner. Consequently reused and written bytes are each bounded by read bytes,
-but their sum may exceed read bytes during a race. Existing verified content
-is reused without first writing another pending copy.
-`publicationBytesWritten` is the exact sum of the local scopes, source schema,
-release schema, receipt, manifest, and root bytes. Because the receipt includes
-that total, publication computes the canonical receipt/root fixed point and
-fails if it does not stabilize.
+including a losing concurrent write discarded after verifying the winner.
+Consequently reused and written bytes are each bounded by read bytes, but their
+sum may exceed read bytes during a race. Existing verified content is reused
+without first writing another pending copy.
+`publicationBytesWritten` is the exact sum of local scopes, source schema,
+release schema, receipt, manifest, and root bytes, calculated after writing.
+Metadata construction has no self-size fixed point. Member sizes and hashes
+remain sealed evidence, and admission retains its root size limit.
 
 Root `supersedes` carries the one
 platform succession record when this release replaces the current generation;
-the receipt does not repeat it. The counts are non-negative,
+the receipt does not repeat it. All listed counts are required and nonnegative,
 `semanticVerdict` is exactly `pass` for a publishable release; `warnings` is
 a sorted array of closed code/message objects; and the times are canonical
 UTC instants with completion not before start. The publisher creates the
@@ -347,7 +361,8 @@ records that never became canonical observations. **Superseding amendment
 failures remain in the acquisition ledger and retained source evidence; they
 contribute no published record. A release may publish with these failures when
 the per-class counts reconcile with `failedRecordCount` and both transient and
-unclassed counts are zero. Transport, page parsing, and other acquisition errors
+unclassed counts are zero. Admission applies this equation even when
+`failedRecordCount` is zero; missing class counts are refused. Transport, page parsing, and other acquisition errors
 still abort; a credential refusal never becomes a deterministic source record.
 This replaces the original requirement that every failure count be zero.
 
@@ -362,8 +377,9 @@ Transport outcomes cannot be established by reclassifying retained pages and
 remain outside an accepted release. This check deliberately does not reuse the
 writer's failure-ledger construction.
 Bounded consumer admission checks the sealed counts and accepted verifier pins
-without walking the ledger. Historical accepted schema bundles remain readable;
-an older receipt without per-class counts is admissible only with zero failures.
+without semantically replaying the ledger. Structural admission still reads and
+hashes payload bytes, so bounded memory does not imply fixed total I/O. Only the
+current installed schema bundle and current profile policy version are accepted.
 The verifier refuses an unsupported release format or role, unknown release
 field, missing required evidence, or inconsistent page, ledger, schema, receipt,
 or state data. It recomputes and checks the exact schema-set and source-state
@@ -393,7 +409,7 @@ schema member or any receipt/root/schema mismatch.
 
 ## 6. Bounded reader and dependency inversion
 
-SpicyRegs exposes a separate bounded `SourceNativeReleaseReader`. It performs
+SpicyDocs exposes a separate bounded `SourceNativeReleaseReader`. It performs
 Rulespec structural admission, compares the sealed receipt and verifier pins
 with the root, requires an injected Rulespec `BlobSource` for every external
 member, and then streams closed-schema rows in stable order with at most 64
@@ -401,22 +417,22 @@ payload streams open for a row family. It does not replay observation collapse
 or recompute the corpus-wide semantic state on consumer open. DocSpec's
 source-native adapter receives that reader
 through its `SourceNativeRecordSource` port; the DocSpec core imports neither
-SpicyRegs nor a concrete store. Tests prove a changed member or receipt fails
+SpicyDocs nor a concrete store. Tests prove a changed member or receipt fails
 before the first row and a valid consumer starts after bounded structural and
 receipt checks without a second semantic pass.
 
-The reader is the only SpicyRegs integration surface required by DocSpec.
+The reader is the only SpicyDocs integration surface required by DocSpec.
 DocSpec owns its optional outer adapter and receives the reader through its
 `SourceNativeRecordSource` port. Neither product imports the other's core.
 
-The `spicy-regs-source-native` operator command is a thin outer adapter. Its
-`publish` command selects exactly one of `federal-register`,
-`regulations-documents`, `regulations-dockets`, or `regulations-comments`;
-accepts explicit inclusive
-`--since` and `--until` dates, repeated `--agency` values for Regulations.gov,
-an immutable destination, an explicit persistent `--blob-store`, and an
-implementation identity; and runs the same injected publisher and producer
-verifier. Release and store paths must be distinct and neither may contain the
+The `spicy-docs-source-native` operator command is a thin outer adapter. Its
+`publish` command selects one source and its explicit selectors: inclusive
+`--since` and `--until` dates for date-scoped collections, repeated `--agency`
+values where required, or exact `--product-id` values for GAO. The
+[operator guide](../../cli.md#publish) lists the supported source names and
+selector combinations. Publication requires an immutable destination, an
+explicit persistent `--blob-store`, and an implementation identity, and runs
+the same injected publisher and producer verifier. Release and store paths must be distinct and neither may contain the
 other. The store atomically creates digest-addressed files without replacement,
 verifies an existing digest on reuse or `EEXIST`, and retains verified orphan
 blobs after a failed root publication so a later build can recover them. A
@@ -434,7 +450,7 @@ The public profile preserves bulk-data access without creating another logical
 record model. One `spicyregs-public-table` Rulespec artifact pins exactly one
 admitted source-native release and faithfully projects its current rows into
 bounded Parquet members. Rulespec supplies root identity, manifests, member
-digests, and admission. SpicyRegs supplies only the source-specific columns,
+digests, and admission. SpicyDocs supplies only the source-specific columns,
 primary key, total order, and physical partition choice.
 
 The implemented profiles preserve the existing Federal Register, Regulations.gov
@@ -496,7 +512,7 @@ Every record requires the source's `document_number` and canonical
 `publication_date`; together they form `document_number@publication_date`, as
 amended in section 4. A missing or malformed value at the shared classification
 or record-scope boundary becomes a retained deterministic failure under section
-5, with no published record. The date remains in the native record; SpicyRegs
+5, with no published record. The date remains in the native record; SpicyDocs
 does not copy it into a second generic version field.
 
 The profile preserves agency names and slugs exactly and reports absence. It
@@ -505,7 +521,7 @@ only as a source-native fact plus a field diagnostic. Its rendition index
 records every stated `html_url`, `pdf_url`, and `body_html_url`, including
 explicit absence, without choosing a DocSpec candidate.
 
-The predecessor found `topics_json = []` on 890,013 rows. SpicyRegs preserves
+The predecessor found `topics_json = []` on 890,013 rows. SpicyDocs preserves
 those arrays exactly and makes no claim that the publisher declared no topics.
 DocSpec alone owns any catalog interpretation and the corresponding live-source
 measurement.
@@ -521,7 +537,7 @@ bounded to one Federal Register day. These checks do not prove corpus-wide
 completeness, historical baseline parity, a live HTTPS/object-store deployment,
 or production cadence.
 
-The final migration gate uses a clean installed SpicyRegs wheel to build and
+The final migration gate uses a clean installed SpicyDocs wheel to build and
 independently verify fixture and exact real-data releases for the retained
 mirror index, Regulations.gov documents, dockets, and comments, Federal
 Register records, and every other published source table retained by the
@@ -582,3 +598,11 @@ topic arrays. A current corpus may change measured counts only through a newly
 pinned input and dated difference receipt. One malformed RIN, absent agency,
 missing rendition, or empty topic array MUST NOT abort or silently remove an
 unrelated record.
+
+## Current wheel acceptance boundary
+
+SpicyDocs qualifies its own format `2.0` wheel. DocSpec owns the destination
+acceptance update in D10: its current probe requires the removed
+`SUPPORTED_PRODUCER_PRODUCTS` allowlist to include both producer names and will
+refuse this candidate until that probe and its supported-format expectations
+are updated. Local wheel qualification does not claim consumer adoption.

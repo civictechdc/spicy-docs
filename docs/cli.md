@@ -29,6 +29,15 @@ Use the actual producer revision in place of the example implementation ID.
 required. The destination must be new; destination and blob store must be
 separate, with neither nested inside the other.
 
+The success result includes `byteMeasurements` for this invocation: payload
+bytes read, reused, and written to storage staging, plus the resulting local
+metadata size. Staging writes include a discarded write that lost a concurrent
+publication race.
+These operational measurements are outside the sealed release and are not
+returned by later verification or inspection. See [storage reporting](releases.md#storage-and-recovery)
+for their units and limits. Publication uses the current source-native format
+2.0; historical release formats and producer identities are refused on opening.
+
 | Source | Required selectors | Meaning and live access |
 | --- | --- | --- |
 | `federal-register` | `--since`, `--until` | Closed publication-date window, Federal Register HTTPS API; no agency or product selector |

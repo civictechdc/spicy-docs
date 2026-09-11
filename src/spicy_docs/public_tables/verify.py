@@ -35,7 +35,7 @@ from spicy_docs.public_tables.format import (
     _validate_profile,
 )
 from spicy_docs.public_tables.profiles import PublicTableProfile, PublicTableProjectionError
-from spicy_docs.releases.format import SUPPORTED_PRODUCER_PRODUCTS
+from spicy_docs.releases.format import CURRENT_PRODUCER_PRODUCT
 
 
 def _validate_root(
@@ -49,7 +49,7 @@ def _validate_root(
         raise PublicTableError("artifact is not a SpicyRegs public table")
     producer = root.get("producer")
     if not isinstance(producer, Mapping) or (
-        producer.get("product") not in SUPPORTED_PRODUCER_PRODUCTS
+        producer.get("product") != CURRENT_PRODUCER_PRODUCT
         or producer.get("verifierId") != VERIFIER_ID
         or producer.get("verifierVersion") != VERIFIER_VERSION
     ):

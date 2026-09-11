@@ -11,6 +11,7 @@ from rulespec_artifacts import (
     MemberDescriptor,
     MemberSource,
     VerifiedArtifact,
+    canonical_json_bytes,
     iter_member_descriptors,
     schema_bundle_digest,
 )
@@ -18,11 +19,10 @@ from rulespec_artifacts import (
 from spicy_docs.releases.format import (
     _RECEIPT_SHAPE,
     ALWAYS_REQUIRED_ROLES,
+    CURRENT_PRODUCER_PRODUCT,
     FORMAT,
     FORMAT_VERSION,
     KIND,
-    KNOWN_ACQUISITION_POLICY_VERSIONS,
-    KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS,
     MAX_ROW_BYTES,
     PARTITION_KINDS,
     PARTITION_LEDGER,
@@ -42,11 +42,11 @@ from spicy_docs.releases.format import (
     ROLE_SCOPES,
     SCOPES_KEY,
     SPEC_FIELDS,
-    SUPPORTED_PRODUCER_PRODUCTS,
     VERIFIER_ID,
     VERIFIER_VERSION,
     SourceNativeReleaseError,
     _utc,
+    installed_release_schema_bundle,
 )
 from spicy_docs.releases.observations import (
     _section_digest,
@@ -95,16 +95,11 @@ def _member_index(
 
 
 def _failure_summary_counts(receipt: Mapping[str, Any]) -> tuple[int, int, int]:
-    """Return the receipt's (deterministic, transient, unclassed) tally.
-
-    All three are optional (``_RECEIPT_OPTIONAL_FIELDS``); an absent count
-    reads as zero, so an old, all-success receipt reconciles trivially
-    against ``failedRecordCount == 0`` without carrying these keys at all.
-    """
+    """Return the required (deterministic, transient, unclassed) tally."""
 
     counts: list[int] = []
     for field in ("deterministicFailureCount", "transientFailureCount", "unclassedFailureCount"):
-        value = receipt.get(field, 0)
+        value = receipt[field]
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             raise SourceNativeReleaseError(f"source-native receipt count is invalid at {field}")
         counts.append(value)
@@ -137,13 +132,10 @@ def verify_source_native_admission(
         or spec.get("sourceStateScope") != profile.source_state_scope
     ):
         raise SourceNativeReleaseError(f"source-native root names an unsupported {profile.name} profile")
-    accepted_versions = KNOWN_ACQUISITION_POLICY_VERSIONS.get(
-        profile.acquisition_policy_id, frozenset({profile.acquisition_policy_version})
-    )
-    if spec.get("acquisitionPolicyVersion") not in accepted_versions:
+    if spec.get("acquisitionPolicyVersion") != profile.acquisition_policy_version:
         raise SourceNativeReleaseError(
-            f"source-native root names a {profile.name} acquisition policy version this project "
-            f"has not published under: {spec.get('acquisitionPolicyVersion')!r}"
+            f"source-native root requires current {profile.name} acquisition policy version "
+            f"{profile.acquisition_policy_version!r}; got {spec.get('acquisitionPolicyVersion')!r}"
         )
     receipts = by_role[ROLE_RECEIPT]
     if len(receipts) != 1 or receipts[0].object_key != RECEIPT_KEY:
@@ -173,7 +165,7 @@ def verify_source_native_admission(
     if not isinstance(producer, Mapping):
         raise SourceNativeReleaseError("source-native producer record is absent")
     if (
-        producer.get("product") not in SUPPORTED_PRODUCER_PRODUCTS
+        producer.get("product") != CURRENT_PRODUCER_PRODUCT
         or producer.get("verifierId") != VERIFIER_ID
         or producer.get("verifierVersion") != VERIFIER_VERSION
     ):
@@ -187,19 +179,15 @@ def verify_source_native_admission(
             raise SourceNativeReleaseError(f"receipt differs from producer at {receipt_field}")
     if receipt.get("semanticVerdict") != "pass":
         raise SourceNativeReleaseError("source-native receipt is not publishable")
-    failed_record_count = receipt.get("failedRecordCount")
-    if failed_record_count != 0:
-        deterministic, transient, unclassed = _failure_summary_counts(receipt)
-        if deterministic + transient + unclassed != failed_record_count:
-            raise SourceNativeReleaseError("source-native failure summary does not reconcile with failedRecordCount")
-        if unclassed:
-            raise SourceNativeReleaseError("source-native receipt records an unclassed acquisition failure")
-        if transient:
-            raise SourceNativeReleaseError("source-native receipt records a transient acquisition failure")
-        # A deterministic failure is a fact about this one acquisition
-        # attempt, not a fact about the item: no consumer may cache "no
-        # body, do not ask again" from it, because a later release that
-        # succeeds for the same sourceRecordId supersedes it outright.
+    deterministic, transient, unclassed = _failure_summary_counts(receipt)
+    if deterministic + transient + unclassed != receipt["failedRecordCount"]:
+        raise SourceNativeReleaseError("source-native failure summary does not reconcile with failedRecordCount")
+    if unclassed:
+        raise SourceNativeReleaseError("source-native receipt records an unclassed acquisition failure")
+    if transient:
+        raise SourceNativeReleaseError("source-native receipt records a transient acquisition failure")
+    # A deterministic failure describes this acquisition attempt, not permanent
+    # source absence. A later attempt may succeed for the same sourceRecordId.
     if (
         receipt.get("format") != FORMAT
         or receipt.get("formatVersion") != FORMAT_VERSION
@@ -238,31 +226,10 @@ def verify_source_native_admission(
         or receipt["acquisitionEvidenceCount"] != len(by_role[ROLE_EVIDENCE])
     ):
         raise SourceNativeReleaseError("source-native receipt counts differ from payload membership")
-    measurements = receipt["byteMeasurements"]
-    payload_bytes = sum(member.byte_size for member in by_ref.values())
-    if (
-        measurements["payloadBytesRead"] != payload_bytes
-        or measurements["payloadBytesReused"] > payload_bytes
-        or measurements["payloadBytesWritten"] > payload_bytes
-    ):
-        raise SourceNativeReleaseError("source-native payload byte measurements do not reconcile")
     with source.open(ROOT_OBJECT_KEY) as stream:
         root_bytes = stream.read(MAX_ROW_BYTES + 1)
     if len(root_bytes) > MAX_ROW_BYTES:
         raise SourceNativeReleaseError("source-native root exceeds its product limit")
-    publication_roles = {
-        ROLE_SCOPES,
-        ROLE_SCHEMA,
-        ROLE_RELEASE_SCHEMA,
-        ROLE_RECEIPT,
-    }
-    publication_bytes = (
-        sum(member.byte_size for role in publication_roles for member in by_role[role])
-        + sum(manifest.byte_size for manifest in artifact.manifests)
-        + len(root_bytes)
-    )
-    if measurements["publicationBytesWritten"] != publication_bytes:
-        raise SourceNativeReleaseError("source-native publication byte measurements do not reconcile")
     warnings = receipt.get("warnings")
     if not isinstance(warnings, list) or any(
         not isinstance(value, Mapping)
@@ -282,8 +249,8 @@ def verify_source_native_admission(
     embedded_bundle_digest = schema_bundle_digest(release_schemas)
     if embedded_bundle_digest != spec["releaseSchemaDigest"]:
         raise SourceNativeReleaseError("release schema bundle digest differs from the spec")
-    if embedded_bundle_digest not in KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS.values():
-        raise SourceNativeReleaseError("release schema bundle is not one this project published")
+    if canonical_json_bytes(release_schemas) != canonical_json_bytes(installed_release_schema_bundle()):
+        raise SourceNativeReleaseError("release schema bundle differs from the current installed bundle")
     source_schema = _read_one_json(source, profile.source_schema_key)
     if source_schema != profile.source_schema:
         raise SourceNativeReleaseError(f"installed {profile.name} source schema differs")

@@ -42,6 +42,15 @@ def test_cli_shares_outcomes_across_publish_verify_and_inspect(
     documents.extend(_document(f"2026-{number + valid:05d}", title=False) for number in range(rejected))
     published = _publish_documents(destination, *documents)
     expected = published["collectionOutcome"]
+    measurements = published["byteMeasurements"]
+    assert isinstance(expected, dict)
+    assert isinstance(measurements, dict)
+    assert measurements["publicationBytesWritten"] == sum(
+        path.stat().st_size for path in destination.rglob("*") if path.is_file()
+    )
+    assert measurements["payloadBytesRead"] == measurements["payloadBytesWritten"] > 0
+    assert measurements["payloadBytesReused"] == 0
+    assert "byteMeasurements" not in json.loads((destination / "receipts/publication.json").read_bytes())
     assert expected["recordOutcome"] == outcome
     assert expected["publishedRecordCount"] == valid
     assert expected["failedRecordCount"] == rejected
@@ -55,6 +64,7 @@ def test_cli_shares_outcomes_across_publish_verify_and_inspect(
         assert main(args, stdout=output, stderr=errors) == 0, errors.getvalue()
         result = json.loads(output.getvalue())
         assert result["collectionOutcome"] == expected
+        assert "byteMeasurements" not in result  # admission cannot reconstruct the producer's storage work
         assert result["command"] == command
         assert result["artifactDigest"] == published["artifactDigest"]
         # Command success describes verification/admission, not record acceptance.

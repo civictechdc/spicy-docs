@@ -78,7 +78,7 @@ this refactor preserves the cache and its purpose.
 
 | Code | Disposition |
 | --- | --- |
-| Release publication | `_publish_indexed` went from 311 to 187 lines. It computes the result, stages indexed partitions, writes self-accounting metadata, verifies, and publishes. The extracted steps perform substantive operations. |
+| Release publication | `_publish_indexed` went from 311 to 187 lines. It computes the result, stages indexed partitions, writes metadata, verifies, and publishes. The extracted steps perform substantive operations. |
 | Acquisition indexing | The 225-line method became a 197-line function with a separate stateless page-chain check. Index updates and source callback state remain together. |
 | Full verification | The 274-line verifier is now 246 lines after sharing counted digest construction and correcting stale commentary. Keep the ordered comparisons and failure-ledger accounting visible in one function. |
 | Acquisition replay | Keep the 239-line loop together. Traversal/window/page state, evidence pins, terminal markers, and discovered-record accounting are coupled. Replay remains independent of the publisher's indexer. |
@@ -91,29 +91,41 @@ public API exports; it does not establish a net line-count reduction.
 Repeated implementation was removed, and changes can now be reviewed within
 bounded responsibilities. File size remains a review prompt, not a quota.
 
-## Reading retained acquisition evidence
+## Current source-release format and retained evidence
 
-The known schema digests and acquisition-policy versions in
-[`releases/format.py`](../src/spicy_docs/releases/format.py) support the current
-workflow for reusing evidence. Retained Federal Register and Regulations.gov
-releases declare the bundle from before the failure schema expanded; the
-composite Federal Register release declares the expanded bundle. Keep those
-literal entries and Federal Register
-policy versions `1.0` and `1.1` in the bounded admission allowlist. Recomputing a
-historical entry from today's schema or profile would change the identity of
-the data it is meant to recognize.
+Source-native format and verifier `2.0` accept only the installed current
+schema bundle, the selected profile's current acquisition-policy version,
+and producer `spicy-docs`. The format name, artifact kind, verifier ID,
+and digest framing keep their existing identifiers; the schema ID, member
+key, and packaged schema directory explicitly name `2.0`. Every receipt
+requires all three nonnegative failure counts. Their sum must equal
+`failedRecordCount`, including when that total is zero; transient and unclassed
+failures remain unpublishable.
 
-The [offline replay tool](../src/spicy_docs/sources/federal_register/replay.py) admits
-retained evidence before publishing it under the current source profile.
-Admission of an older release does not promise successful full verification
-under an old policy: full verification recomputes the current profile's policy
-and source schema, and refuses mismatched digests. These are distinct checks.
+Historical schema and policy allowlists, missing-count defaults, and acceptance
+of the former `spicy-regs` producer have been removed. Public-table format and
+verifier remain `1.0`; their current producer is also `spicy-docs`. Retained
+artifacts remain on disk, but current readers and the
+[offline replay tool](../src/spicy_docs/sources/federal_register/replay.py)
+refuse unsupported inputs. This change provides no conversion or historical
+reader. Independently sealed refusal fixtures protect that boundary; the
+historical schema copy is test evidence and is not packaged.
 
-This is a closed policy for reading evidence. Legacy API support and automatic format
-conversion are not required. `sourceSystemId`, `acquisitionPolicyId`,
-`sourceSystemVersion`, and `sourceStateScope` still match the selected profile
-exactly. Add no version or scope adapters without an evidenced current need.
-The historical schema and admission tests protect this boundary.
+Storage read, reuse, write, and publication-size measurements now belong to
+`PublishedSourceNativeRelease.byte_measurements` and the publish CLI result.
+They are absent from sealed receipts. Metadata is written once; publication
+size is measured afterward. Exact member sizes and hashes, source counts,
+requested scope, evidence references, and the root size limit remain checked.
+For fixed sealed inputs, format `2.0` produces the same exact artifact pin
+whether the store starts empty or already contains the payloads. Logical
+identity still includes `releaseSchemaDigest`, so the schema change can alter
+the logical ID between versions `1.0` and `2.0` despite unchanged digest framing.
+
+This is an intentional consumer boundary. The current DocSpec acceptance probe
+requires the removed producer allowlist to include both `spicy-regs` and
+`spicy-docs`; it will refuse this candidate until DocSpec implements its D10
+acceptance update. Building and qualifying the SpicyDocs wheel does not establish
+DocSpec adoption. No sibling repository is changed by this decision.
 
 ## Remaining observations
 

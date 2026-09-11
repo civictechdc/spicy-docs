@@ -70,11 +70,10 @@ def _collection_outcome(source: MemberSource, receipt: Mapping[str, Any] | None 
                 "discardedObservationCount",
                 "reconciliationPassCount",
                 "renditionIndexCount",
+                "deterministicFailureCount",
+                "transientFailureCount",
+                "unclassedFailureCount",
             )
-        },
-        **{
-            field: receipt.get(field, 0)
-            for field in ("deterministicFailureCount", "transientFailureCount", "unclassedFailureCount")
         },
         "warnings": deepcopy(receipt["warnings"]),
     }

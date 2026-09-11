@@ -17,7 +17,7 @@ from rulespec_artifacts import (
 )
 
 from spicy_docs.public_tables.profiles import PublicTableProfile
-from spicy_docs.releases.format import SUPPORTED_PRODUCER_PRODUCTS
+from spicy_docs.releases.format import CURRENT_PRODUCER_PRODUCT
 
 KIND = "spicyregs-public-table"
 FORMAT_VERSION = "1.0"
@@ -89,10 +89,8 @@ class PublicTableBuild:
     supersedes: Supersedes | None = None
 
     def __post_init__(self) -> None:
-        if self.producer.product not in SUPPORTED_PRODUCER_PRODUCTS:
-            raise PublicTableError(
-                f"public-table producer product must be one of {sorted(SUPPORTED_PRODUCER_PRODUCTS)}"
-            )
+        if self.producer.product != CURRENT_PRODUCER_PRODUCT:
+            raise PublicTableError(f"public-table producer product must be {CURRENT_PRODUCER_PRODUCT}")
         if self.producer.verifier_id != VERIFIER_ID or self.producer.verifier_version != VERIFIER_VERSION:
             raise PublicTableError("public-table producer names an unsupported verifier")
         if (

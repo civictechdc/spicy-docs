@@ -15,7 +15,6 @@ from rulespec_artifacts import (
 from spicy_docs.source_native import (
     SourceNativeReleaseBuild,
     SourceNativeReleaseError,
-    SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
@@ -24,7 +23,6 @@ from tests.releases.fixtures import (
     IMPLEMENTATION_ID,
     PRODUCER,
     QUERY_SCOPE,
-    _completed_at,
     _CountingBlobSource,
     _document,
     _publish,
@@ -33,26 +31,13 @@ from tests.releases.fixtures import (
 )
 
 
-def test_reader_accepts_a_historical_spicy_regs_producer(tmp_path: Path) -> None:
-    """spicy-regs minted releases before the acquisition layer moved to spicy-docs;
-    consumer admission must keep reading them under their original producer identity."""
-    published = SourceNativeReleasePublisher(
-        FEDERAL_REGISTER_PROFILE,
-        blob_store=LocalSourceNativeBlobStore(tmp_path / "blobs"),
-        clock=_completed_at,
-    ).publish(
-        _stable_pages(_document()),
-        build=SourceNativeReleaseBuild(
+def test_source_build_refuses_a_historical_producer() -> None:
+    with pytest.raises(SourceNativeReleaseError, match="producer product must be spicy-docs"):
+        SourceNativeReleaseBuild(
             query_scope=QUERY_SCOPE,
             producer=replace(PRODUCER, product="spicy-regs"),
             started_at="2026-08-25T00:00:00Z",
-        ),
-        destination=tmp_path / "release",
-    )
-
-    reader = _reader(published.root, published.artifact.pin)
-
-    assert len(list(reader.iter_records())) == 1
+        )
 
 
 def test_reader_holds_at_most_the_fixed_bucket_count_of_streams(tmp_path: Path) -> None:

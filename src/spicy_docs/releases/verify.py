@@ -225,9 +225,9 @@ def verify_source_native_release(
                 connection.execute("SELECT count(*) FROM failures WHERE traversal = ?", (accepted,)).fetchone()[0]
             )
             if (
-                receipt.get("deterministicFailureCount", 0) != replayed_failed_count
-                or receipt.get("transientFailureCount", 0) != 0
-                or receipt.get("unclassedFailureCount", 0) != 0
+                receipt["deterministicFailureCount"] != replayed_failed_count
+                or receipt["transientFailureCount"] != 0
+                or receipt["unclassedFailureCount"] != 0
             ):
                 raise SourceNativeReleaseError("source-native failure summary differs from replayed evidence")
             observed_ledger_count = published_record_count + replayed_failed_count

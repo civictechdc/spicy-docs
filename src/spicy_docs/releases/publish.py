@@ -279,12 +279,6 @@ class SourceNativeReleasePublisher:
             "acquisitionEvidenceCount": len(evidence_descriptors),
             "acquisitionLedgerDigest": ledger_digest,
             "acquisitionPolicyDigest": _policy_digest(build, profile),
-            "byteMeasurements": {
-                "payloadBytesRead": accounting.payload_bytes_read,
-                "payloadBytesReused": accounting.payload_bytes_reused,
-                "payloadBytesWritten": accounting.payload_bytes_written,
-                "publicationBytesWritten": 0,
-            },
             "completedAt": completed_at,
             "deterministicFailureCount": failed_record_count,
             "discoveredRecordCount": input_observation_count + failed_record_count,
@@ -315,7 +309,7 @@ class SourceNativeReleasePublisher:
             "verifierVersion": build.producer.verifier_version,
             "warnings": [],
         }
-        _write_metadata(
+        publication_bytes = _write_metadata(
             staging,
             profile=profile,
             build=build,
@@ -337,7 +331,16 @@ class SourceNativeReleasePublisher:
             scratch_directory=scratch / "verify",
         )
         publish_directory_once(staging, destination)
-        return PublishedSourceNativeRelease(destination, artifact)
+        return PublishedSourceNativeRelease(
+            destination,
+            artifact,
+            byte_measurements={
+                "payloadBytesRead": accounting.payload_bytes_read,
+                "payloadBytesReused": accounting.payload_bytes_reused,
+                "payloadBytesWritten": accounting.payload_bytes_written,
+                "publicationBytesWritten": publication_bytes,
+            },
+        )
 
 
 def _stage_indexed_partitions(
@@ -403,82 +406,71 @@ def _write_metadata(
     scopes: list[dict[str, Any]],
     release_schemas: Mapping[str, Mapping[str, Any]],
     external_members: tuple[MemberDescriptor, ...],
-) -> None:
-    """Stabilize self-reported byte accounting, then stage metadata exactly once."""
+) -> int:
+    """Write metadata once and report the resulting local file sizes."""
     scopes_bytes = b"".join(chunk for value in scopes for chunk in (canonical_json_bytes(value), b"\n"))
     source_schema_bytes = canonical_json_bytes(profile.source_schema)
     release_schema_bytes = canonical_json_bytes(release_schemas)
     refs = [member.blob_ref for member in external_members]
     if None in refs or len(set(refs)) != len(refs):
         raise SourceNativeReleaseError("source-native external payload members must have distinct content identities")
-    publication_bytes = -1
-    for _ in range(8):
-        receipt["byteMeasurements"]["publicationBytesWritten"] = max(publication_bytes, 0)
-        receipt = _RECEIPT_SHAPE.parse(receipt)
-        receipt_bytes = canonical_json_bytes(receipt)
-        local_members = (
-            describe_member_from_receipt(
-                object_key=SCOPES_KEY,
-                sha256="sha256:" + hashlib.sha256(scopes_bytes).hexdigest(),
-                role=ROLE_SCOPES,
-                media_type="application/x-ndjson",
-                byte_size=len(scopes_bytes),
-                record_count=1,
-            ),
-            describe_member_from_receipt(
-                object_key=RECEIPT_KEY,
-                sha256="sha256:" + hashlib.sha256(receipt_bytes).hexdigest(),
-                role=ROLE_RECEIPT,
-                media_type="application/json",
-                byte_size=len(receipt_bytes),
-            ),
-            describe_member_from_receipt(
-                object_key=RELEASE_SCHEMA_KEY,
-                sha256="sha256:" + hashlib.sha256(release_schema_bytes).hexdigest(),
-                role=ROLE_RELEASE_SCHEMA,
-                media_type="application/schema+json",
-                byte_size=len(release_schema_bytes),
-                schema_id=RELEASE_SCHEMA_ID,
-            ),
-            describe_member_from_receipt(
-                object_key=profile.source_schema_key,
-                sha256="sha256:" + hashlib.sha256(source_schema_bytes).hexdigest(),
-                role=ROLE_SCHEMA,
-                media_type="application/schema+json",
-                byte_size=len(source_schema_bytes),
-                schema_id=str(profile.source_schema["$id"]),
-            ),
-        )
-        manifest, manifest_bytes = MemberManifestReference.for_members(
-            scope_kind="global",
-            scope_id="source-native",
-            object_key=MANIFEST_KEY,
-            members=(*local_members, *external_members),
-        )
-        root = build_artifact_root(
-            kind=KIND,
-            spec=spec,
-            producer=build.producer,
-            manifests=(manifest,),
-            supersedes=build.supersedes,
-        )
-        root_bytes = canonical_json_bytes(root)
-        measured = (
-            len(scopes_bytes)
-            + len(receipt_bytes)
-            + len(release_schema_bytes)
-            + len(source_schema_bytes)
-            + len(manifest_bytes)
-            + len(root_bytes)
-        )
-        if measured == publication_bytes:
-            break
-        publication_bytes = measured
-    else:
-        raise SourceNativeReleaseError("source-native publication byte accounting did not stabilize")
-    write_bytes_once(staging / SCOPES_KEY, scopes_bytes)
-    write_bytes_once(staging / profile.source_schema_key, source_schema_bytes)
-    write_bytes_once(staging / RELEASE_SCHEMA_KEY, release_schema_bytes)
-    write_bytes_once(staging / RECEIPT_KEY, receipt_bytes)
-    write_bytes_once(staging / MANIFEST_KEY, manifest_bytes)
-    write_bytes_once(staging / ROOT_OBJECT_KEY, root_bytes)
+    receipt = _RECEIPT_SHAPE.parse(receipt)
+    receipt_bytes = canonical_json_bytes(receipt)
+    local_members = (
+        describe_member_from_receipt(
+            object_key=SCOPES_KEY,
+            sha256="sha256:" + hashlib.sha256(scopes_bytes).hexdigest(),
+            role=ROLE_SCOPES,
+            media_type="application/x-ndjson",
+            byte_size=len(scopes_bytes),
+            record_count=1,
+        ),
+        describe_member_from_receipt(
+            object_key=RECEIPT_KEY,
+            sha256="sha256:" + hashlib.sha256(receipt_bytes).hexdigest(),
+            role=ROLE_RECEIPT,
+            media_type="application/json",
+            byte_size=len(receipt_bytes),
+        ),
+        describe_member_from_receipt(
+            object_key=RELEASE_SCHEMA_KEY,
+            sha256="sha256:" + hashlib.sha256(release_schema_bytes).hexdigest(),
+            role=ROLE_RELEASE_SCHEMA,
+            media_type="application/schema+json",
+            byte_size=len(release_schema_bytes),
+            schema_id=RELEASE_SCHEMA_ID,
+        ),
+        describe_member_from_receipt(
+            object_key=profile.source_schema_key,
+            sha256="sha256:" + hashlib.sha256(source_schema_bytes).hexdigest(),
+            role=ROLE_SCHEMA,
+            media_type="application/schema+json",
+            byte_size=len(source_schema_bytes),
+            schema_id=str(profile.source_schema["$id"]),
+        ),
+    )
+    manifest, manifest_bytes = MemberManifestReference.for_members(
+        scope_kind="global",
+        scope_id="source-native",
+        object_key=MANIFEST_KEY,
+        members=(*local_members, *external_members),
+    )
+    root = build_artifact_root(
+        kind=KIND,
+        spec=spec,
+        producer=build.producer,
+        manifests=(manifest,),
+        supersedes=build.supersedes,
+    )
+    root_bytes = canonical_json_bytes(root)
+    members = (
+        (SCOPES_KEY, scopes_bytes),
+        (profile.source_schema_key, source_schema_bytes),
+        (RELEASE_SCHEMA_KEY, release_schema_bytes),
+        (RECEIPT_KEY, receipt_bytes),
+        (MANIFEST_KEY, manifest_bytes),
+        (ROOT_OBJECT_KEY, root_bytes),
+    )
+    for key, payload in members:
+        write_bytes_once(staging / key, payload)
+    return sum((staging / key).stat().st_size for key, _ in members)

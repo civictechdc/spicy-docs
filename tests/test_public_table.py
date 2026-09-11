@@ -22,10 +22,15 @@ import pytest
 # this optional suite collectable when a reader-only environment omits it.
 pq = pytest.importorskip("pyarrow.parquet")
 from rulespec_artifacts import (
+    ROOT_OBJECT_KEY,
+    ArtifactInput,
     ArtifactPin,
     ArtifactVerificationError,
     LocalMemberSource,
     Producer,
+    admit_artifact,
+    build_artifact_root,
+    canonical_json_bytes,
 )
 
 from spicy_docs.public_tables.api import (
@@ -551,14 +556,14 @@ def test_public_table_is_immutable_and_tamper_fails_before_read(tmp_path: Path) 
         )
 
 
-def test_public_table_build_refuses_an_unrecognized_producer_product() -> None:
-    with pytest.raises(PublicTableError, match="producer product must be one of"):
-        PublicTableBuild(replace(_PUBLIC_PRODUCER, product="spicy-widgets"))
+@pytest.mark.parametrize("product", ["spicy-widgets", "spicy-regs"])
+def test_public_table_build_requires_the_current_producer_product(product: str) -> None:
+    with pytest.raises(PublicTableError, match="producer product must be spicy-docs"):
+        PublicTableBuild(replace(_PUBLIC_PRODUCER, product=product))
 
 
-def test_public_table_reader_accepts_a_historical_spicy_regs_producer(tmp_path: Path) -> None:
-    """spicy-regs minted public tables before the publisher moved to spicy-docs;
-    consumer admission must keep reading them under their original producer identity."""
+def test_public_table_reader_refuses_a_resealed_historical_producer(tmp_path: Path) -> None:
+    """Valid platform hashes cannot override the current product identity."""
     profile = REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
     identity = "EPA-2026-0001"
     record = {
@@ -572,13 +577,25 @@ def test_public_table_reader_accepts_a_historical_spicy_regs_producer(tmp_path: 
     destination = tmp_path / "historical"
     published = PublicTablePublisher(profile).publish(
         source,
-        build=PublicTableBuild(replace(_PUBLIC_PRODUCER, product="spicy-regs")),
+        build=PublicTableBuild(_PUBLIC_PRODUCER),
         destination=destination,
     )
 
-    reader = _public_reader(destination, profile, published.artifact.pin)
-
-    assert reader.object_keys
+    root = published.artifact.root
+    historical_root = build_artifact_root(
+        kind=root["kind"],
+        spec=root["spec"],
+        producer=replace(_PUBLIC_PRODUCER, product="spicy-regs"),
+        inputs=tuple(
+            ArtifactInput(role=value["role"], logical_id=value["logicalId"], artifact_digest=value["artifactDigest"])
+            for value in root["inputs"]
+        ),
+        manifests=published.artifact.manifests,
+    )
+    (destination / ROOT_OBJECT_KEY).write_bytes(canonical_json_bytes(historical_root))
+    historical = admit_artifact(LocalMemberSource(destination))
+    with pytest.raises(PublicTableError, match="producer identity differs"):
+        _public_reader(destination, profile, historical.pin)
 
 
 def test_remote_location_refuses_a_different_artifact_address(tmp_path: Path) -> None:

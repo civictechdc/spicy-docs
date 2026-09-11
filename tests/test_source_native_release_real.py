@@ -35,10 +35,10 @@ def _completed_at() -> datetime:
 @pytest.mark.integration
 def test_pinned_federal_register_day_publishes_and_replays_exactly(tmp_path: Path) -> None:
     producer = Producer(
-        product="spicy-regs",
+        product="spicy-docs",
         implementation_id=_IMPLEMENTATION_ID,
         verifier_id="urn:spicy-regs:source-native-release-verifier",
-        verifier_version="1.0",
+        verifier_version="2.0",
         verifier_implementation_id=_IMPLEMENTATION_ID,
     )
     with httpx.Client(

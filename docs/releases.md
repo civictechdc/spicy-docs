@@ -25,6 +25,12 @@ defines member names, schemas, digest inputs, ordering, and bounds. The
    replays saved evidence and checks the staged result. Only then does immutable
    publication make the destination directory visible.
 
+The current source-native format is **2.0**, with required failure-summary counts
+and exact current schemas, acquisition policies, producer, and verifier version.
+Historical formats receive a refusal; retained files are left intact. The
+source-state digest still describes the same source facts, but a format change
+can change the artifact's logical ID because the release schema is part of it.
+
 The source owns classification, identity, dates, tie rules, and what
 completeness means. Shared release code owns indexing, partitioning, manifests,
 artifact identity, and publication. Exact evidence remains available even for
@@ -36,7 +42,7 @@ excluded probes or discarded observations.
 | --- | --- | --- |
 | `verify_source_native_admission()` | Bounded agreement among the receipt, release root, and profile on an already structurally admitted artifact | Does not check a caller's expected pin or implementation allowlist, or replay every source observation. |
 | `SourceNativeReleaseReader` and CLI admission workflow | Structural and source-native admission, supplied artifact-pin checks, an explicit implementation allowlist, and member/row checks during reading | A partially consumed reader has not checked unread rows. |
-| `verify_source_native_release()` | Offline reconstruction of successful observations, selected output, renditions, ordering, digests, and receipt counts | Failure-ledger entries receive shape and class-count checks; their individual failure provenance is not reconstructed. |
+| `verify_source_native_release()` | Offline reconstruction of successful observations, deterministic failures and their evidence links, selected output, renditions, ordering, digests, and receipt counts | Establishes agreement with retained evidence, not publisher authenticity or a broader population than the declared scope. |
 | Public-table reader and CLI admission workflow | Supplied table-pin checks, profile, layout, and accepted verifier identity | Does not reproject source records or run the full Parquet-row check. |
 | `verify_public_table_release()` | Full Parquet-row checks in addition to table admission | Operates on the table; source evidence remains a separate retained input. |
 
@@ -51,7 +57,22 @@ from a trusted deployment decision, not from an untrusted artifact's own claim.
 `SourceNativeBlobStore` read/write boundary and local implementation. Conditional
 writes stream into a temporary file, verify the expected size and SHA-256, and
 install a digest-named blob without replacement. Reusing an existing blob still
-checks its bytes. Write receipts distinguish reused content from new bytes.
+checks its bytes. Write receipts distinguish reused content from staging writes.
+
+`PublishedSourceNativeRelease.byte_measurements` and the publish CLI's
+`byteMeasurements` report storage work for that invocation. The payload counters
+cover unique evidence and staged partitions presented to the store: bytes read,
+reused, and written to storage staging. Written bytes include a losing concurrent
+write discarded after checking the winning blob, so reused plus written bytes
+can exceed read bytes. They do not measure total network traffic or every
+verification read. `publicationBytesWritten` is the sum of the six local metadata
+files measured after writing. Keep this result with the run's operator records.
+
+These measurements are outside the sealed source receipt. Metadata is built
+once, with no loop to encode its own size. Given identical evidence, producer,
+timestamps, and all other sealed inputs, writing into a populated blob store
+produces the same artifact pin as writing into an empty one; the reported reuse
+differs. Later verification and inspection cannot reconstruct that storage work.
 
 [`storage/publication.py`](../src/spicy_docs/storage/publication.py) owns
 create-once publication. The release destination and blob store must be separate

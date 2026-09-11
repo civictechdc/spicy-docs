@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from importlib.resources import files
@@ -20,16 +20,11 @@ from rulespec_artifacts import (
 
 KIND: Final = "spicyregs-source-native-release"
 FORMAT: Final = "spicyregs-source-native-release"
-FORMAT_VERSION: Final = "1.0"
-RELEASE_SCHEMA_ID: Final = "urn:spicy-regs:schema:source-native-release:1.0"
+FORMAT_VERSION: Final = "2.0"
+RELEASE_SCHEMA_ID: Final = "urn:spicy-regs:schema:source-native-release:2.0"
 VERIFIER_ID: Final = "urn:spicy-regs:source-native-release-verifier"
-VERIFIER_VERSION: Final = "1.0"
+VERIFIER_VERSION: Final = "2.0"
 
-#: Producer identities this release format recognizes: the historical
-#: publisher (spicy-regs) and the current one (spicy-docs), which now owns
-#: faithful acquisition and source-native publication. See the adoption note
-#: atop docs/superpowers/specs/2026-08-25-source-native-release-spec.md.
-SUPPORTED_PRODUCER_PRODUCTS: Final = frozenset({"spicy-regs", "spicy-docs"})
 CURRENT_PRODUCER_PRODUCT: Final = "spicy-docs"
 MAX_EVIDENCE_BYTES: Final = 24 * 1024 * 1024
 MAX_ROW_BYTES: Final = 4 * 1024 * 1024
@@ -76,7 +71,7 @@ REQUIRED_ROLES: Final = frozenset(
 ALWAYS_REQUIRED_ROLES: Final = REQUIRED_ROLES - {ROLE_RECORDS, ROLE_RENDITIONS}
 
 SCOPES_KEY: Final = "records/scopes.jsonl"
-RELEASE_SCHEMA_KEY: Final = "schemas/source-native-release-1.0.json"
+RELEASE_SCHEMA_KEY: Final = "schemas/source-native-release-2.0.json"
 RECEIPT_KEY: Final = "receipts/publication.json"
 MANIFEST_KEY: Final = "manifests/source-native.json"
 
@@ -110,8 +105,8 @@ class SourceNativeReleaseBuild:
 
     def __post_init__(self) -> None:
         _utc(self.started_at, "started_at")
-        if self.producer.product not in SUPPORTED_PRODUCER_PRODUCTS:
-            raise SourceNativeReleaseError(f"producer product must be one of {sorted(SUPPORTED_PRODUCER_PRODUCTS)}")
+        if self.producer.product != CURRENT_PRODUCER_PRODUCT:
+            raise SourceNativeReleaseError(f"producer product must be {CURRENT_PRODUCER_PRODUCT}")
         if self.producer.verifier_id != VERIFIER_ID or self.producer.verifier_version != VERIFIER_VERSION:
             raise SourceNativeReleaseError("producer names an unsupported source-native verifier")
 
@@ -120,6 +115,7 @@ class SourceNativeReleaseBuild:
 class PublishedSourceNativeRelease:
     root: Path
     artifact: VerifiedArtifact
+    byte_measurements: Mapping[str, int]
 
 
 def _utc(value: str, label: str) -> datetime:
@@ -145,30 +141,22 @@ def _instant(clock: Callable[[], datetime]) -> str:
     return value.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def _closed_schema(properties: Mapping[str, Any], *, required: Sequence[str] | None = None) -> dict[str, Any]:
+def _closed_schema(properties: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "additionalProperties": False,
         "properties": dict(properties),
-        "required": list(required or properties),
+        "required": list(properties),
         "type": "object",
     }
 
 
 @dataclass(frozen=True, slots=True)
 class _ClosedObjectShape:
-    """One declaration for schema generation, writing, and structural parsing.
-
-    ``required`` defaults to every declared property (today's closed-shape
-    behaviour, unchanged). A shape may narrow it so a newly added property
-    can be read from an old, already-published instance that never carried
-    that key -- see ``_RECEIPT_SHAPE``, whose three failure-summary counts
-    are optional for exactly this reason.
-    """
+    """One closed declaration for schema generation, writing, and parsing."""
 
     name: str
     properties: Mapping[str, Any]
-    required: Sequence[str] | None = None
 
     @property
     def fields(self) -> frozenset[str]:
@@ -176,7 +164,7 @@ class _ClosedObjectShape:
 
     @property
     def schema(self) -> dict[str, Any]:
-        return _closed_schema(self.properties, required=self.required)
+        return _closed_schema(self.properties)
 
     def parse(self, value: object) -> dict[str, Any]:
         if not isinstance(value, Mapping):
@@ -237,14 +225,6 @@ _LEDGER_FAILURE_SCHEMA: Final = _closed_schema(
     }
 )
 
-_BYTE_MEASUREMENTS_SCHEMA: Final = _closed_schema(
-    {
-        "payloadBytesRead": _UINT_SCHEMA,
-        "payloadBytesReused": _UINT_SCHEMA,
-        "payloadBytesWritten": _UINT_SCHEMA,
-        "publicationBytesWritten": _UINT_SCHEMA,
-    }
-)
 _PARTITION_POLICY_SCHEMA: Final = _closed_schema(
     {
         "algorithm": {"const": PARTITION_ALGORITHM},
@@ -281,19 +261,10 @@ _PAGE_SHAPE: Final = _ClosedObjectShape(
     },
 )
 
-#: The receipt's failure-summary counts are new and absent from every
-#: already-published receipt, so they must stay optional in the schema
-#: below -- see ``_RECEIPT_OPTIONAL_FIELDS``. Reader code treats an absent
-#: count as zero, which reproduces an all-success receipt's summary exactly.
-_RECEIPT_OPTIONAL_FIELDS: Final = frozenset(
-    {"deterministicFailureCount", "transientFailureCount", "unclassedFailureCount"}
-)
-
 _RECEIPT_PROPERTIES: Final = {
     "acquisitionEvidenceCount": _UINT_SCHEMA,
     "acquisitionLedgerDigest": _DIGEST_SCHEMA,
     "acquisitionPolicyDigest": _DIGEST_SCHEMA,
-    "byteMeasurements": _BYTE_MEASUREMENTS_SCHEMA,
     "completedAt": {"type": "string"},
     "deterministicFailureCount": _UINT_SCHEMA,
     "discoveredRecordCount": _UINT_SCHEMA,
@@ -332,7 +303,6 @@ _RECEIPT_PROPERTIES: Final = {
 _RECEIPT_SHAPE: Final = _ClosedObjectShape(
     "publication receipt",
     _RECEIPT_PROPERTIES,
-    required=tuple(name for name in _RECEIPT_PROPERTIES if name not in _RECEIPT_OPTIONAL_FIELDS),
 )
 
 
@@ -413,24 +383,11 @@ def release_schema_bundle() -> dict[str, Mapping[str, Any]]:
     return schemas
 
 
-# Historical bundles are literal digests, never computed from today's files.
-# Add accepted entries without changing published ones: widening the failure
-# ledger must not invalidate releases carrying the prior schema. See
-# docs/maintenance-decisions.md and the historical schema-bundle tests.
-KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS: Final[Mapping[str, str]] = {
-    # Published before the failure shape widened.
-    "1.0": "sha256:a7e0dba5e0b26f69ad3a41901a08eb158d21eb59b856f9faf83d48640a85abdb",
-    # Acquisition-ledger ``failure`` widened to permit a recorded failure, and
-    # the receipt gained the optional per-class failure counts.
-    "1.1": "sha256:4c32416532f34a8bb7fbb4009c6324881495b9a6038c61931f8cf05694e1e164",
-}
-
-
 def installed_release_schema_bundle() -> dict[str, Mapping[str, Any]]:
     """Load the shipped schemas and refuse drift from their sole generator."""
 
     expected = release_schema_bundle()
-    root = files("spicy_docs").joinpath("schemas/source_native_release/1.0")
+    root = files("spicy_docs").joinpath("schemas/source_native_release/2.0")
     try:
         observed_names = {entry.name for entry in root.iterdir() if entry.is_file()}
     except FileNotFoundError as error:
@@ -447,16 +404,3 @@ def installed_release_schema_bundle() -> dict[str, Mapping[str, Any]]:
             raise SourceNativeReleaseError(f"installed source-native schema is not an object at {name}")
         installed[name] = value
     return installed
-
-
-# Admission accepts the policy that acquired a release, independently of the
-# running profile's current version. Keep literal history for the same reason
-# as schema bundles. Unlisted policy IDs retain exact-match behavior.
-# sourceSystemVersion and sourceStateScope still match the live profile;
-# changing them needs the deferred compatibility design recorded in
-# docs/maintenance-decisions.md. Identity IDs continue to match exactly.
-KNOWN_ACQUISITION_POLICY_VERSIONS: Final[Mapping[str, frozenset[str]]] = {
-    # 1.0 published the Federal Register corpus on disk; 1.1 is composite
-    # identity, (document_number, publication_date).
-    "urn:spicy-regs:acquisition:federal-register-paginated": frozenset({"1.0", "1.1"}),
-}

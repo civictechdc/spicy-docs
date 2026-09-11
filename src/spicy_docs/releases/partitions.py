@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import heapq
 import os
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Generator, Iterable, Iterator, Mapping, Sequence
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -91,7 +91,7 @@ def _jsonl_rows(stream: BinaryIO, *, label: str) -> Iterator[Mapping[str, Any]]:
         yield value
 
 
-def _read_jsonl(source: MemberSource, object_key: str) -> Iterator[Mapping[str, Any]]:
+def _read_jsonl(source: MemberSource, object_key: str) -> Generator[Mapping[str, Any], None, None]:
     with source.open(object_key) as stream:
         yield from _jsonl_rows(stream, label=object_key)
 
@@ -233,7 +233,7 @@ def _partition_rows(
     source: MemberSource,
     blob_source: BlobSource | None,
     partitions: Sequence[_PayloadPartition],
-) -> Iterator[Mapping[str, Any]]:
+) -> Generator[Mapping[str, Any], None, None]:
     if not partitions:
         return
     selected = tuple(sorted(partitions, key=lambda value: value.partition_id))

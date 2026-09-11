@@ -269,6 +269,10 @@ def _build_release(
     deterministic_failure_count: int | None = None,
     transient_failure_count: int | None = None,
     unclassed_failure_count: int | None = None,
+    mutate_receipt: Callable[[dict[str, Any]], None] | None = None,
+    mutate_spec: Callable[[dict[str, Any]], None] | None = None,
+    release_schemas: Mapping[str, Any] | None = None,
+    producer: Producer | None = None,
 ) -> tuple[Path, Path]:
     """Hand-assemble one source-native release: at most one published
     record plus whatever ``failure_rows`` the caller wants recorded in the
@@ -409,7 +413,7 @@ def _build_release(
     }
     scopes_bytes = canonical_json_bytes(scope_row) + b"\n"
     source_schema_bytes = canonical_json_bytes(_SOURCE_SCHEMA)
-    release_schemas = release_schema_bundle()
+    release_schemas = release_schema_bundle() if release_schemas is None else release_schemas
     release_schema_bytes = canonical_json_bytes(release_schemas)
 
     scopes_member = describe_member_from_receipt(
@@ -491,23 +495,10 @@ def _build_release(
         else unclassed_failure_count
     )
 
-    payload_bytes_read = (
-        sum(entry[2] for entry in pages_entries)
-        + sum(entry[2] for entry in ledger_entries)
-        + sum(entry[2] for entry in records_entries)
-        + len(response_bytes)
-    )
-
     receipt: dict[str, Any] = {
         "acquisitionEvidenceCount": 1,
         "acquisitionLedgerDigest": ledger_digest,
         "acquisitionPolicyDigest": policy_digest,
-        "byteMeasurements": {
-            "payloadBytesRead": payload_bytes_read,
-            "payloadBytesReused": 0,
-            "payloadBytesWritten": 0,
-            "publicationBytesWritten": 0,
-        },
         "completedAt": "2026-09-01T00:00:01Z",
         "deterministicFailureCount": resolved_deterministic,
         "discardedObservationCount": 0,
@@ -553,7 +544,7 @@ def _build_release(
         "sourceSystemId": "fixture-system",
         "sourceSystemVersion": "1",
     }
-    producer = Producer(
+    producer = producer or Producer(
         product="spicy-docs",
         implementation_id=IMPLEMENTATION_ID,
         verifier_id=VERIFIER_ID,
@@ -561,42 +552,27 @@ def _build_release(
         verifier_implementation_id=IMPLEMENTATION_ID,
     )
 
-    publication_bytes = -1
-    receipt_bytes = b""
-    manifest_bytes = b""
-    root_bytes = b""
-    for _ in range(8):
-        receipt["byteMeasurements"]["publicationBytesWritten"] = max(publication_bytes, 0)
-        receipt_bytes = canonical_json_bytes(receipt)
-        receipt_member = describe_member_from_receipt(
-            object_key=RECEIPT_KEY,
-            sha256="sha256:" + hashlib.sha256(receipt_bytes).hexdigest(),
-            role=ROLE_RECEIPT,
-            media_type="application/json",
-            byte_size=len(receipt_bytes),
-        )
-        local_members = (scopes_member, receipt_member, release_schema_member, source_schema_member)
-        manifest, manifest_bytes = MemberManifestReference.for_members(
-            scope_kind="global",
-            scope_id="source-native",
-            object_key=MANIFEST_KEY,
-            members=(*local_members, *external_members),
-        )
-        root = build_artifact_root(kind=KIND, spec=spec, producer=producer, manifests=(manifest,))
-        root_bytes = canonical_json_bytes(root)
-        measured = (
-            len(scopes_bytes)
-            + len(receipt_bytes)
-            + len(release_schema_bytes)
-            + len(source_schema_bytes)
-            + len(manifest_bytes)
-            + len(root_bytes)
-        )
-        if measured == publication_bytes:
-            break
-        publication_bytes = measured
-    else:
-        raise AssertionError("fixture publication byte accounting did not stabilize")
+    if mutate_receipt is not None:
+        mutate_receipt(receipt)
+    if mutate_spec is not None:
+        mutate_spec(spec)
+    receipt_bytes = canonical_json_bytes(receipt)
+    receipt_member = describe_member_from_receipt(
+        object_key=RECEIPT_KEY,
+        sha256="sha256:" + hashlib.sha256(receipt_bytes).hexdigest(),
+        role=ROLE_RECEIPT,
+        media_type="application/json",
+        byte_size=len(receipt_bytes),
+    )
+    local_members = (scopes_member, receipt_member, release_schema_member, source_schema_member)
+    manifest, manifest_bytes = MemberManifestReference.for_members(
+        scope_kind="global",
+        scope_id="source-native",
+        object_key=MANIFEST_KEY,
+        members=(*local_members, *external_members),
+    )
+    root = build_artifact_root(kind=KIND, spec=spec, producer=producer, manifests=(manifest,))
+    root_bytes = canonical_json_bytes(root)
 
     def _write_local(relative_key: str, payload: bytes) -> None:
         path = release_root / relative_key
@@ -612,7 +588,9 @@ def _build_release(
     return release_root, blobs_root
 
 
-def _admit(release_root: Path, blobs_root: Path, verifier: Any) -> Any:
+def _admit(
+    release_root: Path, blobs_root: Path, verifier: Any, *, profile: SourceNativeProfile = FIXTURE_PROFILE
+) -> Any:
     blob_source = LocalBlobSource(blobs_root)
     return admit_artifact(
         LocalMemberSource(release_root),
@@ -620,7 +598,7 @@ def _admit(release_root: Path, blobs_root: Path, verifier: Any) -> Any:
         semantic_verifier=lambda artifact, source: verifier(
             artifact,
             source,
-            profile=FIXTURE_PROFILE,
+            profile=profile,
             blob_source=blob_source,
         ),
     )
@@ -764,3 +742,73 @@ def test_consistently_sealed_failure_tampering_is_refused(tmp_path: Path, change
     _admit(release_root, blobs_root, verify_source_native_admission)
     with pytest.raises(SourceNativeReleaseError, match="ledger differs from replayed evidence|partition is unordered"):
         _admit(release_root, blobs_root, verify_source_native_release)
+
+
+@pytest.mark.parametrize("field", ["deterministicFailureCount", "transientFailureCount", "unclassedFailureCount"])
+def test_missing_failure_summary_count_is_refused_even_with_zero_failures(tmp_path: Path, field: str) -> None:
+    def omit(receipt: dict[str, Any]) -> None:
+        del receipt[field]
+
+    release_root, blobs_root = _build_release(tmp_path, mutate_receipt=omit)
+    with pytest.raises(SourceNativeReleaseError, match=f"'{field}' is a required property"):
+        _admit(release_root, blobs_root, verify_source_native_admission)
+
+
+@pytest.mark.parametrize("field", ["deterministicFailureCount", "transientFailureCount", "unclassedFailureCount"])
+@pytest.mark.parametrize("value", [-1, True, "0"])
+def test_failure_summary_counts_require_nonnegative_integers(tmp_path: Path, field: str, value: Any) -> None:
+    def change(receipt: dict[str, Any]) -> None:
+        receipt[field] = value
+
+    release_root, blobs_root = _build_release(tmp_path, mutate_receipt=change)
+    with pytest.raises(SourceNativeReleaseError, match="publication receipt structure differs"):
+        _admit(release_root, blobs_root, verify_source_native_admission)
+
+
+@pytest.mark.parametrize("field", ["deterministicFailureCount", "transientFailureCount", "unclassedFailureCount"])
+def test_nonzero_class_count_cannot_hide_behind_zero_total(tmp_path: Path, field: str) -> None:
+    def change(receipt: dict[str, Any]) -> None:
+        receipt[field] = 1
+
+    release_root, blobs_root = _build_release(tmp_path, mutate_receipt=change)
+    with pytest.raises(SourceNativeReleaseError, match="does not reconcile with failedRecordCount"):
+        _admit(release_root, blobs_root, verify_source_native_admission)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("formatVersion", "1.0"), ("releaseSchemaId", "urn:spicy-regs:schema:source-native-release:1.0")],
+)
+def test_historical_receipt_identity_is_refused(tmp_path: Path, field: str, value: str) -> None:
+    def change(receipt: dict[str, Any]) -> None:
+        receipt[field] = value
+
+    release_root, blobs_root = _build_release(tmp_path, mutate_receipt=change)
+    with pytest.raises(SourceNativeReleaseError, match="receipt format is unsupported"):
+        _admit(release_root, blobs_root, verify_source_native_admission)
+
+
+@pytest.mark.parametrize(("product", "version"), [("spicy-regs", "2.0"), ("spicy-docs", "1.0")])
+def test_historical_producer_or_verifier_is_refused(tmp_path: Path, product: str, version: str) -> None:
+    producer = Producer(
+        product=product,
+        implementation_id=IMPLEMENTATION_ID,
+        verifier_id=VERIFIER_ID,
+        verifier_version=version,
+        verifier_implementation_id=IMPLEMENTATION_ID,
+    )
+    release_root, blobs_root = _build_release(tmp_path, producer=producer)
+    with pytest.raises(SourceNativeReleaseError, match="producer names an unsupported verifier"):
+        _admit(release_root, blobs_root, verify_source_native_admission)
+
+
+def test_admission_preserves_root_byte_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from spicy_docs.releases import admission
+
+    release_root, blobs_root = _build_release(tmp_path)
+    root_size = (release_root / ROOT_OBJECT_KEY).stat().st_size
+    monkeypatch.setattr(admission, "MAX_ROW_BYTES", root_size)
+    _admit(release_root, blobs_root, verify_source_native_admission)
+    monkeypatch.setattr(admission, "MAX_ROW_BYTES", root_size - 1)
+    with pytest.raises(SourceNativeReleaseError, match="root exceeds its product limit"):
+        _admit(release_root, blobs_root, verify_source_native_admission)

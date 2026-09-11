@@ -167,7 +167,7 @@ def _publish(
             build=build,
             destination=args.destination,
         )
-    return _success(
+    result = _success(
         "publish",
         args.source,
         published.root,
@@ -175,6 +175,8 @@ def _publish(
         spec=published.artifact.root["spec"],
         outcome=_collection_outcome(LocalMemberSource(published.root)),
     )
+    result["byteMeasurements"] = dict(published.byte_measurements)
+    return result
 
 
 def _verify(args: argparse.Namespace) -> dict[str, object]:

@@ -57,6 +57,15 @@ def test_stable_release_preserves_source_value_and_streams(tmp_path: Path) -> No
     receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
     assert receipt["startedAt"] == "2026-08-25T00:00:00Z"
     assert receipt["completedAt"] == "2026-08-25T00:00:01Z"
+    assert "byteMeasurements" not in receipt
+    measurements = published.byte_measurements
+    assert measurements["publicationBytesWritten"] == sum(
+        path.stat().st_size for path in published.root.rglob("*") if path.is_file()
+    )
+    payload_bytes = sum(path.stat().st_size for path in (tmp_path / "blobs" / "sha256").iterdir())
+    assert measurements["payloadBytesRead"] == payload_bytes
+    assert measurements["payloadBytesWritten"] == payload_bytes
+    assert measurements["payloadBytesReused"] == 0
     assert records[0]["record"]["agencies"] == []
     assert records[0]["record"]["topics"] == []
     assert records[0]["record"]["regulation_id_numbers"] == ["not-a-rin"]
@@ -77,7 +86,7 @@ def test_stable_release_preserves_source_value_and_streams(tmp_path: Path) -> No
 
 
 def test_build_refuses_an_unrecognized_producer_product() -> None:
-    with pytest.raises(SourceNativeReleaseError, match="producer product must be one of"):
+    with pytest.raises(SourceNativeReleaseError, match="producer product must be spicy-docs"):
         SourceNativeReleaseBuild(
             query_scope=QUERY_SCOPE,
             producer=replace(PRODUCER, product="spicy-widgets"),
@@ -209,8 +218,7 @@ def test_acquisition_exception_cannot_publish_partial_release(tmp_path: Path) ->
     assert len(orphan_refs) == 1
 
     recovered = _publish(tmp_path, _stable_pages(_document()))
-    receipt = json.loads((recovered.root / "receipts/publication.json").read_bytes())
-    assert receipt["byteMeasurements"]["payloadBytesReused"] > 0
+    assert recovered.byte_measurements["payloadBytesReused"] > 0
     assert orphan_refs <= {path.name for path in (tmp_path / "blobs" / "sha256").iterdir()}
 
 
@@ -269,13 +277,10 @@ def test_successor_reuses_unchanged_buckets_and_writes_only_new_payloads(
         if key not in expected_changed
     )
 
-    successor_receipt = json.loads((successor.root / "receipts/publication.json").read_bytes())
     current_files = {path.name: path.stat().st_size for path in (tmp_path / "blobs" / "sha256").iterdir()}
     new_files = set(current_files) - set(initial_files)
-    assert successor_receipt["byteMeasurements"]["payloadBytesWritten"] == sum(
-        current_files[name] for name in new_files
-    )
-    assert successor_receipt["byteMeasurements"]["payloadBytesReused"] > 0
+    assert successor.byte_measurements["payloadBytesWritten"] == sum(current_files[name] for name in new_files)
+    assert successor.byte_measurements["payloadBytesReused"] > 0
 
     rebuilt = SourceNativeReleasePublisher(
         FEDERAL_REGISTER_PROFILE,
@@ -286,15 +291,12 @@ def test_successor_reuses_unchanged_buckets_and_writes_only_new_payloads(
         build=_build(),
         destination=tmp_path / "rebuilt",
     )
-    rebuilt_receipt = json.loads((rebuilt.root / "receipts/publication.json").read_bytes())
     assert _partition_map(rebuilt.root) == initial_partitions
-    assert rebuilt.artifact.pin.logical_id == initial.artifact.pin.logical_id
-    assert rebuilt.artifact.pin.artifact_digest != initial.artifact.pin.artifact_digest
-    assert rebuilt_receipt["byteMeasurements"]["payloadBytesWritten"] == 0
-    assert (
-        rebuilt_receipt["byteMeasurements"]["payloadBytesReused"]
-        == rebuilt_receipt["byteMeasurements"]["payloadBytesRead"]
-    )
+    # Store reuse changes operational reporting, not any sealed input.
+    assert rebuilt.artifact.pin == initial.artifact.pin
+    assert rebuilt.byte_measurements != initial.byte_measurements
+    assert rebuilt.byte_measurements["payloadBytesWritten"] == 0
+    assert rebuilt.byte_measurements["payloadBytesReused"] == rebuilt.byte_measurements["payloadBytesRead"]
 
 
 def test_concurrent_publishers_never_replace_the_winner(tmp_path: Path) -> None:

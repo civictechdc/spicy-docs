@@ -21,7 +21,7 @@ PRODUCER = Producer(
     product="spicy-docs",
     implementation_id=IMPLEMENTATION_ID,
     verifier_id="urn:spicy-regs:source-native-release-verifier",
-    verifier_version="1.0",
+    verifier_version="2.0",
     verifier_implementation_id=IMPLEMENTATION_ID,
 )
 WINDOW = {"publishedFrom": "2000-01-14", "publishedThrough": "2000-01-18"}
