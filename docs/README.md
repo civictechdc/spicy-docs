@@ -8,6 +8,7 @@ states the adopted format and publication requirements.
 | What you need to do | Read |
 | --- | --- |
 | Find the code that owns a change | [Architecture and ownership](architecture.md) |
+| Review planned simplification, component ownership, and DocSpec wheel reuse | [Simplification to-do list](simplification-todo.md) |
 | Publish or verify a release or public table | [Operator commands](cli.md) |
 | Add a profile or change shared publication | [Release lifecycle and extension](releases.md) |
 | Understand Federal Register scope, identity, and evidence | [Federal Register](sources/federal-register.md) and [body sources](federal-register-body-sources.md) |
