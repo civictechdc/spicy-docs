@@ -20,7 +20,6 @@ per traversal) even though it is one distinct request.
 
 from __future__ import annotations
 
-import dataclasses
 import json
 import re
 from datetime import UTC, date, datetime
@@ -40,7 +39,6 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
-from spicy_docs.source_native_profile import SourceNativeProfile
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 from tools.replay_federal_register_release import (
@@ -247,39 +245,15 @@ def test_repeated_url_across_traversals_is_served_not_missed(tmp_path: Path) -> 
     assert summary["distinctRequestKeysMatchSource"] is True
 
 
-def test_local_profile_matches_the_canonical_profile_field_for_field() -> None:
-    """Guards the deliberate duplication the tool's module docstring names:
-    ``tools.replay_federal_register_release.FEDERAL_REGISTER_PROFILE`` is
-    built locally (from ``federal_register_source_native`` directly) instead
-    of imported from ``spicy_docs.source_native_profiles``, so importing this
-    tool never pulls GAO's ``spicy_docs.sources.zyte`` -- and therefore
-    ``urllib.request`` -- into the process. Every field but
-    ``validate_record_scope`` must be the exact same object (not just an
-    equal-looking copy) as the canonical profile; a change to the real
-    profile that this tool does not mirror fails here, not silently at the
-    real corpus's replay."""
-
-    canonical = FEDERAL_REGISTER_PROFILE
-    local = replay_tool.FEDERAL_REGISTER_PROFILE
-    for profile_field in dataclasses.fields(SourceNativeProfile):
-        if profile_field.name == "validate_record_scope":
-            continue
-        assert getattr(local, profile_field.name) == getattr(canonical, profile_field.name), profile_field.name
+def test_replay_uses_the_shared_source_profile() -> None:
+    assert replay_tool.FEDERAL_REGISTER_PROFILE is FEDERAL_REGISTER_PROFILE
 
 
-def test_local_record_scope_validator_matches_canonical_behavior() -> None:
-    """``validate_record_scope`` is the one field that cannot be the same
-    object (each module defines its own private closure) -- so it is pinned
-    by behavior instead: both accept a record inside its page window and
-    both refuse one outside it, the same way."""
+def test_record_scope_validator_refuses_a_record_outside_its_window() -> None:
+    from spicy_docs.federal_register_source_native import FederalRegisterSourceError
 
     window = (date(2026, 8, 25), date(2026, 8, 25))
-    in_window = {"publication_date": "2026-08-25"}
-    out_of_window = {"publication_date": "2026-08-26"}
-    for validate in (
-        FEDERAL_REGISTER_PROFILE.validate_record_scope,
-        replay_tool.FEDERAL_REGISTER_PROFILE.validate_record_scope,
-    ):
-        validate(in_window, query_scope={}, page_window=window)  # does not raise
-        with pytest.raises(Exception, match="date window"):
-            validate(out_of_window, query_scope={}, page_window=window)
+    validate = FEDERAL_REGISTER_PROFILE.validate_record_scope
+    validate({"publication_date": "2026-08-25"}, query_scope={}, page_window=window)
+    with pytest.raises(FederalRegisterSourceError, match="date window"):
+        validate({"publication_date": "2026-08-26"}, query_scope={}, page_window=window)

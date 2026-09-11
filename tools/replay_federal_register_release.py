@@ -28,31 +28,10 @@ every retained response into memory up front, and hand that fetch to the
 unmodified production pipeline
 (``SourceNativeReleasePublisher(FEDERAL_REGISTER_PROFILE).publish(...)``).
 
-NO FALLBACK, BY CONSTRUCTION. A ``fetch`` call for a URL the mapping does
-not carry raises :class:`ReplayEvidenceMissingError` immediately, naming the
-URL -- it never returns anything and there is no other code path in this
-module that could reach a transport. This module imports no HTTP client:
-no ``httpx``, no ``urllib.request``, no ``socket``, no ``ssl``, no
-``spicy_docs.sources.zyte``, no ``spicy_docs.source_native_cli`` (which
-wires up the live fetchers) -- measured by importing this module alone and
-checking ``sys.modules`` for exactly those names; none appear. That
-measurement is *why* :data:`FEDERAL_REGISTER_PROFILE` below is built here
-from :mod:`spicy_docs.federal_register_source_native` directly rather than
-imported from ``spicy_docs.source_native_profiles`` (which is otherwise the
-canonical place a caller gets this object, e.g.
-``spicy_docs.source_native_cli``): that module unconditionally also builds
-the GAO product-page profile, which imports ``spicy_docs.sources.zyte``,
-which imports ``urllib.request`` -- so importing it, even only for the one
-name needed here, would put a transport-capable module into this process
-that a grep of this file alone could not rule out. The fields below are
-copied verbatim from ``source_native_profiles.FEDERAL_REGISTER_PROFILE``
-(duplicated, not re-derived: every value still comes from
-``federal_register_source_native``'s own public functions and constants,
-which a test below pins equal to the real profile field for field). The
-better long-term fix -- lazily importing GAO inside
-``source_native_profiles.py``, the same way ``source_native_cli.py``
-already lazily imports ``public_table``'s pyarrow dependency -- is outside
-this tool's writable scope.
+OFFLINE BY CONSTRUCTION. A request absent from retained evidence raises
+ReplayEvidenceMissingError. The profile comes from the Federal Register's own
+module, which imports no GAO or live transport code. The CLI and replay tool
+share that exact profile; import-boundary tests protect this separation.
 
 THE QUERY SCOPE is read from the source release itself -- its sole
 ``source-native-scopes`` member, on disk ``records/scopes.jsonl`` -- never
@@ -81,9 +60,9 @@ import json
 import sys
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -98,7 +77,7 @@ from rulespec_artifacts import (
     iter_member_descriptors,
 )
 
-from spicy_docs import federal_register_source_native as federal_register
+from spicy_docs.federal_register_source_native import iter_federal_register_pages
 from spicy_docs.source_native import (
     CURRENT_PRODUCER_PRODUCT,
     ROLE_LEDGER,
@@ -110,77 +89,14 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
     verify_source_native_admission,
 )
-from spicy_docs.source_native_profile import SourceNativeProfile
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.sources.federal_register.profile import FEDERAL_REGISTER_PROFILE
 
 #: Publication receipt path, relative to a release root. Not imported from
 #: ``spicy_docs.source_native`` (its ``RECEIPT_KEY`` is private to that
 #: module) -- mirrors the same hardcoded-path convention already used by
 #: ``tools/fr_discarded_distinctness.py``'s ``RECEIPT_PATH``.
 _RECEIPT_PATH: tuple[str, str] = ("receipts", "publication.json")
-
-
-#: Mirrors ``source_native_profiles._federal_register_record_scope`` (private
-#: to that module). See the module docstring's NO FALLBACK section for why
-#: this is copied rather than imported from ``source_native_profiles``.
-def _federal_register_record_scope(
-    record: Mapping[str, Any],
-    *,
-    query_scope: Mapping[str, Any],
-    page_window: object | None,
-) -> None:
-    del query_scope
-    if (
-        not isinstance(page_window, tuple)
-        or len(page_window) != 2
-        or not all(isinstance(value, date) for value in page_window)
-    ):
-        raise federal_register.FederalRegisterSourceError("Federal Register page lacks a validated date window")
-    typed_window = cast(tuple[date, date], page_window)
-    record_date = date.fromisoformat(str(record["publication_date"]))
-    if not typed_window[0] <= record_date <= typed_window[1]:
-        raise federal_register.FederalRegisterSourceError("Federal Register result falls outside its date window")
-
-
-#: Mirrors ``spicy_docs.source_native_profiles.FEDERAL_REGISTER_PROFILE``
-#: field for field. Not imported from there: see the module docstring's NO
-#: FALLBACK section. ``tests/test_replay_federal_register_release.py`` pins
-#: this against the real profile so the two cannot silently drift apart.
-FEDERAL_REGISTER_ACQUISITION_POLICY_ID = "urn:spicy-regs:acquisition:federal-register-paginated"
-FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION = "1.1"
-FEDERAL_REGISTER_SOURCE_SCHEMA_KEY = "schemas/federal-register-document-1.0.schema.json"
-FEDERAL_REGISTER_PROFILE = SourceNativeProfile(
-    name="Federal Register",
-    source_system_id=federal_register.SOURCE_SYSTEM_ID,
-    source_system_version=federal_register.SOURCE_SYSTEM_VERSION,
-    acquisition_policy_id=FEDERAL_REGISTER_ACQUISITION_POLICY_ID,
-    acquisition_policy_version=FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION,
-    scope_id=federal_register.SCOPE_ID,
-    source_schema_key=FEDERAL_REGISTER_SOURCE_SCHEMA_KEY,
-    source_schema=federal_register.FEDERAL_REGISTER_DOCUMENT_SCHEMA,
-    record_stem="federal-register",
-    max_traversals=federal_register.MAX_RECONCILIATION_TRAVERSALS,
-    source_state_scope="observed-crawl",
-    traversal_acceptance="stable-consecutive-traversals",
-    acquisition_policy=federal_register.federal_register_acquisition_policy,
-    validate_query_scope=federal_register.federal_register_query_scope,
-    parse_page_response=federal_register.parse_page_response,
-    next_page=federal_register.federal_register_next_page_url,
-    traversal_check=federal_register.FederalRegisterTraversalCheck,
-    classify_record=federal_register.classify_document,
-    wrap_record=federal_register.source_record,
-    record_digest=federal_register.source_record_digest,
-    rendition_rows=federal_register.rendition_rows,
-    source_schema_declaration=federal_register.source_schema_declaration,
-    source_schema_digest=federal_register.source_schema_digest,
-    validate_record_scope=_federal_register_record_scope,
-    records_included=federal_register.federal_register_records_included,
-    acquisition_check=federal_register.FederalRegisterAcquisitionCheck,
-    page_window=federal_register.federal_register_request_window,
-    observation_version=federal_register.federal_register_observation_version,
-    refuse_equal_observation_versions=False,
-)
-iter_federal_register_pages = federal_register.iter_federal_register_pages
 
 
 class ReplayEvidenceMissingError(SourceNativeReleaseError):
