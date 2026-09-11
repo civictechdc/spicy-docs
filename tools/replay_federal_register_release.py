@@ -64,8 +64,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from spicy_docs.releases.paths import require_separate_paths
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
@@ -80,6 +78,7 @@ from rulespec_artifacts import (
 )
 
 from spicy_docs.federal_register_source_native import iter_federal_register_pages
+from spicy_docs.releases.paths import require_separate_paths
 from spicy_docs.source_native import (
     CURRENT_PRODUCER_PRODUCT,
     ROLE_LEDGER,
