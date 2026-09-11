@@ -647,7 +647,7 @@ Add refusal tests for malformed artifacts and success tests for the intended can
 | Partition writing | `_partition_id()`, `_partition_policy()`, `_stage_partition()`, `_PayloadPartition`, `_ByteAccounting` | Build deterministic external JSONL payloads and account for blob reuse. |
 | Partition reading | `_payload_partitions()`, `_partition_row_identity()`, `_identity_bucket_for_row()`, `_partition_rows()` | Bind receipt rows to members and stream a globally ordered, checked merge. |
 | Policy and digest input streams | `_policy()`, `_policy_for_scope()`, `_policy_digest()`, `_query_mappings()`, `_query_renditions()`, `_ledger_rows()`, `_page_rows()`, `_source_state_digest()`, `_digest_records()` | Rebuild the scoped acquisition policy and produce canonical rows for release digests and comparisons. |
-| Artifact membership | `_member_index()`, `_descriptor_rows()`, `_open_descriptor()`, `_validate_evidence_media_type()` | Index roles, open and parse local or external members through explicit sources, and restrict evidence types. |
+| Artifact membership | `_member_index()`, `_open_descriptor()`, `_validate_evidence_media_type()` | Index roles, open and parse local or external members through explicit sources, and restrict evidence types. |
 | Verification | `verify_source_native_admission()`, `_replay_acquisition()`, `verify_source_native_release()` | Separate bounded consumer admission from full producer replay. |
 
 ## Maintainer checklist

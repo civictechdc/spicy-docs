@@ -575,16 +575,6 @@ def _open_descriptor(
         yield stream
 
 
-def _descriptor_rows(
-    source: MemberSource,
-    blob_source: BlobSource | None,
-    member: MemberDescriptor,
-) -> Iterator[Mapping[str, Any]]:
-    label = member.object_key or member.blob_ref or "external-member"
-    with _open_descriptor(source, blob_source, member) as stream:
-        yield from _jsonl_rows(stream, label=label)
-
-
 def _read_one_json(source: MemberSource, object_key: str, byte_limit: int = MAX_ROW_BYTES) -> Mapping[str, Any]:
     with source.open(object_key) as stream:
         raw = stream.read(byte_limit + 1)
