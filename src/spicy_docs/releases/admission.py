@@ -49,7 +49,7 @@ from spicy_docs.releases.format import (
     _utc,
 )
 from spicy_docs.releases.observations import (
-    _digest_records,
+    _section_digest,
 )
 from spicy_docs.releases.partitions import (
     _payload_partitions,
@@ -287,10 +287,8 @@ def verify_source_native_admission(
     source_schema = _read_one_json(source, profile.source_schema_key)
     if source_schema != profile.source_schema:
         raise SourceNativeReleaseError(f"installed {profile.name} source schema differs")
-    schema_set_digest = _digest_records(
-        "spicyregs-source-schema-set/1",
-        "schemas",
-        [profile.source_schema_declaration()],
+    schema_set_digest = _section_digest(
+        "spicyregs-source-schema-set/1", "schemas", 1, [profile.source_schema_declaration()]
     )
     if schema_set_digest != spec["sourceNativeSchemaSetDigest"]:
         raise SourceNativeReleaseError("source-native schema-set digest differs")

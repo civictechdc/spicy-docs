@@ -12,10 +12,8 @@ from typing import Any
 from jsonschema import Draft202012Validator
 from rulespec_artifacts import (
     BlobSource,
-    FramedSection,
     MemberSource,
     VerifiedArtifact,
-    framed_section_digest,
 )
 
 from spicy_docs.releases.admission import (
@@ -37,10 +35,10 @@ from spicy_docs.releases.format import (
     SourceNativeReleaseError,
 )
 from spicy_docs.releases.observations import (
-    _digest_records,
     _ordered_rendition_rows,
     _policy_for_scope,
     _query_mappings,
+    _section_digest,
     _source_state_digest,
 )
 from spicy_docs.releases.partitions import (
@@ -91,20 +89,15 @@ def verify_source_native_release(
     query_scope = dict(profile.validate_query_scope(scopes[0]["fields"]))
     if query_scope != dict(scopes[0]["fields"]):
         raise SourceNativeReleaseError(f"{profile.name} source scope is not canonical")
-    policy_digest = framed_section_digest(
-        "spicyregs-acquisition-policy/1",
-        (
-            FramedSection(
-                "policy",
-                1,
-                (_policy_for_scope(query_scope, profile),),
-            ),
-        ),
+    policy_digest = _section_digest(
+        "spicyregs-acquisition-policy/1", "policy", 1, (_policy_for_scope(query_scope, profile),)
     )
     if policy_digest != spec["acquisitionPolicyDigest"]:
         raise SourceNativeReleaseError("acquisition-policy digest differs")
     schema_declarations = [profile.source_schema_declaration()]
-    schema_set_digest = _digest_records("spicyregs-source-schema-set/1", "schemas", schema_declarations)
+    schema_set_digest = _section_digest(
+        "spicyregs-source-schema-set/1", "schemas", len(schema_declarations), schema_declarations
+    )
     if schema_set_digest != spec["sourceNativeSchemaSetDigest"]:
         raise SourceNativeReleaseError("source-native schema-set digest differs")
     evidence_members = {member.blob_ref: member for member in by_role[ROLE_EVIDENCE] if member.blob_ref is not None}
@@ -280,27 +273,13 @@ def verify_source_native_release(
             )
             if state_digest != spec["sourceStateDigest"]:
                 raise SourceNativeReleaseError("source-state digest differs")
-            input_digest = framed_section_digest(
-                "spicyregs-input-observations/1",
-                (
-                    FramedSection(
-                        "observations",
-                        input_observation_count,
-                        replayed_observations(),
-                    ),
-                ),
+            input_digest = _section_digest(
+                "spicyregs-input-observations/1", "observations", input_observation_count, replayed_observations()
             )
             if input_digest != receipt["inputObservationDigest"]:
                 raise SourceNativeReleaseError("input-observation digest differs")
-            ledger_digest = framed_section_digest(
-                "spicyregs-acquisition-ledger/1",
-                (
-                    FramedSection(
-                        "entries",
-                        observed_ledger_count,
-                        admitted_ledger(),
-                    ),
-                ),
+            ledger_digest = _section_digest(
+                "spicyregs-acquisition-ledger/1", "entries", observed_ledger_count, admitted_ledger()
             )
             if ledger_digest != receipt["acquisitionLedgerDigest"]:
                 raise SourceNativeReleaseError("acquisition-ledger digest differs")
@@ -309,9 +288,8 @@ def verify_source_native_release(
                 connection,
                 "SELECT payload FROM pages WHERE accepted = 1 ORDER BY traversal, page",
             )
-            reconciliation_digest = framed_section_digest(
-                "spicyregs-source-reconciliation/1",
-                (FramedSection("pages", accepted_page_count, accepted_pages),),
+            reconciliation_digest = _section_digest(
+                "spicyregs-source-reconciliation/1", "pages", accepted_page_count, accepted_pages
             )
             if reconciliation_digest != receipt["reconciliationDigest"]:
                 raise SourceNativeReleaseError("source-reconciliation digest differs")

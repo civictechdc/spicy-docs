@@ -77,32 +77,8 @@ def index_pages(
         if page.traversal_index >= profile.max_traversals:
             raise SourceNativeReleaseError(f"{profile.name} acquisition exceeds its traversal bound")
         starts_window = page.window_page_index == 0
-        if previous is None:
-            if page.traversal_index != 0 or page.page_index != 0 or page.window_index != 0 or not starts_window:
-                raise SourceNativeReleaseError(f"{profile.name} acquisition must start at traversal 0 page 0")
-        elif page.traversal_index == previous.traversal_index:
-            if page.page_index != previous.page_index + 1:
-                raise SourceNativeReleaseError(f"{profile.name} page indexes are not contiguous")
-            if starts_window:
-                if previous_next is not None or page.window_index != previous.window_index + 1:
-                    raise SourceNativeReleaseError(f"{profile.name} window chain is missing or forked")
-            elif (
-                page.window_index != previous.window_index
-                or page.window_page_index != previous.window_page_index + 1
-                or page.source_cursor != previous_next
-                or page.request_key != page.source_cursor
-            ):
-                raise SourceNativeReleaseError(f"{profile.name} page chain is missing or forked")
-        else:
-            if previous_next is not None:
-                raise SourceNativeReleaseError(f"{profile.name} traversal ended before its terminal page")
-            if (
-                page.traversal_index != previous.traversal_index + 1
-                or page.page_index != 0
-                or page.window_index != 0
-                or not starts_window
-            ):
-                raise SourceNativeReleaseError(f"{profile.name} traversal indexes are not contiguous")
+        _validate_page_chain(page, previous, previous_next, profile)
+        if previous is not None and page.traversal_index != previous.traversal_index:
             ordinal = 0
         if starts_window:
             inventory = profile.traversal_check()
@@ -260,3 +236,39 @@ def index_pages(
         acquisition_checks[traversal].finish(query_scope=query_scope)
     _select_observations(connection, profile=profile)
     connection.commit()
+
+
+def _validate_page_chain(
+    page: SourceNativePage,
+    previous: SourceNativePage | None,
+    previous_next: str | None,
+    profile: SourceNativeProfile,
+) -> None:
+    """Require contiguous traversal, window, and page transitions before indexing."""
+    starts_window = page.window_page_index == 0
+    if previous is None:
+        if page.traversal_index != 0 or page.page_index != 0 or page.window_index != 0 or not starts_window:
+            raise SourceNativeReleaseError(f"{profile.name} acquisition must start at traversal 0 page 0")
+    elif page.traversal_index == previous.traversal_index:
+        if page.page_index != previous.page_index + 1:
+            raise SourceNativeReleaseError(f"{profile.name} page indexes are not contiguous")
+        if starts_window:
+            if previous_next is not None or page.window_index != previous.window_index + 1:
+                raise SourceNativeReleaseError(f"{profile.name} window chain is missing or forked")
+        elif (
+            page.window_index != previous.window_index
+            or page.window_page_index != previous.window_page_index + 1
+            or page.source_cursor != previous_next
+            or page.request_key != page.source_cursor
+        ):
+            raise SourceNativeReleaseError(f"{profile.name} page chain is missing or forked")
+    else:
+        if previous_next is not None:
+            raise SourceNativeReleaseError(f"{profile.name} traversal ended before its terminal page")
+        if (
+            page.traversal_index != previous.traversal_index + 1
+            or page.page_index != 0
+            or page.window_index != 0
+            or not starts_window
+        ):
+            raise SourceNativeReleaseError(f"{profile.name} traversal indexes are not contiguous")

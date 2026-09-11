@@ -13,7 +13,6 @@ from typing import Any
 
 from rulespec_artifacts import (
     ROOT_OBJECT_KEY,
-    FramedSection,
     LocalMemberSource,
     MemberDescriptor,
     MemberManifestReference,
@@ -21,7 +20,6 @@ from rulespec_artifacts import (
     build_artifact_root,
     canonical_json_bytes,
     describe_member_from_receipt,
-    framed_section_digest,
     schema_bundle_digest,
 )
 
@@ -59,12 +57,12 @@ from spicy_docs.releases.indexing import (
 )
 from spicy_docs.releases.observations import (
     _accepted_traversal,
-    _digest_records,
     _full_ledger_rows,
     _page_rows,
     _policy_digest,
     _query_mappings,
     _query_renditions,
+    _section_digest,
     _source_state_digest,
 )
 from spicy_docs.releases.partitions import (
@@ -217,47 +215,13 @@ class SourceNativeReleasePublisher:
         accepted_page_count = int(
             connection.execute("SELECT count(*) FROM pages WHERE traversal = ?", (accepted_traversal,)).fetchone()[0]
         )
-        partitions: list[_PayloadPartition] = []
-        for partition_id in (f"{index:02d}" for index in range(PARTITION_BUCKET_COUNT)):
-            rows_by_kind: tuple[tuple[str, Iterable[Mapping[str, Any]]], ...] = (
-                (
-                    PARTITION_LEDGER,
-                    _full_ledger_rows(connection, accepted_traversal, partition_id),
-                ),
-                (
-                    PARTITION_PAGES,
-                    _page_rows(
-                        connection,
-                        accepted_traversal,
-                        partition_id=partition_id,
-                    ),
-                ),
-                (
-                    PARTITION_RECORDS,
-                    _query_mappings(
-                        connection,
-                        record_query + "WHERE traversal = ? AND selected = 1 AND partition_id = ? "
-                        "ORDER BY source_record_id",
-                        (accepted_traversal, partition_id),
-                    ),
-                ),
-                (
-                    PARTITION_RENDITIONS,
-                    _query_renditions(connection, accepted_traversal, partition_id),
-                ),
-            )
-            for partition_kind, rows in rows_by_kind:
-                partition = _stage_partition(
-                    scratch,
-                    blob_store=blob_store,
-                    accounting=accounting,
-                    partition_kind=partition_kind,
-                    partition_id=partition_id,
-                    rows=rows,
-                )
-                if partition is not None:
-                    partitions.append(partition)
-        partitions.sort(key=lambda value: (value.partition_kind, value.partition_id))
+        partitions = _stage_indexed_partitions(
+            connection,
+            accepted_traversal=accepted_traversal,
+            scratch=scratch,
+            blob_store=blob_store,
+            accounting=accounting,
+        )
         partition_counts = {
             kind: sum(
                 partition.member.record_count or 0 for partition in partitions if partition.partition_kind == kind
@@ -272,46 +236,29 @@ class SourceNativeReleasePublisher:
         ):
             raise SourceNativeReleaseError("partitioned source-native accounting differs")
 
-        schema_set_digest = _digest_records("spicyregs-source-schema-set/1", "schemas", schema_declarations)
+        schema_set_digest = _section_digest(
+            "spicyregs-source-schema-set/1", "schemas", len(schema_declarations), schema_declarations
+        )
         state_digest = _source_state_digest(
             (len(scopes), scopes),
             (len(schema_declarations), schema_declarations),
             (published_record_count, records()),
             (rendition_count, renditions()),
         )
-        input_digest = framed_section_digest(
-            "spicyregs-input-observations/1",
-            (
-                FramedSection(
-                    "observations",
-                    input_observation_count,
-                    observations(),
-                ),
-            ),
+        input_digest = _section_digest(
+            "spicyregs-input-observations/1", "observations", input_observation_count, observations()
         )
-        ledger_digest = framed_section_digest(
+        ledger_digest = _section_digest(
             "spicyregs-acquisition-ledger/1",
-            (
-                FramedSection(
-                    "entries",
-                    published_record_count + failed_record_count,
-                    _full_ledger_rows(connection, accepted_traversal),
-                ),
-            ),
+            "entries",
+            published_record_count + failed_record_count,
+            _full_ledger_rows(connection, accepted_traversal),
         )
-        reconciliation_digest = framed_section_digest(
+        reconciliation_digest = _section_digest(
             "spicyregs-source-reconciliation/1",
-            (
-                FramedSection(
-                    "pages",
-                    accepted_page_count,
-                    _page_rows(
-                        connection,
-                        accepted_traversal,
-                        accepted_only=True,
-                    ),
-                ),
-            ),
+            "pages",
+            accepted_page_count,
+            _page_rows(connection, accepted_traversal, accepted_only=True),
         )
         release_schema_digest = schema_bundle_digest(release_schemas)
         completed_at = _instant(self._clock)
@@ -368,89 +315,16 @@ class SourceNativeReleasePublisher:
             "verifierVersion": build.producer.verifier_version,
             "warnings": [],
         }
-        scopes_bytes = b"".join(chunk for value in scopes for chunk in (canonical_json_bytes(value), b"\n"))
-        source_schema_bytes = canonical_json_bytes(profile.source_schema)
-        release_schema_bytes = canonical_json_bytes(release_schemas)
-        external_members = (
-            *evidence_descriptors,
-            *(partition.member for partition in partitions),
+        _write_metadata(
+            staging,
+            profile=profile,
+            build=build,
+            spec=spec,
+            receipt=receipt,
+            scopes=scopes,
+            release_schemas=release_schemas,
+            external_members=(*evidence_descriptors, *(partition.member for partition in partitions)),
         )
-        refs = [member.blob_ref for member in external_members]
-        if None in refs or len(set(refs)) != len(refs):
-            raise SourceNativeReleaseError(
-                "source-native external payload members must have distinct content identities"
-            )
-        publication_bytes = -1
-        for _ in range(8):
-            receipt["byteMeasurements"]["publicationBytesWritten"] = max(publication_bytes, 0)
-            receipt = _RECEIPT_SHAPE.parse(receipt)
-            receipt_bytes = canonical_json_bytes(receipt)
-            local_members = (
-                describe_member_from_receipt(
-                    object_key=SCOPES_KEY,
-                    sha256="sha256:" + hashlib.sha256(scopes_bytes).hexdigest(),
-                    role=ROLE_SCOPES,
-                    media_type="application/x-ndjson",
-                    byte_size=len(scopes_bytes),
-                    record_count=1,
-                ),
-                describe_member_from_receipt(
-                    object_key=RECEIPT_KEY,
-                    sha256="sha256:" + hashlib.sha256(receipt_bytes).hexdigest(),
-                    role=ROLE_RECEIPT,
-                    media_type="application/json",
-                    byte_size=len(receipt_bytes),
-                ),
-                describe_member_from_receipt(
-                    object_key=RELEASE_SCHEMA_KEY,
-                    sha256="sha256:" + hashlib.sha256(release_schema_bytes).hexdigest(),
-                    role=ROLE_RELEASE_SCHEMA,
-                    media_type="application/schema+json",
-                    byte_size=len(release_schema_bytes),
-                    schema_id=RELEASE_SCHEMA_ID,
-                ),
-                describe_member_from_receipt(
-                    object_key=profile.source_schema_key,
-                    sha256="sha256:" + hashlib.sha256(source_schema_bytes).hexdigest(),
-                    role=ROLE_SCHEMA,
-                    media_type="application/schema+json",
-                    byte_size=len(source_schema_bytes),
-                    schema_id=str(profile.source_schema["$id"]),
-                ),
-            )
-            manifest, manifest_bytes = MemberManifestReference.for_members(
-                scope_kind="global",
-                scope_id="source-native",
-                object_key=MANIFEST_KEY,
-                members=(*local_members, *external_members),
-            )
-            root = build_artifact_root(
-                kind=KIND,
-                spec=spec,
-                producer=build.producer,
-                manifests=(manifest,),
-                supersedes=build.supersedes,
-            )
-            root_bytes = canonical_json_bytes(root)
-            measured = (
-                len(scopes_bytes)
-                + len(receipt_bytes)
-                + len(release_schema_bytes)
-                + len(source_schema_bytes)
-                + len(manifest_bytes)
-                + len(root_bytes)
-            )
-            if measured == publication_bytes:
-                break
-            publication_bytes = measured
-        else:
-            raise SourceNativeReleaseError("source-native publication byte accounting did not stabilize")
-        write_bytes_once(staging / SCOPES_KEY, scopes_bytes)
-        write_bytes_once(staging / profile.source_schema_key, source_schema_bytes)
-        write_bytes_once(staging / RELEASE_SCHEMA_KEY, release_schema_bytes)
-        write_bytes_once(staging / RECEIPT_KEY, receipt_bytes)
-        write_bytes_once(staging / MANIFEST_KEY, manifest_bytes)
-        write_bytes_once(staging / ROOT_OBJECT_KEY, root_bytes)
         artifact = admit_artifact(
             LocalMemberSource(staging),
             blob_source=blob_store,
@@ -464,3 +338,147 @@ class SourceNativeReleasePublisher:
         )
         publish_directory_once(staging, destination)
         return PublishedSourceNativeRelease(destination, artifact)
+
+
+def _stage_indexed_partitions(
+    connection: sqlite3.Connection,
+    *,
+    accepted_traversal: int,
+    scratch: Path,
+    blob_store: SourceNativeBlobStore,
+    accounting: _ByteAccounting,
+) -> list[_PayloadPartition]:
+    """Write the four ordered payload kinds into their fixed identity buckets."""
+    partitions: list[_PayloadPartition] = []
+    for partition_id in (f"{index:02d}" for index in range(PARTITION_BUCKET_COUNT)):
+        rows_by_kind: tuple[tuple[str, Iterable[Mapping[str, Any]]], ...] = (
+            (
+                PARTITION_LEDGER,
+                _full_ledger_rows(connection, accepted_traversal, partition_id),
+            ),
+            (
+                PARTITION_PAGES,
+                _page_rows(
+                    connection,
+                    accepted_traversal,
+                    partition_id=partition_id,
+                ),
+            ),
+            (
+                PARTITION_RECORDS,
+                _query_mappings(
+                    connection,
+                    "SELECT record_payload FROM observations WHERE traversal = ? AND selected = 1 AND partition_id = ? "
+                    "ORDER BY source_record_id",
+                    (accepted_traversal, partition_id),
+                ),
+            ),
+            (
+                PARTITION_RENDITIONS,
+                _query_renditions(connection, accepted_traversal, partition_id),
+            ),
+        )
+        for partition_kind, rows in rows_by_kind:
+            partition = _stage_partition(
+                scratch,
+                blob_store=blob_store,
+                accounting=accounting,
+                partition_kind=partition_kind,
+                partition_id=partition_id,
+                rows=rows,
+            )
+            if partition is not None:
+                partitions.append(partition)
+    partitions.sort(key=lambda value: (value.partition_kind, value.partition_id))
+    return partitions
+
+
+def _write_metadata(
+    staging: Path,
+    *,
+    profile: SourceNativeProfile,
+    build: SourceNativeReleaseBuild,
+    spec: Mapping[str, Any],
+    receipt: dict[str, Any],
+    scopes: list[dict[str, Any]],
+    release_schemas: Mapping[str, Mapping[str, Any]],
+    external_members: tuple[MemberDescriptor, ...],
+) -> None:
+    """Stabilize self-reported byte accounting, then stage metadata exactly once."""
+    scopes_bytes = b"".join(chunk for value in scopes for chunk in (canonical_json_bytes(value), b"\n"))
+    source_schema_bytes = canonical_json_bytes(profile.source_schema)
+    release_schema_bytes = canonical_json_bytes(release_schemas)
+    refs = [member.blob_ref for member in external_members]
+    if None in refs or len(set(refs)) != len(refs):
+        raise SourceNativeReleaseError("source-native external payload members must have distinct content identities")
+    publication_bytes = -1
+    for _ in range(8):
+        receipt["byteMeasurements"]["publicationBytesWritten"] = max(publication_bytes, 0)
+        receipt = _RECEIPT_SHAPE.parse(receipt)
+        receipt_bytes = canonical_json_bytes(receipt)
+        local_members = (
+            describe_member_from_receipt(
+                object_key=SCOPES_KEY,
+                sha256="sha256:" + hashlib.sha256(scopes_bytes).hexdigest(),
+                role=ROLE_SCOPES,
+                media_type="application/x-ndjson",
+                byte_size=len(scopes_bytes),
+                record_count=1,
+            ),
+            describe_member_from_receipt(
+                object_key=RECEIPT_KEY,
+                sha256="sha256:" + hashlib.sha256(receipt_bytes).hexdigest(),
+                role=ROLE_RECEIPT,
+                media_type="application/json",
+                byte_size=len(receipt_bytes),
+            ),
+            describe_member_from_receipt(
+                object_key=RELEASE_SCHEMA_KEY,
+                sha256="sha256:" + hashlib.sha256(release_schema_bytes).hexdigest(),
+                role=ROLE_RELEASE_SCHEMA,
+                media_type="application/schema+json",
+                byte_size=len(release_schema_bytes),
+                schema_id=RELEASE_SCHEMA_ID,
+            ),
+            describe_member_from_receipt(
+                object_key=profile.source_schema_key,
+                sha256="sha256:" + hashlib.sha256(source_schema_bytes).hexdigest(),
+                role=ROLE_SCHEMA,
+                media_type="application/schema+json",
+                byte_size=len(source_schema_bytes),
+                schema_id=str(profile.source_schema["$id"]),
+            ),
+        )
+        manifest, manifest_bytes = MemberManifestReference.for_members(
+            scope_kind="global",
+            scope_id="source-native",
+            object_key=MANIFEST_KEY,
+            members=(*local_members, *external_members),
+        )
+        root = build_artifact_root(
+            kind=KIND,
+            spec=spec,
+            producer=build.producer,
+            manifests=(manifest,),
+            supersedes=build.supersedes,
+        )
+        root_bytes = canonical_json_bytes(root)
+        measured = (
+            len(scopes_bytes)
+            + len(receipt_bytes)
+            + len(release_schema_bytes)
+            + len(source_schema_bytes)
+            + len(manifest_bytes)
+            + len(root_bytes)
+        )
+        if measured == publication_bytes:
+            break
+        publication_bytes = measured
+    else:
+        raise SourceNativeReleaseError("source-native publication byte accounting did not stabilize")
+    write_bytes_once(staging / SCOPES_KEY, scopes_bytes)
+    write_bytes_once(staging / profile.source_schema_key, source_schema_bytes)
+    write_bytes_once(staging / RELEASE_SCHEMA_KEY, release_schema_bytes)
+    write_bytes_once(staging / RECEIPT_KEY, receipt_bytes)
+    write_bytes_once(staging / MANIFEST_KEY, manifest_bytes)
+    write_bytes_once(staging / ROOT_OBJECT_KEY, root_bytes)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import heapq
 import sqlite3
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from typing import Any
 
 from rulespec_artifacts import (
@@ -25,10 +25,6 @@ from spicy_docs.source_native_profile import (
 )
 
 
-def _policy(build: SourceNativeReleaseBuild, profile: SourceNativeProfile) -> dict[str, Any]:
-    return _policy_for_scope(build.query_scope, profile)
-
-
 def _policy_for_scope(
     query_scope: Mapping[str, Any],
     profile: SourceNativeProfile,
@@ -40,14 +36,17 @@ def _policy_for_scope(
 
 
 def _policy_digest(build: SourceNativeReleaseBuild, profile: SourceNativeProfile) -> str:
-    return framed_section_digest(
+    return _section_digest(
         "spicyregs-acquisition-policy/1",
-        (FramedSection("policy", 1, (_policy(build, profile),)),),
+        "policy",
+        1,
+        (_policy_for_scope(build.query_scope, profile),),
     )
 
 
-def _digest_records(domain: str, section: str, values: Sequence[Mapping[str, Any]]) -> str:
-    return framed_section_digest(domain, (FramedSection(section, len(values), values),))
+def _section_digest(domain: str, section: str, count: int, values: Iterable[Mapping[str, Any]]) -> str:
+    """Hash ordered rows through Rulespec with their declared count, without buffering."""
+    return framed_section_digest(domain, (FramedSection(section, count, values),))
 
 
 def _source_state_digest(
