@@ -383,6 +383,7 @@ def test_comment_source_native_boundary_has_no_sibling_product_imports() -> None
     imported: set[str] = set()
     for relative in (
         *repository.glob("src/spicy_docs/releases/*.py"),
+        *repository.glob("src/spicy_docs/sources/regulations_gov/*.py"),
         "src/spicy_docs/regulations_gov_source_native.py",
         "src/spicy_docs/source_native.py",
         "src/spicy_docs/source_native_profile.py",

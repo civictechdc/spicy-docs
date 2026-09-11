@@ -15,7 +15,6 @@ from zipfile import ZipFile
 import pytest
 from rulespec_artifacts import LocalMemberSource, Producer
 
-from spicy_docs import regulations_gov_source_native
 from spicy_docs.regulations_gov_source_native import (
     DOCKET_COLLECTION,
     DOCKET_SOURCE_SYSTEM_ID,
@@ -52,6 +51,7 @@ from spicy_docs.source_native_profiles import (
     REGULATIONS_GOV_DOCUMENT_PROFILE,
 )
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.sources.regulations_gov import acquisition
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _PRODUCER = Producer(
@@ -506,7 +506,7 @@ def test_missing_or_changed_enumerated_object_refuses_complete_snapshot(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(regulations_gov_source_native, "MAX_EVIDENCE_PACK_OBJECTS", 1)
+    monkeypatch.setattr(acquisition, "MAX_EVIDENCE_PACK_OBJECTS", 1)
     pages = list(
         iter_regulations_gov_document_pages(
             lambda _agency: _Reader([_document_object(), _document_object("EPA-2026-0001-0002")]),

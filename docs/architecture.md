@@ -35,7 +35,7 @@ identity depend on the caller.
 | --- | --- |
 | Source profiles | `sources/federal_register/profile.py`, `sources/regulations_gov/profile.py`, `sources/gao/profile.py`, `sources/public_comments/profile.py` |
 | Federal Register acquisition | `federal_register_source_native.py` |
-| Regulations.gov acquisition | `regulations_gov_source_native.py` |
+| Regulations.gov | `sources/regulations_gov/`: `definitions.py` declares fields and data shapes; `validation.py` checks source structures; `records.py` classifies records; `schemas.py` declares schemas; `scope.py` checks scope and completeness; `evidence.py` packs/decodes captures; `acquisition.py` captures pages. `regulations_gov_source_native.py` preserves public imports. |
 | GAO exact-page capture | `gao_product_pages_source_native.py` |
 | Captured public comments | `spicy_regs_public_tables_source_native.py` |
 | Raw readers | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |
