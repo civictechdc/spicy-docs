@@ -96,6 +96,29 @@ def test_injected_page_fetcher_refuses_incomplete_or_cyclic_inventory() -> None:
         )
 
 
+def test_injected_page_fetcher_refuses_off_source_cursor_before_fetching() -> None:
+    scope = {"publishedFrom": "2026-04-13", "publishedThrough": "2026-04-13"}
+    initial = federal_register_documents_url(scope)
+    off_source_url = "https://another-publisher.example.test/api/v1/documents.json?page=2"
+    # Synthetic source response: plausible pagination must still stay on the source host.
+    response = federal_response(
+        _document(),
+        next_page_url=off_source_url,
+        count=2,
+        total_pages=2,
+    )
+    requests: list[str] = []
+
+    def fetch(url: str) -> bytes:
+        requests.append(url)
+        return response
+
+    with pytest.raises(FederalRegisterSourceError, match="unsafe page cursor"):
+        list(iter_federal_register_pages(fetch, query_scope=scope, traversals=1))
+
+    assert requests == [initial]
+
+
 def test_capped_interval_splits_into_exact_ordered_leaf_evidence(tmp_path: Path) -> None:
     scope = {"publishedFrom": "2026-04-13", "publishedThrough": "2026-04-14"}
     requests: list[tuple[str, str]] = []
