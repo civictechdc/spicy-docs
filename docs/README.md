@@ -19,6 +19,7 @@ states the adopted format and publication requirements.
 | Run a campaign, replay retained evidence, or inspect corpus receipts | [Operational modules](cli.md#campaigns-replay-and-source-tools) and [corpus diagnostics](../tools/README.md) |
 | Understand why an unusual rule exists | [Acquisition decisions](decisions.md) and [maintenance decisions](maintenance-decisions.md) |
 | Update these guides or recover the former wiki | [Documentation maintenance and provenance](documentation.md) |
+| Plan FEC and related-data acquisition from the completed research | [FEC research and integration handoff](research/fec-data-2026-09-11.md) |
 
 Keep source observations, run measurements, and large captures with their corpus
 receipts. Commit only bounded fixtures and the guidance needed to reproduce or
