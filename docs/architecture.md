@@ -45,7 +45,8 @@ identity depend on the caller.
 | Observation selection and publication | `releases/observations.py`, `releases/indexing.py`, `releases/publish.py`; immutable filesystem publication in `publication.py` |
 | Full offline verification | `releases/replay.py` reconstructs evidence; `releases/verify.py` compares published output |
 | Bounded admission and reading | `releases/admission.py`, `releases/reader.py` |
-| Public-table output and reading | `public_table.py`, `public_table_profiles.py` |
+| Public-table output | `public_tables/format.py` defines layout; `publish.py` indexes and writes; `verify.py` owns admission and the full row gate. `public_table_profiles.py` owns source projections. |
+| Public-table consumption | `public_tables/reader.py` owns locations and reading; `iceberg.py` adopts exact files through an injected table. `public_table.py` preserves public imports. |
 | Transport | `transport/acquisition.py`, `transport/retry.py`, `sources/zyte.py` |
 | Operator commands | `source_native_cli.py` handles commands; `cli/arguments.py` defines syntax; `cli/sources.py` registers scope, acquisition, errors, and optional tables |
 

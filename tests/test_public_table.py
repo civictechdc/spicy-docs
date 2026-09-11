@@ -762,7 +762,9 @@ def test_public_table_module_has_no_sibling_product_imports() -> None:
 
     repository = Path(__file__).resolve().parents[1]
     imported: set[str] = set()
+    implementations = sorted(repository.glob("src/spicy_docs/public_tables/*.py"))
     for relative in (
+        *implementations,
         "src/spicy_docs/public_table.py",
         "src/spicy_docs/public_table_profiles.py",
     ):
@@ -775,10 +777,11 @@ def test_public_table_module_has_no_sibling_product_imports() -> None:
 
     assert not {name for name in imported if name.startswith(("docspec", "refspec", "spicysearch", "spicy_regs"))}
 
-    public_module = ast.parse((repository / "src/spicy_docs/public_table.py").read_text(encoding="utf-8"))
+    public_modules = [ast.parse(path.read_text(encoding="utf-8")) for path in implementations]
     public_arguments = {
         argument.arg
-        for node in ast.walk(public_module)
+        for module in public_modules
+        for node in ast.walk(module)
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
         for argument in (*node.args.args, *node.args.kwonlyargs)
     }
