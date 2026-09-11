@@ -753,8 +753,7 @@ def _tie_group_is_volatile_only(
 
     reference: str | None = None
     for (payload,) in connection.execute(
-        "SELECT record_payload FROM observations "
-        "WHERE traversal = ? AND source_record_id = ? AND source_version IS ?",
+        "SELECT record_payload FROM observations WHERE traversal = ? AND source_record_id = ? AND source_version IS ?",
         (traversal, source_record_id, source_version),
     ):
         wrapped = parse_canonical_json(bytes(payload))
@@ -1054,9 +1053,7 @@ def _page_rows(
     # Created here rather than beside `observations_selection`, because that
     # function also serves the producer replay gate's observations table, which
     # has no `page` column at all -- the statement would raise there.
-    connection.execute(
-        "CREATE INDEX IF NOT EXISTS observations_page ON observations (traversal, page, ordinal)"
-    )
+    connection.execute("CREATE INDEX IF NOT EXISTS observations_page ON observations (traversal, page, ordinal)")
     conditions: list[str] = []
     parameters: list[object] = []
     if accepted_only:
@@ -2579,9 +2576,7 @@ def verify_source_native_release(
                 raise SourceNativeReleaseError("acquisition ledger differs from replayed evidence")
             if observed_success_count != published_record_count:
                 raise SourceNativeReleaseError("acquisition-ledger count differs")
-            observed_failed_count = (
-                observed_deterministic_count + observed_transient_count + observed_unclassed_count
-            )
+            observed_failed_count = observed_deterministic_count + observed_transient_count + observed_unclassed_count
             if (
                 receipt.get("deterministicFailureCount", 0) != observed_deterministic_count
                 or receipt.get("transientFailureCount", 0) != observed_transient_count

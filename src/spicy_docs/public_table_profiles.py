@@ -54,33 +54,21 @@ class PublicTableProfile:
 
     def project(self, source_row: Mapping[str, Any]) -> dict[str, str | None]:
         if source_row.get("schemaName") != self.source_schema_name:
-            raise PublicTableProjectionError(
-                f"{self.table_name} source schema differs from {self.source_schema_name}"
-            )
+            raise PublicTableProjectionError(f"{self.table_name} source schema differs from {self.source_schema_name}")
         record = source_row.get("record")
         if not isinstance(record, Mapping):
-            raise PublicTableProjectionError(
-                f"{self.table_name} source-native row has no record object"
-            )
+            raise PublicTableProjectionError(f"{self.table_name} source-native row has no record object")
         projected = self.project_source_record(dict(record))
         if set(projected) != set(self.columns):
-            raise PublicTableProjectionError(
-                f"{self.table_name} public columns differ from its stable schema"
-            )
-        normalized = {
-            name: _public_text(projected[name], field=name) for name in self.columns
-        }
+            raise PublicTableProjectionError(f"{self.table_name} public columns differ from its stable schema")
+        normalized = {name: _public_text(projected[name], field=name) for name in self.columns}
         identity = normalized[self.primary_key]
         if not identity or identity != source_row.get("sourceRecordId"):
-            raise PublicTableProjectionError(
-                f"{self.table_name} primary key differs from the source record identity"
-            )
+            raise PublicTableProjectionError(f"{self.table_name} primary key differs from the source record identity")
         for name in self.partition_columns:
             value = normalized[name]
             if value is None or not value:
-                raise PublicTableProjectionError(
-                    f"{self.table_name} partition column {name} is empty"
-                )
+                raise PublicTableProjectionError(f"{self.table_name} partition column {name} is empty")
         return normalized
 
 
@@ -95,9 +83,7 @@ def _public_text(value: object, *, field: str) -> str | None:
         return "true" if value else "false"
     if isinstance(value, int):
         return str(value)
-    raise PublicTableProjectionError(
-        f"public field {field} has unsupported value type {type(value).__name__}"
-    )
+    raise PublicTableProjectionError(f"public field {field} has unsupported value type {type(value).__name__}")
 
 
 REGULATIONS_GOV_DOCUMENT_PUBLIC_TABLE: Final = PublicTableProfile(

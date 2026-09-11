@@ -44,10 +44,7 @@ def test_the_1_0_entry_is_frozen_and_is_not_the_current_bundle() -> None:
     """
 
     assert KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS["1.0"] == PUBLISHED_1_0_DIGEST
-    assert (
-        KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS["1.0"]
-        != schema_bundle_digest(installed_release_schema_bundle())
-    )
+    assert KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS["1.0"] != schema_bundle_digest(installed_release_schema_bundle())
 
 
 def test_the_installed_bundle_is_one_the_reader_accepts() -> None:
@@ -58,15 +55,10 @@ def test_the_installed_bundle_is_one_the_reader_accepts() -> None:
     unreadable by the code that wrote it.
     """
 
-    assert (
-        schema_bundle_digest(installed_release_schema_bundle())
-        in KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS.values()
-    )
+    assert schema_bundle_digest(installed_release_schema_bundle()) in KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS.values()
 
 
 def test_no_two_accepted_bundle_digests_are_the_same_value() -> None:
     """Catches a future entry written as a copy of the current one."""
 
-    assert len(set(KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS.values())) == len(
-        KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS
-    )
+    assert len(set(KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS.values())) == len(KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS)

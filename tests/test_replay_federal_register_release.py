@@ -276,7 +276,10 @@ def test_local_record_scope_validator_matches_canonical_behavior() -> None:
     window = (date(2026, 8, 25), date(2026, 8, 25))
     in_window = {"publication_date": "2026-08-25"}
     out_of_window = {"publication_date": "2026-08-26"}
-    for validate in (FEDERAL_REGISTER_PROFILE.validate_record_scope, replay_tool.FEDERAL_REGISTER_PROFILE.validate_record_scope):
+    for validate in (
+        FEDERAL_REGISTER_PROFILE.validate_record_scope,
+        replay_tool.FEDERAL_REGISTER_PROFILE.validate_record_scope,
+    ):
         validate(in_window, query_scope={}, page_window=window)  # does not raise
         with pytest.raises(Exception, match="date window"):
             validate(out_of_window, query_scope={}, page_window=window)

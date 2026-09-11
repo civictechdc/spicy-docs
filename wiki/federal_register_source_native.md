@@ -439,6 +439,7 @@ scope = {
 }
 
 with httpx.Client(timeout=60.0, follow_redirects=True) as client:
+
     def fetch(url: str) -> bytes:
         response = client.get(url)
         response.raise_for_status()

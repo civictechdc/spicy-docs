@@ -99,7 +99,9 @@ def _next_page(response: Mapping[str, Any], *, seen_urls: set[str]) -> str | Non
     return None
 
 
-def _records_included(response: Mapping[str, Any], *, query_scope: Mapping[str, Any], page_window: object | None) -> bool:
+def _records_included(
+    response: Mapping[str, Any], *, query_scope: Mapping[str, Any], page_window: object | None
+) -> bool:
     del response, query_scope, page_window
     return True
 

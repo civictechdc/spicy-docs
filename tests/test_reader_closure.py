@@ -84,6 +84,4 @@ def test_each_reader_module_is_guarded_individually() -> None:
             text=True,
             check=False,
         )
-        assert completed.returncode == 0, (
-            f"{module} pulled in heavy modules: {completed.stdout!r} {completed.stderr}"
-        )
+        assert completed.returncode == 0, f"{module} pulled in heavy modules: {completed.stdout!r} {completed.stderr}"

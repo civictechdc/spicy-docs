@@ -158,10 +158,7 @@ class _ObjectReader:
 def _object(record: Mapping[str, Any], *, observation: str) -> _Object:
     identity = str(record["data"]["id"])  # type: ignore[index]
     return _Object(
-        key=(
-            f"raw-data/EPA/EPA-2026-0001/text-{observation}/comments/"
-            f"{identity}.json"
-        ),
+        key=(f"raw-data/EPA/EPA-2026-0001/text-{observation}/comments/{identity}.json"),
         etag=f'"{observation}-etag"',
         version_id=f"{observation}-version",
         content=json.dumps(record, indent=2).encode(),
@@ -407,9 +404,7 @@ def test_source_public_tables_preserve_proven_columns(
     expected: Mapping[str, Any],
 ) -> None:
     identity = (
-        str(record["document_number"])
-        if profile is FEDERAL_REGISTER_PUBLIC_TABLE
-        else str(record["data"]["id"])  # type: ignore[index]
+        str(record["document_number"]) if profile is FEDERAL_REGISTER_PUBLIC_TABLE else str(record["data"]["id"])  # type: ignore[index]
     )
     source = _SourceStub(profile, [_source_row(profile, identity, record)])
     destination = tmp_path / profile.table_name
@@ -577,9 +572,7 @@ def test_iceberg_sink_adopts_exact_members_in_one_standard_snapshot(tmp_path: Pa
     snapshot = IcebergPublicTableSink(table).publish(reader)
 
     assert snapshot == {"snapshot-id": 123}
-    assert table.calls == [
-        ([str(destination / key) for key in reader.object_keys], True)
-    ]
+    assert table.calls == [([str(destination / key) for key in reader.object_keys], True)]
 
     with pytest.raises(PublicTableError, match="new empty table"):
         IcebergPublicTableSink(table).publish(reader)
@@ -626,11 +619,8 @@ def test_remote_location_refuses_a_different_artifact_address(tmp_path: Path) ->
         PublicTableArtifactLocation.content_addressed_remote(
             LocalMemberSource(first.root),
             expected_pin=first.artifact.pin,
-            duckdb_base_uri=(
-                f"https://data.example.test/artifacts/sha256/{second_digest}"
-            ),
+            duckdb_base_uri=(f"https://data.example.test/artifacts/sha256/{second_digest}"),
         )
-
 
 
 _HTTPFS_TIMEOUT_SECONDS = 30
@@ -745,9 +735,7 @@ def test_duckdb_reads_admitted_members_over_anonymous_http_ranges(tmp_path: Path
             location = PublicTableArtifactLocation.content_addressed_remote(
                 LocalMemberSource(destination),
                 expected_pin=published.artifact.pin,
-                duckdb_base_uri=(
-                    f"http://{host}:{port}/artifacts/sha256/{digest}"
-                ),
+                duckdb_base_uri=(f"http://{host}:{port}/artifacts/sha256/{digest}"),
             )
             reader = PublicTableReader(
                 location,

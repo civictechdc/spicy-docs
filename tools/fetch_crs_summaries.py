@@ -113,9 +113,7 @@ def fetch_one(client: httpx.Client, report_id: str, api_key: str) -> dict[str, A
                 "refused. Stopping rather than continuing or falling back."
             )
         if response.status_code == 429 or response.status_code >= 500:
-            raise _RetryableStatus(
-                "retryable congress.gov response", request=response.request, response=response
-            )
+            raise _RetryableStatus("retryable congress.gov response", request=response.request, response=response)
         response.raise_for_status()
         if "json" not in (response.headers.get("content-type") or ""):
             raise ValueError(f"{report_id}: not JSON ({response.headers.get('content-type')})")
@@ -162,12 +160,15 @@ def run(
     )
 
     ok = failed = 0
-    with httpx.Client(
-        timeout=httpx.Timeout(60.0, connect=30.0),
-        follow_redirects=True,
-        headers={"Accept": "application/json", "User-Agent": USER_AGENT},
-        transport=transport,
-    ) as client, output.open("a") as sink:
+    with (
+        httpx.Client(
+            timeout=httpx.Timeout(60.0, connect=30.0),
+            follow_redirects=True,
+            headers={"Accept": "application/json", "User-Agent": USER_AGENT},
+            transport=transport,
+        ) as client,
+        output.open("a") as sink,
+    ):
         last = 0.0
         for index, report_id in enumerate(todo, start=1):
             wait = delay_seconds - (time.monotonic() - last)
@@ -182,9 +183,7 @@ def run(
                 row = {
                     "reportId": report_id,
                     "status": "failed",
-                    "error": scrub_credential(
-                        f"{type(error).__name__}: {error}", api_key
-                    )[:300],
+                    "error": scrub_credential(f"{type(error).__name__}: {error}", api_key)[:300],
                     "sourceParquet": str(parquet),
                 }
                 failed += 1

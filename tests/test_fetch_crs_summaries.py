@@ -63,8 +63,7 @@ def test_a_non_json_200_is_not_a_success(tmp_path: Path) -> None:
     output = tmp_path / "out.jsonl"
 
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, text="<html>Just a moment...</html>",
-                              headers={"content-type": "text/html"})
+        return httpx.Response(200, text="<html>Just a moment...</html>", headers={"content-type": "text/html"})
 
     run(parquet, output, api_key="k", delay_seconds=0.0, transport=_transport(handler))
 
@@ -88,7 +87,7 @@ def test_a_403_aborts_the_run_rather_than_being_recorded(tmp_path: Path) -> None
 
 
 def test_a_recorded_failure_is_retried_and_a_success_is_not(tmp_path: Path) -> None:
-    """"Asked and got nothing" must stay distinct from "never asked".
+    """ "Asked and got nothing" must stay distinct from "never asked".
 
     Skipping any row already present converts an outage into a receipt that
     reads as coverage -- the defect that bit the GovInfo census.
@@ -96,8 +95,10 @@ def test_a_recorded_failure_is_retried_and_a_success_is_not(tmp_path: Path) -> N
     parquet = _parquet(tmp_path, ["R1", "R2"])
     output = tmp_path / "out.jsonl"
     output.write_text(
-        json.dumps({"reportId": "R1", "status": "ok"}) + "\n"
-        + json.dumps({"reportId": "R2", "status": "failed"}) + "\n"
+        json.dumps({"reportId": "R1", "status": "ok"})
+        + "\n"
+        + json.dumps({"reportId": "R2", "status": "failed"})
+        + "\n"
     )
     asked: list[str] = []
 

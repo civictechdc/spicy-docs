@@ -119,6 +119,7 @@ from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 #: ``tools/fr_discarded_distinctness.py``'s ``RECEIPT_PATH``.
 _RECEIPT_PATH: tuple[str, str] = ("receipts", "publication.json")
 
+
 #: Mirrors ``source_native_profiles._federal_register_record_scope`` (private
 #: to that module). See the module docstring's NO FALLBACK section for why
 #: this is copied rather than imported from ``source_native_profiles``.

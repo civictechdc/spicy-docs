@@ -195,8 +195,7 @@ def census(release_root: Path, blob_store: Path) -> dict[str, Any]:
         "discardedThatAreTrueReobservations": len(true_reobs),
         "distinctDocumentsPopulation": "discarded observations differing from the survivor on at "
         "least one of type/title/agencies/abstract",
-        "trueReobservationsPopulation": "discarded observations identical to the survivor on all "
-        "four compared fields",
+        "trueReobservationsPopulation": "discarded observations identical to the survivor on all four compared fields",
         "differingFieldCounts": dict(field_diff),
         "differingFieldCountsPopulation": "of discardedThatAreDistinctDocuments, count differing in "
         "this field; one observation can count under several",
@@ -215,8 +214,7 @@ def census(release_root: Path, blob_store: Path) -> dict[str, Any]:
         },
         "adjudicationLimit": {
             "capturedFields": sorted(available_fields),
-            "capturedFieldsPopulation": "distinct field names seen across the first 5,000 evidence "
-            "result rows",
+            "capturedFieldsPopulation": "distinct field names seen across the first 5,000 evidence result rows",
             "correctionOfCaptured": "correction_of" in available_fields,
             "why": "RefSpec resolved the seven modern-form collisions from document bodies because "
             "correction_of answered null. Here the field was never requested by the "

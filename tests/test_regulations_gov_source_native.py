@@ -901,7 +901,7 @@ def test_release_collapses_identical_record_digests_with_differing_raw_bytes(
         clock=_completed_at,
     ).publish(
         fixture.iter_pages(
-            lambda agency: (_Reader(objects) if agency == "ACF" else pytest.fail("wrong agency")),
+            lambda agency: _Reader(objects) if agency == "ACF" else pytest.fail("wrong agency"),
             query_scope=fixture.scope,
         ),
         build=_build(fixture.scope),
@@ -967,12 +967,8 @@ def test_document_release_selects_newest_observation_and_counts_discard(tmp_path
             lambda agency: (
                 _Reader(
                     [
-                        _document_object(
-                            identity, value=older, tag="1", agency="ACF", docket_id="ACF-2021-0001"
-                        ),
-                        _document_object(
-                            identity, value=newer, tag="2", agency="ACF", docket_id="ACF-2021-0001"
-                        ),
+                        _document_object(identity, value=older, tag="1", agency="ACF", docket_id="ACF-2021-0001"),
+                        _document_object(identity, value=newer, tag="2", agency="ACF", docket_id="ACF-2021-0001"),
                     ]
                 )
                 if agency == "ACF"

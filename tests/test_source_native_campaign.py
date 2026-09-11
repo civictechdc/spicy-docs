@@ -60,18 +60,25 @@ class FakeRunner:
             receipts_dir = destination / "receipts"
             receipts_dir.mkdir()
             (receipts_dir / "publication.json").write_text(
-                json.dumps({"verifierImplementationId": _flag(command, "--implementation-id")}), encoding="utf-8",
+                json.dumps({"verifierImplementationId": _flag(command, "--implementation-id")}),
+                encoding="utf-8",
             )
             payload = {
-                "ok": True, "command": "publish", "source": source, "release": str(destination.resolve()),
+                "ok": True,
+                "command": "publish",
+                "source": source,
+                "release": str(destination.resolve()),
                 "logicalId": f"urn:spicy-docs:test:{source}:{agency}",
                 "artifactDigest": f"sha256:{source}-{agency}",
             }
         else:
             payload = {
-                "ok": True, "command": "verify", "source": source,
+                "ok": True,
+                "command": "verify",
+                "source": source,
                 "release": str(Path(_flag(command, "--release")).resolve()),
-                "logicalId": _flag(command, "--logical-id"), "artifactDigest": _flag(command, "--artifact-digest"),
+                "logicalId": _flag(command, "--logical-id"),
+                "artifactDigest": _flag(command, "--artifact-digest"),
             }
         _append(log_path, self.noise + json.dumps(payload) + "\n")
         return 0
@@ -87,12 +94,20 @@ def _argv(
     concurrency: int = 1,
 ) -> list[str]:
     argv = [
-        "--window-since", "2021-01-01", "--window-until", "2025-12-31",
-        "--destination-root", str(tmp_path / "out"),
-        "--blob-store", str(tmp_path / "blobs"),
-        "--implementation-id", "git+file://spicy-docs@testsha",
-        "--python", "python3",
-        "--concurrency", str(concurrency),
+        "--window-since",
+        "2021-01-01",
+        "--window-until",
+        "2025-12-31",
+        "--destination-root",
+        str(tmp_path / "out"),
+        "--blob-store",
+        str(tmp_path / "blobs"),
+        "--implementation-id",
+        "git+file://spicy-docs@testsha",
+        "--python",
+        "python3",
+        "--concurrency",
+        str(concurrency),
         "--verify" if verify else "--no-verify",
     ]
     for agency in agencies:
@@ -111,8 +126,14 @@ def _seed_receipt(tmp_path: Path, name: str, *, release: Path, logical_id: str =
     receipts_dir.mkdir(parents=True, exist_ok=True)
     path = receipts_dir / f"{name}.json"
     path.write_text(
-        json.dumps({"ok": True, "release": str(release.resolve()), "logicalId": logical_id,
-                    "artifactDigest": "sha256:pre-existing"}),
+        json.dumps(
+            {
+                "ok": True,
+                "release": str(release.resolve()),
+                "logicalId": logical_id,
+                "artifactDigest": "sha256:pre-existing",
+            }
+        ),
         encoding="utf-8",
     )
     return path
@@ -123,7 +144,8 @@ def _seed_publication_receipt(destination: Path, *, verifier_implementation_id: 
     receipts_dir = destination / "receipts"
     receipts_dir.mkdir(parents=True, exist_ok=True)
     (receipts_dir / "publication.json").write_text(
-        json.dumps({"verifierImplementationId": verifier_implementation_id}), encoding="utf-8",
+        json.dumps({"verifierImplementationId": verifier_implementation_id}),
+        encoding="utf-8",
     )
 
 
@@ -212,7 +234,9 @@ def test_verify_uses_the_id_that_actually_published_an_older_release(tmp_path: P
     exit_code = main(_argv(tmp_path, agencies=["EPA"], verify=True), run_subprocess=runner, clock=_clock)
     assert exit_code == 0
 
-    docket_verify = next(call for call in runner.calls if call[3] == "verify" and _flag(call, "--source") == "regulations-dockets")
+    docket_verify = next(
+        call for call in runner.calls if call[3] == "verify" and _flag(call, "--source") == "regulations-dockets"
+    )
     assert _flag(docket_verify, "--accepted-verifier-implementation-id") == "git+file://spicy-docs@oldsha"
 
 
@@ -290,7 +314,9 @@ def test_skip_when_already_receipted_but_still_verifies(tmp_path: Path) -> None:
     assert ("regulations-dockets", "EPA") not in published
     assert ("regulations-documents", "EPA") in published
 
-    docket_verify = next(call for call in runner.calls if call[3] == "verify" and _flag(call, "--source") == "regulations-dockets")
+    docket_verify = next(
+        call for call in runner.calls if call[3] == "verify" and _flag(call, "--source") == "regulations-dockets"
+    )
     assert _flag(docket_verify, "--logical-id") == "urn:pre-existing:dockets"
     assert _flag(docket_verify, "--artifact-digest") == "sha256:pre-existing"
     assert _flag(docket_verify, "--accepted-verifier-implementation-id") == "git+file://spicy-docs@testsha"
@@ -337,7 +363,10 @@ def test_stale_verify_receipt_never_stands_in_for_a_republish(
 
     docket_calls = [call[3] for call in runner.calls if _flag(call, "--source") == "regulations-dockets"]
     assert docket_calls == ["publish", "verify"]
-    assert json.loads(verify_path.read_text(encoding="utf-8"))["logicalId"] == "urn:spicy-docs:test:regulations-dockets:EPA"
+    assert (
+        json.loads(verify_path.read_text(encoding="utf-8"))["logicalId"]
+        == "urn:spicy-docs:test:regulations-dockets:EPA"
+    )
 
 
 def test_receipt_naming_another_release_is_ignored(tmp_path: Path) -> None:
@@ -395,7 +424,9 @@ def test_second_runner_refuses_a_locked_root(tmp_path: Path, capsys: pytest.Capt
     assert json.loads(lock_path.read_text(encoding="utf-8"))["pid"] == 4242  # the holder's lock is left alone
 
 
-def test_dry_run_prints_commands_in_order_and_touches_nothing(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_dry_run_prints_commands_in_order_and_touches_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     argv = _argv(tmp_path, agencies=["EPA", "FDA"], verify=True, dry_run=True)
     exit_code = main(argv, run_subprocess=FakeRunner(), clock=_clock)
     assert exit_code == 0

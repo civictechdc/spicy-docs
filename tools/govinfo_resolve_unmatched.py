@@ -75,7 +75,7 @@ def _is_fusion_of(granule_id: str, number: str) -> bool:
         return True
     if not granule_id.startswith(number):
         return False
-    return not granule_id[len(number):len(number) + 1].isdigit()
+    return not granule_id[len(number) : len(number) + 1].isdigit()
 
 
 def granule_ids(date: str, key: str, timeout: float) -> tuple[list[str], int | None, int | None]:

@@ -48,7 +48,7 @@ def _mods(granules: list[str] | list[tuple[str, str]]) -> bytes:
             f"<extension><accessId>{access}</accessId></extension>"
             f"</relatedItem>"
         )
-    return f'<mods {MODS_NS}>{"".join(parts)}</mods>'.encode()
+    return f"<mods {MODS_NS}>{''.join(parts)}</mods>".encode()
 
 
 def _transport(pages: dict[str, bytes], seen: list[httpx.Request]) -> httpx.MockTransport:
@@ -66,8 +66,13 @@ def _run(tmp_path: Path, records, pages, *, seen=None) -> list[dict[str, Any]]:
     root, blobs = records_release(tmp_path, "release", records)
     output = tmp_path / "out.jsonl"
     census(
-        root, blobs, output,
-        api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+        root,
+        blobs,
+        output,
+        api_key=None,
+        through="1999-12-31",
+        page_size=1000,
+        min_interval_seconds=0.0,
         transport=_transport(pages, seen if seen is not None else []),
     )
     return [json.loads(line) for line in output.read_text().splitlines() if line.strip()]
@@ -154,9 +159,7 @@ def test_a_401_aborts_the_run_rather_than_being_recorded_and_passed_over(
     tmp_path: Path,
 ) -> None:
     """A keyless route answering 401 means the premise failed. Stop."""
-    root, blobs = records_release(
-        tmp_path, "release", [_line("95-1", "1995-04-10"), _line("95-2", "1995-04-11")]
-    )
+    root, blobs = records_release(tmp_path, "release", [_line("95-1", "1995-04-10"), _line("95-2", "1995-04-11")])
     seen: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -165,8 +168,13 @@ def test_a_401_aborts_the_run_rather_than_being_recorded_and_passed_over(
 
     with pytest.raises(CredentialRefusedError, match="supposed to need no credential"):
         census(
-            root, blobs, tmp_path / "out.jsonl",
-            api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+            root,
+            blobs,
+            tmp_path / "out.jsonl",
+            api_key=None,
+            through="1999-12-31",
+            page_size=1000,
+            min_interval_seconds=0.0,
             transport=httpx.MockTransport(handler),
         )
 
@@ -183,8 +191,13 @@ def test_a_403_aborts_and_is_never_retried(tmp_path: Path) -> None:
 
     with pytest.raises(CredentialRefusedError):
         census(
-            root, blobs, tmp_path / "out.jsonl",
-            api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+            root,
+            blobs,
+            tmp_path / "out.jsonl",
+            api_key=None,
+            through="1999-12-31",
+            page_size=1000,
+            min_interval_seconds=0.0,
             transport=httpx.MockTransport(handler),
         )
 
@@ -199,16 +212,18 @@ def test_a_resumed_run_refetches_nothing_already_recorded(tmp_path: Path) -> Non
     # A row as a real run writes it, carrying the corpus it was computed against.
     digest = json.loads((root / "artifact.json").read_text())["artifactDigest"]
     output.write_text(
-        json.dumps(
-            {"publicationDate": "1995-04-10", "status": "listed", "sourceReleaseDigest": digest}
-        )
-        + "\n"
+        json.dumps({"publicationDate": "1995-04-10", "status": "listed", "sourceReleaseDigest": digest}) + "\n"
     )
 
     seen: list[httpx.Request] = []
     census(
-        root, blobs, output,
-        api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+        root,
+        blobs,
+        output,
+        api_key=None,
+        through="1999-12-31",
+        page_size=1000,
+        min_interval_seconds=0.0,
         transport=_transport(pages, seen),
     )
 
@@ -221,8 +236,13 @@ def test_the_through_date_bounds_the_run(tmp_path: Path) -> None:
     root, blobs = records_release(tmp_path, "release", records)
     seen: list[httpx.Request] = []
     census(
-        root, blobs, tmp_path / "out.jsonl",
-        api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+        root,
+        blobs,
+        tmp_path / "out.jsonl",
+        api_key=None,
+        through="1999-12-31",
+        page_size=1000,
+        min_interval_seconds=0.0,
         transport=_transport(pages, seen),
     )
 
@@ -237,10 +257,7 @@ def test_the_parser_reads_the_saved_sample(tmp_path: Path) -> None:
     constituents and zero ids: accessId is an element under extension, not an
     identifier[@type='accessId'].
     """
-    sample = (
-        Path.home()
-        / "Work/corpora/supply-2026-09-02/receipts/govinfo-mods-sample-FR-1994-01-03.xml"
-    )
+    sample = Path.home() / "Work/corpora/supply-2026-09-02/receipts/govinfo-mods-sample-FR-1994-01-03.xml"
     if not sample.exists():
         pytest.skip("saved MODS sample not present")
 
@@ -323,9 +340,7 @@ def test_resume_refuses_a_file_from_another_release(tmp_path) -> None:
     from tools.govinfo_granule_census import _guard_resume_release
 
     output = tmp_path / "census.jsonl"
-    output.write_text(
-        json.dumps({"publicationDate": "1994-01-03", "sourceReleaseDigest": "sha256:aaa"}) + "\n"
-    )
+    output.write_text(json.dumps({"publicationDate": "1994-01-03", "sourceReleaseDigest": "sha256:aaa"}) + "\n")
     _guard_resume_release(output, "sha256:aaa", None)  # same corpus: fine
     with pytest.raises(SystemExit, match="mix two corpora"):
         _guard_resume_release(output, "sha256:bbb", None)

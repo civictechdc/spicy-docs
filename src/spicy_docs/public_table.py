@@ -115,16 +115,16 @@ class PublicTableBuild:
             raise PublicTableError(
                 f"public-table producer product must be one of {sorted(SUPPORTED_PRODUCER_PRODUCTS)}"
             )
-        if (
-            self.producer.verifier_id != VERIFIER_ID
-            or self.producer.verifier_version != VERIFIER_VERSION
-        ):
+        if self.producer.verifier_id != VERIFIER_ID or self.producer.verifier_version != VERIFIER_VERSION:
             raise PublicTableError("public-table producer names an unsupported verifier")
-        if min(
-            self.max_rows_per_member,
-            self.max_rows_per_batch,
-            self.max_batch_bytes,
-        ) < 1:
+        if (
+            min(
+                self.max_rows_per_member,
+                self.max_rows_per_batch,
+                self.max_batch_bytes,
+            )
+            < 1
+        ):
             raise PublicTableError("public-table physical bounds must be positive")
 
 
@@ -154,9 +154,7 @@ class PublicTableArtifactLocation:
     ) -> None:
         local = Path(local_root).absolute() if local_root is not None else None
         if (local is None) == (duckdb_base_uri is None):
-            raise PublicTableError(
-                "public-table location must be exactly one local or remote artifact"
-            )
+            raise PublicTableError("public-table location must be exactly one local or remote artifact")
         self.source = source
         self.expected_pin = expected_pin
         self._local_root = local
@@ -223,9 +221,7 @@ class PublicTableArtifactLocation:
         if self._local_root is not None:
             return str(self._local_member(object_key))
         if self._iceberg_base_uri is None:
-            raise PublicTableError(
-                "remote public-table location has no content-addressed Iceberg base"
-            )
+            raise PublicTableError("remote public-table location has no content-addressed Iceberg base")
         return f"{self._iceberg_base_uri}/{quote(object_key, safe='/=._-')}"
 
     def _local_member(self, object_key: str) -> Path:
@@ -247,11 +243,7 @@ def _content_addressed_base(
     selected = value.rstrip("/")
     parsed = urlparse(selected)
     scheme_allowed = parsed.scheme in allowed_schemes
-    if (
-        parsed.scheme == "http"
-        and allow_loopback_http
-        and parsed.hostname in {"127.0.0.1", "::1", "localhost"}
-    ):
+    if parsed.scheme == "http" and allow_loopback_http and parsed.hostname in {"127.0.0.1", "::1", "localhost"}:
         scheme_allowed = True
     digest = expected_pin.artifact_digest
     digest_hex = digest.removeprefix("sha256:")
@@ -266,9 +258,7 @@ def _content_addressed_base(
         or re.fullmatch(r"[0-9a-f]{64}", digest_hex) is None
         or path_parts[-2:] != ["sha256", digest_hex]
     ):
-        raise PublicTableError(
-            f"{purpose} base must be a clean content-addressed artifact URI"
-        )
+        raise PublicTableError(f"{purpose} base must be a clean content-addressed artifact URI")
     return selected
 
 
@@ -322,10 +312,7 @@ def _member_position(
     parts = object_key.split("/")
     expected_length = 2 + len(profile.partition_columns)
     empty_partition_member = bool(profile.partition_columns) and len(parts) == 2
-    if (
-        parts[0] != "data"
-        or (len(parts) != expected_length and not empty_partition_member)
-    ):
+    if parts[0] != "data" or (len(parts) != expected_length and not empty_partition_member):
         raise PublicTableError(f"invalid public-table member key: {object_key}")
     values: list[str] = []
     partition_components = () if empty_partition_member else parts[1:-1]
@@ -336,11 +323,7 @@ def _member_position(
     ):
         prefix = f"{column}="
         value = component.removeprefix(prefix)
-        if (
-            not component.startswith(prefix)
-            or not value
-            or _PARTITION_VALUE.fullmatch(value) is None
-        ):
+        if not component.startswith(prefix) or not value or _PARTITION_VALUE.fullmatch(value) is None:
             raise PublicTableError(f"invalid public-table partition key: {object_key}")
         values.append(value)
     match = _PART_FILE.fullmatch(parts[-1])
@@ -364,9 +347,7 @@ def _member_key(
     components = ["data"]
     for column, value in zip(profile.partition_columns, partition, strict=True):
         if _PARTITION_VALUE.fullmatch(value) is None:
-            raise PublicTableError(
-                f"public-table partition value for {column} is not portable: {value!r}"
-            )
+            raise PublicTableError(f"public-table partition value for {column} is not portable: {value!r}")
         components.append(f"{column}={value}")
     components.append(f"part-{part:06d}.parquet")
     return "/".join(components)
@@ -375,12 +356,9 @@ def _member_key(
 def _create_row_index(path: Path, profile: PublicTableProfile) -> sqlite3.Connection:
     connection = sqlite3.connect(path)
     partition_fields = ", ".join(
-        f"partition_{index} TEXT NOT NULL"
-        for index, _ in enumerate(profile.partition_columns)
+        f"partition_{index} TEXT NOT NULL" for index, _ in enumerate(profile.partition_columns)
     )
-    sort_fields = ", ".join(
-        f"sort_{index} TEXT" for index, _ in enumerate(profile.sort_columns)
-    )
+    sort_fields = ", ".join(f"sort_{index} TEXT" for index, _ in enumerate(profile.sort_columns))
     fields = ["row_id TEXT PRIMARY KEY"]
     if partition_fields:
         fields.append(partition_fields)
@@ -426,9 +404,7 @@ def _index_rows(
                 ),
             )
         except sqlite3.IntegrityError as error:
-            raise PublicTableError(
-                f"public table repeats primary key {identity!r}"
-            ) from error
+            raise PublicTableError(f"public table repeats primary key {identity!r}") from error
         count += 1
         if count % 10_000 == 0:
             connection.commit()
@@ -444,12 +420,8 @@ def _partitions(
     if not profile.partition_columns:
         yield ()
         return
-    columns = ", ".join(
-        f"partition_{index}" for index, _ in enumerate(profile.partition_columns)
-    )
-    for row in connection.execute(
-        f"SELECT DISTINCT {columns} FROM rows ORDER BY {columns}"
-    ):
+    columns = ", ".join(f"partition_{index}" for index, _ in enumerate(profile.partition_columns))
+    for row in connection.execute(f"SELECT DISTINCT {columns} FROM rows ORDER BY {columns}"):
         yield tuple(str(value) for value in row)
 
 
@@ -459,9 +431,7 @@ def _partition_rows(
     *,
     profile: PublicTableProfile,
 ) -> sqlite3.Cursor:
-    where = " AND ".join(
-        f"partition_{index} = ?" for index, _ in enumerate(partition)
-    ) or "1 = 1"
+    where = " AND ".join(f"partition_{index} = ?" for index, _ in enumerate(partition)) or "1 = 1"
     order_terms: list[str] = []
     for index, _ in enumerate(profile.sort_columns):
         order_terms.extend((f"sort_{index} IS NULL", f"sort_{index}"))
@@ -543,19 +513,14 @@ def _write_partition(
     for (raw_payload,) in cursor:
         payload = bytes(raw_payload)
         if len(payload) > build.max_batch_bytes:
-            raise PublicTableError(
-                "one public-table row exceeds the configured batch-byte bound"
-            )
+            raise PublicTableError("one public-table row exceeds the configured batch-byte bound")
         if writer is None:
             open_writer()
         if member_rows == build.max_rows_per_member:
             close_writer()
             part += 1
             open_writer()
-        if batch and (
-            len(batch) == build.max_rows_per_batch
-            or batch_bytes + len(payload) > build.max_batch_bytes
-        ):
+        if batch and (len(batch) == build.max_rows_per_batch or batch_bytes + len(payload) > build.max_batch_bytes):
             flush_batch()
         batch.append(_decode_row(payload))
         batch_bytes += len(payload)
@@ -635,10 +600,7 @@ def _validate_root(
     if spec.get("sourceStateScope") not in {"complete-snapshot", "observed-crawl"}:
         raise PublicTableError("public-table source-state scope is invalid")
     state_digest = spec.get("sourceStateDigest")
-    if (
-        not isinstance(state_digest, str)
-        or re.fullmatch(r"sha256:[0-9a-f]{64}", state_digest) is None
-    ):
+    if not isinstance(state_digest, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", state_digest) is None:
         raise PublicTableError("public-table source-state digest is invalid")
     manifests = root.get("memberManifests")
     if (
@@ -667,9 +629,7 @@ def _validate_root(
             raise PublicTableError("public-table member descriptor differs")
         position = _member_position(member.object_key, profile=profile)
         if profile.partition_columns and not position[0] and member.record_count != 0:
-            raise PublicTableError(
-                "partitioned public table has rows outside a Hive partition"
-            )
+            raise PublicTableError("partitioned public table has rows outside a Hive partition")
         positions.append(position)
         total_rows += member.record_count
     if positions != sorted(positions) or len(positions) != len(set(positions)):
@@ -736,19 +696,13 @@ def verify_public_table_release(
                             try:
                                 identities.execute("INSERT INTO ids VALUES (?)", (identity,))
                             except sqlite3.IntegrityError as error:
-                                raise PublicTableError(
-                                    f"public table repeats primary key {identity!r}"
-                                ) from error
+                                raise PublicTableError(f"public table repeats primary key {identity!r}") from error
                             actual_partition = tuple(str(row[name]) for name in profile.partition_columns)
                             if actual_partition != partition:
-                                raise PublicTableError(
-                                    "public-table row differs from its Hive partition"
-                                )
+                                raise PublicTableError("public-table row differs from its Hive partition")
                             order = _sort_value(row, profile.sort_columns)
                             if previous is not None and order <= previous:
-                                raise PublicTableError(
-                                    "public-table rows are not in their declared total order"
-                                )
+                                raise PublicTableError("public-table rows are not in their declared total order")
                             previous = order
                     if previous is not None:
                         seen_by_partition[partition] = previous
@@ -757,9 +711,7 @@ def verify_public_table_release(
             if observed != artifact.root["counts"]["totalRecordCount"]:
                 raise PublicTableError("public-table root row accounting differs")
             if any(
-                member.record_count is not None
-                and member.record_count > spec["maxRowsPerMember"]
-                for member in members
+                member.record_count is not None and member.record_count > spec["maxRowsPerMember"] for member in members
             ):
                 raise PublicTableError("public-table member exceeds its row bound")
         finally:
@@ -782,9 +734,7 @@ class PublicTablePublisher:
     ) -> PublishedPublicTable:
         destination = Path(destination).absolute()
         if destination.exists() or destination.is_symlink():
-            raise ImmutablePublicationError(
-                f"refusing to replace immutable directory: {destination}"
-            )
+            raise ImmutablePublicationError(f"refusing to replace immutable directory: {destination}")
         if source.source_system_id != self._profile.source_system_id:
             raise PublicTableError("source-native release does not match the public-table profile")
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -890,9 +840,7 @@ class PublicTableReader:
         self._members = tuple(
             sorted(
                 members,
-                key=lambda member: _member_position(
-                    str(member.object_key), profile=profile
-                ),
+                key=lambda member: _member_position(str(member.object_key), profile=profile),
             )
         )
         source_input = self._artifact.root["inputs"][0]
@@ -921,15 +869,11 @@ class PublicTableReader:
 
     @property
     def duckdb_member_locations(self) -> tuple[str, ...]:
-        return tuple(
-            self._location.duckdb_member(object_key) for object_key in self.object_keys
-        )
+        return tuple(self._location.duckdb_member(object_key) for object_key in self.object_keys)
 
     @property
     def iceberg_member_locations(self) -> tuple[str, ...]:
-        return tuple(
-            self._location.iceberg_member(object_key) for object_key in self.object_keys
-        )
+        return tuple(self._location.iceberg_member(object_key) for object_key in self.object_keys)
 
     def duckdb_relation(
         self,
@@ -945,6 +889,7 @@ class PublicTableReader:
             hive_partitioning=bool(self._profile.partition_columns),
             union_by_name=False,
         )
+
 
 @runtime_checkable
 class IcebergTable(Protocol):
@@ -971,9 +916,7 @@ class IcebergPublicTableSink:
         public_table: PublicTableReader,
     ) -> object:
         if self._table.current_snapshot() is not None:
-            raise PublicTableError(
-                "Iceberg target must be a new empty table for this immutable generation"
-            )
+            raise PublicTableError("Iceberg target must be a new empty table for this immutable generation")
         locations = list(public_table.iceberg_member_locations)
         if len(locations) != len(set(locations)) or any(not value for value in locations):
             raise PublicTableError("Iceberg member locations are empty or repeated")

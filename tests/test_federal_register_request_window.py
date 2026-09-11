@@ -84,7 +84,6 @@ def test_a_request_carrying_the_1_0_field_set_still_replays() -> None:
     assert federal_register_request_window(stored_request) == EXPECTED_WINDOW
 
 
-
 def test_documents_url_with_explicit_fields_round_trips_through_the_window_parser() -> None:
     explicit_request = federal_register_documents_url(QUERY_SCOPE, fields=DOCUMENT_FIELDS)
     default_request = federal_register_documents_url(QUERY_SCOPE)
@@ -172,9 +171,7 @@ def test_the_current_field_set_is_one_the_replay_path_accepts_by_key() -> None:
     """
 
     assert federal_register._CURRENT_FIELD_POLICY in ACCEPTED_DOCUMENT_FIELD_SETS
-    assert (
-        ACCEPTED_DOCUMENT_FIELD_SETS[federal_register._CURRENT_FIELD_POLICY] is DOCUMENT_FIELDS
-    )
+    assert ACCEPTED_DOCUMENT_FIELD_SETS[federal_register._CURRENT_FIELD_POLICY] is DOCUMENT_FIELDS
 
 
 def test_no_two_accepted_field_sets_are_the_same_object() -> None:
@@ -184,6 +181,4 @@ def test_no_two_accepted_field_sets_are_the_same_object() -> None:
     passes every other test here until the 1.2 addition silently rewrites it.
     """
 
-    assert len({id(value) for value in ACCEPTED_DOCUMENT_FIELD_SETS.values()}) == len(
-        ACCEPTED_DOCUMENT_FIELD_SETS
-    )
+    assert len({id(value) for value in ACCEPTED_DOCUMENT_FIELD_SETS.values()}) == len(ACCEPTED_DOCUMENT_FIELD_SETS)

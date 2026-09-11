@@ -96,15 +96,13 @@ def _granules_from_mods(xml: bytes) -> list[tuple[str, str | None]]:
     out: list[tuple[str, str | None]] = []
     for item in root.findall(".//m:relatedItem[@type='constituent']", MODS_NS):
         access = next(
-            (e.text.strip() for e in item.iter()
-             if e.tag == "{http://www.loc.gov/mods/v3}accessId" and e.text),
+            (e.text.strip() for e in item.iter() if e.tag == "{http://www.loc.gov/mods/v3}accessId" and e.text),
             None,
         )
         if access is None:
             continue
         frdoc = next(
-            (e.text.strip() for e in item.findall("m:identifier[@type='FR Doc No.']", MODS_NS)
-             if e.text),
+            (e.text.strip() for e in item.findall("m:identifier[@type='FR Doc No.']", MODS_NS) if e.text),
             None,
         )
         out.append((access, frdoc))
@@ -160,9 +158,7 @@ def _fetch_mods(client: httpx.Client, date: str) -> bytes:
                 "sending a key."
             )
         if response.status_code == 429 or response.status_code >= 500:
-            raise _RetryableStatus(
-                "retryable govinfo response", request=response.request, response=response
-            )
+            raise _RetryableStatus("retryable govinfo response", request=response.request, response=response)
         response.raise_for_status()
         return response.content
 
@@ -312,12 +308,15 @@ def census(
     todo = [d for d in dates if d not in done]
     print(f"{len(dates):,} issues in scope, {len(todo):,} to fetch", file=sys.stderr)
 
-    with httpx.Client(
-        headers={"Accept": "application/xml", "User-Agent": USER_AGENT},
-        timeout=httpx.Timeout(60.0, connect=30.0),
-        follow_redirects=True,
-        transport=transport,
-    ) as client, output.open("a") as sink:
+    with (
+        httpx.Client(
+            headers={"Accept": "application/xml", "User-Agent": USER_AGENT},
+            timeout=httpx.Timeout(60.0, connect=30.0),
+            follow_redirects=True,
+            transport=transport,
+        ) as client,
+        output.open("a") as sink,
+    ):
         last = 0.0
         for index, date in enumerate(todo, start=1):
             wait = min_interval_seconds - (time.monotonic() - last)
@@ -366,9 +365,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--blob-store", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="JSONL, appended, resumable")
     parser.add_argument(
-        "--env-file", type=Path, default=None,
-        help="Unused: this route is keyless. Kept so old invocations fail loudly "
-        "rather than silently sending a key.",
+        "--env-file",
+        type=Path,
+        default=None,
+        help="Unused: this route is keyless. Kept so old invocations fail loudly rather than silently sending a key.",
     )
     parser.add_argument("--env-var", default="API_GOV")
     parser.add_argument(

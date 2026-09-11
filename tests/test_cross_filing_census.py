@@ -605,7 +605,10 @@ def test_docket_profile_document_specific_analyses_are_marked_not_applicable(tmp
 
     totals = cast("dict[str, Any]", result["totals"])
     assert "documentsInFrdocCatchAllDockets" not in totals
-    assert isinstance(totals["catchAllDocketMembershipNotApplicable"], str) and totals["catchAllDocketMembershipNotApplicable"]
+    assert (
+        isinstance(totals["catchAllDocketMembershipNotApplicable"], str)
+        and totals["catchAllDocketMembershipNotApplicable"]
+    )
 
 
 def test_docket_profile_clean_set_reports_zero(tmp_path: Path) -> None:

@@ -700,9 +700,7 @@ class MirrulationsReader(Reader):
             key, etag, _listed_size = entry
             return _retry_transient(
                 key,
-                lambda: download_object_bytes(
-                    self.s3_resource, self.bucket, key, if_match=etag, max_bytes=max_bytes
-                ),
+                lambda: download_object_bytes(self.s3_resource, self.bucket, key, if_match=etag, max_bytes=max_bytes),
             )
 
         workers = max(1, self.download_workers)

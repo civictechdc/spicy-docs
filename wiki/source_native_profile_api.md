@@ -178,6 +178,7 @@ def add_window(
     response_bytes: bytes,
 ) -> None: ...
 
+
 def finish(*, query_scope: Mapping[str, Any]) -> None: ...
 ```
 

@@ -64,9 +64,7 @@ def write_release(
     # members keeps it deterministic and gives two different fixtures two
     # different digests, which is what a guard against mixing them needs.
     digest = hashlib.sha256(json.dumps(members, sort_keys=True).encode()).hexdigest()
-    (release_root / "artifact.json").write_text(
-        json.dumps({"artifactDigest": f"sha256:{digest}"})
-    )
+    (release_root / "artifact.json").write_text(json.dumps({"artifactDigest": f"sha256:{digest}"}))
     return release_root
 
 

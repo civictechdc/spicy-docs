@@ -124,8 +124,13 @@ def compare(
         "receipts": {
             side: {
                 k: json.loads(root.joinpath(*RECEIPT_PATH).read_text()).get(k)
-                for k in ("publishedRecordCount", "discardedObservationCount", "semanticVerdict",
-                          "releaseSchemaDigest", "verifierImplementationId")
+                for k in (
+                    "publishedRecordCount",
+                    "discardedObservationCount",
+                    "semanticVerdict",
+                    "releaseSchemaDigest",
+                    "verifierImplementationId",
+                )
             }
             for side, root in (("baseline", baseline_root), ("candidate", candidate_root))
         },

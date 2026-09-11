@@ -314,12 +314,9 @@ def test_every_subset_with_a_count_states_its_population(tmp_path: Path) -> None
     # object; check those pairings explicitly since the generic walk above cannot find them.
     assert isinstance(result["population"], str) and result["population"].strip()
     assert isinstance(result["distinctDocumentsPopulation"], str) and result["distinctDocumentsPopulation"].strip()
+    assert isinstance(result["trueReobservationsPopulation"], str) and result["trueReobservationsPopulation"].strip()
     assert (
-        isinstance(result["trueReobservationsPopulation"], str) and result["trueReobservationsPopulation"].strip()
-    )
-    assert (
-        isinstance(result["differingFieldCountsPopulation"], str)
-        and result["differingFieldCountsPopulation"].strip()
+        isinstance(result["differingFieldCountsPopulation"], str) and result["differingFieldCountsPopulation"].strip()
     )
     adjudication_limit = cast("dict[str, Any]", result["adjudicationLimit"])
     assert (

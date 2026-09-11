@@ -1398,9 +1398,7 @@ def test_the_vendored_wheel_is_tracked_by_git() -> None:
     """
 
     project_root = Path(__file__).parents[1]
-    configuration = tomllib.loads(
-        (project_root / "pyproject.toml").read_text(encoding="utf-8")
-    )
+    configuration = tomllib.loads((project_root / "pyproject.toml").read_text(encoding="utf-8"))
     wheel = configuration["tool"]["uv"]["sources"]["rulespec-artifacts"]["path"]
     tracked = subprocess.run(
         ["git", "ls-files", "--error-unmatch", wheel],
