@@ -66,9 +66,14 @@ class SourceNativeTableInput(Protocol):
     @property
     def pin(self) -> ArtifactPin: ...
 
-    source_state_scope: str
-    source_system_id: str
-    source_state_digest: str
+    @property
+    def source_state_scope(self) -> str: ...
+
+    @property
+    def source_system_id(self) -> str: ...
+
+    @property
+    def source_state_digest(self) -> str: ...
 
     def iter_records(self) -> Iterator[Mapping[str, Any]]: ...
 

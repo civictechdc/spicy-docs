@@ -41,7 +41,6 @@ class PublicTableArtifactLocation:
         expected_pin: ArtifactPin,
         local_root: Path | None = None,
         duckdb_base_uri: str | None = None,
-        iceberg_base_uri: str | None = None,
     ) -> None:
         local = Path(local_root).absolute() if local_root is not None else None
         if (local is None) == (duckdb_base_uri is None):
@@ -53,22 +52,8 @@ class PublicTableArtifactLocation:
             _content_addressed_base(
                 duckdb_base_uri,
                 expected_pin=expected_pin,
-                purpose="DuckDB",
-                allowed_schemes=frozenset({"https"}),
-                allow_loopback_http=True,
             )
             if duckdb_base_uri is not None
-            else None
-        )
-        self._iceberg_base_uri = (
-            _content_addressed_base(
-                iceberg_base_uri,
-                expected_pin=expected_pin,
-                purpose="Iceberg",
-                allowed_schemes=frozenset({"s3", "gs", "abfs", "abfss", "https"}),
-                allow_loopback_http=False,
-            )
-            if iceberg_base_uri is not None
             else None
         )
 
@@ -93,13 +78,11 @@ class PublicTableArtifactLocation:
         *,
         expected_pin: ArtifactPin,
         duckdb_base_uri: str,
-        iceberg_base_uri: str | None = None,
     ) -> PublicTableArtifactLocation:
         return cls(
             source=source,
             expected_pin=expected_pin,
             duckdb_base_uri=duckdb_base_uri,
-            iceberg_base_uri=iceberg_base_uri,
         )
 
     def duckdb_member(self, object_key: str) -> str:
@@ -107,13 +90,6 @@ class PublicTableArtifactLocation:
             return str(self._local_member(object_key))
         assert self._duckdb_base_uri is not None
         return f"{self._duckdb_base_uri}/{quote(object_key, safe='/=._-')}"
-
-    def iceberg_member(self, object_key: str) -> str:
-        if self._local_root is not None:
-            return str(self._local_member(object_key))
-        if self._iceberg_base_uri is None:
-            raise PublicTableError("remote public-table location has no content-addressed Iceberg base")
-        return f"{self._iceberg_base_uri}/{quote(object_key, safe='/=._-')}"
 
     def _local_member(self, object_key: str) -> Path:
         assert self._local_root is not None
@@ -127,14 +103,11 @@ def _content_addressed_base(
     value: str,
     *,
     expected_pin: ArtifactPin,
-    purpose: str,
-    allowed_schemes: frozenset[str],
-    allow_loopback_http: bool,
 ) -> str:
     selected = value.rstrip("/")
     parsed = urlparse(selected)
-    scheme_allowed = parsed.scheme in allowed_schemes
-    if parsed.scheme == "http" and allow_loopback_http and parsed.hostname in {"127.0.0.1", "::1", "localhost"}:
+    scheme_allowed = parsed.scheme == "https"
+    if parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "::1", "localhost"}:
         scheme_allowed = True
     digest = expected_pin.artifact_digest
     digest_hex = digest.removeprefix("sha256:")
@@ -149,7 +122,7 @@ def _content_addressed_base(
         or re.fullmatch(r"[0-9a-f]{64}", digest_hex) is None
         or path_parts[-2:] != ["sha256", digest_hex]
     ):
-        raise PublicTableError(f"{purpose} base must be a clean content-addressed artifact URI")
+        raise PublicTableError("DuckDB base must be a clean content-addressed artifact URI")
     return selected
 
 
@@ -214,10 +187,6 @@ class PublicTableReader:
     @property
     def duckdb_member_locations(self) -> tuple[str, ...]:
         return tuple(self._location.duckdb_member(object_key) for object_key in self.object_keys)
-
-    @property
-    def iceberg_member_locations(self) -> tuple[str, ...]:
-        return tuple(self._location.iceberg_member(object_key) for object_key in self.object_keys)
 
     def duckdb_relation(
         self,

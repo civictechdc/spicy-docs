@@ -1,4 +1,4 @@
-"""Source-native-backed public Parquet, DuckDB, and Iceberg behavior."""
+"""Source-native-backed public Parquet and DuckDB behavior."""
 
 from __future__ import annotations
 
@@ -35,7 +35,6 @@ from spicy_docs.public_tables.api import (
     VERIFIER_VERSION as PUBLIC_VERIFIER_VERSION,
 )
 from spicy_docs.public_tables.api import (
-    IcebergPublicTableSink,
     PublicTableArtifactLocation,
     PublicTableBuild,
     PublicTableError,
@@ -580,48 +579,6 @@ def test_public_table_reader_accepts_a_historical_spicy_regs_producer(tmp_path: 
     reader = _public_reader(destination, profile, published.artifact.pin)
 
     assert reader.object_keys
-
-
-class _IcebergTable:
-    def __init__(self, *, existing: object | None = None) -> None:
-        self.snapshot = existing
-        self.calls: list[tuple[list[str], bool]] = []
-
-    def current_snapshot(self) -> object | None:
-        return self.snapshot
-
-    def add_files(
-        self,
-        file_paths: list[str],
-        *,
-        check_duplicate_files: bool = True,
-    ) -> None:
-        self.calls.append((file_paths, check_duplicate_files))
-        self.snapshot = {"snapshot-id": 123}
-
-
-def test_iceberg_sink_adopts_exact_members_in_one_standard_snapshot(tmp_path: Path) -> None:
-    source = _source_release(tmp_path)
-    destination = tmp_path / "public"
-    published = PublicTablePublisher(REGULATIONS_GOV_COMMENT_PUBLIC_TABLE).publish(
-        source,
-        build=PublicTableBuild(_PUBLIC_PRODUCER, max_rows_per_member=1),
-        destination=destination,
-    )
-    reader = _public_reader(
-        destination,
-        REGULATIONS_GOV_COMMENT_PUBLIC_TABLE,
-        published.artifact.pin,
-    )
-    table = _IcebergTable()
-
-    snapshot = IcebergPublicTableSink(table).publish(reader)
-
-    assert snapshot == {"snapshot-id": 123}
-    assert table.calls == [([str(destination / key) for key in reader.object_keys], True)]
-
-    with pytest.raises(PublicTableError, match="new empty table"):
-        IcebergPublicTableSink(table).publish(reader)
 
 
 def test_remote_location_refuses_a_different_artifact_address(tmp_path: Path) -> None:

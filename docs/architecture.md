@@ -46,7 +46,7 @@ identity depend on the caller.
 | Full offline verification | `releases/replay.py` reconstructs evidence; `releases/verify.py` compares published output |
 | Bounded admission and reading | `releases/admission.py`, `releases/reader.py` |
 | Public-table output | `public_tables/format.py` defines layout; `publish.py` indexes and writes; `verify.py` owns admission and the full row gate. `public_tables/profiles.py` owns source projections. |
-| Public-table consumption | `public_tables/api.py` exports the library API; `reader.py` owns locations and reading; `iceberg.py` adopts exact files through an injected table. |
+| Public-table consumption | `public_tables/api.py` exports the library API; `reader.py` owns admitted locations and exact Parquet member reading. |
 | Source catalogs and applicability | `catalog/profiles.py` declares source-table capabilities; `catalog/artifacts.py` validates and builds the catalog artifacts. |
 | Publisher-domain drift | `sources/source_domains.py` owns pinned document parsing and exact-value comparisons. |
 | Shared evidence encoding | `sources/evidence_zip.py` defines deterministic ZIP member metadata. |

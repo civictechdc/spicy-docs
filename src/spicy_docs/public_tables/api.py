@@ -25,10 +25,6 @@ from spicy_docs.public_tables.format import (
     PublishedPublicTable,
     SourceNativeTableInput,
 )
-from spicy_docs.public_tables.iceberg import (
-    IcebergPublicTableSink,
-    IcebergTable,
-)
 from spicy_docs.public_tables.publish import (
     PublicTablePublisher,
 )
@@ -46,8 +42,6 @@ __all__ = [
     "KIND",
     "VERIFIER_ID",
     "VERIFIER_VERSION",
-    "IcebergPublicTableSink",
-    "IcebergTable",
     "PublicTableArtifactLocation",
     "PublicTableBuild",
     "PublicTableError",

@@ -5,7 +5,7 @@
 Status: normative target. The shared release path, Federal Register,
 Regulations.gov, and explicit GAO product-page source profiles, plus their
 immutable public Parquet views, are implemented in the current worktree.
-External object-store publication, a live Iceberg catalog run, final
+External object-store publication, final
 installed-wheel interoperability, consumer cutover, and scale conformance
 remain incomplete.
 
@@ -469,19 +469,18 @@ producer's corpus-wide semantic pass.
 Given an admitted artifact, the reader hands its exact member locations to
 DuckDB's native Parquet reader. An injected locator may use local paths or
 anonymous immutable HTTPS URLs, so DuckDB performs its standard range reads and
-Hive pruning without a SpicyRegs query service. An injected newly created empty
-PyIceberg `Table` may adopt the same files through one standard `add_files()`
-transaction; the catalog supplies the table and Iceberg supplies snapshot and
-file identity.
+Hive pruning without a query service. SpicyDocs publishes immutable Parquet
+generations; consumers own any catalog registration or mutable table updates.
+The former first-snapshot Iceberg attachment helper is retired because it had
+no operational caller and did not implement SpicyRegs' mutable publishing flow.
 
-SpicyRegs defines no public-table registry, mutable merge/upsert path,
-row-hash index, file inventory, latest-pointer algorithm, compatibility
-command, or object-store replacement protocol. Normal artifact publication,
-the object-store address, and the Iceberg catalog determine how callers select
-a current immutable generation. Existing mutable public URLs remain on their
-predecessor path until a live remote range smoke test, retained-data
-differential, dependent-reader smoke tests, and an explicit cutover complete.
-This worktree does not publish or replace them.
+This public-table format defines no registry, mutable merge/upsert path,
+row-hash index, latest-pointer algorithm, compatibility command, or object-store
+replacement protocol. Callers select an exact immutable generation through its
+artifact pin and address. SpicyRegs owns its mutable public-data pipeline
+independently; these source-table changes do not replace that pipeline or its
+public URLs. A selected future handoff needs retained-data comparison,
+dependent-reader checks, and explicit cutover evidence.
 
 ## 8. Federal Register profile
 
@@ -517,11 +516,10 @@ The current phase gate builds and independently verifies fixture releases for
 Federal Register records and separate Regulations.gov document, docket, and
 comment collections. It also builds all four public profiles, opens local and
 anonymous HTTP-range members through DuckDB, checks comment Hive pruning and
-newest-comment behavior, and proves that an injected empty Iceberg table adopts
-the exact members in one standard snapshot. Its live source check is deliberately
+newest-comment behavior. Its live source check is deliberately
 bounded to one Federal Register day. These checks do not prove corpus-wide
 completeness, historical baseline parity, a live HTTPS/object-store deployment,
-a real Iceberg catalog, or production cadence.
+or production cadence.
 
 The final migration gate uses a clean installed SpicyRegs wheel to build and
 independently verify fixture and exact real-data releases for the retained
@@ -543,9 +541,9 @@ admission, read its exact local and anonymous range-served Parquet members with
 DuckDB, preserve all declared columns, and reproduce comments partition pruning
 and newest-comment collapse. They refuse tamper, repeated primary keys,
 out-of-partition rows, unbounded rows or members, schema and row-count drift,
-replacement of an immutable destination, and adoption into a nonempty Iceberg
-table. External cutover adds a live immutable HTTPS range test, a real catalog
-snapshot test, and smoke tests for each retained anonymous consumer.
+replacement of an immutable destination. External cutover adds a live immutable
+HTTPS range test and smoke tests for each retained anonymous consumer. Catalog
+integration, if selected by a consumer, needs its own snapshot/update checks.
 
 Role-closure tests reject an extra role. Comment fixtures cover equal and null
 timestamp conflicts, multiple source versions, shuffled enumeration order,

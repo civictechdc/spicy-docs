@@ -142,9 +142,9 @@ and its Iceberg implementation performs delete/insert updates and public export
 and [MCP reader](../../spicy-regs/src/spicy_regs/mcp_server.py#L286) establish
 operational producers and consumers in code; this review does not assert live health.
 
-SpicyDocs' [`IcebergPublicTableSink:29`](../src/spicy_docs/public_tables/iceberg.py#L29)
+SpicyDocs' `IcebergPublicTableSink` (baseline `c9da196`, `public_tables/iceberg.py:29`)
 only accepts a new empty table and calls injected `add_files`; its located caller
-is [`test_public_table.py:618`](../tests/test_public_table.py#L618), using a test
+is `tests/test_public_table.py:618` at baseline `c9da196`, using a test
 table. It supplies neither upstream incremental updates nor a qualified production
 attachment workflow. Retiring that helper removes an unsupported integration
 obligation while preserving the documented Parquet outcome.
