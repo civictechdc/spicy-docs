@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import argparse
 import sys
-from collections.abc import Callable, Iterator, Mapping
-from contextlib import contextmanager
-from datetime import UTC, date, datetime
+from collections.abc import Callable, Mapping
+from contextlib import closing
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Final, TextIO
+from typing import Any, TextIO
 
 import httpx
 from rulespec_artifacts import (
@@ -24,42 +24,21 @@ from rulespec_artifacts import (
     canonical_json_bytes,
 )
 
+from spicy_docs.cli.arguments import parser
+from spicy_docs.cli.sources import (
+    ACQUISITION_ERRORS,
+    AcquisitionInputs,
+    RegulationsReaderFactory,
+    public_table_profile,
+    source_registration,
+)
 from spicy_docs.federal_register_source_native import (
     FederalRegisterFetch,
-    FederalRegisterSourceError,
-    iter_federal_register_pages,
-)
-from spicy_docs.gao_product_pages_source_native import (
-    FETCH_TIMEOUT_SECONDS as GAO_FETCH_TIMEOUT_SECONDS,
-)
-from spicy_docs.gao_product_pages_source_native import (
-    MAX_PAGE_BYTES as GAO_MAX_PAGE_BYTES,
 )
 from spicy_docs.gao_product_pages_source_native import (
     GaoProductFetch,
-    GaoProductSourceError,
-    gao_product_query_scope,
-    iter_gao_product_pages,
-)
-from spicy_docs.public_table_profiles import (
-    FEDERAL_REGISTER_PUBLIC_TABLE,
-    REGULATIONS_GOV_COMMENT_PUBLIC_TABLE,
-    REGULATIONS_GOV_DOCKET_PUBLIC_TABLE,
-    REGULATIONS_GOV_DOCUMENT_PUBLIC_TABLE,
-    PublicTableProfile,
 )
 from spicy_docs.publication import ImmutablePublicationError
-from spicy_docs.regulations_gov_source_native import (
-    COMMENT_COLLECTION,
-    DOCKET_COLLECTION,
-    DOCUMENT_COLLECTION,
-    MirrulationsObjectReader,
-    RegulationsGovSourceError,
-    iter_regulations_gov_comment_pages,
-    iter_regulations_gov_docket_pages,
-    iter_regulations_gov_document_pages,
-)
-from spicy_docs.schemas import COMMENT, DOCKET, DOCUMENT
 from spicy_docs.source_native import (
     CURRENT_PRODUCER_PRODUCT,
     VERIFIER_ID,
@@ -70,354 +49,16 @@ from spicy_docs.source_native import (
     SourceNativeReleaseReader,
     verify_source_native_release,
 )
-from spicy_docs.source_native_profile import SourceNativePage, SourceNativeProfile
-from spicy_docs.source_native_profiles import (
-    FEDERAL_REGISTER_PROFILE,
-    GAO_PRODUCT_PAGE_PROFILE,
-    REGULATIONS_GOV_COMMENT_PROFILE,
-    REGULATIONS_GOV_DOCKET_PROFILE,
-    REGULATIONS_GOV_DOCUMENT_PROFILE,
-    SPICY_REGS_PUBLIC_COMMENT_PROFILE,
-)
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
-from spicy_docs.sources import mirrulations
-from spicy_docs.sources.zyte import ZyteHttpFetcher, ZyteTransportError
+from spicy_docs.sources.zyte import ZyteTransportError
 from spicy_docs.spicy_regs_public_tables_source_native import (
-    COMMENT_TABLE,
-    MAX_PARTITION_BYTES,
-    PublicTableCapture,
     PublicTableFetch,
-    PublicTableSourceError,
-    iter_spicy_regs_public_comment_pages,
 )
-from spicy_docs.transport.retry import retry_http
-
-SOURCE_FEDERAL_REGISTER: Final = "federal-register"
-SOURCE_GAO_PRODUCT_PAGES: Final = "gao-product-pages"
-SOURCE_REGULATIONS_DOCUMENTS: Final = "regulations-documents"
-SOURCE_REGULATIONS_DOCKETS: Final = "regulations-dockets"
-SOURCE_REGULATIONS_COMMENTS: Final = "regulations-comments"
-SOURCE_SPICY_REGS_PUBLIC_COMMENTS: Final = "spicy-regs-public-comments"
-SOURCE_CHOICES: Final = (
-    SOURCE_FEDERAL_REGISTER,
-    SOURCE_GAO_PRODUCT_PAGES,
-    SOURCE_REGULATIONS_DOCUMENTS,
-    SOURCE_REGULATIONS_DOCKETS,
-    SOURCE_REGULATIONS_COMMENTS,
-    SOURCE_SPICY_REGS_PUBLIC_COMMENTS,
-)
-# The community mirror is the default supply rung; the origin-API sources
-# above are the fallback for what its tables cannot carry.
-DATED_SOURCES: Final = (
-    SOURCE_FEDERAL_REGISTER,
-    SOURCE_REGULATIONS_DOCUMENTS,
-    SOURCE_REGULATIONS_DOCKETS,
-    SOURCE_REGULATIONS_COMMENTS,
-)
-# The public-table projection only exists for the sources that publish a
-# faithful flat public view; GAO product pages and the spicy-regs public-table
-# mirror (itself a *source* fed into a source-native release, not a public
-# table this CLI can build) have no PublicTableProfile.
-PUBLIC_TABLE_CHOICES: Final = (
-    SOURCE_FEDERAL_REGISTER,
-    SOURCE_REGULATIONS_DOCUMENTS,
-    SOURCE_REGULATIONS_DOCKETS,
-    SOURCE_REGULATIONS_COMMENTS,
-)
-
-_USER_AGENT = "spicy-docs-source-native/1.0 (https://github.com/civictechdc/spicy-docs)"
-RegulationsReaderFactory = Callable[[str, str], MirrulationsObjectReader]
-
-
-def _date(value: str) -> date:
-    try:
-        parsed = date.fromisoformat(value)
-    except ValueError as error:
-        raise argparse.ArgumentTypeError(str(error)) from error
-    if parsed.isoformat() != value:
-        raise argparse.ArgumentTypeError("date must use YYYY-MM-DD")
-    return parsed
-
-
-def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    publish = subparsers.add_parser(
-        "publish",
-        help="Acquire, publish, and producer-verify one release",
-    )
-    publish.add_argument("--source", choices=SOURCE_CHOICES, required=True)
-    publish.add_argument(
-        "--since",
-        type=_date,
-        help="Start of the source date window; required by every dated source",
-    )
-    publish.add_argument(
-        "--until",
-        type=_date,
-        help="End of the source date window; required by every dated source",
-    )
-    publish.add_argument(
-        "--agency",
-        action="append",
-        help="Agency code; repeat for multiple agencies",
-    )
-    publish.add_argument(
-        "--product-id",
-        action="append",
-        help="Closed GAO product ID; repeat for multiple product pages",
-    )
-    publish.add_argument("--destination", type=Path, required=True)
-    publish.add_argument(
-        "--blob-store",
-        type=Path,
-        required=True,
-        help="Explicit persistent content-addressed payload store",
-    )
-    publish.add_argument("--implementation-id", required=True)
-
-    verify = subparsers.add_parser(
-        "verify",
-        help="Independently replay and verify one immutable release",
-    )
-    verify.add_argument("--source", choices=SOURCE_CHOICES, required=True)
-    verify.add_argument("--release", type=Path, required=True)
-    verify.add_argument(
-        "--blob-store",
-        type=Path,
-        required=True,
-        help="Explicit persistent content-addressed payload store",
-    )
-    verify.add_argument("--logical-id", required=True)
-    verify.add_argument("--artifact-digest", required=True)
-    verify.add_argument(
-        "--accepted-verifier-implementation-id",
-        action="append",
-        required=True,
-    )
-
-    publish_public_table = subparsers.add_parser(
-        "publish-public-table",
-        help="Project one admitted source-native release into one immutable public Parquet table",
-    )
-    publish_public_table.add_argument("--table", choices=PUBLIC_TABLE_CHOICES, required=True)
-    publish_public_table.add_argument(
-        "--source-release",
-        type=Path,
-        required=True,
-        help="Root of the admitted source-native release this table projects",
-    )
-    publish_public_table.add_argument(
-        "--source-blob-store",
-        type=Path,
-        required=True,
-        help="Explicit persistent content-addressed payload store for the source-native release",
-    )
-    publish_public_table.add_argument(
-        "--source-accepted-verifier-implementation-id",
-        action="append",
-        required=True,
-        help="Verifier implementation id(s) accepted for the admitted source-native release",
-    )
-    publish_public_table.add_argument("--destination", type=Path, required=True)
-    publish_public_table.add_argument("--implementation-id", required=True)
-
-    verify_public_table = subparsers.add_parser(
-        "verify-public-table",
-        help="Check the pin, profile, and admission of one immutable public Parquet table",
-    )
-    verify_public_table.add_argument("--table", choices=PUBLIC_TABLE_CHOICES, required=True)
-    verify_public_table.add_argument("--release", type=Path, required=True)
-    verify_public_table.add_argument("--logical-id", required=True)
-    verify_public_table.add_argument("--artifact-digest", required=True)
-    verify_public_table.add_argument(
-        "--accepted-verifier-implementation-id",
-        action="append",
-        required=True,
-    )
-    return parser
-
-
-def _profile(source: str) -> SourceNativeProfile:
-    if source == SOURCE_FEDERAL_REGISTER:
-        return FEDERAL_REGISTER_PROFILE
-    if source == SOURCE_GAO_PRODUCT_PAGES:
-        return GAO_PRODUCT_PAGE_PROFILE
-    if source == SOURCE_REGULATIONS_DOCUMENTS:
-        return REGULATIONS_GOV_DOCUMENT_PROFILE
-    if source == SOURCE_REGULATIONS_DOCKETS:
-        return REGULATIONS_GOV_DOCKET_PROFILE
-    if source == SOURCE_REGULATIONS_COMMENTS:
-        return REGULATIONS_GOV_COMMENT_PROFILE
-    if source == SOURCE_SPICY_REGS_PUBLIC_COMMENTS:
-        return SPICY_REGS_PUBLIC_COMMENT_PROFILE
-    raise SourceNativeReleaseError(f"unsupported source {source!r}")
-
-
-def _public_table_profile(table: str) -> PublicTableProfile:
-    """Pair one ``--table`` choice with its public projection.
-
-    ``_profile`` above resolves the same name to the source-native profile
-    that admits the *input* release; a public-table build needs both.
-    """
-
-    if table == SOURCE_FEDERAL_REGISTER:
-        return FEDERAL_REGISTER_PUBLIC_TABLE
-    if table == SOURCE_REGULATIONS_DOCUMENTS:
-        return REGULATIONS_GOV_DOCUMENT_PUBLIC_TABLE
-    if table == SOURCE_REGULATIONS_DOCKETS:
-        return REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
-    if table == SOURCE_REGULATIONS_COMMENTS:
-        return REGULATIONS_GOV_COMMENT_PUBLIC_TABLE
-    raise SourceNativeReleaseError(f"unsupported public table {table!r}")
+from spicy_docs.transport.acquisition import capture_instant
 
 
 def _now() -> datetime:
     return datetime.now(UTC)
-
-
-def _instant(clock: Callable[[], datetime]) -> str:
-    value = clock()
-    if value.tzinfo is None or value.utcoffset() is None:
-        raise SourceNativeReleaseError("CLI clock must return a timezone-aware instant")
-    return value.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-class _RetryableHTTPStatusError(httpx.HTTPStatusError):
-    """A 429 or 5xx response -- worth retrying, unlike any other 4xx.
-
-    A distinct subclass (rather than the plain ``httpx.HTTPStatusError`` that
-    ``response.raise_for_status()`` raises) lets ``retry_http`` tell "the
-    server asked us to back off or is failing" apart from "this request is
-    simply wrong" without inspecting exception messages. Both still satisfy
-    ``isinstance(error, httpx.HTTPError)``, so a persistent 429/5xx that
-    outlasts every attempt is still classified as ``transport-failed`` same
-    as before.
-    """
-
-
-def _fetch_with_retries(client: httpx.Client, url: str) -> bytes:
-    def _attempt() -> bytes:
-        response = client.get(url)
-        if response.status_code == 429 or response.status_code >= 500:
-            raise _RetryableHTTPStatusError(
-                "retryable Federal Register response",
-                request=response.request,
-                response=response,
-            )
-        response.raise_for_status()
-        if not response.content:
-            raise FederalRegisterSourceError("Federal Register returned an empty response")
-        return response.content
-
-    return retry_http(
-        _attempt,
-        retryable=(httpx.RequestError, _RetryableHTTPStatusError, FederalRegisterSourceError),
-    )
-
-
-@contextmanager
-def _fetcher(injected: FederalRegisterFetch | None) -> Iterator[FederalRegisterFetch]:
-    if injected is not None:
-        yield injected
-        return
-    with httpx.Client(
-        headers={"Accept": "application/json", "User-Agent": _USER_AGENT},
-        timeout=httpx.Timeout(60.0, connect=30.0),
-        follow_redirects=True,
-    ) as client:
-        yield lambda url: _fetch_with_retries(client, url)
-
-
-def _fetch_public_table(
-    client: httpx.Client,
-    locator: str,
-    *,
-    clock: Callable[[], datetime],
-) -> PublicTableCapture | None:
-    """Fetch one whole partition object, or report that the mirror has none."""
-
-    def _attempt() -> PublicTableCapture | None:
-        response = client.get(locator)
-        if response.status_code == 404:
-            return None
-        if response.status_code == 429 or response.status_code >= 500:
-            raise _RetryableHTTPStatusError(
-                "retryable spicy-regs public-table response",
-                request=response.request,
-                response=response,
-            )
-        response.raise_for_status()
-        if not response.content:
-            raise PublicTableSourceError("the spicy-regs public tables returned an empty partition")
-        if len(response.content) > MAX_PARTITION_BYTES:
-            raise PublicTableSourceError("public-table partition exceeds its capture byte bound")
-        return PublicTableCapture(
-            locator=locator,
-            content=response.content,
-            fetched_at=_instant(clock),
-            etag=response.headers.get("etag"),
-            last_modified=response.headers.get("last-modified"),
-        )
-
-    return retry_http(
-        _attempt,
-        retryable=(httpx.RequestError, _RetryableHTTPStatusError, PublicTableSourceError),
-    )
-
-
-@contextmanager
-def _gao_fetcher(injected: GaoProductFetch | None) -> Iterator[GaoProductFetch]:
-    """Use an injected fixture or the secret-safe SpicyDocs Zyte adapter."""
-
-    if injected is not None:
-        yield injected
-        return
-    fetcher = ZyteHttpFetcher.from_environment()
-    yield lambda url: fetcher.fetch(
-        url,
-        timeout_seconds=GAO_FETCH_TIMEOUT_SECONDS,
-        max_bytes=GAO_MAX_PAGE_BYTES,
-    )
-
-
-@contextmanager
-def _public_table_fetcher(
-    injected: PublicTableFetch | None,
-    clock: Callable[[], datetime],
-) -> Iterator[PublicTableFetch]:
-    if injected is not None:
-        yield injected
-        return
-    with httpx.Client(
-        headers={"Accept": "application/octet-stream", "User-Agent": _USER_AGENT},
-        timeout=httpx.Timeout(120.0, connect=30.0),
-        follow_redirects=True,
-    ) as client:
-        yield lambda locator: _fetch_public_table(client, locator, clock=clock)
-
-
-def _default_regulations_reader(agency: str, collection: str) -> MirrulationsObjectReader:
-    if collection == DOCUMENT_COLLECTION:
-        record_type = DOCUMENT
-    elif collection == DOCKET_COLLECTION:
-        record_type = DOCKET
-    elif collection == COMMENT_COLLECTION:
-        record_type = COMMENT
-    else:
-        raise RegulationsGovSourceError(f"unsupported Mirrulations collection {collection!r}")
-    return mirrulations.MirrulationsReader(
-        mirrulations.s3_resource(),
-        mirrulations.BUCKET,
-        mirrulations.PREFIX,
-        agency,
-        record_type,
-        processed_keys=None,
-        since_year=None,
-        retain_keys=False,
-        fail_fast=True,
-    )
 
 
 def _success(
@@ -486,80 +127,6 @@ def _require_separate_paths(left: Path, right: Path, *, labels: tuple[str, str])
         raise SourceNativeReleaseError(f"{labels[0]} and {labels[1]} must not overlap")
 
 
-def _query_scope(args: argparse.Namespace) -> dict[str, Any]:
-    dated = args.source in DATED_SOURCES
-    if dated and (args.since is None or args.until is None):
-        raise SourceNativeReleaseError(f"--since and --until are required for {args.source}")
-    if not dated and (args.since is not None or args.until is not None):
-        raise SourceNativeReleaseError(
-            f"--since and --until are not valid for {args.source}; its scope names partitions, not dates"
-        )
-    if args.source != SOURCE_GAO_PRODUCT_PAGES and args.product_id:
-        raise SourceNativeReleaseError("--product-id is only valid for GAO product pages")
-    if args.source == SOURCE_GAO_PRODUCT_PAGES:
-        if args.agency:
-            raise SourceNativeReleaseError("--agency is not valid for GAO product pages")
-        product_ids = args.product_id or []
-        if not product_ids:
-            raise SourceNativeReleaseError("at least one --product-id is required for GAO product pages")
-        if len(set(product_ids)) != len(product_ids):
-            raise SourceNativeReleaseError("GAO --product-id values must be distinct")
-        return gao_product_query_scope({"productIds": sorted(product_ids)})
-    if args.source == SOURCE_SPICY_REGS_PUBLIC_COMMENTS:
-        agencies = sorted(set(args.agency or []))
-        if not agencies:
-            raise SourceNativeReleaseError("at least one --agency is required for the spicy-regs public tables")
-        return {"agencies": agencies, "table": COMMENT_TABLE}
-    if args.source == SOURCE_FEDERAL_REGISTER:
-        if args.agency:
-            raise SourceNativeReleaseError("--agency is only valid for Regulations.gov")
-        return {
-            "publishedFrom": args.since.isoformat(),
-            "publishedThrough": args.until.isoformat(),
-        }
-    agencies = sorted(set(args.agency or []))
-    if not agencies:
-        raise SourceNativeReleaseError("at least one --agency is required for Regulations.gov")
-    if args.source == SOURCE_REGULATIONS_DOCUMENTS:
-        return {
-            "agencies": agencies,
-            "publishedFrom": args.since.isoformat(),
-            "publishedThrough": args.until.isoformat(),
-        }
-    if args.source == SOURCE_REGULATIONS_COMMENTS:
-        return {
-            "agencies": agencies,
-            "postedFrom": args.since.isoformat(),
-            "postedThrough": args.until.isoformat(),
-        }
-    return {
-        "agencies": agencies,
-        "modifiedFrom": args.since.isoformat(),
-        "modifiedThrough": args.until.isoformat(),
-    }
-
-
-def _regulations_pages(
-    args: argparse.Namespace,
-    query_scope: Mapping[str, Any],
-    read_regulations: RegulationsReaderFactory,
-) -> Iterator[SourceNativePage]:
-    if args.source == SOURCE_REGULATIONS_DOCUMENTS:
-        return iter_regulations_gov_document_pages(
-            lambda agency: read_regulations(agency, DOCUMENT_COLLECTION),
-            query_scope=query_scope,
-        )
-    if args.source == SOURCE_REGULATIONS_COMMENTS:
-        return iter_regulations_gov_comment_pages(
-            lambda agency: read_regulations(agency, COMMENT_COLLECTION),
-            query_scope=query_scope,
-        )
-    return iter_regulations_gov_docket_pages(
-        lambda agency: read_regulations(agency, DOCKET_COLLECTION),
-        query_scope=query_scope,
-    )
-
-
 def _publish(
     args: argparse.Namespace,
     *,
@@ -569,8 +136,8 @@ def _publish(
     read_regulations: RegulationsReaderFactory | None,
     clock: Callable[[], datetime],
 ) -> dict[str, object]:
-    profile = _profile(args.source)
-    query_scope = _query_scope(args)
+    profile = source_registration(args.source).profile
+    query_scope = source_registration(args.source).query_scope(args)
     _require_separate_paths(
         args.destination,
         args.blob_store,
@@ -578,7 +145,7 @@ def _publish(
     )
     if args.destination.exists() or args.destination.is_symlink():
         raise FileExistsError(f"refusing to replace immutable release: {args.destination}")
-    started_at = _instant(clock)
+    started_at = capture_instant(clock)
     producer = Producer(
         product=CURRENT_PRODUCER_PRODUCT,
         implementation_id=args.implementation_id,
@@ -592,47 +159,12 @@ def _publish(
         started_at=started_at,
     )
     blob_store = LocalSourceNativeBlobStore(args.blob_store)
-    if args.source == SOURCE_FEDERAL_REGISTER:
-        with _fetcher(fetch) as active_fetch:
-            published = SourceNativeReleasePublisher(
-                profile,
-                blob_store=blob_store,
-                clock=clock,
-            ).publish(
-                iter_federal_register_pages(active_fetch, query_scope=query_scope),
-                build=build,
-                destination=args.destination,
-            )
-    elif args.source == SOURCE_GAO_PRODUCT_PAGES:
-        with _gao_fetcher(fetch_gao) as active_fetch:
-            published = SourceNativeReleasePublisher(
-                profile,
-                blob_store=blob_store,
-                clock=clock,
-            ).publish(
-                iter_gao_product_pages(active_fetch, query_scope=query_scope),
-                build=build,
-                destination=args.destination,
-            )
-    elif args.source == SOURCE_SPICY_REGS_PUBLIC_COMMENTS:
-        with _public_table_fetcher(fetch_public_table, clock) as active_table_fetch:
-            published = SourceNativeReleasePublisher(
-                profile,
-                blob_store=blob_store,
-                clock=clock,
-            ).publish(
-                iter_spicy_regs_public_comment_pages(active_table_fetch, query_scope=query_scope),
-                build=build,
-                destination=args.destination,
-            )
-    else:
-        active_reader = read_regulations or _default_regulations_reader
-        published = SourceNativeReleasePublisher(
-            profile,
-            blob_store=blob_store,
-            clock=clock,
-        ).publish(
-            _regulations_pages(args, query_scope, active_reader),
+    inputs = AcquisitionInputs(clock, fetch, fetch_gao, fetch_public_table, read_regulations)
+    # Keep the selected transport context open while the publisher consumes
+    # the lazy iterator, including when iteration fails.
+    with source_registration(args.source).acquire(inputs, query_scope) as pages, closing(pages):
+        published = SourceNativeReleasePublisher(profile, blob_store=blob_store, clock=clock).publish(
+            pages,
             build=build,
             destination=args.destination,
         )
@@ -646,7 +178,7 @@ def _publish(
 
 
 def _verify(args: argparse.Namespace) -> dict[str, object]:
-    profile = _profile(args.source)
+    profile = source_registration(args.source).profile
     _require_separate_paths(
         args.release,
         args.blob_store,
@@ -697,8 +229,8 @@ def _publish_public_table(args: argparse.Namespace) -> dict[str, object]:
         PublicTablePublisher,
     )
 
-    source_profile = _profile(args.table)
-    public_profile = _public_table_profile(args.table)
+    source_profile = source_registration(args.table).profile
+    public_profile = public_table_profile(args.table)
     _require_separate_paths(
         args.source_release,
         args.source_blob_store,
@@ -747,7 +279,7 @@ def _verify_public_table(args: argparse.Namespace) -> dict[str, object]:
 
     from spicy_docs.public_table import verify_public_table_admission
 
-    profile = _public_table_profile(args.table)
+    profile = public_table_profile(args.table)
     expected_pin = ArtifactPin(args.logical_id, args.artifact_digest)
     source = LocalMemberSource(args.release)
     artifact = admit_artifact(
@@ -775,15 +307,7 @@ def _verify_public_table(args: argparse.Namespace) -> dict[str, object]:
 def _error_code(error: Exception) -> str:
     if isinstance(error, (FileExistsError, ImmutablePublicationError)):
         return "destination-exists"
-    if isinstance(
-        error,
-        (
-            FederalRegisterSourceError,
-            GaoProductSourceError,
-            RegulationsGovSourceError,
-            PublicTableSourceError,
-        ),
-    ):
+    if isinstance(error, ACQUISITION_ERRORS):
         return "acquisition-failed"
     if isinstance(error, SourceNativeReleaseError):
         return "release-invalid"
@@ -809,7 +333,7 @@ def main(
 
     output = stdout or sys.stdout
     errors = stderr or sys.stderr
-    args = _parser().parse_args(argv)
+    args = parser().parse_args(argv)
     try:
         if args.command == "publish":
             result = _publish(
@@ -829,10 +353,7 @@ def main(
     except (
         FileExistsError,
         ImmutablePublicationError,
-        FederalRegisterSourceError,
-        GaoProductSourceError,
-        RegulationsGovSourceError,
-        PublicTableSourceError,
+        *ACQUISITION_ERRORS,
         SourceNativeReleaseError,
         ZyteTransportError,
         httpx.HTTPError,

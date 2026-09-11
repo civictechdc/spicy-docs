@@ -46,8 +46,8 @@ identity depend on the caller.
 | Full offline verification | `releases/replay.py` reconstructs evidence; `releases/verify.py` compares published output |
 | Bounded admission and reading | `releases/admission.py`, `releases/reader.py` |
 | Public-table output and reading | `public_table.py`, `public_table_profiles.py` |
-| Transport | `transport/retry.py`, `sources/zyte.py`; source-specific I/O selected at the CLI boundary |
-| Operator commands | `source_native_cli.py` |
+| Transport | `transport/acquisition.py`, `transport/retry.py`, `sources/zyte.py` |
+| Operator commands | `source_native_cli.py` handles commands; `cli/arguments.py` defines syntax; `cli/sources.py` registers scope, acquisition, errors, and optional tables |
 
 Dependencies point from commands to sources and release operations, then to
 format definitions, stores, and Rulespec. Package initializers stay lightweight.
