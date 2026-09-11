@@ -8,12 +8,11 @@ keys.
 
 from __future__ import annotations
 
-import json
 import re
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
-from functools import cache
+from functools import cache, partial
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Final, Literal, Protocol, cast
@@ -28,6 +27,7 @@ from rulespec_artifacts import (
 )
 
 from spicy_docs.source_native_zip import deterministic_zip_entry
+from spicy_docs.sources.json_input import load_integer_json
 from spicy_docs.sources.media_types import media_type
 
 DOCUMENT_COLLECTION: Final = "documents"
@@ -991,29 +991,9 @@ def docket_rendition_rows(record: Mapping[str, Any]) -> tuple[()]:
     return ()
 
 
-def _decode_json(raw: bytes) -> object:
-    def duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for key, value in pairs:
-            if key in result:
-                raise RegulationsGovSourceError(f"Regulations.gov JSON repeats field {key!r}")
-            result[key] = value
-        return result
-
-    def unsupported_float(value: str) -> None:
-        raise RegulationsGovSourceError(f"Regulations.gov JSON contains unsupported float {value!r}")
-
-    try:
-        return json.loads(
-            raw.decode("utf-8"),
-            object_pairs_hook=duplicate_keys,
-            parse_float=unsupported_float,
-            parse_constant=unsupported_float,
-        )
-    except RegulationsGovSourceError:
-        raise
-    except (UnicodeError, json.JSONDecodeError) as error:
-        raise RegulationsGovSourceError(f"invalid Regulations.gov JSON: {error}") from error
+_decode_json = partial(
+    load_integer_json, source="Regulations.gov", error_type=RegulationsGovSourceError, number_label="float"
+)
 
 
 def _enumeration_entry(value: object) -> dict[str, Any]:

@@ -25,12 +25,11 @@ repeats an identity instead of quietly collapsing one away.
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
-from functools import cache
+from functools import cache, partial
 from io import BytesIO
 from typing import Any, Final, Literal, cast
 from urllib.parse import parse_qs, quote, urlencode, urlparse
@@ -52,6 +51,7 @@ from spicy_docs.schemas.spicy_regs_public_tables import (
     project_public_comment_row,
 )
 from spicy_docs.source_native_zip import deterministic_zip_entry
+from spicy_docs.sources.json_input import load_integer_json
 from spicy_docs.sources.media_types import media_type
 
 PUBLIC_TABLE_BASE_URL: Final = "https://data.spicy-regs.dev"
@@ -330,29 +330,9 @@ def capture_pack_bytes(
     return output.getvalue()
 
 
-def _decode_json(raw: bytes) -> object:
-    def duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for key, value in pairs:
-            if key in result:
-                raise PublicTableSourceError(f"public-table JSON repeats field {key!r}")
-            result[key] = value
-        return result
-
-    def unsupported_number(value: str) -> None:
-        raise PublicTableSourceError(f"public-table JSON contains unsupported number {value!r}")
-
-    try:
-        return json.loads(
-            raw.decode("utf-8"),
-            object_pairs_hook=duplicate_keys,
-            parse_float=unsupported_number,
-            parse_constant=unsupported_number,
-        )
-    except PublicTableSourceError:
-        raise
-    except (UnicodeError, json.JSONDecodeError) as error:
-        raise PublicTableSourceError(f"invalid public-table JSON: {error}") from error
+_decode_json = partial(
+    load_integer_json, source="public-table", error_type=PublicTableSourceError, number_label="number"
+)
 
 
 def _validated_manifest(value: object) -> dict[str, Any]:
