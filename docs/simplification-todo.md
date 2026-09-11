@@ -4,7 +4,7 @@ Created September 11, 2026 from the blind product-boundary review (`blind-produc
 
 **Updated September 11, 2026 following the owner's product clarification and checklist sync.** DocSpec is an iterative dataset and catalog platform: accept sources, select documents, use injected fetchers, process now or later, reuse previous work, and compare results. SpicyRegs remains an independently usable source-data product. SpicyDocs may remain separate; share source improvements where they remove duplicate effort or improve a supported workflow. Package placement remains open and is not a prerequisite for useful integration. The prior blanket recommendation to merge SpicyDocs into DocSpec is withdrawn. The additional duplication review (`docspec-spicy-docs-duplication-review.md`) and coordination review (`docspec-spicy-docs-coordination-review.md`) supply useful findings, but their merger addenda do not define this plan.
 
-**Progress: 4 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
+**Progress: 6 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
 
 The intended result is reusable upstream source data and an approachable platform for dataset experiments. A user can build a catalog, fetch selected documents once, process them inline or later, change processors or reference resources, add documents, and compare reproducible results. Every useful stopping point exposes what was requested, received, accepted, rejected, and unresolved. Search is one consumer; catalog-only, acquisition-only, and later-processing workflows have independent value.
 
@@ -96,7 +96,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s03"></a>
 
-- [ ] **S03 — Remove the default second full campaign verification.** **Change; owner: SpicyDocs; beneficiary: acquisition operators.** Keep the full staged-publication verifier mandatory. Use the existing bounded opening and expected artifact pin where a visible-destination or resume check is needed. Retain full replay as an explicit audit operation, with an independently supplied expected pin and accepted verifier identity. Simplify the extra verification subprocess, receipts, and resume states that become unnecessary. **Done when:** ordinary publication runs full replay once; interrupted runs, stale receipts, mismatched pins, and tampered destinations cannot be mistaken for completed work. Explicit audit still works. Record pass counts and any measured cost reduction without claiming unmeasured speedups. **Evidence:** simplification recommendation 1; `cli/campaign.py:252`, `releases/publish.py:328`.
+- [x] **S03 — Remove the default second full campaign verification.** **Change; owner: SpicyDocs; beneficiary: acquisition operators.** Keep the full staged-publication verifier mandatory. Use the existing bounded opening and expected artifact pin where a visible-destination or resume check is needed. Retain full replay as an explicit audit operation, with an independently supplied expected pin and accepted verifier identity. Simplify the extra verification subprocess, receipts, and resume states that become unnecessary. **Done when:** ordinary publication runs full replay once; interrupted runs, stale receipts, mismatched pins, and tampered destinations cannot be mistaken for completed work. Explicit audit still works. Record pass counts and any measured cost reduction without claiming unmeasured speedups. **Evidence:** simplification recommendation 1; `cli/campaign.py:252`, `releases/publish.py:328`.
 
 <a id="s04"></a>
 
@@ -209,7 +209,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s15"></a>
 
-- [ ] **S15 — Keep local documented-value diagnostics proportionate to use.**
+- [x] **S15 — Keep local documented-value diagnostics proportionate to use.**
   **Decision and selected local changes; owner: SpicyDocs; beneficiary: source maintainers.**
   Identify who uses the diagnostic to compare observed values with publisher
   documentation, including SpicyRegs maintenance. Keep exact strings, pinned
@@ -529,3 +529,28 @@ records the S11 decision. Review reports are retained in the local planning
 session as `s01-outcomes-review.md`, `s13-iceberg-retirement-review.md`, and
 `s07-failure-provenance-review.md`. No consumer adoption or remote publication is
 claimed by these local changes.
+
+**September 11, 2026 — S03 and S15 complete.** Commit `ee991d7` removes
+the campaign's automatic second full replay and separate verification receipts.
+New and resumed releases use interruptible inspection with independently supplied
+verifier acceptance, the retained expected pin, requested scope, and exact
+collection outcomes. Tests count one mandatory replay per publication and check
+explicit audit, corruption, stale receipts, retries, and interruption, including
+the gap between launching a child and registering it. The 43 campaign tests,
+focused Ruff, formatting, and type checks passed. Independent review approved
+the final patch after cancellation, outcome matching, and malformed-log fixes.
+Admission still hashes all retained payloads; no runtime speedup is claimed.
+
+Commit `aba1031` keeps documented-value drift as an optional offline diagnostic
+owned by source maintainers, documents its refresh process and limits, and
+removes an empty skipped test. Both local Parquet queries bind paths as data;
+the connection closes on errors as well as success. The 30 diagnostic tests and
+focused Ruff, formatting, and type checks passed. Independent review approved
+the changes. SpicyRegs adoption remains conditional on a named maintenance user.
+
+The combined repository check, `./scripts/check`, passed after both changes:
+locked dependency sync, Ruff, formatting, and **559 tests passed; two integration
+cases deselected by the default configuration**. This is local validation;
+remote CI, pushing these commits, and wheel qualification are not claimed.
+The independent reports remain in the local planning session as
+`implementation-review-s03.md` and `s15-drift-diagnostic-review.md`.
