@@ -4,7 +4,7 @@ Created September 11, 2026 from the blind product-boundary review (`blind-produc
 
 **Updated September 11, 2026 following the owner's product clarification and checklist sync.** DocSpec is an iterative dataset and catalog platform: accept sources, select documents, use injected fetchers, process now or later, reuse previous work, and compare results. SpicyRegs remains an independently usable source-data product. SpicyDocs may remain separate; share source improvements where they remove duplicate effort or improve a supported workflow. Package placement remains open and is not a prerequisite for useful integration. The prior blanket recommendation to merge SpicyDocs into DocSpec is withdrawn. The additional duplication review (`docspec-spicy-docs-duplication-review.md`) and coordination review (`docspec-spicy-docs-coordination-review.md`) supply useful findings, but their merger addenda do not define this plan.
 
-**Progress: 0 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
+**Progress: 2 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
 
 The intended result is reusable upstream source data and an approachable platform for dataset experiments. A user can build a catalog, fetch selected documents once, process them inline or later, change processors or reference resources, add documents, and compare reproducible results. Every useful stopping point exposes what was requested, received, accepted, rejected, and unresolved. Search is one consumer; catalog-only, acquisition-only, and later-processing workflows have independent value.
 
@@ -133,7 +133,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s07"></a>
 
-- [ ] **S07 — Reconstruct deterministic failure provenance during full replay.** **Change; owner: SpicyDocs release verification; beneficiary: users investigating omitted records.** During the existing evidence pass, independently reconstruct rejected-record positions, identifiers, reason/class, and evidence references, then compare the failure ledger. Keep transport failures separate where retained response bytes cannot reproduce them. Avoid sharing the writer's failure-ledger construction in a way that makes the check circular. **Done when:** omitted, injected, duplicated, misclassified, or relinked failures are rejected even in an otherwise consistently resealed artifact. Genuine deterministic failures replay successfully. Ordinary reader admission gains no whole-corpus scan. **Evidence:** product review finding 2; `releases/replay.py:183`, `releases/verify.py:213`.
+- [x] **S07 — Reconstruct deterministic failure provenance during full replay.** **Change; owner: SpicyDocs release verification; beneficiary: users investigating omitted records.** During the existing evidence pass, independently reconstruct rejected-record positions, identifiers, reason/class, and evidence references, then compare the failure ledger. Keep transport failures separate where retained response bytes cannot reproduce them. Avoid sharing the writer's failure-ledger construction in a way that makes the check circular. **Done when:** omitted, injected, duplicated, misclassified, or relinked failures are rejected even in an otherwise consistently resealed artifact. Genuine deterministic failures replay successfully. Ordinary reader admission gains no whole-corpus scan. **Evidence:** product review finding 2; `releases/replay.py:183`, `releases/verify.py:213`.
 
 <a id="s08"></a>
 
@@ -151,7 +151,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s11"></a>
 
-- [ ] **S11 — Inventory SpicyDocs users and repeated source work.**
+- [x] **S11 — Inventory SpicyDocs users and repeated source work.**
   **Decision; owner: SpicyDocs; beneficiary: source contributors and experiment authors.**
   Inspect local auxiliary catalogs, tables/Iceberg, CourtListener, drift tools,
   imports, and extension points against actual sibling callers and intended
@@ -493,3 +493,20 @@ unchanged RefSpec resource package assigns no implementation work to RefSpec.
 **September 11, 2026 — destination ownership correction, planning only.** Split shared work into local tasks in DocSpec, SpicyDocs, SpicyRegs, Rulespec, SpicySearch, and SpicyEngine. Replaced six source-side descriptions of DocSpec work with moved-ID links; narrowed remaining checkboxes to this repository's work. DocSpec D51–D52 now own the named GAO/comment examples. The 25 remaining local checkboxes are open; no implementation was completed or dropped by this routing change.
 
 Append concise implementation entries as work proceeds: item IDs, agreed decision, changed repositories, commit IDs, focused validation, upstream status, and remaining dependencies. Decisions to defer optional features need a beneficiary and revisit condition; they do not count as delivered implementation. The owner's stated experiment capabilities and SpicyRegs uses are requirements, not speculative features to remove solely because today's search pipeline does not exercise them.
+
+
+**September 11, 2026 — S07 complete; S11 inventory agreed.** Commit `1e661ed`
+reconstructs rejected record positions and exact failure/evidence references during
+producer replay. It removes the weaker shape-only ledger path while preserving
+bounded-memory admission and full producer verification. The focused failure and
+publication checks passed (43 tests); the broader source/release checks passed
+before redundant fixture-test removal (169 tests, one excluded live case).
+Nine adversarial cases fail against the original `c9da196` verifier and pass
+against the changed implementation. Focused Ruff and type checks passed.
+Independent semi-formal review found no blocking issue.
+
+The [source ownership inventory](source-ownership.md) completes S11's decision
+work: keep independent source publication, remove unused generated policy and
+Iceberg attachment machinery, share the strict source parser through its wheel,
+and qualify shared storage before replacing callers. S25 handoffs and every
+selected removal remain open; this decision does not claim consumer adoption.
