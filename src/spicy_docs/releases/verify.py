@@ -1,0 +1,331 @@
+"""Compare a release against full offline acquisition replay."""
+
+from __future__ import annotations
+
+import sqlite3
+import tempfile
+from collections.abc import Iterator, Mapping
+from itertools import zip_longest
+from pathlib import Path
+from typing import Any
+
+from jsonschema import Draft202012Validator
+from rulespec_artifacts import (
+    BlobSource,
+    FramedSection,
+    MemberSource,
+    VerifiedArtifact,
+    framed_section_digest,
+)
+
+from spicy_docs.releases.admission import (
+    _member_index,
+    verify_source_native_admission,
+)
+from spicy_docs.releases.format import (
+    _LEDGER_FAILURE_SCHEMA,
+    _RECEIPT_SHAPE,
+    FAILURE_CLASS_DETERMINISTIC,
+    FAILURE_CLASS_TRANSIENT,
+    PARTITION_LEDGER,
+    PARTITION_PAGES,
+    PARTITION_RECORDS,
+    PARTITION_RENDITIONS,
+    RECEIPT_KEY,
+    ROLE_EVIDENCE,
+    SCOPES_KEY,
+    SourceNativeReleaseError,
+)
+from spicy_docs.releases.observations import (
+    _digest_records,
+    _ordered_rendition_rows,
+    _policy_for_scope,
+    _query_mappings,
+    _source_state_digest,
+)
+from spicy_docs.releases.partitions import (
+    _partition_rows,
+    _payload_partitions,
+    _read_jsonl,
+    _read_one_json,
+)
+from spicy_docs.releases.replay import (
+    _replay_acquisition,
+)
+from spicy_docs.source_native_profile import (
+    SourceNativeProfile,
+)
+
+
+def verify_source_native_release(
+    artifact: VerifiedArtifact,
+    source: MemberSource,
+    *,
+    profile: SourceNativeProfile,
+    blob_source: BlobSource | None,
+) -> None:
+    """Recompute the selected source profile at the producer gate."""
+
+    verify_source_native_admission(
+        artifact,
+        source,
+        profile=profile,
+        blob_source=blob_source,
+    )
+    _, by_ref, by_role = _member_index(artifact, source)
+    spec = artifact.root["spec"]
+    if not isinstance(spec, Mapping):
+        raise SourceNativeReleaseError("source-native root spec is not an object")
+    receipt = _RECEIPT_SHAPE.parse(_read_one_json(source, RECEIPT_KEY))
+    partitions = _payload_partitions(receipt, by_ref)
+    scopes = list(_read_jsonl(source, SCOPES_KEY))
+    if len(scopes) != 1 or set(scopes[0]) != {"fields", "scopeId", "scopeKind", "sourceSystemId"}:
+        raise SourceNativeReleaseError(f"{profile.name} source scope differs")
+    if (
+        scopes[0].get("scopeId") != profile.scope_id
+        or scopes[0].get("scopeKind") != "source-collection"
+        or scopes[0].get("sourceSystemId") != profile.source_system_id
+        or not isinstance(scopes[0].get("fields"), Mapping)
+    ):
+        raise SourceNativeReleaseError(f"{profile.name} source scope values differ")
+    query_scope = dict(profile.validate_query_scope(scopes[0]["fields"]))
+    if query_scope != dict(scopes[0]["fields"]):
+        raise SourceNativeReleaseError(f"{profile.name} source scope is not canonical")
+    policy_digest = framed_section_digest(
+        "spicyregs-acquisition-policy/1",
+        (
+            FramedSection(
+                "policy",
+                1,
+                (_policy_for_scope(query_scope, profile),),
+            ),
+        ),
+    )
+    if policy_digest != spec["acquisitionPolicyDigest"]:
+        raise SourceNativeReleaseError("acquisition-policy digest differs")
+    schema_declarations = [profile.source_schema_declaration()]
+    schema_set_digest = _digest_records("spicyregs-source-schema-set/1", "schemas", schema_declarations)
+    if schema_set_digest != spec["sourceNativeSchemaSetDigest"]:
+        raise SourceNativeReleaseError("source-native schema-set digest differs")
+    evidence_members = {member.blob_ref: member for member in by_role[ROLE_EVIDENCE] if member.blob_ref is not None}
+    with tempfile.TemporaryDirectory(prefix="source-native-verify-") as directory:
+        connection = sqlite3.connect(Path(directory) / "replay.sqlite3")
+        try:
+            accepted, traversal_count = _replay_acquisition(
+                connection,
+                source=source,
+                blob_source=blob_source,
+                evidence_members=evidence_members,
+                page_partitions=partitions[PARTITION_PAGES],
+                query_scope=query_scope,
+                profile=profile,
+            )
+            if receipt["reconciliationPassCount"] != traversal_count:
+                raise SourceNativeReleaseError("reconciliation pass count differs")
+            published_record_count = int(
+                connection.execute(
+                    "SELECT count(*) FROM observations WHERE traversal = ? AND selected = 1",
+                    (accepted,),
+                ).fetchone()[0]
+            )
+            input_observation_count = int(
+                connection.execute(
+                    "SELECT count(*) FROM observations WHERE traversal = ?",
+                    (accepted,),
+                ).fetchone()[0]
+            )
+
+            def replayed_records() -> Iterator[Mapping[str, Any]]:
+                return _query_mappings(
+                    connection,
+                    "SELECT record_payload FROM observations "
+                    "WHERE traversal = ? AND selected = 1 ORDER BY source_record_id",
+                    (accepted,),
+                )
+
+            def replayed_observations() -> Iterator[Mapping[str, Any]]:
+                return _query_mappings(
+                    connection,
+                    "SELECT record_payload FROM observations WHERE traversal = ? "
+                    "ORDER BY source_record_id, source_version IS NULL, source_version DESC",
+                    (accepted,),
+                )
+
+            def admitted_records() -> Iterator[Mapping[str, Any]]:
+                return _partition_rows(
+                    source,
+                    blob_source,
+                    partitions[PARTITION_RECORDS],
+                )
+
+            def expected_renditions() -> Iterator[Mapping[str, Any]]:
+                for row in replayed_records():
+                    record = row.get("record")
+                    if not isinstance(record, Mapping):
+                        raise SourceNativeReleaseError(f"published {profile.name} record payload is invalid")
+                    yield from _ordered_rendition_rows(
+                        profile,
+                        profile.classify_record(record),
+                    )
+
+            rendition_count = sum(1 for _ in expected_renditions())
+
+            sentinel = object()
+            observed_count = 0
+            for actual, expected in zip_longest(admitted_records(), replayed_records(), fillvalue=sentinel):
+                if actual is sentinel or expected is sentinel or actual != expected:
+                    raise SourceNativeReleaseError("published records differ from replayed source evidence")
+                observed_count += 1
+            if observed_count != published_record_count:
+                raise SourceNativeReleaseError("published record count differs from replayed evidence")
+
+            observed_rendition_count = 0
+            for actual, expected in zip_longest(
+                _partition_rows(
+                    source,
+                    blob_source,
+                    partitions[PARTITION_RENDITIONS],
+                ),
+                expected_renditions(),
+                fillvalue=sentinel,
+            ):
+                if actual is sentinel or expected is sentinel or actual != expected:
+                    raise SourceNativeReleaseError("rendition index differs from source-stated locators")
+                observed_rendition_count += 1
+            if observed_rendition_count != rendition_count:
+                raise SourceNativeReleaseError("rendition count differs from replayed evidence")
+
+            def expected_ledger() -> Iterator[Mapping[str, Any]]:
+                query = (
+                    "SELECT observations.source_record_id, observations.evidence_ref "
+                    "FROM observations "
+                    "WHERE observations.traversal = ? AND observations.selected = 1 "
+                    "ORDER BY observations.source_record_id"
+                )
+                for source_record_id, evidence_ref in connection.execute(query, (accepted,)):
+                    yield {
+                        "evidenceBlobRef": evidence_ref,
+                        "failure": None,
+                        "observationRef": {"sourceRecordId": source_record_id},
+                        "sourceRecordId": source_record_id,
+                    }
+
+            def admitted_ledger() -> Iterator[Mapping[str, Any]]:
+                return _partition_rows(
+                    source,
+                    blob_source,
+                    partitions[PARTITION_LEDGER],
+                )
+
+            # A ledger row with `failure: null` is one replayed, published
+            # observation and is proven byte-for-byte against that replay,
+            # exactly as before this release shape could record a failure at
+            # all. A row with `failure` set records one failed acquisition
+            # attempt instead; nothing here replays failures (no acquisition
+            # step in this codebase yet produces one, and no source evidence
+            # exists to reconstruct one from), so this walk instead proves
+            # each failure row well-formed and proves the receipt's own
+            # per-class summary reconciles with what the ledger actually
+            # holds -- the one proof available, at the one place (this
+            # build-gate check, not the cheap admission check) allowed to
+            # walk every ledger row once.
+            failure_validator = Draft202012Validator(_LEDGER_FAILURE_SCHEMA)
+            expected_ledger_iterator = expected_ledger()
+            observed_success_count = 0
+            observed_deterministic_count = 0
+            observed_transient_count = 0
+            observed_unclassed_count = 0
+            for row in admitted_ledger():
+                failure = row.get("failure")
+                if failure is None:
+                    expected = next(expected_ledger_iterator, sentinel)
+                    if expected is sentinel or row != expected:
+                        raise SourceNativeReleaseError("acquisition ledger differs from replayed evidence")
+                    observed_success_count += 1
+                    continue
+                if not failure_validator.is_valid(failure):
+                    raise SourceNativeReleaseError("acquisition-ledger failure entry is malformed")
+                failure_class = failure["class"]
+                if failure_class == FAILURE_CLASS_DETERMINISTIC:
+                    observed_deterministic_count += 1
+                elif failure_class == FAILURE_CLASS_TRANSIENT:
+                    observed_transient_count += 1
+                else:
+                    observed_unclassed_count += 1
+            if next(expected_ledger_iterator, sentinel) is not sentinel:
+                raise SourceNativeReleaseError("acquisition ledger differs from replayed evidence")
+            if observed_success_count != published_record_count:
+                raise SourceNativeReleaseError("acquisition-ledger count differs")
+            observed_failed_count = observed_deterministic_count + observed_transient_count + observed_unclassed_count
+            if (
+                receipt.get("deterministicFailureCount", 0) != observed_deterministic_count
+                or receipt.get("transientFailureCount", 0) != observed_transient_count
+                or receipt.get("unclassedFailureCount", 0) != observed_unclassed_count
+            ):
+                raise SourceNativeReleaseError("source-native failure summary differs from acquisition ledger")
+            observed_ledger_count = observed_success_count + observed_failed_count
+
+            state_digest = _source_state_digest(
+                (len(scopes), scopes),
+                (len(schema_declarations), schema_declarations),
+                (published_record_count, admitted_records()),
+                (
+                    rendition_count,
+                    _partition_rows(
+                        source,
+                        blob_source,
+                        partitions[PARTITION_RENDITIONS],
+                    ),
+                ),
+            )
+            if state_digest != spec["sourceStateDigest"]:
+                raise SourceNativeReleaseError("source-state digest differs")
+            input_digest = framed_section_digest(
+                "spicyregs-input-observations/1",
+                (
+                    FramedSection(
+                        "observations",
+                        input_observation_count,
+                        replayed_observations(),
+                    ),
+                ),
+            )
+            if input_digest != receipt["inputObservationDigest"]:
+                raise SourceNativeReleaseError("input-observation digest differs")
+            ledger_digest = framed_section_digest(
+                "spicyregs-acquisition-ledger/1",
+                (
+                    FramedSection(
+                        "entries",
+                        observed_ledger_count,
+                        admitted_ledger(),
+                    ),
+                ),
+            )
+            if ledger_digest != receipt["acquisitionLedgerDigest"]:
+                raise SourceNativeReleaseError("acquisition-ledger digest differs")
+            accepted_page_count = int(connection.execute("SELECT count(*) FROM pages WHERE accepted = 1").fetchone()[0])
+            accepted_pages = _query_mappings(
+                connection,
+                "SELECT payload FROM pages WHERE accepted = 1 ORDER BY traversal, page",
+            )
+            reconciliation_digest = framed_section_digest(
+                "spicyregs-source-reconciliation/1",
+                (FramedSection("pages", accepted_page_count, accepted_pages),),
+            )
+            if reconciliation_digest != receipt["reconciliationDigest"]:
+                raise SourceNativeReleaseError("source-reconciliation digest differs")
+            counts = {
+                "acquisitionEvidenceCount": len(evidence_members),
+                "discoveredRecordCount": input_observation_count + observed_failed_count,
+                "discardedObservationCount": (input_observation_count - published_record_count),
+                "failedRecordCount": observed_failed_count,
+                "inputObservationCount": input_observation_count,
+                "publishedRecordCount": published_record_count,
+                "renditionIndexCount": rendition_count,
+            }
+            for name, expected in counts.items():
+                if receipt.get(name) != expected:
+                    raise SourceNativeReleaseError(f"receipt count differs at {name}")
+        finally:
+            connection.close()

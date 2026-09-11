@@ -992,7 +992,8 @@ def test_reader_requires_explicit_verifier_allowlist(tmp_path: Path) -> None:
 def test_new_path_uses_only_shared_artifact_implementation() -> None:
     source_native = Path(__file__).parents[1] / "src/spicy_docs/source_native.py"
     profile = Path(__file__).parents[1] / "src/spicy_docs/federal_register_source_native.py"
-    text = source_native.read_text() + profile.read_text()
+    implementations = sorted(source_native.with_name("releases").glob("*.py"))
+    text = source_native.read_text() + profile.read_text() + "".join(path.read_text() for path in implementations)
 
     assert "rulespec_conformance" not in text
     assert "build_artifact_root" in text

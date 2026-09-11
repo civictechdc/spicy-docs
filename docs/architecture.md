@@ -40,7 +40,11 @@ identity depend on the caller.
 | Captured public comments | `spicy_regs_public_tables_source_native.py` |
 | Raw readers | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |
 | Shared source mechanics | `sources/json_input.py`, `sources/media_types.py` |
-| Shared release machinery | `source_native.py`; blob access in `source_native_store.py`; immutable filesystem publication in `publication.py` |
+| Public release API | `source_native.py` preserves existing imports; implementations live in `releases/` |
+| Release format and payloads | `releases/format.py`, `releases/partitions.py`; blob access in `source_native_store.py` |
+| Observation selection and publication | `releases/observations.py`, `releases/indexing.py`, `releases/publish.py`; immutable filesystem publication in `publication.py` |
+| Full offline verification | `releases/replay.py` reconstructs evidence; `releases/verify.py` compares published output |
+| Bounded admission and reading | `releases/admission.py`, `releases/reader.py` |
 | Public-table output and reading | `public_table.py`, `public_table_profiles.py` |
 | Transport | `transport/retry.py`, `sources/zyte.py`; source-specific I/O selected at the CLI boundary |
 | Operator commands | `source_native_cli.py` |
