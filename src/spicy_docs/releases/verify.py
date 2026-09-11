@@ -210,18 +210,12 @@ def verify_source_native_release(
                     partitions[PARTITION_LEDGER],
                 )
 
-            # A ledger row with `failure: null` is one replayed, published
-            # observation and is proven byte-for-byte against that replay,
-            # exactly as before this release shape could record a failure at
-            # all. A row with `failure` set records one failed acquisition
-            # attempt instead; nothing here replays failures (no acquisition
-            # step in this codebase yet produces one, and no source evidence
-            # exists to reconstruct one from), so this walk instead proves
-            # each failure row well-formed and proves the receipt's own
-            # per-class summary reconciles with what the ledger actually
-            # holds -- the one proof available, at the one place (this
-            # build-gate check, not the cheap admission check) allowed to
-            # walk every ledger row once.
+            # Successful rows must match independent replay byte-for-byte.
+            # Replay reclassifies retained evidence and skips deterministic
+            # classification/scope failures; it does not reconstruct their
+            # ledger rows. This full gate checks failure shape and per-class
+            # counts in one ledger pass. Bounded admission trusts those sealed
+            # counts under the explicitly accepted verifier identity.
             failure_validator = Draft202012Validator(_LEDGER_FAILURE_SCHEMA)
             expected_ledger_iterator = expected_ledger()
             observed_success_count = 0

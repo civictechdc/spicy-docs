@@ -197,13 +197,16 @@ apply to Federal Register.
 **Amendment (2026-09-02):** it applies to Regulations.gov documents and dockets
 too; the mirror holds a 2021-02-12 and a newer "(1)" 2024-06-12 observation of
 docket ACF-2007-0125, and a filename filter would have discarded the newer one.
-**Amendment (2026-09-02):** it now applies to Federal Register too. The source
-reuses `document_number` across unrelated documents — `00-111` resolves (via the
-API's own `/documents/00-111.json`) to a 2000-01-18 "Notice of Filing of Plat of
-an Island; Minnesota", while the full-history crawl also discovers an older
-2000-01-14 "Compliance Monitoring..." rule filed under the same number — so the
-profile groups by `/document_number`, orders by `/publication_date DESC NULLS
-LAST`, and refuses a same-date collision whose record digests differ.
+**Superseding amendment (2026-09-04, `b590d867`):** Federal Register identity is
+`document_number@publication_date`, and the profile groups by both fields.
+The source reuses a number across unrelated documents: `00-111` names both a
+2000-01-14 rule and a 2000-01-18 notice. Both dates remain distinct records.
+Repeated observations of the same pair collapse only when their canonical
+record digests agree; differing digests refuse publication. This supersedes
+the 2026-09-02 rule that grouped by number and selected the latest date, which
+discarded distinct documents. Acquisition policy `1.1` records this identity
+change; the requested fields remain at `1.0`. See the
+[identity and field-policy decision](../../decisions.md#federal-register-identity-and-fields-version-separately).
 
 Source-specific observation collapse is acquisition meaning, not a catalog
 derivation: every Regulations.gov profile — comments, dockets, and documents —
@@ -280,8 +283,9 @@ timestamps, and the publication receipt are excluded from logical state but
 remain integrity-bound by `artifactDigest`. Each source adapter must classify
 every observed upstream column and nested field into its closed versioned
 source schema, validate its declared shape, and preserve the exact classified
-value including explicit nulls. A new name or incompatible type fails
-publication. A future schema may preserve new names only through an explicitly
+value including explicit nulls. A new name or incompatible type produces a
+record-level deterministic failure under the amendment in section 5. A future
+schema may preserve new names only through an explicitly
 classified, closed extension map; an open catch-all is not allowed.
 
 ## 5. Receipt and semantic verification
@@ -293,6 +297,7 @@ exactly `format`, `formatVersion`, `releaseSchemaId`,
 `reconciliationDigest`, `inputObservationDigest`,
 `inputObservationCount`, `publishedRecordCount`,
 `discardedObservationCount`, `renditionIndexCount`, `failedRecordCount`,
+`deterministicFailureCount`, `transientFailureCount`, `unclassedFailureCount`,
 `acquisitionLedgerDigest`, `acquisitionEvidenceCount`,
 `discoveredRecordCount`,
 `sourceNativeSchemaSetDigest`, `sourceStateDigest`, `verifierId`,
@@ -335,12 +340,22 @@ proves `discoveredRecordCount = inputObservationCount + failedRecordCount`,
 recomputes the acquisition-ledger digest and evidence count,
 recomputes the rendition and published-record counts, and checks them against
 the product state and applicable root aggregates. `failedRecordCount` covers
-source-read or parse failures that never became canonical observations and is
-not part of that equality, but it MUST be zero for a publishable release. A
-nonzero value fails the semantic verdict and blocks publication rather than
-silently creating a partial source state. A malformed field retained in a
-canonical observation with an explicit diagnostic is not a failed record;
-one such field cannot abort unrelated rows. The verifier refuses an unknown
+records that never became canonical observations. **Superseding amendment
+(2026-09-04, `83e2032`, `dc5687b`):** deterministic classification or record-scope
+failures remain in the acquisition ledger and retained source evidence; they
+contribute no published record. A release may publish with these failures when
+the per-class counts reconcile with `failedRecordCount` and both transient and
+unclassed counts are zero. Transport, page parsing, and other acquisition errors
+still abort; a credential refusal never becomes a deterministic source record.
+This replaces the original requirement that every failure count be zero.
+
+Full verification independently reclassifies retained records and compares
+the successful rows. It checks each failure row's closed shape and reconciles
+the per-class ledger counts; it does not reconstruct failure rows from evidence.
+Bounded consumer admission checks the sealed counts and accepted verifier pins
+without walking the ledger. Historical accepted schema bundles remain readable;
+an older receipt without per-class counts is admissible only with zero failures.
+The verifier refuses an unknown release
 field, code, format, missing required observation log, or extra log on a
 no-collapse profile. It recomputes and records the exact schema-set and source-state
 digests, and the receipt pins its verifier identity, version, and
