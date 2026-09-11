@@ -13,7 +13,12 @@ from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
 
+from rulespec_artifacts import ArtifactPin, LocalMemberSource
+
+from spicy_docs.source_native import SourceNativeReleaseReader
 from spicy_docs.source_native_cli import main as source_native_main
+from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.sources.gao.profile import GAO_PRODUCT_PAGE_PROFILE
 from spicy_docs.sources.zyte import ZyteHttpResponse
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
@@ -89,12 +94,21 @@ def run_example(directory: Path) -> dict[str, object]:
     if result != 0:
         raise RuntimeError(errors.getvalue().strip())
     verified = json.loads(verified_output.getvalue())
+    reader = SourceNativeReleaseReader(
+        LocalMemberSource(release),
+        blob_source=LocalSourceNativeBlobStore(blobs, create=False),
+        profile=GAO_PRODUCT_PAGE_PROFILE,
+        expected_pin=ArtifactPin(verified["logicalId"], verified["artifactDigest"]),
+        accepted_verifier_implementation_ids=frozenset({IMPLEMENTATION_ID}),
+    )
     return {
         "input": "one synthetic GAO page; no live requests",
         "release": str(release),
         "blobStore": str(blobs),
         "publication": published,
         "verification": verified,
+        # This fixed example has one record. General consumers should stream it.
+        "records": list(reader.iter_records()),
     }
 
 

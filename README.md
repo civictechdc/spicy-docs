@@ -15,8 +15,11 @@ uv run --frozen python examples/offline_release.py
 ```
 
 The example publishes and independently verifies one synthetic GAO page. It
-makes no network requests, needs no credentials, and prints paths to retained
-artifacts. Use `--directory /path/to/example` to choose the output parent;
+makes no network requests and needs no credentials. Its JSON output includes
+the preserved source record under `records`, including the publisher's topic
+and capture details, read through `SourceNativeReleaseReader` after verification.
+It also prints paths to retained artifacts; the evidence ZIP holds the exact
+synthetic HTML. Use `--directory /path/to/example` to choose the output parent;
 its `gao/` child must be new. The fixed implementation ID identifies the
 example, not a production build. See [the example](examples/offline_release.py).
 

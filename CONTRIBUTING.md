@@ -9,13 +9,21 @@ checks. You do not need a sibling checkout or source credentials.
 
 | Job | Start with | Evidence and focused checks |
 | --- | --- | --- |
-| Correct a source behavior | The source's acquisition module and `sources/<source>/profile.py`; see the [module map](docs/architecture.md) | Add a small response fixture demonstrating the difference. Run `tests/regulations_gov/` for Regulations.gov, or the corresponding `test_*source_native*` source tests. Add `tests/releases/` when selection or identity changes. |
+| Correct a source behavior | The source's acquisition module and `sources/<source>/profile.py`; see the [module map](docs/architecture.md) | Add a small response fixture demonstrating the difference. Use the source checks below; add `tests/releases/` when selection or identity changes. |
 | Add a source | `source_native_profile.py`, an existing source profile, and `cli/sources.py` registration | Define scope, exact evidence, classification, identities, and completeness. Test success, malformed success, incomplete enumeration, duplicate observations, and offline replay. Reuse the release engine. |
 | Change shared release behavior | `source_native.py`, the [release specification](docs/superpowers/specs/2026-08-25-source-native-release-spec.md), and reader tests | Preserve output identities, schema bytes, bounded reading, immutable publication, and independent replay. Run `tests/releases/`, `test_source_native_failure_shape.py`, CLI, and reader-closure tests. Test the built wheel when imports or bundled schemas move. |
 
+Source checks:
+
+- Federal Register: `tests/releases/test_acquisition.py` and `tests/test_federal_register_request_window.py`.
+- Regulations.gov: `tests/regulations_gov/`.
+- GAO: `tests/test_gao_product_pages_source_native.py` and `tests/test_gao_source_native_cli.py`.
+- Captured public comments: `tests/test_spicy_regs_public_tables_source_native.py`.
+
 Public-table changes also need `test_public_table.py` and its CLI tests. Raw
-reader changes belong with the Mirrulations or CourtListener tests. Find exact
-test names with `uv run --frozen pytest --collect-only -q`.
+reader changes belong with the Mirrulations or CourtListener tests. Run a focused
+file with `uv run --frozen pytest -q tests/releases/test_acquisition.py`; add
+`--collect-only` to list its test names.
 
 ## Bring a domain finding without writing an adapter
 

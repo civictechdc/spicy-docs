@@ -109,9 +109,13 @@ its command and configuration were not retained. The documented manual refresh
 procedure preserves original provenance and separates current task guides from
 the dated reference snapshot.
 
-A first-time human contribution exercise remains unobserved. The automated
-example, tests, and clean installation establish that the path runs; they do
-not measure whether a new contributor can follow it within the proposed times.
+At the user's request, the contributor exercise used fresh blind subagents
+assigned Python-developer and government-records-analyst personas. Both followed
+the repository guidance and produced useful regression tests. Their shared
+record-inspection detour prompted a preserved-record preview in the offline
+example; finding Federal Register tests prompted explicit source test paths in
+the contributor guide. These are simulated contributor observations on a
+prepared host. First-time human contribution times remain unmeasured.
 
 Independent review also exposed a pre-existing Federal Register public-table
 identity mismatch. Its separately versioned

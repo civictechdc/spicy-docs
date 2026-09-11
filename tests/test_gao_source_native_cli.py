@@ -32,6 +32,13 @@ def test_cli_publishes_and_independently_verifies_gao_product_pages(tmp_path: Pa
     assert published["source"] == "gao-product-pages"
     assert published["sourceStateScope"] == "complete-snapshot"
     assert verified["sourceStateDigest"] == published["sourceStateDigest"]
+    (row,) = result["records"]
+    assert row["sourceRecordId"] == PRODUCT_ID
+    assert row["record"]["publisherTopic"] == {
+        "href": "/topics/information-security",
+        "label": "Information Security",
+        "slug": "information-security",
+    }
 
 
 def test_cli_refuses_duplicate_product_ids_before_fetching(tmp_path: Path) -> None:
