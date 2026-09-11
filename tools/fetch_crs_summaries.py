@@ -51,7 +51,7 @@ import httpx
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from spicy_docs.source_native_cli import _retry_http
+from spicy_docs.transport.retry import retry_http
 
 API = "https://api.congress.gov/v3/crsreport/{report_id}"
 USER_AGENT = "spicy-docs-crs-summaries/1.0"
@@ -125,7 +125,7 @@ def fetch_one(client: httpx.Client, report_id: str, api_key: str) -> dict[str, A
             raise ValueError(f"{report_id}: response carries id {report.get('id')!r}")
         return report
 
-    return _retry_http(_attempt, retryable=(httpx.RequestError, _RetryableStatus))
+    return retry_http(_attempt, retryable=(httpx.RequestError, _RetryableStatus))
 
 
 def run(

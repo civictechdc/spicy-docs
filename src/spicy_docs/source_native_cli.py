@@ -1,23 +1,14 @@
-"""Publish or independently verify one SpicyRegs source-native release, or one
-public Parquet table projected from an already-admitted release.
+"""Publish or verify immutable source-native releases and public Parquet tables.
 
-The public-table commands (``publish-public-table``/``verify-public-table``)
-import ``spicy_docs.public_table`` lazily, inside their own handlers, rather
-than at module scope like everything else here. That module has an
-unconditional ``import pyarrow``, and pyarrow is not yet declared anywhere in
-this package's dependency closure (SD-23 brought the publisher across but was
-authorized to add only ``duckdb``, dev/test-only). The lazy import keeps
-``publish``/``verify`` -- and this whole module's importability -- unaffected
-by that gap; only the two public-table commands fail, cleanly, as
-``dependency-missing``, until pyarrow is added to ``[project] dependencies``.
+Public-table handlers import their publisher lazily: PyArrow is supplied by
+this package's ``public-table`` extra, while source acquisition and verification
+remain usable without it. A missing extra produces ``dependency-missing``.
 """
 
 from __future__ import annotations
 
 import argparse
-import random
 import sys
-import time
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from datetime import UTC, date, datetime
@@ -99,6 +90,7 @@ from spicy_docs.spicy_regs_public_tables_source_native import (
     PublicTableSourceError,
     iter_spicy_regs_public_comment_pages,
 )
+from spicy_docs.transport.retry import retry_http
 
 SOURCE_FEDERAL_REGISTER: Final = "federal-register"
 SOURCE_GAO_PRODUCT_PAGES: Final = "gao-product-pages"
@@ -134,17 +126,6 @@ PUBLIC_TABLE_CHOICES: Final = (
 )
 
 _USER_AGENT = "spicy-docs-source-native/1.0 (https://github.com/civictechdc/spicy-docs)"
-# 2026-09-02: a full-history Federal Register crawl lost hours of work to one
-# `_ssl.c:993: The handshake operation timed out` — the crawl was competing
-# with a heavy S3 fan-out, and 5 attempts capped at 30s of total sleep gave up
-# long before the network recovered. 14 attempts (13 possible sleeps) with a
-# doubling backoff capped at 60s gives ~542s (~9 minutes) of worst-case
-# patience -- on the order of ten minutes, not thirty seconds -- while a
-# terminal refusal (a non-429 4xx, or the day's result cap) still fails on
-# the first attempt; see `_RetryableHTTPStatusError` and `_retry_http` below.
-_MAX_HTTP_ATTEMPTS = 14
-_RETRY_BACKOFF_CEILING_SECONDS = 60.0
-
 RegulationsReaderFactory = Callable[[str, str], MirrulationsObjectReader]
 
 
@@ -307,47 +288,13 @@ class _RetryableHTTPStatusError(httpx.HTTPStatusError):
     """A 429 or 5xx response -- worth retrying, unlike any other 4xx.
 
     A distinct subclass (rather than the plain ``httpx.HTTPStatusError`` that
-    ``response.raise_for_status()`` raises) lets ``_retry_http`` tell "the
+    ``response.raise_for_status()`` raises) lets ``retry_http`` tell "the
     server asked us to back off or is failing" apart from "this request is
     simply wrong" without inspecting exception messages. Both still satisfy
     ``isinstance(error, httpx.HTTPError)``, so a persistent 429/5xx that
     outlasts every attempt is still classified as ``transport-failed`` same
     as before.
     """
-
-
-def _retry_http[FetchResult](
-    operation: Callable[[], FetchResult],
-    *,
-    retryable: tuple[type[Exception], ...],
-) -> FetchResult:
-    """Run ``operation`` with capped exponential backoff and full jitter.
-
-    See the ``_MAX_HTTP_ATTEMPTS`` comment for why the budget is what it is.
-    Full jitter -- a uniform draw between 0 and the deterministic ceiling --
-    keeps concurrent fetchers (Federal Register pages, public-table
-    partitions) from retrying in lockstep against the same struggling host.
-    Each retry is logged to stderr with the attempt number, the chosen delay,
-    and the exception that triggered it, so a long retry reads as "working"
-    rather than "hung" in an operator's log.
-    """
-
-    for attempt in range(1, _MAX_HTTP_ATTEMPTS + 1):
-        try:
-            return operation()
-        except retryable as error:
-            if attempt == _MAX_HTTP_ATTEMPTS:
-                raise
-            ceiling = min(2**attempt, _RETRY_BACKOFF_CEILING_SECONDS)
-            delay = random.uniform(0.0, ceiling)
-            print(
-                f"source-native fetch: retry {attempt}/{_MAX_HTTP_ATTEMPTS - 1} "
-                f"in {delay:.1f}s (cap {ceiling:.0f}s) after "
-                f"{type(error).__name__}: {error}",
-                file=sys.stderr,
-            )
-            time.sleep(delay)
-    raise AssertionError("unreachable")
 
 
 def _fetch_with_retries(client: httpx.Client, url: str) -> bytes:
@@ -364,7 +311,7 @@ def _fetch_with_retries(client: httpx.Client, url: str) -> bytes:
             raise FederalRegisterSourceError("Federal Register returned an empty response")
         return response.content
 
-    return _retry_http(
+    return retry_http(
         _attempt,
         retryable=(httpx.RequestError, _RetryableHTTPStatusError, FederalRegisterSourceError),
     )
@@ -414,7 +361,7 @@ def _fetch_public_table(
             last_modified=response.headers.get("last-modified"),
         )
 
-    return _retry_http(
+    return retry_http(
         _attempt,
         retryable=(httpx.RequestError, _RetryableHTTPStatusError, PublicTableSourceError),
     )

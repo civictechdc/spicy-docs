@@ -55,13 +55,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from spicy_docs.source_native import ROLE_RECORDS
+from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 
 # Reaching for a private helper deliberately: it already implements capped
 # exponential backoff with full jitter and 429/5xx classification, and this
 # tool hand-rolling a second one would be the copy the doctrine forbids.
 # Promote it to a public name when a third consumer appears.
-from spicy_docs.source_native_cli import _retry_http
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.transport.retry import retry_http
 
 MANIFEST_PATH: tuple[str, str] = ("manifests", "source-native.json")
 #: The KEYLESS enumeration route, and the complete one. Measured 2026-09-05:
@@ -162,7 +162,7 @@ def _fetch_mods(client: httpx.Client, date: str) -> bytes:
         response.raise_for_status()
         return response.content
 
-    return _retry_http(_attempt, retryable=(httpx.RequestError, _RetryableStatus))
+    return retry_http(_attempt, retryable=(httpx.RequestError, _RetryableStatus))
 
 
 def _granule_ids(client: httpx.Client, date: str, page_size: int) -> tuple[list[str], int, int | None]:
