@@ -35,7 +35,7 @@ names rather than treating missing local callers as proof of no consumers.
 | --- | --- |
 | `_descriptor_rows()` | Removed. No repository or searched downstream caller; the underlying descriptor and JSON-lines readers remain in use. |
 | `_policy()` | Removed after the release split. Its only use forwarded a build's scope to the actual policy validator. |
-| `Writer` | Retain the documented, exported legacy extension interface. Core publication does not implement it. A new source uses `Reader` or `SourceNativeProfile`; removing `Writer` needs an explicit public deprecation decision. No external implementation was verified. |
+| `Writer` | Removed under the decision that legacy support is not required. No implementation or current caller was found in this repository or the five related checkouts. A source uses `Reader` or `SourceNativeProfile`; publication uses the shared publisher. |
 | `declared_profile_for_table()` | Retain as a supported, lightweight lookup of declared source capabilities. It raises `KeyError` for an undeclared table without loading a processing runtime. |
 | `discover_agencies()` | Retain as the documented library convenience for listing agencies with the built-in anonymous Mirrulations connection. Same-named sibling functions are separate APIs. |
 

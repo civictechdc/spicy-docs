@@ -92,9 +92,11 @@ Iteration is lazy. A caller must exhaust the iterator before treating key lists,
 
 The Mirrulations implementation adds `parse_failed_keys` and deliberately treats deterministic parse failures differently from transient transport failures. That source-specific exception appears in [Mirrulations connector](mirrulations_connector.md); it is not a general `Reader` guarantee.
 
-### Related `Writer` interface
+### Publication
 
-The same source file defines `Writer.write(records)`, an abstract sink interface. No component in this module implements it, and the supplied module tree does not include a writer. A connector that reads and writes can inherit from both interfaces.
+Source-native publication uses `SourceNativeProfile` and the shared release
+publisher. The unused abstract `Writer` interface described by the original
+snapshot was removed on 2026-09-11; legacy interface support is not required.
 
 ## `RecordType`: flat-record description
 
