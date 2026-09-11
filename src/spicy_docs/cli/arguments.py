@@ -19,9 +19,19 @@ def _date(value: str) -> date:
     return parsed
 
 
+def _nonnegative_int(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("must be a non-negative integer") from error
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("must be a non-negative integer")
+    return parsed
+
+
 def parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Publish or verify immutable source-native releases and public Parquet tables."
+        description="Publish, verify, or inspect immutable source-native releases and public Parquet tables."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -59,25 +69,33 @@ def parser() -> argparse.ArgumentParser:
     )
     publish.add_argument("--implementation-id", required=True)
 
-    verify = subparsers.add_parser(
-        "verify",
-        help="Independently replay and verify one immutable release",
-    )
-    verify.add_argument("--source", choices=SOURCE_CHOICES, required=True)
-    verify.add_argument("--release", type=Path, required=True)
-    verify.add_argument(
-        "--blob-store",
-        type=Path,
-        required=True,
-        help="Explicit persistent content-addressed payload store",
-    )
-    verify.add_argument("--logical-id", required=True)
-    verify.add_argument("--artifact-digest", required=True)
-    verify.add_argument(
-        "--accepted-verifier-implementation-id",
-        action="append",
-        required=True,
-    )
+    for command, help_text in (
+        ("verify", "Independently replay and verify one immutable release"),
+        ("inspect", "Admit one release and report collection outcomes and bounded failure details"),
+    ):
+        read = subparsers.add_parser(command, help=help_text)
+        read.add_argument("--source", choices=SOURCE_CHOICES, required=True)
+        read.add_argument("--release", type=Path, required=True)
+        read.add_argument(
+            "--blob-store",
+            type=Path,
+            required=True,
+            help="Explicit persistent content-addressed payload store",
+        )
+        read.add_argument("--logical-id", required=True)
+        read.add_argument("--artifact-digest", required=True)
+        read.add_argument(
+            "--accepted-verifier-implementation-id",
+            action="append",
+            required=True,
+        )
+        if command == "inspect":
+            read.add_argument(
+                "--failure-limit",
+                type=_nonnegative_int,
+                default=20,
+                help="Maximum failure rows to report (default: 20; 0 reports only the outcome)",
+            )
 
     publish_public_table = subparsers.add_parser(
         "publish-public-table",

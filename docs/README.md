@@ -11,6 +11,7 @@ states the adopted format and publication requirements.
 | Review planned simplification, component ownership, and DocSpec wheel reuse | [Simplification to-do list](simplification-todo.md) |
 | Understand which source capabilities to keep, share, or retire | [Source ownership decisions](source-ownership.md) |
 | Publish or verify a release or public table | [Operator commands](cli.md) |
+| Inspect collection counts, scope, and rejected records | [Collection outcomes](source-native-outcomes.md) |
 | Add a profile or change shared publication | [Release lifecycle and extension](releases.md) |
 | Understand Federal Register scope, identity, and evidence | [Federal Register](sources/federal-register.md) and [body sources](federal-register-body-sources.md) |
 | Change Mirrulations collection rules | [Regulations.gov](sources/regulations-gov.md) |

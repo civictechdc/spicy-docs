@@ -1,4 +1,4 @@
-"""Publish or verify immutable source-native releases and public Parquet tables.
+"""Publish, verify, or inspect source-native releases and public Parquet tables.
 
 Public-table handlers import their publisher lazily: PyArrow is supplied by
 this package's ``public-table`` extra, while source acquisition and verification
@@ -45,6 +45,7 @@ from spicy_docs.releases.publish import (
 )
 from spicy_docs.releases.reader import (
     SourceNativeReleaseReader,
+    _collection_outcome,
 )
 from spicy_docs.releases.verify import (
     verify_source_native_release,
@@ -75,10 +76,12 @@ def _success(
     *,
     pin: ArtifactPin,
     spec: Mapping[str, Any],
+    outcome: Mapping[str, Any],
 ) -> dict[str, object]:
     return {
         "artifactDigest": pin.artifact_digest,
         "command": command,
+        "collectionOutcome": outcome,
         "logicalId": pin.logical_id,
         "ok": True,
         "release": str(release.resolve()),
@@ -170,6 +173,7 @@ def _publish(
         published.root,
         pin=published.artifact.pin,
         spec=published.artifact.root["spec"],
+        outcome=_collection_outcome(LocalMemberSource(published.root)),
     )
 
 
@@ -204,7 +208,40 @@ def _verify(args: argparse.Namespace) -> dict[str, object]:
         args.release,
         pin=artifact.pin,
         spec=artifact.root["spec"],
+        outcome=_collection_outcome(source),
     )
+
+
+def _inspect(args: argparse.Namespace) -> dict[str, object]:
+    require_separate_paths(args.release, args.blob_store, labels=("--release", "--blob-store"))
+    reader = SourceNativeReleaseReader(
+        LocalMemberSource(args.release),
+        blob_source=LocalSourceNativeBlobStore(args.blob_store, create=False),
+        profile=source_registration(args.source).profile,
+        accepted_verifier_implementation_ids=frozenset(args.accepted_verifier_implementation_id),
+        expected_pin=ArtifactPin(args.logical_id, args.artifact_digest),
+    )
+    outcome = reader.collection_outcome
+    failures = list(reader.iter_failures(limit=args.failure_limit))
+    return {
+        **_success(
+            "inspect",
+            args.source,
+            args.release,
+            pin=reader.pin,
+            spec={
+                "sourceNativeSchemaSetDigest": reader.source_native_schema_set_digest,
+                "sourceStateDigest": reader.source_state_digest,
+                "sourceStateScope": reader.source_state_scope,
+                "sourceSystemId": reader.source_system_id,
+                "sourceSystemVersion": reader.source_system_version,
+            },
+            outcome=outcome,
+        ),
+        "failureLimit": args.failure_limit,
+        "failures": failures,
+        "failuresTruncated": len(failures) < outcome["failedRecordCount"],
+    }
 
 
 def _publish_public_table(args: argparse.Namespace) -> dict[str, object]:
@@ -342,6 +379,8 @@ def main(
             )
         elif args.command == "verify":
             result = _verify(args)
+        elif args.command == "inspect":
+            result = _inspect(args)
         elif args.command == "publish-public-table":
             result = _publish_public_table(args)
         else:
