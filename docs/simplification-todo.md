@@ -4,7 +4,7 @@ Created September 11, 2026 from the blind product-boundary review (`blind-produc
 
 **Updated September 11, 2026 following the owner's product clarification and checklist sync.** DocSpec is an iterative dataset and catalog platform: accept sources, select documents, use injected fetchers, process now or later, reuse previous work, and compare results. SpicyRegs remains an independently usable source-data product. SpicyDocs may remain separate; share source improvements where they remove duplicate effort or improve a supported workflow. Package placement remains open and is not a prerequisite for useful integration. The prior blanket recommendation to merge SpicyDocs into DocSpec is withdrawn. The additional duplication review (`docspec-spicy-docs-duplication-review.md`) and coordination review (`docspec-spicy-docs-coordination-review.md`) supply useful findings, but their merger addenda do not define this plan.
 
-**Progress: 9 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
+**Progress: 12 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
 
 The intended result is reusable upstream source data and an approachable platform for dataset experiments. A user can build a catalog, fetch selected documents once, process them inline or later, change processors or reference resources, add documents, and compare reproducible results. Every useful stopping point exposes what was requested, received, accepted, rejected, and unresolved. Search is one consumer; catalog-only, acquisition-only, and later-processing workflows have independent value.
 
@@ -137,15 +137,15 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s08"></a>
 
-- [ ] **S08 — Retain bounded evidence for refused responses.** **Change; owner: SpicyDocs acquisition and release code; beneficiary: operators repairing source drift.** Cover GAO identity/topic/markup failures and shared page parsing or inventory failures that currently occur before evidence persistence. Reuse the blob store and failed-run outcome to reference captured bytes; keep them separate from admitted records. Agree the smallest retention/reference design with the architect. Apply existing credential safeguards and byte bounds, and record when a bound or transport failure prevents capture. **Done when:** an operator can inspect the original refused response and diagnose these cases offline; failed runs retain discoverable evidence references; malformed pages remain refused; no second acquisition framework or valid-looking partial release is introduced. **Evidence:** product review finding 3; `sources/gao/native.py:623`, `releases/indexing.py:92`.
+- [x] **S08 — Retain bounded evidence for refused responses.** **Change; owner: SpicyDocs acquisition and release code; beneficiary: operators repairing source drift.** Cover GAO identity/topic/markup failures and shared page parsing or inventory failures that currently occur before evidence persistence. Reuse the blob store and failed-run outcome to reference captured bytes; keep them separate from admitted records. Agree the smallest retention/reference design with the architect. Apply existing credential safeguards and byte bounds, and record when a bound or transport failure prevents capture. **Done when:** an operator can inspect the original refused response and diagnose these cases offline; failed runs retain discoverable evidence references; malformed pages remain refused; no second acquisition framework or valid-looking partial release is introduced. **Evidence:** product review finding 3; `sources/gao/native.py:623`, `releases/indexing.py:92`.
 
 <a id="s09"></a>
 
-- [ ] **S09 — Expose what each coverage claim actually establishes.** **Change; owner: SpicyDocs; beneficiary: dataset users assessing omissions. Depends on S01 and the relevant S25 interface decision.** Carry exact selectors, discovery rules, and material assumptions alongside broad scope labels. Distinguish Federal Register's stable observed crawls, GAO's explicit requested IDs, and Mirrulations' live listing with individually pinned objects. Identify requested, unrequested, observed-empty, rejected, and unresolved outcomes where evidence supports those distinctions. **Done when:** supported source APIs and examples explain each source's coverage without implying one frozen publisher-wide instant or treating a transport error as source absence. Reuse existing scope/policy declarations where possible. [DocSpec D08](../../DocSpec/docs/dataset-experiments-todo.md#d08) consumes these facts; implementing the provider does not depend on its consumer. **Evidence:** product review finding 4.
+- [x] **S09 — Expose what each coverage claim actually establishes.** **Change; owner: SpicyDocs; beneficiary: dataset users assessing omissions. Depends on S01 and the relevant S25 interface decision.** Carry exact selectors, discovery rules, and material assumptions alongside broad scope labels. Distinguish Federal Register's stable observed crawls, GAO's explicit requested IDs, and Mirrulations' live listing with individually pinned objects. Identify requested, unrequested, observed-empty, rejected, and unresolved outcomes where evidence supports those distinctions. **Done when:** supported source APIs and examples explain each source's coverage without implying one frozen publisher-wide instant or treating a transport error as source absence. Reuse existing scope/policy declarations where possible. [DocSpec D08](../../DocSpec/docs/dataset-experiments-todo.md#d08) consumes these facts; implementing the provider does not depend on its consumer. **Evidence:** product review finding 4.
 
 <a id="s10"></a>
 
-- [ ] **S10 — Make public-comment completeness match its discovery evidence.** **Change with architecture decision; owner: SpicyDocs; beneficiary: public-comment dataset users. Depends on S09 and the S05 format decision.** The current first-missing-part rule establishes discovery under a contiguous-name assumption. Prefer an observation-level claim unless a named consumer needs complete membership and a publisher inventory/version can establish it. Do not invent an endless search for later part numbers to preserve the old label. **Done when:** the profile, executable checks, downstream description, and guide agree; retained cases cover the first missing part, gaps, empty input, and request failures. If authoritative inventory is adopted, membership is checked against that inventory. **Evidence:** product review finding 4; `sources/public_comments/profile.py:20`, `sources/public_comments/native.py:785`.
+- [x] **S10 — Make public-comment completeness match its discovery evidence.** **Change with architecture decision; owner: SpicyDocs; beneficiary: public-comment dataset users. Depends on S09 and the S05 format decision.** The current first-missing-part rule establishes discovery under a contiguous-name assumption. Prefer an observation-level claim unless a named consumer needs complete membership and a publisher inventory/version can establish it. Do not invent an endless search for later part numbers to preserve the old label. **Done when:** the profile, executable checks, downstream description, and guide agree; retained cases cover the first missing part, gaps, empty input, and request failures. If authoritative inventory is adopted, membership is checked against that inventory. **Evidence:** product review finding 4; `sources/public_comments/profile.py:20`, `sources/public_comments/native.py:785`.
 
 ## Third: place source capabilities with their users and remove unused obligations
 
@@ -620,3 +620,64 @@ The checklist now has nine completed local items. DocSpec D42 and SpicyRegs SR03
 still own consumer adoption and copy removal; the source API and wheel checks do
 not complete those destination tasks. These commits are local; no push, remote
 CI, package release, or production cutover is claimed.
+
+
+**September 11, 2026 — S08–S10 complete.** Commit `f1edf37` retains bounded
+refused-response evidence and makes source coverage understandable through the
+existing reader and CLI. The architect approved the approach; independent
+semi-formal reviews approved the implementation, including a separate review of
+the small GAO policy changes that one reviewer had applied.
+
+S08 preserves the original exception while attaching source response context.
+GAO identity/topic/markup failures and Federal Register parsing/inventory failures
+before page delivery now reach the publisher with their exact bounded bytes.
+Shared indexing stores bounded evidence before semantic page checks. The existing
+blob store retains refused bodies; the same error carries `failed_acquisition`
+and CLI stderr exposes `failedAcquisition`. The report distinguishes exact empty
+bytes, bounds, unavailable transport responses, credential suppression, and a
+failed diagnostic write. Up to eight already stored page blobs provide explicitly
+labeled context; a later fetch failure never claims the previous successful page
+as its own response. No partial release or separate run store is created. CLI
+error messages use the existing query-credential scrubber, and Zyte refuses
+reflected known credentials before returning target bytes for retention.
+
+S09 exposes existing acquisition policy values, ID, version, and digest alongside
+requested selectors and counts. The reader checks regenerated policy values
+against the admitted digest. `traversalAcceptance` describes the supplied trusted
+profile's rule; it is not a new independently sealed field. Source policies and
+guides explain Federal Register's stable observed crawls, GAO's explicit IDs,
+Mirrulations' live enumeration with individually pinned objects, and public-comment
+contiguous-part discovery. Federal Register policy advances to 1.2; GAO,
+Regulations.gov, and public-comment policies advance to 1.1. Prior policies remain
+refused under the current installed profiles, without a format or schema change.
+
+S10 now describes public comments as `observed-crawl` with
+`single-observed-traversal`. Ordered membership, capture bounds, terminal markers,
+and byte replay remain enforced. Missing part zero is a failed requested capture;
+a valid empty Parquet capture is observed empty input. Later parts after a gap
+remain unrequested. Missing-part HTTP responses are not retained, and terminal
+markers do not establish complete upstream membership. Fixtures cover these
+cases and request failures, including unchanged original exception identity.
+
+The default `./scripts/check` passed **684 tests**, with two opt-in cases deselected
+(15.85 seconds). Scoped Ruff, formatting, and type checks passed. The pre-existing
+CLI acquisition type annotation remains tracked under S16. Reviews resolved the
+closure fixture's incomplete page shape, query credentials in CLI error text,
+and overly broad wording about which failures carry a report. No review blocker
+remains for S08–S10.
+
+The candidate wheel SHA-256 is
+`57a2435ee2ea3a1429ddf8bb1241f7666127be60f6a1cba538c85c5e759f7a88`.
+All 89 packaged source/resource members match the committed source tree. Installed
+outside the checkout using frozen runtime dependencies, it retained the nine
+current format schemas and lightweight reader imports, published and independently
+verified the synthetic GAO example with matching policy outcomes, and recovered
+exact GAO malformed/empty bodies and Federal Register invalid JSON offline.
+`validation/s08-s10/result.json` and `validation/s08-s10/refusal-results.json` in
+the local planning session hold those checks; `s08-s10-architecture-decision.md`,
+`s08-refusal-implementation-review.md`, and `s09-s10-coverage-review.md` hold the
+reviews. These are local commits and qualification results. DocSpec consumer
+adoption, remote CI, pushing, and wheel release are not established by them.
+
+Twelve local items are complete and thirteen remain. Destination-owned work
+keeps its own status; S08–S10 do not close those tasks.
