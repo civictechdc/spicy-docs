@@ -20,14 +20,12 @@ from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 
 _SCOPE = {"publishedFrom": "2026-04-13", "publishedThrough": "2026-04-13"}
 _IMPLEMENTATION_ID = "pkg:pypi/spicy-regs@0.1.7?checksum=sha256:" + "a" * 64
-# SD-24: composite identity changes every record's sourceRecordId, so this
-# pinned digest is stale under the new (document_number, publication_date)
-# encoding. This test is network-gated (@pytest.mark.integration, deselected
-# by default -- see pyproject.toml's addopts) and could not be re-run to
-# mint a fresh digest without violating the no-network constraint this
-# change was made under. Re-pin by running this test once, live, and
-# updating this constant from its (expected) failure message.
-_SOURCE_STATE_DIGEST = "sha256:e170cf3ddf2819b0f33ced07e050e18cef0adc43f57c5dfde51e04535ebf13bc"
+# Policy 1.1 uses composite identities. The 2026-09-11 fixed-day capture
+# reproduces the former digest when only record and rendition sourceRecordId
+# values are restored to document_number: the source content is unchanged.
+# The refreshed pin covers the implemented (document_number, publication_date)
+# identity. Investigate future differences before updating this expectation.
+_SOURCE_STATE_DIGEST = "sha256:cfe902f7f1de4072580219389584da7acc7440d549f0726527767ac1bed80296"
 
 
 def _completed_at() -> datetime:

@@ -51,7 +51,7 @@ The default suite excludes two opt-in checks:
 
 | Command | Prerequisite and interpretation |
 | --- | --- |
-| `uv run --frozen pytest -q -m integration` | Calls Federal Register over HTTPS for one fixed day. Needs network access; publisher changes can invalidate its pinned expectation. The test currently records a stale identity-era digest; inspect captured differences before updating a pin. |
+| `uv run --frozen pytest -q -m integration` | Calls Federal Register over HTTPS for one fixed day. Needs network access; publisher changes can invalidate its pinned expectation. The digest includes composite record identity; inspect captured differences before updating a pin. |
 | `uv run --frozen pytest -q -m httpfs` | Needs DuckDB's `httpfs` extension and local loopback networking. Install the extension with `uv run --frozen python -c 'import duckdb; duckdb.connect().install_extension("httpfs")'`. The test documents a platform-specific stall that can last about two minutes. |
 
 Describe the trigger, resulting behavior, relevant source evidence, checks run,
