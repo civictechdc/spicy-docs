@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import signal
+import sys
 import threading
 import time
 from datetime import UTC, datetime
@@ -154,6 +155,18 @@ def test_dockets_before_documents_order_within_agency(tmp_path: Path) -> None:
     exit_code = main(_argv(tmp_path, agencies=["EPA"], verify=False), run_subprocess=runner, clock=_clock)
     assert exit_code == 0
     assert [_flag(call, "--source") for call in runner.calls] == ["regulations-dockets", "regulations-documents"]
+
+
+def test_default_interpreter_runs_actual_publish_and_verify_children(tmp_path: Path) -> None:
+    runner = FakeRunner()
+    argv = _argv(tmp_path, agencies=["EPA"])
+    python_option = argv.index("--python")
+    del argv[python_option : python_option + 2]
+
+    assert main(argv, run_subprocess=runner, clock=_clock) == 0
+    assert len(runner.calls) == 4
+    assert {call[3] for call in runner.calls} == {"publish", "verify"}
+    assert all(call[:3] == [sys.executable, "-m", "spicy_docs.cli.source_native"] for call in runner.calls)
 
 
 def test_largest_first_scheduling(tmp_path: Path) -> None:

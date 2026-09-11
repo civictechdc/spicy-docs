@@ -1,4 +1,4 @@
-"""Fixture coverage for ``tools/govinfo_granule_census.py``.
+"""Fixture coverage for ``tools/analysis/govinfo_granule_census.py``.
 
 The census exists to size a publisher-side identifier defect, so its tests are
 mostly about the ways a census can lie: reporting missing metadata as a
@@ -23,7 +23,6 @@ from tests.source_native_release_fixtures import records_release
 from tools.analysis.govinfo_granule_census import (
     CredentialRefusedError,
     _granules_from_mods,
-    _read_api_key,
     census,
 )
 
@@ -69,9 +68,7 @@ def _run(tmp_path: Path, records, pages, *, seen=None) -> list[dict[str, Any]]:
         root,
         blobs,
         output,
-        api_key=None,
         through="1999-12-31",
-        page_size=1000,
         min_interval_seconds=0.0,
         transport=_transport(pages, seen if seen is not None else []),
     )
@@ -171,9 +168,7 @@ def test_a_401_aborts_the_run_rather_than_being_recorded_and_passed_over(
             root,
             blobs,
             tmp_path / "out.jsonl",
-            api_key=None,
             through="1999-12-31",
-            page_size=1000,
             min_interval_seconds=0.0,
             transport=httpx.MockTransport(handler),
         )
@@ -194,9 +189,7 @@ def test_a_403_aborts_and_is_never_retried(tmp_path: Path) -> None:
             root,
             blobs,
             tmp_path / "out.jsonl",
-            api_key=None,
             through="1999-12-31",
-            page_size=1000,
             min_interval_seconds=0.0,
             transport=httpx.MockTransport(handler),
         )
@@ -220,9 +213,7 @@ def test_a_resumed_run_refetches_nothing_already_recorded(tmp_path: Path) -> Non
         root,
         blobs,
         output,
-        api_key=None,
         through="1999-12-31",
-        page_size=1000,
         min_interval_seconds=0.0,
         transport=_transport(pages, seen),
     )
@@ -239,9 +230,7 @@ def test_the_through_date_bounds_the_run(tmp_path: Path) -> None:
         root,
         blobs,
         tmp_path / "out.jsonl",
-        api_key=None,
         through="1999-12-31",
-        page_size=1000,
         min_interval_seconds=0.0,
         transport=_transport(pages, seen),
     )
@@ -265,15 +254,6 @@ def test_the_parser_reads_the_saved_sample(tmp_path: Path) -> None:
 
     assert len(granules) == 105
     assert ("93-31907", "93-31907") in granules
-
-
-def test_the_key_reader_still_refuses_a_missing_name(tmp_path: Path) -> None:
-    """Kept though the route is keyless: an old keyed invocation must fail loudly."""
-    env = tmp_path / ".env"
-    env.write_text("ZYTE_TOKEN=other\n")
-
-    with pytest.raises(SystemExit, match="API_GOV not found"):
-        _read_api_key(env, "API_GOV")
 
 
 def test_resume_retries_a_failed_listing_instead_of_settling_it(tmp_path) -> None:
@@ -341,22 +321,18 @@ def test_resume_refuses_a_file_from_another_release(tmp_path) -> None:
 
     output = tmp_path / "census.jsonl"
     output.write_text(json.dumps({"publicationDate": "1994-01-03", "sourceReleaseDigest": "sha256:aaa"}) + "\n")
-    _guard_resume_release(output, "sha256:aaa", None)  # same corpus: fine
+    _guard_resume_release(output, "sha256:aaa")  # same corpus: fine
     with pytest.raises(SystemExit, match="mix two corpora"):
-        _guard_resume_release(output, "sha256:bbb", None)
+        _guard_resume_release(output, "sha256:bbb")
 
 
-def test_rows_without_a_digest_must_be_declared_not_guessed(tmp_path) -> None:
-    """Legacy rows predate the field; the operator states their corpus rather than the tool assuming it."""
+def test_resume_requires_a_recorded_release_digest(tmp_path) -> None:
     from tools.analysis.govinfo_granule_census import _guard_resume_release
 
-    output = tmp_path / "census.jsonl"
-    output.write_text(json.dumps({"publicationDate": "1994-01-03", "status": "listed"}) + "\n")
-    with pytest.raises(SystemExit, match="written before sourceReleaseDigest existed"):
-        _guard_resume_release(output, "sha256:aaa", None)
-    with pytest.raises(SystemExit, match="declared as"):
-        _guard_resume_release(output, "sha256:aaa", "sha256:bbb")
-    _guard_resume_release(output, "sha256:aaa", "sha256:aaa")
+    output = tmp_path / "out.jsonl"
+    output.write_text(json.dumps({"publicationDate": "1994-01-03"}) + "\n")
+    with pytest.raises(SystemExit, match="without sourceReleaseDigest; start a fresh output"):
+        _guard_resume_release(output, "sha256:aaa")
 
 
 def test_a_short_number_does_not_fuse_with_a_longer_one() -> None:

@@ -1,23 +1,15 @@
-"""Resolve the numbers MODS does not list against the keyed granules endpoint.
+"""Check a keyed GovInfo listing for identifiers left unmatched by the MODS census.
 
-The keyless MODS route is the complete one and the census is built on it, but it
-omits at least one thing the keyed route has: GPO files some documents under a
-granule id fused from the printed colophon, and `95-8641` is filed as
-`95-8641-Filed`. This asks the keyed route about exactly the numbers MODS left
-unmatched, and about nothing else.
+The MODS census supplies the issue dates, unmatched numbers, and source release
+identity. This diagnostic asks the keyed endpoint once per issue; it does not
+infer absence from empty, malformed, or incomplete listings. A complete populated
+listing produces ``fused-match`` or ``not-listed`` for each requested number.
+``not-listed`` describes that endpoint's answer, not GovInfo's entire holdings.
 
-**Three outcomes, and the third is why this tool exists.** A number is
-`fused-match` when the listing holds a granule id that contains it, `not-listed`
-when the listing is populated and does not, and **`listing-empty` when the keyed
-endpoint answers HTTP 200 with a count of zero** -- which it does for whole
-issues, including FR-1995-04-10, the issue holding the canonical `95-8641`
-specimen. `listing-empty` is *indeterminate*, not absence. Recording it as
-absence is precisely the defect that made an earlier keyed census read as though
-govinfo held no granules at all: 200 with a declared count of 0 looks exactly
-like a clean answer.
-
-The unmatched set is re-derived from the census output rather than hardcoded, so
-this stays correct as the census extends its date range.
+Results append to JSONL. Only a complete populated listing settles an issue on
+resume. Empty listings remain recorded as indeterminate and are retried, as are
+request failures and incomplete listings. A credential refusal aborts immediately.
+Every input and output row must name the same source release digest.
 """
 
 from __future__ import annotations
@@ -26,34 +18,53 @@ import argparse
 import json
 import sys
 import time
-import urllib.error
-import urllib.request
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-GRANULES = "https://api.govinfo.gov/packages/FR-{date}/granules?offset=0&pageSize=1000"
+import httpx
+
+from spicy_docs.transport.credentials import read_api_key, scrub_credential
+from spicy_docs.transport.retry import retry_http
+
+PAGE_SIZE = 1000
+GRANULES = f"https://api.govinfo.gov/packages/FR-{{date}}/granules?offset=0&pageSize={PAGE_SIZE}"
 USER_AGENT = "spicy-docs-govinfo-resolve-unmatched/1.0"
 
 
-def read_key(env_file: Path, name: str) -> str:
-    for line in env_file.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        if key.strip() == name:
-            return value.strip().strip("'\"")
-    raise SystemExit(f"{name} not found in {env_file}")
+class CredentialRefusedError(RuntimeError):
+    """A 401 or 403 stops the run before any per-issue result is recorded."""
 
 
-def unmatched_from_census(census: Path) -> dict[str, list[str]]:
+class _RetryableStatus(httpx.HTTPStatusError):
+    """A 429 or 5xx response that can be retried within the shared bound."""
+
+
+@dataclass(frozen=True)
+class Listing:
+    status: str
+    ids: tuple[str, ...] = ()
+    declared: int | None = None
+    http_status: int | None = None
+
+
+def _rows(path: Path) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+def _source_digest(rows: list[dict[str, Any]]) -> str:
+    digests = {row.get("sourceReleaseDigest") for row in rows}
+    if not digests or None in digests or any(not isinstance(d, str) or not d.startswith("sha256:") for d in digests):
+        raise ValueError("every census row must carry sourceReleaseDigest; regenerate the census if it is missing")
+    if len(digests) != 1:
+        raise ValueError("census rows name different source releases")
+    return next(iter(digests))
+
+
+def unmatched_from_census(rows: list[dict[str, Any]]) -> dict[str, list[str]]:
     """The last row for a date wins, and only a complete listing contributes."""
-    last: dict[str, dict[str, Any]] = {}
-    for line in census.read_text().splitlines():
-        if line.strip():
-            row = json.loads(line)
-            last[row["publicationDate"]] = row
+    last = {row["publicationDate"]: row for row in rows}
     return {
         date: row["ourNumbersUnmatched"]
         for date, row in sorted(last.items())
@@ -61,85 +72,126 @@ def unmatched_from_census(census: Path) -> dict[str, list[str]]:
     }
 
 
+def _settled(output: Path, digest: str, pending: dict[str, list[str]]) -> set[str]:
+    if not output.exists():
+        return set()
+    last = {}
+    for row in _rows(output):
+        if row.get("sourceReleaseDigest") != digest:
+            raise ValueError(
+                "output rows must carry the same sourceReleaseDigest as the census; start a fresh output file"
+            )
+        last[row["publicationDate"]] = row
+    return {
+        date
+        for date, row in last.items()
+        if row.get("status") == "listed"
+        and date in pending
+        and sorted(item["number"] for item in row["numbers"]) == sorted(pending[date])
+    }
+
+
 def _is_fusion_of(granule_id: str, number: str) -> bool:
-    """Does this granule id carry `number` as a whole identifier, fused with a suffix?
+    """Match a whole identifier, optionally followed by a non-digit suffix.
 
-    A plain substring test is wrong for short numbers: `94-2050` occurs inside
-    `94-20508`, `94-20509` and `94-20500`, which are three OTHER documents, and
-    reporting them as fusions of `94-2050` would invent a defect that is not
-    there. The number must be the whole id or be followed by a non-digit, which
-    is what a fused colophon looks like -- `94-8046-Filed`, `94-10956Filed`,
-    `94-2050F` -- while a longer number simply continues in digits.
+    ``94-2050`` is not a fusion of ``94-20508``. Conversely,
+    ``94-8046-Filed``, ``94-10956Filed``, and ``94-2050F`` retain a whole number.
     """
-    if granule_id == number:
-        return True
-    if not granule_id.startswith(number):
-        return False
-    return not granule_id[len(number) : len(number) + 1].isdigit()
-
-
-def granule_ids(date: str, key: str, timeout: float) -> tuple[list[str], int | None, int | None]:
-    request = urllib.request.Request(
-        GRANULES.format(date=date),
-        headers={"X-Api-Key": key, "Accept": "application/json", "User-Agent": USER_AGENT},
+    return granule_id == number or (
+        granule_id.startswith(number) and not granule_id[len(number) : len(number) + 1].isdigit()
     )
+
+
+def granule_ids(client: httpx.Client, date: str) -> Listing:
+    def fetch() -> httpx.Response:
+        try:
+            response = client.get(GRANULES.format(date=date))
+        except httpx.RequestError as error:
+            detail = scrub_credential(str(error), client.headers.get("X-Api-Key", ""))
+            raise httpx.RequestError(f"{type(error).__name__}: {detail}", request=error.request) from error
+        if response.status_code in (401, 403):
+            raise CredentialRefusedError(f"GovInfo refused the credential with HTTP {response.status_code}; stopping")
+        if response.status_code == 429 or response.status_code >= 500:
+            raise _RetryableStatus("retryable GovInfo response", request=response.request, response=response)
+        response.raise_for_status()
+        return response
+
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read())
-            granules = payload.get("granules") or []
-            return [g.get("granuleId", "") for g in granules], payload.get("count"), response.status
-    except urllib.error.HTTPError as error:
-        return [], None, error.code
-    except (OSError, TimeoutError) as error:
-        print(f"  {date}: {type(error).__name__}", file=sys.stderr)
-        return [], None, None
+        response = retry_http(fetch, retryable=(httpx.RequestError, _RetryableStatus))
+    except httpx.HTTPStatusError as error:
+        return Listing("request-failed", http_status=error.response.status_code)
+    except httpx.RequestError:
+        return Listing("request-failed")
+    try:
+        payload = response.json()
+        granules = payload["granules"]
+        declared = payload["count"]
+        if not isinstance(granules, list) or type(declared) is not int or declared < 0:
+            raise ValueError("invalid granule list or count")
+        ids = tuple(row["granuleId"] for row in granules)
+        if any(not isinstance(value, str) or not value for value in ids):
+            raise ValueError("invalid granule identifier")
+    except (KeyError, TypeError, ValueError):
+        return Listing("listing-invalid", http_status=response.status_code)
+    if payload.get("nextPage") or len(ids) >= PAGE_SIZE or len(ids) != declared or len(set(ids)) != len(ids):
+        return Listing("listing-incomplete", ids, declared, response.status_code)
+    return Listing("listed" if ids else "listing-empty", ids, declared, response.status_code)
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--census", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--env-file", type=Path, default=Path.home() / "Work" / "RefSpec" / ".env")
-    parser.add_argument("--env-var", default="API_GOV")
-    parser.add_argument("--min-interval-seconds", type=float, default=3.7)
-    parser.add_argument("--timeout", type=float, default=90.0)
-    args = parser.parse_args(argv)
-
-    pending = unmatched_from_census(args.census)
-    done: set[str] = set()
-    if args.output.exists():
-        for line in args.output.read_text().splitlines():
-            if line.strip():
-                done.add(json.loads(line)["publicationDate"])
-    todo = {d: ns for d, ns in pending.items() if d not in done}
-    total = sum(len(v) for v in pending.values())
-    print(f"{total} unmatched numbers across {len(pending)} issues; {len(todo)} issues to resolve")
-
-    key = read_key(args.env_file, args.env_var)
+def run(
+    census: Path,
+    output: Path,
+    *,
+    api_key: str,
+    min_interval_seconds: float = 3.7,
+    timeout: float = 90.0,
+    transport: httpx.BaseTransport | None = None,
+) -> int:
+    census_rows = _rows(census)
+    digest = _source_digest(census_rows)
+    pending = unmatched_from_census(census_rows)
+    done = _settled(output, digest, pending)
+    todo = {date: numbers for date, numbers in pending.items() if date not in done}
+    print(
+        f"{sum(map(len, pending.values()))} unmatched numbers across {len(pending)} issues; {len(todo)} issues to resolve"
+    )
     verdicts: Counter[str] = Counter()
-    with args.output.open("a") as sink:
-        for index, (date, numbers) in enumerate(sorted(todo.items()), start=1):
-            ids, declared, status = granule_ids(date, key, args.timeout)
+    incomplete = False
+    with (
+        httpx.Client(
+            headers={"X-Api-Key": api_key, "Accept": "application/json", "User-Agent": USER_AGENT},
+            timeout=timeout,
+            transport=transport,
+        ) as client,
+        output.open("a") as sink,
+    ):
+        last = 0.0
+        for date, numbers in sorted(todo.items()):
+            wait = min_interval_seconds - (time.monotonic() - last)
+            if wait > 0:
+                time.sleep(wait)
+            last = time.monotonic()
+            listing = granule_ids(client, date)
+            incomplete |= listing.status != "listed"
             rows = []
             for number in numbers:
-                if status != 200:
-                    verdict, matched = "request-failed", None
-                elif not ids:
-                    # 200 with an empty listing. Indeterminate, never absence.
-                    verdict, matched = "listing-empty", None
-                else:
-                    hits = [g for g in ids if _is_fusion_of(g, number)]
-                    verdict = "fused-match" if hits else "not-listed"
-                    matched = hits or None
+                hits = (
+                    [value for value in listing.ids if _is_fusion_of(value, number)]
+                    if listing.status == "listed"
+                    else []
+                )
+                verdict = ("fused-match" if hits else "not-listed") if listing.status == "listed" else listing.status
                 verdicts[verdict] += 1
-                rows.append({"number": number, "verdict": verdict, "granuleIds": matched})
+                rows.append({"number": number, "verdict": verdict, "granuleIds": hits or None})
             sink.write(
                 json.dumps(
                     {
                         "publicationDate": date,
-                        "httpStatus": status,
-                        "keyedGranuleCount": len(ids),
-                        "keyedDeclaredCount": declared,
+                        "sourceReleaseDigest": digest,
+                        "status": listing.status,
+                        "httpStatus": listing.http_status,
+                        "keyedGranuleCount": len(listing.ids),
+                        "keyedDeclaredCount": listing.declared,
                         "numbers": rows,
                     },
                     sort_keys=True,
@@ -147,20 +199,33 @@ def main(argv: list[str] | None = None) -> int:
                 + "\n"
             )
             sink.flush()
-            for row in rows:
-                if row["verdict"] == "fused-match":
-                    print(f"  {date}  {row['number']} -> {row['granuleIds']}")
-            if index % 10 == 0:
-                print(f"  {index}/{len(todo)} issues", file=sys.stderr)
-            time.sleep(args.min_interval_seconds)
+    print("verdicts:", dict(verdicts))
+    if incomplete:
+        print("Some listings remain indeterminate; rerun to retry them. No absence was inferred.", file=sys.stderr)
+    return int(incomplete)
 
-    print("\nverdicts:", dict(verdicts))
-    print(
-        "listing-empty is INDETERMINATE: the endpoint answered 200 with no granules, "
-        "which is not evidence that govinfo lacks the document."
-    )
-    return 0
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--census", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--env-file", type=Path, required=True)
+    parser.add_argument("--env-var", default="API_GOV")
+    parser.add_argument("--min-interval-seconds", type=float, default=3.7)
+    parser.add_argument("--timeout", type=float, default=90.0)
+    args = parser.parse_args(argv)
+    try:
+        return run(
+            args.census,
+            args.output,
+            api_key=read_api_key(args.env_file, args.env_var),
+            min_interval_seconds=args.min_interval_seconds,
+            timeout=args.timeout,
+        )
+    except (CredentialRefusedError, OSError, ValueError) as error:
+        print(f"GovInfo resolver error: {error}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

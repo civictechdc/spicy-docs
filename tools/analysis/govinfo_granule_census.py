@@ -29,10 +29,7 @@ own assumptions is not a measurement:
 * An issue that 404s or errors is recorded as such and excluded from the rates,
   because a failed listing is missing evidence, not evidence of zero mismatches.
 
-The key is read from an env file at run time and never printed, never placed in
-a URL, and never written to the output: govinfo is fronted by api.data.gov,
-which accepts ``X-Api-Key``, so it stays in a header where no logged request
-line can carry it.
+The active route reads keyless issue MODS XML. It never accepts or sends an API key.
 
 Resumable by design: results are appended per issue as JSONL and an existing
 output file is read first, so a run interrupted at hour two resumes rather than
@@ -51,9 +48,6 @@ from xml.etree import ElementTree
 
 import httpx
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "src"))
-
 from spicy_docs.source_native import ROLE_RECORDS
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
@@ -69,7 +63,6 @@ MANIFEST_PATH: tuple[str, str] = ("manifests", "source-native.json")
 #: returned all 105 granules for FR-1994-01-03, where the keyed route returned
 #: none. The patchy route was also the one that spent the credential.
 MODS_URL = "https://www.govinfo.gov/metadata/pkg/FR-{date}/mods.xml"
-GRANULES_URL = "https://api.govinfo.gov/packages/FR-{date}/granules"
 USER_AGENT = "spicy-docs-govinfo-granule-census/1.0"
 MODS_NS = {"m": "http://www.loc.gov/mods/v3"}
 
@@ -126,14 +119,6 @@ class CredentialRefusedError(RuntimeError):
     """
 
 
-def _read_api_key(env_file: Path, name: str) -> str:
-    for line in env_file.read_text().splitlines():
-        key, sep, value = line.partition("=")
-        if sep and key.strip() == name:
-            return value.strip().strip("'\"")
-    raise SystemExit(f"{name} not found in {env_file}")
-
-
 def _our_numbers_by_date(release_root: Path, blob_store: Path) -> dict[str, set[str]]:
     store = LocalSourceNativeBlobStore(blob_store, create=False)
     members = json.loads(release_root.joinpath(*MANIFEST_PATH).read_text())["members"]
@@ -163,7 +148,7 @@ def _fetch_mods(client: httpx.Client, date: str) -> bytes:
     return retry_http(_attempt, retryable=(httpx.RequestError, _RetryableStatus))
 
 
-def _granule_ids(client: httpx.Client, date: str, page_size: int) -> tuple[list[str], int, int | None]:
+def _granule_ids(client: httpx.Client, date: str) -> tuple[list[str], int, int | None]:
     """Every granule id for one issue, from the issue's MODS record.
 
     One request, no pagination: a MODS package record lists every constituent
@@ -203,44 +188,21 @@ def _release_digest(release_root: Path) -> str:
     return digest
 
 
-def _guard_resume_release(output: Path, digest: str, assume_legacy: str | None) -> None:
-    """Refuse to append rows computed against a different corpus.
-
-    Rows written before this field existed carry no digest. Rather than guess
-    what they were built against, the operator states it with
-    ``--assume-legacy-release-digest``; a wrong statement then fails here rather
-    than silently producing a mixed file.
-    """
+def _guard_resume_release(output: Path, digest: str) -> None:
+    """Append only when every existing row names this exact source release."""
     if not output.exists():
         return
-    seen: set[str] = set()
-    legacy = 0
     for line in output.read_text().splitlines():
         if not line.strip():
             continue
-        row = json.loads(line)
-        found = row.get("sourceReleaseDigest")
+        found = json.loads(line).get("sourceReleaseDigest")
         if found is None:
-            legacy += 1
-        else:
-            seen.add(found)
-    if legacy and assume_legacy is None:
-        raise SystemExit(
-            f"{output} has {legacy:,} rows written before sourceReleaseDigest existed. "
-            "State what they were computed against with --assume-legacy-release-digest "
-            "<sha256:...>; it must equal this run's release digest to resume."
-        )
-    if legacy and assume_legacy != digest:
-        raise SystemExit(
-            f"{output}'s {legacy:,} undigested rows are declared as {assume_legacy}, but this "
-            f"run's release is {digest}. Resuming would mix two corpora in one file."
-        )
-    other = seen - {digest}
-    if other:
-        raise SystemExit(
-            f"{output} holds rows from {sorted(other)} and this run's release is {digest}. "
-            "Resuming would mix two corpora in one file."
-        )
+            raise SystemExit(f"{output} contains a row without sourceReleaseDigest; start a fresh output file.")
+        if found != digest:
+            raise SystemExit(
+                f"{output} holds rows from {found} and this run's release is {digest}. "
+                "Resuming would mix two corpora in one file."
+            )
 
 
 def _resume_state(output: Path) -> tuple[set[str], set[str]]:
@@ -284,15 +246,12 @@ def census(
     blob_store: Path,
     output: Path,
     *,
-    api_key: str | None,
     through: str,
-    page_size: int,
     min_interval_seconds: float,
-    assume_legacy_release_digest: str | None = None,
     transport: httpx.BaseTransport | None = None,
 ) -> int:
     release_digest = _release_digest(release_root)
-    _guard_resume_release(output, release_digest, assume_legacy_release_digest)
+    _guard_resume_release(output, release_digest)
     by_date = _our_numbers_by_date(release_root, blob_store)
     dates = sorted(d for d in by_date if d <= through)
     print(f"corpus: {release_root.name} {release_digest}", file=sys.stderr)
@@ -323,7 +282,7 @@ def census(
             last = time.monotonic()
             ours = by_date[date]
             try:
-                ids, calls, declared = _granule_ids(client, date, page_size)
+                ids, calls, declared = _granule_ids(client, date)
             except httpx.HTTPStatusError as error:
                 row = {
                     "publicationDate": date,
@@ -363,43 +322,25 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--blob-store", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="JSONL, appended, resumable")
     parser.add_argument(
-        "--env-file",
-        type=Path,
-        default=None,
-        help="Unused: this route is keyless. Kept so old invocations fail loudly rather than silently sending a key.",
-    )
-    parser.add_argument("--env-var", default="API_GOV")
-    parser.add_argument(
         "--through",
         default="1999-12-31",
-        help="Last publication date to enumerate. Default stops at the bulkdata boundary: "
-        "2000 onward is enumerable keylessly from bulk XML, so spending a keyed quota on it "
-        "would be waste.",
+        help="Last publication date to enumerate. Default limits this diagnostic to pre-2000 "
+        "issues; supply a later date to include more issues.",
     )
-    parser.add_argument(
-        "--assume-legacy-release-digest",
-        default=None,
-        help="the release digest that rows written before this field existed were computed "
-        "against; must equal this run's, or the resume is refused",
-    )
-    parser.add_argument("--page-size", type=int, default=1000)
     parser.add_argument(
         "--min-interval-seconds",
         type=float,
         default=3.7,
-        help="Floor between requests. Default keeps a single runner under api.data.gov's "
-        "1,000/hour default. Measure the concurrency you intend to run before raising it.",
+        help="Floor between requests. Default paces this keyless MODS diagnostic; "
+        "measure the concurrency you intend to run before raising it.",
     )
     args = parser.parse_args(argv)
     return census(
         args.release_root,
         args.blob_store,
         args.output,
-        api_key=None,  # keyless by construction; there is no fallback
         through=args.through,
-        page_size=args.page_size,
         min_interval_seconds=args.min_interval_seconds,
-        assume_legacy_release_digest=args.assume_legacy_release_digest,
     )
 
 
