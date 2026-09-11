@@ -52,6 +52,7 @@ from spicy_docs.schemas.spicy_regs_public_tables import (
     project_public_comment_row,
 )
 from spicy_docs.source_native_zip import deterministic_zip_entry
+from spicy_docs.sources.media_types import media_type
 
 PUBLIC_TABLE_BASE_URL: Final = "https://data.spicy-regs.dev"
 PUBLIC_TABLE_HOST: Final = "data.spicy-regs.dev"
@@ -531,28 +532,6 @@ def comment_source_issued_version(record: Mapping[str, Any]) -> str | None:
     return value
 
 
-def _media_type(value: object, locator: str) -> str:
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if "/" in normalized:
-            return normalized
-        aliases = {
-            "doc": "application/msword",
-            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "htm": "text/html",
-            "html": "text/html",
-            "pdf": "application/pdf",
-            "txt": "text/plain",
-            "xml": "application/xml",
-        }
-        if normalized in aliases:
-            return aliases[normalized]
-    suffix = locator.rsplit("?", 1)[0].rsplit(".", 1)[-1].lower()
-    if suffix and suffix != locator.lower():
-        return _media_type(suffix, "")
-    return "application/octet-stream"
-
-
 def _attachment_groups(record: Mapping[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Split the attachments column into usable groups and nonfatal diagnostics.
 
@@ -626,7 +605,7 @@ def comment_rendition_rows(record: Mapping[str, Any]) -> tuple[dict[str, Any], .
                     "expectedByteSize": value.get("size"),
                     "expectedSha256": None,
                     "locator": locator,
-                    "mediaType": _media_type(value.get("format"), locator),
+                    "mediaType": media_type(value.get("format"), locator),
                     "renditionId": f"attachment-{index:04d}-{format_index:04d}",
                     "sourceField": f"attachments_json[{index}].formats[{format_index}]",
                     "sourceRecordId": identity,

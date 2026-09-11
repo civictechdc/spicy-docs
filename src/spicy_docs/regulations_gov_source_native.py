@@ -28,6 +28,7 @@ from rulespec_artifacts import (
 )
 
 from spicy_docs.source_native_zip import deterministic_zip_entry
+from spicy_docs.sources.media_types import media_type
 
 DOCUMENT_COLLECTION: Final = "documents"
 DOCKET_COLLECTION: Final = "dockets"
@@ -919,28 +920,6 @@ def comment_source_record(
     )
 
 
-def _media_type(value: object, locator: str) -> str:
-    if isinstance(value, str):
-        normalized = value.strip().lower()
-        if "/" in normalized:
-            return normalized
-        aliases = {
-            "doc": "application/msword",
-            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "htm": "text/html",
-            "html": "text/html",
-            "pdf": "application/pdf",
-            "txt": "text/plain",
-            "xml": "application/xml",
-        }
-        if normalized in aliases:
-            return aliases[normalized]
-    suffix = locator.rsplit("?", 1)[0].rsplit(".", 1)[-1].lower()
-    if suffix and suffix != locator.lower():
-        return _media_type(suffix, "")
-    return "application/octet-stream"
-
-
 def _rendition(
     *,
     source_record_id_value: str,
@@ -961,7 +940,7 @@ def _rendition(
         "expectedByteSize": expected_size,
         "expectedSha256": None,
         "locator": locator,
-        "mediaType": _media_type(value.get("format"), locator),
+        "mediaType": media_type(value.get("format"), locator),
         "renditionId": rendition_id,
         "sourceField": source_field,
         "sourceRecordId": source_record_id_value,
