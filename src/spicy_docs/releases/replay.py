@@ -15,6 +15,7 @@ from rulespec_artifacts import (
 
 from spicy_docs.releases.format import (
     _PAGE_SHAPE,
+    _UNCLASSIFIED_RECORD_ID_PREFIX,
     MAX_EVIDENCE_BYTES,
     SourceNativeReleaseError,
 )
@@ -55,6 +56,8 @@ def _replay_acquisition(
         "CREATE TABLE observations (traversal INTEGER, ordinal INTEGER, source_record_id TEXT, "
         "source_version TEXT, selected INTEGER NOT NULL DEFAULT 0, record_digest TEXT, "
         "record_payload BLOB, evidence_ref TEXT, PRIMARY KEY (traversal, ordinal));"
+        "CREATE TABLE failures (traversal INTEGER, source_record_id TEXT, evidence_ref TEXT, "
+        "PRIMARY KEY (traversal, source_record_id));"
     )
     pages = _partition_rows(source, blob_source, page_partitions)
     seen_evidence: set[str] = set()
@@ -180,7 +183,7 @@ def _replay_acquisition(
         if not isinstance(discovered, list):
             raise SourceNativeReleaseError("acquisition page discoveredRecords is not an array")
         expected_discovered = []
-        for raw in response["results"] if records_included else ():
+        for record_index, raw in enumerate(response["results"] if records_included else ()):
             try:
                 classified = profile.classify_record(raw)
                 profile.validate_record_scope(
@@ -189,17 +192,16 @@ def _replay_acquisition(
                     page_window=current_window,
                 )
             except ValueError:
-                # Reproduces the writer's own outcome on this same evidence
-                # (_index_pages skips this record for the identical reason,
-                # deterministically, given the same bytes) rather than
-                # aborting the whole build-gate replay. The ledger walk in
-                # verify_source_native_release proves the admitted failure
-                # rows well-formed and reconciles their per-class counts; it
-                # does not ask this replay to reconstruct them, so nothing
-                # further is recorded here -- the record is simply absent
-                # from both expected_discovered and the replayed
-                # observations table, exactly as it is absent from the
-                # writer's.
+                # Derive failed positions from the evidence, independently of the
+                # writer's failure table and ledger construction.
+                connection.execute(
+                    "INSERT INTO failures VALUES (?, ?, ?)",
+                    (
+                        traversal,
+                        f"{_UNCLASSIFIED_RECORD_ID_PREFIX}:{traversal}:{page_index}:{record_index}",
+                        evidence_ref,
+                    ),
+                )
                 continue
             wrapped = profile.wrap_record(
                 classified,

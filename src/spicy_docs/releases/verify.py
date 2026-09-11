@@ -9,7 +9,6 @@ from itertools import zip_longest
 from pathlib import Path
 from typing import Any
 
-from jsonschema import Draft202012Validator
 from rulespec_artifacts import (
     BlobSource,
     MemberSource,
@@ -21,14 +20,13 @@ from spicy_docs.releases.admission import (
     verify_source_native_admission,
 )
 from spicy_docs.releases.format import (
-    _LEDGER_FAILURE_SCHEMA,
     _RECEIPT_SHAPE,
     FAILURE_CLASS_DETERMINISTIC,
-    FAILURE_CLASS_TRANSIENT,
     PARTITION_LEDGER,
     PARTITION_PAGES,
     PARTITION_RECORDS,
     PARTITION_RENDITIONS,
+    REASON_RECORD_UNCLASSIFIABLE,
     RECEIPT_KEY,
     ROLE_EVIDENCE,
     SCOPES_KEY,
@@ -189,16 +187,23 @@ def verify_source_native_release(
                 raise SourceNativeReleaseError("rendition count differs from replayed evidence")
 
             def expected_ledger() -> Iterator[Mapping[str, Any]]:
+                # This merge uses replayed facts, never the writer's ledger helper.
                 query = (
-                    "SELECT observations.source_record_id, observations.evidence_ref "
-                    "FROM observations "
-                    "WHERE observations.traversal = ? AND observations.selected = 1 "
-                    "ORDER BY observations.source_record_id"
+                    "SELECT source_record_id, evidence_ref, 0 AS failed FROM observations "
+                    "WHERE traversal = ? AND selected = 1 "
+                    "UNION ALL SELECT source_record_id, evidence_ref, 1 FROM failures "
+                    "WHERE traversal = ? ORDER BY source_record_id"
                 )
-                for source_record_id, evidence_ref in connection.execute(query, (accepted,)):
+                for source_record_id, evidence_ref, failed in connection.execute(query, (accepted, accepted)):
                     yield {
                         "evidenceBlobRef": evidence_ref,
-                        "failure": None,
+                        "failure": {
+                            "class": FAILURE_CLASS_DETERMINISTIC,
+                            "evidenceDigest": evidence_ref,
+                            "reasonCode": REASON_RECORD_UNCLASSIFIABLE,
+                        }
+                        if failed
+                        else None,
                         "observationRef": {"sourceRecordId": source_record_id},
                         "sourceRecordId": source_record_id,
                     }
@@ -210,47 +215,22 @@ def verify_source_native_release(
                     partitions[PARTITION_LEDGER],
                 )
 
-            # Successful rows must match independent replay byte-for-byte.
-            # Replay reclassifies retained evidence and skips deterministic
-            # classification/scope failures; it does not reconstruct their
-            # ledger rows. This full gate checks failure shape and per-class
-            # counts in one ledger pass. Bounded admission trusts those sealed
-            # counts under the explicitly accepted verifier identity.
-            failure_validator = Draft202012Validator(_LEDGER_FAILURE_SCHEMA)
-            expected_ledger_iterator = expected_ledger()
-            observed_success_count = 0
-            observed_deterministic_count = 0
-            observed_transient_count = 0
-            observed_unclassed_count = 0
-            for row in admitted_ledger():
-                failure = row.get("failure")
-                if failure is None:
-                    expected = next(expected_ledger_iterator, sentinel)
-                    if expected is sentinel or row != expected:
-                        raise SourceNativeReleaseError("acquisition ledger differs from replayed evidence")
-                    observed_success_count += 1
-                    continue
-                if not failure_validator.is_valid(failure):
-                    raise SourceNativeReleaseError("acquisition-ledger failure entry is malformed")
-                failure_class = failure["class"]
-                if failure_class == FAILURE_CLASS_DETERMINISTIC:
-                    observed_deterministic_count += 1
-                elif failure_class == FAILURE_CLASS_TRANSIENT:
-                    observed_transient_count += 1
-                else:
-                    observed_unclassed_count += 1
-            if next(expected_ledger_iterator, sentinel) is not sentinel:
-                raise SourceNativeReleaseError("acquisition ledger differs from replayed evidence")
-            if observed_success_count != published_record_count:
-                raise SourceNativeReleaseError("acquisition-ledger count differs")
-            observed_failed_count = observed_deterministic_count + observed_transient_count + observed_unclassed_count
+            # Exact comparison proves successful and rejected positions, classes,
+            # reasons, and evidence links. A transport outcome is not a fact that
+            # can be established by reclassifying these retained page bytes.
+            for actual, expected in zip_longest(admitted_ledger(), expected_ledger(), fillvalue=sentinel):
+                if actual is sentinel or expected is sentinel or actual != expected:
+                    raise SourceNativeReleaseError("acquisition ledger differs from replayed evidence")
+            replayed_failed_count = int(
+                connection.execute("SELECT count(*) FROM failures WHERE traversal = ?", (accepted,)).fetchone()[0]
+            )
             if (
-                receipt.get("deterministicFailureCount", 0) != observed_deterministic_count
-                or receipt.get("transientFailureCount", 0) != observed_transient_count
-                or receipt.get("unclassedFailureCount", 0) != observed_unclassed_count
+                receipt.get("deterministicFailureCount", 0) != replayed_failed_count
+                or receipt.get("transientFailureCount", 0) != 0
+                or receipt.get("unclassedFailureCount", 0) != 0
             ):
-                raise SourceNativeReleaseError("source-native failure summary differs from acquisition ledger")
-            observed_ledger_count = observed_success_count + observed_failed_count
+                raise SourceNativeReleaseError("source-native failure summary differs from replayed evidence")
+            observed_ledger_count = published_record_count + replayed_failed_count
 
             state_digest = _source_state_digest(
                 (len(scopes), scopes),
@@ -289,9 +269,9 @@ def verify_source_native_release(
                 raise SourceNativeReleaseError("source-reconciliation digest differs")
             counts = {
                 "acquisitionEvidenceCount": len(evidence_members),
-                "discoveredRecordCount": input_observation_count + observed_failed_count,
+                "discoveredRecordCount": input_observation_count + replayed_failed_count,
                 "discardedObservationCount": (input_observation_count - published_record_count),
-                "failedRecordCount": observed_failed_count,
+                "failedRecordCount": replayed_failed_count,
                 "inputObservationCount": input_observation_count,
                 "publishedRecordCount": published_record_count,
                 "renditionIndexCount": rendition_count,

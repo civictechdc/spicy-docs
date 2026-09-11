@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import sqlite3
+from collections.abc import Iterator, Mapping
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from spicy_docs.releases import observations
 from spicy_docs.source_native import (
     FAILURE_CLASS_DETERMINISTIC,
     PARTITION_LEDGER,
@@ -24,6 +29,7 @@ from tests.releases.fixtures import (
     _page,
     _publish,
     _reader,
+    _stable_paged_pages,
     _stable_pages,
 )
 from tests.source_fixtures import federal_response, payload_rows
@@ -211,3 +217,31 @@ def test_publisher_refuses_a_cyclic_source_cursor(tmp_path: Path) -> None:
 
     with pytest.raises(FederalRegisterSourceError, match="cyclic page cursor"):
         _publish(tmp_path, pages)
+
+
+def test_failure_cannot_be_relinked_to_another_retained_page(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pages = _stable_paged_pages(_document(), _document("2026-00002", publication_date="not-a-date"))
+    other_evidence = "sha256:" + hashlib.sha256(pages[0].response_bytes).hexdigest()
+    original = observations._failure_ledger_rows
+
+    def relink(
+        connection: sqlite3.Connection,
+        accepted_traversal: int,
+        partition_id: str | None = None,
+    ) -> Iterator[Mapping[str, Any]]:
+        for row in original(connection, accepted_traversal, partition_id):
+            # Both links point to an actual retained page, but not the page
+            # containing the rejected record. Hash/membership checks alone pass.
+            yield {
+                **row,
+                "evidenceBlobRef": other_evidence,
+                "failure": {**row["failure"], "evidenceDigest": other_evidence},
+            }
+
+    monkeypatch.setattr(observations, "_failure_ledger_rows", relink)
+    with pytest.raises(SourceNativeReleaseError, match="ledger differs from replayed evidence"):
+        _publish(tmp_path, pages)
+    assert not (tmp_path / "release").exists()

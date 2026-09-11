@@ -352,8 +352,15 @@ still abort; a credential refusal never becomes a deterministic source record.
 This replaces the original requirement that every failure count be zero.
 
 Full verification independently reclassifies retained records and compares
-the successful rows. It checks each failure row's closed shape and reconciles
-the per-class ledger counts; it does not reconstruct failure rows from evidence.
+both successful and rejected rows. A rejected record is identified by its
+zero-based traversal, page, and position in that page's results. Replay derives
+that position from retained bytes and compares the exact ledger identity,
+observation reference, deterministic class, `source.record-unclassifiable`
+reason, and page evidence references. Omitted, added, duplicated, or relinked
+failures are refused even when their member hashes and receipt counts agree.
+Transport outcomes cannot be established by reclassifying retained pages and
+remain outside an accepted release. This check deliberately does not reuse the
+writer's failure-ledger construction.
 Bounded consumer admission checks the sealed counts and accepted verifier pins
 without walking the ledger. Historical accepted schema bundles remain readable;
 an older receipt without per-class counts is admissible only with zero failures.

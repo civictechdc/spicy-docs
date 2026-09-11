@@ -1,21 +1,14 @@
-"""Failure-shape reader/verifier checks for DocSpec decision 0002, step 1.
+"""Independent sealed fixtures for failure provenance and bounded admission.
 
-No writer in ``spicy_docs`` can yet emit a ledger row whose ``failure`` is
-non-null -- that is step 2, deliberately not built here. So every fixture in
-this file is assembled by hand from ``rulespec_artifacts`` primitives (the
-same primitives ``SourceNativeReleasePublisher`` uses) plus a minimal,
-test-local ``SourceNativeProfile``. Nothing here calls
-``SourceNativeReleasePublisher`` or any private ``spicy_docs.source_native``
-builder: a fixture produced by the code under test would prove only that the
-code agrees with itself, and the whole point of step 1 is that the reader
-and verifier must tolerate a shape nothing in this repository writes yet.
+Build through Rulespec primitives rather than the SpicyDocs publisher: the
+verifier must reject false claims even when all hashes and counts agree.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, Final
 
@@ -107,7 +100,10 @@ def _records_included(
 
 
 def _classify_record(record: object) -> Mapping[str, Any]:
-    assert isinstance(record, Mapping)
+    if not isinstance(record, Mapping):
+        raise TypeError("fixture record must be an object")
+    if "id" not in record:
+        raise ValueError("fixture record lacks id")
     return record
 
 
@@ -166,7 +162,7 @@ class _NoOpAcquisitionCheck:
 
 #: A minimal, test-local profile: one traversal, trivial classify/wrap, no
 #: renditions. It exists only so the verifier's full acquisition replay has
-#: something to replay -- it carries no failure-handling logic of its own.
+#: something to replay; records without identities fail classification.
 FIXTURE_PROFILE: Final = SourceNativeProfile(
     name="fixture",
     source_system_id="fixture-system",
@@ -266,7 +262,9 @@ def _build_release(
     tmp_path: Path,
     *,
     published_id: str | None = None,
-    failure_rows: list[Mapping[str, Any]] = (),  # type: ignore[assignment]
+    failure_rows: Sequence[Mapping[str, Any]] | None = None,
+    rejected_records: int = 0,
+    mutate_failures: Callable[[list[Mapping[str, Any]]], list[Mapping[str, Any]]] | None = None,
     failed_record_count: int | None = None,
     deterministic_failure_count: int | None = None,
     transient_failure_count: int | None = None,
@@ -278,19 +276,35 @@ def _build_release(
     receipt's own summary lie about what the ledger actually holds.
     """
 
-    failure_rows = list(failure_rows)
     release_root = tmp_path / "release"
     blobs_root = tmp_path / "blobs"
     release_root.mkdir(parents=True)
 
     results = [{"id": published_id}] if published_id is not None else []
+    results.extend({"invalid": index} for index in range(rejected_records))
     response_bytes = json.dumps({"results": results}, sort_keys=True, separators=(",", ":")).encode("utf-8")
     evidence_ref = _write_blob(blobs_root, response_bytes)
 
     discovered: list[dict[str, Any]] = []
     record_rows: list[Mapping[str, Any]] = []
     success_ledger_rows: list[Mapping[str, Any]] = []
-    for raw in results:
+    rejected_rows: list[Mapping[str, Any]] = []
+    for index, raw in enumerate(results):
+        if "id" not in raw:
+            identity = f"unclassified:0:0:{index}"
+            rejected_rows.append(
+                {
+                    "evidenceBlobRef": evidence_ref,
+                    "failure": {
+                        "class": "deterministic",
+                        "reasonCode": "source.record-unclassifiable",
+                        "evidenceDigest": evidence_ref,
+                    },
+                    "observationRef": {"sourceRecordId": identity},
+                    "sourceRecordId": identity,
+                }
+            )
+            continue
         classified = _classify_record(raw)
         digest = _record_digest(classified)
         discovered.append({"recordDigest": digest, "sourceRecordId": raw["id"]})
@@ -326,6 +340,9 @@ def _build_release(
         bucket_of=lambda row: _page_bucket(row["traversalIndex"], row["pageIndex"]),
         sort_key=lambda row: (row["traversalIndex"], row["pageIndex"]),
     )
+    failure_rows = list(rejected_rows if failure_rows is None else failure_rows)
+    if mutate_failures is not None:
+        failure_rows = mutate_failures(failure_rows)
     all_ledger_rows = [*success_ledger_rows, *failure_rows]
     ledger_entries = _write_partition(
         blobs_root,
@@ -609,15 +626,20 @@ def _admit(release_root: Path, blobs_root: Path, verifier: Any) -> Any:
     )
 
 
-def test_deterministic_only_failures_are_accepted(tmp_path: Path) -> None:
-    failures = [
-        _failure_row("fixture-det-1", FAILURE_CLASS_DETERMINISTIC, "not-found"),
-        _failure_row("fixture-det-2", FAILURE_CLASS_DETERMINISTIC, "not-found"),
-    ]
-    release_root, blobs_root = _build_release(tmp_path, failure_rows=failures)
-
+@pytest.mark.parametrize("published_id", [None, "fixture-ok"])
+def test_replayed_deterministic_failures_are_accepted(tmp_path: Path, published_id: str | None) -> None:
+    release_root, blobs_root = _build_release(tmp_path, published_id=published_id, rejected_records=2)
     _admit(release_root, blobs_root, verify_source_native_admission)
     _admit(release_root, blobs_root, verify_source_native_release)
+
+
+def test_fabricated_deterministic_failure_is_refused_by_replay(tmp_path: Path) -> None:
+    release_root, blobs_root = _build_release(
+        tmp_path, failure_rows=[_failure_row("fixture-not-fetched", FAILURE_CLASS_DETERMINISTIC, "not-found")]
+    )
+    _admit(release_root, blobs_root, verify_source_native_admission)
+    with pytest.raises(SourceNativeReleaseError, match="ledger differs from replayed evidence"):
+        _admit(release_root, blobs_root, verify_source_native_release)
 
 
 def test_transient_failure_is_refused(tmp_path: Path) -> None:
@@ -666,34 +688,6 @@ def test_transient_and_unclassed_refusals_are_distinguishable(tmp_path: Path) ->
     assert "unclassed" in str(unclassed_error.value)
 
 
-def test_failure_summary_mismatch_is_refused_only_by_verifier(tmp_path: Path) -> None:
-    """The ledger truly holds 2 deterministic + 1 unclassed failure, but the
-    receipt claims all 3 are deterministic. Cheap admission only checks the
-    receipt's own arithmetic (it never walks the ledger), so it is fooled;
-    only the verifier's one-time full walk catches the lie.
-    """
-
-    failures = [
-        _failure_row("fixture-det-1", FAILURE_CLASS_DETERMINISTIC, "not-found"),
-        _failure_row("fixture-det-2", FAILURE_CLASS_DETERMINISTIC, "not-found"),
-        _failure_row("fixture-unclassed-1", "quantum-interference", "unexplained"),
-    ]
-    release_root, blobs_root = _build_release(
-        tmp_path,
-        failure_rows=failures,
-        deterministic_failure_count=3,
-        transient_failure_count=0,
-        unclassed_failure_count=0,
-    )
-
-    # Admission trusts the receipt's summary arithmetically and is fooled.
-    _admit(release_root, blobs_root, verify_source_native_admission)
-
-    # The verifier proves the summary against the real ledger and refuses.
-    with pytest.raises(SourceNativeReleaseError, match="failure summary differs"):
-        _admit(release_root, blobs_root, verify_source_native_release)
-
-
 def test_receipt_summary_not_summing_to_failed_record_count_is_refused(tmp_path: Path) -> None:
     """Even before touching the ledger, admission checks the receipt's own
     three counts sum to its own ``failedRecordCount`` -- a cheap, purely
@@ -718,32 +712,55 @@ def test_receipt_summary_not_summing_to_failed_record_count_is_refused(tmp_path:
         _admit(release_root, blobs_root, verify_source_native_admission)
 
 
-def test_mixed_published_record_and_deterministic_failure_are_accepted(tmp_path: Path) -> None:
-    """One published (successful) record and one deterministic failure share
-    the same ledger, sorted together by sourceRecordId. This exercises the
-    verifier's merge between replayed successes and unreplayable failures --
-    the one thing an all-failure fixture cannot exercise.
-    """
-
-    failures = [_failure_row("fixture-zz-fail", FAILURE_CLASS_DETERMINISTIC, "not-found")]
-    release_root, blobs_root = _build_release(
-        tmp_path,
-        published_id="fixture-aa-ok",
-        failure_rows=failures,
-    )
-
-    _admit(release_root, blobs_root, verify_source_native_admission)
-    _admit(release_root, blobs_root, verify_source_native_release)
-
-
 def test_zero_count_null_failure_release_reads_unchanged(tmp_path: Path) -> None:
-    """The existing shape (no failures at all) must still read and verify
-    exactly as before -- proven directly here, and already proven at scale
-    by the untouched Federal Register fixtures in tests/releases/
-    (53 cases, all still passing after this change).
-    """
+    """A successful release still passes both admission and full replay."""
 
     release_root, blobs_root = _build_release(tmp_path, published_id="fixture-ok-only")
 
     _admit(release_root, blobs_root, verify_source_native_admission)
     _admit(release_root, blobs_root, verify_source_native_release)
+
+
+@pytest.mark.parametrize(
+    "change", ["omit", "inject", "duplicate", "identity", "observation", "reason", "evidence", "page-link", "class"]
+)
+def test_consistently_sealed_failure_tampering_is_refused(tmp_path: Path, change: str) -> None:
+    def mutate(rows: list[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+        rows = json.loads(json.dumps(rows))
+        if change == "omit":
+            return rows[1:]
+        if change in {"inject", "duplicate"}:
+            extra = json.loads(json.dumps(rows[0]))
+            if change == "inject":
+                extra["sourceRecordId"] = "unclassified:0:0:99"
+                extra["observationRef"]["sourceRecordId"] = extra["sourceRecordId"]
+            return [*rows, extra]
+        row = rows[0]
+        if change == "identity":
+            row["sourceRecordId"] = "unclassified:0:0:99"
+            row["observationRef"]["sourceRecordId"] = row["sourceRecordId"]
+        elif change == "observation":
+            row["observationRef"]["sourceRecordId"] = "unclassified:0:0:99"
+        elif change == "reason":
+            row["failure"]["reasonCode"] = "not-found"
+        elif change == "evidence":
+            row["failure"]["evidenceDigest"] = "sha256:" + "a" * 64
+        elif change == "page-link":
+            row["evidenceBlobRef"] = "sha256:" + "a" * 64
+        elif change == "class":
+            row["failure"]["class"] = "transient"
+        return rows
+
+    release_root, blobs_root = _build_release(
+        tmp_path,
+        published_id="fixture-ok",
+        rejected_records=2,
+        mutate_failures=mutate,
+        # A lying class must pass the arithmetic admission gate so replay has
+        # to establish its meaning. All remaining counters/hashes are rebuilt.
+        deterministic_failure_count=2 if change == "class" else None,
+        transient_failure_count=0 if change == "class" else None,
+    )
+    _admit(release_root, blobs_root, verify_source_native_admission)
+    with pytest.raises(SourceNativeReleaseError, match="ledger differs from replayed evidence|partition is unordered"):
+        _admit(release_root, blobs_root, verify_source_native_release)
