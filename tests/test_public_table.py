@@ -18,14 +18,8 @@ from urllib.parse import unquote
 import duckdb
 import pytest
 
-# public_table.py has an unconditional `import pyarrow` -- a genuine runtime
-# dependency of the shipped module, not merely of this test -- and pyproject.toml
-# was authorized to gain only `duckdb`, dev/test-only, for the DuckDB assertion
-# below. pyarrow is absent from this package's dependency closure entirely (it
-# is not declared, transitively pulled in, or present in uv.lock), so guard the
-# whole module rather than let one missing package abort collection for the
-# other ~385 tests in this suite. See the report note: this needs a human
-# decision to add pyarrow to `[project] dependencies`, not a workaround here.
+# PyArrow is a public-table extra and a default development dependency. Keep
+# this optional suite collectable when a reader-only environment omits it.
 pq = pytest.importorskip("pyarrow.parquet")
 from rulespec_artifacts import (
     ArtifactPin,
@@ -404,7 +398,7 @@ def test_source_public_tables_preserve_proven_columns(
     expected: Mapping[str, Any],
 ) -> None:
     identity = (
-        str(record["document_number"]) if profile is FEDERAL_REGISTER_PUBLIC_TABLE else str(record["data"]["id"])  # type: ignore[index]
+        profile.source_record_id(record) if profile.source_record_id is not None else str(record["data"]["id"])  # type: ignore[index]
     )
     source = _SourceStub(profile, [_source_row(profile, identity, record)])
     destination = tmp_path / profile.table_name
@@ -419,7 +413,9 @@ def test_source_public_tables_preserve_proven_columns(
     row = reader.duckdb_relation(duckdb.connect()).pl().row(0, named=True)
 
     assert reader.columns == expected["columns"]
-    assert row[expected["primary"]] == identity
+    assert row[expected["primary"]] == (
+        record["document_number"] if profile is FEDERAL_REGISTER_PUBLIC_TABLE else identity
+    )
     for name, value in expected.items():
         if name not in {"primary", "columns"}:
             assert row[name] == value

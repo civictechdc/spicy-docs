@@ -283,9 +283,11 @@ timestamps, and the publication receipt are excluded from logical state but
 remain integrity-bound by `artifactDigest`. Each source adapter must classify
 every observed upstream column and nested field into its closed versioned
 source schema, validate its declared shape, and preserve the exact classified
-value including explicit nulls. A new name or incompatible type produces a
-record-level deterministic failure under the amendment in section 5. A future
-schema may preserve new names only through an explicitly
+value including explicit nulls. A new name or incompatible type is refused.
+Failures raised by the shared record-classification or scope-validation step
+are recorded as deterministic under section 5; source acquisition and
+evidence-parser errors still abort. A future schema may preserve new names only
+through an explicitly
 classified, closed extension map; an open catch-all is not allowed.
 
 ## 5. Receipt and semantic verification
@@ -437,6 +439,17 @@ before this projection. Documents and comments retain their established
 sets them to null because source acquisition does not create derived text.
 DocSpec must own any future body-text result and the catalog row that selects it.
 
+**Amendment (2026-09-11):** Federal Register public projection `1.1` declares
+the compound primary key `["document_number", "publication_date"]`, preserving
+the existing columns and their types. It checks native identity using the
+Federal Register identity function and keeps both rows when a document number
+occurs on different dates. Compound-key uniqueness uses canonical JSON values,
+not delimiter concatenation. All key columns participate in the declared total
+order. Other profiles keep scalar `primaryKey` metadata. Federal Register
+projection `1.1` is the single supported table profile; the former `1.0`
+projection is no longer supported. See the
+[current projection decision](../../decisions.md#federal-register-public-tables-preserve-composite-identity).
+
 Publication uses a disk-backed sort and duplicate-key check, bounded Arrow
 batches, a configured maximum row count per member, Parquet 2.6 with Zstandard,
 and an atomic no-replacement directory publish. One self-describing zero-row
@@ -473,11 +486,12 @@ three source-stated rendition locator fields, native titles, and raw
 `topics_json`. The current release may grow beyond that baseline, but it MUST
 NOT silently lose a baseline row or field.
 
-Every record requires the source's `document_number` identity and its canonical
-`publication_date` source-issued version. A missing or malformed value fails
-publication instead of creating an unversioned source fact. The date remains in
-the native record; SpicyRegs does not copy it into a second generic version
-field.
+Every record requires the source's `document_number` and canonical
+`publication_date`; together they form `document_number@publication_date`, as
+amended in section 4. A missing or malformed value at the shared classification
+or record-scope boundary becomes a retained deterministic failure under section
+5, with no published record. The date remains in the native record; SpicyRegs
+does not copy it into a second generic version field.
 
 The profile preserves agency names and slugs exactly and reports absence. It
 does not require or invent an agency crosswalk. It preserves malformed RIN text

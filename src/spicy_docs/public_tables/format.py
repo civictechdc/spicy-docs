@@ -123,7 +123,7 @@ def _spec(
         "parquetCompression": PARQUET_COMPRESSION,
         "parquetFormatVersion": PARQUET_FORMAT_VERSION,
         "partitionColumns": list(profile.partition_columns),
-        "primaryKey": profile.primary_key,
+        "primaryKey": profile.primary_key_spec,
         "projectionId": profile.projection_id,
         "projectionVersion": profile.projection_version,
         "schemaId": profile.schema_id,
@@ -139,13 +139,18 @@ def _validate_profile(profile: PublicTableProfile) -> None:
     columns = profile.columns
     if not columns or len(columns) != len(set(columns)):
         raise PublicTableError("public-table columns must be nonempty and distinct")
-    if profile.primary_key not in columns:
+    keys = profile.primary_key_columns
+    if not keys or len(keys) != len(set(keys)) or any(not isinstance(name, str) or not name for name in keys):
+        raise PublicTableError("public-table primary key columns must be nonempty and distinct")
+    if any(name not in columns for name in keys):
         raise PublicTableError("public-table primary key is absent from its columns")
+    if not isinstance(profile.primary_key, str) and profile.source_record_id is None:
+        raise PublicTableError("public-table compound key requires a source identity function")
     if any(name not in columns for name in (*profile.partition_columns, *profile.sort_columns)):
         raise PublicTableError("public-table partition or sort column is absent")
     if len(profile.partition_columns) != len(set(profile.partition_columns)):
         raise PublicTableError("public-table partition columns repeat")
-    if not profile.sort_columns or profile.primary_key not in profile.sort_columns:
+    if not profile.sort_columns or any(name not in profile.sort_columns for name in keys):
         raise PublicTableError("public-table total order must include its primary key")
 
 

@@ -90,6 +90,12 @@ comments have no output-table profile. The destination must be new and separate
 from the source release. The source release and source blob store must also be
 separate.
 
+Federal Register now publishes projection `1.1`, keyed by the existing
+`document_number` and `publication_date` columns. Reused numbers on different
+dates remain separate rows. This corrects the former projection's mismatch
+with current source-native identity; it changes the table's projection version
+and logical identity while preserving the columns.
+
 ## verify-public-table
 
 Check the artifact pin, structure, declared table profile, member layout, and
@@ -108,6 +114,10 @@ uv run --frozen spicy-docs-source-native verify-public-table \
 
 Every shown option is required. Table choices match `publish-public-table`;
 repeat the accepted-ID option as needed.
+
+For Federal Register this command selects the supported `1.1` profile.
+The old `1.0` table projection is no longer supported. See the
+[compatibility decision](decisions.md#federal-register-public-tables-preserve-composite-identity).
 
 ## Output and failures
 

@@ -18,7 +18,7 @@ from rulespec_artifacts import (
     iter_member_descriptors,
 )
 
-from spicy_docs.public_table_profiles import PublicTableProfile
+from spicy_docs.public_table_profiles import PublicTableProfile, PublicTableProjectionError
 from spicy_docs.public_tables.format import (
     _SPEC_FIELDS,
     INPUT_ROLE,
@@ -70,7 +70,7 @@ def _validate_root(
         "parquetCompression": PARQUET_COMPRESSION,
         "parquetFormatVersion": PARQUET_FORMAT_VERSION,
         "partitionColumns": list(profile.partition_columns),
-        "primaryKey": profile.primary_key,
+        "primaryKey": profile.primary_key_spec,
         "projectionId": profile.projection_id,
         "projectionVersion": profile.projection_version,
         "schemaId": profile.schema_id,
@@ -176,9 +176,10 @@ def verify_public_table_release(
                     previous = seen_by_partition.get(partition)
                     for batch in parquet.iter_batches(batch_size=2_000):
                         for row in pa.Table.from_batches([batch]).to_pylist():
-                            identity = row[profile.primary_key]
-                            if not isinstance(identity, str) or not identity:
-                                raise PublicTableError("public-table primary key is empty")
+                            try:
+                                identity = profile.row_key(row)
+                            except PublicTableProjectionError as error:
+                                raise PublicTableError(str(error)) from error
                             try:
                                 identities.execute("INSERT INTO ids VALUES (?)", (identity,))
                             except sqlite3.IntegrityError as error:

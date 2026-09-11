@@ -33,6 +33,26 @@ That record includes superseded proposals. Local authority is
 [release specification](superpowers/specs/2026-08-25-source-native-release-spec.md)
 defines shared publication requirements.
 
+## Federal Register public tables preserve composite identity
+
+Public projection `1.1` uses the existing `document_number` and
+`publication_date` columns as a compound key. Both literal values and the full
+column set stay unchanged. The former `1.0` projection required a number-only
+source identity and could not publish current native releases; removing the
+identity check would still reject reused numbers in the duplicate-key index.
+
+The current `FEDERAL_REGISTER_PUBLIC_TABLE` and CLI select projection `1.1`.
+Its sealed `primaryKey` is the ordered array
+`["document_number", "publication_date"]`. Scalar-key profiles retain their
+string metadata. Duplicate checks encode compound values through
+Rulespec canonical JSON; source identity validation reuses the Federal Register
+identity function. No new source fact or derived column is introduced.
+
+Projection `1.1` is the only supported Federal Register public-table profile;
+legacy table support is not required. Readers match its version and key exactly.
+The Parquet schema ID remains `1.0` because the columns and their types did not
+change; the projection version and table logical identity change.
+
 ## Similar sources can need different rules
 
 Regulations.gov documents and dockets select the newest observation. Identical

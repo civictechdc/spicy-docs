@@ -82,8 +82,7 @@ def _index_rows(
     count = 0
     for source_row in source.iter_records():
         row = profile.project(source_row)
-        identity = row[profile.primary_key]
-        assert identity is not None
+        identity = profile.row_key(row)
         partition = tuple(row[name] for name in profile.partition_columns)
         if any(value is None for value in partition):
             raise PublicTableError("public-table partition value is null")

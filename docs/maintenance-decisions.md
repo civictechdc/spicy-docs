@@ -112,3 +112,11 @@ the dated reference snapshot.
 A first-time human contribution exercise remains unobserved. The automated
 example, tests, and clean installation establish that the path runs; they do
 not measure whether a new contributor can follow it within the proposed times.
+
+Independent review also exposed a pre-existing Federal Register public-table
+identity mismatch. Its separately versioned
+[projection repair](decisions.md#federal-register-public-tables-preserve-composite-identity)
+preserves columns while using both identity fields. Legacy table support is not
+required. This changes that table's output identity and is separate
+from the behavior-preserving module extraction. Current native-to-public CLI
+tests cover the boundary that the former number-only test stub missed.

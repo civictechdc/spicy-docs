@@ -11,12 +11,15 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any, Final
 
+from rulespec_artifacts import canonical_json_bytes
+
 from spicy_docs.federal_register_source_native import (
     SCHEMA_NAME as FEDERAL_REGISTER_SCHEMA_NAME,
 )
 from spicy_docs.federal_register_source_native import (
     SOURCE_SYSTEM_ID as FEDERAL_REGISTER_SOURCE_SYSTEM_ID,
 )
+from spicy_docs.federal_register_source_native import federal_register_source_record_id
 from spicy_docs.regulations_gov_source_native import (
     COMMENT_SCHEMA_NAME,
     COMMENT_SOURCE_SYSTEM_ID,
@@ -47,10 +50,27 @@ class PublicTableProfile:
     source_system_id: str
     source_schema_name: str
     columns: tuple[str, ...]
-    primary_key: str
+    primary_key: str | tuple[str, ...]
     partition_columns: tuple[str, ...]
     sort_columns: tuple[str, ...]
     project_source_record: Callable[[dict[str, Any]], Mapping[str, Any]]
+    source_record_id: Callable[[Mapping[str, Any]], str] | None = None
+
+    @property
+    def primary_key_columns(self) -> tuple[str, ...]:
+        return (self.primary_key,) if isinstance(self.primary_key, str) else self.primary_key
+
+    @property
+    def primary_key_spec(self) -> str | list[str]:
+        """Scalar keys name one column; compound keys name every column."""
+        return self.primary_key if isinstance(self.primary_key, str) else list(self.primary_key)
+
+    def row_key(self, row: Mapping[str, Any]) -> str:
+        """A collision-safe index key, distinct from the source's identity encoding."""
+        values = [row[name] for name in self.primary_key_columns]
+        if any(not isinstance(value, str) or not value for value in values):
+            raise PublicTableProjectionError("public-table primary key is empty")
+        return values[0] if isinstance(self.primary_key, str) else canonical_json_bytes(values).decode("utf-8")
 
     def project(self, source_row: Mapping[str, Any]) -> dict[str, str | None]:
         if source_row.get("schemaName") != self.source_schema_name:
@@ -62,8 +82,9 @@ class PublicTableProfile:
         if set(projected) != set(self.columns):
             raise PublicTableProjectionError(f"{self.table_name} public columns differ from its stable schema")
         normalized = {name: _public_text(projected[name], field=name) for name in self.columns}
-        identity = normalized[self.primary_key]
-        if not identity or identity != source_row.get("sourceRecordId"):
+        key = self.row_key(normalized)
+        identity = self.source_record_id(normalized) if self.source_record_id is not None else key
+        if identity != source_row.get("sourceRecordId"):
             raise PublicTableProjectionError(f"{self.table_name} primary key differs from the source record identity")
         for name in self.partition_columns:
             value = normalized[name]
@@ -132,14 +153,15 @@ FEDERAL_REGISTER_PUBLIC_TABLE: Final = PublicTableProfile(
     table_name="federal_register",
     schema_id="urn:spicy-regs:schema:public-federal-register:1.0",
     projection_id="urn:spicy-regs:projection:federal-register-public-table",
-    projection_version="1.0",
+    projection_version="1.1",
     source_system_id=FEDERAL_REGISTER_SOURCE_SYSTEM_ID,
     source_schema_name=FEDERAL_REGISTER_SCHEMA_NAME,
     columns=FEDERAL_REGISTER_COLUMNS,
-    primary_key="document_number",
+    primary_key=("document_number", "publication_date"),
     partition_columns=(),
     sort_columns=("publication_date", "document_number"),
     project_source_record=project_federal_register_document,
+    source_record_id=federal_register_source_record_id,
 )
 
 
