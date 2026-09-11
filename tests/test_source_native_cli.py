@@ -428,16 +428,16 @@ def test_cli_closes_partial_acquisition_before_its_transport_on_failure(tmp_path
     """A rejected page must not leave a suspended download iterator alive."""
     from contextlib import contextmanager
     from dataclasses import replace
-    from types import SimpleNamespace
 
     from spicy_docs.cli.sources import SOURCES
+    from tests.releases.fixtures import _page
 
     events = []
 
     def pages():
         try:
             # Rejected by the real publisher before it asks for the next page.
-            yield SimpleNamespace(response_bytes=b"", traversal_index=10_000)
+            yield _page(10_000, 0, b"invalid page")
         finally:
             events.append("iterator-closed")
 

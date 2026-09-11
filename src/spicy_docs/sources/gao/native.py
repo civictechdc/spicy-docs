@@ -38,6 +38,7 @@ from spicy_docs.sources.evidence_zip import (
     deterministic_zip_entry,
     has_deterministic_zip_metadata,
 )
+from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.sources.zyte import ZyteHttpResponse
 
 SOURCE_SYSTEM_ID: Final = "https://www.gao.gov/products"
@@ -49,7 +50,7 @@ SCHEMA_PATH: Final = "sources/gao-product-page-raw-1.0.schema.json"
 SOURCE_SCHEMA_KEY: Final = "schemas/gao-product-page-raw-1.0.schema.json"
 RECORD_STEM: Final = "gao-product-page"
 ACQUISITION_POLICY_ID: Final = "urn:spicy-docs:acquisition:gao-product-page-zyte-enumeration"
-ACQUISITION_POLICY_VERSION: Final = "1.0"
+ACQUISITION_POLICY_VERSION: Final = "1.1"
 MAX_TRAVERSALS: Final = 1
 MAX_PRODUCT_IDS: Final = 1_000
 MAX_PRODUCT_ID_LENGTH: Final = 128
@@ -595,6 +596,10 @@ class GaoProductAcquisitionCheck:
 
 def gao_product_acquisition_policy(query_scope: Mapping[str, Any]) -> dict[str, Any]:
     return {
+        "coverageLimits": [
+            "Only the explicitly requested product IDs are covered; other product IDs are unrequested.",
+            "Each requested page is captured separately; no single publisher-wide version is established.",
+        ],
         "evidence": "one-deterministic-bounded-zip-per-exact-html-page",
         "initialQueryScope": gao_product_query_scope(query_scope),
         "maxHtmlBytesPerProduct": MAX_PAGE_BYTES,
@@ -605,6 +610,30 @@ def gao_product_acquisition_policy(query_scope: Mapping[str, Any]) -> dict[str, 
         "strategy": "complete-explicit-product-id-enumeration",
         "transport": TRANSPORT_ID,
     }
+
+
+def _refused_gao_response(request_key: str, response: ZyteHttpResponse, *, total_html_bytes: int) -> RefusedResponse:
+    """Describe exact diagnostic bytes without exceeding acquisition bounds."""
+
+    body = response.body
+    byte_size = len(body) if isinstance(body, bytes) else None
+    unavailable_reason = None
+    if byte_size is None:
+        unavailable_reason = "unsupported-response"
+    elif byte_size > MAX_PAGE_BYTES:
+        unavailable_reason = "response-byte-limit"
+    elif total_html_bytes + byte_size > MAX_TOTAL_HTML_BYTES:
+        unavailable_reason = "acquisition-byte-limit"
+    content_type = response.content_type
+    is_html = isinstance(content_type, str) and content_type.split(";", 1)[0].strip().casefold() == "text/html"
+    return RefusedResponse(
+        request_key=request_key,
+        stage="source-validation",
+        response_bytes=body if unavailable_reason is None else None,
+        media_type="text/html" if is_html and unavailable_reason is None else "application/octet-stream",
+        unavailable_reason=unavailable_reason,
+        observed_byte_size=byte_size,
+    )
 
 
 def iter_gao_product_pages(
@@ -624,17 +653,45 @@ def iter_gao_product_pages(
     total_html_bytes = 0
     for page_index, product_id in enumerate(cast(Sequence[str], scope["productIds"])):
         url = gao_product_url(product_id)
-        response = fetch(url)
+        try:
+            response = fetch(url)
+        except Exception as error:
+            attach_refused_response(
+                error,
+                RefusedResponse(
+                    request_key=url,
+                    stage="transport",
+                    response_bytes=None,
+                    media_type="application/octet-stream",
+                    unavailable_reason="transport-unavailable",
+                ),
+            )
+            raise
         if not isinstance(response, ZyteHttpResponse):
-            raise GaoProductSourceError("GAO fetcher returned an unsupported response")
-        manifest = _capture_manifest(product_id, response)
+            error = GaoProductSourceError("GAO fetcher returned an unsupported response")
+            attach_refused_response(
+                error,
+                RefusedResponse(
+                    request_key=url,
+                    stage="source-validation",
+                    response_bytes=None,
+                    media_type="application/octet-stream",
+                    unavailable_reason="unsupported-response",
+                ),
+            )
+            raise error
+        try:
+            manifest = _capture_manifest(product_id, response)
+            if total_html_bytes + len(response.body) > MAX_TOTAL_HTML_BYTES:
+                raise GaoProductSourceError("GAO acquisition exceeds its total HTML byte bound")
+            # Refused target bytes travel with the error for diagnostic retention;
+            # they never become a successful page or an admitted source record.
+            _publisher_fields(response.body, expected_url=url)
+            evidence_bytes = _evidence_zip(manifest, response.body)
+        except GaoProductSourceError as error:
+            attach_refused_response(error, _refused_gao_response(url, response, total_html_bytes=total_html_bytes))
+            raise
         total_html_bytes += len(response.body)
-        if total_html_bytes > MAX_TOTAL_HTML_BYTES:
-            raise GaoProductSourceError("GAO acquisition exceeds its total HTML byte bound")
-        # Refuse identity/topic drift before a caller can persist the evidence.
-        # The independent verifier parses the ZIP again; the deliberate second
-        # O(B) pass proves the carried bytes, not ambient in-memory state.
-        _publisher_fields(response.body, expected_url=url)
         yield GaoProductPage(
             traversal_index=0,
             page_index=page_index,
@@ -642,7 +699,7 @@ def iter_gao_product_pages(
             window_page_index=0,
             request_key=url,
             source_cursor=None,
-            response_bytes=_evidence_zip(manifest, response.body),
+            response_bytes=evidence_bytes,
         )
 
 

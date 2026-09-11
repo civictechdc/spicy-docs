@@ -2,9 +2,9 @@
 
 A valid source release can contain accepted records, rejected records, or no
 records. `SourceNativeReleaseReader.collection_outcome` exposes that distinction
-using the release's existing scope and publication receipt. `publish`, `verify`,
-and `inspect` return the same mapping as `collectionOutcome` in their JSON output.
-No new status file or release format is involved.
+using the release's existing scope, acquisition policy, and publication receipt.
+`publish`, `verify`, and `inspect` return the same mapping as `collectionOutcome`
+in their JSON output. No new status file or release format is involved.
 
 ## What the outcome establishes
 
@@ -12,6 +12,24 @@ No new status file or release format is involved.
 as dates, agencies, or GAO product IDs. `sourceStateScope` names the source
 profile's coverage claim. For example, `observed-crawl` records an observed crawl;
 it does not promise a frozen snapshot of every publisher document.
+
+`acquisitionPolicy` supplies the source's existing policy values, including
+`initialQueryScope`, discovery `strategy`, bounds, selection rules, and
+`coverageLimits`. The reader regenerates these values with the supplied source
+profile and checks their digest against the admitted release's
+`acquisitionPolicyDigest`. `acquisitionPolicyId` and `acquisitionPolicyVersion`
+identify that policy. A changed implementation cannot silently describe an old
+release using different policy values. `traversalAcceptance` names the profile's
+rule for accepting the collected passes.
+
+Read the broad label together with those facts:
+
+| Source | What its coverage establishes |
+| --- | --- |
+| Federal Register | Two consecutive crawls agree on records observed within the exact date selectors. Date windows split at the result cap. This is stable observation, without a frozen publisher-wide version. |
+| GAO product pages | Each explicitly requested product ID has captured page evidence. `complete-snapshot` concerns that exact ID list; other product IDs are unrequested. Each page is captured separately. |
+| Mirrulations documents, dockets, and comments | One live listing supplies the requested agencies and collection; date selection follows acquisition. The built-in transport uses each listed object's ETag in an `IfMatch` request. `complete-snapshot` concerns that enumeration and its individually pinned objects, without establishing a single version of the whole listing or publisher. |
+| Community public comments | One `observed-crawl` probes contiguous partition names from zero and stops at the first missing part. Later part numbers remain unrequested. Captured terminal markers describe the traversal; missing-part HTTP responses are not retained. See [captured public comments](sources/public-comments.md). |
 
 `recordOutcome` describes records from the accepted traversal:
 
@@ -27,6 +45,14 @@ request and observed response. It says nothing about an unrequested collection.
 An acquisition or transport failure that prevents publication produces a command
 error, not an `empty` release. A deterministic record rejection concerns that
 acquisition attempt; a later request may succeed.
+
+Use `requestedScope` to distinguish requested selectors from unrequested ones.
+Use `empty` only for the observed input of an accepted collection and the failure
+ledger for rejected record observations. An acquisition refusal leaves the
+requested collection unresolved; it supplies no accepted collection outcome.
+These are collection facts. The API does not invent a result for every possible
+document ID, infer that an unrequested ID is absent, or identify a rejected row
+as a valid publisher ID when its identity could not be established.
 
 For all three commands, `ok: true` means the command completed its admission or
 verification checks. Read `collectionOutcome` to determine what happened to the
@@ -61,8 +87,8 @@ counts do not add to the equations above. Current publication permits recorded
 deterministic record failures; transient or unclassified acquisition failures
 prevent an accepted release.
 
-Each property access returns a fresh mapping, including fresh selectors and
-warnings, so changing the returned value does not change later reads.
+Each property access returns a fresh mapping, including fresh selectors, policy
+values, and warnings, so changing the returned value does not change later reads.
 
 ## Inspect failures
 

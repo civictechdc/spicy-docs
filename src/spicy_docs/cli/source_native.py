@@ -63,6 +63,7 @@ from spicy_docs.sources.zyte import ZyteTransportError
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from spicy_docs.storage.publication import ImmutablePublicationError
 from spicy_docs.transport.acquisition import capture_instant
+from spicy_docs.transport.credentials import scrub_credential
 
 
 def _now() -> datetime:
@@ -173,7 +174,9 @@ def _publish(
         published.root,
         pin=published.artifact.pin,
         spec=published.artifact.root["spec"],
-        outcome=_collection_outcome(LocalMemberSource(published.root)),
+        outcome=_collection_outcome(
+            LocalMemberSource(published.root), profile=profile, spec=published.artifact.root["spec"]
+        ),
     )
     result["byteMeasurements"] = dict(published.byte_measurements)
     return result
@@ -210,7 +213,7 @@ def _verify(args: argparse.Namespace) -> dict[str, object]:
         args.release,
         pin=artifact.pin,
         spec=artifact.root["spec"],
-        outcome=_collection_outcome(source),
+        outcome=_collection_outcome(source, profile=profile, spec=artifact.root["spec"]),
     )
 
 
@@ -398,14 +401,15 @@ def main(
         OSError,
         ValueError,
     ) as error:
-        _emit(
-            errors,
-            {
-                "command": args.command,
-                "error": {"code": _error_code(error), "message": str(error)},
-                "ok": False,
-            },
-        )
+        result = {
+            "command": args.command,
+            "error": {"code": _error_code(error), "message": scrub_credential(str(error), "")},
+            "ok": False,
+        }
+        failed_acquisition = getattr(error, "failed_acquisition", None)
+        if failed_acquisition is not None:
+            result["failedAcquisition"] = failed_acquisition
+        _emit(errors, result)
         return 1
     _emit(output, result)
     return 0

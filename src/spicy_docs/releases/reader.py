@@ -27,6 +27,7 @@ from spicy_docs.releases.format import (
     SCOPES_KEY,
     SourceNativeReleaseError,
 )
+from spicy_docs.releases.observations import _policy_for_scope, _section_digest
 from spicy_docs.releases.partitions import (
     _partition_rows,
     _payload_partitions,
@@ -38,7 +39,13 @@ from spicy_docs.releases.profile import (
 )
 
 
-def _collection_outcome(source: MemberSource, receipt: Mapping[str, Any] | None = None) -> dict[str, Any]:
+def _collection_outcome(
+    source: MemberSource,
+    *,
+    profile: SourceNativeProfile,
+    spec: Mapping[str, Any],
+    receipt: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """Summarize existing metadata after admission, without reopening payloads."""
 
     if receipt is None:
@@ -47,6 +54,10 @@ def _collection_outcome(source: MemberSource, receipt: Mapping[str, Any] | None 
         scope = next(scopes, None)
         if scope is None or next(scopes, None) is not None or not isinstance(scope.get("fields"), Mapping):
             raise SourceNativeReleaseError("source-native requested scope must be one fields mapping")
+    policy = _policy_for_scope(scope["fields"], profile)
+    policy_digest = _section_digest("spicyregs-acquisition-policy/1", "policy", 1, (policy,))
+    if policy_digest != spec["acquisitionPolicyDigest"]:
+        raise SourceNativeReleaseError("acquisition-policy digest differs")
     if receipt["discoveredRecordCount"] == 0:
         record_outcome = "empty"
     elif receipt["failedRecordCount"] == 0:
@@ -58,6 +69,12 @@ def _collection_outcome(source: MemberSource, receipt: Mapping[str, Any] | None 
     return {
         "requestedScope": deepcopy(dict(scope["fields"])),
         "sourceStateScope": receipt["sourceStateScope"],
+        "traversalAcceptance": profile.traversal_acceptance,
+        "acquisitionPolicy": deepcopy(policy),
+        **{
+            field: spec[field]
+            for field in ("acquisitionPolicyId", "acquisitionPolicyVersion", "acquisitionPolicyDigest")
+        },
         "recordOutcome": record_outcome,
         **{
             field: receipt[field]
@@ -115,8 +132,8 @@ class SourceNativeReleaseReader:
         self._record_partitions = partitions[PARTITION_RECORDS]
         self._rendition_partitions = partitions[PARTITION_RENDITIONS]
         self._ledger_partitions = partitions[PARTITION_LEDGER]
-        self._collection_outcome = _collection_outcome(source, receipt)
         spec = self._artifact.root["spec"]
+        self._collection_outcome = _collection_outcome(source, profile=profile, spec=spec, receipt=receipt)
         self.source_state_scope = str(spec["sourceStateScope"])
         self.source_system_id = str(spec["sourceSystemId"])
         self.source_system_version = str(spec["sourceSystemVersion"])
@@ -129,7 +146,7 @@ class SourceNativeReleaseReader:
 
     @property
     def collection_outcome(self) -> Mapping[str, Any]:
-        """Return fresh scope/count metadata; empty input does not prove absence.
+        """Return fresh scope, policy, and counts; empty input does not prove absence.
 
         Counts describe the accepted traversal: discovered = input + failed,
         and input = published + discarded. See ``docs/source-native-outcomes.md``

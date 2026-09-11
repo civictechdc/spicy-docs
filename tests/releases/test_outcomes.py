@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from rulespec_artifacts import LocalMemberSource
 
-from spicy_docs.source_native import SourceNativeReleaseReader
+from spicy_docs.source_native import SourceNativeReleaseError, SourceNativeReleaseReader
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.releases.fixtures import (
@@ -40,6 +41,13 @@ def test_outcome_reports_empty_success_partial_and_total_rejection(
     assert summary["recordOutcome"] == outcome
     assert summary["requestedScope"] == QUERY_SCOPE
     assert summary["sourceStateScope"] == "observed-crawl"
+    assert summary["traversalAcceptance"] == "stable-consecutive-traversals"
+    assert summary["acquisitionPolicy"] == FEDERAL_REGISTER_PROFILE.acquisition_policy(QUERY_SCOPE)
+    assert summary["acquisitionPolicy"]["strategy"] == "date-window-cap-split-stable-reconciliation"
+    assert summary["acquisitionPolicy"]["initialQueryScope"] == QUERY_SCOPE
+    assert summary["acquisitionPolicyVersion"] == "1.2"
+    for field in ("acquisitionPolicyId", "acquisitionPolicyVersion", "acquisitionPolicyDigest"):
+        assert summary[field] == published.artifact.root["spec"][field]
     assert summary["discoveredRecordCount"] == valid + rejected
     assert summary["inputObservationCount"] == summary["publishedRecordCount"] == valid
     assert summary["discardedObservationCount"] == 0
@@ -85,10 +93,29 @@ def test_outcome_is_a_fresh_mapping_and_does_not_reopen_payloads(tmp_path: Path,
     changed["requestedScope"]["publishedFrom"] = "1990-01-01"
     changed["warnings"].append({"code": "injected", "message": "caller mutation"})
     changed["publishedRecordCount"] = 9
+    changed["acquisitionPolicy"]["initialQueryScope"]["publishedFrom"] = "1990-01-01"
+    changed["acquisitionPolicy"]["coverageLimits"].clear()
 
     assert reader.collection_outcome["requestedScope"] == QUERY_SCOPE
     assert reader.collection_outcome["warnings"] == []
     assert reader.collection_outcome["publishedRecordCount"] == 1
+    assert reader.collection_outcome["acquisitionPolicy"] == FEDERAL_REGISTER_PROFILE.acquisition_policy(QUERY_SCOPE)
+
+
+def test_reader_refuses_to_describe_admitted_release_with_changed_policy_values(tmp_path: Path) -> None:
+    published = _publish(tmp_path, _stable_pages())
+    changed_profile = replace(
+        FEDERAL_REGISTER_PROFILE,
+        acquisition_policy=lambda scope: {
+            **FEDERAL_REGISTER_PROFILE.acquisition_policy(scope),
+            "coverageLimits": ["An incorrect frozen snapshot claim."],
+        },
+    )
+
+    # Identity/version still match. The reader must bind displayed policy values
+    # to the release's digest even though reader admission does no source replay.
+    with pytest.raises(SourceNativeReleaseError, match="acquisition-policy digest differs"):
+        _reader(published.root, published.artifact.pin, profile=changed_profile)
 
 
 @pytest.mark.parametrize("reject", [False, True])

@@ -458,6 +458,11 @@ def _acquisition_policy(
     )
     return {
         "collection": collection,
+        "coverageLimits": [
+            "Membership follows one live listing of the requested agencies and collection, with dates applied afterward.",
+            "The built-in transport fetches each listed object with its ETag as an IfMatch precondition.",
+            "Individual object pins do not establish one frozen version of the whole listing or publisher.",
+        ],
         "dateSelection": "after-full-agency-object-acquisition",
         "evidence": "bounded-zip-packs-of-listed-metadata-and-exact-object-bytes",
         "initialQueryScope": dict(validator(query_scope)),

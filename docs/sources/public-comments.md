@@ -16,10 +16,17 @@ claiming whole-partition capture would change the meaning of the input pin.
 For each agency, acquisition starts with `part-0.parquet`. One-part look-ahead
 marks the preceding partition terminal when the next part is missing. This
 assumes the publisher names partitions contiguously: discovery stops at the
-first missing part and does not search for later upstream objects. A missing
-first part or exhausted scan bound refuses the run. Gaps, repeated locators,
-wrong agencies, and extra partitions after a terminal marker in retained
-evidence also refuse verification. Empty present partitions remain evidence.
+first missing part and does not search for later upstream objects. If part 0
+exists, part 1 is missing, and part 2 exists, acquisition captures part 0 and
+never requests part 2. It makes no claim about part 2's existence. A missing
+first part or exhausted 64-part probe bound refuses the run. Gaps within the
+retained sequence, repeated locators, wrong agencies, and extra partitions after
+a terminal marker in retained evidence also refuse verification.
+
+A present Parquet partition with zero rows remains evidence and can produce an
+observed-empty release. A missing first part leaves that agency unresolved;
+it does not establish that the agency has no comments. Request failures abort
+collection rather than becoming empty partitions or terminal markers.
 
 Each ZIP binds the exact Parquet object to its URL, fetch time, stated freshness,
 byte size, and digest. Replay validates the manifest and ZIP, hashes the object,
@@ -29,8 +36,19 @@ therefore contains the publisher's 16 columns, including nulls, while the file
 contains 15. The closed schema and projection live in
 [`schemas/spicy_regs_public_tables.py`](../../src/spicy_docs/schemas/spicy_regs_public_tables.py).
 
-`complete-snapshot` describes the discovered partitions for the named agencies.
-It does not cover all agencies, all historical versions, or all origin records.
+Acquisition policy `1.1` declares `observed-crawl`, accepted as one
+`single-observed-traversal`. Its `observed-contiguous-part-probing` strategy
+states the contiguous-name assumption in the policy itself. The capture pins
+the observed partition bytes; it does not prove complete upstream membership,
+all agencies, historical versions, or a single publisher-wide instant.
+
+The terminal marker records the acquirer's stopping decision. The missing-part
+HTTP response is not retained, so replay checks the declared captured sequence
+and its bytes, rather than proving why the live scan stopped. The
+[collection outcome](../source-native-outcomes.md) exposes the exact requested
+agencies and the digest-checked policy with these limits. Policy `1.0` releases
+are refused by the current profile; capture-pack and source-row shapes are
+unchanged.
 
 ## Selection and attachment diagnostics
 
@@ -63,6 +81,7 @@ uv run --frozen pytest -q tests/test_spicy_regs_public_tables_source_native.py
 ```
 
 Check exact capture bytes, Hive agency insertion, missing terminal evidence,
-empty partitions, repeated identity, and malformed attachment diagnostics.
+first-missing and gap probes, empty partitions, request failures, repeated
+identity, and malformed attachment diagnostics.
 The [supply decision](../decisions.md#community-supply-precedes-origin-acquisition)
 explains when this source takes precedence over origin acquisition.

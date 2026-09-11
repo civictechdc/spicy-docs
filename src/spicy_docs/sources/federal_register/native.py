@@ -18,9 +18,12 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 from rulespec_artifacts import FramedSection, canonical_json_bytes, framed_section_digest, schema_bundle_digest
 
+from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
+
 SOURCE_SYSTEM_ID: Final = "https://www.federalregister.gov/api/v1"
 SOURCE_SYSTEM_VERSION: Final = "v1"
 MAX_RESULTS_PER_PAGE: Final = 1_000
+MAX_PAGE_BYTES: Final = 24 * 1024 * 1024
 MAX_RECONCILIATION_TRAVERSALS: Final = 3
 RESULT_CAP: Final = 10_000
 MAX_WINDOW_DAYS: Final = 90
@@ -369,6 +372,10 @@ def federal_register_acquisition_policy(
     query_scope: Mapping[str, Any],
 ) -> dict[str, Any]:
     return {
+        "coverageLimits": [
+            "Two consecutive traversals must agree on observed records within the requested date windows.",
+            "Matching crawls do not establish a frozen publisher-wide version or source absence outside those windows.",
+        ],
         "initialQueryScope": federal_register_query_scope(query_scope),
         "maxTraversals": MAX_RECONCILIATION_TRAVERSALS,
         "maxWindowDays": MAX_WINDOW_DAYS,
@@ -429,6 +436,23 @@ def federal_register_next_page_url(
     return next_url
 
 
+def _refused_federal_response(request_key: str, response_bytes: bytes | None) -> RefusedResponse:
+    byte_size = len(response_bytes) if isinstance(response_bytes, bytes) else None
+    reason = None
+    if byte_size is None:
+        reason = "unsupported-response"
+    elif byte_size > MAX_PAGE_BYTES:
+        reason = "response-byte-limit"
+    return RefusedResponse(
+        request_key=request_key,
+        stage="source-validation",
+        response_bytes=response_bytes if reason is None else None,
+        media_type="application/json" if reason is None else "application/octet-stream",
+        unavailable_reason=reason,
+        observed_byte_size=byte_size,
+    )
+
+
 def iter_federal_register_pages(
     fetch: FederalRegisterFetch,
     *,
@@ -459,9 +483,28 @@ def iter_federal_register_pages(
         emitted_windows = 0
 
         def fetch_bytes(request_url: str) -> bytes:
-            response_bytes = fetch(request_url)
-            if not isinstance(response_bytes, bytes) or not response_bytes:
-                raise FederalRegisterSourceError("Federal Register fetch returned no response bytes")
+            try:
+                response_bytes = fetch(request_url)
+            except Exception as error:
+                attach_refused_response(
+                    error,
+                    RefusedResponse(
+                        request_key=request_url,
+                        stage="transport",
+                        response_bytes=None,
+                        media_type="application/octet-stream",
+                        unavailable_reason="transport-unavailable",
+                    ),
+                )
+                raise
+            try:
+                if not isinstance(response_bytes, bytes) or not response_bytes:
+                    raise FederalRegisterSourceError("Federal Register fetch returned no response bytes")
+                if len(response_bytes) > MAX_PAGE_BYTES:
+                    raise FederalRegisterSourceError("Federal Register response exceeds its evidence byte bound")
+            except FederalRegisterSourceError as error:
+                attach_refused_response(error, _refused_federal_response(request_url, response_bytes))
+                raise
             return response_bytes
 
         def window_pages(window_start: date, window_end: date) -> Iterator[FederalRegisterPage]:
@@ -471,63 +514,71 @@ def iter_federal_register_pages(
                 "publishedThrough": window_end.isoformat(),
             }
             initial_url = federal_register_documents_url(window_scope, per_page=per_page)
-            first_bytes = fetch_bytes(initial_url)
-            first_response = parse_page_response(first_bytes)
-            declared_count = first_response["count"]
-            if emitted_pages >= max_pages_per_traversal:
-                raise FederalRegisterSourceError("Federal Register acquisition exceeded its evidence-page bound")
-            window_index = emitted_windows
-            emitted_windows += 1
-            if declared_count >= RESULT_CAP:
-                yield FederalRegisterPage(
-                    traversal_index=traversal_index,  # noqa: B023 - window_pages is drained via `yield from` before traversal_index advances
-                    page_index=emitted_pages,
-                    request_key=initial_url,
-                    source_cursor=None,
-                    response_bytes=first_bytes,
-                    window_index=window_index,
-                    window_page_index=0,
-                )
-                emitted_pages += 1
-                if window_start == window_end:
-                    raise FederalRegisterSourceError(
-                        f"Federal Register result cap is ambiguous for {window_start.isoformat()}"
-                    )
-                midpoint = window_start + (window_end - window_start) // 2
-                yield from window_pages(window_start, midpoint)
-                yield from window_pages(midpoint + timedelta(days=1), window_end)
-                return
-
-            cursor: str | None = None
             request_url = initial_url
-            response_bytes = first_bytes
-            response = first_response
-            seen_urls = {initial_url}
-            inventory = FederalRegisterTraversalCheck()
-            window_page_index = 0
-            while True:
+            response_bytes: bytes | None = None
+            try:
+                response_bytes = fetch_bytes(initial_url)
+                first_bytes = response_bytes
+                first_response = parse_page_response(first_bytes)
+                declared_count = first_response["count"]
                 if emitted_pages >= max_pages_per_traversal:
                     raise FederalRegisterSourceError("Federal Register acquisition exceeded its evidence-page bound")
-                inventory.add(response, page_index=window_page_index)
-                next_url = federal_register_next_page_url(response, seen_urls=seen_urls)
-                yield FederalRegisterPage(
-                    traversal_index=traversal_index,  # noqa: B023 - window_pages is drained via `yield from` before traversal_index advances
-                    page_index=emitted_pages,
-                    request_key=request_url,
-                    source_cursor=cursor,
-                    response_bytes=response_bytes,
-                    window_index=window_index,
-                    window_page_index=window_page_index,
-                )
-                emitted_pages += 1
-                if next_url is None:
-                    inventory.finish()
+                window_index = emitted_windows
+                emitted_windows += 1
+                if declared_count >= RESULT_CAP:
+                    yield FederalRegisterPage(
+                        traversal_index=traversal_index,  # noqa: B023 - window_pages is drained via `yield from` before traversal_index advances
+                        page_index=emitted_pages,
+                        request_key=initial_url,
+                        source_cursor=None,
+                        response_bytes=first_bytes,
+                        window_index=window_index,
+                        window_page_index=0,
+                    )
+                    emitted_pages += 1
+                    if window_start == window_end:
+                        raise FederalRegisterSourceError(
+                            f"Federal Register result cap is ambiguous for {window_start.isoformat()}"
+                        )
+                    midpoint = window_start + (window_end - window_start) // 2
+                    yield from window_pages(window_start, midpoint)
+                    yield from window_pages(midpoint + timedelta(days=1), window_end)
                     return
-                cursor = next_url
-                request_url = next_url
-                response_bytes = fetch_bytes(request_url)
-                response = parse_page_response(response_bytes)
-                window_page_index += 1
+
+                cursor: str | None = None
+                response_bytes = first_bytes
+                response = first_response
+                seen_urls = {initial_url}
+                inventory = FederalRegisterTraversalCheck()
+                window_page_index = 0
+                while True:
+                    if emitted_pages >= max_pages_per_traversal:
+                        raise FederalRegisterSourceError(
+                            "Federal Register acquisition exceeded its evidence-page bound"
+                        )
+                    inventory.add(response, page_index=window_page_index)
+                    next_url = federal_register_next_page_url(response, seen_urls=seen_urls)
+                    yield FederalRegisterPage(
+                        traversal_index=traversal_index,  # noqa: B023 - window_pages is drained via `yield from` before traversal_index advances
+                        page_index=emitted_pages,
+                        request_key=request_url,
+                        source_cursor=cursor,
+                        response_bytes=response_bytes,
+                        window_index=window_index,
+                        window_page_index=window_page_index,
+                    )
+                    emitted_pages += 1
+                    if next_url is None:
+                        inventory.finish()
+                        return
+                    cursor = next_url
+                    request_url = next_url
+                    response_bytes = fetch_bytes(request_url)
+                    response = parse_page_response(response_bytes)
+                    window_page_index += 1
+            except Exception as error:
+                attach_refused_response(error, _refused_federal_response(request_url, response_bytes))
+                raise
 
         window_start = published_from
         while window_start <= published_through:

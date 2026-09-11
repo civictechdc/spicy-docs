@@ -218,3 +218,38 @@ Handled failures have `ok: false`, `command`, and `error` containing `code` and
 `operation-failed`. Keep the actual message; a failed acquisition is not a claim
 that the publisher has no records. Missing optional dependencies identify setup
 work; an existing immutable destination requires choosing a new destination.
+
+Failures after source acquisition starts can also include `failedAcquisition`. Keep stderr
+with the run, for example by appending `2> /path/to/run-error.json` to the publish
+command. The report's `response.status` is `retained` only when its `blobRef`
+names exact bytes in the chosen blob store. The report keeps the source error
+separate from its evidence. Neither the report nor the retained blob is a release.
+
+For a retained response, retrieve the bytes without contacting the publisher:
+
+```python
+import json
+from pathlib import Path
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+
+failure = json.loads(Path("/path/to/run-error.json").read_text())
+response = failure["failedAcquisition"]["response"]
+if response["status"] == "retained":
+    store = LocalSourceNativeBlobStore(Path("/path/to/blobs"), create=False)
+    with store.open(response["blobRef"]) as source, open("refused-response.bin", "xb") as output:
+        output.write(source.read())
+else:
+    print(response["reason"])
+```
+
+Empty received bytes are retainable. Oversized bodies are never truncated into
+evidence: the report says `response-byte-limit` (or `acquisition-byte-limit`) and
+includes the observed size when known. Shared pages are limited to 24 MiB; GAO
+HTML is limited to 8 MiB per page and 1 GiB per acquisition. A failed transport
+may report `transport-unavailable` when no target body reached the source adapter.
+Zyte suppresses target responses that reflect its known credential and reports
+`credential-suppressed`; provider JSON and authorization headers are never retained.
+If diagnostic storage fails, `storage-failed` preserves the original acquisition
+error. `retainedPageEvidence` lists bounded context from already written page
+blobs, with a total count and truncation flag. A later request failure does not
+turn those previous responses into evidence of the failed request.

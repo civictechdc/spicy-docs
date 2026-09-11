@@ -77,8 +77,23 @@ differs. Later verification and inspection cannot reconstruct that storage work.
 [`storage/publication.py`](../src/spicy_docs/storage/publication.py) owns
 create-once publication. The release destination and blob store must be separate
 and must not contain one another. A destination is never overwritten. A failed
-publication may have already stored valid, unreferenced blobs; those are not a
+publication may have already stored exact, unreferenced response blobs; those are not a
 published release or permission to delete shared storage.
+
+When publication fails, the original exception may carry `failed_acquisition`.
+Its `response` identifies exact refused bytes in the same blob store, or explains
+why they were not retained. GAO validates identity, topic, and markup before
+yielding a page; Federal Register validates parsing and page inventory there too.
+Both attach bounded response context to their original error. Shared page
+indexing stores bounded evidence before semantic checks. No refused response
+becomes an admitted record or a partial release.
+
+The report includes at most eight distinct blobs already written while indexing
+as `retainedPageEvidence`, with a total count and a truncation flag. These are
+context for diagnosing the failed run, not a claim that every listed page was
+refused. An iterator or final acquisition check can fail without identifying a
+new refused response. See [the CLI recovery example](cli.md#output-and-failures)
+for preserving the report and opening retained bytes offline.
 
 Source evidence ZIP helpers use deterministic member metadata. Changing those
 bytes, source schema bytes, digest domains, ordering, or literal format IDs can

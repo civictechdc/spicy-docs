@@ -74,6 +74,7 @@ from spicy_docs.releases.profile import (
     SourceNativePage,
     SourceNativeProfile,
 )
+from spicy_docs.releases.refusals import record_failed_acquisition
 from spicy_docs.releases.verify import (
     verify_source_native_release,
 )
@@ -145,6 +146,14 @@ class SourceNativeReleasePublisher:
                     accounting=accounting,
                     evidence_descriptors=tuple(evidence_members[key] for key in sorted(evidence_members)),
                 )
+            except Exception as error:
+                record_failed_acquisition(
+                    error,
+                    source_system_id=profile.source_system_id,
+                    blob_store=self._blob_store,
+                    evidence_members=evidence_members,
+                )
+                raise
             finally:
                 connection.close()
         finally:

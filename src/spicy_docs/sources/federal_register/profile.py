@@ -11,10 +11,11 @@ from spicy_docs.sources.federal_register import native as federal_register
 
 FEDERAL_REGISTER_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:federal-register-paginated"
 # Policy 1.1 makes identity composite (document_number, publication_date).
+# Policy 1.2 states the limits of stable observed crawls in the hashed policy.
 # Requested fields remain policy 1.0: correction_of was deferred and never
 # landed. Version acquisition and fields independently. See docs/decisions.md
 # for the SD-24 / DocSpec 0003 provenance and the deferred field decision.
-FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION: Final = "1.1"
+FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION: Final = "1.2"
 FEDERAL_REGISTER_SOURCE_SCHEMA_KEY: Final = "schemas/federal-register-document-1.0.schema.json"
 
 

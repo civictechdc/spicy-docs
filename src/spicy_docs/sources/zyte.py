@@ -18,6 +18,8 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Final
 
+from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
+
 ZYTE_API_URL: Final = "https://api.zyte.com/v1/extract"
 ZYTE_TOKEN_ENV: Final = "ZYTE_TOKEN"
 _MIN_PROVIDER_BYTES: Final = 1024 * 1024
@@ -203,7 +205,7 @@ class ZyteHttpFetcher:
         encoded_body = value.get("httpResponseBody")
         target_status = value.get("statusCode")
         resolved_url = value.get("url", url)
-        if not isinstance(encoded_body, str) or not encoded_body:
+        if not isinstance(encoded_body, str):
             raise ZyteTransportError("Zyte response omitted httpResponseBody")
         if not isinstance(target_status, int) or isinstance(target_status, bool):
             raise ZyteTransportError("Zyte response omitted target statusCode")
@@ -215,8 +217,40 @@ class ZyteHttpFetcher:
             body = base64.b64decode(encoded_body, validate=True)
         except (ValueError, binascii.Error) as error:
             raise ZyteTransportError("Zyte returned invalid base64 target bytes") from error
+        # Retained evidence must be exact. Suppress a reflected credential at
+        # the transport that knows it, rather than redacting publisher bytes
+        # and later describing them as an exact capture.
+        public_metadata = (url, resolved_url, content_type or "")
+        if any(secret in value for secret in (self.token, basic) for value in public_metadata) or any(
+            secret.encode(encoding) in body for secret in (self.token, basic) for encoding in ("utf-8", "iso-8859-1")
+        ):
+            error = ZyteTransportError("Zyte target response contains a reflected transport credential")
+            attach_refused_response(
+                error,
+                RefusedResponse(
+                    request_key="[credential-suppressed]",
+                    stage="transport",
+                    response_bytes=None,
+                    media_type="application/octet-stream",
+                    unavailable_reason="credential-suppressed",
+                    observed_byte_size=len(body),
+                ),
+            )
+            raise error
         if len(body) > max_bytes:
-            raise ZyteTransportError(f"Zyte target response exceeds max_bytes={max_bytes}")
+            error = ZyteTransportError(f"Zyte target response exceeds max_bytes={max_bytes}")
+            attach_refused_response(
+                error,
+                RefusedResponse(
+                    request_key=url,
+                    stage="transport",
+                    response_bytes=None,
+                    media_type="application/octet-stream",
+                    unavailable_reason="response-byte-limit",
+                    observed_byte_size=len(body),
+                ),
+            )
+            raise error
         return ZyteHttpResponse(
             requested_url=url,
             resolved_url=resolved_url,

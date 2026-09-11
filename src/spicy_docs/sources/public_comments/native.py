@@ -66,7 +66,7 @@ COMMENT_SCHEMA_PATH: Final = "sources/spicy-regs-public-comment-1.0.schema.json"
 COMMENT_SOURCE_SCHEMA_KEY: Final = "schemas/spicy-regs-public-comment-1.0.schema.json"
 COMMENT_RECORD_STEM: Final = "spicy-regs-public-comment"
 COMMENT_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:spicy-regs-public-comment-partition-capture"
-ACQUISITION_POLICY_VERSION: Final = "1.0"
+ACQUISITION_POLICY_VERSION: Final = "1.1"
 
 MAX_TRAVERSALS: Final = 1
 MAX_SCOPE_AGENCIES: Final = 512
@@ -640,7 +640,7 @@ class PublicTableTraversalCheck:
 
 @dataclass(slots=True)
 class PublicTableAcquisitionCheck:
-    """Validate one complete, bounded, ordered capture of the named partitions."""
+    """Validate the bounded, ordered captured partitions for each requested agency."""
 
     table: str
     observed_agencies: list[str] = field(default_factory=list)
@@ -755,6 +755,12 @@ def comment_acquisition_policy(query_scope: Mapping[str, Any]) -> dict[str, Any]
     return {
         "acquisitionRung": "community-mirror",
         "baseUrl": PUBLIC_TABLE_BASE_URL,
+        "coverageLimits": [
+            "Discovery assumes contiguous part numbers from zero for each requested agency and stops at the first missing part.",
+            "Later part numbers after a gap and agencies outside the requested scope are unrequested.",
+            "The terminal marker declares the end of the capture; the missing-part HTTP response is not retained.",
+            "Captured partition bytes do not establish complete upstream membership or one publisher-wide version.",
+        ],
         "evidence": "bounded-zip-packs-of-a-capture-manifest-and-exact-partition-bytes",
         "initialQueryScope": dict(spicy_regs_public_comment_query_scope(query_scope)),
         "maxPartitionBytes": MAX_PARTITION_BYTES,
@@ -768,7 +774,7 @@ def comment_acquisition_policy(query_scope: Mapping[str, Any]) -> dict[str, Any]
             "statedRule": "newest observed row per comment_id by modify_date DESC NULLS LAST",
             "tieDisposition": "refuse-repeated-source-record-id",
         },
-        "strategy": "complete-public-table-partition-capture",
+        "strategy": "observed-contiguous-part-probing",
         "table": COMMENT_TABLE,
     }
 
@@ -778,7 +784,7 @@ def iter_spicy_regs_public_comment_pages(
     *,
     query_scope: Mapping[str, Any],
 ) -> Iterator[PublicTablePartitionPage]:
-    """Capture every named agency partition, in ASCII order, whole objects only."""
+    """Probe contiguous parts for each requested agency and capture whole objects."""
 
     scope = spicy_regs_public_comment_query_scope(query_scope)
     page_index = 0
@@ -797,9 +803,7 @@ def iter_spicy_regs_public_comment_pages(
         else:
             raise PublicTableSourceError(f"public-table capture for {agency} exceeded its partition bound")
         if pending is None:
-            raise PublicTableSourceError(
-                f"the spicy-regs public tables publish no {COMMENT_TABLE} partition for {agency}"
-            )
+            raise PublicTableSourceError(f"public-table capture for {agency} did not obtain requested part-0.parquet")
         yield _page(page_index, pending[1], agency=agency, part_index=pending[0], terminal=True)
         page_index += 1
 
