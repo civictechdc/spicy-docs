@@ -76,7 +76,7 @@ this refactor preserves the cache and its purpose.
 | --- | --- |
 | Release publication | `_publish_indexed` went from 311 to 187 lines. It computes the result, stages indexed partitions, writes self-accounting metadata, verifies, and publishes. The extracted steps perform substantive operations. |
 | Acquisition indexing | The 225-line method became a 197-line function with a separate stateless page-chain check. Index updates and source callback state remain together. |
-| Full verification | The 274-line verifier became 252 lines after sharing counted digest construction. Keep the ordered comparisons and failure-ledger accounting visible in one function. |
+| Full verification | The 274-line verifier is now 246 lines after sharing counted digest construction and correcting stale commentary. Keep the ordered comparisons and failure-ledger accounting visible in one function. |
 | Acquisition replay | Keep the 239-line loop together. Traversal/window/page state, evidence pins, terminal markers, and discovered-record accounting are coupled. Replay remains independent of the publisher's indexer. |
 | Federal Register module | Retain the cohesive source adapter; its largest function is 105 lines. Field/schema declarations and historical field policies account for substantial file length. The independently importable profile already has its own home. |
 | Captured public-comment module | Retain the single captured-table adapter after sharing JSON and media-type mechanics. Its largest function is 51 lines; source column declarations, evidence format, and small callbacks make the file long. Split another responsibility when a concrete change needs it. |
