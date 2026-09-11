@@ -57,10 +57,8 @@ sys.path.insert(0, str(ROOT / "src"))
 from spicy_docs.source_native import ROLE_RECORDS
 from spicy_docs.source_native_store import LocalSourceNativeBlobStore
 
-# Reaching for a private helper deliberately: it already implements capped
-# exponential backoff with full jitter and 429/5xx classification, and this
-# tool hand-rolling a second one would be the copy the doctrine forbids.
-# Promote it to a public name when a third consumer appears.
+# Shared capped exponential backoff with full jitter; this tool decides which
+# status and transport errors are retryable.
 from spicy_docs.transport.retry import retry_http
 
 MANIFEST_PATH: tuple[str, str] = ("manifests", "source-native.json")

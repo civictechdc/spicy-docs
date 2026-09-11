@@ -68,8 +68,8 @@ Its complete product-role vocabulary is `source-native-scopes`,
 and `source-acquisition-evidence`. This is the complete required product-role
 set; any other role fails. `source-native-records` and `rendition-index` are
 absent only when their corresponding receipt counts are zero.
-The installed SpicyRegs package generates and ships the closed bundle at
-`spicy_regs/schemas/source_native_release/1.0/` from the same typed records
+The installed spicy-docs package generates and ships the closed bundle at
+`spicy_docs/schemas/source_native_release/1.0/` from the same typed records
 used by its serializers and parsers. It contains the release, scope,
 source-schema-declaration, rendition-index, acquisition-ledger, failure, and
 publication-receipt schemas. `releaseSchemaDigest` calls the
@@ -330,12 +330,12 @@ platform succession record when this release replaces the current generation;
 the receipt does not repeat it. The counts are non-negative,
 `semanticVerdict` is exactly `pass` for a publishable release; `warnings` is
 a sorted array of closed code/message objects; and the times are canonical
-UTC instants with completion not before start. An independent product
-semantic verifier creates the receipt only after recomputing the release
-schema bundle and comparing its digest with the product `spec`, carried
-member, and receipt. It then recomputes the observation
-digest and count from the observation log or, for a no-collapse profile, the
-current records. It replays the profile's exact
+UTC instants with completion not before start. The publisher creates the
+receipt in staging. Before publication, an independent product semantic
+verifier recomputes the release schema bundle and compares its digest with the
+product `spec`, carried member, and receipt. It recomputes the observation
+digest and count by parsing retained acquisition evidence and rebuilding the
+complete pre-collapse observation sequence. It replays the profile's exact
 collapse over that ordered input, compares every current row, proves
 `inputObservationCount = publishedRecordCount + discardedObservationCount`,
 proves `discoveredRecordCount = inputObservationCount + failedRecordCount`,
@@ -357,9 +357,9 @@ the per-class ledger counts; it does not reconstruct failure rows from evidence.
 Bounded consumer admission checks the sealed counts and accepted verifier pins
 without walking the ledger. Historical accepted schema bundles remain readable;
 an older receipt without per-class counts is admissible only with zero failures.
-The verifier refuses an unknown release
-field, code, format, missing required observation log, or extra log on a
-no-collapse profile. It recomputes and records the exact schema-set and source-state
+The verifier refuses an unsupported release format or role, unknown release
+field, missing required evidence, or inconsistent page, ledger, schema, receipt,
+or state data. It recomputes and checks the exact schema-set and source-state
 digests, and the receipt pins its verifier identity, version, and
 implementation pin. Rulespec's root `producer` identifies the released
 publisher implementation and verifier. The producer gate resolves those pins

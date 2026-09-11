@@ -8,8 +8,8 @@ selection, immutable publication, and bounded consumer opening. The
 
 | Surface | Compatibility decision |
 | --- | --- |
-| `spicy_docs.source_native` | Preserve public build, publisher, reader, error, schema-bundle, admission, and verification imports, format constants, and historical `__all__`. Implementations live in `releases/`. |
-| `spicy_docs.regulations_gov_source_native` | Preserve collection constants, data types, scope, classification, evidence parsing, iteration, digest functions, and historical `__all__`. Implementations live in `sources/regulations_gov/`. |
+| `spicy_docs.source_native` | Preserve public build, publisher, reader, error, schema-bundle, admission, and verification imports, format constants, and declared public exports. Implementations live in `releases/`. |
+| `spicy_docs.regulations_gov_source_native` | Preserve collection constants, data types, scope, classification, evidence parsing, iteration, digest functions, and declared public exports. Implementations live in `sources/regulations_gov/`. |
 | `spicy_docs.source_native_profiles` | Preserve profile exports. A caller needing one source can import its source-owned `profile.py` without loading unrelated sources. |
 | `spicy_docs.public_table` | Preserve table build, publisher, reader, location, verifier, and injected Iceberg APIs. Implementations live in `public_tables/`. |
 | Other public reader modules | Keep Federal Register, source profiles, blob stores, Mirrulations, and CourtListener imports stable. |
@@ -24,10 +24,10 @@ transport modules. The old `schema_bundle_digest` convenience import from
 `source_native` remains available; new code should import it from Rulespec.
 
 The caller inventory covered this repository and the local DocSpec, spicy-regs,
-spicysearch, RefSpec, and rulespec checkouts. DocSpec's installed-wheel probe and
-a historical spicysearch investigation script import spicy-docs. Installed
-consumers outside those checkouts are unknown. The refactor preserves public
-names rather than treating missing local callers as proof of no consumers.
+spicysearch, RefSpec, and rulespec checkouts. DocSpec's installed-wheel probe
+imports spicy-docs through these entry modules. They remain discoverable public
+APIs with one implementation behind each exported operation. Current callers
+and documented use define the supported entry points.
 
 ## Unused-code dispositions
 
@@ -87,20 +87,29 @@ compatibility exports; it does not establish a net line-count reduction.
 Repeated implementation was removed, and changes can now be reviewed within
 bounded responsibilities. File size remains a review prompt, not a quota.
 
-## Historical format rules
+## Reading retained acquisition evidence
 
-Known schema digests and accepted acquisition-policy versions are literal
-history. Add an entry for a newly accepted format; do not compute old entries
-from today's schema or profile. The failure-ledger shape widened after existing
-releases had been published, so accepting only today's bundle would reject
-valid older artifacts. Historical schema and acquisition-policy tests protect
-these rules.
+The known schema digests and acquisition-policy versions in
+[`releases/format.py`](../src/spicy_docs/releases/format.py) support the current
+workflow for reusing evidence. Retained Federal Register and Regulations.gov
+releases declare the bundle from before the failure schema expanded; the
+composite Federal Register release declares the expanded bundle. Keep those
+literal entries and Federal Register
+policy versions `1.0` and `1.1` in the bounded admission allowlist. Recomputing a
+historical entry from today's schema or profile would change the identity of
+the data it is meant to recognize.
 
-`sourceSystemId` and `acquisitionPolicyId` identify what an artifact is and still
-require exact matches. `sourceSystemVersion` and `sourceStateScope` also currently
-match the live profile. Changing either needs an explicit compatibility design;
-the earlier decision to defer that work is preserved, not silently resolved by
-this cleanup. See `releases/format.py` and the admission tests.
+The [offline replay tool](../tools/replay_federal_register_release.py) admits
+retained evidence before publishing it under the current source profile.
+Admission of an older release does not promise successful full verification
+under an old policy: full verification recomputes the current profile's policy
+and source schema, and refuses mismatched digests. These are distinct checks.
+
+This is a closed policy for reading evidence. Legacy API support and automatic format
+conversion are not required. `sourceSystemId`, `acquisitionPolicyId`,
+`sourceSystemVersion`, and `sourceStateScope` still match the selected profile
+exactly. Add no version or scope adapters without an evidenced current need.
+The historical schema and admission tests protect this boundary.
 
 ## Remaining observations
 

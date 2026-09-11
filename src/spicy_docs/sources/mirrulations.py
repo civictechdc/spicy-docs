@@ -318,7 +318,7 @@ def download_object_bytes(
 # complete-snapshot evidence -- aborted the whole agency for what was only a
 # busy network. `download_keys`'s own `transient_retries` retries immediately
 # with no backoff; give the exact-enumeration GETs the same patience
-# `source_native_cli._retry_http` gives the HTTP path: doubling backoff capped
+# `transport.retry.retry_http` gives the HTTP path: doubling backoff capped
 # at 60s, full jitter, 14 attempts (13 possible sleeps) for ~542s (~9 minutes)
 # of worst-case patience, so a busy network costs minutes, not an agency.
 # Botocore's own standard-mode retries (see `s3_resource`) already ran and
