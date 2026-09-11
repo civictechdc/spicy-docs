@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Shard-by-agency campaign runner for Phase A of the source supply consolidation plan.
+"""Publish docket and document releases per agency, with bounded resume checks.
 
-Publishes docket and document releases per agency through ``spicy_docs.cli.source_native``
-subprocesses, N agencies at a time (Phase A of
-``spicysearch/docs/source-supply-consolidation-plan-2026-09-01.md``). Each child streams its
-stdout and stderr into ``logs/<release>.log``, appended per attempt, and the CLI's one JSON
+Runs ``spicy_docs.cli.source_native`` publish subprocesses, N agencies at a time.
+Each child streams stdout and stderr into ``logs/<release>.log``, appended per attempt, and the CLI's one JSON
 receipt line is read back as that log's last non-empty line. SIGINT and SIGTERM terminate the
 live children, cancel the agencies not yet started, and exit non-zero.
 
 One runner owns a destination root: the campaign claims ``<root>/campaign.lock`` exclusively
 and refuses to run while another process holds it. Resume is release-grained -- skip a release
-whose stored receipt names that destination and carries both pins, rename an un-receipted
-destination aside (never delete) before retrying, drop the verify receipt whenever a publish
-reruns so a replacement release is re-verified -- and is only safe under that root lock.
+only after bounded admission against its stored external pin, the requested scope, and an
+explicitly accepted producer-verifier identity. Rename an un-receipted destination aside
+before retrying; preserve valid receipts and destinations that fail admission. The producer
+already replays the full release before publication. Use the standalone ``verify`` command
+for an additional full audit.
 
 ``--window-since``/``--window-until`` are one window per agency that feeds both collections and
 is meant to be the source's full history; a narrower document window would need dockets over a
@@ -34,14 +34,28 @@ from collections.abc import Callable
 from concurrent.futures import CancelledError, ThreadPoolExecutor
 from contextlib import suppress
 from datetime import UTC, date, datetime
+from functools import partial
 from pathlib import Path
 from typing import Any, Final, NamedTuple, TextIO
+
+from rulespec_artifacts import canonical_json_bytes
+
+from spicy_docs.cli.sources import source_registration
 
 DEFAULT_PYTHON: Final = Path(sys.executable)
 SOURCE_DOCKETS: Final = "regulations-dockets"
 SOURCE_DOCUMENTS: Final = "regulations-documents"
 _DESTINATION_PREFIX: Final = {SOURCE_DOCKETS: "regs-dockets", SOURCE_DOCUMENTS: "regs-documents"}
-_FAILED_STATUSES: Final = frozenset({"failed", "verify-failed"})
+_RESULT_ID_FIELDS: Final = (
+    "logicalId",
+    "artifactDigest",
+    "sourceNativeSchemaSetDigest",
+    "sourceStateDigest",
+    "sourceStateScope",
+    "sourceSystemId",
+    "sourceSystemVersion",
+)
+_FAILED_STATUSES: Final = frozenset({"failed", "admission-failed", "interrupted"})
 _WINDOW_HELP: Final = "{} of the one window per agency; it feeds both collections and is meant to be full history"
 
 RunSubprocess = Callable[[list[str], Path], int]
@@ -67,12 +81,19 @@ _CHILDREN: Final[set[subprocess.Popen[bytes]]] = set()  # every child alive righ
 _CHILDREN_LOCK: Final = threading.Lock()
 
 
-def run_child(command: list[str], log_path: Path) -> int:
+def run_child(command: list[str], log_path: Path, *, stopping: threading.Event | None = None) -> int:
     """Default runner: stream one child's stdout and stderr into its log, and stay killable."""
+    if stopping is not None and stopping.is_set():
+        return -signal.SIGTERM
     with log_path.open("a", encoding="utf-8") as log:
         process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT)
     with _CHILDREN_LOCK:
         _CHILDREN.add(process)
+    # A signal between Popen and registration cannot find the child in the set.
+    # Check after registration too; later signals use the registered process.
+    if stopping is not None and stopping.is_set():
+        with suppress(OSError):
+            process.terminate()
     try:
         return process.wait()
     finally:
@@ -119,46 +140,81 @@ def _publish_command(args: argparse.Namespace, source: str, agency: str, destina
 
 def _log_receipt(log_path: Path) -> dict[str, Any]:
     """The CLI writes one JSON receipt line, so the log's last non-empty line is that receipt."""
-    lines = [line for line in log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     try:
-        payload = json.loads(lines[-1]) if lines else None
-    except json.JSONDecodeError:
+        last_line = b""
+        with log_path.open("rb") as log:
+            for line in log:
+                if line.strip():
+                    last_line = line
+        payload = json.loads(last_line.decode("utf-8")) if last_line else None
+    except (OSError, ValueError):
         return {}
     return payload if isinstance(payload, dict) else {}
 
 
-def _resume_receipt(path: Path, destination: Path) -> dict[str, Any] | None:
-    """A stored receipt counts on resume only when it names this destination and pins it."""
+def _valid_receipt(receipt: object, destination: Path, source: str, command: str = "publish") -> bool:
+    """Accept only current command results addressed to this release."""
+    if not isinstance(receipt, dict):
+        return False
+    named = receipt.get("release")
+    outcome = receipt.get("collectionOutcome")
+    try:
+        return (
+            receipt.get("ok") is True
+            and receipt.get("command") == command
+            and receipt.get("source") == source
+            and isinstance(named, str)
+            and Path(named).is_absolute()
+            and Path(named).resolve() == destination.resolve()
+            and all(isinstance(receipt.get(key), str) and receipt[key] for key in _RESULT_ID_FIELDS)
+            and isinstance(outcome, dict)
+            and isinstance(outcome.get("requestedScope"), dict)
+        )
+    except (OSError, ValueError):
+        return False
+
+
+def _resume_receipt(path: Path, destination: Path, source: str) -> dict[str, Any] | None:
     try:
         receipt = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        return receipt if _valid_receipt(receipt, destination, source) else None
+    except (OSError, ValueError):
         return None
-    named = receipt.get("release") if isinstance(receipt, dict) else None
-    if not (isinstance(named, str) and receipt.get("logicalId") and receipt.get("artifactDigest")):
-        return None
-    return receipt if Path(named).resolve() == destination.resolve() else None
 
 
-def _publication_verifier_id(destination: Path) -> tuple[str | None, str | None]:
-    """Read the id that actually published this release from its own publication receipt.
-
-    A campaign can span several builds, so the accepted verifier id has to come from the
-    release being verified, never from the runner's own current ``--implementation-id`` --
-    that value is correct for publish (the runner is the publisher there) but would silently
-    re-accept the wrong build if reused for verify. Returns ``(verifier id, None)`` on success,
-    or ``(None, what was missing)`` so the caller can fail closed with a clear reason.
-    """
-    path = destination / "receipts" / "publication.json"
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except OSError:
-        return None, f"{path} does not exist"
-    except json.JSONDecodeError as error:
-        return None, f"{path} is not valid JSON ({error})"
-    verifier_id = payload.get("verifierImplementationId") if isinstance(payload, dict) else None
-    if isinstance(verifier_id, str) and verifier_id:
-        return verifier_id, None
-    return None, f"{path} is missing verifierImplementationId"
+def _admit_receipt(
+    ctx: RunContext, receipt: dict[str, Any], destination: Path, source: str, agency: str, args: argparse.Namespace
+) -> bool:
+    requested_scope = source_registration(source).query_scope(
+        argparse.Namespace(
+            source=source, since=args.window_since, until=args.window_until, agency=[agency], product_id=[]
+        )
+    )
+    if receipt["collectionOutcome"]["requestedScope"] != requested_scope:
+        raise ValueError("stored publish receipt does not match the requested agency and window")
+    command = _cli(
+        args.python,
+        "inspect",
+        source=source,
+        release=destination,
+        blob_store=args.blob_store,
+        logical_id=receipt["logicalId"],
+        artifact_digest=receipt["artifactDigest"],
+        failure_limit=0,
+    )
+    for implementation_id in args.accepted_verifier_implementation_id:
+        command.extend(["--accepted-verifier-implementation-id", implementation_id])
+    inspected = _execute(ctx, command, destination=destination, release=destination.name, agency=agency, source=source)
+    if not inspected:
+        return False
+    if inspected["collectionOutcome"]["requestedScope"] != requested_scope:
+        raise ValueError("admitted release does not match the requested agency and window")
+    for field in _RESULT_ID_FIELDS:
+        if inspected[field] != receipt[field]:
+            raise ValueError(f"stored publish receipt differs from admitted release at {field}")
+    if canonical_json_bytes(inspected["collectionOutcome"]) != canonical_json_bytes(receipt["collectionOutcome"]):
+        raise ValueError("stored publish receipt differs from admitted release at collectionOutcome")
+    return True
 
 
 def _append_log(log_path: Path, text: str) -> None:
@@ -189,13 +245,18 @@ def _log_interrupted(ctx: RunContext) -> None:
         )
 
 
-def _execute(ctx: RunContext, command: list[str], *, release: str, agency: str, source: str) -> dict[str, Any]:
-    """Run one CLI command into its log, receipt a success, and return the parsed receipt."""
+def _execute(
+    ctx: RunContext, command: list[str], *, destination: Path, release: str, agency: str, source: str
+) -> dict[str, Any]:
+    """Run a killable command; retain publication receipts separately from inspection output."""
+    if ctx.stopping.is_set():
+        return {}
+    operation = command[3]
     log_path = ctx.logs_dir / f"{release}.log"
     started_at, start = _instant(ctx.clock), time.monotonic()
     _append_log(log_path, f"\n$ {started_at} {shlex.join(command)}\n")
     with ctx.lock:
-        ctx.live[release] = {"agency": agency, "source": source, "startedAt": started_at}
+        ctx.live[release] = {"agency": agency, "source": source, "startedAt": started_at, "command": operation}
     try:
         exit_code = ctx.run_subprocess(command, log_path)
     except OSError as error:
@@ -204,16 +265,30 @@ def _execute(ctx: RunContext, command: list[str], *, release: str, agency: str, 
     finally:
         with ctx.lock:
             ctx.live.pop(release, None)
-    payload = _log_receipt(log_path) if exit_code == 0 else {}
-    ok = exit_code == 0 and bool(payload.get("ok"))
-    if ok:
+    payload = _log_receipt(log_path)
+    valid = exit_code == 0 and _valid_receipt(payload, destination, source, operation)
+    if valid and operation == "publish":
         (ctx.receipts_dir / f"{release}.json").write_text(json.dumps(payload, sort_keys=True) + "\n", encoding="utf-8")
+    ok = valid and not ctx.stopping.is_set()
+    status = (
+        "interrupted"
+        if ctx.stopping.is_set()
+        else "completed"
+        if ok
+        else "admission-failed"
+        if operation == "inspect"
+        else "failed"
+    )
+    error = payload.get("error")
     _append_row(
         ctx,
         {
             "release": release,
             "agency": agency,
             "source": source,
+            "command": operation,
+            "status": status,
+            **({"error": error.get("message")} if isinstance(error, dict) else {}),
             "startedAt": started_at,
             "finishedAt": _instant(ctx.clock),
             "elapsedSeconds": round(time.monotonic() - start, 3),
@@ -226,62 +301,60 @@ def _execute(ctx: RunContext, command: list[str], *, release: str, agency: str, 
     return payload if ok else {}
 
 
-def _fail_verify(ctx: RunContext, *, release: str, agency: str, source: str, reason: str) -> None:
-    """Record a verify that never ran because the release's own publisher id could not be read."""
+def _fail_admission(ctx: RunContext, *, release: str, agency: str, source: str, reason: str) -> None:
     now = _instant(ctx.clock)
-    _append_log(ctx.logs_dir / f"{release}.verify.log", f"\n{now} cannot verify {release}: {reason}\n")
+    _append_log(ctx.logs_dir / f"{release}.log", f"\n{now} cannot admit {release}: {reason}\n")
     _append_row(
         ctx,
         {
-            "release": f"{release}.verify",
+            "release": release,
             "agency": agency,
             "source": source,
-            "startedAt": now,
             "finishedAt": now,
-            "elapsedSeconds": 0.0,
-            "exitCode": None,
             "ok": False,
-            "logicalId": None,
-            "artifactDigest": None,
-            "status": "verify-failed",
+            "status": "admission-failed",
             "error": reason,
         },
     )
 
 
+def _rename_aside(path: Path, stamp: str) -> None:
+    """Preserve every failed attempt, including retries within the same clock tick."""
+    if not (path.exists() or path.is_symlink()):
+        return
+    stem = f"{path.name}.failed-{stamp}"
+    aside = path.with_name(stem)
+    suffix = 0
+    while aside.exists() or aside.is_symlink():
+        suffix += 1
+        aside = path.with_name(f"{stem}-{suffix}")
+    path.rename(aside)
+
+
 def _run_one_release(ctx: RunContext, *, agency: str, source: str, args: argparse.Namespace) -> ReleaseOutcome:
     destination = _destination(args.destination_root, source, agency)
     release = destination.name
-    verify_path = ctx.receipts_dir / f"{release}.verify.json"
-    receipt = _resume_receipt(ctx.receipts_dir / f"{release}.json", destination) if destination.exists() else None
+    receipt_path = ctx.receipts_dir / f"{release}.json"
+    receipt = _resume_receipt(receipt_path, destination, source) if destination.exists() else None
     published = receipt is None
     if published:
-        if destination.exists():
-            stamp = ctx.clock().astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
-            destination.rename(destination.with_name(f"{release}.failed-{stamp}"))
-        verify_path.unlink(missing_ok=True)  # that verdict was about the release being replaced
+        stamp = ctx.clock().astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
+        for path in (destination, receipt_path):
+            _rename_aside(path, stamp)
         command = _publish_command(args, source, agency, destination)
-        receipt = _execute(ctx, command, release=release, agency=agency, source=source)
-        if not (receipt.get("logicalId") and receipt.get("artifactDigest")):  # fail closed on a pin-less receipt
-            return release, agency, source, "failed"
-    if not args.verify or _resume_receipt(verify_path, destination) is not None:
-        return release, agency, source, "done" if published else "skipped"
-    verifier_id, missing = _publication_verifier_id(destination)
-    if verifier_id is None:
-        _fail_verify(ctx, release=release, agency=agency, source=source, reason=missing or "unknown reason")
-        return release, agency, source, "verify-failed"
-    verify_command = _cli(
-        args.python,
-        "verify",
-        source=source,
-        release=destination,
-        blob_store=args.blob_store,
-        logical_id=receipt["logicalId"],
-        artifact_digest=receipt["artifactDigest"],
-        accepted_verifier_implementation_id=verifier_id,
-    )
-    verified = _execute(ctx, verify_command, release=f"{release}.verify", agency=agency, source=source)
-    return release, agency, source, "done" if verified else "verify-failed"
+        receipt = _execute(ctx, command, destination=destination, release=release, agency=agency, source=source)
+        if not receipt:
+            return release, agency, source, "interrupted" if ctx.stopping.is_set() else "failed"
+    try:
+        admitted = _admit_receipt(ctx, receipt, destination, source, agency, args)
+    except (OSError, ValueError) as error:
+        _fail_admission(ctx, release=release, agency=agency, source=source, reason=str(error))
+        return release, agency, source, "admission-failed"
+    if ctx.stopping.is_set():
+        return release, agency, source, "interrupted"
+    if not admitted:
+        return release, agency, source, "admission-failed"
+    return release, agency, source, "done" if published else "skipped"
 
 
 def _run_agency(ctx: RunContext, agency: str, args: argparse.Namespace) -> list[ReleaseOutcome]:
@@ -365,15 +438,16 @@ def _run_campaign(
 ) -> tuple[list[ReleaseOutcome], float, bool]:
     ordered = _agencies(args)
     lock_path = _claim_root(args.destination_root, clock)
+    stopping = threading.Event()
     ctx = RunContext(
-        run_subprocess=run_subprocess,
+        run_subprocess=partial(run_child, stopping=stopping) if run_subprocess is run_child else run_subprocess,
         clock=clock,
         receipts_dir=args.destination_root / "receipts",
         logs_dir=args.destination_root / "logs",
         campaign_path=args.destination_root / "campaign.jsonl",
         lock=threading.Lock(),
         live={},
-        stopping=threading.Event(),
+        stopping=stopping,
     )
     for directory in (ctx.receipts_dir, ctx.logs_dir):
         directory.mkdir(parents=True, exist_ok=True)
@@ -413,17 +487,19 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--implementation-id",
         required=True,
-        help="Passed to each publish; verify instead reads its accepted id from "
-        "the release's own receipts/publication.json",
+        help="Implementation identity passed to each new publish",
+    )
+    parser.add_argument(
+        "--accepted-verifier-implementation-id",
+        action="append",
+        required=True,
+        help="Trusted producer-verifier identity for new and resumed releases; repeat to accept several builds",
     )
     parser.add_argument("--concurrency", type=int, default=1, help="Concurrent agency slots")
     parser.add_argument(
         "--python", type=Path, default=DEFAULT_PYTHON, help="Interpreter to run the source-native CLI with"
     )
     parser.add_argument("--sizes", type=Path, help="JSON {agency: object count}; schedules largest-first when given")
-    parser.add_argument(
-        "--verify", action=argparse.BooleanOptionalAction, default=True, help="Run verify after each publish"
-    )
     parser.add_argument("--dry-run", action="store_true", help="Print the commands that would run, in order, and exit")
     return parser
 

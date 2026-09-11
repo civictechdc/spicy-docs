@@ -1,7 +1,7 @@
-# Publish and verify
+# Publish, verify, and inspect
 
 Run `uv run --frozen spicy-docs-source-native --help` from a developer checkout.
-Each command also accepts `--help`. The four commands below write a JSON success
+Each command also accepts `--help`. The commands below write a JSON success
 object to stdout (exit 0), or a handled operational error to stderr (exit 1).
 Argument syntax errors use argparse's ordinary usage output and exit 2.
 
@@ -70,6 +70,20 @@ reading a value from an untrusted artifact does not establish trust in it.
 Verification checks scope, schemas, evidence, reconstruction, ordering,
 selection, failure accounting, and the published source-state digest.
 
+
+## inspect
+
+Open a retained release, check its pin and trusted producer-verifier identity,
+and show collection outcomes and a bounded sample of recorded failures.
+Use the same required `--source`, `--release`, `--blob-store`, `--logical-id`,
+`--artifact-digest`, and repeatable `--accepted-verifier-implementation-id`
+options as [verify](#verify), with `inspect` as the subcommand.
+
+`--failure-limit 20` is the default sample size. Set `--failure-limit 0` for
+outcomes only. Admission hashes retained payloads without reconstructing source
+records; `verify` performs the full replay. The [source outcomes guide](source-native-outcomes.md)
+explains each count, scope, and failure field.
+
 ## publish-public-table
 
 Project an admitted source-native release into an immutable flat Parquet table.
@@ -135,6 +149,41 @@ uv run --frozen python -m spicy_docs.sources.congress.crs_summaries --help
 Use the [operation index](../tools/README.md#related-operations) for each
 command's purpose, output, and prerequisites. Campaigns publish agency-scoped
 releases with attempt logs and receipts; start with their `--dry-run`.
+
+```sh
+uv run --frozen python -m spicy_docs.cli.campaign \
+  --agency EPA --window-since 2021-01-01 --window-until 2025-12-31 \
+  --destination-root /campaign/releases --blob-store /persistent/blobs \
+  --implementation-id '<current producer implementation ID>' \
+  --accepted-verifier-implementation-id '<trusted producer-verifier ID>' \
+  --dry-run
+```
+
+Remove `--dry-run` to publish. Each publisher performs one mandatory full replay
+before making its release visible. The campaign then checks its expected pin,
+publication metadata, requested agency and window, and trusted verifier identity
+without reconstructing source records again. Admission uses bounded memory but
+still hashes all retained payload bytes to detect corruption. Resume repeats
+this admission check in an interruptible `inspect --failure-limit 0` child; it
+does not launch another publisher or semantic replay for a matching release.
+Inspection writes to the attempt log and creates no separate success receipt. Repeat
+`--accepted-verifier-implementation-id` to explicitly trust several producer
+builds. These IDs come from your deployment policy, independently of release
+contents; `--implementation-id` alone does not grant trust.
+
+Keep the campaign's external `receipts/*.json` files with their release pins and
+collection outcomes. See [source outcomes](source-native-outcomes.md) for counts,
+requested scope, and inspection of retained failures. Missing, malformed, or
+misdirected receipts cause the campaign to rename old evidence aside before
+retrying. A valid receipt with a
+mismatched pin, requested scope, damaged metadata, or unaccepted verifier fails
+closed and preserves the release and receipt for inspection. Choose a new
+campaign root when changing an agency's window. Full source reconstruction
+remains available through the explicit [verify command](#verify) using the
+retained external pin and an independently accepted verifier ID. The campaign's
+former `--verify` and `--no-verify` switches and separate verify receipts are
+removed; current resume requires a publish receipt with `collectionOutcome`.
+
 Federal Register replay publishes saved responses under the current profile
 without a source request. CRS acquisition writes resumable Congress.gov summary
 records and requires an explicit credential file.
@@ -149,8 +198,9 @@ The installed catalog builder is described in the
 
 Success includes `ok`, `command`, absolute `release`, `logicalId`,
 `artifactDigest`, `sourceStateDigest`, `sourceStateScope`, and `sourceSystemId`.
-Source-native results also include `source`, `sourceSystemVersion`, and
-`sourceNativeSchemaSetDigest`. Public-table results instead include `table`,
+Source-native results also include `source`, `sourceSystemVersion`,
+`sourceNativeSchemaSetDigest`, and `collectionOutcome`. Inspection adds its
+failure sample and limit; see [inspect](#inspect). Public-table results instead include `table`,
 `tableName`, and `maxRowsPerMember`. Keep these values with the run's receipt.
 
 Handled failures have `ok: false`, `command`, and `error` containing `code` and
