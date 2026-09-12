@@ -283,7 +283,7 @@ with callers. No new storage framework is selected.
 | --- | --- | --- |
 | Source-only publication and public-data use remain independent of DocSpec | Preserved by provider ownership and optional composition | A source fix forces users to configure an experiment platform. |
 | Exact source identities, values, refused evidence and coverage distinctions survive simplification | Required by AGENTS and S01/S07–S10/S19 | Outages, partial pages or changed source bytes become false data claims. |
-| One implementation owns each shared source rule | Selected, not yet implemented for CourtListener | Three parsers continue disagreeing about complete listings and revision markers. |
+| One implementation owns each shared source rule | CourtListener provider implemented in S14; DocSpec D42 and SpicyRegs SR03 own adoption | Unmigrated consumer copies can disagree about complete listings and revision markers. |
 | Dataset selection, processors, resources and reuse remain injectable | Preserved in DocSpec | Removing “unused” extensions makes the owner's iterative workflow impossible. |
 | No circular package dependency | Required by S25/S31 and DocSpec D45–D46 | Optional module boundaries disguise an un-installable package graph. |
 | Wheel and upstream status reflect observed acceptance | Required, still open | A local source edit is misreported as deployed consumer interoperability. |

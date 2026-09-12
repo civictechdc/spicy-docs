@@ -4,7 +4,7 @@ Created September 11, 2026 from the blind product-boundary review (`blind-produc
 
 **Updated September 11, 2026 following the owner's product clarification and checklist sync.** DocSpec is an iterative dataset and catalog platform: accept sources, select documents, use injected fetchers, process now or later, reuse previous work, and compare results. SpicyRegs remains an independently usable source-data product. SpicyDocs may remain separate; share source improvements where they remove duplicate effort or improve a supported workflow. Package placement remains open and is not a prerequisite for useful integration. The prior blanket recommendation to merge SpicyDocs into DocSpec is withdrawn. The additional duplication review (`docspec-spicy-docs-duplication-review.md`) and coordination review (`docspec-spicy-docs-coordination-review.md`) supply useful findings, but their merger addenda do not define this plan.
 
-**Progress: 16 of 25 local implementation items complete; 2 conditionally deferred.** S21 and S31 remain unchecked because no present local dataset loop would benefit from their proposed replacement. The other 7 items remain active. S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
+**Progress: 23 of 25 local implementation items complete; 2 conditionally deferred.** S21 and S31 remain unchecked because no present local dataset loop would benefit from their proposed replacement. No other local implementation item remains open. Receiver-owned work, upstream acceptance, CI and package publication retain their separate status. S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
 
 The intended result is reusable upstream source data and an approachable platform for dataset experiments. A user can build a catalog, fetch selected documents once, process them inline or later, change processors or reference resources, add documents, and compare reproducible results. Every useful stopping point exposes what was requested, received, accepted, rejected, and unresolved. Search is one consumer; catalog-only, acquisition-only, and later-processing workflows have independent value.
 
@@ -33,9 +33,9 @@ Reuse works in both directions at the application boundary: DocSpec consumes sou
 | Dataset planning, work accounting, and run/resume/completion operations | The applicable SpicyDocs experiment campaign driver and duplicate checkpoint/run receipts | A thin caller uses installed DocSpec operations and its supported executor adapter. Dagster handles its execution responsibilities; the caller supplies source scope and experiment configuration. | S20, S21, S28, S29, S31 |
 | Processing, dependency invalidation, incremental datasets, and comparison | Per-experiment processor loops, stale-result cache logic, and ad hoc result comparisons | Supply processor implementations and pinned resources through the wheel's extension API. Retain valid captured data and unaffected results; expose comparable result revisions. | S27, S29, S31 |
 
-DocSpec owns dataset capture and transactions. S22/D31 choose the owner of any shared physical blob writer based on independent source callers as well as dataset callers. Reuse suitable existing primitives where possible; provider storage must not acquire a DocSpec lifecycle dependency solely to remove a writer copy.
+DocSpec owns dataset capture and transactions. Rulespec RS03 supplies the selected shared physical blob writer; SpicyDocs has adopted it in S22. DocSpec D31 owns its remaining caller migration. Provider storage remains independent of DocSpec's lifecycle.
 
-Rulespec supplies the existing shared encoding and generic artifact/atomic-publication primitives; Rulespec RS01 owns the remaining encoding decision; S30/D28 own producer/consumer adoption. Publisher parsers, source identities, and public-data transforms remain with their source owner. Keep the dependency direction explicit:
+Rulespec supplies the shared encoding and generic artifact/atomic-publication primitives. RS01 has qualified its existing supported-value domain, and SpicyDocs has adopted it in S30; DocSpec D28 owns its remaining adoption. Publisher parsers, source identities, and public-data transforms remain with their source owner. Keep the dependency direction explicit:
 
 - The independent provider package uses shared primitives and remains usable without DocSpec.
 - An optional DocSpec integration or a separate experiment caller uses both packages' public APIs and injects source operations and fetchers. Dataset-specific source-tool loops can move to that caller and use DocSpec's wheel.
@@ -261,7 +261,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s19"></a>
 
-- [ ] **S19 — Package publisher-specific acquisition and identity checks.**
+- [x] **S19 — Package publisher-specific acquisition and identity checks.**
   **Owner: SpicyDocs; beneficiary: consumers fetching the intended document.**
   Expose existing Federal Register locators, soft-404/printed-marker checks, and
   MODS resolution through a bounded public provider API where the selected route
@@ -303,7 +303,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s22"></a>
 
-- [ ] **S22 — Adopt the chosen shared physical writer in SpicyDocs.**
+- [x] **S22 — Adopt the chosen shared physical writer in SpicyDocs.**
   **Conditional change; owner: SpicyDocs; beneficiary: source operators and maintainers.**
   Supply known-digest, early reuse, directory pinning, no-follow, cleanup, and
   durability requirements to [Rulespec RS03](../../rulespec/TODO.md#rs03)'s
@@ -321,7 +321,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s23"></a>
 
-- [ ] **S23 — Qualify SpicyDocs' documentation and installed package.**
+- [x] **S23 — Qualify SpicyDocs' documentation and installed package.**
   **Owner: SpicyDocs; beneficiary: source contributors and consumers.** Update
   local specs, source guides, public API docs, CLI help, ownership maps, and
   examples as local changes land. Build the current candidate wheel and check
@@ -335,7 +335,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s24"></a>
 
-- [ ] **S24 — Independently review SpicyDocs changes and source-user value.**
+- [x] **S24 — Independently review SpicyDocs changes and source-user value.**
   **Owner: SpicyDocs; beneficiary: source users and contributors.** Obtain
   independent semi-formal code review and architecture advice for local judgment
   calls. Give a fresh source-contributor persona the supported instructions and
@@ -354,7 +354,7 @@ S25–S31 retain their original IDs. Open checkboxes now cover SpicyDocs impleme
 
 <a id="s25"></a>
 
-- [ ] **S25 — Assign SpicyDocs responsibilities and implement local handoffs.**
+- [x] **S25 — Assign SpicyDocs responsibilities and implement local handoffs.**
   **Decision and selected changes; owner: SpicyDocs; beneficiary: source users and contributors.**
   Use S11's inventory to identify repeated source rules, table publication,
   evidence, diagnostics, storage, and experiment loops. **Done when:** the local
@@ -370,7 +370,7 @@ S25–S31 retain their original IDs. Open checkboxes now cover SpicyDocs impleme
 
 <a id="s26"></a>
 
-- [ ] **S26 — Publish the independent source-provider API through its wheel.**
+- [x] **S26 — Publish the independent source-provider API through its wheel.**
   **Owner: SpicyDocs; beneficiary: catalog builders and source users.** Expose
   profiles, stable source descriptions, faithful fields, provenance, records,
   candidate renditions, scope/outcomes, and bounded evidence/failure inspection
@@ -411,7 +411,7 @@ S25–S31 retain their original IDs. Open checkboxes now cover SpicyDocs impleme
 
 <a id="s30"></a>
 
-- [ ] **S30 — Adopt the agreed shared encoding in source production.**
+- [x] **S30 — Adopt the agreed shared encoding in source production.**
   **Owner: SpicyDocs; beneficiary: consumers relying on exact stable source identities.**
   Supply required source-value cases to [Rulespec RS01](../../rulespec/TODO.md#rs01),
   which owns the supported-value decision and shared emitter. **Done when:** local
@@ -790,3 +790,61 @@ provider qualification, the selected DocSpec receiving patch, and the fresh
 contributor exercise remain in progress. Review certificates and command
 receipts are retained with the local planning session. Remote CI, upstream
 acceptance and a published wheel are not established by these local commits.
+
+
+**September 11, 2026 — final local provider qualification.** S19, S22–S26 and S30
+are complete against source commit `296f20d05e0c32419ebae9d43cdfd19fe054238b`.
+The current SpicyDocs `0.2.0` wheel SHA-256 is
+`ecaa5ebc15df7cad12952e5fdeb8e1cef71614471dfb81b5f43316049d246c4e`.
+Its 87 package members match committed and working source, including nine current
+schemas. Core and both-extras installations resolve normal hashed dependencies
+in fresh environments outside source checkouts. Core source publication and
+reading require neither DocSpec nor HTTP/S3/Parquet libraries.
+
+The combined receipt is retained with the local planning session under
+`validation/s19-s22-s26-s30/`: `candidate.json` pins inputs; `commands.json`
+records commands, working directories, outputs and exit statuses. All 28 commands
+succeeded. `./scripts/check` passed 802 tests with two opt-in cases deselected,
+plus lint and formatting; whole-source type checking, lock and whitespace checks
+passed. The installed package passed 64 focused acquisition/value/refusal tests
+and all 44 canonical cases in both environments. The retained GAO examples cover
+matching, unexpected and missing topics; the bounded GovInfo example retains
+MODS and body bytes. Source and Rulespec receiving probes recorded no network
+calls. These checks establish local offline behavior, not live-source availability.
+
+Rulespec commit `bf59d63` supplies the shared bounded writer in Artifacts `1.0.12`,
+wheel SHA-256 `3f6c946c60ff2ddbe854fce7f74f4358ddb21e3ba3f6ad10caa8a0d8d59fd0a5`.
+SpicyDocs `296f20d` removes its physical writer and keeps a 72-line source wrapper.
+All 108 focused source caller tests pass. The shared workspace passes 64 tests;
+the isolated shared installation passes 62 and skips two existing optional-msgspec
+checks. All 23 new writer tests run, covering both layouts, hard bounds, early
+reuse, corruption, directory replacement, durability and cleanup. The final
+shared-wheel receipts are in `validation/s22-shared-writer-final/`. Rulespec
+`fda9a97` records RS01/RS03 completion; DocSpec D28/D31 remain receiver work.
+
+Independent semi-formal reviews approved the GovInfo acquisition, optional
+package dependencies, source-value/refused-evidence changes and shared writer
+after findings were fixed. The documentation audit's three findings were resolved;
+this update corrects the remaining stale CourtListener ownership row. The fresh
+source-contributor simulation ran four offline examples without DocSpec and added
+a duplicate-empty-topic-field regression with a mutation check. Commit `09fe808`
+adopts that regression and corrects its diagnostic to require one publisher topic
+field with one anchor. The installation guide documents the observed macOS hidden
+editable-package path-file issue. The persona accidentally opened historical
+ownership text; this was an imperfectly blind simulation, not a human usability
+measurement. No review observation is silently treated as fixed or as human evidence.
+
+The selected DocSpec receiving patch is committed in an isolated worktree as
+`a239395`, based on DocSpec `cd8f534`. It selects the current public reader, pins
+these exact provider/shared wheels, and passes 41 focused integration/package
+checks including installed catalog construction, reuse and independent admission
+without the provider installed. D10 remains open for D08's partial-input handling;
+D28/D31 and other receiving tasks keep their own acceptance criteria. Integration
+into the active DocSpec checkout and its full-suite result will be recorded
+separately. Rulespec's actual current-provider probe is also qualified against
+this exact source wheel. No SpicyRegs package move was selected.
+
+Twenty-three local items are complete. S21/S31 remain the two justified conditional
+deferrals with explicit reopening criteria; they are not completed replacements.
+The PR, remote CI, wheel publication and receiving upstream acceptance remain
+separate from these local implementation results.
