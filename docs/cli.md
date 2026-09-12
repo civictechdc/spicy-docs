@@ -6,9 +6,11 @@ object to stdout (exit 0), or a handled operational error to stderr (exit 1).
 Argument syntax errors use argparse's ordinary usage output and exit 2.
 
 For an installed package, `spicy-docs-source-native` is the same entry point.
-Live HTTP/S3 operations require the `acquisition` extra. Captured comment Parquet
-parsing/full replay and public-table commands require `public-table`. Core
-inspection, JSON/HTML replay, and injected acquisition do not load these packages.
+Default HTTPX/S3 operations require the `acquisition` extra; GAO's standard-library
+Zyte transport requires its credential but no extra. Captured comment Parquet
+parsing/full replay and public-table commands require `public-table`, including
+when acquisition is injected. Core inspection, JSON/HTML replay, and injected
+JSON/HTML acquisition do not load these packages.
 The contributor setup `uv sync --frozen --all-extras` installs both. See
 [installation choices](installation.md) for the source-specific requirements.
 The [offline example](../examples/offline_release.py) needs no credentials.
@@ -222,9 +224,18 @@ Handled failures have `ok: false`, `command`, and `error` containing `code` and
 that the publisher has no records. Missing optional dependencies identify setup
 work; an existing immutable destination requires choosing a new destination.
 
-Failures after source acquisition starts can also include `failedAcquisition`. Keep stderr
-with the run, for example by appending `2> /path/to/run-error.json` to the publish
-command. The report's `response.status` is `retained` only when its `blobRef`
+Failures after source acquisition starts can also include `failedAcquisition`.
+Keep stderr with the run, for example by appending `2> /path/to/run-error.log`
+to the publish command. For a handled operational failure (exit 1), the final
+stderr line is the JSON error report; earlier lines can contain retry logs.
+Extract that line before reading it as JSON:
+
+```sh
+tail -n 1 /path/to/run-error.log > /path/to/run-error.json
+```
+
+Argument errors, interruption, and unhandled tracebacks do not provide this
+structured report. The report's `response.status` is `retained` only when its `blobRef`
 names exact bytes in the chosen blob store. The report keeps the source error
 separate from its evidence. Neither the report nor the retained blob is a release.
 

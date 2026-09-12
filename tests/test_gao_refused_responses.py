@@ -48,6 +48,25 @@ def test_refused_response_preserves_exact_body_and_source_error(response: ZyteHt
     assert list(pages) == []
 
 
+def test_duplicate_empty_topic_field_refuses_even_with_one_topic_anchor() -> None:
+    # Synthetic drift: the original topic remains, but the publisher field is
+    # declared a second time without an anchor. Counting anchors alone misses it.
+    body = _html().replace(b"</body>", b'<div class="views-field-field-topic"></div></body>')
+    pages = gao.iter_gao_product_pages(lambda _url: _capture(body), query_scope={"productIds": [PRODUCT_ID]})
+
+    with pytest.raises(
+        gao.GaoProductSourceError, match="exactly one publisher topic field with one topic anchor"
+    ) as caught:
+        next(pages)
+
+    diagnostic = _diagnostic(caught.value)
+    assert diagnostic.stage == "source-validation"
+    assert diagnostic.request_key == PRODUCT_URL
+    assert diagnostic.response_bytes == body
+    assert diagnostic.observed_byte_size == len(body)
+    assert list(pages) == []
+
+
 def test_identity_refusal_does_not_export_untrusted_response_urls() -> None:
     untrusted_url = "https://www.gao.gov/products/other?api_key=never-record-this"
     response = replace(_capture(), requested_url=untrusted_url, resolved_url=untrusted_url)

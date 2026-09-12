@@ -72,8 +72,10 @@ uv run --frozen python examples/offline_release.py --case missing
 The first two cases publish and verify a source release. The missing case reports
 the expected refusal and retained target-body reference without publishing a
 release. An unrelated error still fails the example. You can stop at those
-source results. DocSpec's [D51 example](../../../DocSpec/docs/dataset-experiments-todo.md#d51)
-owns any catalog filter or processor using them. A literal label alone establishes
+source results. The [D51 example](../../../DocSpec/docs/dataset-experiments-todo.md#d51)
+in an optional neighboring DocSpec checkout owns any catalog filter or processor
+using them; that link requires the sibling checkout, but these source examples
+do not. A literal label alone establishes
 no requirements or applicability.
 
 ## Diagnose a refused response

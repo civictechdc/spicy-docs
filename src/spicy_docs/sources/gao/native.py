@@ -365,7 +365,7 @@ def _publisher_fields(body: bytes, *, expected_url: str) -> tuple[str, dict[str,
     if parser.canonical_urls != [expected_url]:
         raise GaoProductSourceError("GAO canonical URL differs from its requested product URL")
     if parser.topic_field_count != 1 or len(parser.topics) != 1:
-        raise GaoProductSourceError("GAO page must contain exactly one publisher topic anchor")
+        raise GaoProductSourceError("GAO page must contain exactly one publisher topic field with one topic anchor")
     return parser.canonical_urls[0], parser.topics[0]
 
 

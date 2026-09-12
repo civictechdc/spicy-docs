@@ -78,11 +78,13 @@ retain the GovInfo capture directly without a dataset application. DocSpec's
 candidate selection and fetcher adapter remain separate work.
 
 For a dataset assembled from sources, chosen document fetchers, processors and
-successive runs, start with DocSpec's
+successive runs, use DocSpec. If you also have the optional neighboring DocSpec
+checkout, its local guides are the
 [offline walkthrough](../../DocSpec/docs/offline-walkthrough.md) and
 [current capabilities](../../DocSpec/README.md#what-you-can-use-today). Its
 [GAO topic example plan](../../DocSpec/docs/dataset-experiments-todo.md#d51)
-owns catalog filtering and processing. A GAO topic is a publisher label; it does
+owns catalog filtering and processing. These links require that sibling checkout;
+SpicyDocs setup and source examples do not. A GAO topic is a publisher label; it does
 not establish a legal requirement, applicability, classification, or a match
 to a separate taxonomy.
 

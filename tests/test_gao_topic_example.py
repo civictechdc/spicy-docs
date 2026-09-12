@@ -68,7 +68,7 @@ def test_missing_topic_example_retains_refused_html_without_a_release(tmp_path: 
     refusal = result["refusal"]
     assert refusal["ok"] is False
     assert refusal["error"]["code"] == "acquisition-failed"
-    assert "exactly one publisher topic anchor" in refusal["error"]["message"]
+    assert "exactly one publisher topic field with one topic anchor" in refusal["error"]["message"]
     response = refusal["failedAcquisition"]["response"]
     assert response["status"] == "retained"
     assert response["requestKey"] == PRODUCT_URL
