@@ -1,9 +1,9 @@
 # Reuse for the remaining source tasks
 
-**The media-type helper is already fixed on another local branch. The other
-source fixes remain open, with useful tests and consumer examples to reuse.**
-DocSpec already supplies the catalog, fetch, process and retained-input reuse
-flow for the CFR example.
+**Historical reuse inventory, captured before the source fidelity fixes.**
+The [to-do list](simplification-todo.md) records current implementation and checks.
+This inventory identified the existing media-type helper and DocSpec's catalog,
+fetch, process and retained-input reuse flow.
 
 This September 12, 2026 review inspected local code and prior evidence. It ran
 no tests or live acquisitions and made no implementation changes. Task completion
@@ -11,7 +11,7 @@ remains in the [to-do list](simplification-todo.md).
 
 ## Use this work first
 
-| Task | Pre-work to reuse | Remaining work |
+| Task | Pre-work to reuse | Remaining work at review time |
 | --- | --- | --- |
 | **P01: attachment positions** | [SpicyDocs attachment tests](../tests/test_spicy_regs_public_tables_source_native.py) cover valid renditions, malformed JSON, publication and replay. [DocSpec's comment example](../../DocSpec/examples/spicyregs_comments.py) already retains source locations and exact evidence. | Carry original format positions through filtering. Add invalid entries before and between valid entries; verify rendition IDs and source fields through publication/replay. |
 | **F05: empty versus missing CSV values** | [The streaming reader and tests](../tests/test_courtlistener_bulk.py) already cover bounds, filtering, quotes, newlines and resumed transfers. | Add quote-aware empty/null preservation. SpicyRegs still uses its own lossy reader; adoption and its table normalization need separate checks. No completed fidelity fix was found. |

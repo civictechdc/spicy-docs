@@ -22,7 +22,7 @@ live in the [task list](simplification-todo.md#fetcher-format-review).
 | Mirrulations / Regulations.gov | S3 listing and JSON records | Keep; attachment links are preserved, not downloaded. |
 | Community public comments | Parquet parts, including extracted text | Keep the supplied dataset and its source fields. |
 | CourtListener discovery | S3 listing XML | Already XML. |
-| CourtListener records | Compressed CSV, including available XML/HTML fields | Keep; fix null versus empty-string handling. |
+| CourtListener records | Compressed CSV, including available XML/HTML fields | Keep; quoted empty strings and unquoted NULLs now remain distinct. |
 
 Replay and drift comparison read retained evidence offline. Zyte's JSON response
 wraps the target's bytes; it does not turn an HTML document into JSON. There is
@@ -77,12 +77,18 @@ add a body downloader.
 
 ### 4. Preserve CourtListener empty strings
 
-This is a related fidelity bug. The [CSV reader](../src/spicy_docs/sources/courtlistener_bulk.py)
-collapses unquoted nulls and quoted empty strings into `None`. A synthetic row
-`1,,""` reproduces the loss. The publisher uses PostgreSQL CSV, which distinguishes
-these values. Keep CSV; correct parsing with tests for quoted empties, embedded
-quotes/newlines and streaming bounds, and check raw-reader consumers.
-[Publisher's bulk format](https://wiki.free.law/c/courtlistener/help/api/bulk-data/bulk-legal-data).
+The [CSV reader](../src/spicy_docs/sources/courtlistener_bulk.py) now preserves
+unquoted empty fields as `None` and quoted empty strings as `""`. Its bounded
+source decoder follows the
+[publisher's PostgreSQL export dialect](https://github.com/freelawproject/courtlistener/blob/main/scripts/make_bulk_data.sh).
+It refuses invalid UTF-8, malformed quoting, and mismatched columns; tests cover
+escaped quotes, newlines, byte limits, and resumed transfers. See
+[raw-reader limits](sources/raw-readers.md#courtlistener).
+
+A retained June 30, 2026 courts dump parsed all 3,361 rows. Re-encoding them with
+the publisher's quoting rules exactly reproduced all 765,809 decompressed bytes,
+including 16,096 NULLs and 11,808 empty strings. SpicyRegs still uses its own
+reader and normalizes some table values; its adoption remains separate.
 
 ## Opportunities that need more evidence
 

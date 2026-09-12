@@ -59,11 +59,11 @@ Replace these paths with the exact wheel files selected for your application:
 uv venv --python 3.12 /path/to/source-reader-env
 uv pip install --python /path/to/source-reader-env/bin/python \
   /path/to/rulespec_artifacts-1.0.12-py3-none-any.whl \
-  /path/to/spicy_docs-0.5.0-py3-none-any.whl
+  /path/to/spicy_docs-0.6.0-py3-none-any.whl
 ```
 
 For both extras, use
-`'/path/to/spicy_docs-0.5.0-py3-none-any.whl[acquisition,public-table]'` as the last
+`'/path/to/spicy_docs-0.6.0-py3-none-any.whl[acquisition,public-table]'` as the last
 argument. Use ordinary dependency resolution. Record version, source revision
 and wheel digest separately from data pins; a local build is not a published release.
 

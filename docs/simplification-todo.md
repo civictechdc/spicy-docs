@@ -124,7 +124,17 @@ implementations and tests for F02–F05, P01 and the DocSpec CFR example.
 - [x] **F02:** Reuse the FEC/main media-type fix; pin aliases and final URL-path inference in Regulations.gov/public-comment policy `1.2`. JSON publication, retained replay and prior-policy refusal pass; source schemas stay unchanged.
 - [x] **F03:** Preserve Federal Register `full_text_xml_url` and emit `body-xml`. Source schema `1.1`, policy `1.3`, embedded schema, admission and replay agree. Empty/malformed values become retained record failures; Parquet columns stay unchanged.
 - [x] **F04:** Preserve native CRS `version` values, explicit null and absence on new captures. Resume leaves earlier successful rows untouched; a new output file obtains fresh evidence.
-- [ ] **F05:** Preserve CourtListener CSV quoted empty strings versus nulls; cover escaping/newlines and bounds, and check downstream raw-reader consumers.
+- [x] **F05:** Preserve CourtListener quoted empty strings, nulls and literal
+  backslashes using the publisher's CSV dialect. Bound record size, decompression
+  and compressed reads; refuse malformed text, rows and incomplete bzip2 members.
+  Resume and cleanup checks pass. SpicyRegs' duplicate raw reader and table
+  normalization still need a separate adoption change; this fix does not migrate them.
+
+F05 checks: 103 CSV, bulk-reader and listing tests passed. Retained CourtListener
+data produced 3,361 rows with 16,096 nulls and 11,808 empty strings. Re-encoding
+with the publisher's quoting rules reproduced all 765,809 decompressed bytes.
+Independent review findings about truncated input, byte limits and cleanup were
+fixed and covered by regressions. Evidence shares the receipt directory below.
 
 F02–F04 and P01 checks: 342 focused tests and 40 XML-acquisition tests passed;
 lint, format and focused types passed. Independent review approved P01/F02/F04;
@@ -132,6 +142,12 @@ F03 review caught and corrected the empty-link refusal. One bounded live Federal
 Register request returned 20 metadata records with publisher XML links. It did
 not acquire bodies or establish coverage. Receipts and review:
 `~/Work/corpora/supply-2026-09-02/receipts/source-fidelity-2026-09-12/`.
+
+Combined qualification: **1,312 tests passed**, two opt-in tests deselected;
+lint, format and focused types passed. Independent source reviews approved.
+The ordinary SpicyDocs `0.6.0` wheel replayed retained Federal Register records,
+both CFR MODS packages and CSV fidelity cases with no HTTP dependency installed.
+Wheel SHA-256: `c6c364190dfab74d22e77843a8b3dee5c392ed983de21e524dd73be72647c532`.
 
 ## Public-comment attachment provenance
 

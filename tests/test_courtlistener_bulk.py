@@ -140,19 +140,17 @@ def test_reader_tracking_defaults_are_owned_by_each_instance():
     assert second.failed_keys == []
 
 
-def test_reader_streams_rows_and_normalizes_blanks(tmp_path: Path):
+def test_reader_preserves_empty_strings_and_nulls(tmp_path: Path):
     path = _csv_bz2(
         tmp_path,
         "courts-2026-06-30.csv.bz2",
         "id,short_name,jurisdiction,notes",
-        ["ca9,Ninth Circuit,F,", "scotus,Supreme Court,F,seat of last resort"],
+        ["ca9,Ninth Circuit,F,", 'scotus,Supreme Court,F,""'],
     )
     rows = list(CourtListenerBulkReader("courts", local_file=path).iter_records())
     assert [r["id"] for r in rows] == ["ca9", "scotus"]
-    # An empty CSV field is absence, not the empty string — downstream NULL
-    # handling depends on that being decided here rather than per-transform.
     assert rows[0]["notes"] is None
-    assert rows[1]["notes"] == "seat of last resort"
+    assert rows[1]["notes"] == ""
 
 
 def test_reader_honors_the_record_bound_and_reports_it(tmp_path: Path):
@@ -248,6 +246,7 @@ class _FlakyResponse:
         self._served = 0
         self._fail_after = fail_after
         self.status = status if status is not None else (206 if offset else 200)
+        self.closed = False
 
     def read(self, size: int) -> bytes:
         if self._fail_after is not None and self._served >= self._fail_after:
@@ -258,7 +257,7 @@ class _FlakyResponse:
         return chunk
 
     def close(self) -> None:
-        return None
+        self.closed = True
 
 
 def test_counting_stream_resumes_a_dropped_transfer_at_the_exact_offset(monkeypatch):
@@ -308,12 +307,15 @@ def test_a_resume_that_restarts_the_stream_is_refused_not_spliced(monkeypatch):
     payload = bz2.compress(b"id,body\n" + b"".join(b"%d,row\n" % i for i in range(4000)))
     monkeypatch.setattr(courtlistener_bulk, "_CHUNK", 1024)
 
+    refused = _FlakyResponse(payload, offset=0, fail_after=None, status=200)
+
     def restart_from_zero(offset: int):
-        return _FlakyResponse(payload, offset=0, fail_after=None, status=200)
+        return refused
 
     stream = _CountingStream(_FlakyResponse(payload, offset=0, fail_after=2048), reopen=restart_from_zero)
     with pytest.raises(RuntimeError, match="not 206"):
         io.BufferedReader(stream).read()
+    assert refused.closed
 
 
 def test_counting_stream_reads_a_concatenated_bzip2_dump():
@@ -338,3 +340,155 @@ def test_reader_raises_on_a_broken_local_read_rather_than_resuming(tmp_path: Pat
     stream = _CountingStream(_FlakyResponse(b"anything", offset=0, fail_after=0))
     with pytest.raises(OSError, match="connection reset"):
         io.BufferedReader(stream).read()
+
+
+@pytest.mark.parametrize(
+    ("body", "reason"),
+    [
+        (b"", "missing header"),
+        (b"id,id\n1,2\n", "nonempty and unique"),
+        (b"id,\n1,2\n", "nonempty and unique"),
+        (b'id,""\n1,2\n', "nonempty and unique"),
+        (b"id,name\n1\n", "expected 2 columns, got 1"),
+        (b"id,name\n1,two,extra\n", "expected 2 columns, got 3"),
+        (b"id\n\xff\n", "invalid UTF-8"),
+    ],
+)
+def test_reader_refuses_lossy_header_or_row_recovery(tmp_path, body, reason):
+    from spicy_docs.sources.courtlistener_csv import CourtListenerCsvError
+
+    path = tmp_path / "dump.bz2"
+    path.write_bytes(bz2.compress(body))
+    reader = CourtListenerBulkReader("courts", local_file=path)
+    with pytest.raises(CourtListenerCsvError, match=reason):
+        list(reader.iter_records())
+    assert reader.stopped_early
+    assert reader.compressed_bytes == path.stat().st_size
+    assert reader.decompressed_bytes == len(body)
+
+
+def test_reader_keeps_counters_and_closes_on_early_generator_close(tmp_path, monkeypatch):
+    from spicy_docs.sources import courtlistener_bulk
+
+    path = _csv_bz2(tmp_path, "dump.bz2", "id,name", ["1,one", "2,two"])
+    handles = []
+    original = courtlistener_bulk._CountingStream.close
+
+    def close(stream):
+        handles.append(stream._response)
+        original(stream)
+
+    monkeypatch.setattr(courtlistener_bulk._CountingStream, "close", close)
+    reader = CourtListenerBulkReader("courts", local_file=path)
+    rows = reader.iter_records()
+    assert next(rows)["id"] == "1"
+    rows.close()
+    assert reader.rows_scanned == reader.rows_yielded == 1
+    assert reader.compressed_bytes == path.stat().st_size
+    assert reader.stopped_early
+    assert handles and all(handle.closed for handle in handles)
+
+
+@pytest.mark.parametrize("partial", [b'"partial', b"partial", b"partial\xc3"])
+def test_byte_budget_discards_partial_record_but_drains_complete_rows(tmp_path, monkeypatch, partial):
+    from spicy_docs.sources import courtlistener_bulk
+
+    first = bz2.compress(b"id\ncomplete\n" + partial)
+    path = tmp_path / "dump.bz2"
+    path.write_bytes(first + bz2.compress(b"rest\n"))
+    monkeypatch.setattr(courtlistener_bulk, "_CHUNK", len(first))
+    reader = CourtListenerBulkReader("courts", local_file=path, max_compressed_bytes=len(first))
+    assert list(reader.iter_records()) == [{"id": "complete"}]
+    assert reader.compressed_bytes == len(first)
+    assert reader.decompressed_bytes == len(b"id\ncomplete\n" + partial)
+    assert reader.rows_scanned == reader.rows_yielded == 1
+    assert reader.stopped_early
+
+
+def test_highly_compressed_input_is_drained_in_bounded_blocks(monkeypatch):
+    from spicy_docs.sources import courtlistener_bulk
+
+    original = b"a" * (2 * 1024 * 1024)
+    payload = bz2.compress(original)
+    monkeypatch.setattr(courtlistener_bulk, "_DECOMPRESSED_CHUNK", 1024)
+    stream = courtlistener_bulk._CountingStream(io.BytesIO(payload))
+    block = bytearray(17)
+    recovered = bytearray()
+    while size := stream.readinto(block):
+        assert len(stream._buffer) <= 1024
+        recovered.extend(block[:size])
+    assert bytes(recovered) == original
+    assert stream.decompressed_bytes == len(original)
+    assert stream.compressed_bytes == len(payload)
+
+
+def test_record_bound_is_configurable_on_reader(tmp_path):
+    from spicy_docs.sources.courtlistener_csv import CourtListenerCsvError
+
+    path = _csv_bz2(tmp_path, "dump.bz2", "id", ['"12345"'])
+    assert list(CourtListenerBulkReader("courts", local_file=path, max_record_characters=7).iter_records()) == [
+        {"id": "12345"}
+    ]
+    with pytest.raises(CourtListenerCsvError, match="record 2: exceeds 6"):
+        list(CourtListenerBulkReader("courts", local_file=path, max_record_characters=6).iter_records())
+
+
+@pytest.mark.parametrize("concatenated", [False, True])
+def test_natural_eof_requires_complete_bzip2_footer(tmp_path, concatenated):
+    from spicy_docs.sources.courtlistener_bulk import _CountingStream
+
+    body = b"id\ncomplete\nunterminated-tail"
+    member = bz2.compress(body)
+    # All CSV bytes are available before these footer bytes. A missing footer
+    # must still prevent this transport from reporting a completed dump.
+    assert bz2.BZ2Decompressor().decompress(member[:-5]) == body
+    payload = (bz2.compress(b"id\nfirst\n") if concatenated else b"") + member[:-5]
+    path = tmp_path / "truncated.bz2"
+    path.write_bytes(payload)
+    reader = CourtListenerBulkReader("courts", local_file=path)
+    with pytest.raises(EOFError, match="incomplete bzip2 member"):
+        list(reader.iter_records())
+    assert reader.stopped_early
+    assert reader.compressed_bytes == len(payload)
+    # Direct stream access has the same completion requirement.
+    with pytest.raises(EOFError, match="incomplete bzip2 member"):
+        io.BufferedReader(_CountingStream(io.BytesIO(payload))).read()
+
+
+def test_one_byte_budget_does_not_read_an_entire_compressed_chunk(tmp_path):
+    path = _csv_bz2(tmp_path, "dump.bz2", "id", ["first", "second"])
+    reader = CourtListenerBulkReader("courts", local_file=path, max_compressed_bytes=1)
+    assert list(reader.iter_records()) == []
+    assert reader.compressed_bytes == 1
+    assert reader.stopped_early
+
+
+def test_unaligned_budget_caps_the_resumed_read_and_closes_current_response(monkeypatch):
+    from spicy_docs.sources import courtlistener_bulk
+
+    monkeypatch.setattr(courtlistener_bulk, "_CHUNK", 1024)
+    payload = bz2.compress(b"id,name\n" + b"".join(b"%d,row %d\n" % (i, i) for i in range(4000)))
+    resumed = []
+
+    class Response(_FlakyResponse):
+        closed = False
+
+        def close(self):
+            self.closed = True
+
+    def reopen(offset):
+        response = Response(payload, offset=offset, fail_after=None)
+        resumed.append(response)
+        return response
+
+    stream = courtlistener_bulk._CountingStream(
+        Response(payload, offset=0, fail_after=1024),
+        max_compressed_bytes=1025,
+        reopen=reopen,
+    )
+    with io.BufferedReader(stream) as raw:
+        raw.read()
+    assert stream.compressed_bytes == 1025
+    assert stream.resumes == 1
+    assert stream.budget_exhausted
+    assert len(resumed) == 1 and resumed[0]._served == 1 and resumed[0].closed
