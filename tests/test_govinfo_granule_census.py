@@ -1,4 +1,4 @@
-"""Fixture coverage for ``tools/govinfo_granule_census.py``.
+"""Fixture coverage for ``tools/analysis/govinfo_granule_census.py``.
 
 The census exists to size a publisher-side identifier defect, so its tests are
 mostly about the ways a census can lie: reporting missing metadata as a
@@ -20,10 +20,9 @@ import httpx
 import pytest
 
 from tests.source_native_release_fixtures import records_release
-from tools.govinfo_granule_census import (
+from tools.analysis.govinfo_granule_census import (
     CredentialRefusedError,
     _granules_from_mods,
-    _read_api_key,
     census,
 )
 
@@ -48,7 +47,7 @@ def _mods(granules: list[str] | list[tuple[str, str]]) -> bytes:
             f"<extension><accessId>{access}</accessId></extension>"
             f"</relatedItem>"
         )
-    return f'<mods {MODS_NS}>{"".join(parts)}</mods>'.encode()
+    return f"<mods {MODS_NS}>{''.join(parts)}</mods>".encode()
 
 
 def _transport(pages: dict[str, bytes], seen: list[httpx.Request]) -> httpx.MockTransport:
@@ -66,8 +65,11 @@ def _run(tmp_path: Path, records, pages, *, seen=None) -> list[dict[str, Any]]:
     root, blobs = records_release(tmp_path, "release", records)
     output = tmp_path / "out.jsonl"
     census(
-        root, blobs, output,
-        api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+        root,
+        blobs,
+        output,
+        through="1999-12-31",
+        min_interval_seconds=0.0,
         transport=_transport(pages, seen if seen is not None else []),
     )
     return [json.loads(line) for line in output.read_text().splitlines() if line.strip()]
@@ -154,9 +156,7 @@ def test_a_401_aborts_the_run_rather_than_being_recorded_and_passed_over(
     tmp_path: Path,
 ) -> None:
     """A keyless route answering 401 means the premise failed. Stop."""
-    root, blobs = records_release(
-        tmp_path, "release", [_line("95-1", "1995-04-10"), _line("95-2", "1995-04-11")]
-    )
+    root, blobs = records_release(tmp_path, "release", [_line("95-1", "1995-04-10"), _line("95-2", "1995-04-11")])
     seen: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -165,8 +165,11 @@ def test_a_401_aborts_the_run_rather_than_being_recorded_and_passed_over(
 
     with pytest.raises(CredentialRefusedError, match="supposed to need no credential"):
         census(
-            root, blobs, tmp_path / "out.jsonl",
-            api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+            root,
+            blobs,
+            tmp_path / "out.jsonl",
+            through="1999-12-31",
+            min_interval_seconds=0.0,
             transport=httpx.MockTransport(handler),
         )
 
@@ -183,8 +186,11 @@ def test_a_403_aborts_and_is_never_retried(tmp_path: Path) -> None:
 
     with pytest.raises(CredentialRefusedError):
         census(
-            root, blobs, tmp_path / "out.jsonl",
-            api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+            root,
+            blobs,
+            tmp_path / "out.jsonl",
+            through="1999-12-31",
+            min_interval_seconds=0.0,
             transport=httpx.MockTransport(handler),
         )
 
@@ -199,16 +205,16 @@ def test_a_resumed_run_refetches_nothing_already_recorded(tmp_path: Path) -> Non
     # A row as a real run writes it, carrying the corpus it was computed against.
     digest = json.loads((root / "artifact.json").read_text())["artifactDigest"]
     output.write_text(
-        json.dumps(
-            {"publicationDate": "1995-04-10", "status": "listed", "sourceReleaseDigest": digest}
-        )
-        + "\n"
+        json.dumps({"publicationDate": "1995-04-10", "status": "listed", "sourceReleaseDigest": digest}) + "\n"
     )
 
     seen: list[httpx.Request] = []
     census(
-        root, blobs, output,
-        api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+        root,
+        blobs,
+        output,
+        through="1999-12-31",
+        min_interval_seconds=0.0,
         transport=_transport(pages, seen),
     )
 
@@ -221,8 +227,11 @@ def test_the_through_date_bounds_the_run(tmp_path: Path) -> None:
     root, blobs = records_release(tmp_path, "release", records)
     seen: list[httpx.Request] = []
     census(
-        root, blobs, tmp_path / "out.jsonl",
-        api_key=None, through="1999-12-31", page_size=1000, min_interval_seconds=0.0,
+        root,
+        blobs,
+        tmp_path / "out.jsonl",
+        through="1999-12-31",
+        min_interval_seconds=0.0,
         transport=_transport(pages, seen),
     )
 
@@ -237,10 +246,7 @@ def test_the_parser_reads_the_saved_sample(tmp_path: Path) -> None:
     constituents and zero ids: accessId is an element under extension, not an
     identifier[@type='accessId'].
     """
-    sample = (
-        Path.home()
-        / "Work/corpora/supply-2026-09-02/receipts/govinfo-mods-sample-FR-1994-01-03.xml"
-    )
+    sample = Path.home() / "Work/corpora/supply-2026-09-02/receipts/govinfo-mods-sample-FR-1994-01-03.xml"
     if not sample.exists():
         pytest.skip("saved MODS sample not present")
 
@@ -248,15 +254,6 @@ def test_the_parser_reads_the_saved_sample(tmp_path: Path) -> None:
 
     assert len(granules) == 105
     assert ("93-31907", "93-31907") in granules
-
-
-def test_the_key_reader_still_refuses_a_missing_name(tmp_path: Path) -> None:
-    """Kept though the route is keyless: an old keyed invocation must fail loudly."""
-    env = tmp_path / ".env"
-    env.write_text("ZYTE_TOKEN=other\n")
-
-    with pytest.raises(SystemExit, match="API_GOV not found"):
-        _read_api_key(env, "API_GOV")
 
 
 def test_resume_retries_a_failed_listing_instead_of_settling_it(tmp_path) -> None:
@@ -267,7 +264,7 @@ def test_resume_retries_a_failed_listing_instead_of_settling_it(tmp_path) -> Non
     recorded date as done, which would have left those nine unvisited forever
     and shipped a transient outage as a finding.
     """
-    from tools.govinfo_granule_census import _resume_state
+    from tools.analysis.govinfo_granule_census import _resume_state
 
     output = tmp_path / "census.jsonl"
     output.write_text(
@@ -289,7 +286,7 @@ def test_resume_retries_a_failed_listing_instead_of_settling_it(tmp_path) -> Non
 
 def test_a_later_listing_supersedes_an_earlier_failure(tmp_path) -> None:
     """The file is append-only, so the last row for a date is the current one."""
-    from tools.govinfo_granule_census import _resume_state
+    from tools.analysis.govinfo_granule_census import _resume_state
 
     output = tmp_path / "census.jsonl"
     output.write_text(
@@ -320,28 +317,22 @@ def test_resume_refuses_a_file_from_another_release(tmp_path) -> None:
     Counts cannot detect the swap: 1994-01-03 holds 105 documents in both
     releases and only 380 of 8,170 dates differ at all. Hence a digest.
     """
-    from tools.govinfo_granule_census import _guard_resume_release
+    from tools.analysis.govinfo_granule_census import _guard_resume_release
 
     output = tmp_path / "census.jsonl"
-    output.write_text(
-        json.dumps({"publicationDate": "1994-01-03", "sourceReleaseDigest": "sha256:aaa"}) + "\n"
-    )
-    _guard_resume_release(output, "sha256:aaa", None)  # same corpus: fine
+    output.write_text(json.dumps({"publicationDate": "1994-01-03", "sourceReleaseDigest": "sha256:aaa"}) + "\n")
+    _guard_resume_release(output, "sha256:aaa")  # same corpus: fine
     with pytest.raises(SystemExit, match="mix two corpora"):
-        _guard_resume_release(output, "sha256:bbb", None)
+        _guard_resume_release(output, "sha256:bbb")
 
 
-def test_rows_without_a_digest_must_be_declared_not_guessed(tmp_path) -> None:
-    """Legacy rows predate the field; the operator states their corpus rather than the tool assuming it."""
-    from tools.govinfo_granule_census import _guard_resume_release
+def test_resume_requires_a_recorded_release_digest(tmp_path) -> None:
+    from tools.analysis.govinfo_granule_census import _guard_resume_release
 
-    output = tmp_path / "census.jsonl"
-    output.write_text(json.dumps({"publicationDate": "1994-01-03", "status": "listed"}) + "\n")
-    with pytest.raises(SystemExit, match="written before sourceReleaseDigest existed"):
-        _guard_resume_release(output, "sha256:aaa", None)
-    with pytest.raises(SystemExit, match="declared as"):
-        _guard_resume_release(output, "sha256:aaa", "sha256:bbb")
-    _guard_resume_release(output, "sha256:aaa", "sha256:aaa")
+    output = tmp_path / "out.jsonl"
+    output.write_text(json.dumps({"publicationDate": "1994-01-03"}) + "\n")
+    with pytest.raises(SystemExit, match="without sourceReleaseDigest; start a fresh output"):
+        _guard_resume_release(output, "sha256:aaa")
 
 
 def test_a_short_number_does_not_fuse_with_a_longer_one() -> None:
@@ -352,7 +343,7 @@ def test_a_short_number_does_not_fuse_with_a_longer_one() -> None:
     four other documents, and the only real fusion in that listing was 94-2050F.
     A defect invented by the instrument is worse than the one it was looking for.
     """
-    from tools.govinfo_resolve_unmatched import _is_fusion_of
+    from tools.analysis.govinfo_resolve_unmatched import _is_fusion_of
 
     assert _is_fusion_of("94-2050F", "94-2050")
     assert _is_fusion_of("94-8046-Filed", "94-8046")

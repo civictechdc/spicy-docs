@@ -6,7 +6,7 @@ from dataclasses import asdict
 
 import pytest
 
-from spicy_docs.federal_register_body_sources import (
+from spicy_docs.sources.federal_register.body_sources import (
     FederalRegisterBodySourceError,
     body_source_locators,
     resolve_govinfo_granule_from_mods,

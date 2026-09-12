@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from spicy_docs.cli.source_native import main
 from spicy_docs.regulations_gov_source_native import RegulationsGovSourceError
-from spicy_docs.source_native_cli import main
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-regs@" + "a" * 40
 FIXED_NOW = datetime(2026, 8, 25, tzinfo=UTC)
@@ -422,3 +422,36 @@ def test_cli_verify_refuses_a_mismatched_source_profile(tmp_path: Path) -> None:
     failure = json.loads(errors.getvalue())
     assert failure["error"]["code"] == "release-invalid"
     assert "unsupported Regulations.gov dockets profile" in failure["error"]["message"]
+
+
+def test_cli_closes_partial_acquisition_before_its_transport_on_failure(tmp_path: Path, monkeypatch) -> None:
+    """A rejected page must not leave a suspended download iterator alive."""
+    from contextlib import contextmanager
+    from dataclasses import replace
+
+    from spicy_docs.cli.sources import SOURCES
+    from tests.releases.fixtures import _page
+
+    events = []
+
+    def pages():
+        try:
+            # Rejected by the real publisher before it asks for the next page.
+            yield _page(10_000, 0, b"invalid page")
+        finally:
+            events.append("iterator-closed")
+
+    @contextmanager
+    def acquire(inputs, scope):
+        try:
+            yield pages()
+        finally:
+            events.append("transport-closed")
+
+    monkeypatch.setitem(SOURCES, "federal-register", replace(SOURCES["federal-register"], acquire=acquire))
+    errors = StringIO()
+    result = main(_publish_args(tmp_path / "release", "federal-register"), clock=lambda: FIXED_NOW, stderr=errors)
+    assert result == 1
+    assert "traversal bound" in errors.getvalue()
+    assert events == ["iterator-closed", "transport-closed"]
+    assert not (tmp_path / "release").exists()

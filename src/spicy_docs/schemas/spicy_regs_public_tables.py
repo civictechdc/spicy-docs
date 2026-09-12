@@ -9,7 +9,7 @@ bytes carry fifteen columns and the logical row carries sixteen.
 
 This module states both column lists and the one projection between them.  It
 holds data and a pure function only; the acquisition profile in
-:mod:`spicy_docs.spicy_regs_public_tables_source_native` owns the JSON Schema,
+:mod:`spicy_docs.sources.public_comments.native` owns the JSON Schema,
 the capture format, and every refusal.
 """
 

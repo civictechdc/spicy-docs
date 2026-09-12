@@ -1,33 +1,17 @@
-"""The source-native reader closure imports no acquisition-only dependency.
+"""Reader imports stay independent of acquisition and optional table libraries.
 
-DocSpec installs the producer wheel with ``uv pip install --no-deps`` and
-imports five modules from it to read and verify Federal Register and
-Regulations.gov releases -- ``federal_register_source_native``,
-``regulations_gov_source_native``, ``source_native``, ``source_native_profiles``
-and ``source_native_store`` (DocSpec ``tests/test_source_catalog_installed_wheel.py``,
-which is the authority for this list). None may reach polars, httpx,
-boto3/botocore, loguru, or tqdm at import time: those belong to acquisition
-(Zyte, Mirrulations/S3, the public-table Parquet reader) and the legacy ETL
-``RecordType`` schemas, none of which run on the read/verify path.
-
-The list was two modules until 2026-09-05, when spicyregZ2 read it against
-DocSpec's probe and found it named two of the five. All five passed already, so
-this widening fixes no failure -- it closes the gap where three modules could
-have grown a heavy import with nothing to catch it. A guard that covers less
-than the contract it protects reports success about the part nobody was going
-to break.
-
-This is an eager-import guard, not an installability proof — the modules could
-still fail on a machine without those libraries for some other reason.
-DocSpec's installed-wheel test is the installability proof. Here a subprocess
-imports all five modules and fails if any of the six names landed in
-``sys.modules``.
+The five public paths match DocSpec's installed-wheel probe. Import each alone
+as well as together: a clean combined import can hide an order-dependent leak.
+This guard checks eager imports; the installed-wheel consumer probe separately
+checks operation without the producer's acquisition dependencies installed.
 """
 
 from __future__ import annotations
 
 import subprocess
 import sys
+
+import pytest
 
 #: Kept in step with DocSpec's installed-wheel probe. Adding a module to the
 #: read/verify contract there means adding it here.
@@ -39,7 +23,7 @@ _READER_MODULES = (
     "spicy_docs.source_native_store",
 )
 
-_HEAVY_MODULES = ("polars", "httpx", "boto3", "botocore", "loguru", "tqdm")
+_HEAVY_MODULES = ("polars", "httpx", "boto3", "botocore", "loguru", "tqdm", "pyarrow", "duckdb")
 
 
 def test_reader_closure_imports_without_heavy_third_party_modules() -> None:
@@ -84,6 +68,36 @@ def test_each_reader_module_is_guarded_individually() -> None:
             text=True,
             check=False,
         )
-        assert completed.returncode == 0, (
-            f"{module} pulled in heavy modules: {completed.stdout!r} {completed.stderr}"
-        )
+        assert completed.returncode == 0, f"{module} pulled in heavy modules: {completed.stdout!r} {completed.stderr}"
+
+
+@pytest.mark.parametrize(
+    "module",
+    ["spicy_docs.sources.federal_register.profile", "spicy_docs.sources.federal_register.replay"],
+)
+def test_federal_register_replay_imports_no_live_transport(module: str) -> None:
+    """One source's policy must be usable without another source's transport."""
+    forbidden = (
+        *_HEAVY_MODULES,
+        "urllib.request",
+        "ssl",
+        "socket",
+        "spicy_docs.sources.zyte",
+        "spicy_docs.sources.gao.native",
+        "spicy_docs.cli.source_native",
+    )
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                f"import sys; import {module}; "
+                f"present = [name for name in {forbidden!r} if name in sys.modules]; "
+                "print(','.join(present)); raise SystemExit(bool(present))"
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, f"{module} imported live transport: {completed.stdout} {completed.stderr}"

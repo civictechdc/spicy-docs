@@ -1,4 +1,4 @@
-"""Fixture coverage for the ``tools/observation_census.py`` receipt helper."""
+"""Fixture coverage for the ``tools/analysis/observation_census.py`` receipt helper."""
 
 from __future__ import annotations
 
@@ -10,18 +10,18 @@ from typing import cast
 
 from rulespec_artifacts import Producer
 
-from spicy_docs.federal_register_source_native import FederalRegisterPage, federal_register_documents_url
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
-from tools.observation_census import LEGACY_NUMBER_PATTERN, MODERN_NUMBER_PATTERN, X_FORM_PATTERN, census
+from spicy_docs.sources.federal_register.native import FederalRegisterPage, federal_register_documents_url
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+from tools.analysis.observation_census import LEGACY_NUMBER_PATTERN, MODERN_NUMBER_PATTERN, X_FORM_PATTERN, census
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 PRODUCER = Producer(
     product="spicy-docs",
     implementation_id=IMPLEMENTATION_ID,
     verifier_id="urn:spicy-regs:source-native-release-verifier",
-    verifier_version="1.0",
+    verifier_version="2.0",
     verifier_implementation_id=IMPLEMENTATION_ID,
 )
 WINDOW = {"publishedFrom": "2000-01-14", "publishedThrough": "2000-01-18"}

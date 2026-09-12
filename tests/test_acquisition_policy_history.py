@@ -1,45 +1,36 @@
-"""A release stays admissible when its acquisition policy version moves.
-
-Admission required a release's declared `acquisitionPolicyVersion` to equal the
-version the *running code* declares (`source_native.py`, the SPEC_FIELDS
-identity block). Moving the Federal Register policy 1.0 -> 1.1 for composite
-identity therefore made every already-published FR release inadmissible --
-including the one holding the retained acquisition evidence a rebuild replays,
-which is how this was found: the replay tool could not admit the release it
-exists to replay.
-
-This is the third instance of one design assumption, not a third bug. The
-stored-request field list (fixed in 6293692) and the embedded schema bundle
-(fixed in 83e2032) both validated a stored artefact against what today's code
-produces rather than against what this project has accepted. A release acquired
-under 1.0 IS a 1.0 release: that is a fact about how it was acquired, not a
-defect to refuse.
-
-The same block still compares `sourceSystemVersion` and `sourceStateScope` to
-the live values. That fourth instance is left in place knowingly, with the
-reason recorded in this change's commit message.
-"""
+"""Only the selected profile's current acquisition policy is admissible."""
 
 from __future__ import annotations
 
-from spicy_docs.source_native import KNOWN_ACQUISITION_POLICY_VERSIONS
+from dataclasses import replace
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from spicy_docs.source_native import SourceNativeReleaseError, verify_source_native_admission
 from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
+from tests.test_source_native_failure_shape import FIXTURE_PROFILE, _admit, _build_release
 
 
-def test_the_federal_register_policy_history_holds_both_published_versions() -> None:
-    """1.0 published the corpus on disk; 1.1 is composite identity."""
-
-    assert KNOWN_ACQUISITION_POLICY_VERSIONS[FEDERAL_REGISTER_PROFILE.acquisition_policy_id] == frozenset(
-        {"1.0", "1.1"}
+@pytest.mark.parametrize("declared_version", ["1.0", "1.1", "1.2", "99.0"])
+def test_only_current_federal_register_policy_version_is_accepted(tmp_path: Path, declared_version: str) -> None:
+    # Use an independently sealed minimal source and the real policy identity;
+    # this exercises the former Federal Register historical-allowlist branch.
+    profile = replace(
+        FIXTURE_PROFILE,
+        acquisition_policy_id=FEDERAL_REGISTER_PROFILE.acquisition_policy_id,
+        acquisition_policy_version=FEDERAL_REGISTER_PROFILE.acquisition_policy_version,
     )
+    assert profile.acquisition_policy_version == "1.2"
 
+    def declare_policy(spec: dict[str, Any]) -> None:
+        spec["acquisitionPolicyId"] = profile.acquisition_policy_id
+        spec["acquisitionPolicyVersion"] = declared_version
 
-def test_the_running_version_is_one_the_reader_accepts() -> None:
-    """A policy bump that forgets a history entry fails here, not at admission.
-
-    Otherwise the acquirer would publish under a version its own reader
-    refuses -- which is exactly what b590d86 did until this table existed.
-    """
-
-    accepted = KNOWN_ACQUISITION_POLICY_VERSIONS[FEDERAL_REGISTER_PROFILE.acquisition_policy_id]
-    assert FEDERAL_REGISTER_PROFILE.acquisition_policy_version in accepted
+    release_root, blobs_root = _build_release(tmp_path, published_id="current-record", mutate_spec=declare_policy)
+    if declared_version == "1.2":
+        _admit(release_root, blobs_root, verify_source_native_admission, profile=profile)
+    else:
+        with pytest.raises(SourceNativeReleaseError, match="requires current fixture acquisition policy version"):
+            _admit(release_root, blobs_root, verify_source_native_admission, profile=profile)

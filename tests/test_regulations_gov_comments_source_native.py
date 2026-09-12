@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 from rulespec_artifacts import LocalMemberSource, Producer
 
+from spicy_docs.cli.source_native import main as source_native_main
 from spicy_docs.regulations_gov_source_native import (
     COMMENT_COLLECTION,
     COMMENT_SOURCE_SYSTEM_ID,
@@ -30,16 +31,15 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
-from spicy_docs.source_native_cli import main as source_native_main
 from spicy_docs.source_native_profiles import REGULATIONS_GOV_COMMENT_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _PRODUCER = Producer(
     product="spicy-docs",
     implementation_id=_IMPLEMENTATION_ID,
     verifier_id="urn:spicy-regs:source-native-release-verifier",
-    verifier_version="1.0",
+    verifier_version="2.0",
     verifier_implementation_id=_IMPLEMENTATION_ID,
 )
 
@@ -382,9 +382,10 @@ def test_comment_source_native_boundary_has_no_sibling_product_imports() -> None
     repository = Path(__file__).resolve().parents[1]
     imported: set[str] = set()
     for relative in (
+        *repository.glob("src/spicy_docs/releases/*.py"),
+        *repository.glob("src/spicy_docs/sources/regulations_gov/*.py"),
         "src/spicy_docs/regulations_gov_source_native.py",
         "src/spicy_docs/source_native.py",
-        "src/spicy_docs/source_native_profile.py",
         "src/spicy_docs/source_native_profiles.py",
     ):
         tree = ast.parse((repository / relative).read_text(encoding="utf-8"))

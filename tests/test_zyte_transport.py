@@ -8,6 +8,7 @@ import json
 import pytest
 
 from spicy_docs.sources import zyte
+from spicy_docs.sources.refusals import RefusedResponse
 
 
 class _Response:
@@ -78,9 +79,60 @@ def test_fetch_refuses_target_bytes_over_the_caller_bound(monkeypatch) -> None:
     ).encode()
     monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(provider))
 
-    with pytest.raises(zyte.ZyteTransportError, match="max_bytes"):
+    with pytest.raises(zyte.ZyteTransportError, match="max_bytes") as raised:
         zyte.ZyteHttpFetcher(token="test-token").fetch(
             "https://www.gao.gov/products/gao-26-107693",
             timeout_seconds=9.0,
             max_bytes=4,
         )
+    context = getattr(raised.value, "refused_response", None)
+    assert isinstance(context, RefusedResponse)
+    assert context.unavailable_reason == "response-byte-limit"
+    assert context.observed_byte_size == 5
+    assert context.response_bytes is None
+
+
+@pytest.mark.parametrize("location", ["body", "resolved-url", "content-type"])
+@pytest.mark.parametrize("encoded", [False, True])
+def test_reflected_credentials_are_unavailable_evidence(monkeypatch, location: str, encoded: bool) -> None:
+    # Deliberately shorter than logging's replacement threshold: the transport
+    # knows the credential and must not retain it even when it is short.
+    token = "s3cr!t"
+    reflected = base64.b64encode(f"{token}:".encode()).decode() if encoded else token
+    body = f"<html>{reflected}</html>".encode() if location == "body" else b"<html>publisher page</html>"
+    url = "https://www.gao.gov/products/gao-26-107693"
+    provider = json.dumps(
+        {
+            "httpResponseBody": base64.b64encode(body).decode(),
+            "httpResponseHeaders": [
+                {"name": "Content-Type", "value": reflected if location == "content-type" else "text/html"}
+            ],
+            "statusCode": 200,
+            "url": url + f"?echo={reflected}" if location == "resolved-url" else url,
+        }
+    ).encode()
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(provider))
+    with pytest.raises(zyte.ZyteTransportError, match="reflected transport credential") as raised:
+        zyte.ZyteHttpFetcher(token=token).fetch(url, timeout_seconds=9, max_bytes=1024)
+    context = getattr(raised.value, "refused_response", None)
+    assert isinstance(context, RefusedResponse)
+    assert context.unavailable_reason == "credential-suppressed"
+    assert context.response_bytes is None
+    assert context.observed_byte_size == len(body)
+    assert token not in str(raised.value) + repr(context)
+    assert reflected not in str(raised.value) + repr(context)
+
+
+def test_empty_received_target_body_is_distinct_from_missing_provider_field(monkeypatch) -> None:
+    provider = json.dumps(
+        {
+            "httpResponseBody": "",
+            "httpResponseHeaders": [{"name": "Content-Type", "value": "text/html"}],
+            "statusCode": 200,
+        }
+    ).encode()
+    monkeypatch.setattr(zyte.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response(provider))
+    response = zyte.ZyteHttpFetcher(token="test-token").fetch(
+        "https://www.gao.gov/products/gao-26-107693", timeout_seconds=9, max_bytes=1024
+    )
+    assert response.body == b""

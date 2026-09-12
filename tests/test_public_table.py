@@ -1,4 +1,4 @@
-"""Source-native-backed public Parquet, DuckDB, and Iceberg behavior."""
+"""Source-native-backed public Parquet and DuckDB behavior."""
 
 from __future__ import annotations
 
@@ -18,44 +18,41 @@ from urllib.parse import unquote
 import duckdb
 import pytest
 
-# public_table.py has an unconditional `import pyarrow` -- a genuine runtime
-# dependency of the shipped module, not merely of this test -- and pyproject.toml
-# was authorized to gain only `duckdb`, dev/test-only, for the DuckDB assertion
-# below. pyarrow is absent from this package's dependency closure entirely (it
-# is not declared, transitively pulled in, or present in uv.lock), so guard the
-# whole module rather than let one missing package abort collection for the
-# other ~385 tests in this suite. See the report note: this needs a human
-# decision to add pyarrow to `[project] dependencies`, not a workaround here.
+# PyArrow is a public-table extra and a default development dependency. Keep
+# this optional suite collectable when a reader-only environment omits it.
 pq = pytest.importorskip("pyarrow.parquet")
 from rulespec_artifacts import (
+    ROOT_OBJECT_KEY,
+    ArtifactInput,
     ArtifactPin,
     ArtifactVerificationError,
     LocalMemberSource,
     Producer,
+    admit_artifact,
+    build_artifact_root,
+    canonical_json_bytes,
 )
 
-from spicy_docs.public_table import (
+from spicy_docs.public_tables.api import (
     VERIFIER_ID as PUBLIC_VERIFIER_ID,
 )
-from spicy_docs.public_table import (
+from spicy_docs.public_tables.api import (
     VERIFIER_VERSION as PUBLIC_VERIFIER_VERSION,
 )
-from spicy_docs.public_table import (
-    IcebergPublicTableSink,
+from spicy_docs.public_tables.api import (
     PublicTableArtifactLocation,
     PublicTableBuild,
     PublicTableError,
     PublicTablePublisher,
     PublicTableReader,
 )
-from spicy_docs.public_table_profiles import (
+from spicy_docs.public_tables.profiles import (
     FEDERAL_REGISTER_PUBLIC_TABLE,
     REGULATIONS_GOV_COMMENT_PUBLIC_TABLE,
     REGULATIONS_GOV_DOCKET_PUBLIC_TABLE,
     REGULATIONS_GOV_DOCUMENT_PUBLIC_TABLE,
     PublicTableProfile,
 )
-from spicy_docs.publication import ImmutablePublicationError
 from spicy_docs.regulations_gov_source_native import (
     COMMENT_COLLECTION,
     iter_regulations_gov_comment_pages,
@@ -70,7 +67,8 @@ from spicy_docs.source_native import (
     SourceNativeReleaseReader,
 )
 from spicy_docs.source_native_profiles import REGULATIONS_GOV_COMMENT_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
+from spicy_docs.storage.publication import ImmutablePublicationError
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _SOURCE_PRODUCER = Producer(
@@ -158,10 +156,7 @@ class _ObjectReader:
 def _object(record: Mapping[str, Any], *, observation: str) -> _Object:
     identity = str(record["data"]["id"])  # type: ignore[index]
     return _Object(
-        key=(
-            f"raw-data/EPA/EPA-2026-0001/text-{observation}/comments/"
-            f"{identity}.json"
-        ),
+        key=(f"raw-data/EPA/EPA-2026-0001/text-{observation}/comments/{identity}.json"),
         etag=f'"{observation}-etag"',
         version_id=f"{observation}-version",
         content=json.dumps(record, indent=2).encode(),
@@ -407,9 +402,7 @@ def test_source_public_tables_preserve_proven_columns(
     expected: Mapping[str, Any],
 ) -> None:
     identity = (
-        str(record["document_number"])
-        if profile is FEDERAL_REGISTER_PUBLIC_TABLE
-        else str(record["data"]["id"])  # type: ignore[index]
+        profile.source_record_id(record) if profile.source_record_id is not None else str(record["data"]["id"])  # type: ignore[index]
     )
     source = _SourceStub(profile, [_source_row(profile, identity, record)])
     destination = tmp_path / profile.table_name
@@ -424,7 +417,9 @@ def test_source_public_tables_preserve_proven_columns(
     row = reader.duckdb_relation(duckdb.connect()).pl().row(0, named=True)
 
     assert reader.columns == expected["columns"]
-    assert row[expected["primary"]] == identity
+    assert row[expected["primary"]] == (
+        record["document_number"] if profile is FEDERAL_REGISTER_PUBLIC_TABLE else identity
+    )
     for name, value in expected.items():
         if name not in {"primary", "columns"}:
             assert row[name] == value
@@ -484,6 +479,56 @@ def test_public_table_refuses_a_row_larger_than_its_batch_bound(tmp_path: Path) 
     assert not (tmp_path / "oversize").exists()
 
 
+def test_public_table_closes_open_writer_without_flushing_after_later_failure(tmp_path: Path, monkeypatch) -> None:
+    from spicy_docs.public_tables import publish
+
+    profile = REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
+    source = _SourceStub(
+        profile,
+        [
+            _source_row(
+                profile,
+                identity,
+                {"data": {"id": identity, "type": "dockets", "attributes": {"agencyId": "EPA", "dkAbstract": text}}},
+            )
+            for identity, text in (("EPA-2026-0001", "small"), ("EPA-2026-0002", "x" * 5000))
+        ],
+    )
+    writer_type = publish.pq.ParquetWriter
+    opened = []
+    events = []
+
+    class TrackedWriter:
+        def __init__(self, *args, **kwargs):
+            self.delegate = writer_type(*args, **kwargs)
+            opened.append(self)
+
+        def write_table(self, table):
+            events.append("write")
+            self.delegate.write_table(table)
+
+        def close(self):
+            events.append("close")
+            self.delegate.close()
+
+    monkeypatch.setattr(publish.pq, "ParquetWriter", TrackedWriter)
+    destination = tmp_path / "later-oversize"
+    try:
+        with pytest.raises(PublicTableError, match="batch-byte bound"):
+            PublicTablePublisher(profile).publish(
+                source,
+                build=PublicTableBuild(_PUBLIC_PRODUCER, max_batch_bytes=4096),
+                destination=destination,
+            )
+        assert len(opened) == 1
+        assert events == ["close"]
+        assert not destination.exists()
+        assert not list(tmp_path.glob(".later-oversize.build-*"))
+    finally:
+        for writer in opened:
+            writer.delegate.close()
+
+
 def test_public_table_is_immutable_and_tamper_fails_before_read(tmp_path: Path) -> None:
     source = _source_release(tmp_path)
     destination = tmp_path / "public"
@@ -511,14 +556,14 @@ def test_public_table_is_immutable_and_tamper_fails_before_read(tmp_path: Path) 
         )
 
 
-def test_public_table_build_refuses_an_unrecognized_producer_product() -> None:
-    with pytest.raises(PublicTableError, match="producer product must be one of"):
-        PublicTableBuild(replace(_PUBLIC_PRODUCER, product="spicy-widgets"))
+@pytest.mark.parametrize("product", ["spicy-widgets", "spicy-regs"])
+def test_public_table_build_requires_the_current_producer_product(product: str) -> None:
+    with pytest.raises(PublicTableError, match="producer product must be spicy-docs"):
+        PublicTableBuild(replace(_PUBLIC_PRODUCER, product=product))
 
 
-def test_public_table_reader_accepts_a_historical_spicy_regs_producer(tmp_path: Path) -> None:
-    """spicy-regs minted public tables before the publisher moved to spicy-docs;
-    consumer admission must keep reading them under their original producer identity."""
+def test_public_table_reader_refuses_a_resealed_historical_producer(tmp_path: Path) -> None:
+    """Valid platform hashes cannot override the current product identity."""
     profile = REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
     identity = "EPA-2026-0001"
     record = {
@@ -532,57 +577,25 @@ def test_public_table_reader_accepts_a_historical_spicy_regs_producer(tmp_path: 
     destination = tmp_path / "historical"
     published = PublicTablePublisher(profile).publish(
         source,
-        build=PublicTableBuild(replace(_PUBLIC_PRODUCER, product="spicy-regs")),
+        build=PublicTableBuild(_PUBLIC_PRODUCER),
         destination=destination,
     )
 
-    reader = _public_reader(destination, profile, published.artifact.pin)
-
-    assert reader.object_keys
-
-
-class _IcebergTable:
-    def __init__(self, *, existing: object | None = None) -> None:
-        self.snapshot = existing
-        self.calls: list[tuple[list[str], bool]] = []
-
-    def current_snapshot(self) -> object | None:
-        return self.snapshot
-
-    def add_files(
-        self,
-        file_paths: list[str],
-        *,
-        check_duplicate_files: bool = True,
-    ) -> None:
-        self.calls.append((file_paths, check_duplicate_files))
-        self.snapshot = {"snapshot-id": 123}
-
-
-def test_iceberg_sink_adopts_exact_members_in_one_standard_snapshot(tmp_path: Path) -> None:
-    source = _source_release(tmp_path)
-    destination = tmp_path / "public"
-    published = PublicTablePublisher(REGULATIONS_GOV_COMMENT_PUBLIC_TABLE).publish(
-        source,
-        build=PublicTableBuild(_PUBLIC_PRODUCER, max_rows_per_member=1),
-        destination=destination,
+    root = published.artifact.root
+    historical_root = build_artifact_root(
+        kind=root["kind"],
+        spec=root["spec"],
+        producer=replace(_PUBLIC_PRODUCER, product="spicy-regs"),
+        inputs=tuple(
+            ArtifactInput(role=value["role"], logical_id=value["logicalId"], artifact_digest=value["artifactDigest"])
+            for value in root["inputs"]
+        ),
+        manifests=published.artifact.manifests,
     )
-    reader = _public_reader(
-        destination,
-        REGULATIONS_GOV_COMMENT_PUBLIC_TABLE,
-        published.artifact.pin,
-    )
-    table = _IcebergTable()
-
-    snapshot = IcebergPublicTableSink(table).publish(reader)
-
-    assert snapshot == {"snapshot-id": 123}
-    assert table.calls == [
-        ([str(destination / key) for key in reader.object_keys], True)
-    ]
-
-    with pytest.raises(PublicTableError, match="new empty table"):
-        IcebergPublicTableSink(table).publish(reader)
+    (destination / ROOT_OBJECT_KEY).write_bytes(canonical_json_bytes(historical_root))
+    historical = admit_artifact(LocalMemberSource(destination))
+    with pytest.raises(PublicTableError, match="producer identity differs"):
+        _public_reader(destination, profile, historical.pin)
 
 
 def test_remote_location_refuses_a_different_artifact_address(tmp_path: Path) -> None:
@@ -626,11 +639,8 @@ def test_remote_location_refuses_a_different_artifact_address(tmp_path: Path) ->
         PublicTableArtifactLocation.content_addressed_remote(
             LocalMemberSource(first.root),
             expected_pin=first.artifact.pin,
-            duckdb_base_uri=(
-                f"https://data.example.test/artifacts/sha256/{second_digest}"
-            ),
+            duckdb_base_uri=(f"https://data.example.test/artifacts/sha256/{second_digest}"),
         )
-
 
 
 _HTTPFS_TIMEOUT_SECONDS = 30
@@ -745,9 +755,7 @@ def test_duckdb_reads_admitted_members_over_anonymous_http_ranges(tmp_path: Path
             location = PublicTableArtifactLocation.content_addressed_remote(
                 LocalMemberSource(destination),
                 expected_pin=published.artifact.pin,
-                duckdb_base_uri=(
-                    f"http://{host}:{port}/artifacts/sha256/{digest}"
-                ),
+                duckdb_base_uri=(f"http://{host}:{port}/artifacts/sha256/{digest}"),
             )
             reader = PublicTableReader(
                 location,
@@ -774,10 +782,8 @@ def test_public_table_module_has_no_sibling_product_imports() -> None:
 
     repository = Path(__file__).resolve().parents[1]
     imported: set[str] = set()
-    for relative in (
-        "src/spicy_docs/public_table.py",
-        "src/spicy_docs/public_table_profiles.py",
-    ):
+    implementations = sorted(repository.glob("src/spicy_docs/public_tables/*.py"))
+    for relative in implementations:
         tree = ast.parse((repository / relative).read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -787,10 +793,11 @@ def test_public_table_module_has_no_sibling_product_imports() -> None:
 
     assert not {name for name in imported if name.startswith(("docspec", "refspec", "spicysearch", "spicy_regs"))}
 
-    public_module = ast.parse((repository / "src/spicy_docs/public_table.py").read_text(encoding="utf-8"))
+    public_modules = [ast.parse(path.read_text(encoding="utf-8")) for path in implementations]
     public_arguments = {
         argument.arg
-        for node in ast.walk(public_module)
+        for module in public_modules
+        for node in ast.walk(module)
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
         for argument in (*node.args.args, *node.args.kwonlyargs)
     }

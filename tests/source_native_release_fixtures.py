@@ -1,7 +1,7 @@
 """Hand-built source-native release fixtures for the receipt-helper tools.
 
-``tools/fr_discarded_distinctness.py`` and
-``tools/compare_source_native_releases.py`` both read a release the same
+``tools/analysis/fr_discarded_distinctness.py`` and
+``tools/analysis/compare_source_native_releases.py`` both read a release the same
 low-level way -- manifest, receipt, and blobs through
 ``LocalSourceNativeBlobStore`` -- without going through
 ``SourceNativeReleaseReader``/``admit_artifact``. So both need the same
@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from spicy_docs.source_native import ROLE_EVIDENCE, ROLE_RECORDS
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 
 def store_at(tmp_path: Path) -> LocalSourceNativeBlobStore:
@@ -64,9 +64,7 @@ def write_release(
     # members keeps it deterministic and gives two different fixtures two
     # different digests, which is what a guard against mixing them needs.
     digest = hashlib.sha256(json.dumps(members, sort_keys=True).encode()).hexdigest()
-    (release_root / "artifact.json").write_text(
-        json.dumps({"artifactDigest": f"sha256:{digest}"})
-    )
+    (release_root / "artifact.json").write_text(json.dumps({"artifactDigest": f"sha256:{digest}"}))
     return release_root
 
 

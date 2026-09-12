@@ -318,7 +318,7 @@ def download_object_bytes(
 # complete-snapshot evidence -- aborted the whole agency for what was only a
 # busy network. `download_keys`'s own `transient_retries` retries immediately
 # with no backoff; give the exact-enumeration GETs the same patience
-# `source_native_cli._retry_http` gives the HTTP path: doubling backoff capped
+# `transport.retry.retry_http` gives the HTTP path: doubling backoff capped
 # at 60s, full jitter, 14 attempts (13 possible sleeps) for ~542s (~9 minutes)
 # of worst-case patience, so a busy network costs minutes, not an agency.
 # Botocore's own standard-mode retries (see `s3_resource`) already ran and
@@ -631,10 +631,9 @@ class MirrulationsReader(Reader):
         self.key_lister = key_lister
         self.retain_keys = retain_keys
         self.fail_fast = fail_fast
-        self.last_keys: list[str] = []
-        # Keys attempted but not consumed, so the caller can keep them out of the
-        # manifest (transient) or surface them for replay (parse).
-        self.failed_keys: list[str] = []
+        super().__init__()
+        # Parse failures are recorded separately from the base failed_keys,
+        # which this reader uses for transient failures eligible for retry.
         self.parse_failed_keys: list[str] = []
 
     def iter_source_objects(
@@ -700,9 +699,7 @@ class MirrulationsReader(Reader):
             key, etag, _listed_size = entry
             return _retry_transient(
                 key,
-                lambda: download_object_bytes(
-                    self.s3_resource, self.bucket, key, if_match=etag, max_bytes=max_bytes
-                ),
+                lambda: download_object_bytes(self.s3_resource, self.bucket, key, if_match=etag, max_bytes=max_bytes),
             )
 
         workers = max(1, self.download_workers)

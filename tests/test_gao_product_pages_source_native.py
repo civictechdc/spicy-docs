@@ -6,12 +6,13 @@ import hashlib
 import subprocess
 import sys
 from io import BytesIO
+from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 import pytest
 
-import spicy_docs.gao_product_pages_source_native as gao
-from spicy_docs.gao_product_pages_source_native import (
+import spicy_docs.sources.gao.native as gao
+from spicy_docs.sources.gao.native import (
     MAX_PAGE_BYTES,
     GaoProductSourceError,
     GaoProductWindow,
@@ -99,6 +100,27 @@ def test_unrelated_publisher_markup_drift_does_not_change_the_closed_source_rule
     assert parse_gao_product_page_response(page.response_bytes)["results"][0]["publisherTopic"]["slug"] == (
         "information-security"
     )
+
+
+def test_topic_links_outside_the_publisher_field_remain_evidence_without_becoming_topics() -> None:
+    body = (Path(__file__).parent / "fixtures" / "gao-product-page-navigation-topics.html").read_bytes()
+
+    page = next(
+        iter_gao_product_pages(
+            lambda _url: _capture(body),
+            query_scope={"productIds": [PRODUCT_ID]},
+        )
+    )
+
+    response = parse_gao_product_page_response(page.response_bytes)
+    assert response["count"] == 1
+    assert response["results"][0]["publisherTopic"] == {
+        "href": "/topics/information-security",
+        "label": "Information Security",
+        "slug": "information-security",
+    }
+    with ZipFile(BytesIO(page.response_bytes)) as evidence:
+        assert evidence.read("product.html") == body
 
 
 def test_publisher_topic_is_preserved_without_refspec_membership_filtering() -> None:
@@ -242,7 +264,7 @@ def test_gao_profile_imports_without_spicysearch_or_refspec() -> None:
             sys.executable,
             "-c",
             (
-                "import sys; import spicy_docs.gao_product_pages_source_native; "
+                "import sys; import spicy_docs.sources.gao.native; "
                 "unexpected=[name for name in sys.modules if name.startswith(('spicysearch', 'refspec'))]; "
                 "print(','.join(unexpected)); raise SystemExit(bool(unexpected))"
             ),

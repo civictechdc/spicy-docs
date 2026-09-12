@@ -1,72 +1,50 @@
-"""A published release stays admissible when the schema bundle moves.
+"""Current admission refuses independently sealed historical schema bundles.
 
-Admission used to require a release's embedded schema bundle to equal
-``installed_release_schema_bundle()`` byte-for-byte -- the bundle *today's*
-code generates. Widening the acquisition-ledger ``failure`` shape therefore
-made all 668 already-published releases inadmissible, measured against
-``releases/fr-full-1994-2026`` before this was fixed: embedded
-``sha256:a7e0dba5...`` against installed ``sha256:4c324165...``.
-
-That is the same defect as the Federal Register field-set check fixed in
-6293692: validating a stored artefact against what the current code produces
-rather than against what this project has accepted. The remedy is the same --
-a frozen table of accepted historical values -- and it carries the same trap,
-which two drafts of that fix fell into: an entry computed from today's files
-is not a historical record, because it moves when the files do.
+The test-only 1.1 bundle is copied exactly from the installed 1.0 directory at
+commit 83e2032. Its independently recorded digest is pinned below; production
+packages ship only the 2.0 schema family.
 """
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
+import pytest
+from rulespec_artifacts import schema_bundle_digest
+
 from spicy_docs.source_native import (
-    KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS,
+    FORMAT_VERSION,
+    RELEASE_SCHEMA_ID,
+    RELEASE_SCHEMA_KEY,
+    VERIFIER_VERSION,
+    SourceNativeReleaseError,
     installed_release_schema_bundle,
-    schema_bundle_digest,
+    release_schema_bundle,
+    verify_source_native_admission,
 )
-
-#: Measured from three independently built published releases -- fr-full-1994-2026,
-#: regs-dockets-ACF and fr-slice-2026-04-13 -- which agree. Spelled out here rather
-#: than imported so this test is an independent statement of what 1.0 was.
-PUBLISHED_1_0_DIGEST = "sha256:a7e0dba5e0b26f69ad3a41901a08eb158d21eb59b856f9faf83d48640a85abdb"
+from tests.test_source_native_failure_shape import _admit, _build_release
 
 
-def test_the_published_bundle_digest_is_still_accepted() -> None:
-    """The 668 releases on disk must keep loading after the schema widens."""
-
-    assert PUBLISHED_1_0_DIGEST in KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS.values()
-
-
-def test_the_1_0_entry_is_frozen_and_is_not_the_current_bundle() -> None:
-    """A historical entry computed from today's files is not historical.
-
-    If ``KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS["1.0"]`` were derived from the
-    installed schema files it would silently become the widened bundle, and the
-    releases it exists to admit would be refused again -- under the new error.
-    """
-
-    assert KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS["1.0"] == PUBLISHED_1_0_DIGEST
-    assert (
-        KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS["1.0"]
-        != schema_bundle_digest(installed_release_schema_bundle())
-    )
+def test_current_schema_family_has_explicit_version_two_identity() -> None:
+    assert FORMAT_VERSION == VERIFIER_VERSION == "2.0"
+    assert RELEASE_SCHEMA_ID == "urn:spicy-regs:schema:source-native-release:2.0"
+    assert RELEASE_SCHEMA_KEY == "schemas/source-native-release-2.0.json"
+    assert installed_release_schema_bundle() == release_schema_bundle()
+    receipt = installed_release_schema_bundle()["publication-receipt.schema.json"]
+    assert set(receipt["required"]) == set(receipt["properties"])
+    assert "byteMeasurements" not in receipt["properties"]
 
 
-def test_the_installed_bundle_is_one_the_reader_accepts() -> None:
-    """A schema change that forgets a table entry fails here, not at admission.
+def test_correctly_sealed_historical_schema_bundle_is_refused(tmp_path: Path) -> None:
+    bundle = json.loads((Path(__file__).parent / "fixtures/source_native_release_1_1.schemas.json").read_bytes())
+    assert schema_bundle_digest(bundle) == "sha256:4c32416532f34a8bb7fbb4009c6324881495b9a6038c61931f8cf05694e1e164"
+    release_root, blobs_root = _build_release(tmp_path, published_id="current-record", release_schemas=bundle)
 
-    Otherwise the writer would embed a bundle the reader refuses, and every
-    release built between the schema change and the table update would be
-    unreadable by the code that wrote it.
-    """
-
-    assert (
-        schema_bundle_digest(installed_release_schema_bundle())
-        in KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS.values()
-    )
+    with pytest.raises(SourceNativeReleaseError, match="schema bundle differs from the current installed bundle"):
+        _admit(release_root, blobs_root, verify_source_native_admission)
 
 
-def test_no_two_accepted_bundle_digests_are_the_same_value() -> None:
-    """Catches a future entry written as a copy of the current one."""
-
-    assert len(set(KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS.values())) == len(
-        KNOWN_RELEASE_SCHEMA_BUNDLE_DIGESTS
-    )
+def test_current_schema_bundle_is_admissible(tmp_path: Path) -> None:
+    release_root, blobs_root = _build_release(tmp_path, published_id="current-record")
+    _admit(release_root, blobs_root, verify_source_native_admission)

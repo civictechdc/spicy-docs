@@ -1,14 +1,12 @@
-"""Base classes for data source connectors.
+"""Base interface for acquisition readers.
 
 Subclass `Reader` to add a connector that pulls records from an external
-system (S3 bucket, REST API, scraped HTML, etc.). Subclass `Writer` to
-add a connector that pushes records to an external system. A connector
-that does both inherits from both.
+system (S3 bucket, REST API, scraped HTML, etc.). Source-native publication
+uses `SourceNativeProfile` and the shared release publisher.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Iterator
-from typing import ClassVar
+from collections.abc import Iterator
 
 
 class Reader(ABC):
@@ -26,15 +24,9 @@ class Reader(ABC):
     to empty lists for sources without addressable keys.
     """
 
-    last_keys: ClassVar[list[str]] = []
-    failed_keys: ClassVar[list[str]] = []
+    def __init__(self) -> None:
+        self.last_keys: list[str] = []
+        self.failed_keys: list[str] = []
 
     @abstractmethod
     def iter_records(self) -> Iterator[dict]: ...
-
-
-class Writer(ABC):
-    """A connector that writes records to an external system."""
-
-    @abstractmethod
-    def write(self, records: Iterable[dict]) -> None: ...

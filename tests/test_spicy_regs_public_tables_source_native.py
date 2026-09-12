@@ -15,6 +15,7 @@ import ast
 import io
 import json
 from copy import deepcopy
+from dataclasses import replace
 from datetime import UTC, datetime
 from io import StringIO
 from pathlib import Path
@@ -25,6 +26,8 @@ import polars as pl
 import pytest
 from rulespec_artifacts import LocalMemberSource, Producer
 
+from spicy_docs.cli.source_native import main as source_native_main
+from spicy_docs.releases.profile import SourceNativeProfile
 from spicy_docs.schemas.spicy_regs_public_tables import (
     PUBLIC_COMMENT_COLUMNS,
     PUBLIC_COMMENT_FILE_COLUMNS,
@@ -35,16 +38,16 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
-from spicy_docs.source_native_cli import main as source_native_main
 from spicy_docs.source_native_profiles import SPICY_REGS_PUBLIC_COMMENT_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
-from spicy_docs.spicy_regs_public_tables_source_native import (
+from spicy_docs.sources.public_comments.native import (
     CAPTURE_PACK_TYPE,
     MANIFEST_ENTRY,
+    MAX_PARTS_PER_AGENCY,
     PARTITION_ENTRY,
     SOURCE_SYSTEM_ID,
     PublicTableAcquisitionCheck,
     PublicTableCapture,
+    PublicTableFetch,
     PublicTableSourceError,
     capture_pack_bytes,
     classify_comment_row,
@@ -58,13 +61,14 @@ from spicy_docs.spicy_regs_public_tables_source_native import (
     parse_public_table_request,
     spicy_regs_public_comment_query_scope,
 )
+from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40
 _PRODUCER = Producer(
     product="spicy-docs",
     implementation_id=_IMPLEMENTATION_ID,
     verifier_id="urn:spicy-regs:source-native-release-verifier",
-    verifier_version="1.0",
+    verifier_version="2.0",
     verifier_implementation_id=_IMPLEMENTATION_ID,
 )
 _BOILERPLATE = "See attached"
@@ -170,14 +174,16 @@ def _publish(
     scope: dict[str, Any] | None = None,
     name: str = "release",
     blobs: str = "blobs",
+    fetch: PublicTableFetch | None = None,
+    profile: SourceNativeProfile = SPICY_REGS_PUBLIC_COMMENT_PROFILE,
 ):
     query_scope = scope or _scope()
     return SourceNativeReleasePublisher(
-        SPICY_REGS_PUBLIC_COMMENT_PROFILE,
+        profile,
         blob_store=LocalSourceNativeBlobStore(tmp_path / blobs),
         clock=_completed_at,
     ).publish(
-        iter_spicy_regs_public_comment_pages(_mirror(captures), query_scope=query_scope),
+        iter_spicy_regs_public_comment_pages(fetch or _mirror(captures), query_scope=query_scope),
         build=SourceNativeReleaseBuild(
             query_scope=query_scope,
             producer=_PRODUCER,
@@ -216,7 +222,11 @@ def test_every_published_column_survives_capture_including_nulls_and_boilerplate
     assert record["organization"] is None
     assert rows[0]["sourceRecordId"] == "EPA-2026-0001-0001"
     assert _reader(published.root, published.artifact.pin).source_system_id == SOURCE_SYSTEM_ID
-    assert _reader(published.root, published.artifact.pin).source_state_scope == "complete-snapshot"
+    outcome = _reader(published.root, published.artifact.pin).collection_outcome
+    assert outcome["sourceStateScope"] == "observed-crawl"
+    assert outcome["traversalAcceptance"] == "single-observed-traversal"
+    assert outcome["acquisitionPolicyVersion"] == "1.1"
+    assert outcome["acquisitionPolicy"] == comment_acquisition_policy(_scope())
 
 
 def test_capture_pins_the_partition_bytes_and_states_upstream_freshness() -> None:
@@ -353,7 +363,7 @@ def test_scope_declaration_names_the_partitions_a_capture_covers() -> None:
 
     policy = comment_acquisition_policy(canonical)
     assert policy["initialQueryScope"] == canonical
-    assert policy["strategy"] == "complete-public-table-partition-capture"
+    assert policy["strategy"] == "observed-contiguous-part-probing"
     assert policy["acquisitionRung"] == "community-mirror"
     # The upstream pipeline already chose the current row per comment_id.
     assert policy["observationSelection"]["reselectedHere"] is False
@@ -361,12 +371,112 @@ def test_scope_declaration_names_the_partitions_a_capture_covers() -> None:
 
 
 def test_capture_must_cover_exactly_the_scoped_partitions(tmp_path: Path) -> None:
-    with pytest.raises(PublicTableSourceError, match="publish no comments partition for FDA"):
+    with pytest.raises(PublicTableSourceError, match="capture for FDA did not obtain requested part-0.parquet"):
         _publish(
             tmp_path,
             [_capture("EPA", 0, [_row()])],
             scope=_scope("EPA", "FDA"),
         )
+
+
+@pytest.mark.parametrize("later_part", [None, 2])
+def test_first_missing_part_ends_observation_without_requesting_later_parts(
+    tmp_path: Path, later_part: int | None
+) -> None:
+    captures = [_capture("EPA", 0, [_row()])]
+    if later_part is not None:
+        captures.append(_capture("EPA", later_part, [_row("EPA-2026-0001-0002")]))
+    mirror = _mirror(captures)
+    requested = []
+
+    def fetch(locator: str) -> PublicTableCapture | None:
+        requested.append(locator)
+        return mirror(locator)
+
+    published = _publish(tmp_path, captures, fetch=fetch)
+    reader = _reader(published.root, published.artifact.pin)
+    assert requested == [comment_partition_locator("EPA", 0), comment_partition_locator("EPA", 1)]
+    assert [row["sourceRecordId"] for row in reader.iter_records()] == ["EPA-2026-0001-0001"]
+    assert reader.collection_outcome["sourceStateScope"] == "observed-crawl"
+    assert reader.collection_outcome["acquisitionEvidenceCount"] == 1
+    assert reader.collection_outcome["reconciliationPassCount"] == 1
+
+
+def test_missing_first_part_refuses_instead_of_publishing_empty_input(tmp_path: Path) -> None:
+    requested = []
+
+    def fetch(locator: str) -> None:
+        requested.append(locator)
+
+    with pytest.raises(PublicTableSourceError, match="did not obtain requested part-0.parquet"):
+        _publish(tmp_path, [], fetch=fetch)
+    assert requested == [comment_partition_locator("EPA", 0)]
+    assert not (tmp_path / "release").exists()
+
+
+def test_present_empty_partition_publishes_observed_empty_input(tmp_path: Path) -> None:
+    published = _publish(tmp_path, [_capture("EPA", 0, [])])
+    reader = _reader(published.root, published.artifact.pin)
+
+    assert list(reader.iter_records()) == []
+    assert reader.collection_outcome["recordOutcome"] == "empty"
+    assert reader.collection_outcome["sourceStateScope"] == "observed-crawl"
+    assert reader.collection_outcome["requestedScope"] == _scope()
+    assert reader.collection_outcome["acquisitionEvidenceCount"] == 1
+
+
+def test_partition_probe_bound_refuses_without_claiming_complete_membership() -> None:
+    first = _capture("EPA", 0, [])
+    requested = []
+
+    def fetch(locator: str) -> PublicTableCapture:
+        requested.append(locator)
+        return replace(first, locator=locator)
+
+    with pytest.raises(PublicTableSourceError, match="exceeded its partition bound"):
+        list(iter_spicy_regs_public_comment_pages(fetch, query_scope=_scope()))
+    assert MAX_PARTS_PER_AGENCY == 64
+    assert requested == [comment_partition_locator("EPA", index) for index in range(MAX_PARTS_PER_AGENCY)]
+
+
+@pytest.mark.parametrize("failed_part", [0, 2])
+def test_request_failure_never_becomes_terminal_or_empty_evidence(tmp_path: Path, failed_part: int) -> None:
+    requested = []
+    error = PublicTableSourceError("public-table upstream request failed")
+
+    def fetch(locator: str) -> PublicTableCapture:
+        requested.append(locator)
+        part = len(requested) - 1
+        if part == failed_part:
+            raise error
+        return _capture("EPA", part, [_row(f"EPA-2026-0001-000{part}")])
+
+    with pytest.raises(PublicTableSourceError) as caught:
+        _publish(tmp_path, [], fetch=fetch)
+    assert caught.value is error
+    assert requested == [comment_partition_locator("EPA", index) for index in range(failed_part + 1)]
+    assert not (tmp_path / "release").exists()
+
+
+@pytest.mark.parametrize("old_claim", [False, True])
+def test_current_profile_refuses_prior_policy_and_complete_snapshot_claim(tmp_path: Path, old_claim: bool) -> None:
+    def old_policy(scope):
+        policy = comment_acquisition_policy(scope)
+        del policy["coverageLimits"]
+        policy["strategy"] = "complete-public-table-partition-capture"
+        return policy
+
+    old_profile = replace(
+        SPICY_REGS_PUBLIC_COMMENT_PROFILE,
+        acquisition_policy_version="1.0",
+        acquisition_policy=old_policy,
+        source_state_scope="complete-snapshot" if old_claim else "observed-crawl",
+        traversal_acceptance="source-enumeration" if old_claim else "single-observed-traversal",
+    )
+    published = _publish(tmp_path, [_capture("EPA", 0, [_row()])], profile=old_profile)
+
+    with pytest.raises(SourceNativeReleaseError, match="unsupported .* profile|requires current .* policy version"):
+        _reader(published.root, published.artifact.pin)
 
 
 def test_acquisition_check_refuses_a_capture_that_misses_a_scoped_partition() -> None:
@@ -680,7 +790,7 @@ def test_public_table_source_boundary_has_no_sibling_product_imports() -> None:
     repository = Path(__file__).resolve().parents[1]
     imported: set[str] = set()
     for relative in (
-        "src/spicy_docs/spicy_regs_public_tables_source_native.py",
+        "src/spicy_docs/sources/public_comments/native.py",
         "src/spicy_docs/schemas/spicy_regs_public_tables.py",
     ):
         tree = ast.parse((repository / relative).read_text(encoding="utf-8"))

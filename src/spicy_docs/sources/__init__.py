@@ -13,6 +13,6 @@ iceberg, r2, ...). Those belong to sibling/rollup products and were
 deliberately left out of this extraction.
 """
 
-from spicy_docs.sources.base import Reader, Writer
+from spicy_docs.sources.base import Reader
 
-__all__ = ["Reader", "Writer"]
+__all__ = ["Reader"]
