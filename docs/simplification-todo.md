@@ -20,7 +20,9 @@ The [FEC reader and CLI](sources/fec.md) cover the researched official collectio
 families through shared JSON, XML listing, sitemap and explicit page-link readers.
 Selected originals use the shared blob writer independently of metadata. Full
 historical acquisition, financial normalization and SpicyRegs/DocSpec adoption
-remain caller work; the source integration does not mark those complete.
+remain caller work; the source integration does not mark those complete. The
+[updated T01–T19 task list](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration-task-list.md)
+records completed capabilities, remaining acceptance criteria and the next delivery.
 
 ## Deferred local work
 
