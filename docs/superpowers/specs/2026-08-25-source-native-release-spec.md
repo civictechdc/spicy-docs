@@ -215,9 +215,14 @@ The source reuses a number across unrelated documents: `00-111` names both a
 Repeated observations of the same pair collapse only when their canonical
 record digests agree; differing digests refuse publication. This supersedes
 the 2026-09-02 rule that grouped by number and selected the latest date, which
-discarded distinct documents. Acquisition policy `1.1` records this identity
-change; the requested fields remain at `1.0`. See the
-[identity and field-policy decision](../../decisions.md#federal-register-identity-and-fields-version-separately).
+discarded distinct documents. Acquisition policy `1.1` recorded this identity
+change; current policy `1.2` also states the limits of stable observed crawls.
+Both changes preserve the same 22 current `DOCUMENT_FIELDS`. The proposed
+`correction_of` field was deferred and never added. Request construction and
+replay require the current field set and exact canonical URL, without a
+historical field-set map or separate field-policy version selector. See the
+[identity and current-field decision](../../decisions.md#federal-register-identity-and-fields-version-separately)
+for the historical SD-24 / DocSpec 0003 provenance.
 
 Source-specific observation collapse is acquisition meaning, not a catalog
 derivation: every Regulations.gov profile — comments, dockets, and documents —

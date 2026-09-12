@@ -631,10 +631,9 @@ class MirrulationsReader(Reader):
         self.key_lister = key_lister
         self.retain_keys = retain_keys
         self.fail_fast = fail_fast
-        self.last_keys: list[str] = []
-        # Keys attempted but not consumed, so the caller can keep them out of the
-        # manifest (transient) or surface them for replay (parse).
-        self.failed_keys: list[str] = []
+        super().__init__()
+        # Parse failures are recorded separately from the base failed_keys,
+        # which this reader uses for transient failures eligible for retry.
         self.parse_failed_keys: list[str] = []
 
     def iter_source_objects(

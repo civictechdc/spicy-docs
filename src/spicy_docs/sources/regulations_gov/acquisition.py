@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping, Sequence
-from pathlib import Path
+from collections.abc import Callable, Generator, Mapping, Sequence
 from typing import Any, cast
 
 from spicy_docs.sources.regulations_gov.definitions import (
@@ -46,15 +45,13 @@ def _iter_pages(
     collection: str,
     scope_validator: Callable[[Mapping[str, Any]], Mapping[str, Any]],
     classifier: Callable[[object], Mapping[str, Any]],
-    scratch_directory: Path | None,
-) -> Iterator[RegulationsGovPage]:
+) -> Generator[RegulationsGovPage, None, None]:
     scope = scope_validator(query_scope)
     path_collection = {
         COMMENT_COLLECTION: COMMENT_COLLECTION,
         DOCUMENT_COLLECTION: DOCUMENT_COLLECTION,
         DOCKET_COLLECTION: "docket",
     }[collection]
-    del scratch_directory
     page_index = 0
     previous_global_key: str | None = None
     for agency in cast(Sequence[str], scope["agencies"]):
@@ -163,15 +160,13 @@ def iter_regulations_gov_document_pages(
     read: RegulationsGovRead,
     *,
     query_scope: Mapping[str, Any],
-    scratch_directory: Path | None = None,
-) -> Iterator[RegulationsGovPage]:
+) -> Generator[RegulationsGovPage, None, None]:
     return _iter_pages(
         read,
         query_scope=query_scope,
         collection=DOCUMENT_COLLECTION,
         scope_validator=regulations_gov_document_query_scope,
         classifier=classify_document,
-        scratch_directory=scratch_directory,
     )
 
 
@@ -179,15 +174,13 @@ def iter_regulations_gov_docket_pages(
     read: RegulationsGovRead,
     *,
     query_scope: Mapping[str, Any],
-    scratch_directory: Path | None = None,
-) -> Iterator[RegulationsGovPage]:
+) -> Generator[RegulationsGovPage, None, None]:
     return _iter_pages(
         read,
         query_scope=query_scope,
         collection=DOCKET_COLLECTION,
         scope_validator=regulations_gov_docket_query_scope,
         classifier=classify_docket,
-        scratch_directory=scratch_directory,
     )
 
 
@@ -195,13 +188,11 @@ def iter_regulations_gov_comment_pages(
     read: RegulationsGovRead,
     *,
     query_scope: Mapping[str, Any],
-    scratch_directory: Path | None = None,
-) -> Iterator[RegulationsGovPage]:
+) -> Generator[RegulationsGovPage, None, None]:
     return _iter_pages(
         read,
         query_scope=query_scope,
         collection=COMMENT_COLLECTION,
         scope_validator=regulations_gov_comment_query_scope,
         classifier=classify_comment,
-        scratch_directory=scratch_directory,
     )

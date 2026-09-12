@@ -17,7 +17,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import cache
 from html.parser import HTMLParser
@@ -640,7 +640,7 @@ def iter_gao_product_pages(
     fetch: GaoProductFetch,
     *,
     query_scope: Mapping[str, Any],
-) -> Iterator[GaoProductPage]:
+) -> Generator[GaoProductPage, None, None]:
     """Acquire ``N`` products in O(N + H) time and O(N + B) space.
 
     ``H`` is total HTML bytes and ``B`` is the largest page, capped at 8 MiB.

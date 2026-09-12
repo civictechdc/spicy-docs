@@ -7,7 +7,6 @@ uses `SourceNativeProfile` and the shared release publisher.
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from typing import ClassVar
 
 
 class Reader(ABC):
@@ -25,8 +24,9 @@ class Reader(ABC):
     to empty lists for sources without addressable keys.
     """
 
-    last_keys: ClassVar[list[str]] = []
-    failed_keys: ClassVar[list[str]] = []
+    def __init__(self) -> None:
+        self.last_keys: list[str] = []
+        self.failed_keys: list[str] = []
 
     @abstractmethod
     def iter_records(self) -> Iterator[dict]: ...

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Generator, Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 from datetime import datetime
@@ -84,19 +84,25 @@ class AcquisitionInputs:
 
 
 @contextmanager
-def _federal_pages(inputs: AcquisitionInputs, scope: Mapping[str, Any]) -> Iterator[Iterator[SourceNativePage]]:
+def _federal_pages(
+    inputs: AcquisitionInputs, scope: Mapping[str, Any]
+) -> Iterator[Generator[SourceNativePage, None, None]]:
     with federal_register_fetcher(inputs.fetch) as fetch:
         yield iter_federal_register_pages(fetch, query_scope=scope)
 
 
 @contextmanager
-def _gao_pages(inputs: AcquisitionInputs, scope: Mapping[str, Any]) -> Iterator[Iterator[SourceNativePage]]:
+def _gao_pages(
+    inputs: AcquisitionInputs, scope: Mapping[str, Any]
+) -> Iterator[Generator[SourceNativePage, None, None]]:
     with gao_fetcher(inputs.fetch_gao) as fetch:
         yield iter_gao_product_pages(fetch, query_scope=scope)
 
 
 @contextmanager
-def _table_pages(inputs: AcquisitionInputs, scope: Mapping[str, Any]) -> Iterator[Iterator[SourceNativePage]]:
+def _table_pages(
+    inputs: AcquisitionInputs, scope: Mapping[str, Any]
+) -> Iterator[Generator[SourceNativePage, None, None]]:
     with public_table_fetcher(inputs.fetch_public_table, inputs.clock) as fetch:
         yield iter_spicy_regs_public_comment_pages(fetch, query_scope=scope)
 
@@ -107,8 +113,8 @@ def _regulations_pages(
     scope: Mapping[str, Any],
     *,
     collection: str,
-    iterate: Callable[..., Iterator[SourceNativePage]],
-) -> Iterator[Iterator[SourceNativePage]]:
+    iterate: Callable[..., Generator[SourceNativePage, None, None]],
+) -> Iterator[Generator[SourceNativePage, None, None]]:
     reader = inputs.read_regulations or default_regulations_reader
     yield iterate(lambda agency: reader(agency, collection), query_scope=scope)
 
@@ -116,7 +122,9 @@ def _regulations_pages(
 @dataclass(frozen=True)
 class SourceRegistration:
     profile: SourceNativeProfile
-    acquire: Callable[[AcquisitionInputs, Mapping[str, Any]], AbstractContextManager[Iterator[SourceNativePage]]]
+    acquire: Callable[
+        [AcquisitionInputs, Mapping[str, Any]], AbstractContextManager[Generator[SourceNativePage, None, None]]
+    ]
     error_type: type[ValueError]
     date_fields: tuple[str, str] | None = None
     agency_label: str | None = None

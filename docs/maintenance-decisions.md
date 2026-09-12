@@ -13,9 +13,9 @@ selection, immutable publication, and bounded consumer opening. The
 | `spicy_docs.source_native_profiles` | Preserve profile exports. A caller needing one source can import its source-owned `profile.py` without loading unrelated sources. |
 | `spicy_docs.federal_register_source_native` | Preserve the Federal Register imports used by current reader probes. Source acquisition and classification live in `sources/federal_register/native.py`. |
 | `spicy_docs.source_native_store` | Preserve the current consumer's blob-store imports. Their implementation lives in `storage/blobs.py`. |
-| Newly organized library APIs | Public tables use `spicy_docs.public_tables.api`; table profiles use `spicy_docs.public_tables.profiles`; source-table declarations and artifact builders use `spicy_docs.catalog`. Their former root paths have no forwarding wrappers. |
+| Newly organized library APIs | Public tables use `spicy_docs.public_tables.api`; table profiles use `spicy_docs.public_tables.profiles`; the unused `spicy_docs.catalog` package and its artifact builders are retired. [Source-reference notes](source-reference.md) preserve useful knowledge; current native profiles own executable source descriptions. No forwarding wrappers remain. |
 | Raw reader modules | Mirrulations and CourtListener remain under `sources/`. |
-| Operator commands | Keep both installed entry points in `pyproject.toml`; their implementations live in `cli/`. The source-native command retains its four subcommands, injected operations, exit codes, and result shapes. `python -m` callers use the owning module paths in the [operator guide](cli.md). |
+| Operator commands | `spicy-docs-source-native` is the installed entry point in `pyproject.toml`; its implementation lives in `cli/`. The retired catalog builder has no replacement command. Current subcommands, injected operations, exit codes, and `python -m` paths are documented in the [operator guide](cli.md). |
 | Private test hooks | Tests now patch the implementation owner, such as Regulations.gov acquisition's pack limit. Private imports are not retained as forwarding wrappers. |
 
 The five modules in `tests/test_reader_closure.py` match DocSpec's installed-wheel
@@ -40,7 +40,7 @@ for moved internal modules. The current code and guides use the owning packages.
 | `_descriptor_rows()` | Removed. No repository or searched downstream caller; the underlying descriptor and JSON-lines readers remain in use. |
 | `_policy()` | Removed after the release split. Its only use forwarded a build's scope to the actual policy validator. |
 | `Writer` | Removed under the decision that legacy support is not required. No implementation or current caller was found in this repository or the five related checkouts. A source uses `Reader` or `SourceNativeProfile`; publication uses the shared publisher. |
-| `declared_profile_for_table()` | Retain as a supported, lightweight lookup of declared source capabilities. It raises `KeyError` for an undeclared table without loading a processing runtime. |
+| `declared_profile_for_table()` | Retired with the unused table registry in S12. Existing native release profiles describe working source operations; [source-reference notes](source-reference.md) preserve reviewed relationships and correct unsupported table-field claims. |
 | `discover_agencies()` | Retain as the documented library convenience for listing agencies with the built-in anonymous Mirrulations connection. Same-named sibling functions are separate APIs. |
 
 A final static scan found no private top-level function without a name or
@@ -82,7 +82,7 @@ this refactor preserves the cache and its purpose.
 | Acquisition indexing | The 225-line method became a 197-line function with a separate stateless page-chain check. Index updates and source callback state remain together. |
 | Full verification | The 274-line verifier is now 246 lines after sharing counted digest construction and correcting stale commentary. Keep the ordered comparisons and failure-ledger accounting visible in one function. |
 | Acquisition replay | Keep the 239-line loop together. Traversal/window/page state, evidence pins, terminal markers, and discovered-record accounting are coupled. Replay remains independent of the publisher's indexer. |
-| Federal Register module | Retain the cohesive source adapter; its largest function is 105 lines. Field/schema declarations and historical field policies account for substantial file length. The independently importable profile already has its own home. |
+| Federal Register module | Retain the cohesive source adapter and its field/schema declarations. The single current `DOCUMENT_FIELDS` set replaces the unused historical field-policy map; request construction and replay require the same current fields and canonical URL. The independently importable profile already has its own home. |
 | Captured public-comment module | Retain the single captured-table adapter after sharing JSON and media-type mechanics. Its largest function is 51 lines; source column declarations, evidence format, and small callbacks make the file long. Split another responsibility when a concrete change needs it. |
 | Mirrulations reader | Retain distinct incremental and complete-enumeration paths sharing download primitives. Their failure and coverage promises differ. The largest function is 80 lines. |
 

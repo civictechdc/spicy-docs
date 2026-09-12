@@ -147,9 +147,9 @@ def _admit_source_release(
     artifact = admit_artifact(
         source,
         blob_source=blob_source,
-        semantic_verifier=lambda candidate, member_source: verify_source_native_admission(
-            candidate,
-            member_source,
+        semantic_verifier=lambda artifact, source: verify_source_native_admission(
+            artifact,
+            source,
             profile=FEDERAL_REGISTER_PROFILE,
             blob_source=blob_source,
         ),

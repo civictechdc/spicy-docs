@@ -17,18 +17,26 @@ commits `48dac81` (capture) and `b25a3e9` (ruling tests),
 implemented behavior, not a reconstruction of the missing plan. Sources remain
 explicit CLI choices; fallback is not automatic.
 
-## Federal Register identity and fields version separately
+<a id="federal-register-identity-and-fields-version-separately"></a>
 
-Acquisition policy `1.1` identifies a record by
-`(document_number, publication_date)`. Requested-field policy remains `1.0`:
+## Federal Register identity changes preserve the current fields
+
+Acquisition policy `1.1` introduced identity by
+`(document_number, publication_date)` without changing the requested fields.
+Current policy `1.2` also states the limits of stable observed crawls. Requests
+and retained initial URLs use the same 22 current `DOCUMENT_FIELDS`; replay
+requires that field set and exact canonical URL. No historical field-set map
+or separate field-policy version selector remains.
+
 `correction_of` was proposed with the identity change, then deferred and never
-added to the accepted fields or schema. Do not force these versions to match.
-Adding that field requires a new acquisition-policy decision.
+added to the accepted fields or source schema. Adding it requires a new
+acquisition-policy decision.
 
-This is the implemented result of SD-24 / DocSpec decision 0003,
+The identity change and deferred field are the implemented result of historical
+SD-24 / DocSpec decision 0003,
 `docs/decisions/0003-federal-register-record-identity.md` in the DocSpec repository.
 That record includes superseded proposals. Local authority is
-`sources/federal_register/profile.py`, accepted field sets in
+`sources/federal_register/profile.py`, the current field set in
 `sources/federal_register/native.py`, and identity/replay tests. The adopted
 [release specification](superpowers/specs/2026-08-25-source-native-release-spec.md)
 defines shared publication requirements.

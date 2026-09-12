@@ -1,27 +1,13 @@
-"""Replay of stored Federal Register acquisition requests.
-
-SD-20: a Federal Register rebuild (DocSpec decision 0003) replays 1.76 GB of
-retained evidence with no refetch. ``federal_register_request_window`` used to
-regenerate today's canonical URL from the module-level ``DOCUMENT_FIELDS`` and
-demand exact equality against the stored request, so it refused every stored
-page the moment ``DOCUMENT_FIELDS`` changed -- including pages recorded under
-the field list still in force today. These tests pin the replacement: the
-field list a stored request declares is parsed from the request itself and
-checked against ``ACCEPTED_DOCUMENT_FIELD_SETS``, a small table of field sets
-this project has accepted, keyed by the acquisition policy version each was
-minted under.
-"""
+"""Current Federal Register requests preserve exact fields and refuse query drift."""
 
 from __future__ import annotations
 
 from datetime import date
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import pytest
 
-import spicy_docs.sources.federal_register.native as federal_register
 from spicy_docs.sources.federal_register.native import (
-    ACCEPTED_DOCUMENT_FIELD_SETS,
-    DOCUMENT_FIELDS,
     FederalRegisterSourceError,
     federal_register_documents_url,
     federal_register_request_window,
@@ -29,156 +15,118 @@ from spicy_docs.sources.federal_register.native import (
 
 QUERY_SCOPE = {"publishedFrom": "2026-08-25", "publishedThrough": "2026-08-25"}
 EXPECTED_WINDOW = (date(2026, 8, 25), date(2026, 8, 25))
+# Independent exact bytes preserve all 22 current fields, their order and encoding.
+CURRENT_REQUEST = (
+    "https://www.federalregister.gov/api/v1/documents.json?per_page=1000&order=newest"
+    "&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-25"
+    "&conditions%5Bpublication_date%5D%5Blte%5D=2026-08-25"
+    "&fields%5B%5D=abstract&fields%5B%5D=agencies&fields%5B%5D=agency_names"
+    "&fields%5B%5D=body_html_url&fields%5B%5D=cfr_references&fields%5B%5D=comments_close_on"
+    "&fields%5B%5D=docket_ids&fields%5B%5D=document_number&fields%5B%5D=effective_on"
+    "&fields%5B%5D=end_page&fields%5B%5D=executive_order_number&fields%5B%5D=html_url"
+    "&fields%5B%5D=pdf_url&fields%5B%5D=publication_date&fields%5B%5D=regulation_id_numbers"
+    "&fields%5B%5D=signing_date&fields%5B%5D=start_page&fields%5B%5D=subtype"
+    "&fields%5B%5D=title&fields%5B%5D=topics&fields%5B%5D=type&fields%5B%5D=volume"
+)
 
 
-def test_a_request_carrying_the_current_field_list_replays() -> None:
-    stored_request = federal_register_documents_url(QUERY_SCOPE)
-
-    assert federal_register_request_window(stored_request) == EXPECTED_WINDOW
-
-
-def test_a_request_carrying_an_unknown_field_set_is_refused_and_names_the_drift() -> None:
-    drifted_fields = frozenset(DOCUMENT_FIELDS) - {"topics"}
-    assert drifted_fields not in ACCEPTED_DOCUMENT_FIELD_SETS.values()
-    stored_request = federal_register_documents_url(QUERY_SCOPE, fields=drifted_fields)
-
-    with pytest.raises(FederalRegisterSourceError, match="field set"):
-        federal_register_request_window(stored_request)
+def _request(pairs: list[tuple[str, str]]) -> str:
+    parts = urlsplit(CURRENT_REQUEST)
+    return urlunsplit(parts._replace(query=urlencode(pairs)))
 
 
-def test_a_hypothetical_future_accepted_field_set_also_replays(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The mechanism generalises: any table entry -- not just today's -- replays.
-
-    This is the property SD-20 exists for: on a real rebuild, evidence
-    acquired under the current policy and evidence acquired under a future
-    policy (once one is added to the table) must both replay untouched.
-    ``correction_of`` was deferred out and never became a table entry (DocSpec
-    0003), so the table holds only "1.0" and the addition here is hypothetical
-    against a table of one. Keep it a field the schema genuinely does not
-    carry.
-    """
-
-    future_fields = frozenset(DOCUMENT_FIELDS | {"some_future_field"})
-    monkeypatch.setattr(
-        federal_register,
-        "ACCEPTED_DOCUMENT_FIELD_SETS",
-        {**ACCEPTED_DOCUMENT_FIELD_SETS, "2.0": future_fields},
-    )
-    stored_request = federal_register_documents_url(QUERY_SCOPE, fields=future_fields)
-
-    assert federal_register_request_window(stored_request) == EXPECTED_WINDOW
+def test_current_request_preserves_exact_bytes_and_round_trips() -> None:
+    assert federal_register_documents_url(QUERY_SCOPE) == CURRENT_REQUEST
+    assert federal_register_request_window(CURRENT_REQUEST) == EXPECTED_WINDOW
 
 
-def test_a_request_carrying_the_1_0_field_set_still_replays() -> None:
-    """SD-24: 1.0 evidence must replay exactly, which is what the rebuild did.
-
-    This docstring claimed correction_of joins the requested fields as 1.1. It
-    was deferred out and never landed, so "1.0" is not a historical entry being
-    kept alive beside a newer one -- it is the only entry, and the property
-    under test is that replay reads the field list from the evidence rather
-    than from today's constant.
-    """
-
-    stored_request = federal_register_documents_url(QUERY_SCOPE, fields=ACCEPTED_DOCUMENT_FIELD_SETS["1.0"])
-
-    assert federal_register_request_window(stored_request) == EXPECTED_WINDOW
+@pytest.mark.parametrize("per_page", [1, 500, 1000])
+def test_current_fields_round_trip_with_supported_page_sizes(per_page: int) -> None:
+    request = federal_register_documents_url(QUERY_SCOPE, per_page=per_page)
+    assert request == CURRENT_REQUEST.replace("per_page=1000", f"per_page={per_page}")
+    assert federal_register_request_window(request) == EXPECTED_WINDOW
 
 
-def test_documents_url_with_explicit_fields_round_trips_through_the_window_parser() -> None:
-    explicit_request = federal_register_documents_url(QUERY_SCOPE, fields=DOCUMENT_FIELDS)
-    default_request = federal_register_documents_url(QUERY_SCOPE)
-
-    assert explicit_request == default_request
-    assert federal_register_request_window(explicit_request) == EXPECTED_WINDOW
-
-
-def test_existing_callers_with_no_fields_argument_are_unchanged() -> None:
-    assert federal_register_documents_url(QUERY_SCOPE) == federal_register_documents_url(
-        QUERY_SCOPE, fields=DOCUMENT_FIELDS
-    )
-    assert federal_register_documents_url(QUERY_SCOPE, per_page=500) == federal_register_documents_url(
-        QUERY_SCOPE, per_page=500, fields=DOCUMENT_FIELDS
-    )
+@pytest.mark.parametrize("change", ["missing", "added"])
+def test_changed_document_field_set_is_refused(change: str) -> None:
+    pairs = parse_qsl(urlsplit(CURRENT_REQUEST).query)
+    if change == "missing":
+        pairs.remove(("fields[]", "topics"))
+    else:
+        pairs.append(("fields[]", "some_future_field"))
+    with pytest.raises(FederalRegisterSourceError, match="field set differs from current fields"):
+        federal_register_request_window(_request(pairs))
 
 
-def test_the_1_0_field_set_is_frozen_and_never_follows_the_current_constant() -> None:
-    """The historical entry must be a literal, not an alias of the live constant.
-
-    The first draft of this table wrote ``{"1.0": DOCUMENT_FIELDS}``, which made
-    the 1.0 entry a reference to whatever the current constant holds. Adding
-    ``correction_of`` would then have silently rewritten the 1.0 entry to the
-    23-field set and refused every stored 22-field page -- reintroducing exactly
-    the defect this table exists to fix, under the table's own new error message.
-
-    Spelling the expected members out here is the guard: editing the 1.0 literal
-    fails this test, which is what should happen, because a published release was
-    recorded under it.
-    """
-
-    assert ACCEPTED_DOCUMENT_FIELD_SETS["1.0"] == frozenset(
-        {
-            "abstract",
-            "agencies",
-            "agency_names",
-            "body_html_url",
-            "cfr_references",
-            "comments_close_on",
-            "docket_ids",
-            "document_number",
-            "effective_on",
-            "end_page",
-            "executive_order_number",
-            "html_url",
-            "pdf_url",
-            "publication_date",
-            "regulation_id_numbers",
-            "signing_date",
-            "start_page",
-            "subtype",
-            "title",
-            "topics",
-            "type",
-            "volume",
-        }
-    )
-    assert "correction_of" not in ACCEPTED_DOCUMENT_FIELD_SETS["1.0"]
+@pytest.mark.parametrize(
+    "change",
+    ["duplicate-field", "reordered-fields", "reordered-query", "alternate-encoding"],
+)
+def test_equivalent_but_noncanonical_requests_are_refused(change: str) -> None:
+    pairs = parse_qsl(urlsplit(CURRENT_REQUEST).query)
+    if change == "duplicate-field":
+        pairs.append(("fields[]", "topics"))
+    elif change == "reordered-fields":
+        pairs[-1], pairs[-2] = pairs[-2], pairs[-1]
+    elif change == "reordered-query":
+        pairs[0], pairs[1] = pairs[1], pairs[0]
+    request = _request(pairs)
+    if change == "alternate-encoding":
+        request = request.replace("fields%5B%5D", "fields[]")
+    with pytest.raises(FederalRegisterSourceError, match="not canonical"):
+        federal_register_request_window(request)
 
 
-def test_the_current_field_set_is_always_one_the_replay_path_accepts() -> None:
-    """A field addition that forgets a table entry must fail here, not at rebuild.
-
-    Without this, adding a field to ``DOCUMENT_FIELDS`` without adding the
-    matching accepted set would leave the acquirer requesting fields the replay
-    path refuses -- discovered only when a rebuild of retained evidence fails.
-    """
-
-    assert DOCUMENT_FIELDS in ACCEPTED_DOCUMENT_FIELD_SETS.values()
-
-
-def test_the_current_field_set_is_one_the_replay_path_accepts_by_key() -> None:
-    """The field-set version and the acquisition policy version are separate sequences.
-
-    This test used to assert they are equal. That was wrong, and the composite
-    identity change proved it: the acquisition policy moved 1.0 -> 1.1 because
-    `source_record_id` became (document_number, publication_date), while the
-    requested fields did not change at all. Tying the two together would force a
-    meaningless field-set entry every time the policy moves for any other
-    reason, and each such entry would be a second literal holding the same 22
-    fields -- exactly the duplication the table exists to avoid.
-
-    What must hold is weaker and true: the key the acquirer requests under names
-    a set the replay path accepts.
-    """
-
-    assert federal_register._CURRENT_FIELD_POLICY in ACCEPTED_DOCUMENT_FIELD_SETS
-    assert ACCEPTED_DOCUMENT_FIELD_SETS[federal_register._CURRENT_FIELD_POLICY] is DOCUMENT_FIELDS
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("per_page", "0"),
+        ("per_page", "1001"),
+        ("per_page", "1.5"),
+        ("per_page", "0500"),
+        ("order", "oldest"),
+        ("conditions[publication_date][gte]", "not-a-date"),
+        ("conditions[publication_date][gte]", "2026-08-26"),
+    ],
+)
+def test_query_value_drift_is_refused(key: str, value: str) -> None:
+    pairs = [
+        (name, value if name == key else existing) for name, existing in parse_qsl(urlsplit(CURRENT_REQUEST).query)
+    ]
+    with pytest.raises(FederalRegisterSourceError):
+        federal_register_request_window(_request(pairs))
 
 
-def test_no_two_accepted_field_sets_are_the_same_object() -> None:
-    """Aliasing at any version, not just the one the spelled-out test pins.
+@pytest.mark.parametrize("key", ["per_page", "order", "conditions[publication_date][gte]"])
+def test_repeated_singleton_query_fields_are_refused(key: str) -> None:
+    pairs = parse_qsl(urlsplit(CURRENT_REQUEST).query)
+    pairs.append(next(pair for pair in pairs if pair[0] == key))
+    with pytest.raises(FederalRegisterSourceError):
+        federal_register_request_window(_request(pairs))
 
-    Catches the recurrence: a future entry written as ``{"1.1": DOCUMENT_FIELDS}``
-    passes every other test here until the 1.2 addition silently rewrites it.
-    """
 
-    assert len({id(value) for value in ACCEPTED_DOCUMENT_FIELD_SETS.values()}) == len(ACCEPTED_DOCUMENT_FIELD_SETS)
+@pytest.mark.parametrize("change", ["missing-per-page", "extra-page"])
+def test_missing_and_additional_query_fields_are_refused(change: str) -> None:
+    pairs = parse_qsl(urlsplit(CURRENT_REQUEST).query)
+    if change == "missing-per-page":
+        pairs = [pair for pair in pairs if pair[0] != "per_page"]
+    else:
+        pairs.append(("page", "1"))
+    with pytest.raises(FederalRegisterSourceError, match="request fields differ"):
+        federal_register_request_window(_request(pairs))
+
+
+@pytest.mark.parametrize(
+    "request_url",
+    [
+        CURRENT_REQUEST.replace("https://", "http://"),
+        CURRENT_REQUEST.replace("www.federalregister.gov", "example.test"),
+        CURRENT_REQUEST.replace("www.federalregister.gov", "www.federalregister.gov:443"),
+        CURRENT_REQUEST.replace("www.federalregister.gov", "user@www.federalregister.gov"),
+        CURRENT_REQUEST.replace("documents.json", "documents"),
+        CURRENT_REQUEST + "#fragment",
+    ],
+)
+def test_window_request_requires_the_canonical_source_url(request_url: str) -> None:
+    with pytest.raises(FederalRegisterSourceError, match="URL is invalid"):
+        federal_register_request_window(request_url)

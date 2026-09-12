@@ -129,6 +129,17 @@ def test_latest_dump_date_and_find_dump_pick_one_published_object():
 # -- streaming reader --------------------------------------------------------
 
 
+def test_reader_tracking_defaults_are_owned_by_each_instance():
+    first = CourtListenerBulkReader("courts")
+    second = CourtListenerBulkReader("opinions")
+
+    first.last_keys.append("captured-key")
+    first.failed_keys.append("failed-key")
+
+    assert second.last_keys == []
+    assert second.failed_keys == []
+
+
 def test_reader_streams_rows_and_normalizes_blanks(tmp_path: Path):
     path = _csv_bz2(
         tmp_path,

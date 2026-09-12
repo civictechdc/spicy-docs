@@ -39,6 +39,7 @@ import urllib.request
 from collections.abc import Callable, Iterator
 from datetime import date
 from pathlib import Path
+from typing import Protocol, TypedDict
 
 from loguru import logger
 
@@ -65,6 +66,12 @@ _PROGRESS_EVERY = 50_000
 #: far past the stdlib default. Raise once, at import, to the platform maximum.
 csv.field_size_limit(sys.maxsize)
 
+
+class _CsvDialect(TypedDict):
+    escapechar: str
+    doublequote: bool
+
+
 #: The dumps escape an embedded quote as ``\"``, not as the doubled ``""`` the
 #: stdlib assumes. Reading them with the default dialect does not fail — it
 #: *desyncs*: the reader treats the escaped quote as the end of the field, and
@@ -74,7 +81,7 @@ csv.field_size_limit(sys.maxsize)
 #: would have quietly destroyed the join this whole ingest exists to make. With
 #: ``escapechar`` set, the same 3,000 rows parse clean and every one keeps its
 #: docket. ``doublequote`` stays True so a literal ``""`` empty field still reads.
-CSV_DIALECT: dict[str, object] = {"escapechar": "\\", "doublequote": True}
+CSV_DIALECT: _CsvDialect = {"escapechar": "\\", "doublequote": True}
 
 
 def _request(url: str, *, extra_headers: dict[str, str] | None = None):
@@ -216,6 +223,12 @@ class _UnrangeableResume(RuntimeError):
     """A resume the server answered with a whole new stream instead of a range."""
 
 
+class _BinarySource(Protocol):
+    def read(self, size: int, /) -> bytes: ...
+
+    def close(self) -> None: ...
+
+
 class _CountingStream(io.RawIOBase):
     """Adapt an HTTP response to a readable stream, decompressing bzip2 inline.
 
@@ -242,10 +255,10 @@ class _CountingStream(io.RawIOBase):
 
     def __init__(
         self,
-        response,
+        response: _BinarySource,
         *,
         max_compressed_bytes: int | None = None,
-        reopen: Callable[[int], object] | None = None,
+        reopen: Callable[[int], _BinarySource] | None = None,
     ) -> None:
         self._response = response
         self._reopen = reopen
@@ -374,6 +387,7 @@ class CourtListenerBulkReader(Reader):
         max_compressed_bytes: int | None = None,
         row_filter: Callable[[dict], bool] | None = None,
     ) -> None:
+        super().__init__()
         self.dataset = dataset
         self.dump_date = dump_date
         self.local_file = local_file
@@ -409,10 +423,7 @@ class CourtListenerBulkReader(Reader):
         handle, response = self._stream()
         try:
             if response is None:
-                raw: io.BufferedIOBase = io.BufferedReader(
-                    _LocalBz2Stream(handle, max_compressed_bytes=self.max_compressed_bytes)
-                )
-                counter = raw.raw  # type: ignore[assignment]
+                counter = _CountingStream(handle, max_compressed_bytes=self.max_compressed_bytes)
             else:
                 url = self.source_url
                 counter = _CountingStream(
@@ -420,9 +431,9 @@ class CourtListenerBulkReader(Reader):
                     max_compressed_bytes=self.max_compressed_bytes,
                     reopen=lambda offset: _open(str(url), extra_headers={"Range": f"bytes={offset}-"}),
                 )
-                raw = io.BufferedReader(counter)  # type: ignore[arg-type]
+            raw = io.BufferedReader(counter)
             text = io.TextIOWrapper(raw, encoding="utf-8", errors="replace", newline="")
-            for row in csv.DictReader(text, **CSV_DIALECT):  # type: ignore[arg-type]
+            for row in csv.DictReader(text, **CSV_DIALECT):
                 self.rows_scanned += 1
                 if self.rows_scanned % _PROGRESS_EVERY == 0:
                     logger.info(
@@ -455,10 +466,3 @@ class CourtListenerBulkReader(Reader):
             self.compressed_bytes / 2**30,
             self.resumes,
         )
-
-
-class _LocalBz2Stream(_CountingStream):
-    """``_CountingStream`` over an open local file rather than an HTTP response."""
-
-    def __init__(self, handle, *, max_compressed_bytes: int | None = None) -> None:
-        super().__init__(handle, max_compressed_bytes=max_compressed_bytes)

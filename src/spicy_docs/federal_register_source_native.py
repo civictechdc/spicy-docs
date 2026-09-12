@@ -1,7 +1,6 @@
 """Current Federal Register API; source implementation lives with its profile."""
 
 from spicy_docs.sources.federal_register.native import (
-    ACCEPTED_DOCUMENT_FIELD_SETS,
     API_RESPONSE_FIELDS,
     DOCUMENT_FIELDS,
     FEDERAL_REGISTER_DOCUMENT_SCHEMA,
@@ -43,7 +42,6 @@ from spicy_docs.sources.federal_register.native import (
 )
 
 __all__ = [
-    "ACCEPTED_DOCUMENT_FIELD_SETS",
     "API_RESPONSE_FIELDS",
     "DOCUMENT_FIELDS",
     "FEDERAL_REGISTER_DOCUMENTS_URL",

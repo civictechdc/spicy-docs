@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from collections.abc import Callable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Generator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from functools import cache, partial
@@ -783,7 +783,7 @@ def iter_spicy_regs_public_comment_pages(
     fetch: PublicTableFetch,
     *,
     query_scope: Mapping[str, Any],
-) -> Iterator[PublicTablePartitionPage]:
+) -> Generator[PublicTablePartitionPage, None, None]:
     """Probe contiguous parts for each requested agency and capture whole objects."""
 
     scope = spicy_regs_public_comment_query_scope(query_scope)

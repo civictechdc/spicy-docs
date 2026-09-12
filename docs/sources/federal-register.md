@@ -46,11 +46,14 @@ does not download those bodies or attest to their bytes. The
 [body-source guide](../federal-register-body-sources.md) explains later route
 selection.
 
-Acquisition policy `1.2` and requested-field policy `1.0` serve different jobs.
-The deferred `correction_of` field is still outside the accepted field set.
-The public-table projection also uses compound identity; see
+Acquisition policy `1.1` introduced compound identity; current policy `1.2`
+also records the coverage limits of stable observed crawls. Both changes kept
+the same 22 current `DOCUMENT_FIELDS`. Request construction and replay require
+that single field set and the canonical URL. `correction_of` was deferred and
+never added to the fields or source schema. The public-table projection also
+uses compound identity; see
 [the decisions](../decisions.md#federal-register-identity-and-fields-version-separately)
-before changing either policy.
+before changing source identity or requested fields.
 
 You can stop after publishing and inspecting these metadata records. Read them
 through `SourceNativeReleaseReader`, export the supported Federal Register
