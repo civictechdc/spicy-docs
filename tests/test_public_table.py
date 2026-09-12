@@ -648,21 +648,11 @@ _HTTPFS_TIMEOUT_SECONDS = 30
 
 @contextmanager
 def _skip_if_it_hangs(reason: str) -> Iterator[None]:
-    """Bound a test that can stall instead of failing.
+    """Skip after a bounded wait when DuckDB's local HTTP test stalls.
 
-    DuckDB's httpfs client stalls against a local ThreadingHTTPServer when the
-    server and query run inside a function scope -- an equivalent top-level
-    script with the identical request/response pattern completes in
-    milliseconds. Two fixes were tried (``protocol_version="HTTP/1.1"``, which
-    made the hang unbounded rather than bounded, and ``SET threads=1``);
-    neither helped and both were reverted, so the test's own logic is
-    unchanged and this reads as an environment quirk rather than a defect in
-    the code under test.
-
-    A hang is worse than either outcome: it blocks the whole suite for
-    everyone, including the next full-suite gate. This bounds it and skips,
-    so the test stays visible in the skip summary instead of stalling a run
-    or being quietly deleted.
+    httpfs can hang against a function-scoped ThreadingHTTPServer even when the same
+    exchange succeeds in a top-level script. A skip exposes this environment limit
+    without blocking the suite.
     """
 
     if not hasattr(signal, "SIGALRM"):  # pragma: no cover - platform guard

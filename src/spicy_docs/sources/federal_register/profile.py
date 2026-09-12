@@ -66,16 +66,9 @@ FEDERAL_REGISTER_PROFILE: Final = SourceNativeProfile(
     records_included=federal_register.federal_register_records_included,
     acquisition_check=federal_register.FederalRegisterAcquisitionCheck,
     page_window=federal_register.federal_register_request_window,
-    # document_number is reused across unrelated documents: 00-111 resolves to
-    # a 2000-01-18 "Notice of Filing of Plat of an Island; Minnesota" and also
-    # discovers an older 2000-01-14 "Compliance Monitoring..." rule filed under
-    # the same number. Identity is composite (the composite-identity decision,
-    # 2026-09-04): document_number and publication_date together, so the two
-    # 00-111 documents are distinct records and neither evicts the other.
-    # observation_version still returns publication_date, but that value is
-    # now part of the identity rather than a tiebreak across it -- it can
-    # only ever agree within one identity, so it settles a residual repeat of
-    # one (document_number, publication_date) pair, not a cross-date choice.
+    # Pair number and date because unrelated documents can reuse a number.
+    # observation_version returns the date too, so it agrees within an identity;
+    # it only participates in resolving repeated observations of that same pair.
     observation_version=federal_register.federal_register_observation_version,
     # A repeat of one (document_number, publication_date) identity still
     # refuses unless every observed record shares a canonical digest.

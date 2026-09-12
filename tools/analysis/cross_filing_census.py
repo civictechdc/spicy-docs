@@ -1,42 +1,20 @@
 #!/usr/bin/env python3
-"""Census cross-filed regulations.gov records in one pass over the release list.
+"""Count duplicate identities and cross-filings in source-native releases.
 
-SD-16: consolidates six throwaway session scripts that each made a *separate*
-~1.94M-record pass over the same releases, all keyed on the source's own
-``objectId``: duplicate document ids sharing one objectId, whether the copies
-agree in content, genuine co-issued rules vs. component/parent catch-all-docket
-pairs, the letters segment in some document ids, and same-agency id repeats.
+One pass reads input records through SourceNativeReleaseReader.iter_records().
+Every count names its population; catalog item counts may differ after catalog
+selection or transformation. Each run filters to one profile, reported as
+scope.profileConsidered.
 
-SD-17: a receipt claimed a regulations-gov-dockets duplicate-identity count
-measured once by a throwaway script whose output existed only in a chat log --
-unre-derivable with any committed tool. ``--profile dockets`` runs the same
-duplicate-identity question (which sourceRecordIds appear in more than one
-release, and which objectIds carry more than one sourceRecordId) over the
-regulations-gov-dockets selector, so that count becomes re-derivable too. Two
-analyses stay document-only because they are not analogous, not narrower
-versions of the same question: the id-grammar letters-segment census keys on
-the document-id shape ``<docket>-<docSeq>-<LETTERS>-<docSeq>``, which docket
-ids (identical to the docket itself, e.g. ``EPA-2020-0001``) never carry; and
-the co-issued-vs-parent/component split reads a document's own ``docketId``
-attribute to tell a record's identity apart from the docket it belongs to --
-dockets have no such attribute, because a docket record's id *is* the docket.
-The ``suspects`` narrowing (``frDocNum``/``pageCount`` disagreement) is the
-same story: neither field exists on a docket record. All three appear in the
-dockets report as a ``*NotApplicable`` sibling naming why, rather than being
-silently dropped or forced onto a shape they do not fit. Content comparison
-still runs for dockets, on the nearest available fields: see
-``DOCKET_IDENTITY_FIELDS``.
+Both --profile documents and --profile dockets compare repeated sourceRecordIds,
+shared objectIds, and content agreement. Document-only analyses report explicit
+*NotApplicable reasons for dockets:
+- Letters segments require the document-id shape <docket>-<docSeq>-<LETTERS>-<docSeq>.
+- Co-issued versus parent/component classification requires a docketId attribute;
+  a docket's own id already identifies its docket.
+- Suspect narrowing requires frDocNum or pageCount, absent from docket records.
 
-Every count below states its own population as a sibling field -- one of the
-six original scripts' outputs was misread as a rate over the whole corpus when
-it was a rate over a filtered subset, and that error nearly reached a
-decision-maker. All counts are over input RECORDS read via
-``SourceNativeReleaseReader.iter_records()``, not built catalog items: a
-catalog build's dispositions can drop or transform records, so these numbers
-will not equal catalog item counts. One run scans exactly one profile (the
-release list is filtered to it before anything else runs) and the report's
-``scope.profileConsidered`` names it, so a report never blends counts from a
-selector it did not scan.
+Docket content comparison uses DOCKET_IDENTITY_FIELDS.
 """
 
 from __future__ import annotations

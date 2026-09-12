@@ -119,16 +119,11 @@ def _record_date(value: object, label: str) -> date:
 
 
 def _optional_record_date(value: object, label: str) -> date | None:
-    """Return the parsed date, or ``None`` when the field is unusable for date scope.
+    """Return the document's date, or None when postedDate cannot define date scope.
 
-    An explicit source null (2026-09-02: three FMCSA documents publish
-    ``postedDate: null``, e.g. FMCSA-2007-0006-0015) and a present value that
-    fails canonical-date parsing (2026-09-02: the FAA full-history publish,
-    205,696 documents, surfaced a malformed non-null ``postedDate`` that
-    aborted the whole agency nine minutes in) are both undatable, not
-    corrupt: this is the sole caller of ``_record_date`` for the document
-    postedDate that gates date scope, so relaxing it here does not loosen
-    docket ``modifyDate`` or comment ``postedDate``, which still refuse.
+    FMCSA records supply null postedDate; FAA records also supply malformed values.
+    Treat both as undatable while preserving the source value. Docket modifyDate
+    and comment postedDate still use strict parsing and refuse malformed values.
     """
 
     if value is None:
@@ -139,10 +134,7 @@ def _optional_record_date(value: object, label: str) -> date | None:
         return None
 
 
-# Label and instant fields per collection. Documents fall back to postedDate,
-# their only other date-stamped field, when modifyDate is null (2026-09-02: the
-# ACF-2007-0125 docket collapse extends to documents and dockets). Both may be
-# null, and the collapse tolerates a null instant.
+# Documents can fall back to postedDate. Null instants remain valid observations.
 _OBSERVATION_INSTANTS: Final = {
     COMMENT_COLLECTION: ("comment", ("modifyDate",)),
     DOCKET_COLLECTION: ("docket", ("modifyDate",)),
@@ -151,17 +143,11 @@ _OBSERVATION_INSTANTS: Final = {
 
 
 def source_issued_version(record: Mapping[str, Any], *, collection: str) -> str | None:
-    """Return the exact source instant that orders one record's public observations.
+    """Return the exact source instant used to order observations, or None.
 
-    Null is a valid public observation. This is acquisition meaning shared by
-    every Regulations.gov collection (spec 2026-08-25 §4, 2026-09-02
-    amendment): comments and dockets order by ``modifyDate``; documents fall
-    back to ``postedDate`` when ``modifyDate`` is null. A document
-    ``postedDate`` that is present but unparseable is treated the same as a
-    null one and skipped rather than refused (2026-09-02: the FAA
-    full-history publish), since §3 already puts that document outside every
-    date scope; ``modifyDate`` — for documents and every other collection —
-    still refuses a malformed value.
+    Comments and dockets use modifyDate. Documents fall back to postedDate when
+    modifyDate is null; an unusable postedDate supplies no instant and places the
+    document outside date scope. Malformed modifyDate refuses for every collection.
     """
 
     if collection not in _OBSERVATION_INSTANTS:

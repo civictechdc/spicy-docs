@@ -1,46 +1,20 @@
-"""Documented column domains, and the drift between them and what we observe.
+"""Compare published column values with pinned publisher documentation.
 
-A *source domain* is a controlled value list that a publisher documents for one
-column of one published table: regulations.gov's ``documentType`` enum, the
-Unified Agenda's ``RULE_STAGE`` list, and so on. This module holds the
-publisher's half of that claim and the machinery to hold our own data to it.
+A source domain is a publisher's documented value list for one column. Values
+are parsed from exact captures in sample-data/source-domains/, whose manifest
+pins the digest, size, URL, and observation time. Re-pinning exposes changes.
 
-Why it exists. The published tables are pass-through — ``build_federal_register``
-and ``build_unified_agenda`` copy the publisher's strings verbatim — so the values
-in a column *are* whatever the publisher emitted, and nothing until now compared
-that against what the publisher said it would emit. The two directions differ in
-what they mean:
+Drift has two directions:
+- Undocumented: observed values missing from the publisher's list.
+- Unobserved: listed values absent from this snapshot, possibly because its
+  scope is bounded or the publisher retired a value.
 
-* an **undocumented** value (observed, not documented) says the documented
-  enumeration is incomplete. A consumer that switches on the documented list
-  silently mishandles those rows.
-* an **unobserved** value (documented, not observed) says either the snapshot is
-  bounded — the Unified Agenda snapshot holds one semiannual edition, and no
-  edition need exercise every documented value — or the publisher retired a
-  value without saying so.
+ACCEPTED_DOMAIN_FINDINGS records a reason for each accepted difference. New
+findings and accepted findings that disappear both fail the check.
 
-Neither is automatically an error, and neither is automatically fine. Both are
-therefore carried in :data:`ACCEPTED_DOMAIN_FINDINGS`, a closed ledger: every
-finding needs a recorded reason, and a ledger entry that stops being observed
-fails just as loudly as an unrecorded finding does. That is what keeps the ledger
-from becoming a place where drift goes to be forgotten.
-
-The documented half is not transcribed. Both publisher documents are checked in
-under ``sample-data/source-domains/`` as exact bytes, bound to their SHA-256
-digest, byte length, publisher URL and observation time by
-``documented-enumeration-capture-manifest-v1.json``, and every documented value
-is *parsed out of those bytes* on each run. A hand-typed list would rot silently;
-a parse against pinned bytes cannot, and re-pinning a fresh capture makes any
-change to the publisher's own enumeration show up as a test failure.
-
-Note what the reginfo.gov XSD does *not* do: it declares every one of these
-elements as an unrestricted ``xs:string`` and states the controlled list only in
-an ``xs:documentation`` sentence. There is no ``xs:enumeration`` anywhere in the
-file. So the "documented" domain for the Unified Agenda is publisher prose read
-by a parser that refuses any sentence it does not recognise.
-
-Parsers here are pure: bytes in, values out, no network and no I/O beyond the
-manifest and snapshot reads.
+The reginfo.gov XSD uses unrestricted xs:string fields. Its lists appear in
+xs:documentation prose, so the parser refuses unrecognized wording. Parsing is
+offline; I/O is limited to the manifest, captures, and observed snapshot.
 """
 
 from __future__ import annotations
@@ -281,21 +255,12 @@ class _DomainDeclaration:
     expected_raw_options: int
 
 
-# Six columns: every published column for which a pinned publisher document
-# states a closed value list. Two deliberate absences, so the set is a decision
-# rather than an accident:
-#
-# * ``submitterType`` (OpenAPI L905-911) governs ``comments.category``, and the
-#   published-table snapshot the observed half is drawn from carries no comments
-#   table. A documented domain with nothing to observe is not a check.
-# * ``TTBL_ACTION`` (XSD L441-448) documents 34 timetable actions, but the same
-#   snapshot's ``timetable_json`` holds 1,139 distinct actions over 10,533
-#   entries. The publisher's own data treats that field as free text, so a gate
-#   against its list would report a thousand findings and gate nothing.
-#
-# ``federal_register.document_type`` is absent for a different reason: no pinned
-# publisher document states its list. The FR API documentation page is not
-# captured here, and a domain nobody published is not a documented domain.
+# Check columns with both a pinned value list and an observed population.
+# Exclusions:
+# - submitterType (OpenAPI L905-911): the snapshot has no comments table.
+# - TTBL_ACTION (XSD L441-448): observed timetable actions behave as free text,
+#   so the documented list is unsuitable for this gate.
+# - federal_register.document_type: no publisher list is pinned here.
 _DECLARATIONS: tuple[_DomainDeclaration, ...] = (
     _DomainDeclaration(
         key="regulations-gov-document-type",

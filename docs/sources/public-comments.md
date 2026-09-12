@@ -1,98 +1,73 @@
 # Captured public comments
 
-This profile captures whole named agency partitions from the community
-spicy-regs comment table. It retains the exact Parquet bytes before reconstructing
-logical rows. This is an input source for source-native releases; the
-[public-table commands](../cli.md#publish-public-table) separately produce flat
-tables from admitted releases.
+Capture whole named agency partitions from the community spicy-regs comment
+table, retaining exact Parquet before reconstructing rows. This input profile
+has no separate public-table export; the original parts stay in its evidence.
+[Public-table commands](../cli.md#publish-public-table) export other admitted
+source releases.
 
-Install `public-table` to parse captured Parquet or run full source replay, and
-add `acquisition` for the default HTTP fetcher. Reading already admitted source
-records and their evidence needs only the core package. See
-[installation choices](../installation.md).
+Install `public-table` for captured Parquet parsing/full replay and `acquisition`
+for default HTTP fetching. Admitted record/evidence reading needs only core.
+See [installation](../installation.md).
 
 ## Scope and evidence
 
-The Python query contains exactly `table: "comments"` and a sorted, distinct
-list of agencies. The [CLI](../cli.md#publish) accepts repeated `--agency`
-values and canonicalizes their order. Dates are invalid: filtering rows while
-claiming whole-partition capture would change the meaning of the input pin.
+The query requires exactly `table: "comments"` and sorted, distinct agencies.
+The [CLI](../cli.md#publish) canonicalizes repeated `--agency` values. Dates are
+invalid because this capture pins whole partitions.
 
-For each agency, acquisition starts with `part-0.parquet`. One-part look-ahead
-marks the preceding partition terminal when the next part is missing. This
-assumes the publisher names partitions contiguously: discovery stops at the
-first missing part and does not search for later upstream objects. If part 0
-exists, part 1 is missing, and part 2 exists, acquisition captures part 0 and
-never requests part 2. It makes no claim about part 2's existence. A missing
-first part or exhausted 64-part probe bound refuses the run. Gaps within the
-retained sequence, repeated locators, wrong agencies, and extra partitions after
-a terminal marker in retained evidence also refuse verification.
+- Acquisition starts at `part-0.parquet`. One-part look-ahead marks the preceding
+  part terminal when the next is missing; discovery then stops.
+- Names are assumed contiguous. If part 1 is missing, part 2 is unrequested even
+  if it exists. The capture makes no claim about later parts.
+- A missing first part or exhausted 64-part probe bound refuses acquisition.
+  Request failures never become empty parts or terminal markers.
+- A present zero-row part is evidence and may produce an observed-empty release.
+  A missing first part leaves the agency unresolved, not absent.
+- Replay refuses gaps, repeated locators, wrong agencies, and extra parts after
+  a terminal marker. Missing-part HTTP responses are not retained: replay checks
+  captured bytes and the declared sequence, not why live discovery stopped.
 
-A present Parquet partition with zero rows remains evidence and can produce an
-observed-empty release. A missing first part leaves that agency unresolved;
-it does not establish that the agency has no comments. Request failures abort
-collection rather than becoming empty partitions or terminal markers.
+Each ZIP binds the Parquet bytes to URL, fetch time, stated freshness, size, and
+digest. Replay checks the ZIP/manifest, object hash, physical column order, and
+row types. The Hive path supplies `agency_code`: the file has 15 columns, and the
+logical row has 16, preserving nulls. See the
+[closed schema](../../src/spicy_docs/schemas/spicy_regs_public_tables.py).
 
-Each ZIP binds the exact Parquet object to its URL, fetch time, stated freshness,
-byte size, and digest. Replay validates the manifest and ZIP, hashes the object,
-and checks the physical column order and row types. The Hive path supplies
-`agency_code`; the other values come directly from the file. The logical row
-therefore contains the publisher's 16 columns, including nulls, while the file
-contains 15. The closed schema and projection live in
-[`schemas/spicy_regs_public_tables.py`](../../src/spicy_docs/schemas/spicy_regs_public_tables.py).
-
-Acquisition policy `1.1` declares `observed-crawl`, accepted as one
-`single-observed-traversal`. Its `observed-contiguous-part-probing` strategy
-states the contiguous-name assumption in the policy itself. The capture pins
-the observed partition bytes; it does not prove complete upstream membership,
-all agencies, historical versions, or a single publisher-wide instant.
-
-The terminal marker records the acquirer's stopping decision. The missing-part
-HTTP response is not retained, so replay checks the declared captured sequence
-and its bytes, rather than proving why the live scan stopped. The
-[collection outcome](../source-native-outcomes.md) exposes the exact requested
-agencies and the digest-checked policy with these limits. Policy `1.0` releases
-are refused by the current profile; capture-pack and source-row shapes are
-unchanged.
-
-You can stop at the admitted source release and stream the captured comments
-through `SourceNativeReleaseReader`. This input profile has no separate
-public-table export command; the original Parquet parts are already retained
-inside its evidence. Listed attachment formats remain document candidates,
-not downloaded files. See [source workflows](../source-workflows.md).
+Policy `1.1` uses `observed-crawl`, `single-observed-traversal`, and
+`observed-contiguous-part-probing`. It pins observed parts, not all upstream
+members, agencies, historical versions, or one publisher-wide instant.
+[Outcomes](../source-native-outcomes.md) expose these digest-checked limits and
+requested agencies. Current readers refuse policy `1.0`; pack and row shapes
+remain unchanged.
 
 ## Selection and attachment diagnostics
 
-Identity is `comment_id`. The upstream public-table pipeline has already
-selected a current row using its declared `modify_date DESC NULLS LAST` rule.
-This profile preserves that date and reports upstream selection. It does not
-select again: a repeated comment identity refuses publication.
+Identity is `comment_id`. Upstream selected the current row with
+`modify_date DESC NULLS LAST`; this profile preserves that date and reports
+upstream selection. It refuses repeated identities instead of selecting again.
 
-The original `attachments_json` text always stays in the source record. A
-separate strict parse derives usable attachment locators. Malformed JSON,
-groups, or formats produce field diagnostics; unusable formats are omitted
-from the rendition index without losing the source text. Valid renditions
-retain declared size where available and infer a media type from the format
-or URL when needed. They carry no invented content digest.
+Original `attachments_json` always remains in the record. A separate strict
+parse derives attachment locators:
 
-Partition corruption, changed physical columns, wrong cell types, and identity
-failures remain fatal. Keep this distinction when improving diagnostics:
-malformed publisher-authored attachment text is a recordable observation;
-unproved partition membership is a failed acquisition.
+| Condition | Result |
+| --- | --- |
+| Malformed attachment JSON, groups, or formats | Field diagnostic; unusable formats omitted from renditions, source text retained |
+| Usable format | Locator, declared size when available, and media type supplied or inferred from format/URL; no invented content digest |
+| Partition corruption, changed columns, wrong cell types, or identity failure | Fatal refusal |
+
+Renditions describe candidates, not downloaded files. Stream captured records
+through `SourceNativeReleaseReader`; see [output choices](../source-workflows.md).
 
 ## Change and check
 
-Capture and replay live in
-[`sources/public_comments/native.py`](../../src/spicy_docs/sources/public_comments/native.py),
-with profile composition in
-[`sources/public_comments/profile.py`](../../src/spicy_docs/sources/public_comments/profile.py).
+Owners: [`native.py`](../../src/spicy_docs/sources/public_comments/native.py)
+and [`profile.py`](../../src/spicy_docs/sources/public_comments/profile.py).
 
 ```sh
 uv run --frozen pytest -q tests/test_spicy_regs_public_tables_source_native.py
 ```
 
-Check exact capture bytes, Hive agency insertion, missing terminal evidence,
-first-missing and gap probes, empty partitions, request failures, repeated
-identity, and malformed attachment diagnostics.
-The [supply decision](../decisions.md#community-supply-precedes-origin-acquisition)
-explains when this source takes precedence over origin acquisition.
+Cover exact bytes, Hive agency insertion, terminal evidence, first-missing and
+gap probes, empty parts, request failures, repeated identity, and attachment
+diagnostics. Follow the [community supply rule](../decisions.md#community-supply-precedes-origin-acquisition).

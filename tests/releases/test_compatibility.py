@@ -49,19 +49,10 @@ def test_installed_schema_bundle_is_the_exact_generated_bundle() -> None:
 
 
 def test_the_vendored_wheel_is_tracked_by_git() -> None:
-    """A bumped wheel that git ignores is invisible until someone clones.
+    """Verify a fresh checkout receives the pinned vendored wheel.
 
-    ``vendor/.gitignore`` ignores everything and re-admits exactly one wheel by
-    name, so bumping the vendored version silently requires moving that
-    allowlist line too. Miss it and ``git add`` stages the deletion of the old
-    wheel and nothing else: the working tree still has the file, every local
-    check passes, and only a fresh checkout -- a worktree, a clone, CI -- gets
-    an empty vendor directory that cannot install. That failure has happened
-    three times on this dependency, so it is checked here rather than
-    remembered.
-
-    The pin test above reads the wheel from the working tree, which is exactly
-    what cannot see this; this one asks git what it would hand a new checkout.
+    vendor/.gitignore allows one named wheel. A version bump must update that entry;
+    a working-tree file check alone misses an ignored replacement wheel.
     """
 
     project_root = Path(__file__).parents[2]

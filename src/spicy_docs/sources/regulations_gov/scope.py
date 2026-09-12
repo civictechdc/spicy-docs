@@ -440,17 +440,11 @@ def _acquisition_policy(
     validator: Callable[[Mapping[str, Any]], Mapping[str, Any]],
     collection: str,
 ) -> dict[str, Any]:
-    # Every collection groups by ``/data/id`` and keeps the greatest normalized
-    # UTC instant, refusing a repeated (id, instant) pair with differing
-    # canonical record digests rather than inventing a tie-breaker (raw bytes
-    # need not match); for documents and dockets a repeated pair with an
-    # identical canonical record digest selects one published record, and
-    # every redundant input remains counted as a discarded observation and
-    # retained in evidence, but comments still refuse any repeat (spec
-    # 2026-08-25 §4, 2026-09-02 amendments: newest-observation collapse and
-    # the ACF-2026-0199 identical-digest case). Documents order by
-    # ``modifyDate`` falling back to ``postedDate``, as
-    # :func:`source_issued_version` does; the other two order by ``modifyDate``.
+    # Group by /data/id and keep the greatest normalized UTC instant.
+    # Documents use modifyDate, then postedDate; dockets/comments use modifyDate.
+    # Documents/dockets collapse equal digests; documents also allow differences
+    # in declared volatile fields. Other tied differences refuse, as do all comment
+    # repeats. Count and retain every discard. See source_issued_version.
     order_by = (
         "coalesce(/data/attributes/modifyDate, /data/attributes/postedDate) DESC NULLS LAST"
         if collection == DOCUMENT_COLLECTION

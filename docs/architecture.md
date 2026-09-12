@@ -1,95 +1,79 @@
-# Architecture and change ownership
+# Find the code that owns a change
 
-A raw reader yields source records for a caller that owns its run. Source-native
-acquisition additionally retains accepted evidence and bounded refused-response diagnostics,
-checks source coverage for a named scope, publishes immutable artifacts, and supports independent replay.
+Publisher bytes enter a source adapter. Its profile supplies scope, parsing,
+identity and selection rules. The release engine publishes evidence and records;
+readers open that release, or optional table profiles produce Parquet.
 
 ```mermaid
 flowchart LR
-  A[Publisher API, mirror, or captured table] --> B[Source acquisition and profile]
-  B --> C[Release publication]
-  C --> D[Immutable release plus evidence blobs]
-  D --> E[Full offline replay verification]
-  D --> F[Bounded admission and record reading]
-  F --> G[DocSpec catalogs and dataset experiments]
-  F --> H[Public-table projection and Parquet reader]
-  A --> I[Raw bulk or mirror reader]
-  I --> J[Caller-managed records and run receipts]
+  A[Publisher or retained capture] --> B[Source adapter and profile]
+  B --> C[Release publisher and full verifier]
+  C --> D[Immutable release and evidence]
+  D --> E[Bounded reader]
+  E --> F[Source users or DocSpec]
+  E --> G[Public Parquet tables]
+  A --> H[Raw reader: caller owns the run]
 ```
 
-## Two profiles with distinct jobs
+Paths below are relative to `src/spicy_docs/`.
 
-| Type | What it describes | What it does not own |
-| --- | --- | --- |
-| `SourceNativeProfile` in `releases/profile.py` | Source scope, evidence decoding, schema, identity, observation selection, and completeness | Generic artifact hashing or downstream interpretation |
-| `PublicTableProfile` in `public_tables/profiles.py` | Flat columns, projection, partitioning, and ordering | Acquiring source evidence |
+## Sources
 
-Rulespec Artifacts owns canonical byte identity, manifests, and structural
-artifact admission. Reuse its functions; a second canonical encoder would make
-identity depend on the caller.
-
-## Module map
-
-| Responsibility | Implementation |
+| Change | Start here |
 | --- | --- |
-| Source profiles | `sources/federal_register/profile.py`, `sources/regulations_gov/profile.py`, `sources/gao/profile.py`, `sources/public_comments/profile.py` |
-| Federal Register acquisition | `sources/federal_register/native.py` |
-| Selected GovInfo body acquisition | `sources/federal_register/body_acquisition.py` applies bounded requests and preserves captures; `body_sources.py` owns the pure locator and identity checks. |
-| Regulations.gov | `sources/regulations_gov/`: `definitions.py` declares fields and data shapes; `validation.py` checks source structures; `records.py` classifies records; `schemas.py` declares schemas; `scope.py` checks scope and completeness; `evidence.py` packs/decodes captures; `acquisition.py` captures pages. |
-| GAO exact-page capture | `sources/gao/native.py` |
+| Federal Register pages and date windows | `sources/federal_register/native.py` |
+| GovInfo body fetching; pure document checks | `sources/federal_register/body_acquisition.py`; `body_sources.py` |
+| GAO pages | `sources/gao/native.py` |
 | Captured public comments | `sources/public_comments/native.py` |
-| Raw readers | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |
-| Shared source mechanics | `sources/json_input.py`, `sources/media_types.py` |
-| Public release API and source profile interface | `source_native.py` exports the current reader/publisher API; implementations and `profile.py` live in `releases/` |
-| Release format and payloads | `releases/format.py`, `releases/partitions.py`; blob access in `storage/blobs.py` |
-| Observation selection and publication | `releases/observations.py`, `releases/indexing.py`, `releases/publish.py`; path preflight in `releases/paths.py`; immutable filesystem publication in `storage/publication.py` |
-| Full offline verification | `releases/replay.py` reconstructs evidence; `releases/verify.py` compares published output |
-| Bounded admission and reading | `releases/admission.py`, `releases/reader.py` |
-| Public-table output | `public_tables/format.py` defines layout; `publish.py` indexes and writes; `verify.py` owns admission and the full row gate. `public_tables/profiles.py` owns source projections. |
-| Public-table consumption | `public_tables/api.py` exports the library API; `reader.py` owns admitted locations and exact Parquet member reading. |
-| Publisher-domain drift | `sources/source_domains.py` owns pinned document parsing and exact-value comparisons. |
-| Shared evidence encoding | `sources/evidence_zip.py` defines deterministic ZIP member metadata. |
-| Transport | `transport/acquisition.py` composes injected/default clients; `transport/http.py` contains HTTPX operations; `transport/retry.py`, `transport/credentials.py`, and `sources/zyte.py` retain their specific responsibilities. |
-| Operator commands | `cli/source_native.py` handles commands; `cli/arguments.py` defines syntax; `cli/sources.py` registers scope, acquisition, errors, and optional tables |
-| Campaigns and source-specific operational acquisition | `cli/campaign.py`, `sources/federal_register/replay.py`, and `sources/congress/crs_summaries.py`; see [operator commands](cli.md#campaigns-replay-and-source-tools) |
-| Repository checks and receipt analysis | [scripts](../scripts/README.md) update/check repository inputs; [tools/analysis](../tools/README.md) answers bounded questions about retained evidence. |
+| Raw streams | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |
+| CourtListener listing grammar | `sources/courtlistener_listing.py` |
 
-Dependencies point from commands to sources and release operations, then to
-format definitions, stores, and Rulespec. Package initializers stay lightweight.
-Directly importing a source-owned profile avoids unrelated sources. Federal
-Register's profile and offline replay also avoid live transport imports, as
-checked by the reader dependency tests. GAO imports its own Zyte response type;
-that import does not perform a request. The package root keeps `__init__.py`
-and five export modules
-used by current downstream consumers: `federal_register_source_native.py`,
-`regulations_gov_source_native.py`, `source_native.py`,
-`source_native_profiles.py`, and `source_native_store.py`. These are import
-surfaces; source, release, and storage packages own the implementation. New
-internal code imports the owner directly. See the
-[supported entry points](maintenance-decisions.md#supported-entry-points).
+Each native source's `profile.py` connects its rules to `SourceNativeProfile`
+in `releases/profile.py`. For Regulations.gov, use
+`sources/regulations_gov/`: `acquisition.py` fetches, `evidence.py` packs captures,
+`records.py` classifies, `scope.py` checks coverage, and `validation.py` checks
+structures. `definitions.py` and `schemas.py` declare the data shapes.
 
-## Checks have distinct purposes
+## Releases and storage
 
-Publication verifies its staged result before making a new directory visible
-once. Full verification reconstructs successful observations from retained
-evidence; bounded admission checks an artifact for opening under an accepted
-verifier identity. The [release guide](releases.md#choose-the-right-check)
-explains each check and its limits. Reader dependency tests protect the bounded
-opening path for DocSpec.
+| Change | Start here |
+| --- | --- |
+| Index and select observations | `releases/indexing.py`, `observations.py` |
+| Stage, verify and publish | `releases/publish.py` |
+| Independently reconstruct and compare evidence | `releases/replay.py`, `verify.py` |
+| Open and read records, outcomes or evidence | `releases/admission.py`, `reader.py` |
+| Retain refused-response diagnostics | `releases/refusals.py` |
+| Format, partitions and path checks | `releases/format.py`, `partitions.py`, `paths.py` |
+| Map shared storage to source references | `storage/blobs.py`, `publication.py` |
 
-Source tests own publisher-specific meaning. Shared release tests own selection,
-tampering, failure records, bounds, and publication. Independently constructed
-malformed artifacts remain independent of the publisher under test.
+Rulespec owns canonical encoding, artifact admission, atomic publication and
+bounded physical blob writes. SpicyDocs owns source meanings and references.
+[Choose the right check](releases.md#choose-the-right-check): ordinary opening
+checks integrity with bounded memory; full verification also replays source meaning.
 
-## Test map
+## Tables, commands and helpers
 
-`tests/releases/` groups publication, selection, acquisition, failures, storage,
-reading, and compatibility. `tests/regulations_gov/` groups record rules, scope,
-evidence, release integration, and observation selection. Each has a focused
-`fixtures.py`. Routine cross-source encoding and inspection live in
-`tests/source_fixtures.py`; independent malformed artifact construction remains
-in `tests/source_native_release_fixtures.py`. Other source, CLI, and import-boundary
-tests remain directly under `tests/`.
+- **Tables:** `public_tables/profiles.py` declares columns and ordering through
+  `PublicTableProfile`; `publish.py`, `verify.py` and `reader.py` implement the
+  operations exported by `public_tables/api.py`.
+- **Commands:** `cli/arguments.py` defines syntax, `sources.py` registers source
+  composition, and `source_native.py` runs it. `cli/campaign.py` owns campaigns.
+- **Transport:** `transport/acquisition.py` composes clients, `http.py` implements
+  HTTPX calls, and `retry.py` and `credentials.py` hold shared request rules.
+- **Source helpers:** `sources/json_input.py`, `media_types.py` and `evidence_zip.py`
+  share parsing/encoding; `source_domains.py` owns documented-value comparisons.
+- **Maintenance tools:** [scripts](../scripts/README.md) check repository inputs;
+  [tools](../tools/README.md) investigate retained corpus evidence.
 
-See [maintenance decisions](maintenance-decisions.md) for public API dispositions,
-preserved historical rules, and the review of remaining long functions.
+## Imports and tests
+
+Use the [supported public entry points](decisions.md#supported-entry-points)
+from other applications. Internal code imports the implementation owner directly.
+Commands depend on sources and releases; these depend on shared format/storage
+primitives. Keep package initializers and reader imports lightweight.
+
+`tests/releases/` covers publication, selection, failures, bounds and storage.
+`tests/regulations_gov/` covers that source's records, scope and evidence. Their
+`fixtures.py` files and `tests/source_fixtures.py` share routine setup; malformed
+artifact construction stays independent in `tests/source_native_release_fixtures.py`.
+See [focused checks](../CONTRIBUTING.md#run-focused-checks) for source tests.

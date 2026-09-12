@@ -1,39 +1,19 @@
 #!/usr/bin/env python3
-"""Enumerate govinfo's granule ids per Federal Register issue and diff ours against them.
+"""Compare Federal Register document numbers with GovInfo granule ids by issue.
 
-GPO's granule ids are derived from the printed FR Doc colophon, and that
-colophon carries a composition defect: on some printed pages the space between
-the number and "Filed" was lost, so ``95-8641`` was filed at GPO as granule
-``95-8641-Filed``. Every route keyed on the bare number then 404s. RefSpec found
-that specimen on 2026-08-31 by a four-route probe; the overseer re-found it on
-2026-09-05 by listing the issue package. Two routes, one mechanism.
+Read each issue's keyless MODS XML and append results to resumable JSONL. This
+route never accepts or sends an API key; 401/403 aborts the run.
 
-This measures the population rather than guessing at it. A package listing
-returns EVERY granule for an issue in one call (138 for FR-1995-04-10), so one
-request per issue enumerates the whole corpus of ids -- no need to know in
-advance which documents are broken, which is the part nobody can know.
+Interpretation rules:
+- Compare exact strings. Printed colophons can fuse a number with "Filed", as
+  in 95-8641-Filed. Normalizing would hide the mismatch; for E5-2394, the fused
+  spelling is the only live identifier.
+- Report unmatched ids in both directions. Neither count alone measures defects:
+  granules include non-documents such as Reader Aids, and filing dates may differ.
+- Record failed listings and exclude them from rates. Missing evidence does not
+  establish zero mismatches.
 
-WHAT THIS CANNOT SEE, stated because a census that reports agreement with its
-own assumptions is not a measurement:
-
-* Matching is exact string equality, deliberately. Any normalisation (splitting
-  a trailing "Filed") would decide the very question being asked, and RefSpec's
-  pilot attestation recorded ``reverse_substitution: forbidden`` -- for
-  ``E5-2394`` the fused spelling is the only live identifier, so a "repair"
-  destroys that case while fixing ``95-8641``. Unmatched is reported, never
-  resolved.
-* Unmatched is reported in BOTH directions and neither direction alone is "the
-  defect count". Granules include non-documents (the Reader Aids section is
-  served under an internal placeholder id), and our corpus may legitimately
-  hold a document for a date whose granule GPO files differently or not at all.
-* An issue that 404s or errors is recorded as such and excluded from the rates,
-  because a failed listing is missing evidence, not evidence of zero mismatches.
-
-The active route reads keyless issue MODS XML. It never accepts or sends an API key.
-
-Resumable by design: results are appended per issue as JSONL and an existing
-output file is read first, so a run interrupted at hour two resumes rather than
-re-spending the quota.
+Each output row pins the source release digest so resume cannot mix corpora.
 """
 
 from __future__ import annotations
@@ -56,32 +36,20 @@ from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from spicy_docs.transport.retry import retry_http
 
 MANIFEST_PATH: tuple[str, str] = ("manifests", "source-native.json")
-#: The KEYLESS enumeration route, and the complete one. Measured 2026-09-05:
-#: the keyed api.govinfo.gov granules endpoint returned ZERO granules for 33 of
-#: 58 sampled 1994 issues while reporting HTTP 200 and its own declared count of
-#: 0 -- so it looked like a clean answer and was missing metadata. mods.xml
-#: returned all 105 granules for FR-1994-01-03, where the keyed route returned
-#: none. The patchy route was also the one that spent the credential.
+#: Keyless MODS lists issue constituents. The keyed granules endpoint can
+#: return HTTP 200 with zero results for populated issues (FR-1994-01-03).
 MODS_URL = "https://www.govinfo.gov/metadata/pkg/FR-{date}/mods.xml"
 USER_AGENT = "spicy-docs-govinfo-granule-census/1.0"
 MODS_NS = {"m": "http://www.loc.gov/mods/v3"}
 
 
 def _granules_from_mods(xml: bytes) -> list[tuple[str, str | None]]:
-    """Every granule of an issue, as (accessId, FR Doc No.).
+    """Return each granule as (accessId, FR Doc No.).
 
-    Written against a saved sample rather than a description of the format,
-    which is why it does not look like the description: ``accessId`` is an
-    element under ``extension`` in the MODS namespace, not an
-    ``identifier[@type='accessId']``. An XPath built from the prose found 105
-    constituents and zero ids.
-
-    BOTH values are returned on purpose. ``accessId`` is GPO's own granule id
-    and is what a content URL is keyed on, so it is what a fetch 404s against
-    -- it carries the printed-colophon fusion (``95-8641-Filed``). The
-    ``FR Doc No.`` identifier is the parsed number. Keying the census on the
-    parsed number would compare our document numbers against document numbers
-    and agree with itself; the defect only shows against the accessId.
+    accessId is an element under extension in the MODS namespace, not an identifier
+    attribute. It keys content URLs and can retain colophon fusion such as
+    95-8641-Filed. FR Doc No. is the parsed number; comparing that alone would hide
+    the identifier mismatch this census measures.
     """
     root = ElementTree.fromstring(xml)
     out: list[tuple[str, str | None]] = []
@@ -105,17 +73,10 @@ class _RetryableStatus(httpx.HTTPStatusError):
 
 
 class CredentialRefusedError(RuntimeError):
-    """A 401 or 403 aborts the run instead of being recorded and passed over.
+    """Abort on 401/403 because the route's keyless premise no longer holds.
 
-    The enumeration route was verified keyless. If the publisher starts
-    answering 401 or 403, the premise that this census spends no credential has
-    failed, and the only safe response is to stop and say so. Recording it as a
-    per-issue failure and continuing would walk all 1,502 issues collecting
-    refusals, and -- worse -- would hide a change of terms behind a column of
-    zeros that reads like coverage.
-
-    Never retry these and never fall back to sending a key. A run authorized on
-    "this spends nothing" must not quietly become a run that spends something.
+    Never retry or fall back to a key. Continuing would record refusals as apparent
+    coverage; sending a key would change the run's authorized credential use.
     """
 
 
@@ -149,18 +110,10 @@ def _fetch_mods(client: httpx.Client, date: str) -> bytes:
 
 
 def _granule_ids(client: httpx.Client, date: str) -> tuple[list[str], int, int | None]:
-    """Every granule id for one issue, from the issue's MODS record.
+    """Return granule ids, one call spent, and their count from one issue's MODS XML.
 
-    One request, no pagination: a MODS package record lists every constituent
-    in a single document, which is the other reason this route beats the keyed
-    granules endpoint it replaced -- that one paged, and paging was where a
-    short read could masquerade as a complete answer.
-
-    Returns ids, calls spent, and the declared count. The declared count is the
-    constituent count from the same document, so unlike the keyed route it
-    cannot report "0 of 0" for an issue whose metadata is simply absent: a
-    missing record is a 404 and is recorded as a failure, not as an empty
-    success.
+    MODS supplies all constituents without pagination. A missing MODS record returns
+    404 and becomes a failed listing, rather than the keyed endpoint's empty success.
     """
     xml = _fetch_mods(client, date)
     granules = _granules_from_mods(xml)
@@ -169,17 +122,10 @@ def _granule_ids(client: httpx.Client, date: str) -> tuple[list[str], int, int |
 
 
 def _release_digest(release_root: Path) -> str:
-    """The pinned identity of the corpus a row's counts were computed against.
+    """Read the source release identity attached to every census row.
 
-    Every row carries this. Without it a resumed file can silently mix two
-    corpora: on 2026-09-05 a resume ran against the pre-composite release while
-    rows 1-391 had been computed against composite-2, and the 483 recovered
-    documents -- 364 of them pre-2000 -- would have surfaced as "govinfo has it,
-    we do not", inflating the column whose real signal is single digits.
-
-    A single date cannot detect that swap. 1994-01-03 holds 105 documents in
-    BOTH releases; only 380 of 8,170 dates differ at all. The digest is checked
-    instead of the counts for exactly that reason.
+    Resume compares digests to prevent mixed corpora. Equal counts on a sampled
+    date cannot prove two releases contain the same documents.
     """
     artifact = json.loads((release_root / "artifact.json").read_text())
     digest = artifact.get("artifactDigest")
@@ -206,21 +152,10 @@ def _guard_resume_release(output: Path, digest: str) -> None:
 
 
 def _resume_state(output: Path) -> tuple[set[str], set[str]]:
-    """Split what is already recorded into settled issues and ones to retry.
+    """Return settled issues and issues to retry, using the latest row per date.
 
-    Resume used to treat every recorded date as done, which is right for a
-    listing and wrong for a failure: an outage writes `listing-failed` rows, and
-    skipping them makes a transient 502 permanent in the census. Nine such rows
-    were written on 2026-09-05 when govinfo's backend went down mid-run, and
-    without this they would never be revisited.
-
-    Only a complete listing settles a date. `listing-failed` and
-    `listing-incomplete` are both returned for retry -- the second because a
-    short read is exactly the case the status exists to mark as untrustworthy.
-
-    The file stays append-only, and the LAST row for a date is the current one.
-    A superseded failure is kept rather than rewritten, so the census carries
-    the evidence that an issue once failed and what it answered when it did.
+    Only status=listed settles an issue. Retry failures and incomplete listings;
+    keep superseded rows in the append-only file as evidence of earlier answers.
     """
 
     listed: set[str] = set()

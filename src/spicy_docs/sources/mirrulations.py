@@ -70,17 +70,8 @@ def s3_resource(max_pool_connections: int = DEFAULT_DOWNLOAD_WORKERS) -> Any:
             # instead of wedging a worker indefinitely; standard mode retries
             # transient errors (throttling, resets) rather than dropping records.
             connect_timeout=30,
-            # 2026-09-02: 30s read_timeout x 5 standard-mode attempts was not
-            # enough -- a four-way fan-out hit 47 `ReadTimeoutError: Read
-            # timeout on endpoint URL` failures, each destroying a whole
-            # agency's complete-snapshot enumeration in iter_source_objects.
-            # 120s covers a full max_bytes object (16 MiB by default) down to
-            # ~136 KB/s sustained -- generous enough that a large-but-healthy
-            # transfer on a saturated link isn't cut off mid-read and forced
-            # to restart, while a truly dead connection still fails within
-            # minutes. iter_source_objects's own capped, jittered per-key
-            # retry (`_retry_transient`) sits above this and above standard
-            # mode's five attempts, not instead of them.
+            # Allow a default 16 MiB object roughly 120s at ~136 KB/s on a busy link.
+            # _retry_transient adds per-key retries after botocore's attempts exhaust.
             read_timeout=120,
             retries={"max_attempts": 5, "mode": "standard"},
         ),
@@ -311,38 +302,19 @@ def download_object_bytes(
     )
 
 
-# 2026-09-02: a four-way S3 fan-out hit 47 `botocore.exceptions.ReadTimeoutError:
-# Read timeout on endpoint URL` failures, and iter_source_objects's fail-fast
-# design -- correct for a changed object, a listed-size mismatch, or a
-# truncated body, each of which would make the enumeration unfaithful as
-# complete-snapshot evidence -- aborted the whole agency for what was only a
-# busy network. `download_keys`'s own `transient_retries` retries immediately
-# with no backoff; give the exact-enumeration GETs the same patience
-# `transport.retry.retry_http` gives the HTTP path: doubling backoff capped
-# at 60s, full jitter, 14 attempts (13 possible sleeps) for ~542s (~9 minutes)
-# of worst-case patience, so a busy network costs minutes, not an agency.
-# Botocore's own standard-mode retries (see `s3_resource`) already ran and
-# gave up before any of this is reached -- this sits above them, not instead.
+# Retry temporary S3 congestion after botocore's own retries are exhausted.
+# Fourteen attempts allow 13 jittered sleeps, capped at 60s each (~542s total).
+# Changed objects and incomplete evidence still fail immediately.
 _MAX_TRANSIENT_ATTEMPTS = 14
 _TRANSIENT_BACKOFF_CEILING_SECONDS = 60.0
 
 
 def _is_transient_transport_error(exc: BaseException) -> bool:
-    """True only for a genuine transport failure -- the network was busy, not wrong.
+    """Retry connection/HTTP-client failures and responses with status 429 or 5xx.
 
-    A network-level failure that never got a response at all
-    (``botocore.exceptions.ConnectionError`` and its ``EndpointConnectionError``
-    / ``ConnectTimeoutError`` / ``SSLError`` subclasses; ``HTTPClientError`` and
-    its ``ReadTimeoutError`` / ``ConnectionClosedError`` subclasses -- the exact
-    ``ReadTimeoutError`` family behind the 47 failures) or a response that
-    explicitly asked for a retry (429, or any 5xx) is worth retrying.
-
-    Everything else is a data fact, not a busy network, and must abort
-    immediately: any other ``ClientError`` (404 missing, 403 denied, and
-    critically 412 precondition-failed for an object that changed under
-    ``IfMatch``), one of ``download_object_bytes``'s own ``ValueError``s
-    (missing/changed listing ETag, a listed-size mismatch, an incomplete
-    body), or a :class:`PayloadParseError`.
+    Other failures abort: 404/403, IfMatch 412, missing or changed ETags, size
+    mismatches, incomplete bodies, and PayloadParseError. Retrying those cannot
+    establish faithful complete-snapshot evidence.
     """
     if isinstance(exc, (BotoConnectionError, HTTPClientError)):
         return True
@@ -353,19 +325,11 @@ def _is_transient_transport_error(exc: BaseException) -> bool:
 
 
 def _retry_transient[DownloadResult](key: str, operation: Callable[[], DownloadResult]) -> DownloadResult:
-    """Run ``operation`` with capped exponential backoff and full jitter.
+    """Retry transient transport failures with capped exponential backoff and full jitter.
 
-    Retries only a genuine transient transport failure (see
-    :func:`_is_transient_transport_error`); everything else -- including a
-    transient failure that has already used up the whole budget -- is
-    re-raised immediately, unwrapped, so the caller sees the original
-    exception exactly as ``operation`` raised it.
-
-    Full jitter -- a uniform draw between 0 and the deterministic ceiling --
-    keeps the pool's workers from retrying in lockstep against the same
-    struggling endpoint. Each retry is logged to stderr with the key, the
-    attempt number, the chosen delay, and the exception that triggered it, so
-    a long retry on a large agency reads as "working" rather than "hung".
+    A uniform delay from zero to the ceiling separates concurrent workers' retries.
+    Log each retry with its key, attempt, delay, and exception. Non-transient errors
+    and exhausted retries propagate as the original exception.
     """
     for attempt in range(1, _MAX_TRANSIENT_ATTEMPTS + 1):
         try:
@@ -409,19 +373,11 @@ def download_and_parse(
     key: str,
     extract_fn: Callable[[dict], dict],
 ) -> dict:
-    """Download a single JSON file from S3 and parse it with the given extractor.
+    """Download and extract one S3 JSON object.
 
-    Failures are classified so the caller can retry the retryable ones: a GET or
-    read failure raises :class:`TransientDownloadError` (network/throttle — the
-    key may succeed next time), while a JSON-decode or extract failure raises
-    :class:`PayloadParseError` (the bytes are deterministically bad). Both wrap
-    the original exception and carry the offending key.
-
-    The response body is closed on every path — including a failed read — so a
-    transient error can't leak the connection into CLOSE_WAIT and starve the
-    pool. Leaked connections were the cause of the low-CPU/CLOSE_WAIT hang seen
-    on large agencies: once the pool drained, later downloads blocked forever
-    waiting for a free connection.
+    GET/read failures become TransientDownloadError; JSON/extraction failures become
+    PayloadParseError. Both preserve the key and original exception. The download
+    helper closes the response on every path to prevent connection-pool exhaustion.
     """
     try:
         content = download_object_bytes(s3_resource, bucket_name, key).content
@@ -553,20 +509,11 @@ def _bounded_ordered_results(
     work: Callable[[Any], Any],
     window: int,
 ) -> Iterator[tuple[Any, Any]]:
-    """Run ``work`` over ``items`` on ``executor``, yielding ``(item, result)``
-    in ``items`` order with at most ``window`` futures in flight.
+    """Yield (item, result) in listing order with at most window futures in flight.
 
-    ``download_keys`` above fans out unordered and doesn't care which key
-    finishes first; :meth:`MirrulationsReader.iter_source_objects` is
-    complete-snapshot evidence and must preserve listing order and abort on
-    the first failure. Popping the window's head and calling ``.result()``
-    blocks only on that item, so the failure that aborts is the first *listed*
-    one even when a later item failed sooner.
-
-    Once any in-flight future is done with an exception, no further work is
-    submitted; leaving this generator — by that failure or by an early close —
-    cancels every not-yet-started future. Work already running drains under its
-    own timeouts while the caller's executor shuts down.
+    The first listed failure aborts, regardless of completion order. Stop submitting
+    as soon as any pending failure is observed. Failure or early close cancels
+    unstarted work; running work drains under its timeouts during executor shutdown.
     """
     pending: deque[tuple[Any, Future[Any]]] = deque()
 
@@ -641,22 +588,12 @@ class MirrulationsReader(Reader):
         *,
         max_bytes: int = 16 * 1024 * 1024,
     ) -> Iterator[MirrulationsSourceObject]:
-        """Capture exact listing membership and ETag-pinned object bytes.
+        """Capture ordered listing membership and ETag-pinned bytes for every object.
 
-        This path is deliberately fail-fast for anything that would make the
-        enumeration unusable as complete-snapshot evidence: a missing listing
-        ETag, a changed object, a listed-size mismatch, or an incomplete body
-        all abort the enumeration immediately, with no retry. A genuine
-        transient transport failure (a read timeout, a connection reset, a
-        429/5xx) is not one of those -- the network was busy, not wrong -- so
-        each per-key GET gets its own patient, jittered retry
-        (:func:`_retry_transient`) before it is allowed to abort the run; see
-        the module comment above ``_MAX_TRANSIENT_ATTEMPTS`` for the budget
-        and the incident that set it. Listing stays serial (the strict-
-        ascending-key assert needs it), but GETs fan out over a thread pool
-        bounded to ``self.download_workers`` in flight via
-        :func:`_bounded_ordered_results`, and are yielded back in listing
-        order regardless of which GET completes first.
+        Missing ETags, changed objects, size mismatches, and incomplete bodies abort
+        immediately. _retry_transient retries transport failures within its budget.
+        Listing stays serial to check strictly ascending keys; GETs use at most
+        download_workers futures and yield in listing order.
         """
 
         if self.record_type.path_pattern is None:

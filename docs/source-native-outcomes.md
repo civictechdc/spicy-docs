@@ -1,101 +1,86 @@
 # Understand a collection outcome
 
-A valid source release can contain accepted records, rejected records, or no
-records. `SourceNativeReleaseReader.collection_outcome` exposes that distinction
-using the release's existing scope, acquisition policy, and publication receipt.
-`publish`, `verify`, and `inspect` return the same mapping as `collectionOutcome`
-in their JSON output. No new status file or release format is involved.
+**A valid release can contain accepted records, rejected records, or no records.**
+`SourceNativeReleaseReader.collection_outcome` reads that distinction from the
+existing scope, policy, and receipt. `publish`, `verify`, and `inspect` expose the
+same mapping as `collectionOutcome`; there is no separate status format.
 
 ## What the outcome establishes
 
-`requestedScope` contains the exact selectors recorded for this collection, such
-as dates, agencies, or GAO product IDs. `sourceStateScope` names the source
-profile's coverage claim. For example, `observed-crawl` records an observed crawl;
-it does not promise a frozen snapshot of every publisher document.
-
-`acquisitionPolicy` supplies the source's existing policy values, including
-`initialQueryScope`, discovery `strategy`, bounds, selection rules, and
-`coverageLimits`. The reader regenerates these values with the supplied source
-profile and checks their digest against the admitted release's
-`acquisitionPolicyDigest`. `acquisitionPolicyId` and `acquisitionPolicyVersion`
-identify that policy. A changed implementation cannot silently describe an old
-release using different policy values. `traversalAcceptance` names the profile's
-rule for accepting the collected passes.
-
-Read the broad label together with those facts:
-
-| Source | What its coverage establishes |
+| Field | Read it as |
 | --- | --- |
-| Federal Register | Two consecutive crawls agree on records observed within the exact date selectors. Date windows split at the result cap. This is stable observation, without a frozen publisher-wide version. |
-| GAO product pages | Each explicitly requested product ID has captured page evidence. `complete-snapshot` concerns that exact ID list; other product IDs are unrequested. Each page is captured separately. |
-| Mirrulations documents, dockets, and comments | One live listing supplies the requested agencies and collection; date selection follows acquisition. The built-in transport uses each listed object's ETag in an `IfMatch` request. `complete-snapshot` concerns that enumeration and its individually pinned objects, without establishing a single version of the whole listing or publisher. |
-| Community public comments | One `observed-crawl` probes contiguous partition names from zero and stops at the first missing part. Later part numbers remain unrequested. Captured terminal markers describe the traversal; missing-part HTTP responses are not retained. See [captured public comments](sources/public-comments.md). |
+| `requestedScope` | Exact recorded selectors: dates, agencies, or product IDs |
+| `sourceStateScope` | The profile's coverage claim, qualified by its policy |
+| `acquisitionPolicy` | `initialQueryScope`, discovery `strategy`, bounds, selection, and `coverageLimits` |
+| `acquisitionPolicyId`, `acquisitionPolicyVersion` | Identity of that policy |
+| `traversalAcceptance` | Rule used to accept the collected passes |
 
-`recordOutcome` describes records from the accepted traversal:
+The reader regenerates policy values from the supplied profile and checks their
+digest against `acquisitionPolicyDigest`. Changed code cannot silently describe
+an old release with different policy values.
+
+| Source | Coverage limit |
+| --- | --- |
+| Federal Register | Two consecutive crawls agree within exact date selectors; capped windows split. This is stable observation, not a frozen publisher version. |
+| GAO | `complete-snapshot` covers exactly the requested IDs, each captured separately. Other IDs are unrequested. |
+| Mirrulations | `complete-snapshot` covers the observed agency/collection enumeration. Dates are selected afterward. Each GET uses the listed ETag as `IfMatch`; the listing is not frozen at one upstream instant. |
+| Community comments | One `observed-crawl` probes contiguous parts from zero and stops at the first missing part. Later parts are unrequested. Terminal markers are retained; missing-part HTTP responses are not. |
+
+`recordOutcome` describes only the accepted traversal:
 
 | Value | Meaning |
 | --- | --- |
-| `empty` | The accepted traversal supplied no record observations from its included pages. |
-| `no-record-rejections` | Records were observed and none failed source-record validation. |
-| `partial-rejection` | Some records were published and some were rejected. |
-| `total-rejection` | Records were observed, but all failed source-record validation. |
+| `empty` | Included pages supplied no record observations |
+| `no-record-rejections` | Records were observed; none failed source-record validation |
+| `partial-rejection` | Some observed records were published and some rejected |
+| `total-rejection` | All observed records failed source-record validation |
 
-**Empty input does not prove source absence.** The outcome concerns the recorded
-request and observed response. It says nothing about an unrequested collection.
-An acquisition or transport failure that prevents publication produces a command
-error, not an `empty` release. A deterministic record rejection concerns that
-acquisition attempt; a later request may succeed.
+Keep these distinctions:
 
-Use `requestedScope` to distinguish requested selectors from unrequested ones.
-Use `empty` only for the observed input of an accepted collection and the failure
-ledger for rejected record observations. An acquisition refusal leaves the
-requested collection unresolved; it supplies no accepted collection outcome.
-These are collection facts. The API does not invent a result for every possible
-document ID, infer that an unrequested ID is absent, or identify a rejected row
-as a valid publisher ID when its identity could not be established.
+- **Empty accepted input does not prove source absence.** It describes the
+  recorded request and response, saying nothing about unrequested collections.
+- An acquisition/transport refusal leaves the request unresolved and supplies
+  no accepted outcome or partial release.
+- A deterministic record rejection concerns this attempt; a later request may
+  succeed. A failure does not invent a valid publisher ID when identity failed.
+- `ok: true` means the command passed its admission or verification checks.
+  Read the outcome for record results; even total record rejection may pass.
 
-For all three commands, `ok: true` means the command completed its admission or
-verification checks. Read `collectionOutcome` to determine what happened to the
-records. A release with total record rejection can still pass those checks.
+The API reports collection facts, not a result for every possible document ID.
 
 ## Read the counts
 
-The main counts describe the **accepted traversal**, not the sum of discovery
-passes. They use these exact receipt names:
+Counts describe the **accepted traversal**, not the sum of discovery passes:
 
-| Field | Unit |
+| Receipt field | Unit |
 | --- | --- |
-| `discoveredRecordCount` | Record observations from included acquisition pages, including rejections with invalid or unestablished scope. It is not a count of unique published records. |
-| `inputObservationCount` | Valid observations considered for selection, including multiple observations of one source identity. |
-| `publishedRecordCount` | Selected source records. |
-| `failedRecordCount` | Rejected record observations retained as failure ledger entries. |
-| `discardedObservationCount` | Valid observations superseded during selection, such as older observations of the same identity. These are not validation failures. |
-
-The counts reconcile as follows:
+| `discoveredRecordCount` | Included-page record observations, including rejections with invalid/unestablished scope; not unique published records |
+| `inputObservationCount` | Valid observations considered for selection, including repeated source identities |
+| `publishedRecordCount` | Selected source records |
+| `failedRecordCount` | Rejected observations retained in the failure ledger |
+| `discardedObservationCount` | Valid observations superseded during selection; not validation failures |
 
 ```text
 discoveredRecordCount = inputObservationCount + failedRecordCount
 inputObservationCount = publishedRecordCount + discardedObservationCount
 ```
 
-The outcome also includes the receipt's `deterministicFailureCount`,
-`transientFailureCount`, `unclassedFailureCount`, `acquisitionEvidenceCount`,
-`reconciliationPassCount`, `renditionIndexCount`, and `warnings`. Evidence and
-reconciliation counts describe retained acquisition evidence and passes;
-renditions are listed document formats, not additional source records. These
-counts do not add to the equations above. Current publication permits recorded
-deterministic record failures; transient or unclassified acquisition failures
-prevent an accepted release.
+The receipt also supplies `deterministicFailureCount`, `transientFailureCount`,
+`unclassedFailureCount`, `acquisitionEvidenceCount`, `reconciliationPassCount`,
+`renditionIndexCount`, and `warnings`. Evidence/pass counts describe retained
+acquisition work; renditions list formats, not additional records. They do not
+add to those equations. Publication permits deterministic record failures;
+transient or unclassified acquisition failures prevent acceptance.
 
-Each property access returns a fresh mapping, including fresh selectors, policy
-values, and warnings, so changing the returned value does not change later reads.
+Each property read returns a fresh mapping, including selectors, policy values,
+and warnings. Editing it does not change later reads.
 
 ## Inspect failures
 
-Use the release pin and the verifier implementation you already accept:
+Use the retained pin and an independently accepted verifier implementation:
 
 ```sh
-uv run spicy-docs-source-native inspect \
+uv run --frozen spicy-docs-source-native inspect \
   --source federal-register \
   --release /data/releases/federal-register \
   --blob-store /data/blobs \
@@ -105,17 +90,13 @@ uv run spicy-docs-source-native inspect \
   --failure-limit 20
 ```
 
-The JSON output contains `collectionOutcome`, `failureLimit`, `failures`, and
-`failuresTruncated`. The default limit is 20. Set `--failure-limit 0` to report
-the outcome alone. `failuresTruncated: true` means more failures are recorded
-than are included in the response.
+JSON contains `collectionOutcome`, `failureLimit`, `failures`, and
+`failuresTruncated`. The default limit is 20; zero returns only the outcome.
+`failuresTruncated: true` means the ledger contains additional failures.
 
-For Python callers, `reader.iter_failures(limit=100)` streams existing failure
-ledger rows in `sourceRecordId` order. Each row retains `sourceRecordId`,
-`observationRef`, `evidenceBlobRef`, and the nested `failure` with its `class`,
-`reasonCode`, and `evidenceDigest`. Use the references to inspect retained source
-evidence. Failure entries do not invent a valid publisher identity when the
-source record could not be classified.
+Python `iter_failures(limit=100)` streams rows in `sourceRecordId` order. Each
+retains `sourceRecordId`, `observationRef`, `evidenceBlobRef`, and nested `failure`
+fields `class`, `reasonCode`, and `evidenceDigest`:
 
 ```python
 from contextlib import closing
@@ -126,27 +107,22 @@ with closing(reader.iter_failures(limit=10)) as failures:
         print(failure)
 ```
 
-The reader admits the pinned artifact under the supplied source profile and
-accepted verifier implementation. Admission hashes all retained payload members;
-it uses bounded memory, but its I/O grows with release size. `inspect` does not
-repeat source interpretation. Use `verify` for independent source replay.
+Admission checks the pin, profile, accepted verifier, and hashes of all payload
+members. Memory is bounded; I/O grows with release size. `inspect` performs no
+source replay; use `verify` for that check. Reading the admitted outcome reopens
+no payloads.
 
-Reading the outcome after admission reopens no payloads. Failure iteration uses
-the existing merge of at most 64 partition streams and bounded rows. It stops at
-the requested number of failures and closes its streams; a zero limit or a
-sealed zero failure count skips the ledger. Finding a late failure can still
-require scanning the whole ledger. Callers that stop iteration early should
-close the iterator, as the example does.
+Failure iteration merges at most 64 partition streams with bounded rows. It stops
+and closes at the limit; zero limits or sealed zero counts skip the ledger.
+Finding a late failure may scan the whole ledger. Close an iterator you stop early.
 
 ## Inspect record evidence
 
-For a published record, `reader.record_evidence(source_record_id)` returns its
-selected observation's `sourceRecordId`, `observationRef`, `evidenceBlobRef`, and
-`failure: None`. A missing result means this release has no published success
-for that identity. It does not prove source absence. Failure-only identities
-return `None`; use `iter_failures()` for their recorded failure and evidence
-references. The lookup does not enumerate discarded observations or earlier
-acquisition passes.
+`record_evidence(source_record_id)` returns the selected successful observation's
+`sourceRecordId`, `observationRef`, `evidenceBlobRef`, and `failure: None`.
+`None` means no published success for that identity in this release, not source
+absence. Use `iter_failures()` for failure-only identities. This lookup excludes
+discarded observations and earlier passes.
 
 ```python
 evidence = reader.record_evidence(source_record_id)
@@ -154,28 +130,24 @@ if evidence is not None:
     exact_bytes = reader.read_evidence(evidence["evidenceBlobRef"], max_bytes=8 * 1024 * 1024)
 ```
 
-Lookup chooses the existing identity bucket and scans at most one ledger
-partition, using the ordinary row, order and bucket checks. It closes that
-stream before returning. Memory stays bounded by the row limit; lookup can
-still scan a large partition. There is no new index or release member.
-The lookup relies on the admitted immutable ledger and the accepted producer
-and source profile. It does not replay acquisition or recheck every ledger byte
-after a storage change.
+Lookup scans at most one identity-bucket ledger partition, checks rows/order/bucket,
+and closes before returning. Memory is row-bounded, but the partition may be large.
+It relies on the admitted immutable ledger, producer, and profile; it neither
+replays acquisition nor rechecks all bytes after storage changes.
 
-`read_evidence()` accepts only evidence references declared by this admitted
-release. It refuses unknown references, record/table/ledger payload references,
-and declared sizes above the requested limit before opening the injected blob
-source. It checks the returned bytes against the admitted size and digest and
-closes storage on success or failure. `max_bytes` defaults to the release's
-24 MiB evidence bound; it must be an integer from zero through that bound.
-Zero can read a zero-byte admitted evidence member, but not a nonempty member.
-An oversize response is refused, never returned as a truncated capture.
-The method accumulates at most the requested limit plus one detection byte;
-an injected blob source may also perform its own integrity reads when opened.
+`read_evidence()`:
 
-Evidence bytes may be JSON or a source-specific ZIP, not the document body
-listed by a rendition. Use the source's documented parser to interpret its
-evidence; the [GAO example](sources/gao.md#read-a-topic-and-its-evidence) shows
-this path. A refused acquisition has no admitted reader: its separate
-`failedAcquisition` references belong to the failed-run report and selected
-blob store, described in [the CLI guide](cli.md#output-and-failures).
+- Accepts only evidence references declared by this admitted release. Unknown,
+  record, table, and ledger references are refused.
+- Refuses declared sizes above `max_bytes` before opening storage, then checks
+  returned size and digest. Storage closes on success or failure.
+- Defaults to the 24 MiB release evidence bound. `max_bytes` must be an integer
+  from zero through that bound; zero permits only admitted zero-byte evidence.
+- Accumulates at most the requested limit plus one detection byte. Oversize
+  evidence is refused, never truncated. Injected storage may do integrity reads
+  of its own on opening.
+
+Evidence may be JSON or a source ZIP, not the body named in a rendition.
+Use the source parser; see the [GAO example](sources/gao.md#read-a-topic-and-its-evidence).
+Refused acquisitions have no admitted reader. Their `failedAcquisition` references
+belong to the [failed-run report and blob store](cli.md#output-and-failures).

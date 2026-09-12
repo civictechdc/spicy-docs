@@ -1,37 +1,18 @@
 #!/usr/bin/env python3
-"""How many of the Federal Register's discarded observations are distinct documents?
+"""Compare Federal Register observations discarded by historical identity policy 1.0.
 
-Historical acquisition policy 1.0 collapses by /document_number keeping the newest
-/publication_date, so where the Register reuses a number the older document is
-discarded. The release therefore cannot answer this question -- the discarded
-records are only in the acquisition evidence, which is the pre-collapse
-population.
+Policy 1.0 kept the newest publication_date per document_number. Discarded rows
+survive only in acquisition evidence; policy 1.1 retains both fields as identity
+(see docs/decisions.md).
 
-Policy 1.1 now retains (document_number, publication_date); see docs/decisions.md.
-This diagnostic still compares the pre-selection evidence across dates.
+Compare each discard with its survivor on type, title, agencies, and abstract,
+per DocSpec 0003. Number and date defined the old grouping, so comparing them
+would not establish distinctness. Identifier year codes are also insufficient:
+E8-30793 was legitimately published on 2009-01-02.
 
-Method fixed by doc1 in DocSpec 0003: compare a discarded observation against
-the survivor on type, title, agencies and abstract. Deliberately NOT on
-document_number or publication_date -- those are what the collapse already
-keyed on, and re-measuring them would repeat the census tautology that hid this
-in the first place. No inference is drawn from an identifier's year code:
-E8-30793 published 2009-01-02 proves a year family spills into January
-legitimately.
-
-Two passes so memory stays bounded: pass A keeps only number -> set of dates,
-pass B re-reads and retains full records only for numbers observed on more than
-one date.
-
-SD-18: promoted from a session-scratch script whose one measured output lived
-only in a receipt JSON in the corpora tree, not a committed tool -- the same
-"measured once by a throwaway script whose output lived in a chat log" gap that
-``tools/analysis/cross_filing_census.py`` (SD-16, SD-17) was built to close. This module
-takes ``--release-root``/``--blob-store`` in place of the original's hardcoded
-``~/Work/corpora`` paths so the same measurement is re-derivable against any
-Federal Register source-native release, and reads blobs through
-``LocalSourceNativeBlobStore`` (the platform's own content-addressed reader,
-which verifies each blob's bytes against its digest) instead of hand-joining
-``sha256:<hex>`` blob references into filesystem paths.
+Two passes bound memory: first collect dates per number, then retain full records
+only for numbers seen on multiple dates. --release-root and --blob-store select
+the evidence; LocalSourceNativeBlobStore verifies each blob against its digest.
 """
 
 from __future__ import annotations

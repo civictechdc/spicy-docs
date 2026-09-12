@@ -130,16 +130,11 @@ def test_classify_document_tolerates_an_unusable_posted_date(
     modify_date: str | None,
     expected_version: str | None,
 ) -> None:
-    """Three live FMCSA documents publish ``postedDate: null`` with
-    ``modifyDate`` present, e.g. FMCSA-2007-0006-0015. A live FAA
-    full-history publish (205,696 documents) later surfaced a document with a
-    non-null ``postedDate`` that fails canonical-date parsing, and the strict
-    parse aborted the whole agency nine minutes in (2026-09-02 fix): null and
-    unparseable are both undatable, not corrupt, so classification tolerates
-    either without coercing or repairing the raw value. A document whose
-    ``postedDate`` is unusable but whose ``modifyDate`` is present still
-    orders by ``modifyDate``; one where both are unusable has a null
-    instant, which the collapse orders last rather than refusing.
+    """Preserve null or unparseable postedDate values without repairing them.
+
+    FMCSA and FAA records exhibit both shapes. Order by modifyDate when present;
+    when it is null and postedDate is unusable, retain a null instant that sorts last.
+    Malformed modifyDate values still refuse.
     """
     record = classify_document(_document(postedDate=posted_date, modifyDate=modify_date))
     assert record["data"]["attributes"]["postedDate"] == posted_date

@@ -1,37 +1,17 @@
 #!/usr/bin/env python3
-"""Fetch CRS report summaries from the Congress.gov v3 API, one row per report.
+"""Fetch CRS metadata and summaries from Congress.gov v3 using Parquet report ids.
 
-The API supplies report metadata and summary text. Fetching full report PDFs is
-a separate operation. The input Parquet supplies report ids; the output JSONL
-retains one success or failure row per attempt and resumes from that output.
+Append one success or failure row per attempt to JSONL; PDFs are fetched separately.
 
-Five disciplines are built in rather than added after, each from a defect this
-project hit:
-
-1. **Assert on what success looks like, not on what one failure looks like.**
-   A check for the absence of a known error string passed a Cloudflare
-   challenge page that contained no such string -- it passed the exact failure
-   it existed to catch. So a row counts only when the response parses as JSON,
-   carries a ``CRSReport`` object, and that object's ``id`` equals the id
-   requested. A negative check only ever catches the failure already seen.
-2. **A credential refusal aborts.** 401/403 stops the run rather than being
-   recorded per row and passed over; a run authorized as keyed-and-budgeted
-   must not quietly continue against a wall.
-3. **A recorded failure is retried, never skipped.** Resume re-attempts any row
-   whose status is not ``ok``, so "asked and got nothing" stays distinct from
-   "never asked". Skipping recorded failures is how an outage becomes a receipt
-   that reads as coverage.
-4. **Every row carries its provenance** -- the run id and the source parquet it
-   was drawn from -- because a file whose rows came from two different inputs
-   cannot be reconciled after the fact.
-5. **A recorded error is scrubbed before it is written.** This API takes its
-   credential as an ``api_key`` *query parameter*, and httpx's
-   ``HTTPStatusError`` renders the full request URL, so the unmodified
-   exception text carries the key into the data file and from there into a
-   receipt -- one 404 on ``R43434`` did exactly that on 2026-09-07, and the
-   receipt printed 120 characters of the error, which is long enough to reach
-   past ``api_key=``. The credential is never printed, never in a URL, never in
-   a receipt, and an error string is a URL in disguise.
+Fetcher rules:
+1. Validate JSON, a CRSReport object, and the requested id. Error-string checks
+   alone can accept a challenge page as success.
+2. Abort on 401/403; a credential refusal must stop the run.
+3. Resume only skips status=ok. Retrying failures keeps outages from becoming
+   apparent coverage.
+4. Preserve sourceParquet on every row so the input remains traceable.
+5. Scrub errors before truncating or writing them. The api_key query parameter
+   appears in httpx exception URLs and can otherwise leak into rows or receipts.
 """
 
 from __future__ import annotations
@@ -116,9 +96,7 @@ def run(
     already_ok = len(ids) - len(todo)
     if limit is not None:
         todo = todo[:limit]
-    # Counted BEFORE the limit is applied. Deriving "already ok" from the
-    # post-limit list reported 13,975 done against an empty output file, which
-    # is a progress line that lies in the direction of looking finished.
+    # Count successes before applying the run limit; an unfetched row is not done.
     print(
         f"{len(ids):,} reports; {already_ok:,} already ok; {len(todo):,} to fetch this run "
         f"({retrying:,} of them retries of recorded failures)",
