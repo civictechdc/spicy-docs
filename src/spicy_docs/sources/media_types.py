@@ -1,5 +1,8 @@
 """Media types stated by publishers, with a deterministic extension fallback."""
 
+from pathlib import PurePosixPath
+from urllib.parse import urlsplit
+
 
 def media_type(value: object, locator: str) -> str:
     if isinstance(value, str):
@@ -29,7 +32,8 @@ def media_type(value: object, locator: str) -> str:
         }
         if normalized in aliases:
             return aliases[normalized]
-    suffix = locator.rsplit("?", 1)[0].rsplit(".", 1)[-1].lower()
-    if suffix and suffix != locator.lower():
-        return media_type(suffix, "")
+    path = urlsplit(locator).path
+    suffix = "" if path.endswith("/") else PurePosixPath(path).suffix
+    if suffix:
+        return media_type(suffix[1:], "")
     return "application/octet-stream"

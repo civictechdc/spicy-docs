@@ -173,3 +173,12 @@ sitemap, FOIA link discovery and a selected XML original. Its local receipts are
 under `~/Work/corpora/supply-2026-09-02/receipts/fec-integration-2026-09-12/`.
 These observations do not establish a full historical backfill, a frozen FEC
 snapshot, normalized table parity, or downstream publication.
+
+The subsequent [2023–2024 bulk qualification](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration/README.md)
+acquired the selected identity/summary originals, verified ZIP membership and
+CRC, and produced local Parquet tables with literal string fields. Independent
+CSV replay matched every field and row. A caller interruption/retry proof retained
+object versions and reused successful downloads without HTTP. Source references
+missing from the corresponding masters remain explicit in the receipt; the
+tables do not establish a closed set of entities. SpicyRegs adoption, API-only
+relationship supplements, the active cycle and sealed publication remain open.
