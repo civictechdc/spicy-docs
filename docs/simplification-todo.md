@@ -37,7 +37,11 @@ downstream publication remain open. The [selected relationship delivery](/Users/
 now covers all selected bulk relationship rows, the complete current committee
 census and retained gap observations, and every relationship record in the
 selected original statements. SpicyRegs preserves reported roles, names, source
-dates and empty/invalid values with exact source references.
+dates and empty/invalid values with exact source references. The
+[handoff repairs and fresh qualification](/Users/mikewolfd/Documents/Codex/fec-handoff-fixes/integration/fixes-2026-09-12/README.md)
+close the selected legacy CSV TEXT, archive-only descriptor, empty sponsor-list
+and input-membership defects. These repairs are on dedicated branches; downstream
+FEC distribution/catalog/search admission remains open.
 
 ## Deferred local work
 
