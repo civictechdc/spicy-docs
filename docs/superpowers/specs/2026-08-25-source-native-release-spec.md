@@ -232,7 +232,9 @@ rule and a 2000-01-18 notice; both remain distinct records.
 
 Repeated observations of the same pair collapse only when their canonical record
 digests agree; differing digests refuse publication. Policies `1.1` (identity)
-and `1.2` (crawl limits) retain the same 22 current `DOCUMENT_FIELDS`.
+and `1.2` (crawl limits) retained the same 22 `DOCUMENT_FIELDS`. Current policy
+`1.3` adds `full_text_xml_url` and pins all 23 fields and the rendition mappings;
+source schema `1.1` admits the optional, nullable XML locator.
 `correction_of` was deferred and never added. Requests and replay require the
 current field set and exact canonical URL, with no historical field-set map or
 separate field-policy selector. See the
@@ -548,8 +550,11 @@ does not copy it into a second generic version field.
 The profile preserves agency names and slugs exactly and reports absence. It
 does not require or invent an agency crosswalk. It preserves malformed RIN text
 only as a source-native fact plus a field diagnostic. Its rendition index
-records every stated `html_url`, `pdf_url`, and `body_html_url`, including
-explicit absence, without choosing a DocSpec candidate.
+records every stated `html_url`, `pdf_url`, `body_html_url`, and
+`full_text_xml_url`, including null locators, without choosing a DocSpec
+candidate. Missing and explicit null fields remain distinct in source records;
+both emit null rendition locators. A constructed body URL cannot replace a
+publisher-stated field.
 
 The predecessor found `topics_json = []` on 890,013 rows. SpicyDocs preserves
 those arrays exactly and makes no claim that the publisher declared no topics.

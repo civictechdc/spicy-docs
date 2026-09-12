@@ -106,11 +106,48 @@ def test_a_recorded_failure_is_retried_and_a_success_is_not(tmp_path: Path) -> N
     def handler(request: httpx.Request) -> httpx.Response:
         rid = request.url.path.rsplit("/", 1)[-1]
         asked.append(rid)
-        return httpx.Response(200, json=_report(rid))
+        payload = _report(rid)
+        payload["CRSReport"]["version"] = 15
+        return httpx.Response(200, json=payload)
 
     run(parquet, output, api_key="k", delay_seconds=0.0, transport=_transport(handler))
 
     assert asked == ["R2"]
+    rows = _rows(output)
+    assert rows[0] == {"reportId": "R1", "status": "ok"}
+    assert rows[-1]["version"] == 15
+
+
+@pytest.mark.parametrize("version", [15, "15", 0, None])
+def test_a_new_capture_preserves_the_native_version(tmp_path: Path, version: Any) -> None:
+    parquet = _parquet(tmp_path, ["R1"])
+    output = tmp_path / "out.jsonl"
+    payload = _report("R1")
+    payload["CRSReport"]["version"] = version
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=payload)
+
+    run(parquet, output, api_key="k", delay_seconds=0.0, transport=_transport(handler))
+
+    row = _rows(output)[0]
+    assert row["status"] == "ok"
+    assert row["version"] == version
+    assert type(row["version"]) is type(version)
+
+
+def test_a_missing_version_stays_absent(tmp_path: Path) -> None:
+    parquet = _parquet(tmp_path, ["R1"])
+    output = tmp_path / "out.jsonl"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=_report("R1"))
+
+    run(parquet, output, api_key="k", delay_seconds=0.0, transport=_transport(handler))
+
+    row = _rows(output)[0]
+    assert row["status"] == "ok"
+    assert "version" not in row
 
 
 def test_every_row_carries_the_source_it_was_drawn_from(tmp_path: Path) -> None:

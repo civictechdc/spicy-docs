@@ -1,12 +1,12 @@
 # Fetcher formats
 
-**Most fetchers already retrieve structured data.** The immediate opportunities
-are to expose Federal Register XML links and label JSON attachments correctly.
+**Most fetchers already retrieve structured data.** Federal Register releases
+now expose publisher XML links, and attachment renditions identify JSON correctly.
 CourtListener already carries some XML opinion bodies inside its CSV files.
 
 The original review covered implemented fetchers and network tools at `bd30dde`;
-the table now also includes the bill API. The four follow-ups below remain open
-in the [task list](simplification-todo.md#fetcher-format-review).
+the table now also includes the bill API. Implementation and qualification status
+live in the [task list](simplification-todo.md#fetcher-format-review).
 
 ## What we fetch today
 
@@ -29,46 +29,45 @@ wraps the target's bytes; it does not turn an HTML document into JSON. There is
 no general PDF downloader here. Sources listed only in the
 [reference catalog](source-reference.md) are not additional implemented fetchers.
 
-## Four bounded follow-ups
+## Format fidelity
 
-### 1. Correct JSON attachment labels
+### 1. JSON attachment labels
 
-The shared [media-type helper](../src/spicy_docs/sources/media_types.py) lacks a
-`json` alias and infers extensions from the whole URL. Reproductions return
-`application/octet-stream` for `file.json` and the invalid `org/file` for an
-extensionless `https://example.org/file`.
+The shared [media-type helper](../src/spicy_docs/sources/media_types.py) maps
+publisher `json` labels to `application/json`. Fallback examines only the final
+URL path extension; query strings, fragments and parent directories do not
+supply a type. An unknown type stays `application/octet-stream`.
 
-Add the alias and inspect the parsed URL path. Cover explicit labels, query
-strings, fragments and extensionless paths. This affects Regulations.gov and
-public-comment rendition metadata: their lists of alternative document files.
-Actual equivalent XML/JSON attachments were not established by this review.
+Regulations.gov and public-comment policy `1.2` pin these rules and qualify
+publication/replay. Public-comment attachment IDs also preserve original list
+positions after invalid formats are omitted. Current readers require the new
+policies; source record schemas stay unchanged. Renditions describe offered
+files. These checks do not establish equivalent XML/JSON body availability.
 
-Revise both acquisition policies and qualify publication/replay: rendition
-values contribute to release hashes. Keep source schemas unchanged if their
-fields and validation rules do not change. Apply current-only admission rules
-explicitly; never silently reinterpret historical releases.
-
-### 2. Expose the publisher's Federal Register XML link
+### 2. Federal Register XML links are exposed
 
 The [source profile](../src/spicy_docs/sources/federal_register/native.py)
-omits `full_text_xml_url` and emits only HTML/PDF renditions. The new body API
-prefers XML, but general release consumers cannot discover it in that list.
-The official API supplies the missing field; its availability does not establish
-historical XML coverage. [Federal Register API](https://www.federalregister.gov/developers/documentation/api/v1).
+requests optional `full_text_xml_url` and emits a `body-xml` rendition with the
+publisher's value. HTML/PDF alternatives remain available. Missing and explicit
+null values remain distinct in records; both have null rendition locators.
+Field availability does not establish historical XML coverage.
+[Federal Register API](https://www.federalregister.gov/developers/documentation/api/v1).
 
-Capture the nullable publisher value and emit a `body-xml` rendition. Update the
-source schema, acquisition policy, schema bundle, admission and replay fixtures
-together. Preserve HTML/PDF alternatives and explicit nulls. A derived XML URL
-must not be described as publisher-stated. Adding a public Parquet column is a
-separate decision; a body link alone does not prove a successful download.
+Source schema `1.1` and acquisition policy `1.3` qualify publication, the embedded
+schema and offline replay together. Admission requires the current versions.
+The generic release schema remains unchanged. Constructed body-fetch URLs never
+replace publisher-stated fields. Public Parquet columns remain unchanged;
+a body link alone does not prove a successful download.
 
 ### 3. Keep CRS report versions
 
 The [CRS fetcher](../src/spicy_docs/sources/congress/crs_summaries.py) retains
-`formats` but drops `version`. Preserve it on new captures so a later download
-can be matched to the same edition. Existing successful rows are skipped on
-resume; obtaining missing version evidence requires an explicit fresh capture.
-Do not infer it or rewrite historical captures.
+`formats` and the detail response's `version` on new captures. The version keeps
+its native JSON value: explicit null stays null, and a missing field stays absent.
+Existing successful rows are skipped on resume. To obtain missing version evidence,
+run the fetcher with a new `--output` JSONL file and retain the earlier capture.
+A fresh response describes the newly observed version; list metadata cannot
+reconstruct the version of an earlier detail response.
 
 The API's JSON/XML responses describe metadata and separate report files; they
 do not supply XML/JSON full reports. Preserve whichever body formats the

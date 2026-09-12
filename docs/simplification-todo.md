@@ -49,6 +49,12 @@ Receipts, replay script and live outputs:
 The [field guide](sources/govinfo-metadata.md) links the publisher dictionaries
 and documents the mapping and format limits.
 
+- [ ] **C07:** Add a DocSpec-owned annual CFR catalog example using the qualified
+  SpicyDocs wheel. Preserve MODS metadata, select one explicit annual section,
+  inject acquisition and processing, then prove a changed processor reuses
+  retained bytes after the source client closes. Work is isolated on DocSpec's
+  `codex/cfr-dataset-example` branch.
+
 Validation: 1,162 tests passed (two opt-in tests deselected), lint/format and
 focused types passed. All seven request shapes succeeded live. Source validation
 passed all 49 retained August 24 titles (810,674,584 bytes); that snapshot is not
@@ -107,34 +113,35 @@ batch measurements.
 ## Fetcher format review
 
 The [format review](fetcher-formats.md) covers all implemented fetchers and
-network tools. Four follow-ups remain; this review did not implement them.
+network tools. Implementation and validation are tracked below.
 
 The [local pre-work review](remaining-source-prework.md) identifies existing
-implementations and tests for F02–F05, P01 and the DocSpec CFR example. Reuse the
-FEC/main media-type helper; affected source publication/replay work remains open.
+implementations and tests for F02–F05, P01 and the DocSpec CFR example.
 
 - [x] **F01:** Review structured-format opportunities with parallel source reviewers and architecture consensus.
 - [x] **F06:** Test GovInfo issue XML with retained live evidence. Extraction is feasible; no additional recovery demonstrated. Keep the default unchanged. [Result and limits](fetcher-formats.md#opportunities-that-need-more-evidence).
 - [x] **F07:** Review all 23 tracked GovInfo bulk-data assets, including PDF guides, XML pairs and HTML samples; refine source-format guidance. [Findings and scope](fetcher-formats.md#what-the-complete-govinfo-asset-review-adds).
-- [ ] **F02:** Correct JSON aliases and URL-path extension inference; revise affected Regulations.gov/public-comment policies and qualify publication/replay.
-- [ ] **F03:** Capture Federal Register `full_text_xml_url` and emit `body-xml`; revise source schema/policy, bundle, admission and replay together. Decide any Parquet column separately.
-- [ ] **F04:** Retain CRS `version` on new captures. Document that earlier successful rows need an explicit fresh capture to obtain missing version evidence.
+- [x] **F02:** Reuse the FEC/main media-type fix; pin aliases and final URL-path inference in Regulations.gov/public-comment policy `1.2`. JSON publication, retained replay and prior-policy refusal pass; source schemas stay unchanged.
+- [x] **F03:** Preserve Federal Register `full_text_xml_url` and emit `body-xml`. Source schema `1.1`, policy `1.3`, embedded schema, admission and replay agree. Empty/malformed values become retained record failures; Parquet columns stay unchanged.
+- [x] **F04:** Preserve native CRS `version` values, explicit null and absence on new captures. Resume leaves earlier successful rows untouched; a new output file obtains fresh evidence.
 - [ ] **F05:** Preserve CourtListener CSV quoted empty strings versus nulls; cover escaping/newlines and bounds, and check downstream raw-reader consumers.
+
+F02–F04 and P01 checks: 342 focused tests and 40 XML-acquisition tests passed;
+lint, format and focused types passed. Independent review approved P01/F02/F04;
+F03 review caught and corrected the empty-link refusal. One bounded live Federal
+Register request returned 20 metadata records with publisher XML links. It did
+not acquire bodies or establish coverage. Receipts and review:
+`~/Work/corpora/supply-2026-09-02/receipts/source-fidelity-2026-09-12/`.
 
 ## Public-comment attachment provenance
 
-- [ ] **P01 — Preserve original attachment-format positions.** In
-  `src/spicy_docs/sources/public_comments/native.py`, `_attachment_groups` filters
-  invalid format entries before rendition construction enumerates the survivors.
-  A formats list of `[{}, {"url": "https://example.test/comment.pdf", "format": "pdf", "size": 123}]`
-  therefore declares `attachments_json[0].formats[0]` for the valid candidate,
-  whose original location is `attachments_json[0].formats[1]`. Carry the original
-  position through filtering and qualify publication and replay for invalid
-  entries before and between valid ones. Preserve raw fields and diagnostics.
+- [x] **P01 — Preserve original attachment-format positions.** Rendition IDs
+  and source fields keep their original indexes when invalid entries appear
+  before or between valid formats. Publication and replay preserve the raw
+  JSON, diagnostics and noncontiguous positions under policy `1.2`.
   [DocSpec's comment example](../../DocSpec/docs/spicyregs-comments.md) retains
   provider-declared locations and exact input bytes; the source fix belongs here.
-  [Existing tests and receiving behavior](remaining-source-prework.md) are mapped
-  for reuse; this research does not complete the correction.
+  Receiving mixed-validity coverage accompanies the C07 wheel adoption.
 
 ## XML body preference
 

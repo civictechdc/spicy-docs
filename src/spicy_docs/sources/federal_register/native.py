@@ -31,8 +31,8 @@ MAX_PAGES_PER_TRAVERSAL: Final = 10_000
 FEDERAL_REGISTER_DOCUMENTS_URL: Final = f"{SOURCE_SYSTEM_ID}/documents.json"
 SCOPE_ID: Final = "federal-register-documents"
 SCHEMA_NAME: Final = "federal-register-document"
-SCHEMA_VERSION: Final = "1.0"
-SCHEMA_PATH: Final = "sources/federal-register-document-1.0.schema.json"
+SCHEMA_VERSION: Final = "1.1"
+SCHEMA_PATH: Final = "sources/federal-register-document-1.1.schema.json"
 
 API_RESPONSE_FIELDS: Final = frozenset(
     {
@@ -57,6 +57,7 @@ DOCUMENT_FIELDS: Final = frozenset(
         "effective_on",
         "end_page",
         "executive_order_number",
+        "full_text_xml_url",
         "html_url",
         "pdf_url",
         "publication_date",
@@ -81,6 +82,7 @@ _TEXT_FIELDS: Final = frozenset(
         "comments_close_on",
         "effective_on",
         "executive_order_number",
+        "full_text_xml_url",
         "html_url",
         "pdf_url",
         "signing_date",
@@ -91,6 +93,12 @@ _TEXT_FIELDS: Final = frozenset(
 )
 _INTEGER_FIELDS: Final = frozenset({"end_page", "start_page", "volume"})
 _TEXT_ARRAY_FIELDS: Final = frozenset({"agency_names", "docket_ids", "topics"})
+_RENDITION_FIELDS: Final = (
+    ("body-html", "body_html_url", "text/html"),
+    ("body-xml", "full_text_xml_url", "application/xml"),
+    ("html", "html_url", "text/html"),
+    ("pdf", "pdf_url", "application/pdf"),
+)
 
 
 class FederalRegisterSourceError(ValueError):
@@ -336,6 +344,7 @@ def federal_register_acquisition_policy(
             "Two consecutive traversals must agree on observed records within the requested date windows.",
             "Matching crawls do not establish a frozen publisher-wide version or source absence outside those windows.",
         ],
+        "documentFields": sorted(DOCUMENT_FIELDS),
         "initialQueryScope": federal_register_query_scope(query_scope),
         "maxTraversals": MAX_RECONCILIATION_TRAVERSALS,
         "maxWindowDays": MAX_WINDOW_DAYS,
@@ -345,6 +354,13 @@ def federal_register_acquisition_policy(
         "observationSelection": {
             "groupBy": ["/document_number", "/publication_date"],
             "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
+        },
+        "renditionSelection": {
+            "fields": [
+                {"mediaType": media_type, "renditionId": rendition_id, "sourceField": source_field}
+                for rendition_id, source_field, media_type in _RENDITION_FIELDS
+            ],
+            "missingLocator": "emit-null",
         },
         "resultCap": RESULT_CAP,
         "strategy": "date-window-cap-split-stable-reconciliation",
@@ -614,6 +630,8 @@ def classify_document(value: object) -> dict[str, Any]:
         field_value = source.get(field_name)
         if field_value is not None and not isinstance(field_value, str):
             raise FederalRegisterSourceError(f"Federal Register {field_name} must be text or null")
+    if source.get("full_text_xml_url") == "":
+        raise FederalRegisterSourceError("Federal Register full_text_xml_url must be null or nonempty text")
     for field_name in _INTEGER_FIELDS:
         field_value = source.get(field_name)
         if field_value is not None and (isinstance(field_value, bool) or not isinstance(field_value, int)):
@@ -723,13 +741,8 @@ def rendition_rows(record: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
     """Preserve every source-stated locator field, including explicit absence."""
 
     source_record_id = federal_register_source_record_id(record)
-    definitions = (
-        ("body-html", "body_html_url", "text/html"),
-        ("html", "html_url", "text/html"),
-        ("pdf", "pdf_url", "application/pdf"),
-    )
     rows: list[dict[str, Any]] = []
-    for rendition_id, source_field, media_type in definitions:
+    for rendition_id, source_field, media_type in _RENDITION_FIELDS:
         locator = record.get(source_field)
         if locator is not None and (not isinstance(locator, str) or not locator):
             raise FederalRegisterSourceError(f"Federal Register {source_field} must be null or nonempty text")
@@ -754,7 +767,7 @@ _TEXT_ARRAY_SCHEMA: Final = {
 }
 
 FEDERAL_REGISTER_DOCUMENT_SCHEMA: Final[dict[str, Any]] = {
-    "$id": "urn:spicy-regs:schema:federal-register-document:1.0",
+    "$id": "urn:spicy-regs:schema:federal-register-document:1.1",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "additionalProperties": False,
     "properties": {
@@ -785,6 +798,7 @@ FEDERAL_REGISTER_DOCUMENT_SCHEMA: Final[dict[str, Any]] = {
         "effective_on": _NULLABLE_TEXT_SCHEMA,
         "end_page": {"type": ["integer", "null"]},
         "executive_order_number": _NULLABLE_TEXT_SCHEMA,
+        "full_text_xml_url": {"minLength": 1, "type": ["string", "null"]},
         "html_url": _NULLABLE_TEXT_SCHEMA,
         "pdf_url": _NULLABLE_TEXT_SCHEMA,
         "publication_date": {"format": "date", "type": "string"},

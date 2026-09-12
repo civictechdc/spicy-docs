@@ -148,6 +148,8 @@ def run(
                     "authors": report.get("authors") or [],
                     "sourceParquet": str(parquet),
                 }
+                if "version" in report:
+                    row["version"] = report["version"]
                 ok += 1
             sink.write(json.dumps(row, sort_keys=True) + "\n")
             sink.flush()

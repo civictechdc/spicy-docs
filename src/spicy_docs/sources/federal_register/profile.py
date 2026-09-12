@@ -10,13 +10,10 @@ from spicy_docs.releases.profile import SourceNativeProfile
 from spicy_docs.sources.federal_register import native as federal_register
 
 FEDERAL_REGISTER_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:federal-register-paginated"
-# Policy 1.1 makes identity composite (document_number, publication_date).
-# Policy 1.2 states the limits of stable observed crawls in the hashed policy.
-# Both changes preserve the same 22 current DOCUMENT_FIELDS. correction_of was
-# deferred and never added; there is no separate field-policy version selector.
-# See docs/decisions.md for the historical SD-24 / DocSpec 0003 decision.
-FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION: Final = "1.2"
-FEDERAL_REGISTER_SOURCE_SCHEMA_KEY: Final = "schemas/federal-register-document-1.0.schema.json"
+# Policy 1.3 adds the publisher's XML locator and pins fields and renditions.
+# Admission and replay require this policy; see docs/sources/federal-register.md.
+FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION: Final = "1.3"
+FEDERAL_REGISTER_SOURCE_SCHEMA_KEY: Final = "schemas/federal-register-document-1.1.schema.json"
 
 
 def _federal_register_record_scope(

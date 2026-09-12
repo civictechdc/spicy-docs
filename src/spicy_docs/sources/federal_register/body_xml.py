@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, NoReturn
 from xml.parsers import expat
 
 from .body_sources import (
@@ -129,7 +129,7 @@ def validate_publisher_xml(
     parser.EndElementHandler = handler.end
     parser.CharacterDataHandler = handler.data
 
-    def refuse_declaration(*_values: object) -> None:
+    def refuse_declaration(*_values: object) -> NoReturn:
         raise FederalRegisterBodySourceError("publisher XML DTD and entity declarations are forbidden")
 
     parser.StartDoctypeDeclHandler = refuse_declaration

@@ -15,6 +15,14 @@ from spicy_docs.sources.media_types import media_type
         ("htm", "", "text/html"),
         (None, "https://example.test/file.TXT?download=1", "text/plain"),
         (None, "https://example.test/file.xml", "application/xml"),
+        (" JSON ", "https://example.test/file.pdf", "application/json"),
+        (None, "https://example.test/file.JSON?download=1#content", "application/json"),
+        (None, "https://www.fec.gov/data/", "application/octet-stream"),
+        (None, "https://example.test/path.xml/child", "application/octet-stream"),
+        (None, "https://example.test/path.xml/", "application/octet-stream"),
+        (None, "https://example.test/file.csv#columns", "text/csv"),
+        (None, "https://example.test/?download=file.pdf", "application/octet-stream"),
+        (None, "https://[invalid/file.json", "application/octet-stream"),
         ("unknown", "https://example.test/file.pdf", "application/pdf"),
         (None, "https://example.test/file.bin", "application/octet-stream"),
         (None, "", "application/octet-stream"),
@@ -22,3 +30,23 @@ from spicy_docs.sources.media_types import media_type
 )
 def test_publisher_type_takes_precedence_over_url(stated: object, locator: str, expected: str) -> None:
     assert media_type(stated, locator) == expected
+
+
+@pytest.mark.parametrize(
+    ("alias", "expected"),
+    [
+        ("xhtml", "application/xhtml+xml"),
+        ("csv", "text/csv"),
+        ("ics", "text/calendar"),
+        ("fec", "text/plain"),
+        ("zip", "application/zip"),
+        ("gz", "application/gzip"),
+        ("bz2", "application/x-bzip2"),
+        ("xls", "application/vnd.ms-excel"),
+        ("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        ("mp3", "audio/mpeg"),
+        ("mp4", "video/mp4"),
+    ],
+)
+def test_additional_publisher_aliases(alias: str, expected: str) -> None:
+    assert media_type(alias, "") == expected
