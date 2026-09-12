@@ -109,6 +109,10 @@ batch measurements.
 The [format review](fetcher-formats.md) covers all implemented fetchers and
 network tools. Four follow-ups remain; this review did not implement them.
 
+The [local pre-work review](remaining-source-prework.md) identifies existing
+implementations and tests for F02–F05, P01 and the DocSpec CFR example. Reuse the
+FEC/main media-type helper; affected source publication/replay work remains open.
+
 - [x] **F01:** Review structured-format opportunities with parallel source reviewers and architecture consensus.
 - [x] **F06:** Test GovInfo issue XML with retained live evidence. Extraction is feasible; no additional recovery demonstrated. Keep the default unchanged. [Result and limits](fetcher-formats.md#opportunities-that-need-more-evidence).
 - [x] **F07:** Review all 23 tracked GovInfo bulk-data assets, including PDF guides, XML pairs and HTML samples; refine source-format guidance. [Findings and scope](fetcher-formats.md#what-the-complete-govinfo-asset-review-adds).
@@ -129,6 +133,8 @@ network tools. Four follow-ups remain; this review did not implement them.
   entries before and between valid ones. Preserve raw fields and diagnostics.
   [DocSpec's comment example](../../DocSpec/docs/spicyregs-comments.md) retains
   provider-declared locations and exact input bytes; the source fix belongs here.
+  [Existing tests and receiving behavior](remaining-source-prework.md) are mapped
+  for reuse; this research does not complete the correction.
 
 ## XML body preference
 
