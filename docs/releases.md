@@ -84,7 +84,10 @@ When publication fails, the original exception may carry `failed_acquisition`.
 Its `response` identifies exact refused bytes in the same blob store, or explains
 why they were not retained. GAO validates identity, topic, and markup before
 yielding a page; Federal Register validates parsing and page inventory there too.
-Both attach bounded response context to their original error. Shared page
+Regulations.gov also attaches the current object's exact bounded bytes when
+source metadata, JSON values, or identity fail before an evidence pack is
+yielded. A later enumeration error never inherits an earlier buffered object's
+bytes. These paths attach response context to the original error. Shared page
 indexing stores bounded evidence before semantic checks. No refused response
 becomes an admitted record or a partial release.
 

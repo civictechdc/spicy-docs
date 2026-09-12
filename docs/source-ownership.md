@@ -78,10 +78,13 @@ captures source objects into bounded evidence pages
 public-comment input captures exact upstream Parquet bytes before interpretation
 ([`public_comments/native.py:1`](../src/spicy_docs/sources/public_comments/native.py#L1)).
 Neither is the optional public-table output described below. Federal Register
-body helpers preserve printed-marker and MODS identity checks but currently make
-no requests ([`body_sources.py:1`](../src/spicy_docs/sources/federal_register/body_sources.py#L1));
-S19/D44 must join those checks to selected bounded acquisition without a second
-unnecessary download.
+body helpers preserve printed-marker and MODS identity checks without requests
+([`body_sources.py`](../src/spicy_docs/sources/federal_register/body_sources.py)).
+The separate [GovInfo acquisition API](federal-register-body-sources.md) joins
+those checks to an explicit bounded route and returns the exact captured bytes
+for reuse. DocSpec D44 owns its injected fetcher and retention of the additional
+MODS/resolved-identity facts; a successful source capture does not qualify that
+downstream adapter.
 
 Reader imports are deliberately tested without eager HTTP/S3/analytics imports
 ([`test_reader_closure.py`](../tests/test_reader_closure.py)). Version `0.2.0`
@@ -311,8 +314,9 @@ The following historical S11 maintenance commands ran against the inspected base
 **Architecture verdict: approve these dispositions.** Ownership follows the
 owner's intent, preserves useful existing differences, and selects concrete
 removals and reuse. Confidence is high for local caller evidence and medium for
-future adoption value. S12–S16, S21–S22, S25–S26 and S31 remain implementation work;
-DocSpec D41–D46, SpicyRegs SR01/SR03 and Rulespec RS03 own their corresponding
-changes. Keep selected deferrals separate from delivered changes. No adoption,
-retirement, wheel release, production run, push, or upstream acceptance is claimed
-by this inventory.
+future adoption value. The [current checklist](simplification-todo.md) records
+completed local changes and qualification separately from this original
+inventory. S21/S31 are conditionally deferred as explained above; DocSpec
+D41–D46, SpicyRegs SR01/SR03 and Rulespec RS03 own their corresponding changes.
+Keep selected deferrals separate from delivered changes. This inventory alone
+does not establish wheel release, production operation or upstream acceptance.

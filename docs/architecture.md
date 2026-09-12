@@ -34,6 +34,7 @@ identity depend on the caller.
 | --- | --- |
 | Source profiles | `sources/federal_register/profile.py`, `sources/regulations_gov/profile.py`, `sources/gao/profile.py`, `sources/public_comments/profile.py` |
 | Federal Register acquisition | `sources/federal_register/native.py` |
+| Selected GovInfo body acquisition | `sources/federal_register/body_acquisition.py` applies bounded requests and preserves captures; `body_sources.py` owns the pure locator and identity checks. |
 | Regulations.gov | `sources/regulations_gov/`: `definitions.py` declares fields and data shapes; `validation.py` checks source structures; `records.py` classifies records; `schemas.py` declares schemas; `scope.py` checks scope and completeness; `evidence.py` packs/decodes captures; `acquisition.py` captures pages. |
 | GAO exact-page capture | `sources/gao/native.py` |
 | Captured public comments | `sources/public_comments/native.py` |
@@ -48,7 +49,7 @@ identity depend on the caller.
 | Public-table consumption | `public_tables/api.py` exports the library API; `reader.py` owns admitted locations and exact Parquet member reading. |
 | Publisher-domain drift | `sources/source_domains.py` owns pinned document parsing and exact-value comparisons. |
 | Shared evidence encoding | `sources/evidence_zip.py` defines deterministic ZIP member metadata. |
-| Transport | `transport/acquisition.py`, `transport/retry.py`, `transport/credentials.py`, `sources/zyte.py` |
+| Transport | `transport/acquisition.py` composes injected/default clients; `transport/http.py` contains HTTPX operations; `transport/retry.py`, `transport/credentials.py`, and `sources/zyte.py` retain their specific responsibilities. |
 | Operator commands | `cli/source_native.py` handles commands; `cli/arguments.py` defines syntax; `cli/sources.py` registers scope, acquisition, errors, and optional tables |
 | Campaigns and source-specific operational acquisition | `cli/campaign.py`, `sources/federal_register/replay.py`, and `sources/congress/crs_summaries.py`; see [operator commands](cli.md#campaigns-replay-and-source-tools) |
 | Repository checks and receipt analysis | [scripts](../scripts/README.md) update/check repository inputs; [tools/analysis](../tools/README.md) answers bounded questions about retained evidence. |
