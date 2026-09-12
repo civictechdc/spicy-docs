@@ -83,5 +83,7 @@ The upstream [Bill Status guide](https://github.com/usgpo/bill-status) describes
 metadata and text links. [GPO's bulk-data guides](https://github.com/usgpo/bulk-data)
 describe document formats and collection listings. They are reference material;
 acquisition talks directly to GovInfo. This API accepts explicit bill IDs and
-versions. Collection crawling, separate BILLSUM acquisition and CFR/eCFR readers
-have separate scope and coverage requirements.
+versions. Collection crawling and separate BILLSUM acquisition have separate
+scope and coverage requirements. For CFR/eCFR, reuse the
+[existing sibling implementations](../source-reference.md#cfr-metadata-and-separately-acquired-xml)
+and qualify the selected source format before adding acquisition here.

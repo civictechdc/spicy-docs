@@ -33,9 +33,16 @@ SHA-256 `bef15f967b0840ccc119c812edca92b38c63adb8943074be17655b86c96f83f1`.
 Receiving branches are committed locally; DocSpec uses an isolated worktree.
 Live receipts: `~/Work/corpora/supply-2026-09-02/receipts/bill-acquisition-2026-09-12/`.
 
-Deferred until a named collection workflow needs them: bounded GovInfo JSON
-discovery/publication, standalone BILLSUM coverage, annual CFR editions, eCFR
-snapshots, and Federal Register issue acquisition justified by batch measurements.
+CFR/eCFR already has acquisition examples, retained XML and active readers across
+the sibling repositories; see the [reuse inventory](source-reference.md#cfr-metadata-and-separately-acquired-xml).
+The remaining task is to qualify shared acquisition for a named caller using
+those components, with exact bytes, source/date identity and bounded failures.
+Preserve SpicyRegs metadata and DocSpec catalog/run ownership. Qualify annual CFR
+and GovInfo bulk eCFR separately from the existing eCFR API reader.
+
+Deferred until a named workflow needs them: bounded GovInfo JSON discovery/publication,
+standalone BILLSUM coverage, and Federal Register issue acquisition justified by
+batch measurements.
 
 ## Fetcher format review
 
