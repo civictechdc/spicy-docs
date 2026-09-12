@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterator, Mapping
 from contextlib import closing
 from copy import deepcopy
@@ -20,15 +21,18 @@ from spicy_docs.releases.admission import (
 )
 from spicy_docs.releases.format import (
     _RECEIPT_SHAPE,
+    MAX_EVIDENCE_BYTES,
     PARTITION_LEDGER,
     PARTITION_RECORDS,
     PARTITION_RENDITIONS,
     RECEIPT_KEY,
+    ROLE_EVIDENCE,
     SCOPES_KEY,
     SourceNativeReleaseError,
 )
 from spicy_docs.releases.observations import _policy_for_scope, _section_digest
 from spicy_docs.releases.partitions import (
+    _partition_id,
     _partition_rows,
     _payload_partitions,
     _read_jsonl,
@@ -127,6 +131,7 @@ class SourceNativeReleaseReader:
         if producer["verifierImplementationId"] not in accepted_verifier_implementation_ids:
             raise SourceNativeReleaseError("source-native verifier implementation is not accepted")
         _, by_ref, _ = _member_index(self._artifact, source)
+        self._evidence_members = {ref: member for ref, member in by_ref.items() if member.role == ROLE_EVIDENCE}
         receipt = _RECEIPT_SHAPE.parse(_read_one_json(source, RECEIPT_KEY))
         partitions = _payload_partitions(receipt, by_ref)
         self._record_partitions = partitions[PARTITION_RECORDS]
@@ -154,6 +159,58 @@ class SourceNativeReleaseReader:
         """
 
         return deepcopy(self._collection_outcome)
+
+    def record_evidence(self, source_record_id: str) -> Mapping[str, Any] | None:
+        """Return the selected published record's evidence reference, if present.
+
+        The result carries ``sourceRecordId``, ``observationRef``,
+        ``evidenceBlobRef`` and ``failure: None``. It does not enumerate discarded
+        observations. Returns None when this release has no published success
+        for the identity, including failure-only identities. Lookup scans at
+        most one existing ledger partition in bounded memory and closes its
+        stream before returning.
+        """
+
+        bucket = _partition_id(source_record_id)
+        partitions = tuple(partition for partition in self._ledger_partitions if partition.partition_id == bucket)
+        with closing(_partition_rows(self._source, self._blob_source, partitions)) as rows:
+            for row in rows:
+                if row["sourceRecordId"] == source_record_id:
+                    return row if row["failure"] is None else None
+                if row["sourceRecordId"] > source_record_id:
+                    break
+        return None
+
+    def read_evidence(self, blob_ref: str, *, max_bytes: int = MAX_EVIDENCE_BYTES) -> bytes:
+        """Read one admitted evidence member within a caller-selected byte limit.
+
+        The limit must be a nonnegative integer no larger than the release
+        evidence bound. Size and digest are rechecked on the returned bytes,
+        including with a custom blob source. Unknown and non-evidence references
+        are refused before opening storage. The storage context always closes.
+        """
+
+        if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or not 0 <= max_bytes <= MAX_EVIDENCE_BYTES:
+            raise ValueError(f"evidence byte limit must be an integer from 0 to {MAX_EVIDENCE_BYTES}")
+        member = self._evidence_members.get(blob_ref) if isinstance(blob_ref, str) else None
+        if member is None:
+            raise SourceNativeReleaseError("reference is not an admitted source evidence member")
+        if member.byte_size > max_bytes:
+            raise SourceNativeReleaseError("source evidence exceeds the requested byte limit")
+        data = bytearray()
+        with self._blob_source.open(blob_ref) as stream:
+            while len(data) <= max_bytes:
+                chunk = stream.read(min(64 * 1024, max_bytes + 1 - len(data)))
+                if not chunk:
+                    break
+                data.extend(chunk)
+        if len(data) > max_bytes:
+            raise SourceNativeReleaseError("source evidence exceeds the requested byte limit")
+        if len(data) != member.byte_size:
+            raise SourceNativeReleaseError("source evidence size differs from admitted member")
+        if "sha256:" + hashlib.sha256(data).hexdigest() != blob_ref:
+            raise SourceNativeReleaseError("source evidence digest differs from admitted member")
+        return bytes(data)
 
     def iter_failures(self, limit: int = 100) -> Iterator[Mapping[str, Any]]:
         """Stream at most ``limit`` failure ledger rows in source-record order.

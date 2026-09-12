@@ -30,6 +30,52 @@ and capture details. HTML character references are decoded and outer label
 whitespace is trimmed; the original HTML remains available to inspect that
 extraction. This profile emits no attachment rendition rows.
 
+## Read a topic and its evidence
+
+`SourceNativeReleaseReader.iter_records()` exposes `record.publisherTopic` as
+`href`, `label`, and `slug`, alongside `canonicalUrl`, `requestedUrl`,
+`resolvedUrl`, `htmlSha256`, and `htmlByteLength`. A syntactically valid topic is
+preserved even if it is unexpected by a downstream application. There is no
+RefSpec membership check or allowed-topic list. A missing topic refuses source
+acquisition; it does not become a null topic or an empty accepted release.
+
+After opening the release under its expected pin and accepted verifier identity,
+use the public reader to inspect the selected record's evidence:
+
+```python
+from spicy_docs.sources.gao.native import parse_gao_product_page_response
+
+evidence = reader.record_evidence("gao-26-107693")
+if evidence is not None:
+    pack = reader.read_evidence(evidence["evidenceBlobRef"])
+    response = parse_gao_product_page_response(pack)
+    print(response["results"][0]["publisherTopic"])
+```
+
+`record_evidence()` returns the selected successful observation's existing
+references, not every discarded observation. `read_evidence()` returns the
+exact admitted ZIP after checking its role, size and digest; the GAO parser
+validates that ZIP's manifest and original `product.html`. See
+[evidence access and bounds](../source-native-outcomes.md#inspect-record-evidence).
+
+The [retained topic inputs](../../examples/fixtures/gao/README.md) demonstrate a
+matching label, an unexpected label, and a missing publisher field. They are
+explicitly synthetic HTML, not live GAO captures. Each example reports its exact
+input digest and retained output references:
+
+```sh
+uv run --frozen python examples/offline_release.py --case matching
+uv run --frozen python examples/offline_release.py --case unexpected
+uv run --frozen python examples/offline_release.py --case missing
+```
+
+The first two cases publish and verify a source release. The missing case reports
+the expected refusal and retained target-body reference without publishing a
+release. An unrelated error still fails the example. You can stop at those
+source results. DocSpec's [D51 example](../../../DocSpec/docs/dataset-experiments-todo.md#d51)
+owns any catalog filter or processor using them. A literal label alone establishes
+no requirements or applicability.
+
 ## Diagnose a refused response
 
 A response that fails URL identity, status, content type, UTF-8, topic, or markup
@@ -71,6 +117,6 @@ uv run --frozen pytest -q tests/test_gao_product_pages_source_native.py tests/te
 uv run --frozen python examples/offline_release.py
 ```
 
-The offline example supplies synthetic HTML and reads the preserved record after
-verification. Keep field-versus-navigation fixtures when changing the parser;
+The offline example supplies synthetic HTML and reads the preserved record and
+evidence through public APIs after verification. Keep field-versus-navigation fixtures when changing the parser;
 an arbitrary topic anchor is insufficient evidence of the publisher's topic.

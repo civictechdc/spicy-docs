@@ -137,3 +137,45 @@ the requested number of failures and closes its streams; a zero limit or a
 sealed zero failure count skips the ledger. Finding a late failure can still
 require scanning the whole ledger. Callers that stop iteration early should
 close the iterator, as the example does.
+
+## Inspect record evidence
+
+For a published record, `reader.record_evidence(source_record_id)` returns its
+selected observation's `sourceRecordId`, `observationRef`, `evidenceBlobRef`, and
+`failure: None`. A missing result means this release has no published success
+for that identity. It does not prove source absence. Failure-only identities
+return `None`; use `iter_failures()` for their recorded failure and evidence
+references. The lookup does not enumerate discarded observations or earlier
+acquisition passes.
+
+```python
+evidence = reader.record_evidence(source_record_id)
+if evidence is not None:
+    exact_bytes = reader.read_evidence(evidence["evidenceBlobRef"], max_bytes=8 * 1024 * 1024)
+```
+
+Lookup chooses the existing identity bucket and scans at most one ledger
+partition, using the ordinary row, order and bucket checks. It closes that
+stream before returning. Memory stays bounded by the row limit; lookup can
+still scan a large partition. There is no new index or release member.
+The lookup relies on the admitted immutable ledger and the accepted producer
+and source profile. It does not replay acquisition or recheck every ledger byte
+after a storage change.
+
+`read_evidence()` accepts only evidence references declared by this admitted
+release. It refuses unknown references, record/table/ledger payload references,
+and declared sizes above the requested limit before opening the injected blob
+source. It checks the returned bytes against the admitted size and digest and
+closes storage on success or failure. `max_bytes` defaults to the release's
+24 MiB evidence bound; it must be an integer from zero through that bound.
+Zero can read a zero-byte admitted evidence member, but not a nonempty member.
+An oversize response is refused, never returned as a truncated capture.
+The method accumulates at most the requested limit plus one detection byte;
+an injected blob source may also perform its own integrity reads when opened.
+
+Evidence bytes may be JSON or a source-specific ZIP, not the document body
+listed by a rendition. Use the source's documented parser to interpret its
+evidence; the [GAO example](sources/gao.md#read-a-topic-and-its-evidence) shows
+this path. A refused acquisition has no admitted reader: its separate
+`failedAcquisition` references belong to the failed-run report and selected
+blob store, described in [the CLI guide](cli.md#output-and-failures).
