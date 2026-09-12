@@ -1,14 +1,8 @@
-"""Fixture coverage for the ``tools/analysis/fr_discarded_distinctness.py`` receipt helper (SD-18).
+"""Check discarded-observation analysis with synthetic Federal Register releases.
 
-Builds synthetic Federal Register source-native releases the way
-``tests/test_cross_filing_census.py`` builds synthetic regulations.gov releases: a real
-``LocalSourceNativeBlobStore`` holding digest-addressed blobs, plus a hand-written
-``manifests/source-native.json`` and ``receipts/publication.json`` naming them. The tool under
-test never goes through ``SourceNativeReleaseReader``/``admit_artifact`` -- it reads the manifest
-and receipt directly, exactly as the promoted script did -- so the fixtures only need to satisfy
-what the tool itself reads: a member's ``role`` and ``blobRef``, an evidence blob shaped as one
-Federal Register API page (``{"results": [...]}``), and a records blob shaped as the release's
-JSONL (one ``{"sourceRecordId": ..., "record": {...}}`` per line).
+Fixtures use real digest-addressed blobs and hand-written manifests/receipts.
+The tool reads these directly, bypassing release admission, so fixtures provide
+only the consumed fields: member role/blobRef, API results pages, and record JSONL.
 """
 
 from __future__ import annotations
@@ -74,20 +68,16 @@ def _write_release(
 
 
 def _fixture(tmp_path: Path) -> dict[str, Any]:
-    """One release covering every scenario this tool reports on.
+    """Cover distinct documents, re-observations, title prefixes, and singletons.
 
-    FR-2000-DISTINCT: two observations; the discarded (older) one differs from the survivor on
-      title -- a distinct-document candidate.
-    FR-2000-REOBS: two observations; the discarded one is identical to the survivor on all four
-      compared fields -- a true re-observation.
-    00-12867: the real historical example from the promoted script's own docstring. The discarded
-      title is a trimmed prefix of the survivor's ("...General Counsel" vs "...General Counsel;
-      Republication") -- differs (so it is also a distinct-document candidate) and trips the
-      title-prefix heuristic.
-    FR-2000-SINGLE: one observation only -- must never enter the multi-date population at all.
-    The receipt is written to balance exactly (inputObservationCount - publishedRecordCount ==
-    discardedObservationCount == the three discarded observations enumerated above), so
-    reconciliation.agrees must be True.
+    - FR-2000-DISTINCT: older title differs; distinct-document candidate.
+    - FR-2000-REOBS: all four compared fields agree; re-observation.
+    - 00-12867: discarded title is the survivor's trimmed prefix; candidate and
+      title-prefix hit ("General Counsel" versus "General Counsel; Republication").
+    - FR-2000-SINGLE: excluded from the multi-date population.
+
+    The receipt balances inputObservationCount - publishedRecordCount against the
+    three discarded observations, so reconciliation.agrees must be True.
     """
     release_root, blob_store = _write_release(
         tmp_path / "happy",

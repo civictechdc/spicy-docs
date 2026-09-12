@@ -1,26 +1,26 @@
 # Publish, verify, and inspect
 
-Run `uv run --frozen spicy-docs-source-native --help` from a developer checkout.
-Each command also accepts `--help`. The commands below write a JSON success
-object to stdout (exit 0), or a handled operational error to stderr (exit 1).
-Argument syntax errors use argparse's ordinary usage output and exit 2.
+Run `uv run --frozen spicy-docs-source-native --help` in a checkout; each
+subcommand accepts `--help`. Installed packages use `spicy-docs-source-native`
+or `python -m spicy_docs.cli.source_native`.
 
-For an installed package, `spicy-docs-source-native` is the same entry point.
-Default HTTPX/S3 operations require the `acquisition` extra; GAO's standard-library
-Zyte transport requires its credential but no extra. Captured comment Parquet
-parsing/full replay and public-table commands require `public-table`, including
-when acquisition is injected. Core inspection, JSON/HTML replay, and injected
-JSON/HTML acquisition do not load these packages.
-The contributor setup `uv sync --frozen --all-extras` installs both. See
-[installation choices](installation.md) for the source-specific requirements.
-The [offline example](../examples/offline_release.py) needs no credentials.
-Library and module ownership are in the [architecture map](architecture.md).
-The module form of this command is `python -m spicy_docs.cli.source_native`.
+| Result | Stream | Exit |
+| --- | --- | --- |
+| Success JSON | stdout | 0 |
+| Handled operational error JSON, after any retry logs | stderr | 1 |
+| Argument usage error | stderr | 2 |
+
+Default HTTPX/S3 operations need `acquisition`; GAO's standard-library Zyte
+transport needs its credential only. Parquet parsing/full replay and public-table
+commands need `public-table`, even with injected acquisition. Core inspection,
+JSON/HTML replay, and injected JSON/HTML acquisition need neither extra.
+`uv sync --frozen --all-extras` installs both for development. See
+[installation](installation.md) or try the credential-free
+[offline example](../examples/offline_release.py).
 
 ## publish
 
-Acquire one source, retain exact evidence in the persistent blob store, stage
-and producer-verify a release, and publish its directory once.
+Acquire evidence, stage and fully verify a release, then publish its directory once:
 
 ```sh
 uv run --frozen spicy-docs-source-native publish \
@@ -29,45 +29,37 @@ uv run --frozen spicy-docs-source-native publish \
   --implementation-id 'git+https://example.test/spicy-docs@<full-commit>'
 ```
 
-Use the actual producer revision in place of the example implementation ID.
-`--source`, `--destination`, `--blob-store`, and `--implementation-id` are
-required. The destination must be new; destination and blob store must be
-separate, with neither nested inside the other.
+`--source`, `--destination`, `--blob-store`, and `--implementation-id` are required.
+Use the actual producer revision. The destination must be new and separate from
+the blob store, with neither nested inside the other.
 
-The success result includes `byteMeasurements` for this invocation: payload
-bytes read, reused, and written to storage staging, plus the resulting local
-metadata size. Staging writes include a discarded write that lost a concurrent
-publication race.
-These operational measurements are outside the sealed release and are not
-returned by later verification or inspection. See [storage reporting](releases.md#storage-and-recovery)
-for their units and limits. Publication uses the current source-native format
-2.0; historical release formats and producer identities are refused on opening.
-
-| Source | Required selectors | Meaning and live access |
+| Source | Required selectors | Live access and scope |
 | --- | --- | --- |
-| `federal-register` | `--since`, `--until` | Closed publication-date window, Federal Register HTTPS API; no agency or product selector |
-| `regulations-documents` | Dates and one or more `--agency` | Publication-date window, anonymous Mirrulations S3 |
-| `regulations-dockets` | Dates and agencies | Modified-date window, anonymous Mirrulations S3 |
-| `regulations-comments` | Dates and agencies | Posted-date window, anonymous Mirrulations S3 |
-| `spicy-regs-public-comments` | Agencies | Whole named community-table partitions over HTTPS; dates are invalid |
-| `gao-product-pages` | One or more `--product-id` | Closed set of exact product pages through Zyte; dates and agencies are invalid |
+| `federal-register` | `--since`, `--until` | Inclusive publication dates; Federal Register HTTPS API; no agencies/products |
+| `regulations-documents` | Dates and repeated `--agency` | Posted dates; anonymous Mirrulations S3 |
+| `regulations-dockets` | Dates and agencies | Modified dates; anonymous Mirrulations S3 |
+| `regulations-comments` | Dates and agencies | Posted dates; anonymous Mirrulations S3 |
+| `spicy-regs-public-comments` | Agencies | Whole community-table partitions over HTTPS; dates invalid |
+| `gao-product-pages` | Repeated `--product-id` | Exact products through Zyte; dates/agencies invalid |
 
-Dates use `YYYY-MM-DD`. Repeat `--agency` or `--product-id` for multiple values.
-Agencies are sorted and deduplicated; duplicate GAO product IDs are refused.
-GAO requires `ZYTE_TOKEN` in the process environment. It preserves literal
-publisher topic information and covers only the named products. Bounds and
-supply precedence are explained in [decisions](decisions.md).
+Dates use `YYYY-MM-DD`. Agencies are sorted/deduplicated; duplicate GAO IDs are
+refused. GAO requires environment variable `ZYTE_TOKEN` and preserves literal
+topics for named products. See [source scope and supply rules](source-workflows.md#know-what-each-source-supplies).
 
-Federal Register and public-table HTTP requests retry transient request errors,
-429s, and server failures with bounded jittered delays. Most other 4xx responses
-abort. Mirrulations retains its source-specific retry and ordered enumeration
-rules. Credential refusals stop the run; follow [AGENTS.md](../AGENTS.md) for
-error scrubbing and resumable operational tools.
+Federal Register and public-table HTTP retry transient errors, 429s, and server
+failures with bounded jittered delays; most other 4xx abort. Mirrulations uses
+its own retry/enumeration rules. Credential refusals stop the run. Follow
+[credential and resume rules](../AGENTS.md).
+
+Publication uses source-native format 2.0; opening historical formats or unsupported
+producer identities is refused. Success includes invocation-only `byteMeasurements`,
+outside the sealed release. Later inspection/verification cannot reconstruct
+these storage counters; see [units and limits](releases.md#storage-and-recovery).
 
 ## verify
 
-Replay retained evidence without source requests. Require the expected artifact
-pin and an explicitly accepted producer-verifier implementation identity.
+Replay retained evidence without source requests, using the expected artifact
+pin and an independently accepted producer-verifier identity:
 
 ```sh
 uv run --frozen spicy-docs-source-native verify \
@@ -78,31 +70,26 @@ uv run --frozen spicy-docs-source-native verify \
   --accepted-verifier-implementation-id '<trusted implementation ID>'
 ```
 
-Every shown option is required. Repeat the accepted-ID option for an explicit
-set of trusted implementations. Choose that set according to your deployment;
-reading a value from an untrusted artifact does not establish trust in it.
-Verification checks scope, schemas, evidence, reconstruction, ordering,
-selection, failure accounting, and the published source-state digest.
-
+Every shown option is required. Repeat the accepted-ID option to trust multiple
+implementations. Choose IDs through deployment policy, independently of artifact
+claims. Verification checks scope, schemas, evidence, reconstruction, ordering,
+selection, failure accounting, and source-state digest.
 
 ## inspect
 
-Open a retained release, check its pin and trusted producer-verifier identity,
-and show collection outcomes and a bounded sample of recorded failures.
-Use the same required `--source`, `--release`, `--blob-store`, `--logical-id`,
-`--artifact-digest`, and repeatable `--accepted-verifier-implementation-id`
-options as [verify](#verify), with `inspect` as the subcommand.
+Check a retained release's pin and accepted verifier, then report its outcome
+and a bounded failure sample. Use [verify](#verify)'s required options with
+`inspect` as the subcommand.
 
-`--failure-limit 20` is the default sample size. Set `--failure-limit 0` for
-outcomes only. Admission hashes retained payloads without reconstructing source
-records; `verify` performs the full replay. The [source outcomes guide](source-native-outcomes.md)
-explains each count, scope, and failure field.
+`--failure-limit` defaults to 20; zero reports outcomes only. Admission hashes
+payloads without reconstructing source records. See the
+[inspection example and field definitions](source-native-outcomes.md#inspect-failures).
 
 ## publish-public-table
 
-Project an admitted source-native release into an immutable flat Parquet table.
-The publisher checks every output row before publication. It retains a pin to
-its source release; preserve that release and its evidence separately.
+Export an admitted source release to immutable flat Parquet. Publication checks
+every output row and retains the input release pin; preserve source evidence
+separately.
 
 ```sh
 uv run --frozen spicy-docs-source-native publish-public-table \
@@ -113,26 +100,21 @@ uv run --frozen spicy-docs-source-native publish-public-table \
   --implementation-id 'git+https://example.test/spicy-docs@<full-commit>'
 ```
 
-Every shown option is required. Repeat `--source-accepted-verifier-implementation-id`
-for multiple accepted IDs. Tables are `federal-register`, `regulations-documents`,
-`regulations-dockets`, and `regulations-comments`. GAO and captured community
-comments have no output-table profile. The destination must be new and separate
-from the source release. The source release and source blob store must also be
-separate.
+Every shown option is required. Repeat the source accepted-ID option as needed.
+Tables: `federal-register`, `regulations-documents`, `regulations-dockets`,
+`regulations-comments`. GAO and captured community comments have no table output
+profile. The destination must be new and separate from the source release; the
+source release and blob store must also be separate.
 
-Federal Register now publishes projection `1.1`, keyed by the existing
-`document_number` and `publication_date` columns. Reused numbers on different
-dates remain separate rows. This corrects the former projection's mismatch
-with current source-native identity; it changes the table's projection version
-and logical identity while preserving the columns.
+Federal Register table version `1.1` uses existing `document_number` and
+`publication_date` columns as compound identity. Reused numbers on different dates
+stay separate. Columns are unchanged; projection version and logical identity changed.
 
 ## verify-public-table
 
-Check the artifact pin, structure, declared table profile, member layout, and
-accepted producer-verifier identity. This command performs table admission;
-it does not independently reproject source records or run the publisher's
-full Parquet-row gate. `verify_public_table_release()` provides the full row
-gate to library callers.
+Check table admission: pin, structure, profile, member layout, and accepted verifier.
+This command neither reprojects source records nor runs the full Parquet-row gate;
+library `verify_public_table_release()` adds the full row check.
 
 ```sh
 uv run --frozen spicy-docs-source-native verify-public-table \
@@ -142,17 +124,13 @@ uv run --frozen spicy-docs-source-native verify-public-table \
   --accepted-verifier-implementation-id '<trusted table implementation ID>'
 ```
 
-Every shown option is required. Table choices match `publish-public-table`;
-repeat the accepted-ID option as needed.
-
-For Federal Register this command selects the supported `1.1` profile.
-The old `1.0` table projection is no longer supported. See the
+Every shown option is required. Table choices match publication; repeat accepted
+IDs as needed. Federal Register selects `1.1`; `1.0` is unsupported. See the
 [compatibility decision](decisions.md#federal-register-public-tables-preserve-composite-identity).
 
 ## Campaigns, replay, and source tools
 
-Reusable operations live beside their owning source or CLI package. Their
-`--help` output lists explicit paths and required inputs:
+Start with module help and the [operation index](../tools/README.md#related-operations):
 
 ```sh
 uv run --frozen python -m spicy_docs.cli.campaign --help
@@ -160,9 +138,8 @@ uv run --frozen python -m spicy_docs.sources.federal_register.replay --help
 uv run --frozen python -m spicy_docs.sources.congress.crs_summaries --help
 ```
 
-Use the [operation index](../tools/README.md#related-operations) for each
-command's purpose, output, and prerequisites. Campaigns publish agency-scoped
-releases with attempt logs and receipts; start with their `--dry-run`.
+Campaigns publish agency-scoped releases with attempt logs and external receipts.
+Preview first:
 
 ```sh
 uv run --frozen python -m spicy_docs.cli.campaign \
@@ -173,73 +150,63 @@ uv run --frozen python -m spicy_docs.cli.campaign \
   --dry-run
 ```
 
-Remove `--dry-run` to publish. Each publisher performs one mandatory full replay
-before making its release visible. The campaign then checks its expected pin,
-publication metadata, requested agency and window, and trusted verifier identity
-without reconstructing source records again. Admission uses bounded memory but
-still hashes all retained payload bytes to detect corruption. Resume repeats
-this admission check in an interruptible `inspect --failure-limit 0` child; it
-does not launch another publisher or semantic replay for a matching release.
-Inspection writes to the attempt log and creates no separate success receipt. Repeat
-`--accepted-verifier-implementation-id` to explicitly trust several producer
-builds. These IDs come from your deployment policy, independently of release
-contents; `--implementation-id` alone does not grant trust.
+Remove `--dry-run` to publish. Each publisher runs mandatory full replay before
+publication. The campaign then checks expected pin, metadata, agency/window,
+and trusted verifier through admission, hashing all payloads with bounded memory.
 
-Keep the campaign's external `receipts/*.json` files with their release pins and
-collection outcomes. See [source outcomes](source-native-outcomes.md) for counts,
-requested scope, and inspection of retained failures. Missing, malformed, or
-misdirected receipts cause the campaign to rename old evidence aside before
-retrying. A valid receipt with a
-mismatched pin, requested scope, damaged metadata, or unaccepted verifier fails
-closed and preserves the release and receipt for inspection. Choose a new
-campaign root when changing an agency's window. Full source reconstruction
-remains available through the explicit [verify command](#verify) using the
-retained external pin and an independently accepted verifier ID. The campaign's
-former `--verify` and `--no-verify` switches and separate verify receipts are
-removed; current resume requires a publish receipt with `collectionOutcome`.
+Resume uses an interruptible `inspect --failure-limit 0` child for that admission.
+A matching release triggers neither republication nor replay. Inspection writes
+the attempt log without a separate success receipt. Accepted IDs may repeat;
+`--implementation-id` alone grants no trust.
+
+Keep `receipts/*.json` with pins and `collectionOutcome`:
+
+| Resume condition | Action |
+| --- | --- |
+| Missing, malformed, or misdirected receipt | Rename old evidence aside, then retry |
+| Valid receipt with mismatched pin/scope, damaged metadata, or unaccepted verifier | Fail closed; preserve release and receipt for inspection |
+| Changed agency window | Choose a new campaign root |
+
+Explicit [verify](#verify) still performs full reconstruction with the external
+pin and trusted ID. Former `--verify`/`--no-verify` switches and separate verify
+receipts are removed; resume requires a publish receipt with `collectionOutcome`.
 
 Federal Register replay publishes saved responses under the current profile
-without a source request. CRS acquisition writes resumable Congress.gov summary
-records and requires an explicit credential file.
-
-[Corpus diagnostics](../tools/README.md) remain checkout tools under
-`tools/analysis/`, where each report states the bounded question it answers.
-[Repository maintenance](../scripts/README.md) lives under `scripts/`.
-[Source-reference notes](source-reference.md) preserve useful field relationships;
-there is no separate catalog-generation command.
+without source requests. CRS acquisition writes resumable Congress.gov summaries
+and requires an explicit credential file. [Corpus diagnostics](../tools/README.md)
+live under `tools/analysis/`; [maintenance](../scripts/README.md) lives under
+`scripts/`. The retired catalog has no generation command; use
+[source references](source-reference.md).
 
 ## Output and failures
 
-Success includes `ok`, `command`, absolute `release`, `logicalId`,
-`artifactDigest`, `sourceStateDigest`, `sourceStateScope`, and `sourceSystemId`.
-Source-native results also include `source`, `sourceSystemVersion`,
-`sourceNativeSchemaSetDigest`, and `collectionOutcome`. Inspection adds its
-failure sample and limit; see [inspect](#inspect). Public-table results instead include `table`,
-`tableName`, and `maxRowsPerMember`. Keep these values with the run's receipt.
+Keep success fields with the run receipt:
 
-Handled failures have `ok: false`, `command`, and `error` containing `code` and
-`message`. Codes distinguish `destination-exists`, `acquisition-failed`,
-`release-invalid`, `transport-failed`, `dependency-missing`, and
-`operation-failed`. Keep the actual message; a failed acquisition is not a claim
-that the publisher has no records. Missing optional dependencies identify setup
-work; an existing immutable destination requires choosing a new destination.
+| Result | Fields |
+| --- | --- |
+| All | `ok`, `command`, absolute `release`, `logicalId`, `artifactDigest`, `sourceStateDigest`, `sourceStateScope`, `sourceSystemId` |
+| Source release | `source`, `sourceSystemVersion`, `sourceNativeSchemaSetDigest`, `collectionOutcome` |
+| Inspection | Failure sample and limit |
+| Public table | `table`, `tableName`, `maxRowsPerMember` |
 
-Failures after source acquisition starts can also include `failedAcquisition`.
-Keep stderr with the run, for example by appending `2> /path/to/run-error.log`
-to the publish command. For a handled operational failure (exit 1), the final
-stderr line is the JSON error report; earlier lines can contain retry logs.
-Extract that line before reading it as JSON:
+Handled failures contain `ok: false`, `command`, and `error` (`code`, `message`).
+Codes: `destination-exists`, `acquisition-failed`, `release-invalid`,
+`transport-failed`, `dependency-missing`, `operation-failed`. Preserve the message.
+Missing dependencies need setup; an existing immutable destination needs a new
+path. Acquisition failure does not establish source absence.
+
+After acquisition starts, errors may include `failedAcquisition`. Append
+`2> /path/to/run-error.log` to publication to retain stderr. For a handled error
+(exit 1), **only the final stderr line is the JSON report**; retry logs may precede it:
 
 ```sh
 tail -n 1 /path/to/run-error.log > /path/to/run-error.json
 ```
 
-Argument errors, interruption, and unhandled tracebacks do not provide this
-structured report. The report's `response.status` is `retained` only when its `blobRef`
-names exact bytes in the chosen blob store. The report keeps the source error
-separate from its evidence. Neither the report nor the retained blob is a release.
-
-For a retained response, retrieve the bytes without contacting the publisher:
+Argument errors, interruption, and unhandled tracebacks lack this structured
+report. `response.status: retained` means `blobRef` names exact stored bytes.
+The report and blob remain separate from the source error and are not a release.
+Read retained bytes offline:
 
 ```python
 import json
@@ -256,14 +223,14 @@ else:
     print(response["reason"])
 ```
 
-Empty received bytes are retainable. Oversized bodies are never truncated into
-evidence: the report says `response-byte-limit` (or `acquisition-byte-limit`) and
-includes the observed size when known. Shared pages are limited to 24 MiB; GAO
-HTML is limited to 8 MiB per page and 1 GiB per acquisition. A failed transport
-may report `transport-unavailable` when no target body reached the source adapter.
-Zyte suppresses target responses that reflect its known credential and reports
-`credential-suppressed`; provider JSON and authorization headers are never retained.
-If diagnostic storage fails, `storage-failed` preserves the original acquisition
-error. `retainedPageEvidence` lists bounded context from already written page
-blobs, with a total count and truncation flag. A later request failure does not
-turn those previous responses into evidence of the failed request.
+| Evidence condition | Report behavior |
+| --- | --- |
+| Fully received empty bytes | Retainable exact evidence |
+| Oversize | `response-byte-limit` or `acquisition-byte-limit`, observed size when known; never a truncated capture |
+| No target body reached the adapter | May report `transport-unavailable` |
+| Zyte target reflects known credentials | `credential-suppressed`; provider JSON/auth headers are never retained |
+| Diagnostic storage fails | `storage-failed`; original acquisition error preserved |
+
+Shared pages are bounded to 24 MiB; GAO HTML to 8 MiB/page and 1 GiB/acquisition.
+`retainedPageEvidence` lists bounded previously written context with total count
+and truncation flag. Earlier responses do not become evidence of a later failed request.

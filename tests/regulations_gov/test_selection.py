@@ -101,17 +101,11 @@ def test_docket_release_selects_newest_observation_and_counts_discard(tmp_path: 
 def test_release_collapses_identical_record_digests_with_differing_raw_bytes(
     tmp_path: Path, fixture: _CollapseFixture
 ) -> None:
-    """A live docket publish surfaced ACF-2026-0199 with two Mirrulations
-    objects ("(18)" and "(19)") at one modifyDate instant — a re-fetch of one
-    active docket, not a tie to refuse. Equality for the collapse is the
-    canonical record digest, not raw bytes (2026-09-02 fix): this fixture
-    proves it directly by serializing the second "newest" observation with
-    reversed JSON key order, so its raw bytes differ from the first while its
-    record digest is identical. Two observations of one record at one instant
-    with equal record digests select one published record; every redundant
-    input remains counted as a discarded observation and stays byte-exact in
-    acquisition evidence, alongside the older, genuinely distinct
-    observation.
+    """Collapse equal canonical records even when raw JSON key order differs.
+
+    ACF-2026-0199 refetches (18)/(19) share modifyDate. Reversing one payload's key
+    order changes its bytes, not its record digest. Publish one record and retain
+    all discarded observations byte-for-byte, including the older distinct version.
     """
     reordered_newest = _reordered(fixture.newest)
     assert reordered_newest == fixture.newest
@@ -297,18 +291,11 @@ def test_repeated_normalized_document_versions_refuse_a_tie(tmp_path: Path) -> N
 
 
 def test_read_time_derived_field_only_difference_collapses_without_tying(tmp_path: Path) -> None:
-    """A live agency fan-out lost BIS after 85 minutes on exactly this
-    shape: BIS-2023-0021-0001 has two Mirrulations objects at one modifyDate
-    instant (2023-10-13T01:04:10Z) whose only difference is
-    ``openForComment`` -- a field regulations.gov computes at read time from
-    commentStartDate/commentEndDate against "now", not a stored document
-    fact, so a later refetch after the comment window closed flips it while
-    the document's own modifyDate does not move. Two such observations
-    collapse to one published record instead of refusing a tie (2026-09-02
-    fix); every redundant observation still counts as discarded and stays in
-    evidence. The mirror's own listing order is the only signal of fetch
-    recency, so the last-listed object -- ``openForComment: True`` here --
-    is the one published.
+    """Collapse a tied version whose only difference is read-time openForComment.
+
+    BIS-2023-0021-0001 refetches can cross the comment deadline without changing
+    modifyDate. Publish the last-listed object (openForComment=True here) as the
+    only available fetch-recency signal; count and retain the discarded observation.
     """
     assert DOCUMENT_TIE_VOLATILE_FIELDS == {"openForComment", "withinCommentPeriod"}
     identity = "BIS-2023-0021-0001"

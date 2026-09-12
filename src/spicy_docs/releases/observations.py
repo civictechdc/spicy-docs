@@ -175,13 +175,9 @@ def _select_observations(
                 f"{profile.name} has an unresolved source-version tie for {str(source_record_id)!r} at {source_version!r}"
             )
 
-    # One grouped maximum over the file-backed index above, not a correlated
-    # search per candidate: linear index scans instead of O(n**2) when one
-    # identity carries n observations. SQLite's ``max`` skips nulls and yields
-    # null only when every observation is null, so ``IS`` marks the newest
-    # non-null normalized version or the sole null version; the refusals above
-    # already leave one record digest per (traversal, source id, version)
-    # group, so the earliest ordinal breaks an identical repeat.
+    # A grouped maximum avoids O(n**2) searches for identities with n observations.
+    # max skips nulls; IS also matches all-null groups. Choose the earliest ordinal
+    # among equal newest versions, then adjust accepted volatile-only ties below.
     connection.execute(
         "UPDATE observations SET selected = 1 WHERE (traversal, ordinal) IN ("
         "SELECT candidate.traversal, min(candidate.ordinal) FROM observations AS candidate "
@@ -193,13 +189,8 @@ def _select_observations(
         "GROUP BY candidate.traversal, candidate.source_record_id)"
     )
 
-    # A volatile-only group's members share one source_version (the group-by
-    # above) and only differ in read-time-derived fields, so which one is
-    # "the" record is otherwise arbitrary; prefer the one the source listed
-    # last (max ordinal) as the later, more current fetch. Re-point selection
-    # only within the exact tied identity, and only if the block above just
-    # made it the winner (selected = 1 already present) -- an older,
-    # non-newest volatile-only group is left untouched.
+    # For a selected volatile-only tie, prefer the last-listed fetch.
+    # Change only that exact identity/version; leave older tied groups unselected.
     for traversal, source_record_id, source_version in volatile_groups:
         already_preferred = connection.execute(
             "SELECT 1 FROM observations WHERE traversal = ? AND source_record_id = ? "
@@ -399,17 +390,8 @@ def _page_rows(
     accepted_only: bool = False,
     partition_id: str | None = None,
 ) -> Iterator[Mapping[str, Any]]:
-    # The inner query below runs once per page and filters on (traversal, page),
-    # but the table's primary key is (traversal, ordinal) and the selection index
-    # leads (traversal, source_record_id). SQLite therefore narrowed on traversal
-    # alone and then examined every observation in it -- once per page. Measured
-    # by EXPLAIN QUERY PLAN and by timing the loop at the composite release's own
-    # cardinality (1,007,639 observations over 1,072 pages): 39.8 ms/page without
-    # this index and 0.2 ms/page with it, about 200x on the query.
-    #
-    # Created here rather than beside `observations_selection`, because that
-    # function also serves the producer replay gate's observations table, which
-    # has no `page` column at all -- the statement would raise there.
+    # Index the per-page lookup to avoid scanning a traversal for every page.
+    # Create it here: the replay gate's observations table has no page column.
     connection.execute("CREATE INDEX IF NOT EXISTS observations_page ON observations (traversal, page, ordinal)")
     conditions: list[str] = []
     parameters: list[object] = []

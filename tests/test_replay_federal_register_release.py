@@ -1,21 +1,9 @@
-"""Hermetic coverage for ``src/spicy_docs/sources/federal_register/replay.py`` (SD-25).
+"""Check offline replay through the production Federal Register profile and page iterator.
 
-Every release built below goes through the real, unmodified
-``FEDERAL_REGISTER_PROFILE`` and ``iter_federal_register_pages`` -- the same
-pipeline ``spicy_docs.cli.source_native``'s ``publish`` command drives -- with
-a small in-memory ``{url: bytes}`` fake standing in for the live Federal
-Register API. No test here makes, or could make, an HTTP request: the fake
-fetch below is a plain dict lookup, and the tool under test imports no HTTP
-client (see its module docstring).
-
-Note: Federal Register's ``traversal_acceptance`` is
-``"stable-consecutive-traversals"`` (``SourceNativeProfile`` in
-``source_native_profiles.py``), which ``_accepted_traversal`` in
-``source_native.py`` requires *at least two* traversals to satisfy -- a
-single-traversal acquisition is refused outright. So every release built here
-uses the default ``traversals=2``, and a requestKey a single traversal visits
-once is therefore retained twice in the release's acquisition-page rows (once
-per traversal) even though it is one distinct request.
+A URL-to-bytes dictionary replaces live fetches. Each release uses two traversals
+to satisfy stable-consecutive-traversals acceptance; one traversal is refused.
+A URL visited once per traversal therefore produces two retained acquisition-page
+rows but one distinct request.
 """
 
 from __future__ import annotations

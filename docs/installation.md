@@ -1,57 +1,59 @@
-# Installation choices
+# Install what you need
 
-Use Python 3.12. The core SpicyDocs wheel requires Rulespec Artifacts and
-`jsonschema`; it does not require DocSpec, SpicyRegs, or a sibling checkout.
-Optional dependencies follow two kinds of work:
+Use Python 3.12. Core SpicyDocs requires Rulespec Artifacts and `jsonschema`,
+with no DocSpec, SpicyRegs or sibling checkout dependency.
 
-| Install | What it enables | Additional packages |
-| --- | --- | --- |
-| Core `spicy-docs` | Profiles; admitted records, renditions, outcomes, failures, and bounded evidence; JSON/HTML source parsing and replay; injected acquisition; pure CourtListener listing parsing | None beyond the core requirements |
-| `spicy-docs[acquisition]` | Default HTTP and S3 acquisition; Mirrulations and CourtListener raw readers | HTTPX, Boto3, Loguru, tqdm |
-| `spicy-docs[public-table]` | Captured comment Parquet parsing and full replay; public-table publication and checking | Polars, PyArrow |
-| `spicy-docs[acquisition,public-table]` | Live capture of community comment partitions; CRS summaries fetched from a Parquet input; all package operations | Both groups above |
+| Install | Use it for |
+| --- | --- |
+| Core | Profiles, admitted records/renditions/outcomes, bounded evidence, JSON/HTML parsing, injected acquisition and pure CourtListener listing parsing. |
+| `[acquisition]` | Default HTTP/S3 capture and raw Mirrulations/CourtListener readers; adds HTTPX, Boto3, Loguru and tqdm. |
+| `[public-table]` | Captured-comment Parquet parsing/replay and public-table operations; adds Polars and PyArrow. |
+| Both extras | Live community-comment capture or CRS summaries read from Parquet. |
 
-GAO's default Zyte transport uses the Python standard library, so it needs no
-extra, but live capture requires `ZYTE_TOKEN`. An injected fetcher may have its
-own dependencies. Install only what that fetcher uses.
+Live GAO uses the standard-library Zyte transport: no extra, but `ZYTE_TOKEN`
+is required. Injected fetchers need their own dependencies.
 
-Reading admitted public-comment records does not parse the retained Parquet
-again. Full source verification does, so it requires `public-table` even when
-the release and evidence are local. These are different checks; see
-[collection outcomes and evidence access](source-native-outcomes.md).
+Reading admitted comment records needs no Parquet parser. Full verification
+replays their retained Parquet and therefore needs `public-table`.
 
 ## From this checkout
-
-Contributors install all operations and the development tools:
 
 ```sh
 uv sync --frozen --all-extras
 ./scripts/check
 ```
 
-The check script performs this same sync. Subsequent `uv run --frozen` commands
-retain installed extras. Running `uv sync --frozen` without `--all-extras`
-removes the optional packages; rerun the contributor setup before the full suite.
-Development tools are declared once, separately from runtime extras.
+The check script installs all extras too. `uv run --frozen` retains them;
+`uv sync --frozen` without extras removes them.
 
-On macOS, if setup succeeds but an example cannot import `spicy_docs`, inspect
-the editable-path file with
-`ls -lO .venv/lib/python3.12/site-packages/spicy_docs.pth`. Python skips this file
-when it has the `hidden` flag. If that exact file shows the flag, clear it with
-`chflags nohidden .venv/lib/python3.12/site-packages/spicy_docs.pth`, then retry
-the example. This condition occurred during the isolated contributor exercise;
-its cause is unknown. It does not require changing the package's imports.
+To try core only:
 
-To try only the core in the checkout, use `uv sync --frozen --no-dev`, then
-`uv run --frozen --no-dev python examples/offline_release.py`. This publishes,
-verifies, and reads synthetic GAO evidence without optional packages or network
-access. Restore the contributor setup before working on the full package.
+```sh
+uv sync --frozen --no-dev
+uv run --frozen --no-dev python examples/offline_release.py
+```
+
+This runs offline without optional packages. Restore all extras before the full suite.
+
+### macOS: install succeeds but import fails
+
+Python skips an editable-path file carrying the `hidden` flag. Check:
+
+```sh
+ls -lO .venv/lib/python3.12/site-packages/spicy_docs.pth
+```
+
+If that exact file is hidden, clear the flag and retry:
+
+```sh
+chflags nohidden .venv/lib/python3.12/site-packages/spicy_docs.pth
+```
+
+This local condition was observed during contributor checks; its cause is unknown.
 
 ## From a built wheel
 
-Use a fresh virtual environment and the exact candidate wheel and Rulespec
-Artifacts wheel selected for your application. For example, replacing the paths
-with your retained wheel files:
+Replace these paths with the exact wheel files selected for your application:
 
 ```sh
 uv venv --python 3.12 /path/to/source-reader-env
@@ -60,13 +62,9 @@ uv pip install --python /path/to/source-reader-env/bin/python \
   /path/to/spicy_docs-0.2.0-py3-none-any.whl
 ```
 
-For both optional groups, replace the last argument with
-`'/path/to/spicy_docs-0.2.0-py3-none-any.whl[acquisition,public-table]'`.
-Ordinary dependency resolution is sufficient; `--no-deps` is unnecessary.
-Record package version, source revision, and wheel digest separately from data
-release pins. Building a local wheel does not establish package publication or
-downstream adoption.
+For both extras, use
+`'/path/to/spicy_docs-0.2.0-py3-none-any.whl[acquisition,public-table]'` as the last
+argument. Use ordinary dependency resolution. Record version, source revision
+and wheel digest separately from data pins; a local build is not a published release.
 
-The CLI reports `dependency-missing` when an operation needs an unavailable
-package. That is an installation issue; it does not report an empty source or
-create a successful release. Use the table above to choose the required extra.
+A CLI `dependency-missing` error means an extra is needed. It never means an empty source.

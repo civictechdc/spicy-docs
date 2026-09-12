@@ -1,33 +1,22 @@
-"""Federal Register body-source locators and response identity checks.
+"""Derive Federal Register body locators and validate response identity offline.
 
-This module retains source knowledge discovered by the old SpicySearch fetch
-campaigns without retaining their one-off download loops.  The useful facts
-are source-specific:
+Source rules:
+- body_html_url paths have sibling XML and text paths.
+- GovInfo granules use publication date and printed document number. Check the
+  [FR Doc No: ...] marker because a missing granule can return HTTP 200.
+- A FederalRegister.gov split suffix may differ from the printed marker.
+- Resolve synthetic X numbers through issue MODS start pages while preserving
+  the original source identity.
 
-* Federal Register ``body_html_url`` paths have sibling XML and text paths.
-* govinfo Federal Register granules use the publication date and printed
-  document number, return an HTTP-200 soft 404, and must therefore be checked
-  against their ``[FR Doc No: ...]`` marker.
-* a FederalRegister.gov split suffix may differ from the printed marker, while
-  a synthetic ``X`` number must be resolved through the issue MODS start page
-  without replacing the original source identity.
+DocSpec owns candidate choice; body_acquisition fetches an explicitly selected
+GovInfo route. Publisher XML/text remain locators. SpicySearch Validation owns
+carrier agreement. Response size and campaign timing are not identity rules.
 
-The old 44,165-byte soft-404 size was one dated response fingerprint, not an
-identity rule, so it is deliberately not accepted as one here.  Likewise, the
-old 0.4-second/three-worker tuning was a campaign measurement rather than a
-stable source promise.  These helpers make no requests and write no files.
-DocSpec remains responsible for candidate choice. ``body_acquisition`` acquires
-an explicitly selected GovInfo route with bounded transport and exact capture;
-publisher XML/text remain locators only. SpicySearch Validation retains the
-separate carrier-agreement measurement.
-
-Let ``U`` be the URL length, ``B`` the granule byte length, and ``M`` the MODS
-byte length.  Locator derivation is ``O(U)`` time and output space.  Granule
-validation is ``O(B)`` time and ``O(U)`` auxiliary space.  MODS resolution is
-``O(M)`` time and ``O(D + A)`` auxiliary space, where ``D`` is XML nesting
-depth and ``A`` the largest retained ``start``/``accessId`` text.  Both byte
-parsers require a caller-supplied positive byte bound.  Every public function
-performs exactly zero network requests.
+For URL length U, granule bytes B, and MODS bytes M: locator time and output space are O(U);
+granule validation is O(B) time and O(U) auxiliary space; MODS resolution is
+O(M) time and O(D + A) auxiliary space, with XML depth D and largest retained
+start/accessId text A. Both parsers require a positive byte bound. These helpers
+make no network requests and write no files.
 """
 
 from __future__ import annotations

@@ -102,16 +102,12 @@ def _publish(
 
 
 def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> None:
-    """A fixture release carrying the real 00-111 collision -- a 2000-01-14 rule and
-    a newer 2000-01-18 notice sharing one document_number -- reports two distinct
-    records and zero discards under composite identity (SD-24): neither document
-    evicts the other, so there is no multi-observation identity and nothing to
-    collapse. The number/date findings below are unaffected -- they key on the
-    classified record's own document_number, independent of sourceRecordId's
-    shape -- so 00-111 still surfaces as one number reused across two dates, now
-    as an informational fact about the source rather than a loss. 00-111 is
-    legacy-form (it fails the modern \\d{4}-... pattern), so this release also proves
-    the shape of every other collision field's EMPTY case: they are emitted, not omitted."""
+    """Keep both 00-111 documents: the 2000-01-14 rule and 2000-01-18 notice.
+
+    Composite identity yields two records and zero discards. The number/date census
+    still reports reuse because it reads document_number directly. This legacy-form
+    number also checks that unused modern collision fields appear as empty values.
+    """
     number = "00-111"
     args, receipt = _publish(
         tmp_path,

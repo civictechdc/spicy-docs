@@ -1,14 +1,7 @@
-"""Fixture coverage for ``tools/analysis/compare_source_native_releases.py``.
+"""Check record additions and changes that release counts alone would hide.
 
-The tool's job is to answer, after a producer change republishes a release,
-whether the change ADDED records or also PERTURBED existing ones. The
-distinction is the whole point: a rebuild that quietly rewrites history looks
-exactly like a rebuild that recovers records if you only compare counts. So
-every test here checks a case where the counts alone would mislead.
-
-Fixtures are hand-built rather than publisher-generated -- see
-``tests/source_native_release_fixtures``. A fixture the writer produces cannot
-catch the writer being wrong, and this tool exists to check the writer.
+Hand-built fixtures from tests/source_native_release_fixtures keep expected
+records independent of the publisher being checked.
 """
 
 from __future__ import annotations

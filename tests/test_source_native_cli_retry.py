@@ -1,21 +1,9 @@
-"""Transport-retry patience for the two source-native HTTP fetchers.
+"""Check shared retry policy for Federal Register and public-table HTTP fetchers.
 
-2026-09-02: a full-history Federal Register crawl lost hours of work to one
-``_ssl.c:993: The handshake operation timed out`` while competing with a
-heavy S3 fan-out. The old policy -- five attempts inside about thirty seconds
-of total sleep -- gave up long before a transient network disturbance could
-resolve. These tests pin the replacement policy (``_MAX_HTTP_ATTEMPTS``
-attempts, a doubling backoff capped at ``_RETRY_BACKOFF_CEILING_SECONDS``,
-full jitter, and a stderr line per retry) against both ``fetch_federal_register``
-(Federal Register) and ``fetch_public_table`` (the spicy-regs public
-tables), which share the ``retry_http`` helper and therefore the same
-classification: 429 and 5xx and transport errors retry; any other 4xx and an
-empty response behave exactly as before (immediate failure and retry,
-respectively).
-
-Nothing here touches the network -- every client is a real ``httpx.Client``
-backed by a scripted, in-memory ``httpx.MockTransport``, and ``time.sleep``
-is monkeypatched to record instead of sleeping.
+Pin the attempt budget, capped doubling backoff, full jitter, and stderr logs.
+Transport errors, 429/5xx, and empty responses retry; other 4xx fail immediately.
+httpx.MockTransport supplies responses and patched sleep records delays, keeping
+all tests offline and immediate.
 """
 
 from __future__ import annotations

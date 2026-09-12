@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
-"""Publish docket and document releases per agency, with bounded resume checks.
+"""Publish docket and document releases per agency with bounded resume checks.
 
-Runs ``spicy_docs.cli.source_native`` publish subprocesses, N agencies at a time.
-Each child streams stdout and stderr into ``logs/<release>.log``, appended per attempt, and the CLI's one JSON
-receipt line is read back as that log's last non-empty line. SIGINT and SIGTERM terminate the
-live children, cancel the agencies not yet started, and exit non-zero.
+Run N agencies concurrently through spicy_docs.cli.source_native. Append each
+child's stdout/stderr to logs/<release>.log; its last non-empty line supplies
+the JSON receipt. SIGINT/SIGTERM terminate children, cancel queued work, and
+exit non-zero.
 
-One runner owns a destination root: the campaign claims ``<root>/campaign.lock`` exclusively
-and refuses to run while another process holds it. Resume is release-grained -- skip a release
-only after bounded admission against its stored external pin, the requested scope, and an
-explicitly accepted producer-verifier identity. Rename an un-receipted destination aside
-before retrying; preserve valid receipts and destinations that fail admission. The producer
-already replays the full release before publication. Use the standalone ``verify`` command
-for an additional full audit.
+One runner exclusively holds <root>/campaign.lock. Resume skips a release only
+after bounded admission checks its external pin, requested scope, and accepted
+producer-verifier identity. Unreceipted destinations move aside before retry;
+valid receipts and destinations that fail admission remain intact. Publication
+already replays the release; use verify for an additional full audit.
 
-``--window-since``/``--window-until`` are one window per agency that feeds both collections and
-is meant to be the source's full history; a narrower document window would need dockets over a
-wider one, which this runner deliberately does not support.
+--window-since/--window-until define one window per agency for both collections,
+intended to cover full history. Separate document/docket windows are unsupported.
 """
 
 from __future__ import annotations

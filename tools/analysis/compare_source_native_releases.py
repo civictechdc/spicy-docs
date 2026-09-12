@@ -1,35 +1,17 @@
 #!/usr/bin/env python3
-"""What moved when a producer change republished a source-native release?
+"""Compare published records before and after a producer change.
 
-A producer change is testable without a fresh crawl: replay the retained
-acquisition evidence through the new code (``replay_federal_register_release``)
-and compare the two releases. This is the comparison half. It answers the
-question a receipt actually has to answer -- *did the change add records, or
-did it also perturb existing ones?* -- and it answers it from the published
-records of both releases.
+Replay retained evidence with replay_federal_register_release, then use this
+tool to identify added, removed, or changed records. fr_discarded_distinctness
+provides a separate check against pre-selection acquisition evidence.
 
-That is deliberately a different route from ``fr_discarded_distinctness``,
-which measures the same recovery from the OLD release's pre-collapse
-acquisition evidence. Different member role, different code path, different
-notion of the quantity: what the builder emitted, versus what the acquisition
-pages contained. Two routes agreeing is evidence; one route agreeing with
-itself is a formatting assertion.
-
-Identity fields are named by the caller rather than guessed, because the whole
-point of a comparison like this is that a release's identity policy may be the
-thing that changed. For a Federal Register composite-identity rebuild::
+Name identity fields explicitly because the identity policy itself may have
+changed. For a Federal Register composite-identity rebuild::
 
     --identity-field document_number --identity-field publication_date
 
-Baseline records are held as a digest of the canonical payload, so memory is
-one small entry per record rather than the corpus.
-
-Promoted from a session-scratch script on 2026-09-05, for the reason
-``fr_discarded_distinctness`` records in its own docstring (SD-18): its numbers
-were load-bearing in a receipt while the code that produced them lived only in
-a scratchpad. Reads blobs through ``LocalSourceNativeBlobStore``, which
-verifies each blob's bytes against its digest, rather than hand-joining
-``sha256:<hex>`` references into filesystem paths.
+Baseline state holds one canonical-payload digest per record.
+LocalSourceNativeBlobStore verifies blob bytes against their digests.
 """
 
 from __future__ import annotations

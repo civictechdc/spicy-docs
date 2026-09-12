@@ -1,13 +1,27 @@
 # SpicyDocs source-native release 2.0
 
-> **Current-format amendment (2026-09-11).** SpicyDocs owns this specification and source-native publication. Source-native format, schema, and verifier versions are `2.0`; only producer `spicy-docs`, the installed current schema bundle, and the selected profile's current acquisition policy are accepted. The artifact kind, format name, verifier ID, and digest domains retain their existing `spicyregs` / `urn:spicy-regs:...` identifiers. Historical artifacts remain retained but are not accepted or automatically converted by current readers. Public-table format and verifier remain `1.0`, with current producer `spicy-docs`.
+**Status: normative target.** The shared local release path and source profiles
+are implemented. Local wheel checks do not establish external object-store
+publication, consumer cutover or scale conformance; those require their own evidence.
 
-Status: normative target. The shared release path, Federal Register,
-Regulations.gov, and explicit GAO product-page source profiles, plus their
-immutable public Parquet views, are implemented in the current worktree.
-External object-store publication, final
-installed-wheel interoperability, consumer cutover, and scale conformance
-remain incomplete.
+**Current versions:** source-native format/schema/verifier `2.0`; public-table
+format/verifier `1.0`; producer `spicy-docs`. Require the installed current schema
+bundle and selected profile policy. Existing `spicyregs` / `urn:spicy-regs:...`
+format identifiers remain. Retain historical artifacts, but current readers
+neither accept nor automatically convert them.
+
+For ordinary use, start with the [release guide](../../releases.md) or
+[commands](../../cli.md). This document defines the exact requirements:
+
+1. [Purpose](#1-purpose-and-boundary)
+2. [Artifact, identity and schema](#2-artifact-identity-and-schema)
+3. [Acquisition completeness](#3-acquisition-completeness)
+4. [Source state and selection](#4-source-state-and-profile-owned-collapse)
+5. [Receipt and verification](#5-receipt-and-semantic-verification)
+6. [Reader and dependencies](#6-bounded-reader-and-dependency-inversion)
+7. [Public tables](#7-public-publication-profile)
+8. [Federal Register baseline](#8-federal-register-profile)
+9. [Conformance](#9-conformance)
 
 ## 1. Purpose and boundary
 
@@ -59,6 +73,8 @@ or source-issued enumeration bytes under `source-acquisition-evidence`. Every
 external payload uses a Rulespec `blobRef` in one explicitly injected shared
 content-addressed store; the artifact contains no hidden sibling store.
 
+### Payload partitions
+
 The partition policy has exactly 64 buckets, numbered `00` through `63`, and
 assigns each UTF-8 identity to the integer value of its SHA-256 digest modulo
 64. Record and acquisition-record identities are `sourceRecordId`; rendition
@@ -79,6 +95,8 @@ Its complete product-role vocabulary is `source-native-scopes`,
 and `source-acquisition-evidence`. This is the complete required product-role
 set; any other role fails. `source-native-records` and `rendition-index` are
 absent only when their corresponding receipt counts are zero.
+### Schema bundle
+
 The installed spicy-docs package generates and ships the closed bundle at
 `spicy_docs/schemas/source_native_release/2.0/` from the same typed records
 used by its serializers and parsers. It contains the release, scope,
@@ -101,6 +119,8 @@ Each profile defines one closed acquisition strategy and its executable
 evidence check. Caller-authored snapshot tokens do not exist in this API and
 can never prove completeness.
 
+### Enumerated source membership
+
 A source enumeration may claim `complete-snapshot` only when the source reader
 enumerates the exact requested membership and pins every member with
 source-issued identity evidence. The current Mirrulations proof carries every
@@ -110,25 +130,18 @@ a changed ETag, missing or duplicate key, omitted object, mismatched size,
 unsupported key, incomplete agency set, or unclassified raw field. The
 enumeration evidence is preserved independently from the records selected by
 the release's bounded date scope, so an out-of-scope source object remains
-evidence but contributes no record. **Amendment (2026-09-02):** a
-Regulations.gov document `postedDate` that is null or present but not
-canonical-date text is unusable and therefore outside every date scope; it
-stays in evidence and contributes no record, the same disposition as any
-other out-of-scope object. The live mirror holds exactly three null
-`postedDate` FMCSA documents, e.g. FMCSA-2007-0006-0015, each with
-`modifyDate` present, and the FAA full-history publish surfaced a malformed
-non-null `postedDate` that had aborted the whole agency nine minutes in.
+evidence but contributes no record. A Regulations.gov document `postedDate`
+that is null or present but not canonical-date text is outside every date scope.
+Retain it in evidence without a published record, as for other out-of-scope objects.
 
 Each Regulations.gov query covers at most 14,640 inclusive calendar days
 (~40 years). The adapter rejects a reversed or wider range before it opens the
 source reader.
 
-> **Amendment (2026-09-02, source-supply consolidation A0.3).** 366 → 14,640,
-> ~40 years: docket IDs embed a year and source history starts in the 1990s.
-> For an identical scope and bytes only `acquisitionPolicyDigest` moves in §2's
-> closed `spec`; a wider scope in use also moves `sourceStateDigest`,
-> `logicalId`, and `artifactDigest`, since release state stores the scope. One
-> window replacing W makes acquisition O(objects), not O(W × objects).
+The range supports source history beginning in the 1990s without scanning the
+same objects in many short windows. Changing the allowed range changes
+`acquisitionPolicyDigest`; widening the actual scope also changes
+`sourceStateDigest`, `logicalId` and `artifactDigest`, because state includes scope.
 
 SpicyDocs stores that proof in deterministic, bounded ZIP members. Each member
 contains one canonical manifest followed by the listed object bytes in the same
@@ -139,6 +152,8 @@ an empty terminal pack when an agency has no objects. Admission checks the
 closed manifest, exact ZIP membership and order, sizes, source identity facts,
 object bytes, pack sequence, globally sorted distinct keys, and exact requested
 agency set before the release may claim `complete-snapshot`.
+
+### Paginated observations
 
 A paginated strategy starts at the profile's declared initial request, carries
 every exact response, and records request key, response digest, source cursor,
@@ -151,6 +166,8 @@ digests. That proves a repeatable observation, not source completeness, so
 such a profile is always `observed-crawl`. The release carries every attempted
 chain. No matching pair fails publication. An `observed-crawl` exposes its
 exact time and query scope and cannot support a downstream completeness claim.
+
+### Federal Register windows
 
 The Federal Register strategy partitions each traversal into ordered date
 windows of at most 90 days. A response whose declared `count` is at least
@@ -165,6 +182,8 @@ are carried as evidence. In each traversal those leaf windows MUST cover the req
 interval once, in order, with no gap or overlap, and every returned record's
 `publication_date` MUST fall inside its leaf. Stable reconciliation compares
 the complete ordered union across all leaves, not each leaf independently.
+
+### GAO named products
 
 The GAO product-page profile enumerates one explicit, closed set of sorted,
 distinct product IDs. Its `complete-snapshot` claim covers exactly that named
@@ -185,6 +204,8 @@ mint a search tag. For `N` product IDs, `H` total HTML bytes, and largest page
 space (the source iterator itself is linear after canonical ordering), with closed
 bounds of 1,000 IDs, 8 MiB per page, and 1 GiB total HTML.
 
+### Regulations.gov collections
+
 Regulations.gov documents and dockets are separate source profiles and separate
 releases. Each uses one exact Mirrulations enumeration traversal for its own
 collection and agency set. Document records preserve their raw
@@ -203,26 +224,22 @@ ledger, and counts. Ambient network state is never proof of completeness.
 
 ## 4. Source state and profile-owned collapse
 
-This source-owned collapse preserves the existing public behavior. It does not
-apply to Federal Register.
-**Amendment (2026-09-02):** it applies to Regulations.gov documents and dockets
-too; the mirror holds a 2021-02-12 and a newer "(1)" 2024-06-12 observation of
-docket ACF-2007-0125, and a filename filter would have discarded the newer one.
-**Superseding amendment (2026-09-04, `b590d867`):** Federal Register identity is
-`document_number@publication_date`, and the profile groups by both fields.
-The source reuses a number across unrelated documents: `00-111` names both a
-2000-01-14 rule and a 2000-01-18 notice. Both dates remain distinct records.
-Repeated observations of the same pair collapse only when their canonical
-record digests agree; differing digests refuse publication. This supersedes
-the 2026-09-02 rule that grouped by number and selected the latest date, which
-discarded distinct documents. Acquisition policy `1.1` recorded this identity
-change; current policy `1.2` also states the limits of stable observed crawls.
-Both changes preserve the same 22 current `DOCUMENT_FIELDS`. The proposed
-`correction_of` field was deferred and never added. Request construction and
-replay require the current field set and exact canonical URL, without a
-historical field-set map or separate field-policy version selector. See the
-[identity and current-field decision](../../decisions.md#federal-register-identity-and-fields-version-separately)
-for the historical SD-24 / DocSpec 0003 provenance.
+### Federal Register identity
+
+Federal Register groups by `document_number@publication_date`: the source reuses
+numbers across unrelated documents. For example, `00-111` names both a 2000-01-14
+rule and a 2000-01-18 notice; both remain distinct records.
+
+Repeated observations of the same pair collapse only when their canonical record
+digests agree; differing digests refuse publication. Policies `1.1` (identity)
+and `1.2` (crawl limits) retain the same 22 current `DOCUMENT_FIELDS`.
+`correction_of` was deferred and never added. Requests and replay require the
+current field set and exact canonical URL, with no historical field-set map or
+separate field-policy selector. See the
+[identity decision](../../decisions.md#federal-register-identity-and-fields-version-separately)
+for the superseded number-only behavior and SD-24 / DocSpec 0003 provenance.
+
+### Regulations.gov observations
 
 Source-specific observation collapse is acquisition meaning, not a catalog
 derivation: every Regulations.gov profile — comments, dockets, and documents —
@@ -233,25 +250,22 @@ instant to UTC only for comparison. The canonical observation sequence sorts by
 strict-ASCII record identity, non-null before null, and normalized UTC instant
 descending. For comments, any repeated `(record identity, normalized UTC
 instant)` pair, including two nulls, fails instead of inventing a
-tie-breaker. **Amendment (2026-09-02):** for dockets and documents, a
-repeated pair with an identical canonical record digest — raw bytes need not
-match — selects one published record; every redundant input remains counted
-as a discarded observation and retained in evidence. Only a repeated pair
-with differing record digests still fails as a tie. Docket ACF-2026-0199
-holds two identical-digest objects "(18)" and "(19)" at one modifyDate
-instant — Mirrulations refetching an active docket, not two observations to
-tie-break.
-**Amendment (2026-09-02):** for documents, two observations at one instant
-differing only in `openForComment` or `withinCommentPeriod` — fields
-regulations.gov derives at read time against "now", not stored document
-facts — are one observation, not a tie. BIS-2023-0021-0001 and
-EPA-HQ-OAR-2006-0894-0021 each surfaced exactly this shape; any other
-difference still refuses as a tie.
+tie-breaker.
+
+For dockets and documents, a repeated pair with an identical canonical record
+digest selects one record; raw bytes need not match. Count every redundant input
+as discarded and retain it in evidence. Differing digests fail as a tie, except
+for documents differing only in `openForComment` or `withinCommentPeriod` at one
+instant. Those fields are derived at read time, so that difference represents
+one observation; any other difference refuses publication.
 `inputObservationDigest` consumes that sequence through the installed shared
 framed-section digester. Every older observation counts as discarded and stays
 in the acquisition evidence; the profile records that count and owns the
 executable equivalence test for its public current view.
 The thin reader contains none of this policy.
+
+### Digest inputs and ordering
+
 These source digests call the installed `rulespec-artifacts` streaming
 framed-section digester; SpicyDocs does not implement or restate its byte
 framing.
@@ -326,6 +340,8 @@ identity encoding. `payloadPartitions` is bounded to the four partition kinds
 times 64 buckets and records each nonempty member's kind, bucket, `blobRef`,
 byte size, and record count in strict order.
 
+### Operational byte measurements
+
 Operational byte measurements are returned as
 `PublishedSourceNativeRelease.byte_measurements` and as `byteMeasurements` in
 the publish CLI result. They are not sealed receipt fields and cannot be
@@ -344,6 +360,8 @@ release schema, receipt, manifest, and root bytes, calculated after writing.
 Metadata construction has no self-size fixed point. Member sizes and hashes
 remain sealed evidence, and admission retains its root size limit.
 
+### Verification and failure accounting
+
 Root `supersedes` carries the one
 platform succession record when this release replaces the current generation;
 the receipt does not repeat it. All listed counts are required and nonnegative,
@@ -361,15 +379,13 @@ proves `discoveredRecordCount = inputObservationCount + failedRecordCount`,
 recomputes the acquisition-ledger digest and evidence count,
 recomputes the rendition and published-record counts, and checks them against
 the product state and applicable root aggregates. `failedRecordCount` covers
-records that never became canonical observations. **Superseding amendment
-(2026-09-04, `83e2032`, `dc5687b`):** deterministic classification or record-scope
+records that never became canonical observations. Deterministic classification or record-scope
 failures remain in the acquisition ledger and retained source evidence; they
 contribute no published record. A release may publish with these failures when
 the per-class counts reconcile with `failedRecordCount` and both transient and
 unclassed counts are zero. Admission applies this equation even when
 `failedRecordCount` is zero; missing class counts are refused. Transport, page parsing, and other acquisition errors
 still abort; a credential refusal never becomes a deterministic source record.
-This replaces the original requirement that every failure count be zero.
 
 Full verification independently reclassifies retained records and compares
 both successful and rejected rows. A rejected record is identified by its
@@ -430,6 +446,8 @@ The reader is the only SpicyDocs integration surface required by DocSpec.
 DocSpec owns its optional outer adapter and receives the reader through its
 `SourceNativeRecordSource` port. Neither product imports the other's core.
 
+### Command and storage boundary
+
 The `spicy-docs-source-native` operator command is a thin outer adapter. Its
 `publish` command selects one source and its explicit selectors: inclusive
 `--since` and `--until` dates for date-scoped collections, repeated `--agency`
@@ -449,6 +467,11 @@ command writes one canonical JSON result to standard output, or one canonical
 JSON error to standard error, so automation does not scrape log text. The
 command defines no catalog, selection, join, or document-processing behavior.
 
+**Current implementation gap:** handled failures end stderr with a JSON error,
+but diagnostic or retry lines may precede it. Argument errors and unexpected
+exceptions are not structured-error results. See [command output](../../cli.md)
+for the current behavior; the single-result requirement above remains the target.
+
 ## 7. Public publication profile
 
 The public profile preserves bulk-data access without creating another logical
@@ -467,7 +490,7 @@ before this projection. Documents and comments retain their established
 sets them to null because source acquisition does not create derived text.
 DocSpec must own any future body-text result and the catalog row that selects it.
 
-**Amendment (2026-09-11):** Federal Register public projection `1.1` declares
+Federal Register public projection `1.1` declares
 the compound primary key `["document_number", "publication_date"]`, preserving
 the existing columns and their types. It checks native identity using the
 Federal Register identity function and keeps both rows when a document number
@@ -477,6 +500,8 @@ order. Other profiles keep scalar `primaryKey` metadata. Federal Register
 projection `1.1` is the single supported table profile; the former `1.0`
 projection is no longer supported. See the
 [current projection decision](../../decisions.md#federal-register-public-tables-preserve-composite-identity).
+
+### Publish and read tables
 
 Publication uses a disk-backed sort and duplicate-key check, bounded Arrow
 batches, a configured maximum row count per member, Parquet 2.6 with Zstandard,
@@ -566,6 +591,8 @@ replacement of an immutable destination. External cutover adds a live immutable
 HTTPS range test and smoke tests for each retained anonymous consumer. Catalog
 integration, if selected by a consumer, needs its own snapshot/update checks.
 
+### Refusal and determinism checks
+
 Role-closure tests reject an extra role. Comment fixtures cover equal and null
 timestamp conflicts, multiple source versions, shuffled enumeration order,
 digest/count replay, deterministic output order, schema drift, and a one-row
@@ -573,7 +600,7 @@ mutation that changes the digest. Document and docket fixtures extend that
 executable coverage to the document `postedDate` fallback, offset-equivalent
 instants that tie, a repeated docket instant, and a repeated pair with an
 identical canonical record digest but differing raw bytes (key order alone)
-at one instant selecting one published record instead of tying (2026-09-02),
+at one instant selecting one published record instead of tying,
 with every redundant input counted as a discarded observation and retained
 in acquisition evidence.
 Generation tests refuse broken superseded identities, an empty successor reason,
@@ -586,6 +613,8 @@ changed-bucket-only writes, zero payload writes for a physical rebuild,
 truthful byte accounting, corrupt-`EEXIST` refusal, safe concurrent publication,
 recoverable orphan content, path-containment refusal, no root after failure,
 and the fixed 64-stream reader bound.
+
+### Scale and baseline gates
 
 A sealed scale run publishes and verifies the accepted 3.9 GB input with peak
 resident memory at most 8 GiB and temporary disk at most 16 GiB. It records
@@ -606,8 +635,9 @@ unrelated record.
 
 ## Current wheel acceptance boundary
 
-SpicyDocs qualifies its own format `2.0` wheel. DocSpec owns the destination
-acceptance update in D10: its current probe requires the removed
-`SUPPORTED_PRODUCER_PRODUCTS` allowlist to include both producer names and will
-refuse this candidate until that probe and its supported-format expectations
-are updated. Local wheel qualification does not claim consumer adoption.
+Qualify the exact producer wheel after changing source format or admission.
+DocSpec owns its receiving integration and partial-input policy in D10; a passing
+SpicyDocs build does not establish consumer adoption. The
+[task ledger](../../simplification-todo.md#merged-baseline-and-evidence) records
+qualified baseline wheels and local receiving evidence separately from release
+and deployment status.

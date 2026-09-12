@@ -233,20 +233,11 @@ COMMENT_ATTRIBUTE_FIELDS: Final = frozenset(
     }
 )
 _DOCUMENT_BOOLEAN_FIELDS: Final = frozenset({"allowLateComments", "openForComment", "withdrawn", "withinCommentPeriod"})
-# `openForComment` and `withinCommentPeriod` are both computed at read time
-# from the fixed commentStartDate/commentEndDate pair (and, for
-# openForComment, allowLateComments) against "now" -- they are not stored
-# document facts, so two mirror objects for the same document version can
-# report opposite values depending solely on what day each was fetched.
-# Measured twice: BIS-2023-0021-0001 has two objects at modifyDate
-# 2023-10-13T01:04:10Z differing only in openForComment, and
-# EPA-HQ-OAR-2006-0894-0021 has two objects at modifyDate
-# 2024-04-25T01:00:59Z with the same single-field difference -- in both
-# cases the mirror's later refetch crossed the comment deadline while the
-# document's own modifyDate did not move. `allowLateComments` and
-# `withdrawn` are lifecycle facts the source writes once, not clock-derived
-# on every read, so they are excluded: a difference in either still refuses
-# as a tie (2026-09-02).
+# These fields depend on the fetch time relative to commentStartDate/commentEndDate;
+# openForComment also uses allowLateComments. Refetches can therefore disagree
+# without a modifyDate change (for example, BIS-2023-0021-0001).
+# allowLateComments and withdrawn are stored lifecycle facts: differences in
+# either still refuse a tied version.
 DOCUMENT_TIE_VOLATILE_FIELDS: Final = frozenset({"openForComment", "withinCommentPeriod"})
 _DOCUMENT_INTEGER_FIELDS: Final = frozenset({"pageCount", "paperLength", "paperWidth"})
 # cfrPart is text or null, never an array, in the v4 API and the mirror alike

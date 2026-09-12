@@ -1,30 +1,13 @@
-"""Reader connector for the CourtListener bulk-data dumps (quarterly CSV exports).
+"""Stream CourtListener's published CSV dumps for keyless opinion text.
 
-Complements :mod:`spicy_regs.sources.courtlistener` (which stays in
-spicy-regs), which reads the v4
-``/search/`` endpoint for *docket* metadata. This module reads the other half of
-the publisher's surface: the periodic full-table CSV dumps at
-``storage.courtlistener.com/bulk-data/``, which are the **only keyless source of
-opinion text**. The REST ``/opinions/`` and ``/clusters/`` endpoints both answer
-``401`` without a token (verified 2026-08-22); ``/search/`` and ``/courts/`` do
-not. So a bulk read is not an optimization here, it is the only road.
+This complements spicy-regs' docket search reader. The REST opinions and clusters
+endpoints required a token when checked on 2026-08-22; the bulk bucket supplies
+full tables without one.
 
-**The listing is the publisher's enumeration.** The bucket answers the S3 v2
-list API, so ``list_bulk_dumps`` recovers every published object with its exact
-byte size and last-modified stamp. That listing is what makes coverage
-*checkable*: a claim about how much of a dump we ingested is measured against
-the publisher's own row counts, not against our hopes.
-
-**Streaming, not landing.** The dumps are bzip2 and some are enormous — the
-2026-06-30 ``opinions`` dump is 50.8 GiB compressed and roughly 422 GiB
-decompressed at its observed 8.3x ratio. Landing that is not an option on a
-workstation, so the reader decompresses *as it downloads* and never holds more
-than a buffer in memory. ``max_records`` / ``max_compressed_bytes`` bound a run
-so a partial ingest is a deliberate, recorded slice rather than a timeout.
-
-**Politeness.** Every request carries an honest identifying User-Agent. The
-bucket serves at roughly 1.7-2.0 MiB/s per connection; the reader takes that as
-given rather than opening parallel connections to work around it.
+The S3 listing records published objects, exact sizes, and modification times.
+The reader downloads and decompresses bzip2 incrementally. max_records and
+max_compressed_bytes bound a partial ingest. Requests use an identifying
+User-Agent and one connection, respecting the publisher's transfer rate.
 """
 
 from __future__ import annotations
@@ -72,15 +55,9 @@ class _CsvDialect(TypedDict):
     doublequote: bool
 
 
-#: The dumps escape an embedded quote as ``\"``, not as the doubled ``""`` the
-#: stdlib assumes. Reading them with the default dialect does not fail — it
-#: *desyncs*: the reader treats the escaped quote as the end of the field, and
-#: the prose after it becomes the next record's first column. Measured on the
-#: 2026-06-30 ``opinion-clusters`` dump, the default dialect corrupts 1,987 of
-#: the first 3,000 rows and drops ``docket_id`` on two thirds of them, which
-#: would have quietly destroyed the join this whole ingest exists to make. With
-#: ``escapechar`` set, the same 3,000 rows parse clean and every one keeps its
-#: docket. ``doublequote`` stays True so a literal ``""`` empty field still reads.
+#: Embedded quotes use backslash escaping. The default CSV dialect silently
+#: splits opinion text into false rows and can lose docket_id. Keep doublequote
+#: enabled as well so quoted empty fields still parse.
 CSV_DIALECT: _CsvDialect = {"escapechar": "\\", "doublequote": True}
 
 
@@ -154,23 +131,14 @@ def published_object_pin(
     expect_last_modified: str | None = None,
     expect_etag: str | None = None,
 ) -> dict[str, object]:
-    """Identify the published object a capture read, in receipt form.
+    """Record one published object's listing metadata and check caller expectations.
 
-    A capture that says "streamed the 2026-06-30 opinions dump" has named a
-    filename, not a thing. The publisher's listing carries the object's exact
-    byte size and last-modified stamp, which is what makes two runs comparable
-    and what makes "the dump changed under us" a detectable event rather than an
-    unexplained difference in row counts.
+    Byte size, last-modified time, and the exact quoted ETag distinguish revisions
+    of the same filename. These checks apply to the listing only: this helper does
+    not bind later HTTP reads with If-Match or hash their content.
 
-    **The population itself is DocSpec's to pin**, at
-    ``fixtures/courtlistener-bulk-v1/`` — it captures this listing verbatim,
-    digests it, and distinguishes an object the publisher withdrew from one we
-    declined. This function does not re-derive any of that. It records the one
-    object a run actually read, and ``expect_bytes`` / ``expect_last_modified``
-    let a caller compare that record before reading it. ``expect_etag`` compares
-    the exact listed ETag, including quotes. These are listing preconditions;
-    this helper does not bind subsequent HTTP reads with If-Match or hash their
-    content.
+    DocSpec owns the pinned population in fixtures/courtlistener-bulk-v1/, including
+    withdrawn versus declined objects. This helper records only the object read.
     """
     listing = objects if objects is not None else list_bulk_dumps()
     published = find_dump(listing, dataset, dump_date)
@@ -230,27 +198,13 @@ class _BinarySource(Protocol):
 
 
 class _CountingStream(io.RawIOBase):
-    """Adapt an HTTP response to a readable stream, decompressing bzip2 inline.
+    """Decompress an HTTP bzip2 stream while counting compressed bytes for the budget.
 
-    Tracks compressed bytes pulled so a caller can stop on a byte budget without
-    waiting for a row count.
+    After a read error, reopen resumes at the exact compressed offset and feeds the
+    same decompressor. Without reopen, as for a local file, the error propagates.
 
-    **Resumable.** A full pass over the ``opinions`` dump is 8.6 hours on one
-    socket, and a socket held open that long will occasionally be dropped by
-    something between here and the bucket. Failing at hour seven with nothing to
-    show for it is the difference between this ingest being feasible and not, so
-    a read error reopens the transfer with an HTTP ``Range`` starting at the
-    exact compressed offset already consumed and keeps feeding the *same*
-    decompressor — bzip2 needs its compressed bytes in order, not in one socket.
-    ``reopen`` is the callable that performs that ranged re-request; without one
-    (a local file) a read error still propagates.
-
-    **Multi-stream aware.** ``bzip2`` writes one stream; ``pbzip2`` writes a
-    concatenation of them, and a plain ``BZ2Decompressor`` raises ``EOFError``
-    the moment it is fed a byte past the first stream's end. The publisher's
-    dumps read as single-stream today, but a compressor change upstream would
-    otherwise truncate a pass silently-ish at a stream boundary, so a finished
-    decompressor is replaced and its ``unused_data`` carried over.
+    Concatenated bzip2 streams need a fresh decompressor at each boundary; carry
+    unused_data forward so a publisher compressor change cannot truncate the dump.
     """
 
     def __init__(

@@ -1,15 +1,13 @@
 # Federal Register body sources and acquisition
 
-SpicyDocs can acquire and check an explicitly selected GovInfo Federal Register
-body. `spicy_docs.sources.federal_register.body_acquisition` returns exact bytes,
-observed response facts and the source identities that those bytes support.
-The caller can retain or process them without downloading them again. Install
-`spicy-docs[acquisition]` to use this HTTPX-based API.
+`spicy_docs.sources.federal_register.body_acquisition` acquires an explicitly
+selected GovInfo body, checks identity, and returns exact bytes plus observed
+response facts. Install `spicy-docs[acquisition]`. You can retain or process the
+result directly without a second download, source release, or dataset run.
 
-The standard-library-only `body_sources` module also derives publisher XML/text
-locators and checks already fetched GovInfo bytes. Publisher XML/text acquisition
-is not yet qualified here. A caller selects a route; DocSpec owns preference
-among candidates when building a dataset.
+Standard-library `body_sources` derives publisher XML/text locators and validates
+already fetched GovInfo bytes. Publisher XML/text acquisition remains unqualified.
+The caller selects a route; DocSpec owns dataset candidate preference.
 
 ## Acquire a selected GovInfo body
 
@@ -39,99 +37,96 @@ digest = result.body.sha256
 identity = result.identity
 ```
 
-For an ordinary known GovInfo granule, select `route="granule"` and omit
-`start_page`. That route makes one request before any retries. The explicit
-`mods-start-page` route first reads the issue's Metadata Object Description
-Schema (MODS) XML, resolves one constituent by start page, and fetches its
-granule. It returns both complete captures and keeps the FederalRegister.gov
-number, GovInfo access ID and actual printed document marker separate. A
-failed direct lookup never automatically starts a MODS or publisher fallback.
+| Route | Requests before retries | Identity retained |
+| --- | --- | --- |
+| `granule` (omit `start_page`) | One known granule | Requested identity and printed document marker |
+| `mods-start-page` | Issue Metadata Object Description Schema (MODS) XML, then the unique granule matching `start_page` | FederalRegister.gov number, resolved GovInfo `accessId`, and actual printed marker, kept separate; both captures returned |
 
-Every attempt, including retries and both MODS/body requests, counts against
-`max_requests`. The client retries transport failures and HTTP 429/5xx using
-the shared bounded exponential backoff. Other statuses and source identity
-failures stop immediately. Redirects are refused without following them.
-HTTP 401/403 raises the shared `CredentialRefusedError`; the caller must stop
-its operation rather than continue with another route or record.
+A failed route never automatically starts another. Apply these bounds:
 
-The required request-start interval applies across sequential acquisitions on
-the same client, including retries. A zero interval explicitly disables this
-pacing. The timeout bounds transport waits; it is not a total operation
-deadline. These are caller choices, not a statement of GovInfo's current
-rate policy. Use one client sequentially and close it, normally with `with`.
-Injected HTTPX transports support offline operation; they must preserve the
-streaming interface and must not add hidden requests or authentication.
+- Every attempt, including retries and MODS/body requests, consumes `max_requests`.
+- Transport failures and HTTP 429/5xx retry with bounded exponential backoff.
+  Other statuses and identity failures stop immediately; redirects are refused.
+- HTTP 401/403 raises `CredentialRefusedError`. Stop the operation rather than
+  continuing with another route or record.
+- Request-start pacing applies across sequential acquisitions and retries on one
+  client. Zero disables it. Timeout bounds transport waits, not total duration.
+  These caller settings are not GovInfo rate-policy claims.
+- Use one client sequentially and close it. Injected HTTPX transports must preserve
+  streaming and add no hidden requests or authentication.
+- Each response bound must be positive and at most 24 MiB. Acquisition requests
+  identity encoding, refuses other encodings, checks stated length, and bounds
+  accumulated bytes through EOF. HTTPX may obtain extra transport bytes to detect
+  overflow; this limits retained bytes, not wire traffic or transport buffering.
+- No partial body becomes exact evidence. Streams close on success and refusal.
 
-Each response has a required positive byte bound, at most 24 MiB. Acquisition
-requests identity content encoding, rejects other encodings, checks any stated
-length, and bounds its accumulated bytes while reading through EOF. HTTPX's
-chunking may obtain more bytes from a transport to detect overflow; the bound
-describes retained response bytes, not wire traffic or transport buffering.
-No partial body is returned as exact evidence. Response streams close on both
-success and refusal.
+The result includes route, effective budget, attempts, identity, and complete
+responses: requested/final URL, status, content type, observation time, bytes,
+size, and qualified SHA-256. To store a capture, pass its `sha256`, `byte_size`,
+and `[body]` to `SourceNativeBlobStore.put_blob`; retain source facts beside the
+returned reference.
 
-The result contains route, effective budget, attempt count, source identity,
-and complete response values with requested/final URL, status, content type,
-observation time, exact bytes, byte length and qualified SHA-256. It does not
-publish a source-native release or start a dataset run. You may stop with this
-source-only result. To retain bytes, pass each capture's `sha256`, `byte_size`
-and `[body]` to `SourceNativeBlobStore.put_blob` and retain its source facts
-alongside the stored references.
-
-Run `uv run python examples/govinfo_body.py` for a network-free example that
-retains synthetic MODS and body bytes plus `capture.json`. Its two requests go
-to an injected local transport. The JSON is an example report, not a sealed
-release receipt. When copying the script for installed-wheel testing, copy
-`examples/fixtures/govinfo/` beside it too.
+`uv run python examples/govinfo_body.py` uses an injected local transport for two
+synthetic requests, retaining MODS/body bytes and `capture.json`. The JSON is an
+example report, not a sealed release receipt. For installed-wheel testing, copy
+`examples/fixtures/govinfo/` beside the script.
 
 ## Refused evidence
 
-Errors preserve their source exception and carry `refused_response`, the
-existing `RefusedResponse` value. A complete bounded body that fails an
-identity, MODS or ordinary HTTP status check remains available as exact bytes,
-including an exact empty response. Oversize, unsupported transport, credential
-refusal and exhausted retry cases can have no captured body. A request skipped
-because its total budget is exhausted is explicitly `before-request` with
-`request-budget-exhausted`; it is not represented as an attempted fetch.
+Errors preserve the source exception and attach `refused_response` (`RefusedResponse`):
 
-`body_acquisition` on the same error records selected route, original source
-arguments, budget and consumed attempts. These values remain in caller memory;
-the caller decides how to store a failed run. They retain the active offending
-response rather than a history of all retry bodies, and a failed granule request
-does not mislabel previously successful MODS bytes as the refused response.
-No release or success result is returned after refusal.
+| Condition | Retained response |
+| --- | --- |
+| Complete bounded body fails identity, MODS, or ordinary HTTP status check | Exact bytes, including empty bytes |
+| Oversize, unsupported transport, credential refusal, or exhausted retries | May have no captured body |
+| Request skipped because total budget is exhausted | `before-request` / `request-budget-exhausted`; no attempted fetch implied |
+
+The same error's `body_acquisition` retains route, original arguments, budget,
+and consumed attempts. The caller owns persistence. Context identifies the active
+offending response, not all retry bodies; a failed granule never labels earlier
+successful MODS as the refused response. Refusal returns no release or success result.
 
 ## Why each rule survived or did not
 
-| Prior behavior | Decision | Why |
-| --- | --- | --- |
-| Derive publisher XML and text siblings from `body_html_url` | Retain, with stricter identity checks | The publisher exposes real sibling paths, and the pre-2000 corpus showed that XML absence did not mean body absence. The old global string replacement could derive a plausible URL from the wrong record; the new helper requires the host, path, date, and document number to agree first. |
-| Derive a govinfo FR granule from publication date and document number | Retain | This is a stable source-addressing rule and recovered a measured publisher gap. The helper emits the candidate without ranking it. |
-| Treat a 44,165-byte response as a govinfo soft 404 | Do not retain as an invariant | That size described one observed error-page version. A later valid document could have the same size, and a changed error template would bypass the check. The durable checks are the final URL, error-page marker, and printed FR document marker. |
-| Require `[FR Doc No: ...]` in a govinfo body | Retain and strengthen | govinfo can return HTTP 200 for a missing granule. The marker binds the bytes to the requested identity. A MODS-resolved alternate must now print the resolved `accessId`; the old alternate branch checked only that it was not the known error page. |
-| Accept the base marker for a split number such as `97-26440-2` | Retain narrowly | FederalRegister.gov created a disambiguation suffix while the printed document kept the unsuffixed number. The new rule accepts a base only for the measured three-part numeric shape, not for every string ending in digits. |
-| Resolve a synthetic `X` number by matching `start_page` in the issue MODS | Retain and strengthen | This preserves a real cross-source identity difference. The streaming parser keeps the FederalRegister.gov number separate from the govinfo `accessId` and refuses zero, multiple, malformed, oversized, or DTD-bearing evidence instead of taking the first regex match. |
-| Use `.xml` then `.txt` then govinfo as a fixed runtime cascade | Leave selection to DocSpec policy | The availability observation is valuable, but candidate preference is a DocSpec decision. SpicyDocs exposes locators without ranking them and acquires the explicitly selected, supported GovInfo route. |
-| Prove publisher text and govinfo agreement | Keep in SpicySearch Validation | Agreement measures whether two carriers yield the same recovered terms; it does not establish source acquisition identity and must not become a runtime shortcut. Copying the check here would create a second validation implementation. |
-| Sleep 0.4 seconds with three workers | Do not retain as source semantics | The useful performance lesson is to meter request starts rather than add response latency to a post-request sleep. The exact interval and worker count came from one host/client campaign and can drift. A future DocSpec transport policy must state and receipt its own current bounds. |
-| Append failures and digests to ad hoc ledgers, rescan output directories, and write manifests directly | Do not retain | The code arose from a resumable research campaign. SpicyDocs' shared acquisition and publication path provides immutable members, exact digests, bounded reads, and explicit failures. Restoring the loop would duplicate those mechanisms with weaker arrival evidence. |
+- **Check identity before deriving sibling URLs from `body_html_url`.** XML/text siblings
+  require the expected host, path, date, and document number. Global replacement
+  could derive a plausible link for the wrong record. Pre-2000 XML absence did
+  not establish body absence.
+- **Use date and document number for GovInfo granule addresses.** This source
+  rule recovered a measured publisher gap; the helper emits an unranked candidate.
+- **Validate final URL, error-page marker, and `[FR Doc No: ...]`.** GovInfo can
+  return 200 for missing granules. The old 44,165-byte error size was one template
+  observation, not an identity rule. MODS alternates must print the resolved `accessId`.
+- **Accept split-number bases narrowly.** A number such as `97-26440-2` may print
+  its unsuffixed base. This exception covers the measured three-part numeric
+  shape, not arbitrary trailing digits.
+- **Resolve synthetic `X` numbers through MODS start pages.** Preserve the
+  original number and separate `accessId`. Refuse zero/multiple matches,
+  malformed/oversized XML, and DTD-bearing evidence.
+- **Keep candidate selection in DocSpec.** A fixed XML → text → GovInfo cascade
+  would turn an availability observation into runtime policy. SpicyDocs acquires
+  only the explicitly selected supported route.
+- **Keep text-agreement checks in SpicySearch Validation.** Recovered-term agreement
+  between publisher text and GovInfo does not establish acquisition identity.
+- **Use current caller bounds and shared storage.** Historical 0.4-second,
+  three-worker tuning and ad hoc ledgers were campaign choices. Meter request
+  starts; retain bounds and source facts without restoring weaker duplicate
+  download/publication loops.
 
 ## Bounds and handoff
 
+The pure `body_sources` helpers make zero network requests and filesystem writes.
 For URL length `U`, granule bytes `B`, and MODS bytes `M`:
 
-- locator derivation takes `O(U)` time and `O(U)` output space;
-- granule validation takes `O(B)` time and `O(U)` auxiliary space;
-- MODS resolution takes `O(M)` time and `O(D + A)` auxiliary space, where
-  `D` is XML nesting depth and `A` is the largest retained `start` or
-  `accessId` value;
-- byte parsers reject a payload beyond the caller-supplied positive bound;
-- every helper performs zero network requests and zero filesystem writes.
+| Operation | Time | Auxiliary/output space |
+| --- | --- | --- |
+| Locator derivation | `O(U)` | `O(U)` output |
+| Granule validation | `O(B)` | `O(U)` auxiliary |
+| MODS resolution | `O(M)` | `O(D + A)` auxiliary: XML depth `D`, largest retained `start`/`accessId` value `A` |
 
-DocSpec D44 still owns its fetcher adapter: selecting a candidate, setting an
-experiment's bounds, passing these already captured body bytes into its existing
-fetch stream, and retaining source identity plus MODS proof. Its current fetcher
-metadata has no general slot for those extra proof facts, so that integration
-must choose and qualify their supported retention. S19 supplies the source
-operation; it does not claim D44 adoption or require a second download or a
-second SpicyDocs publication before use.
+Byte parsers reject payloads beyond caller-supplied positive bounds.
+
+DocSpec D44 still owns its adapter: candidate choice, experiment bounds, passing
+captured bytes into its fetch stream, and retaining identity/MODS proof. Current
+fetcher metadata has no general slot for those proof facts; that integration
+must qualify their retention. S19 supplies the source operation, not D44 adoption.

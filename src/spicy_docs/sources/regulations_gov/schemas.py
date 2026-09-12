@@ -264,7 +264,7 @@ REGULATIONS_GOV_COMMENT_SCHEMA: Final = _raw_schema(
 
 
 # Schemas are immutable constants. Cache their digests across publication and
-# replay rather than recomputing per record; see docs/maintenance-decisions.md.
+# replay rather than recomputing per record; see docs/decisions.md.
 @cache
 def document_source_schema_digest() -> str:
     return schema_bundle_digest({DOCUMENT_SCHEMA_PATH: REGULATIONS_GOV_DOCUMENT_SCHEMA})

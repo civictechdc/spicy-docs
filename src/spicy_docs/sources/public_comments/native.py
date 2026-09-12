@@ -1,25 +1,14 @@
-"""Exact spicy-regs public-table captures as a source-native release.
+"""Capture exact spicy-regs public comment partitions as source-native releases.
 
-Acquisition begins at the spicy-regs public tables — the community's already
-collected data — captured and digest-pinned like any other source (see
-``docs/decisions.md`` for the supply-precedence rule and its provenance).  spicy-docs reaches an origin
-API only for what those tables cannot supply.
+Supply precedence starts with community tables (docs/decisions.md); origin APIs
+supply only what those tables lack. Each Hive partition at
+comments/agency/agency_code={X}/part-{n}.parquet becomes one bounded evidence ZIP:
+exact bytes plus digest, size, fetch time, locator, and stated freshness.
+Publication and independent replay classify only those pinned bytes.
 
-The acquisition unit is one Hive partition file:
-``comments/agency/agency_code={X}/part-{n}.parquet``.  The whole object is
-fetched, its SHA-256, byte size, fetch instant, upstream locator, and whatever
-freshness the mirror stated (``ETag``, ``Last-Modified``) are written into a
-capture manifest, and manifest plus exact partition bytes are sealed into one
-bounded ZIP pack.  That pack is the evidence page: rows are classified out of
-the pinned bytes on every publish *and* on every independent replay, never out
-of a live query.
-
-Faithfulness is the whole point at this layer.  Every declared column is
-preserved, nulls included; ``See attached`` comment bodies and empty
-``text_content`` are recorded exactly as the table holds them.  The upstream
-pipeline has already selected the current row per ``comment_id``; this profile
-reports that selection rather than re-running it, and refuses a capture that
-repeats an identity instead of quietly collapsing one away.
+Preserve every declared column, including nulls, "See attached" bodies, and empty
+text_content. The upstream table already selected the current row per comment_id;
+this profile records that selection and refuses repeated identities.
 """
 
 from __future__ import annotations
@@ -878,13 +867,7 @@ SPICY_REGS_PUBLIC_COMMENT_SCHEMA: Final[dict[str, Any]] = {
 }
 
 
-#: The schema is a module constant, so this digest is one value per process.
-#: It was recomputed per record: measured on a real replay, 4.04 calls per
-#: published record at 171 us each -- 2 per record in the publish pass and 2
-#: more in the verify gate's replay -- which projects to 4,073,895 calls and
-#: 696 s over the 1,007,639-record corpus. functools.cache rather than a
-#: hand-rolled module global: the function takes no arguments, so the stdlib
-#: decorator is exactly the right shape and says so.
+#: The schema is constant; cache its digest once per process across publish/replay.
 @cache
 def comment_source_schema_digest() -> str:
     """Use the installed Rulespec schema-family identity implementation."""

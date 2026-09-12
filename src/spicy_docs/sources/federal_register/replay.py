@@ -1,56 +1,13 @@
 #!/usr/bin/env python3
-"""Republish one Federal Register source-native release from its own retained
-acquisition evidence -- no network access, ever.
+"""Republish a Federal Register release from its retained evidence, entirely offline.
 
-WHY (SD-25). ``b590d86`` changed Federal Register identity from
-``document_number`` alone to the composite ``(document_number,
-publication_date)``. The release already published at
-``~/Work/corpora/supply-2026-09-02/releases/fr-full-1994-2026`` was built
-under the old identity and silently evicted 483 observations across 474
-reused document numbers -- real documents, including ``00-111``'s
-2000-01-14 rule, discarded because a later same-number filing collapsed
-onto it. Republishing under the current :data:`FEDERAL_REGISTER_PROFILE`
-recovers them as records. A fresh crawl cannot be used to measure this: the
-live Federal Register API returns *today's* corpus, so "record count rises
-by exactly 483" would measure the corpus moving, not the code. The only way
-to isolate the identity change is to replay the exact bytes the original
-acquisition already retained.
+Replay isolates producer changes from changes in the live corpus. It uses the
+release's recorded query scope and the current FEDERAL_REGISTER_PROFILE, shared
+with the publish CLI. Imports exclude GAO and live transport code.
 
-THE SEAM. ``iter_federal_register_pages(fetch, *, query_scope, ...)`` takes
-``FederalRegisterFetch = Callable[[str], bytes]`` -- a URL in, response
-bytes out. The published release records, on each acquisition-page row,
-both ``requestKey`` (the exact URL requested) and ``evidenceBlobRef`` (the
-digest of the retained response). Replaying is therefore a pure function of
-that release's own evidence: build ``{requestKey: evidenceBlobRef}`` once
-(:func:`build_request_map`), resolve each hit through the blob store lazily
-inside the fetch closure (:func:`build_replay_fetch`) rather than loading
-every retained response into memory up front, and hand that fetch to the
-unmodified production pipeline
-(``SourceNativeReleasePublisher(FEDERAL_REGISTER_PROFILE).publish(...)``).
-
-OFFLINE BY CONSTRUCTION. A request absent from retained evidence raises
-ReplayEvidenceMissingError. The profile comes from the Federal Register's own
-module, which imports no GAO or live transport code. The CLI and replay tool
-share that exact profile; import-boundary tests protect this separation.
-
-THE QUERY SCOPE is read from the source release itself -- its sole
-``source-native-scopes`` member, on disk ``records/scopes.jsonl`` -- never
-taken as a CLI argument (see :func:`_read_query_scope`). A replay under a
-scope the operator merely believes matches the original is not a replay; a
-scope read back from the release is byte-identical by construction.
-
-SCALE NOTE. :func:`build_request_map` reads every row of every
-``source-acquisition-ledger``-role member -- that role covers two row
-shapes, acquisition-page rows (``requestKey``, ``evidenceBlobRef``, ...) and
-acquisition-ledger rows (``sourceRecordId``, ``observationRef``,
-``failure``, no ``requestKey``) -- and keeps only the former, identified by
-``requestKey``'s presence rather than by the manifest's own
-``partitionKind`` label, so it stays correct even if that partitioning
-detail changes. That is one linear, streamed pass over every retained
-ledger row (bounded per-line memory; nothing is held in aggregate but the
-small ``{requestKey: evidenceBlobRef}`` map), not just the page rows -- named
-here because the acquisition-ledger row population is normally much larger
-than the acquisition-page row population.
+Each requested URL resolves to its retained evidenceBlobRef; a missing request
+raises ReplayEvidenceMissingError. Responses load lazily from the blob store.
+The ordinary publisher builds and verifies the new release.
 """
 
 from __future__ import annotations
@@ -89,10 +46,7 @@ from spicy_docs.sources.federal_register.native import iter_federal_register_pag
 from spicy_docs.sources.federal_register.profile import FEDERAL_REGISTER_PROFILE
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
-#: Publication receipt path, relative to a release root. Not imported from
-#: ``spicy_docs.source_native`` (its ``RECEIPT_KEY`` is private to that
-#: module) -- mirrors the same hardcoded-path convention already used by
-#: ``tools/analysis/fr_discarded_distinctness.py``'s ``RECEIPT_PATH``.
+#: Receipt path relative to the release root; source_native.RECEIPT_KEY is private.
 _RECEIPT_PATH: tuple[str, str] = ("receipts", "publication.json")
 
 
@@ -133,13 +87,10 @@ def _admit_source_release(
     release_root: Path,
     blob_store: Path,
 ) -> tuple[MemberSource, LocalSourceNativeBlobStore, VerifiedArtifact, list[MemberDescriptor]]:
-    """Cheap-tier admission of the source release: structural and bounded
-    receipt/root agreement, the same check ``SourceNativeReleaseReader`` runs
-    on open. Not the expensive full acquisition replay
-    (``verify_source_native_release``) -- that recomputes the *original*
-    acquisition from evidence, which is redundant work here: this tool is
-    about to do exactly that recomputation itself, for the *new* release,
-    through the ordinary build gate inside ``SourceNativeReleasePublisher.publish``.
+    """Check structure and bounded receipt/root agreement, as the release reader does.
+
+    Full acquisition replay runs during publication of the new release; repeating
+    it here for the original release would duplicate that work.
     """
 
     source = LocalMemberSource(release_root)
@@ -159,14 +110,10 @@ def _admit_source_release(
 
 
 def _read_query_scope(members: Sequence[MemberDescriptor], source: MemberSource) -> dict[str, Any]:
-    """The source release's own recorded query scope -- read from its sole
-    ``source-native-scopes`` member (on disk: ``records/scopes.jsonl``,
-    ``spicy_docs.source_native.SCOPES_KEY``), located here by role rather
-    than by a hardcoded path so this stays correct even if that path
-    changes. Never taken as a CLI argument: a replay under any other scope
-    would drive ``iter_federal_register_pages`` over a different date
-    window than the one this evidence was acquired for, comparing unlike
-    populations rather than replaying the one that exists.
+    """Read the canonical query scope from the sole source-native-scopes member.
+
+    Locate it by role, not path. An operator-supplied scope could select a different
+    date window, so replay always uses the original release's recorded scope.
     """
 
     scope_members = [member for member in members if member.role == ROLE_SCOPES]
@@ -206,12 +153,12 @@ def _extract_request_map(
     members: Sequence[MemberDescriptor],
     blob_source: LocalSourceNativeBlobStore,
 ) -> tuple[dict[str, str], int]:
-    """``{requestKey: evidenceBlobRef}`` plus the total acquisition-page row
-    count (population: every row carrying ``requestKey``, across every
-    ``source-acquisition-ledger`` member and every retained traversal -- a
-    URL requested again in a later traversal contributes one row per
-    traversal, so this total can exceed the distinct-key count of the
-    returned mapping).
+    """Return {requestKey: evidenceBlobRef} and the acquisition-page row count.
+
+    Stream every source-acquisition-ledger member. Only rows carrying requestKey
+    are pages; other ledger rows describe observations and failures. Keep only the
+    URL map in memory. Count repeated URLs once per retained traversal, so the row
+    count can exceed the map size.
     """
 
     ledger_members = [member for member in members if member.role == ROLE_LEDGER]

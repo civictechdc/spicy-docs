@@ -339,19 +339,9 @@ def federal_register_acquisition_policy(
         "initialQueryScope": federal_register_query_scope(query_scope),
         "maxTraversals": MAX_RECONCILIATION_TRAVERSALS,
         "maxWindowDays": MAX_WINDOW_DAYS,
-        # document_number is reused across unrelated documents (00-111: a
-        # 2000-01-18 filing and an older 2000-01-14 rule). Identity is
-        # composite (the composite-identity decision, 2026-09-04): grouping on
-        # document_number alone silently evicted the older document every
-        # time a number was reused, so the group is the full pair below and
-        # a same-number, different-date pair is two records, not one
-        # collapsed to the newer. publication_date is now inside the group
-        # key rather than a tiebreak across it, so there is nothing left to
-        # order across dates -- orderBy is gone, not merely unused. The only
-        # residual tie is an exact repeat of one (document_number,
-        # publication_date) identity: refuse it unless every observed
-        # record shares one canonical digest, exactly as before, just
-        # scoped to a narrower, correct group.
+        # Reused numbers need composite identity; see federal_register_source_record_id.
+        # publication_date belongs to the group key, so no cross-date orderBy applies.
+        # Repeats of one pair collapse only when all canonical record digests agree.
         "observationSelection": {
             "groupBy": ["/document_number", "/publication_date"],
             "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
@@ -660,25 +650,12 @@ def classify_document(value: object) -> dict[str, Any]:
 
 
 def federal_register_observation_version(record: Mapping[str, Any]) -> str | None:
-    """Normalize the record's exact ``publication_date`` only for deterministic comparison.
+    """Return canonical publication_date for comparing repeated observations.
 
-    Mirrors :func:`regulations_gov_source_native.observation_version`'s shape: the
-    source-issued value stays in the record untouched; this returns the same
-    canonical text used to order and collapse repeat observations.
-
-    Identity is composite (the composite-identity decision, 2026-09-04):
-    ``publication_date`` is part of :func:`federal_register_source_record_id`
-    now, not merely a version compared within it, so within one identity this
-    can no longer distinguish anything -- every observation of one
-    ``(document_number, publication_date)`` pair returns the same value by
-    construction, and that is coherent rather than broken. It still selects
-    among repeat observations of one identity (a source refetch, or a
-    publisher correction that changes the record without changing its number
-    or date), where an identical digest collapses silently and a differing
-    one meets ``tieDisposition`` and refuses the release rather than picking
-    a winner. ``publication_date`` is required and already
-    source-issued-canonical by the time :func:`classify_document` returns it, so
-    this never observes an undated record (2026-09-02).
+    classify_document requires this date; the source record remains unchanged.
+    The date is also part of the composite identity, so every observation of one
+    identity has the same version. Equal canonical digests collapse; differing
+    digests refuse the release rather than choosing a correction arbitrarily.
     """
 
     value = record.get("publication_date")
@@ -715,22 +692,12 @@ def field_diagnostics(record: Mapping[str, Any]) -> list[dict[str, Any]]:
 
 
 def federal_register_source_record_id(record: Mapping[str, Any]) -> str:
-    """Compose the record's identity: the two fields that actually identify it.
+    """Join document_number and publication_date into a reversible source identity.
 
-    The composite-identity decision (2026-09-04): the source reuses ``document_number``
-    across unrelated documents -- ``00-111`` is both a 2000-01-18 notice and an
-    older 2000-01-14 rule (see :func:`federal_register_observation_version`'s
-    docstring) -- so ``document_number`` alone is not identity. Every record
-    that reaches this function has already passed :func:`classify_document`,
-    which requires ``document_number`` to fullmatch ``_ASCII_ID`` (letters,
-    digits, ``.``, ``_``, ``-``, never ``@``) and requires ``publication_date``
-    to be canonical ISO ``YYYY-MM-DD`` text. Joining them with ``@`` is
-    therefore both canonical (the same two source-issued values always
-    produce the same string) and reversible (``@`` cannot occur in either
-    half, so it occurs exactly once in the result and splitting on it
-    recovers both fields exactly) -- a lossless pairing, not a hash or a
-    digest. This is a public contract: every Federal Register
-    ``sourceRecordId`` changes shape under this release.
+    Numbers can identify unrelated documents: 00-111 names both a 2000-01-18 notice
+    and a 2000-01-14 rule. classify_document requires an _ASCII_ID number and a
+    canonical YYYY-MM-DD date. Neither permits @, so splitting the result on @
+    recovers both source-issued values exactly.
     """
 
     document_number = str(record["document_number"])
@@ -846,13 +813,7 @@ FEDERAL_REGISTER_DOCUMENT_SCHEMA: Final[dict[str, Any]] = {
 }
 
 
-#: The schema is a module constant, so this digest is one value per process.
-#: It was recomputed per record: measured on a real replay, 4.04 calls per
-#: published record at 171 us each -- 2 per record in the publish pass and 2
-#: more in the verify gate's replay -- which projects to 4,073,895 calls and
-#: 696 s over the 1,007,639-record corpus. functools.cache rather than a
-#: hand-rolled module global: the function takes no arguments, so the stdlib
-#: decorator is exactly the right shape and says so.
+#: The schema is constant; cache its digest once per process across publish/replay.
 @cache
 def source_schema_digest() -> str:
     """Use the installed Rulespec schema-family identity implementation."""

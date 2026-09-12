@@ -7,14 +7,8 @@ import sys
 import time
 from collections.abc import Callable
 
-# 2026-09-02: a full-history Federal Register crawl lost hours of work to one
-# `_ssl.c:993: The handshake operation timed out` — the crawl was competing
-# with a heavy S3 fan-out, and 5 attempts capped at 30s of total sleep gave up
-# long before the network recovered. 14 attempts (13 possible sleeps) with a
-# doubling backoff capped at 60s gives ~542s (~9 minutes) of worst-case
-# patience -- on the order of ten minutes, not thirty seconds -- while a
-# terminal refusal (a non-429 4xx, or the day's result cap) still fails on
-# the first attempt; callers decide which errors are retryable.
+# Allow temporary network congestion ~542s of total sleep across 13 retries.
+# Callers classify errors; terminal refusals still fail on the first attempt.
 MAX_HTTP_ATTEMPTS = 14
 RETRY_BACKOFF_CEILING_SECONDS = 60.0
 
@@ -25,17 +19,11 @@ def retry_http[FetchResult](
     retryable: tuple[type[Exception], ...],
     max_attempts: int | None = None,
 ) -> FetchResult:
-    """Run ``operation`` with capped exponential backoff and full jitter.
+    """Run operation with capped exponential backoff and full jitter.
 
-    ``max_attempts`` may impose a smaller remaining operation budget, including
-    the initial attempt. Omission uses ``MAX_HTTP_ATTEMPTS`` as before.
-    See its comment for why the default budget is what it is.
-    Full jitter -- a uniform draw between 0 and the deterministic ceiling --
-    keeps concurrent fetchers (Federal Register pages, public-table
-    partitions) from retrying in lockstep against the same struggling host.
-    Each retry is logged to stderr with the attempt number, the chosen delay,
-    and the exception that triggered it, so a long retry reads as "working"
-    rather than "hung" in an operator's log.
+    max_attempts includes the initial attempt and defaults to MAX_HTTP_ATTEMPTS.
+    A uniform delay from zero to the ceiling separates concurrent fetchers' retries.
+    Each retry logs its attempt, delay, and exception to stderr.
     """
 
     attempts = MAX_HTTP_ATTEMPTS if max_attempts is None else max_attempts

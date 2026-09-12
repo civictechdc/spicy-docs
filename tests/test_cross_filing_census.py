@@ -128,20 +128,15 @@ def _run_census(tmp_path: Path, releases: list[list[str]], *, profile: str = "do
 
 
 def _fixture(tmp_path: Path) -> dict[str, Any]:
-    """Publish five agencies' worth of documents covering every scenario this census reports on.
+    """Cover duplicate identity, content agreement, agency grouping, and id grammar.
 
-    OBJ-A: two EPA documents sharing an objectId, identical content (same-agency, content agrees).
-    OBJ-B: DOI's catch-all-docket filing plus BOEM's real docket, same objectId, titles differ
-      (cross-agency, single real docket -- a parent/component pairing, not a co-issued rule).
-    OBJ-C: EPA and DOT real dockets sharing an objectId, pageCount differs (cross-agency, two real
-      dockets from different agencies -- a genuine co-issued rule; also a suspects hit).
-    OBJ-D: two EPA documents sharing an objectId, frDocNum both null, pageCount differs (same-agency,
-      content disagrees, also a suspects hit with every frDocNum null).
-    OBJ-E: two FOO documents with identical content (content agrees, same-agency), but the FOO release
-      is listed twice in the input list, so every row -- and every id -- is observed twice (a
-      repeated sourceRecordId within the group; also two agency-level repeats).
-    A grammar-only EPA document carries no objectId (excluded from every objectId-keyed count) and an
-    id with a letters segment between its docket and document sequence numbers.
+    - OBJ-A: two EPA documents; same objectId and content.
+    - OBJ-B: DOI catch-all and BOEM real docket; different titles, parent/component pair.
+    - OBJ-C: EPA and DOT real dockets; co-issued rule, different pageCount, suspect hit.
+    - OBJ-D: two EPA documents; different pageCount, null frDocNum, suspect hit.
+    - OBJ-E: two identical FOO documents; listing the release twice repeats each id
+      and produces two agency-level repeats.
+    - Grammar-only EPA record: letters segment, no objectId; excluded from objectId counts.
     """
     epa_root, epa_digest = _publish(
         tmp_path,
@@ -340,16 +335,12 @@ def _fixture(tmp_path: Path) -> dict[str, Any]:
 
 
 def _docket_duplicate_fixture(tmp_path: Path) -> dict[str, Any]:
-    """Publish two agencies' worth of dockets covering the duplicate-identity question for dockets (SD-17).
+    """Cover docket duplicates and profile isolation.
 
-    OBJ-DOCK-FOO: two FOO dockets sharing an objectId, identical content (same-agency, content
-      agrees) -- and the FOO release is listed twice in the input list, so every row -- and every
-      id -- is observed twice (a repeated sourceRecordId within the group; also two agency-level
-      repeats), exactly as OBJ-E proves for documents.
-    OBJ-DOCK-DOT: DOT's single docket, unique objectId -- present so distinctObjectIds counts more
-      than the duplicate group alone, but it never forms a duplicate group by itself.
-    A regulations-gov-documents entry is included and must be skipped -- never opened -- proving a
-    dockets-profile run does not silently fold in the documents selector.
+    - OBJ-DOCK-FOO: two identical FOO dockets sharing objectId. A repeated release
+      doubles each row/id and produces two agency-level repeats.
+    - OBJ-DOCK-DOT: one unique docket contributes only to distinctObjectIds.
+    - The documents-profile entry must be skipped without opening its release.
     """
     foo_root, foo_digest = _publish_dockets(
         tmp_path,
