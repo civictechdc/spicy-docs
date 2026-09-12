@@ -32,8 +32,12 @@ rows through its existing mapping. The [filing slice](/Users/mikewolfd/Documents
 adds selected original statements, daily archives, separate Form 99 PDFs and a
 source-reported amendment chain. The offline reader preserves positional fields
 and separate body references without financial mappings. Complete distribution
-adoption, relationship fields, filing/attachment backfills and downstream
-publication remain open.
+adoption, historical profile/statement coverage, filing/attachment backfills and
+downstream publication remain open. The [selected relationship delivery](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration/relationships.md)
+now covers all selected bulk relationship rows, the complete current committee
+census and retained gap observations, and every relationship record in the
+selected original statements. SpicyRegs preserves reported roles, names, source
+dates and empty/invalid values with exact source references.
 
 ## Deferred local work
 
