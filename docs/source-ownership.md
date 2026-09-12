@@ -1,7 +1,7 @@
 # Source ownership and reuse decisions
 
-Keep SpicyDocs as an independent source provider. Remove unused catalog machinery
-and the unused Iceberg attachment helper; share source parsing through its wheel.
+Keep SpicyDocs as an independent source provider. The unused catalog machinery
+and Iceberg attachment helper are retired; source parsing is available through its wheel.
 DocSpec owns dataset selection, capture, processing, reuse, and experiment runs.
 SpicyRegs owns its independently useful public-data pipeline. Rulespec is the
 selected candidate for shared physical storage operations, subject to its writer
@@ -49,8 +49,8 @@ The detailed traces below distinguish existing callers from proposed consumers.
 | Component | Actual or required user and present callers | Decision, owner, and removal consequence |
 | --- | --- | --- |
 | Native release profiles, publisher, reader, evidence and failure APIs | Source operators use `cli/source_native.py`; DocSpec uses `SpicyDocsSourceNativeAdapter`. Injected source profiles and bounded readers support both source-only and dataset work. [Trace A](#a-source-operations-and-public-interfaces) | **KEEP**, SpicyDocs. Removing them breaks native publication and DocSpec source intake. Extend the existing API in S01/S19/S26 instead of creating another reader. |
-| Auxiliary generated profile/applicability catalogs | Repository generator, installed builder, and fixture tests regenerate and validate the outputs. No production reader found in the checked siblings. [Trace B](#b-auxiliary-catalogs-and-misplaced-policy) | **DELETE** generated outputs, bespoke sealing, builder commands, and their maintenance-only tests/gates in S12. Retain source facts and native vocabulary relationships needed by a supported source interface; deleting generated policy must not erase those facts. |
-| Source table declarations mixed with processing policy | Catalog builder reads `allowed_schemes`, processing mode, region adapter, and step flags. A Rulespec research probe reads `declared_profile_for_table`; source acquisition uses different native profiles. [Trace B](#b-auxiliary-catalogs-and-misplaced-policy) | **KEEP/RESHAPE** source identity, fields, access evidence and operational configuration; **DELETE** unconsumed processing choices and stage flags in S12. Coordinate the bounded probe change before removing its API. DocSpec D32/D34 and optional Search SC04 own actual experiment/recipe policy. |
+| Auxiliary generated profile/applicability catalogs | The retired repository generator, installed builder, and fixture tests regenerated the outputs. No production reader was found in the checked siblings. [Trace B](#b-auxiliary-catalogs-and-misplaced-policy) | **RETIRED in S12** with the entire unused catalog package. [Source-reference notes](source-reference.md) preserve reviewed relationships and limitations; current native profiles retain executable source descriptions. |
+| Source table declarations mixed with processing policy | The retired builder read `allowed_schemes`, processing mode, region adapter, and step flags. The historical Rulespec probe read `declared_profile_for_table`; source acquisition uses native profiles. [Trace B](#b-auxiliary-catalogs-and-misplaced-policy) | **RETIRED in S12**: no shadow table dictionary replaces it. Existing native profiles and SpicyRegs producers describe actual data. A current Rulespec probe replaces the lookup without rewriting historical evidence. DocSpec D32/D34 and optional Search SC04 own experiment/recipe policy. |
 | Immutable public Parquet output | Documented publish/verify commands and public library API; tests exercise native-to-table conversion. No sibling runtime import found. Source users can inspect a bounded immutable generation without DocSpec. [Trace C](#c-public-tables-and-iceberg) | **KEEP**, SpicyDocs S13. Removal would delete a supported source output. SpicyRegs may reuse suitable source transforms under SR03, but its mutable ETL is not replaced by this publisher. |
 | First-snapshot Iceberg attachment helper | Public export and one fake-table test; no operational caller or distinct required current workflow found. [Trace C](#c-public-tables-and-iceberg) | **DELETE**, SpicyDocs S13/S16. Remove the helper/export and now-unused location plumbing after checking the retained Parquet reader. No real integration is qualified by its protocol test. Reintroduce only for a concrete immutable-generation consumer. |
 | CourtListener listing, filename grammar, and raw streaming reader | SpicyDocs documented library use and tests; SpicyRegs independently calls its copied reader from court-scope, opinion-cluster and opinion-body builders. DocSpec's captured-listing tool owns a stricter duplicate parser. [Trace D](#d-courtlistener) | **KEEP/SHARE**, SpicyDocs S14/S26 owns the strict public source parser and live reader. DocSpec D42 and selected SpicyRegs SR03 callers consume its wheel before removing replaced copies. Domain transforms and dataset admission stay with their present owners. |
@@ -92,34 +92,36 @@ without confusing lazy imports with a lightweight installed wheel.
 
 ### B. Auxiliary catalogs and misplaced policy
 
-[`catalog/profiles.py:52`](../src/spicy_docs/catalog/profiles.py#L52) combines source
-identity/text/access fields with `allowed_schemes`, `mode`, and
-`region_adapter_id`; `STEP4_ACTIVE_SOURCE_TABLES` excludes comments at
-[`:129`](../src/spicy_docs/catalog/profiles.py#L129). The artifact builder copies
-those selections and computes custom seals
-([`catalog/artifacts.py:108`](../src/spicy_docs/catalog/artifacts.py#L108),
-[`:154`](../src/spicy_docs/catalog/artifacts.py#L154)). It also joins reviewed native
-vocabulary evidence to pinned RefSpec resources
-([`:241`](../src/spicy_docs/catalog/artifacts.py#L241)). The latter input facts may
-be useful even when its separately generated sealed output has no consumer.
+S12 retires the entire `catalog` package and its declared `SourceProfile` table
+registry. At baseline `04ade52`, `catalog/profiles.py` mixed identity/text/access
+notes with `allowed_schemes`, processing `mode`, `region_adapter_id`, and a
+`STEP4_ACTIVE_SOURCE_TABLES` flag. `catalog/artifacts.py` copied those choices,
+joined reviewed relationships to a pinned RefSpec catalog, and computed custom
+seals. Its only located executable consumers were the repository generator,
+installed builder, and maintenance tests. Those commands, tests, input/output
+JSONs, vendored RefSpec fixture, and package entry point are retired together.
 
-Present maintenance callers are
-[`scripts/generate_source_profile_artifacts.py:13`](../scripts/generate_source_profile_artifacts.py#L13),
-[`cli/source_profiles.py:8`](../src/spicy_docs/cli/source_profiles.py#L8), and
-[`test_source_profile_artifacts.py:23`](../tests/test_source_profile_artifacts.py#L23).
-The installed command is declared in [`pyproject.toml:45`](../pyproject.toml#L45).
-Rulespec's [offline probe:5](../../rulespec/thoughts/experiments/2026-09-11-ecfr-text/sibling-readers/spicydocs_probe.py#L5)
-imports the profile lookup and records a dataclass; that is research use, not an
-active processing policy consumer. SpicyRegs already generates its own published
-table dictionary from schemas and descriptions
-([`data_dictionary.py:798`](../../spicy-regs/src/spicy_regs/data_dictionary.py#L798)).
-Do not replace that useful dictionary with this auxiliary catalog.
+The [source-reference notes](source-reference.md) retain useful relationship
+knowledge as maintained prose. There is no replacement registry or seal.
+Supported executable descriptions remain in existing native release profiles;
+SpicyRegs' [dictionary](../../spicy-regs/src/spicy_regs/data_dictionary.py) and
+producing transforms own its table columns. The review corrected claims about
+CFR/Federal Register body columns, GAO RSS empty topic placeholders, FCC proceeding
+identity, and non-native Federal Register topic relationships. Real CourtListener
+cluster/body producers remain recognized; the unsupported old generic opinion
+declaration is not treated as a working adapter. Blanket public-record access
+was also a declaration, not evidence of every record's access conditions.
 
-The repeated work is maintaining profile coverage, fixture pins, custom seals,
-generated policy documents, and regeneration checks without a selected reader.
-S12 removes that maintenance cycle together, while preserving source knowledge
-and operational source configuration. Any needed processing choice belongs in an
-actual DocSpec experiment or Search recipe, not an automatic copy of these flags.
+Rulespec's earlier `spicydocs_probe.py` and its result remain historical evidence.
+Its new current-provider probe uses the installed public native profiles and
+records that the tested wheel has no CFR release adapter, with a separate
+SpicyRegs CFR metadata citation. No historical capture is rewritten and no
+compatibility wrapper keeps the retired lookup alive. The S12 execution record
+identifies the exact receiving probe and wheel qualification.
+
+DocSpec D32/D34 and optional Search SC04 remain owners of actual experiment and
+recipe choices. No removed processing flags are automatically copied there,
+and their adoption is not completed by source-side deletion.
 
 ### C. Public tables and Iceberg
 
@@ -193,7 +195,7 @@ captures, provenance, parsing, comparison and accepted explanations. No counterp
 module or executable caller was found in current SpicyRegs.
 
 Keep this as an explicitly owned source-maintainer diagnostic, with the existing
-[refresh instructions](catalog-and-drift.md#review-documented-value-drift): observe
+[refresh instructions](source-domain-drift.md#review-documented-value-drift): observe
 retained tables with time/revision pins, review both directions, and refresh
 publisher captures and their manifest together. It does not discover live drift
 until someone supplies new observations. Its nonzero status reports an unexplained
@@ -268,7 +270,7 @@ Those are observable outcomes; line-count reductions alone are not proof of valu
 
 ## Validation and implementation status
 
-Two read-only maintenance commands ran successfully against the inspected inputs:
+The following historical S11 maintenance commands ran against the inspected baseline inputs. The catalog generator was later retired by S12; this is an evidence record, not a current command list:
 
 - `uv run --frozen python scripts/generate_source_profile_artifacts.py --check`
   reported 19 profiles and 18 active. This proves the present maintenance cycle

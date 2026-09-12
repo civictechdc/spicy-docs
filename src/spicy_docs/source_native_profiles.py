@@ -1,4 +1,4 @@
-"""Public profile exports retained for existing consumers.
+"""Public profiles for supported source-native releases.
 
 Import a source's own ``sources.<source>.profile`` module when only that source
 is needed. In particular, offline Federal Register replay must not import GAO's

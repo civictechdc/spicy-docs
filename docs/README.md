@@ -7,6 +7,7 @@ states the adopted format and publication requirements.
 
 | What you need to do | Read |
 | --- | --- |
+| Choose raw records, a verified source release, or a flat table | [Source workflows and useful stopping points](source-workflows.md) |
 | Find the code that owns a change | [Architecture and ownership](architecture.md) |
 | Review planned simplification, component ownership, and DocSpec wheel reuse | [Simplification to-do list](simplification-todo.md) |
 | Understand which source capabilities to keep, share, or retire | [Source ownership decisions](source-ownership.md) |
@@ -18,7 +19,7 @@ states the adopted format and publication requirements.
 | Change exact GAO page capture | [GAO product pages](sources/gao.md) |
 | Capture community comment partitions | [Public comments](sources/public-comments.md) |
 | Use a raw Mirrulations or CourtListener reader | [Raw readers and projections](sources/raw-readers.md) |
-| Update source declarations or investigate documented-value drift | [Catalog and drift checks](catalog-and-drift.md) |
+| Find source-field references or investigate documented-value drift | [Source references](source-reference.md) and [documented-value drift](source-domain-drift.md) |
 | Run a campaign, replay retained evidence, or inspect corpus receipts | [Operational modules](cli.md#campaigns-replay-and-source-tools) and [corpus diagnostics](../tools/README.md) |
 | Understand why an unusual rule exists | [Acquisition decisions](decisions.md) and [maintenance decisions](maintenance-decisions.md) |
 | Update these guides or recover the former wiki | [Documentation maintenance and provenance](documentation.md) |

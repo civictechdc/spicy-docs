@@ -42,7 +42,6 @@ dev = [
 
 [project.scripts]
 spicy-docs-source-native = "spicy_docs.cli.source_native:main"
-build-source-profile-artifacts = "spicy_docs.cli.source_profiles:main"
 
 [build-system]
 requires = ["uv_build<0.12"]

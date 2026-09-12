@@ -1,8 +1,8 @@
 # Architecture and change ownership
 
 A raw reader yields source records for a caller that owns its run. Source-native
-acquisition additionally retains exact evidence, establishes completeness for a
-named scope, publishes immutable artifacts, and supports independent replay.
+acquisition additionally retains accepted evidence and bounded refused-response diagnostics,
+checks source coverage for a named scope, publishes immutable artifacts, and supports independent replay.
 
 ```mermaid
 flowchart LR
@@ -11,17 +11,16 @@ flowchart LR
   C --> D[Immutable release plus evidence blobs]
   D --> E[Full offline replay verification]
   D --> F[Bounded admission and record reading]
-  F --> G[DocSpec interpretation]
+  F --> G[DocSpec catalogs and dataset experiments]
   F --> H[Public-table projection and Parquet reader]
   A --> I[Raw bulk or mirror reader]
   I --> J[Caller-managed records and run receipts]
 ```
 
-## Three profiles with distinct jobs
+## Two profiles with distinct jobs
 
 | Type | What it describes | What it does not own |
 | --- | --- | --- |
-| `SourceProfile` in `catalog/profiles.py` | Declared fields, source capabilities, access scope, and observed drift | Release publication and record selection |
 | `SourceNativeProfile` in `releases/profile.py` | Source scope, evidence decoding, schema, identity, observation selection, and completeness | Generic artifact hashing or downstream interpretation |
 | `PublicTableProfile` in `public_tables/profiles.py` | Flat columns, projection, partitioning, and ordering | Acquiring source evidence |
 
@@ -47,7 +46,6 @@ identity depend on the caller.
 | Bounded admission and reading | `releases/admission.py`, `releases/reader.py` |
 | Public-table output | `public_tables/format.py` defines layout; `publish.py` indexes and writes; `verify.py` owns admission and the full row gate. `public_tables/profiles.py` owns source projections. |
 | Public-table consumption | `public_tables/api.py` exports the library API; `reader.py` owns admitted locations and exact Parquet member reading. |
-| Source catalogs and applicability | `catalog/profiles.py` declares source-table capabilities; `catalog/artifacts.py` validates and builds the catalog artifacts. |
 | Publisher-domain drift | `sources/source_domains.py` owns pinned document parsing and exact-value comparisons. |
 | Shared evidence encoding | `sources/evidence_zip.py` defines deterministic ZIP member metadata. |
 | Transport | `transport/acquisition.py`, `transport/retry.py`, `transport/credentials.py`, `sources/zyte.py` |

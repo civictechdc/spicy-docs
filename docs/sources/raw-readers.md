@@ -5,6 +5,11 @@ persistence, checkpoints, and run receipts. They do not publish source-native
 releases. Use the [release path](../releases.md) when you need preserved evidence
 and independent replay.
 
+A raw reader is a useful stopping point when your application already owns
+those responsibilities. Choose it deliberately rather than assuming it carries
+the release publisher's checks. [Source workflows](../source-workflows.md)
+compares the available outputs.
+
 [`Reader`](../../src/spicy_docs/sources/base.py) defines `iter_records()`.
 [`RecordType`](../../src/spicy_docs/schemas/base.py) names a record family and its
 optional flat projection. Selecting a record type configures a reader's source

@@ -62,6 +62,12 @@ wrong agency, and ambiguous versions fail rather than being silently repaired.
 Rendition rows preserve supplied attachment locators and metadata; downloading
 or interpreting their contents belongs to later work.
 
+The source release is usable as a record dataset without downloading attachments.
+Stream it through `SourceNativeReleaseReader`, or export the matching documents,
+dockets or comments public table. Keep the source release and blob store when
+you need to inspect the original JSON. [Source workflows](../source-workflows.md)
+distinguishes those outputs from a raw read and a later DocSpec experiment.
+
 ## Change and check
 
 [`sources/regulations_gov/`](../../src/spicy_docs/sources/regulations_gov/)

@@ -1,8 +1,14 @@
 # spicy-docs
 
-Faithful acquisition from government sources and immutable publication of
-source-native records. spicy-docs preserves what a publisher supplied and the
-evidence needed to check it. DocSpec, the downstream product, interprets it.
+Collect government-source records with enough retained evidence to check what
+was received. SpicyDocs acquires named sources, preserves their fields and
+provenance, and publishes immutable source releases that can be checked offline.
+It also provides raw readers and optional flat-table output.
+
+Use the source records directly, or supply them to another application. DocSpec
+owns dataset catalogs, document-fetcher and processor selection, experiment
+runs, and reuse across runs. A source release is a useful stopping point on its
+own. [Choose a source workflow](docs/source-workflows.md).
 
 ## Start here
 
@@ -19,7 +25,11 @@ makes no network requests and needs no credentials. Its JSON output includes
 the preserved source record under `records`, including the publisher's topic
 and capture details, read through `SourceNativeReleaseReader` after verification.
 It also prints paths to retained artifacts; the evidence ZIP holds the exact
-synthetic HTML. Use `--directory /path/to/example` to choose the output parent;
+synthetic HTML. `recordEvidence` links that record to its admitted evidence blob.
+Use `--case unexpected` to preserve a different literal topic, or `--case missing`
+to inspect an expected missing-topic refusal with retained diagnostic bytes.
+These cases demonstrate source behavior; they do not filter a catalog or infer
+requirements from a topic. Use `--directory /path/to/example` to choose the output parent;
 its `gao/` child must be new. The fixed implementation ID identifies the
 example, not a production build. See [the example](examples/offline_release.py).
 
@@ -52,5 +62,7 @@ failure handling are in [the operator guide](docs/cli.md) and [AGENTS.md](AGENTS
 The initial extraction came from `spicy-regs` branch
 `integrate/payload-prereqs`, commit `ff8d202` and neighboring changes, including
 the bulk readers, fixtures, and vendored `rulespec-artifacts` wheel. Earlier
-history remains in that repository. Historical `spicy-regs` schema identifiers
-and supported producer identities remain intentional compatibility boundaries.
+history remains in that repository. Some current schema and artifact identifiers
+retain the `spicy-regs` name. They identify the data format; current releases
+require the `spicy-docs` producer and supported current format and policy
+versions. Historical producer or format acceptance is not retained.

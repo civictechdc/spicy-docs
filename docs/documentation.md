@@ -9,7 +9,7 @@ guides. Update them with the code they describe:
 | Command arguments, outputs, or failure behavior | [Operator guide](cli.md), [script index](../scripts/README.md), or [analysis-tool index](../tools/README.md) |
 | Source scope, evidence, identity, or selection | The source guide under `sources/`, [acquisition decisions](decisions.md), and affected specification requirements |
 | Release format or consumer assumptions | [Release lifecycle](releases.md), the [specification](superpowers/specs/2026-08-25-source-native-release-spec.md), and [maintenance decisions](maintenance-decisions.md) |
-| Declared tables, applicability, or publisher domains | [Catalog and drift guide](catalog-and-drift.md) and the affected checked inputs |
+| Source-reference knowledge or publisher domains | [Source-reference notes](source-reference.md), the authoritative table producer, and [documented-value drift](source-domain-drift.md) |
 
 Read the implementation, its callers, and relevant tests before stating a
 guarantee. Explain scope and limits beside the behavior. Keep commands runnable
@@ -55,7 +55,7 @@ identity; the current guide describes the implemented compound identity.
 | `spicy_regs_public_table_source_native` | [Public comments](sources/public-comments.md); preserve whole-partition proof, Hive agency insertion, upstream selection, and attachment diagnostics |
 | `source_native_profile_api`, `source_native_release_engine`, `source_native_storage_and_publication` | [Releases](releases.md), [architecture](architecture.md), and the specification; preserve callback responsibilities, deterministic storage, immutable publication, and verification distinctions |
 | `source_native_operator_cli` | [Operator guide](cli.md); replace the old pointer page |
-| `source_profile_catalog_artifacts`, `source_domain_drift_gate` | [Catalog and drift](catalog-and-drift.md); preserve deterministic regeneration, provenance, bidirectional findings, and snapshot write behavior |
+| `source_profile_catalog_artifacts`, `source_domain_drift_gate` | The unused catalog generator and declarations are retired; [source-reference notes](source-reference.md) preserve useful relationships and correct unsupported capability claims. [Documented-value drift](source-domain-drift.md) preserves provenance, bidirectional findings, and snapshot write behavior. |
 | `metadata.json` | Provenance above; exact file remains in the pinned Git revision |
 | `module_tree.json`, `first_module_tree.json` | Removed generated symbol inventories; current ownership map and live code replace stale counts and graphs |
 

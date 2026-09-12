@@ -200,8 +200,8 @@ records and requires an explicit credential file.
 [Corpus diagnostics](../tools/README.md) remain checkout tools under
 `tools/analysis/`, where each report states the bounded question it answers.
 [Repository maintenance](../scripts/README.md) lives under `scripts/`.
-The installed catalog builder is described in the
-[catalog guide](catalog-and-drift.md#update-a-source-catalog).
+[Source-reference notes](source-reference.md) preserve useful field relationships;
+there is no separate catalog-generation command.
 
 ## Output and failures
 

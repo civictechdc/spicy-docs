@@ -50,6 +50,12 @@ agencies and the digest-checked policy with these limits. Policy `1.0` releases
 are refused by the current profile; capture-pack and source-row shapes are
 unchanged.
 
+You can stop at the admitted source release and stream the captured comments
+through `SourceNativeReleaseReader`. This input profile has no separate
+public-table export command; the original Parquet parts are already retained
+inside its evidence. Listed attachment formats remain document candidates,
+not downloaded files. See [source workflows](../source-workflows.md).
+
 ## Selection and attachment diagnostics
 
 Identity is `comment_id`. The upstream public-table pipeline has already
