@@ -760,3 +760,33 @@ Sixteen local items are complete and nine remain: S19, S21–S26, S30 and S31.
 S25/S26 have the partial progress described above. Destination-owned work keeps
 its own status. These are local commits and qualification results; upstream
 acceptance, DocSpec adoption, remote CI, pushing and a wheel release are separate.
+
+**September 11, 2026 — provider implementation and reviewed boundaries.**
+Commit `1b595b0` moves HTTP/S3 acquisition and Parquet capabilities into purposeful
+extras and sets package version `0.2.0`. Fresh core and both-extras installations
+passed normal hashed dependency resolution, outside-checkout source publication,
+replay, reading and missing-dependency checks. That intermediate wheel is not
+the final candidate. S26 remains open until the combined package is qualified.
+
+Commit `b83c373` retains exact bounded Regulations.gov objects refused before an
+evidence pack is yielded. Tests preserve source Unicode, numeric strings, nulls,
+booleans and supported integer boundaries; unsupported values retain refusal
+evidence. Later iterator errors do not inherit buffered object bytes. All 69
+focused source/refusal tests passed. Independent review approved the change.
+
+Commit `b51bad2` adds bounded GovInfo body acquisition with explicit routes,
+request/retry/pacing/byte limits, original and resolved identities, and exact
+captures reusable without a second download. The standalone synthetic example
+retains MODS and body bytes. Independent review found and resolved provider text
+exposure in terminal tracebacks; the author reports 99 focused checks passing.
+The combined suite before that final reporting fix passed 797 tests, with two
+opt-in cases deselected. S19 still requires the final installed-wheel proof.
+
+Commits `48b800f` and `59501eb` record current ownership and the conditional
+deferral of S21/S31. Rulespec `d032d7c` selects its shared bounded physical writer;
+`88c431d` accepts the existing canonical value domain for RS01/S30. Neither
+decision checks an implementation item. S22 migration, shared-library and final
+provider qualification, the selected DocSpec receiving patch, and the fresh
+contributor exercise remain in progress. Review certificates and command
+receipts are retained with the local planning session. Remote CI, upstream
+acceptance and a published wheel are not established by these local commits.
