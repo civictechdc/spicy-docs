@@ -5,9 +5,13 @@ import pytest
 from spicy_docs.sources.xml import parse_xml, scan_xml
 
 
-def test_streaming_scan_preserves_unicode_entities_and_namespaced_attributes():
-    payload = ("a" * 65519 + " &amp; café").encode()
-    body = b'<r xmlns:p="urn:publisher" p:key="value"><p:body>' + payload + b"</p:body></r>"
+@pytest.mark.parametrize("fragment,split,decoded", [(b"&amp;", 2, "&"), ("é".encode(), 1, "é")])
+def test_streaming_scan_preserves_unicode_entities_and_namespaced_attributes(fragment, split, decoded):
+    prefix = b'<r xmlns:p="urn:publisher" p:key="value"><p:body>'
+    padding = 65536 - len(prefix) - split
+    body = prefix + b"a" * padding + fragment + b"</p:body></r>"
+    assert body[65536 - split : 65536] == fragment[:split]
+    assert body[65536 : 65536 + len(fragment) - split] == fragment[split:]
     starts, ends, text = [], [], []
     scan_xml(
         body,
@@ -20,7 +24,12 @@ def test_streaming_scan_preserves_unicode_entities_and_namespaced_attributes():
     )
     assert starts == [("r", {"{urn:publisher}key": "value"}), ("{urn:publisher}body", {})]
     assert ends == ["{urn:publisher}body", "r"]
-    assert "".join(text) == "a" * 65519 + " & café"
+    assert "".join(text) == "a" * padding + decoded
+
+
+def test_xml_encoding_declaration_and_bom_are_respected():
+    body = '<?xml version="1.0" encoding="UTF-16"?><r>café &amp; source</r>'.encode("utf-16")
+    assert parse_xml(body, max_bytes=1024, error_type=ValueError, label="test XML").text == "café & source"
 
 
 @pytest.mark.parametrize(

@@ -42,6 +42,8 @@ Mirrulations and CourtListener readers are also available.
 
 The [bill API](docs/sources/congress-bills.md) separately captures BILLSTATUS XML
 and a selected bill-text version, preserving identity, source fields and bytes.
+The [CFR/eCFR API](docs/sources/cfr.md) captures explicitly selected regulation
+XML, retaining printed dates separately from requested dates and editions.
 
 Prefer community spicy-regs tables where they carry the required data; use
 origin acquisition for missing coverage. Capture and pin whole named agency

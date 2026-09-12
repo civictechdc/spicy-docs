@@ -23,7 +23,7 @@ from spicy_docs.transport.retry import retry_http
 
 @dataclass(frozen=True, slots=True)
 class CapturedBodyResponse:
-    """One complete response body and the public facts observed with it."""
+    """Exact response payload bytes, before any content decoding, and observed facts."""
 
     requested_url: str
     resolved_url: str
@@ -31,6 +31,7 @@ class CapturedBodyResponse:
     content_type: str | None
     observed_at: str
     body: bytes = field(repr=False)
+    content_encoding: str = "identity"
 
     @property
     def byte_size(self) -> int:
@@ -112,14 +113,18 @@ class BoundedHttpCapture:
         self._last_request_start = time.monotonic()
         self._request_count += 1
 
-    def capture(self, url: str, *, max_bytes: int, allow_unavailable: bool = False) -> CapturedBodyResponse:
+    def capture(
+        self, url: str, *, max_bytes: int, allow_unavailable: bool = False, allow_gzip: bool = False
+    ) -> CapturedBodyResponse:
         if self._closed:
             raise ValueError("Source acquisition client is closed")
 
         def attempt() -> CapturedBodyResponse:
             self._start_request()
             try:
-                with self._client.stream("GET", url) as response:
+                with self._client.stream(
+                    "GET", url, headers={"Accept-Encoding": "gzip" if allow_gzip else "identity"}
+                ) as response:
                     if response.status_code in (401, 403):
                         raise CredentialRefusedError(
                             f"Body source answered HTTP {response.status_code}; stopping acquisition"
@@ -130,7 +135,8 @@ class BoundedHttpCapture:
                             request=response.request,
                             response=response,
                         )
-                    if response.headers.get("content-encoding", "identity").strip().lower() != "identity":
+                    encoding = response.headers.get("content-encoding", "identity").strip().lower()
+                    if encoding not in ({"identity", "gzip"} if allow_gzip else {"identity"}):
                         raise self.error_type("Body source response uses unsupported content encoding")
                     stated_length = response.headers.get("content-length")
                     if stated_length is not None and (not stated_length.isascii() or not stated_length.isdigit()):
@@ -145,7 +151,7 @@ class BoundedHttpCapture:
                     body = bytearray()
                     # HTTPX's chunker yields at most this size, including over
                     # short transport reads. A complete capture needs EOF.
-                    for chunk in response.iter_raw(chunk_size=max_bytes + 1):
+                    for chunk in response.iter_raw(chunk_size=min(max_bytes + 1, 64 * 1024)):
                         if len(body) + len(chunk) > max_bytes:
                             error = self.error_type("Body source response exceeds its byte bound")
                             attach_refused_response(
@@ -171,6 +177,7 @@ class BoundedHttpCapture:
                         content_type=response.headers.get("content-type"),
                         observed_at=observed_at.astimezone(UTC).isoformat().replace("+00:00", "Z"),
                         body=bytes(body),
+                        content_encoding=encoding,
                     )
                     try:
                         if stated_length is not None and int(stated_length) != capture.byte_size:
@@ -182,6 +189,7 @@ class BoundedHttpCapture:
                         ):
                             raise self.error_type(f"Body source answered HTTP {response.status_code}")
                     except self.error_type as error:
+                        error.__dict__["capture"] = capture
                         attach_refused_response(error, refused_capture(capture, stage="transport"))
                         raise
                     return capture

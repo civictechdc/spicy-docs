@@ -78,7 +78,10 @@ Archived SpicyRegs/DocSpec evaluation code fetched dated CFR/eCFR sections.
 These are implemented acquisition examples; qualify their bounds, resume identity
 and response evidence before promoting them to reusable source APIs.
 
-The remaining source work is to qualify an explicit route using these components.
+The canonical [SpicyDocs acquisition API](sources/cfr.md) now owns explicit eCFR
+API, annual CFR and bulk eCFR captures, using shared bounded HTTP and XML scanning.
+The historical research downloader remains an experiment; existing receiving
+applications have not automatically migrated to this API.
 Keep annual CFR editions and eCFR snapshot dates distinct. RefSpec's current reader
 accepts `ECFR` or typed `DIV` roots; GovInfo bulk eCFR's `DLPSTEXTCLASS` wrapper and
 annual CFR body XML need separate format qualification. Do not strip the bulk

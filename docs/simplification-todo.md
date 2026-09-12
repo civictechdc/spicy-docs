@@ -8,9 +8,9 @@ completed task; follow the receiving backlog for its status.
 
 - [x] **C01:** Inventory existing code and agree ownership: SpicyDocs acquires;
   RefSpec reads native text; DocSpec selects and runs datasets.
-- [ ] **C02:** Validate explicit eCFR API, annual CFR and GovInfo bulk eCFR inputs;
+- [x] **C02:** Validate explicit eCFR API, annual CFR and GovInfo bulk eCFR inputs;
   preserve native identity separately from requested dates/editions.
-- [ ] **C03:** Implement bounded acquisition through shared HTTP and XML scanning;
+- [x] **C03:** Implement bounded acquisition through shared HTTP and XML scanning;
   retain exact captures and failures without implicit route or date fallback.
 - [ ] **C04:** Provide one runnable source capture example and qualify ordinary
   installed-wheel use, including RefSpec reading supported captured XML.
@@ -48,10 +48,9 @@ Live receipts: `~/Work/corpora/supply-2026-09-02/receipts/bill-acquisition-2026-
 
 CFR/eCFR already has acquisition examples, retained XML and active readers across
 the sibling repositories; see the [reuse inventory](source-reference.md#cfr-metadata-and-separately-acquired-xml).
-The remaining task is to qualify shared acquisition for a named caller using
-those components, with exact bytes, source/date identity and bounded failures.
-Preserve SpicyRegs metadata and DocSpec catalog/run ownership. Qualify annual CFR
-and GovInfo bulk eCFR separately from the existing eCFR API reader.
+The canonical acquisition work is tracked above. Preserve SpicyRegs metadata
+and DocSpec catalog/run ownership; receiving application migration remains
+separate from adding this source API.
 
 Deferred until a named workflow needs them: bounded GovInfo JSON discovery/publication,
 standalone BILLSUM coverage, and Federal Register issue acquisition justified by

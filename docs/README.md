@@ -16,6 +16,8 @@
 - [Federal Register](sources/federal-register.md) · [GovInfo bodies](federal-register-body-sources.md)
 - [Regulations.gov](sources/regulations-gov.md)
 - [GAO pages](sources/gao.md)
+- [Congressional bills](sources/congress-bills.md)
+- [CFR/eCFR XML](sources/cfr.md)
 - [Captured public comments](sources/public-comments.md)
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.
 - [Source-field references](source-reference.md) · [Documented-value drift](source-domain-drift.md)

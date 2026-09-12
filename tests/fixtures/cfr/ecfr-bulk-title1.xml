@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='utf-8'?>
+<DLPSTEXTCLASS>
+<HEADER>
+<FILEDESC>
+<TITLESTMT>
+<TITLE>
+Title 1: General Provisions</TITLE>
+<AUTHOR TYPE="nameinv">
+</AUTHOR>
+</TITLESTMT>
+<PUBLICATIONSTMT>
+<PUBLISHER>
+</PUBLISHER>
+<PUBPLACE>
+</PUBPLACE>
+<IDNO TYPE="title">
+1</IDNO>
+<DATE />
+</PUBLICATIONSTMT>
+<SERIESSTMT>
+<TITLE>
+</TITLE>
+</SERIESSTMT>
+
+</FILEDESC>
+
+<PROFILEDESC>
+<TEXTCLASS>
+<KEYWORDS>
+</KEYWORDS>
+</TEXTCLASS>
+</PROFILEDESC>
+</HEADER>
+<TEXT>
+<BODY>
+<ECFRBRWS>
+<AMDDATE>Dec. 29, 2022(fm)
+</AMDDATE>
+
+<DIV1 N="1" NODE="1:1" TYPE="TITLE">
+
+<HEAD>Title 1—General Provisions--Volume 1</HEAD>
+<CFRTOC>
+<PTHD>Part 
+</PTHD>
+<CHAPTI>
+<SUBJECT><E T="04">chapter i</E>—Administrative Committee of the Federal Register 
+</SUBJECT>
+<PG>1
+</PG></CHAPTI>
+<CHAPTI>
+<SUBJECT><E T="04">chapter ii</E>—Office of the Federal Register 
+</SUBJECT>
+<PG>51
+</PG></CHAPTI>
+<CHAPTI>
+<SUBJECT><E T="04">chapter iii</E>—Administrative Conference of the United States 
+</SUBJECT>
+<PG>301
+</PG></CHAPTI>
+<CHAPTI>
+<SUBJECT><E T="04">chapter iv</E>—Miscellaneous Agencies 
+</SUBJECT>
+<PG>425
+</PG></CHAPTI>
+<CHAPTI>
+<RESERVED><E T="04">chapter v</E> [Reserved] 
+</RESERVED></CHAPTI>
+<CHAPTI>
+<SUBJECT><E T="04">chapter vi</E>—National Capital Planning Commission
+</SUBJECT>
+<PG>602
+
+
+</PG></CHAPTI></CFRTOC>
+
+<DIV3 N="I" NODE="1:1.0.1" TYPE="CHAPTER">
+
+<HEAD> CHAPTER I—ADMINISTRATIVE COMMITTEE OF THE FEDERAL REGISTER</HEAD>
+
+<DIV4 N="A" NODE="1:1.0.1.1" TYPE="SUBCHAP">
+<HEAD>SUBCHAPTER A—GENERAL 
+
+
+</HEAD>
+
+<DIV5 N="1" NODE="1:1.0.1.1.1" TYPE="PART">
+<HEAD>PART 1—DEFINITIONS 
+</HEAD>
+<AUTH>
+<HED>Authority:</HED><PSPACE>44 U.S.C. 1506; sec. 6, E.O. 10530, 19 FR 2709; 3 CFR, 1954-1958 Comp., p.189. 
+
+
+</PSPACE></AUTH>
+
+<DIV8 N="§ 1.1" NODE="1:1.0.1.1.1.0.1.1" TYPE="SECTION">
+<HEAD>§ 1.1   Definitions.</HEAD>
+<P>As used in this chapter, unless the context requires otherwise—
+</P>
+</DIV8></DIV5></DIV4></DIV3></DIV1></ECFRBRWS>
+</BODY>
+</TEXT>
+</DLPSTEXTCLASS>
