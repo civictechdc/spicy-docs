@@ -20,6 +20,7 @@ from spicy_docs.sources.cfr.ecfr import (
     validate_ecfr_bulk_xml,
     validate_ecfr_xml,
 )
+from spicy_docs.sources.cfr.edition import AnnualCfrEdition, annual_cfr_edition_locator, parse_annual_cfr_edition
 from spicy_docs.sources.cfr.models import (
     MAX_CFR_BYTES,
     AnnualCfrSelection,
@@ -82,6 +83,15 @@ class CfrXmlAcquisition:
 @dataclass(frozen=True, slots=True)
 class CfrTitlesAcquisition:
     titles: EcfrTitles
+    capture: CapturedBodyResponse
+    request_count: int
+    budget: CfrAcquisitionBudget
+
+
+@dataclass(frozen=True, slots=True)
+class CfrEditionAcquisition:
+    selection: AnnualCfrSelection
+    edition: AnnualCfrEdition
     capture: CapturedBodyResponse
     request_count: int
     budget: CfrAcquisitionBudget
@@ -258,3 +268,25 @@ class CfrAcquirer:
             lambda xml, url, limit: validate_ecfr_bulk_xml(xml, title=title, final_url=url, max_bytes=limit),
             max_bytes,
         )
+
+    def acquire_annual_edition(
+        self,
+        selection: AnnualCfrSelection,
+        *,
+        max_bytes: int | None = None,
+    ) -> CfrEditionAcquisition:
+        """Observe publication type and dates from explicitly requested package MODS."""
+        edition, capture, budget = self._acquire(
+            annual_cfr_edition_locator(selection),
+            operation="annual-edition",
+            selection=selection,
+            media_types=("application/xml", "text/xml"),
+            parse=lambda response, limit: parse_annual_cfr_edition(
+                response.body,
+                selection=selection,
+                final_url=response.resolved_url,
+                max_bytes=limit,
+            ),
+            max_bytes=max_bytes,
+        )
+        return CfrEditionAcquisition(selection, edition, capture, self._http.request_count, budget)

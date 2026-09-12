@@ -24,7 +24,7 @@ network or credentials and leaves inspectable output.
 | [Community comments](sources/public-comments.md) | Agencies | Exact Parquet parts and rows. Discovery stops at the first missing numbered part; later parts are unrequested. |
 | [GAO](sources/gao.md) | Product IDs | Exact HTML, product identity, and one literal publisher topic per page. Other products and linked report files are outside the capture. |
 | [Congressional bills](sources/congress-bills.md) | Explicit bill IDs and text-version package IDs | BILLSTATUS metadata and selected XML text with exact captures and identity checks. This API does not enumerate a collection or publish a release. |
-| [CFR/eCFR](sources/cfr.md) | Explicit route, title and date/edition where supported | Regulation XML with exact payloads and native identity/date checks. Separate API, annual and latest bulk routes; no collection discovery or release publication. |
+| [CFR/eCFR](sources/cfr.md) | Explicit route, title and date/edition where supported | Regulation XML and separately requested annual edition metadata, including publisher-stated cover-only status. Exact payloads and native identity/date checks; no collection discovery or release publication. |
 
 Prefer community SpicyRegs tables when they supply the needed data; choose origin
 acquisition for uncovered needs. This [supply rule](decisions.md#community-supply-precedes-origin-acquisition)

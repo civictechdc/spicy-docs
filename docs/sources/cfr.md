@@ -8,6 +8,7 @@ edition, switch routes after failure, or infer that the publisher is complete.
 | --- | --- | --- |
 | eCFR API | Title and date; optional part and section | XML for that requested snapshot and scope. A section also requires an explicit part. |
 | Annual CFR | Year, title and volume; optional section | GovInfo volume or section XML. Requested year and printed revision remain separate. |
+| Annual CFR edition metadata | Year, title and volume | GovInfo MODS XML: publication type, original issue date and publisher status. |
 | GovInfo bulk eCFR | Title | Latest-route XML in its original bulk wrapper. No historical date selector. |
 | eCFR title index | None | JSON roster with separate amendment, issue and currency dates, plus processing status. |
 
@@ -27,6 +28,10 @@ uv run --frozen python -m examples.cfr_capture ecfr \
 uv run --frozen python -m examples.cfr_capture annual \
   --year 2025 --title 1 --volume 1 \
   --max-bytes 2097152 --output /tmp/cfr-annual-capture
+
+uv run --frozen python -m examples.cfr_capture annual-edition \
+  --year 2025 --title 1 --volume 1 \
+  --max-bytes 2097152 --output /tmp/cfr-edition-capture
 
 uv run --frozen python -m examples.cfr_capture ecfr-bulk \
   --title 1 --max-bytes 2097152 --output /tmp/ecfr-bulk-capture
@@ -65,7 +70,7 @@ with CfrAcquirer(budget=budget) as source:
 xml = result.xml  # Decoded, validated XML bytes.
 payload = result.capture.body  # Exact HTTP payload; may be gzip.
 encoding = result.capture.content_encoding
-native_fields = result.identity  # Printed facts, warnings and identity basis.
+native_fields = result.identity  # Printed facts and identity basis.
 requested_scope = result.selection
 ```
 
@@ -79,16 +84,45 @@ XML plus the expected selection and final URL for offline checks.
 exact response URL. A subset may omit its title; an annual volume may omit its
 volume number. Those native fields remain `None`.
 
-The requested API date is not an amendment date. Likewise, an annual URL year
-does not prove the body's printed revision. A recognized front-matter revision
-year that differs from the request emits
-`requested-edition-differs-from-printed-revision`. Both values remain available;
-the capture alone cannot explain the discrepancy.
+The requested API date is not an amendment date. An annual edition can also
+carry an older printed revision. Keep both dates; their difference produces no
+warning and does not establish the publication type.
 
-For example, on September 12, 2026, the annual Title 1 volume returned 2023
-front matter and running headers through the 2025 route. The 2023 and 2025 bulk
-URLs returned byte-identical XML. SpicyDocs preserves that observation and does
-not label it a verified 2025 edition. Amendment dates alone trigger no warning.
+Use `acquire_annual_edition(AnnualCfrSelection(2025, 1, 1))` to obtain that type
+from GovInfo's MODS (Metadata Object Description Schema) package XML. This is a
+separate, explicit request; body acquisition does not fetch metadata implicitly.
+The result supplies `.edition` and the exact `.capture`. Section selections are
+rejected because this metadata describes the whole volume.
+
+| `edition.edition_type` | Publisher evidence |
+| --- | --- |
+| `cover-only` | `isCoverOnly=true`: this annual publication carries forward the previous volume. It can still supply the complete regulation XML. |
+| `not-cover-only` | `isCoverOnly=false`: no claim about how much text changed. |
+| `unknown` | The publisher omitted the flag. A malformed flag is refused. |
+
+The type is derived from `.is_cover_only`; `.date_issued` and
+`.original_date_issued` remain independent. The example receipt includes all
+three. For 2025 Title 1, GovInfo explicitly states `isCoverOnly=true`,
+`dateIssued=2025-01-01`, and `originalDateIssued=2023-01-01`. The identical 2023
+and 2025 body XML is consistent with that publication practice. See the
+[native metadata](https://www.govinfo.gov/metadata/pkg/CFR-2025-title1-vol1/mods.xml)
+and [GPO's explanation](https://bookstore.gpo.gov/products/cfr-title-1-cvr-code-federal-regulations-2025).
+
+The API also exposes the literal title, edition identifier, current-edition flag
+and fallback-title flag. Status flags describe the publisher's answer at capture
+time; they do not select another edition. The complete MODS includes constituent
+identifiers, parent relationships, rendition links and citation hints for future
+catalog work. Those advertised links do not establish acquired bodies. Nested
+constituent fields cannot replace the package's identity or edition facts.
+
+In the retained 2025 Title 1 metadata, 401 constituent entries include 288 section
+entries and 400 parent links. They advertise 391 XML and 400 PDF renditions;
+some structural nodes offer only PDF. Literal authority/history notes and
+structured citation hints are also available. This inventory can supply DocSpec
+catalog selection without downloading each body first. SpicyDocs currently
+retains those constituent fields in the XML; it does not expose a granule catalog
+API. Reference hints still need checking: Chapter VI is labeled as a `part` in
+the 2025 metadata and as a `chapter` in the 2023 metadata.
 
 ## Bounds and downstream work
 

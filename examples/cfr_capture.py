@@ -42,6 +42,8 @@ def _acquire(client: CfrAcquirer, route: str, selection: Selection):
         return client.acquire_ecfr(selection)
     if route == "annual" and isinstance(selection, AnnualCfrSelection):
         return client.acquire_annual(selection)
+    if route == "annual-edition" and isinstance(selection, AnnualCfrSelection):
+        return client.acquire_annual_edition(selection)
     if route == "ecfr-bulk" and type(selection) is int:
         return client.acquire_ecfr_bulk(selection)
     raise ValueError("route and selection must identify one supported CFR/eCFR request")
@@ -122,7 +124,7 @@ def run_capture(
     if capture.content_encoding == "gzip":
         filename += ".gz"
     (output / filename).write_bytes(capture.body)
-    if route != "ecfr-titles":
+    if route not in ("ecfr-titles", "annual-edition"):
         if capture.content_encoding == "gzip":
             (output / "response.xml").write_bytes(result.xml)
         receipt["xml"] = {
@@ -131,21 +133,25 @@ def run_capture(
             "sha256": "sha256:" + hashlib.sha256(result.xml).hexdigest(),
             "transformation": "gzip-decode" if capture.content_encoding == "gzip" else "identity",
         }
+    if route == "ecfr-titles":
+        source = {
+            "titles": {
+                "date": result.titles.date,
+                "import_in_progress": result.titles.import_in_progress,
+                "title_count": len(result.titles.titles),
+            }
+        }
+    elif route == "annual-edition":
+        source = {"edition": {**asdict(result.edition), "edition_type": result.edition.edition_type.value}}
+    else:
+        source = {"identity": asdict(result.identity)}
     receipt.update(
         {
             "outcome": "captured",
             "requestCount": result.request_count,
             "budget": asdict(result.budget),
             "capture": {"file": filename, **_capture_fields(capture)},
-            "source": {
-                "titles": {
-                    "date": result.titles.date,
-                    "import_in_progress": result.titles.import_in_progress,
-                    "title_count": len(result.titles.titles),
-                }
-            }
-            if route == "ecfr-titles"
-            else {"identity": asdict(result.identity)},
+            "source": source,
         }
     )
     _write_receipt(output, receipt)
@@ -172,6 +178,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     annual.add_argument("--title", type=int, required=True)
     annual.add_argument("--volume", type=int, required=True)
     annual.add_argument("--section")
+    edition = routes.add_parser("annual-edition", parents=[common], help="request annual CFR edition MODS metadata")
+    edition.add_argument("--year", type=int, required=True)
+    edition.add_argument("--title", type=int, required=True)
+    edition.add_argument("--volume", type=int, required=True)
     bulk = routes.add_parser("ecfr-bulk", parents=[common], help="observe undated bulk eCFR title XML")
     bulk.add_argument("--title", type=int, required=True)
     args = parser.parse_args(argv)
@@ -179,8 +189,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         selection: Selection = None
         if args.route == "ecfr":
             selection = EcfrSelection(title=args.title, date=args.date, part=args.part, section=args.section)
-        elif args.route == "annual":
-            selection = AnnualCfrSelection(year=args.year, title=args.title, volume=args.volume, section=args.section)
+        elif args.route in ("annual", "annual-edition"):
+            selection = AnnualCfrSelection(
+                year=args.year,
+                title=args.title,
+                volume=args.volume,
+                section=args.section if args.route == "annual" else None,
+            )
         elif args.route == "ecfr-bulk":
             selection = args.title
         budget = CfrAcquisitionBudget(

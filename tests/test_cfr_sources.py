@@ -209,28 +209,26 @@ def test_bulk_header_and_body_title_disagreement_refuses(old, new):
         bulk(source.replace(old, new))
 
 
-def test_annual_requested_edition_and_native_revision_are_separate_with_visible_warning():
+def test_annual_requested_edition_and_native_revision_are_separate():
     result = annual()
     assert result.stated_date == "As of January 1, 2023"
     assert result.revision_text == "Revised as of January 1, 2023"
     assert result.title == 1 and result.volume is None
     assert result.identity_basis == ("title:native", "volume:request-url", "edition:request-url")
-    assert result.warnings == ("requested-edition-differs-from-printed-revision",)
-    assert annual(year=2023).warnings == ()
+    assert annual(year=2023).revision_text == result.revision_text
     granule = annual(section="716.2")
     assert (granule.title, granule.volume, granule.section, granule.stated_date) == (30, 3, "716.2", "2025-07-01")
-    assert granule.warnings == ()
 
 
 @pytest.mark.parametrize(
     "replacement", [b"date unknown (2023)", b"As of _SUBSTITUTE_DATE_", b"As of February 30, 2023"]
 )
-def test_warning_never_uses_ambiguous_dates_or_amendment_years(replacement):
+def test_printed_revision_text_is_preserved_without_interpreting_ambiguous_dates(replacement):
     source = (FIXTURES / "annual-title1-vol1.xml").read_bytes()
     source = source.replace(b"Revised as of January 1, 2023", replacement).replace(
         b"As of January 1, 2023", replacement
     )
-    assert annual(source).warnings == ()
+    assert annual(source).revision_text == replacement.decode()
 
 
 @pytest.mark.parametrize(

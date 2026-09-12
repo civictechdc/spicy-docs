@@ -16,6 +16,7 @@ from examples import cfr_capture
 from spicy_docs.sources.cfr.acquisition import CfrAcquisitionBudget, CfrSourceUnavailableError
 from spicy_docs.sources.cfr.annual import annual_cfr_xml_locator
 from spicy_docs.sources.cfr.ecfr import ecfr_bulk_xml_locator, ecfr_titles_locator, ecfr_xml_locator
+from spicy_docs.sources.cfr.edition import annual_cfr_edition_locator
 from spicy_docs.sources.cfr.models import AnnualCfrSelection, CfrSourceError, EcfrSelection
 from spicy_docs.transport.credentials import CredentialRefusedError
 
@@ -46,9 +47,14 @@ def transport_for(body, *, status=200, media_type="application/xml", content_enc
     return httpx.MockTransport(handle), calls
 
 
-def capture(output, transport, *, budget=BUDGET):
+def capture(output, transport, *, budget=BUDGET, route="ecfr"):
     return cfr_capture.run_capture(
-        output, route="ecfr", selection=SELECTION, budget=budget, transport=transport, clock=lambda: NOW
+        output,
+        route=route,
+        selection=AnnualCfrSelection(2025, 1, 1) if route == "annual-edition" else SELECTION,
+        budget=budget,
+        transport=transport,
+        clock=lambda: NOW,
     )
 
 
@@ -72,6 +78,13 @@ def capture(output, transport, *, budget=BUDGET):
             annual_cfr_xml_locator,
         ),
         ("ecfr-bulk", 1, "ecfr-bulk-title1.xml", ecfr_bulk_xml_locator),
+        ("annual-edition", AnnualCfrSelection(2025, 1, 1), "annual-title1-edition.xml", annual_cfr_edition_locator),
+        (
+            "annual-edition",
+            AnnualCfrSelection(2023, 1, 1),
+            "annual-title1-2023-edition.xml",
+            annual_cfr_edition_locator,
+        ),
     ],
 )
 def test_each_explicit_route_retains_original_and_evidence(tmp_path, route, selection, fixture, locator):
@@ -108,7 +121,23 @@ def test_each_explicit_route_retains_original_and_evidence(tmp_path, route, sele
         assert "2023" in saved["source"]["identity"]["revision_text"]
     elif route == "ecfr-bulk":
         assert saved["selection"] == {"title": 1}
-    if route != "ecfr-titles":
+    elif route == "annual-edition":
+        assert saved["source"]["edition"] == {
+            "year": selection.year,
+            "title": 1,
+            "volume": 1,
+            "date_issued": f"{selection.year}-01-01",
+            "original_date_issued": "2023-01-01",
+            "is_cover_only": selection.year == 2025,
+            "edition_type": "cover-only" if selection.year == 2025 else "not-cover-only",
+            "edition_id": "CFR-title1-vol1",
+            "is_current_edition": selection.year == 2025,
+            "is_fallback_title": False,
+            "title_text": "General Provisions",
+        }
+        assert saved["capture"]["file"] == "response.xml"
+        assert "xml" not in saved
+    if route not in ("ecfr-titles", "annual-edition"):
         assert saved["xml"]["transformation"] == "identity"
         assert saved["xml"]["file"] == saved["capture"]["file"]
         assert saved["xml"]["sha256"] == saved["capture"]["sha256"]
@@ -125,12 +154,13 @@ def test_existing_output_is_untouched_before_any_request(tmp_path):
 
 
 @pytest.mark.parametrize("status", [404, 410])
-def test_unavailable_locator_retains_failed_receipt_and_body_without_fallback(tmp_path, status):
+@pytest.mark.parametrize("route", ["ecfr", "annual-edition"])
+def test_unavailable_locator_retains_failed_receipt_and_body_without_fallback(tmp_path, status, route):
     body = b"publisher says unavailable"
     transport, calls = transport_for(body, status=status)
     output = tmp_path / "capture"
     with pytest.raises(CfrSourceUnavailableError):
-        capture(output, transport)
+        capture(output, transport, route=route)
     saved = json.loads((output / "receipt.json").read_text())
     assert saved["outcome"] == "failed" and "capture" not in saved
     assert saved["failure"]["acquisition"]["requestCount"] == len(calls) == 1
@@ -141,11 +171,12 @@ def test_unavailable_locator_retains_failed_receipt_and_body_without_fallback(tm
 
 
 @pytest.mark.parametrize("status", [401, 403])
-def test_access_refusal_records_omission_without_persisting_response_body(tmp_path, status):
+@pytest.mark.parametrize("route", ["ecfr", "annual-edition"])
+def test_access_refusal_records_omission_without_persisting_response_body(tmp_path, status, route):
     transport, calls = transport_for(b"sensitive challenge body", status=status)
     output = tmp_path / "capture"
     with pytest.raises(CredentialRefusedError):
-        capture(output, transport)
+        capture(output, transport, route=route)
     saved = json.loads((output / "receipt.json").read_text())
     assert saved["outcome"] == "failed"
     assert saved["failure"]["acquisition"]["requestCount"] == len(calls) == 1
@@ -248,3 +279,73 @@ def test_cli_requires_date_and_byte_bound_before_starting(tmp_path, missing):
     with pytest.raises(SystemExit, match="2"):
         cfr_capture.main(args)
     assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize("missing", ["--year", "--title", "--volume"])
+def test_edition_cli_requires_each_package_selector(tmp_path, missing):
+    args = [
+        "annual-edition",
+        "--year",
+        "2025",
+        "--title",
+        "1",
+        "--volume",
+        "1",
+        "--max-bytes",
+        "65536",
+        "--output",
+        str(tmp_path / "out"),
+    ]
+    index = args.index(missing)
+    del args[index : index + 2]
+    with pytest.raises(SystemExit, match="2"):
+        cfr_capture.main(args)
+    assert not (tmp_path / "out").exists()
+
+
+def test_edition_cli_refuses_section_selector(tmp_path):
+    with pytest.raises(SystemExit, match="2"):
+        cfr_capture.main(
+            [
+                "annual-edition",
+                "--year",
+                "2025",
+                "--title",
+                "1",
+                "--volume",
+                "1",
+                "--section",
+                "1.1",
+                "--max-bytes",
+                "65536",
+                "--output",
+                str(tmp_path / "out"),
+            ]
+        )
+    assert not (tmp_path / "out").exists()
+
+
+def test_edition_cli_captures_only_the_selected_volume_metadata(tmp_path, monkeypatch, capsys):
+    body = (FIXTURES / "annual-title1-edition.xml").read_bytes()
+    transport, calls = transport_for(body)
+    monkeypatch.setattr(cfr_capture, "run_capture", partial(cfr_capture.run_capture, transport=transport))
+    args = ["annual-edition", "--year", "2025", "--title", "1", "--volume", "1", "--max-bytes", "65536"]
+    assert cfr_capture.main([*args, "--output", str(tmp_path / "out")]) == 0
+    saved = json.loads(capsys.readouterr().out)
+    assert saved["outcome"] == "captured"
+    assert saved["source"]["edition"]["edition_type"] == "cover-only"
+    assert saved["selection"] == {"year": 2025, "title": 1, "volume": 1, "section": None}
+    assert saved["requestCount"] == len(calls) == 1
+    assert str(calls[0].url) == annual_cfr_edition_locator(AnnualCfrSelection(2025, 1, 1))
+    assert (tmp_path / "out" / "response.xml").read_bytes() == body
+
+
+def test_absent_cover_flag_stays_unknown_in_the_edition_receipt(tmp_path):
+    body = (FIXTURES / "annual-title1-edition.xml").read_bytes()
+    assert b"<isCoverOnly>true</isCoverOnly>" in body
+    body = body.replace(b"<isCoverOnly>true</isCoverOnly>", b"")
+    transport, _calls = transport_for(body)
+    saved = capture(tmp_path / "out", transport, route="annual-edition")
+    assert saved["source"]["edition"]["is_cover_only"] is None
+    assert saved["source"]["edition"]["edition_type"] == "unknown"
+    assert (tmp_path / "out" / "response.xml").read_bytes() == body

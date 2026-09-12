@@ -16,6 +16,15 @@ completed task; follow the receiving backlog for its status.
   installed-wheel use, including RefSpec reading supported captured XML.
 - [x] **C05:** Complete focused/full checks, bounded live captures, retained-source
   replay and independent code reviews; document remaining format limits.
+- [x] **C06:** Represent publisher-stated cover-only editions and original issue
+  dates from GovInfo metadata; remove warnings based only on differing dates.
+
+C06 checks: 1,211 tests passed (two opt-in tests deselected), lint/format and
+focused types passed. The explicit edition metadata API returned 2025 Title 1
+as `cover-only`, with original issue date `2023-01-01`, in one live request.
+Retained evidence: `~/Work/corpora/supply-2026-09-02/receipts/cfr-edition-type-2026-09-12/`.
+Constituent inventories and citation hints remain preserved in raw MODS; a
+future catalog API needs a named consuming workflow.
 
 Validation: 1,162 tests passed (two opt-in tests deselected), lint/format and
 focused types passed. All seven request shapes succeeded live. Source validation

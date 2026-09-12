@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from datetime import date
 
 from ._xml import IdentityXmlScan
 from .models import DEFAULT_MAX_BYTES, AnnualCfrSelection, CfrSourceError, CfrXmlMetadata, _date
@@ -61,36 +60,6 @@ def _integer(value: str, label: str) -> int:
     return int(value)
 
 
-def _revision_year(value: str | None) -> int | None:
-    if value is None:
-        return None
-    match = re.fullmatch(
-        r"(?:Revised as of|As of) (January|February|March|April|May|June|July|August|September|October|November|December) "
-        r"([0-9]{1,2}), ([0-9]{4})",
-        value.strip(),
-    )
-    if match is None:
-        return None
-    months = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ]
-    try:
-        return date(int(match[3]), months.index(match[1]) + 1, int(match[2])).year
-    except ValueError:
-        return None
-
-
 def validate_annual_cfr_xml(
     body: bytes,
     *,
@@ -140,15 +109,6 @@ def validate_annual_cfr_xml(
     if granule:
         basis.append("section:native")
     revision = scan.field((*scan.front, "REVISED"))
-    front_date = scan.field((*scan.front, "DATE"))
-    warnings = (
-        ("requested-edition-differs-from-printed-revision",)
-        if any(
-            year is not None and year != identity.year
-            for year in (_revision_year(revision), _revision_year(front_date))
-        )
-        else ()
-    )
     return CfrXmlMetadata(
         "annual-cfr",
         identity.title,
@@ -161,5 +121,4 @@ def validate_annual_cfr_xml(
         revision,
         tuple(scan.values.get((scan.root, "AMDDATE"), [])),
         tuple(basis),
-        warnings,
     )

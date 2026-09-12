@@ -124,4 +124,3 @@ class CfrXmlMetadata:
     revision_text: str | None
     amendment_dates: tuple[str, ...]
     identity_basis: tuple[str, ...]
-    warnings: tuple[str, ...] = ()
