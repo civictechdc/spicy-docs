@@ -15,7 +15,7 @@ import pytest
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.congress import crs_summaries
 from spicy_docs.sources.federal_register import body_acquisition as acquisition
-from spicy_docs.sources.federal_register.body_acquisition import GovInfoBodyAcquirer, GovInfoBodyBudget
+from spicy_docs.sources.federal_register.body_acquisition import FederalRegisterBodyAcquirer, FederalRegisterBodyBudget
 from spicy_docs.sources.federal_register.body_sources import FederalRegisterBodySourceError
 from spicy_docs.sources.refusals import RefusedResponse
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
@@ -30,7 +30,7 @@ MODS = b"""<mods xmlns="http://www.loc.gov/mods/v3">
 <extension><accessId>98-14931</accessId></extension></relatedItem></mods>"""
 GRANULE_URL = "https://www.govinfo.gov/content/pkg/FR-1998-06-03/html/98-14931.htm"
 MODS_URL = "https://www.govinfo.gov/metadata/pkg/FR-1998-06-03/mods.xml"
-BUDGET = GovInfoBodyBudget(3, 1024, 4096, 7.0, 0)
+BUDGET = FederalRegisterBodyBudget(3, 1024, 4096, 7.0, 0)
 NOW = datetime(2026, 9, 11, tzinfo=UTC)
 
 
@@ -71,8 +71,10 @@ def response(body: bytes = BODY, status: int = 200, *, headers: dict[str, str] |
     return httpx.Response(status, stream=Stream(body), headers={"content-type": "text/html", **(headers or {})})
 
 
-def acquire(client: GovInfoBodyAcquirer) -> acquisition.GovInfoBodyAcquisition:
-    return client.acquire(document_number="98-14931", publication_date="1998-06-03", route="granule")
+def acquire(client: FederalRegisterBodyAcquirer) -> acquisition.FederalRegisterBodyAcquisition:
+    return client.acquire(
+        format="html", document_number="98-14931", publication_date="1998-06-03", html_route="granule"
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -83,7 +85,7 @@ def no_retry_delays(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_direct_capture_is_exact_and_reusable_without_refetch(tmp_path) -> None:
     received = response(headers={"content-length": str(len(BODY))})
     transport = Transport(received)
-    with GovInfoBodyAcquirer(budget=BUDGET, transport=transport, clock=lambda: NOW) as client:
+    with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport, clock=lambda: NOW) as client:
         result = acquire(client)
         store = LocalSourceNativeBlobStore(tmp_path / "blobs")
         write = store.put_blob(result.body.sha256, result.body.byte_size, [result.body.body])
@@ -108,9 +110,13 @@ def test_direct_capture_is_exact_and_reusable_without_refetch(tmp_path) -> None:
 
 def test_mods_route_retains_original_resolved_identity_and_both_captures() -> None:
     transport = Transport(response(MODS), response())
-    with GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client:
+    with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = client.acquire(
-            document_number="X98-10603", publication_date="1998-06-03", route="mods-start-page", start_page=30359
+            format="html",
+            document_number="X98-10603",
+            publication_date="1998-06-03",
+            html_route="mods-start-page",
+            start_page=30359,
         )
     assert [str(call.url) for call in transport.calls] == [MODS_URL, GRANULE_URL]
     assert result.request_count == 2
@@ -128,7 +134,7 @@ def test_credential_refusal_aborts_without_body_retry_or_fallback(status: int) -
     received = httpx.Response(status, stream=stream)
     transport = Transport(received)
     with (
-        GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
         pytest.raises(CredentialRefusedError) as caught,
     ):
         acquire(client)
@@ -146,7 +152,7 @@ def test_other_status_retains_exact_refusal_and_never_follows_redirect(status: i
     received = response(b"refused", status, headers={"location": "https://example.test/elsewhere"})
     transport = Transport(received)
     with (
-        GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
         pytest.raises(FederalRegisterBodySourceError),
     ):
         try:
@@ -163,7 +169,7 @@ def test_retryable_status_uses_explicit_total_budget(status: int) -> None:
     responses = [response(status=status) for _ in range(2)]
     transport = Transport(*responses)
     with (
-        GovInfoBodyAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as client,
         pytest.raises(RetryableHTTPStatusError) as caught,
     ):
         acquire(client)
@@ -173,9 +179,13 @@ def test_retryable_status_uses_explicit_total_budget(status: int) -> None:
 
 def test_retry_then_mods_and_body_share_one_total_request_budget() -> None:
     transport = Transport(response(status=503), response(MODS), response())
-    with GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client:
+    with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = client.acquire(
-            document_number="X98-10603", publication_date="1998-06-03", route="mods-start-page", start_page=30359
+            format="html",
+            document_number="X98-10603",
+            publication_date="1998-06-03",
+            html_route="mods-start-page",
+            start_page=30359,
         )
     assert result.request_count == len(transport.calls) == 3
 
@@ -183,11 +193,15 @@ def test_retry_then_mods_and_body_share_one_total_request_budget() -> None:
 def test_retry_can_exhaust_budget_before_body_without_misattributing_mods() -> None:
     transport = Transport(response(status=503), response(MODS))
     with (
-        GovInfoBodyAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as client,
         pytest.raises(FederalRegisterBodySourceError, match="request budget") as caught,
     ):
         client.acquire(
-            document_number="X98-10603", publication_date="1998-06-03", route="mods-start-page", start_page=30359
+            format="html",
+            document_number="X98-10603",
+            publication_date="1998-06-03",
+            html_route="mods-start-page",
+            start_page=30359,
         )
     assert len(transport.calls) == 2
     refusal = caught.value.__dict__["refused_response"]
@@ -197,7 +211,7 @@ def test_retry_can_exhaust_budget_before_body_without_misattributing_mods() -> N
 
 def test_transport_retry_scrubs_untrusted_error_text(capsys: pytest.CaptureFixture[str]) -> None:
     transport = Transport(httpx.ConnectError("secret-key-123"), response())
-    with GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client:
+    with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         assert acquire(client).request_count == 2
     assert "secret-key-123" not in capsys.readouterr().err
 
@@ -207,7 +221,7 @@ def test_exhausted_transport_failure_traceback_does_not_expose_provider_text(
 ) -> None:
     transport = Transport(httpx.ConnectError("secret-key-123"), httpx.ConnectError("secret-key-123"))
     with (
-        GovInfoBodyAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as client,
         pytest.raises(ConnectionError) as caught,
     ):
         acquire(client)
@@ -223,7 +237,7 @@ def test_identity_refusal_retains_exact_complete_response(body: bytes) -> None:
     received = response(body)
     transport = Transport(received)
     with (
-        GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
         pytest.raises(FederalRegisterBodySourceError) as caught,
     ):
         acquire(client)
@@ -236,11 +250,15 @@ def test_identity_refusal_retains_exact_complete_response(body: bytes) -> None:
 def test_invalid_mods_retains_mods_without_requesting_body() -> None:
     transport = Transport(response(b"invalid MODS"))
     with (
-        GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
         pytest.raises(FederalRegisterBodySourceError) as caught,
     ):
         client.acquire(
-            document_number="X98-10603", publication_date="1998-06-03", route="mods-start-page", start_page=30359
+            format="html",
+            document_number="X98-10603",
+            publication_date="1998-06-03",
+            html_route="mods-start-page",
+            start_page=30359,
         )
     refusal = caught.value.__dict__["refused_response"]
     assert refusal.response_bytes == b"invalid MODS" and refusal.request_key == MODS_URL
@@ -253,7 +271,7 @@ def test_over_bound_response_never_returns_or_labels_truncated_bytes_as_evidence
     received = httpx.Response(200, stream=stream, headers={"content-length": "60"} if declared else {})
     transport = Transport(received)
     with (
-        GovInfoBodyAcquirer(budget=replace(BUDGET, max_body_bytes=40), transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_body_bytes=40), transport=transport) as client,
         pytest.raises(FederalRegisterBodySourceError, match="byte bound") as caught,
     ):
         acquire(client)
@@ -267,7 +285,7 @@ def test_invalid_transport_headers_refused_before_read(headers: dict[str, str]) 
     stream = Stream(BODY)
     transport = Transport(httpx.Response(200, stream=stream, headers=headers))
     with (
-        GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
         pytest.raises(FederalRegisterBodySourceError),
     ):
         acquire(client)
@@ -277,7 +295,7 @@ def test_invalid_transport_headers_refused_before_read(headers: dict[str, str]) 
 def test_wrong_content_length_retains_exact_response() -> None:
     transport = Transport(response(headers={"content-length": str(len(BODY) + 1)}))
     with (
-        GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client,
+        FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
         pytest.raises(FederalRegisterBodySourceError, match="Content-Length") as caught,
     ):
         acquire(client)
@@ -287,7 +305,7 @@ def test_wrong_content_length_retains_exact_response() -> None:
 def test_short_transport_chunks_are_accumulated_through_eof() -> None:
     stream = Stream(*(BODY[index : index + 3] for index in range(0, len(BODY), 3)))
     transport = Transport(httpx.Response(200, stream=stream))
-    with GovInfoBodyAcquirer(budget=replace(BUDGET, max_body_bytes=len(BODY)), transport=transport) as client:
+    with FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_body_bytes=len(BODY)), transport=transport) as client:
         assert acquire(client).body.body == BODY
     assert stream.reads > 1 and stream.closed
 
@@ -300,7 +318,7 @@ def test_broken_body_stream_closes_before_retry_and_never_returns_partial_bytes(
 
     broken = BrokenStream()
     transport = Transport(httpx.Response(200, stream=broken), response())
-    with GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client:
+    with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = acquire(client)
     assert broken.closed
     assert result.body.body == BODY and result.request_count == 2
@@ -309,10 +327,10 @@ def test_broken_body_stream_closes_before_retry_and_never_returns_partial_bytes(
 @pytest.mark.parametrize(
     "arguments",
     [
-        {"route": "unknown"},
-        {"route": "mods-start-page"},
-        {"route": "mods-start-page", "start_page": True},
-        {"route": "granule", "start_page": 30359},
+        {"html_route": "unknown"},
+        {"html_route": "mods-start-page"},
+        {"html_route": "mods-start-page", "start_page": True},
+        {"html_route": "granule", "start_page": 30359},
         {"document_number": "../escape"},
     ],
 )
@@ -321,11 +339,11 @@ def test_invalid_route_or_identity_refuses_before_request(arguments: dict[str, A
     options: dict[str, Any] = {
         "document_number": "98-14931",
         "publication_date": "1998-06-03",
-        "route": "granule",
+        "html_route": "granule",
         **arguments,
     }
-    with GovInfoBodyAcquirer(budget=BUDGET, transport=transport) as client, pytest.raises(ValueError):
-        client.acquire(**options)
+    with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client, pytest.raises(ValueError):
+        client.acquire(format="html", **options)
     assert not transport.calls
 
 
@@ -339,7 +357,7 @@ def test_request_start_pacing_covers_retries_and_successive_acquisitions(monkeyp
         starts.append(current[0])
         return response(status=503 if len(starts) == 1 else 200)
 
-    with GovInfoBodyAcquirer(
+    with FederalRegisterBodyAcquirer(
         budget=replace(BUDGET, min_request_interval_seconds=0.4), transport=httpx.MockTransport(handler)
     ) as client:
         assert acquire(client).request_count == 2
@@ -375,7 +393,7 @@ def test_shared_retry_rejects_invalid_explicit_attempt_count(max_attempts: int) 
 
 def test_closed_client_refuses_without_request() -> None:
     transport = Transport()
-    client = GovInfoBodyAcquirer(budget=BUDGET, transport=transport)
+    client = FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport)
     client.close()
     with pytest.raises(ValueError, match="closed"):
         acquire(client)

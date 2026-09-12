@@ -50,8 +50,8 @@ or export a supported table. Rendition rows describe locators and source metadat
 they do not establish downloaded or hashed body content.
 
 The [Federal Register body API](federal-register-body-sources.md) separately
-acquires an explicitly selected GovInfo granule, checks identity, and returns
-exact bytes. Publisher XML/text routes currently provide locators only.
+prefers publisher XML, checks identity, and returns exact bytes. It falls back
+to GovInfo HTML only after XML 404/410; strict XML and explicit HTML are available.
 
 Use DocSpec when combining sources, document fetchers, processors, and successive
 runs. Its optional sibling-checkout [walkthrough](../../DocSpec/docs/offline-walkthrough.md),

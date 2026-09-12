@@ -35,8 +35,9 @@ digests agree; a substantive tie refuses publication.
 
 Renditions list `body-html`, `html`, and `pdf`, including explicit null locators.
 They describe links, not downloaded bodies. The separate
-[body API](../federal-register-body-sources.md) acquires a selected direct or
-MODS-resolved GovInfo granule; publisher XML/text helpers supply locators only.
+[body API](../federal-register-body-sources.md) prefers publisher XML, with direct
+or MODS-resolved GovInfo HTML after XML 404/410. Callers can also require XML or
+request HTML explicitly. Plain-text helpers supply locators only.
 Stream admitted metadata with `SourceNativeReleaseReader` or export its public
 table. See [output choices](../source-workflows.md).
 

@@ -8,9 +8,9 @@ Source rules:
 - Resolve synthetic X numbers through issue MODS start pages while preserving
   the original source identity.
 
-DocSpec owns candidate choice; body_acquisition fetches an explicitly selected
-GovInfo route. Publisher XML/text remain locators. SpicySearch Validation owns
-carrier agreement. Response size and campaign timing are not identity rules.
+body_acquisition prefers publisher XML, then the chosen GovInfo route after
+XML 404/410. body_xml validates XML identity. DocSpec owns dataset selection;
+SpicySearch Validation owns text agreement. Timing is not an identity rule.
 
 For URL length U, granule bytes B, and MODS bytes M: locator time and output space are O(U);
 granule validation is O(B) time and O(U) auxiliary space; MODS resolution is

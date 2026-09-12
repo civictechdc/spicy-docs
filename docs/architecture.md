@@ -22,7 +22,7 @@ Paths below are relative to `src/spicy_docs/`.
 | Change | Start here |
 | --- | --- |
 | Federal Register pages and date windows | `sources/federal_register/native.py` |
-| GovInfo body fetching; pure document checks | `sources/federal_register/body_acquisition.py`; `body_sources.py` |
+| XML-first body fetching; pure identity checks | `sources/federal_register/body_acquisition.py`; `body_sources.py`; `body_xml.py` |
 | GAO pages | `sources/gao/native.py` |
 | Captured public comments | `sources/public_comments/native.py` |
 | Raw streams | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |

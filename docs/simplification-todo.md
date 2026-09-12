@@ -4,6 +4,16 @@
 Six original items moved to their implementation owners. A moved task is not a
 completed task; follow the receiving backlog for its status.
 
+## XML body preference
+
+- [x] **X01:** Prefer validated Federal Register XML; retain HTML fallback only after XML 404/410.
+- [x] **X02:** Demonstrate XML and fallback with retained bytes; update callers and source guidance.
+- [x] **X03:** Check identity, refusal, shared bounds, live XML and installed-wheel use; independently review.
+
+Validation: 916 tests passed (two opt-in tests deselected), lint/format passed,
+and independent architecture/code reviews approved. Four live XML samples and
+both installed-wheel examples passed. [Usage and limits](federal-register-body-sources.md).
+
 ## Readability pass
 
 - [x] **R1:** Consolidate Markdown around current tasks, rules and ownership.
