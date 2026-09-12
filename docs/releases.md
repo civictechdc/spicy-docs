@@ -54,10 +54,15 @@ from a trusted deployment decision, not from an untrusted artifact's own claim.
 ## Storage and recovery
 
 [`storage/blobs.py`](../src/spicy_docs/storage/blobs.py) defines the
-`SourceNativeBlobStore` read/write boundary and local implementation. Conditional
-writes stream into a temporary file, verify the expected size and SHA-256, and
-install a digest-named blob without replacement. Reusing an existing blob still
-checks its bytes. Write receipts distinguish reused content from staging writes.
+`SourceNativeBlobStore` read/write boundary. Its local implementation delegates
+physical writes to `rulespec_artifacts.LocalBlobWriter` and maps the result into
+source references. The declared byte size is a hard limit checked before each
+write. The shared operation verifies size and SHA-256, pins storage directories,
+and installs a digest-named blob without replacement. Reusing an existing blob
+still checks its bytes and durable directory state; known reuse does not consume
+the supplied input iterator. The caller retains that iterator's lifetime.
+Write receipts distinguish reused content from staging writes. Storage remains
+independent of DocSpec's dataset lifecycle.
 
 `PublishedSourceNativeRelease.byte_measurements` and the publish CLI's
 `byteMeasurements` report storage work for that invocation. The payload counters

@@ -34,6 +34,14 @@ retain installed extras. Running `uv sync --frozen` without `--all-extras`
 removes the optional packages; rerun the contributor setup before the full suite.
 Development tools are declared once, separately from runtime extras.
 
+On macOS, if setup succeeds but an example cannot import `spicy_docs`, inspect
+the editable-path file with
+`ls -lO .venv/lib/python3.12/site-packages/spicy_docs.pth`. Python skips this file
+when it has the `hidden` flag. If that exact file shows the flag, clear it with
+`chflags nohidden .venv/lib/python3.12/site-packages/spicy_docs.pth`, then retry
+the example. This condition occurred during the isolated contributor exercise;
+its cause is unknown. It does not require changing the package's imports.
+
 To try only the core in the checkout, use `uv sync --frozen --no-dev`, then
 `uv run --frozen --no-dev python examples/offline_release.py`. This publishes,
 verifies, and reads synthetic GAO evidence without optional packages or network
@@ -48,7 +56,7 @@ with your retained wheel files:
 ```sh
 uv venv --python 3.12 /path/to/source-reader-env
 uv pip install --python /path/to/source-reader-env/bin/python \
-  /path/to/rulespec_artifacts-1.0.11-py3-none-any.whl \
+  /path/to/rulespec_artifacts-1.0.12-py3-none-any.whl \
   /path/to/spicy_docs-0.2.0-py3-none-any.whl
 ```
 

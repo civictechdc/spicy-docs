@@ -9,6 +9,8 @@ from pathlib import Path
 import pytest
 from rulespec_artifacts import (
     ArtifactVerificationError,
+    BlobIntegrityError,
+    BlobLimitError,
     LocalMemberSource,
     MemberSourceError,
     admit_artifact,
@@ -37,6 +39,36 @@ def test_blob_store_refuses_corrupt_existing_content(tmp_path: Path) -> None:
 
     with pytest.raises(ImmutablePublicationError, match="content identity"):
         store.put_blob(blob_ref, len(payload), (payload,))
+
+
+def test_blob_store_reuses_verified_bytes_without_consuming_input(tmp_path: Path) -> None:
+    payload = b"shared physical writer, source receipt"
+    blob_ref = "sha256:" + hashlib.sha256(payload).hexdigest()
+    store = LocalSourceNativeBlobStore(tmp_path / "blobs")
+    store.put_blob(blob_ref, len(payload), (payload,))
+
+    def unexpected_input():
+        pytest.fail("known verified bytes should be reused before fetching input")
+        yield b""
+
+    write = store.put_blob(blob_ref, len(payload), unexpected_input())
+    assert (write.blob_ref, write.byte_size, write.reused, write.bytes_written) == (blob_ref, len(payload), True, 0)
+    assert (store.root / "sha256" / blob_ref[7:]).read_bytes() == payload
+    with store.open(blob_ref) as stream:
+        assert stream.read() == payload
+
+
+@pytest.mark.parametrize("payload, error_type", [(b"longer", BlobLimitError), (b"x", BlobIntegrityError)])
+def test_blob_store_maps_shared_bound_and_integrity_errors(
+    tmp_path: Path, payload: bytes, error_type: type[ValueError]
+) -> None:
+    store = LocalSourceNativeBlobStore(tmp_path / "blobs")
+    blob_ref = "sha256:" + hashlib.sha256(b"ok").hexdigest()
+    with pytest.raises(ImmutablePublicationError) as refused:
+        store.put_blob(blob_ref, 2, [payload])
+    assert isinstance(refused.value.__cause__, error_type)
+    assert list((store.root / ".pending").iterdir()) == []
+    assert list((store.root / "sha256").iterdir()) == []
 
 
 def test_read_only_blob_store_open_does_not_create_missing_layout(

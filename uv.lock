@@ -367,10 +367,10 @@ wheels = [
 
 [[package]]
 name = "rulespec-artifacts"
-version = "1.0.11"
-source = { path = "vendor/rulespec_artifacts-1.0.11-py3-none-any.whl" }
+version = "1.0.12"
+source = { path = "vendor/rulespec_artifacts-1.0.12-py3-none-any.whl" }
 wheels = [
-    { filename = "rulespec_artifacts-1.0.11-py3-none-any.whl", hash = "sha256:bedd8ee4799d9633963272714a30258f505404155732480ad5cb1dde2d7cbf4f" },
+    { filename = "rulespec_artifacts-1.0.12-py3-none-any.whl", hash = "sha256:3f6c946c60ff2ddbe854fce7f74f4358ddb21e3ba3f6ad10caa8a0d8d59fd0a5" },
 ]
 
 [[package]]
@@ -432,7 +432,7 @@ requires-dist = [
     { name = "loguru", marker = "extra == 'acquisition'" },
     { name = "polars", marker = "extra == 'public-table'" },
     { name = "pyarrow", marker = "extra == 'public-table'" },
-    { name = "rulespec-artifacts", path = "vendor/rulespec_artifacts-1.0.11-py3-none-any.whl" },
+    { name = "rulespec-artifacts", path = "vendor/rulespec_artifacts-1.0.12-py3-none-any.whl" },
     { name = "tqdm", marker = "extra == 'acquisition'" },
 ]
 provides-extras = ["acquisition", "public-table"]

@@ -3,9 +3,10 @@
 Keep SpicyDocs as an independent source provider. The unused catalog machinery
 and Iceberg attachment helper are retired; source parsing is available through its wheel.
 DocSpec owns dataset selection, capture, processing, reuse, and experiment runs.
-SpicyRegs owns its independently useful public-data pipeline. Rulespec is the
-selected candidate for shared physical storage operations, subject to its writer
-qualification.
+SpicyRegs owns its independently useful public-data pipeline. Rulespec owns the
+selected shared physical blob writer. SpicyDocs retains the source read/write
+interface and result mapping; DocSpec D31 owns adoption in its dataset storage.
+Current qualification status remains in the implementation checklist.
 
 This is the [S11 inventory](simplification-todo.md#s11) and the decision input for
 [S25 handoffs](simplification-todo.md#s25). **The inventory is complete; this
@@ -56,7 +57,7 @@ The detailed traces below distinguish existing callers from proposed consumers.
 | CourtListener listing, filename grammar, and raw streaming reader | SpicyDocs documented library use and tests; SpicyRegs independently calls its copied reader from court-scope, opinion-cluster and opinion-body builders. DocSpec's captured-listing tool owns a stricter duplicate parser. [Trace D](#d-courtlistener) | **KEEP/SHARE**, SpicyDocs S14/S26 owns the strict public source parser and live reader. DocSpec D42 and selected SpicyRegs SR03 callers consume its wheel before removing replaced copies. Domain transforms and dataset admission stay with their present owners. |
 | Documented-value drift diagnostic | Repository command and fixture tests compare retained SpicyRegs table observations with retained publisher documentation. No live-source or sibling runtime caller found. [Trace E](#e-documented-value-drift) | **KEEP**, SpicyDocs S15 as explicit source-maintainer tooling. Removing it loses a checked explanation of documented/observed differences. **DEFER** upstream adoption until SR01/SR03 selects a maintenance caller; do not make it a DocSpec or publication gate. |
 | Agency campaign driver | Documented `python -m spicy_docs.cli.campaign` publishes source releases with subprocesses, receipts, locking and recovery. DocSpec's task runner is a sibling capability, not a qualified replacement for this workflow. [Trace F](#f-campaigns-and-experiment-execution) | **KEEP pending replacement**; S03 removes repeated verification now. **DEFER retirement**, S21/S31, until DocSpec D22 qualifies the selected workflow. Then remove only replaced execution machinery. Independent source publication remains supported. |
-| Local physical blob writer | Native CLI/replay use `LocalSourceNativeBlobStore`; publication calls `put_blob`. DocSpec request composition creates its separate `LocalContentAddressedBlobStore`. [Trace G](#g-physical-storage-and-shared-primitives) | **SHARE after qualification**, candidate owner Rulespec RS03, adopters S22/DocSpec D31. Retain both working writers until the common operation preserves their different requirements. Moving provider storage into DocSpec would add the wrong lifecycle dependency. |
+| Local physical blob writer | Native CLI/replay use `LocalSourceNativeBlobStore`; publication calls `put_blob`. DocSpec request composition creates its separate `LocalContentAddressedBlobStore`. [Trace G](#g-physical-storage-and-shared-primitives) | **SHARE**, Rulespec RS03 owns the bounded physical operation. S22 replaces the source implementation with a thin adapter; its current-wheel qualification is tracked in the checklist. DocSpec D31 owns its separate migration. Provider storage stays independent of the dataset lifecycle. |
 | Dataset catalog/capture/processing/run APIs | DocSpec source intake, fetcher and processor interfaces, execution services and optional Dagster adapter implement these concerns. Required future callers include independent source inputs and iterative experiments. [Trace F](#f-campaigns-and-experiment-execution) | **KEEP**, DocSpec; **MOVE selected composition** from SpicyDocs only when D45/D46 provides supported wheel APIs and S31 identifies the replaced local loop. Do not move publisher identity or source-data transforms with it. |
 
 ## Traces and repeated work
@@ -253,25 +254,28 @@ or source-only publication to adopt an experiment lifecycle.
 
 ### G. Physical storage and shared primitives
 
-SpicyDocs' [writer:242](../src/spicy_docs/storage/blobs.py#L242) takes a known digest
-and size, verifies early reuse without consuming new chunks, pins directory
-identities, uses no-follow operations and syncs published directories. Its native
-[partition publisher:176](../src/spicy_docs/releases/partitions.py#L176) calls that
-API. DocSpec's [writer:43](../../DocSpec/src/docspec/adapters/storage/blobs.py#L43)
-accepts an unknown digest, enforces a hard streaming limit before writing each
-chunk, validates expected identity and conditionally links the result. Its
-[CLI composition:289](../../DocSpec/src/docspec/cli/requests.py#L289) constructs it.
-Both hash, stage, sync, conditionally publish, verify existing bytes and clean up;
-neither implementation currently subsumes every useful property of the other.
+SpicyDocs' [source adapter](../src/spicy_docs/storage/blobs.py) takes a known digest
+and size and returns source references and write measurements. It delegates to
+Rulespec's [shared writer](../../rulespec/packages/rulespec-artifacts/src/rulespec_artifacts/_blobs.py),
+which verifies early reuse without consuming input, checks a hard byte limit,
+pins directories, refuses symlinks, conditionally publishes, and syncs output.
+The [partition publisher](../src/spicy_docs/releases/partitions.py) retains the
+same source API.
+
+The shared operation also supports the unknown digest and two-digit sharding
+needed by DocSpec's [physical writer](../../DocSpec/src/docspec/adapters/storage/blobs.py).
+The original local implementations each owned part of this requirement set;
+the shared operation combines it without owning dataset capture or source
+semantics. DocSpec D31 still owns adopting that operation and removing its copy.
 
 Rulespec already supplies [atomic directory publication:1691](../../rulespec/packages/rulespec-artifacts/src/rulespec_artifacts/_artifact.py#L1691),
 [blob reading:2061](../../rulespec/packages/rulespec-artifacts/src/rulespec_artifacts/_artifact.py#L2061),
 and [canonical encoding:318](../../rulespec/packages/rulespec-artifacts/src/rulespec_artifacts/_artifact.py#L318).
 The local [publication wrapper](../src/spicy_docs/storage/publication.py#L41) calls
-that implementation; it is not a second rename engine. RS03 must qualify the
-smallest shared writer before S22/D31 remove their physical copies. Keep media
-types, source receipts, DocSpec references and dataset transactions with callers.
-No new storage framework is selected.
+that implementation. RS03/S22 record shared-wheel and source qualification;
+DocSpec D31 must qualify its own caller before removing its physical copy.
+Media types, source receipts, DocSpec references and dataset transactions remain
+with callers. No new storage framework is selected.
 
 ## Invariants, value and counterfactual checks
 
