@@ -23,8 +23,31 @@ C06 checks: 1,211 tests passed (two opt-in tests deselected), lint/format and
 focused types passed. The explicit edition metadata API returned 2025 Title 1
 as `cover-only`, with original issue date `2023-01-01`, in one live request.
 Retained evidence: `~/Work/corpora/supply-2026-09-02/receipts/cfr-edition-type-2026-09-12/`.
-Constituent inventories and citation hints remain preserved in raw MODS; a
-future catalog API needs a named consuming workflow.
+
+- [x] **M01:** Map GovInfo MODS package and constituent metadata using published
+  MODS definitions and GovInfo field guides. Preserve repeated fields, attributes,
+  namespace context, literal notes and unknown extensions with input provenance.
+- [x] **M02:** Return mapped metadata from the existing annual metadata request;
+  derive edition facts from that mapping and save ingestible JSON in the example.
+- [x] **M03:** Verify preservation against retained full XML, qualify the wheel,
+  review independently and correct the source ownership guidance.
+
+SpicyDocs owns parsing and mapping non-body source metadata. DocSpec uses those
+records for dataset catalogs and selection; domain processors interpret meaning.
+
+M01–M03 qualification: 1,229 tests passed (two opt-in tests deselected), lint,
+format and focused types passed. One live request produced exact XML and mapped
+JSON. Complete 2023/2025 Title 1 replays each compared all 15,377 elements with an
+independent XML parser and retained 401 constituents, 391 XML links, 400 PDF links
+and 400 parent references. These are source observations, not acquired bodies.
+
+The ordinary core-only SpicyDocs 0.5.0 wheel passed both replays without HTTPX.
+Two independent static code reviews approved with no actionable findings.
+Wheel SHA-256: `4b658c4a1cd8d5a1e99697440b6e6d152ae1c665233d4e8b4fe4e8cee156815a`.
+Receipts, replay script and live outputs:
+`~/Work/corpora/supply-2026-09-02/receipts/govinfo-mods-mapping-2026-09-12/`.
+The [field guide](sources/govinfo-metadata.md) links the publisher dictionaries
+and documents the mapping and format limits.
 
 Validation: 1,162 tests passed (two opt-in tests deselected), lint/format and
 focused types passed. All seven request shapes succeeded live. Source validation

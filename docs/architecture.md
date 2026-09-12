@@ -24,6 +24,7 @@ Paths below are relative to `src/spicy_docs/`.
 | Federal Register pages and date windows | `sources/federal_register/native.py` |
 | XML-first body fetching; pure identity checks | `sources/federal_register/body_acquisition.py`; `body_sources.py`; `body_xml.py` |
 | Explicit CFR/eCFR captures and native identity | `sources/cfr/acquisition.py`; `ecfr.py`; `annual.py` |
+| GovInfo MODS package/constituent metadata | `sources/govinfo/mods.py`; CFR edition checks in `sources/cfr/edition.py` |
 | GAO pages | `sources/gao/native.py` |
 | Captured public comments | `sources/public_comments/native.py` |
 | Raw streams | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |

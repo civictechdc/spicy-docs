@@ -142,7 +142,19 @@ def run_capture(
             }
         }
     elif route == "annual-edition":
-        source = {"edition": {**asdict(result.edition), "edition_type": result.edition.edition_type.value}}
+        metadata = (json.dumps(asdict(result.metadata), indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+        (output / "metadata.json").write_bytes(metadata)
+        source = {
+            "edition": {**asdict(result.edition), "edition_type": result.edition.edition_type.value},
+            "metadata": {
+                "file": "metadata.json",
+                "sha256": "sha256:" + hashlib.sha256(metadata).hexdigest(),
+                "byteSize": len(metadata),
+                "constituentCount": len(result.metadata.constituents),
+                "elementCount": result.metadata.element_count,
+                "inputCaptureSha256": capture.sha256,
+            },
+        }
     else:
         source = {"identity": asdict(result.identity)}
     receipt.update(

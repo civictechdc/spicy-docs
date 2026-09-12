@@ -19,6 +19,7 @@ def scan_xml(
     label: str,
     allow_external_doctype: bool = False,
     max_depth: int = 256,
+    namespace: Callable[[str, str], object] | None = None,
 ) -> None:
     """Visit XML without retaining a tree; callbacks choose which facts to keep.
 
@@ -60,6 +61,8 @@ def scan_xml(
     parser.StartElementHandler = on_start
     parser.EndElementHandler = on_end
     parser.CharacterDataHandler = data
+    if namespace is not None:
+        parser.StartNamespaceDeclHandler = lambda prefix, uri: namespace(prefix or "", uri or "")
     parser.StartDoctypeDeclHandler = doctype
     parser.EntityDeclHandler = refuse_entity
     parser.ExternalEntityRefHandler = refuse_entity

@@ -20,7 +20,7 @@ from spicy_docs.sources.cfr.ecfr import (
     validate_ecfr_bulk_xml,
     validate_ecfr_xml,
 )
-from spicy_docs.sources.cfr.edition import AnnualCfrEdition, annual_cfr_edition_locator, parse_annual_cfr_edition
+from spicy_docs.sources.cfr.edition import AnnualCfrEdition, _parse_annual_cfr_metadata, annual_cfr_edition_locator
 from spicy_docs.sources.cfr.models import (
     MAX_CFR_BYTES,
     AnnualCfrSelection,
@@ -29,6 +29,7 @@ from spicy_docs.sources.cfr.models import (
     EcfrSelection,
     EcfrTitles,
 )
+from spicy_docs.sources.govinfo.mods import GovInfoModsPackage
 from spicy_docs.sources.refusals import attach_refused_response
 from spicy_docs.transport.capture import BoundedHttpCapture, CapturedBodyResponse, refused_capture
 
@@ -92,6 +93,7 @@ class CfrTitlesAcquisition:
 class CfrEditionAcquisition:
     selection: AnnualCfrSelection
     edition: AnnualCfrEdition
+    metadata: GovInfoModsPackage
     capture: CapturedBodyResponse
     request_count: int
     budget: CfrAcquisitionBudget
@@ -275,13 +277,13 @@ class CfrAcquirer:
         *,
         max_bytes: int | None = None,
     ) -> CfrEditionAcquisition:
-        """Observe publication type and dates from explicitly requested package MODS."""
-        edition, capture, budget = self._acquire(
+        """Map package/constituent metadata and edition facts in one MODS request."""
+        (edition, metadata), capture, budget = self._acquire(
             annual_cfr_edition_locator(selection),
             operation="annual-edition",
             selection=selection,
             media_types=("application/xml", "text/xml"),
-            parse=lambda response, limit: parse_annual_cfr_edition(
+            parse=lambda response, limit: _parse_annual_cfr_metadata(
                 response.body,
                 selection=selection,
                 final_url=response.resolved_url,
@@ -289,4 +291,4 @@ class CfrAcquirer:
             ),
             max_bytes=max_bytes,
         )
-        return CfrEditionAcquisition(selection, edition, capture, self._http.request_count, budget)
+        return CfrEditionAcquisition(selection, edition, metadata, capture, self._http.request_count, budget)

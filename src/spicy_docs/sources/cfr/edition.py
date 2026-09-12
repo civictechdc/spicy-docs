@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-from ._xml import IdentityXmlScan
-from .models import DEFAULT_MAX_BYTES, AnnualCfrSelection, CfrSourceError, _date
+from ..govinfo.mods import GovInfoModsError, GovInfoModsPackage, ModsRecord, parse_govinfo_mods
+from .models import DEFAULT_MAX_BYTES, AnnualCfrSelection, CfrSourceError, _date, _limit
 
 
 class CfrEditionType(StrEnum):
@@ -43,43 +43,25 @@ def annual_cfr_edition_locator(selection: AnnualCfrSelection) -> str:
     )
 
 
-def _path(*names: str) -> tuple[str, ...]:
-    return tuple("{http://www.loc.gov/mods/v3}" + name for name in ("mods", *names))
-
-
-_EXTENSION_FIELDS = (
-    "collectionCode",
-    "accessId",
-    "titleNumber",
-    "volumeNumber",
-    "isCoverOnly",
-    "originalDateIssued",
-    "editionId",
-    "isCurrentEdition",
-    "isFallbackTitle",
-)
-
-
-class _EditionScan(IdentityXmlScan):
-    def __init__(self) -> None:
-        super().__init__(
-            {
-                *(_path("extension", name) for name in _EXTENSION_FIELDS),
-                _path("originInfo", "dateIssued"),
-                _path("titleInfo", "title"),
-            }
-        )
-
-    def observe_start(self, tag: str, attributes: dict[str, str]) -> None:
-        if len(self.path) == 1 and tag != _path()[0]:
-            raise CfrSourceError("annual edition metadata must be MODS v3 XML")
-        if any(active_path != self.path for active_path, _parts in self._active):
-            raise CfrSourceError("annual edition metadata fields must contain scalar text")
+class _EditionFields:
+    def __init__(self, record: ModsRecord) -> None:
+        self.record = record
 
     def value(self, *names: str, required: bool = False) -> str | None:
-        path = _path(*names)
-        # An absent optional flag is unknown; a supplied empty value is invalid.
-        return self.field(path, required=required or path in self.values)
+        elements = self.record.fields(*names)
+        if len(elements) > 1:
+            raise CfrSourceError("annual edition repeats a field: " + "/".join(names))
+        if not elements:
+            if required:
+                raise CfrSourceError("annual edition lacks a field: " + "/".join(names))
+            return None
+        element = elements[0]
+        if element.children:
+            raise CfrSourceError("annual edition metadata fields must contain scalar text")
+        value = element.text
+        if not value.strip() or len(value) > 65_536:
+            raise CfrSourceError("annual edition fields must contain bounded nonempty text")
+        return value
 
     def flag(self, name: str) -> bool | None:
         value = self.value("extension", name)
@@ -97,11 +79,27 @@ def parse_annual_cfr_edition(
     final_url: str,
     max_bytes: int = DEFAULT_MAX_BYTES,
 ) -> AnnualCfrEdition:
-    """Read root package facts; nested granule metadata cannot supply them."""
+    """Read typed edition facts; use the shared MODS parser for all source fields."""
+    edition, _metadata = _parse_annual_cfr_metadata(body, selection=selection, final_url=final_url, max_bytes=max_bytes)
+    return edition
+
+
+def _parse_annual_cfr_metadata(
+    body: bytes,
+    *,
+    selection: AnnualCfrSelection,
+    final_url: str,
+    max_bytes: int,
+) -> tuple[AnnualCfrEdition, GovInfoModsPackage]:
+    """Map once, then validate the selected package using only its root fields."""
     if final_url != annual_cfr_edition_locator(selection):
         raise CfrSourceError("annual edition response URL differs from the requested volume")
-    scan = _EditionScan()
-    scan.read(body, max_bytes)
+    _limit(max_bytes)
+    try:
+        metadata = parse_govinfo_mods(body, max_bytes=max_bytes)
+    except GovInfoModsError as error:
+        raise CfrSourceError(str(error)) from error
+    scan = _EditionFields(metadata.package)
     expected = {
         "collectionCode": "CFR",
         "accessId": f"CFR-{selection.year}-title{selection.title}-vol{selection.volume}",
@@ -123,7 +121,12 @@ def parse_annual_cfr_edition(
     edition_id = scan.value("extension", "editionId")
     if edition_id is not None and edition_id.strip() != f"CFR-title{selection.title}-vol{selection.volume}":
         raise CfrSourceError("annual edition native editionId differs from the requested volume")
-    return AnnualCfrEdition(
+    # Alternate/repeated titles belong in the full mapping. A singular display
+    # title is available only when the package supplies one untyped title.
+    titles = [
+        title for info in metadata.package.titles if info.attribute("type") is None for title in info.findall("title")
+    ]
+    edition = AnnualCfrEdition(
         selection.year,
         selection.title,
         selection.volume,
@@ -133,5 +136,6 @@ def parse_annual_cfr_edition(
         edition_id,
         scan.flag("isCurrentEdition"),
         scan.flag("isFallbackTitle"),
-        scan.value("titleInfo", "title"),
+        titles[0].text if len(titles) == 1 else None,
     )
+    return edition, metadata

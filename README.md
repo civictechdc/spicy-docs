@@ -44,6 +44,8 @@ The [bill API](docs/sources/congress-bills.md) separately captures BILLSTATUS XM
 and a selected bill-text version, preserving identity, source fields and bytes.
 The [CFR/eCFR API](docs/sources/cfr.md) captures explicitly selected regulation
 XML, retaining printed dates separately from requested dates and editions.
+Its [GovInfo metadata mapping](docs/sources/govinfo-metadata.md) supplies package
+and constituent records, including repeated fields, links and publisher notes.
 
 Prefer community spicy-regs tables where they carry the required data; use
 origin acquisition for missing coverage. Capture and pin whole named agency

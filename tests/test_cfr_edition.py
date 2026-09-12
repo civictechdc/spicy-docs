@@ -157,6 +157,9 @@ def test_acquisition_retains_one_exact_metadata_response_and_respects_override()
     assert result.capture.requested_url == URL
     assert result.request_count == len(calls) == 1
     assert result.edition.edition_type is CfrEditionType.COVER_ONLY
+    assert result.metadata.source_sha256 == result.capture.sha256
+    assert result.metadata.source_byte_size == result.capture.byte_size
+    assert result.metadata.package.fields("extension", "partRange")[0].attribute("to") == "603"
     assert result.budget.max_bytes == len(BODY)
     assert calls[0].headers["accept-encoding"] == "identity"
 
@@ -179,3 +182,23 @@ def test_refused_or_missing_metadata_keeps_evidence(status, body):
     assert raised.value.cfr_acquisition["operation"] == "annual-edition"
     assert raised.value.cfr_acquisition["requestCount"] == 1
     assert isinstance(raised.value, CfrSourceUnavailableError) == (status == 404)
+
+
+def test_multiple_titles_remain_mapped_without_invalidating_edition_identity():
+    alternate = b'<titleInfo type="alternative"><title>Other title</title></titleInfo>'
+    assert parse(BODY.replace(b"</mods>", alternate + b"</mods>")).title_text == "General Provisions"
+    repeated = b"<titleInfo><title>Second untyped title</title></titleInfo>"
+    assert parse(BODY.replace(b"</mods>", repeated + b"</mods>")).title_text is None
+
+
+def test_full_metadata_acquisition_maps_constituents_and_checks_only_package_identity():
+    body = (FIXTURES.parent / "govinfo/cfr-mods-excerpt.xml").read_bytes()
+    transport = httpx.MockTransport(
+        lambda _: httpx.Response(200, stream=httpx.ByteStream(body), headers={"content-type": "text/xml"})
+    )
+    with CfrAcquirer(budget=CfrAcquisitionBudget(1, len(body), 10, 0), transport=transport) as client:
+        result = client.acquire_annual_edition(SELECTION)
+    assert result.capture.body == body and result.request_count == 1
+    assert len(result.metadata.constituents) == 3
+    assert result.metadata.package.fields("extension", "accessId")[0].text == "CFR-2025-title1-vol1"
+    assert result.metadata.constituents[1].fields("extension", "accessId")[0].text.endswith("sec1-1")

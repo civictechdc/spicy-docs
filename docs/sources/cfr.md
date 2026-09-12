@@ -8,7 +8,7 @@ edition, switch routes after failure, or infer that the publisher is complete.
 | --- | --- | --- |
 | eCFR API | Title and date; optional part and section | XML for that requested snapshot and scope. A section also requires an explicit part. |
 | Annual CFR | Year, title and volume; optional section | GovInfo volume or section XML. Requested year and printed revision remain separate. |
-| Annual CFR edition metadata | Year, title and volume | GovInfo MODS XML: publication type, original issue date and publisher status. |
+| Annual CFR metadata | Year, title and volume | Mapped GovInfo MODS package and constituent records, publication type and exact XML. |
 | GovInfo bulk eCFR | Title | Latest-route XML in its original bulk wrapper. No historical date selector. |
 | eCFR title index | None | JSON roster with separate amendment, issue and currency dates, plus processing status. |
 
@@ -43,6 +43,8 @@ uv run --frozen python -m examples.cfr_capture ecfr-titles \
 The example writes `receipt.json` and original XML or JSON. The eCFR API requires
 compression: for gzip responses it retains both `response.xml.gz` (received
 payload) and `response.xml` (decoded XML), with separate hashes and byte counts.
+The `annual-edition` route also writes `metadata.json`: the complete mapped
+source record, with a file hash and original-input hash in the receipt.
 Failures retain a receipt and bounded refused bytes when available.
 
 The example defaults to two requests, a 20-second transport timeout, and one
@@ -91,7 +93,7 @@ warning and does not establish the publication type.
 Use `acquire_annual_edition(AnnualCfrSelection(2025, 1, 1))` to obtain that type
 from GovInfo's MODS (Metadata Object Description Schema) package XML. This is a
 separate, explicit request; body acquisition does not fetch metadata implicitly.
-The result supplies `.edition` and the exact `.capture`. Section selections are
+The result supplies `.edition`, mapped `.metadata` and the exact `.capture`. Section selections are
 rejected because this metadata describes the whole volume.
 
 | `edition.edition_type` | Publisher evidence |
@@ -110,18 +112,19 @@ and [GPO's explanation](https://bookstore.gpo.gov/products/cfr-title-1-cvr-code-
 
 The API also exposes the literal title, edition identifier, current-edition flag
 and fallback-title flag. Status flags describe the publisher's answer at capture
-time; they do not select another edition. The complete MODS includes constituent
-identifiers, parent relationships, rendition links and citation hints for future
-catalog work. Those advertised links do not establish acquired bodies. Nested
+time; they do not select another edition. The complete mapped MODS includes
+constituent identifiers, parent relationships, rendition links and citation hints.
+Those advertised links do not establish acquired bodies. Nested
 constituent fields cannot replace the package's identity or edition facts.
 
 In the retained 2025 Title 1 metadata, 401 constituent entries include 288 section
 entries and 400 parent links. They advertise 391 XML and 400 PDF renditions;
 some structural nodes offer only PDF. Literal authority/history notes and
 structured citation hints are also available. This inventory can supply DocSpec
-catalog selection without downloading each body first. SpicyDocs currently
-retains those constituent fields in the XML; it does not expose a granule catalog
-API. Reference hints still need checking: Chapter VI is labeled as a `part` in
+catalog selection without downloading each body first. SpicyDocs exposes these
+source records in `result.metadata.constituents`; the
+[metadata guide](govinfo-metadata.md) maps published field definitions to the API.
+Reference hints still need checking: Chapter VI is labeled as a `part` in
 the 2025 metadata and as a `chapter` in the 2023 metadata.
 
 ## Bounds and downstream work
@@ -132,6 +135,9 @@ the 2025 metadata and as a `chapter` in the 2023 metadata.
 - Whole-title validation scans XML without building a full tree. It refuses
   entities, DTDs, excessive nesting, malformed XML and contradictory requested
   identity. A timeout limits transport waits, not total operation duration.
+- Metadata mapping builds one bounded tree: up to 100,000 elements and depth 64,
+  within the acquisition byte allowance. Unknown fields, repeated values and
+  namespace context remain available; selected edition facts have separate checks.
 - `401`/`403` stops acquisition. Only an exact `404`/`410` produces
   `CfrSourceUnavailableError`; it establishes no publisher-wide absence.
 - Graphics and table structure remain in the XML. Linked assets are not fetched.

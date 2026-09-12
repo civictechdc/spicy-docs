@@ -137,6 +137,19 @@ def test_each_explicit_route_retains_original_and_evidence(tmp_path, route, sele
         }
         assert saved["capture"]["file"] == "response.xml"
         assert "xml" not in saved
+        metadata_bytes = (output / "metadata.json").read_bytes()
+        metadata = json.loads(metadata_bytes)
+        assert metadata["source_sha256"] == saved["capture"]["sha256"]
+        assert metadata["source_byte_size"] == len(body)
+        assert metadata["element_count"] > 0
+        assert saved["source"]["metadata"] == {
+            "file": "metadata.json",
+            "sha256": "sha256:" + hashlib.sha256(metadata_bytes).hexdigest(),
+            "byteSize": len(metadata_bytes),
+            "constituentCount": 0,
+            "elementCount": metadata["element_count"],
+            "inputCaptureSha256": saved["capture"]["sha256"],
+        }
     if route not in ("ecfr-titles", "annual-edition"):
         assert saved["xml"]["transformation"] == "identity"
         assert saved["xml"]["file"] == saved["capture"]["file"]
@@ -349,3 +362,46 @@ def test_absent_cover_flag_stays_unknown_in_the_edition_receipt(tmp_path):
     assert saved["source"]["edition"]["is_cover_only"] is None
     assert saved["source"]["edition"]["edition_type"] == "unknown"
     assert (tmp_path / "out" / "response.xml").read_bytes() == body
+
+
+def test_edition_metadata_json_preserves_one_tree_with_nested_and_unknown_source_fields(tmp_path):
+    body = (FIXTURES / "annual-title1-edition.xml").read_bytes()
+    additions = """<relatedItem type="constituent" ID="direct-child-marker">
+<titleInfo><title>  Keep this é title  </title></titleInfo>
+<relatedItem type="constituent" ID="nested-child-marker"><titleInfo><title>Nested metadata</title></titleInfo></relatedItem>
+</relatedItem><extension><vendor:opaque xmlns:vendor="urn:publisher:extra" vendor:kind="future"> lead <vendor:leaf order="02">A &amp; B</vendor:leaf> tail </vendor:opaque></extension>"""
+    body = body.replace(b"</mods>", additions.encode("utf-8") + b"</mods>")
+    transport, calls = transport_for(body)
+    output = tmp_path / "out"
+    saved = capture(output, transport, route="annual-edition")
+    reference = saved["source"]["metadata"]
+    metadata_bytes = (output / reference["file"]).read_bytes()
+    metadata = json.loads(metadata_bytes)
+    assert saved["requestCount"] == len(calls) == 1
+    assert (output / saved["capture"]["file"]).read_bytes() == body
+    assert reference["inputCaptureSha256"] == metadata["source_sha256"] == saved["capture"]["sha256"]
+    assert reference["sha256"] == "sha256:" + hashlib.sha256(metadata_bytes).hexdigest()
+    assert reference["byteSize"] == len(metadata_bytes)
+    assert reference["constituentCount"] == 1
+    assert reference["elementCount"] == metadata["element_count"]
+    assert set(metadata) == {"package", "source_sha256", "source_byte_size", "element_count"}
+    assert set(metadata["package"]) == {"element"}
+    assert metadata_bytes.count(b"direct-child-marker") == metadata_bytes.count(b"nested-child-marker") == 1
+    assert "package" not in json.dumps(saved["source"]["metadata"])
+
+    def children(element, name):
+        return [item for item in element["content"] if isinstance(item, dict) and item["name"] == name]
+
+    root = metadata["package"]["element"]
+    mods = "{http://www.loc.gov/mods/v3}"
+    direct = children(root, mods + "relatedItem")[0]
+    assert direct["attributes"] == [["type", "constituent"], ["ID", "direct-child-marker"]]
+    assert children(direct, mods + "relatedItem")[0]["attributes"][-1] == ["ID", "nested-child-marker"]
+    assert children(children(direct, mods + "titleInfo")[0], mods + "title")[0]["content"] == ["  Keep this é title  "]
+    extension = children(root, mods + "extension")[-1]
+    opaque = children(extension, "{urn:publisher:extra}opaque")[0]
+    assert opaque["namespace_declarations"] == [["vendor", "urn:publisher:extra"]]
+    assert opaque["attributes"] == [["{urn:publisher:extra}kind", "future"]]
+    assert opaque["content"][0] == " lead " and opaque["content"][2] == " tail "
+    assert opaque["content"][1]["attributes"] == [["order", "02"]]
+    assert opaque["content"][1]["content"] == ["A & B"]

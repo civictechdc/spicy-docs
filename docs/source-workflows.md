@@ -10,6 +10,7 @@ provenance; the caller chooses the source and scope.
 | Records with exact acquisition evidence and offline replay | `publish` a supported source for explicit dates, agencies, or product IDs | Keep the release, blob store, and artifact pin. `inspect` checks admission and reports outcomes; `verify` reconstructs records and failures. |
 | Flat Parquet rows from a release | `publish-public-table` for Federal Register or Mirrulations | Keep the table pin and input release. Publication checks every row; `verify-public-table` checks admission. The library verifier also checks rows. |
 | Parsed dictionaries in an application that owns recovery | A Mirrulations or CourtListener raw reader | The caller retains input pins, failures, checkpoints, and completion evidence. A raw read has no release verification. |
+| Complete GovInfo MODS metadata | The [MODS mapping](sources/govinfo-metadata.md), available with annual CFR edition capture | Keep the original response and mapped package/constituents. Repeated fields, attributes and unknown extensions survive; advertised links remain unfetched. |
 
 Use the [CLI commands](cli.md), [raw-reader APIs](sources/raw-readers.md), or
 [offline GAO example](../examples/offline_release.py). The example requires no

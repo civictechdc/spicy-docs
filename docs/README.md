@@ -18,6 +18,7 @@
 - [GAO pages](sources/gao.md)
 - [Congressional bills](sources/congress-bills.md)
 - [CFR/eCFR XML](sources/cfr.md)
+- [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records.
 - [Captured public comments](sources/public-comments.md)
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.
 - [Source-field references](source-reference.md) · [Documented-value drift](source-domain-drift.md)
