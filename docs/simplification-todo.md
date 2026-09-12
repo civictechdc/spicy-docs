@@ -4,6 +4,22 @@
 Six original items moved to their implementation owners. A moved task is not a
 completed task; follow the receiving backlog for its status.
 
+## GovInfo bill integration
+
+First deliverable: explicit bill IDs and text versions, exact status/text XML,
+and installed-wheel consumers. Collection discovery and new regulatory sources
+remain separate work with their own scope and coverage checks.
+
+- [ ] **G01:** Parse current BILLSTATUS and bill XML; preserve source fields, summaries and every stated text-version link; prove bill/version identity.
+- [ ] **G02:** Share bounded HTTP capture with Federal Register; expose status and explicitly selected XML text acquisition.
+- [ ] **G03:** Replace SpicyRegs' duplicate BILLSTATUS subject acquisition with the qualified SpicyDocs wheel.
+- [ ] **G04:** Add a DocSpec-owned catalog, injected fetcher and processing example; prove later processing reuses captured bytes.
+- [ ] **G05:** Run source/receiver checks, bounded live captures, installed-wheel qualification and independent reviews; document the supported formats and limits.
+
+Deferred until a named collection workflow needs them: bounded GovInfo JSON
+discovery/publication, standalone BILLSUM coverage, annual CFR editions, eCFR
+snapshots, and Federal Register issue acquisition justified by batch measurements.
+
 ## Fetcher format review
 
 The [format review](fetcher-formats.md) covers all implemented fetchers and

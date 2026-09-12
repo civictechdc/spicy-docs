@@ -8,11 +8,9 @@ Install ``spicy-docs[acquisition]`` for this HTTPX-based operation.
 
 from __future__ import annotations
 
-import hashlib
 import math
-import time
 from collections.abc import Callable
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from typing import Literal, Self
 
@@ -33,10 +31,8 @@ from spicy_docs.sources.federal_register.body_xml import (
     publisher_xml_locator,
     validate_publisher_xml,
 )
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
-from spicy_docs.transport.credentials import CredentialRefusedError
-from spicy_docs.transport.http import RetryableHTTPStatusError
-from spicy_docs.transport.retry import retry_http
+from spicy_docs.sources.refusals import attach_refused_response
+from spicy_docs.transport.capture import BoundedHttpCapture, CapturedBodyResponse, refused_capture
 
 GovInfoBodyRoute = Literal["granule", "mods-start-page"]
 BodyFormatPreference = Literal["prefer-xml", "xml", "html"]
@@ -80,26 +76,6 @@ class FederalRegisterBodyBudget:
 
 
 @dataclass(frozen=True, slots=True)
-class CapturedBodyResponse:
-    """One complete response body and the public facts observed with it."""
-
-    requested_url: str
-    resolved_url: str
-    status_code: int
-    content_type: str | None
-    observed_at: str
-    body: bytes = field(repr=False)
-
-    @property
-    def byte_size(self) -> int:
-        return len(self.body)
-
-    @property
-    def sha256(self) -> str:
-        return "sha256:" + hashlib.sha256(self.body).hexdigest()
-
-
-@dataclass(frozen=True, slots=True)
 class FederalRegisterBodyAcquisition:
     """Validated source identity and captures, without a separate publication."""
 
@@ -115,22 +91,8 @@ class FederalRegisterBodyAcquisition:
     budget: FederalRegisterBodyBudget
 
 
-class _RetryableTransportError(ConnectionError):
-    """Transport failed without copying arbitrary provider text into logs."""
-
-
 def _utc_now() -> datetime:
     return datetime.now(UTC)
-
-
-def _refused(capture: CapturedBodyResponse, *, stage: str) -> RefusedResponse:
-    return RefusedResponse(
-        request_key=capture.requested_url,
-        stage=stage,
-        response_bytes=capture.body,
-        media_type=(capture.content_type or "application/octet-stream").split(";", 1)[0].strip(),
-        observed_byte_size=capture.byte_size,
-    )
 
 
 class FederalRegisterBodyAcquirer:
@@ -152,16 +114,15 @@ class FederalRegisterBodyAcquirer:
         if not isinstance(budget, FederalRegisterBodyBudget):
             raise TypeError("budget must be a FederalRegisterBodyBudget")
         self.budget = budget
-        self._clock = clock
-        self._last_request_start: float | None = None
         self._closed = False
-        self._request_count = 0
-        self._client = httpx.Client(
+        self._http = BoundedHttpCapture(
+            max_requests=budget.max_requests,
+            timeout_seconds=budget.timeout_seconds,
+            min_request_interval_seconds=budget.min_request_interval_seconds,
+            user_agent=_USER_AGENT,
+            error_type=FederalRegisterBodySourceError,
             transport=transport,
-            timeout=httpx.Timeout(budget.timeout_seconds),
-            follow_redirects=False,
-            trust_env=False,
-            headers={"User-Agent": _USER_AGENT, "Accept-Encoding": "identity"},
+            clock=clock,
         )
 
     def __enter__(self) -> Self:
@@ -175,120 +136,7 @@ class FederalRegisterBodyAcquirer:
     def close(self) -> None:
         if not self._closed:
             self._closed = True
-            self._client.close()
-
-    def _start_request(self) -> None:
-        if self._request_count >= self.budget.max_requests:
-            raise FederalRegisterBodySourceError("Federal Register body acquisition exhausted its total request budget")
-        if self._last_request_start is not None:
-            while (
-                delay := self.budget.min_request_interval_seconds - (time.monotonic() - self._last_request_start)
-            ) > 0:
-                time.sleep(delay)
-        self._last_request_start = time.monotonic()
-        self._request_count += 1
-
-    def _capture(self, url: str, *, max_bytes: int, allow_unavailable: bool = False) -> CapturedBodyResponse:
-        def attempt() -> CapturedBodyResponse:
-            self._start_request()
-            try:
-                with self._client.stream("GET", url) as response:
-                    if response.status_code in (401, 403):
-                        raise CredentialRefusedError(
-                            f"Body source answered HTTP {response.status_code}; stopping acquisition"
-                        )
-                    if response.status_code == 429 or response.status_code >= 500:
-                        raise RetryableHTTPStatusError(
-                            f"Body source answered retryable HTTP {response.status_code}",
-                            request=response.request,
-                            response=response,
-                        )
-                    if response.headers.get("content-encoding", "identity").strip().lower() != "identity":
-                        raise FederalRegisterBodySourceError("Body source response uses unsupported content encoding")
-                    stated_length = response.headers.get("content-length")
-                    if stated_length is not None and (not stated_length.isascii() or not stated_length.isdigit()):
-                        raise FederalRegisterBodySourceError("Body source response Content-Length is invalid")
-                    if stated_length is not None and int(stated_length) > max_bytes:
-                        error = FederalRegisterBodySourceError("Body source response exceeds its byte bound")
-                        attach_refused_response(
-                            error,
-                            RefusedResponse(url, "transport", None, "application/octet-stream", "response-byte-limit"),
-                        )
-                        raise error
-                    body = bytearray()
-                    # HTTPX's chunker yields at most this size, including over
-                    # short transport reads. A complete capture needs EOF.
-                    for chunk in response.iter_raw(chunk_size=max_bytes + 1):
-                        if len(body) + len(chunk) > max_bytes:
-                            error = FederalRegisterBodySourceError("Body source response exceeds its byte bound")
-                            attach_refused_response(
-                                error,
-                                RefusedResponse(
-                                    url,
-                                    "transport",
-                                    None,
-                                    "application/octet-stream",
-                                    "response-byte-limit",
-                                    len(body) + len(chunk),
-                                ),
-                            )
-                            raise error
-                        body.extend(chunk)
-                    observed_at = self._clock()
-                    if observed_at.tzinfo is None or observed_at.utcoffset() is None:
-                        raise ValueError("Federal Register body acquisition clock must return a timezone-aware instant")
-                    capture = CapturedBodyResponse(
-                        requested_url=url,
-                        resolved_url=str(response.url),
-                        status_code=response.status_code,
-                        content_type=response.headers.get("content-type"),
-                        observed_at=observed_at.astimezone(UTC).isoformat().replace("+00:00", "Z"),
-                        body=bytes(body),
-                    )
-                    try:
-                        if stated_length is not None and int(stated_length) != capture.byte_size:
-                            raise FederalRegisterBodySourceError(
-                                "Body source response size differs from Content-Length"
-                            )
-                        if capture.resolved_url != url:
-                            raise FederalRegisterBodySourceError(
-                                "Body source response final URL differs from its request"
-                            )
-                        if response.status_code != 200 and not (
-                            allow_unavailable and response.status_code in (404, 410)
-                        ):
-                            raise FederalRegisterBodySourceError(f"Body source answered HTTP {response.status_code}")
-                    except FederalRegisterBodySourceError as error:
-                        attach_refused_response(error, _refused(capture, stage="transport"))
-                        raise
-                    return capture
-            except httpx.RequestError:
-                raise _RetryableTransportError("Body source transport failed while acquiring a response") from None
-
-        try:
-            remaining = self.budget.max_requests - self._request_count
-            if remaining <= 0:
-                error = FederalRegisterBodySourceError(
-                    "Federal Register body acquisition exhausted its total request budget"
-                )
-                attach_refused_response(
-                    error,
-                    RefusedResponse(
-                        url, "before-request", None, "application/octet-stream", "request-budget-exhausted"
-                    ),
-                )
-                raise error
-            return retry_http(
-                attempt,
-                retryable=(_RetryableTransportError, RetryableHTTPStatusError),
-                max_attempts=remaining,
-            )
-        except Exception as error:
-            attach_refused_response(
-                error,
-                RefusedResponse(url, "transport", None, "application/octet-stream", "response-unavailable"),
-            )
-            raise
+            self._http.close()
 
     def acquire(
         self,
@@ -318,7 +166,7 @@ class FederalRegisterBodyAcquirer:
                 raise ValueError("MODS route requires a positive integer start_page")
         elif start_page is not None:
             raise ValueError("start_page is only valid for the MODS route")
-        self._request_count = 0
+        self._http.reset_budget()
         mods = None
         resolution = None
         unavailable_xml = None
@@ -326,7 +174,7 @@ class FederalRegisterBodyAcquirer:
         route: FederalRegisterBodyRoute = "publisher-xml" if format != "html" else html_route
         try:
             if format != "html":
-                xml = self._capture(
+                xml = self._http.capture(
                     xml_url, max_bytes=self.budget.max_body_bytes, allow_unavailable=format == "prefer-xml"
                 )
                 active_capture = xml
@@ -350,7 +198,7 @@ class FederalRegisterBodyAcquirer:
                         mods=None,
                         mods_resolution=None,
                         unavailable_xml=None,
-                        request_count=self._request_count,
+                        request_count=self._http.request_count,
                         budget=self.budget,
                     )
                 unavailable_xml = xml
@@ -360,7 +208,7 @@ class FederalRegisterBodyAcquirer:
             access_id = document_number
             if html_route == "mods-start-page":
                 assert start_page is not None
-                mods = self._capture(govinfo_mods_locator(publication_date), max_bytes=self.budget.max_mods_bytes)
+                mods = self._http.capture(govinfo_mods_locator(publication_date), max_bytes=self.budget.max_mods_bytes)
                 active_capture = mods
                 resolution = resolve_govinfo_granule_from_mods(
                     mods.body,
@@ -372,7 +220,7 @@ class FederalRegisterBodyAcquirer:
                 granule_url = resolution.granule_url
             # A failed later request must not inherit the successful MODS body.
             active_capture = None
-            body = self._capture(granule_url, max_bytes=self.budget.max_body_bytes)
+            body = self._http.capture(granule_url, max_bytes=self.budget.max_body_bytes)
             active_capture = body
             identity = validate_govinfo_granule(
                 body.body,
@@ -391,12 +239,12 @@ class FederalRegisterBodyAcquirer:
                 mods=mods,
                 mods_resolution=resolution,
                 unavailable_xml=unavailable_xml,
-                request_count=self._request_count,
+                request_count=self._http.request_count,
                 budget=self.budget,
             )
         except Exception as error:
             if active_capture is not None:
-                attach_refused_response(error, _refused(active_capture, stage="source-validation"))
+                attach_refused_response(error, refused_capture(active_capture, stage="source-validation"))
             error.__dict__["body_acquisition"] = {
                 "format": format,
                 "htmlRoute": html_route,
@@ -404,7 +252,7 @@ class FederalRegisterBodyAcquirer:
                 "documentNumber": document_number,
                 "publicationDate": publication_date,
                 "startPage": start_page,
-                "requestCount": self._request_count,
+                "requestCount": self._http.request_count,
                 "budget": asdict(self.budget),
                 "unavailableXml": unavailable_xml,
             }

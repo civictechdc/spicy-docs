@@ -13,7 +13,7 @@ import pytest
 from spicy_docs.sources.federal_register import body_acquisition as acquisition
 from spicy_docs.sources.federal_register.body_acquisition import FederalRegisterBodyAcquirer, FederalRegisterBodyBudget
 from spicy_docs.sources.federal_register.body_sources import FederalRegisterBodySourceError
-from spicy_docs.transport import retry
+from spicy_docs.transport import capture, retry
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.http import RetryableHTTPStatusError
 
@@ -389,8 +389,8 @@ def test_explicit_html_skips_xml() -> None:
 def test_pacing_continues_across_xml_fallback_and_successive_acquisitions(monkeypatch: pytest.MonkeyPatch) -> None:
     current = [0.0]
     starts: list[float] = []
-    monkeypatch.setattr(acquisition.time, "monotonic", lambda: current[0])
-    monkeypatch.setattr(acquisition.time, "sleep", lambda delay: current.__setitem__(0, current[0] + delay))
+    monkeypatch.setattr(capture.time, "monotonic", lambda: current[0])
+    monkeypatch.setattr(capture.time, "sleep", lambda delay: current.__setitem__(0, current[0] + delay))
 
     def handle(request: httpx.Request) -> httpx.Response:
         starts.append(current[0])
