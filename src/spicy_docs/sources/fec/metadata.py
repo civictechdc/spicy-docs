@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
-from urllib.parse import quote, urljoin, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urljoin, urlsplit, urlunsplit
 
 from spicy_docs.sources.json_input import load_decimal_json
 from spicy_docs.sources.media_types import media_type
@@ -166,3 +166,74 @@ def resolve_link(value: str, *, base: str) -> str:
     """Resolve source-relative links and encode literal path spaces, preserving metadata."""
     p = urlsplit(urljoin(base, value))
     return urlunsplit((p.scheme, p.netloc, quote(p.path, safe="/%:@!$&'()*+,;="), p.query, p.fragment))
+
+
+def api_page(value: dict, *, url: str, mode: str | list[str]) -> tuple[list[tuple[str, object]], dict | None, dict]:
+    """Apply the response shape declared by the retained official Swagger."""
+    query = dict(parse_qsl(urlsplit(url).query))
+    if isinstance(mode, list):
+        if not all(field in value for field in mode):
+            raise ValueError("FEC reference response omitted its declared fields")
+        return [("", value)], None, {}
+    if mode == "docs":
+        if not isinstance(value.get("docs"), list):
+            raise ValueError("FEC legal detail omitted docs")
+        return [(f"/docs/{i}", x) for i, x in enumerate(value["docs"])], None, {}
+    if mode in {"page", "keyset", "list"}:
+        rows = value.get("results")
+        if not isinstance(rows, list):
+            raise ValueError("FEC response omitted its results list")
+        if mode == "list":
+            if "pagination" in value:
+                raise ValueError("FEC finite reference unexpectedly declared pagination")
+            return [(f"/results/{i}", x) for i, x in enumerate(rows)], None, {}
+        pagination = value.get("pagination")
+        if not isinstance(pagination, dict):
+            raise ValueError("FEC response omitted pagination")
+        changes = None
+        if mode == "keyset":
+            if rows:
+                indexes = pagination.get("last_indexes")
+                if not isinstance(indexes, dict) or not indexes or not any(v is not None for v in indexes.values()):
+                    raise ValueError("nonempty FEC keyset page omitted continuation indexes")
+                if any(
+                    not (k.startswith("last_") or k == "sort_null_only") or isinstance(v, (dict, list))
+                    for k, v in indexes.items()
+                ):
+                    raise ValueError("FEC keyset contains unexpected continuation controls")
+                changes = indexes
+        else:
+            page, pages = pagination.get("page"), pagination.get("pages")
+            if type(page) is not int or type(pages) is not int or page < 1 or pages < 0:
+                raise ValueError("FEC page controls must be nonnegative integers")
+            if page != int(query.get("page", 1)):
+                raise ValueError("FEC returned a different page than requested")
+            if not rows and pagination.get("is_count_exact") is True and page < pages:
+                raise ValueError("FEC returned an empty page before its declared end")
+            if rows and (pagination.get("is_count_exact") is not True or page < pages):
+                changes = {"page": page + 1}
+        return [(f"/results/{i}", x) for i, x in enumerate(rows)], changes, {"pagination": pagination}
+    if mode == "legal":
+        groups = [
+            name
+            for name in ("murs", "advisory_opinions", "admin_fines", "adrs", "statutes", "rulemakings")
+            if name in value
+        ]
+        if not groups:
+            raise ValueError("FEC legal search omitted its result groups")
+        size = int(query.get("hits_returned", 30 if "rulemakings" in groups else 20))
+        offset = int(query.get("from_hit", 0))
+        if not 1 <= size <= 200 or offset < 0:
+            raise ValueError("FEC legal offsets or page size are invalid")
+        rows, more = [], False
+        for group in groups:
+            items, total = value[group], value.get("total_" + group)
+            if not isinstance(items, list) or type(total) is not int or total < 0 or len(items) > size:
+                raise ValueError("FEC legal search count/record shape is unsupported")
+            if len(items) < min(size, max(0, total - offset)):
+                raise ValueError("FEC legal search is short before its declared end")
+            rows.extend((f"/{group}/{i}", x) for i, x in enumerate(items))
+            more = more or offset + len(items) < total
+        controls = {k: v for k, v in value.items() if k not in groups}
+        return rows, {"from_hit": offset + size} if more else None, {"pagination": controls}
+    raise ValueError("FEC API response mode is unsupported")

@@ -124,6 +124,13 @@ Finding a late failure may scan the whole ledger. Close an iterator you stop ear
 absence. Use `iter_failures()` for failure-only identities. This lookup excludes
 discarded observations and earlier passes.
 
+For a bulk join, use `iter_record_evidence()` alongside `iter_records()`. Both
+streams use source-record identity order. The evidence iterator reads each ledger
+partition once and excludes failure rows; compare identities while joining and
+fully exhaust both streams to check membership and partition counts. Close either
+iterator when stopping early. Repeating `record_evidence()` for every row rescans
+partitions and should remain a single-record inspection path.
+
 ```python
 evidence = reader.record_evidence(source_record_id)
 if evidence is not None:

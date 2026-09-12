@@ -4,6 +4,7 @@ import json
 from importlib.resources import files
 from urllib.parse import parse_qsl, unquote, urlsplit
 
+MAX_METADATA_BYTES = 8 * 1024**2
 API_ROOT = "https://api.open.fec.gov"
 BUCKET = "cg-519a459a-0ea3-42c2-b7bc-fa1143481f74"
 BUCKET_URL = f"https://{BUCKET}.s3-us-gov-west-1.amazonaws.com/"

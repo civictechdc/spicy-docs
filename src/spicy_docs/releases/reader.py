@@ -181,6 +181,21 @@ class SourceNativeReleaseReader:
                     break
         return None
 
+    def iter_record_evidence(self) -> Iterator[Mapping[str, Any]]:
+        """Stream selected success evidence in the same identity order as records.
+
+        Bulk consumers can join this iterator with ``iter_records`` without
+        rescanning a ledger partition for every identity. Each ledger partition
+        is read once, using the existing bounded merge and row checks. Failures
+        remain available separately through ``iter_failures``. Close the iterator
+        when stopping early; full exhaustion checks partition record counts.
+        """
+
+        with closing(_partition_rows(self._source, self._blob_source, self._ledger_partitions)) as rows:
+            for row in rows:
+                if row["failure"] is None:
+                    yield row
+
     def read_evidence(self, blob_ref: str, *, max_bytes: int = MAX_EVIDENCE_BYTES) -> bytes:
         """Read one admitted evidence member within a caller-selected byte limit.
 

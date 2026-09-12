@@ -21,7 +21,7 @@ families through shared JSON, XML listing, sitemap and explicit page-link reader
 Selected originals use the shared blob writer independently of metadata. Full
 historical acquisition, financial normalization and SpicyRegs/DocSpec adoption
 remain caller work; the source integration does not mark those complete. The
-[updated T01–T19 task list](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration-task-list.md)
+[updated T01–T19 task list](/Users/mikewolfd/Documents/Codex/fec-handoff-fixes/integration-task-list.md)
 records completed capabilities, remaining acceptance criteria and the next delivery.
 The [selected 2023–2024 and 2025–2026 bulk slices](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration/README.md)
 now have retained originals, source-shaped local tables, independent row/field
@@ -41,7 +41,17 @@ dates and empty/invalid values with exact source references. The
 [handoff repairs and fresh qualification](/Users/mikewolfd/Documents/Codex/fec-handoff-fixes/integration/fixes-2026-09-12/README.md)
 close the selected legacy CSV TEXT, archive-only descriptor, empty sponsor-list
 and input-membership defects. These repairs are on dedicated branches; downstream
-FEC distribution/catalog/search admission remains open.
+complete FEC distribution/catalog/search adoption remains open.
+
+- [x] Add a [retained committee census profile](sources/fec.md#publish-a-retained-committee-census)
+  through the existing release publisher. Pin exact captures and replay source
+  JSON; keep the selected observed scope and metadata/body separation explicit.
+  Stream success evidence once for bulk consumer joins. Existing release formats
+  and other source policies are unchanged.
+- [ ] Qualify the installed release and consumer wheels against the retained
+  census, then extend delivery to the other identity, relationship and filing
+  inputs. Full financial/legal/history acquisition and search adoption remain
+  separate tasks.
 
 ## Deferred local work
 

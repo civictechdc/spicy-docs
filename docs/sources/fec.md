@@ -8,7 +8,8 @@ publications. Use HTML link discovery when a collection has no structured index.
 The library is `spicy_docs.sources.fec.client.FecClient`; the command is
 `spicy-docs-fec`. Install the `acquisition` extra for HTTP access. These are raw
 acquisition APIs, like the CourtListener reader. They do not publish sealed
-releases, normalize financial tables, or manage a dataset across runs.
+releases, normalize financial tables, or manage a dataset across runs. The
+separate committee census profile below reuses the existing release publisher.
 
 ## Choose a collection and route
 
@@ -93,6 +94,36 @@ response. Citation and subject `text` labels remain metadata. Fields named
 `body`, `html`, `document_text`, `extracted_text`, `full_text`, and other `text`
 fields are lifted; unknown fields remain source metadata. No linked body is
 requested by an API, listing, sitemap or link-discovery operation.
+
+## Publish a retained committee census
+
+`spicy_docs.sources.fec.profile` supplies `FEC_COMMITTEE_CENSUS_PROFILE`,
+`committee_census_scope(captures)` and
+`iter_retained_committee_pages(captures, blob_source=...)`. Use the scope in
+`SourceNativeReleaseBuild` and pass the iterator to the existing
+`SourceNativeReleasePublisher`. The profile requires no HTTP dependency and
+makes no network request.
+
+Each ordered capture descriptor pins `requestUrl`, `observedAt`,
+`responseSha256` and `byteSize`. Preserve `resolvedUrl`, `mediaType` and `via`
+when those acquisition facts are available. All pages must belong to the same
+explicit `/v1/committees/` query, use `sort=committee_id`, begin at page one and
+reach the publisher's exact final count. Repeated cycle filters retain their
+original meaning: they select current entities, not historical field values.
+
+Publication and offline replay enforce capture membership, response hashes,
+continuations, counts and strictly increasing committee IDs. Evidence ZIPs contain
+the exact `response.json` and its pinned `manifest.json` capture description.
+Records preserve that capture and the existing metadata/body-pointer split;
+unknown fields, nulls and empty lists survive. Linked assets remain metadata,
+with no document renditions or body-download claim for this profile.
+
+The release uses `observed-crawl` and `single-observed-traversal`. It covers only
+the pinned query observation. Bulk tables, gap queries, historical profiles,
+filings and legal collections need their own qualified delivery; this profile
+does not broaden their status. Use the [release lifecycle](../releases.md) for
+pin/producer admission and the [bulk evidence iterator](../source-native-outcomes.md#inspect-record-evidence)
+when joining records to originals.
 
 ## Acquire selected originals
 

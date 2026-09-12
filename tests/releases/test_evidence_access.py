@@ -102,14 +102,70 @@ def test_record_evidence_reads_only_its_bucket_and_closes_before_returning(tmp_p
     assert reader.record_evidence(identity)["observationRef"] == {"sourceRecordId": identity}
 
 
-def test_record_evidence_returns_selected_observation_not_discarded_ones(tmp_path: Path) -> None:
+def test_bulk_record_evidence_reads_each_partition_once_and_matches_record_order(tmp_path: Path, monkeypatch) -> None:
+    documents = [_document(f"2026-{number:05d}") for number in range(256)]
+    published = _publish(tmp_path, _stable_pages(*documents, _document(title=False)))
+    reader, blobs = _memory_reader(published, tmp_path)
+    identities = [row["sourceRecordId"] for row in reader.iter_records()]
+    blobs.opened.clear()
+
+    def no_point_lookup(*args):
+        pytest.fail("bulk evidence must not repeat point lookups")
+
+    monkeypatch.setattr(reader, "record_evidence", no_point_lookup)
+    evidence = list(reader.iter_record_evidence())
+
+    assert [row["sourceRecordId"] for row in evidence] == identities
+    expected_ref = "sha256:" + hashlib.sha256(federal_response(*documents, _document(title=False))).hexdigest()
+    assert all(
+        row
+        == {
+            "sourceRecordId": identity,
+            "observationRef": {"sourceRecordId": identity},
+            "evidenceBlobRef": expected_ref,
+            "failure": None,
+        }
+        for identity, row in zip(identities, evidence, strict=True)
+    )
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    expected = {
+        item["blobRef"] for item in receipt["payloadPartitions"] if item["partitionKind"] == "acquisition-records"
+    }
+    assert {ref for ref, _ in blobs.opened} == expected
+    assert len(blobs.opened) == len(expected)
+    assert all(stream.closed for _, stream in blobs.opened)
+
+
+def test_bulk_record_evidence_closes_when_consumer_stops_early(tmp_path: Path) -> None:
+    published = _publish(tmp_path, _stable_pages(*(_document(f"2026-{n:05d}") for n in range(70))))
+    reader, blobs = _memory_reader(published, tmp_path)
+    rows = reader.iter_record_evidence()
+    assert next(rows)["failure"] is None
+    assert blobs.opened
+    rows.close()
+    assert all(stream.closed for _, stream in blobs.opened)
+
+
+@pytest.mark.parametrize("documents", [(), (_document(title=False),)])
+def test_bulk_record_evidence_empty_and_failure_only_controls(tmp_path: Path, documents) -> None:
+    published = _publish(tmp_path, _stable_pages(*documents))
+    reader, blobs = _memory_reader(published, tmp_path)
+    assert list(reader.iter_record_evidence()) == []
+    assert all(stream.closed for _, stream in blobs.opened)
+
+
+@pytest.mark.parametrize("bulk", [False, True])
+def test_record_evidence_returns_selected_observation_not_discarded_ones(tmp_path: Path, bulk: bool) -> None:
     profile = _collapsing_profile(observation_version=_signing_date_version)
     old, selected = _document(signing_date="2026-08-24"), _document(signing_date="2026-08-25")
     pages = _stable_paged_pages(old, selected)
     published = _publish(tmp_path, pages, profile=profile)
     reader = _reader(published.root, published.artifact.pin, profile=profile)
 
-    evidence = reader.record_evidence("2026-00001@2026-08-25")
+    if bulk:
+        (evidence,) = reader.iter_record_evidence()
+    else:
+        evidence = reader.record_evidence("2026-00001@2026-08-25")
 
     assert evidence is not None
     assert evidence["evidenceBlobRef"] == "sha256:" + hashlib.sha256(pages[1].response_bytes).hexdigest()
@@ -118,7 +174,8 @@ def test_record_evidence_returns_selected_observation_not_discarded_ones(tmp_pat
 
 
 @pytest.mark.parametrize("change", ["wrong-bucket", "unordered"])
-def test_record_evidence_keeps_partition_row_checks(tmp_path: Path, change: str) -> None:
+@pytest.mark.parametrize("bulk", [False, True])
+def test_record_evidence_keeps_partition_row_checks(tmp_path: Path, change: str, bulk: bool) -> None:
     published = _publish(tmp_path, _stable_pages(*(_document(f"2026-{n:05d}") for n in range(256))))
     reader, blobs = _memory_reader(published, tmp_path)
     receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
@@ -145,9 +202,10 @@ def test_record_evidence_keeps_partition_row_checks(tmp_path: Path, change: str)
     blobs.values[partition["blobRef"]] = b"\n".join(lines) + b"\n"
 
     with pytest.raises(SourceNativeReleaseError, match="wrong identity bucket|partition is unordered"):
-        reader.record_evidence(identity)
-    assert len(blobs.opened) == 1
-    assert blobs.opened[0][1].closed
+        list(reader.iter_record_evidence()) if bulk else reader.record_evidence(identity)
+    if not bulk:
+        assert len(blobs.opened) == 1
+    assert all(stream.closed for _, stream in blobs.opened)
 
 
 def test_failure_only_and_unrequested_ids_have_no_published_success(tmp_path: Path) -> None:
