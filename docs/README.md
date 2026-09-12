@@ -17,6 +17,7 @@
 - [Regulations.gov](sources/regulations-gov.md)
 - [GAO pages](sources/gao.md)
 - [Captured public comments](sources/public-comments.md)
+- [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.
 - [Source-field references](source-reference.md) · [Documented-value drift](source-domain-drift.md)
 
 ## Change shared behavior
@@ -25,7 +26,7 @@
 - [Releases](releases.md): publication, checks and profile extensions.
 - [Ownership](source-ownership.md): SpicyDocs, SpicyRegs, DocSpec and Rulespec.
 - [Decisions](decisions.md): reasons for unusual rules and current formats.
-- [Task status](simplification-todo.md): completed work and conditional deferrals.
+- [Task status](simplification-todo.md): open follow-ups, completed work and deferrals.
 - [Release specification](superpowers/specs/2026-08-25-source-native-release-spec.md): exact format requirements.
 
 [Corpus diagnostics](../tools/README.md), [repository checks](../scripts/README.md)

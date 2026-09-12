@@ -4,6 +4,17 @@
 Six original items moved to their implementation owners. A moved task is not a
 completed task; follow the receiving backlog for its status.
 
+## Fetcher format review
+
+The [format review](fetcher-formats.md) covers all implemented fetchers and
+network tools. Four follow-ups remain; this review did not implement them.
+
+- [x] **F01:** Review structured-format opportunities with parallel source reviewers and architecture consensus.
+- [ ] **F02:** Correct JSON aliases and URL-path extension inference; revise affected Regulations.gov/public-comment policies and qualify publication/replay.
+- [ ] **F03:** Capture Federal Register `full_text_xml_url` and emit `body-xml`; revise source schema/policy, bundle, admission and replay together. Decide any Parquet column separately.
+- [ ] **F04:** Retain CRS `version` on new captures. Document that earlier successful rows need an explicit fresh capture to obtain missing version evidence.
+- [ ] **F05:** Preserve CourtListener CSV quoted empty strings versus nulls; cover escaping/newlines and bounds, and check downstream raw-reader consumers.
+
 ## XML body preference
 
 - [x] **X01:** Prefer validated Federal Register XML; retain HTML fallback only after XML 404/410.
