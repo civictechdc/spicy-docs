@@ -5,6 +5,10 @@ result later. You choose the source and requested scope. A successful source
 release retains the evidence used to accept that collection, its selected
 records, and an outcome describing coverage and record rejections.
 
+Retained evidence covers the responses or objects used by acquisition and
+selected refused bodies. Retry responses and unretained discovery probes are
+not part of that evidence.
+
 ## Choose the output you need
 
 | What goes in? | What happens? | What comes out? | How do you check it? |
@@ -70,7 +74,9 @@ does not enumerate or fetch linked report files. Federal Register's
 already fetched bytes; they are not a complete body-acquisition adapter.
 
 For a dataset assembled from sources, chosen document fetchers, processors and
-successive runs, use DocSpec's dataset workflow. Its
+successive runs, start with DocSpec's
+[offline walkthrough](../../DocSpec/docs/offline-walkthrough.md) and
+[current capabilities](../../DocSpec/README.md#what-you-can-use-today). Its
 [GAO topic example plan](../../DocSpec/docs/dataset-experiments-todo.md#d51)
 owns catalog filtering and processing. A GAO topic is a publisher label; it does
 not establish a legal requirement, applicability, classification, or a match

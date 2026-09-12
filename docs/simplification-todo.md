@@ -4,7 +4,7 @@ Created September 11, 2026 from the blind product-boundary review (`blind-produc
 
 **Updated September 11, 2026 following the owner's product clarification and checklist sync.** DocSpec is an iterative dataset and catalog platform: accept sources, select documents, use injected fetchers, process now or later, reuse previous work, and compare results. SpicyRegs remains an independently usable source-data product. SpicyDocs may remain separate; share source improvements where they remove duplicate effort or improve a supported workflow. Package placement remains open and is not a prerequisite for useful integration. The prior blanket recommendation to merge SpicyDocs into DocSpec is withdrawn. The additional duplication review (`docspec-spicy-docs-duplication-review.md`) and coordination review (`docspec-spicy-docs-coordination-review.md`) supply useful findings, but their merger addenda do not define this plan.
 
-**Progress: 12 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
+**Progress: 16 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
 
 The intended result is reusable upstream source data and an approachable platform for dataset experiments. A user can build a catalog, fetch selected documents once, process them inline or later, change processors or reference resources, add documents, and compare reproducible results. Every useful stopping point exposes what was requested, received, accepted, rejected, and unresolved. Search is one consumer; catalog-only, acquisition-only, and later-processing workflows have independent value.
 
@@ -100,7 +100,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s04"></a>
 
-- [ ] **S04 — Correct SpicyDocs' product promises and workflow map.**
+- [x] **S04 — Correct SpicyDocs' product promises and workflow map.**
   **Owner: SpicyDocs; beneficiary: source users and contributors.** Explain source
   inputs, acquisition, outputs, and checks; distinguish accepted evidence from
   every response, links from captured bodies, raw/table outputs from verified
@@ -165,7 +165,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s12"></a>
 
-- [ ] **S12 — Remove unused local catalogs and misplaced policy declarations.**
+- [x] **S12 — Remove unused local catalogs and misplaced policy declarations.**
   **Owner: SpicyDocs; beneficiary: source contributors and experiment authors.**
   After S11/S25's relevant decisions, retire unused `allowed_schemes`, processor/
   region selections, stage flags, generators, commands, custom seals, outputs,
@@ -222,7 +222,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s16"></a>
 
-- [ ] **S16 — Remove superseded SpicyDocs code and dependencies.**
+- [x] **S16 — Remove superseded SpicyDocs code and dependencies.**
   **Owner: SpicyDocs; beneficiary: contributors and package consumers.** After
   S12–S15/S25 decisions and selected replacements, recheck callers and delete
   local dead helpers, old commands, replaced parsers/encoders, unused extras,
@@ -242,7 +242,7 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
 
 <a id="s17"></a>
 
-- [ ] **S17 — Supply faithful GAO topics and retained example evidence.**
+- [x] **S17 — Supply faithful GAO topics and retained example evidence.**
   **Owner: SpicyDocs; beneficiary: dataset users selecting GAO material.** Expose
   the literal publisher topic and required byte/evidence references through the
   supported source API. Keep a small retained fixture with matching, missing,
@@ -681,3 +681,71 @@ adoption, remote CI, pushing, and wheel release are not established by them.
 
 Twelve local items are complete and thirteen remain. Destination-owned work
 keeps its own status; S08–S10 do not close those tasks.
+
+**September 11, 2026 — S04, S12, S16 and S17 complete.** Commits `8fead25`,
+`31600be` and `4b90464` expose selected-record evidence, retire the unused source
+catalog, clarify supported workflows and simplify current source readers.
+
+The [workflow guide](source-workflows.md) explains inputs, source acquisition,
+usable outputs and checks. It distinguishes retained evidence from an archive
+of every response, rendition links from captured bodies, raw readers from
+verified releases, and declarations from working adapters. Source-only stopping
+points and community supply remain useful independently; DocSpec owns dataset
+catalogs, injected fetching, processing and later experiment runs.
+
+S12 removes the catalog package, installed builder, generator, three policy
+JSONs, custom seals, vendored RefSpec catalog and exclusive maintenance tests.
+The [source reference](source-reference.md) retains reviewed knowledge across
+19 source surfaces, including limitations and the original inventory's date.
+Existing native profiles describe actual release operations; SpicyRegs owns its
+table definitions. The separate [drift diagnostic](source-domain-drift.md)
+remains available. Source-side processing flags are not copied into DocSpec or
+Search, whose destination tasks remain open.
+
+S16 gives each raw reader its own tracking lists, corrects generator/stream
+types, removes the forwarding local stream subclass and ignored scratch
+argument, and aligns the replay callback signature. Federal Register now uses
+one current 22-field literal with direct field validation. The unused historical
+map, version selector and `fields=` override are removed; exact current request
+bytes, canonical URL checks, identity, schema and acquisition policy remain
+unchanged. Tests cover real field/query drift rather than hypothetical future
+compatibility. Remaining dependencies support active paths; S26 still owns
+qualification of their optional placement alongside the broader provider API.
+
+S17 supplies retained synthetic GAO pages with matching, unexpected and missing
+topic cases. Literal labels, slugs and links remain source facts. Missing topics
+refuse publication and retain diagnostic HTML. `record_evidence()` scans the
+selected ledger bucket for a published record; `read_evidence()` bounds reads,
+handles valid short reads, and checks the admitted size and digest. No new reader,
+index or schema is introduced. DocSpec D51 owns the catalog/filter/processor
+example. These byte-access improvements complete part of S26, which remains open
+until its other provider capabilities, including S19, are qualified.
+
+The final default `./scripts/check` passed **727 tests**, with two opt-in cases
+deselected (17.87 seconds). Whole-source type checking, Ruff, formatting, frozen
+lock validation and dependency consistency checks passed. Independent reviews
+approved S04, S12, S16 and S17 after resolving the short-read bug, stale catalog
+and field-policy guidance, and the missing DocSpec workflow link. Architecture
+review agreed both catalog retirement and current-only field validation.
+
+The candidate at `4b90464da8ae00e67f094f699813f1739b07c3ce` has wheel SHA-256
+`6f1c56ab5c464af308531051f3d2fbc43648c4474e0fd28819152c130142a5c3`.
+All 85 package members match committed source bytes and the isolated installation.
+The installed wheel excludes the retired catalog and command, exposes nine
+current release schemas and lightweight reader imports, preserves the 22-field
+Federal Register request, and passes all three GAO cases without network calls.
+Retained inputs, commands and results are in
+`validation/s04-s12-s16-s17/` in the local planning session.
+
+Rulespec commit `963165c` adds a current-provider probe and receiving note while
+preserving the old research script/results. The probe ran against that exact
+installed wheel, recorded its six public native profiles, and checked the
+Federal Register locator's refusal of an eCFR URL. Its separate CFR metadata
+reference was inspected at SpicyRegs `1880517202ccc80e31bc8072dd21965e90253646`;
+no remote source availability was tested. This completes the selected S12
+research-caller handoff, not all S25/Rulespec integration work.
+
+Sixteen local items are complete and nine remain: S19, S21–S26, S30 and S31.
+S25/S26 have the partial progress described above. Destination-owned work keeps
+its own status. These are local commits and qualification results; upstream
+acceptance, DocSpec adoption, remote CI, pushing and a wheel release are separate.
