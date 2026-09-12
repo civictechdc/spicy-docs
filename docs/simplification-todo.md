@@ -12,13 +12,26 @@ remain separate work with their own scope and coverage checks.
 
 - [x] **G01:** Parse current BILLSTATUS and bill XML; preserve source fields, summaries and every stated text-version link; prove bill/version identity.
 - [x] **G02:** Share bounded HTTP capture with Federal Register; expose status and explicitly selected XML text acquisition.
-- [ ] **G03:** Replace SpicyRegs' duplicate BILLSTATUS subject acquisition with the qualified SpicyDocs wheel.
-- [ ] **G04:** Add a DocSpec-owned catalog, injected fetcher and processing example; prove later processing reuses captured bytes.
-- [ ] **G05:** Run source/receiver checks, bounded live captures, installed-wheel qualification and independent reviews; document the supported formats and limits.
+- [x] **G03:** Replace SpicyRegs' duplicate BILLSTATUS subject acquisition with the qualified SpicyDocs wheel.
+  Local receiving commit `b990062` on `codex/govinfo-bill-source`; 1,040 tests
+  passed, and the base CLI/MCP wheel works without the optional provider.
+- [x] **G04:** Add a DocSpec-owned catalog, injected fetcher and processing example; prove later processing reuses captured bytes.
+  Local receiving commit `4df1b44` on `codex/govinfo-bill-example`; the installed-wheel
+  example explicitly selects one version and reprocesses after closing the source
+  client, with zero new captures. Final checks: 1,277 tests passed, lint and lock
+  checks passed; separate test-maintenance commit `e0580ce` updates stale Rulespec
+  error assertions and removes an unused import.
+- [x] **G05:** Run source/receiver checks, bounded live captures, installed-wheel qualification and independent reviews; document the supported formats and limits.
 
 Source checks: 1,016 tests passed (two opt-in tests deselected), lint/format and
 focused types passed. Three live bills supplied six validated status/text captures;
-independent source review approved. [API and supported formats](sources/congress-bills.md).
+all three pairs replayed through the installed wheel. Source and receiving
+independent reviews approved. [API and supported formats](sources/congress-bills.md).
+
+Both receiving repositories pin SpicyDocs 0.3.0 from source commit `8e485fe`, wheel
+SHA-256 `bef15f967b0840ccc119c812edca92b38c63adb8943074be17655b86c96f83f1`.
+Receiving branches are committed locally; DocSpec uses an isolated worktree.
+Live receipts: `~/Work/corpora/supply-2026-09-02/receipts/bill-acquisition-2026-09-12/`.
 
 Deferred until a named collection workflow needs them: bounded GovInfo JSON
 discovery/publication, standalone BILLSUM coverage, annual CFR editions, eCFR
