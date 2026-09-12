@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Generator, Mapping, Sequence
 from typing import Any, cast
 
+from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.sources.regulations_gov.definitions import (
     _ASCII_KEY,
     COMMENT_COLLECTION,
@@ -64,35 +65,59 @@ def _iter_pages(
             etag = source_object.etag
             version_id = source_object.version_id
             content = source_object.content
-            if (
-                not isinstance(key, str)
-                or _ASCII_KEY.fullmatch(key) is None
-                or not key.startswith(f"raw-data/{agency}/")
-                or f"/{path_collection}/" not in key
-                or previous_global_key is not None
-                and key <= previous_global_key
-            ):
-                raise RegulationsGovSourceError(
-                    "Mirrulations object keys must be globally sorted, distinct, and match agency/collection"
+            try:
+                if (
+                    not isinstance(key, str)
+                    or _ASCII_KEY.fullmatch(key) is None
+                    or not key.startswith(f"raw-data/{agency}/")
+                    or f"/{path_collection}/" not in key
+                    or previous_global_key is not None
+                    and key <= previous_global_key
+                ):
+                    raise RegulationsGovSourceError(
+                        "Mirrulations object keys must be globally sorted, distinct, and match agency/collection"
+                    )
+                if not isinstance(etag, str) or not etag:
+                    raise RegulationsGovSourceError(f"Mirrulations object {key} lacks a source ETag")
+                if version_id is not None and (not isinstance(version_id, str) or not version_id):
+                    raise RegulationsGovSourceError(f"Mirrulations object {key} version is invalid")
+                if not isinstance(content, bytes) or not content or len(content) > MAX_OBJECT_BYTES:
+                    raise RegulationsGovSourceError(f"Mirrulations object {key} bytes are invalid")
+                record = classifier(_decode_json(content))
+                identity = source_record_id(record)
+                if _key_claimed_identity(key) != identity:
+                    raise RegulationsGovSourceError(
+                        f"Mirrulations object key {key} does not match body identity {identity}"
+                    )
+                included = _record_in_scope(
+                    record,
+                    query_scope=scope,
+                    agency=agency,
+                    collection=collection,
                 )
-            if not isinstance(etag, str) or not etag:
-                raise RegulationsGovSourceError(f"Mirrulations object {key} lacks a source ETag")
-            if version_id is not None and (not isinstance(version_id, str) or not version_id):
-                raise RegulationsGovSourceError(f"Mirrulations object {key} version is invalid")
-            if not isinstance(content, bytes) or not content or len(content) > MAX_OBJECT_BYTES:
-                raise RegulationsGovSourceError(f"Mirrulations object {key} bytes are invalid")
-            record = classifier(_decode_json(content))
-            identity = source_record_id(record)
-            if _key_claimed_identity(key) != identity:
-                raise RegulationsGovSourceError(
-                    f"Mirrulations object key {key} does not match body identity {identity}"
+            except ValueError as error:
+                # These bytes have arrived, but no evidence page has been yielded
+                # yet. Carry this object's refusal to the existing publisher path.
+                size = len(content) if isinstance(content, bytes) else None
+                retain = size is not None and size <= MAX_OBJECT_BYTES
+                attach_refused_response(
+                    error,
+                    RefusedResponse(
+                        request_key=key
+                        if isinstance(key, str) and _ASCII_KEY.fullmatch(key)
+                        else _pack_request(collection=collection, agency=agency, pack_index=pack_index, terminal=False),
+                        stage="source-object-admission",
+                        response_bytes=content if retain else None,
+                        media_type="application/json",
+                        unavailable_reason=None
+                        if retain
+                        else "source-byte-limit"
+                        if size is not None
+                        else "response-unavailable",
+                        observed_byte_size=size,
+                    ),
                 )
-            included = _record_in_scope(
-                record,
-                query_scope=scope,
-                agency=agency,
-                collection=collection,
-            )
+                raise
             if pack and (
                 len(pack) == MAX_EVIDENCE_PACK_OBJECTS or pack_raw_bytes + len(content) > MAX_EVIDENCE_PACK_RAW_BYTES
             ):
