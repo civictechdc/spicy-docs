@@ -1,5 +1,9 @@
 # Work status
 
+**All active source-fidelity and CFR example tasks are complete locally.**
+S21/S31 remain conditionally deferred. SpicyRegs' CourtListener reader adoption
+is separate receiving work. These follow-up commits have not been pushed.
+
 **Merged simplification: 23 local items complete; two conditionally deferred.**
 Six original items moved to their implementation owners. A moved task is not a
 completed task; follow the receiving backlog for its status.
@@ -49,13 +53,28 @@ Receipts, replay script and live outputs:
 The [field guide](sources/govinfo-metadata.md) links the publisher dictionaries
 and documents the mapping and format limits.
 
-- [ ] **C07:** Add a DocSpec-owned annual CFR catalog example using the qualified
+- [x] **C07:** Add a DocSpec-owned annual CFR catalog example using the qualified
   SpicyDocs wheel. Preserve MODS metadata, select one explicit annual section,
   inject acquisition and processing, then prove a changed processor reuses
-  retained bytes after the source client closes. Work is isolated on DocSpec's
-  `codex/cfr-dataset-example` branch.
+  retained bytes after the source client closes. Local DocSpec commit `1d37bcb`
+  is isolated on `codex/cfr-dataset-example`; it pins SpicyDocs `0.6.0` from
+  source commit `5a9c4e9`.
 
-Validation: 1,162 tests passed (two opt-in tests deselected), lint/format and
+C07 checks: **1,162 tests passed**, one opt-in test deselected; regression-map,
+lint, lock, build and installed-wheel checks passed. The examples work without
+Dagster, and DocSpec's base install remains independent of SpicyDocs. Independent
+review approved after fixing joined Federal Register format selection and policy
+type checks. Both standalone and joined catalogs prefer one publisher XML offer
+while retaining alternative formats as evidence.
+
+The bounded live example used two requests: full volume MODS metadata (401
+constituents) and one selected annual section. Reprocessing after closing the
+source client added no captures, representations or segments. Exact source bytes,
+complete mapped metadata and native publication identity remain available.
+Receipts and review: `~/Work/corpora/supply-2026-09-02/receipts/source-fidelity-2026-09-12/`
+(`docspec-check/` and `docspec-cfr-live/`).
+
+Earlier C01–C05 validation: 1,162 tests passed (two opt-in tests deselected), lint/format and
 focused types passed. All seven request shapes succeeded live. Source validation
 passed all 49 retained August 24 titles (810,674,584 bytes); that snapshot is not
 current coverage. Two independent code reviews approved the implementation.
@@ -95,9 +114,9 @@ focused types passed. Three live bills supplied six validated status/text captur
 all three pairs replayed through the installed wheel. Source and receiving
 independent reviews approved. [API and supported formats](sources/congress-bills.md).
 
-Both receiving repositories pin SpicyDocs 0.3.0 from source commit `8e485fe`, wheel
+At bill integration, both receivers pinned SpicyDocs 0.3.0 from source commit `8e485fe`, wheel
 SHA-256 `bef15f967b0840ccc119c812edca92b38c63adb8943074be17655b86c96f83f1`.
-Receiving branches are committed locally; DocSpec uses an isolated worktree.
+DocSpec's later C07 work above advances its wheel to 0.6.0 in an isolated worktree.
 Live receipts: `~/Work/corpora/supply-2026-09-02/receipts/bill-acquisition-2026-09-12/`.
 
 CFR/eCFR already has acquisition examples, retained XML and active readers across
@@ -143,6 +162,7 @@ Register request returned 20 metadata records with publisher XML links. It did
 not acquire bodies or establish coverage. Receipts and review:
 `~/Work/corpora/supply-2026-09-02/receipts/source-fidelity-2026-09-12/`.
 
+Local source commits: `f3b9137` (P01/F02–F04) and `5a9c4e9` (F05).
 Combined qualification: **1,312 tests passed**, two opt-in tests deselected;
 lint, format and focused types passed. Independent source reviews approved.
 The ordinary SpicyDocs `0.6.0` wheel replayed retained Federal Register records,
