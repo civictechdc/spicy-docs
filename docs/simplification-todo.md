@@ -10,6 +10,7 @@ The [format review](fetcher-formats.md) covers all implemented fetchers and
 network tools. Four follow-ups remain; this review did not implement them.
 
 - [x] **F01:** Review structured-format opportunities with parallel source reviewers and architecture consensus.
+- [x] **F06:** Test GovInfo issue XML with retained live evidence. Extraction is feasible; no additional recovery demonstrated. Keep the default unchanged. [Result and limits](fetcher-formats.md#opportunities-that-need-more-evidence).
 - [ ] **F02:** Correct JSON aliases and URL-path extension inference; revise affected Regulations.gov/public-comment policies and qualify publication/replay.
 - [ ] **F03:** Capture Federal Register `full_text_xml_url` and emit `body-xml`; revise source schema/policy, bundle, admission and replay together. Decide any Parquet column separately.
 - [ ] **F04:** Retain CRS `version` on new captures. Document that earlier successful rows need an explicit fresh capture to obtain missing version evidence.

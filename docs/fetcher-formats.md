@@ -100,11 +100,15 @@ current HTML capture. Live feed parity remains unqualified. Keep the current
 page evidence.
 [GAO feed directory](https://www.gao.gov/about/stay-connected).
 
-**GovInfo whole-issue XML might recover additional documents.** First prove a
-case where document XML is missing but issue XML contains it. A future route
-must retain the issue, extracted document, identity and derivation evidence
-within explicit bounds. Do not guess per-document XML paths or assume coverage
-before 2000. [Federal Register formats](https://www.govinfo.gov/help/fr),
+**GovInfo whole-issue XML is feasible; added recovery remains unproven.** A
+bounded live test extracted documents matching the publisher's exact XML bytes,
+but recovered no additional document where publisher XML was unavailable.
+Keep the current default. Any future issue route needs a demonstrated recovery
+or bulk-workload benefit, surrounding page context, strict issue/member identity,
+and retained issue bytes, extraction offsets and hashes within explicit bounds.
+The [local experiment receipt](../../corpora/supply-2026-09-02/receipts/govinfo-issue-xml-2026-09-11/report.md)
+retains cases, commands, input pins and limitations outside this repository.
+[Federal Register formats](https://www.govinfo.gov/help/fr),
 [bulk coverage](https://www.govinfo.gov/developers).
 
 Prefer XML/JSON when it supplies the same document and edition with the needed
