@@ -48,10 +48,14 @@ complete FEC distribution/catalog/search adoption remains open.
   JSON; keep the selected observed scope and metadata/body separation explicit.
   Stream success evidence once for bulk consumer joins. Existing release formats
   and other source policies are unchanged.
-- [ ] Qualify the installed release and consumer wheels against the retained
-  census, then extend delivery to the other identity, relationship and filing
-  inputs. Full financial/legal/history acquisition and search adoption remain
-  separate tasks.
+- [x] Qualify the installed release and consumer wheels against the retained
+  census. The [delivery evidence](/Users/mikewolfd/Documents/Codex/fec-handoff-fixes/integration/census-delivery-2026-09-12.md)
+  covers original-JSON parity, committee table fields, complete catalog facts
+  and rejected missing members/pins. The catalog contains committee metadata,
+  with no acquired-body claim; default rollup and search paths remain unchanged.
+- [ ] Extend delivery to the other identity, relationship and filing inputs.
+  Full financial/legal/history acquisition and search adoption remain separate
+  tasks.
 
 ## Deferred local work
 
