@@ -14,6 +14,14 @@ Validation: 802 tests passed (two opt-in tests deselected), lint/format passed,
 and both independent reviews approved. Python logic and TOML settings are
 unchanged; seven CLI help checks and local link/example checks passed.
 
+## Official FEC acquisition
+
+The [FEC reader and CLI](sources/fec.md) cover the researched official collection
+families through shared JSON, XML listing, sitemap and explicit page-link readers.
+Selected originals use the shared blob writer independently of metadata. Full
+historical acquisition, financial normalization and SpicyRegs/DocSpec adoption
+remain caller work; the source integration does not mark those complete.
+
 ## Deferred local work
 
 <a id="s21"></a>

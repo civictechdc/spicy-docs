@@ -118,3 +118,10 @@ uv run --frozen pytest -q tests/test_mirrulations_reader.py tests/test_courtlist
 
 Add a focused transport/parsing fixture. Preserve each reader's actual failure
 and coverage guarantees. Follow [acquisition rules](../../AGENTS.md) for new fetchers.
+
+## FEC
+
+[`FecClient` and `spicy-docs-fec`](fec.md) read official JSON, XML object listings,
+sitemaps and explicit collection links. Metadata and selected originals share
+content-addressed storage but have separate acquisition operations. The guide
+covers source scope, body references, pagination, native formats and failure handling.

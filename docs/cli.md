@@ -234,3 +234,9 @@ else:
 Shared pages are bounded to 24 MiB; GAO HTML to 8 MiB/page and 1 GiB/acquisition.
 `retainedPageEvidence` lists bounded previously written context with total count
 and truncation flag. Earlier responses do not become evidence of a later failed request.
+
+## Official FEC raw acquisition
+
+Use [`spicy-docs-fec`](sources/fec.md) to list official collections, read bounded
+OpenFEC JSON/XML metadata, and independently download selected native originals.
+It writes raw observations and acquisition receipts, not sealed source releases.

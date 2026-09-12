@@ -80,9 +80,9 @@ def test_empty_listing_requires_an_explicit_complete_answer() -> None:
 @pytest.mark.parametrize(
     ("payload", "message"),
     [
-        (b"<html><body>Please sign in</body></html>", "CourtListener S3 bucket"),
-        (_page().replace(b"com-courtlistener-storage", b"another-bucket"), "CourtListener S3 bucket"),
-        (_page().replace(b"http://s3.amazonaws.com/doc/2006-03-01/", b"urn:other"), "CourtListener S3 bucket"),
+        (b"<html><body>Please sign in</body></html>", "requested S3 bucket"),
+        (_page().replace(b"com-courtlistener-storage", b"another-bucket"), "requested S3 bucket"),
+        (_page().replace(b"http://s3.amazonaws.com/doc/2006-03-01/", b"urn:other"), "requested S3 bucket"),
         (_page(prefix="other/"), "requested prefix"),
         (_page(_entry("elsewhere/object.csv")), "escapes the requested prefix"),
         (_page(truncated="perhaps"), "IsTruncated"),

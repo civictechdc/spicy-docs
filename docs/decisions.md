@@ -74,7 +74,8 @@ The package root keeps five public export modules for current consumers:
 
 Implementations live under their [owning packages](architecture.md). Public
 tables use `spicy_docs.public_tables.api` and `.profiles`; raw readers stay under
-`sources/`. The installed command is `spicy-docs-source-native`.
+`sources/`. Installed commands are `spicy-docs-source-native` for releases and
+`spicy-docs-fec` for independent FEC metadata and asset acquisition.
 
 Reader imports must avoid eager HTTP/S3, logging/progress, Parquet and DuckDB
 imports. Federal Register profile/replay imports also avoid GAO, Zyte and live

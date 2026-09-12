@@ -26,7 +26,8 @@ Paths below are relative to `src/spicy_docs/`.
 | GAO pages | `sources/gao/native.py` |
 | Captured public comments | `sources/public_comments/native.py` |
 | Raw streams | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |
-| CourtListener listing grammar | `sources/courtlistener_listing.py` |
+| Shared S3 listing grammar | `sources/s3_listing.py`; `courtlistener_listing.py` adds source facts |
+| FEC metadata, source routes and selected originals | `sources/fec/` |
 
 Each native source's `profile.py` connects its rules to `SourceNativeProfile`
 in `releases/profile.py`. For Regulations.gov, use
@@ -57,9 +58,11 @@ checks integrity with bounded memory; full verification also replays source mean
   `PublicTableProfile`; `publish.py`, `verify.py` and `reader.py` implement the
   operations exported by `public_tables/api.py`.
 - **Commands:** `cli/arguments.py` defines syntax, `sources.py` registers source
-  composition, and `source_native.py` runs it. `cli/campaign.py` owns campaigns.
+  composition, and `source_native.py` runs it. `cli/campaign.py` owns campaigns;
+  `cli/fec.py` exposes independent raw FEC acquisition.
 - **Transport:** `transport/acquisition.py` composes clients, `http.py` implements
-  HTTPX calls, and `retry.py` and `credentials.py` hold shared request rules.
+  HTTPX calls, and `download.py` streams bounded assets to the shared blob writer.
+  `retry.py` and `credentials.py` hold shared request rules.
 - **Source helpers:** `sources/json_input.py`, `media_types.py` and `evidence_zip.py`
   share parsing/encoding; `source_domains.py` owns documented-value comparisons.
 - **Maintenance tools:** [scripts](../scripts/README.md) check repository inputs;

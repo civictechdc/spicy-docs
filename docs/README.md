@@ -9,7 +9,7 @@
 - [Source workflows](source-workflows.md): choose raw records, releases or tables.
 - [Commands](cli.md): publish, verify, replay and run campaigns.
 - [Collection outcomes](source-native-outcomes.md): scope, failures and evidence.
-- [Raw readers](sources/raw-readers.md): Mirrulations and CourtListener streams.
+- [Raw readers](sources/raw-readers.md): Mirrulations, CourtListener and FEC acquisition.
 
 ## Work on a source
 
@@ -18,6 +18,7 @@
 - [GAO pages](sources/gao.md)
 - [Captured public comments](sources/public-comments.md)
 - [Source-field references](source-reference.md) · [Documented-value drift](source-domain-drift.md)
+- [FEC acquisition](sources/fec.md): official JSON/XML metadata and separate originals.
 - [FEC research and integration handoff](research/fec-data-2026-09-11.md): inventory, bulk acquisition plan and retained evidence.
 
 ## Change shared behavior

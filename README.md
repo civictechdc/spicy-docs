@@ -38,7 +38,7 @@ be new. The example's fixed implementation ID is for demonstration only.
 
 Source releases support Federal Register, Regulations.gov through Mirrulations,
 captured spicy-regs public comments, and named GAO product pages. Raw
-Mirrulations and CourtListener readers are also available.
+Mirrulations, CourtListener and [FEC](docs/sources/fec.md) readers are also available.
 
 Prefer community spicy-regs tables where they carry the required data; use
 origin acquisition for missing coverage. Capture and pin whole named agency

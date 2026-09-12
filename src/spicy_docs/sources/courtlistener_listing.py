@@ -6,19 +6,18 @@ listings; they neither hash object content nor pin a later HTTP transfer.
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import date, datetime
 from urllib.parse import quote
+
+from spicy_docs.sources.s3_listing import MAX_LISTING_PAGE_BYTES, parse_s3_listing
 
 # Downloads use the public alias, which does not answer the listing API.
 # Enumeration therefore uses the S3 bucket host below.
 BULK_BASE_URL = "https://storage.courtlistener.com/bulk-data"
 BULK_LIST_URL = "https://com-courtlistener-storage.s3.amazonaws.com/"
 BULK_PREFIX = "bulk-data/"
-MAX_LISTING_PAGE_BYTES = 8 * 1024**2
 
-_NAMESPACE = "http://s3.amazonaws.com/doc/2006-03-01/"
 _BUCKET = "com-courtlistener-storage"
 _MEDIA_TYPES = {
     ".csv.bz2": "application/x-bzip2",
@@ -99,54 +98,11 @@ class BulkObject:
         return f"s3-listing:{self.etag}:{self.size}:{self.last_modified}"
 
 
-def _text(node: ET.Element, tag: str) -> str:
-    fields = node.findall(f"{{{_NAMESPACE}}}{tag}")
-    if len(fields) != 1 or fields[0].text is None or not fields[0].text.strip():
-        raise ValueError(f"bulk listing must carry one nonempty {tag}")
-    return fields[0].text
-
-
 def parse_listing_page(payload: bytes, *, prefix: str = BULK_PREFIX) -> tuple[tuple[BulkObject, ...], str | None]:
-    """Read one bounded S3 listing page, preserving order and publisher values.
-
-    The continuation token is None only when IsTruncated explicitly says false.
-    Callers own traversal or captured-page admission; one page alone cannot
-    establish that they retained the complete listing.
-    """
+    """Read one bounded CourtListener page through the shared S3 parser."""
     if not isinstance(prefix, str) or not prefix.startswith(BULK_PREFIX):
         raise ValueError("bulk listing prefix must stay under bulk-data/")
     if len(payload) > MAX_LISTING_PAGE_BYTES:
-        raise ValueError(f"bulk listing page exceeds the {MAX_LISTING_PAGE_BYTES}-byte limit")
-    try:
-        root = ET.fromstring(payload)
-    except ET.ParseError as error:
-        raise ValueError("bulk listing page is not well-formed XML") from error
-    if root.tag != f"{{{_NAMESPACE}}}ListBucketResult" or _text(root, "Name") != _BUCKET:
-        raise ValueError("bulk listing page does not name the CourtListener S3 bucket")
-    if _text(root, "Prefix") != prefix:
-        raise ValueError(f"bulk listing page does not cover the requested prefix {prefix!r}")
-    truncated = _text(root, "IsTruncated")
-    if truncated not in {"true", "false"}:
-        raise ValueError("bulk listing IsTruncated must be true or false")
-    token = _text(root, "NextContinuationToken") if truncated == "true" else None
-    objects = []
-    seen: set[str] = set()
-    for node in root.findall(f"{{{_NAMESPACE}}}Contents"):
-        key = _text(node, "Key")
-        if not key.startswith(prefix):
-            raise ValueError(f"bulk listing key escapes the requested prefix: {key}")
-        if key in seen:
-            raise ValueError(f"bulk listing repeats object key: {key}")
-        seen.add(key)
-        size = _text(node, "Size")
-        if not size.isascii() or not size.isdecimal():
-            raise ValueError("bulk listing Size must be a non-negative decimal integer")
-        objects.append(
-            BulkObject(
-                key=key,
-                size=int(size),
-                etag=_text(node, "ETag"),
-                last_modified=_text(node, "LastModified"),
-            )
-        )
-    return tuple(objects), token
+        raise ValueError("bulk listing page exceeds its byte limit")
+    objects, token = parse_s3_listing(payload, bucket=_BUCKET, prefix=prefix)
+    return tuple(BulkObject(x.key, x.size, x.etag, x.last_modified) for x in objects), token

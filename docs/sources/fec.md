@@ -1,0 +1,175 @@
+# Acquire official FEC data
+
+SpicyDocs reads official Federal Election Commission (FEC) metadata and acquires
+selected originals separately. Use bulk XML listings for historical backfills,
+OpenFEC JSON for filtered records and relationships, and XML sitemaps for website
+publications. Use HTML link discovery when a collection has no structured index.
+
+The library is `spicy_docs.sources.fec.client.FecClient`; the command is
+`spicy-docs-fec`. Install the `acquisition` extra for HTTP access. These are raw
+acquisition APIs, like the CourtListener reader. They do not publish sealed
+releases, normalize financial tables, or manage a dataset across runs.
+
+## Choose a collection and route
+
+Run the offline registry to see the exact paths, filters, original bulk-family
+labels and collection indexes:
+
+```sh
+uv run --frozen spicy-docs-fec collections
+```
+
+The packaged [collection registry](../../src/spicy_docs/sources/fec/official_sources.json)
+and [API response modes](../../src/spicy_docs/sources/fec/api_operations.json)
+come from the [retained research](../research/fec-data-2026-09-11.md). The latter
+covers the GET operations in that research's official Swagger capture, including
+finite name lists and the calendar CSV/ICS export. An operation declaration does
+not establish that every filter or historical period has been acquired live.
+
+| Official data | Preferred acquisition | Additional originals and scope |
+| --- | --- | --- |
+| Committee and candidate identities, affiliations, sponsors and candidate–committee links | Bulk master/linkage/leadership files; JSON histories and identities | Keep candidate IDs, committee IDs and source cycle separately. |
+| Reports, filings, Forms 1/2/3/3X/3P/5/6/9/13/99 and electronic submissions | Bulk filing inventories and raw dumps; JSON filings, reports, efile and operations log | Independently fetch publisher `.fec`, PDF, CSV and text links. Efile and processed filings are different stages. |
+| Contributions, disbursements, intercommittee transactions and independent expenditures | Bulk files and raw schedule archives; JSON A/B/E and aggregates | Keep amendments, memo indicators, transaction IDs, period, schedule and source version. Overlapping exports are not additive. |
+| Loans, debts, guarantees, party allocations and special accounts | Raw schedule archives; JSON C/D/F/H4 and national-party accounts | Do not claim that a processed API subset exhausts the original filings. |
+| Electioneering, communication costs, bundling and inaugural committees | Published bulk families; JSON where declared in the registry | Forms and original reports fill gaps in structured API coverage. |
+| Financial summaries, statistics, presidential aggregates and public funding | Published summary files and JSON; public-funding collection links | Source totals and detailed transactions retain their separate units. |
+| Election results, election/reporting calendars and state-office references | JSON calendar/date/reference routes; native result spreadsheets/PDFs | Calendar export is CSV/ICS and uses `download`, not the JSON iterator. |
+| Statutes, regulations and rulemakings | Legal/rulemaking JSON, `legal/` XML listing, collection links | Preserve legal IDs and attached originals. FEC's legal bucket does not cover every court/audit/website publication. |
+| Advisory opinions, MURs, administrative fines and alternative dispute resolution | Legal JSON search/details and `legal/` XML listing | Legal search uses `from_hit`/`hits_returned`; detail responses contain cases with nested documents. |
+| Audits and court cases | Audit JSON; court/audit collection links and website sitemaps | Follow selected detail-page links to attachments. A collection index is discovery evidence. |
+| Guidance, forms, manuals, meetings, agendas, minutes, news and historical website material | XML sitemaps, calendar JSON and collection links | Acquire selected XML/JSON/XHTML, PDF, media or explicit HTML originals. |
+| FOIA, agency strategy/budget/performance, annual, privacy, procurement, operations and Inspector General reports | Report collection links and XML sitemaps | Prefer declared FOIA XML. The historical 2009 `.xml` publication has a different representation; an extension does not establish schema parity. |
+| Data dictionaries, raw archive instructions and quality notices | Bulk XML listings and source collection links | Keep these alongside downloaded files; do not infer a raw file's schema from a current API response. |
+
+FEC links to material from other publishers, including GovInfo and the Federal
+Register. Preserve those links and use their existing SpicyDocs readers or body
+APIs. FEC acquisition permits the named FEC hosts and its exact public S3 bucket;
+it does not silently expand into a general web crawler. Adjacent IRS, state,
+academic and commercial datasets from the research remain outside this integration.
+
+## Read metadata first
+
+Use a fresh observation file for each operation. Set `FEC_API_KEY` in the
+process environment, or pass `--env-file /explicit/path` before the subcommand.
+Credentials use `X-Api-Key`, never query parameters.
+
+```sh
+# List one cycle's original objects without downloading archives.
+uv run --frozen spicy-docs-fec --store /tmp/fec-blobs --output /tmp/fec-bulk-2024.jsonl \
+  objects bulk-downloads/2024/ --max-pages 10
+
+# Scope JSON acquisition explicitly; repeat --param for multi-valued filters.
+uv run --frozen spicy-docs-fec --store /tmp/fec-blobs --output /tmp/fec-committees.jsonl \
+  api /v1/committees/ --param cycle=2024 --param per_page=100 --max-pages 100
+
+uv run --frozen spicy-docs-fec --store /tmp/fec-blobs --output /tmp/fec-aos.jsonl \
+  api /v1/legal/search/ --param type=advisory_opinions --param hits_returned=1 --max-pages 100
+
+uv run --frozen spicy-docs-fec --store /tmp/fec-blobs --output /tmp/fec-site.jsonl \
+  sitemap https://www.fec.gov/sitemap-wagtail.xml
+
+uv run --frozen spicy-docs-fec --store /tmp/fec-blobs --output /tmp/fec-foia-links.jsonl \
+  links https://www.fec.gov/about/reports-about-fec/foia-reports/
+```
+
+The registry includes the separate PDF and HTML sitemaps, `legal/`, raw data-dump
+prefixes, and `user-downloads/`. The last contains generated user exports with
+opaque names; neither its presence nor its enumeration establishes a canonical
+financial dataset. Narrow a prefix using an observed key instead of constructing
+unobserved download URLs.
+
+Each page contains request/resolved URLs, acquisition time and method, an exact
+response digest and blob location, source records, and continuation information.
+JSON Pointer coordinates identify API records in the retained JSON. XML records
+identify S3 keys or sitemap locations; they do not invent JSON coordinates for XML.
+Relative FEC document links resolve against fec.gov, while the original field
+remains in metadata. Decimal amounts become `Decimal` in Python and **decimal
+strings** in CLI JSONL, preserving precision; the retained API response preserves
+the original JSON numeric spelling.
+
+String document body fields become `embedded_bodies` references into the retained
+response. Citation and subject `text` labels remain metadata. Fields named
+`body`, `html`, `document_text`, `extracted_text`, `full_text`, and other `text`
+fields are lifted; unknown fields remain source metadata. No linked body is
+requested by an API, listing, sitemap or link-discovery operation.
+
+## Acquire selected originals
+
+Select a URL from the observed `assets` or collection links and give an explicit
+byte bound. For a listed object, also pass its size and quoted ETag. ETags are
+publisher validators, not SHA-256 hashes.
+
+```sh
+uv run --frozen spicy-docs-fec --store /tmp/fec-blobs --output /tmp/fec-foia-body.jsonl \
+  download https://www.fec.gov/documents/6100/FOIA-Annual-Report-Fiscal-Year-2025.xml \
+  --max-bytes 1048576
+```
+
+The downloader streams chunks to the existing Rulespec content-addressed writer.
+It checks bounds, known digest/size, source ETag when selected, identity content
+encoding and recognizable file prefixes. These checks do not parse or validate
+every document or archive member. Archives stay as original assets; downstream
+callers can use maintained CSV/XML/archive readers without another FEC-specific
+normalization pipeline in SpicyDocs.
+
+For equivalent renditions already established by the caller, use
+`choose_rendition` from `spicy_docs.sources.fec.assets`: XML, JSON and XHTML precede
+HTML. It never invents alternate URLs. Pass `--allow-html` only when explicitly
+selecting an HTML body. A PDF image, raw filing, table and summary are separate
+source units unless the caller establishes equivalence.
+
+Embedded text is available offline without downloading its linked original:
+
+```python
+from pathlib import Path
+from spicy_docs.sources.fec.assets import embedded_text
+
+# page and body are one observed page and one of its embedded_bodies entries.
+text = embedded_text(
+    store=Path("/tmp/fec-blobs"),
+    sha256=page["evidence"]["sha256"],
+    source_pointer=body["source_pointer"],
+)
+```
+
+Known `--sha256 sha256:... --size N` inputs permit verified local reuse with no
+network request. Failed transfers leave no completed blob; retry starts the
+selected transfer again. There is no unpinned HTTP range append or automatic
+archive extraction. Preserve the observation file, blob store and source selection
+together. SpicyRegs/DocSpec can consume these facts and selected originals without
+moving acquisition into their metadata model.
+
+## Bounds, failures and coverage
+
+Requests are sequential and paced. Metadata pages are bounded to 8 MiB; API,
+S3 and sitemap traversals also have page bounds. Large legal responses may need
+a smaller `hits_returned`. Asset storage uses bounded chunks rather than memory
+proportional to archive size. Pagination state grows with the selected page bound;
+there is no corpus-wide accumulation of records.
+
+The CLI creates a new JSONL file exclusively and flushes each page. Only normal
+exhaustion emits `complete`; errors emit `failed`, exit unsuccessfully and retain
+available refused response evidence. Already written pages remain partial
+observations. Ordinary pagination, keyset cursors (including null-sort controls),
+legal offsets and S3 continuation tokens follow their respective source rules.
+Estimated counts cannot end pagination. XML sitemaps follow child indexes, while
+`links` reads one explicit page; it does not traverse detail pages or HTML pagination.
+The caller selects those subsequent pages. A sitemap's `next_url` is the next
+pending index, not a portable checkpoint for the whole traversal.
+
+`401` and `403` stop direct acquisition. If the caller explicitly supplies
+`--zyte-on-denial` and `ZYTE_TOKEN`, a public-source `403` can use the existing Zyte
+extract adapter; OpenFEC authentication failures still stop. Its retained method
+is `zyte_after_http_403`. Extract transfers have a 32 MiB bound and cannot bind a
+selected ETag; use direct streaming for large/version-bound assets. This path is
+covered with an injected provider, not a claim that every denied URL works live.
+
+The focused tests include retained official audit, legal-detail and keyset
+responses, metadata/body separation, negative response shapes, exact amounts,
+continuations, credential suppression, interrupted transfers and byte bounds.
+Small live qualification exercised API metadata, a bulk listing, the website
+sitemap, FOIA link discovery and a selected XML original. Its local receipts are
+under `~/Work/corpora/supply-2026-09-02/receipts/fec-integration-2026-09-12/`.
+These observations do not establish a full historical backfill, a frozen FEC
+snapshot, normalized table parity, or downstream publication.

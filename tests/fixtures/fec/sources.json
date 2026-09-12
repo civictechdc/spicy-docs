@@ -1,0 +1,26 @@
+[
+  {
+    "file": "audit.json",
+    "research_path": "inventory/expansion/repositories/wave8/captures/be018c331ab518f5dbcf.body",
+    "research_commit": "de39b22e7d9c3173babbaa93c4e6157493699103",
+    "sha256": "caf0d8d765f129b6824e5f38cd345a2ddf32713daa5247e509006bc501758a50",
+    "path": "/v1/audit-case/",
+    "mode": "page"
+  },
+  {
+    "file": "legal-detail.json",
+    "research_path": "inventory/expansion/repositories/wave8/captures/2e68855d7597a24beafb.body",
+    "research_commit": "de39b22e7d9c3173babbaa93c4e6157493699103",
+    "sha256": "3b12e34ddd62573faa39b09bcbd6c6b5354fcb2b7c022ad1d974e2a982e3fdb7",
+    "path": "/v1/legal/docs/murs/206",
+    "mode": "docs"
+  },
+  {
+    "file": "keyset.json",
+    "research_path": "inventory/expansion/academic/wave7/captures/e097938b29055711eedb.body",
+    "research_commit": "de39b22e7d9c3173babbaa93c4e6157493699103",
+    "sha256": "7e0ecea78df1bcd2128e5a2dab5e2de57c8083919fcdf7790e4a1b10af66689c",
+    "path": "/v1/schedules/schedule_h4/",
+    "mode": "keyset"
+  }
+]

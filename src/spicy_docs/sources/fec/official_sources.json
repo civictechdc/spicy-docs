@@ -1,0 +1,1022 @@
+[
+  {
+    "id": "fec_access",
+    "name": "OpenFEC API, exports and bulk access",
+    "api": [
+      {
+        "path": "/v1/names/candidates/"
+      },
+      {
+        "path": "/v1/names/committees/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "objects",
+        "prefix": "legal/"
+      },
+      {
+        "kind": "objects",
+        "prefix": "user-downloads/"
+      }
+    ],
+    "references": [
+      "https://api.open.fec.gov/developers/",
+      "https://api.open.fec.gov/swagger/",
+      "https://www.fec.gov/data/browse-data/?tab=bulk-data"
+    ]
+  },
+  {
+    "id": "fec_committees",
+    "name": "Committee identities and affiliation evidence",
+    "api": [
+      {
+        "path": "/v1/candidate/{candidate_id}/committees/"
+      },
+      {
+        "path": "/v1/committee/{committee_id}/"
+      },
+      {
+        "path": "/v1/committee/{committee_id}/history/"
+      },
+      {
+        "path": "/v1/committee/{committee_id}/history/{cycle}/"
+      },
+      {
+        "path": "/v1/committees/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/committee-master-file-description/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/committee-master-file-description/",
+      "https://api.open.fec.gov/swagger/"
+    ],
+    "bulk_families": [
+      "Committee master",
+      "New statements of organization (Form 1)"
+    ]
+  },
+  {
+    "id": "fec_candidates",
+    "name": "Candidates and statements of candidacy",
+    "api": [
+      {
+        "path": "/v1/candidate/{candidate_id}/"
+      },
+      {
+        "path": "/v1/candidate/{candidate_id}/history/"
+      },
+      {
+        "path": "/v1/candidate/{candidate_id}/history/{cycle}/"
+      },
+      {
+        "path": "/v1/candidate/{candidate_id}/totals/"
+      },
+      {
+        "path": "/v1/candidates/"
+      },
+      {
+        "path": "/v1/candidates/search/"
+      },
+      {
+        "path": "/v1/candidates/totals/"
+      },
+      {
+        "path": "/v1/candidates/totals/aggregates/"
+      },
+      {
+        "path": "/v1/committee/{committee_id}/candidates/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/candidate-master-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/data/browse-data/?tab=bulk-data"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/forms/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/candidate-master-file-description/",
+      "https://www.fec.gov/data/browse-data/?tab=bulk-data",
+      "https://www.fec.gov/help-candidates-and-committees/forms/"
+    ],
+    "bulk_families": [
+      "Candidate summary",
+      "Candidate master",
+      "New statements of candidacy (Form 2)",
+      "House/Senate current campaigns",
+      "All candidates"
+    ]
+  },
+  {
+    "id": "fec_candidate_links",
+    "name": "Candidate–committee linkages and history",
+    "api": [
+      {
+        "path": "/v1/candidate/{candidate_id}/committees/history/"
+      },
+      {
+        "path": "/v1/candidate/{candidate_id}/committees/history/{cycle}/"
+      },
+      {
+        "path": "/v1/committee/{committee_id}/candidates/history/"
+      },
+      {
+        "path": "/v1/committee/{committee_id}/candidates/history/{cycle}/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/candidate-committee-linkage-file-description/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/candidate-committee-linkage-file-description/",
+      "https://api.open.fec.gov/swagger/"
+    ],
+    "bulk_families": [
+      "Candidate-committee linkages"
+    ]
+  },
+  {
+    "id": "fec_reports",
+    "name": "Filings, reports, statements and source documents",
+    "api": [
+      {
+        "path": "/v1/candidate/{candidate_id}/filings/"
+      },
+      {
+        "path": "/v1/committee/{committee_id}/filings/"
+      },
+      {
+        "path": "/v1/committee/{committee_id}/reports/"
+      },
+      {
+        "path": "/v1/efile/filings/"
+      },
+      {
+        "path": "/v1/efile/form1/"
+      },
+      {
+        "path": "/v1/efile/form2/"
+      },
+      {
+        "path": "/v1/efile/reports/house-senate/"
+      },
+      {
+        "path": "/v1/efile/reports/pac-party/"
+      },
+      {
+        "path": "/v1/efile/reports/presidential/"
+      },
+      {
+        "path": "/v1/filings/"
+      },
+      {
+        "path": "/v1/operations-log/"
+      },
+      {
+        "path": "/v1/reports/{entity_type}/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/forms/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/filing-reports/electronic-filing/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/updates/fec-updates-electronic-filing-specifications/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/help-candidates-and-committees/forms/",
+      "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/",
+      "https://www.fec.gov/help-candidates-and-committees/filing-reports/electronic-filing/",
+      "https://www.fec.gov/updates/fec-updates-electronic-filing-specifications/"
+    ],
+    "bulk_families": [
+      "Electronically filed reports (.fec)",
+      "Paper filed reports (.fec)",
+      "Senate unofficial electronic filings"
+    ]
+  },
+  {
+    "id": "fec_receipts",
+    "name": "Schedule A receipts and contribution subsets",
+    "api": [
+      {
+        "path": "/v1/schedules/schedule_a/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/by_employer/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/by_occupation/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/by_size/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/by_size/by_candidate/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/by_state/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/by_state/by_candidate/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/by_state/by_candidate/totals/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/by_state/totals/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/by_zip/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/efile/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a/{sub_id}/"
+      },
+      {
+        "path": "/v1/schedules/schedule_a_form5/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/about-receipts-data/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/contributions-individuals-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/methodology/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/about-receipts-data/",
+      "https://www.fec.gov/campaign-finance-data/contributions-individuals-file-description/",
+      "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/methodology/",
+      "https://api.open.fec.gov/swagger/"
+    ],
+    "bulk_families": [
+      "Contributions by individuals"
+    ]
+  },
+  {
+    "id": "fec_disbursements",
+    "name": "Schedule B disbursements and operating expenditures",
+    "api": [
+      {
+        "path": "/v1/schedules/schedule_b/"
+      },
+      {
+        "path": "/v1/schedules/schedule_b/by_purpose/"
+      },
+      {
+        "path": "/v1/schedules/schedule_b/by_recipient/"
+      },
+      {
+        "path": "/v1/schedules/schedule_b/by_recipient_id/"
+      },
+      {
+        "path": "/v1/schedules/schedule_b/efile/"
+      },
+      {
+        "path": "/v1/schedules/schedule_b/{sub_id}/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/operating-expenditures-file-description/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/operating-expenditures-file-description/",
+      "https://api.open.fec.gov/swagger/"
+    ],
+    "bulk_families": [
+      "Operating expenditures"
+    ]
+  },
+  {
+    "id": "fec_intercommittee",
+    "name": "Committee transactions, transfers, refunds and candidate support",
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/any-transaction-one-committee-another-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/contributions-committees-candidates-file-description/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/any-transaction-one-committee-another-file-description/",
+      "https://www.fec.gov/campaign-finance-data/contributions-committees-candidates-file-description/"
+    ],
+    "bulk_families": [
+      "Any transaction from one committee to another"
+    ]
+  },
+  {
+    "id": "fec_loans_debts",
+    "name": "Loans, guarantees and debts",
+    "api": [
+      {
+        "path": "/v1/schedules/schedule_c/"
+      },
+      {
+        "path": "/v1/schedules/schedule_c/{sub_id}/"
+      },
+      {
+        "path": "/v1/schedules/schedule_d/"
+      },
+      {
+        "path": "/v1/schedules/schedule_d/{sub_id}/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/forms/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/help-candidates-and-committees/forms/",
+      "https://api.open.fec.gov/swagger/"
+    ]
+  },
+  {
+    "id": "fec_party_allocation",
+    "name": "Party coordinated expenditures, allocations and special accounts",
+    "api": [
+      {
+        "path": "/v1/national_party/schedule_a/"
+      },
+      {
+        "path": "/v1/national_party/schedule_b/"
+      },
+      {
+        "path": "/v1/national_party/totals/"
+      },
+      {
+        "path": "/v1/schedules/schedule_f/"
+      },
+      {
+        "path": "/v1/schedules/schedule_f/{sub_id}/"
+      },
+      {
+        "path": "/v1/schedules/schedule_h4/"
+      },
+      {
+        "path": "/v1/schedules/schedule_h4/efile/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/forms/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/help-candidates-and-committees/forms/",
+      "https://api.open.fec.gov/swagger/"
+    ]
+  },
+  {
+    "id": "fec_ie",
+    "name": "Independent expenditure disclosures",
+    "api": [
+      {
+        "path": "/v1/schedules/schedule_e/"
+      },
+      {
+        "path": "/v1/schedules/schedule_e/by_candidate/"
+      },
+      {
+        "path": "/v1/schedules/schedule_e/efile/"
+      },
+      {
+        "path": "/v1/schedules/schedule_e/totals/by_candidate/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/independent-expenditures-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/forms/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/independent-expenditures-file-description/",
+      "https://api.open.fec.gov/swagger/",
+      "https://www.fec.gov/help-candidates-and-committees/forms/"
+    ],
+    "bulk_families": [
+      "Contributions from committees to candidates and independent expenditures",
+      "Independent expenditures (24- and 48-Hour Reports)"
+    ]
+  },
+  {
+    "id": "fec_electioneering",
+    "name": "Electioneering communications",
+    "api": [
+      {
+        "path": "/v1/electioneering/"
+      },
+      {
+        "path": "/v1/electioneering/aggregates/"
+      },
+      {
+        "path": "/v1/electioneering/by_candidate/"
+      },
+      {
+        "path": "/v1/electioneering/totals/by_candidate/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/electioneering-communications-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/forms/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/electioneering-communications-file-description/",
+      "https://www.fec.gov/help-candidates-and-committees/forms/"
+    ],
+    "bulk_families": [
+      "Electioneering communications"
+    ]
+  },
+  {
+    "id": "fec_communication_costs",
+    "name": "Communication costs",
+    "api": [
+      {
+        "path": "/v1/communication_costs/"
+      },
+      {
+        "path": "/v1/communication_costs/aggregates/"
+      },
+      {
+        "path": "/v1/communication_costs/by_candidate/"
+      },
+      {
+        "path": "/v1/communication_costs/totals/by_candidate/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/communication-costs-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/forms/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/communication-costs-file-description/",
+      "https://www.fec.gov/help-candidates-and-committees/forms/"
+    ],
+    "bulk_families": [
+      "Communication costs"
+    ]
+  },
+  {
+    "id": "fec_bundling",
+    "name": "Lobbyist/registrant committees and bundled contributions",
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/lobbyist-bundled-contributions-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/data/browse-data/?tab=bulk-data"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/forms/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/lobbyist-bundled-contributions-file-description/",
+      "https://www.fec.gov/data/browse-data/?tab=bulk-data",
+      "https://www.fec.gov/help-candidates-and-committees/forms/"
+    ],
+    "bulk_families": [
+      "Lobbyist/registrant committees",
+      "Lobbyist bundled filings"
+    ]
+  },
+  {
+    "id": "fec_leadership",
+    "name": "Leadership PAC sponsors",
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/leadership-pacs-and-sponsors-description/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/leadership-pacs-and-sponsors-description/",
+      "https://api.open.fec.gov/swagger/"
+    ],
+    "bulk_families": [
+      "Leadership PACs and sponsors"
+    ]
+  },
+  {
+    "id": "fec_inaugural",
+    "name": "Inaugural committees",
+    "api": [
+      {
+        "path": "/v1/totals/inaugural_committees/by_contributor/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/updates/donations-to-the-inaugural-committee-2/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/about-receipts-data/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/help-candidates-and-committees/forms/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/updates/donations-to-the-inaugural-committee-2/",
+      "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/about-receipts-data/",
+      "https://api.open.fec.gov/swagger/",
+      "https://www.fec.gov/help-candidates-and-committees/forms/"
+    ]
+  },
+  {
+    "id": "fec_summaries",
+    "name": "Financial summaries, statistics and presidential map aggregates",
+    "api": [
+      {
+        "path": "/v1/committee/{committee_id}/totals/"
+      },
+      {
+        "path": "/v1/elections/"
+      },
+      {
+        "path": "/v1/elections/search/"
+      },
+      {
+        "path": "/v1/elections/summary/"
+      },
+      {
+        "path": "/v1/presidential/contributions/by_candidate/"
+      },
+      {
+        "path": "/v1/presidential/contributions/by_size/"
+      },
+      {
+        "path": "/v1/presidential/contributions/by_state/"
+      },
+      {
+        "path": "/v1/presidential/coverage_end_date/"
+      },
+      {
+        "path": "/v1/presidential/financial_summary/"
+      },
+      {
+        "path": "/v1/totals/by_entity/"
+      },
+      {
+        "path": "/v1/totals/{entity_type}/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/committee-summary-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/all-candidates-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/data/browse-data/?tab=bulk-data"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/committee-summary-file-description/",
+      "https://www.fec.gov/campaign-finance-data/all-candidates-file-description/",
+      "https://www.fec.gov/data/browse-data/?tab=bulk-data",
+      "https://api.open.fec.gov/swagger/"
+    ],
+    "bulk_families": [
+      "Presidential candidate map exports",
+      "Committee summary",
+      "PAC summary"
+    ]
+  },
+  {
+    "id": "fec_public_funding",
+    "name": "Presidential public funding",
+    "indexes": [
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/introduction-campaign-finance/understanding-ways-support-federal-candidates/presidential-elections/public-funding-presidential-elections/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/introduction-campaign-finance/understanding-ways-support-federal-candidates/presidential-elections/public-funding-presidential-elections/"
+    ]
+  },
+  {
+    "id": "fec_results_calendar",
+    "name": "Federal election results, calendars and reporting dates",
+    "api": [
+      {
+        "path": "/v1/calendar-dates/"
+      },
+      {
+        "path": "/v1/calendar-dates/export/"
+      },
+      {
+        "path": "/v1/election-dates/"
+      },
+      {
+        "path": "/v1/reporting-dates/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/introduction-campaign-finance/election-results-and-voting-information/",
+      "https://api.open.fec.gov/swagger/"
+    ]
+  },
+  {
+    "id": "fec_legal",
+    "name": "FEC statutes, regulations and rulemaking",
+    "api": [
+      {
+        "path": "/v1/legal/docs/{doc_type}/{no}"
+      },
+      {
+        "path": "/v1/legal/search/",
+        "params": {
+          "type": "statutes"
+        }
+      },
+      {
+        "path": "/v1/rulemaking/search/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "legal/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/legal-resources/how-to-use-fec-legal-search-systems/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/legal-resources/regulations-and-rulemakings/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/legal-resources/how-to-use-fec-legal-search-systems/",
+      "https://www.fec.gov/legal-resources/regulations-and-rulemakings/",
+      "https://api.open.fec.gov/swagger/"
+    ]
+  },
+  {
+    "id": "fec_ao",
+    "name": "Advisory opinions",
+    "api": [
+      {
+        "path": "/v1/legal/docs/{doc_type}/{no}"
+      },
+      {
+        "path": "/v1/legal/search/",
+        "params": {
+          "type": "advisory_opinions"
+        }
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "legal/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/data/legal/advisory-opinions/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/legal-resources/advisory-opinions-process/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/legal-resources/how-to-use-fec-legal-search-systems/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/data/legal/advisory-opinions/",
+      "https://www.fec.gov/legal-resources/advisory-opinions-process/",
+      "https://www.fec.gov/legal-resources/how-to-use-fec-legal-search-systems/"
+    ]
+  },
+  {
+    "id": "fec_enforcement",
+    "name": "Enforcement, audits and litigation",
+    "api": [
+      {
+        "path": "/v1/audit-case/"
+      },
+      {
+        "path": "/v1/audit-category/"
+      },
+      {
+        "path": "/v1/audit-primary-category/"
+      },
+      {
+        "path": "/v1/legal/docs/{doc_type}/{no}"
+      },
+      {
+        "path": "/v1/legal/search/",
+        "params": {
+          "type": "murs"
+        }
+      },
+      {
+        "path": "/v1/legal/search/",
+        "params": {
+          "type": "admin_fines"
+        }
+      },
+      {
+        "path": "/v1/legal/search/",
+        "params": {
+          "type": "adrs"
+        }
+      },
+      {
+        "path": "/v1/names/audit_candidates/"
+      },
+      {
+        "path": "/v1/names/audit_committees/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "legal/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/legal-resources/enforcement/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/legal-resources/enforcement/audit-search/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/legal-resources/court-cases/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/legal-resources/how-to-use-fec-legal-search-systems/"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/legal-resources/enforcement/",
+      "https://www.fec.gov/legal-resources/enforcement/audit-search/",
+      "https://www.fec.gov/legal-resources/court-cases/",
+      "https://www.fec.gov/legal-resources/how-to-use-fec-legal-search-systems/",
+      "https://api.open.fec.gov/swagger/"
+    ]
+  },
+  {
+    "id": "fec_guidance_meetings",
+    "name": "Guidance, Commission meetings and public policy records",
+    "api": [
+      {
+        "path": "/v1/rad-analyst/"
+      },
+      {
+        "path": "/v1/state-election-office/"
+      }
+    ],
+    "indexes": [
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/legal-resources/policy-and-other-guidance/guidance-documents/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/meetings/"
+      },
+      {
+        "kind": "sitemap",
+        "url": "https://www.fec.gov/sitemap-wagtail.xml"
+      },
+      {
+        "kind": "sitemap",
+        "url": "https://www.fec.gov/resources/cms-content/documents/sitemap_pdf.xml"
+      },
+      {
+        "kind": "sitemap",
+        "url": "https://www.fec.gov/resources/cms-content/documents/sitemap_html.xml"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/legal-resources/policy-and-other-guidance/guidance-documents/",
+      "https://www.fec.gov/meetings/"
+    ]
+  },
+  {
+    "id": "fec_archive_quality",
+    "name": "Historical raw data and quality notices",
+    "indexes": [
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/data-dump/"
+      },
+      {
+        "kind": "objects",
+        "prefix": "bulk-downloads/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/campaign-finance-data/unverified-filers-file-description/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/data/browse-data/?tab=bulk-data"
+      }
+    ],
+    "references": [
+      "https://www.fec.gov/campaign-finance-data/about-campaign-finance-data/",
+      "https://www.fec.gov/resources/cms-content/documents/rawdatainst.pdf",
+      "https://www.fec.gov/files/bulk-downloads/data-dump/schedules/README.txt",
+      "https://www.fec.gov/campaign-finance-data/unverified-filers-file-description/",
+      "https://www.fec.gov/data/browse-data/?tab=bulk-data"
+    ],
+    "bulk_families": [
+      "False and fictitious filings",
+      "Postgres database dump files"
+    ]
+  },
+  {
+    "id": "fec_agency_reports",
+    "name": "Agency reports, budgets, performance, FOIA, procurement and annual reports",
+    "indexes": [
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/about/reports-about-fec/strategy-budget-and-performance/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/about/reports-about-fec/foia-reports/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/about/reports-about-fec/privacy-information/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/about/reports-about-fec/procurement-and-contracting/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/about/reports-about-fec/annual-and-anniversary-reports/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/about/reports-about-fec/agency-operations/"
+      },
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/about/reports-about-fec/oig-reports/"
+      }
+    ]
+  },
+  {
+    "id": "fec_oig",
+    "name": "Inspector General reports and executive summaries",
+    "indexes": [
+      {
+        "kind": "links",
+        "url": "https://www.fec.gov/about/office-inspector-general/"
+      }
+    ]
+  }
+]
