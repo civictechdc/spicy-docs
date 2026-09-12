@@ -1,0 +1,244 @@
+"""Literal BILLSTATUS fields, offered versions, and refusal boundaries."""
+
+from dataclasses import FrozenInstanceError
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+from spicy_docs.sources.congress.bill_status import (
+    BillIdentity,
+    BillSourceError,
+    bill_package_id_from_url,
+    bill_status_locator,
+    bill_xml_locator,
+    parse_bill_status,
+    select_bill_xml,
+)
+
+FIXTURES = Path(__file__).parent / "fixtures" / "govinfo_bills"
+IDENTITY = BillIdentity(119, "hr", 6028)
+PACKAGE = "BILLS-119hr6028eh"
+XML_URL = bill_xml_locator(IDENTITY, PACKAGE)
+
+
+def status_body() -> bytes:
+    return (FIXTURES / "status-119hr6028.xml").read_bytes()
+
+
+def test_current_status_preserves_fields_and_offered_versions() -> None:
+    status = parse_bill_status(status_body(), identity=IDENTITY)
+    assert status.identity == IDENTITY
+    assert status.schema_version == "3.0.0"
+    assert status.title == "Legislative Branch Agencies Clarification Act"
+    assert status.origin_chamber == "House"
+    assert status.introduced_date == "2025-11-12"
+    assert status.update_date == "2026-09-09T17:31:22Z"
+    assert status.update_date_including_text == status.update_date
+    assert status.policy_area == "Congress"
+    assert status.subjects == ("Congressional agencies", "Congressional operations and organization")
+    assert status.latest_action.text == "Received in the Senate."
+    assert status.actions[0].source_system_name == "Senate"
+    assert status.actions[0].source_system_code is None
+    assert status.actions[1].action_time == "15:48:09"
+    assert status.actions[1].action_code == "H38310"
+    assert status.actions[1].action_type == "Floor"
+    assert status.actions[1].source_system_code == "2"
+    assert status.sponsors[0].bioguide_id == "G000568"
+    assert status.sponsors[0].full_name == "Rep. Griffith, H. Morgan [R-VA-9]"
+    assert [summary.version_code for summary in status.summaries] == ["00", "53"]
+    assert status.summaries[0].text == "<p><strong>Legislative Branch Agencies Clarification Act</strong></p>"
+    assert [version.package_id for version in status.text_versions] == [PACKAGE, "BILLS-119hr6028ih"]
+    version, format_ = select_bill_xml(status, PACKAGE)
+    assert version.type == "Engrossed in House"
+    assert version.date == "2026-06-08T04:00:00Z"
+    assert format_.url == XML_URL
+    assert format_.type is None
+    with pytest.raises(FrozenInstanceError):
+        status.title = "changed"
+
+
+def test_literal_strings_duplicates_and_unrecognized_format_links_survive() -> None:
+    body = status_body().replace(b"<title>Legislative", b"<title>  Legislative")
+    body = body.replace(b"<name>Congressional agencies</name>", "<name>  A—B &amp; C  </name>".encode())
+    body = body.replace(
+        b"<textVersions>",
+        b"<textVersions>\n<item><type>Unfamiliar stage</type><formats>"
+        b"<item><type>Future format</type><url>https://example.invalid/source.json</url></item>"
+        b"</formats></item>",
+    )
+    body = body.replace(b"<actions>", b"<actions><item><text> same. </text></item><item><text> same. </text></item>")
+    status = parse_bill_status(body, identity=IDENTITY)
+    assert status.title.startswith("  Legislative")
+    assert status.subjects[0] == "  A—B & C  "
+    assert [action.text for action in status.actions[:2]] == [" same. ", " same. "]
+    assert status.text_versions[0].formats[0].type == "Future format"
+    assert status.text_versions[0].package_id is None
+
+
+def test_summary_cdata_is_literal_html_and_not_bill_text() -> None:
+    body = status_body().replace(
+        b"<summaries>", b"<summaries><summary><text><![CDATA[<p>  A &amp; B. </p>]]></text></summary>"
+    )
+    status = parse_bill_status(body, identity=IDENTITY)
+    assert status.summaries[0].text == "<p>  A &amp; B. </p>"
+    assert status.summaries[0].version_code is None
+    assert len(status.text_versions) == 2
+
+
+def test_policy_area_reconciles_both_current_source_locations() -> None:
+    assert parse_bill_status(status_body(), identity=IDENTITY).policy_area == "Congress"
+    top_only = (
+        b"<billStatus><version>3.0.0</version><bill><congress>119</congress><type>HR</type>"
+        b"<number>6028</number><title>Title</title><policyArea><name> Congress </name></policyArea></bill></billStatus>"
+    )
+    assert parse_bill_status(top_only, identity=IDENTITY).policy_area == " Congress "
+    nested_only = top_only.replace(b"<policyArea>", b"<subjects><policyArea>").replace(
+        b"</policyArea>", b"</policyArea></subjects>"
+    )
+    assert parse_bill_status(nested_only, identity=IDENTITY).policy_area == " Congress "
+    with pytest.raises(BillSourceError, match="policy area fields disagree"):
+        parse_bill_status(
+            status_body().replace(b"<name>Congress</name>", b"<name>Different</name>", 1), identity=IDENTITY
+        )
+
+
+@pytest.mark.parametrize(
+    "identity", [BillIdentity(118, "hr", 6028), BillIdentity(119, "s", 6028), BillIdentity(119, "hr", 1)]
+)
+def test_status_refuses_wrong_bill(identity: BillIdentity) -> None:
+    with pytest.raises(BillSourceError, match="identity differs"):
+        parse_bill_status(status_body(), identity=identity)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"",
+        b" ",
+        b"<html><body>Checking browser</body></html>",
+        b"<error/>",
+        b"<billStatus/>",
+        b"<billStatus",
+        b'<billStatus xmlns="urn:other"/>',
+    ],
+)
+def test_status_refuses_empty_error_and_unsupported_xml(body: bytes) -> None:
+    with pytest.raises(BillSourceError):
+        parse_bill_status(body, identity=IDENTITY)
+
+
+@pytest.mark.parametrize(
+    "before,after",
+    [
+        (b"<number>6028</number>", b"<number>6028</number><number>1</number>"),
+        (b"<number>6028</number>", b"<number><value>6028</value></number>"),
+        (b"<textVersions>", b"<textVersions><unexpected/>"),
+        (b"<policyArea>", b"<policyArea><name>Another</name>"),
+        (b"</billStatus>", b"<bill/></billStatus>"),
+    ],
+)
+def test_status_refuses_ambiguous_or_unsupported_known_fields(before: bytes, after: bytes) -> None:
+    with pytest.raises(BillSourceError):
+        parse_bill_status(status_body().replace(before, after), identity=IDENTITY)
+
+
+@pytest.mark.parametrize("limit", [0, -1, True, 1.5, "200"])
+def test_status_requires_positive_integer_byte_limit(limit: object) -> None:
+    with pytest.raises(BillSourceError, match="max_bytes"):
+        parse_bill_status(status_body(), identity=IDENTITY, max_bytes=limit)
+
+
+def test_status_byte_bound_is_inclusive() -> None:
+    body = status_body()
+    assert parse_bill_status(body, identity=IDENTITY, max_bytes=len(body)).identity == IDENTITY
+    with pytest.raises(BillSourceError, match="max_bytes"):
+        parse_bill_status(body, identity=IDENTITY, max_bytes=len(body) - 1)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("congress", True),
+        ("number", False),
+        ("congress", 0),
+        ("number", -1),
+        ("number", "6028"),
+        ("bill_type", "HR"),
+        ("bill_type", "hr/../../"),
+        ("bill_type", []),
+    ],
+)
+def test_identity_refuses_noncanonical_arguments(field: str, value: object) -> None:
+    args = {"congress": 119, "bill_type": "hr", "number": 6028, field: value}
+    with pytest.raises(BillSourceError):
+        BillIdentity(**args)
+
+
+def test_locators_are_canonical_and_other_links_are_not_selected() -> None:
+    assert (
+        bill_status_locator(IDENTITY) == "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr6028.xml"
+    )
+    assert bill_package_id_from_url(IDENTITY, XML_URL) == PACKAGE
+    for url in [
+        XML_URL + "?key=secret",
+        XML_URL.replace("https://", "http://"),
+        XML_URL.replace("www.govinfo.gov", "other.invalid"),
+        XML_URL.replace("/xml/", "/pdf/"),
+    ]:
+        assert bill_package_id_from_url(IDENTITY, url) is None
+    for package in [
+        "BILLS-119s6028eh",
+        "BILLS-118hr6028eh",
+        "BILLS-119hr6029eh",
+        "BILLS-119hr6028eh/../other",
+        "BILLS-0119hr6028eh",
+    ]:
+        with pytest.raises(BillSourceError):
+            bill_xml_locator(IDENTITY, package)
+
+
+def test_selection_needs_exactly_one_offered_xml_link_and_never_infers_from_pdf() -> None:
+    status = parse_bill_status(status_body(), identity=IDENTITY)
+    with pytest.raises(BillSourceError, match="offered exactly once"):
+        select_bill_xml(status, "BILLS-119hr6028enr")
+    pdf_body = status_body().replace(
+        XML_URL.encode(), XML_URL.replace("/xml/", "/pdf/").replace(".xml", ".pdf").encode()
+    )
+    with pytest.raises(BillSourceError, match="offered exactly once"):
+        select_bill_xml(parse_bill_status(pdf_body, identity=IDENTITY), PACKAGE)
+    duplicate_body = status_body().replace(b"</formats>", f"<item><url>{XML_URL}</url></item></formats>".encode(), 1)
+    with pytest.raises(BillSourceError, match="offered exactly once"):
+        select_bill_xml(parse_bill_status(duplicate_body, identity=IDENTITY), PACKAGE)
+
+
+def test_status_refuses_cross_bill_and_mixed_version_package_links() -> None:
+    with pytest.raises(BillSourceError, match="identity differs"):
+        parse_bill_status(status_body().replace(b"BILLS-119hr6028eh", b"BILLS-119hr6029eh"), identity=IDENTITY)
+    body = status_body().replace(
+        b"</formats>", f"<item><url>{XML_URL.replace('6028eh', '6028ih')}</url></item></formats>".encode(), 1
+    )
+    with pytest.raises(BillSourceError, match="disagree"):
+        parse_bill_status(body, identity=IDENTITY)
+
+
+def test_status_refuses_doctype_and_excessive_nesting() -> None:
+    body = status_body().split(b"?>", 1)[1]
+    with pytest.raises(BillSourceError, match="DOCTYPE"):
+        parse_bill_status(
+            b'<!DOCTYPE billStatus SYSTEM "https://example.invalid/never-load.dtd">' + body, identity=IDENTITY
+        )
+    with pytest.raises(BillSourceError, match="nesting"):
+        parse_bill_status(b"<a>" * 257 + b"</a>" * 257, identity=IDENTITY)
+
+
+def test_public_entry_points_refuse_objects_without_validated_identity() -> None:
+    identity = SimpleNamespace(congress="../bad", bill_type="hr", number=6028)
+    for operation in [
+        lambda: bill_status_locator(identity),
+        lambda: bill_xml_locator(identity, PACKAGE),
+        lambda: bill_package_id_from_url(identity, XML_URL),
+        lambda: parse_bill_status(status_body(), identity=identity),
+    ]:
+        with pytest.raises(BillSourceError, match="BillIdentity"):
+            operation()

@@ -4,8 +4,8 @@
 are to expose Federal Register XML links and label JSON attachments correctly.
 CourtListener already carries some XML opinion bodies inside its CSV files.
 
-This review covers implemented fetchers and network tools at `bd30dde`.
-The XML-first body change is implemented; the four follow-ups below remain open
+The original review covered implemented fetchers and network tools at `bd30dde`;
+the table now also includes the bill API. The four follow-ups below remain open
 in the [task list](simplification-todo.md#fetcher-format-review).
 
 ## What we fetch today
@@ -17,6 +17,7 @@ in the [task list](simplification-todo.md#fetcher-format-review).
 | GovInfo issue census and start-page lookup | MODS XML metadata | Keep; metadata does not contain the document body. |
 | GovInfo unmatched-identifier diagnostic | Credentialed JSON | Keep. |
 | Congress CRS summaries | JSON metadata, summary and format links | Keep; retain report version. |
+| Congress bill status and selected text | BILLSTATUS XML and explicitly selected bill XML | Preserve all offered version links; validate the requested bill/version. [API and limits](sources/congress-bills.md). |
 | GAO product topics | Exact HTML through Zyte | Keep until equivalent topic evidence is demonstrated. |
 | Mirrulations / Regulations.gov | S3 listing and JSON records | Keep; attachment links are preserved, not downloaded. |
 | Community public comments | Parquet parts, including extracted text | Keep the supplied dataset and its source fields. |

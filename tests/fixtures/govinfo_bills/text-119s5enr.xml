@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE bill PUBLIC "-//US Congress//DTDs/bill.dtd//EN" "bill.dtd">
+<bill xmlns:dc="http://purl.org/dc/elements/1.1/" bill-type="olc" bill-stage="Enrolled-Bill" dms-id="A1" public-private="public" slc-id="S1-MDM25016-3XL-4X-F38" star-print="no-star-print" stage-count="1" public-print="no">
+  <metadata>
+    <dublinCore>
+      <dc:title> S5 ENR: Laken Riley Act</dc:title>
+    </dublinCore>
+  </metadata>
+  <form display="yes">
+    <congress>One Hundred Nineteenth Congress of the United States of America</congress>
+    <legis-num display="yes">S. 5</legis-num>
+  </form>
+  <legis-body style="OLC" display-enacting-clause="yes-display-enacting-clause" id="HFC8173D785904E8B8E14982A7C826002">
+    <section section-type="section-one" id="H2E18DDDA603A4CDCA4C15F863F864C58" commented="no" display-inline="no-display-inline">
+      <enum>1.</enum>
+      <header display-inline="yes-display-inline">Short title</header>
+      <text display-inline="no-display-inline">This Act may be cited as the <quote>
+          <short-title>Laken Riley Act</short-title>
+        </quote>. </text>
+    </section>
+  </legis-body>
+</bill>

@@ -40,6 +40,9 @@ Source releases support Federal Register, Regulations.gov through Mirrulations,
 captured spicy-regs public comments, and named GAO product pages. Raw
 Mirrulations and CourtListener readers are also available.
 
+The [bill API](docs/sources/congress-bills.md) separately captures BILLSTATUS XML
+and a selected bill-text version, preserving identity, source fields and bytes.
+
 Prefer community spicy-regs tables where they carry the required data; use
 origin acquisition for missing coverage. Capture and pin whole named agency
 partitions before classifying rows. Source choice is explicit: the CLI does

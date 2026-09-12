@@ -398,3 +398,11 @@ def test_closed_client_refuses_without_request() -> None:
     with pytest.raises(ValueError, match="closed"):
         acquire(client)
     assert not transport.calls and transport.closed
+
+
+def test_configured_budget_cannot_diverge_from_shared_transport() -> None:
+    with (
+        FederalRegisterBodyAcquirer(budget=BUDGET, transport=Transport()) as client,
+        pytest.raises(AttributeError),
+    ):
+        client.budget = replace(BUDGET, max_requests=50)

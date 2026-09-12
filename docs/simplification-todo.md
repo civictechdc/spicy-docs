@@ -10,11 +10,15 @@ First deliverable: explicit bill IDs and text versions, exact status/text XML,
 and installed-wheel consumers. Collection discovery and new regulatory sources
 remain separate work with their own scope and coverage checks.
 
-- [ ] **G01:** Parse current BILLSTATUS and bill XML; preserve source fields, summaries and every stated text-version link; prove bill/version identity.
-- [ ] **G02:** Share bounded HTTP capture with Federal Register; expose status and explicitly selected XML text acquisition.
+- [x] **G01:** Parse current BILLSTATUS and bill XML; preserve source fields, summaries and every stated text-version link; prove bill/version identity.
+- [x] **G02:** Share bounded HTTP capture with Federal Register; expose status and explicitly selected XML text acquisition.
 - [ ] **G03:** Replace SpicyRegs' duplicate BILLSTATUS subject acquisition with the qualified SpicyDocs wheel.
 - [ ] **G04:** Add a DocSpec-owned catalog, injected fetcher and processing example; prove later processing reuses captured bytes.
 - [ ] **G05:** Run source/receiver checks, bounded live captures, installed-wheel qualification and independent reviews; document the supported formats and limits.
+
+Source checks: 1,016 tests passed (two opt-in tests deselected), lint/format and
+focused types passed. Three live bills supplied six validated status/text captures;
+independent source review approved. [API and supported formats](sources/congress-bills.md).
 
 Deferred until a named collection workflow needs them: bounded GovInfo JSON
 discovery/publication, standalone BILLSUM coverage, annual CFR editions, eCFR

@@ -113,7 +113,7 @@ class FederalRegisterBodyAcquirer:
     ) -> None:
         if not isinstance(budget, FederalRegisterBodyBudget):
             raise TypeError("budget must be a FederalRegisterBodyBudget")
-        self.budget = budget
+        self._budget = budget
         self._closed = False
         self._http = BoundedHttpCapture(
             max_requests=budget.max_requests,
@@ -124,6 +124,10 @@ class FederalRegisterBodyAcquirer:
             transport=transport,
             clock=clock,
         )
+
+    @property
+    def budget(self) -> FederalRegisterBodyBudget:
+        return self._budget
 
     def __enter__(self) -> Self:
         if self._closed:

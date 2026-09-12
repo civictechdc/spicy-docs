@@ -23,6 +23,7 @@ network or credentials and leaves inspectable output.
 | [Mirrulations](sources/regulations-gov.md) | Agencies, collection, dates | Exact JSON objects and selected documents, dockets, or comments. Date selection follows live listing acquisition; objects are pinned individually. |
 | [Community comments](sources/public-comments.md) | Agencies | Exact Parquet parts and rows. Discovery stops at the first missing numbered part; later parts are unrequested. |
 | [GAO](sources/gao.md) | Product IDs | Exact HTML, product identity, and one literal publisher topic per page. Other products and linked report files are outside the capture. |
+| [Congressional bills](sources/congress-bills.md) | Explicit bill IDs and text-version package IDs | BILLSTATUS metadata and selected XML text with exact captures and identity checks. This API does not enumerate a collection or publish a release. |
 
 Prefer community SpicyRegs tables when they supply the needed data; choose origin
 acquisition for uncovered needs. This [supply rule](decisions.md#community-supply-precedes-origin-acquisition)
