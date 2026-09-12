@@ -161,17 +161,22 @@ quotes; legacy comma-delimited fields use Python's CSV reader, including quoted
 multiline records. Dates, amounts, empty values and IDs stay strings. This is
 source syntax, not a mapping to financial field names or amendment selection.
 
-Bracketed free text and the text field of ASCII-FS `TEXT` records become
-`embedded_bodies` references. Each reference identifies the original digest,
-byte offset, byte length and encoding; a delimited body also identifies its field
-position. The body does not appear in row metadata. `filing_body(store=..., body=...)`
-resolves one reference while preserving whitespace. For many references, open
-the original once with `LocalBlobSource` and read the indicated ranges; separate
-helper calls each reverify the whole original.
+Bracketed free text and recognized `TEXT` fields become `embedded_bodies`
+references: position 5 for ASCII-FS and position 3 for CSV version `5.3`
+(zero-based). The latter follows `4-TEXT4000` in the publisher's historical
+`e-filing headers all versions` workbook, `all versions` row 809. Other CSV
+versions remain positional until their layouts are qualified. Each reference
+identifies the original digest, byte offset, byte length and encoding; a delimited
+body also identifies its field position. The body does not appear in row metadata.
+`filing_body(store=..., body=...)` resolves one reference while preserving
+whitespace and CSV quoting semantics; CSV ranges must contain exactly one record.
+For many references, open the original once with `LocalBlobSource` and read the
+indicated ranges; separate helper calls each reverify the whole original.
 
 The reader checks the original digest before yielding records. Select UTF-8
 (default) or Latin-1 explicitly for the whole file; decoding failure never
-restarts previously emitted rows. The configurable record bound defaults to
+restarts previously emitted rows. Latin-1 preserves byte values but does not
+establish the publisher's intended character set. The configurable record bound defaults to
 1 MiB and applies across quoted CSV lines and legacy headers. Python's CSV field
 limit also applies. Bracketed text is scanned one bounded line at a time without
 joining the body in memory. Invalid headers, malformed CSV, unclosed text and

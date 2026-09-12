@@ -1,5 +1,6 @@
 """Literal filing syntax and source coordinates; fixtures are not valid reports."""
 
+import csv
 import hashlib
 import io
 
@@ -61,6 +62,75 @@ def test_csv_multiline_and_legacy_header_keep_case_and_byte_coordinates(tmp_path
         raw[ref["byte_offset"] : ref["byte_offset"] + ref["byte_length"]]
         == b'F3A,"Mixed, Name","line one\nline two",0.00\n'
     )
+
+
+@pytest.mark.parametrize("text", ["", 'Exact, "quoted"\r\nsecond line\n caf\u00e9 '])
+def test_qualified_csv_text_lifts_only_narrative_and_resolves_exactly(tmp_path, text):
+    output = io.StringIO(newline="")
+    expected = ["TEXT", "SB29", "parent-id", text, "", "unknown-extra"]
+    csv.writer(output).writerow(expected)
+    record = output.getvalue().encode()
+    header = b"HDR,FEC,5.3,Example\r\n"
+    raw = header + record + b"OTHER,untouched\r\n"
+    rows = list(filing_records(**captured(tmp_path, raw), max_record_bytes=len(record)))
+    row = rows[1]
+    assert row["field_count"] == 6
+    assert row["fields"] == {"0": "TEXT", "1": "SB29", "2": "parent-id", "4": "", "5": "unknown-extra"}
+    (body,) = row["embedded_bodies"]
+    assert body == {**row["source"], "field_index": 3, "delimiter": ","}
+    assert body["byte_offset"] == len(header) and body["byte_length"] == len(record)
+    assert raw[body["byte_offset"] : body["byte_offset"] + body["byte_length"]] == record
+    assert filing_body(store=tmp_path, body=body, max_bytes=len(record)) == text
+    assert rows[2]["fields"] == {"0": "OTHER", "1": "untouched"}
+    with pytest.raises(ValueError, match="byte bound"):
+        filing_body(store=tmp_path, body=body, max_bytes=len(record) - 1)
+    with pytest.raises(ValueError, match="byte bound"):
+        list(filing_records(**captured(tmp_path, raw), max_record_bytes=len(record) - 1))
+
+
+@pytest.mark.parametrize("version", ["5.2", "5.30", "unqualified"])
+def test_unqualified_csv_text_remains_positional(tmp_path, version):
+    raw = f"HDR,FEC,{version}\nTEXT,SB29,parent,Narrative,,EXTRA\n".encode()
+    row = list(filing_records(**captured(tmp_path, raw)))[1]
+    assert row["embedded_bodies"] == []
+    assert row["fields"] == {"0": "TEXT", "1": "SB29", "2": "parent", "3": "Narrative", "4": "", "5": "EXTRA"}
+
+
+@pytest.mark.parametrize("record", [b"TEXT,form,parent\n", b"text,form,parent,not-a-TEXT-record\n"])
+def test_short_or_other_csv_record_does_not_invent_a_body(tmp_path, record):
+    row = list(filing_records(**captured(tmp_path, b"HDR,FEC,5.3\n" + record)))[1]
+    assert row["embedded_bodies"] == []
+    assert len(row["fields"]) == row["field_count"]
+
+
+@pytest.mark.parametrize("raw", [b"TEXT,form,parent,body\nOTHER,row\n", b""])
+def test_csv_body_reference_requires_exactly_one_record(tmp_path, raw):
+    kwargs = captured(tmp_path, raw or b"\n")
+    body = {
+        "sha256": kwargs["sha256"],
+        "byte_offset": 0,
+        "byte_length": len(raw),
+        "encoding": "utf-8",
+        "field_index": 3,
+        "delimiter": ",",
+    }
+    with pytest.raises(ValueError, match="exactly one"):
+        filing_body(store=tmp_path, body=body)
+
+
+def test_csv_body_malformed_row_and_missing_field_refuse(tmp_path):
+    for raw, error in [(b'TEXT,form,parent,"unterminated\n', csv.Error), (b"TEXT,form,parent\n", ValueError)]:
+        kwargs = captured(tmp_path, raw)
+        body = {
+            "sha256": kwargs["sha256"],
+            "byte_offset": 0,
+            "byte_length": len(raw),
+            "encoding": "utf-8",
+            "field_index": 3,
+            "delimiter": ",",
+        }
+        with pytest.raises(error):
+            filing_body(store=tmp_path, body=body)
 
 
 def test_explicit_latin1_never_restarts_prior_records(tmp_path):

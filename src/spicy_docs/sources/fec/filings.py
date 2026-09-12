@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import io
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -10,6 +11,9 @@ from rulespec_artifacts import LocalBlobSource
 
 BEGIN_TEXT = {"[BEGINTEXT]", "[BEGIN TEXT]"}
 END_TEXT = {"[ENDTEXT]", "[END TEXT]"}
+# Publisher "e-filing headers all versions", "all versions" row 809:
+# v5.3 TEXT4000 is field 4 (zero-based 3). Other CSV versions stay positional.
+CSV_TEXT_FIELDS = {"5.3": 3}
 
 
 class _Lines:
@@ -102,7 +106,12 @@ def filing_records(
 
                 fields = next(csv.reader(csv_lines(), strict=True))
             row_source = reference(lines.start, lines.end)
-            body_fields = {5} if fields and fields[0] == "TEXT" and delimiter == "\x1c" and len(fields) >= 6 else set()
+            body_index = 5 if delimiter == "\x1c" else CSV_TEXT_FIELDS.get(version)
+            body_fields = (
+                [body_index]
+                if fields and fields[0] == "TEXT" and body_index is not None and len(fields) > body_index
+                else []
+            )
             yield {
                 "kind": "record",
                 "record_type": fields[0] if fields else "",
@@ -135,8 +144,16 @@ def filing_body(*, store: Path, body: dict, max_bytes: int = 8 * 1024**2) -> str
     if "field_index" in body:
         if type(body["field_index"]) is not int or body["field_index"] < 0:
             raise ValueError("FEC body field index must be a nonnegative integer")
-        if body["delimiter"] != "\x1c":
-            raise ValueError("FEC body field reference requires ASCII FS")
-        fields = text.rstrip("\r\n").split("\x1c")
+        if body["delimiter"] == "\x1c":
+            fields = text.rstrip("\r\n").split("\x1c")
+        elif body["delimiter"] == ",":
+            records = csv.reader(io.StringIO(text, newline=""), strict=True)
+            fields = next(records, None)
+            if fields is None or next(records, None) is not None:
+                raise ValueError("FEC CSV body reference must contain exactly one record")
+        else:
+            raise ValueError("FEC body field reference requires ASCII FS or CSV")
+        if body["field_index"] >= len(fields):
+            raise ValueError("FEC body field index is outside its retained record")
         return fields[body["field_index"]]
     return text
