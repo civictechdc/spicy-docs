@@ -117,6 +117,19 @@ network tools. Four follow-ups remain; this review did not implement them.
 - [ ] **F04:** Retain CRS `version` on new captures. Document that earlier successful rows need an explicit fresh capture to obtain missing version evidence.
 - [ ] **F05:** Preserve CourtListener CSV quoted empty strings versus nulls; cover escaping/newlines and bounds, and check downstream raw-reader consumers.
 
+## Public-comment attachment provenance
+
+- [ ] **P01 — Preserve original attachment-format positions.** In
+  `src/spicy_docs/sources/public_comments/native.py`, `_attachment_groups` filters
+  invalid format entries before rendition construction enumerates the survivors.
+  A formats list of `[{}, {"url": "https://example.test/comment.pdf", "format": "pdf", "size": 123}]`
+  therefore declares `attachments_json[0].formats[0]` for the valid candidate,
+  whose original location is `attachments_json[0].formats[1]`. Carry the original
+  position through filtering and qualify publication and replay for invalid
+  entries before and between valid ones. Preserve raw fields and diagnostics.
+  [DocSpec's comment example](../../DocSpec/docs/spicyregs-comments.md) retains
+  provider-declared locations and exact input bytes; the source fix belongs here.
+
 ## XML body preference
 
 - [x] **X01:** Prefer validated Federal Register XML; retain HTML fallback only after XML 404/410.
