@@ -12,10 +12,26 @@ completed task; follow the receiving backlog for its status.
   preserve native identity separately from requested dates/editions.
 - [x] **C03:** Implement bounded acquisition through shared HTTP and XML scanning;
   retain exact captures and failures without implicit route or date fallback.
-- [ ] **C04:** Provide one runnable source capture example and qualify ordinary
+- [x] **C04:** Provide one runnable source capture example and qualify ordinary
   installed-wheel use, including RefSpec reading supported captured XML.
-- [ ] **C05:** Complete focused/full checks, bounded live captures, retained-source
+- [x] **C05:** Complete focused/full checks, bounded live captures, retained-source
   replay and independent code reviews; document remaining format limits.
+
+Validation: 1,162 tests passed (two opt-in tests deselected), lint/format and
+focused types passed. All seven request shapes succeeded live. Source validation
+passed all 49 retained August 24 titles (810,674,584 bytes); that snapshot is not
+current coverage. Two independent code reviews approved the implementation.
+
+SpicyDocs 0.4.0, source commit `29a2be4`, wheel SHA-256
+`728affb3721707087c90987cbf3362295b7c527332ba7dbb15459e8ce0521fb4`, passed 11
+installed-wheel replays. RefSpec read captured Title 1 and returned 274 addresses
+with 14 explicit unsupported-range issues. Its format and numbering limits
+remain visible in the [source guide](sources/cfr.md).
+
+Source receipts: `~/Work/corpora/supply-2026-09-02/receipts/cfr-canonical-qualification-2026-09-12.json`
+and `cfr-retained-validation-2026-09-12.json` in the same directory. This completes
+the local source API; receiving application migration and public release remain
+separate work.
 
 ## GovInfo bill integration
 

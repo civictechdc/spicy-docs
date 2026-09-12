@@ -120,6 +120,12 @@ reader also rejects some valid numbering, including Part 241 / section `19-8.1`
 in Title 14. Successful source validation does not promise that every downstream
 reader can address every section.
 
+The September 12 qualification returned 274 Title 1 addresses and reported 14
+unsupported combined-range addresses. Those issues remain visible. All seven
+source request shapes succeeded in bounded live captures, and offline source
+validation passed all 49 nonreserved titles in the retained August 24 snapshot
+(810,674,584 bytes). That replay does not establish current coverage.
+
 Publisher references: [eCFR API](https://www.ecfr.gov/developers/documentation/api/v1),
 [annual CFR XML guide](https://github.com/usgpo/bulk-data/blob/main/CFR-XML_User-Guide.md),
 [bulk eCFR XML guide](https://github.com/usgpo/bulk-data/blob/main/ECFR-XML-User-Guide.md).
