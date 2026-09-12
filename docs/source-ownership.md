@@ -84,11 +84,39 @@ S19/D44 must join those checks to selected bounded acquisition without a second
 unnecessary download.
 
 Reader imports are deliberately tested without eager HTTP/S3/analytics imports
-([`test_reader_closure.py`](../tests/test_reader_closure.py)). Installation is a
-separate obligation: [`pyproject.toml:6`](../pyproject.toml#L6) currently makes
-Boto3, HTTPX, Loguru, Polars and tqdm base dependencies; PyArrow alone is the
-`public-table` extra. S16/S26 should qualify proportionate optional dependencies
-without confusing lazy imports with a lightweight installed wheel.
+([`test_reader_closure.py`](../tests/test_reader_closure.py)). Version `0.2.0`
+also separates installation: Rulespec Artifacts and jsonschema form the core,
+`acquisition` supplies HTTP/S3 clients, and `public-table` supplies Parquet
+parsing and publication. See [installation choices](installation.md). The
+intermediate core and extras wheels passed isolated installation checks; S26
+still requires qualification of the final combined candidate.
+
+### Current campaign and dataset callers
+
+The September 11 caller audit at SpicyDocs `49c1eec` and committed DocSpec
+`99849b2` found no local dataset loop to replace with DocSpec's wheel. The agency
+campaign publishes docket/document source releases, checks admitted releases,
+and retains external attempt receipts. CRS summaries and the GovInfo/source
+census tools perform source acquisition or diagnostics. The offline GAO example
+demonstrates source publication and evidence access. None constructs a dataset
+catalog or runs selected-document processors. The obsolete table-profile
+catalog was already removed in S12.
+
+DocSpec exposes a catalog builder and a prepared document-store runtime with
+fetcher/processor injection, recovery, and a Dagster adapter. Its inspected
+runtime expects dataset plans and document stores; it is not a qualified
+replacement for independent source-publication subprocesses. Adding that
+lifecycle would increase the source operator's work without replacing the
+campaign's actual behavior.
+
+**S21 and S31 are conditionally deferred, not completed.** Keep the current
+source campaign. Reopen S21 when a named dataset workflow and DocSpec D22
+demonstrate source ordering, interruption, root ownership, resource bounds,
+retained pin checks, and stale-resume refusal. Reopen S31 for a concrete local
+dataset caller that can use qualified public wheel APIs. DocSpec D51/D52 already
+own the named GAO/comment dataset examples; no source-package dependency or
+example is needed merely to have a loop to migrate. The independent reviewer
+and coordinating agent agreed on these dispositions.
 
 ### B. Auxiliary catalogs and misplaced policy
 

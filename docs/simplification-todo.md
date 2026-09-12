@@ -4,7 +4,7 @@ Created September 11, 2026 from the blind product-boundary review (`blind-produc
 
 **Updated September 11, 2026 following the owner's product clarification and checklist sync.** DocSpec is an iterative dataset and catalog platform: accept sources, select documents, use injected fetchers, process now or later, reuse previous work, and compare results. SpicyRegs remains an independently usable source-data product. SpicyDocs may remain separate; share source improvements where they remove duplicate effort or improve a supported workflow. Package placement remains open and is not a prerequisite for useful integration. The prior blanket recommendation to merge SpicyDocs into DocSpec is withdrawn. The additional duplication review (`docspec-spicy-docs-duplication-review.md`) and coordination review (`docspec-spicy-docs-coordination-review.md`) supply useful findings, but their merger addenda do not define this plan.
 
-**Progress: 16 of 25 local implementation items complete.** S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
+**Progress: 16 of 25 local implementation items complete; 2 conditionally deferred.** S21 and S31 remain unchecked because no present local dataset loop would benefit from their proposed replacement. The other 7 items remain active. S02, S18, S20, and S27–S29 are moved-task references with no checkbox. All S IDs remain stable; moving a task does not complete its implementation. The completed 51-item maintainability checklist (`spicy-docs-maintainability-todo.md`) remains the record of the earlier refactor. Updating this list completes no implementation.
 
 The intended result is reusable upstream source data and an approachable platform for dataset experiments. A user can build a catalog, fetch selected documents once, process them inline or later, change processors or reference resources, add documents, and compare reproducible results. Every useful stopping point exposes what was requested, received, accepted, rejected, and unresolved. Search is one consumer; catalog-only, acquisition-only, and later-processing workflows have independent value.
 
@@ -294,6 +294,12 @@ No legacy support is required. S05 removes historical acceptance behavior; activ
   Assess independent source publishing separately; it remains usable without
   DocSpec. Depends on S25's relevant decision and the accepted destination
   evidence; if replacement adds no value, defer with the reason.
+  **Deferred September 11:** the current agency campaign publishes and admits
+  independent source releases; it does not select documents or execute dataset
+  processors. DocSpec's committed runtime at `99849b2` requires a document-store
+  workflow and has no qualified source-publication task. Reopen for a named
+  dataset experiment and D22 evidence that earns the replacement. See the
+  [caller decision](source-ownership.md#current-campaign-and-dataset-callers).
 
 <a id="s22"></a>
 
@@ -433,6 +439,11 @@ S25–S31 retain their original IDs. Open checkboxes now cover SpicyDocs impleme
   local code here. Source-only users remain independent. Record package versions,
   wheel/revision pins, local checks, and deferred capabilities; provider packaging
   is S26, and DocSpec's public API/qualification work is D45–D46.
+  **Deferred September 11:** the caller audit found no remaining local catalog,
+  selected-document capture, processor, or dataset-resume loop to replace.
+  Existing source diagnostics and publication remain independently useful.
+  DocSpec D51/D52 own the named dataset examples. Reopen when a concrete local
+  experiment caller exists; do not create one solely to migrate it.
 
 ## Destination-owned implementation tasks
 
