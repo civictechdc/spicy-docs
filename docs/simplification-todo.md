@@ -23,11 +23,13 @@ historical acquisition, financial normalization and SpicyRegs/DocSpec adoption
 remain caller work; the source integration does not mark those complete. The
 [updated T01–T19 task list](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration-task-list.md)
 records completed capabilities, remaining acceptance criteria and the next delivery.
-The [selected 2023–2024 bulk slice](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration/README.md)
-now has retained originals, source-shaped local tables, independent row/field
-parity and caller interruption/retry evidence. Missing cross-file references are
-retained for API/history supplementation. Active-cycle acquisition and adoption
-by the existing SpicyRegs consumer remain open.
+The [selected 2023–2024 and 2025–2026 bulk slices](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration/README.md)
+now have retained originals, source-shaped local tables, independent row/field
+parity and caller interruption/retry evidence. Scoped API/history lookups are
+complete; empty results, invalid candidate references and the official list of
+unverified filers remain explicit. A local SpicyRegs wheel accepts selected retained API
+rows through its existing mapping. Complete distribution adoption, original
+statements, filing/amendment qualification and downstream publication remain open.
 
 ## Deferred local work
 
