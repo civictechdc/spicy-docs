@@ -140,6 +140,53 @@ archive extraction. Preserve the observation file, blob store and source selecti
 together. SpicyRegs/DocSpec can consume these facts and selected originals without
 moving acquisition into their metadata model.
 
+## Read retained raw filings offline
+
+`spicy_docs.sources.fec.filings.filing_records` reads a retained `.fec` original
+without network access or a financial schema dependency:
+
+```python
+from pathlib import Path
+from spicy_docs.sources.fec.filings import filing_records
+
+for row in filing_records(store=Path("fec-blobs"), sha256=original["sha256"]):
+    if row["kind"] == "record":
+        print(row["record_type"], row["fields"], row["source"])
+```
+
+The header retains its declared format version and literal fields. Data records
+retain their field count and values keyed by zero-based position, including
+unrecognized record types and extra fields. ASCII-FS fields preserve literal
+quotes; legacy comma-delimited fields use Python's CSV reader, including quoted
+multiline records. Dates, amounts, empty values and IDs stay strings. This is
+source syntax, not a mapping to financial field names or amendment selection.
+
+Bracketed free text and the text field of ASCII-FS `TEXT` records become
+`embedded_bodies` references. Each reference identifies the original digest,
+byte offset, byte length and encoding; a delimited body also identifies its field
+position. The body does not appear in row metadata. `filing_body(store=..., body=...)`
+resolves one reference while preserving whitespace. For many references, open
+the original once with `LocalBlobSource` and read the indicated ranges; separate
+helper calls each reverify the whole original.
+
+The reader checks the original digest before yielding records. Select UTF-8
+(default) or Latin-1 explicitly for the whole file; decoding failure never
+restarts previously emitted rows. The configurable record bound defaults to
+1 MiB and applies across quoted CSV lines and legacy headers. Python's CSV field
+limit also applies. Bracketed text is scanned one bounded line at a time without
+joining the body in memory. Invalid headers, malformed CSV, unclosed text and
+over-limit records fail; any earlier rows remain a partial parse. Retain the
+original and failure when a layout is unsupported.
+
+The [selected filing qualification](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration/filings.md)
+covers early, paper-entered and modern originals, registration statements, a
+source-reported amendment chain, daily ZIP membership and separately acquired
+Form 99 PDFs. It checks positional fields and body ranges, not financial meaning
+or a full historical filing population. The existing `fecfile` package was
+evaluated before this reader; its successful string-mode reads can omit extra
+source fields. SpicyDocs reuses `csv` and the blob reader instead of copying its
+financial mappings.
+
 ## Bounds, failures and coverage
 
 Requests are sequential and paced. Metadata pages are bounded to 8 MiB; API,
@@ -183,5 +230,7 @@ missing from the corresponding masters remain explicit in the receipt; the
 tables do not establish a closed set of entities. Scoped current/history queries
 retain requested-empty outcomes and invalid references; the official list of
 unverified filers supplies separate status evidence. An installed SpicyRegs wheel accepts
-a selected API slice through its existing mapping. Complete distribution adoption,
-API-only relationship fields, original statements and sealed publication remain open.
+a selected API slice through its existing mapping. Selected original statements
+and a filing/amendment slice are now retained and checked with the offline reader.
+Complete distribution adoption, API-only relationship fields, full filing and
+attachment coverage, and sealed publication remain open.

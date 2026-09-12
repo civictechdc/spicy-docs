@@ -28,8 +28,12 @@ now have retained originals, source-shaped local tables, independent row/field
 parity and caller interruption/retry evidence. Scoped API/history lookups are
 complete; empty results, invalid candidate references and the official list of
 unverified filers remain explicit. A local SpicyRegs wheel accepts selected retained API
-rows through its existing mapping. Complete distribution adoption, original
-statements, filing/amendment qualification and downstream publication remain open.
+rows through its existing mapping. The [filing slice](/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11/integration/filings.md)
+adds selected original statements, daily archives, separate Form 99 PDFs and a
+source-reported amendment chain. The offline reader preserves positional fields
+and separate body references without financial mappings. Complete distribution
+adoption, relationship fields, filing/attachment backfills and downstream
+publication remain open.
 
 ## Deferred local work
 
