@@ -1,8 +1,8 @@
 """Publish, verify, or inspect source-native releases and public Parquet tables.
 
-Public-table handlers import their publisher lazily: PyArrow is supplied by
-this package's ``public-table`` extra, while source acquisition and verification
-remain usable without it. A missing extra produces ``dependency-missing``.
+Live HTTP/S3 clients and Parquet handlers load their optional dependencies only
+when used. Core inspection and injected JSON/HTML acquisition remain usable
+without extras. A missing dependency produces ``dependency-missing``.
 """
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TextIO
 
-import httpx
 from rulespec_artifacts import (
     ArtifactPin,
     LocalMemberSource,
@@ -342,6 +341,16 @@ def _verify_public_table(args: argparse.Namespace) -> dict[str, object]:
     )
 
 
+def _http_errors() -> tuple[type[Exception], ...]:
+    # A real HTTPX exception comes from an already loaded HTTPX module. Keep
+    # core commands independent of that optional dependency, including errors.
+    if "httpx" not in sys.modules:
+        return ()
+    from httpx import HTTPError
+
+    return (HTTPError,)
+
+
 def _error_code(error: Exception) -> str:
     if isinstance(error, (FileExistsError, ImmutablePublicationError)):
         return "destination-exists"
@@ -349,7 +358,7 @@ def _error_code(error: Exception) -> str:
         return "acquisition-failed"
     if isinstance(error, SourceNativeReleaseError):
         return "release-invalid"
-    if isinstance(error, (httpx.HTTPError, ZyteTransportError)):
+    if isinstance(error, (*_http_errors(), ZyteTransportError)):
         return "transport-failed"
     if isinstance(error, ImportError):
         return "dependency-missing"
@@ -396,7 +405,7 @@ def main(
         *ACQUISITION_ERRORS,
         SourceNativeReleaseError,
         ZyteTransportError,
-        httpx.HTTPError,
+        *_http_errors(),
         ImportError,
         OSError,
         ValueError,

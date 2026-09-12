@@ -19,7 +19,7 @@ from spicy_docs.releases.publish import SourceNativeReleasePublisher
 from spicy_docs.sources.federal_register.native import FederalRegisterSourceError
 from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
-from spicy_docs.transport.acquisition import fetch_federal_register
+from spicy_docs.transport.http import fetch_federal_register
 from tests.releases.fixtures import (
     FEDERAL_REGISTER_PROFILE,
     IMPLEMENTATION_ID,

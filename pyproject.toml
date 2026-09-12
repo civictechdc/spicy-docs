@@ -1,25 +1,19 @@
 [project]
 name = "spicy-docs"
-version = "0.1.0"
+version = "0.2.0"
 description = "Faithful acquisition from government sources and immutable source-native release publication"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "rulespec-artifacts==1.0.11",
-    "boto3",
-    "httpx",
     "jsonschema>=4.23",
-    "loguru",
-    "polars",
-    "tqdm",
 ]
 
 [project.optional-dependencies]
-# The public-table publisher reads and writes Parquet directly; the rest of
-# this package -- acquisition, publish, verify -- does not import pyarrow at
-# all. Optional so the core closure stays tight and a consumer vendoring this
-# package does not inherit a large binary wheel it may not want. The CLI
-# imports the publisher lazily and reports dependency-missing when absent.
-public-table = ["pyarrow"]
+# Live HTTP/S3 acquisition and raw readers. Injected fetchers and the core
+# reader, evidence access, and JSON/HTML parsers do not require these packages.
+acquisition = ["boto3", "httpx", "loguru", "tqdm"]
+# Captured comment Parquet parsing/full replay and flat-table publication.
+public-table = ["polars", "pyarrow"]
 
 [dependency-groups]
 dev = [
@@ -32,9 +26,6 @@ dev = [
     # that DuckDB reads the declared Parquet members directly; the module
     # itself never imports duckdb, so it stays test-only rather than runtime.
     "duckdb",
-    # Also in the public-table extra: without it here the publisher is
-    # untested in the default suite, which is why it appears in both places.
-    "pyarrow",
     "pytest",
     "ruff",
     "ty",

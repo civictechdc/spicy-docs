@@ -3,7 +3,7 @@
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
-uv sync --frozen
+uv sync --frozen --all-extras
 uv run --frozen ruff check .
 uv run --frozen ruff format --check .
 uv run --frozen pytest -q

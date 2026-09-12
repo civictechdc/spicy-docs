@@ -4,6 +4,10 @@ Start with the [offline example](README.md#start-here), then choose the smallest
 change that demonstrates the source behavior you want to improve. Python 3.12,
 uv, and the checked-in wheel under `vendor/` are sufficient for the default
 checks. You do not need a sibling checkout or source credentials.
+Run `uv sync --frozen --all-extras` once to install both optional tool groups
+along with development dependencies. `./scripts/check` performs that setup too;
+subsequent `uv run --frozen` commands retain the installed extras. See
+[installation choices](docs/installation.md) for a smaller consumer environment.
 
 ## Choose a job
 
@@ -44,7 +48,7 @@ in their corpus receipts; commit only bounded test fixtures.
 
 ```sh
 ./scripts/check
-# Equivalent individual checks after uv sync --frozen:
+# Equivalent individual checks after uv sync --frozen --all-extras:
 uv run --frozen ruff check .
 uv run --frozen ruff format --check .
 uv run --frozen pytest -q

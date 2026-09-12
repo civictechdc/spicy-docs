@@ -6,6 +6,11 @@ logical rows. This is an input source for source-native releases; the
 [public-table commands](../cli.md#publish-public-table) separately produce flat
 tables from admitted releases.
 
+Install `public-table` to parse captured Parquet or run full source replay, and
+add `acquisition` for the default HTTP fetcher. Reading already admitted source
+records and their evidence needs only the core package. See
+[installation choices](../installation.md).
+
 ## Scope and evidence
 
 The Python query contains exactly `table: "comments"` and a sorted, distinct

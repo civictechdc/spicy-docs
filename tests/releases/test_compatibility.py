@@ -25,12 +25,11 @@ def test_new_path_uses_only_shared_artifact_implementation() -> None:
     assert "refspec" not in text.lower()
 
 
-def test_base_package_keeps_legacy_platform_dependencies_out_of_source_native_path() -> None:
+def test_base_package_keeps_acquisition_analytics_and_platform_dependencies_optional() -> None:
     project_root = Path(__file__).parents[2]
     configuration = tomllib.loads((project_root / "pyproject.toml").read_text(encoding="utf-8"))
     project = configuration["project"]
 
-    assert project["version"] == "0.1.0"
     dependencies = project["dependencies"]
     assert "rulespec-artifacts==1.0.11" in dependencies
     assert configuration["tool"]["uv"]["sources"]["rulespec-artifacts"] == {
@@ -40,7 +39,8 @@ def test_base_package_keeps_legacy_platform_dependencies_out_of_source_native_pa
     assert hashlib.sha256(rulespec_wheel.read_bytes()).hexdigest() == (
         "bedd8ee4799d9633963272714a30258f505404155732480ad5cb1dde2d7cbf4f"
     )
-    assert not any(dependency.startswith(("refspec", "rdflib", "rulespec-conformance")) for dependency in dependencies)
+    excluded = ("boto3", "httpx", "loguru", "polars", "tqdm", "pyarrow", "refspec", "rdflib", "rulespec-conformance")
+    assert not any(dependency.startswith(excluded) for dependency in dependencies)
     assert "build-source-catalog" not in project["scripts"]
 
 

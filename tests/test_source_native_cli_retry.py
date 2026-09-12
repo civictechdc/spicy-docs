@@ -26,7 +26,7 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 
-from spicy_docs.transport import acquisition, retry
+from spicy_docs.transport import http, retry
 
 FIXED_NOW = datetime(2026, 9, 2, tzinfo=UTC)
 
@@ -56,11 +56,11 @@ def _scripted_client(*actions: httpx.Response | Exception) -> tuple[httpx.Client
 
 
 def _call_federal_register(client: httpx.Client, url: str) -> bytes | None:
-    return acquisition.fetch_federal_register(client, url)
+    return http.fetch_federal_register(client, url)
 
 
 def _call_public_table(client: httpx.Client, url: str) -> bytes | None:
-    capture = acquisition.fetch_public_table(client, url, clock=lambda: FIXED_NOW)
+    capture = http.fetch_public_table(client, url, clock=lambda: FIXED_NOW)
     return None if capture is None else capture.content
 
 
@@ -134,7 +134,7 @@ def test_federal_register_other_4xx_fails_immediately_without_retrying(
     with pytest.raises(httpx.HTTPStatusError) as excinfo:
         _call_federal_register(client, "https://example.test/refused")
 
-    assert not isinstance(excinfo.value, acquisition.RetryableHTTPStatusError)
+    assert not isinstance(excinfo.value, http.RetryableHTTPStatusError)
     assert len(calls) == 1
     assert recorded_sleeps == []
 
@@ -149,7 +149,7 @@ def test_public_table_other_4xx_fails_immediately_without_retrying(
     with pytest.raises(httpx.HTTPStatusError) as excinfo:
         _call_public_table(client, "https://example.test/refused")
 
-    assert not isinstance(excinfo.value, acquisition.RetryableHTTPStatusError)
+    assert not isinstance(excinfo.value, http.RetryableHTTPStatusError)
     assert len(calls) == 1
     assert recorded_sleeps == []
 

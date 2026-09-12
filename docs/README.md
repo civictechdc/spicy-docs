@@ -7,6 +7,7 @@ states the adopted format and publication requirements.
 
 | What you need to do | Read |
 | --- | --- |
+| Install only the reader, acquisition tools, or Parquet tools you need | [Installation choices](installation.md) |
 | Choose raw records, a verified source release, or a flat table | [Source workflows and useful stopping points](source-workflows.md) |
 | Find the code that owns a change | [Architecture and ownership](architecture.md) |
 | Review planned simplification, component ownership, and DocSpec wheel reuse | [Simplification to-do list](simplification-todo.md) |

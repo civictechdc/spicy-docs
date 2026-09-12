@@ -10,6 +10,10 @@ those responsibilities. Choose it deliberately rather than assuming it carries
 the release publisher's checks. [Source workflows](../source-workflows.md)
 compares the available outputs.
 
+Install the `acquisition` extra for the Mirrulations and CourtListener raw
+readers. The pure CourtListener listing parser below needs only the core
+package. See [installation choices](../installation.md).
+
 [`Reader`](../../src/spicy_docs/sources/base.py) defines `iter_records()`.
 [`RecordType`](../../src/spicy_docs/schemas/base.py) names a record family and its
 optional flat projection. Selecting a record type configures a reader's source

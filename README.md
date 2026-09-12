@@ -15,10 +15,15 @@ own. [Choose a source workflow](docs/source-workflows.md).
 Use Python 3.12 and [uv](https://docs.astral.sh/uv/). From this checkout:
 
 ```sh
-uv sync --frozen
+uv sync --frozen --all-extras
 uv run --frozen python examples/offline_release.py
 ./scripts/check
 ```
+
+This contributor setup installs the live-acquisition and Parquet tools used by
+the full test suite. An application can install the smaller core wheel for
+source records, profiles, evidence, and JSON/HTML parsing. See
+[installation choices](docs/installation.md).
 
 The example publishes and independently verifies one synthetic GAO page. It
 makes no network requests and needs no credentials. Its JSON output includes

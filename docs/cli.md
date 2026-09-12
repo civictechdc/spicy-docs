@@ -6,8 +6,11 @@ object to stdout (exit 0), or a handled operational error to stderr (exit 1).
 Argument syntax errors use argparse's ordinary usage output and exit 2.
 
 For an installed package, `spicy-docs-source-native` is the same entry point.
-Public-table commands require the `public-table` extra (PyArrow); `uv sync --frozen`
-includes it through the development dependencies. Other commands load it lazily.
+Live HTTP/S3 operations require the `acquisition` extra. Captured comment Parquet
+parsing/full replay and public-table commands require `public-table`. Core
+inspection, JSON/HTML replay, and injected acquisition do not load these packages.
+The contributor setup `uv sync --frozen --all-extras` installs both. See
+[installation choices](installation.md) for the source-specific requirements.
 The [offline example](../examples/offline_release.py) needs no credentials.
 Library and module ownership are in the [architecture map](architecture.md).
 The module form of this command is `python -m spicy_docs.cli.source_native`.
