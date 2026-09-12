@@ -1,0 +1,25 @@
+{
+  "result": "pass",
+  "verified_at_utc": "2026-09-11T20:10:46.215650+00:00",
+  "research_directory": "/Users/mikewolfd/Documents/Codex/fec-data-research-2026-09-11",
+  "research_commit": "de39b22e7d9c3173babbaa93c4e6157493699103",
+  "research_branch": "main",
+  "bundle": {
+    "path": "/Users/mikewolfd/Work/corpora/research/fec-data-2026-09-11/fec-data-research.bundle",
+    "bytes": 457983560,
+    "sha256": "1eaebc5d02bf43ce56223c8ff68f672eb849437cb3f92882e31c1e1a41209623"
+  },
+  "manifest_sha256": "1aa3a4f2b06a4a083e61d43ca9cd05526cc010c94facf070d752675527658a23",
+  "tracked_files": 16663,
+  "tracked_bytes": 1535358314,
+  "checks": {
+    "git_bundle_verify": "pass",
+    "independent_bare_clone": "pass",
+    "restored_commit_matches": "pass",
+    "exact_restored_path_membership": "pass",
+    "every_restored_blob_size_and_SHA256": "pass"
+  },
+  "method": "git bundle create --all; git bundle verify; clone bundle to a disposable bare repository without a network remote; enumerate every committed path; stream every blob through git cat-file --batch and compare size/SHA256 to the preservation manifest (plus the manifest and receipt themselves); SHA256 the complete bundle.",
+  "scope": "Byte preservation and offline restoration of all tracked research files. Existing research validity and source limitations remain those recorded in the research receipts.",
+  "published_or_pushed": false
+}

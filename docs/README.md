@@ -18,6 +18,7 @@
 - [GAO pages](sources/gao.md)
 - [Captured public comments](sources/public-comments.md)
 - [Source-field references](source-reference.md) · [Documented-value drift](source-domain-drift.md)
+- [FEC research and integration handoff](research/fec-data-2026-09-11.md): inventory, bulk acquisition plan and retained evidence.
 
 ## Change shared behavior
 
