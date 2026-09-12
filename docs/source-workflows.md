@@ -70,8 +70,12 @@ Rendition rows describe document candidates: a locator and whatever metadata
 the source supplied. They do not mean that a PDF, attachment or body was fetched
 or that its content was hashed. GAO's HTML is acquisition evidence; its profile
 does not enumerate or fetch linked report files. Federal Register's
-[body-source helpers](federal-register-body-sources.md) derive locators and check
-already fetched bytes; they are not a complete body-acquisition adapter.
+[body-source API](federal-register-body-sources.md) separately acquires an
+explicitly selected GovInfo granule or MODS-resolved granule, checks its printed
+identity and returns exact bytes. It also derives publisher XML/text locators;
+those routes do not yet have a qualified acquisition implementation. You can
+retain the GovInfo capture directly without a dataset application. DocSpec's
+candidate selection and fetcher adapter remain separate work.
 
 For a dataset assembled from sources, chosen document fetchers, processors and
 successive runs, start with DocSpec's

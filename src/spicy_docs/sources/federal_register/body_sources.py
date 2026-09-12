@@ -16,10 +16,10 @@ The old 44,165-byte soft-404 size was one dated response fingerprint, not an
 identity rule, so it is deliberately not accepted as one here.  Likewise, the
 old 0.4-second/three-worker tuning was a campaign measurement rather than a
 stable source promise.  These helpers make no requests and write no files.
-DocSpec remains responsible for candidate choice and asks SpicyDocs to acquire
-the selected representation.  A future SpicyDocs adapter must own bounded
-transport, exact capture, and immutable byte receipts.  SpicySearch Validation
-retains the separate carrier-agreement measurement.
+DocSpec remains responsible for candidate choice. ``body_acquisition`` acquires
+an explicitly selected GovInfo route with bounded transport and exact capture;
+publisher XML/text remain locators only. SpicySearch Validation retains the
+separate carrier-agreement measurement.
 
 Let ``U`` be the URL length, ``B`` the granule byte length, and ``M`` the MODS
 byte length.  Locator derivation is ``O(U)`` time and output space.  Granule

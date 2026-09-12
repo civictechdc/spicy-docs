@@ -6,6 +6,10 @@ import re
 from pathlib import Path
 
 
+class CredentialRefusedError(RuntimeError):
+    """401 or 403 ends the operation; callers must not continue or fall back."""
+
+
 def read_api_key(env_file: Path, name: str) -> str:
     for line in env_file.read_text().splitlines():
         key, sep, value = line.partition("=")

@@ -23,10 +23,13 @@ def retry_http[FetchResult](
     operation: Callable[[], FetchResult],
     *,
     retryable: tuple[type[Exception], ...],
+    max_attempts: int | None = None,
 ) -> FetchResult:
     """Run ``operation`` with capped exponential backoff and full jitter.
 
-    See the ``MAX_HTTP_ATTEMPTS`` comment for why the budget is what it is.
+    ``max_attempts`` may impose a smaller remaining operation budget, including
+    the initial attempt. Omission uses ``MAX_HTTP_ATTEMPTS`` as before.
+    See its comment for why the default budget is what it is.
     Full jitter -- a uniform draw between 0 and the deterministic ceiling --
     keeps concurrent fetchers (Federal Register pages, public-table
     partitions) from retrying in lockstep against the same struggling host.
@@ -35,16 +38,19 @@ def retry_http[FetchResult](
     rather than "hung" in an operator's log.
     """
 
-    for attempt in range(1, MAX_HTTP_ATTEMPTS + 1):
+    attempts = MAX_HTTP_ATTEMPTS if max_attempts is None else max_attempts
+    if isinstance(attempts, bool) or not isinstance(attempts, int) or attempts <= 0:
+        raise ValueError("max_attempts must be a positive integer")
+    for attempt in range(1, attempts + 1):
         try:
             return operation()
         except retryable as error:
-            if attempt == MAX_HTTP_ATTEMPTS:
+            if attempt == attempts:
                 raise
             ceiling = min(2**attempt, RETRY_BACKOFF_CEILING_SECONDS)
             delay = random.uniform(0.0, ceiling)
             print(
-                f"source-native fetch: retry {attempt}/{MAX_HTTP_ATTEMPTS - 1} "
+                f"source-native fetch: retry {attempt}/{attempts - 1} "
                 f"in {delay:.1f}s (cap {ceiling:.0f}s) after "
                 f"{type(error).__name__}: {error}",
                 file=sys.stderr,

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mods xmlns="http://www.loc.gov/mods/v3">
+  <extension><accessId>FR-1998-06-03</accessId></extension>
+  <relatedItem type="constituent">
+    <part><extent unit="pages"><start>30359</start></extent></part>
+    <extension><accessId>98-14931</accessId></extension>
+  </relatedItem>
+</mods>

@@ -43,8 +43,10 @@ unsafe cursors, or inconsistent acquisition coverage refuse the release.
 The rendition index records `body-html`, `html`, and `pdf`, including
 explicit null locators. These rows describe publisher locators; acquisition
 does not download those bodies or attest to their bytes. The
-[body-source guide](../federal-register-body-sources.md) explains later route
-selection.
+[body-source guide](../federal-register-body-sources.md) describes the separate
+bounded GovInfo acquisition API: select a direct or MODS-resolved granule,
+check its source identity, and retain the exact bytes without another download.
+Publisher XML/text helpers currently supply locators only.
 
 Acquisition policy `1.1` introduced compound identity; current policy `1.2`
 also records the coverage limits of stable observed crawls. Both changes kept

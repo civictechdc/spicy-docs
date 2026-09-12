@@ -45,17 +45,13 @@ from typing import Any
 
 import httpx
 
-from spicy_docs.transport.credentials import read_api_key, scrub_credential
+from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key, scrub_credential
 from spicy_docs.transport.retry import retry_http
 
 API = "https://api.congress.gov/v3/crsreport/{report_id}"
 USER_AGENT = "spicy-docs-crs-summaries/1.0"
 #: 1,000 requests/hour is the published api.data.gov budget: 3.6 s exactly.
 DEFAULT_DELAY_SECONDS = 3.7
-
-
-class CredentialRefusedError(RuntimeError):
-    """401 or 403 ends the run. There is no fallback and no per-row recording."""
 
 
 class _RetryableStatus(httpx.HTTPStatusError):
