@@ -4,6 +4,19 @@
 Six original items moved to their implementation owners. A moved task is not a
 completed task; follow the receiving backlog for its status.
 
+## Canonical CFR/eCFR acquisition
+
+- [x] **C01:** Inventory existing code and agree ownership: SpicyDocs acquires;
+  RefSpec reads native text; DocSpec selects and runs datasets.
+- [ ] **C02:** Validate explicit eCFR API, annual CFR and GovInfo bulk eCFR inputs;
+  preserve native identity separately from requested dates/editions.
+- [ ] **C03:** Implement bounded acquisition through shared HTTP and XML scanning;
+  retain exact captures and failures without implicit route or date fallback.
+- [ ] **C04:** Provide one runnable source capture example and qualify ordinary
+  installed-wheel use, including RefSpec reading supported captured XML.
+- [ ] **C05:** Complete focused/full checks, bounded live captures, retained-source
+  replay and independent code reviews; document remaining format limits.
+
 ## GovInfo bill integration
 
 First deliverable: explicit bill IDs and text versions, exact status/text XML,

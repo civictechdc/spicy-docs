@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import NoReturn
-from xml.etree.ElementTree import Element, TreeBuilder
-from xml.parsers import expat
+from xml.etree.ElementTree import Element
+
+from spicy_docs.sources.xml import parse_xml
 
 _BILL_TYPES = frozenset({"hr", "s", "hjres", "sjres", "hconres", "sconres", "hres", "sres"})
 _PACKAGE = re.compile(r"BILLS-([1-9][0-9]*)(hconres|sconres|hjres|sjres|hres|sres|hr|s)([1-9][0-9]*)([a-z][a-z0-9]*)")
@@ -156,50 +156,13 @@ def select_bill_xml(status: BillStatus, package_id: str) -> tuple[BillTextVersio
 
 
 def _xml_root(body: bytes, max_bytes: int, *, allow_external_doctype: bool = False) -> Element:
-    if type(max_bytes) is not int or max_bytes <= 0:
-        raise BillSourceError("max_bytes must be a positive integer")
-    if not isinstance(body, bytes) or not body or len(body) > max_bytes:
-        raise BillSourceError("bill XML must be nonempty bytes within max_bytes")
-    builder = TreeBuilder()
-    parser = expat.ParserCreate(namespace_separator="}")
-    depth = 0
-
-    def start(name: str, attributes: dict[str, str]) -> None:
-        nonlocal depth
-        depth += 1
-        if depth > 256:
-            raise BillSourceError("bill XML exceeds the supported nesting depth")
-        builder.start("{" + name if "}" in name else name, attributes)
-
-    def end(name: str) -> None:
-        nonlocal depth
-        builder.end("{" + name if "}" in name else name)
-        depth -= 1
-
-    def refuse_entity(*_args: object) -> NoReturn:
-        raise BillSourceError("bill XML entity declarations and references are forbidden")
-
-    def doctype(_name: str, system_id: str | None, _public_id: str | None, internal: bool) -> None:
-        # Current Congressional bill XML declares a relative external DTD.
-        # Expat never loads it; internal declarations would alter source text.
-        if not allow_external_doctype or internal or not system_id:
-            raise BillSourceError("bill XML permits only an inert external DOCTYPE")
-
-    parser.StartElementHandler = start
-    parser.EndElementHandler = end
-    parser.CharacterDataHandler = builder.data
-    parser.StartDoctypeDeclHandler = doctype
-    parser.EntityDeclHandler = refuse_entity
-    parser.ExternalEntityRefHandler = refuse_entity
-    parser.SkippedEntityHandler = refuse_entity
-    parser.SetParamEntityParsing(expat.XML_PARAM_ENTITY_PARSING_NEVER)
-    try:
-        parser.Parse(body, True)
-        return builder.close()
-    except (expat.ExpatError, ValueError) as error:
-        if isinstance(error, BillSourceError):
-            raise
-        raise BillSourceError("bill XML is malformed") from error
+    return parse_xml(
+        body,
+        max_bytes=max_bytes,
+        error_type=BillSourceError,
+        label="bill XML",
+        allow_external_doctype=allow_external_doctype,
+    )
 
 
 def _one(parent: Element | None, name: str, *, required: bool = False) -> Element | None:
