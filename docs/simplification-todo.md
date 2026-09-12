@@ -803,7 +803,7 @@ reading require neither DocSpec nor HTTP/S3/Parquet libraries.
 
 The combined receipt is retained with the local planning session under
 `validation/s19-s22-s26-s30/`: `candidate.json` pins inputs; `commands.json`
-records commands, working directories, outputs and exit statuses. All 28 commands
+records commands, working directories, outputs and exit statuses. All 29 commands
 succeeded. `./scripts/check` passed 802 tests with two opt-in cases deselected,
 plus lint and formatting; whole-source type checking, lock and whitespace checks
 passed. The installed package passed 64 focused acquisition/value/refusal tests
@@ -838,13 +838,30 @@ The selected DocSpec receiving patch is committed in an isolated worktree as
 `a239395`, based on DocSpec `cd8f534`. It selects the current public reader, pins
 these exact provider/shared wheels, and passes 41 focused integration/package
 checks including installed catalog construction, reuse and independent admission
-without the provider installed. D10 remains open for D08's partial-input handling;
-D28/D31 and other receiving tasks keep their own acceptance criteria. Integration
-into the active DocSpec checkout and its full-suite result will be recorded
-separately. Rulespec's actual current-provider probe is also qualified against
-this exact source wheel. No SpicyRegs package move was selected.
+without the provider installed. The identical reviewed patch is integrated in
+the active DocSpec checkout as `bf38ef1`, preserving unrelated work in progress.
+Its broader suite produced 1,021 passes and seven child-process import failures;
+all seven affected tests passed after clearing the verified macOS hidden flag
+on that isolated environment's `docspec.pth`. The flag later reappeared during
+idle for an unknown reason. This is 1,021 original passes plus seven targeted
+passes, not a clean full-suite rerun. The receiving wheel's 179 package files
+match its committed source; `d10-receiver-qualification.json` retains its exact
+digest and the separate runtime receipts. D10 remains open for D08's partial-input
+handling; D28/D31 and other receiving tasks keep their own acceptance criteria.
+Rulespec's actual current-provider probe is also qualified against this exact
+source wheel. No SpicyRegs package move was selected.
 
 Twenty-three local items are complete. S21/S31 remain the two justified conditional
 deferrals with explicit reopening criteria; they are not completed replacements.
 The PR, remote CI, wheel publication and receiving upstream acceptance remain
 separate from these local implementation results.
+
+**Delivery:** [PR #1](https://github.com/mikewolfd/spicy-docs/pull/1) contains the
+source changes. Both push and PR checks passed at `82ef116`; the
+[PR run](https://github.com/mikewolfd/spicy-docs/actions/runs/34664463737)
+passed 801 tests, skipped one saved-sample check, and deselected two opt-in cases,
+with lint and formatting green. The additional local test accounts for the
+saved sample absent in CI. This final receipt update changes documentation only;
+the PR's current checks remain authoritative for its latest head. DocSpec
+`bf38ef1` and the Rulespec changes are local receiving commits; no merge,
+package-index release or upstream acceptance is claimed.
