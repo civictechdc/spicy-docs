@@ -111,7 +111,35 @@ retains cases, commands, input pins and limitations outside this repository.
 [Federal Register formats](https://www.govinfo.gov/help/fr),
 [bulk coverage](https://www.govinfo.gov/developers).
 
-Prefer XML/JSON when it supplies the same document and edition with the needed
-content. CSV and Parquet are already structured; metadata, summaries and JSON
-wrappers cannot substitute for a full document. Dataset selection remains with
-the fetching caller; see [ownership](source-ownership.md).
+## What the complete GovInfo asset review adds
+
+All 23 tracked assets in [`usgpo/bulk-data` at `83a8517`](https://github.com/usgpo/bulk-data/tree/83a85170ce0bdd0cf218f6290bd739df8748e2ea)
+were covered: seven root files, four PDF guides, eight XML samples and four files
+under `sample-xhtml`. Review included full guide/PDF text, whole-file XML/HTML
+analysis and complete comparison of the XML pairs. External schemas/resources,
+live collection coverage and visual fidelity were outside this review.
+
+- **Bill Summaries is a separate dataset.** Its CRS-authored summaries follow
+  congressional actions and need not match printed bill versions. Preserve
+  summary identity and dates; its prose is HTML inside XML CDATA.
+- **Publisher HTML can preserve useful bill structure.** Three samples contain
+  legislative HTML; one `.html` file is plain text with a staging marker. Some
+  IDs repeat, and a layout table contains most of an enrolled bill. Validate
+  actual content; do not remove tables or use IDs as unique passage keys blindly.
+- **Punctuation changes affect identity.** Every updated XML sample changes only
+  en dashes to hyphens, including some document/section identifiers. Preserve
+  raw spelling and hashes; any comparison keys are separate derived values.
+- **eCFR needs source-specific parsing.** `NODE` is unstable; `DIV1/@N` is a
+  volume number. Preserve title identity, repeated blocks, distinct source dates,
+  editorial/superseded text and mixed content. XML nesting alone does not prove
+  paragraph hierarchy.
+- **Exact XML bytes may still need companion content.** Graphics and equations
+  can be external. Preserve their locators; the caller decides which resources
+  its dataset needs. The older PDF guides are references, not current coverage
+  guarantees or additional data collections.
+
+Keep the XML preference when it supplies the required document and edition.
+Qualify actual structure and content, including useful publisher HTML. CSV and
+Parquet are already structured; metadata, summaries and JSON wrappers cannot
+substitute for a full document. Source acquisition preserves evidence; dataset
+selection and processing remain with the caller. See [ownership](source-ownership.md).
