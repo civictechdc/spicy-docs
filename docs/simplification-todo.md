@@ -8,12 +8,13 @@
   packages. Retained metadata checks passed; source captures remain byte-exact.
   Architecture and both independent code reviews approved. Wheel, checks and
   reviews: `~/Work/corpora/supply-2026-09-02/receipts/xml-fec-merge-2026-09-12/`.
-  Downstream adoption and push remain separate.
+  Source merge `d9c312c` is pushed to `fork/main`. Downstream wheel adoption
+  remains separate.
 
 **All active source-fidelity and CFR example tasks are complete locally.**
 S21/S31 remain conditionally deferred. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
-owns the remaining CourtListener reader adoption. These follow-up commits have
-not been pushed.
+owns the remaining CourtListener reader adoption. The merged source changes
+are on `fork/main`; receiving changes remain on their own branches.
 
 **Merged simplification: 23 local items complete; two conditionally deferred.**
 Six original items moved to their implementation owners. A moved task is not a
