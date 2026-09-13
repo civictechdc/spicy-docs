@@ -47,9 +47,27 @@ cancels queued work; running calls finish under their transport limits.
 
 [`courtlistener_bulk.py`](../../src/spicy_docs/sources/courtlistener_bulk.py)
 streams a dated network `.csv.bz2` dump or local file. It handles concatenated
-bzip2 streams and incremental CSV. Empty cells become `None`; other strings
-remain source values. `row_filter` runs before `max_records` counts accepted rows.
-A compressed-byte bound stops at a chunk boundary and may overshoot by one chunk.
+bzip2 streams and incremental CSV. An unquoted empty field becomes `None`;
+`""` remains an empty string. Other values remain strings, including whitespace
+and literal `\N`. `row_filter` runs before `max_records` counts accepted rows.
+
+The [publisher's export script](https://github.com/freelawproject/courtlistener/blob/main/scripts/make_bulk_data.sh)
+uses PostgreSQL CSV with UTF-8, a header, backslash escaping, and `FORCE_QUOTE *`.
+Backslashes escape quotes and backslashes inside quoted values. This follows
+[PostgreSQL's CSV rules](https://www.postgresql.org/docs/current/sql-copy.html).
+The source decoder handles this dialect directly because
+[Python 3.12's `QUOTE_NOTNULL` reader is affected by a documented bug](https://docs.python.org/3.12/library/csv.html#csv.QUOTE_NOTNULL).
+It refuses invalid UTF-8, malformed quoting, empty/duplicate header names, and
+row-width mismatches. Errors identify the CSV record (header = 1), without values.
+
+Decompression drains in 64 KiB blocks. `max_record_characters` defaults to
+64 Mi characters, including CSV syntax but excluding the record's line ending;
+raise it explicitly for larger source records. Records also have a 1,024-column
+limit. These are per-record limits, so memory does not grow with dump size.
+A compressed-byte bound caps each read to its remaining allowance. Already-read
+bytes drain; an unfinished final record is discarded.
+Counters finalize on completion, configured stop, failure, or explicit generator
+close. The latter three set `stopped_early=True`.
 
 Use a new reader per pass. For a full network pass:
 
@@ -64,16 +82,14 @@ Use a new reader per pass. For a full network pass:
 
 Network failures resume at the compressed-byte offset. Nonzero offsets require
 HTTP 206; a restart at zero is refused to prevent decompressor corruption.
+Natural source exhaustion must finish a bzip2 member; a missing footer raises.
+A configured byte cutoff remains a partial pass, even at a member boundary.
 
 Know the limits before treating a pass as complete:
 
 - Listed ETags mark revisions, not content hashes. The reader sends no
   `If-Match` and hashes no downloaded object; a matching pin does not bind the
   later transfer to listed bytes.
-- Input exhaustion does not explicitly require bzip2 end-of-stream.
-- CSV decoding replaces invalid UTF-8 and tolerates row-width mismatches.
-- Counters are final only after normal completion or a configured stop.
-  Exceptions and early close may leave partial values.
 
 ### Reuse listing rules through the installed wheel
 

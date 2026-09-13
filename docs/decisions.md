@@ -18,16 +18,19 @@ the implemented decision; they do not reconstruct the missing plan.
 
 <a id="federal-register-identity-and-fields-version-separately"></a>
 
-## Federal Register identity changes preserve the current fields
+## Federal Register identity and fields version separately
 
 A document number can name different documents on different dates. Identity
 therefore uses `(document_number, publication_date)`; conflicting observations
 of the same pair refuse publication. Policy `1.1` introduced that identity;
-current policy `1.2` also describes the limits of stable observed crawls.
+policy `1.2` added the limits of stable observed crawls without changing fields.
 
-Both use the same 22 `DOCUMENT_FIELDS`. Requests and replay require that set and
-the exact canonical URL. The proposed `correction_of` field was deferred and
-never accepted; adding it needs a new policy decision.
+Current policy `1.3` adds publisher-stated `full_text_xml_url`, a `body-xml`
+rendition and explicit field/rendition rules. Source schema `1.1` admits the
+nullable field; the generic release schema remains `2.0`. Requests and replay
+require all 23 selected fields and the exact canonical URL. Source record
+identity and public Parquet columns remain unchanged. The proposed
+`correction_of` field was deferred and never accepted.
 
 Historical rationale: SD-24 / DocSpec decision 0003,
 `docs/decisions/0003-federal-register-record-identity.md` in that repository.

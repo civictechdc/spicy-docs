@@ -16,7 +16,11 @@
 - [Federal Register](sources/federal-register.md) · [GovInfo bodies](federal-register-body-sources.md)
 - [Regulations.gov](sources/regulations-gov.md)
 - [GAO pages](sources/gao.md)
+- [Congressional bills](sources/congress-bills.md)
+- [CFR/eCFR XML](sources/cfr.md)
+- [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records.
 - [Captured public comments](sources/public-comments.md)
+- [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.
 - [Source-field references](source-reference.md) · [Documented-value drift](source-domain-drift.md)
 - [FEC acquisition](sources/fec.md): official JSON/XML metadata and separate originals.
 - [FEC research and integration handoff](research/fec-data-2026-09-11.md): inventory, bulk acquisition plan and retained evidence.
@@ -27,7 +31,7 @@
 - [Releases](releases.md): publication, checks and profile extensions.
 - [Ownership](source-ownership.md): SpicyDocs, SpicyRegs, DocSpec and Rulespec.
 - [Decisions](decisions.md): reasons for unusual rules and current formats.
-- [Task status](simplification-todo.md): completed work and conditional deferrals.
+- [Task status](simplification-todo.md): open follow-ups, completed work and deferrals.
 - [Release specification](superpowers/specs/2026-08-25-source-native-release-spec.md): exact format requirements.
 
 [Corpus diagnostics](../tools/README.md), [repository checks](../scripts/README.md)

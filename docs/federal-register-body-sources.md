@@ -1,52 +1,69 @@
 # Federal Register body sources and acquisition
 
-`spicy_docs.sources.federal_register.body_acquisition` acquires an explicitly
-selected GovInfo body, checks identity, and returns exact bytes plus observed
-response facts. Install `spicy-docs[acquisition]`. You can retain or process the
-result directly without a second download, source release, or dataset run.
+`FederalRegisterBodyAcquirer` prefers full-document publisher XML. If XML returns
+404 or 410, it uses the chosen GovInfo HTML route and retains the unavailable XML
+response. Other failures stop acquisition. Install `spicy-docs[acquisition]`.
 
-Standard-library `body_sources` derives publisher XML/text locators and validates
-already fetched GovInfo bytes. Publisher XML/text acquisition remains unqualified.
-The caller selects a route; DocSpec owns dataset candidate preference.
+The result contains exact bytes, checked document identity, and response facts.
+Retain or process it directly without another download, release, or dataset run.
+This body operation is separate from publishing Federal Register metadata.
 
-## Acquire a selected GovInfo body
+## Acquire a body
 
 ```python
 from spicy_docs.sources.federal_register.body_acquisition import (
-    GovInfoBodyAcquirer,
-    GovInfoBodyBudget,
+    FederalRegisterBodyAcquirer,
+    FederalRegisterBodyBudget,
 )
 
-budget = GovInfoBodyBudget(
+budget = FederalRegisterBodyBudget(
     max_requests=4,
     max_body_bytes=8 * 1024 * 1024,
     max_mods_bytes=16 * 1024 * 1024,
     timeout_seconds=30,
     min_request_interval_seconds=0.4,
 )
-with GovInfoBodyAcquirer(budget=budget) as client:
+with FederalRegisterBodyAcquirer(budget=budget) as client:
     result = client.acquire(
-        document_number="X98-10603",
-        publication_date="1998-06-03",
-        route="mods-start-page",
-        start_page=30359,
-    )
+        document_number="2026-18670",
+        publication_date="2026-09-11",
+    )  # format="prefer-xml" is the default
 
 body = result.body.body
 digest = result.body.sha256
 identity = result.identity
 ```
 
-| Route | Requests before retries | Identity retained |
-| --- | --- | --- |
-| `granule` (omit `start_page`) | One known granule | Requested identity and printed document marker |
-| `mods-start-page` | Issue Metadata Object Description Schema (MODS) XML, then the unique granule matching `start_page` | FederalRegister.gov number, resolved GovInfo `accessId`, and actual printed marker, kept separate; both captures returned |
+| `format` | Behavior |
+| --- | --- |
+| `prefer-xml` (default) | Try publisher XML; use HTML only after a complete, bounded XML 404/410 response. |
+| `xml` | Require publisher XML. No HTML fallback. |
+| `html` | Request GovInfo HTML directly. |
 
-A failed route never automatically starts another. Apply these bounds:
+`html_route="granule"` requests the known GovInfo document. Use
+`html_route="mods-start-page", start_page=30359` when the document needs an issue
+Metadata Object Description Schema (MODS) lookup. That route preserves the
+original number, resolved `accessId`, and printed marker separately. It does
+not run when XML succeeds.
 
-- Every attempt, including retries and MODS/body requests, consumes `max_requests`.
+XML validation requires a native document root (`RULE`, `PRORULE`, `NOTICE`, or
+`PRESDOCU`) and one matching `FRDOC` number. Presidential documents may split the
+marker across `FRDOC` and its following `FILED` field. Publication date is bound
+to the exact canonical URL; the filing date is a separate fact. DTDs, declared
+entities, malformed XML, ambiguous markers and wrong identities are refused.
+This checks identity and XML shape, not complete publisher-schema conformance.
+
+A 200 HTML challenge page, empty body, wrong content type, or invalid XML does
+not trigger fallback. Neither do access refusal, redirect, transport failure,
+exhausted retries or byte limits. Plain-text publisher URLs remain locators only.
+
+Apply these bounds:
+
+- Every XML, MODS, HTML and retry attempt consumes the same `max_requests`.
+  One request can suffice for XML; fallback stops if the budget is exhausted.
 - Transport failures and HTTP 429/5xx retry with bounded exponential backoff.
-  Other statuses and identity failures stop immediately; redirects are refused.
+  Except for the XML 404/410 fallback above, other status failures stop
+  immediately. Identity failures stop, and redirects are refused.
 - HTTP 401/403 raises `CredentialRefusedError`. Stop the operation rather than
   continuing with another route or record.
 - Request-start pacing applies across sequential acquisitions and retries on one
@@ -60,15 +77,24 @@ A failed route never automatically starts another. Apply these bounds:
   overflow; this limits retained bytes, not wire traffic or transport buffering.
 - No partial body becomes exact evidence. Streams close on success and refusal.
 
-The result includes route, effective budget, attempts, identity, and complete
-responses: requested/final URL, status, content type, observation time, bytes,
-size, and qualified SHA-256. To store a capture, pass its `sha256`, `byte_size`,
+The result names `requested_format`, actual `format` and `route`, effective
+budget, attempts, identity, and complete responses: requested/final URL, status,
+content type, observation time, bytes, size, and qualified SHA-256. To store a
+capture, pass its `sha256`, `byte_size`,
 and `[body]` to `SourceNativeBlobStore.put_blob`; retain source facts beside the
-returned reference.
+returned reference. HTML fallback also returns `unavailable_xml`: preserve that
+response to explain why XML was not selected.
 
-`uv run python examples/govinfo_body.py` uses an injected local transport for two
-synthetic requests, retaining MODS/body bytes and `capture.json`. The JSON is an
-example report, not a sealed release receipt. For installed-wheel testing, copy
+Try both paths offline:
+
+```sh
+uv run --frozen python examples/federal_register_body.py
+uv run --frozen python examples/federal_register_body.py --case html-fallback
+```
+
+The example retains all used responses and `capture.json`, including the XML 404
+in the fallback case. The JSON is an example report, not a sealed release receipt.
+For installed-wheel testing, copy both `examples/fixtures/federal-register/` and
 `examples/fixtures/govinfo/` beside the script.
 
 ## Refused evidence
@@ -82,7 +108,8 @@ Errors preserve the source exception and attach `refused_response` (`RefusedResp
 | Request skipped because total budget is exhausted | `before-request` / `request-budget-exhausted`; no attempted fetch implied |
 
 The same error's `body_acquisition` retains route, original arguments, budget,
-and consumed attempts. The caller owns persistence. Context identifies the active
+and consumed attempts. Its `unavailableXml` holds the XML capture if a subsequent
+HTML operation failed. The caller owns persistence. Context identifies the active
 offending response, not all retry bodies; a failed granule never labels earlier
 successful MODS as the refused response. Refusal returns no release or success result.
 
@@ -103,9 +130,9 @@ successful MODS as the refused response. Refusal returns no release or success r
 - **Resolve synthetic `X` numbers through MODS start pages.** Preserve the
   original number and separate `accessId`. Refuse zero/multiple matches,
   malformed/oversized XML, and DTD-bearing evidence.
-- **Keep candidate selection in DocSpec.** A fixed XML → text → GovInfo cascade
-  would turn an availability observation into runtime policy. SpicyDocs acquires
-  only the explicitly selected supported route.
+- **Prefer XML while keeping failures visible.** The caller's format preference
+  selects XML before HTML; only explicit XML 404/410 permits fallback. This source
+  operation stays usable independently. DocSpec chooses dataset items and processing.
 - **Keep text-agreement checks in SpicySearch Validation.** Recovered-term agreement
   between publisher text and GovInfo does not establish acquisition identity.
 - **Use current caller bounds and shared storage.** Historical 0.4-second,
@@ -115,18 +142,19 @@ successful MODS as the refused response. Refusal returns no release or success r
 
 ## Bounds and handoff
 
-The pure `body_sources` helpers make zero network requests and filesystem writes.
-For URL length `U`, granule bytes `B`, and MODS bytes `M`:
+The pure `body_sources` and `body_xml` helpers make no network requests or file
+writes. For URL length `U`, body bytes `B`, and MODS bytes `M`:
 
 | Operation | Time | Auxiliary/output space |
 | --- | --- | --- |
 | Locator derivation | `O(U)` | `O(U)` output |
 | Granule validation | `O(B)` | `O(U)` auxiliary |
+| Publisher XML validation | `O(B)` | XML depth plus retained `FRDOC`/`FILED` text; no document tree |
 | MODS resolution | `O(M)` | `O(D + A)` auxiliary: XML depth `D`, largest retained `start`/`accessId` value `A` |
 
 Byte parsers reject payloads beyond caller-supplied positive bounds.
 
-DocSpec D44 still owns its adapter: candidate choice, experiment bounds, passing
-captured bytes into its fetch stream, and retaining identity/MODS proof. Current
+DocSpec D44 still owns its adapter: dataset candidate choice, experiment bounds,
+passing captured bytes into its fetch stream, and retaining identity/MODS proof. Current
 fetcher metadata has no general slot for those proof facts; that integration
 must qualify their retention. S19 supplies the source operation, not D44 adoption.

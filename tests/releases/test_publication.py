@@ -80,6 +80,7 @@ def test_stable_release_preserves_source_value_and_streams(tmp_path: Path) -> No
     renditions = list(reader.iter_renditions())
     assert [(row["sourceField"], row["locator"], row["mediaType"]) for row in renditions] == [
         ("body_html_url", None, "text/html"),
+        ("full_text_xml_url", None, "application/xml"),
         ("html_url", "https://www.federalregister.gov/d/2026-00001", "text/html"),
         ("pdf_url", None, "application/pdf"),
     ]
@@ -134,6 +135,7 @@ def test_source_native_record_preserves_predecessor_source_facts(tmp_path: Path)
             }
         ],
         body_html_url="https://www.federalregister.gov/documents/full_text/html/2026-00001.html",
+        full_text_xml_url="https://www.federalregister.gov/documents/full_text/xml/2026/08/25/2026-00001.xml",
         docket_ids=["EPA-HQ-OAR-2026-0001"],
         pdf_url="https://www.govinfo.gov/content/pkg/FR-2026-08-25/pdf/2026-00001.pdf",
         regulation_id_numbers=["2060-AV12"],
@@ -148,9 +150,22 @@ def test_source_native_record_preserves_predecessor_source_facts(tmp_path: Path)
     assert next(iter(reader.iter_records()))["record"] == document
     assert [(row["sourceField"], row["locator"]) for row in reader.iter_renditions()] == [
         ("body_html_url", document["body_html_url"]),
+        ("full_text_xml_url", document["full_text_xml_url"]),
         ("html_url", document["html_url"]),
         ("pdf_url", document["pdf_url"]),
     ]
+
+
+@pytest.mark.parametrize("xml_locator", ["", 17, [], {}])
+def test_invalid_xml_locator_is_retained_as_a_record_failure(tmp_path: Path, xml_locator: object) -> None:
+    published = _publish(tmp_path, _stable_pages(_document(full_text_xml_url=xml_locator)))
+    reader = _reader(published.root, published.artifact.pin)
+    assert list(reader.iter_records()) == []
+    assert list(reader.iter_renditions()) == []
+    failures = [row for row in payload_rows(published.root, PARTITION_LEDGER) if row["failure"] is not None]
+    assert len(failures) == 1
+    assert failures[0]["failure"]["class"] == FAILURE_CLASS_DETERMINISTIC
+    assert failures[0]["failure"]["evidenceDigest"].startswith("sha256:")
 
 
 @pytest.mark.parametrize("publication_date", [None, "", "not-a-date", "2026-08-25T00:00:00Z"])

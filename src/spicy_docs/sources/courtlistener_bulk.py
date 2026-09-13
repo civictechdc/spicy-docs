@@ -13,20 +13,24 @@ User-Agent and one connection, respecting the publisher's transfer rate.
 from __future__ import annotations
 
 import bz2
-import csv
 import io
-import sys
 import time
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Iterator
 from datetime import date
 from pathlib import Path
-from typing import Protocol, TypedDict
+from typing import Protocol
 
 from loguru import logger
 
 from spicy_docs.sources.base import Reader
+from spicy_docs.sources.courtlistener_csv import (
+    MAX_RECORD_CHARACTERS,
+    CourtListenerCsvError,
+    iter_postgres_csv,
+    validate_record_limit,
+)
 from spicy_docs.sources.courtlistener_listing import (
     BULK_BASE_URL,
     BULK_LIST_URL,
@@ -45,20 +49,7 @@ _MAX_RETRIES = 5
 _CHUNK = 4 << 20
 _PROGRESS_EVERY = 50_000
 
-#: Opinion text rows carry entire judicial opinions in one CSV field, which is
-#: far past the stdlib default. Raise once, at import, to the platform maximum.
-csv.field_size_limit(sys.maxsize)
-
-
-class _CsvDialect(TypedDict):
-    escapechar: str
-    doublequote: bool
-
-
-#: Embedded quotes use backslash escaping. The default CSV dialect silently
-#: splits opinion text into false rows and can lose docket_id. Keep doublequote
-#: enabled as well so quoted empty fields still parse.
-CSV_DIALECT: _CsvDialect = {"escapechar": "\\", "doublequote": True}
+_DECOMPRESSED_CHUNK = 64 * 1024
 
 
 def _request(url: str, *, extra_headers: dict[str, str] | None = None):
@@ -223,6 +214,7 @@ class _CountingStream(io.RawIOBase):
         self.decompressed_bytes = 0
         self.resumes = 0
         self._exhausted = False
+        self.budget_exhausted = False
 
     def readable(self) -> bool:
         return True
@@ -235,10 +227,10 @@ class _CountingStream(io.RawIOBase):
             pass
         super().close()
 
-    def _read_chunk(self) -> bytes:
+    def _read_chunk(self, size: int) -> bytes:
         """Pull the next compressed chunk, reconnecting mid-stream if need be."""
         try:
-            return self._response.read(_CHUNK)
+            return self._response.read(size)
         except Exception as exc:
             if self._reopen is None:
                 raise
@@ -263,6 +255,7 @@ class _CountingStream(io.RawIOBase):
                 if self.compressed_bytes and status != 206:
                     # Not retryable: a server that ignores Range will ignore it
                     # again, and every retry is another chance to splice.
+                    resumed.close()
                     raise _UnrangeableResume(
                         f"CourtListener bulk: resume at byte {self.compressed_bytes} "
                         f"answered {status}, not 206 — refusing to splice a restarted "
@@ -270,7 +263,7 @@ class _CountingStream(io.RawIOBase):
                     )
                 self._response = resumed
                 self.resumes += 1
-                return self._response.read(_CHUNK)
+                return self._response.read(size)
             except _UnrangeableResume:
                 raise
             except Exception as exc:
@@ -289,26 +282,30 @@ class _CountingStream(io.RawIOBase):
                 time.sleep(backoff)
         return b""  # pragma: no cover - the loop either returns or raises
 
-    def _decompress(self, chunk: bytes) -> bytes:
-        """Decompress one chunk, rolling over a concatenated bzip2 stream."""
-        out = self._decompressor.decompress(chunk)
-        while self._decompressor.eof and self._decompressor.unused_data:
-            leftover = self._decompressor.unused_data
-            self._decompressor = bz2.BZ2Decompressor()
-            out += self._decompressor.decompress(leftover)
-        return out
-
     def readinto(self, target) -> int:  # type: ignore[override]
         while not self._buffer and not self._exhausted:
-            if self._max_compressed_bytes is not None and self.compressed_bytes >= self._max_compressed_bytes:
-                self._exhausted = True
-                break
-            chunk = self._read_chunk()
-            if not chunk:
-                self._exhausted = True
-                break
-            self.compressed_bytes += len(chunk)
-            self._buffer = self._decompress(chunk)
+            chunk = b""
+            member_finished = self._decompressor.eof
+            if member_finished:
+                chunk = self._decompressor.unused_data
+                self._decompressor = bz2.BZ2Decompressor()
+            if not chunk and self._decompressor.needs_input:
+                if self._max_compressed_bytes is not None and self.compressed_bytes >= self._max_compressed_bytes:
+                    self.budget_exhausted = self._exhausted = True
+                    break
+                size = _CHUNK
+                if self._max_compressed_bytes is not None:
+                    size = min(size, self._max_compressed_bytes - self.compressed_bytes)
+                chunk = self._read_chunk(size)
+                if not chunk:
+                    if not member_finished:
+                        raise EOFError("CourtListener bulk: incomplete bzip2 member at source EOF")
+                    self._exhausted = True
+                    break
+                self.compressed_bytes += len(chunk)
+            # Drain already-read compressed bytes before checking the input budget.
+            # max_length prevents one compressed chunk allocating an entire dump.
+            self._buffer = self._decompressor.decompress(chunk, max_length=_DECOMPRESSED_CHUNK)
             self.decompressed_bytes += len(self._buffer)
         if not self._buffer:
             return 0
@@ -321,9 +318,8 @@ class _CountingStream(io.RawIOBase):
 class CourtListenerBulkReader(Reader):
     """Yield raw CSV rows from one CourtListener bulk dump, decompressed inline.
 
-    Pure source: rows are yielded as the publisher wrote them (all values are
-    strings; the empty string is normalized to ``None``). Shaping belongs to the
-    ``transforms/build_court_*`` builders.
+    Source strings, including quoted empty strings, remain strings. Unquoted
+    empty fields become ``None``. Shaping belongs to the caller.
 
     ``local_file`` reads an already-downloaded ``.bz2`` instead of the network,
     which is how the small dumps are handled once cached. ``max_records`` and
@@ -339,9 +335,12 @@ class CourtListenerBulkReader(Reader):
         local_file: Path | None = None,
         max_records: int | None = None,
         max_compressed_bytes: int | None = None,
+        max_record_characters: int = MAX_RECORD_CHARACTERS,
         row_filter: Callable[[dict], bool] | None = None,
     ) -> None:
         super().__init__()
+        validate_record_limit(max_record_characters)
+        self.max_record_characters = max_record_characters
         self.dataset = dataset
         self.dump_date = dump_date
         self.local_file = local_file
@@ -375,43 +374,60 @@ class CourtListenerBulkReader(Reader):
 
     def iter_records(self) -> Iterator[dict]:
         handle, response = self._stream()
+        counter = _CountingStream(
+            handle,
+            max_compressed_bytes=self.max_compressed_bytes,
+            reopen=(
+                (lambda offset: _open(str(self.source_url), extra_headers={"Range": f"bytes={offset}-"}))
+                if response is not None
+                else None
+            ),
+        )
+        completed = False
         try:
-            if response is None:
-                counter = _CountingStream(handle, max_compressed_bytes=self.max_compressed_bytes)
-            else:
-                url = self.source_url
-                counter = _CountingStream(
-                    handle,
-                    max_compressed_bytes=self.max_compressed_bytes,
-                    reopen=lambda offset: _open(str(url), extra_headers={"Range": f"bytes={offset}-"}),
+            with io.BufferedReader(counter) as raw:
+                rows = iter_postgres_csv(
+                    raw,
+                    max_record_characters=self.max_record_characters,
+                    is_truncated=lambda: counter.budget_exhausted,
                 )
-            raw = io.BufferedReader(counter)
-            text = io.TextIOWrapper(raw, encoding="utf-8", errors="replace", newline="")
-            for row in csv.DictReader(text, **CSV_DIALECT):
-                self.rows_scanned += 1
-                if self.rows_scanned % _PROGRESS_EVERY == 0:
-                    logger.info(
-                        "CourtListener bulk {}: {:,} rows scanned, {:,} kept, {:.2f} GiB compressed",
-                        self.dataset,
-                        self.rows_scanned,
-                        self.rows_yielded,
-                        counter.compressed_bytes / 2**30,
-                    )
-                record = {k: (v if v != "" else None) for k, v in row.items() if k is not None}
-                if self.row_filter is not None and not self.row_filter(record):
-                    continue
-                self.rows_yielded += 1
-                yield record
-                if self.max_records is not None and self.rows_yielded >= self.max_records:
-                    self.stopped_early = True
-                    break
-            else:
-                self.stopped_early = bool(self.max_compressed_bytes is not None and counter._exhausted)
+                header = next(rows, None)
+                if header is None:
+                    if counter.budget_exhausted:
+                        return
+                    raise CourtListenerCsvError("CourtListener CSV record 1: missing header")
+                if any(name is None or name == "" for name in header) or len(set(header)) != len(header):
+                    raise CourtListenerCsvError("CourtListener CSV record 1: header names must be nonempty and unique")
+                for record_number, row in enumerate(rows, start=2):
+                    if len(row) != len(header):
+                        raise CourtListenerCsvError(
+                            f"CourtListener CSV record {record_number}: expected {len(header)} columns, got {len(row)}"
+                        )
+                    self.rows_scanned += 1
+                    if self.rows_scanned % _PROGRESS_EVERY == 0:
+                        logger.info(
+                            "CourtListener bulk {}: {:,} rows scanned, {:,} kept, {:.2f} GiB compressed",
+                            self.dataset,
+                            self.rows_scanned,
+                            self.rows_yielded,
+                            counter.compressed_bytes / 2**30,
+                        )
+                    record = dict(zip(header, row, strict=True))
+                    if self.row_filter is not None and not self.row_filter(record):
+                        continue
+                    self.rows_yielded += 1
+                    yield record
+                    if self.max_records is not None and self.rows_yielded >= self.max_records:
+                        self.stopped_early = True
+                        break
+                else:
+                    completed = not counter.budget_exhausted
+        finally:
             self.compressed_bytes = counter.compressed_bytes
             self.decompressed_bytes = counter.decompressed_bytes
             self.resumes = counter.resumes
-        finally:
-            handle.close()
+            self.stopped_early = not completed
+            counter.close()
         logger.info(
             "CourtListener bulk {}: {:,} scanned / {:,} yielded ({:.2f} GiB compressed read, {} resume(s))",
             self.dataset,

@@ -37,6 +37,7 @@ from spicy_docs.source_native import (
     SourceNativeReleaseError,
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
+    verify_source_native_release,
 )
 from spicy_docs.source_native_profiles import SPICY_REGS_PUBLIC_COMMENT_PROFILE
 from spicy_docs.sources.public_comments.native import (
@@ -225,7 +226,7 @@ def test_every_published_column_survives_capture_including_nulls_and_boilerplate
     outcome = _reader(published.root, published.artifact.pin).collection_outcome
     assert outcome["sourceStateScope"] == "observed-crawl"
     assert outcome["traversalAcceptance"] == "single-observed-traversal"
-    assert outcome["acquisitionPolicyVersion"] == "1.1"
+    assert outcome["acquisitionPolicyVersion"] == "1.2"
     assert outcome["acquisitionPolicy"] == comment_acquisition_policy(_scope())
 
 
@@ -650,6 +651,65 @@ def test_attachment_renditions_reach_the_published_release(tmp_path: Path) -> No
     assert {row["sourceRecordId"] for row in renditions} == {"EPA-2026-0001-0001"}
     receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
     assert receipt["renditionIndexCount"] == 2
+
+
+def test_mixed_attachment_positions_and_json_types_survive_publication_and_replay(tmp_path: Path) -> None:
+    raw = json.dumps(
+        [
+            None,
+            {
+                "formats": [
+                    {},
+                    {"url": "https://example.test/download", "format": "json", "size": 12},
+                    {"url": "https://example.test/bad", "size": -1},
+                    {"url": "https://example.test/data.json#table", "size": None},
+                    {"url": "https://example.test/path.xml/child"},
+                ]
+            },
+        ]
+    )
+    captures = [_capture("EPA", 0, [_row(attachments_json=raw)])]
+    first = _publish(tmp_path, captures, name="first")
+    second = _publish(tmp_path, deepcopy(captures), name="second", blobs="blobs-replay")
+    assert first.artifact.pin == second.artifact.pin
+    reader = _reader(first.root, first.artifact.pin)
+    verify_source_native_release(
+        first.artifact,
+        LocalMemberSource(first.root),
+        profile=SPICY_REGS_PUBLIC_COMMENT_PROFILE,
+        blob_source=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+    )
+    record = next(iter(reader.iter_records()))
+    assert record["record"]["attachments_json"] == raw
+    assert [item["field"] for item in record["fieldDiagnostics"]] == [
+        "attachments_json[0]",
+        "attachments_json[1].formats[0]",
+        "attachments_json[1].formats[2]",
+    ]
+    assert all(item["value"] == raw for item in record["fieldDiagnostics"])
+    renditions = list(reader.iter_renditions())
+    assert [item["renditionId"] for item in renditions] == [
+        "attachment-0001-0001",
+        "attachment-0001-0003",
+        "attachment-0001-0004",
+    ]
+    assert [item["sourceField"] for item in renditions] == [
+        "attachments_json[1].formats[1]",
+        "attachments_json[1].formats[3]",
+        "attachments_json[1].formats[4]",
+    ]
+    assert [item["mediaType"] for item in renditions] == [
+        "application/json",
+        "application/json",
+        "application/octet-stream",
+    ]
+
+
+def test_current_profile_refuses_pre_rendition_policy(tmp_path: Path) -> None:
+    old_profile = replace(SPICY_REGS_PUBLIC_COMMENT_PROFILE, acquisition_policy_version="1.1")
+    published = _publish(tmp_path, [_capture("EPA", 0, [_row()])], profile=old_profile)
+    with pytest.raises(SourceNativeReleaseError, match="requires current .* policy version"):
+        _reader(published.root, published.artifact.pin)
 
 
 @pytest.mark.parametrize(

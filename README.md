@@ -37,8 +37,16 @@ be new. The example's fixed implementation ID is for demonstration only.
 ## Sources and supply
 
 Source releases support Federal Register, Regulations.gov through Mirrulations,
-captured spicy-regs public comments, and named GAO product pages. Raw
+captured spicy-regs public comments, named GAO product pages, and a retained
+OpenFEC committee census. Raw
 Mirrulations, CourtListener and [FEC](docs/sources/fec.md) readers are also available.
+
+The [bill API](docs/sources/congress-bills.md) separately captures BILLSTATUS XML
+and a selected bill-text version, preserving identity, source fields and bytes.
+The [CFR/eCFR API](docs/sources/cfr.md) captures explicitly selected regulation
+XML, retaining printed dates separately from requested dates and editions.
+Its [GovInfo metadata mapping](docs/sources/govinfo-metadata.md) supplies package
+and constituent records, including repeated fields, links and publisher notes.
 
 Prefer community spicy-regs tables where they carry the required data; use
 origin acquisition for missing coverage. Capture and pin whole named agency

@@ -41,7 +41,7 @@ from spicy_docs.schemas.spicy_regs_public_tables import (
 )
 from spicy_docs.sources.evidence_zip import deterministic_zip_entry
 from spicy_docs.sources.json_input import load_integer_json
-from spicy_docs.sources.media_types import media_type
+from spicy_docs.sources.media_types import media_type, media_type_policy
 
 PUBLIC_TABLE_BASE_URL: Final = "https://data.spicy-regs.dev"
 PUBLIC_TABLE_HOST: Final = "data.spicy-regs.dev"
@@ -55,7 +55,7 @@ COMMENT_SCHEMA_PATH: Final = "sources/spicy-regs-public-comment-1.0.schema.json"
 COMMENT_SOURCE_SCHEMA_KEY: Final = "schemas/spicy-regs-public-comment-1.0.schema.json"
 COMMENT_RECORD_STEM: Final = "spicy-regs-public-comment"
 COMMENT_ACQUISITION_POLICY_ID: Final = "urn:spicy-regs:acquisition:spicy-regs-public-comment-partition-capture"
-ACQUISITION_POLICY_VERSION: Final = "1.1"
+ACQUISITION_POLICY_VERSION: Final = "1.2"
 
 MAX_TRAVERSALS: Final = 1
 MAX_SCOPE_AGENCIES: Final = 512
@@ -532,7 +532,7 @@ def _attachment_groups(record: Mapping[str, Any]) -> tuple[list[dict[str, Any]],
             )
             groups.append({"index": index, "formats": []})
             continue
-        usable: list[Mapping[str, Any]] = []
+        usable: list[tuple[int, Mapping[str, Any]]] = []
         for format_index, value in enumerate(formats):
             url = value.get("url") if isinstance(value, Mapping) else None
             size = value.get("size") if isinstance(value, Mapping) else None
@@ -550,7 +550,7 @@ def _attachment_groups(record: Mapping[str, Any]) -> tuple[list[dict[str, Any]],
                     }
                 )
                 continue
-            usable.append(value)
+            usable.append((format_index, value))
         groups.append({"index": index, "formats": usable})
     return groups, diagnostics
 
@@ -568,7 +568,7 @@ def comment_rendition_rows(record: Mapping[str, Any]) -> tuple[dict[str, Any], .
     rows: list[dict[str, Any]] = []
     for group in _attachment_groups(record)[0]:
         index = int(group["index"])
-        for format_index, value in enumerate(cast(Sequence[Mapping[str, Any]], group["formats"])):
+        for format_index, value in cast(Sequence[tuple[int, Mapping[str, Any]]], group["formats"]):
             locator = str(value["url"])
             rows.append(
                 {
@@ -763,6 +763,10 @@ def comment_acquisition_policy(query_scope: Mapping[str, Any]) -> dict[str, Any]
             "selectedBy": "upstream-spicy-regs-pipeline",
             "statedRule": "newest observed row per comment_id by modify_date DESC NULLS LAST",
             "tieDisposition": "refuse-repeated-source-record-id",
+        },
+        "renditions": {
+            "positions": "original-attachment-and-format-indexes; invalid-formats-retained-as-diagnostics",
+            "mediaType": media_type_policy(),
         },
         "strategy": "observed-contiguous-part-probing",
         "table": COMMENT_TABLE,

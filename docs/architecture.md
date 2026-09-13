@@ -22,7 +22,10 @@ Paths below are relative to `src/spicy_docs/`.
 | Change | Start here |
 | --- | --- |
 | Federal Register pages and date windows | `sources/federal_register/native.py` |
-| GovInfo body fetching; pure document checks | `sources/federal_register/body_acquisition.py`; `body_sources.py` |
+| XML-first body fetching; pure identity checks | `sources/federal_register/body_acquisition.py`; `body_sources.py`; `body_xml.py` |
+| Explicit CFR/eCFR captures and native identity | `sources/cfr/acquisition.py`; `ecfr.py`; `annual.py` |
+| GovInfo MODS package/constituent metadata | `sources/govinfo/mods.py`; CFR edition checks in `sources/cfr/edition.py` |
+| Explicit bill status and selected text XML | `sources/congress/bill_acquisition.py`; `bill_status.py`; `bill_text.py` |
 | GAO pages | `sources/gao/native.py` |
 | Captured public comments | `sources/public_comments/native.py` |
 | Raw streams | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |
@@ -62,6 +65,7 @@ checks integrity with bounded memory; full verification also replays source mean
   `cli/fec.py` exposes independent raw FEC acquisition.
 - **Transport:** `transport/acquisition.py` composes clients, `http.py` implements
   HTTPX calls, and `download.py` streams bounded assets to the shared blob writer.
+  `capture.py` retains bounded regulation/bill captures and refused bytes;
   `retry.py` and `credentials.py` hold shared request rules.
 - **Source helpers:** `sources/json_input.py`, `media_types.py` and `evidence_zip.py`
   share parsing/encoding; `source_domains.py` owns documented-value comparisons.

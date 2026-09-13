@@ -11,6 +11,7 @@ provenance; the caller chooses the source and scope.
 | Flat Parquet rows from a release | `publish-public-table` for Federal Register or Mirrulations | Keep the table pin and input release. Publication checks every row; `verify-public-table` checks admission. The library verifier also checks rows. |
 | Parsed dictionaries in an application that owns recovery | A Mirrulations, CourtListener or FEC raw reader | The caller retains input pins, failures, checkpoints, and completion evidence. A raw read has no release verification. |
 | An immutable release of a retained OpenFEC committee census | The [FEC committee profile](sources/fec.md#publish-a-retained-committee-census) and existing publisher | Pin every capture, replay exact JSON, check page/count/ID membership, and retain observed-crawl scope. Other FEC families remain raw-reader inputs. |
+| Complete GovInfo MODS metadata | The [MODS mapping](sources/govinfo-metadata.md), available with annual CFR edition capture | Keep the original response and mapped package/constituents. Repeated fields, attributes and unknown extensions survive; advertised links remain unfetched. |
 
 Use the [CLI commands](cli.md), [raw-reader APIs](sources/raw-readers.md), or
 [offline GAO example](../examples/offline_release.py). The example requires no
@@ -25,6 +26,8 @@ network or credentials and leaves inspectable output.
 | [Community comments](sources/public-comments.md) | Agencies | Exact Parquet parts and rows. Discovery stops at the first missing numbered part; later parts are unrequested. |
 | [FEC](sources/fec.md) | Explicit API filters, bulk prefixes, sitemaps or selected originals | Metadata and retained responses; linked bodies are acquired separately. The committee census profile can seal one pinned observed traversal. Raw-reader output and other families do not automatically become releases. |
 | [GAO](sources/gao.md) | Product IDs | Exact HTML, product identity, and one literal publisher topic per page. Other products and linked report files are outside the capture. |
+| [Congressional bills](sources/congress-bills.md) | Explicit bill IDs and text-version package IDs | BILLSTATUS metadata and selected XML text with exact captures and identity checks. This API does not enumerate a collection or publish a release. |
+| [CFR/eCFR](sources/cfr.md) | Explicit route, title and date/edition where supported | Regulation XML and separately requested annual edition metadata, including publisher-stated cover-only status. Exact payloads and native identity/date checks; no collection discovery or release publication. |
 
 Prefer community SpicyRegs tables when they supply the needed data; choose origin
 acquisition for uncovered needs. This [supply rule](decisions.md#community-supply-precedes-origin-acquisition)
@@ -52,8 +55,8 @@ or export a supported table. Rendition rows describe locators and source metadat
 they do not establish downloaded or hashed body content.
 
 The [Federal Register body API](federal-register-body-sources.md) separately
-acquires an explicitly selected GovInfo granule, checks identity, and returns
-exact bytes. Publisher XML/text routes currently provide locators only.
+prefers publisher XML, checks identity, and returns exact bytes. It falls back
+to GovInfo HTML only after XML 404/410; strict XML and explicit HTML are available.
 
 Use DocSpec when combining sources, document fetchers, processors, and successive
 runs. Its optional sibling-checkout [walkthrough](../../DocSpec/docs/offline-walkthrough.md),

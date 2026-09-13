@@ -1,8 +1,206 @@
 # Work status
 
+- [x] **I01 — Combine the FEC and XML/CFR source work.** Local `main` combines
+  FEC `e7fa9da` and XML/CFR `1c2c95c`, preserving both families and their task
+  status. SpicyDocs **0.7.0** passed 1,428 repository tests (two opt-in checks
+  deselected), lint/format, lock and 330 tests against the installed core wheel.
+  Both CLI commands and FEC JSON resources work without optional HTTP/table
+  packages. Retained metadata checks passed; source captures remain byte-exact.
+  Architecture and both independent code reviews approved. Wheel, checks and
+  reviews: `~/Work/corpora/supply-2026-09-02/receipts/xml-fec-merge-2026-09-12/`.
+  Downstream adoption and push remain separate.
+
+**All active source-fidelity and CFR example tasks are complete locally.**
+S21/S31 remain conditionally deferred. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
+owns the remaining CourtListener reader adoption. These follow-up commits have
+not been pushed.
+
 **Merged simplification: 23 local items complete; two conditionally deferred.**
 Six original items moved to their implementation owners. A moved task is not a
 completed task; follow the receiving backlog for its status.
+
+## Canonical CFR/eCFR acquisition
+
+- [x] **C01:** Inventory existing code and agree ownership: SpicyDocs acquires;
+  RefSpec reads native text; DocSpec selects and runs datasets.
+- [x] **C02:** Validate explicit eCFR API, annual CFR and GovInfo bulk eCFR inputs;
+  preserve native identity separately from requested dates/editions.
+- [x] **C03:** Implement bounded acquisition through shared HTTP and XML scanning;
+  retain exact captures and failures without implicit route or date fallback.
+- [x] **C04:** Provide one runnable source capture example and qualify ordinary
+  installed-wheel use, including RefSpec reading supported captured XML.
+- [x] **C05:** Complete focused/full checks, bounded live captures, retained-source
+  replay and independent code reviews; document remaining format limits.
+- [x] **C06:** Represent publisher-stated cover-only editions and original issue
+  dates from GovInfo metadata; remove warnings based only on differing dates.
+
+C06 checks: 1,211 tests passed (two opt-in tests deselected), lint/format and
+focused types passed. The explicit edition metadata API returned 2025 Title 1
+as `cover-only`, with original issue date `2023-01-01`, in one live request.
+Retained evidence: `~/Work/corpora/supply-2026-09-02/receipts/cfr-edition-type-2026-09-12/`.
+
+- [x] **M01:** Map GovInfo MODS package and constituent metadata using published
+  MODS definitions and GovInfo field guides. Preserve repeated fields, attributes,
+  namespace context, literal notes and unknown extensions with input provenance.
+- [x] **M02:** Return mapped metadata from the existing annual metadata request;
+  derive edition facts from that mapping and save ingestible JSON in the example.
+- [x] **M03:** Verify preservation against retained full XML, qualify the wheel,
+  review independently and correct the source ownership guidance.
+
+SpicyDocs owns parsing and mapping non-body source metadata. DocSpec uses those
+records for dataset catalogs and selection; domain processors interpret meaning.
+
+M01–M03 qualification: 1,229 tests passed (two opt-in tests deselected), lint,
+format and focused types passed. One live request produced exact XML and mapped
+JSON. Complete 2023/2025 Title 1 replays each compared all 15,377 elements with an
+independent XML parser and retained 401 constituents, 391 XML links, 400 PDF links
+and 400 parent references. These are source observations, not acquired bodies.
+
+The ordinary core-only SpicyDocs 0.5.0 wheel passed both replays without HTTPX.
+Two independent static code reviews approved with no actionable findings.
+Wheel SHA-256: `4b658c4a1cd8d5a1e99697440b6e6d152ae1c665233d4e8b4fe4e8cee156815a`.
+Receipts, replay script and live outputs:
+`~/Work/corpora/supply-2026-09-02/receipts/govinfo-mods-mapping-2026-09-12/`.
+The [field guide](sources/govinfo-metadata.md) links the publisher dictionaries
+and documents the mapping and format limits.
+
+<a id="c07"></a>
+
+- [x] **C07:** Add a DocSpec-owned annual CFR catalog example using the qualified
+  SpicyDocs wheel. Preserve MODS metadata, select one explicit annual section,
+  inject acquisition and processing, then prove a changed processor reuses
+  retained bytes after the source client closes. Local DocSpec commit `1d37bcb`
+  is isolated on `codex/cfr-dataset-example`; it pins SpicyDocs `0.6.0` from
+  source commit `5a9c4e9`. DocSpec D55 owns its receiving completion record.
+
+C07 checks: **1,162 tests passed**, one opt-in test deselected; regression-map,
+lint, lock, build and installed-wheel checks passed. The examples work without
+Dagster, and DocSpec's base install remains independent of SpicyDocs. Independent
+review approved after fixing joined Federal Register format selection and policy
+type checks. Both standalone and joined catalogs prefer one publisher XML offer
+while retaining alternative formats as evidence.
+
+The bounded live example used two requests: full volume MODS metadata (401
+constituents) and one selected annual section. Reprocessing after closing the
+source client added no captures, representations or segments. Exact source bytes,
+complete mapped metadata and native publication identity remain available.
+Receipts and review: `~/Work/corpora/supply-2026-09-02/receipts/source-fidelity-2026-09-12/`
+(`docspec-check/` and `docspec-cfr-live/`).
+
+Earlier C01–C05 validation: 1,162 tests passed (two opt-in tests deselected), lint/format and
+focused types passed. All seven request shapes succeeded live. Source validation
+passed all 49 retained August 24 titles (810,674,584 bytes); that snapshot is not
+current coverage. Two independent code reviews approved the implementation.
+
+SpicyDocs 0.4.0, source commit `29a2be4`, wheel SHA-256
+`728affb3721707087c90987cbf3362295b7c527332ba7dbb15459e8ce0521fb4`, passed 11
+installed-wheel replays. RefSpec read captured Title 1 and returned 274 addresses
+with 14 explicit unsupported-range issues. Its format and numbering limits
+remain visible in the [source guide](sources/cfr.md).
+
+Source receipts: `~/Work/corpora/supply-2026-09-02/receipts/cfr-canonical-qualification-2026-09-12.json`
+and `cfr-retained-validation-2026-09-12.json` in the same directory. This completes
+the local source API; receiving application migration and public release remain
+separate work.
+
+## GovInfo bill integration
+
+First deliverable: explicit bill IDs and text versions, exact status/text XML,
+and installed-wheel consumers. Collection discovery and new regulatory sources
+remain separate work with their own scope and coverage checks.
+
+- [x] **G01:** Parse current BILLSTATUS and bill XML; preserve source fields, summaries and every stated text-version link; prove bill/version identity.
+- [x] **G02:** Share bounded HTTP capture with Federal Register; expose status and explicitly selected XML text acquisition.
+- [x] **G03:** Replace SpicyRegs' duplicate BILLSTATUS subject acquisition with the qualified SpicyDocs wheel.
+  Local receiving commit `b990062` on `codex/govinfo-bill-source`; 1,040 tests
+  passed, and the base CLI/MCP wheel works without the optional provider.
+- [x] **G04:** Add a DocSpec-owned catalog, injected fetcher and processing example; prove later processing reuses captured bytes.
+  Local receiving commit `4df1b44` on `codex/govinfo-bill-example`; the installed-wheel
+  example explicitly selects one version and reprocesses after closing the source
+  client, with zero new captures. Final checks: 1,277 tests passed, lint and lock
+  checks passed; separate test-maintenance commit `e0580ce` updates stale Rulespec
+  error assertions and removes an unused import.
+- [x] **G05:** Run source/receiver checks, bounded live captures, installed-wheel qualification and independent reviews; document the supported formats and limits.
+
+Source checks: 1,016 tests passed (two opt-in tests deselected), lint/format and
+focused types passed. Three live bills supplied six validated status/text captures;
+all three pairs replayed through the installed wheel. Source and receiving
+independent reviews approved. [API and supported formats](sources/congress-bills.md).
+
+At bill integration, both receivers pinned SpicyDocs 0.3.0 from source commit `8e485fe`, wheel
+SHA-256 `bef15f967b0840ccc119c812edca92b38c63adb8943074be17655b86c96f83f1`.
+DocSpec's later C07 work above advances its wheel to 0.6.0 in an isolated worktree.
+Live receipts: `~/Work/corpora/supply-2026-09-02/receipts/bill-acquisition-2026-09-12/`.
+
+CFR/eCFR already has acquisition examples, retained XML and active readers across
+the sibling repositories; see the [reuse inventory](source-reference.md#cfr-metadata-and-separately-acquired-xml).
+The canonical acquisition work is tracked above. Preserve SpicyRegs metadata
+and DocSpec catalog/run ownership; receiving application migration remains
+separate from adding this source API.
+
+Deferred until a named workflow needs them: bounded GovInfo JSON discovery/publication,
+standalone BILLSUM coverage, and Federal Register issue acquisition justified by
+batch measurements.
+
+## Fetcher format review
+
+The [format review](fetcher-formats.md) covers all implemented fetchers and
+network tools. Implementation and validation are tracked below.
+
+The [local pre-work review](remaining-source-prework.md) identifies existing
+implementations and tests for F02–F05, P01 and the DocSpec CFR example.
+
+- [x] **F01:** Review structured-format opportunities with parallel source reviewers and architecture consensus.
+- [x] **F06:** Test GovInfo issue XML with retained live evidence. Extraction is feasible; no additional recovery demonstrated. Keep the default unchanged. [Result and limits](fetcher-formats.md#opportunities-that-need-more-evidence).
+- [x] **F07:** Review all 23 tracked GovInfo bulk-data assets, including PDF guides, XML pairs and HTML samples; refine source-format guidance. [Findings and scope](fetcher-formats.md#what-the-complete-govinfo-asset-review-adds).
+- [x] **F02:** Reuse the FEC/main media-type fix; pin aliases and final URL-path inference in Regulations.gov/public-comment policy `1.2`. JSON publication, retained replay and prior-policy refusal pass; source schemas stay unchanged.
+- [x] **F03:** Preserve Federal Register `full_text_xml_url` and emit `body-xml`. Source schema `1.1`, policy `1.3`, embedded schema, admission and replay agree. Empty/malformed values become retained record failures; Parquet columns stay unchanged.
+- [x] **F04:** Preserve native CRS `version` values, explicit null and absence on new captures. Resume leaves earlier successful rows untouched; a new output file obtains fresh evidence.
+- [x] **F05:** Preserve CourtListener quoted empty strings, nulls and literal
+  backslashes using the publisher's CSV dialect. Bound record size, decompression
+  and compressed reads; refuse malformed text, rows and incomplete bzip2 members.
+  Resume and cleanup checks pass. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
+  owns adoption of the reader and the separate table-normalization audit.
+
+F05 checks: 103 CSV, bulk-reader and listing tests passed. Retained CourtListener
+data produced 3,361 rows with 16,096 nulls and 11,808 empty strings. Re-encoding
+with the publisher's quoting rules reproduced all 765,809 decompressed bytes.
+Independent review findings about truncated input, byte limits and cleanup were
+fixed and covered by regressions. Evidence shares the receipt directory below.
+
+F02–F04 and P01 checks: 342 focused tests and 40 XML-acquisition tests passed;
+lint, format and focused types passed. Independent review approved P01/F02/F04;
+F03 review caught and corrected the empty-link refusal. One bounded live Federal
+Register request returned 20 metadata records with publisher XML links. It did
+not acquire bodies or establish coverage. Receipts and review:
+`~/Work/corpora/supply-2026-09-02/receipts/source-fidelity-2026-09-12/`.
+
+Local source commits: `f3b9137` (P01/F02–F04) and `5a9c4e9` (F05).
+Combined qualification: **1,312 tests passed**, two opt-in tests deselected;
+lint, format and focused types passed. Independent source reviews approved.
+The ordinary SpicyDocs `0.6.0` wheel replayed retained Federal Register records,
+both CFR MODS packages and CSV fidelity cases with no HTTP dependency installed.
+Wheel SHA-256: `c6c364190dfab74d22e77843a8b3dee5c392ed983de21e524dd73be72647c532`.
+
+## Public-comment attachment provenance
+
+- [x] **P01 — Preserve original attachment-format positions.** Rendition IDs
+  and source fields keep their original indexes when invalid entries appear
+  before or between valid formats. Publication and replay preserve the raw
+  JSON, diagnostics and noncontiguous positions under policy `1.2`.
+  [DocSpec's comment example](../../DocSpec/docs/spicyregs-comments.md) retains
+  provider-declared locations and exact input bytes; the source fix belongs here.
+  Receiving mixed-validity coverage accompanies the C07 wheel adoption.
+
+## XML body preference
+
+- [x] **X01:** Prefer validated Federal Register XML; retain HTML fallback only after XML 404/410.
+- [x] **X02:** Demonstrate XML and fallback with retained bytes; update callers and source guidance.
+- [x] **X03:** Check identity, refusal, shared bounds, live XML and installed-wheel use; independently review.
+
+Validation: 916 tests passed (two opt-in tests deselected), lint/format passed,
+and independent architecture/code reviews approved. Four live XML samples and
+both installed-wheel examples passed. [Usage and limits](federal-register-body-sources.md).
 
 ## Readability pass
 
@@ -76,7 +274,8 @@ complete FEC distribution/catalog/search adoption remains open.
   parity checks; keep source users independent and package dependencies acyclic.
 
 The [caller decision](source-ownership.md#current-campaign-and-dataset-callers)
-explains both deferrals. DocSpec D51/D52 own the planned dataset examples;
+explains both deferrals. DocSpec D51/D52 own the completed GAO/comment examples,
+and D55 records the annual CFR example;
 creating a new source-side loop merely to migrate it adds no value.
 
 ## Completed local work

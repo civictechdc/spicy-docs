@@ -33,17 +33,23 @@ digests agree; a substantive tie refuses publication.
 | Classification failure or record outside its request window | Deterministic failure-ledger row; publication may succeed with zero accepted records |
 | Invalid page evidence, unsafe cursor, or inconsistent coverage | Release refused |
 
-Renditions list `body-html`, `html`, and `pdf`, including explicit null locators.
-They describe links, not downloaded bodies. The separate
-[body API](../federal-register-body-sources.md) acquires a selected direct or
-MODS-resolved GovInfo granule; publisher XML/text helpers supply locators only.
+Renditions list `body-html`, `body-xml`, `html`, and `pdf`. `body-xml` preserves
+the publisher's `full_text_xml_url` with media type `application/xml`; it never
+substitutes a constructed URL. Missing and explicit null fields remain distinct
+in the source record, and both produce a null rendition locator. These rows
+describe links, not downloaded bodies. The separate
+[body API](../federal-register-body-sources.md) prefers publisher XML, with direct
+or MODS-resolved GovInfo HTML after XML 404/410. Callers can also require XML or
+request HTML explicitly. Plain-text helpers supply locators only.
 Stream admitted metadata with `SourceNativeReleaseReader` or export its public
 table. See [output choices](../source-workflows.md).
 
-Policy `1.1` introduced compound identity; current `1.2` adds observed-crawl
-coverage limits. Both retain the same 22 `DOCUMENT_FIELDS`. Requests and replay
-require that field set and canonical URL. `correction_of` was never added.
-The public table also uses compound identity. Read the
+Current policy `1.3` requests 23 fields and pins the rendition mappings. Source
+schema `1.1` adds optional, nullable `full_text_xml_url`. Admission and replay
+require these current versions and the canonical URL; earlier releases need
+an explicit fresh acquisition. `correction_of` was never added. The public
+Parquet table retains its existing columns and compound identity; the XML link
+is available in source records and rendition rows. Read the
 [identity and field decision](../decisions.md#federal-register-identity-and-fields-version-separately)
 before changing either.
 
@@ -57,6 +63,7 @@ identity changes:
 ```sh
 uv run --frozen pytest -q tests/releases/test_acquisition.py tests/test_federal_register_request_window.py
 uv run --frozen pytest -q tests/releases/test_selection.py tests/releases/test_reading.py tests/test_federal_register_public_table.py
+uv run --frozen pytest -q tests/test_replay_federal_register_release.py tests/test_acquisition_policy_history.py tests/test_release_schema_bundle_history.py
 ```
 
 Use small captured or explicitly synthetic responses. Keep replay independent

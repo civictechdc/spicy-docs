@@ -8,6 +8,7 @@ from datetime import date
 from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
 
+from spicy_docs.sources.media_types import media_type_policy
 from spicy_docs.sources.regulations_gov.definitions import (
     _ASCII_ID,
     COMMENT_COLLECTION,
@@ -475,6 +476,11 @@ def _acquisition_policy(
             ),
         },
         "strategy": "complete-mirrulations-source-enumeration",
+        "renditions": (
+            {"positions": "original-file-format-indexes", "mediaType": media_type_policy()}
+            if collection != DOCKET_COLLECTION
+            else {"selection": "none-stated-by-docket-profile"}
+        ),
     }
 
 

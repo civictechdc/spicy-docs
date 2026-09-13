@@ -60,6 +60,33 @@ Preserve hierarchy, citations, edition, and XML structure. References:
 contains metadata, not section bodies or proof of USLM text/Lists of Subjects.
 SpicyDocs has no CFR release profile.
 
+Existing implementations to reuse:
+
+- **SpicyRegs:** `sources/cfr_sections.py` and its transform acquire annual CFR
+  package/granule JSON and publish section metadata.
+- **RefSpec:** `registry/ecfr.py` and `registry/xml_text.py` read retained eCFR
+  API XML into text, native nodes and source maps; `section_addresses` locates
+  sections. Source-map coordinates are decoded characters, not raw XML bytes.
+- **Rulespec:** `rulespec_extrapolator/uslm.py` already consumes that RefSpec
+  reader through an installed wheel for document preparation and reference lookup.
+- **DocSpec:** supplied-record catalogs, injected fetchers, XML extraction and
+  retained-input reprocessing already exist; no current dedicated CFR adapter.
+
+RefSpec also retains a whole-title research downloader under
+`research/evidence/ecfr-authority-notes-2026-08-24/scripts/fetch_titles.py`.
+Archived SpicyRegs/DocSpec evaluation code fetched dated CFR/eCFR sections.
+These are implemented acquisition examples; qualify their bounds, resume identity
+and response evidence before promoting them to reusable source APIs.
+
+The canonical [SpicyDocs acquisition API](sources/cfr.md) now owns explicit eCFR
+API, annual CFR and bulk eCFR captures, using shared bounded HTTP and XML scanning.
+The historical research downloader remains an experiment; existing receiving
+applications have not automatically migrated to this API.
+Keep annual CFR editions and eCFR snapshot dates distinct. RefSpec's current reader
+accepts `ECFR` or typed `DIV` roots; GovInfo bulk eCFR's `DLPSTEXTCLASS` wrapper and
+annual CFR body XML need separate format qualification. Do not strip the bulk
+wrapper blindly: its `DIV1/@N` can identify a volume rather than a title.
+
 ### Congress bill metadata and separately acquired XML
 
 Preserve bill type, actions, versions, committees, BioGuide IDs, and XML structure.

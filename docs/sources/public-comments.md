@@ -34,11 +34,11 @@ row types. The Hive path supplies `agency_code`: the file has 15 columns, and th
 logical row has 16, preserving nulls. See the
 [closed schema](../../src/spicy_docs/schemas/spicy_regs_public_tables.py).
 
-Policy `1.1` uses `observed-crawl`, `single-observed-traversal`, and
+Policy `1.2` uses `observed-crawl`, `single-observed-traversal`, and
 `observed-contiguous-part-probing`. It pins observed parts, not all upstream
 members, agencies, historical versions, or one publisher-wide instant.
 [Outcomes](../source-native-outcomes.md) expose these digest-checked limits and
-requested agencies. Current readers refuse policy `1.0`; pack and row shapes
+requested agencies. Current readers refuse earlier policies; pack and row shapes
 remain unchanged.
 
 ## Selection and attachment diagnostics
@@ -55,6 +55,12 @@ parse derives attachment locators:
 | Malformed attachment JSON, groups, or formats | Field diagnostic; unusable formats omitted from renditions, source text retained |
 | Usable format | Locator, declared size when available, and media type supplied or inferred from format/URL; no invented content digest |
 | Partition corruption, changed columns, wrong cell types, or identity failure | Fatal refusal |
+
+Rendition IDs and source fields retain the original attachment and format
+positions, including gaps left by invalid entries. Policy `1.2` pins those rules
+and the media-type aliases. Publisher types take precedence; fallback uses only
+the final URL path extension, ignoring queries, fragments and parent directories.
+JSON is `application/json`; unknown formats remain `application/octet-stream`.
 
 Renditions describe candidates, not downloaded files. Stream captured records
 through `SourceNativeReleaseReader`; see [output choices](../source-workflows.md).

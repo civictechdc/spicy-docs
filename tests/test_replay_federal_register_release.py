@@ -8,6 +8,7 @@ rows but one distinct request.
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -122,13 +123,17 @@ def _publish_source_release(
     return tmp_path / subdir, blob_store
 
 
-def _release_records(root: Path, blob_store: Path) -> dict[str, Any]:
-    reader = SourceNativeReleaseReader(
+def _release_reader(root: Path, blob_store: Path) -> SourceNativeReleaseReader:
+    return SourceNativeReleaseReader(
         LocalMemberSource(root),
         blob_source=LocalSourceNativeBlobStore(blob_store, create=False),
         profile=FEDERAL_REGISTER_PROFILE,
         accepted_verifier_implementation_ids=frozenset({IMPLEMENTATION_ID}),
     )
+
+
+def _release_records(root: Path, blob_store: Path) -> dict[str, Any]:
+    reader = _release_reader(root, blob_store)
     return {row["sourceRecordId"]: row["record"] for row in reader.iter_records()}
 
 
@@ -155,6 +160,52 @@ def test_replay_reproduces_the_same_record_set(tmp_path: Path) -> None:
     replayed_records = _release_records(destination, blob_store)
     assert len(source_records) == 2
     assert replayed_records == source_records
+
+
+def test_publisher_xml_links_absence_and_null_survive_admission_and_replay(tmp_path: Path) -> None:
+    xml_url = "https://www.federalregister.gov/documents/full_text/xml/2026/08/25/2026-00001.xml"
+    documents = [
+        _document("2026-00001", full_text_xml_url=xml_url),
+        _document("2026-00002", full_text_xml_url=None),
+        _document(
+            "2026-00003",
+            body_html_url="https://www.federalregister.gov/documents/full_text/html/2026/08/25/2026-00003.html",
+        ),
+    ]
+    fetch_map, url = _single_page_fetch_map(*documents)
+    assert "fields%5B%5D=full_text_xml_url" in url
+    release_root, blob_store = _publish_source_release(tmp_path, fetch_map)
+    destination = tmp_path / "replayed"
+    summary = replay(
+        release_root=release_root,
+        blob_store=blob_store,
+        destination=destination,
+        implementation_id=IMPLEMENTATION_ID,
+        clock=_replay_started_at,
+    )
+    assert summary["publishedRecordCount"] == 3
+    for root in (release_root, destination):
+        reader = _release_reader(root, blob_store)
+        records = list(reader.iter_records())
+        assert [row["record"] for row in records] == documents
+        assert {row["schemaVersion"] for row in records} == {"1.1"}
+        schema = json.loads((root / "schemas/federal-register-document-1.1.schema.json").read_bytes())
+        assert schema["$id"] == "urn:spicy-regs:schema:federal-register-document:1.1"
+        assert schema["properties"]["full_text_xml_url"] == {"minLength": 1, "type": ["string", "null"]}
+        assert not (root / "schemas/federal-register-document-1.0.schema.json").exists()
+        xml_renditions = [row for row in reader.iter_renditions() if row["renditionId"] == "body-xml"]
+        assert xml_renditions == [
+            {
+                "expectedByteSize": None,
+                "expectedSha256": None,
+                "locator": locator,
+                "mediaType": "application/xml",
+                "renditionId": "body-xml",
+                "sourceField": "full_text_xml_url",
+                "sourceRecordId": f"2026-0000{index}@2026-08-25",
+            }
+            for index, locator in enumerate((xml_url, None, None), start=1)
+        ]
 
 
 def test_replay_fetch_raises_naming_a_missing_request_key(tmp_path: Path) -> None:

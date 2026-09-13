@@ -7,7 +7,7 @@ reduces duplicate implementation without forcing source users into a dataset pla
 
 | Component | Responsibility |
 | --- | --- |
-| SpicyDocs | Source acquisition, faithful fields, identity, coverage, evidence and immutable source publication. |
+| SpicyDocs | Source acquisition and metadata parsing, faithful fields, identity, coverage, evidence and immutable source publication. |
 | SpicyRegs | Its independently useful regulatory-data pipeline and mutable public tables. |
 | DocSpec | Dataset catalogs, selection, injected fetchers/processors, capture, experiments, reuse and comparison. |
 | Rulespec Artifacts | Shared canonical encoding, artifact admission/publication and bounded physical blob writes. |
@@ -15,6 +15,11 @@ reduces duplicate implementation without forcing source users into a dataset pla
 DocSpec owns dataset semantics; Dagster or another executor schedules and runs
 its work. RefSpec and other supplied processors/resources own their domain meaning.
 A source release, catalog or retained capture can each be a useful stopping point.
+
+Parsing [GovInfo MODS metadata](sources/govinfo-metadata.md), including its nested
+records and source links, is core source work. DocSpec chooses which records
+become catalog items and manages their runs. RefSpec interprets citations and
+document text; SpicyDocs preserves the publisher's reference hints.
 
 ## Keep, share or retire
 

@@ -45,7 +45,7 @@ def test_outcome_reports_empty_success_partial_and_total_rejection(
     assert summary["acquisitionPolicy"] == FEDERAL_REGISTER_PROFILE.acquisition_policy(QUERY_SCOPE)
     assert summary["acquisitionPolicy"]["strategy"] == "date-window-cap-split-stable-reconciliation"
     assert summary["acquisitionPolicy"]["initialQueryScope"] == QUERY_SCOPE
-    assert summary["acquisitionPolicyVersion"] == "1.2"
+    assert summary["acquisitionPolicyVersion"] == "1.3"
     for field in ("acquisitionPolicyId", "acquisitionPolicyVersion", "acquisitionPolicyDigest"):
         assert summary[field] == published.artifact.root["spec"][field]
     assert summary["discoveredRecordCount"] == valid + rejected

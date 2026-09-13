@@ -51,6 +51,13 @@ ambiguous versions. Renditions preserve attachment locators and metadata; they
 contain no downloaded attachment. Stream admitted records or export the matching
 public table, retaining the source release and blob store for original JSON.
 
+Policy `1.2` pins rendition typing: publisher media types or known aliases take
+precedence, then the final URL path extension supplies a known type. Queries,
+fragments and parent directory names do not supply an extension. JSON becomes
+`application/json`; unknown types remain `application/octet-stream`. All three
+profiles share this policy version; dockets still state no renditions. Current
+readers refuse earlier policies. The raw record schemas remain `1.0`.
+
 ## Change and check
 
 [`sources/regulations_gov/`](../../src/spicy_docs/sources/regulations_gov/) owns

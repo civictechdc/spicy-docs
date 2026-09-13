@@ -30,6 +30,7 @@ from spicy_docs.source_native import (
     SourceNativeReleaseError,
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
+    verify_source_native_release,
 )
 from spicy_docs.source_native_profiles import REGULATIONS_GOV_COMMENT_PROFILE
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
@@ -205,6 +206,31 @@ def test_comment_raw_fields_and_every_attachment_rendition_are_preserved() -> No
     ]
     assert [row["mediaType"] for row in rows] == ["text/plain", "application/pdf"]
     assert [row["expectedByteSize"] for row in rows] == [42, 123]
+
+
+def test_comment_json_types_survive_publication_and_retained_replay(tmp_path: Path) -> None:
+    raw = _comment()
+    raw["data"]["attributes"]["fileFormats"] = [
+        {"fileUrl": "https://example.test/data.json#table", "format": None},
+        {"fileUrl": "https://example.test/path.xml/child", "format": None},
+    ]
+    raw["included"][0]["attributes"]["fileFormats"] = [
+        {"fileUrl": "https://example.test/download", "format": "JSON"},
+    ]
+    published = _publish(tmp_path, [_object("EPA-2026-0001-0001", tag="json", record=raw)])
+    reader = _reader(published.root, published.artifact.pin)
+    assert next(iter(reader.iter_records()))["record"] == raw
+    rows = {row["sourceField"]: row for row in reader.iter_renditions()}
+    assert rows["data.attributes.fileFormats[0]"]["mediaType"] == "application/json"
+    assert rows["data.attributes.fileFormats[1]"]["mediaType"] == "application/octet-stream"
+    assert rows["included[0].attributes.fileFormats[0]"]["mediaType"] == "application/json"
+    assert reader.collection_outcome["acquisitionPolicyVersion"] == "1.2"
+    verify_source_native_release(
+        published.artifact,
+        LocalMemberSource(published.root),
+        profile=REGULATIONS_GOV_COMMENT_PROFILE,
+        blob_source=LocalSourceNativeBlobStore(tmp_path / "blobs"),
+    )
 
 
 def test_complete_enumeration_selects_newest_comment_version_and_counts_discard(

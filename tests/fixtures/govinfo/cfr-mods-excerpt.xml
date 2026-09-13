@@ -1,0 +1,269 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mods xmlns="http://www.loc.gov/mods/v3" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1da1a300f">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>National Archives and Records Administration</namePart>
+         <namePart>Office of the Federal Register</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CFR</collectionCode>
+         <category>Regulatory Information</category>
+         <waisDatabaseName>2025_cfr_1v1</waisDatabaseName>
+         <branch>executive</branch>
+         <dateIngested>2025-11-19</dateIngested>
+    </extension>
+    <originInfo>
+         <publisher>Office of the Federal Register, National Archives and Records Administration</publisher>
+         <dateIssued encoding="w3cdtf">2025-01-01</dateIssued>
+         <issuance>monographic</issuance>
+         <frequency authority="marcfrequency">annual</frequency>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>175 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">AE 2.106/3:1/</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CFR-2025-title1-vol1</identifier>
+    <identifier type="local">P0b002ee1da1a300f</identifier>
+    <identifier type="former package identifier">1CFR</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2025-11-19</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2025-11-19</recordChangeDate>
+         <recordIdentifier source="DGPO">CFR-2025-title1-vol1</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <docClass>CFR</docClass>
+         <accessId>CFR-2025-title1-vol1</accessId>
+         <titleNumber>1</titleNumber>
+         <volumeNumber>1</volumeNumber>
+         <volumeCount>1</volumeCount>
+         <nodeRange />
+         <isCurrentEdition>true</isCurrentEdition>
+         <editionId>CFR-title1-vol1</editionId>
+         <isFallbackTitle>false</isFallbackTitle>
+         <partRange from="1" to="603" />
+         <isCoverOnly>true</isCoverOnly>
+         <originalDateIssued>2023-01-01</originalDateIssued>
+    </extension>
+    <titleInfo>
+         <title>General Provisions</title>
+         <partNumber>Title 1</partNumber>
+         <partNumber>Volume 1</partNumber>
+    </titleInfo>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CFR-2025-title1-vol1</url>
+         <url displayLabel="HTML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/html/CFR-2025-title1-vol1.htm</url>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/pdf/CFR-2025-title1-vol1.pdf</url>
+         <url displayLabel="XML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/xml/CFR-2025-title1-vol1.xml</url>
+    </location>
+    <identifier type="preferred citation">Code of Federal Regulations Title 1, Volume 1, January 1, 2025</identifier>
+    <relatedItem type="host">
+         <titleInfo>
+              <title>Code of Federal Regulations</title>
+        </titleInfo>
+    </relatedItem>
+    <relatedItem type="constituent" ID="id-CFR-2025-title1-vol1-part1" xlink:href="https://www.govinfo.gov/metadata/granule/CFR-2025-title1-vol1/CFR-2025-title1-vol1-part1/mods.xml">
+         <identifier type="Parent Id">id-CFR-2025-title1-vol1-chapI-subchapA</identifier>
+         <titleInfo>
+              <title>DEFINITIONS</title>
+        </titleInfo>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/xml/CFR-2025-title1-vol1-part1.xml">
+              <identifier type="FDsys Unique ID">D09002ee1da2945da-CFR-2025-title1-vol1-part1.xml</identifier>
+        </relatedItem>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/pdf/CFR-2025-title1-vol1-part1.pdf">
+              <identifier type="FDsys Unique ID">D09002ee1da2945d8-CFR-2025-title1-vol1-part1.pdf</identifier>
+        </relatedItem>
+         <identifier type="uri">https://www.govinfo.gov/app/details/CFR-2025-title1-vol1/CFR-2025-title1-vol1-part1</identifier>
+         <location>
+              <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CFR-2025-title1-vol1/CFR-2025-title1-vol1-part1</url>
+              <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/pdf/CFR-2025-title1-vol1-part1.pdf</url>
+              <url access="raw object" displayLabel="XML rendition">https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/xml/CFR-2025-title1-vol1-part1.xml</url>
+        </location>
+         <identifier type="preferred citation">1 CFR 1</identifier>
+         <identifier type="former granule identifier">1CFR1</identifier>
+         <extension>
+              <searchTitle>Part 1; DEFINITIONS</searchTitle>
+              <chapterHeading>Chapter I</chapterHeading>
+              <chapterTitle>ADMINISTRATIVE COMMITTEE OF THE FEDERAL REGISTER</chapterTitle>
+              <granuleClass>NODE</granuleClass>
+              <accessId>CFR-2025-title1-vol1-part1</accessId>
+              <sequenceNumber>6</sequenceNumber>
+              <heading>Part 1</heading>
+              <granuleLabel>part</granuleLabel>
+              <granuleNumber>1 </granuleNumber>
+              <partRange from="1" to="1" />
+              <leafRange from="§ 1.1" to="§ 1.1" type="section" />
+              <authority>44 U.S.C. 1506; sec. 6, E.O. 10530, 19 FR 2709; 3 CFR, 1954-1958 Comp., p.189.</authority>
+              <graphicsInPDF>false</graphicsInPDF>
+              <USCode title="44">
+                                        
+                   <section number="1506" />
+                                    
+            </USCode>
+              <fr context="AUTHORITY" volume="19">
+                                        
+                   <pages pages="2709" />
+                                    
+            </fr>
+        </extension>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Code</title>
+                   <partNumber>Title 44 Section 1506</partNumber>
+            </titleInfo>
+              <identifier type="USC citation">44 U.S.C. 1506</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>Federal Register</title>
+                   <partNumber>Volume 19 Page 2709</partNumber>
+            </titleInfo>
+              <identifier type="FR citation">19 FR 2709</identifier>
+        </relatedItem>
+    </relatedItem>
+    <relatedItem type="constituent" ID="id-CFR-2025-title1-vol1-sec1-1" xlink:href="https://www.govinfo.gov/metadata/granule/CFR-2025-title1-vol1/CFR-2025-title1-vol1-sec1-1/mods.xml">
+         <identifier type="Parent Id">id-CFR-2025-title1-vol1-part1</identifier>
+         <titleInfo>
+              <title>Definitions.</title>
+        </titleInfo>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/xml/CFR-2025-title1-vol1-sec1-1.xml">
+              <identifier type="FDsys Unique ID">D09002ee1da2945da-CFR-2025-title1-vol1-sec1-1.xml</identifier>
+        </relatedItem>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/pdf/CFR-2025-title1-vol1-sec1-1.pdf">
+              <identifier type="FDsys Unique ID">D09002ee1da2945d8-CFR-2025-title1-vol1-sec1-1.pdf</identifier>
+        </relatedItem>
+         <identifier type="uri">https://www.govinfo.gov/app/details/CFR-2025-title1-vol1/CFR-2025-title1-vol1-sec1-1</identifier>
+         <location>
+              <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CFR-2025-title1-vol1/CFR-2025-title1-vol1-sec1-1</url>
+              <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/pdf/CFR-2025-title1-vol1-sec1-1.pdf</url>
+              <url access="raw object" displayLabel="XML rendition">https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/xml/CFR-2025-title1-vol1-sec1-1.xml</url>
+        </location>
+         <identifier type="preferred citation">1 CFR § 1.1</identifier>
+         <identifier type="former granule identifier">1CFR§ 1.1</identifier>
+         <extension>
+              <searchTitle>Section § 1.1; Definitions.</searchTitle>
+              <chapterHeading>Chapter I</chapterHeading>
+              <chapterTitle>ADMINISTRATIVE COMMITTEE OF THE FEDERAL REGISTER</chapterTitle>
+              <partHeading>Part 1</partHeading>
+              <partTitle>DEFINITIONS</partTitle>
+              <granuleClass>CONTENT</granuleClass>
+              <accessId>CFR-2025-title1-vol1-sec1-1</accessId>
+              <sequenceNumber>7</sequenceNumber>
+              <heading>Section § 1.1</heading>
+              <granuleLabel>section</granuleLabel>
+              <granuleNumber>§ 1.1 </granuleNumber>
+              <partRange from="1" to="1" />
+              <leafRange from="§ 1.1" to="§ 1.1" type="section" />
+              <citation>37 FR 23603, Nov. 4, 1972, as amended at 50 FR 12466, Mar. 28, 1985</citation>
+              <graphicsInPDF>false</graphicsInPDF>
+              <USCode title="44">
+                                        
+                   <section number="1506" />
+                                    
+            </USCode>
+              <fr context="CITATION" volume="37">
+                                        
+                   <pages pages="23603" />
+                                    
+            </fr>
+              <fr context="CITATION" volume="50">
+                                        
+                   <pages pages="12466" />
+                                    
+            </fr>
+        </extension>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>United States Code</title>
+                   <partNumber>Title 44 Section 1506</partNumber>
+            </titleInfo>
+              <identifier type="USC citation">44 U.S.C. 1506</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>Federal Register</title>
+                   <partNumber>Volume 37 Page 23603</partNumber>
+            </titleInfo>
+              <identifier type="FR citation">37 FR 23603</identifier>
+        </relatedItem>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>Federal Register</title>
+                   <partNumber>Volume 50 Page 12466</partNumber>
+            </titleInfo>
+              <identifier type="FR citation">50 FR 12466</identifier>
+        </relatedItem>
+    </relatedItem>
+    <relatedItem type="constituent" ID="id-CFR-2025-title1-vol1-chapVI" xlink:href="https://www.govinfo.gov/metadata/granule/CFR-2025-title1-vol1/CFR-2025-title1-vol1-chapVI/mods.xml">
+         <identifier type="Parent Id">id-CFR-2025-title1-vol1</identifier>
+         <titleInfo>
+              <title>NATIONAL CAPITAL PLANNING COMMISSION</title>
+        </titleInfo>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/xml/CFR-2025-title1-vol1-chapVI.xml">
+              <identifier type="FDsys Unique ID">D09002ee1da2945da-CFR-2025-title1-vol1-chapVI.xml</identifier>
+        </relatedItem>
+         <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/pdf/CFR-2025-title1-vol1-chapVI.pdf">
+              <identifier type="FDsys Unique ID">D09002ee1da2945d8-CFR-2025-title1-vol1-chapVI.pdf</identifier>
+        </relatedItem>
+         <identifier type="uri">https://www.govinfo.gov/app/details/CFR-2025-title1-vol1/CFR-2025-title1-vol1-chapVI</identifier>
+         <location>
+              <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CFR-2025-title1-vol1/CFR-2025-title1-vol1-chapVI</url>
+              <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/pdf/CFR-2025-title1-vol1-chapVI.pdf</url>
+              <url access="raw object" displayLabel="XML rendition">https://www.govinfo.gov/content/pkg/CFR-2025-title1-vol1/xml/CFR-2025-title1-vol1-chapVI.xml</url>
+        </location>
+         <identifier type="preferred citation">1 CFR Chapter VI</identifier>
+         <identifier type="former granule identifier">1CFR</identifier>
+         <extension>
+              <searchTitle>Chapter VI; NATIONAL CAPITAL PLANNING COMMISSION</searchTitle>
+              <granuleClass>NODE</granuleClass>
+              <accessId>CFR-2025-title1-vol1-chapVI</accessId>
+              <sequenceNumber>324</sequenceNumber>
+              <heading>Chapter VI</heading>
+              <granuleLabel>chapter</granuleLabel>
+              <granuleNumber>VI </granuleNumber>
+              <partRange from="600" to="603" />
+              <leafRange from="§ 601.1" to="§ 603.18" type="section" />
+              <graphicsInPDF>false</graphicsInPDF>
+              <cfr title="1">
+                                        
+                   <part number="VI" />
+                                    
+            </cfr>
+        </extension>
+         <relatedItem type="isReferencedBy">
+              <titleInfo>
+                   <title>Code of Federal Regulations</title>
+                   <partNumber>Title 1 Part VI</partNumber>
+            </titleInfo>
+              <identifier type="CFR citation">1 CFR Part  VI</identifier>
+        </relatedItem>
+    </relatedItem>
+    </mods>

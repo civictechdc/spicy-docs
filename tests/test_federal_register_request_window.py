@@ -15,7 +15,7 @@ from spicy_docs.sources.federal_register.native import (
 
 QUERY_SCOPE = {"publishedFrom": "2026-08-25", "publishedThrough": "2026-08-25"}
 EXPECTED_WINDOW = (date(2026, 8, 25), date(2026, 8, 25))
-# Independent exact bytes preserve all 22 current fields, their order and encoding.
+# Independent exact bytes preserve all 23 current fields, their order and encoding.
 CURRENT_REQUEST = (
     "https://www.federalregister.gov/api/v1/documents.json?per_page=1000&order=newest"
     "&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-25"
@@ -23,7 +23,8 @@ CURRENT_REQUEST = (
     "&fields%5B%5D=abstract&fields%5B%5D=agencies&fields%5B%5D=agency_names"
     "&fields%5B%5D=body_html_url&fields%5B%5D=cfr_references&fields%5B%5D=comments_close_on"
     "&fields%5B%5D=docket_ids&fields%5B%5D=document_number&fields%5B%5D=effective_on"
-    "&fields%5B%5D=end_page&fields%5B%5D=executive_order_number&fields%5B%5D=html_url"
+    "&fields%5B%5D=end_page&fields%5B%5D=executive_order_number&fields%5B%5D=full_text_xml_url"
+    "&fields%5B%5D=html_url"
     "&fields%5B%5D=pdf_url&fields%5B%5D=publication_date&fields%5B%5D=regulation_id_numbers"
     "&fields%5B%5D=signing_date&fields%5B%5D=start_page&fields%5B%5D=subtype"
     "&fields%5B%5D=title&fields%5B%5D=topics&fields%5B%5D=type&fields%5B%5D=volume"
@@ -47,11 +48,13 @@ def test_current_fields_round_trip_with_supported_page_sizes(per_page: int) -> N
     assert federal_register_request_window(request) == EXPECTED_WINDOW
 
 
-@pytest.mark.parametrize("change", ["missing", "added"])
+@pytest.mark.parametrize("change", ["missing", "added", "previous-field-set"])
 def test_changed_document_field_set_is_refused(change: str) -> None:
     pairs = parse_qsl(urlsplit(CURRENT_REQUEST).query)
     if change == "missing":
         pairs.remove(("fields[]", "topics"))
+    elif change == "previous-field-set":
+        pairs.remove(("fields[]", "full_text_xml_url"))
     else:
         pairs.append(("fields[]", "some_future_field"))
     with pytest.raises(FederalRegisterSourceError, match="field set differs from current fields"):

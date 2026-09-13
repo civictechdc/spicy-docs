@@ -80,7 +80,7 @@ def test_records_and_renditions_stream_across_fixed_identity_buckets(
         "2026-00002@2026-08-25",
         "2026-00003@2026-08-25",
     ]
-    assert len(list(reader.iter_renditions())) == 9
+    assert len(list(reader.iter_renditions())) == 12
     receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
     assert receipt["partitionPolicy"] == {
         "algorithm": "sha256-utf8-modulo",
