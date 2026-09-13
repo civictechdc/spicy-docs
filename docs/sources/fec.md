@@ -9,7 +9,8 @@ The library is `spicy_docs.sources.fec.client.FecClient`; the command is
 `spicy-docs-fec`. Install the `acquisition` extra for HTTP access. These are raw
 acquisition APIs, like the CourtListener reader. They do not publish sealed
 releases, normalize financial tables, or manage a dataset across runs. The
-separate committee census profile below reuses the existing release publisher.
+separate committee and filing-query profiles below reuse the existing release
+publisher without adding a second publication pipeline.
 
 ## Choose a collection and route
 
@@ -120,10 +121,33 @@ with no document renditions or body-download claim for this profile.
 
 The release uses `observed-crawl` and `single-observed-traversal`. It covers only
 the pinned query observation. Bulk tables, gap queries, historical profiles,
-filings and legal collections need their own qualified delivery; this profile
+and legal collections need their own qualified delivery; this profile
 does not broaden their status. Use the [release lifecycle](../releases.md) for
 pin/producer admission and the [bulk evidence iterator](../source-native-outcomes.md#inspect-record-evidence)
 when joining records to originals.
+
+## Publish retained filing queries
+
+`spicy_docs.sources.fec.filing_profile` supplies `FEC_FILING_QUERY_PROFILE`,
+`filing_query_scope(captures)` and
+`iter_retained_filing_pages(captures, blob_source=...)`. Use the same publisher
+and capture descriptors as the committee profile. Each release contains one
+complete, pinned `/v1/filings/` query with ordinary page/per-page pagination.
+Publication and offline replay check page membership, exact counts and native
+processed-record `sub_id` identity. File numbers, amendment fields, document
+links, unknown fields and metadata/body references remain source observations.
+Schema 1.1 preserves nullable or absent file numbers on unfiltered queries;
+an explicit file-number selection requires a matching returned value. The
+initial schema 1.0 qualification releases remain retained with their original pins.
+
+Keep overlapping queries in separate releases. A requested-empty query retains
+its evidence with zero records; a requested file number omitted from a response
+does not prove that the original filing is absent. This profile neither chooses
+an amendment nor acquires the referenced originals. The selected retained-query
+qualification covers six releases with 47 observations of 46 file numbers;
+it does not establish a full filing population. Source pins, original-JSON parity,
+offline replay and committee regression controls are in
+`~/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/releases-v1.1/qualification.json`.
 
 ## Acquire selected originals
 
@@ -193,10 +217,12 @@ multiline records. Dates, amounts, empty values and IDs stay strings. This is
 source syntax, not a mapping to financial field names or amendment selection.
 
 Bracketed free text and recognized `TEXT` fields become `embedded_bodies`
-references: position 5 for ASCII-FS and position 3 for CSV version `5.3`
-(zero-based). The latter follows `4-TEXT4000` in the publisher's historical
-`e-filing headers all versions` workbook, `all versions` row 809. Other CSV
-versions remain positional until their layouts are qualified. Each reference
+references: position 5 for ASCII-FS and position 3 for exact CSV versions
+`5.0`, `5.1`, `5.2` and `5.3` (zero-based). The latter follows `4-TEXT4000`
+in the publisher's historical `e-filing headers all versions` workbook, `TEXT`
+rows 11–14. The amended indicator and extra fields stay positional metadata.
+Other CSV versions remain positional until qualified; labels are not rounded
+or interpreted as ranges. Each reference
 identifies the original digest, byte offset, byte length and encoding; a delimited
 body also identifies its field position. The body does not appear in row metadata.
 `filing_body(store=..., body=...)` resolves one reference while preserving
@@ -205,9 +231,12 @@ For many references, open the original once with `LocalBlobSource` and read the
 indicated ranges; separate helper calls each reverify the whole original.
 
 The reader checks the original digest before yielding records. Select UTF-8
-(default) or Latin-1 explicitly for the whole file; decoding failure never
-restarts previously emitted rows. Latin-1 preserves byte values but does not
-establish the publisher's intended character set. The configurable record bound defaults to
+(default), Latin-1 or `cp1252` explicitly for the whole file. It does not detect,
+guess or retry encodings. Undefined CP1252 bytes and malformed UTF-8 fail without
+replacement or restarting previously emitted rows. Latin-1 preserves byte values;
+CP1252 can make legacy Windows punctuation readable, but neither establishes
+the publisher's intended character set. Each reference records the selection.
+The configurable record bound defaults to
 1 MiB and applies across quoted CSV lines and legacy headers. Python's CSV field
 limit also applies. Bracketed text is scanned one bounded line at a time without
 joining the body in memory. Invalid headers, malformed CSV, unclosed text and
@@ -222,6 +251,78 @@ or a full historical filing population. The existing `fecfile` package was
 evaluated before this reader; its successful string-mode reads can omit extra
 source fields. SpicyDocs reuses `csv` and the blob reader instead of copying its
 financial mappings.
+
+The additional format qualification preserves the recorded interpretations of
+47 retained originals and proves reversible CP1252 body decoding on two Form 99
+files. Versions 5.0–5.2 have official workbook evidence and known-answer tests;
+this retained file selection contains no originals in those versions. The receipt
+keeps that limit beside its source pins and checks:
+`~/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/formats/qualification.json`.
+
+## Capture selected financial histories and refresh them
+
+Run [the financial history example](../../examples/fec_financial_history.py)
+from this checkout with the acquisition extra installed:
+
+```sh
+uv run --frozen python -m examples.fec_financial_history \
+  --store /tmp/fec-history-blobs --output /tmp/fec-history-first
+
+# Supply the actual SHA-256 of the prior observation.json.
+uv run --frozen python -m examples.fec_financial_history \
+  --store /tmp/fec-history-blobs --output /tmp/fec-history-refresh \
+  --previous /tmp/fec-history-first/observation.json --previous-sha256 PIN
+```
+
+The selection is communication-cost and electioneering CSVs under the `19`/`20`
+bulk year prefixes, plus the bundled-contribution export. It completes XML
+enumeration and checks total bytes/object bounds before transferring originals.
+Fresh directories retain listing responses, source metadata and every acquisition
+outcome; the shared blob store preserves exact versions. A pinned prior receipt
+permits reuse only after unchanged listing validators and local digest/size
+verification. Failed objects are retried; previously listed keys missing from
+a complete new traversal are reported without asserting publisher deletion.
+
+The live selected history includes 19 files, 8,466,042 original bytes and periods
+2010–2026. Independent XML and CSV checks compared the selected membership and
+29,280 literal CSV rows. Fresh refresh listings reused every original; offline
+replay made no network request. Change, missing-key and failure cases use injected
+known-answer controls. These checks do not establish financial meaning, all bulk
+families, large-dump capacity or recurring scheduling. Evidence and exact commands:
+`~/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/bulk/qualification.json`.
+
+## Capture one advisory-opinion number year
+
+[The legal-year example](../../examples/fec_legal_year.py) combines a complete
+OpenFEC JSON search with the exact `legal/aos/YEAR-` XML listing, then requests
+each selected opinion's JSON detail. The year selects AO numbers, not issuance
+dates. All supporting-document associations survive; repeated FEC/S3 aliases
+share one original transfer. Cited opinions remain references outside the selected
+year. A listing-only opinion still receives a detail request, and an empty detail
+remains an explicit unresolved outcome.
+
+```sh
+uv run --frozen python -m examples.fec_legal_year /tmp/fec-ao-2024 \
+  --year 2024 --env-file /explicit/credentials.env
+
+# Verify retained metadata, associations and original bytes without HTTP.
+uv run --frozen python -m examples.fec_legal_year /tmp/fec-ao-2024 --verify-only
+```
+
+The example binds its selection only after metadata replay succeeds. Repeating
+the acquisition command resumes that pinned selection, verifies successful
+originals and retries unfinished objects from atomic checkpoints. Use a fresh
+root for a new source observation. Credential refusals stop the run; metadata
+refusals preserve available bounded response bytes. Incomplete acquisition exits
+unsuccessfully even when its explicit failure records verify. The configured
+aggregate bound covers retained successful originals; failed/retried transfers
+can add network bytes beyond that amount.
+
+The complete observed AO-number year 2024 selection contains 15 opinions and
+163 separately acquired originals, totaling 65,959,367 bytes. Retained JSON/XML
+replay checks metadata and associations, and hashes every original. This does
+not parse PDF text/pages or cover other years and legal families. Evidence:
+`~/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/legal/ao-2024/verification.json`.
 
 ## Bounds, failures and coverage
 

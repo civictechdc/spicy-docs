@@ -239,8 +239,8 @@ selected original statements. SpicyRegs preserves reported roles, names, source
 dates and empty/invalid values with exact source references. The
 [handoff repairs and fresh qualification](/Users/mikewolfd/Documents/Codex/fec-handoff-fixes/integration/fixes-2026-09-12/README.md)
 close the selected legacy CSV TEXT, archive-only descriptor, empty sponsor-list
-and input-membership defects. These repairs are on dedicated branches; downstream
-complete FEC distribution/catalog/search adoption remains open.
+and input-membership defects. SpicyDocs includes its source repairs in merged
+`main`; downstream complete FEC distribution/catalog/search adoption remains open.
 
 - [x] Add a [retained committee census profile](sources/fec.md#publish-a-retained-committee-census)
   through the existing release publisher. Pin exact captures and replay source
@@ -252,36 +252,66 @@ complete FEC distribution/catalog/search adoption remains open.
   covers original-JSON parity, committee table fields, complete catalog facts
   and rejected missing members/pins. The catalog contains committee metadata,
   with no acquired-body claim; default rollup and search paths remain unchanged.
+
 SpicyDocs-only execution continues below. Each task uses the existing readers,
 transport, blob store and publisher; dataset selection across products and
 financial interpretation stay with their callers. Prefer bulk and XML/JSON/XHTML,
 retain exact originals separately, and use the authorized bounded Zyte fallback
 when a public route denies access.
 
-- [ ] **FEC01 — Publish additional retained source observations (T02/T04/T09).**
-  In progress: complete pinned filing-metadata queries, including overlaps and
-  requested-empty results, through the existing release publisher. Complete when
-  every selected query has an admitted release, original-JSON parity and offline
-  replay; other FEC populations keep their own pending status.
-- [ ] **FEC02 — Qualify additional raw filing formats (T05).** In progress:
-  publisher-documented legacy TEXT layouts and explicit readable encodings.
-  Complete when retained originals preserve literal fields, unknown records and
-  body byte coordinates, with unsupported versions/encodings still explicit.
-- [ ] **FEC03 — Capture a complete declared legal collection (T08).** In progress:
-  advisory-opinion numbers for 2024, JSON metadata and separately acquired
-  supporting originals. Complete when enumeration terminates, document
-  associations survive and every discovered original has a verified acquisition
-  or explicit unresolved disposition. This does not complete all legal history.
-- [ ] **FEC04 — Acquire financial bulk originals (T06).** In progress:
-  communication-cost, electioneering and bundled-contribution exports across
-  their listed periods, with a transfer/storage preflight. Complete the selected
-  acquisition with exact source headers/bytes and coverage; large transaction
-  dumps, restoration and other financial families remain separate work.
-- [ ] **FEC05 — Exercise historical acquisition and source refresh (T18).** In
-  progress with FEC04: enumerate listed historical files, retain each observation,
-  retry failed objects and reuse only verified unchanged bytes. Complete the
-  selected replay/refresh proof with changed, removed and unavailable objects
-  visible; broader historical acquisition and recurring scheduling remain open.
+- [x] **FEC01 — Publish the selected retained filing queries (T02/T04/T09).**
+  The filing-query profile uses the existing publisher and shared retained-page
+  reader. Every selected query has original-JSON parity and offline replay;
+  overlaps retain separate observations. Known-answer controls cover empty
+  queries, nullable file numbers and embedded bodies. Filing schema 1.1 corrects
+  the initial non-identity field requirement; committee release identity remains
+  unchanged and the first filing qualification artifacts remain retained.
+- [x] **FEC02 — Add documented legacy TEXT layouts and explicit CP1252 (T05).**
+  Exact CSV versions 5.0–5.3 separate narrative bodies from positional metadata.
+  Retained-file replay preserves literal fields and body byte coordinates; two
+  Form 99 originals have reversible CP1252 decoding. Added versions 5.0–5.2 have
+  workbook evidence and synthetic controls, with real-original qualification
+  still open below. No encoding is guessed or silently retried.
+- [x] **FEC03 — Capture advisory-opinion number year 2024 (T08).** Complete
+  observed JSON search and XML listing, opinion details and all selected
+  supporting originals are retained. Offline replay checks metadata, associations
+  and every original's bytes. Retry controls cover invalid detail responses,
+  listing-only cases, refusals and interruption. PDF content is not parsed.
+- [x] **FEC04 — Acquire the selected financial CSV histories (T06).**
+  Communication-cost, electioneering and bundled-contribution originals passed
+  complete selected-prefix XML enumeration and transfer bounds. Independent XML
+  membership and CSV comparisons preserve source headers and literal fields.
+- [x] **FEC05 — Prove refresh for that selected history (T18).** Fresh live
+  listings reused verified originals; retained-response replay worked offline.
+  Known-answer controls cover changed validators, missing previously listed keys,
+  failed-object retry, corrupted local blobs, refusal and preflight bounds.
+  Missing keys are observations, not proof of publisher deletion.
+
+Selected scope, commands, source pins and limits are in the lane receipts under
+`~/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/`:
+`releases-v1.1/qualification.json`, `formats/qualification.json` and
+`bulk/qualification.json`, plus `legal/ao-2024/verification.json`. These are local
+source deliverables; they do not
+complete the broader T02/T04/T05/T06/T08/T09/T18 integration tasks.
+
+- [ ] **FEC06 — Extend real historical filing qualification.** Acquire complete
+  originals for CSV 5.0–5.2 and other declared layouts before extending body-field
+  mappings. Preserve unsupported cases and source-declared encoding evidence.
+- [ ] **FEC07 — Extend legal acquisition beyond AO-number year 2024.** Reuse
+  explicit JSON/XML selection for other AO years, enforcement, administrative
+  fines, ADR and rulemakings; qualify each family's attachment associations.
+- [ ] **FEC08 — Acquire remaining financial bulk families.** Inventory and bound
+  transaction/raw dumps, qualify archive membership and historical schema inputs,
+  and prove restoration capacity before large transfers. Keep source originals
+  separate from downstream financial interpretation.
+- [ ] **FEC09 — Extend historical refresh across official collections.** Add
+  source-specific update/deletion observations and resumable acquisition where
+  the next selected collection requires them. Recurring scheduling remains with
+  the dataset caller.
+- [ ] **FEC10 — Qualify additional immutable source releases.** Add only the
+  family-specific identity/count/scope checks required by the next retained
+  collection, using the existing publisher; legal/bulk raw captures are not
+  automatically admitted releases.
 
 ## Deferred local work
 
