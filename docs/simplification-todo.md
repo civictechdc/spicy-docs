@@ -298,11 +298,21 @@ Integrated checks passed through `./scripts/check`, including the offline suite,
 lint and format checks. The ordinary core wheel also passed selected FEC tests,
 retained filing-release/raw-file replay and offline CLI use without HTTP/table
 extras. Legal originals replayed against the integrated code. Independent filing,
-bulk and legal reviews have no unresolved findings. Exact checks and the corrected
-qualification caller are retained in `integrated/checks.json` and
+bulk and legal reviews preceded the manual sample follow-up below. Exact checks
+and the corrected qualification caller are retained in `integrated/checks.json` and
 `integrated/completion.json` under the same receipt root. This work is committed
 on `codex/fec-source-expansion`; main merge, package release and downstream
 adoption remain separate.
+
+- [x] **FEC11 — Address the manual input/output review findings (T02/T05/T08/T19).**
+  Retain optional S3 checksum/storage fields and add native positions for repeated
+  sitemap entries and HTML links. Keep filing HTML navigation in metadata and
+  document the explicit asset-selection rule. Offline reprocessing retains earlier
+  captures and outputs. Direct sample review confirms legacy CSV body resolution
+  and selected CP1252 excerpts; it does not establish whole-corpus text fidelity.
+  Evidence and resolved bodies: `manual-review-fixes/` under the receipt root above.
+  PDF originals remain unparsed; text/OCR qualification belongs to their downstream
+  processor, not a new SpicyDocs PDF implementation.
 
 - [ ] **FEC06 — Extend real historical filing qualification.** Acquire complete
   originals for CSV 5.0–5.2 and other declared layouts before extending body-field

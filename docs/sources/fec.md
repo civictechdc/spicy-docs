@@ -85,6 +85,16 @@ Each page contains request/resolved URLs, acquisition time and method, an exact
 response digest and blob location, source records, and continuation information.
 JSON Pointer coordinates identify API records in the retained JSON. XML records
 identify S3 keys or sitemap locations; they do not invent JSON coordinates for XML.
+Sitemap `source_location.child_index` distinguishes repeated entries by their
+zero-based child-element position. HTML links carry `source_location.line`
+(one-based) and `column` (zero-based) at the opening tag in the UTF-8-sig decoded
+capture. Columns count characters, not bytes. These locations supplement retained
+URLs and labels; `source_pointer` remains null for non-JSON inputs.
+S3 records also retain `checksum_algorithms`, `checksum_type` and `storage_class`
+when supplied. Missing algorithms produce an empty list; missing scalar fields
+produce null. Algorithm/type declarations contain no checksum value and do not
+establish content verification. Reprocess retained captures into a new output
+to obtain added metadata; historical outputs remain unchanged.
 Relative FEC document links resolve against fec.gov, while the original field
 remains in metadata. Decimal amounts become `Decimal` in Python and **decimal
 strings** in CLI JSONL, preserving precision; the retained API response preserves
@@ -95,6 +105,11 @@ response. Citation and subject `text` labels remain metadata. Fields named
 `body`, `html`, `document_text`, `extracted_text`, `full_text`, and other `text`
 fields are lifted; unknown fields remain source metadata. No linked body is
 requested by an API, listing, sitemap or link-discovery operation.
+The `assets` list selects recognized original-file suffixes and explicit
+`pdf_url`, `fec_url`, `document_url` and `file_url` fields. It is not an exhaustive
+list of links: filing `html_url` navigation remains in metadata. Select such a
+page explicitly with `allow_html=True` if its content is needed; listing it does
+not establish equivalence with an original filing or PDF.
 
 ## Publish a retained committee census
 
@@ -227,6 +242,8 @@ identifies the original digest, byte offset, byte length and encoding; a delimit
 body also identifies its field position. The body does not appear in row metadata.
 `filing_body(store=..., body=...)` resolves one reference while preserving
 whitespace and CSV quoting semantics; CSV ranges must contain exactly one record.
+Delimited byte ranges cover the whole record; `field_index` selects the body
+after parsing that record. They are not narrative-only byte slices.
 For many references, open the original once with `LocalBlobSource` and read the
 indicated ranges; separate helper calls each reverify the whole original.
 

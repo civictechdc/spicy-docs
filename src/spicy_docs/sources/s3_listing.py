@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 MAX_LISTING_PAGE_BYTES = 8 * 1024**2
@@ -16,13 +16,17 @@ class ListedObject:
     size: int
     etag: str
     last_modified: str
+    checksum_algorithms: list[str | None] = field(default_factory=list)
+    checksum_type: str | None = None
+    storage_class: str | None = None
 
 
 def parse_s3_listing(payload: bytes, *, bucket: str, prefix: str) -> tuple[tuple[ListedObject, ...], str | None]:
     """Require the requested bucket/prefix and an explicit terminal marker.
 
-    ETags are publisher validators, not assumed content hashes. The caller owns
-    traversal; an individual response does not establish a complete snapshot.
+    ETags are publisher validators, not assumed content hashes. Listed checksum
+    algorithms/types describe a mechanism, not a supplied checksum value. The
+    caller owns traversal; a response does not establish a complete snapshot.
     """
     if len(payload) > MAX_LISTING_PAGE_BYTES:
         raise ValueError("bulk listing page exceeds its byte limit")
@@ -65,5 +69,15 @@ def parse_s3_listing(payload: bytes, *, bucket: str, prefix: str) -> tuple[tuple
                 raise ValueError("timezone missing")
         except ValueError as error:
             raise ValueError("bulk listing last-modified stamp must be a timezone-aware ISO date") from error
-        objects.append(ListedObject(key, int(size), text(node, "ETag"), stamp))
+        objects.append(
+            ListedObject(
+                key,
+                int(size),
+                text(node, "ETag"),
+                stamp,
+                [element.text for element in node.findall(f"{{{NAMESPACE}}}ChecksumAlgorithm")],
+                node.findtext(f"{{{NAMESPACE}}}ChecksumType"),
+                node.findtext(f"{{{NAMESPACE}}}StorageClass"),
+            )
+        )
     return tuple(objects), token

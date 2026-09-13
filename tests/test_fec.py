@@ -246,6 +246,68 @@ def test_xml_listing_and_sitemaps_never_fetch_assets(client):
     assert sitemap["records"][0]["source_pointer"] is None
 
 
+def test_listing_retains_optional_checksum_and_storage_fields(client, tmp_path):
+    payload = listing("bulk-downloads/a.zip", "bulk-downloads/b.zip").replace(
+        b"</Contents>",
+        b"<ChecksumAlgorithm>CRC64NVME</ChecksumAlgorithm><ChecksumAlgorithm>SHA256</ChecksumAlgorithm>"
+        b"<ChecksumType>FULL_OBJECT</ChecksumType><StorageClass>STANDARD</StorageClass></Contents>",
+        1,
+    )
+    with client(lambda _: httpx.Response(200, content=payload)) as c:
+        (result,) = c.objects("bulk-downloads/")
+    first, second = [row["metadata"] for row in result["records"]]
+    assert first["checksum_algorithms"] == ["CRC64NVME", "SHA256"]
+    assert first["checksum_type"] == "FULL_OBJECT"
+    assert first["storage_class"] == "STANDARD"
+    assert second["checksum_algorithms"] == []
+    assert second["checksum_type"] is None and second["storage_class"] is None
+    assert (tmp_path / result["evidence"]["blob_path"]).read_bytes() == payload
+    assert c.http.request_count == 1
+
+
+def test_sitemap_locations_distinguish_repeated_urls(client):
+    payload = (
+        b'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        b"<url><loc>https://www.fec.gov/a.xml</loc><lastmod>2025-01-01</lastmod></url>"
+        b"<url><loc>https://www.fec.gov/a.xml</loc><lastmod>2026-01-01</lastmod></url></urlset>"
+    )
+    with client(lambda _: httpx.Response(200, content=payload)) as c:
+        (result,) = c.sitemap("https://www.fec.gov/sitemap.xml")
+    assert [row["metadata"]["source_location"] for row in result["records"]] == [
+        {"child_index": 0},
+        {"child_index": 1},
+    ]
+    assert all(row["source_pointer"] is None for row in result["records"])
+
+
+def test_html_link_locations_use_decoded_source_tag_positions(client):
+    payload = (
+        "<title>FEC</title>\n"
+        'é<a href="/same.xml">First</a><a href="mailto:ignored">Mail</a>\r\n'
+        '  <a href="/same.xml">Second</a>\n'
+        '<link rel="alternate" href="/feed.xml" title="Feed">'
+    ).encode()
+    with client(lambda _: httpx.Response(200, content=payload)) as c:
+        result = c.page_links("https://www.fec.gov/reports/")
+    links = result["records"][0]["metadata"]["links"]
+    assert [link["source_location"] for link in links] == [
+        {"line": 2, "column": 1},
+        {"line": 3, "column": 2},
+        {"line": 4, "column": 0},
+    ]
+    assert [link["label"] for link in links] == ["First", "Second", "Feed"]
+    assert links[0]["url"] == links[1]["url"]
+    assert result["records"][0]["source_pointer"] is None
+
+
+def test_filing_html_navigation_remains_metadata_without_implicit_body_selection():
+    value = {"html_url": "https://docquery.fec.gov/cgi-bin/forms/C00000001/123/", "fec_url": "/123.fec"}
+    record = split_record(value, source_pointer="/results/0")
+    assert record["metadata"] == value
+    assert [asset["url"] for asset in record["assets"]] == ["https://www.fec.gov/123.fec"]
+    assert record["embedded_bodies"] == []
+
+
 def test_sitemap_index_duplicates_are_bounded_and_finite(client):
     def serve(request):
         if request.url.path == "/index.xml":

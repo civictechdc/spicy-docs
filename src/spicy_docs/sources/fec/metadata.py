@@ -92,7 +92,7 @@ def parse_sitemap(payload: bytes) -> tuple[str, list[dict]]:
         raise ValueError("FEC index is not a sitemap XML document")
     expected = "url" if kind == "urlset" else "sitemap"
     rows = []
-    for child in root:
+    for index, child in enumerate(root):
         if child.tag.rsplit("}", 1)[-1] != expected:
             raise ValueError("FEC sitemap contains an unexpected entry")
         locations = [x.text for x in child if x.tag.rsplit("}", 1)[-1] == "loc"]
@@ -101,6 +101,7 @@ def parse_sitemap(payload: bytes) -> tuple[str, list[dict]]:
         rows.append(
             {
                 "url": locations[0],
+                "source_location": {"child_index": index},
                 "fields": [{"name": x.tag, "text": x.text, "attributes": dict(x.attrib)} for x in child],
             }
         )
@@ -117,13 +118,17 @@ class _Links(HTMLParser):
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
+        link = None
         if tag == "title":
             self._title = not self.title  # Later SVG icon titles are not the document title.
         if tag == "a" and values.get("href"):
-            self._anchor = {"href": values["href"], "label": "", "type": values.get("type")}
-            self.links.append(self._anchor)
+            self._anchor = link = {"href": values["href"], "label": "", "type": values.get("type")}
         elif tag == "link" and values.get("href") and "alternate" in (values.get("rel") or "").split():
-            self.links.append({"href": values["href"], "label": values.get("title", ""), "type": values.get("type")})
+            link = {"href": values["href"], "label": values.get("title", ""), "type": values.get("type")}
+        if link is not None:
+            line, column = self.getpos()
+            link["source_location"] = {"line": line, "column": column}
+            self.links.append(link)
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "title":
@@ -158,7 +163,14 @@ def parse_page_links(payload: bytes, *, url: str) -> dict:
         target = resolve_link(link["href"], base=url)
         if urlsplit(target).scheme not in {"http", "https"}:
             continue
-        links.append({"url": target, "label": link["label"].strip(), "media_type": media_type(link["type"], target)})
+        links.append(
+            {
+                "url": target,
+                "label": link["label"].strip(),
+                "media_type": media_type(link["type"], target),
+                "source_location": link["source_location"],
+            }
+        )
     return {"title": title, "links": links}
 
 
