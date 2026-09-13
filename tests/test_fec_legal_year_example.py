@@ -17,7 +17,9 @@ from spicy_docs.sources.s3_listing import NAMESPACE
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.download import HttpRefusal
 
-spec = importlib.util.spec_from_file_location("fec_legal_year", Path(__file__).parents[1] / "examples/fec_legal_year.py")
+spec = importlib.util.spec_from_file_location(
+    "fec_legal_year", Path(__file__).parents[1] / "examples/fec_legal_year.py"
+)
 example = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(example)
 PDF = b"%PDF-1.4\nretained fixture\n%%EOF"
@@ -25,11 +27,22 @@ KEY = "legal/aos/2024-01/request.pdf"
 URL = BUCKET_URL + KEY
 
 
-def fixture_client(root, *, empty=False, source_change=None, fail_asset=False, deny_api=False, invalid_api=False,
-                   wrong_detail=False, listing_only=False):
+def fixture_client(
+    root,
+    *,
+    empty=False,
+    source_change=None,
+    fail_asset=False,
+    deny_api=False,
+    invalid_api=False,
+    wrong_detail=False,
+    listing_only=False,
+):
     calls = []
     case = {
-        "ao_no": "2024-01", "status": "Withdrawn", "is_pending": False,
+        "ao_no": "2024-01",
+        "status": "Withdrawn",
+        "is_pending": False,
         "unknown": {"missing_is_distinct": None, "empty": []},
         "documents": [
             {"document_id": 1, "category": "Request", "url": "/files/" + KEY, "text": "Exact body\n"},
@@ -47,33 +60,46 @@ def fixture_client(root, *, empty=False, source_change=None, fail_asset=False, d
             if deny_api:
                 return httpx.Response(403)
             if invalid_api:
-                return httpx.Response(200, content=b"<html>publisher challenge</html>", headers={"Content-Type": "text/html"})
+                return httpx.Response(
+                    200, content=b"<html>publisher challenge</html>", headers={"Content-Type": "text/html"}
+                )
             if request.url.path == "/v1/legal/search/":
-                return httpx.Response(200, json={"advisory_opinions": [] if empty else [case],
-                                                 "total_advisory_opinions": 0 if empty else 1})
+                return httpx.Response(
+                    200,
+                    json={"advisory_opinions": [] if empty else [case], "total_advisory_opinions": 0 if empty else 1},
+                )
             if listing_only and request.url.path == "/v1/legal/docs/advisory_opinions/2024-02":
                 return httpx.Response(200, json={"docs": []})
             assert request.url.path == "/v1/legal/docs/advisory_opinions/2024-01"
-            return httpx.Response(200, json={"docs": [] if empty else [{**case, "ao_no": "2024-02"} if wrong_detail else case]})
+            return httpx.Response(
+                200, json={"docs": [] if empty else [{**case, "ao_no": "2024-02"} if wrong_detail else case]}
+            )
         assert "X-Api-Key" not in request.headers
         if request.url.path == "/":
-            content = "" if empty else (
-                f'<Contents><Key>{KEY}</Key><Size>{len(PDF)}</Size><ETag>"e"</ETag>'
-                '<LastModified>2026-09-13T00:00:00Z</LastModified></Contents>')
+            content = (
+                ""
+                if empty
+                else (
+                    f'<Contents><Key>{KEY}</Key><Size>{len(PDF)}</Size><ETag>"e"</ETag>'
+                    "<LastModified>2026-09-13T00:00:00Z</LastModified></Contents>"
+                )
+            )
             if listing_only:
                 content += content.replace("2024-01", "2024-02")
-            listing = (f'<ListBucketResult xmlns="{NAMESPACE}"><Name>{BUCKET}</Name>'
-                       '<Prefix>legal/aos/2024-</Prefix><IsTruncated>false</IsTruncated>'
-                       f'{content}</ListBucketResult>')
+            listing = (
+                f'<ListBucketResult xmlns="{NAMESPACE}"><Name>{BUCKET}</Name>'
+                "<Prefix>legal/aos/2024-</Prefix><IsTruncated>false</IsTruncated>"
+                f"{content}</ListBucketResult>"
+            )
             return httpx.Response(200, content=listing, headers={"Content-Type": "application/xml"})
         assert str(request.url) in ({URL, URL.replace("2024-01", "2024-02")} if listing_only else {URL})
         assert request.headers["If-Match"] == '"e"'
         status = fail_asset if type(fail_asset) is int else 404 if fail_asset else 200
-        return httpx.Response(status, content=PDF,
-                              headers={"Content-Type": "application/pdf", "ETag": '"e"'})
+        return httpx.Response(status, content=PDF, headers={"Content-Type": "application/pdf", "ETag": '"e"'})
 
-    return FecClient(store=root / "blobs", api_key="fixture-key", transport=httpx.MockTransport(handler),
-                     min_interval=0), calls
+    return FecClient(
+        store=root / "blobs", api_key="fixture-key", transport=httpx.MockTransport(handler), min_interval=0
+    ), calls
 
 
 def prepared(tmp_path, **options):
@@ -122,6 +148,7 @@ def test_extensionless_supporting_document_and_external_url_are_not_silently_dro
     def change(case):
         case["documents"] += [{"url": "/download/legal/document?id=1"}, {"url": "https://external.test/item.pdf"}]
         case["ao_citations"] = [{"ao_no": "1975-01", "url": "/files/legal/aos/1975-01/opinion.pdf"}]
+
     plan = prepared(tmp_path, source_change=change)
     assert [item["url"] for item in plan["originals"]] == [URL, "https://www.fec.gov/download/legal/document?id=1"]
     external = [row for row in plan["unavailable"] if row["disposition"] == "unavailable-outside-approved-hosts"]
@@ -143,8 +170,7 @@ def test_wrong_detail_identity_never_binds_a_complete_selection_and_can_retry(tm
 
 
 def test_listing_only_case_is_requested_and_retained_with_empty_detail_outcome(tmp_path):
-    client, calls = fixture_client(tmp_path, listing_only=True,
-                                  source_change=lambda case: case["documents"].pop())
+    client, calls = fixture_client(tmp_path, listing_only=True, source_change=lambda case: case["documents"].pop())
     with client:
         example.capture_metadata(client, tmp_path, 2024)
         plan = example.load_plan(tmp_path)[1]
@@ -152,7 +178,9 @@ def test_listing_only_case_is_requested_and_retained_with_empty_detail_outcome(t
     assert len(plan["originals"]) == 2
     assert plan["unavailable"] == []
     assert [(case["ao_no"], case["disposition"]) for case in plan["cases"]] == [
-        ("2024-01", "returned"), ("2024-02", "requested-empty")]
+        ("2024-01", "returned"),
+        ("2024-02", "requested-empty"),
+    ]
     assert "https://api.open.fec.gov/v1/legal/docs/advisory_opinions/2024-02" in calls
     report = example.verify(tmp_path)
     assert report["counts"] == {"acquired": 2}
@@ -202,11 +230,14 @@ def test_metadata_shape_refusal_retains_exact_bytes_and_stage(tmp_path):
 def test_credential_refusal_stops_original_requests_and_scrubs_error(tmp_path):
     plan = prepared(tmp_path)
     plan["originals"].append({"url": BUCKET_URL + "legal/aos/2024-01/other.pdf", "listing": None, "associations": []})
+
     class RefusedClient:
         calls = 0
+
         def download(self, *args, **kwargs):
             self.calls += 1
             raise CredentialRefusedError("refused fixture-secret-123")
+
     client = RefusedClient()
     with pytest.raises(CredentialRefusedError):
         example.acquire_originals(client, tmp_path, plan, max_bytes=1000, secret="fixture-secret-123")
@@ -240,21 +271,26 @@ def test_interrupted_original_run_resumes_from_atomic_per_object_checkpoints(tmp
     plan["originals"].append(second)
     snapshots = []
     save = example.save
+
     def counted_save(path, value):
         if path.name == "originals.json":
             snapshots.append(len(value))
         save(path, value)
+
     monkeypatch.setattr(example, "save", counted_save)
+
     class Client:
         def __init__(self):
             self.calls = []
             self.interrupt = True
+
         def download(self, url, **kwargs):
             self.calls.append(url)
             if self.interrupt and url == second["url"]:
                 raise KeyboardInterrupt
             written = LocalBlobWriter(tmp_path / "blobs").put([PDF], max_bytes=1000)
             return {"url": url, "sha256": written.digest, "bytes": written.byte_size}
+
     client = Client()
     with pytest.raises(KeyboardInterrupt):
         example.acquire_originals(client, tmp_path, plan, max_bytes=1000)

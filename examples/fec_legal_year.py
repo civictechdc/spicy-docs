@@ -66,9 +66,17 @@ def verify_page(page, *, label, store, year):
     if label == "listing":
         prefix = f"legal/aos/{year}-"
         objects, token = parse_s3_listing(raw, bucket=BUCKET, prefix=prefix)
-        records = [split_record({**asdict(obj), "url": BUCKET_URL + quote(obj.key, safe="/"),
-                                 "fec_url": "https://www.fec.gov/files/" + quote(obj.key, safe="/")},
-                                source_pointer=None) for obj in objects]
+        records = [
+            split_record(
+                {
+                    **asdict(obj),
+                    "url": BUCKET_URL + quote(obj.key, safe="/"),
+                    "fec_url": "https://www.fec.gov/files/" + quote(obj.key, safe="/"),
+                },
+                source_pointer=None,
+            )
+            for obj in objects
+        ]
         changes = {"continuation-token": token} if token else None
     else:
         value = parse_api(raw)
@@ -91,6 +99,7 @@ def capture_metadata(client, root, year, *, secret=""):
     path = root / f"metadata-{uuid4().hex}.jsonl"
     events = []
     with path.open("xb") as stream:
+
         def record(label, pages):
             try:
                 for page in pages:
@@ -99,31 +108,60 @@ def capture_metadata(client, root, year, *, secret=""):
                     stream.flush()
                     events.append(event)
             except (ValueError, RuntimeError, OSError) as error:
-                failure = {"operation": label, "complete": False, "partial_metadata": pin(path),
-                           "error": scrub_credential(str(error), secret)[:1000]}
+                failure = {
+                    "operation": label,
+                    "complete": False,
+                    "partial_metadata": pin(path),
+                    "error": scrub_credential(str(error), secret)[:1000],
+                }
                 refused = retain_refused_response(error, store=root / "blobs", max_bytes=8 * 1024**2, credential=secret)
                 if refused:
                     failure["refused_evidence"] = refused
                 save(path.with_suffix(".failure.json"), failure)
                 raise
+
         record("listing", client.objects(f"legal/aos/{year}-", max_pages=20))
-        record("search", client.api("/v1/legal/search/", params={"type": "advisory_opinions", "ao_year": year,
-                                                              "hits_returned": 100}, max_pages=20))
+        record(
+            "search",
+            client.api(
+                "/v1/legal/search/",
+                params={"type": "advisory_opinions", "ao_year": year, "hits_returned": 100},
+                max_pages=20,
+            ),
+        )
         try:
             cases = case_ids(events, year)
         except ValueError as error:
-            save(path.with_suffix(".failure.json"), {"operation": "case-selection", "complete": False,
-                 "partial_metadata": pin(path), "error": scrub_credential(str(error), secret)[:1000]})
+            save(
+                path.with_suffix(".failure.json"),
+                {
+                    "operation": "case-selection",
+                    "complete": False,
+                    "partial_metadata": pin(path),
+                    "error": scrub_credential(str(error), secret)[:1000],
+                },
+            )
             raise
         for case in cases:
             record("detail:" + case, client.api(f"/v1/legal/docs/advisory_opinions/{case}", max_pages=1))
-    manifest = {"year": year, "metadata": pin(path), "observed_at": datetime.now(UTC).isoformat(),
-                "scope": "Complete observed AO-number year search plus legal/aos/YEAR- listing; no issuance-year or historical completeness claim."}
+    manifest = {
+        "year": year,
+        "metadata": pin(path),
+        "observed_at": datetime.now(UTC).isoformat(),
+        "scope": "Complete observed AO-number year search plus legal/aos/YEAR- listing; no issuance-year or historical completeness claim.",
+    }
     try:
         load_plan(root, manifest=manifest)
     except (ValueError, TypeError, KeyError) as error:
-        save(path.with_suffix(".failure.json"), {"operation": "metadata-validation", "complete": False,
-             "partial_metadata": pin(path), "error": scrub_credential(str(error), secret)[:1000]})
+        save(
+            path.with_suffix(".failure.json"),
+            {
+                "operation": "metadata-validation",
+                "complete": False,
+                "partial_metadata": pin(path),
+                "error": scrub_credential(str(error), secret)[:1000],
+            },
+        )
         raise
     save(root / "selection.json", manifest)
     return manifest
@@ -138,8 +176,12 @@ def case_ids(events, year):
     if any(re.fullmatch(f"{year}-[0-9]+", case) is None for case in cases):
         raise ValueError("legal search returned an AO outside the selected number year")
     # Directory-only cases still receive an explicit detail request.
-    directories = {row["metadata"]["key"].split("/")[2] for event in events if event["label"] == "listing"
-                   for row in event["page"]["records"]}
+    directories = {
+        row["metadata"]["key"].split("/")[2]
+        for event in events
+        if event["label"] == "listing"
+        for row in event["page"]["records"]
+    }
     if any(re.fullmatch(f"{year}-[0-9]+", case) is None for case in directories):
         raise ValueError("legal directory falls outside the selected AO number year")
     return sorted(set(cases) | directories)
@@ -163,13 +205,22 @@ def load_plan(root, *, manifest=None):
             query = parse_qs(url.query)
             if label == "listing":
                 valid = url.hostname == urlsplit(BUCKET_URL).hostname and query == {
-                    "list-type": ["2"], "prefix": [f"legal/aos/{year}-"], "max-keys": ["1000"]}
+                    "list-type": ["2"],
+                    "prefix": [f"legal/aos/{year}-"],
+                    "max-keys": ["1000"],
+                }
             elif label == "search":
-                valid = url.hostname == "api.open.fec.gov" and url.path == "/v1/legal/search/" and query == {
-                    "type": ["advisory_opinions"], "ao_year": [str(year)], "hits_returned": ["100"]}
+                valid = (
+                    url.hostname == "api.open.fec.gov"
+                    and url.path == "/v1/legal/search/"
+                    and query == {"type": ["advisory_opinions"], "ao_year": [str(year)], "hits_returned": ["100"]}
+                )
             else:
-                valid = url.hostname == "api.open.fec.gov" and not query and url.path == (
-                    "/v1/legal/docs/advisory_opinions/" + label.removeprefix("detail:"))
+                valid = (
+                    url.hostname == "api.open.fec.gov"
+                    and not query
+                    and url.path == ("/v1/legal/docs/advisory_opinions/" + label.removeprefix("detail:"))
+                )
             if not valid:
                 raise ValueError("initial metadata request differs from the declared complete year selection")
         if previous and previous[-1]["next_url"] != page["request_url"]:
@@ -198,34 +249,69 @@ def load_plan(root, *, manifest=None):
             case = label.removeprefix("detail:")
             if len(page["records"]) > 1 or any(row["metadata"].get("ao_no") != case for row in page["records"]):
                 raise ValueError("legal detail identity differs from requested AO")
-            case_outcomes.append({"ao_no": case, "disposition": "returned" if page["records"] else "requested-empty",
-                                  "evidence": page["evidence"]})
+            case_outcomes.append(
+                {
+                    "ao_no": case,
+                    "disposition": "returned" if page["records"] else "requested-empty",
+                    "evidence": page["evidence"],
+                }
+            )
         for row in page["records"]:
             case = row["metadata"]["ao_no"]
             # Citation links remain references; only this case's documents are selected.
-            assets = [asset for asset in row["assets"]
-                      if asset["source_pointer"].startswith(row["source_pointer"] + "/documents/")]
+            assets = [
+                asset
+                for asset in row["assets"]
+                if asset["source_pointer"].startswith(row["source_pointer"] + "/documents/")
+            ]
             pointers = {asset["source_pointer"] for asset in assets}
             for index, document in enumerate(row["metadata"].get("documents", [])):
                 pointer = row["source_pointer"] + f"/documents/{index}/url"
                 if not isinstance(document.get("url"), str) or not document["url"]:
-                    unavailable.append({"ao_no": case, "operation": label, "disposition": "unavailable-missing-url",
-                                        "source_pointer": pointer, "evidence": page["evidence"]})
+                    unavailable.append(
+                        {
+                            "ao_no": case,
+                            "operation": label,
+                            "disposition": "unavailable-missing-url",
+                            "source_pointer": pointer,
+                            "evidence": page["evidence"],
+                        }
+                    )
                 elif pointer not in pointers:
-                    assets.append({"url": resolve_link(document["url"], base="https://www.fec.gov/"), "source_pointer": pointer})
+                    assets.append(
+                        {"url": resolve_link(document["url"], base="https://www.fec.gov/"), "source_pointer": pointer}
+                    )
             for asset in assets:
                 try:
                     url = official_url(asset["url"])
                 except ValueError:
-                    unavailable.append({"ao_no": case, "operation": label, "disposition": "unavailable-outside-approved-hosts",
-                                        "source_url": asset["url"], "source_pointer": asset["source_pointer"], "evidence": page["evidence"]})
+                    unavailable.append(
+                        {
+                            "ao_no": case,
+                            "operation": label,
+                            "disposition": "unavailable-outside-approved-hosts",
+                            "source_url": asset["url"],
+                            "source_pointer": asset["source_pointer"],
+                            "evidence": page["evidence"],
+                        }
+                    )
                     continue
                 target = aliases.get(url, url)
                 item = items.setdefault(target, {"url": target, "listing": None, "associations": []})
-                item["associations"].append({"ao_no": case, "operation": label, "source_url": url,
-                                             "source_pointer": asset["source_pointer"], "evidence": page["evidence"]})
-    return manifest, {"originals": sorted(items.values(), key=lambda item: item["url"]),
-                      "unavailable": unavailable, "cases": case_outcomes}
+                item["associations"].append(
+                    {
+                        "ao_no": case,
+                        "operation": label,
+                        "source_url": url,
+                        "source_pointer": asset["source_pointer"],
+                        "evidence": page["evidence"],
+                    }
+                )
+    return manifest, {
+        "originals": sorted(items.values(), key=lambda item: item["url"]),
+        "unavailable": unavailable,
+        "cases": case_outcomes,
+    }
 
 
 def acquire_originals(client, root, plan, *, max_bytes, secret=""):
@@ -235,11 +321,13 @@ def acquire_originals(client, root, plan, *, max_bytes, secret=""):
         raise ValueError("original selection changed on resume")
     rows = prior or [{"selected": item, "disposition": "unrequested", "attempts": []} for item in plan["originals"]]
     save(path, rows)
+
     def checkpoint(row):
         # Atomic per-object state survives interruption without rewriting the population.
         progress = root / "original-progress"
         progress.mkdir(exist_ok=True)
         save(progress / (hashlib.sha256(row["selected"]["url"].encode()).hexdigest() + ".json"), row)
+
     used = 0
     for row in rows:
         if row["disposition"] == "acquired":
@@ -258,19 +346,28 @@ def acquire_originals(client, root, plan, *, max_bytes, secret=""):
             checkpoint(row)
             continue
         try:
-            result = client.download(item["url"], max_bytes=min(remaining, 32 * 1024**2),
-                                     expected_size=listing["size"] if listing else None,
-                                     etag=listing["etag"] if listing else None)
+            result = client.download(
+                item["url"],
+                max_bytes=min(remaining, 32 * 1024**2),
+                expected_size=listing["size"] if listing else None,
+                etag=listing["etag"] if listing else None,
+            )
             row.update(disposition="acquired", acquisition=result)
             used += result["bytes"]
         except (ValueError, RuntimeError, OSError) as error:
             row["disposition"] = "failed"
-            row["attempts"].append({"at": datetime.now(UTC).isoformat(), "error": scrub_credential(str(error), secret)[:1000]})
+            row["attempts"].append(
+                {"at": datetime.now(UTC).isoformat(), "error": scrub_credential(str(error), secret)[:1000]}
+            )
             refused = retain_refused_response(error, store=root / "blobs", max_bytes=8 * 1024**2, credential=secret)
             if refused:
                 row["attempts"][-1]["refused_evidence"] = refused
             checkpoint(row)
-            if isinstance(error, CredentialRefusedError) or isinstance(error, HttpRefusal) and error.status in {401, 403}:
+            if (
+                isinstance(error, CredentialRefusedError)
+                or isinstance(error, HttpRefusal)
+                and error.status in {401, 403}
+            ):
                 raise
         checkpoint(row)
         print(f"original {number}/{len(rows)}: {row['disposition']}", flush=True)
@@ -286,7 +383,11 @@ def original_rows(root):
         row = json.loads(progress.read_bytes())
         url = row["selected"]["url"]
         previous = by_url.get(url)
-        if previous is None or previous["selected"] != row["selected"] or progress.stem != hashlib.sha256(url.encode()).hexdigest():
+        if (
+            previous is None
+            or previous["selected"] != row["selected"]
+            or progress.stem != hashlib.sha256(url.encode()).hexdigest()
+        ):
             raise ValueError("original progress changed a selected association")
         by_url[url] = row
     return [by_url[row["selected"]["url"]] for row in rows]
@@ -306,14 +407,21 @@ def verify(root):
                 raise ValueError("acquired original differs from its selected source")
         elif row["disposition"] not in {"failed", "unrequested-byte-bound"}:
             raise ValueError("selected original lacks a completed disposition")
-    return {"year": manifest["year"], "metadata": manifest["metadata"], "originals": pin(root / "originals.json"),
-            "progress": [pin(path) for path in sorted((root / "original-progress").glob("*.json"))],
-            "cases": plan["cases"], "unavailable": plan["unavailable"],
-            "counts": dict(Counter(row["disposition"] for row in rows)),
-            "acquisition_complete": all(row["disposition"] == "acquired" for row in rows) and not plan["unavailable"]
-                                    and all(case["disposition"] == "returned" for case in plan["cases"]),
-            "acquired_bytes": sum(row["acquisition"]["bytes"] for row in rows if row["disposition"] == "acquired"),
-            "scope": manifest["scope"], "verification": "All selected response bytes replayed, all associations compared, every acquired original hashed; PDF text/pages are not parsed."}
+    return {
+        "year": manifest["year"],
+        "metadata": manifest["metadata"],
+        "originals": pin(root / "originals.json"),
+        "progress": [pin(path) for path in sorted((root / "original-progress").glob("*.json"))],
+        "cases": plan["cases"],
+        "unavailable": plan["unavailable"],
+        "counts": dict(Counter(row["disposition"] for row in rows)),
+        "acquisition_complete": all(row["disposition"] == "acquired" for row in rows)
+        and not plan["unavailable"]
+        and all(case["disposition"] == "returned" for case in plan["cases"]),
+        "acquired_bytes": sum(row["acquisition"]["bytes"] for row in rows if row["disposition"] == "acquired"),
+        "scope": manifest["scope"],
+        "verification": "All selected response bytes replayed, all associations compared, every acquired original hashed; PDF text/pages are not parsed.",
+    }
 
 
 def main():
@@ -333,10 +441,19 @@ def main():
     if not args.verify_only:
         key = read_api_key(args.env_file, args.key_name) if args.env_file else os.environ[args.key_name]
         from spicy_docs.sources.zyte import ZyteHttpFetcher
-        zyte = (ZyteHttpFetcher(read_api_key(args.env_file, "ZYTE_TOKEN")) if args.env_file
-                else ZyteHttpFetcher.from_environment()) if args.zyte_on_denial else None
-        with FecClient(store=args.root / "blobs", api_key=key, zyte_on_denial=zyte,
-                       max_requests=args.max_requests, min_interval=1) as client:
+
+        zyte = (
+            (
+                ZyteHttpFetcher(read_api_key(args.env_file, "ZYTE_TOKEN"))
+                if args.env_file
+                else ZyteHttpFetcher.from_environment()
+            )
+            if args.zyte_on_denial
+            else None
+        )
+        with FecClient(
+            store=args.root / "blobs", api_key=key, zyte_on_denial=zyte, max_requests=args.max_requests, min_interval=1
+        ) as client:
             if not (args.root / "selection.json").exists():
                 capture_metadata(client, args.root, args.year, secret=key)
             manifest, plan = load_plan(args.root)
@@ -344,9 +461,14 @@ def main():
                 raise ValueError("resume cannot change the selected AO year")
             acquire_originals(client, args.root, plan, max_bytes=args.max_bytes, secret=key)
     result = verify(args.root)
-    result["execution"] = {"command": sys.argv, "implementation": pin(Path(__file__).resolve()),
-                           "observed_at": datetime.now(UTC).isoformat(), "max_original_bytes": args.max_bytes,
-                           "max_requests": args.max_requests, "requests": 0 if args.verify_only else client.http.request_count}
+    result["execution"] = {
+        "command": sys.argv,
+        "implementation": pin(Path(__file__).resolve()),
+        "observed_at": datetime.now(UTC).isoformat(),
+        "max_original_bytes": args.max_bytes,
+        "max_requests": args.max_requests,
+        "requests": 0 if args.verify_only else client.http.request_count,
+    }
     save(args.root / "verification.json", result)
     print(json.dumps({key: result[key] for key in ("counts", "acquired_bytes", "acquisition_complete")}))
     return 0 if result["acquisition_complete"] else 2

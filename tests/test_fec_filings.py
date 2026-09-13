@@ -152,7 +152,7 @@ def test_explicit_cp1252_preserves_source_ranges_and_readable_bodies(tmp_path, d
     # Retained FEC-1998705/1998706 use 0x93/0x94 around Agreement; choosing
     # cp1252 is caller interpretation, not a publisher encoding declaration.
     header = f"HDR{delimiter}FEC{delimiter}{version}\n".encode()
-    fields = ["TEXT", "parent", "source-id", "back", "schedule"][:body_index] + ['“Agreement”, café', "EXTRA"]
+    fields = ["TEXT", "parent", "source-id", "back", "schedule"][:body_index] + ["“Agreement”, café", "EXTRA"]
     output = io.StringIO(newline="")
     csv.writer(output).writerow(fields)
     line = (delimiter.join(fields) + "\r\n" if delimiter == "\x1c" else output.getvalue()).encode("cp1252")
@@ -168,7 +168,7 @@ def test_explicit_cp1252_preserves_source_ranges_and_readable_bodies(tmp_path, d
     body = rows[1]["embedded_bodies"][0]
     assert body["encoding"] == "cp1252"
     assert body["byte_offset"] == len(header) and body["byte_length"] == len(line)
-    assert filing_body(store=tmp_path, body=body) == '“Agreement”, café'
+    assert filing_body(store=tmp_path, body=body) == "“Agreement”, café"
     bracketed = rows[2]["embedded_bodies"][0]
     text = filing_body(store=tmp_path, body=bracketed)
     assert text == "“Exact”\r\n"
