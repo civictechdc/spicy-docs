@@ -1,8 +1,9 @@
 # Work status
 
 **All active source-fidelity and CFR example tasks are complete locally.**
-S21/S31 remain conditionally deferred. SpicyRegs' CourtListener reader adoption
-is separate receiving work. These follow-up commits have not been pushed.
+S21/S31 remain conditionally deferred. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
+owns the remaining CourtListener reader adoption. These follow-up commits have
+not been pushed.
 
 **Merged simplification: 23 local items complete; two conditionally deferred.**
 Six original items moved to their implementation owners. A moved task is not a
@@ -53,12 +54,14 @@ Receipts, replay script and live outputs:
 The [field guide](sources/govinfo-metadata.md) links the publisher dictionaries
 and documents the mapping and format limits.
 
+<a id="c07"></a>
+
 - [x] **C07:** Add a DocSpec-owned annual CFR catalog example using the qualified
   SpicyDocs wheel. Preserve MODS metadata, select one explicit annual section,
   inject acquisition and processing, then prove a changed processor reuses
   retained bytes after the source client closes. Local DocSpec commit `1d37bcb`
   is isolated on `codex/cfr-dataset-example`; it pins SpicyDocs `0.6.0` from
-  source commit `5a9c4e9`.
+  source commit `5a9c4e9`. DocSpec D55 owns its receiving completion record.
 
 C07 checks: **1,162 tests passed**, one opt-in test deselected; regression-map,
 lint, lock, build and installed-wheel checks passed. The examples work without
@@ -146,8 +149,8 @@ implementations and tests for F02–F05, P01 and the DocSpec CFR example.
 - [x] **F05:** Preserve CourtListener quoted empty strings, nulls and literal
   backslashes using the publisher's CSV dialect. Bound record size, decompression
   and compressed reads; refuse malformed text, rows and incomplete bzip2 members.
-  Resume and cleanup checks pass. SpicyRegs' duplicate raw reader and table
-  normalization still need a separate adoption change; this fix does not migrate them.
+  Resume and cleanup checks pass. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
+  owns adoption of the reader and the separate table-normalization audit.
 
 F05 checks: 103 CSV, bulk-reader and listing tests passed. Retained CourtListener
 data produced 3,361 rows with 16,096 nulls and 11,808 empty strings. Re-encoding
@@ -218,7 +221,8 @@ unchanged; seven CLI help checks and local link/example checks passed.
   parity checks; keep source users independent and package dependencies acyclic.
 
 The [caller decision](source-ownership.md#current-campaign-and-dataset-callers)
-explains both deferrals. DocSpec D51/D52 own the planned dataset examples;
+explains both deferrals. DocSpec D51/D52 own the completed GAO/comment examples,
+and D55 records the annual CFR example;
 creating a new source-side loop merely to migrate it adds no value.
 
 ## Completed local work
