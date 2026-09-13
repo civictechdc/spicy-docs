@@ -282,9 +282,8 @@ class FecClient:
             return self.http.download(url, store=self.store, max_bytes=max_bytes, **options)
         except HttpRefusal as error:
             if options.get("etag"):
-                raise AcquisitionError(
-                    "selected ETag requires direct transfer; Zyte extract cannot bind If-Match"
-                ) from error
+                error.add_note("selected ETag requires direct transfer; Zyte extract cannot bind If-Match")
+                raise
             capture = self._after_denial(error, url, max_bytes=max_bytes)
         if not capture.body:
             raise AcquisitionError("asset response is empty")

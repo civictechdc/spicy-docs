@@ -12,6 +12,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from spicy_docs.sources.fec.catalog import official_sources
+from spicy_docs.sources.refusals import retain_refused_response
 from spicy_docs.transport.credentials import read_api_key, scrub_credential
 
 
@@ -75,8 +76,6 @@ def main(argv: list[str] | None = None) -> int:
                     emit("collection", row)
                 return 0
             # HTTP remains optional for core/offline imports and collection listing.
-            from rulespec_artifacts import LocalBlobWriter
-
             from spicy_docs.sources.fec.client import FecClient
             from spicy_docs.sources.zyte import ZyteHttpFetcher
 
@@ -130,18 +129,9 @@ def main(argv: list[str] | None = None) -> int:
                     )
             except (ValueError, RuntimeError, OSError, TypeError, SystemExit) as error:
                 detail = {"run_id": run_id, "error": scrub_credential(str(error), key)[:1000], "complete": False}
-                refused = getattr(error, "refused_response", None)
-                if (
-                    refused
-                    and refused.response_bytes is not None
-                    and not (key and key.encode() in refused.response_bytes)
-                ):
-                    written = LocalBlobWriter(args.store).put([refused.response_bytes], max_bytes=8 * 1024**2)
-                    detail["refused_evidence"] = {
-                        "sha256": written.digest,
-                        "bytes": written.byte_size,
-                        "stage": refused.stage,
-                    }
+                refused = retain_refused_response(error, store=args.store, max_bytes=8 * 1024**2, credential=key)
+                if refused is not None:
+                    detail["refused_evidence"] = refused
                 emit("failed", detail)
                 return 1
         return 0
