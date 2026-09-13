@@ -11,9 +11,9 @@ from rulespec_artifacts import LocalBlobSource
 
 BEGIN_TEXT = {"[BEGINTEXT]", "[BEGIN TEXT]"}
 END_TEXT = {"[ENDTEXT]", "[END TEXT]"}
-# Publisher "e-filing headers all versions", "all versions" row 809:
-# v5.3 TEXT4000 is field 4 (zero-based 3). Other CSV versions stay positional.
-CSV_TEXT_FIELDS = {"5.3": 3}
+# Publisher "e-filing headers all versions", TEXT rows 11–14:
+# v5.0–5.3 TEXT4000 is field 4 (zero-based 3). Other CSV versions stay positional.
+CSV_TEXT_FIELDS = dict.fromkeys(("5.0", "5.1", "5.2", "5.3"), 3)
 
 
 class _Lines:
@@ -47,8 +47,8 @@ def filing_records(
     """
     if type(max_record_bytes) is not int or max_record_bytes <= 0:
         raise ValueError("max_record_bytes must be a positive integer")
-    if encoding not in {"utf-8", "latin-1"}:
-        raise ValueError("select utf-8 or latin-1 for the complete filing")
+    if encoding not in {"utf-8", "latin-1", "cp1252"}:
+        raise ValueError("select utf-8, latin-1 or cp1252 for the complete filing")
     with LocalBlobSource(store).open(sha256) as stream:
         lines = _Lines(stream, encoding, max_record_bytes)
 

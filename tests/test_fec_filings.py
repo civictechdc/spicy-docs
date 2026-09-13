@@ -65,12 +65,13 @@ def test_csv_multiline_and_legacy_header_keep_case_and_byte_coordinates(tmp_path
 
 
 @pytest.mark.parametrize("text", ["", 'Exact, "quoted"\r\nsecond line\n caf\u00e9 '])
-def test_qualified_csv_text_lifts_only_narrative_and_resolves_exactly(tmp_path, text):
+@pytest.mark.parametrize("version", ["5.0", "5.1", "5.2", "5.3"])
+def test_qualified_csv_text_lifts_only_narrative_and_resolves_exactly(tmp_path, text, version):
     output = io.StringIO(newline="")
     expected = ["TEXT", "SB29", "parent-id", text, "", "unknown-extra"]
     csv.writer(output).writerow(expected)
     record = output.getvalue().encode()
-    header = b"HDR,FEC,5.3,Example\r\n"
+    header = f"HDR,FEC,{version},Example\r\n".encode()
     raw = header + record + b"OTHER,untouched\r\n"
     rows = list(filing_records(**captured(tmp_path, raw), max_record_bytes=len(record)))
     row = rows[1]
@@ -88,7 +89,7 @@ def test_qualified_csv_text_lifts_only_narrative_and_resolves_exactly(tmp_path, 
         list(filing_records(**captured(tmp_path, raw), max_record_bytes=len(record) - 1))
 
 
-@pytest.mark.parametrize("version", ["5.2", "5.30", "unqualified"])
+@pytest.mark.parametrize("version", ["3", "3.00", "5.20", "5.30", "6.1", "unqualified"])
 def test_unqualified_csv_text_remains_positional(tmp_path, version):
     raw = f"HDR,FEC,{version}\nTEXT,SB29,parent,Narrative,,EXTRA\n".encode()
     row = list(filing_records(**captured(tmp_path, raw)))[1]
@@ -144,6 +145,48 @@ def test_explicit_latin1_never_restarts_prior_records(tmp_path):
     rows = list(filing_records(**kwargs, encoding="latin-1"))
     assert [r.get("record_type") for r in rows] == [None, "F13N", "F132"]
     assert rows[-1]["fields"]["1"] == "CAFÉ"
+
+
+@pytest.mark.parametrize("delimiter,version,body_index", [("\x1c", "8.5", 5), (",", "5.2", 3)])
+def test_explicit_cp1252_preserves_source_ranges_and_readable_bodies(tmp_path, delimiter, version, body_index):
+    # Retained FEC-1998705/1998706 use 0x93/0x94 around Agreement; choosing
+    # cp1252 is caller interpretation, not a publisher encoding declaration.
+    header = f"HDR{delimiter}FEC{delimiter}{version}\n".encode()
+    fields = ["TEXT", "parent", "source-id", "back", "schedule"][:body_index] + ['“Agreement”, café', "EXTRA"]
+    output = io.StringIO(newline="")
+    csv.writer(output).writerow(fields)
+    line = (delimiter.join(fields) + "\r\n" if delimiter == "\x1c" else output.getvalue()).encode("cp1252")
+    raw = header + line + b"[BEGINTEXT]\n\x93Exact\x94\r\n[ENDTEXT]\n"
+    kwargs = captured(tmp_path, raw)
+    default = filing_records(**kwargs)
+    assert next(default)["kind"] == "header"
+    with pytest.raises(UnicodeDecodeError):
+        next(default)
+    rows = list(filing_records(**kwargs, encoding="cp1252"))
+    assert len(rows) == 3
+    assert rows[1]["fields"][str(body_index + 1)] == "EXTRA"
+    body = rows[1]["embedded_bodies"][0]
+    assert body["encoding"] == "cp1252"
+    assert body["byte_offset"] == len(header) and body["byte_length"] == len(line)
+    assert filing_body(store=tmp_path, body=body) == '“Agreement”, café'
+    bracketed = rows[2]["embedded_bodies"][0]
+    text = filing_body(store=tmp_path, body=bracketed)
+    assert text == "“Exact”\r\n"
+    assert text.encode("cp1252") == raw[bracketed["byte_offset"] : bracketed["byte_offset"] + bracketed["byte_length"]]
+    # Latin-1 is still an explicit byte-preserving choice, with different text.
+    latin_body = list(filing_records(**kwargs, encoding="latin-1"))[2]["embedded_bodies"][0]
+    assert filing_body(store=tmp_path, body=latin_body) == "\x93Exact\x94\r\n"
+
+
+def test_selected_encoding_never_replaces_undefined_bytes_or_guesses(tmp_path):
+    kwargs = captured(tmp_path, b"HDR\x1cFEC\x1c8.5\nUNKNOWN\x1c\x81\n")
+    stream = filing_records(**kwargs, encoding="cp1252")
+    assert next(stream)["kind"] == "header"
+    with pytest.raises(UnicodeDecodeError):
+        next(stream)
+    assert list(filing_records(**kwargs, encoding="latin-1"))[1]["fields"]["1"] == "\x81"
+    with pytest.raises(ValueError, match="select"):
+        next(filing_records(**kwargs, encoding="utf-16"))
 
 
 def test_record_bound_at_limit_and_csv_total_across_lines(tmp_path):
