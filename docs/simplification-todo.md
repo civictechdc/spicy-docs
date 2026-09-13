@@ -252,9 +252,36 @@ complete FEC distribution/catalog/search adoption remains open.
   covers original-JSON parity, committee table fields, complete catalog facts
   and rejected missing members/pins. The catalog contains committee metadata,
   with no acquired-body claim; default rollup and search paths remain unchanged.
-- [ ] Extend delivery to the other identity, relationship and filing inputs.
-  Full financial/legal/history acquisition and search adoption remain separate
-  tasks.
+SpicyDocs-only execution continues below. Each task uses the existing readers,
+transport, blob store and publisher; dataset selection across products and
+financial interpretation stay with their callers. Prefer bulk and XML/JSON/XHTML,
+retain exact originals separately, and use the authorized bounded Zyte fallback
+when a public route denies access.
+
+- [ ] **FEC01 — Publish additional retained source observations (T02/T04/T09).**
+  In progress: complete pinned filing-metadata queries, including overlaps and
+  requested-empty results, through the existing release publisher. Complete when
+  every selected query has an admitted release, original-JSON parity and offline
+  replay; other FEC populations keep their own pending status.
+- [ ] **FEC02 — Qualify additional raw filing formats (T05).** In progress:
+  publisher-documented legacy TEXT layouts and explicit readable encodings.
+  Complete when retained originals preserve literal fields, unknown records and
+  body byte coordinates, with unsupported versions/encodings still explicit.
+- [ ] **FEC03 — Capture a complete declared legal collection (T08).** In progress:
+  advisory-opinion numbers for 2024, JSON metadata and separately acquired
+  supporting originals. Complete when enumeration terminates, document
+  associations survive and every discovered original has a verified acquisition
+  or explicit unresolved disposition. This does not complete all legal history.
+- [ ] **FEC04 — Acquire financial bulk originals (T06).** In progress:
+  communication-cost, electioneering and bundled-contribution exports across
+  their listed periods, with a transfer/storage preflight. Complete the selected
+  acquisition with exact source headers/bytes and coverage; large transaction
+  dumps, restoration and other financial families remain separate work.
+- [ ] **FEC05 — Exercise historical acquisition and source refresh (T18).** In
+  progress with FEC04: enumerate listed historical files, retain each observation,
+  retry failed objects and reuse only verified unchanged bytes. Complete the
+  selected replay/refresh proof with changed, removed and unavailable objects
+  visible; broader historical acquisition and recurring scheduling remain open.
 
 ## Deferred local work
 
