@@ -300,9 +300,9 @@ retained filing-release/raw-file replay and offline CLI use without HTTP/table
 extras. Legal originals replayed against the integrated code. Independent filing,
 bulk and legal reviews preceded the manual sample follow-up below. Exact checks
 and the corrected qualification caller are retained in `integrated/checks.json` and
-`integrated/completion.json` under the same receipt root. This work is committed
-on `codex/fec-source-expansion`; main merge, package release and downstream
-adoption remain separate.
+`integrated/completion.json` under the same receipt root. The source expansion
+and manual-review fixes below are merged into local `main`. Package release and
+downstream adoption remain separate.
 
 - [x] **FEC11 — Address the manual input/output review findings (T02/T05/T08/T19).**
   Retain optional S3 checksum/storage fields and add native positions for repeated
