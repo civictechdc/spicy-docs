@@ -15,7 +15,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from spicy_docs.sources.fec.client import FecClient
-from spicy_docs.transport.credentials import scrub_credential
+from spicy_docs.sources.refusals import retain_refused_response
+from spicy_docs.transport.credentials import CredentialRefusedError, scrub_credential
 
 PREFIXES = ("bulk-downloads/19", "bulk-downloads/20", "bulk-downloads/data.fec.gov/lobbyist_bundle.csv")
 SELECTOR = (
@@ -99,12 +100,18 @@ def capture(client, output: Path, *, previous=None, max_bytes=128 * 1024**2, max
                     row.update(outcome="acquired", asset=asset)
             except (ValueError, RuntimeError, OSError) as error:
                 row.update(outcome="failed", error=scrub_credential(str(error), "")[:1000])
+                if isinstance(error, CredentialRefusedError):
+                    result["objects"].append(row)
+                    raise
             result["objects"].append(row)
             with (output / "objects.jsonl").open("a") as stream:
                 stream.write(json.dumps(row) + "\n")
             print(f"{key}: {row['outcome']}", flush=True)
     except (ValueError, RuntimeError, OSError) as error:
         result["error"] = scrub_credential(str(error), "")[:1000]
+        refused = retain_refused_response(error, store=client.store, max_bytes=8 * 1024**2)
+        if refused is not None:
+            result["refused_evidence"] = refused
         recorded = {row["source"]["key"] for row in result["objects"]}
         result["objects"].extend(
             dict(row, outcome="not-requested") for key, row in selected.items() if key not in recorded

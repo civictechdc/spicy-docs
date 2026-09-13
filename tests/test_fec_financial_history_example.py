@@ -1,11 +1,16 @@
 import hashlib
 import json
 from copy import deepcopy
+from pathlib import Path
 from types import SimpleNamespace
 
+import httpx
 import pytest
+from rulespec_artifacts import LocalBlobSource
 
 from examples.fec_financial_history import PREFIXES, capture, read_previous
+from spicy_docs.sources.fec.catalog import BUCKET
+from spicy_docs.sources.fec.client import FecClient
 
 
 def source(year=2024, *, etag='"first"', size=20):
@@ -26,6 +31,7 @@ class Client:
         self.listing_failure = listing_failure
         self.http = SimpleNamespace(request_count=0)
         self.downloads = []
+        self.store = Path("unused-fixture-store")
 
     def objects(self, prefix, *, max_pages):
         self.http.request_count += 1
@@ -123,3 +129,61 @@ def test_changed_prior_pin_and_unrelated_selector_rejected(tmp_path):
     path.write_text(json.dumps(changed))
     with pytest.raises(ValueError, match="selection"):
         read_previous(path, hashlib.sha256(path.read_bytes()).hexdigest())
+
+
+def listing(prefix, *, truncated=False):
+    keys = [source(2022), source(2024)] if prefix == PREFIXES[1] else []
+    if prefix == PREFIXES[0] and truncated:
+        keys = [source(1998)]
+    contents = "".join(
+        f"<Contents><Key>{row['key']}</Key><Size>{row['size']}</Size>"
+        f"<ETag>{row['etag']}</ETag><LastModified>{row['last_modified']}</LastModified></Contents>"
+        for row in keys
+    )
+    return (
+        f'<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+        f"<Name>{BUCKET}</Name><Prefix>{prefix}</Prefix>{contents}"
+        f"<IsTruncated>{str(truncated).lower()}</IsTruncated>"
+        + ("<NextContinuationToken>next</NextContinuationToken>" if truncated else "")
+        + "</ListBucketResult>"
+    ).encode()
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_real_access_refusal_stops_later_downloads_with_etag(tmp_path, status):
+    downloads = []
+
+    def handler(request):
+        if request.url.params.get("list-type"):
+            return httpx.Response(200, content=listing(request.url.params["prefix"]))
+        downloads.append(str(request.url))
+        return httpx.Response(status)
+
+    with FecClient(store=tmp_path / "blobs", transport=httpx.MockTransport(handler), min_interval=0) as client:
+        result = capture(client, tmp_path / "out")
+    assert len(downloads) == 1
+    assert [row["outcome"] for row in result["objects"]] == ["failed", "not-requested"]
+    assert not result["acquisition_complete"]
+
+
+def test_rejected_second_listing_retains_exact_failure_and_prior_pages(tmp_path):
+    bad = b"<not-an-s3-listing>"
+
+    def handler(request):
+        assert request.url.params.get("list-type"), "original must not be requested"
+        payload = (
+            bad
+            if request.url.params.get("continuation-token")
+            else listing(request.url.params["prefix"], truncated=True)
+        )
+        return httpx.Response(200, content=payload, headers={"Content-Type": "application/xml"})
+
+    with FecClient(store=tmp_path / "blobs", transport=httpx.MockTransport(handler), min_interval=0) as client:
+        result = capture(client, tmp_path / "out")
+    assert not result["enumeration_complete"] and not result["acquisition_complete"]
+    evidence = result["refused_evidence"]
+    assert "continuation-token=next" in evidence["request_key"]
+    assert evidence["stage"] == "source-validation"
+    with LocalBlobSource(tmp_path / "blobs").open(evidence["sha256"]) as stream:
+        assert stream.read() == bad
+    assert len((tmp_path / "out/listings.jsonl").read_text().splitlines()) == 1
