@@ -11,7 +11,7 @@
   Source merge `d9c312c` is pushed to `fork/main`. Downstream wheel adoption
   remains separate.
 
-**All active source-fidelity and CFR example tasks are complete locally.**
+**The source-fidelity and CFR example tasks below are complete locally.**
 S21/S31 remain conditionally deferred. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
 owns the remaining CourtListener reader adoption. The merged source changes
 are on `fork/main`; receiving changes remain on their own branches.
@@ -293,6 +293,16 @@ Selected scope, commands, source pins and limits are in the lane receipts under
 `bulk/qualification.json`, plus `legal/ao-2024/verification.json`. These are local
 source deliverables; they do not
 complete the broader T02/T04/T05/T06/T08/T09/T18 integration tasks.
+
+Integrated checks passed through `./scripts/check`, including the offline suite,
+lint and format checks. The ordinary core wheel also passed selected FEC tests,
+retained filing-release/raw-file replay and offline CLI use without HTTP/table
+extras. Legal originals replayed against the integrated code. Independent filing,
+bulk and legal reviews have no unresolved findings. Exact checks and the corrected
+qualification caller are retained in `integrated/checks.json` and
+`integrated/completion.json` under the same receipt root. This work is committed
+on `codex/fec-source-expansion`; main merge, package release and downstream
+adoption remain separate.
 
 - [ ] **FEC06 — Extend real historical filing qualification.** Acquire complete
   originals for CSV 5.0–5.2 and other declared layouts before extending body-field
