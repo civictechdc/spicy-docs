@@ -127,6 +127,25 @@ def test_requested_empty_query_keeps_its_capture_without_inventing_filing_record
         assert evidence.read("response.json") == originals[0]
 
 
+@pytest.mark.parametrize("number", [{"file_number": None}, {}])
+@pytest.mark.parametrize("filtered", [False, True])
+def test_nullable_or_absent_file_number_is_metadata_not_identity(tmp_path, number, filtered):
+    row = {"sub_id": "100", "unknown": {"retained": None}, **number}
+    captures, _, blobs = _inputs(tmp_path, records=[row])
+    if not filtered:
+        captures[0]["requestUrl"] = captures[0]["resolvedUrl"] = "https://api.open.fec.gov/v1/filings/?per_page=1"
+    pages = iter_retained_filing_pages(captures, blob_source=blobs)
+    if filtered:
+        with pytest.raises(ValueError, match="explicit file-number selection"):
+            _publish(tmp_path, captures, pages)
+    else:
+        _, reader = _publish(tmp_path, captures, pages)
+        observed = list(reader.iter_records())
+        assert len(observed) == 1 and observed[0]["sourceRecordId"] == "100"
+        assert observed[0]["record"]["metadata"] == row
+        assert observed[0]["schemaVersion"] == "1.1"
+
+
 @pytest.mark.parametrize(
     "change",
     [

@@ -43,8 +43,10 @@ from spicy_docs.sources.fec.retained import (
 
 SOURCE_SYSTEM_ID = "https://api.open.fec.gov/v1/filings/"
 SCHEMA_NAME = "fec-filing-observation"
-SCHEMA_VERSION = "1.0"
-SCHEMA_KEY = "schemas/fec-filing-observation-1.0.json"
+# 1.1 admits source-null or absent file numbers; sub_id supplies record identity.
+# Earlier 1.0 qualification releases keep their original schema and input pins.
+SCHEMA_VERSION = "1.1"
+SCHEMA_KEY = "schemas/fec-filing-observation-1.1.json"
 SCOPE_ID = "fec-retained-filing-query"
 _request = partial(page_request, endpoint=SOURCE_SYSTEM_ID)
 filing_query_scope = partial(query_scope, request=_request)
@@ -64,13 +66,16 @@ def _classify(value: object) -> dict[str, Any]:
     metadata = value["metadata"]
     if not isinstance(metadata.get("sub_id"), str) or re.fullmatch(r"[0-9]+", metadata["sub_id"]) is None:
         raise ValueError("FEC filing observation lacks its native processed-record sub_id")
-    if type(metadata.get("file_number")) is not int or metadata["file_number"] < 0:
-        raise ValueError("FEC filing observation lacks its native file number")
+    # Official OpenFEC Filings.file_number is nullable; it is not this profile's
+    # identity. Preserve null/absence unless a direct filter needs a known match.
+    number = metadata.get("file_number")
+    if number is not None and (type(number) is not int or number < 0):
+        raise ValueError("FEC filing observation has an invalid file number")
     # This filter names the returned field directly. Other source filters may
     # select through associations, so their meaning stays with the publisher.
     pairs, _ = _request(value["capture"]["requestUrl"])
     selected = [number for key, number in pairs if key == "file_number"]
-    if selected and str(metadata["file_number"]) not in selected:
+    if selected and str(number) not in selected:
         raise ValueError("FEC filing result falls outside its explicit file-number selection")
     return dict(value)
 
@@ -116,7 +121,7 @@ def _wrap(record: Mapping[str, Any], *, schema_digest: str) -> dict[str, Any]:
 
 _SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "urn:spicy-docs:schema:fec-filing-observation:1.0",
+    "$id": "urn:spicy-docs:schema:fec-filing-observation:1.1",
     "type": "object",
     "additionalProperties": False,
     "required": sorted(_FIELDS),
@@ -124,10 +129,10 @@ _SCHEMA = {
         "capture": {"type": "object"},
         "metadata": {
             "type": "object",
-            "required": ["sub_id", "file_number"],
+            "required": ["sub_id"],
             "properties": {
                 "sub_id": {"type": "string", "pattern": "^[0-9]+$"},
-                "file_number": {"type": "integer", "minimum": 0},
+                "file_number": {"type": ["integer", "null"], "minimum": 0},
             },
         },
         "embedded_bodies": {"type": "array"},
