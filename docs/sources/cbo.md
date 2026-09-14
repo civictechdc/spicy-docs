@@ -19,9 +19,46 @@ The wall is not user-agent gating — a current Chrome UA gets the identical
 refusal — and it is not a cookie round-trip: presenting the `datadome` cookie
 the wall itself set changes nothing. `CboChallengeError` names it. It is
 deliberately *not* a `CredentialRefusedError`: this family holds no credential,
-so a `403` here is a bot wall, not a key being rejected. The shared client
-refuses `401`/`403` before reading a body, so no challenge bytes reach the
-caller through this route; the pinned challenge bodies are in the receipt below.
+so a `403` here is a bot wall, not a key being rejected. Because the route is
+keyless the shared client retains the refusal body, so the wall's own answer
+reaches the caller on `CboChallengeError.refused_response`; its digest still
+cannot be pinned, because the challenge carries a per-response nonce (767 bytes
+one way, 770 another, on the same day).
+
+### There is no keyless route to an estimate document
+
+Re-probed on 2026-09-14 with a complete browser-like request — Chrome 140 user
+agent, `Accept`, `Accept-Language`, `Referer`, `Upgrade-Insecure-Requests` and
+the three `Sec-Fetch-*` headers — every document path answered the identical
+`403`, 767 bytes, `server: DataDome`, `x-datadome: protected`:
+
+| Requested with a full browser-like header set | Answered |
+| --- | --- |
+| `https://www.cbo.gov/system/files/2020-07/HR1957directspending.pdf` | `403`, 767 B, DataDome |
+| `https://www.cbo.gov/cost-estimates/xml` | `403`, 767 B, DataDome |
+| `https://www.cbo.gov/publication/62720` | `403`, 767 B, DataDome |
+| `https://www.cbo.gov/rss/119congress-cost-estimates.xml` (control) | `200`, 431,257 B, no `x-datadome` |
+
+The control matters: the same client, same headers, same second — so the headers
+are not what is refused, and the wall is path-scoped rather than client-scoped.
+The 767 bytes are a JavaScript challenge (`Please enable JS`, a DataDome `dd`
+blob with a per-response `cid`); passing it means executing that script, which
+no header set can do, and this module does not try.
+
+Nor is there another host to ask. CBO's own retained markup names only
+`www.cbo.gov` paths for its assets — `/system/files/*`, `/sites/default/files/*`,
+`/themes/custom/*`, `/modules/contrib/*` — plus social and analytics hosts and
+`js.datadome.co`. No CDN, no `files`/`static` host, and the feed's `<Link>` is a
+publication *page*, never a PDF locator. The only unwalled paths observed are
+`/rss/{congress}congress-cost-estimates.xml` and `/sites/default/files/css/*`.
+
+**So the estimate documents have no keyless route, and a browser-backed
+transport is the only path.** `CboAcquirer` already takes one: inject a
+`transport` (see [`sources/zyte.py`](../../src/spicy_docs/sources/zyte.py)) and
+the locator grammar, the byte bounds and the three identity proofs below apply
+unchanged. No `ZYTE_TOKEN` was available for this measurement, so *that* route
+is untested here; what is established is that the default transport cannot reach
+a document, on four paths, on two days, with and without browser headers.
 
 ## Read the document shape correctly
 
@@ -61,6 +98,14 @@ window: a per-Congress file is that Congress to date — the 119th spans
 as append-only (below). A Congress with no file answers `404` with a Drupal
 HTML page: requested-empty, not absence of the route.
 
+**`index` is where an item sat in that capture, not a handle on the item.** Two
+captures of the 119th feed nine hours apart on 2026-09-14 hold the same 1,192
+items, byte-identical in all five fields of every one, both strictly newest-first
+— and differ in 76 positions, every one of them a swap inside a run of items
+sharing one `Date`. The order within a `Date` is not stable, so a changed digest
+on this feed is not evidence the feed changed, and only `publication_id`
+identifies an item across captures.
+
 ## Use the route
 
 Install the `acquisition` extra. No key, no env variable.
@@ -87,25 +132,32 @@ identity three ways: `Content-Type: application/pdf`, the `%PDF-` magic bytes,
 and a final URL equal to the locator. The locator must be an
 `https://www.cbo.gov/…​.pdf` URL with no query. **No keyless route states one**
 — the feed's `<Link>` is a publication page, not a PDF — so a caller supplies
-it from a channel that can pass the wall. Without such a channel the estimate
-documents are unavailable, and no amount of retrying changes that.
+both the locator and a `transport` that can pass the wall. Without such a
+transport the estimate documents are unavailable, and no amount of retrying or
+of adding headers changes that.
 
 ## Evidence
 
 Reduced pinned bytes with digests: [`tests/fixtures/cbo/README.md`](../../tests/fixtures/cbo/README.md).
 Full feeds, headers, wall probes, and the cross-capture measurement:
-`corpora/supply-2026-09-02/receipts/port-P06-cbo-2026-09-14/`.
+`corpora/supply-2026-09-02/receipts/port-P06-cbo-2026-09-14/`. The browser-header
+probes, the control, and the second 119th-Congress capture:
+`corpora/supply-2026-09-02/receipts/publisher-questions-2026-09-14/q3-cbo-bot-wall/`.
+One request per URL: the `403`s do not establish that the wall is permanent or
+global, and the `200` does not establish a reliable route.
 
-The parser is qualified against five real captures — the 116th, 117th, 118th
-and 119th Congresses on 2026-09-14, plus RefSpec's 119th from 2026-08-04 —
-totalling 6,233 items, every one of which satisfies every rule above.
+The parser is qualified against six real captures — the 116th, 117th, 118th and
+119th Congresses on 2026-09-14, the 119th again nine hours later, plus RefSpec's
+119th from 2026-08-04 — totalling 7,425 items, every one of which satisfies every
+rule above.
 
 | Congress | Captured | Bytes | Items |
 | --- | --- | --- | --- |
-| 116 | 2026-09-14 | 439,228 | 1,259 |
-| 117 | 2026-09-14 | 420,685 | 1,191 |
-| 118 | 2026-09-14 | 560,335 | 1,533 |
-| 119 | 2026-09-14 | 431,257 | 1,192 |
+| 116 | 2026-09-14 13:27Z | 439,228 | 1,259 |
+| 117 | 2026-09-14 13:24Z | 420,685 | 1,191 |
+| 118 | 2026-09-14 13:24Z | 560,335 | 1,533 |
+| 119 | 2026-09-14 13:15Z | 431,257 | 1,192 |
+| 119 | 2026-09-14 22:03Z | 431,257 | 1,192 |
 | 119 | 2026-08-04 | 375,365 | 1,058 |
 
 Across those 41 days all 1,058 items of the earlier 119th capture are still

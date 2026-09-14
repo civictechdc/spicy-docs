@@ -152,12 +152,14 @@ def test_feed_bounds_are_explicit(max_bytes):
 # --- qualification against every real feed retained -------------------------------
 
 RECEIPTS = Path.home() / "Work/corpora/supply-2026-09-02/receipts/port-P06-cbo-2026-09-14"
+WALL_PROBES = Path.home() / "Work/corpora/supply-2026-09-02/receipts/publisher-questions-2026-09-14/q3-cbo-bot-wall"
 REFSPEC = Path.home() / "Work/RefSpec/tests/fixtures/cbo_topic_codes"
 RETAINED = [
     (RECEIPTS / "09-116congress.body", 1259),
     (RECEIPTS / "06-117congress.body", 1191),
     (RECEIPTS / "06-118congress.body", 1533),
     (RECEIPTS / "02-119congress.body", 1192),
+    (WALL_PROBES / "06-httpx-browser-per-congress-feed.body", 1192),
     (REFSPEC / "cbo-119congress-cost-estimates-2026-08-04.xml", 1058),
 ]
 
@@ -172,6 +174,30 @@ def test_parser_qualifies_against_every_retained_real_feed(path, items):
     assert [item.index for item in feed.items] == list(range(items))
     assert len({item.publication_id for item in feed.items}) == items
     assert all(item.title and item.date and item.link for item in feed.items)
+
+
+def test_item_position_is_a_per_capture_ordering_not_an_identity():
+    """Two captures of the 119th feed nine hours apart, same 1,192 items, different bytes.
+
+    They agree on every field of every item and on newest-first ordering, and
+    disagree only on the order inside runs of items sharing one Date -- 76
+    positions. So ``index``/``key`` is where an item sat in that capture, never
+    a stable handle on it, and a digest change is not evidence the feed changed.
+    """
+    earlier, later = RECEIPTS / "02-119congress.body", WALL_PROBES / "06-httpx-browser-per-congress-feed.body"
+    if not (earlier.exists() and later.exists()):
+        pytest.skip("retained captures not present")
+    first, second = (parse_cbo_cost_estimates_feed(path.read_bytes()) for path in (earlier, later))
+    assert earlier.read_bytes() != later.read_bytes(), "different bytes"
+
+    def field_of(feed):
+        return {i.publication_id: (i.title, i.date, i.link, i.description, i.bill_number) for i in feed.items}
+
+    assert field_of(first) == field_of(second), "every item, every field, unchanged"
+    positions = [(a.publication_id, b.publication_id) for a, b in zip(first.items, second.items, strict=True) if a != b]
+    assert positions, "the captures do differ in item order"
+    dates = field_of(first)
+    assert all(dates[a][1] == dates[b][1] for a, b in positions), "reordering happens only within one Date"
 
 
 # --- locators ---------------------------------------------------------------------
@@ -259,6 +285,35 @@ def test_the_walled_cost_estimates_route_is_recorded_as_a_challenge_not_a_creden
     assert raised.value.url == CBO_COST_ESTIMATES_FEED_URL
     assert raised.value.cbo_acquisition["operation"] == "cost-estimates-feed"
     assert str(transport.calls[0].url) == CBO_COST_ESTIMATES_FEED_URL
+
+
+def test_a_challenge_reaches_the_caller_with_its_bytes_because_the_route_is_keyless():
+    # Keyless routes retain the 401/403 body, so the wall's own answer is
+    # evidence rather than an aborted capture with nothing in it. Its digest
+    # cannot be pinned: the challenge carries a per-response nonce.
+    transport = Transport(response(CHALLENGE, 403, content_type="text/html;charset=utf-8"))
+    with CboAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(CboChallengeError) as raised:
+        source.acquire_estimate_document(PDF_URL)
+    refused = raised.value.refused_response
+    assert refused.response_bytes == CHALLENGE and refused.media_type == "text/html"
+    assert b"Please enable JS" in refused.response_bytes, "a JS challenge; no header set passes it"
+    assert raised.value.cbo_acquisition["url"] == PDF_URL
+
+
+def test_an_injected_browser_backed_transport_is_all_the_document_route_still_needs():
+    """The wall is the only thing missing: given a transport that answers, this route works.
+
+    Every cbo.gov document path measured -- /publication/<id>, /system/files/*,
+    /sites/default/files/*.pdf -- answered the DataDome challenge even to a
+    complete browser-like header set, and CBO's markup names no other host. So
+    the caller supplies a browser-backed transport; the locator grammar, the
+    bounds and the identity proofs below are unchanged by where the bytes came from.
+    """
+    transport = Transport(response(PDF, content_type="application/pdf"))
+    with CboAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.acquire_estimate_document(PDF_URL)
+    assert result.capture.body == PDF and result.capture.resolved_url == PDF_URL
+    assert transport.calls[0].headers["user-agent"] == "spicy-docs-cbo-feed/1.0"
 
 
 def test_the_cost_estimates_route_would_be_read_by_the_same_parser_if_it_ever_answered():

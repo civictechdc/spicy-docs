@@ -119,6 +119,12 @@ class JsonPageFamily:
     drop_query_names: frozenset[str] = frozenset()
     count_kind: Literal["exact", "advisory"] = "exact"
     media_types: tuple[str, ...] = ("application/json",)
+    # Publisher-stated reach bounds, so every walk refuses in one request rather
+    # than paying its way to the publisher's error: SAM serves at most 10,000
+    # records per query shape; regulations.gov serves at most page[number] 40.
+    max_reachable_records: int | None = None
+    max_page_number: int | None = None
+    window_hint: str = "query window"
 
     def __post_init__(self) -> None:
         for field_name in ("name", "label", "host"):
@@ -137,6 +143,10 @@ class JsonPageFamily:
             raise ValueError("credential_format must contain {key}")
         if not self.media_types or not all(isinstance(value, str) and value for value in self.media_types):
             raise ValueError("media_types must name at least one media type")
+        for name in ("max_reachable_records", "max_page_number"):
+            value = getattr(self, name)
+            if value is not None and (isinstance(value, bool) or not isinstance(value, int) or value < 1):
+                raise ValueError(f"{name} must be a positive integer or None")
 
     def check_url(self, url: str) -> str:
         """Only this publisher's HTTPS host, spelled as it will be sent, and never a credential in the query."""
@@ -289,6 +299,17 @@ class PagedJsonReader(SourceAcquirer):
             return None, None
         return with_query(url, family.offset_field, str(offset + len(rows))), None
 
+    def _reachable(self, url: str, body: Mapping[str, Any] | None) -> int:
+        """Whole pages within the cap: a page size of 7 reaches 9,996 of a 10,000-record bound."""
+        cap = self.family.max_reachable_records or 0
+        value = (
+            (body or {}).get(self.family.limit_field)
+            if self.family.method == "POST"
+            else query_value(url, self.family.limit_field)
+        )
+        size = int(value) if value is not None and str(value).isdigit() and int(value) > 0 else None
+        return cap // size * size if size else cap
+
     def _read_page(
         self,
         capture: CapturedBodyResponse,
@@ -401,11 +422,29 @@ class PagedJsonReader(SourceAcquirer):
             observed += len(page.records)
             if exact and declared is not None and observed > declared:
                 raise refuse("returned more records than it declared")
+            if index == 0 and self.family.max_reachable_records is not None and page.declared_count is not None:
+                reachable = self._reachable(url, body)
+                if page.declared_count > reachable:
+                    error = refuse(
+                        f"declares {page.declared_count} records but a walk reaches at most {reachable}; "
+                        f"narrow the {self.family.window_hint} until the declared total fits"
+                    )
+                    error.__dict__["first_page"] = page
+                    raise error
             yield page
             if page.next_url is None:
                 if exact and declared is not None and observed != declared:
                     raise refuse("declared and observed record counts differ")
                 return
+            bound = self.family.max_page_number
+            if bound is not None and self.family.next_kind == "page-number":
+                next_number = (
+                    (page.next_body or {}).get(self.family.page_field)
+                    if page.next_body
+                    else query_value(page.next_url, self.family.page_field)
+                )
+                if next_number is not None and int(next_number) > bound:
+                    raise refuse(f"{self.family.page_field} bound {bound} reached with a next page outstanding")
             url, body = page.next_url, page.next_body
         raise refuse("page bound reached before a terminal response")
 

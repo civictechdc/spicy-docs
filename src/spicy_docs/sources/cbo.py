@@ -9,6 +9,27 @@ also covers ``/publication/<id>`` — the link every item states — and every P
 path, so the estimate **document** has no keyless route either. ``403`` here is
 named a challenge, not a credential refusal: this family holds no credential.
 
+**No header set reaches the documents; only a browser-backed transport could.**
+Re-probed 2026-09-14 (receipt
+``supply-2026-09-02/receipts/publisher-questions-2026-09-14/q3-cbo-bot-wall``)
+with a complete browser-like request — Chrome 140 user agent, ``Accept``,
+``Accept-Language``, ``Referer``, ``Upgrade-Insecure-Requests`` and the three
+``Sec-Fetch-*`` headers — the estimate PDF, the advertised XML feed and the
+publication page each answered the identical ``403``, 767 bytes,
+``server: DataDome``, ``x-datadome: protected``, while the per-Congress feed
+answered ``200`` and 431,257 bytes to that same client. So the headers are not
+what is refused and the wall is path-scoped, not client-scoped. The 767 bytes
+are a JavaScript challenge (``Please enable JS``, a DataDome ``dd`` blob with a
+per-response ``cid``): passing it requires executing that script, which no
+header can do. No keyless route to an estimate document exists, and none is
+stated: the feed's ``<Link>`` is a publication page, and the only hosts CBO's
+own retained markup names for documents are ``www.cbo.gov`` paths —
+``/system/files/*`` and ``/sites/default/files/*``, both walled. There is no CDN
+or ``files``/``static`` host to fall back to. ``acquire_estimate_document``
+therefore needs a browser-backed ``transport`` injected by the caller (see
+``sources/zyte.py``); this module does not and will not try to solve the
+challenge.
+
 One tier answers keyless: ``www.cbo.gov/rss/{congress}congress-cost-estimates.xml``,
 one file per Congress. Its shape is CBO's own XML, **not RSS 2.0** — a
 ``<response>`` root of ``<item key="N">`` elements carrying exactly ``Title``,
@@ -25,8 +46,9 @@ an observation, never a catalog. A Congress with no file answers 404 with a
 Drupal HTML page: requested-empty, not absence of the route.
 
 Byte counts, digests and the measurements behind every claim here:
-``docs/sources/cbo.md`` and
-``corpora/supply-2026-09-02/receipts/port-P06-cbo-2026-09-14/README.md``.
+``docs/sources/cbo.md``,
+``corpora/supply-2026-09-02/receipts/port-P06-cbo-2026-09-14/README.md`` and
+``corpora/supply-2026-09-02/receipts/publisher-questions-2026-09-14/q3-cbo-bot-wall/README.md``.
 """
 
 from __future__ import annotations
@@ -88,10 +110,12 @@ class CboUnavailableError(CboSourceError):
 class CboChallengeError(CboSourceError):
     """cbo.gov answered a bot challenge; the route has no keyless bytes today.
 
-    The shared client refuses 401/403 before reading a body, so no challenge
-    bytes are retained here. The retained pins are in the receipt named in the
-    module docstring; the challenge carries a per-response nonce, so its digest
-    differs every time and cannot be pinned.
+    This family is keyless, so the shared client retains the refusal body and it
+    arrives here on ``refused_response``: 767 bytes through plain HTTPX and 770
+    through this module on 2026-09-14. The challenge carries a per-response
+    nonce, so its length varies slightly and its digest differs every time -- it
+    can be retained but never pinned. Reaching a document past this wall needs a
+    browser-backed ``transport``, not a retry.
     """
 
     def __init__(self, url: str) -> None:
@@ -104,7 +128,13 @@ class CboEstimateItem:
     """One listed estimate exactly as CBO spelled it.
 
     ``index`` is the position in document order, which CBO's own ``key``
-    attribute must equal; the two are one value, so only one is kept.
+    attribute must equal; the two are one value, so only one is kept. It is a
+    position in *that capture*, never an identity: two captures of the 119th
+    feed nine hours apart on 2026-09-14 held the same 1,192 items with every
+    field byte-identical and both strictly newest-first, yet differed at 76
+    positions -- every one a swap inside a run of items sharing one ``Date``.
+    Only ``publication_id`` identifies an item across captures, and a changed
+    feed digest is not evidence the feed changed.
     ``publication_id`` is the digits of the canonical ``Link``. ``description``
     and ``bill_number`` are ``None`` when the publisher's element is empty,
     which is a real value for procedural items such as the weekly House
@@ -307,8 +337,9 @@ def _named_challenge(url: str) -> Iterator[None]:
 
     The shared client maps 401/403 to ``CredentialRefusedError`` so a keyed
     family aborts rather than treating a refusal as a bad row. This family is
-    keyless, so the same status means a bot wall. The substitution keeps the
-    acquisition context and refusal record the shared client attached.
+    keyless, so the same status means a bot wall, and the client retains the
+    challenge body. The substitution keeps the acquisition context and refusal
+    record the shared client attached, so the challenge bytes reach the caller.
     """
     try:
         yield
@@ -371,7 +402,14 @@ class CboAcquirer(SourceAcquirer):
         return self._acquire_feed(cbo_cost_estimates_feed_locator(), "cost-estimates-feed", max_bytes)
 
     def acquire_estimate_document(self, url: str, *, max_bytes: int | None = None) -> CboDocumentAcquisition:
-        """Capture one estimate PDF by a caller-stated cbo.gov locator."""
+        """Capture one estimate PDF by a caller-stated cbo.gov locator.
+
+        Every document path measured is walled, and a full browser-like header
+        set does not pass it, so on the default transport this raises
+        ``CboChallengeError``. Reaching a document needs a browser-backed
+        ``transport`` injected into this acquirer; the locator, the bounds and
+        the three identity proofs are here and ready for one.
+        """
         locator = cbo_estimate_document_locator(url)
         limit = narrow_byte_limit(self.budget.max_document_bytes, max_bytes)
         with _named_challenge(locator):
