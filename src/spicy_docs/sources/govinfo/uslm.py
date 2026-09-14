@@ -13,14 +13,13 @@ each entry's name must parse to a selection and its content must agree.
 from __future__ import annotations
 
 import hashlib
-import io
 import re
-import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
 from ..xml import IdentityXmlScan
+from ..zip_archive import archive_members, open_archive, read_member
 
 USLM_NAMESPACE = "http://schemas.gpo.gov/xml/uslm"
 DUBLIN_CORE_NAMESPACE = "http://purl.org/dc/elements/1.1/"
@@ -162,8 +161,8 @@ class UslmMetadata:
     current_through_public_law: tuple[str, ...] = ()
 
 
-def _u(tag: str) -> str:
-    return "{" + USLM_NAMESPACE + "}" + tag
+def _u(tag: str, namespace: str = USLM_NAMESPACE) -> str:
+    return "{" + namespace + "}" + tag
 
 
 def _dc(tag: str) -> str:
@@ -184,43 +183,88 @@ _META_FIELDS = (
     _u("citableAsShortTitle"),
     _u("property"),
 )
+_SCHEMA_LOCATION = "{http://www.w3.org/2001/XMLSchema-instance}schemaLocation"
 
 
-class _UslmScan(IdentityXmlScan):
-    def __init__(self, root: str) -> None:
-        self.expected_root = _u(root)
-        self.meta_path = (self.expected_root, _u("meta"))
-        super().__init__(
-            {self.meta_path + (name,) for name in _META_FIELDS}, error_type=UslmSourceError, label="USLM XML"
-        )
+class UslmScan(IdentityXmlScan):
+    """One USLM document root: its single meta block, its stated property roles and whether it carries text.
+
+    Two publishers serve USLM and share only this shape. GPO serves 2.x in
+    ``http://schemas.gpo.gov/xml/uslm`` under ``pLaw`` and
+    ``statuteCompilation``, whose own text lives in ``main``; OLRC serves 1.0 in
+    ``http://xml.house.gov/schemas/uslm/1.0`` under ``uscDoc``, whose own text
+    lives in ``main`` or ``appendix`` (:mod:`spicy_docs.sources.uscode`). The
+    namespace, root, body sections, meta fields and refusal words are therefore
+    arguments and the scan is written once.
+
+    ``referring_sections`` name sections whose text accounts for a document's
+    content without being it: a stub compilation carries an empty ``main`` and
+    points to the U.S. Code from its ``preface`` (COMPS-3101, Paperwork
+    Reduction Act). Their text sets ``body_found`` but not ``body_text``, so a
+    caller can report a document that states a body without carrying one.
+    """
+
+    def __init__(
+        self,
+        root: str,
+        *,
+        namespace: str = USLM_NAMESPACE,
+        body_sections: tuple[str, ...] = ("main",),
+        referring_sections: tuple[str, ...] = ("preface",),
+        meta_fields: tuple[str, ...] = _META_FIELDS,
+        error_type: type[ValueError] = UslmSourceError,
+        label: str = "USLM XML",
+        root_refusal: str = "USLM XML root is not the requested document type",
+    ) -> None:
+        self.expected_root = _u(root, namespace)
+        self._meta = _u("meta", namespace)
+        self.meta_path = (self.expected_root, self._meta)
+        self._property = _u("property", namespace)
+        self._body = frozenset(_u(name, namespace) for name in body_sections)
+        self._referring = frozenset(_u(name, namespace) for name in referring_sections)
+        self._sections = " or ".join(body_sections + referring_sections)
+        self._root_refusal = root_refusal
+        super().__init__({self.meta_path + (name,) for name in meta_fields}, error_type=error_type, label=label)
         self.meta_count = 0
         self.property_roles: list[str | None] = []
         self.schema_location: str | None = None
-        self.main_text = False
+        self.identifier: str | None = None
+        self.body_text = False
 
     def observe_start(self, tag: str, attributes: dict[str, str]) -> None:
-        if len(self.stack) == 1:
+        depth = len(self.stack)
+        if depth == 1:
             if tag != self.expected_root:
-                raise UslmSourceError("USLM XML root is not the requested document type")
-            self.schema_location = attributes.get("{http://www.w3.org/2001/XMLSchema-instance}schemaLocation")
+                raise self.error_type(self._root_refusal)
+            self.schema_location = attributes.get(_SCHEMA_LOCATION)
+            # Absent in one retained U.S. Code file: the eliminated Title 50
+            # Appendix, converted in 2015 and reissued unchanged since.
+            self.identifier = attributes.get("identifier")
         elif tag == self.expected_root:
-            raise UslmSourceError("USLM XML contains a nested document root")
-        path = self.path
-        if path == self.meta_path:
+            raise self.error_type(f"{self.label} contains a nested document root")
+        # Depth and parent, not self.path: the largest title is 1.1 million
+        # elements, and rebuilding the ancestor tuple twice per element cost
+        # more than the parse (2.4 s of usc42's 3.4 s, measured).
+        elif depth == 2 and tag == self._meta:
             self.meta_count += 1
-        elif path == self.meta_path + (_u("property"),):
+        elif depth == 3 and tag == self._property and self.stack[1][0] == self._meta:
             self.property_roles.append(attributes.get("role"))
 
     def observe_text(self, text: str) -> None:
-        if self.main_text or not text.strip() or len(self.stack) < 2:
+        if self.body_text or not text.strip() or len(self.stack) < 2:
             return
         section = self.stack[1][0]
-        if section == _u("main"):
-            self.main_text = self.body_found = True
-        elif section == _u("preface"):
-            # A stub compilation can carry an empty main and point to the U.S.
-            # Code from its preface (COMPS-3101, Paperwork Reduction Act).
+        if section in self._body:
+            self.body_text = self.body_found = True
+        elif section in self._referring:
             self.body_found = True
+
+    def read(self, body: bytes, max_bytes: int) -> None:
+        super().read(body, max_bytes)
+        if self.meta_count != 1:
+            raise self.error_type(f"{self.label} requires exactly one meta block")
+        if not self.body_found:
+            raise self.error_type(f"{self.label} lacks source content in {self._sections}")
 
     def meta(self, name: str, *, required: bool = False) -> str | None:
         value = self.field(self.meta_path + (name,), required=required)
@@ -230,14 +274,10 @@ class _UslmScan(IdentityXmlScan):
         return tuple(value.strip() for value in self.values.get(self.meta_path + (name,), []))
 
 
-def _scan(body: bytes, root: str, max_bytes: int) -> _UslmScan:
+def _scan(body: bytes, root: str, max_bytes: int) -> UslmScan:
     _limit(max_bytes)
-    scan = _UslmScan(root)
+    scan = UslmScan(root)
     scan.read(body, max_bytes)
-    if scan.meta_count != 1:
-        raise UslmSourceError("USLM XML requires exactly one meta block")
-    if not scan.body_found:
-        raise UslmSourceError("USLM XML lacks source content in main or preface")
     return scan
 
 
@@ -277,7 +317,7 @@ def validate_public_law_xml(
         scan.meta(_u("processedDate")),
         scan.schema_location,
         ("congress:native", "kind:native", "number:native", "citation:native"),
-        body_present=scan.main_text,
+        body_present=scan.body_text,
         public_private=kind,
     )
 
@@ -315,7 +355,7 @@ def validate_statute_compilation_xml(
         scan.meta(_u("processedDate")),
         scan.schema_location,
         ("file-id:native",),
-        body_present=scan.main_text,
+        body_present=scan.body_text,
         file_id=file_ids[0],
         short_title=scan.meta(_u("citableAsShortTitle")),
         current_through_public_law=scan.meta_values(_u("currentThroughPublicLaw")),
@@ -352,33 +392,12 @@ def _read_archive[Selection](
     _limit(max_entry_bytes)
     if type(max_entries) is not int or max_entries <= 0:
         raise UslmSourceError("max_entries must be a positive integer")
-    if not isinstance(body, bytes) or not body or len(body) > max_bytes:
-        raise UslmSourceError("USLM archive must be nonempty bytes within max_bytes")
-    if body[:4] != b"PK\x03\x04":
-        raise UslmSourceError("USLM archive does not start with a zip local file header")
-    try:
-        archive = zipfile.ZipFile(io.BytesIO(body))
-    except zipfile.BadZipFile as error:
-        raise UslmSourceError("USLM archive is malformed") from error
-    with archive:
-        if archive.testzip() is not None:
-            raise UslmSourceError("USLM archive fails its CRC check")
-        members = [info for info in archive.infolist() if not info.is_dir()]
-        if len(members) > max_entries:
-            raise UslmSourceError("USLM archive contains more entries than max_entries")
-        entries = []
-        seen: set[str] = set()
-        for info in members:
-            name = info.filename.rsplit("/", 1)[-1]
-            if name in seen:
-                raise UslmSourceError("USLM archive repeats an entry name")
-            seen.add(name)
-            selection = select(name)
-            if info.file_size > max_entry_bytes:
-                raise UslmSourceError("USLM archive entry exceeds max_entry_bytes")
-            data = archive.read(info)
-            if len(data) != info.file_size:
-                raise UslmSourceError("USLM archive entry size differs from its header")
+    label = "USLM archive"
+    entries = []
+    with open_archive(body, max_bytes=max_bytes, error_type=UslmSourceError, label=label) as archive:
+        for info in archive_members(archive, max_entries=max_entries, error_type=UslmSourceError, label=label):
+            selection = select(info.filename.rsplit("/", 1)[-1])
+            data = read_member(archive, info, max_bytes=max_entry_bytes, error_type=UslmSourceError, label=label)
             entries.append(
                 UslmArchiveEntry(
                     info.filename, len(data), "sha256:" + hashlib.sha256(data).hexdigest(), validate(data, selection)
