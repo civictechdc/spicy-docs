@@ -11,6 +11,13 @@
   Source merge `d9c312c` is pushed to `fork/main`. Downstream wheel adoption
   remains separate.
 
+**SpicyDocs 0.8.0 (2026-09-14):** 2,247 repository tests (two opt-in checks
+deselected), lint/format and lock; the core wheel imports every public module
+without httpx; 2,192 tests pass against the installed wheel with extras (six
+failures are repository-layout checks and one deselected opt-in replay). Wheel
+SHA-256 `5bb8e5f1f2d64150b77caef4fc4a1f22af1eb4b59f510483df2d402a48c32439`. Receipt:
+`~/Work/corpora/supply-2026-09-02/receipts/release-0.8.0-2026-09-14/`.
+
 **The source-fidelity and CFR example tasks below are complete locally.**
 S21/S31 remain conditionally deferred. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
 owns the remaining CourtListener reader adoption. The merged source changes
