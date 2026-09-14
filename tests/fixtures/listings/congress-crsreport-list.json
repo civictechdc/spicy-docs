@@ -1,0 +1,32 @@
+{
+    "CRSReports": [
+        {
+            "contentType": "Posts",
+            "id": "LSB11481",
+            "publishDate": "2026-09-14T04:00:00Z",
+            "status": "Active",
+            "title": "Standing to Sue for Informational Injuries",
+            "updateDate": "2026-09-14T12:08:45Z",
+            "url": "https://api.congress.gov/v3/crsreport/LSB11481",
+            "version": 1
+        },
+        {
+            "contentType": "Reports",
+            "id": "R49346",
+            "publishDate": "2026-09-10T04:00:00Z",
+            "status": "Active",
+            "title": "Temporary Protected Status Terminations, 2025-2026: Fact Sheet",
+            "updateDate": "2026-09-14T12:08:44Z",
+            "url": "https://api.congress.gov/v3/crsreport/R49346",
+            "version": 1
+        }
+    ],
+    "pagination": {
+        "count": 14111,
+        "next": "https://api.congress.gov/v3/crsreport?sort=updateDate desc&offset=2&limit=2&format=json"
+    },
+    "request": {
+        "contentType": "application/json",
+        "format": "json"
+    }
+}

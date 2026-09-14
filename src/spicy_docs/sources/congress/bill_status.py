@@ -12,7 +12,8 @@ from xml.etree.ElementTree import Element
 
 from spicy_docs.sources.xml import parse_xml
 
-_BILL_TYPES = frozenset({"hr", "s", "hjres", "sjres", "hconres", "sconres", "hres", "sres"})
+BILL_TYPES = frozenset({"hr", "s", "hjres", "sjres", "hconres", "sconres", "hres", "sres"})
+_BILL_TYPES = BILL_TYPES
 _PACKAGE = re.compile(r"BILLS-([1-9][0-9]*)(hconres|sconres|hjres|sjres|hres|sres|hr|s)([1-9][0-9]*)([a-z][a-z0-9]*)")
 _PACKAGE_URL = re.compile(
     r"https://www\.govinfo\.gov/content/pkg/(?P<package>BILLS-[A-Za-z0-9]+)/"

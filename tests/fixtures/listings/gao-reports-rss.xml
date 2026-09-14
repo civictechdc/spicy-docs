@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="/scripts/rss.xsl" ?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+  <channel>
+      <atom:link href="https://www.gao.gov/rss/reports.xml" rel="self" type="application/rss+xml"/>
+      <title>Reports News from the GAO</title>
+      <description>Reports News from the GAO.</description>
+      <link>https://www.gao.gov/rss/reports.xml</link>
+      <lastBuildDate>Mon, 14 Sep 2026 11:01:17 -0400</lastBuildDate>
+      <generator>GAO</generator>
+      <image>
+          <url>https://www.gao.gov/themes/custom/gao_uswds/img/gao-logo-rss.gif</url>
+          <title>Reports News from the GAO</title>
+          <link>https://www.gao.gov/rss/reports.xml</link>
+          <description>Feed provided by GAO.</description> 
+      </image>
+
+            <item>
+                <title>National Register of Historic Places: Selected States and Tribes Identified Challenges to Participation</title>
+                <link>https://www.gao.gov/products/gao-26-107879</link>
+                <description>
+What GAO Found
+
+The National Register of Historic Places is the nation’s official list of historic places worthy of preservation. The National Park Service (NPS) administers the National Register in cooperation with states and Tribes. Each state has established a State Historic Preservation Officer (SHPO) whose responsibilities include identifying and nominating eligible properties to the National Register. Additionally, Tribes may elect to establish a Tribal Historic Preservation Officer (THPO).
+
+Officials from SHPO offices GAO interviewed identified a number of challenges with the National Register process, including that some key NPS guidance documents were outdated and did not have information that would help them effectively nominate properties. Because of these challenges, some of these officials noted that developing nominations required additional time and resources. While NPS officials told GAO they intend to update some guidance documents, they have not developed a plan to do so, including a plan to identify what information SHPOs and THPOs need in updated guidance. Developing such a plan will help NPS better ensure the update includes the information that SHPOs and THPOs—their primary users—need to effectively participate in the program.
+
+Tribes GAO spoke with also identified challenges with the National Register process. Some Tribes and tribal organizations told GAO that the National Register evaluation criteria do not always accommodate historically significant tribal properties. NPS officials told GAO they have taken actions to clarify the ways in which Tribes can apply the criteria, including revising guidance on listing traditional cultural places. However, conducting outreach to Tribes to highlight relevant guidance on applying the National Register criteria could provide better assurance that the National Register includes historic properties significant to Tribes.
+
+Some Tribes GAO interviewed also expressed concern that nominating properties to the National Register could result in unwanted visitation or looting of sites. The location of properties on the National Register can be withheld from public disclosure in certain circumstances. While NPS has taken productive steps to communicate information about this provision, some Tribes GAO spoke with were not aware of it or continued to have concerns about sharing information about properties. Conducting outreach to Tribes on the ability to withhold this information would better ensure they are informed of this provision and may mitigate continuing concerns among Tribes about sharing information about their historic properties.
+
+Why GAO Did This Study
+
+The National Register is a key part of federal efforts to identify and protect America's historic and archeological resources. Over 100,000 properties are listed in the National Register, including buildings, objects, and sites. However, some stakeholder groups have raised questions about whether the National Register is representative of the nation’s full story.
+
+GAO was asked to review how NPS administers the National Register and any challenges SHPOs and THPOs may face in the listing process. This report discusses the National Register listing process and examines challenges faced by selected SHPOs and THPOs and the public.
+
+GAO reviewed relevant laws and regulations, analyzed NPS guidance documents, and interviewed NPS officials who administer the National Register. GAO also interviewed officials from a nonrepresentative selection of nine SHPO offices and eight federally recognized Tribes. GAO selected these SHPO offices and Tribes to reflect variation in the number of sites they had listed to the National Register from 2019 through 2024 and geographic diversity, among other factors.
+
+
+</description>
+                <pubDate>Mon, 14 Sep 2026 07:16:14 -0400</pubDate>
+                <guid isPermaLink="false">/products/gao-26-107879</guid>
+            </item>
+<item>
+                <title>Testing and Evaluation Guide: Best Practices for Commercial Off-the-Shelf Systems (Exposure Draft)</title>
+                <link>https://www.gao.gov/products/gao-26-108068</link>
+                <description>
+Why GAO Did This Study
+
+From September 2026 through December 2026, GAO is seeking input and feedback on this exposure draft from all interested parties. Please use this link TEGuideComments@gao.gov to provide us with comments on the guide.
+
+Federal agencies spend billions of dollars each year buying commercially available off-the-shelf (COTS) products. When agencies want to buy a COTS product, first they need to determine whether a vendor’s product is right for them. One way that agencies assess a product is by conducting testing and evaluation (T&amp;amp;E). Agencies can then use the results of the T&amp;amp;E to inform their purchasing decisions.
+
+Prior GAO work has identified problems with how agencies conduct T&amp;amp;E. Also, there is no widely accepted process or organization for sharing best practices for T&amp;amp;E.
+
+GAO developed this guide to provide best practices for conducting COTS T&amp;amp;E. GAO has developed this guide to serve multiple audiences:
+
+
+	The primary audience for this guide is federal agencies—specifically, T&amp;amp;E practitioners, program managers, and procurement officials. Agency staff can implement the best practices in this guide to improve their T&amp;amp;E, procure effective technologies, and reduce risks of cost and schedule overruns.
+	GAO and other oversight organizations can use this guide to evaluate how effectively federal agencies conduct T&amp;amp;E when buying a COTS product.
+	Vendors can use this guide to evaluate the performance of their products against agency requirements.
+
+
+For more information, contact Karen Howard at HowardK@gao.gov.
+</description>
+                <pubDate>Mon, 14 Sep 2026 07:11:19 -0400</pubDate>
+                <guid isPermaLink="false">/products/gao-26-108068</guid>
+            </item>
+
+  </channel>
+</rss>

@@ -1,0 +1,459 @@
+{
+  "totalRecords": 790124,
+  "entityData": [
+    {
+      "entityRegistration": {
+        "samRegistered": "Yes",
+        "ueiSAM": "CJLMN78UULH4",
+        "entityEFTIndicator": null,
+        "cageCode": "3J0Q0",
+        "dodaac": null,
+        "legalBusinessName": "INDIAN HEALTH SERVICE",
+        "dbaName": "NAVAJO AREA OFFICE, IHS",
+        "purposeOfRegistrationCode": "Z1",
+        "purposeOfRegistrationDesc": "Federal Assistance Awards",
+        "registrationStatus": "Active",
+        "evsSource": null,
+        "registrationDate": "2003-09-23",
+        "lastUpdateDate": "2024-09-04",
+        "registrationExpirationDate": "2026-09-30",
+        "activationDate": "2022-09-29",
+        "ueiStatus": "Active",
+        "ueiExpirationDate": null,
+        "ueiCreationDate": "2020-05-01",
+        "publicDisplayFlag": "Y",
+        "exclusionStatusFlag": "N",
+        "exclusionURL": null,
+        "dnbOpenData": null
+      },
+      "coreData": {
+        "entityInformation": {
+          "entityURL": null,
+          "entityDivisionName": null,
+          "entityDivisionNumber": null,
+          "entityStartDate": "1955-06-01",
+          "fiscalYearEndCloseDate": "09/30",
+          "submissionDate": "2024-08-29"
+        },
+        "physicalAddress": {
+          "addressLine1": "HWY 264",
+          "addressLine2": null,
+          "city": "WINDOW ROCK",
+          "stateOrProvinceCode": "AZ",
+          "zipCode": "86515",
+          "zipCodePlus4": "0000",
+          "countryCode": "USA"
+        },
+        "mailingAddress": {
+          "addressLine1": "HIGHWAY 264, ST MICHAELS",
+          "addressLine2": "P.O. BOX 9020",
+          "city": "WINDOW ROCK",
+          "stateOrProvinceCode": "AZ",
+          "zipCode": "86515",
+          "zipCodePlus4": "9020",
+          "countryCode": "USA"
+        },
+        "congressionalDistrict": "02",
+        "generalInformation": {
+          "entityStructureCode": "2A",
+          "entityStructureDesc": "U.S. Government Entity",
+          "entityTypeCode": "2R",
+          "entityTypeDesc": "U.S Federal Government",
+          "profitStructureCode": null,
+          "profitStructureDesc": null,
+          "organizationStructureCode": null,
+          "organizationStructureDesc": null,
+          "stateOfIncorporationCode": null,
+          "stateOfIncorporationDesc": null,
+          "countryOfIncorporationCode": null,
+          "countryOfIncorporationDesc": null
+        },
+        "businessTypes": {
+          "businessTypeList": [
+            {
+              "businessTypeCode": "2R",
+              "businessTypeDesc": "U.S Federal Government"
+            },
+            {
+              "businessTypeCode": "80",
+              "businessTypeDesc": "Hospital"
+            },
+            {
+              "businessTypeCode": "NG",
+              "businessTypeDesc": "Federal Agency"
+            },
+            {
+              "businessTypeCode": "2R",
+              "businessTypeDesc": "U.S Federal Government"
+            }
+          ],
+          "sbaBusinessTypeList": [
+            {
+              "sbaBusinessTypeCode": null,
+              "sbaBusinessTypeDesc": null,
+              "certificationEntryDate": null,
+              "certificationExitDate": null
+            }
+          ]
+        },
+        "financialInformation": {
+          "creditCardUsage": null,
+          "debtSubjectToOffset": "N"
+        }
+      },
+      "assertions": {
+        "goodsAndServices": {
+          "primaryNaics": null,
+          "naicsList": [
+            {
+              "naicsCode": null,
+              "naicsDescription": null,
+              "sbaSmallBusiness": null,
+              "naicsException": null
+            }
+          ],
+          "pscList": [
+            {
+              "pscCode": null,
+              "pscDescription": null
+            }
+          ]
+        },
+        "disasterReliefData": {
+          "disasterRegistryFlag": "NO",
+          "bondingFlag": null,
+          "geographicalAreaServed": [
+            {
+              "geographicalAreaServedStateCode": null,
+              "geographicalAreaServedStateName": null,
+              "geographicalAreaServedCountyCode": null,
+              "geographicalAreaServedCountyName": null,
+              "geographicalAreaServedmetropolitanStatisticalAreaCode": null,
+              "geographicalAreaServedmetropolitanStatisticalAreaName": null
+            }
+          ]
+        },
+        "ediInformation": {
+          "ediInformationFlag": "N"
+        }
+      },
+      "pointsOfContact": {
+        "governmentBusinessPOC": {
+          "firstName": "Darlene",
+          "middleInitial": null,
+          "lastName": "Kirk",
+          "title": "Accounting Officer",
+          "addressLine1": "Hwy 264 - St. Michaels",
+          "addressLine2": null,
+          "city": "Window Rock",
+          "stateOrProvinceCode": "AZ",
+          "zipCode": "86515",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "electronicBusinessPOC": {
+          "firstName": "Darlene",
+          "middleInitial": null,
+          "lastName": "Kirk",
+          "title": "FMO",
+          "addressLine1": "HIGHWAY 264 - ST MICHAELS",
+          "addressLine2": null,
+          "city": "WINDOW ROCK",
+          "stateOrProvinceCode": "AZ",
+          "zipCode": "86515",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "governmentBusinessAlternatePOC": {
+          "firstName": "Jericho",
+          "middleInitial": null,
+          "lastName": "Lewis",
+          "title": "Chief Contracting Officer",
+          "addressLine1": "Hwy 264 - St. Michaels",
+          "addressLine2": null,
+          "city": "Window Rock",
+          "stateOrProvinceCode": "AZ",
+          "zipCode": "86515",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "electronicBusinessAlternatePOC": {
+          "firstName": "Darlene",
+          "middleInitial": null,
+          "lastName": "Kirk",
+          "title": "Accounting Officer",
+          "addressLine1": "Hwy 264 - St. Michaels",
+          "addressLine2": null,
+          "city": "Window Rock",
+          "stateOrProvinceCode": "AZ",
+          "zipCode": "86515",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "pastPerformancePOC": {
+          "firstName": "Rhonda",
+          "middleInitial": null,
+          "lastName": "Manybeads",
+          "title": "Accountant",
+          "addressLine1": "Hwy 264 - St. Michaels",
+          "addressLine2": null,
+          "city": "Window Rock",
+          "stateOrProvinceCode": "AZ",
+          "zipCode": "86515",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "pastPerformanceAlternatePOC": {
+          "firstName": null,
+          "middleInitial": null,
+          "lastName": null,
+          "title": null,
+          "addressLine1": null,
+          "addressLine2": null,
+          "city": null,
+          "stateOrProvinceCode": null,
+          "zipCode": null,
+          "zipCodePlus4": null,
+          "countryCode": null
+        }
+      }
+    },
+    {
+      "entityRegistration": {
+        "samRegistered": "Yes",
+        "ueiSAM": "TZYMUE5NK8M4",
+        "entityEFTIndicator": null,
+        "cageCode": "79452",
+        "dodaac": null,
+        "legalBusinessName": "FEDERAL PRISON INDUSTRIES, INC",
+        "dbaName": "UNICOR",
+        "purposeOfRegistrationCode": "Z2",
+        "purposeOfRegistrationDesc": "All Awards",
+        "registrationStatus": "Active",
+        "evsSource": null,
+        "registrationDate": "2022-02-03",
+        "lastUpdateDate": "2026-08-03",
+        "registrationExpirationDate": "2026-09-30",
+        "activationDate": "2023-03-08",
+        "ueiStatus": "Active",
+        "ueiExpirationDate": null,
+        "ueiCreationDate": "2020-05-01",
+        "publicDisplayFlag": "Y",
+        "exclusionStatusFlag": "N",
+        "exclusionURL": null,
+        "dnbOpenData": null
+      },
+      "coreData": {
+        "entityInformation": {
+          "entityURL": "http://www.unicor.gov",
+          "entityDivisionName": null,
+          "entityDivisionNumber": null,
+          "entityStartDate": "1934-10-01",
+          "fiscalYearEndCloseDate": "09/30",
+          "submissionDate": "2023-02-09"
+        },
+        "physicalAddress": {
+          "addressLine1": "1529 W US HWY 366",
+          "addressLine2": null,
+          "city": "SAFFORD",
+          "stateOrProvinceCode": "AZ",
+          "zipCode": "85546",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "mailingAddress": {
+          "addressLine1": "PO Box 11890",
+          "addressLine2": null,
+          "city": "Lexington",
+          "stateOrProvinceCode": "KY",
+          "zipCode": "40578",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "congressionalDistrict": "01",
+        "generalInformation": {
+          "entityStructureCode": "2A",
+          "entityStructureDesc": "U.S. Government Entity",
+          "entityTypeCode": "2R",
+          "entityTypeDesc": "US Federal Government",
+          "profitStructureCode": null,
+          "profitStructureDesc": null,
+          "organizationStructureCode": null,
+          "organizationStructureDesc": null,
+          "stateOfIncorporationCode": null,
+          "stateOfIncorporationDesc": null,
+          "countryOfIncorporationCode": null,
+          "countryOfIncorporationDesc": null
+        },
+        "businessTypes": {
+          "businessTypeList": [
+            {
+              "businessTypeCode": "2R",
+              "businessTypeDesc": "U.S Federal Government"
+            },
+            {
+              "businessTypeCode": "NG",
+              "businessTypeDesc": "Federal Agency"
+            }
+          ],
+          "sbaBusinessTypeList": [
+            {
+              "sbaBusinessTypeCode": null,
+              "sbaBusinessTypeDesc": null,
+              "certificationEntryDate": null,
+              "certificationExitDate": null
+            }
+          ]
+        },
+        "financialInformation": {
+          "creditCardUsage": null,
+          "debtSubjectToOffset": "N"
+        }
+      },
+      "assertions": {
+        "goodsAndServices": {
+          "primaryNaics": "315210",
+          "naicsList": [
+            {
+              "naicsCode": "313210",
+              "naicsDescription": "Broadwoven Fabric Mills",
+              "sbaSmallBusiness": "N",
+              "naicsException": null
+            },
+            {
+              "naicsCode": "314120",
+              "naicsDescription": "Curtain and Linen Mills",
+              "sbaSmallBusiness": "N",
+              "naicsException": null
+            },
+            {
+              "naicsCode": "314999",
+              "naicsDescription": "All Other Miscellaneous Textile Product Mills ",
+              "sbaSmallBusiness": "N",
+              "naicsException": null
+            },
+            {
+              "naicsCode": "315210",
+              "naicsDescription": "Cut and Sew Apparel Contractors ",
+              "sbaSmallBusiness": "N",
+              "naicsException": null
+            },
+            {
+              "naicsCode": "315990",
+              "naicsDescription": "Apparel Accessories and Other Apparel Manufacturing ",
+              "sbaSmallBusiness": "N",
+              "naicsException": null
+            }
+          ],
+          "pscList": [
+            {
+              "pscCode": null,
+              "pscDescription": null
+            }
+          ]
+        },
+        "disasterReliefData": {
+          "disasterRegistryFlag": "NO",
+          "bondingFlag": "NO",
+          "geographicalAreaServed": [
+            {
+              "geographicalAreaServedStateCode": null,
+              "geographicalAreaServedStateName": null,
+              "geographicalAreaServedCountyCode": null,
+              "geographicalAreaServedCountyName": null,
+              "geographicalAreaServedmetropolitanStatisticalAreaCode": null,
+              "geographicalAreaServedmetropolitanStatisticalAreaName": null
+            }
+          ]
+        },
+        "ediInformation": {
+          "ediInformationFlag": "N"
+        }
+      },
+      "pointsOfContact": {
+        "governmentBusinessPOC": {
+          "firstName": "William",
+          "middleInitial": null,
+          "lastName": "Banner",
+          "title": null,
+          "addressLine1": "3301 Leestown Rd",
+          "addressLine2": null,
+          "city": "Lexington",
+          "stateOrProvinceCode": "KY",
+          "zipCode": "40511",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "electronicBusinessPOC": {
+          "firstName": "William",
+          "middleInitial": null,
+          "lastName": "Banner",
+          "title": null,
+          "addressLine1": "3301 Leestown Rd",
+          "addressLine2": null,
+          "city": "Lexington",
+          "stateOrProvinceCode": "KY",
+          "zipCode": "40511",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "governmentBusinessAlternatePOC": {
+          "firstName": "Maxwell",
+          "middleInitial": null,
+          "lastName": "Prevatte",
+          "title": null,
+          "addressLine1": "400 First ST NW",
+          "addressLine2": null,
+          "city": "WashingtonDC",
+          "stateOrProvinceCode": "DC",
+          "zipCode": "20534",
+          "zipCodePlus4": null,
+          "countryCode": "USA"
+        },
+        "electronicBusinessAlternatePOC": {
+          "firstName": null,
+          "middleInitial": null,
+          "lastName": null,
+          "title": null,
+          "addressLine1": null,
+          "addressLine2": null,
+          "city": null,
+          "stateOrProvinceCode": null,
+          "zipCode": null,
+          "zipCodePlus4": null,
+          "countryCode": null
+        },
+        "pastPerformancePOC": {
+          "firstName": null,
+          "middleInitial": null,
+          "lastName": null,
+          "title": null,
+          "addressLine1": null,
+          "addressLine2": null,
+          "city": null,
+          "stateOrProvinceCode": null,
+          "zipCode": null,
+          "zipCodePlus4": null,
+          "countryCode": null
+        },
+        "pastPerformanceAlternatePOC": {
+          "firstName": null,
+          "middleInitial": null,
+          "lastName": null,
+          "title": null,
+          "addressLine1": null,
+          "addressLine2": null,
+          "city": null,
+          "stateOrProvinceCode": null,
+          "zipCode": null,
+          "zipCodePlus4": null,
+          "countryCode": null
+        }
+      }
+    }
+  ],
+  "links": {
+    "selfLink": "https://api.sam.gov/entity-information/v4/entities?api_key=REPLACE_WITH_API_KEY&registrationStatus=A&size=2&page=0",
+    "nextLink": "https://api.sam.gov/entity-information/v4/entities?api_key=REPLACE_WITH_API_KEY&registrationStatus=A&size=2&page=1"
+  }
+}

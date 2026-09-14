@@ -1,0 +1,44 @@
+{
+    "bills": [
+        {
+            "congress": 119,
+            "introducedDate": "2026-09-10",
+            "latestAction": {
+                "actionDate": "2026-09-10",
+                "text": "Referred to the Committee on Ways and Means, and in addition to the Committee on Energy and Commerce, for a period to be subsequently determined by the Speaker, in each case for consideration of such provisions as fall within the jurisdiction of the committee concerned."
+            },
+            "number": "10348",
+            "originChamber": "House",
+            "originChamberCode": "H",
+            "title": "To amend title XVIII of the Social Security Act to strengthen program integrity oversight for the Health Care Fraud and Abuse Control Program, and for other purposes.",
+            "type": "HR",
+            "updateDate": "2026-09-14",
+            "updateDateIncludingText": "2026-09-14",
+            "url": "https://api.congress.gov/v3/bill/119/hr/10348?format=json"
+        },
+        {
+            "congress": 119,
+            "introducedDate": "2026-08-10",
+            "latestAction": {
+                "actionDate": "2026-08-10",
+                "text": "Referred to the House Committee on Energy and Commerce."
+            },
+            "number": "213",
+            "originChamber": "House",
+            "originChamberCode": "H",
+            "title": "Providing for congressional disapproval under chapter 8 of title 5, United States Code, of the rule issued by the Environmental Protection Agency relating to the \"California State Nonroad Engine Pollution Control Standards; Commercial Harbor Craft Regulations; Notice of Decision\".",
+            "type": "HJRES",
+            "updateDate": "2026-09-14",
+            "updateDateIncludingText": "2026-09-14",
+            "url": "https://api.congress.gov/v3/bill/119/hjres/213?format=json"
+        }
+    ],
+    "pagination": {
+        "count": 429950,
+        "next": "https://api.congress.gov/v3/bill?sort=updateDate desc&offset=2&limit=2&format=json"
+    },
+    "request": {
+        "contentType": "application/json",
+        "format": "json"
+    }
+}
