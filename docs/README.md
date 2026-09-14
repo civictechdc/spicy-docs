@@ -5,7 +5,7 @@
 
 ## Use SpicyDocs
 
-- [Installation](installation.md): core reader or optional acquisition/table tools.
+- [Installation](installation.md): core reader or optional acquisition, table and extraction tools.
 - [Source workflows](source-workflows.md): choose raw records, releases or tables.
 - [PDF/image extraction API](pdf-extraction-api.md): injected readers, strategies
   and recognition backends with separate metadata, body and raw observations.
@@ -22,6 +22,9 @@
 - [GAO pages](sources/gao.md)
 - [Congressional bills](sources/congress-bills.md)
 - [CFR/eCFR XML](sources/cfr.md)
+- [Public laws and statute compilations](sources/uslm-laws.md): keyless GovInfo USLM XML with native identity checks.
+- [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule.
+- [Unified Agenda](sources/unified-agenda.md): one reginfo.gov edition file, proved from every record.
 - [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records.
 - [Captured public comments](sources/public-comments.md)
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.

@@ -155,9 +155,24 @@ The canonical acquisition work is tracked above. Preserve SpicyRegs metadata
 and DocSpec catalog/run ownership; receiving application migration remains
 separate from adding this source API.
 
-Deferred until a named workflow needs them: bounded GovInfo JSON discovery/publication,
-standalone BILLSUM coverage, and Federal Register issue acquisition justified by
-batch measurements.
+Deferred until a named workflow needs them: GovInfo discovery *publication* as a
+release (bounded discovery itself landed as M04), standalone BILLSUM coverage, and
+Federal Register issue acquisition justified by batch measurements.
+
+## Public laws and statute compilations
+
+- [x] **U01:** Pin the keyless COMPS and PLAW bulkdata zips and listings with both-direction
+  listing checks. Receipt: `~/Work/corpora/supply-2026-09-02/receipts/comps-plaw-pin-2026-09-14/`.
+- [x] **U02:** Add explicit USLM sources: selections, locators, native identity validation,
+  bounded archive readers and an acquirer sharing the bounded HTTP capture. The identity
+  scanner moved from the CFR package to `sources/xml.py` so both families share it.
+  Validators were qualified offline against every pinned file (2,155 laws, 2,681
+  compilations); one stub compilation is accepted and flagged. [Guide](sources/uslm-laws.md).
+- [x] **U03:** Extract the acquisition budget and `_acquire` shape shared by the CFR, bill,
+  Federal Register body and USLM acquirers into `transport/source_acquirer.py`: budget checks,
+  client lifecycle and capture-then-validate with refusal evidence. CFR and USLM subclass it
+  fully; bills take its lifecycle and checks; the Federal Register body flow keeps its
+  multi-step route and takes the checks. 1,657 tests unchanged.
 
 ## Fetcher format review
 
@@ -353,6 +368,55 @@ downstream adoption remain separate.
   family-specific identity/count/scope checks required by the next retained
   collection, using the existing publisher; legal/bulk raw captures are not
   automatically admitted releases.
+
+## SpicyRegs fetcher merge
+
+Decision (2026-09-14): every SpicyRegs reader connector that fetches a publisher
+moves into SpicyDocs as an explicit source; SpicyRegs adopts the wheel and
+deletes its copy. RefSpec's vocabulary fetchers stay in RefSpec. SpicyRegs'
+`cloudflare.py` is a cache purge, not a fetcher, and stays. Adoption needs a
+wheel newer than the 0.3.0 SpicyRegs pins today.
+
+| SpicyRegs module | Publisher route | SpicyDocs disposition | Item |
+| --- | --- | --- | --- |
+| `federal_register.py` | FR API v1 documents; 90-day windows under the 10,000 cap | Covered by `sources/federal_register/native.py` | adopt |
+| `fec_committees.py` | OpenFEC `/v1/committees/`, keyset paging | Covered by the FEC committee profile | adopt |
+| `courtlistener_bulk.py` | CourtListener bulk CSV exports | Covered; SpicyRegs SR04 | adopt |
+| `bill_subjects.py` | GovInfo BILLSTATUS | Already on the wheel (G03) | done |
+| `gao_reports.py` | `gao.gov/rss/reports.xml` listing | Port: RSS listing route beside product pages | M01 |
+| `crs_reports.py` | `api.congress.gov/v3/crsreport`, offset/limit, keyed | Port: listing route beside `crs_summaries.py` | M02 |
+| `congress_bills.py` | `api.congress.gov/v3/bill`, offset/limit, keyed | Port: bill listing route | M03 |
+| `cfr_sections.py` | `api.govinfo.gov` `/published` and `/packages/{id}/granules`, keyed | Port: bounded GovInfo JSON discovery; this names the workflow the deferral above waited for | M04 |
+| `courtlistener.py` | CourtListener REST v4 search, token | Port | M05 |
+| `unified_agenda.py` | `reginfo.gov` `REGINFO_RIN_DATA_{edition}.xml` | Port | M06 |
+| `lobbying_filings.py` | `lda.gov/api/v1`, page/page_size, keyed | Port | M07 |
+| `sam_entities.py` | `api.sam.gov/entity-information/v4`, date windows, keyed | Port | M08 |
+| `usaspending.py` | `api.usaspending.gov/api/v2` recipients, page/limit | Port | M09 |
+| `fcc_ecfs.py` | `publicapi.fcc.gov/ecfs`, date windows, keyed | Port | M10 |
+
+Order: U03 first, so ports land on one acquirer. Then M01–M04, which extend
+source families that exist. M02, M03, M07, M08, M09 and M10 are keyed JSON
+traversals; build the shared traversal once (host allowlist, header-only
+credential, declared pagination mode, records path, exact page captures with
+evidence) and register each publisher against it, the way the FEC client reads
+its retained Swagger. Every port keeps exact page bytes, checks the publisher's
+declared continuation and counts, retains refused bytes, and ships tests on
+retained fixtures plus a guide.
+
+- [x] **M01** — GAO RSS listing: `sources/gao/rss.py`, keyless, links must name canonical products. [Guide](sources/listings.md).
+- [x] **M02** — CRS report listing: `sources/congress/listing.py` on the shared traversal.
+- [x] **M03** — Congress.gov bill listing: same module; continuation spaces re-encoded before request.
+- [x] **M04** — GovInfo JSON discovery: `sources/govinfo/discovery.py` (`/published`, `/collections`, package granules); zero count is an observation.
+  Shared traversal: `sources/paged_json.py` (host, next path, count path as data; header-only credential; declared-count checks). Pinned pages: `receipts/spicyregs-merge-probes-2026-09-14/`.
+- [x] **M05** — CourtListener REST search: `sources/courtlistener_search.py`, keyless or token; cursor continuations.
+- [x] **M06** — Unified Agenda edition XML: `sources/unified_agenda.py`; 202510 capture matched RefSpec's pin. [Guide](sources/unified-agenda.md).
+- [x] **M07** — LDA lobbying filings: `sources/lda.py`, keyless or token.
+- [x] **M08** — SAM entity management: `sources/sam.py`; needs the SAM.gov key (`SAM_GOV` in `.env`); placeholder `api_key` dropped from continuations.
+- [x] **M09** — USAspending recipients: `sources/usaspending.py`; POST page-number walk with request bodies recorded.
+- [x] **M10** — FCC ECFS filings and proceedings: `sources/fcc_ecfs.py`; offset walk with no publisher count.
+  The traversal gained three continuation kinds, a request method and a credential format as family data, and the bounded client gained POST with a recorded body. SpicyRegs adoption (deleting its copies, bumping the pinned wheel) is the receiving side's work and has not started.
+- [x] **M11** — Audit of every other outbound path in SpicyRegs (all mechanisms, not only HTTP libraries): `sources/mirrulations.py` is the same reader SpicyDocs already ships; `sources/pdf.py` (attachment PDF by URL) is covered by `transport/download.py`'s bounded asset capture; four transforms import `requests` without calling it; `r2.py`, `iceberg.py`, `cloudflare.py` and the `data.spicy-regs.dev` clients are its own storage and site, not publisher fetches. No publisher route remains without a SpicyDocs equivalent.
+- [x] **M12** — Live multi-page walks through every list reader (73 requests): next-URL, POST page-number and offset continuations each ran to the publisher's terminal page or refused at the bound as designed. Receipt: `~/Work/corpora/supply-2026-09-02/receipts/spicyregs-merge-live-walks-2026-09-14/`.
 
 ## Deferred local work
 

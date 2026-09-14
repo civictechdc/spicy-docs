@@ -25,6 +25,9 @@ Paths below are relative to `src/spicy_docs/`.
 | XML-first body fetching; pure identity checks | `sources/federal_register/body_acquisition.py`; `body_sources.py`; `body_xml.py` |
 | Explicit CFR/eCFR captures and native identity | `sources/cfr/acquisition.py`; `ecfr.py`; `annual.py` |
 | GovInfo MODS package/constituent metadata | `sources/govinfo/mods.py`; CFR edition checks in `sources/cfr/edition.py` |
+| Public laws and statute compilations (USLM) | `sources/govinfo/uslm.py` identity and archives; `uslm_acquisition.py` captures; shared scanner in `sources/xml.py` |
+| Publisher list pages | `sources/paged_json.py` one traversal rule; `sources/congress/listing.py`, `sources/govinfo/discovery.py`, `sources/lda.py`, `sources/courtlistener_search.py`, `sources/sam.py`, `sources/usaspending.py`, `sources/fcc_ecfs.py` state each publisher's contract; `sources/gao/rss.py` reads the feed |
+| Unified Agenda editions | `sources/unified_agenda.py` |
 | Explicit bill status and selected text XML | `sources/congress/bill_acquisition.py`; `bill_status.py`; `bill_text.py` |
 | GAO pages | `sources/gao/native.py` |
 | Captured public comments | `sources/public_comments/native.py` |
@@ -57,13 +60,18 @@ checks integrity with bounded memory; full verification also replays source mean
 
 ## Tables, commands and helpers
 
+- **PDF/image extraction:** `extraction/api.py` composes injected page strategies;
+  `model.py` declares results and interfaces, `pages.py` decodes retained bytes,
+  and `ocr.py`/`gemini.py` adapt optional recognition providers. `tests/extraction/`
+  checks data retention, coordinates, errors and injection. No source adapter depends
+  on extraction and no model package loads through core imports.
 - **Tables:** `public_tables/profiles.py` declares columns and ordering through
   `PublicTableProfile`; `publish.py`, `verify.py` and `reader.py` implement the
   operations exported by `public_tables/api.py`.
 - **Commands:** `cli/arguments.py` defines syntax, `sources.py` registers source
   composition, and `source_native.py` runs it. `cli/campaign.py` owns campaigns;
   `cli/fec.py` exposes independent raw FEC acquisition.
-- **Transport:** `transport/acquisition.py` composes clients, `http.py` implements
+- **Transport:** `transport/source_acquirer.py` is the shared acquirer shape (budget checks, lifecycle, capture then validate); `transport/acquisition.py` composes clients, `http.py` implements
   HTTPX calls, and `download.py` streams bounded assets to the shared blob writer.
   `capture.py` retains bounded regulation/bill captures and refused bytes;
   `retry.py` and `credentials.py` hold shared request rules.

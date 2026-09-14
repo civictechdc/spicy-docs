@@ -12,6 +12,10 @@ provenance; the caller chooses the source and scope.
 | Parsed dictionaries in an application that owns recovery | A Mirrulations, CourtListener or FEC raw reader | The caller retains input pins, failures, checkpoints, and completion evidence. A raw read has no release verification. |
 | An immutable release of a retained OpenFEC committee census or filing query | The [FEC profiles](sources/fec.md#publish-a-retained-committee-census) and existing publisher | Pin every capture, replay exact JSON, check page/count/ID membership, and retain observed-crawl scope. Other FEC families remain raw-reader inputs. |
 | Complete GovInfo MODS metadata | The [MODS mapping](sources/govinfo-metadata.md), available with annual CFR edition capture | Keep the original response and mapped package/constituents. Repeated fields, attributes and unknown extensions survive; advertised links remain unfetched. |
+| One public law, one statute compilation, or a whole bulkdata zip of either | The [USLM routes](sources/uslm-laws.md) | Keep the exact XML or zip and its receipt. Native identity is proved per file; compilation currency stays as the compiler wrote it. |
+| Exact pages of a publisher list query with declared counts checked | The [list routes](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener, SAM.gov, USAspending, FCC ECFS | Keep every page's bytes; the walk refuses to end early or inconsistently. A count is that day's statement, and zero is not absence. |
+| One Unified Agenda edition with every record proved | The [Unified Agenda route](sources/unified-agenda.md) | Keep the exact XML; the 2004 editions refuse as malformed and stay the caller's to repair. |
+| Text and observations from retained PDFs or images | The [extraction API](pdf-extraction-api.md), with an explicit page strategy and backend | Retain source bytes, metadata, body blocks and raw observations separately. Model output is derived evidence; extraction does not publish a source release. |
 
 Use the [CLI commands](cli.md), [raw-reader APIs](sources/raw-readers.md), or
 [offline GAO example](../examples/offline_release.py). The example requires no
@@ -28,6 +32,9 @@ network or credentials and leaves inspectable output.
 | [GAO](sources/gao.md) | Product IDs | Exact HTML, product identity, and one literal publisher topic per page. Other products and linked report files are outside the capture. |
 | [Congressional bills](sources/congress-bills.md) | Explicit bill IDs and text-version package IDs | BILLSTATUS metadata and selected XML text with exact captures and identity checks. This API does not enumerate a collection or publish a release. |
 | [CFR/eCFR](sources/cfr.md) | Explicit route, title and date/edition where supported | Regulation XML and separately requested annual edition metadata, including publisher-stated cover-only status. Exact payloads and native identity/date checks; no collection discovery or release publication. |
+| [Public laws and statute compilations](sources/uslm-laws.md) | Congress, kind and law number; compilation file identifier; or one bulkdata zip | Exact USLM XML with native identity checks per file. Archives validate every entry against its own name. No release publication; private-law folders exist for only some Congresses. |
+| [Publisher list pages](sources/listings.md) | One explicit list query per publisher: a date or lastModified window, a package's granules, a search, a registration window, a POST body, or the GAO feed | Exact JSON or RSS pages with rows as the publisher spelled them. Declared counts are checked against observed rows where the publisher states one; a bounded walk that cannot reach the terminal page refuses. |
+| [Unified Agenda](sources/unified-agenda.md) | One edition file stem | Exact edition XML; every record proves its RIN and edition. |
 
 Prefer community SpicyRegs tables when they supply the needed data; choose origin
 acquisition for uncovered needs. This [supply rule](decisions.md#community-supply-precedes-origin-acquisition)
