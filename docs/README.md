@@ -25,6 +25,12 @@
 - [Public laws and statute compilations](sources/uslm-laws.md): keyless GovInfo USLM XML with native identity checks.
 - [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule.
 - [Unified Agenda](sources/unified-agenda.md): one reginfo.gov edition file, proved from every record.
+- [U.S. Code](sources/uscode.md): OLRC release-point USLM titles, annual archives, the Popular Name Tool and Table III.
+- [Supreme Court](sources/supreme-court.md): slip-opinion term index and official opinion PDFs.
+- [CRS report files](sources/crs-files.md): report PDFs by the publisher's stated URL, beside the CRS listing.
+- [GAO report files](sources/gao-files.md): keyless report PDFs and online-report index behind product pages.
+- [regulations.gov API](sources/regulations-gov-api.md): keyed document list and detail, attachment relationships, attachment PDFs.
+- [CBO cost estimates](sources/cbo.md): per-Congress cost-estimate feeds and estimate documents.
 - [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records.
 - [Captured public comments](sources/public-comments.md)
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.

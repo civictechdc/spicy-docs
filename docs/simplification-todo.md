@@ -418,6 +418,40 @@ retained fixtures plus a guide.
 - [x] **M11** — Audit of every other outbound path in SpicyRegs (all mechanisms, not only HTTP libraries): `sources/mirrulations.py` is the same reader SpicyDocs already ships; `sources/pdf.py` (attachment PDF by URL) is covered by `transport/download.py`'s bounded asset capture; four transforms import `requests` without calling it; `r2.py`, `iceberg.py`, `cloudflare.py` and the `data.spicy-regs.dev` clients are its own storage and site, not publisher fetches. No publisher route remains without a SpicyDocs equivalent.
 - [x] **M12** — Live multi-page walks through every list reader (73 requests): next-URL, POST page-number and offset continuations each ran to the publisher's terminal page or refused at the bound as designed. Receipt: `~/Work/corpora/supply-2026-09-02/receipts/spicyregs-merge-live-walks-2026-09-14/`.
 
+## Remaining publisher fetches outside SpicyDocs
+
+Inventory of 2026-09-14 across spicysearch, RefSpec, DocSpec and every corpora
+tree including archived and salvaged copies, keyed by publisher host and route
+rather than by file. Vocabulary fetchers (OSTI thesaurus, LOC FAST) stay in
+RefSpec. Own-site and own-storage traffic is not fetching a publisher.
+
+| Item | Publisher route | Where it is fetched today | Disposition |
+| --- | --- | --- | --- |
+| P01 | OLRC U.S. Code: release-point USLM per title and whole corpus, annual XHTML archives, Popular Name Tool page, Table III per-act pages and bulk zip (`uscode.house.gov`) | RefSpec tools and oracle scripts; salvaged SpicyRegs `uscode_olrc.py` | Done 2026-09-14: `sources/uscode.py`, `uscode_acquisition.py`. OLRC uses USLM 1.0 in the House namespace; absent Table III acts answer 200 truncated; the Table III bulk URL is stated on `table3years.htm` and matched RefSpec's retained zip byte for byte. [Guide](sources/uscode.md). |
+| P02 | Supreme Court slip opinions: term index page to case metadata and official PDF (`supremecourt.gov/opinions/slipopinion/{term}`) | Salvaged SpicyRegs `supreme_court_opinions.py` | Done: `sources/supreme_court.py`, keyless. The index is a live render that differs between requests; PDF names carry revision tokens. [Guide](sources/supreme-court.md). |
+| P03 | CRS report files (`congress.gov/crs_external_products/{type}/PDF/{id}/{id}.{version}.pdf`) | Salvaged evaluation; `crs_summaries.py` says PDFs are fetched separately | Done: `sources/congress/crs_files.py`, keyless GET (HEAD is 403). Family directories are not always the id prefix, so the publisher's stated URL is the primary selection. [Guide](sources/crs-files.md). |
+| P04 | GAO report files (`files.gao.gov/reports/{id}/`) | Salvaged evaluation; the GAO guide excludes linked report files | Done: `sources/gao/files.py`. The file host is keyless; only `www.gao.gov` is gated. About half the products have an online-report index, so the one-request PDF route is universal. [Guide](sources/gao-files.md). |
+| P05 | regulations.gov API v4 documents and `downloads.regulations.gov/{id}/content.pdf` attachments, keyed | DocSpec `tools/fetch_attachment_sample.py`; salvaged evaluation | Done: `sources/regulations_gov/api.py`, `attachments.py`. No `links.next`; a boolean `hasNextPage` and a forty-page cap with a drifting count. The download host needs a browser User-Agent, not the key. [Guide](sources/regulations-gov-api.md). |
+| P06 | CBO cost-estimates XML feed and RSS (`cbo.gov/cost-estimates/xml`) | RefSpec `cbo_topic_codes.py` for topic labels | Done: `sources/cbo.py` reads the per-Congress feeds; the site's XML feed and estimate documents are behind a bot wall and were never acquirable. [Guide](sources/cbo.md). |
+
+Shared changes the six ports converged on, made once (2026-09-14): the bounded
+client clears cookies per request and keeps 401/403 bodies as evidence on
+keyless routes; the shared acquirer refuses credential echo centrally and
+carries `check_final_url`; the traversal accepts a boolean has-next flag,
+advisory counts and per-family media types; `sources/pdf_bytes.py` holds the
+one PDF magic-and-trailer check. Remaining DRY debt: `govinfo/uslm.py`'s scanner
+is bound to the GPO namespace and `main`/`preface`, so `uscode.py` subclasses
+the generic scanner instead (a `namespace` and `body_sections` parameter would
+unify them); `uscode.py` and `uslm.py` each carry a bounded-zip reader.
+
+Adoption, not porting (SpicyDocs already serves the route): spicysearch
+`scripts/fetch_presidential_bodies*.py` (GovInfo FR granule bodies); RefSpec
+`cfr_authority_notes.py` (eCFR full titles), `federal_register_topics_api.py`
+and `govinfo_collections.py` captures, `billstatus_codes.py` readme fetch;
+DocSpec `tools/fr_topic_receipt.py` and its generic HTTPS content fetcher.
+GovInfo PREMIS fixity digests (RefSpec `govinfo_collections.py`) remain the
+one cross-check worth adding to SpicyDocs captures.
+
 ## Deferred local work
 
 <a id="s21"></a>
