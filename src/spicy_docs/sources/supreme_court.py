@@ -49,12 +49,11 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime
 from html.parser import HTMLParser
+from typing import TYPE_CHECKING
 from urllib.parse import urljoin, urlsplit
 
-import httpx
-
 from spicy_docs.sources.pdf_bytes import check_pdf_bytes
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -64,6 +63,9 @@ from spicy_docs.transport.source_acquirer import (
     narrow_byte_limit,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 SUPREME_COURT_SITE = "https://www.supremecourt.gov"
 SLIP_OPINION_INDEX_PATH = "/opinions/slipopinion/"

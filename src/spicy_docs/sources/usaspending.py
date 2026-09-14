@@ -11,9 +11,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Mapping
 from datetime import datetime
-from typing import Any, Literal
-
-import httpx
+from typing import TYPE_CHECKING, Any, Literal
 
 from spicy_docs.sources.paged_json import (
     DEFAULT_MAX_PAGES,
@@ -24,6 +22,9 @@ from spicy_docs.sources.paged_json import (
     PagedJsonSourceError,
 )
 from spicy_docs.transport.source_acquirer import utc_now
+
+if TYPE_CHECKING:
+    import httpx
 
 API = "https://api.usaspending.gov/api/v2"
 RECIPIENTS_URL = f"{API}/recipient/"

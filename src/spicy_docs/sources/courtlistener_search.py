@@ -14,10 +14,8 @@ import re
 from collections.abc import Callable, Iterator
 from datetime import date as Date
 from datetime import datetime
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 from urllib.parse import urlencode
-
-import httpx
 
 from spicy_docs.sources.paged_json import (
     DEFAULT_MAX_PAGES,
@@ -28,6 +26,9 @@ from spicy_docs.sources.paged_json import (
     PagedJsonSourceError,
 )
 from spicy_docs.transport.source_acquirer import utc_now
+
+if TYPE_CHECKING:
+    import httpx
 
 API = "https://www.courtlistener.com/api/rest/v4"
 RESULTS_KEY = "results"

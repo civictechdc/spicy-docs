@@ -13,10 +13,8 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Iterator
 from datetime import datetime
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 from urllib.parse import urlencode
-
-import httpx
 
 from spicy_docs.sources.congress.bill_status import BILL_TYPES
 from spicy_docs.sources.paged_json import (
@@ -28,6 +26,9 @@ from spicy_docs.sources.paged_json import (
     PagedJsonSourceError,
 )
 from spicy_docs.transport.source_acquirer import utc_now
+
+if TYPE_CHECKING:
+    import httpx
 
 API = "https://api.congress.gov/v3"
 MAX_LIMIT = 250

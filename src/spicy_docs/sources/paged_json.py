@@ -22,13 +22,11 @@ import json
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
-import httpx
-
 from spicy_docs.sources.json_input import load_decimal_json
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -36,6 +34,9 @@ from spicy_docs.transport.source_acquirer import (
     check_timing,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 MAX_PAGE_BYTES = 64 * 1024 * 1024
 DEFAULT_MAX_PAGE_BYTES = 16 * 1024 * 1024

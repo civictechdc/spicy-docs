@@ -10,8 +10,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime
-
-import httpx
+from typing import TYPE_CHECKING
 
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.congress.bill_status import (
@@ -28,7 +27,7 @@ from spicy_docs.sources.congress.bill_text import (
     validate_bill_text,
 )
 from spicy_docs.sources.refusals import attach_refused_response
-from spicy_docs.transport.capture import CapturedBodyResponse, refused_capture
+from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -36,6 +35,9 @@ from spicy_docs.transport.source_acquirer import (
     check_timing,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 
 @dataclass(frozen=True, slots=True)

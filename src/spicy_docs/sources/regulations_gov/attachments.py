@@ -47,14 +47,12 @@ import re
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlsplit
-
-import httpx
 
 from spicy_docs.sources.pdf_bytes import check_pdf_bytes
 from spicy_docs.sources.regulations_gov.definitions import _ASCII_ID
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -64,6 +62,9 @@ from spicy_docs.transport.source_acquirer import (
     narrow_byte_limit,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 ATTACHMENT_HOST = "downloads.regulations.gov"
 PDF_MEDIA_TYPE = "application/pdf"

@@ -44,10 +44,8 @@ from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from datetime import date as Date
 from datetime import datetime
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
-
-import httpx
 
 from spicy_docs.sources.json_input import load_decimal_json
 from spicy_docs.sources.paged_json import (
@@ -61,8 +59,11 @@ from spicy_docs.sources.paged_json import (
     query_value,
 )
 from spicy_docs.sources.regulations_gov.definitions import _ASCII_ID
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import utc_now
+
+if TYPE_CHECKING:
+    import httpx
 
 API = "https://api.regulations.gov/v4"
 DOCUMENTS_KEY = "data"

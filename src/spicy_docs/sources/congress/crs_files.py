@@ -34,11 +34,10 @@ import re
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime
-
-import httpx
+from typing import TYPE_CHECKING
 
 from spicy_docs.sources.pdf_bytes import check_pdf_bytes
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -48,6 +47,9 @@ from spicy_docs.transport.source_acquirer import (
     narrow_byte_limit,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 CRS_EXTERNAL_PRODUCTS = "https://www.congress.gov/crs_external_products"
 PDF_MEDIA_TYPE = "application/pdf"

@@ -11,13 +11,14 @@ from __future__ import annotations
 import math
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
-from typing import Self
-
-import httpx
+from typing import TYPE_CHECKING, Self
 
 from spicy_docs.sources.refusals import attach_refused_response
-from spicy_docs.transport.capture import BoundedHttpCapture, CapturedBodyResponse, refused_capture
+from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
+
+if TYPE_CHECKING:
+    import httpx
 
 
 def check_request_count(value: object, name: str = "max_requests") -> None:
@@ -97,6 +98,9 @@ class SourceAcquirer:
         self.error_type = error_type
         self.context_key = context_key
         self._credential = credential
+        # The client needs the optional HTTPX dependency; locators and validators do not.
+        from spicy_docs.transport.capture import BoundedHttpCapture
+
         self._http = BoundedHttpCapture(
             max_requests=max_requests,
             timeout_seconds=timeout_seconds,

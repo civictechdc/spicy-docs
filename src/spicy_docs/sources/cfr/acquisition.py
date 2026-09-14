@@ -6,8 +6,7 @@ import zlib
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime
-
-import httpx
+from typing import TYPE_CHECKING
 
 from spicy_docs.sources.cfr.annual import annual_cfr_xml_locator, validate_annual_cfr_xml
 from spicy_docs.sources.cfr.ecfr import (
@@ -28,7 +27,7 @@ from spicy_docs.sources.cfr.models import (
     EcfrTitles,
 )
 from spicy_docs.sources.govinfo.mods import GovInfoModsPackage
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -37,6 +36,9 @@ from spicy_docs.transport.source_acquirer import (
     narrow_byte_limit,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 type CfrSelection = EcfrSelection | AnnualCfrSelection | int
 

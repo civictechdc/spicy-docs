@@ -11,8 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime
-
-import httpx
+from typing import TYPE_CHECKING
 
 from spicy_docs.sources.govinfo.uslm import (
     DEFAULT_MAX_ARCHIVE_ENTRIES,
@@ -33,7 +32,7 @@ from spicy_docs.sources.govinfo.uslm import (
     validate_public_law_xml,
     validate_statute_compilation_xml,
 )
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -42,6 +41,9 @@ from spicy_docs.transport.source_acquirer import (
     narrow_byte_limit,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 type UslmSelection = PublicLawSelection | StatuteCompilationSelection | tuple[int, LawKind] | None
 

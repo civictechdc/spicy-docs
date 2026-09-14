@@ -20,11 +20,10 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import datetime
-
-import httpx
+from typing import TYPE_CHECKING
 
 from spicy_docs.sources.xml import scan_xml
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -33,6 +32,9 @@ from spicy_docs.transport.source_acquirer import (
     narrow_byte_limit,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 EXPORT_URL = "https://www.reginfo.gov/public/do/XMLViewFileAction"
 ROOT = "REGINFO_RIN_DATA"

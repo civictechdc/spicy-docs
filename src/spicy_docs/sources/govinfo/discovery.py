@@ -16,9 +16,8 @@ import re
 from collections.abc import Callable, Iterator, Sequence
 from datetime import date as Date
 from datetime import datetime
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
-
-import httpx
 
 from spicy_docs.sources.paged_json import (
     DEFAULT_MAX_PAGES,
@@ -29,6 +28,9 @@ from spicy_docs.sources.paged_json import (
     PagedJsonSourceError,
 )
 from spicy_docs.transport.source_acquirer import utc_now
+
+if TYPE_CHECKING:
+    import httpx
 
 API = "https://api.govinfo.gov"
 MAX_PAGE_SIZE = 1000

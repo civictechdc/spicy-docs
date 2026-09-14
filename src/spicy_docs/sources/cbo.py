@@ -36,13 +36,12 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
-
-import httpx
 
 from spicy_docs.sources.pdf_bytes import check_pdf_bytes
 from spicy_docs.sources.xml import scan_xml
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
@@ -53,6 +52,9 @@ from spicy_docs.transport.source_acquirer import (
     narrow_byte_limit,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 CBO_COST_ESTIMATES_FEED_URL = "https://www.cbo.gov/cost-estimates/xml"
 CBO_PER_CONGRESS_FEED_TEMPLATE = "https://www.cbo.gov/rss/{congress}congress-cost-estimates.xml"

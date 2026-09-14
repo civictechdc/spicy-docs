@@ -14,14 +14,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 from xml.etree.ElementTree import Element
 
-import httpx
-
 from spicy_docs.sources.gao.native import SOURCE_SYSTEM_ID, GaoProductSourceError, gao_product_url
 from spicy_docs.sources.xml import parse_xml
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -29,6 +28,9 @@ from spicy_docs.transport.source_acquirer import (
     check_timing,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 GAO_REPORTS_FEED_URL = "https://www.gao.gov/rss/reports.xml"
 DEFAULT_MAX_BYTES = 4 * 1024 * 1024

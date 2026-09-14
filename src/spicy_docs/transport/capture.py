@@ -7,55 +7,21 @@ Install spicy-docs[acquisition] to use its optional HTTPX dependency.
 
 from __future__ import annotations
 
-import hashlib
 import time
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 import httpx
 
 from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
+from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.http import RetryableHTTPStatusError
 from spicy_docs.transport.retry import retry_http
 
 
-@dataclass(frozen=True, slots=True)
-class CapturedBodyResponse:
-    """Exact response payload bytes, before any content decoding, and observed facts."""
-
-    requested_url: str
-    resolved_url: str
-    status_code: int
-    content_type: str | None
-    observed_at: str
-    body: bytes = field(repr=False)
-    content_encoding: str = "identity"
-    method: str = "GET"
-    request_body: bytes | None = field(default=None, repr=False)
-
-    @property
-    def byte_size(self) -> int:
-        return len(self.body)
-
-    @property
-    def sha256(self) -> str:
-        return "sha256:" + hashlib.sha256(self.body).hexdigest()
-
-
 class _RetryableTransportError(ConnectionError):
     """Transport failed without copying arbitrary provider text into logs."""
-
-
-def refused_capture(capture: CapturedBodyResponse, *, stage: str) -> RefusedResponse:
-    return RefusedResponse(
-        request_key=capture.requested_url,
-        stage=stage,
-        response_bytes=capture.body,
-        media_type=(capture.content_type or "application/octet-stream").split(";", 1)[0].strip(),
-        observed_byte_size=capture.byte_size,
-    )
 
 
 class BoundedHttpCapture:

@@ -29,14 +29,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from html.parser import HTMLParser
-from typing import Final
+from typing import TYPE_CHECKING, Final
 from urllib.parse import urljoin, urlsplit
-
-import httpx
 
 from spicy_docs.sources.gao.native import GaoProductSourceError, gao_product_url
 from spicy_docs.sources.pdf_bytes import check_pdf_bytes
-from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -45,6 +43,9 @@ from spicy_docs.transport.source_acquirer import (
     check_timing,
     utc_now,
 )
+
+if TYPE_CHECKING:
+    import httpx
 
 REPORT_FILE_ROOT: Final = "https://files.gao.gov"
 REPORT_RENDITIONS: Final = ("report", "highlights")
