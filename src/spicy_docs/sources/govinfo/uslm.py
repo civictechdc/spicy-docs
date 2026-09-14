@@ -1,0 +1,439 @@
+"""Explicit GovInfo USLM sources: public and private laws (PLAW) and statute compilations (COMPS).
+
+Both collections are keyless GovInfo bulkdata in United States Legislative
+Markup (USLM), which the publisher labels beta. Each file states its own
+identity in ``<meta>``: a law names its Congress, public/private kind, number
+and citable forms; a compilation names its file identifier, act title and, when
+present, the public law it is current through. Validation proves that native
+identity against the request and the caller keeps the exact bytes. Archive
+readers apply the same checks to every entry of a bulkdata zip, both ways:
+each entry's name must parse to a selection and its content must agree.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import io
+import re
+import zipfile
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Literal
+
+from ..xml import IdentityXmlScan
+
+USLM_NAMESPACE = "http://schemas.gpo.gov/xml/uslm"
+DUBLIN_CORE_NAMESPACE = "http://purl.org/dc/elements/1.1/"
+BULKDATA = "https://www.govinfo.gov/bulkdata"
+# The largest observed file is the Social Security Act compilation at 20.4 MB.
+DEFAULT_MAX_BYTES = 32 * 1024 * 1024
+MAX_USLM_BYTES = 256 * 1024 * 1024
+DEFAULT_MAX_ARCHIVE_ENTRIES = 4096
+KINDS = ("public", "private")
+type LawKind = Literal["public", "private"]
+type UslmSource = Literal["public-law", "statute-compilation"]
+
+_PLAW_NAME = re.compile(r"PLAW-([0-9]+)(publ|pvtl)([0-9]+)\.xml")
+_COMPS_NAME = re.compile(r"COMPS-([0-9]+)\.xml")
+
+
+class UslmSourceError(ValueError):
+    """The request or response cannot establish the selected USLM source."""
+
+
+def _positive(value: int, name: str, limit: int) -> int:
+    if type(value) is not int or not 1 <= value <= limit:
+        raise UslmSourceError(f"{name} must be an integer from 1 to {limit}")
+    return value
+
+
+# Congress numbers are small; law numbers and compilation file identifiers are
+# publisher-assigned and can be large (the Social Security Act is COMPS-88888888).
+_MAX_CONGRESS = 999
+_MAX_NUMBER = 999_999
+_MAX_FILE_ID = 999_999_999
+
+
+def _limit(max_bytes: int) -> None:
+    if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_USLM_BYTES:
+        raise UslmSourceError("max_bytes must be a positive integer no greater than 256 MiB")
+
+
+@dataclass(frozen=True, slots=True)
+class PublicLawSelection:
+    congress: int
+    kind: LawKind
+    number: int
+
+    def __post_init__(self) -> None:
+        _positive(self.congress, "congress", _MAX_CONGRESS)
+        _positive(self.number, "number", _MAX_NUMBER)
+        if self.kind not in KINDS:
+            raise UslmSourceError("kind must be 'public' or 'private'")
+
+    @property
+    def file_name(self) -> str:
+        return f"PLAW-{self.congress}{'publ' if self.kind == 'public' else 'pvtl'}{self.number}.xml"
+
+    @property
+    def citation(self) -> str:
+        """The publisher's citable form, spelled with an en dash."""
+        return f"{'Public' if self.kind == 'public' else 'Private'} Law {self.congress}–{self.number}"
+
+    @classmethod
+    def from_file_name(cls, name: str) -> PublicLawSelection:
+        match = _PLAW_NAME.fullmatch(name)
+        if match is None:
+            raise UslmSourceError("public law file name is unsupported")
+        return cls(int(match[1]), "public" if match[2] == "publ" else "private", int(match[3]))
+
+
+@dataclass(frozen=True, slots=True)
+class StatuteCompilationSelection:
+    file_id: int
+
+    def __post_init__(self) -> None:
+        _positive(self.file_id, "file_id", _MAX_FILE_ID)
+
+    @property
+    def file_name(self) -> str:
+        return f"COMPS-{self.file_id}.xml"
+
+    @classmethod
+    def from_file_name(cls, name: str) -> StatuteCompilationSelection:
+        match = _COMPS_NAME.fullmatch(name)
+        if match is None:
+            raise UslmSourceError("statute compilation file name is unsupported")
+        return cls(int(match[1]))
+
+
+def public_law_xml_locator(selection: PublicLawSelection) -> str:
+    if not isinstance(selection, PublicLawSelection):
+        raise UslmSourceError("selection must be a PublicLawSelection")
+    return f"{BULKDATA}/PLAW/{selection.congress}/{selection.kind}/{selection.file_name}"
+
+
+def public_law_archive_locator(congress: int, kind: LawKind) -> str:
+    """One zip per Congress and kind; the publisher offers no private-law folder for some Congresses."""
+    _positive(congress, "congress", _MAX_CONGRESS)
+    if kind not in KINDS:
+        raise UslmSourceError("kind must be 'public' or 'private'")
+    return f"{BULKDATA}/PLAW/{congress}/{kind}/PLAW-{congress}-{kind}.zip"
+
+
+def statute_compilation_xml_locator(selection: StatuteCompilationSelection) -> str:
+    if not isinstance(selection, StatuteCompilationSelection):
+        raise UslmSourceError("selection must be a StatuteCompilationSelection")
+    return f"{BULKDATA}/COMPS/{selection.file_name}"
+
+
+def statute_compilations_archive_locator() -> str:
+    """The whole collection in one zip; per-file listing times are not act currency."""
+    return f"{BULKDATA}/COMPS/COMPS.zip"
+
+
+@dataclass(frozen=True, slots=True)
+class UslmMetadata:
+    """Native ``<meta>`` facts. Publisher spellings are kept; nothing is normalized.
+
+    ``current_through_public_law`` holds the compiler's own currency statements
+    in document order. Three compilations state two; the form varies
+    (``118–42``, ``Public Law 117–121``, ``P.L.  111–148``, ``ch883``). A stale
+    compilation and an unamended one look alike here; the enacted-law list is
+    what distinguishes them.
+    """
+
+    source: UslmSource
+    root_tag: str
+    title: str
+    document_type: str | None
+    doc_number: str | None
+    congress: str | None
+    citable_as: tuple[str, ...]
+    approved_date: str | None
+    processed_by: str | None
+    processed_date: str | None
+    schema_location: str | None
+    identity_basis: tuple[str, ...]
+    body_present: bool = True
+    public_private: str | None = None
+    file_id: str | None = None
+    short_title: str | None = None
+    current_through_public_law: tuple[str, ...] = ()
+
+
+def _u(tag: str) -> str:
+    return "{" + USLM_NAMESPACE + "}" + tag
+
+
+def _dc(tag: str) -> str:
+    return "{" + DUBLIN_CORE_NAMESPACE + "}" + tag
+
+
+_META_FIELDS = (
+    _dc("title"),
+    _dc("type"),
+    _u("docNumber"),
+    _u("congress"),
+    _u("publicPrivate"),
+    _u("citableAs"),
+    _u("approvedDate"),
+    _u("processedBy"),
+    _u("processedDate"),
+    _u("currentThroughPublicLaw"),
+    _u("citableAsShortTitle"),
+    _u("property"),
+)
+
+
+class _UslmScan(IdentityXmlScan):
+    def __init__(self, root: str) -> None:
+        self.expected_root = _u(root)
+        self.meta_path = (self.expected_root, _u("meta"))
+        super().__init__(
+            {self.meta_path + (name,) for name in _META_FIELDS}, error_type=UslmSourceError, label="USLM XML"
+        )
+        self.meta_count = 0
+        self.property_roles: list[str | None] = []
+        self.schema_location: str | None = None
+        self.main_text = False
+
+    def observe_start(self, tag: str, attributes: dict[str, str]) -> None:
+        if len(self.stack) == 1:
+            if tag != self.expected_root:
+                raise UslmSourceError("USLM XML root is not the requested document type")
+            self.schema_location = attributes.get("{http://www.w3.org/2001/XMLSchema-instance}schemaLocation")
+        elif tag == self.expected_root:
+            raise UslmSourceError("USLM XML contains a nested document root")
+        path = self.path
+        if path == self.meta_path:
+            self.meta_count += 1
+        elif path == self.meta_path + (_u("property"),):
+            self.property_roles.append(attributes.get("role"))
+
+    def observe_text(self, text: str) -> None:
+        if self.main_text or not text.strip() or len(self.stack) < 2:
+            return
+        section = self.stack[1][0]
+        if section == _u("main"):
+            self.main_text = self.body_found = True
+        elif section == _u("preface"):
+            # A stub compilation can carry an empty main and point to the U.S.
+            # Code from its preface (COMPS-3101, Paperwork Reduction Act).
+            self.body_found = True
+
+    def meta(self, name: str, *, required: bool = False) -> str | None:
+        value = self.field(self.meta_path + (name,), required=required)
+        return value.strip() if value is not None else None
+
+    def meta_values(self, name: str) -> tuple[str, ...]:
+        return tuple(value.strip() for value in self.values.get(self.meta_path + (name,), []))
+
+
+def _scan(body: bytes, root: str, max_bytes: int) -> _UslmScan:
+    _limit(max_bytes)
+    scan = _UslmScan(root)
+    scan.read(body, max_bytes)
+    if scan.meta_count != 1:
+        raise UslmSourceError("USLM XML requires exactly one meta block")
+    if not scan.body_found:
+        raise UslmSourceError("USLM XML lacks source content in main or preface")
+    return scan
+
+
+def _comparable(citation: str) -> str:
+    return re.sub(r"\s+", " ", citation.replace("–", "-").replace("—", "-")).strip()
+
+
+def validate_public_law_xml(
+    body: bytes,
+    *,
+    selection: PublicLawSelection,
+    final_url: str,
+    max_bytes: int = DEFAULT_MAX_BYTES,
+) -> UslmMetadata:
+    """Prove the law's native Congress, kind, number and citation match the request."""
+    if final_url != public_law_xml_locator(selection):
+        raise UslmSourceError("public law response URL differs from the requested law")
+    scan = _scan(body, "pLaw", max_bytes)
+    congress = scan.meta(_u("congress"), required=True)
+    kind = scan.meta(_u("publicPrivate"), required=True)
+    number = scan.meta(_u("docNumber"), required=True)
+    if (congress, kind, number) != (str(selection.congress), selection.kind, str(selection.number)):
+        raise UslmSourceError("public law native identity differs from the request")
+    citations = scan.meta_values(_u("citableAs"))
+    if _comparable(selection.citation) not in {_comparable(citation) for citation in citations}:
+        raise UslmSourceError("public law citable form differs from the request")
+    return UslmMetadata(
+        "public-law",
+        "pLaw",
+        scan.meta(_dc("title"), required=True) or "",
+        scan.meta(_dc("type")),
+        number,
+        congress,
+        citations,
+        scan.meta(_u("approvedDate")),
+        scan.meta(_u("processedBy")),
+        scan.meta(_u("processedDate")),
+        scan.schema_location,
+        ("congress:native", "kind:native", "number:native", "citation:native"),
+        body_present=scan.main_text,
+        public_private=kind,
+    )
+
+
+def validate_statute_compilation_xml(
+    body: bytes,
+    *,
+    selection: StatuteCompilationSelection,
+    final_url: str,
+    max_bytes: int = DEFAULT_MAX_BYTES,
+) -> UslmMetadata:
+    """Prove the compilation's native file identifier matches the request; keep its stated currency raw."""
+    if final_url != statute_compilation_xml_locator(selection):
+        raise UslmSourceError("statute compilation response URL differs from the requested compilation")
+    scan = _scan(body, "statuteCompilation", max_bytes)
+    properties = scan.meta_values(_u("property"))
+    file_ids = [value for role, value in zip(scan.property_roles, properties, strict=True) if role == "fileId"]
+    if len(file_ids) != 1:
+        raise UslmSourceError("statute compilation requires exactly one fileId property")
+    if file_ids[0] != str(selection.file_id):
+        raise UslmSourceError("statute compilation native file identifier differs from the request")
+    document_type = scan.meta(_dc("type"))
+    if document_type is not None and document_type != "Statute Compilation":
+        raise UslmSourceError("statute compilation document type is unsupported")
+    return UslmMetadata(
+        "statute-compilation",
+        "statuteCompilation",
+        scan.meta(_dc("title"), required=True) or "",
+        document_type,
+        scan.meta(_u("docNumber")),
+        scan.meta(_u("congress")),
+        scan.meta_values(_u("citableAs")),
+        scan.meta(_u("approvedDate")),
+        scan.meta(_u("processedBy")),
+        scan.meta(_u("processedDate")),
+        scan.schema_location,
+        ("file-id:native",),
+        body_present=scan.main_text,
+        file_id=file_ids[0],
+        short_title=scan.meta(_u("citableAsShortTitle")),
+        current_through_public_law=scan.meta_values(_u("currentThroughPublicLaw")),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class UslmArchiveEntry:
+    name: str
+    byte_size: int
+    sha256: str
+    metadata: UslmMetadata
+
+
+@dataclass(frozen=True, slots=True)
+class UslmArchive:
+    """Every entry validated against the identity its own file name declares."""
+
+    source: UslmSource
+    entries: tuple[UslmArchiveEntry, ...]
+
+
+def _read_archive[Selection](
+    body: bytes,
+    *,
+    source: UslmSource,
+    select: Callable[[str], Selection],
+    validate: Callable[[bytes, Selection], UslmMetadata],
+    max_bytes: int,
+    max_entry_bytes: int,
+    max_entries: int,
+) -> UslmArchive:
+    _limit(max_bytes)
+    _limit(max_entry_bytes)
+    if type(max_entries) is not int or max_entries <= 0:
+        raise UslmSourceError("max_entries must be a positive integer")
+    if not isinstance(body, bytes) or not body or len(body) > max_bytes:
+        raise UslmSourceError("USLM archive must be nonempty bytes within max_bytes")
+    if body[:4] != b"PK\x03\x04":
+        raise UslmSourceError("USLM archive does not start with a zip local file header")
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(body))
+    except zipfile.BadZipFile as error:
+        raise UslmSourceError("USLM archive is malformed") from error
+    with archive:
+        if archive.testzip() is not None:
+            raise UslmSourceError("USLM archive fails its CRC check")
+        members = [info for info in archive.infolist() if not info.is_dir()]
+        if len(members) > max_entries:
+            raise UslmSourceError("USLM archive contains more entries than max_entries")
+        entries = []
+        seen: set[str] = set()
+        for info in members:
+            name = info.filename.rsplit("/", 1)[-1]
+            if name in seen:
+                raise UslmSourceError("USLM archive repeats an entry name")
+            seen.add(name)
+            selection = select(name)
+            if info.file_size > max_entry_bytes:
+                raise UslmSourceError("USLM archive entry exceeds max_entry_bytes")
+            data = archive.read(info)
+            if len(data) != info.file_size:
+                raise UslmSourceError("USLM archive entry size differs from its header")
+            entries.append(
+                UslmArchiveEntry(
+                    info.filename, len(data), "sha256:" + hashlib.sha256(data).hexdigest(), validate(data, selection)
+                )
+            )
+    return UslmArchive(source, tuple(entries))
+
+
+def read_public_law_archive(
+    body: bytes,
+    *,
+    congress: int,
+    kind: LawKind,
+    max_bytes: int = MAX_USLM_BYTES,
+    max_entry_bytes: int = DEFAULT_MAX_BYTES,
+    max_entries: int = DEFAULT_MAX_ARCHIVE_ENTRIES,
+) -> UslmArchive:
+    """Read one Congress/kind zip; every entry must belong to it and prove its own identity."""
+    public_law_archive_locator(congress, kind)
+
+    def select(name: str) -> PublicLawSelection:
+        selection = PublicLawSelection.from_file_name(name)
+        if (selection.congress, selection.kind) != (congress, kind):
+            raise UslmSourceError("public law archive entry belongs to another Congress or kind")
+        return selection
+
+    return _read_archive(
+        body,
+        source="public-law",
+        select=select,
+        validate=lambda data, selection: validate_public_law_xml(
+            data, selection=selection, final_url=public_law_xml_locator(selection), max_bytes=max_entry_bytes
+        ),
+        max_bytes=max_bytes,
+        max_entry_bytes=max_entry_bytes,
+        max_entries=max_entries,
+    )
+
+
+def read_statute_compilations_archive(
+    body: bytes,
+    *,
+    max_bytes: int = MAX_USLM_BYTES,
+    max_entry_bytes: int = DEFAULT_MAX_BYTES,
+    max_entries: int = DEFAULT_MAX_ARCHIVE_ENTRIES,
+) -> UslmArchive:
+    """Read the whole-collection zip; each entry proves the file identifier its name declares."""
+    return _read_archive(
+        body,
+        source="statute-compilation",
+        select=StatuteCompilationSelection.from_file_name,
+        validate=lambda data, selection: validate_statute_compilation_xml(
+            data, selection=selection, final_url=statute_compilation_xml_locator(selection), max_bytes=max_entry_bytes
+        ),
+        max_bytes=max_bytes,
+        max_entry_bytes=max_entry_bytes,
+        max_entries=max_entries,
+    )

@@ -1,11 +1,47 @@
-"""GovInfo source metadata, available without acquisition dependencies."""
+"""GovInfo source metadata and USLM identity checks, available without acquisition dependencies."""
 
 from .mods import GovInfoModsError, GovInfoModsPackage, ModsElement, ModsRecord, parse_govinfo_mods
+from .uslm import (
+    DEFAULT_MAX_ARCHIVE_ENTRIES,
+    DEFAULT_MAX_BYTES,
+    MAX_USLM_BYTES,
+    PublicLawSelection,
+    StatuteCompilationSelection,
+    UslmArchive,
+    UslmArchiveEntry,
+    UslmMetadata,
+    UslmSourceError,
+    public_law_archive_locator,
+    public_law_xml_locator,
+    read_public_law_archive,
+    read_statute_compilations_archive,
+    statute_compilation_xml_locator,
+    statute_compilations_archive_locator,
+    validate_public_law_xml,
+    validate_statute_compilation_xml,
+)
 
 __all__ = [
+    "DEFAULT_MAX_ARCHIVE_ENTRIES",
+    "DEFAULT_MAX_BYTES",
+    "MAX_USLM_BYTES",
     "GovInfoModsError",
     "GovInfoModsPackage",
     "ModsElement",
     "ModsRecord",
+    "PublicLawSelection",
+    "StatuteCompilationSelection",
+    "UslmArchive",
+    "UslmArchiveEntry",
+    "UslmMetadata",
+    "UslmSourceError",
     "parse_govinfo_mods",
+    "public_law_archive_locator",
+    "public_law_xml_locator",
+    "read_public_law_archive",
+    "read_statute_compilations_archive",
+    "statute_compilation_xml_locator",
+    "statute_compilations_archive_locator",
+    "validate_public_law_xml",
+    "validate_statute_compilation_xml",
 ]
