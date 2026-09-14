@@ -1,0 +1,513 @@
+"""The keyed regulations.gov v4 routes name explicit queries, walk page[number], and prove attachment bytes."""
+
+import json
+from pathlib import Path
+
+import httpx
+import pytest
+
+from spicy_docs.sources.paged_json import PagedJsonBudget, PagedJsonSourceError
+from spicy_docs.sources.regulations_gov.api import (
+    MAX_PAGE_NUMBER,
+    MAX_PAGE_SIZE,
+    MIN_PAGE_SIZE,
+    REGULATIONS_GOV_API,
+    DocumentListPage,
+    RegulationsGovApiError,
+    RegulationsGovApiReader,
+    RegulationsGovApiUnavailableError,
+    document_attachments_url,
+    document_detail_url,
+    document_list_url,
+    read_document_list_page,
+)
+from spicy_docs.sources.regulations_gov.attachments import (
+    ATTACHMENT_HOST,
+    BROWSER_USER_AGENT,
+    DEFAULT_MAX_ATTACHMENT_BYTES,
+    MAX_ATTACHMENT_BYTES,
+    AttachmentBudget,
+    AttachmentLocator,
+    DeclaredFile,
+    RegulationsGovAttachmentAcquirer,
+    RegulationsGovAttachmentError,
+    RegulationsGovAttachmentUnavailableError,
+    attachment_locator,
+    declared_files,
+    pdf_files,
+)
+from spicy_docs.transport import retry
+from spicy_docs.transport.credentials import CredentialRefusedError
+
+FIXTURES = Path(__file__).parent / "fixtures"
+LISTING = (FIXTURES / "listings" / "regulations-gov-documents-p1.json").read_bytes()
+DETAIL = (FIXTURES / "listings" / "regulations-gov-document-detail.json").read_bytes()
+ATTACHMENTS = (FIXTURES / "listings" / "regulations-gov-attachments.json").read_bytes()
+PDF = (FIXTURES / "regulations_gov_attachments" / "FAA-2016-6907-0001-content.pdf").read_bytes()
+BUDGET = PagedJsonBudget(4, 65536, 7, 0)
+FILE_BUDGET = AttachmentBudget(3, DEFAULT_MAX_ATTACHMENT_BYTES, 7, 0)
+KEY = "k3y-abcdef0123456789012345678901234567"
+DOCUMENT = "FAA-2016-6907-0001"
+CONTENT_PDF = f"https://{ATTACHMENT_HOST}/{DOCUMENT}/content.pdf"
+LIST_URL = document_list_url(posted_from="2026-09-02", posted_to="2026-09-02", page_size=5, page_number=1)
+
+
+def json_response(body, status=200, *, content_type="application/json"):
+    return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
+
+
+def item_response(body, status=200, *, content_type="application/vnd.api+json;charset=utf-8"):
+    """The detail and attachment routes answer the JSON:API media type; the list route does not."""
+    return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
+
+
+def pdf_response(body=PDF, status=200, *, content_type="application/pdf"):
+    return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
+
+
+class Transport(httpx.MockTransport):
+    def __init__(self, *responses):
+        self.responses = iter(responses)
+        self.calls = []
+        super().__init__(self.handle)
+
+    def handle(self, request):
+        self.calls.append(request)
+        return next(self.responses)
+
+
+def relisted(**meta) -> bytes:
+    """The pinned page with named meta fields replaced, to exercise one refusal at a time."""
+    body = json.loads(LISTING)
+    body["meta"].update(meta)
+    return json.dumps(body).encode()
+
+
+@pytest.fixture(autouse=True)
+def no_retry_delay(monkeypatch):
+    monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
+
+
+def test_family_states_the_publisher_contract():
+    assert REGULATIONS_GOV_API.host == "api.regulations.gov"
+    assert REGULATIONS_GOV_API.count_path == ("meta", "totalElements")
+    assert REGULATIONS_GOV_API.credential_header == "X-Api-Key" and REGULATIONS_GOV_API.requires_credential
+    # The publisher sends no links object; its continuation is a boolean has-next
+    # flag, so the traversal advances page[number] and treats the count as advisory.
+    assert REGULATIONS_GOV_API.next_kind == "page-number" and REGULATIONS_GOV_API.next_path == ("meta", "hasNextPage")
+    assert REGULATIONS_GOV_API.page_field == "page[number]" and REGULATIONS_GOV_API.count_kind == "advisory"
+    assert "application/vnd.api+json" in REGULATIONS_GOV_API.media_types
+    assert "links" not in json.loads(LISTING) and sorted(json.loads(LISTING)) == ["data", "meta"]
+
+
+def test_list_urls_are_explicit_and_bounded():
+    assert LIST_URL == (
+        "https://api.regulations.gov/v4/documents?filter%5BpostedDate%5D%5Bge%5D=2026-09-02"
+        "&filter%5BpostedDate%5D%5Ble%5D=2026-09-02&page%5Bsize%5D=5&page%5Bnumber%5D=1&sort=postedDate"
+    )
+    assert document_list_url(docket_id="FDA-2026-P-10231", sort="-lastModifiedDate") == (
+        "https://api.regulations.gov/v4/documents?filter%5BdocketId%5D=FDA-2026-P-10231"
+        "&page%5Bsize%5D=250&page%5Bnumber%5D=1&sort=-lastModifiedDate"
+    )
+    # The lastModifiedDate filter takes a space-separated timestamp; it travels as '+'.
+    assert "ge%5D=2026-09-13+00%3A00%3A00" in document_list_url(last_modified_from="2026-09-13 00:00:00")
+    assert document_detail_url(DOCUMENT) == f"https://api.regulations.gov/v4/documents/{DOCUMENT}"
+    assert document_attachments_url(DOCUMENT) == f"https://api.regulations.gov/v4/documents/{DOCUMENT}/attachments"
+    assert (MIN_PAGE_SIZE, MAX_PAGE_SIZE, MAX_PAGE_NUMBER) == (5, 250, 40)
+    # Every built URL is already spelled the way the client will send it.
+    assert REGULATIONS_GOV_API.check_url(LIST_URL) == LIST_URL
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"page_size": 4},
+        {"page_size": 251},
+        {"page_size": True},
+        {"page_number": 0},
+        {"page_number": 41},
+        {"sort": "agencyId"},
+        {"sort": "documentType"},
+        {"sort": "--postedDate"},
+        {"posted_from": "2026-09-02T00:00:00Z"},
+        {"posted_from": "2026-13-01"},
+        {"posted_from": "2026-09-03", "posted_to": "2026-09-02"},
+        {"last_modified_from": "2026-09-13"},
+        {"last_modified_from": "2026-09-13 25:00:00"},
+        {"last_modified_from": "2026-09-14 00:00:00", "last_modified_to": "2026-09-13 00:00:00"},
+        {"docket_id": " "},
+        {"agency_id": "EPA "},
+    ],
+)
+def test_invalid_list_selections_refuse(kwargs):
+    with pytest.raises(RegulationsGovApiError):
+        document_list_url(**kwargs)
+
+
+@pytest.mark.parametrize("identity", ["", "FAA 2016", "FAA/2016", "FAA-2016-6907-0001/", 7, None])
+def test_invalid_document_identities_refuse(identity):
+    with pytest.raises(RegulationsGovApiError, match="strict ASCII"):
+        document_detail_url(identity)
+
+
+def test_pinned_list_page_parses_with_publisher_spellings():
+    transport = Transport(json_response(LISTING))
+    with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        listing = next(source.documents(LIST_URL))
+    assert listing.capture.body == LISTING
+    assert (listing.page_number, listing.page_size, listing.number_of_elements) == (1, 5, 5)
+    assert listing.total_elements == 191 and listing.total_pages == 39 and listing.has_next_page
+    assert listing.document_ids[0] == "FDA-2026-P-10231-0005"
+    assert listing.page.records[0]["attributes"]["docketId"] == "FDA-2026-P-10231"
+    # The list projection carries fields the Mirrulations raw record does not.
+    assert "lastModifiedDate" in listing.page.records[0]["attributes"]
+    assert listing.page.next_url.endswith("number%5D=2") and listing.page.declared_count == 191
+    assert all(call.headers["x-api-key"] == KEY and "api_key" not in str(call.url) for call in transport.calls)
+
+
+def test_declared_count_is_the_query_size_not_what_a_walk_reaches():
+    wide = document_list_url(posted_from="2026-01-01", page_size=250)
+    body = relisted(totalElements=57383, totalPages=40, pageSize=250, numberOfElements=5)
+    page = read_document_list_page(_page(body, wide), requested_page_number=1)
+    assert page.total_elements == 57383 and page.reachable_elements == MAX_PAGE_NUMBER * 250 == 10000
+
+
+def _page(body: bytes, url: str = LIST_URL):
+    transport = Transport(json_response(body))
+    with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        return source.page(url, records_key="data")
+
+
+def test_walk_advances_page_number_until_the_publisher_says_there_is_no_next():
+    transport = Transport(
+        json_response(LISTING), json_response(relisted(hasNextPage=False, lastPage=True, pageNumber=2))
+    )
+    with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        pages = list(source.documents(LIST_URL))
+    assert [page.page_number for page in pages] == [1, 2]
+    assert str(transport.calls[1].url).endswith("page%5Bsize%5D=5&sort=postedDate&page%5Bnumber%5D=2")
+
+
+def test_walk_refuses_the_publishers_page_number_bound_rather_than_ending_quietly():
+    body = relisted(pageNumber=MAX_PAGE_NUMBER)
+    transport = Transport(json_response(body))
+    url = document_list_url(posted_from="2026-09-02", page_size=5, page_number=MAX_PAGE_NUMBER)
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(RegulationsGovApiError, match="page\\[number\\] bound 40"),
+    ):
+        list(source.documents(url))
+
+
+def test_walk_refuses_a_page_bound_reached_with_a_next_page_outstanding():
+    transport = Transport(json_response(LISTING), json_response(relisted(pageNumber=2)))
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(PagedJsonSourceError, match="page bound reached"),
+    ):
+        list(source.documents(LIST_URL, max_pages=2))
+
+
+@pytest.mark.parametrize(
+    "meta,message",
+    [
+        ({"pageNumber": 2}, "page\\[number\\] other than"),
+        ({"pageSize": 25}, "page\\[size\\] other than"),
+        ({"numberOfElements": 4}, "numberOfElements differs"),
+        (
+            {"pageSize": 5, "numberOfElements": 5, "totalElements": 191, "hasNextPage": "yes"},
+            "continuation page number is invalid|hasNextPage is not",
+        ),
+        ({"lastPage": True}, "hasNextPage and meta.lastPage disagree"),
+        ({"totalPages": -1}, "totalPages is not a non-negative"),
+        ({"pageNumber": True}, "pageNumber is not a non-negative"),
+    ],
+)
+def test_paging_statement_refusals_name_the_failed_check(meta, message):
+    with pytest.raises(PagedJsonSourceError, match=message):
+        read_document_list_page(_page(relisted(**meta)), requested_page_number=1)
+
+
+def test_a_page_missing_its_paging_statement_refuses():
+    body = json.loads(LISTING)
+    del body["meta"]
+    with pytest.raises(PagedJsonSourceError, match="omitted its meta"):
+        read_document_list_page(_page(json.dumps(body).encode()), requested_page_number=1)
+
+
+@pytest.mark.parametrize(
+    "mutate,message",
+    [
+        (lambda rows: [{**rows[0], "type": "comments"}], "is not a document"),
+        (lambda rows: [{**rows[0], "id": "FAA 2016"}], "does not name a document"),
+        (lambda rows: [rows[0], rows[0]], "repeats a document id"),
+    ],
+)
+def test_list_row_refusals_name_the_failed_check(mutate, message):
+    body = json.loads(LISTING)
+    body["data"] = mutate(body["data"])
+    body["meta"]["numberOfElements"] = len(body["data"])
+    with pytest.raises(RegulationsGovApiError, match=message):
+        read_document_list_page(_page(json.dumps(body).encode()), requested_page_number=1)
+
+
+def test_pinned_detail_names_one_document_and_its_attachments_route():
+    transport = Transport(item_response(DETAIL))
+    with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        detail = source.document(DOCUMENT)
+    assert detail.capture.body == DETAIL and detail.document_id == DOCUMENT
+    assert detail.attachments_url == document_attachments_url(DOCUMENT)
+    assert detail.attributes["docketId"] == "FAA-2016-6907" and detail.attributes["documentType"] == "Other"
+    files = declared_files(detail.data)
+    assert [file.locator.file_name for file in files] == ["content.txt", "content.pdf"]
+    assert [file.declared_size for file in files] == [119, 2620]
+    assert [file.locator.kind for file in files] == ["content", "content"]
+
+
+@pytest.mark.parametrize(
+    "mutate,message",
+    [
+        (lambda body: body.pop("data"), "omitted its data object"),
+        (lambda body: body["data"].update(type="comments"), "is not a document"),
+        (lambda body: body["data"].update(id="FDA-2026-P-10231-0005"), "names a different document"),
+        (lambda body: body["data"].pop("attributes"), "omitted its attributes"),
+        (
+            lambda body: body["data"]["relationships"]["attachments"]["links"].update(related="https://example.gov/x"),
+            "not this document's route",
+        ),
+    ],
+)
+def test_detail_refusals_name_the_failed_check(mutate, message):
+    body = json.loads(DETAIL)
+    mutate(body)
+    transport = Transport(item_response(json.dumps(body).encode()))
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(RegulationsGovApiError, match=message),
+    ):
+        source.document(DOCUMENT)
+
+
+def test_pinned_attachments_relationship_is_one_unpaged_list():
+    transport = Transport(item_response(ATTACHMENTS))
+    with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        relationship = source.attachments(DOCUMENT)
+    assert relationship.capture.body == ATTACHMENTS and relationship.document_id == DOCUMENT
+    # The publisher states no count, no continuation and no meta on this route.
+    assert len(relationship.records) == 2 and sorted(json.loads(ATTACHMENTS)) == ["data"]
+    served, withheld = relationship.records
+    assert [file.locator.file_name for file in declared_files(served)] == ["attachment_1.docx", "attachment_1.pdf"]
+    # An attachment can exist and carry no file; that is withholding, not absence.
+    assert withheld["attributes"]["restrictReasonType"] == "Confidential Business Information"
+    assert declared_files(withheld) == ()
+    # One attachment in several formats: counting entries is not counting attachments.
+    assert [file.locator.file_name for file in pdf_files(relationship.records)] == ["attachment_1.pdf"]
+
+
+def test_unavailable_and_wrong_shape_responses_never_succeed():
+    absent = b'{\n  "errors" : [ {\n    "status" : "404",\n    "title" : "not found"\n  } ]\n}'
+    transport = Transport(item_response(absent, 404))
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(RegulationsGovApiUnavailableError) as raised,
+    ):
+        source.document(DOCUMENT)
+    assert raised.value.capture.body == absent
+    assert raised.value.paged_json_acquisition["documentId"] == DOCUMENT
+    html = Transport(item_response(b"<html>Access denied</html>", content_type="text/html"))
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=html) as source,
+        pytest.raises(PagedJsonSourceError, match="Content-Type differs"),
+    ):
+        source.document(DOCUMENT)
+
+
+@pytest.mark.parametrize(
+    "rows,message",
+    [
+        ([{"type": "documents", "id": "x"}], "is not an attachment"),
+        ([{"type": "attachments", "id": "0900 006"}], "is not strict ASCII"),
+        ([{"type": "attachments", "id": "a"}, {"type": "attachments", "id": "a"}], "repeats an attachment id"),
+        ({}, "omitted its data list"),
+    ],
+)
+def test_attachment_relationship_refusals_name_the_failed_check(rows, message):
+    transport = Transport(item_response(json.dumps({"data": rows}).encode()))
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(RegulationsGovApiError, match=message),
+    ):
+        source.attachments(DOCUMENT)
+
+
+def test_both_media_type_spellings_the_publisher_uses_are_accepted():
+    # The list route answers application/json and the item routes answer
+    # application/vnd.api+json; both are this publisher's own spelling.
+    for response in (item_response(DETAIL), item_response(DETAIL, content_type="application/json")):
+        with RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=Transport(response)) as source:
+            assert source.document(DOCUMENT).document_id == DOCUMENT
+
+
+def test_an_item_route_echoing_the_credential_is_refused_without_retaining_it():
+    leaked = json.loads(DETAIL)
+    leaked["data"]["attributes"]["title"] = f"see {KEY}"
+    transport = Transport(item_response(json.dumps(leaked).encode()))
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(CredentialRefusedError) as raised,
+    ):
+        source.document(DOCUMENT)
+    assert not hasattr(raised.value, "capture")
+
+
+def test_a_page_echoing_the_credential_is_refused_without_retaining_it():
+    leaked = json.loads(LISTING)
+    leaked["data"][0]["attributes"]["title"] = f"see {KEY}"
+    transport = Transport(json_response(json.dumps(leaked).encode()))
+    with (
+        RegulationsGovApiReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(CredentialRefusedError) as raised,
+    ):
+        next(source.documents(LIST_URL))
+    assert not hasattr(raised.value, "capture")
+
+
+def test_declared_locators_keep_the_publishers_spelling():
+    locator = attachment_locator(CONTENT_PDF)
+    assert locator == AttachmentLocator(CONTENT_PDF, DOCUMENT, "content.pdf", "content", "pdf", None)
+    assert locator.is_pdf and locator.url == CONTENT_PDF
+    third = attachment_locator(f"https://{ATTACHMENT_HOST}/{DOCUMENT}/attachment_3.TIF")
+    assert third.kind == "attachment" and third.attachment_index == 3 and third.extension == "tif"
+    assert not third.is_pdf
+
+
+@pytest.mark.parametrize(
+    "url,message",
+    [
+        (f"http://{ATTACHMENT_HOST}/{DOCUMENT}/content.pdf", "HTTPS"),
+        (f"https://downloads.regulations.gov.example.com/{DOCUMENT}/content.pdf", "HTTPS"),
+        (f"https://{ATTACHMENT_HOST}/{DOCUMENT}/content.pdf?key=abc", "HTTPS"),
+        (f"https://{ATTACHMENT_HOST}/{DOCUMENT}/content.pdf#page=2", "HTTPS"),
+        (f"https://{ATTACHMENT_HOST}/{DOCUMENT}", "must be /"),
+        (f"https://{ATTACHMENT_HOST}/{DOCUMENT}/a/content.pdf", "must be /"),
+        (f"https://{ATTACHMENT_HOST}/FAA 2016/content.pdf", "does not name a document"),
+        (f"https://{ATTACHMENT_HOST}/{DOCUMENT}/content", "neither content"),
+        (f"https://{ATTACHMENT_HOST}/{DOCUMENT}/attachment_0.pdf", "neither content"),
+        (f"https://{ATTACHMENT_HOST}/{DOCUMENT}/../secret.pdf", "must be /"),
+        (7, "HTTPS"),
+    ],
+)
+def test_locator_refusals_name_the_failed_check(url, message):
+    with pytest.raises(RegulationsGovAttachmentError, match=message):
+        attachment_locator(url)
+
+
+@pytest.mark.parametrize(
+    "record,message",
+    [
+        ({}, "omitted its attributes"),
+        ({"attributes": {"fileFormats": {}}}, "must be an array or null"),
+        ({"attributes": {"fileFormats": [{"fileUrl": CONTENT_PDF, "size": -1}]}}, "size must be"),
+        ({"attributes": {"fileFormats": [{"fileUrl": CONTENT_PDF, "format": 7}]}}, "format must be text"),
+        ({"attributes": {"fileFormats": ["x"]}}, "must be an object"),
+        ({"attributes": {"fileFormats": [{"fileUrl": "https://example.gov/a.pdf"}]}}, "HTTPS"),
+    ],
+)
+def test_declaration_refusals_name_the_failed_check(record, message):
+    with pytest.raises(RegulationsGovAttachmentError, match=message):
+        declared_files(record)
+
+
+def test_pinned_pdf_is_proved_by_media_type_magic_final_url_and_declared_size():
+    declared = DeclaredFile(attachment_locator(CONTENT_PDF), "pdf", len(PDF))
+    transport = Transport(pdf_response())
+    with RegulationsGovAttachmentAcquirer(budget=FILE_BUDGET, transport=transport) as source:
+        result = source.acquire_pdf(declared)
+    assert result.capture.body == PDF and result.capture.byte_size == 2620
+    assert result.sha256 == "sha256:f4494ea77d0f8a0ec0b6e7f64e20c6ffe6c53d3be47cd59245f42f74036a7fc0"
+    assert PDF.startswith(b"%PDF-") and result.declared_size == 2620
+    assert result.request_count == 1 and result.budget == FILE_BUDGET
+    # The host is keyless and needs the browser agent; both were verified live.
+    assert "x-api-key" not in transport.calls[0].headers
+    assert transport.calls[0].headers["user-agent"] == BROWSER_USER_AGENT
+
+
+@pytest.mark.parametrize(
+    "answer,message",
+    [
+        (pdf_response(b"<!DOCTYPE HTML><html>403</html>"), "PDF- magic"),
+        (pdf_response(b"\xd0\xcf\x11\xe0not a pdf"), "%PDF- magic"),
+        (pdf_response(PDF, content_type="text/html"), "Content-Type differs"),
+        (pdf_response(PDF[:-1]), "differs from the size the publisher declared"),
+    ],
+)
+def test_attachment_body_refusals_name_the_failed_check(answer, message):
+    declared = DeclaredFile(attachment_locator(CONTENT_PDF), "pdf", len(PDF))
+    transport = Transport(answer)
+    with (
+        RegulationsGovAttachmentAcquirer(budget=FILE_BUDGET, transport=transport) as source,
+        pytest.raises(RegulationsGovAttachmentError) as raised,
+    ):
+        source.acquire_pdf(declared)
+    assert message in str(raised.value)
+    assert raised.value.refused_response.response_bytes is not None
+    assert raised.value.regulations_gov_attachment_acquisition["documentId"] == DOCUMENT
+
+
+def test_the_host_403_aborts_the_capture_and_never_establishes_absence():
+    # Both of this host's 403s -- a rejected client and a file that is not there --
+    # abort without retaining bytes, so neither can be read as a zero.
+    transport = Transport(pdf_response(b"<html>919-byte block page</html>", 403, content_type="text/html"))
+    with (
+        RegulationsGovAttachmentAcquirer(budget=FILE_BUDGET, transport=transport) as source,
+        pytest.raises(CredentialRefusedError) as raised,
+    ):
+        source.acquire_pdf(attachment_locator(CONTENT_PDF))
+    assert not hasattr(raised.value, "capture")
+    gone = Transport(pdf_response(b"", 410))
+    with (
+        RegulationsGovAttachmentAcquirer(budget=FILE_BUDGET, transport=gone) as source,
+        pytest.raises(RegulationsGovAttachmentUnavailableError) as missing,
+    ):
+        source.acquire_pdf(attachment_locator(CONTENT_PDF))
+    assert missing.value.capture.status_code == 410
+
+
+def test_non_pdf_and_oversized_declarations_refuse_before_a_request_is_spent():
+    tif = attachment_locator(f"https://{ATTACHMENT_HOST}/{DOCUMENT}/attachment_1.tif")
+    transport = Transport()
+    with RegulationsGovAttachmentAcquirer(budget=FILE_BUDGET, transport=transport) as source:
+        with pytest.raises(RegulationsGovAttachmentError, match="names another format"):
+            source.acquire_pdf(tif)
+        with pytest.raises(RegulationsGovAttachmentError, match="larger than the capture byte bound"):
+            source.acquire_pdf(DeclaredFile(attachment_locator(CONTENT_PDF), "pdf", DEFAULT_MAX_ATTACHMENT_BYTES + 1))
+        with pytest.raises(TypeError):
+            source.acquire_pdf(CONTENT_PDF)
+    assert transport.calls == []
+
+
+def test_budget_and_client_configuration_are_explicit():
+    for fields in ({"max_requests": 0}, {"max_bytes": MAX_ATTACHMENT_BYTES + 1}, {"timeout_seconds": 0}):
+        with pytest.raises(ValueError):
+            AttachmentBudget(
+                **{
+                    "max_requests": 3,
+                    "max_bytes": 4096,
+                    "timeout_seconds": 7,
+                    "min_request_interval_seconds": 0,
+                    **fields,
+                }
+            )
+    with pytest.raises(TypeError):
+        RegulationsGovAttachmentAcquirer(budget=(3, 4096, 7, 0))
+    with pytest.raises(ValueError, match="user_agent"):
+        RegulationsGovAttachmentAcquirer(budget=FILE_BUDGET, user_agent=" ")
+    with pytest.raises(ValueError, match="requires an explicit API key"):
+        RegulationsGovApiReader(budget=BUDGET, api_key=None)
+
+
+def test_the_list_page_is_a_frozen_observation():
+    listing = read_document_list_page(_page(LISTING), requested_page_number=1)
+    assert isinstance(listing, DocumentListPage)
+    with pytest.raises(AttributeError):
+        listing.total_elements = 0

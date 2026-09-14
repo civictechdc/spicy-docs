@@ -1,0 +1,47 @@
+{
+  "data" : [ {
+    "id" : "0900006481f8105f",
+    "type" : "attachments",
+    "links" : {
+      "self" : "https://api.regulations.gov/v4/attachments/0900006481f8105f"
+    },
+    "attributes" : {
+      "agencyNote" : null,
+      "authors" : null,
+      "docAbstract" : null,
+      "docOrder" : 1,
+      "fileFormats" : [ {
+        "fileUrl" : "https://downloads.regulations.gov/FAA-2016-6907-0001/attachment_1.docx",
+        "format" : "docx",
+        "size" : 168729
+      }, {
+        "fileUrl" : "https://downloads.regulations.gov/FAA-2016-6907-0001/attachment_1.pdf",
+        "format" : "pdf",
+        "size" : 384005
+      } ],
+      "modifyDate" : "2016-05-13T10:59:51Z",
+      "publication" : null,
+      "restrictReason" : null,
+      "restrictReasonType" : null,
+      "title" : "Rank Investigation and Protection, Inc. - Exemption/Rulemaking"
+    }
+  }, {
+    "id" : "0900006481f8105e",
+    "type" : "attachments",
+    "links" : {
+      "self" : "https://api.regulations.gov/v4/attachments/0900006481f8105e"
+    },
+    "attributes" : {
+      "agencyNote" : null,
+      "authors" : null,
+      "docAbstract" : null,
+      "docOrder" : 1,
+      "fileFormats" : null,
+      "modifyDate" : "2016-05-13T10:59:51Z",
+      "publication" : null,
+      "restrictReason" : null,
+      "restrictReasonType" : "Confidential Business Information",
+      "title" : "Rank Investigation and Protection, Inc. - Steven Rank - Appendix A-G Confidential Information ver 2.0"
+    }
+  } ]
+}

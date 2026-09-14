@@ -1,0 +1,347 @@
+{
+  "data" : [ {
+    "type" : "documents",
+    "id" : "FDA-2026-P-10231-0005",
+    "attributes" : {
+      "agencyId" : "FDA",
+      "objectId" : "09000064b94ba88a",
+      "frDocNum" : null,
+      "documentType" : "Supporting & Related Material",
+      "withdrawn" : false,
+      "highlightedContent" : "",
+      "commentEndDate" : null,
+      "commentStartDate" : null,
+      "lastModifiedDate" : "2026-09-02T23:52:15Z",
+      "openForComment" : false,
+      "withinCommentPeriod" : false,
+      "postedDate" : "2026-09-02T04:00:00Z",
+      "title" : "Reference 5 (Ettleson)",
+      "docketId" : "FDA-2026-P-10231",
+      "subtype" : "Background Material",
+      "allowLateComments" : false
+    }
+  }, {
+    "type" : "documents",
+    "id" : "FDA-2026-P-10231-0012",
+    "attributes" : {
+      "agencyId" : "FDA",
+      "objectId" : "09000064b94ba8f4",
+      "frDocNum" : null,
+      "documentType" : "Supporting & Related Material",
+      "withdrawn" : false,
+      "highlightedContent" : "",
+      "commentEndDate" : null,
+      "commentStartDate" : null,
+      "lastModifiedDate" : "2026-09-02T23:52:36Z",
+      "openForComment" : false,
+      "withinCommentPeriod" : false,
+      "postedDate" : "2026-09-02T04:00:00Z",
+      "title" : "Reference 15",
+      "docketId" : "FDA-2026-P-10231",
+      "subtype" : "Background Material",
+      "allowLateComments" : false
+    }
+  }, {
+    "type" : "documents",
+    "id" : "FDA-2026-P-10231-0023",
+    "attributes" : {
+      "agencyId" : "FDA",
+      "objectId" : "09000064b94bcd21",
+      "frDocNum" : null,
+      "documentType" : "Supporting & Related Material",
+      "withdrawn" : false,
+      "highlightedContent" : "",
+      "commentEndDate" : null,
+      "commentStartDate" : null,
+      "lastModifiedDate" : "2026-09-02T23:53:16Z",
+      "openForComment" : false,
+      "withinCommentPeriod" : false,
+      "postedDate" : "2026-09-02T04:00:00Z",
+      "title" : "Reference 72",
+      "docketId" : "FDA-2026-P-10231",
+      "subtype" : "Background Material",
+      "allowLateComments" : false
+    }
+  }, {
+    "type" : "documents",
+    "id" : "FDA-2026-P-10231-0030",
+    "attributes" : {
+      "agencyId" : "FDA",
+      "objectId" : "09000064b94bcd9a",
+      "frDocNum" : null,
+      "documentType" : "Supporting & Related Material",
+      "withdrawn" : false,
+      "highlightedContent" : "",
+      "commentEndDate" : null,
+      "commentStartDate" : null,
+      "lastModifiedDate" : "2026-09-02T23:53:47Z",
+      "openForComment" : false,
+      "withinCommentPeriod" : false,
+      "postedDate" : "2026-09-02T04:00:00Z",
+      "title" : "Reference 85",
+      "docketId" : "FDA-2026-P-10231",
+      "subtype" : "Background Material",
+      "allowLateComments" : false
+    }
+  }, {
+    "type" : "documents",
+    "id" : "FDA-2026-P-10231-0032",
+    "attributes" : {
+      "agencyId" : "FDA",
+      "objectId" : "09000064b94bcd9c",
+      "frDocNum" : null,
+      "documentType" : "Supporting & Related Material",
+      "withdrawn" : false,
+      "highlightedContent" : "",
+      "commentEndDate" : null,
+      "commentStartDate" : null,
+      "lastModifiedDate" : "2026-09-02T23:53:52Z",
+      "openForComment" : false,
+      "withinCommentPeriod" : false,
+      "postedDate" : "2026-09-02T04:00:00Z",
+      "title" : "Reference 111",
+      "docketId" : "FDA-2026-P-10231",
+      "subtype" : "Background Material",
+      "allowLateComments" : false
+    }
+  } ],
+  "meta" : {
+    "aggregations" : {
+      "documentType" : [ {
+        "docCount" : 84,
+        "label" : "Supporting & Related Material"
+      }, {
+        "docCount" : 54,
+        "label" : "Notice"
+      }, {
+        "docCount" : 45,
+        "label" : "Other"
+      }, {
+        "docCount" : 4,
+        "label" : "Proposed Rule"
+      }, {
+        "docCount" : 4,
+        "label" : "Rule"
+      } ],
+      "subtype" : [ {
+        "docCount" : 36,
+        "label" : "Background Material"
+      }, {
+        "docCount" : 19,
+        "label" : "Exhibits"
+      }, {
+        "docCount" : 8,
+        "label" : "Acknowledgement Letter/Receipt"
+      }, {
+        "docCount" : 8,
+        "label" : "Decision"
+      }, {
+        "docCount" : 6,
+        "label" : "Petition(s)"
+      }, {
+        "docCount" : 5,
+        "label" : "Guidance"
+      }, {
+        "docCount" : 5,
+        "label" : "Notice of Availability"
+      }, {
+        "docCount" : 5,
+        "label" : "Supplement"
+      }, {
+        "docCount" : 4,
+        "label" : "Letter(s)"
+      }, {
+        "docCount" : 4,
+        "label" : "Response(s)"
+      }, {
+        "docCount" : 3,
+        "label" : "Amendment"
+      }, {
+        "docCount" : 3,
+        "label" : "Petition"
+      }, {
+        "docCount" : 2,
+        "label" : "Letter"
+      }, {
+        "docCount" : 1,
+        "label" : "Announcement"
+      }, {
+        "docCount" : 1,
+        "label" : "Application for Variance (VAR)"
+      }, {
+        "docCount" : 1,
+        "label" : "Approval for Variance (VRA)"
+      }, {
+        "docCount" : 1,
+        "label" : "Citizen Petition"
+      }, {
+        "docCount" : 1,
+        "label" : "Determinations"
+      }, {
+        "docCount" : 1,
+        "label" : "Grant of Petition"
+      }, {
+        "docCount" : 1,
+        "label" : "ICR Supporting Statement"
+      }, {
+        "docCount" : 1,
+        "label" : "Notice of Action Taken"
+      }, {
+        "docCount" : 1,
+        "label" : "Notice of Proposed Rulemaking (NPRM)"
+      }, {
+        "docCount" : 1,
+        "label" : "Request"
+      }, {
+        "docCount" : 1,
+        "label" : "Request for Comment"
+      }, {
+        "docCount" : 1,
+        "label" : "Request for Extension"
+      } ],
+      "withinCommentPeriod" : [ {
+        "docCount" : 15,
+        "label" : "true"
+      }, {
+        "docCount" : 176,
+        "label" : "false"
+      } ],
+      "agencyId" : [ {
+        "docCount" : 55,
+        "value" : "FDA"
+      }, {
+        "docCount" : 36,
+        "value" : "FAA"
+      }, {
+        "docCount" : 19,
+        "value" : "OSHA"
+      }, {
+        "docCount" : 17,
+        "value" : "NRC"
+      }, {
+        "docCount" : 14,
+        "value" : "SEC"
+      }, {
+        "docCount" : 8,
+        "value" : "EPA"
+      }, {
+        "docCount" : 6,
+        "value" : "FERC"
+      }, {
+        "docCount" : 5,
+        "value" : "DOD"
+      }, {
+        "docCount" : 5,
+        "value" : "FWS"
+      }, {
+        "docCount" : 4,
+        "value" : "FAS"
+      }, {
+        "docCount" : 3,
+        "value" : "ITA"
+      }, {
+        "docCount" : 3,
+        "value" : "USCG"
+      }, {
+        "docCount" : 2,
+        "value" : "PHMSA"
+      }, {
+        "docCount" : 2,
+        "value" : "USPS"
+      }, {
+        "docCount" : 1,
+        "value" : "ARTS"
+      }, {
+        "docCount" : 1,
+        "value" : "CMS"
+      }, {
+        "docCount" : 1,
+        "value" : "DOE"
+      }, {
+        "docCount" : 1,
+        "value" : "DOS"
+      }, {
+        "docCount" : 1,
+        "value" : "DOT"
+      }, {
+        "docCount" : 1,
+        "value" : "ERS"
+      }, {
+        "docCount" : 1,
+        "value" : "FHWA"
+      }, {
+        "docCount" : 1,
+        "value" : "FSIS"
+      }, {
+        "docCount" : 1,
+        "value" : "MMC"
+      }, {
+        "docCount" : 1,
+        "value" : "STB"
+      }, {
+        "docCount" : 1,
+        "value" : "USCBP"
+      }, {
+        "docCount" : 1,
+        "value" : "USTR"
+      } ],
+      "commentEndDate" : [ {
+        "label" : "Next 30 Days",
+        "fromDate" : "2026-09-14 00:00:00",
+        "toDate" : "2026-10-13 23:59:58",
+        "docCount" : 5
+      }, {
+        "label" : "Next 90 Days",
+        "fromDate" : "2026-09-14 00:00:00",
+        "toDate" : "2026-12-12 23:59:58",
+        "docCount" : 15
+      } ],
+      "postedDate" : [ {
+        "label" : "Today",
+        "fromDate" : "2026-09-14 00:00:00",
+        "toDate" : "2026-09-14 23:59:59",
+        "docCount" : 358
+      }, {
+        "label" : "Last 3 Days",
+        "fromDate" : "2026-09-12 00:00:00",
+        "toDate" : "2026-09-14 23:59:59",
+        "docCount" : 358
+      }, {
+        "label" : "Last 7 Days",
+        "fromDate" : "2026-09-08 00:00:00",
+        "toDate" : "2026-09-14 23:59:59",
+        "docCount" : 1672
+      }, {
+        "label" : "Last 15 Days",
+        "fromDate" : "2026-08-31 00:00:00",
+        "toDate" : "2026-09-14 23:59:59",
+        "docCount" : 3181
+      }, {
+        "label" : "Last 30 Days",
+        "fromDate" : "2026-08-16 00:00:00",
+        "toDate" : "2026-09-14 23:59:59",
+        "docCount" : 6935
+      }, {
+        "label" : "Last 90 Days",
+        "fromDate" : "2026-06-17 00:00:00",
+        "toDate" : "2026-09-14 23:59:59",
+        "docCount" : 23771
+      } ]
+    },
+    "filters" : {
+      "postedDate" : {
+        "fromDate" : "2026-09-02",
+        "toDate" : "2026-09-02"
+      }
+    },
+    "hasNextPage" : true,
+    "hasPreviousPage" : false,
+    "numberOfElements" : 5,
+    "pageNumber" : 1,
+    "pageSize" : 5,
+    "totalElements" : 191,
+    "totalPages" : 39,
+    "firstPage" : true,
+    "lastPage" : false
+  }
+}

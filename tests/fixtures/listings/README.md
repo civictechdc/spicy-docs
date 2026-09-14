@@ -30,3 +30,21 @@ Second round, captured 2026-09-14 for the remaining routes (USAspending, LDA and
 | `courtlistener-search-recap.json` | GET https://www.courtlistener.com/api/rest/v4/search/ | 51,424 | `325359abda001d8bf57682e2bca882d8374c6f37326c1129fb1bd1641a7adeeb` | Complete, unchanged response; 20 results. |
 | `courtlistener-search-opinions.json` | GET https://www.courtlistener.com/api/rest/v4/search/ | 48,099 | `4b1df8c2611e95dc1ad8460d29b94602f1b65d02d0bac900b337698bdb147b59` | Complete, unchanged response; 20 results. |
 | `sam-entities-p1.json` | GET https://api.sam.gov/entity-information/v4/entities | 14,826 | `7acdb03875789da24a7b06522ba9eb4d9c008261d39832fb4c3e246ae2f93b56` | Complete, unchanged response; the publisher's links carry an `api_key=REPLACE_WITH_API_KEY` placeholder. |
+
+Third round, captured 2026-09-14 for the keyed regulations.gov API v4 document
+routes (api.data.gov key as `X-Api-Key`; the attachment host takes no key):
+
+| Fixture | Request | Bytes | SHA-256 | Transformation |
+| --- | --- | --- | --- | --- |
+| `regulations-gov-documents-p1.json` | GET https://api.regulations.gov/v4/documents | 9,029 | `abead3878398e785614750bc31e523641406f2aebad24edb2425bc3629b06c22` | Complete, unchanged response to `filter[postedDate][ge]=2026-09-02&filter[postedDate][le]=2026-09-02&page[size]=5&page[number]=1&sort=postedDate`; 5 of a declared 191. |
+| `regulations-gov-document-detail.json` | GET https://api.regulations.gov/v4/documents/FAA-2016-6907-0001 | 2,826 | `245080749e578addcb37cef2970a3cae639ff79baad30919dc920e7b1a614fa3` | Complete, unchanged response. |
+| `regulations-gov-attachments.json` | GET https://api.regulations.gov/v4/documents/FAA-2016-6907-0001/attachments | 1,479 | `089d4a805739474abd68a87ca19878a428c2144ca842ca435b739d19574b21ed` | Complete, unchanged response; two attachments, the second withheld with `fileFormats: null`. |
+
+The list pages carry no `links` object: the two top-level keys are `data` and
+`meta`, and the continuation is `meta.hasNextPage` with the current
+`meta.pageNumber`. `page[size]` is 5 to 250 and `page[number]` at most 40, all
+three quoted from the publisher's own HTTP 400 bodies. `meta.totalElements` is
+the query's size, not what a walk can reach: one query declared 57,383 while
+`totalPages` stayed at 40 for both `page[size]=250` and `page[size]=100`.
+Headers, the refused 400/403/404 bodies and the rate-limit readings are in
+`corpora/supply-2026-09-02/receipts/port-P05-regulations-gov-2026-09-14/`.
