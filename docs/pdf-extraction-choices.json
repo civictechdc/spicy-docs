@@ -1,0 +1,1052 @@
+{
+  "purpose": "Documented PDF processing choices; not an executable SpicyDocs configuration or routing policy",
+  "reviewed_at": "2026-09-14",
+  "automatic_selection": false,
+  "evidence_root": "~/Work/corpora/supply-2026-09-02/receipts",
+  "evidence": {
+    "comparison": {
+      "directory": "fec-pdf-ocr-comparison-2026-09-13",
+      "report": "comparison-findings.md",
+      "report_sha256": "c745507d79820603aa97ebf1202ba2fc3cf7435130e53af9eb97bdabb9e828f8"
+    },
+    "hybrid": {
+      "directory": "fec-pdf-hybrid-2026-09-13",
+      "report": "findings.md",
+      "report_sha256": "e039e6d1b2ed152d285a2fade5e5d223e5c6fbcd538f1439a7f91cf10520126f"
+    },
+    "layout": {
+      "directory": "fec-pdf-layout-query-2026-09-14",
+      "report": "findings.md",
+      "report_sha256": "c9497cf9e7405d84d04818e0010e422d514a3e67b6ac621a49570a2f4fd40742"
+    },
+    "routing": {
+      "directory": "fec-pdf-routing-holdout-2026-09-14",
+      "report": "findings.md",
+      "report_sha256": "66d3c80b4d927c4ad1b4a663d84b4f38f2de919d9f905cba72faf436b7795f5e"
+    },
+    "fusion": {
+      "directory": "fec-pdf-input-fusion-2026-09-14",
+      "report": "findings.md",
+      "report_sha256": "79ca94c44eaffc51107561c723d155c3305a9893572d3b2fe017590298f92e8a"
+    },
+    "regions": {
+      "directory": "fec-pdf-regions-2026-09-14",
+      "report": "findings.md",
+      "report_sha256": "d535b22af1d5b36e3b442d7ef192487607425f667331b7c7239b25daccc2a05a"
+    },
+    "multiturn": {
+      "directory": "fec-pdf-multiturn-2026-09-14",
+      "report": "findings.md",
+      "report_sha256": "4aa67b5232757ee21c92137e48de1be9d124ba8b33ca2906d31e3a7ce21166f2"
+    },
+    "open_models": {
+      "directory": "fec-pdf-open-models-2026-09-14",
+      "report": "findings.md",
+      "report_sha256": "0aca0ffd3806880e01512e78d10520521590e7826f2666b8d5ca486de9bd9621"
+    }
+  },
+  "selection_example": {
+    "status": "Illustrative future configuration; not consumed by a runtime",
+    "source_family": "fec.legal.advisory_opinion",
+    "document_type": "correspondence",
+    "document_choice": "native-pymupdf",
+    "page_overrides": [
+      {
+        "page": 1,
+        "choice": "native-region-vision",
+        "regions": "Explicit reviewed rectangles attached to this source page"
+      }
+    ],
+    "automatic_selection": false,
+    "precedence": [
+      "explicit page or region choice",
+      "document choice",
+      "source-family preference"
+    ]
+  },
+  "options": [
+    {
+      "id": "native-pymupdf",
+      "group": "main",
+      "engine": "PyMuPDF",
+      "tested_version": "1.28.2",
+      "fit": [
+        "native prose",
+        "native received stamps",
+        "positioned text"
+      ],
+      "tested_settings": {
+        "outputs": [
+          "page.get_text()",
+          "page.get_text('words')",
+          "page.get_text('dict')"
+        ],
+        "ocr": false
+      },
+      "retain": [
+        "raw page text",
+        "native word or line boxes",
+        "original PDF"
+      ],
+      "limits": [
+        "Can miss raster and vector lettering",
+        "Geometric text sorting is not verified form structure",
+        "Current deployment licensing must be checked separately"
+      ],
+      "evidence_refs": [
+        "comparison:outputs/historic-pymupdf/run-1/configuration.json",
+        "regions:experiment.py"
+      ],
+      "api": {
+        "strategy": "NativeText()",
+        "extras": [
+          "pdf"
+        ],
+        "status": "implemented; source-specific fidelity remains separate"
+      }
+    },
+    {
+      "id": "native-poppler",
+      "group": "main",
+      "engine": "Poppler pdftotext",
+      "fit": [
+        "native prose",
+        "command-line native extraction",
+        "layout whitespace"
+      ],
+      "tested_settings": {
+        "variants": [
+          "pdftotext input.pdf -",
+          "pdftotext -layout input.pdf -"
+        ]
+      },
+      "retain": [
+        "raw text per page",
+        "command and binary version",
+        "original PDF"
+      ],
+      "limits": [
+        "No raster text recovery",
+        "Spacing does not establish column or amount bindings"
+      ],
+      "evidence_refs": [
+        "comparison:runs/poppler-1.json",
+        "comparison:runs/poppler-layout-1.json",
+        "comparison:environment-receipt.json"
+      ]
+    },
+    {
+      "id": "ocr-rapidocr",
+      "group": "main",
+      "engine": "rapidocr-onnxruntime",
+      "tested_version": "1.4.4",
+      "fit": [
+        "scanned prose",
+        "separately retained OCR observations",
+        "bounded image text"
+      ],
+      "tested_settings": {
+        "dpi": 200,
+        "intra_op_num_threads": 4,
+        "inter_op_num_threads": 1
+      },
+      "retain": [
+        "raw text",
+        "quadrilaterals",
+        "confidence",
+        "render and page mapping"
+      ],
+      "limits": [
+        "Whole lines and negations can disappear",
+        "Decimal and checkbox errors",
+        "OCR disagreement does not prove native incompleteness"
+      ],
+      "evidence_refs": [
+        "regions:experiment.py",
+        "regions:outputs/local/run-1/receipt.json",
+        "layout:typed-assessment.json"
+      ],
+      "api": {
+        "strategy": "FullPage(RapidOCR())",
+        "extras": [
+          "pdf",
+          "pdf-rapidocr"
+        ],
+        "status": "implemented; source-specific fidelity remains separate"
+      }
+    },
+    {
+      "id": "ocr-apple-vision",
+      "group": "main",
+      "engine": "Apple Vision through ocrmac",
+      "tested_version": "ocrmac 1.0.1",
+      "fit": [
+        "local OCR on macOS",
+        "scanned prose",
+        "alternative OCR observations"
+      ],
+      "tested_settings": {
+        "dpi": 200,
+        "recognition_level": "accurate",
+        "language_preference": [
+          "en-US"
+        ]
+      },
+      "retain": [
+        "raw observations",
+        "boxes and engine coordinate convention",
+        "render and page mapping"
+      ],
+      "limits": [
+        "macOS platform requirement",
+        "Amount and field-order errors remain",
+        "This is OCR, not an Apple generative model"
+      ],
+      "evidence_refs": [
+        "comparison:worker.py",
+        "comparison:outputs/apple-vision/run-1/configuration.json",
+        "comparison:runs/apple-vision-1.json"
+      ],
+      "api": {
+        "strategy": "FullPage(AppleVision())",
+        "extras": [
+          "pdf",
+          "pdf-apple"
+        ],
+        "status": "implemented; source-specific fidelity remains separate"
+      }
+    },
+    {
+      "id": "vision-gemini",
+      "group": "main",
+      "engine": "Gemini API",
+      "tested_model": "gemini-3.8-flash",
+      "fit": [
+        "dense forms",
+        "checkboxes and tables",
+        "scanned bodies",
+        "vector lettering"
+      ],
+      "tested_settings": {
+        "dpi": 200,
+        "part_order": [
+          "image",
+          "prompt"
+        ],
+        "maxOutputTokens": 8192,
+        "thinkingConfig": {
+          "thinkingLevel": "low"
+        },
+        "auxiliary_text": false
+      },
+      "retain": [
+        "raw request without credentials",
+        "raw response",
+        "usage and finish status",
+        "page image",
+        "derived transcription"
+      ],
+      "limits": [
+        "Incorrect money, blank cells and checkbox states observed",
+        "Network and provider costs",
+        "Page coordinates do not provide token-level grounding"
+      ],
+      "evidence_refs": [
+        "regions:experiment.py",
+        "regions:transcription-prompt.txt",
+        "regions:assessment.json",
+        "regions:usage.json"
+      ],
+      "api": {
+        "strategy": "FullPage(Gemini(client))",
+        "extras": [
+          "pdf",
+          "pdf-gemini"
+        ],
+        "status": "implemented; source-specific fidelity remains separate"
+      }
+    },
+    {
+      "id": "native-region-ocr",
+      "group": "main",
+      "engine": "Native text with regional OCR composition",
+      "uses": [
+        "native-pymupdf",
+        "ocr-rapidocr"
+      ],
+      "fit": [
+        "native prose with image text",
+        "logos",
+        "stamps and footers"
+      ],
+      "tested_settings": {
+        "selection": "manual",
+        "dpi": 200,
+        "crop": "exact subarray of full render",
+        "composition": "replace only native lines wholly inside region; retain both observations"
+      },
+      "retain": [
+        "original native lines",
+        "OCR boxes",
+        "replaced native lines",
+        "crop-to-page coordinates",
+        "observation differences"
+      ],
+      "limits": [
+        "Footer URL corruption observed",
+        "Interleaved header order",
+        "Manual selections can miss visible content",
+        "Apple OCR in this combination has not been tested"
+      ],
+      "evidence_refs": [
+        "regions:cases.json",
+        "regions:experiment.py",
+        "regions:assessment.json",
+        "regions:decision.json"
+      ],
+      "api": {
+        "strategy": "NativeWithRegions(RapidOCR(), regions)",
+        "extras": [
+          "pdf",
+          "pdf-rapidocr"
+        ],
+        "status": "implemented; source-specific fidelity remains separate"
+      }
+    },
+    {
+      "id": "native-region-vision",
+      "group": "main",
+      "engine": "Native text with regional vision composition",
+      "uses": [
+        "native-pymupdf",
+        "vision-gemini"
+      ],
+      "fit": [
+        "native prose with image text",
+        "selected complex regions"
+      ],
+      "tested_settings": {
+        "selection": "manual",
+        "dpi": 200,
+        "crop": "exact subarray of full render",
+        "composition": "preserve native outside region and retain replaced native observations"
+      },
+      "retain": [
+        "native lines",
+        "raw regional model response",
+        "region-to-page coordinates",
+        "observation differences",
+        "composed body"
+      ],
+      "limits": [
+        "Unchecked box omission observed",
+        "Drawn page counter outside manual crop omitted",
+        "Automatic selection gate failed",
+        "Lower API spend did not mean faster requests on active pages"
+      ],
+      "evidence_refs": [
+        "regions:cases.json",
+        "regions:assessment.json",
+        "regions:decision.json",
+        "regions:cost-comparison.json"
+      ],
+      "api": {
+        "strategy": "NativeWithRegions(Gemini(client), regions)",
+        "extras": [
+          "pdf",
+          "pdf-gemini"
+        ],
+        "status": "implemented; source-specific fidelity remains separate"
+      }
+    },
+    {
+      "id": "docling-json",
+      "group": "main",
+      "engine": "Docling PDF pipeline with RapidOCR",
+      "tested_version": "2.126.0",
+      "fit": [
+        "structured document consumers",
+        "document hierarchy",
+        "table and layout comparisons"
+      ],
+      "tested_settings": {
+        "generate_parsed_pages": true,
+        "do_ocr": true,
+        "do_table_structure": true,
+        "generate_page_images": true,
+        "generate_picture_images": true,
+        "force_full_page_ocr_variants": [
+          false,
+          true
+        ],
+        "lang": [
+          "en"
+        ],
+        "export_variants": [
+          "default",
+          "all ContentLayer values",
+          "traverse_pictures=True",
+          "both"
+        ]
+      },
+      "retain": [
+        "full document JSON",
+        "parsed pages",
+        "raw cells",
+        "page and picture images",
+        "separate exports"
+      ],
+      "limits": [
+        "Recognition, classification and export have separate omissions",
+        "Incorrect financial relationships",
+        "Table-mode switches did not engage tables in the selected follow-up forms"
+      ],
+      "evidence_refs": [
+        "hybrid:outputs/docling-full/run-2/configuration.json",
+        "hybrid:outputs/docling-regional/run-2/configuration.json",
+        "hybrid:export_replay.py",
+        "hybrid:table-switch-comparison.json"
+      ]
+    },
+    {
+      "id": "docling-vlm-gemini",
+      "group": "conditional",
+      "engine": "Docling VlmPipeline with Gemini",
+      "tested_model": "gemini-3.8-flash",
+      "fit": [
+        "existing Docling workflows needing remote visual conversion"
+      ],
+      "tested_settings": {
+        "response_format": "MARKDOWN",
+        "scale": "200/72",
+        "max_tokens": 8192,
+        "reasoning_effort": "low",
+        "concurrency": 1,
+        "historical_temperature": 0
+      },
+      "retain": [
+        "raw VLM response",
+        "Docling JSON",
+        "render",
+        "converted Markdown"
+      ],
+      "limits": [
+        "Converted Markdown can merge a blank-field boundary",
+        "Historical temperature was sent but its effect was not established; do not assume current API support",
+        "Native/OCR hints were not part of this Docling mode"
+      ],
+      "evidence_refs": [
+        "hybrid:docling_arms.py",
+        "hybrid:outputs/docling-api/run-1/configuration.json",
+        "hybrid:blind-vlm-late/resolved.json"
+      ]
+    },
+    {
+      "id": "marker-llm",
+      "group": "conditional",
+      "engine": "Marker with Gemini correction",
+      "tested_version": "Marker 2.0.0; Surya 0.22.1",
+      "fit": [
+        "existing Marker workflow with source-specific correction gains"
+      ],
+      "tested_settings": {
+        "mode": "fast",
+        "use_llm": true,
+        "gemini_model_name": "gemini-3.8-flash"
+      },
+      "retain": [
+        "raw layout and model outputs",
+        "processor requests",
+        "JSON",
+        "images",
+        "final export"
+      ],
+      "limits": [
+        "One loan improved while debt-form labels still disappeared",
+        "Repeated text and source header loss",
+        "Local server/model assets and multiple correction calls",
+        "Balanced+LLM and forced-OCR+LLM were not tested"
+      ],
+      "evidence_refs": [
+        "hybrid:marker_arms.py",
+        "hybrid:outputs/marker-llm/run-1/configuration.json",
+        "hybrid:blind-marker/resolved.json"
+      ]
+    },
+    {
+      "id": "liteparse",
+      "group": "conditional",
+      "engine": "LiteParse",
+      "tested_version": "2.14.4",
+      "fit": [
+        "local structured parsing where JSON annotations suit the consumer"
+      ],
+      "tested_settings": {
+        "dpi": 200,
+        "ocr": "default enabled",
+        "workers": 4,
+        "retain_headers_and_footers": true,
+        "outputs": [
+          "JSON",
+          "Markdown"
+        ]
+      },
+      "retain": [
+        "rich JSON",
+        "page text and geometry",
+        "separate Markdown"
+      ],
+      "limits": [
+        "Markdown loses some text retained in JSON",
+        "Identifier, date and form relationship errors",
+        "Original timing included separate export executions"
+      ],
+      "evidence_refs": [
+        "comparison:worker.py",
+        "comparison:outputs/liteparse/run-1/configuration.json",
+        "comparison:export-signal.json"
+      ]
+    },
+    {
+      "id": "vision-openai-mini",
+      "group": "conditional",
+      "engine": "OpenAI Responses API",
+      "tested_model": "gpt-5.4-mini-2026-03-17",
+      "fit": [
+        "alternate provider comparison on a new source class"
+      ],
+      "tested_settings": {
+        "dpi": 200,
+        "image_detail": "high",
+        "part_order": [
+          "prompt",
+          "image"
+        ],
+        "reasoning_effort": "none",
+        "max_output_tokens": 8192,
+        "store": false
+      },
+      "retain": [
+        "raw request without credentials",
+        "raw response",
+        "usage",
+        "source image",
+        "transcription"
+      ],
+      "limits": [
+        "Changed amounts and checkbox/field relationships",
+        "Not established as better overall",
+        "Image-first and regional variants for this model remain untested"
+      ],
+      "evidence_refs": [
+        "comparison:worker.py",
+        "comparison:outputs/gpt-mini/run-1/configuration.json",
+        "comparison:blind-cloud/repeat-notes.md"
+      ]
+    },
+    {
+      "id": "vision-openai",
+      "group": "conditional",
+      "engine": "OpenAI Responses API",
+      "tested_model": "gpt-5.5-2026-04-23",
+      "fit": [
+        "alternate model comparison on a new source class"
+      ],
+      "tested_settings": {
+        "dpi": 200,
+        "image_detail": "high",
+        "part_order": [
+          "prompt",
+          "image"
+        ],
+        "reasoning_effort": "none",
+        "max_output_tokens": 8192,
+        "store": false
+      },
+      "retain": [
+        "raw request without credentials",
+        "raw response",
+        "usage",
+        "source image",
+        "transcription"
+      ],
+      "limits": [
+        "Changed debt and decimal values across repeats",
+        "Higher tested API spend did not establish better fidelity",
+        "No region-combination result for this model"
+      ],
+      "evidence_refs": [
+        "comparison:worker.py",
+        "comparison:outputs/gpt-5.5/run-1/configuration.json",
+        "comparison:blind-cloud/repeat-notes.md"
+      ]
+    },
+    {
+      "id": "ocr-tesseract",
+      "group": "conditional",
+      "engine": "Tesseract",
+      "fit": [
+        "conventional local OCR baseline",
+        "existing Tesseract deployments"
+      ],
+      "tested_settings": {
+        "dpi": 200,
+        "language": "eng",
+        "psm": 3
+      },
+      "retain": [
+        "text",
+        "TSV boxes and confidence",
+        "effective command and binary version",
+        "render"
+      ],
+      "limits": [
+        "Form line noise",
+        "Lost decimals and checkbox states",
+        "Other languages and segmentation modes not qualified here"
+      ],
+      "evidence_refs": [
+        "comparison:worker.py",
+        "comparison:runs/tesseract-1.json",
+        "comparison:environment-receipt.json"
+      ]
+    },
+    {
+      "id": "searchable-pdf-ocrmypdf",
+      "group": "conditional",
+      "engine": "OCRmyPDF",
+      "fit": [
+        "derived searchable PDF plus text sidecar required"
+      ],
+      "tested_settings": {
+        "variants": [
+          "--skip-text",
+          "--redo-ocr",
+          "--force-ocr"
+        ],
+        "output_type": "pdf",
+        "optimize": 0,
+        "jobs": 4,
+        "language": "eng"
+      },
+      "retain": [
+        "unchanged original PDF",
+        "derived PDF",
+        "OCR sidecar",
+        "command and versions"
+      ],
+      "limits": [
+        "Skip leaves mixed-page omissions",
+        "Force can damage correct native text",
+        "Searchability is not verified financial structure"
+      ],
+      "evidence_refs": [
+        "comparison:worker.py",
+        "comparison:runs/ocrmypdf-skip-1.json",
+        "comparison:runs/ocrmypdf-redo-1.json",
+        "comparison:runs/ocrmypdf-force-1.json"
+      ]
+    },
+    {
+      "id": "native-query-pdfquery",
+      "group": "conditional",
+      "engine": "PDFQuery/PDFMiner",
+      "tested_version": "PDFQuery 0.4.3; PDFMiner 20260107",
+      "fit": [
+        "query known native element geometry; source-specific mapping still requires qualification"
+      ],
+      "tested_settings": {
+        "resort_variants": [
+          true,
+          false
+        ]
+      },
+      "retain": [
+        "native element XML and coordinates",
+        "query settings",
+        "source PDF"
+      ],
+      "limits": [
+        "No OCR and no vector-letter recognition",
+        "Default resort incurred repeated spatial comparisons",
+        "resort=False changes ordering; do not claim full output equivalence"
+      ],
+      "evidence_refs": [
+        "layout:outputs/pdfquery/run-1/configuration.json",
+        "layout:outputs/profile-pdfquery/run-1/profile.json",
+        "layout:assessment.json"
+      ]
+    },
+    {
+      "id": "vision-multiturn-summary",
+      "group": "main",
+      "engine": "Gemini sequential page inspection with summaries",
+      "uses": [
+        "vision-gemini"
+      ],
+      "fit": [
+        "difficult forms and tables",
+        "complete-page visual inspection when selective crops miss content"
+      ],
+      "tested_settings": {
+        "model": "gemini-3.8-flash",
+        "thinking": "low",
+        "max_output_tokens": 8192,
+        "dpi": 200,
+        "strip_vertical_fractions": [
+          [
+            0,
+            0.4
+          ],
+          [
+            0.3,
+            0.7
+          ],
+          [
+            0.6,
+            1
+          ]
+        ],
+        "crop": "exact full-width pixel subarrays; no upscaling",
+        "final_output": "JSON transcription blocks; Markdown tables inside text; not canonical financial facts",
+        "sequence": [
+          "full-page overview",
+          "S1 summary",
+          "S2 summary",
+          "S3 summary",
+          "full-page revisit and final JSON"
+        ],
+        "history": "retain every image and original model Content including signatures; no history compaction"
+      },
+      "retain": [
+        "complete conversation",
+        "all intermediate summaries",
+        "raw final JSON",
+        "source page and strip coordinates",
+        "reference failures and uncertainties"
+      ],
+      "limits": [
+        "Best candidate in the selected multi-turn comparison; not a general accuracy benchmark",
+        "One final financial table lost column structure despite correct intermediate column labels",
+        "Summaries were not always cumulative; replacing history with the last summary is untested",
+        "More calls and higher cost than regional or single-call workflows",
+        "Gate passed for further evaluation, not production adoption"
+      ],
+      "evidence_refs": [
+        "multiturn:preregistration.md",
+        "multiturn:assessment.json",
+        "multiturn:stage-traces.json",
+        "multiturn:usage.json",
+        "multiturn:decision.json"
+      ],
+      "api": {
+        "strategy": "FullPage(Gemini(client, mode=\"multiturn\"))",
+        "extras": [
+          "pdf",
+          "pdf-gemini"
+        ],
+        "status": "implemented; source-specific fidelity remains separate"
+      }
+    },
+    {
+      "id": "vision-multiturn-records",
+      "group": "additional",
+      "engine": "Gemini sequential page inspection with detailed observations and summaries",
+      "uses": [
+        "vision-gemini"
+      ],
+      "fit": [
+        "workflows needing inspectable intermediate transcriptions",
+        "controlled comparison with summary-only intermediate outputs"
+      ],
+      "tested_settings": {
+        "model": "gemini-3.8-flash",
+        "thinking": "low",
+        "max_output_tokens": 8192,
+        "dpi": 200,
+        "strip_vertical_fractions": [
+          [
+            0,
+            0.4
+          ],
+          [
+            0.3,
+            0.7
+          ],
+          [
+            0.6,
+            1
+          ]
+        ],
+        "crop": "exact full-width pixel subarrays; no upscaling",
+        "final_output": "JSON transcription blocks; Markdown tables inside text; not canonical financial facts",
+        "sequence": [
+          "full-page overview",
+          "S1 detailed observations and summary",
+          "S2 detailed observations and summary",
+          "S3 detailed observations and summary",
+          "full-page revisit and final JSON"
+        ],
+        "history": "retain every image and original model Content including signatures; no history compaction"
+      },
+      "retain": [
+        "complete conversation",
+        "all raw observation objects and summaries",
+        "raw final JSON including rejected source references",
+        "source page and strip coordinates"
+      ],
+      "limits": [
+        "Tied running summaries on critical page-failure count but cost more",
+        "Wrong payment appeared in overview and persisted through observations and final output",
+        "Three final outputs invented source IDs",
+        "Intermediate transcription keys varied because the prompt did not fix their spelling",
+        "No improvement over running summaries established; pursue gate failed"
+      ],
+      "evidence_refs": [
+        "multiturn:preregistration.md",
+        "multiturn:assessment.json",
+        "multiturn:stage-traces.json",
+        "multiturn:usage.json",
+        "multiturn:decision.json",
+        "multiturn:intermediate-adherence.json"
+      ]
+    },
+    {
+      "id": "vision-multiview",
+      "group": "additional",
+      "engine": "Gemini full page and covering strips in one request",
+      "uses": [
+        "vision-gemini"
+      ],
+      "fit": [
+        "cheaper comparison to sequential inspection",
+        "complete-page coverage without multiple turns"
+      ],
+      "tested_settings": {
+        "model": "gemini-3.8-flash",
+        "thinking": "low",
+        "max_output_tokens": 8192,
+        "dpi": 200,
+        "strip_vertical_fractions": [
+          [
+            0,
+            0.4
+          ],
+          [
+            0.3,
+            0.7
+          ],
+          [
+            0.6,
+            1
+          ]
+        ],
+        "crop": "exact full-width pixel subarrays; no upscaling",
+        "final_output": "JSON transcription blocks; Markdown tables inside text; not canonical financial facts",
+        "sequence": [
+          "full page then all three strips in one image-first request",
+          "final JSON in the same response"
+        ]
+      },
+      "retain": [
+        "exact request with all views",
+        "raw final JSON",
+        "source page and strip coordinates"
+      ],
+      "limits": [
+        "Fewer calls than multi-turn approaches but more critical failures on selected pages",
+        "Amount decimals, blank-column relationships and an unchecked address-change box were lost",
+        "A contemporaneous full-page-only control using this JSON prompt remains untested"
+      ],
+      "evidence_refs": [
+        "multiturn:preregistration.md",
+        "multiturn:assessment.json",
+        "multiturn:stage-traces.json",
+        "multiturn:usage.json",
+        "multiturn:decision.json"
+      ]
+    },
+    {
+      "id": "ocr-lighton",
+      "group": "main",
+      "engine": "mlx-community/LightOnOCR-2-1B-bf16",
+      "tested_revision": "16e06849ba5c689f782473651914d6613d25d884",
+      "fit": [
+        "local full-page prose and form candidate",
+        "source metadata and checkbox preservation"
+      ],
+      "tested_settings": {
+        "dpi": 200,
+        "scope": "full page",
+        "temperature": 0,
+        "seed": 0,
+        "max_output_tokens": 8192,
+        "image_preprocessing": "pinned model processor defaults",
+        "precision": "bf16",
+        "inference": "MLX-VLM 0.7.0 on Apple Silicon",
+        "prompts": [
+          "image only; empty text prompt"
+        ]
+      },
+      "retain": [
+        "original PDF and page render",
+        "raw generated text including HTML attributes",
+        "actual referenced assets or unresolved-reference status",
+        "effective formatted prompt, model revision and generation metadata"
+      ],
+      "limits": [
+        "Best new local candidate on the selected FEC pages, not general qualification",
+        "F02 year placed under wrong column; F03 dollar/cents distinction lost",
+        "Signature presence and drawn counter omitted",
+        "HTML input value attributes contain amounts; preserve them when deriving text",
+        "Generated image references may not name materialized assets; resolve before use"
+      ],
+      "evidence_refs": [
+        "open_models:models.json",
+        "open_models:local_model.py",
+        "open_models:usage.json",
+        "open_models:blind-small-models/assessment.json",
+        "open_models:repeat-comparison.json",
+        "open_models:outputs/lighton-ocr-r1/model.json"
+      ],
+      "api": {
+        "strategy": "FullPage(MLX.lighton())",
+        "extras": [
+          "pdf",
+          "pdf-mlx"
+        ],
+        "status": "implemented; source-specific fidelity remains separate"
+      }
+    },
+    {
+      "id": "ocr-glm",
+      "group": "conditional",
+      "engine": "mlx-community/GLM-OCR-bf16",
+      "tested_revision": "24f15402e83baa0a80eeeaecf5480e172abc6f2e",
+      "fit": [
+        "local table observations",
+        "full-page text baseline for a specialist model"
+      ],
+      "tested_settings": {
+        "dpi": 200,
+        "scope": "full page",
+        "temperature": 0,
+        "seed": 0,
+        "max_output_tokens": 8192,
+        "image_preprocessing": "pinned model processor defaults",
+        "precision": "bf16",
+        "inference": "MLX-VLM 0.7.0 on Apple Silicon",
+        "prompts": [
+          "Text Recognition:",
+          "Table Recognition:"
+        ]
+      },
+      "retain": [
+        "original PDF and page render",
+        "raw generated text including HTML attributes",
+        "actual referenced assets or unresolved-reference status",
+        "effective formatted prompt, model revision and generation metadata"
+      ],
+      "limits": [
+        "Table prompt preserved central F02 amounts, columns and blank cells in one exposed diagnostic; outside-table content omitted",
+        "Text prompt flattens column relationships and drops metadata",
+        "Both prompts lose dollar/cents semantics on the tested debt plan",
+        "Regional SDK, alternative rendering and larger models remain untested"
+      ],
+      "evidence_refs": [
+        "open_models:models.json",
+        "open_models:local_model.py",
+        "open_models:usage.json",
+        "open_models:blind-small-models/assessment.json",
+        "open_models:blind-diagnostics/assessment.json",
+        "open_models:outputs/glm-ocr-r1/model.json",
+        "open_models:outputs/glm-table-r1/model.json"
+      ],
+      "api": {
+        "strategy": "FullPage(MLX.glm(task=\"table\"))",
+        "extras": [
+          "pdf",
+          "pdf-mlx"
+        ],
+        "status": "implemented; source-specific fidelity remains separate"
+      }
+    },
+    {
+      "id": "mineru-configurations",
+      "group": "research",
+      "engine": "MinerU",
+      "tested_version": "3.4.5",
+      "tested_model": "opendatalab/MinerU2.5-Pro-2605-1.2B",
+      "tested_revision": "bff20d4ae2bf202df9f45284b4d43681555a97ed",
+      "fit": [
+        "layout and intermediate JSON comparisons in existing MinerU workflows"
+      ],
+      "tested_settings": {
+        "formulas": false,
+        "pipeline_cpu_threads": 4,
+        "vision_backend": "mlx-engine",
+        "stock_arms": [
+          "pipeline auto ch tables on",
+          "pipeline auto en tables on",
+          "pipeline forced OCR en tables on",
+          "pipeline forced OCR en tables off",
+          "hybrid medium",
+          "hybrid high image analysis off",
+          "hybrid high image analysis on",
+          "pure VLM image analysis on"
+        ],
+        "diagnostic": "Private image-size eligibility override on four forms; not a supported flag or product patch"
+      },
+      "retain": [
+        "content-list JSON with all headers, footnotes and image content",
+        "middle/model JSON",
+        "page and image crops with coordinates",
+        "separate Markdown export",
+        "effective model roots and file hashes"
+      ],
+      "limits": [
+        "No tested configuration passed every required export criterion on any of the selected real pages; this includes furniture omissions retained in JSON",
+        "Small-image eligibility gate can skip narrow amounts even when image analysis is enabled",
+        "Disabling the gate recovered amounts without complete relationships; table-absorbed images still bypassed it",
+        "Image interpretation hallucinated flowchart relationships and misdescribed signature meaning"
+      ],
+      "evidence_refs": [
+        "open_models:campaign.py",
+        "open_models:stock-mineru-assessment.json",
+        "open_models:intermediate-retention.json",
+        "open_models:gate-engagement.json",
+        "open_models:setup/pipeline-model-files.json",
+        "open_models:research/dispositions.md"
+      ]
+    }
+  ],
+  "archive_refs": [
+    "comparison:arm-dispositions.json",
+    "comparison:research-dispositions.md",
+    "comparison:final-assessment.json",
+    "hybrid:findings.md",
+    "layout:component-review.json",
+    "routing:assessment.json",
+    "fusion:assessment.json",
+    "open_models:research/dispositions.md",
+    "open_models:assessment.json",
+    "open_models:decision.json"
+  ],
+  "global_limits": [
+    "Selected mostly English FEC pages; not a representative or cross-source accuracy benchmark",
+    "Preserve source and original evidence; prefer equivalent official structured data before reconstructing facts from PDF",
+    "Main and conditional are saved candidate groups, not automatic adoption or financial truth",
+    "Historical tested settings are not a claim that every option is installed or supported by a current product API",
+    "Unknown page types, natural corrupt OCR layers, handwriting, multilingual content and cross-page tables need further qualification",
+    "Keep selection separate from extraction; explicit choices do not prove completeness",
+    "Multi-turn results retain full history and compare workflow bundles with different computation; do not infer that a compact rolling summary or sequencing alone provides the same benefit.",
+    "The local model comparison uses community MLX bf16 conversions and exposed development pages. Full-page export failures include metadata and signature/counter omissions; counts are not financial accuracy rates."
+  ],
+  "runtime_integration": {
+    "status": "selected choices implemented",
+    "guide": "pdf-extraction-api.md",
+    "python_api": "spicy_docs.extraction",
+    "automatic_router": false,
+    "other_choices": "Retained research options; no built-in adapter"
+  }
+}

@@ -23,7 +23,48 @@ _READER_MODULES = (
     "spicy_docs.source_native_store",
 )
 
-_HEAVY_MODULES = ("polars", "httpx", "boto3", "botocore", "loguru", "tqdm", "pyarrow", "duckdb")
+_HEAVY_MODULES = (
+    "polars",
+    "httpx",
+    "boto3",
+    "botocore",
+    "loguru",
+    "tqdm",
+    "pyarrow",
+    "duckdb",
+    "pymupdf",
+    "fitz",
+    "PIL",
+    "rapidocr_onnxruntime",
+    "ocrmac",
+    "mlx",
+    "mlx_vlm",
+    "torch",
+    "transformers",
+)
+
+
+@pytest.mark.parametrize(
+    "module", ["spicy_docs.extraction", "spicy_docs.extraction.ocr", "spicy_docs.extraction.gemini"]
+)
+def test_extraction_interfaces_import_without_optional_dependencies(module):
+    probe = f"""
+import importlib.abc
+import sys
+class BlockOptional(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.split('.')[0] in {_HEAVY_MODULES!r}:
+            raise AssertionError('Unexpected optional import: ' + fullname)
+sys.meta_path.insert(0, BlockOptional())
+import {module}
+from spicy_docs.extraction import DocumentExtractor, FullPage, Recognition
+from spicy_docs.extraction.ocr import MLX
+from spicy_docs.extraction.gemini import Gemini
+extractor = DocumentExtractor(FullPage(MLX.lighton()))
+assert Recognition('native', {{}}, {{}}).text == 'native'
+"""
+    completed = subprocess.run([sys.executable, "-c", probe], capture_output=True, text=True, check=False)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_reader_closure_imports_without_heavy_third_party_modules() -> None:

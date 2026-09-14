@@ -14,6 +14,12 @@ dependencies = [
 acquisition = ["boto3", "httpx", "loguru", "tqdm"]
 # Captured comment Parquet parsing/full replay and flat-table publication.
 public-table = ["polars", "pyarrow"]
+# PDF/image decoding is shared; select recognition providers separately.
+pdf = ["pymupdf>=1.28,<2", "pillow>=12,<13"]
+pdf-rapidocr = ["rapidocr-onnxruntime>=1.4.4,<2"]
+pdf-apple = ["ocrmac>=1.0.1,<2; sys_platform == 'darwin'"]
+pdf-mlx = ["mlx-vlm==0.7.0; sys_platform == 'darwin' and platform_machine == 'arm64'"]
+pdf-gemini = ["httpx>=0.28,<1"]
 
 [dependency-groups]
 dev = [

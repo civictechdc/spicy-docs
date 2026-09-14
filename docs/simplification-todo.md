@@ -20,6 +20,22 @@ are on `fork/main`; receiving changes remain on their own branches.
 Six original items moved to their implementation owners. A moved task is not a
 completed task; follow the receiving backlog for its status.
 
+## PDF/image extraction
+
+- [x] **PDF01 — Provide a unified API with injected extraction components.**
+  `DocumentExtractor` accepts a reader and page strategy; OCR/vision strategies
+  accept a recognition backend. Native PyMuPDF, RapidOCR, Apple Vision,
+  LightOnOCR/GLM through MLX, and single/multi-turn Gemini are available as
+  optional adapters, including native plus selected regions. Results separate
+  source metadata, body blocks and raw observations; failures preserve completed
+  regional observations. The [API guide](pdf-extraction-api.md) and
+  [choice catalog](pdf-extraction-choices.json) identify the implemented choices.
+  Local repository checks, mutation checks, a core/PDF installed-wheel probe and
+  bounded real-provider smoke checks passed. Receipts:
+  `~/Work/corpora/supply-2026-09-02/receipts/spicydocs-extraction-api-2026-09-14/`.
+  Implementation remains uncommitted; source-specific qualification and DocSpec
+  adoption are separate from this provider API.
+
 ## Canonical CFR/eCFR acquisition
 
 - [x] **C01:** Inventory existing code and agree ownership: SpicyDocs acquires;
@@ -311,8 +327,13 @@ downstream adoption remain separate.
   captures and outputs. Direct sample review confirms legacy CSV body resolution
   and selected CP1252 excerpts; it does not establish whole-corpus text fidelity.
   Evidence and resolved bodies: `manual-review-fixes/` under the receipt root above.
-  PDF originals remain unparsed; text/OCR qualification belongs to their downstream
-  processor, not a new SpicyDocs PDF implementation.
+  FEC11 validation covers retained originals, not extracted text. The optional
+  PDF/image extraction adapters are tracked separately in PDF01 below.
+  The [saved PDF choices](pdf-extraction-choices.md) and
+  [configuration catalog](pdf-extraction-choices.json) preserve tested alternatives
+  by source/page type; automatic routing and DocSpec adapters remain separate
+  work. The regional approach improved selected outputs but failed its
+  no-regression gate.
 
 - [ ] **FEC06 — Extend real historical filing qualification.** Acquire complete
   originals for CSV 5.0–5.2 and other declared layouts before extending body-field

@@ -7,7 +7,7 @@ reduces duplicate implementation without forcing source users into a dataset pla
 
 | Component | Responsibility |
 | --- | --- |
-| SpicyDocs | Source acquisition and metadata parsing, faithful fields, identity, coverage, evidence and immutable source publication. |
+| SpicyDocs | Source acquisition and metadata parsing, faithful fields, identity, coverage, evidence and immutable source publication; optional reusable PDF/image extraction adapters. |
 | SpicyRegs | Its independently useful regulatory-data pipeline and mutable public tables. |
 | DocSpec | Dataset catalogs, selection, injected fetchers/processors, capture, experiments, reuse and comparison. |
 | Rulespec Artifacts | Shared canonical encoding, artifact admission/publication and bounded physical blob writes. |
@@ -20,6 +20,11 @@ Parsing [GovInfo MODS metadata](sources/govinfo-metadata.md), including its nest
 records and source links, is core source work. DocSpec chooses which records
 become catalog items and manages their runs. RefSpec interprets citations and
 document text; SpicyDocs preserves the publisher's reference hints.
+
+The [extraction API](pdf-extraction-api.md) accepts retained bytes and injected
+readers, strategies and recognition backends. It returns derived page observations
+without assuming source authority. DocSpec owns selection, retained processing
+stages, reuse, comparison and run completion; SpicyDocs does not import that lifecycle.
 
 ## Keep, share or retire
 

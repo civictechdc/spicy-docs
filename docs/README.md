@@ -7,6 +7,10 @@
 
 - [Installation](installation.md): core reader or optional acquisition/table tools.
 - [Source workflows](source-workflows.md): choose raw records, releases or tables.
+- [PDF/image extraction API](pdf-extraction-api.md): injected readers, strategies
+  and recognition backends with separate metadata, body and raw observations.
+- [PDF extraction choices](pdf-extraction-choices.md): saved native, OCR, vision
+  and converter candidates by source and page type, with tested settings and limits.
 - [Commands](cli.md): publish, verify, replay and run campaigns.
 - [Collection outcomes](source-native-outcomes.md): scope, failures and evidence.
 - [Raw readers](sources/raw-readers.md): Mirrulations, CourtListener and FEC acquisition.

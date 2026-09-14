@@ -86,6 +86,12 @@ transports. `tests/test_reader_closure.py` guards these boundaries. Existing
 `source_native.schema_bundle_digest` remains available; new code uses Rulespec.
 Patch implementation owners in tests; private forwarding wrappers are not supported.
 
+`spicy_docs.extraction` exposes the PDF/image data types, reader and page strategies;
+`.ocr` and `.gemini` expose optional recognition adapters. These reusable components
+support the requested source-specific processor choices. Constructors accept their
+dependencies directly; model selection and retained lifecycle stay with callers.
+They do not change source-release schemas or defaults. See the [API design](pdf-extraction-api.md).
+
 ## Current source-release format and retained evidence
 
 - Source-native format/schema/verifier: **2.0**; public-table format/verifier: **1.0**.

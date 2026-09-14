@@ -341,6 +341,18 @@ replay checks metadata and associations, and hashes every original. This does
 not parse PDF text/pages or cover other years and legal families. Evidence:
 `~/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/legal/ao-2024/verification.json`.
 
+## Choose a downstream PDF processor
+
+The [PDF extraction choices](../pdf-extraction-choices.md) preserve native, OCR,
+full-page/region vision and structured-conversion alternatives, including Apple
+Vision, Docling and Marker. Their [JSON catalog](../pdf-extraction-choices.json)
+records tested settings and evidence so sources and document families can choose
+different processors. The [extraction API](../pdf-extraction-api.md) provides
+optional native, OCR and vision adapters for retained PDF/image bytes; the catalog
+identifies implemented choices. Callers retain metadata, derived bodies and raw
+observations separately. Automatic selection and financial fidelity remain
+unqualified.
+
 ## Bounds, failures and coverage
 
 Requests are sequential and paced. Metadata pages are bounded to 8 MiB; API,

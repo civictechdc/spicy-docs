@@ -8,7 +8,12 @@ with no DocSpec, SpicyRegs or sibling checkout dependency.
 | Core | Profiles, admitted records/renditions/outcomes, bounded evidence, JSON/HTML parsing, injected acquisition and pure CourtListener listing parsing. |
 | `[acquisition]` | Default HTTP/S3 capture and raw Mirrulations/CourtListener readers; adds HTTPX, Boto3, Loguru and tqdm. |
 | `[public-table]` | Captured-comment Parquet parsing/replay and public-table operations; adds Polars and PyArrow. |
-| Both extras | Live community-comment capture or CRS summaries read from Parquet. |
+| `[acquisition,public-table]` | Live community-comment capture or CRS summaries read from Parquet. |
+| `[pdf]` | PDF/image decoding and native PDF text; adds PyMuPDF and Pillow. |
+| `[pdf,pdf-rapidocr]` | Local ONNX OCR through RapidOCR. |
+| `[pdf,pdf-apple]` | Apple Vision OCR through ocrmac on macOS. |
+| `[pdf,pdf-mlx]` | Configurable MLX-VLM models on Apple Silicon; pinned LightOnOCR and GLM-OCR presets. |
+| `[pdf,pdf-gemini]` | Injected or HTTP-backed Gemini image extraction; live calls require a credential. |
 
 Live GAO uses the standard-library Zyte transport: no extra, but `ZYTE_TOKEN`
 is required. Injected fetchers need their own dependencies.
