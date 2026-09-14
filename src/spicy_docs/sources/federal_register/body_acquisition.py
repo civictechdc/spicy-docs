@@ -8,7 +8,6 @@ Install ``spicy-docs[acquisition]`` for this HTTPX-based operation.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -33,6 +32,7 @@ from spicy_docs.sources.federal_register.body_xml import (
 )
 from spicy_docs.sources.refusals import attach_refused_response
 from spicy_docs.transport.capture import BoundedHttpCapture, CapturedBodyResponse, refused_capture
+from spicy_docs.transport.source_acquirer import check_byte_bound, check_request_count, check_timing
 
 GovInfoBodyRoute = Literal["granule", "mods-start-page"]
 BodyFormatPreference = Literal["prefer-xml", "xml", "html"]
@@ -56,23 +56,10 @@ class FederalRegisterBodyBudget:
     min_request_interval_seconds: float
 
     def __post_init__(self) -> None:
-        if isinstance(self.max_requests, bool) or not isinstance(self.max_requests, int) or self.max_requests <= 0:
-            raise ValueError("max_requests must be a positive integer")
-        for name in ("max_body_bytes", "max_mods_bytes"):
-            value = getattr(self, name)
-            if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= MAX_EVIDENCE_BYTES:
-                raise ValueError(f"{name} must be an integer from 1 to {MAX_EVIDENCE_BYTES}")
-        for name, positive in (("timeout_seconds", True), ("min_request_interval_seconds", False)):
-            value = getattr(self, name)
-            if (
-                isinstance(value, bool)
-                or not isinstance(value, (int, float))
-                or not math.isfinite(value)
-                or value < 0
-                or positive
-                and value == 0
-            ):
-                raise ValueError(f"{name} must be finite and {'positive' if positive else 'nonnegative'}")
+        check_request_count(self.max_requests)
+        check_byte_bound(self.max_body_bytes, "max_body_bytes", MAX_EVIDENCE_BYTES)
+        check_byte_bound(self.max_mods_bytes, "max_mods_bytes", MAX_EVIDENCE_BYTES)
+        check_timing(self.timeout_seconds, self.min_request_interval_seconds)
 
 
 @dataclass(frozen=True, slots=True)

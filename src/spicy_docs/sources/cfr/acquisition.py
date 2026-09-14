@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import math
 import zlib
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field, replace
-from datetime import UTC, datetime
-from typing import Self
+from datetime import datetime
 
 import httpx
 
@@ -30,8 +28,15 @@ from spicy_docs.sources.cfr.models import (
     EcfrTitles,
 )
 from spicy_docs.sources.govinfo.mods import GovInfoModsPackage
-from spicy_docs.sources.refusals import attach_refused_response
-from spicy_docs.transport.capture import BoundedHttpCapture, CapturedBodyResponse, refused_capture
+from spicy_docs.transport.capture import CapturedBodyResponse
+from spicy_docs.transport.source_acquirer import (
+    SourceAcquirer,
+    check_byte_bound,
+    check_request_count,
+    check_timing,
+    narrow_byte_limit,
+    utc_now,
+)
 
 type CfrSelection = EcfrSelection | AnnualCfrSelection | int
 
@@ -50,25 +55,9 @@ class CfrAcquisitionBudget:
     min_request_interval_seconds: float
 
     def __post_init__(self) -> None:
-        if isinstance(self.max_requests, bool) or not isinstance(self.max_requests, int) or self.max_requests <= 0:
-            raise ValueError("max_requests must be a positive integer")
-        if (
-            isinstance(self.max_bytes, bool)
-            or not isinstance(self.max_bytes, int)
-            or not 1 <= self.max_bytes <= MAX_CFR_BYTES
-        ):
-            raise ValueError(f"max_bytes must be an integer from 1 to {MAX_CFR_BYTES}")
-        for name, positive in (("timeout_seconds", True), ("min_request_interval_seconds", False)):
-            value = getattr(self, name)
-            if (
-                isinstance(value, bool)
-                or not isinstance(value, (int, float))
-                or not math.isfinite(value)
-                or value < 0
-                or positive
-                and value == 0
-            ):
-                raise ValueError(f"{name} must be finite and {'positive' if positive else 'nonnegative'}")
+        check_request_count(self.max_requests)
+        check_byte_bound(self.max_bytes, "max_bytes", MAX_CFR_BYTES)
+        check_timing(self.timeout_seconds, self.min_request_interval_seconds)
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,11 +96,7 @@ class CfrSourceUnavailableError(CfrSourceError):
         self.capture = capture
 
 
-def _utc_now() -> datetime:
-    return datetime.now(UTC)
-
-
-class CfrAcquirer:
+class CfrAcquirer(SourceAcquirer):
     """A sequential source client. Callers select, retain and process captures.
 
     Dates, editions and source routes are explicit; no implicit latest choice,
@@ -125,17 +110,19 @@ class CfrAcquirer:
         *,
         budget: CfrAcquisitionBudget,
         transport: httpx.BaseTransport | None = None,
-        clock: Callable[[], datetime] = _utc_now,
+        clock: Callable[[], datetime] = utc_now,
     ) -> None:
         if not isinstance(budget, CfrAcquisitionBudget):
             raise TypeError("budget must be a CfrAcquisitionBudget")
         self._budget = budget
-        self._http = BoundedHttpCapture(
+        super().__init__(
             max_requests=budget.max_requests,
             timeout_seconds=budget.timeout_seconds,
             min_request_interval_seconds=budget.min_request_interval_seconds,
             user_agent="spicy-docs-cfr/1.0",
+            label="CFR",
             error_type=CfrSourceError,
+            context_key="cfr_acquisition",
             transport=transport,
             clock=clock,
         )
@@ -143,16 +130,6 @@ class CfrAcquirer:
     @property
     def budget(self) -> CfrAcquisitionBudget:
         return self._budget
-
-    def __enter__(self) -> Self:
-        self._http.reset_budget()
-        return self
-
-    def __exit__(self, *_error: object) -> None:
-        self.close()
-
-    def close(self) -> None:
-        self._http.close()
 
     def _acquire[Result](
         self,
@@ -165,35 +142,23 @@ class CfrAcquirer:
         max_bytes: int | None,
         allow_gzip: bool = False,
     ) -> tuple[Result, CapturedBodyResponse, CfrAcquisitionBudget]:
-        limit = self.budget.max_bytes
-        if max_bytes is not None:
-            if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes <= 0:
-                raise ValueError("max_bytes must be a positive integer")
-            limit = min(limit, max_bytes)
-        effective_budget = replace(self.budget, max_bytes=limit)
-        self._http.reset_budget()
-        capture = None
-        try:
-            capture = self._http.capture(url, max_bytes=limit, allow_unavailable=True, allow_gzip=allow_gzip)
-            if capture.status_code in (404, 410):
-                raise CfrSourceUnavailableError(capture)
-            media_type = (capture.content_type or "").split(";", 1)[0].strip().casefold()
-            if media_type not in media_types:
-                raise CfrSourceError("CFR source Content-Type differs from the requested format")
-            return parse(capture, limit), capture, effective_budget
-        except Exception as error:
-            if capture is not None:
-                error.__dict__["capture"] = capture
-                attach_refused_response(error, refused_capture(capture, stage="source-validation"))
-            error.__dict__["cfr_acquisition"] = {
+        effective_budget = replace(self.budget, max_bytes=narrow_byte_limit(self.budget.max_bytes, max_bytes))
+        result, capture = self.capture_validated(
+            url,
+            media_types=media_types,
+            parse=parse,
+            max_bytes=effective_budget.max_bytes,
+            unavailable=CfrSourceUnavailableError,
+            context={
                 "operation": operation,
                 "selection": asdict(selection)
                 if isinstance(selection, (EcfrSelection, AnnualCfrSelection))
                 else selection,
-                "requestCount": self._http.request_count,
                 "budget": asdict(effective_budget),
-            }
-            raise
+            },
+            allow_gzip=allow_gzip,
+        )
+        return result, capture, effective_budget
 
     def acquire_ecfr_titles(self, *, max_bytes: int | None = None) -> CfrTitlesAcquisition:
         """Capture the live title roster; its dates are available for caller selection."""

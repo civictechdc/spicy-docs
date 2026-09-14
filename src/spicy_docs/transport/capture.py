@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
@@ -32,6 +32,8 @@ class CapturedBodyResponse:
     observed_at: str
     body: bytes = field(repr=False)
     content_encoding: str = "identity"
+    method: str = "GET"
+    request_body: bytes | None = field(default=None, repr=False)
 
     @property
     def byte_size(self) -> int:
@@ -74,7 +76,9 @@ class BoundedHttpCapture:
         error_type: type[Exception],
         transport: httpx.BaseTransport | None,
         clock: Callable[[], datetime],
+        headers: Mapping[str, str] | None = None,
     ) -> None:
+        """``headers`` adds fixed request headers, such as a credential header; they never enter URLs."""
         self.max_requests = max_requests
         self.min_request_interval_seconds = min_request_interval_seconds
         self.error_type = error_type
@@ -87,7 +91,7 @@ class BoundedHttpCapture:
             timeout=httpx.Timeout(timeout_seconds),
             follow_redirects=False,
             trust_env=False,
-            headers={"User-Agent": user_agent, "Accept-Encoding": "identity"},
+            headers={"User-Agent": user_agent, "Accept-Encoding": "identity", **dict(headers or {})},
         )
 
     @property
@@ -114,17 +118,29 @@ class BoundedHttpCapture:
         self._request_count += 1
 
     def capture(
-        self, url: str, *, max_bytes: int, allow_unavailable: bool = False, allow_gzip: bool = False
+        self,
+        url: str,
+        *,
+        max_bytes: int,
+        allow_unavailable: bool = False,
+        allow_gzip: bool = False,
+        method: str = "GET",
+        content: bytes | None = None,
+        request_headers: Mapping[str, str] | None = None,
     ) -> CapturedBodyResponse:
+        """``POST`` sends ``content`` verbatim and records it on the capture; credentials never belong in it."""
         if self._closed:
             raise ValueError("Source acquisition client is closed")
+        if method not in ("GET", "POST"):
+            raise ValueError("method must be GET or POST")
+        if (content is not None) != (method == "POST"):
+            raise ValueError("POST requires a request body and GET forbids one")
+        headers = {"Accept-Encoding": "gzip" if allow_gzip else "identity", **dict(request_headers or {})}
 
         def attempt() -> CapturedBodyResponse:
             self._start_request()
             try:
-                with self._client.stream(
-                    "GET", url, headers={"Accept-Encoding": "gzip" if allow_gzip else "identity"}
-                ) as response:
+                with self._client.stream(method, url, headers=headers, content=content) as response:
                     if response.status_code in (401, 403):
                         raise CredentialRefusedError(
                             f"Body source answered HTTP {response.status_code}; stopping acquisition"
@@ -178,6 +194,8 @@ class BoundedHttpCapture:
                         observed_at=observed_at.astimezone(UTC).isoformat().replace("+00:00", "Z"),
                         body=bytes(body),
                         content_encoding=encoding,
+                        method=method,
+                        request_body=content,
                     )
                     try:
                         if stated_length is not None and int(stated_length) != capture.byte_size:

@@ -7,11 +7,9 @@ while a successful text capture proves the selected bill/version's XML shape.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
-from datetime import UTC, datetime
-from typing import Self
+from datetime import datetime
 
 import httpx
 
@@ -30,7 +28,14 @@ from spicy_docs.sources.congress.bill_text import (
     validate_bill_text,
 )
 from spicy_docs.sources.refusals import attach_refused_response
-from spicy_docs.transport.capture import BoundedHttpCapture, CapturedBodyResponse, refused_capture
+from spicy_docs.transport.capture import CapturedBodyResponse, refused_capture
+from spicy_docs.transport.source_acquirer import (
+    SourceAcquirer,
+    check_byte_bound,
+    check_request_count,
+    check_timing,
+    utc_now,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,23 +49,10 @@ class BillAcquisitionBudget:
     min_request_interval_seconds: float
 
     def __post_init__(self) -> None:
-        if isinstance(self.max_requests, bool) or not isinstance(self.max_requests, int) or self.max_requests <= 0:
-            raise ValueError("max_requests must be a positive integer")
-        for name in ("max_status_bytes", "max_text_bytes"):
-            value = getattr(self, name)
-            if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= MAX_EVIDENCE_BYTES:
-                raise ValueError(f"{name} must be an integer from 1 to {MAX_EVIDENCE_BYTES}")
-        for name, positive in (("timeout_seconds", True), ("min_request_interval_seconds", False)):
-            value = getattr(self, name)
-            if (
-                isinstance(value, bool)
-                or not isinstance(value, (int, float))
-                or not math.isfinite(value)
-                or value < 0
-                or positive
-                and value == 0
-            ):
-                raise ValueError(f"{name} must be finite and {'positive' if positive else 'nonnegative'}")
+        check_request_count(self.max_requests)
+        check_byte_bound(self.max_status_bytes, "max_status_bytes", MAX_EVIDENCE_BYTES)
+        check_byte_bound(self.max_text_bytes, "max_text_bytes", MAX_EVIDENCE_BYTES)
+        check_timing(self.timeout_seconds, self.min_request_interval_seconds)
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,10 +79,6 @@ class BillSourceUnavailableError(BillSourceError):
         self.capture = capture
 
 
-def _utc_now() -> datetime:
-    return datetime.now(UTC)
-
-
 def _require_xml_capture(capture: CapturedBodyResponse, *, expected_url: str) -> None:
     if capture.requested_url != expected_url or capture.resolved_url != expected_url:
         raise BillSourceError("Bill capture URL differs from the requested source locator")
@@ -103,7 +91,7 @@ def _require_xml_capture(capture: CapturedBodyResponse, *, expected_url: str) ->
         raise BillSourceError("Bill source Content-Type must be XML")
 
 
-class BillAcquirer:
+class BillAcquirer(SourceAcquirer):
     """A sequential, caller-owned client for status and selected XML text.
 
     No automatic latest-version choice or format fallback occurs. A text call
@@ -116,17 +104,19 @@ class BillAcquirer:
         *,
         budget: BillAcquisitionBudget,
         transport: httpx.BaseTransport | None = None,
-        clock: Callable[[], datetime] = _utc_now,
+        clock: Callable[[], datetime] = utc_now,
     ) -> None:
         if not isinstance(budget, BillAcquisitionBudget):
             raise TypeError("budget must be a BillAcquisitionBudget")
         self._budget = budget
-        self._http = BoundedHttpCapture(
+        super().__init__(
             max_requests=budget.max_requests,
             timeout_seconds=budget.timeout_seconds,
             min_request_interval_seconds=budget.min_request_interval_seconds,
             user_agent="spicy-docs-congress-bills/1.0",
+            label="Bill",
             error_type=BillSourceError,
+            context_key="bill_acquisition",
             transport=transport,
             clock=clock,
         )
@@ -134,16 +124,6 @@ class BillAcquirer:
     @property
     def budget(self) -> BillAcquisitionBudget:
         return self._budget
-
-    def __enter__(self) -> Self:
-        self._http.reset_budget()
-        return self
-
-    def __exit__(self, *_error: object) -> None:
-        self.close()
-
-    def close(self) -> None:
-        self._http.close()
 
     def _failure(
         self,
