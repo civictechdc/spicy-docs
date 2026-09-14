@@ -36,6 +36,7 @@ dev = [
 [project.scripts]
 spicy-docs-source-native = "spicy_docs.cli.source_native:main"
 spicy-docs-fec = "spicy_docs.cli.fec:main"
+spicy-docs-list = "spicy_docs.cli.list_pages:main"
 
 [build-system]
 requires = ["uv_build<0.12"]
