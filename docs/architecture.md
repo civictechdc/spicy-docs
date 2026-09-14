@@ -25,8 +25,8 @@ Paths below are relative to `src/spicy_docs/`.
 | XML-first body fetching; pure identity checks | `sources/federal_register/body_acquisition.py`; `body_sources.py`; `body_xml.py` |
 | Explicit CFR/eCFR captures and native identity | `sources/cfr/acquisition.py`; `ecfr.py`; `annual.py` |
 | GovInfo MODS package/constituent metadata | `sources/govinfo/mods.py`; CFR edition checks in `sources/cfr/edition.py` |
-| Public laws and statute compilations (USLM) | `sources/govinfo/uslm.py` identity and archives; `uslm_acquisition.py` captures; shared scanner in `sources/xml.py` |
-| Publisher list pages | `sources/paged_json.py` one traversal rule; `sources/congress/listing.py`, `sources/govinfo/discovery.py`, `sources/lda.py`, `sources/courtlistener_search.py`, `sources/sam.py`, `sources/usaspending.py`, `sources/fcc_ecfs.py` state each publisher's contract; `sources/gao/rss.py` reads the feed |
+| USLM documents (GovInfo laws and compilations, OLRC U.S. Code) | `sources/govinfo/uslm.py` holds `UslmScan`, bound per publisher by namespace and body sections; `sources/zip_archive.py` is the one bounded zip reader; `uslm_acquisition.py` and `uscode_acquisition.py` capture |
+| Publisher list pages | `sources/paged_json.py` one traversal rule, including each family's reach bounds; `sources/congress/listing.py`, `sources/govinfo/discovery.py`, `sources/lda.py`, `sources/courtlistener_search.py`, `sources/sam.py`, `sources/usaspending.py`, `sources/fcc_ecfs.py` state each publisher's contract; `sources/gao/rss.py` reads the feed; `cli/list_pages.py` walks any family from the command line |
 | Unified Agenda editions | `sources/unified_agenda.py` |
 | U.S. Code, Supreme Court, CBO | `sources/uscode.py` and `uscode_acquisition.py`; `sources/supreme_court.py`; `sources/cbo.py` |
 | Document files beside listings | `sources/congress/crs_files.py`; `sources/gao/files.py`; `sources/regulations_gov/api.py` and `attachments.py`; PDF checks in `sources/pdf_bytes.py` |

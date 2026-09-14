@@ -446,10 +446,14 @@ client clears cookies per request and keeps 401/403 bodies as evidence on
 keyless routes; the shared acquirer refuses credential echo centrally and
 carries `check_final_url`; the traversal accepts a boolean has-next flag,
 advisory counts and per-family media types; `sources/pdf_bytes.py` holds the
-one PDF magic-and-trailer check. Remaining DRY debt: `govinfo/uslm.py`'s scanner
-is bound to the GPO namespace and `main`/`preface`, so `uscode.py` subclasses
-the generic scanner instead (a `namespace` and `body_sections` parameter would
-unify them); `uscode.py` and `uslm.py` each carry a bounded-zip reader.
+one PDF magic-and-trailer check.
+
+Follow-up (same day, three parallel workstreams):
+
+- [x] **D01** — One USLM scanner: `UslmScan(root, *, namespace, body_sections, referring_sections, ...)` in `govinfo/uslm.py` serves GovInfo and OLRC; `uscode.py` lost its copy (−65 lines). One bounded zip reader in `sources/zip_archive.py` replaced two. Re-qualified against every pinned file with identical counts; the GovInfo scan gained the OLRC path optimization (70.9 to 88.4 MB/s on the largest compilation). Receipt: `receipts/dedup-uslm-zip-2026-09-14/`.
+- [x] **Q01** — FCC ECFS: `[gte]D[lte]E` bounds at E's midnight instant, so a same-day window matched nothing; locators now send an inclusive end. **Q02** — regulations.gov attachment 403s are named from the publisher's words (`client-rejected` versus `object-access-denied`; neither is absence). **Q03** — CBO has no keyless document route; the wall is path-scoped and a same-client control served the feed. **Q04** — SAM serves at most 10,000 records per query shape (page 1000 at size 10 is a 400), not the ~5,000 SpicyRegs recorded. Receipts: `receipts/publisher-questions-2026-09-14/`.
+- [x] **C01** — `spicy-docs-list`: one command over the paged traversal, family chosen by name from a registry (`cli/list_pages.py`), exact page bytes into a content-addressed store and one JSONL row per page. Live smoke: five GovInfo granule pages. Receipt: `receipts/cli-list-smoke-2026-09-14/`.
+- [x] **D02** — Reach bounds moved onto `JsonPageFamily` as data (`max_reachable_records`, `max_page_number`, `window_hint`), so the generic walk the command uses refuses in one request where the SAM and regulations.gov readers used to; their copies are deleted.
 
 Adoption, not porting (SpicyDocs already serves the route): spicysearch
 `scripts/fetch_presidential_bodies*.py` (GovInfo FR granule bodies); RefSpec

@@ -23,7 +23,7 @@
 - [Congressional bills](sources/congress-bills.md)
 - [CFR/eCFR XML](sources/cfr.md)
 - [Public laws and statute compilations](sources/uslm-laws.md): keyless GovInfo USLM XML with native identity checks.
-- [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule.
+- [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule; `spicy-docs-list` walks any of them from the [command line](cli.md).
 - [Unified Agenda](sources/unified-agenda.md): one reginfo.gov edition file, proved from every record.
 - [U.S. Code](sources/uscode.md): OLRC release-point USLM titles, annual archives, the Popular Name Tool and Table III.
 - [Supreme Court](sources/supreme-court.md): slip-opinion term index and official opinion PDFs.
