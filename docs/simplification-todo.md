@@ -11,6 +11,12 @@
   Source merge `d9c312c` is pushed to `fork/main`. Downstream wheel adoption
   remains separate.
 
+**SpicyDocs 0.8.1 (2026-09-14):** 2,280 repository tests; 80 of 88 source and
+transport modules import on the core wheel; 2,225 tests pass against the
+installed wheel with extras (same six explained failures as 0.8.0);
+`spicy-docs-list` runs from the installed package. Wheel SHA-256 `4b7d188181e151dccda6c1d15c5d46594121894dc760414f17fe83d54e4886f0`.
+Receipt: `~/Work/corpora/supply-2026-09-02/receipts/release-0.8.1-2026-09-14/`.
+
 **SpicyDocs 0.8.0 (2026-09-14):** 2,247 repository tests (two opt-in checks
 deselected), lint/format and lock; the core wheel imports every public module
 without httpx; 2,192 tests pass against the installed wheel with extras (six
