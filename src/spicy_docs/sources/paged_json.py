@@ -29,7 +29,6 @@ import httpx
 
 from spicy_docs.sources.json_input import load_decimal_json
 from spicy_docs.transport.capture import CapturedBodyResponse
-from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -74,14 +73,14 @@ def normalize_url(url: str, *, drop: frozenset[str] = frozenset()) -> str:
     )
 
 
-def _query_value(url: str, name: str) -> str | None:
+def query_value(url: str, name: str) -> str | None:
     values = [value for key, value in parse_qsl(urlsplit(url).query, keep_blank_values=True) if key == name]
     if len(values) > 1:
         raise PagedJsonSourceError(f"list URL repeats its {name} parameter")
     return values[0] if values else None
 
 
-def _with_query(url: str, name: str, value: str) -> str:
+def with_query(url: str, name: str, value: str) -> str:
     parts = urlsplit(url)
     pairs = [(key, item) for key, item in parse_qsl(parts.query, keep_blank_values=True) if key != name]
     pairs.append((name, value))
@@ -93,10 +92,14 @@ class JsonPageFamily:
     """A publisher's list-page contract, stated as data rather than code.
 
     ``next_kind`` ``url`` reads a full next-page URL at ``next_path``;
-    ``page-number`` reads the next page number at ``next_path`` and rewrites
-    ``page_field`` in the query (GET) or the JSON body (POST); ``offset`` has
-    no publisher continuation and advances ``offset_field`` by the rows
-    received until a page is shorter than ``limit_field``.
+    ``page-number`` reads ``next_path`` as either the next page number or a
+    boolean has-next flag (``true`` means "one more than the page requested")
+    and rewrites ``page_field`` in the query (GET) or the JSON body (POST);
+    ``offset`` has no publisher continuation and advances ``offset_field`` by
+    the rows received until a page is shorter than ``limit_field``.
+    ``count_kind`` ``exact`` means the declared count is checked against the
+    walk; ``advisory`` means the publisher's count is recorded but drifts or
+    exceeds what its pages can reach, so only the continuation ends a walk.
     """
 
     name: str
@@ -113,6 +116,8 @@ class JsonPageFamily:
     offset_field: str = "offset"
     limit_field: str = "limit"
     drop_query_names: frozenset[str] = frozenset()
+    count_kind: Literal["exact", "advisory"] = "exact"
+    media_types: tuple[str, ...] = ("application/json",)
 
     def __post_init__(self) -> None:
         for field_name in ("name", "label", "host"):
@@ -129,6 +134,8 @@ class JsonPageFamily:
             raise ValueError("a family that requires a credential must name its header")
         if "{key}" not in self.credential_format:
             raise ValueError("credential_format must contain {key}")
+        if not self.media_types or not all(isinstance(value, str) and value for value in self.media_types):
+            raise ValueError("media_types must name at least one media type")
 
     def check_url(self, url: str) -> str:
         """Only this publisher's HTTPS host, spelled as it will be sent, and never a credential in the query."""
@@ -225,6 +232,8 @@ class PagedJsonReader(SourceAcquirer):
             transport=transport,
             clock=clock,
             headers=headers,
+            keyless=api_key is None,
+            credential=api_key,
         )
 
     @property
@@ -249,19 +258,25 @@ class PagedJsonReader(SourceAcquirer):
             next_page = _lookup(value, family.next_path or ())
             if next_page is None or next_page is False:
                 return None, None
-            if isinstance(next_page, bool) or not isinstance(next_page, int) or next_page < 1:
-                raise PagedJsonSourceError(f"{family.label} continuation page number is invalid")
             if family.method == "POST":
                 current = (body or {}).get(family.page_field)
-                if current is not None and next_page <= current:
-                    raise PagedJsonSourceError(f"{family.label} continuation page number does not advance")
-                return url, {**(body or {}), family.page_field: next_page}
-            current_value = _query_value(url, family.page_field)
-            if current_value is not None and current_value.isdigit() and next_page <= int(current_value):
+            else:
+                current_value = query_value(url, family.page_field)
+                current = int(current_value) if current_value is not None and current_value.isdigit() else None
+            if next_page is True:
+                # A has-next flag names no page; the next page is one past the page requested.
+                if current is None:
+                    raise PagedJsonSourceError(f"{family.label} has-next flag needs an explicit {family.page_field}")
+                next_page = current + 1
+            if isinstance(next_page, bool) or not isinstance(next_page, int) or next_page < 1:
+                raise PagedJsonSourceError(f"{family.label} continuation page number is invalid")
+            if current is not None and next_page <= current:
                 raise PagedJsonSourceError(f"{family.label} continuation page number does not advance")
-            return _with_query(url, family.page_field, str(next_page)), None
-        limit_value = _query_value(url, family.limit_field)
-        offset_value = _query_value(url, family.offset_field)
+            if family.method == "POST":
+                return url, {**(body or {}), family.page_field: next_page}
+            return with_query(url, family.page_field, str(next_page)), None
+        limit_value = query_value(url, family.limit_field)
+        offset_value = query_value(url, family.offset_field)
         if limit_value is None or not limit_value.isdigit() or int(limit_value) < 1:
             raise PagedJsonSourceError(f"{family.label} offset walk requires an explicit positive {family.limit_field}")
         if offset_value is None or not offset_value.isdigit():
@@ -271,7 +286,7 @@ class PagedJsonReader(SourceAcquirer):
             raise PagedJsonSourceError(f"{family.label} returned more rows than its {family.limit_field}")
         if len(rows) < limit:
             return None, None
-        return _with_query(url, family.offset_field, str(offset + len(rows))), None
+        return with_query(url, family.offset_field, str(offset + len(rows))), None
 
     def _read_page(
         self,
@@ -282,8 +297,6 @@ class PagedJsonReader(SourceAcquirer):
         records_key: str,
         page_index: int,
     ) -> JsonPage:
-        if self._key and self._key.encode() in capture.body:
-            raise CredentialRefusedError("source response echoed the API credential; capture was not retained")
         value = load_decimal_json(capture.body, source=self.family.label, error_type=PagedJsonSourceError)
         if not isinstance(value, Mapping):
             raise PagedJsonSourceError(f"{self.family.label} list response is not a JSON object")
@@ -315,7 +328,7 @@ class PagedJsonReader(SourceAcquirer):
             raise PagedJsonSourceError(f"{self.family.label} request body must not carry the credential")
         page, _capture = self.capture_validated(
             url,
-            media_types=("application/json",),
+            media_types=self.family.media_types,
             parse=lambda capture, _limit: self._read_page(
                 capture, url=url, body=body, records_key=records_key, page_index=page_index
             ),
@@ -378,17 +391,18 @@ class PagedJsonReader(SourceAcquirer):
                 raise refuse("repeated its continuation")
             seen.add(request)
             page = self.page(url, records_key=records_key, page_index=index, body=body)
+            exact = self.family.count_kind == "exact"
             if page.declared_count is not None:
                 if declared is None:
                     declared = page.declared_count
-                elif page.declared_count != declared:
+                elif exact and page.declared_count != declared:
                     raise refuse("declared count changed during the traversal")
             observed += len(page.records)
-            if declared is not None and observed > declared:
+            if exact and declared is not None and observed > declared:
                 raise refuse("returned more records than it declared")
             yield page
             if page.next_url is None:
-                if declared is not None and observed != declared:
+                if exact and declared is not None and observed != declared:
                     raise refuse("declared and observed record counts differ")
                 return
             url, body = page.next_url, page.next_body

@@ -239,7 +239,9 @@ class BoundedAcquirer:
         return retry_http(attempt, retryable=(_Retryable,), max_attempts=3)
 
 
-def validate_body_prefix(chunk: bytes, *, media_type: str, allow_html: bool) -> None:
+def validate_body_prefix(
+    chunk: bytes, *, media_type: str, allow_html: bool, error_type: type[ValueError] = AcquisitionError
+) -> None:
     """Reject accidental HTML captures; XHTML must declare its XML namespace.
 
     This is a representation check, not full document/archive validation.
@@ -252,8 +254,8 @@ def validate_body_prefix(chunk: bytes, *, media_type: str, allow_html: bool) -> 
             parser.feed(chunk)
             first = next(parser.read_events(), None)
             if first is None or first[1].tag != "{http://www.w3.org/1999/xhtml}html":
-                raise AcquisitionError("XHTML asset omitted its namespaced html root")
+                raise error_type("XHTML asset omitted its namespaced html root")
         except ET.ParseError:
-            raise AcquisitionError("XHTML asset has an invalid XML prefix") from None
+            raise error_type("XHTML asset has an invalid XML prefix") from None
     elif not allow_html and (kind == "text/html" or prefix.startswith((b"<!doctype html", b"<html"))):
-        raise AcquisitionError("asset returned HTML; select an HTML body explicitly if intended")
+        raise error_type("asset returned HTML; select an HTML body explicitly if intended")

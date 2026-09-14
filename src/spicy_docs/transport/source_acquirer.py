@@ -59,6 +59,12 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+def check_final_url(final_url: str, locator: str, *, error_type: type[ValueError], message: str) -> None:
+    """The response must have come from exactly the locator the request named."""
+    if final_url != locator:
+        raise error_type(message)
+
+
 class SourceAcquirer:
     """A sequential, caller-owned client. Subclasses select, locate and validate.
 
@@ -81,10 +87,16 @@ class SourceAcquirer:
         transport: httpx.BaseTransport | None = None,
         clock: Callable[[], datetime] = utc_now,
         headers: Mapping[str, str] | None = None,
+        keyless: bool = False,
+        credential: str | None = None,
     ) -> None:
+        """``keyless`` routes keep 401/403 bodies as evidence; ``credential`` is refused if a body echoes it."""
+        if keyless and credential:
+            raise ValueError("a keyless acquirer cannot carry a credential")
         self.label = label
         self.error_type = error_type
         self.context_key = context_key
+        self._credential = credential
         self._http = BoundedHttpCapture(
             max_requests=max_requests,
             timeout_seconds=timeout_seconds,
@@ -94,6 +106,7 @@ class SourceAcquirer:
             transport=transport,
             clock=clock,
             headers=headers,
+            retain_refusal_bodies=keyless,
         )
 
     @property
@@ -139,6 +152,8 @@ class SourceAcquirer:
             )
             if capture.status_code in (404, 410):
                 raise unavailable(capture)
+            if self._credential and self._credential.encode() in capture.body:
+                raise CredentialRefusedError("source response echoed the API credential; capture was not retained")
             media_type = (capture.content_type or "").split(";", 1)[0].strip().casefold()
             if media_type not in media_types:
                 raise self.error_type(f"{self.label} source Content-Type differs from the requested format")

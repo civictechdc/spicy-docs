@@ -77,9 +77,17 @@ class BoundedHttpCapture:
         transport: httpx.BaseTransport | None,
         clock: Callable[[], datetime],
         headers: Mapping[str, str] | None = None,
+        retain_refusal_bodies: bool = False,
     ) -> None:
-        """``headers`` adds fixed request headers, such as a credential header; they never enter URLs."""
+        """``headers`` adds fixed request headers, such as a credential header; they never enter URLs.
+
+        ``retain_refusal_bodies`` is for keyless routes: a 401/403 there is a
+        bot wall or an S3 access-denied document, not a credential refusal, and
+        the body is the publisher's answer, so it is attached to the error. A
+        keyed route must leave it off, since such a body can echo the key.
+        """
         self.max_requests = max_requests
+        self.retain_refusal_bodies = retain_refusal_bodies
         self.min_request_interval_seconds = min_request_interval_seconds
         self.error_type = error_type
         self._clock = clock
@@ -139,12 +147,26 @@ class BoundedHttpCapture:
 
         def attempt() -> CapturedBodyResponse:
             self._start_request()
+            # A cookie set by one response must not steer the next request:
+            # a publisher that keys page selection on session state would
+            # otherwise answer a different page than the URL names.
+            self._client.cookies.clear()
             try:
                 with self._client.stream(method, url, headers=headers, content=content) as response:
                     if response.status_code in (401, 403):
-                        raise CredentialRefusedError(
+                        error = CredentialRefusedError(
                             f"Body source answered HTTP {response.status_code}; stopping acquisition"
                         )
+                        if self.retain_refusal_bodies:
+                            refused = response.read()[: max_bytes + 1]
+                            media_type = (response.headers.get("content-type") or "application/octet-stream").split(
+                                ";", 1
+                            )[0]
+                            attach_refused_response(
+                                error,
+                                RefusedResponse(url, "transport", refused, media_type, "access-refused", len(refused)),
+                            )
+                        raise error
                     if response.status_code == 429 or response.status_code >= 500:
                         raise RetryableHTTPStatusError(
                             f"Body source answered retryable HTTP {response.status_code}",

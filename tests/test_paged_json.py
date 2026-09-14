@@ -321,3 +321,83 @@ def test_family_contract_combinations_are_checked():
         JsonPageFamily(name="x", label="x", host="h", method="POST", next_path=("n",))
     with pytest.raises(ValueError, match="credential_format"):
         JsonPageFamily(name="x", label="x", host="h", next_path=("n",), credential_format="Token")
+
+
+FLAG_FAMILY = JsonPageFamily(
+    name="flagged",
+    label="Flagged",
+    host="api.example.gov",
+    next_kind="page-number",
+    next_path=("meta", "hasNextPage"),
+    page_field="page[number]",
+    count_path=("meta", "total"),
+    count_kind="advisory",
+    media_types=("application/json", "application/vnd.api+json"),
+    credential_header=None,
+    requires_credential=False,
+)
+
+
+def flag_page(rows, *, total, has_next):
+    return json.dumps({"things": rows, "meta": {"total": total, "hasNextPage": has_next}}).encode()
+
+
+def test_boolean_has_next_advances_the_page_field_and_advisory_counts_may_drift():
+    first = flag_page([{"id": 1}, {"id": 2}], total=57380, has_next=True)
+    second = flag_page([{"id": 3}], total=57383, has_next=False)
+    transport = Transport(
+        response(first, content_type="application/vnd.api+json;charset=utf-8"),
+        response(second),
+    )
+    with PagedJsonReader(family=FLAG_FAMILY, budget=BUDGET, transport=transport) as source:
+        pages = list(
+            source.pages("https://api.example.gov/v4/things?page%5Bsize%5D=2&page%5Bnumber%5D=1", records_key="things")
+        )
+    assert [p.declared_count for p in pages] == [57380, 57383]
+    assert pages[0].next_url.endswith("page%5Bnumber%5D=2") and pages[1].next_url is None
+    assert str(transport.calls[1].url).endswith("page%5Bnumber%5D=2")
+
+
+def test_has_next_flag_without_a_page_field_and_an_undeclared_media_type_refuse():
+    transport = Transport(response(flag_page([{"id": 1}], total=1, has_next=True)))
+    with (
+        PagedJsonReader(family=FLAG_FAMILY, budget=BUDGET, transport=transport) as source,
+        pytest.raises(PagedJsonSourceError, match="has-next flag needs"),
+    ):
+        source.page("https://api.example.gov/v4/things", records_key="things")
+    transport = Transport(response(page([{"id": 1}], count=1), content_type="application/vnd.api+json"))
+    with reader(transport) as source, pytest.raises(PagedJsonSourceError, match="Content-Type"):
+        source.page(URL, records_key="things")
+
+
+def test_keyless_readers_keep_a_refusal_body_and_keyed_readers_do_not():
+    denied = b"<Error><Code>AccessDenied</Code></Error>"
+    transport = Transport(
+        httpx.Response(403, stream=httpx.ByteStream(denied), headers={"content-type": "application/xml"})
+    )
+    keyless = replace(FAMILY, credential_header=None, requires_credential=False)
+    with (
+        PagedJsonReader(family=keyless, budget=BUDGET, transport=transport) as source,
+        pytest.raises(CredentialRefusedError) as raised,
+    ):
+        source.page(URL, records_key="things")
+    assert raised.value.refused_response.response_bytes == denied
+    assert raised.value.refused_response.unavailable_reason == "access-refused"
+    transport = Transport(
+        httpx.Response(403, stream=httpx.ByteStream(denied), headers={"content-type": "application/xml"})
+    )
+    with reader(transport) as source, pytest.raises(CredentialRefusedError) as raised:
+        source.page(URL, records_key="things")
+    assert raised.value.refused_response.response_bytes is None
+
+
+def test_cookies_set_by_one_response_do_not_steer_the_next_request():
+    first = httpx.Response(
+        200,
+        stream=httpx.ByteStream(page([{"id": 1}], count=2, next_url="https://api.example.gov/v1/things?offset=1")),
+        headers={"content-type": "application/json", "set-cookie": "term=21; Path=/"},
+    )
+    transport = Transport(first, response(page([{"id": 2}], count=2)))
+    with reader(transport) as source:
+        list(source.pages(URL, records_key="things"))
+    assert "cookie" not in transport.calls[1].headers
