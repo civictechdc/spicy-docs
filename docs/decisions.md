@@ -90,7 +90,7 @@ Patch implementation owners in tests; private forwarding wrappers are not suppor
 `.ocr` and `.gemini` expose optional recognition adapters. These reusable components
 support the requested source-specific processor choices. Constructors accept their
 dependencies directly; model selection and retained lifecycle stay with callers.
-They do not change source-release schemas or defaults. See the [API design](pdf-extraction-api.md).
+They do not change source-release schemas or defaults. See the [API design](extraction/pdf-extraction-api.md).
 
 ## Current source-release format and retained evidence
 

@@ -7,7 +7,7 @@ continues to own document lifecycle, retained stages, retries and dataset execut
 This is a Python library API; it does not start an HTTP service.
 
 For pypdf's exact embedded page strings, use the smaller
-[page-text reader](pdf-page-text.md). Its optional dependency and output stay
+[page-text reader](../pdf-page-text.md). Its optional dependency and output stay
 separate from the rendering and recognition backends below.
 
 Dependency injection means passing these objects into constructors. There is no
@@ -56,7 +56,7 @@ image input because an empty native layer would not establish an empty image.
 
 Install `[pdf]` for the default PDF/image reader and add the provider you use:
 `[pdf,pdf-rapidocr]`, `[pdf,pdf-apple]`, `[pdf,pdf-mlx]`, or `[pdf,pdf-gemini]`.
-See [installation](installation.md). Apple Vision requires macOS; MLX requires
+See [installation](../installation.md). Apple Vision requires macOS; MLX requires
 Apple Silicon. The MLX backend downloads the selected pinned model on first use.
 Core imports and injected readers/backends require no rendering or model packages.
 
@@ -88,7 +88,7 @@ for page in extractor.extract(
     retain(page)  # Application-owned storage.
 ```
 
-The [offline example](../examples/pdf_extraction.py) demonstrates the same pattern
+The [offline example](../../examples/pdf_extraction.py) demonstrates the same pattern
 with an injected test backend and a known native document.
 
 ## Small interfaces, explicit choices

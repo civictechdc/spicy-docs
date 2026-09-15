@@ -58,7 +58,7 @@ records and source links, is core source work. DocSpec chooses which records
 become catalog items and manages their runs. RefSpec interprets citations and
 document text; SpicyDocs preserves the publisher's reference hints.
 
-The [extraction API](pdf-extraction-api.md) accepts retained bytes and injected
+The [extraction API](extraction/pdf-extraction-api.md) accepts retained bytes and injected
 readers, strategies and recognition backends. It returns derived page observations
 without assuming source authority. DocSpec owns selection, retained processing
 stages, reuse, comparison and run completion; SpicyDocs does not import that lifecycle.

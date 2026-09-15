@@ -13,7 +13,7 @@ live in the [task list](simplification-todo.md#fetcher-format-review).
 | Operation | Retrieved format | Decision |
 | --- | --- | --- |
 | Federal Register metadata | JSON | Keep; retain the publisher's XML link. |
-| Federal Register document body | XML; HTML fallback after XML 404/410 | Keep the [XML-first behavior](federal-register-body-sources.md). |
+| Federal Register document body | XML; HTML fallback after XML 404/410 | Keep the [XML-first behavior](sources/federal-register-body-sources.md). |
 | GovInfo issue census and start-page lookup | MODS XML metadata | Keep; metadata does not contain the document body. |
 | GovInfo unmatched-identifier diagnostic | Credentialed JSON | Keep. |
 | Congress CRS summaries | JSON metadata, summary and format links | Keep; retain report version. |

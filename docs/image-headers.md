@@ -20,6 +20,6 @@ are outside its scope. Zero dimensions survive as stated values. An unsupported
 or short PNG/GIF header returns `unknown`; a recognized JPEG or sufficiently
 long PNG without readable dimensions retains its format with `None` dimensions.
 
-Use the [extraction API](pdf-extraction-api.md) when you need decoded pixels,
+Use the [extraction API](extraction/pdf-extraction-api.md) when you need decoded pixels,
 orientation, page regions or recognition. Header observations can remain useful
 even when a decoder refuses the complete file.

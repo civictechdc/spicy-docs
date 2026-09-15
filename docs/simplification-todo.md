@@ -446,8 +446,8 @@ source-campaign replacement remains the separate S21 decision.
   LightOnOCR/GLM through MLX, and single/multi-turn Gemini are available as
   optional adapters, including native plus selected regions. Results separate
   source metadata, body blocks and raw observations; failures preserve completed
-  regional observations. The [API guide](pdf-extraction-api.md) and
-  [choice catalog](pdf-extraction-choices.json) identify the implemented choices.
+  regional observations. The [API guide](extraction/pdf-extraction-api.md) and
+  [choice catalog](extraction/pdf-extraction-choices.json) identify the implemented choices.
   Local repository checks, mutation checks, a core/PDF installed-wheel probe and
   bounded real-provider smoke checks passed. Receipts:
   `~/Work/corpora/supply-2026-09-02/receipts/spicydocs-extraction-api-2026-09-14/`.
@@ -651,7 +651,7 @@ Wheel SHA-256: `c6c364190dfab74d22e77843a8b3dee5c392ed983de21e524dd73be72647c532
 
 Validation: 916 tests passed (two opt-in tests deselected), lint/format passed,
 and independent architecture/code reviews approved. Four live XML samples and
-both installed-wheel examples passed. [Usage and limits](federal-register-body-sources.md).
+both installed-wheel examples passed. [Usage and limits](sources/federal-register-body-sources.md).
 
 ## Readability pass
 
@@ -763,8 +763,8 @@ downstream adoption remain separate.
   Evidence and resolved bodies: `manual-review-fixes/` under the receipt root above.
   FEC11 validation covers retained originals, not extracted text. The optional
   PDF/image extraction adapters are tracked separately in PDF01 below.
-  The [saved PDF choices](pdf-extraction-choices.md) and
-  [configuration catalog](pdf-extraction-choices.json) preserve tested alternatives
+  The [saved PDF choices](extraction/pdf-extraction-choices.md) and
+  [configuration catalog](extraction/pdf-extraction-choices.json) preserve tested alternatives
   by source/page type; automatic routing and DocSpec adapters remain separate
   work. The regional approach improved selected outputs but failed its
   no-regression gate.
@@ -1079,7 +1079,7 @@ creating a new source-side loop merely to migrate it adds no value.
 
 <a id="s19"></a>
 
-- [x] **S19 — Package bounded GovInfo body acquisition.** Explicit routes preserve requested/resolved identity, enforce request/byte bounds and return reusable exact captures. [Guide](federal-register-body-sources.md).
+- [x] **S19 — Package bounded GovInfo body acquisition.** Explicit routes preserve requested/resolved identity, enforce request/byte bounds and return reusable exact captures. [Guide](sources/federal-register-body-sources.md).
 
 <a id="s22"></a>
 

@@ -10,9 +10,9 @@
 - [Mapped markup](markup-reading.md): XML/HTML observations and original byte positions.
 - [Image headers](image-headers.md): declared dimensions without image decoding.
 - [JSON reading](json-reading.md): source values and exact record positions.
-- [PDF/image extraction API](pdf-extraction-api.md): injected readers, strategies
+- [PDF/image extraction API](extraction/pdf-extraction-api.md): injected readers, strategies
   and recognition backends with separate metadata, body and raw observations.
-- [PDF extraction choices](pdf-extraction-choices.md): saved native, OCR, vision
+- [PDF extraction choices](extraction/pdf-extraction-choices.md): saved native, OCR, vision
   and converter candidates by source and page type, with tested settings and limits.
 - [Commands](cli.md): publish, verify, replay and run campaigns.
 - [Collection outcomes](source-native-outcomes.md): scope, failures and evidence.
@@ -20,7 +20,7 @@
 
 ## Work on a source
 
-- [Federal Register](sources/federal-register.md) · [GovInfo bodies](federal-register-body-sources.md)
+- [Federal Register](sources/federal-register.md) · [GovInfo bodies](sources/federal-register-body-sources.md)
 - [Regulations.gov](sources/regulations-gov.md)
 - [GAO pages](sources/gao.md)
 - [Congressional bills](sources/congress-bills.md)

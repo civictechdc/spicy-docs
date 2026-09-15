@@ -38,7 +38,7 @@ the publisher's `full_text_xml_url` with media type `application/xml`; it never
 substitutes a constructed URL. Missing and explicit null fields remain distinct
 in the source record, and both produce a null rendition locator. These rows
 describe links, not downloaded bodies. The separate
-[body API](../federal-register-body-sources.md) prefers publisher XML, with direct
+[body API](federal-register-body-sources.md) prefers publisher XML, with direct
 or MODS-resolved GovInfo HTML after XML 404/410. Callers can also require XML or
 request HTML explicitly. Plain-text helpers supply locators only.
 Stream admitted metadata with `SourceNativeReleaseReader` or export its public

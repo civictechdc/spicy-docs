@@ -22,7 +22,7 @@ provenance; the caller chooses the source and scope.
 | A U.S. Code title at a release point, an annual archive, the Popular Name Tool or Table III | The [U.S. Code routes](sources/uscode.md) | Keep the exact zip, page or bulk file; identity is proved from each title's own meta, never its file name. |
 | A Supreme Court term index and the opinion PDFs it states | The [Supreme Court route](sources/supreme-court.md) | Keep the index render and each PDF; links are byte-exact revision tokens and the index is a live render. |
 | A CRS, GAO, regulations.gov or CBO document PDF | The [CRS files](sources/crs-files.md), [GAO files](sources/gao-files.md), [regulations.gov API](sources/regulations-gov-api.md) and [CBO](sources/cbo.md) routes | Keep the exact bytes; every PDF is proved by its magic, its trailer and the final URL, plus each publisher's own completeness witness. |
-| Text and observations from retained PDFs or images | The [extraction API](pdf-extraction-api.md), with an explicit page strategy and backend | Retain source bytes, metadata, body blocks and raw observations separately. Model output is derived evidence; extraction does not publish a source release. |
+| Text and observations from retained PDFs or images | The [extraction API](extraction/pdf-extraction-api.md), with an explicit page strategy and backend | Retain source bytes, metadata, body blocks and raw observations separately. Model output is derived evidence; extraction does not publish a source release. |
 | Source fields from retained FOIA XML or Oversight.gov report pages | The [agency-report readers](sources/agency-reports.md) | Native XML elements remain traceable; HTML descriptions and recommendation tables stay separate from metadata. Linked originals are acquired independently. |
 
 Use the [CLI commands](cli.md), [raw-reader APIs](sources/raw-readers.md), or
@@ -75,7 +75,7 @@ An admitted release is usable on its own: inspect it, stream records, retain it,
 or export a supported table. Rendition rows describe locators and source metadata;
 they do not establish downloaded or hashed body content.
 
-The [Federal Register body API](federal-register-body-sources.md) separately
+The [Federal Register body API](sources/federal-register-body-sources.md) separately
 prefers publisher XML, checks identity, and returns exact bytes. It falls back
 to GovInfo HTML only after XML 404/410; strict XML and explicit HTML are available.
 

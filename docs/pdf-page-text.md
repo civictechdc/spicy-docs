@@ -20,7 +20,7 @@ with PypdfReader().open(source) as document:
 `read_page` uses one-based page numbers and returns the backend's exact `str` or
 `None`. It preserves blank pages and whitespace. The caller chooses separators,
 text folding, retained evidence, and whether a failed page aborts the document.
-Use the [PDF and image extraction API](pdf-extraction-api.md) for page geometry,
+Use the [PDF and image extraction API](extraction/pdf-extraction-api.md) for page geometry,
 native text blocks, rendering, or an explicitly selected OCR/model backend.
 
 | Input or outcome | Behavior |
