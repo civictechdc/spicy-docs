@@ -7,6 +7,8 @@
 
 - [Installation](installation.md): core reader or optional acquisition, table and extraction tools.
 - [Source workflows](source-workflows.md): choose raw records, releases or tables.
+- [Mapped markup](markup-reading.md): XML/HTML observations and original byte positions.
+- [Image headers](image-headers.md): declared dimensions without image decoding.
 - [PDF/image extraction API](pdf-extraction-api.md): injected readers, strategies
   and recognition backends with separate metadata, body and raw observations.
 - [PDF extraction choices](pdf-extraction-choices.md): saved native, OCR, vision
