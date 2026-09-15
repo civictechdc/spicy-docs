@@ -410,9 +410,9 @@ def test_comment_source_native_boundary_has_no_sibling_product_imports() -> None
     for relative in (
         *repository.glob("src/spicy_docs/releases/*.py"),
         *repository.glob("src/spicy_docs/sources/regulations_gov/*.py"),
-        "src/spicy_docs/regulations_gov_source_native.py",
-        "src/spicy_docs/source_native.py",
-        "src/spicy_docs/source_native_profiles.py",
+        *repository.glob("src/spicy_docs/source_native/*.py"),
+        *repository.glob("src/spicy_docs/source_native_*.py"),
+        *repository.glob("src/spicy_docs/*_source_native.py"),
     ):
         tree = ast.parse((repository / relative).read_text(encoding="utf-8"))
         for node in ast.walk(tree):

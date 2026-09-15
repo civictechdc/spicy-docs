@@ -14,10 +14,11 @@ from spicy_docs.source_native import (
 
 
 def test_new_path_uses_only_shared_artifact_implementation() -> None:
-    source_native = Path(__file__).parents[2] / "src/spicy_docs/source_native.py"
+    source_native = Path(__file__).parents[2] / "src/spicy_docs/source_native"
     profile = Path(__file__).parents[2] / "src/spicy_docs/sources/federal_register/native.py"
     implementations = sorted(source_native.with_name("releases").glob("*.py"))
-    text = source_native.read_text() + profile.read_text() + "".join(path.read_text() for path in implementations)
+    text = "".join(path.read_text() for path in sorted(source_native.glob("*.py")))
+    text += profile.read_text() + "".join(path.read_text() for path in implementations)
 
     assert "rulespec_conformance" not in text
     assert "build_artifact_root" in text
