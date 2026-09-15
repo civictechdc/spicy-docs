@@ -486,6 +486,28 @@ def test_public_403_can_use_explicit_zyte_but_api_auth_refusal_stops(client):
         list(c.objects("bulk-downloads/"))
 
 
+@pytest.mark.parametrize("status", [401, 403])
+@pytest.mark.parametrize("operation", ["metadata", "original"])
+def test_zyte_target_auth_refusal_stops_the_selected_operation(client, status, operation):
+    class Zyte:
+        calls = 0
+
+        def fetch(self, url, **kwargs):
+            self.calls += 1
+            return ZyteHttpResponse(url, url, status, "text/html", b"<html>Refused</html>")
+
+    zyte = Zyte()
+    with client(lambda _: httpx.Response(403), zyte_on_denial=zyte) as c:
+        with pytest.raises(HttpRefusal) as refusal:
+            if operation == "metadata":
+                list(c.objects("bulk-downloads/"))
+            else:
+                c.download("https://www.fec.gov/example.pdf", max_bytes=1024)
+        assert refusal.value.status == status
+        assert c.http.request_count == 2
+    assert zyte.calls == 1
+
+
 def test_echoed_api_key_is_never_retained(client, tmp_path):
     with (
         client(lambda _: httpx.Response(200, json=page([{"text": "test-credential-123"}]))) as c,

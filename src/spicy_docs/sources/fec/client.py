@@ -98,6 +98,8 @@ class FecClient:
         self.http._start()
         response = self._zyte.fetch(official_url(url), timeout_seconds=60, max_bytes=max_bytes)
         official_url(response.resolved_url)
+        if response.status_code in {401, 403}:
+            raise HttpRefusal(response.status_code)
         if response.status_code != 200:
             raise AcquisitionError(f"Zyte target answered HTTP {response.status_code}")
         if len(response.body) > max_bytes:
