@@ -77,10 +77,11 @@ def test_exact_capture_and_native_metadata_for_one_title():
     with UsCodeAcquirer(budget=BUDGET, transport=transport, clock=lambda: NOW) as source:
         result = source.acquire_title(TITLE)
     assert result.capture.body == TITLE_ZIP
+    assert result.result.xml_bytes == TITLE_XML
     assert result.operation == "release-point-title"
     assert result.selection == {"release_point": "119-103", "title": "01"}
-    assert result.result.entries[0].metadata.doc_number == "1"
-    assert result.result.entries[0].metadata.release_point == "Online@119-103"
+    assert result.result.entry.metadata.doc_number == "1"
+    assert result.result.entry.metadata.release_point == "Online@119-103"
     assert result.capture.requested_url == f"{DOWNLOAD}/xml_usc01@119-103.zip"
     assert result.capture.resolved_url == result.capture.requested_url
     assert result.capture.observed_at == "2026-09-14T00:00:00Z"
@@ -97,6 +98,36 @@ def test_a_download_route_answering_without_a_content_type_is_still_proved_from_
     with UsCodeAcquirer(budget=BUDGET, transport=transport) as source:
         assert source.acquire_title(TITLE).capture.content_type is None
         assert source.acquire_title(TITLE).capture.content_type == "application/zip"
+
+
+@pytest.mark.parametrize(
+    "kind,body,expanded", [("corpus", CORPUS_ZIP, len(TITLE_XML)), ("annual", ANNUAL_ZIP, len(ANNUAL_HTML))]
+)
+def test_acquired_archives_honor_the_selected_aggregate_expansion_bound(kind, body, expanded):
+    transport = Transport(response(body))
+    with (
+        UsCodeAcquirer(budget=BUDGET, transport=transport) as source,
+        pytest.raises(UsCodeSourceError, match="max_total_bytes") as raised,
+    ):
+        if kind == "corpus":
+            source.acquire_corpus(CURRENT, max_total_bytes=expanded - 1)
+        else:
+            source.acquire_annual_archive(2024, max_total_bytes=expanded - 1)
+    assert raised.value.capture.body == body
+    assert len(transport.calls) == 1
+
+
+def test_corpus_without_a_title_is_refused_with_its_exact_capture():
+    body = archive(("empty/", b""))
+    transport = Transport(response(body))
+    with (
+        UsCodeAcquirer(budget=BUDGET, transport=transport) as source,
+        pytest.raises(UsCodeSourceError, match="holds no title member") as raised,
+    ):
+        source.acquire_corpus(CURRENT)
+    assert raised.value.capture.body == body
+    assert raised.value.refused_response.response_bytes == body
+    assert len(transport.calls) == 1
 
 
 @pytest.mark.parametrize(
