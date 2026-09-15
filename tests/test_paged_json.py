@@ -401,3 +401,27 @@ def test_cookies_set_by_one_response_do_not_steer_the_next_request():
     with reader(transport) as source:
         list(source.pages(URL, records_key="things"))
     assert "cookie" not in transport.calls[1].headers
+
+
+def test_family_reach_bounds_refuse_in_one_request_and_at_the_page_bound():
+    bounded = replace(FLAG_FAMILY, max_reachable_records=100, limit_field="page[size]", window_hint="date window")
+    transport = Transport(response(flag_page([{"id": 1}], total=101, has_next=True)))
+    with (
+        PagedJsonReader(family=bounded, budget=BUDGET, transport=transport) as source,
+        pytest.raises(PagedJsonSourceError, match="reaches at most 98; narrow the date window") as raised,
+    ):
+        list(
+            source.pages("https://api.example.gov/v4/things?page%5Bsize%5D=7&page%5Bnumber%5D=1", records_key="things")
+        )
+    assert raised.value.first_page.declared_count == 101 and len(transport.calls) == 1
+    paged = replace(FLAG_FAMILY, max_page_number=1)
+    transport = Transport(response(flag_page([{"id": 1}], total=5, has_next=True)))
+    with (
+        PagedJsonReader(family=paged, budget=BUDGET, transport=transport) as source,
+        pytest.raises(PagedJsonSourceError, match="page\\[number\\] bound 1 reached"),
+    ):
+        list(source.pages("https://api.example.gov/v4/things?page%5Bnumber%5D=1", records_key="things"))
+    assert len(transport.calls) == 1
+    for fields in ({"max_reachable_records": 0}, {"max_page_number": True}):
+        with pytest.raises(ValueError):
+            replace(FLAG_FAMILY, **fields)

@@ -94,12 +94,29 @@ shape, on that host, with no query and no fragment.
   a named constant carrying its evidence, because without it the whole route
   reads as "the unmetered host does not work", which is a clean and completely
   wrong answer.
-- **Its `403` never establishes absence.** A rejected client gets `403` with
-  the 919-byte `text/html` page; a file that genuinely is not there gets `403`
-  with S3's 111-byte `application/xml` `AccessDenied`. The shared capture
-  client maps every `403` to a credential refusal and retains no bytes for one,
-  so this route aborts and leaves the two apart to a caller's receipt. An
-  aborted capture is not a zero.
+- **Its two `403`s are named, and neither establishes absence.** A rejected
+  client gets `403` with a 919-byte CloudFront block page — `text/html`,
+  `Server: CloudFront`, `Request blocked.`, and a per-request `Request ID` that
+  changes its digest every time. A key the host serves nothing at gets `403`
+  with S3's 111-byte `application/xml` `<Code>AccessDenied</Code>` document —
+  `Server: AmazonS3`, digest
+  `a824bc7739e226e1b40ea0f8c4e4f4c6f796fc3b4abfa6e9abe3bd119a30d938`, the same
+  bytes on both 2026-09-14 captures. Because the route is keyless the shared
+  capture client retains the refusal body, so `attachment_refusal_kind()` reads
+  which refusal it is from those bytes and
+  `RegulationsGovAttachmentRefusedError` carries it as `refusal_kind`:
+  `"client-rejected"`, `"object-access-denied"`, or `"unrecognized"` for a body
+  in neither shape rather than a guess. It stays a `CredentialRefusedError`
+  subclass, so every caller that aborts on a refusal still aborts.
+  **`object-access-denied` is the bucket policy speaking, not a missing file**:
+  the body states a permission decision and says nothing about existence, and
+  S3's own missing-object answer (`NoSuchKey`, `404`) has never appeared on
+  this host. Only `404`/`410` —
+  `RegulationsGovAttachmentUnavailableError` — is this host saying the exact
+  URL has nothing. The classification is read from the publisher's words, not
+  from the byte count or the media type, so it does not depend on a length the
+  host is free to change; it is qualified in the tests against all six
+  retained refusal bodies from both 2026-09-14 receipts.
 - **Identity is proved four ways**: `application/pdf`, the `%PDF-` magic, a
   final URL equal to the locator, and — when the publisher declared a size —
   a byte count equal to it. Declared equalled actual on all 1,324 documents
@@ -179,9 +196,11 @@ uv run --frozen pytest -q tests/test_regulations_gov_api.py tests/test_paged_jso
 Cover the paging statement's three cross-checks, the `page[number]` bound, both
 media-type spellings, the locator grammar for both file names, the
 withheld-attachment shape, the credential-echo refusal on a list page and on an
-item route, and each of the four identity proofs on the file. Offline tests
-alone cannot see a media type the mock was written to send: qualify a change
-against the live routes as well, as the receipt records.
+item route, each of the four identity proofs on the file, and both named
+refusal kinds — including that an unrecognised `403` stays unrecognised and
+that a refusal is never read as absence. Offline tests alone cannot see a media
+type the mock was written to send: qualify a change against the live routes as
+well, as the receipt records.
 
 ## Evidence
 
@@ -194,4 +213,9 @@ earlier in the pinned PDF floor population, by a different tool. Headers, the
 refused `400`/`403`/`404` bodies, rate-limit readings and the attachment-size
 measurements are in
 `corpora/supply-2026-09-02/receipts/port-P05-regulations-gov-2026-09-14/` and
-`corpora/supply-2026-09-02/receipts/attachment-sample-2026-09-05.md`.
+`corpora/supply-2026-09-02/receipts/attachment-sample-2026-09-05.md`. The two
+`403` shapes were re-probed on 2026-09-14 through this module and again through
+plain HTTPX in
+`corpora/supply-2026-09-02/receipts/publisher-questions-2026-09-14/q2-regulations-gov-403/`:
+one request per case per tool, which establishes that the shapes still hold and
+nothing about how often either is served.

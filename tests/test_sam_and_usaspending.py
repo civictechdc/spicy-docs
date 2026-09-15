@@ -1,4 +1,10 @@
-"""SAM.gov and USAspending list routes: placeholder credentials dropped, POST pages recorded."""
+"""SAM.gov and USAspending list routes: placeholder credentials dropped, POST pages recorded.
+
+SAM.gov also caps how deep a walk can go -- the first 10,000 records of a query,
+with every reachable page still advertising a continuation past the cap -- so
+``entities`` refuses on the first page rather than walking into the publisher's
+``400``. See the module docstring for the live measurement.
+"""
 
 import json
 from datetime import date
@@ -8,7 +14,13 @@ import httpx
 import pytest
 
 from spicy_docs.sources.paged_json import PagedJsonBudget, PagedJsonSourceError
-from spicy_docs.sources.sam import SAM, SamEntitiesReader, entities_url
+from spicy_docs.sources.sam import (
+    MAX_REACHABLE_RECORDS,
+    SAM,
+    SamEntitiesReader,
+    entities_url,
+    reachable_records,
+)
 from spicy_docs.sources.usaspending import RECIPIENTS_URL, USASPENDING, UsaspendingRecipientsReader, recipients_request
 from spicy_docs.transport import retry
 
@@ -67,6 +79,47 @@ def test_sam_pinned_page_drops_the_placeholder_and_keeps_the_key_in_the_header()
     assert transport.calls[0].headers["x-api-key"] == KEY and "api_key" not in str(transport.calls[0].url)
     with pytest.raises(ValueError, match="requires an explicit API key"):
         SamEntitiesReader(budget=BUDGET, api_key=None, transport=transport)
+
+
+def test_reachable_records_counts_whole_pages_within_the_publishers_cap():
+    assert MAX_REACHABLE_RECORDS == 10_000
+    # The publisher refuses once (page + 1) * size passes the cap: at size 10 page
+    # 999 served and page 1000 did not; at size 7 page 1427 served and page 1428 did not.
+    assert reachable_records(10) == 10_000 and reachable_records(1) == 10_000
+    assert reachable_records(7) == 9_996 and reachable_records(3) == 9_999
+    for size in (0, -1, True, 2.0, "10"):
+        with pytest.raises(PagedJsonSourceError, match="size must be"):
+            reachable_records(size)
+
+
+def test_a_query_deeper_than_the_cap_refuses_on_its_first_page_and_keeps_that_page():
+    # The pinned page is itself such a query: registrationStatus=A declared
+    # 790,124 records, and nextLink keeps pointing past the cap all the way to
+    # the page that answers 400, so a walk would spend 1,000 requests to learn it.
+    transport = Transport(SAM_PAGE)
+    with (
+        SamEntitiesReader(budget=BUDGET, api_key=KEY, transport=transport) as source,
+        pytest.raises(PagedJsonSourceError, match="narrow the registrationDate window") as raised,
+    ):
+        list(source.entities(entities_url(size=2)))
+    assert "790124" in str(raised.value) and "10000" in str(raised.value)
+    assert len(transport.calls) == 1, "the refusal costs one request and follows no continuation"
+    assert raised.value.first_page.capture.body == SAM_PAGE, "the page's exact bytes stay the caller's evidence"
+
+
+def test_a_query_that_fits_the_cap_walks_to_the_publishers_terminal_page():
+    """A synthetic total: the pinned bytes with a declared count a walk can reach."""
+    first = json.loads(SAM_PAGE)
+    first["totalRecords"] = 4
+    last = json.loads(SAM_PAGE)
+    last["totalRecords"] = 4
+    del last["links"]["nextLink"]
+    transport = Transport(json.dumps(first).encode(), json.dumps(last).encode())
+    with SamEntitiesReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        pages = list(source.entities(entities_url(size=2)))
+    assert [page.declared_count for page in pages] == [4, 4]
+    assert sum(len(page.records) for page in pages) == 4 and pages[-1].next_url is None
+    assert [str(call.url).rsplit("page=", 1)[1] for call in transport.calls] == ["0", "1"]
 
 
 def test_usaspending_family_and_request():

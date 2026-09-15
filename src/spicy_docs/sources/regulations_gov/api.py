@@ -87,6 +87,7 @@ REGULATIONS_GOV_API = JsonPageFamily(
     count_path=("meta", "totalElements"),
     count_kind="advisory",
     media_types=("application/json", "application/vnd.api+json"),
+    max_page_number=MAX_PAGE_NUMBER,
 )
 # Live-verified 2026-09-14, one request each: postedDate, lastModifiedDate,
 # commentEndDate and title answer 200; agencyId and documentType answer 400
@@ -391,12 +392,7 @@ class RegulationsGovApiReader(PagedJsonReader):
         """
         for page in self.pages(url, records_key=DOCUMENTS_KEY, max_pages=max_pages):
             number = int(query_value(page.capture.requested_url, PAGE_NUMBER_FIELD) or 1)
-            listing = read_document_list_page(page, requested_page_number=number)
-            yield listing
-            if listing.has_next_page and number >= MAX_PAGE_NUMBER:
-                raise RegulationsGovApiError(
-                    f"Regulations.gov page[number] bound {MAX_PAGE_NUMBER} reached with a next page outstanding"
-                )
+            yield read_document_list_page(page, requested_page_number=number)
 
     def _item[Result](
         self, url: str, *, operation: str, identity: str, parse: Callable[[CapturedBodyResponse], Result]

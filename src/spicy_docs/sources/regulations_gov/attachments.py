@@ -23,12 +23,27 @@ whole route reads as "the unmetered host does not work", which is a clean and
 completely wrong answer, so the agent is a named constant with its evidence
 rather than an implicit default.
 
-**The host's 403 is ambiguous and never establishes absence.** A rejected
-client gets 403 with a 919-byte ``text/html`` body; a file that is genuinely not
-there gets 403 with S3's 111-byte ``application/xml`` ``AccessDenied``. The
-shared capture client maps every 403 to a credential refusal and deliberately
-retains no bytes for one, so this route aborts on 403 and leaves the two apart
-only in a caller's receipt. An aborted capture is not a zero.
+**The host's two 403s are told apart by name, and neither establishes absence.**
+A rejected client gets 403 with a 919-byte CloudFront ``text/html`` block page
+(``Request blocked.``, ``Server: CloudFront``, a per-request ``Request ID`` so
+its digest changes every time); a key the host serves nothing at gets 403 with
+S3's 111-byte ``application/xml`` ``<Code>AccessDenied</Code>`` document
+(``Server: AmazonS3``, digest
+``a824bc7739e226e1b40ea0f8c4e4f4c6f796fc3b4abfa6e9abe3bd119a30d938``, stable
+across 2026-09-14's two captures). Both shapes were re-probed live on 2026-09-14
+through this module and again through plain HTTPX
+(``supply-2026-09-02/receipts/publisher-questions-2026-09-14/q2-regulations-gov-403``).
+
+Because this route is keyless, the shared capture client retains the refusal
+body, so ``attachment_refusal_kind`` reads which refusal it is from those bytes
+and ``RegulationsGovAttachmentRefusedError`` carries the answer. It stays a
+``CredentialRefusedError`` subclass, so every caller that aborts on a refusal
+still aborts. **An S3 ``AccessDenied`` is the bucket's policy speaking, not
+proof the object is missing**: its body states a permission decision and nothing
+about existence, and S3's own missing-object answer (``NoSuchKey``, 404) has
+never appeared on this host. So neither kind is a zero, and only 404/410 --
+``RegulationsGovAttachmentUnavailableError`` -- is this host saying the exact
+URL has nothing.
 
 **Bounds come from measured files, not from a guess.** Across the 2,736 files
 downloaded in the 2026-09-05 sample the median was 289,436 bytes, the 95th
@@ -45,6 +60,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
@@ -53,6 +69,7 @@ from urllib.parse import urlsplit
 from spicy_docs.sources.pdf_bytes import check_pdf_bytes
 from spicy_docs.sources.regulations_gov.definitions import _ASCII_ID
 from spicy_docs.transport.captured import CapturedBodyResponse
+from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
@@ -82,6 +99,17 @@ BROWSER_USER_AGENT = (
 _CONTENT_NAME = re.compile(r"content\.(?P<extension>[A-Za-z0-9]{1,8})")
 _ATTACHMENT_NAME = re.compile(r"attachment_(?P<index>[1-9][0-9]{0,3})\.(?P<extension>[A-Za-z0-9]{1,8})")
 type AttachmentKind = Literal["content", "attachment"]
+type AttachmentRefusalKind = Literal["client-rejected", "object-access-denied", "unrecognized"]
+# Both markers are quoted from the bodies retained on 2026-09-14 (see the module
+# docstring). The CloudFront page's own digest changes per request, so the
+# classification reads the text it always carries rather than a digest.
+_CLOUDFRONT_MARKERS = (b"The request could not be satisfied", b"Request blocked")
+_S3_ACCESS_DENIED_MARKER = b"<Code>AccessDenied</Code>"
+_REFUSAL_MEANINGS: dict[AttachmentRefusalKind, str] = {
+    "client-rejected": "the edge rejected this client, so the request never reached the file",
+    "object-access-denied": "the bucket policy denied this key, which states nothing about the file existing",
+    "unrecognized": "the refusal is in neither shape this host is known to serve",
+}
 
 
 class RegulationsGovAttachmentError(ValueError):
@@ -94,6 +122,44 @@ class RegulationsGovAttachmentUnavailableError(RegulationsGovAttachmentError):
     def __init__(self, capture: CapturedBodyResponse) -> None:
         super().__init__(f"Regulations.gov attachment host answered HTTP {capture.status_code}")
         self.capture = capture
+
+
+class RegulationsGovAttachmentRefusedError(CredentialRefusedError):
+    """The host refused the request, and which of its two refusals this was.
+
+    A ``CredentialRefusedError`` subclass on purpose: this host holds no
+    credential, but a refusal still ends the operation, so callers that abort on
+    one keep aborting. ``refusal_kind`` lets a caller tell "my client was
+    rejected" from "the host serves nothing at this key" without reading either
+    as the file being absent. The refused body, its media type and its byte size
+    stay on ``refused_response``, which the keyless capture retains.
+    """
+
+    def __init__(self, locator: AttachmentLocator, kind: AttachmentRefusalKind) -> None:
+        super().__init__(
+            f"Regulations.gov attachment host refused {locator.document_id}/{locator.file_name}: "
+            f"{_REFUSAL_MEANINGS[kind]}; this is not an observation that the file is absent"
+        )
+        self.locator = locator
+        self.refusal_kind = kind
+
+
+def attachment_refusal_kind(body: bytes | None) -> AttachmentRefusalKind:
+    """Which of this host's refusals the retained body is. Never an absence.
+
+    Read from the bytes, not from the media type or the byte count, so the two
+    kinds are separated by the publisher's own words: a CloudFront block page
+    says the request could not be satisfied, an S3 error document says
+    ``AccessDenied``. A body in neither shape is ``unrecognized`` rather than
+    guessed at.
+    """
+    if not body:
+        return "unrecognized"
+    if _S3_ACCESS_DENIED_MARKER in body:
+        return "object-access-denied"
+    if any(marker in body for marker in _CLOUDFRONT_MARKERS):
+        return "client-rejected"
+    return "unrecognized"
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,6 +288,26 @@ def check_pdf_body(capture: CapturedBodyResponse, *, locator: AttachmentLocator,
         raise RegulationsGovAttachmentError("attachment byte count differs from the size the publisher declared")
 
 
+@contextmanager
+def _named_refusal(locator: AttachmentLocator) -> Iterator[None]:
+    """Name which refusal this host answered, keeping the evidence the shared client attached.
+
+    The keyless capture retains the 401/403 body on the error, so the kind is
+    read from those exact bytes. The acquisition context and the refused
+    response carry over unchanged; only the name and the message are added.
+    """
+    try:
+        yield
+    except CredentialRefusedError as error:
+        refused = getattr(error, "refused_response", None)
+        named = RegulationsGovAttachmentRefusedError(
+            locator, attachment_refusal_kind(getattr(refused, "response_bytes", None))
+        )
+        carried = ("regulations_gov_attachment_acquisition", "refused_response")
+        named.__dict__.update({key: error.__dict__[key] for key in carried if key in error.__dict__})
+        raise named from error
+
+
 class RegulationsGovAttachmentAcquirer(SourceAcquirer):
     """Keyless, paced capture of one declared PDF per call; the API key belongs to the other host."""
 
@@ -258,7 +344,11 @@ class RegulationsGovAttachmentAcquirer(SourceAcquirer):
     def acquire_pdf(
         self, file: DeclaredFile | AttachmentLocator, *, max_bytes: int | None = None
     ) -> AttachmentAcquisition:
-        """Capture one declared PDF. A ``DeclaredFile`` also binds the publisher's declared size."""
+        """Capture one declared PDF. A ``DeclaredFile`` also binds the publisher's declared size.
+
+        A 401/403 raises ``RegulationsGovAttachmentRefusedError`` naming which of
+        the host's refusals it was; neither names an absent file.
+        """
         locator = file.locator if isinstance(file, DeclaredFile) else file
         declared_size = file.declared_size if isinstance(file, DeclaredFile) else None
         if not isinstance(locator, AttachmentLocator):
@@ -268,21 +358,22 @@ class RegulationsGovAttachmentAcquirer(SourceAcquirer):
         limit = narrow_byte_limit(self.budget.max_bytes, max_bytes)
         if declared_size is not None and declared_size > limit:
             raise RegulationsGovAttachmentError("publisher declares the file larger than the capture byte bound")
-        _checked, capture = self.capture_validated(
-            locator.url,
-            media_types=(PDF_MEDIA_TYPE,),
-            parse=lambda response, _limit: check_pdf_body(response, locator=locator, declared_size=declared_size),
-            max_bytes=limit,
-            unavailable=RegulationsGovAttachmentUnavailableError,
-            context={
-                "operation": "attachment-pdf",
-                "url": locator.url,
-                "documentId": locator.document_id,
-                "fileName": locator.file_name,
-                "declaredSize": declared_size,
-                "maxBytes": limit,
-            },
-        )
+        with _named_refusal(locator):
+            _checked, capture = self.capture_validated(
+                locator.url,
+                media_types=(PDF_MEDIA_TYPE,),
+                parse=lambda response, _limit: check_pdf_body(response, locator=locator, declared_size=declared_size),
+                max_bytes=limit,
+                unavailable=RegulationsGovAttachmentUnavailableError,
+                context={
+                    "operation": "attachment-pdf",
+                    "url": locator.url,
+                    "documentId": locator.document_id,
+                    "fileName": locator.file_name,
+                    "declaredSize": declared_size,
+                    "maxBytes": limit,
+                },
+            )
         return AttachmentAcquisition(locator, capture, declared_size, self.request_count, self.budget)
 
 
@@ -297,11 +388,14 @@ __all__ = [
     "AttachmentBudget",
     "AttachmentKind",
     "AttachmentLocator",
+    "AttachmentRefusalKind",
     "DeclaredFile",
     "RegulationsGovAttachmentAcquirer",
     "RegulationsGovAttachmentError",
+    "RegulationsGovAttachmentRefusedError",
     "RegulationsGovAttachmentUnavailableError",
     "attachment_locator",
+    "attachment_refusal_kind",
     "check_pdf_body",
     "declared_files",
     "pdf_files",

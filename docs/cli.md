@@ -240,3 +240,77 @@ and truncation flag. Earlier responses do not become evidence of a later failed 
 Use [`spicy-docs-fec`](sources/fec.md) to list official collections, read bounded
 OpenFEC JSON/XML metadata, and independently download selected native originals.
 It writes raw observations and acquisition receipts, not sealed source releases.
+
+## Any publisher JSON list
+
+Use `spicy-docs-list` to walk one [registered list route](sources/listings.md)
+page by page over the shared paged-JSON traversal, instead of one wrapper per
+publisher. It retains each page's exact bytes and writes one receipt row per
+page; it publishes no release.
+
+```sh
+uv run --frozen spicy-docs-list --list-families
+uv run --frozen spicy-docs-list --family congress-bills \
+  --url 'https://api.congress.gov/v3/bill?format=json&limit=250&sort=updateDate+desc' \
+  --env-file .env --env-var API_GOV \
+  --store /persistent/list-blobs --output /new/pages.jsonl --max-pages 50
+uv run --frozen spicy-docs-list --family usaspending-recipients \
+  --body '{"limit":100,"page":1,"order":"desc","sort":"amount","award_type":"all"}' \
+  --store /persistent/list-blobs --output /new/recipients.jsonl --max-pages 5
+```
+
+`--family` names the route; `--list-families` describes every route offline and
+makes no request. A GET route needs `--url` for its first page, spelled as the
+publisher spells it; the POST route needs `--body` and supplies its own URL.
+`--output` must be a new file and defaults to stdout. Needs the `acquisition`
+extra, except `--list-families`.
+
+| Family | First request | Rows | Credential |
+| --- | --- | --- | --- |
+| `congress-bills`, `congress-crs` | `--url` | `bills`, `CRSReports` | `API_GOV` |
+| `govinfo-packages` (published or collections), `govinfo-granules` | `--url` | `packages`, `granules` | `API_GOV` |
+| `fcc-proceedings`, `fcc-filings` | `--url` with explicit `limit`/`offset` | `proceeding`, `filing` | `API_GOV` |
+| `regulations-gov-documents` | `--url` with explicit `page[number]` | `data` | `API_GOV` |
+| `sam-entities` | `--url` | `entityData` | `SAM_GOV` |
+| `lda-filings`, `courtlistener-search` | `--url` | `results` | Optional token; name it with `--env-var` |
+| `usaspending-recipients` | `--body` | `results` | None; `--env-file` is refused |
+
+This command runs the shared traversal only. Two library readers add
+publisher bounds it does not apply: `SamEntitiesReader.entities` refuses a
+query whose declared total exceeds what a SAM walk can reach, and
+`RegulationsGovApiReader.documents` checks regulations.gov's own paging
+statement and its `page[number]` 40 bound. Here those limits surface as the
+publisher's own refusal at the page that hits them, after the requests it took
+to get there; use the library readers when that cost matters.
+
+Credentials come only from `--env-file` through `read_api_key`, travel only as
+the header the family names, and never enter a URL, a request body, a receipt
+row or a message. A family that requires a credential and gets none refuses
+before any request. `--env-var` defaults to the conventional variable above.
+
+Budgets: `--max-pages` (100) bounds continuations, and reaching it with one
+outstanding is a refusal, not an end; `--max-requests` (3) bounds attempts per
+page including retries; `--max-page-bytes` (16 MiB); `--timeout-seconds` (60);
+`--min-request-interval-seconds` defaults to the family's own pacing, 0.25
+everywhere except `regulations-gov-documents`, metered at 1,000 requests per
+hour and so paced at 3.7.
+
+Each page's bytes are written to `--store` under `sha256/<hex>`, and one
+`page` row records `family`, `page_index`, `records_key`, `request_url`,
+`resolved_url`, `request_body`, `status`, `media_type`, `observed_at`, `bytes`,
+`sha256`, `blob_path`, `records`, `declared_count` and
+`continuation_offered`. A run writes `started`, then one `page` row per page,
+then `complete` with `pages`, `records` and `requests`:
+
+| Result | Rows | Exit |
+| --- | --- | --- |
+| Exhausted traversal | `started`, `page`…, `complete` | 0 |
+| Refusal | `started`, `page`… already observed, `failed` | 1 |
+| Argument usage error | none, message on stderr | 2 |
+
+A `failed` row carries `error_type`, the scrubbed `error`, `pages` observed,
+`complete: false`, the reader's `acquisition` context (operation, family, URL,
+request body, page index, records key, request count) and, when the error
+carried bytes, `refused_evidence` with their `stage`, `sha256` and size. Pages
+already written stay valid partial observations of that query on that day; a
+page that echoed the credential is refused with nothing retained.

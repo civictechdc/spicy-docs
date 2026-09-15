@@ -1,6 +1,6 @@
 [project]
 name = "spicy-docs"
-version = "0.8.0"
+version = "0.8.1"
 description = "Faithful acquisition from government sources and immutable source-native release publication"
 requires-python = ">=3.12,<3.13"
 dependencies = [
@@ -36,6 +36,7 @@ dev = [
 [project.scripts]
 spicy-docs-source-native = "spicy_docs.cli.source_native:main"
 spicy-docs-fec = "spicy_docs.cli.fec:main"
+spicy-docs-list = "spicy_docs.cli.list_pages:main"
 
 [build-system]
 requires = ["uv_build<0.12"]

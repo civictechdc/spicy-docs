@@ -1,7 +1,13 @@
-"""FCC ECFS routes walk explicit date windows by offset and end at the first short page."""
+"""FCC ECFS routes walk explicit date windows by offset and end at the first short page.
+
+The publisher's bracketed bounds are instants at ``00:00:00Z``, so an inclusive
+caller window ending on day E is sent as ``[lte]E+1``; see the module docstring
+for the live measurement behind that.
+"""
 
 import json
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 import pytest
@@ -38,7 +44,7 @@ def no_retry_delay(monkeypatch):
 def test_family_and_window_urls():
     assert FCC_ECFS.next_kind == "offset" and FCC_ECFS.count_path is None and FCC_ECFS.requires_credential
     assert proceedings_url(created_from="2026-01-01", created_to="2026-01-31", limit=2) == (
-        "https://publicapi.fcc.gov/ecfs/proceedings?date_proceeding_created=%5Bgte%5D2026-01-01%5Blte%5D2026-01-31"
+        "https://publicapi.fcc.gov/ecfs/proceedings?date_proceeding_created=%5Bgte%5D2026-01-01%5Blte%5D2026-02-01"
         "&sort=date_proceeding_created%2CDESC&limit=2&offset=0"
     )
     assert filings_url(received_from="2026-09-01", received_to="2026-09-02", limit=2, descending=False).endswith(
@@ -49,9 +55,32 @@ def test_family_and_window_urls():
         {"created_from": "2026-02-01", "created_to": "2026-01-01"},
         {"created_from": "2026-01-01", "created_to": "2026-01-31", "limit": 251},
         {"created_from": "2026-01-01", "created_to": "2026-01-31", "offset": -1},
+        {"created_from": "9999-12-31", "created_to": "9999-12-31"},
     ):
         with pytest.raises(PagedJsonSourceError):
             proceedings_url(**kwargs)
+
+
+@pytest.mark.parametrize(
+    "start,end,literal",
+    [
+        # A same-day window means that whole day: [gte]D[lte]D matched only the
+        # midnight instant and answered zero rows live on 2026-09-14.
+        ("2026-09-08", "2026-09-08", "[gte]2026-09-08[lte]2026-09-09"),
+        ("2026-09-01", "2026-09-02", "[gte]2026-09-01[lte]2026-09-03"),
+        # Month, year and leap-day ends roll over rather than being clamped.
+        ("2026-01-01", "2026-01-31", "[gte]2026-01-01[lte]2026-02-01"),
+        ("2026-12-01", "2026-12-31", "[gte]2026-12-01[lte]2027-01-01"),
+        ("2024-02-28", "2024-02-28", "[gte]2024-02-28[lte]2024-02-29"),
+    ],
+)
+def test_an_inclusive_caller_window_is_sent_as_the_publishers_following_midnight(start, end, literal):
+    for url, field in (
+        (filings_url(received_from=start, received_to=end), "date_received"),
+        (proceedings_url(created_from=start, created_to=end), "date_proceeding_created"),
+    ):
+        assert f"{field}={quote(literal)}" in url
+        assert f"{field}={quote(f'[gte]{start}[lte]{end}')}" not in url, "the end day must not be excluded"
 
 
 def test_pinned_pages_parse_and_the_walk_advances_by_offset():

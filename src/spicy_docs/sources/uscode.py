@@ -24,9 +24,9 @@ This publisher's USLM is **not** GovInfo's. OLRC serves USLM 1.0 in
 ``http://xml.house.gov/schemas/uslm/1.0`` under a ``uscDoc`` root;
 :mod:`spicy_docs.sources.govinfo.uslm` serves USLM 2.x in
 ``http://schemas.gpo.gov/xml/uslm`` under ``pLaw`` and ``statuteCompilation``.
-The two share a name and no element names here, so this module scans with the
-shared :class:`~spicy_docs.sources.xml.IdentityXmlScan` rather than that
-module's namespace-bound scanner.
+The two share no element name, but they do share the document shape, so this
+module binds that module's :class:`~spicy_docs.sources.govinfo.uslm.UslmScan` to
+this namespace, root and body sections rather than scanning twice.
 
 Three publisher behaviours shape every check below, all measured on 2026-09-14
 and retained in ``corpora/supply-2026-09-02/receipts/port-P01-uscode-2026-09-14/``:
@@ -48,9 +48,7 @@ and retained in ``corpora/supply-2026-09-02/receipts/port-P01-uscode-2026-09-14/
 from __future__ import annotations
 
 import hashlib
-import io
 import re
-import zipfile
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
@@ -58,7 +56,9 @@ from typing import Literal
 from urllib.parse import parse_qs, urlsplit
 from xml.etree.ElementTree import Element
 
-from .xml import IdentityXmlScan, parse_xml
+from .govinfo.uslm import UslmScan
+from .xml import parse_xml
+from .zip_archive import archive_members, open_archive, read_member
 
 OLRC = "https://uscode.house.gov"
 USLM_NAMESPACE = "http://xml.house.gov/schemas/uslm/1.0"
@@ -283,10 +283,6 @@ _USC_META_FIELDS = (
     _u("docPublicationName"),
     _u("property"),
 )
-#: A title's text lives in ``main``; an appendix title's lives in ``appendix``.
-_BODY_SECTIONS = frozenset({_u("main"), _u("appendix")})
-_META = _u("meta")
-_PROPERTY = _u("property")
 
 
 @dataclass(frozen=True, slots=True)
@@ -309,55 +305,32 @@ class UsCodeTitleMetadata:
     body_present: bool = True
 
 
-class _UscDocScan(IdentityXmlScan):
-    """One ``uscDoc``: its meta block, its stated properties and whether it carries text."""
+def _usc_scan() -> UslmScan:
+    """The shared USLM scan bound to OLRC's namespace, root, body sections and refusals.
 
-    def __init__(self) -> None:
-        self.expected_root = _u("uscDoc")
-        self.meta_path = (self.expected_root, _u("meta"))
-        super().__init__(
-            {self.meta_path + (name,) for name in _USC_META_FIELDS},
-            error_type=UsCodeSourceError,
-            label="U.S. Code USLM",
-        )
-        self.meta_count = 0
-        self.property_roles: list[str | None] = []
-        self.schema_location: str | None = None
-        self.identifier: str | None = None
+    A title's text lives in ``main`` and an appendix title's in ``appendix``;
+    both are the document's own text, so this publisher has no section that
+    states a body it does not carry.
+    """
+    return UslmScan(
+        "uscDoc",
+        namespace=USLM_NAMESPACE,
+        body_sections=("main", "appendix"),
+        referring_sections=(),
+        meta_fields=_USC_META_FIELDS,
+        error_type=UsCodeSourceError,
+        label="U.S. Code USLM",
+        root_refusal="U.S. Code USLM root is not uscDoc in the OLRC namespace",
+    )
 
-    def observe_start(self, tag: str, attributes: dict[str, str]) -> None:
-        if len(self.stack) == 1:
-            if tag != self.expected_root:
-                raise UsCodeSourceError("U.S. Code USLM root is not uscDoc in the OLRC namespace")
-            self.schema_location = attributes.get("{http://www.w3.org/2001/XMLSchema-instance}schemaLocation")
-            # Absent in one retained file: the eliminated Title 50 Appendix,
-            # converted in 2015 and reissued unchanged at every release since.
-            self.identifier = attributes.get("identifier")
-        elif tag == self.expected_root:
-            raise UsCodeSourceError("U.S. Code USLM contains a nested document root")
-        # Depth and parent, not self.path: the largest title is 1.1 million
-        # elements, and rebuilding the ancestor tuple twice per element cost
-        # more than the parse (2.4 s of usc42's 3.4 s, measured).
-        depth = len(self.stack)
-        if depth == 2 and tag == _META:
-            self.meta_count += 1
-        elif depth == 3 and tag == _PROPERTY and self.stack[1][0] == _META:
-            self.property_roles.append(attributes.get("role"))
 
-    def observe_text(self, text: str) -> None:
-        if not self.body_found and text.strip() and len(self.stack) > 1 and self.stack[1][0] in _BODY_SECTIONS:
-            self.body_found = True
-
-    def meta(self, name: str, *, required: bool = False) -> str | None:
-        value = self.field(self.meta_path + (name,), required=required)
-        return value.strip() if value is not None else None
-
-    def property(self, role: str) -> str | None:
-        values = self.values.get(self.meta_path + (_u("property"),), [])
-        stated = [value.strip() for found, value in zip(self.property_roles, values, strict=True) if found == role]
-        if len(stated) > 1:
-            raise UsCodeSourceError(f"U.S. Code USLM repeats the {role} property")
-        return stated[0] if stated else None
+def _property(scan: UslmScan, role: str) -> str | None:
+    """The one value the meta block states for a property role, or None where it states none."""
+    values = scan.values.get(scan.meta_path + (_u("property"),), [])
+    stated = [value.strip() for found, value in zip(scan.property_roles, values, strict=True) if found == role]
+    if len(stated) > 1:
+        raise UsCodeSourceError(f"U.S. Code USLM repeats the {role} property")
+    return stated[0] if stated else None
 
 
 def validate_title_xml(
@@ -380,12 +353,8 @@ def validate_title_xml(
     if final_url is not None and final_url != title_xml_locator(selection):
         raise UsCodeSourceError("U.S. Code title response URL differs from the requested title")
     _limit(max_bytes)
-    scan = _UscDocScan()
-    scan.read(_body(body, max_bytes, "U.S. Code USLM"), max_bytes)
-    if scan.meta_count != 1:
-        raise UsCodeSourceError("U.S. Code USLM requires exactly one meta block")
-    if not scan.body_found:
-        raise UsCodeSourceError("U.S. Code USLM lacks source content in main or appendix")
+    scan = _usc_scan()
+    scan.read(body, max_bytes)
     doc_number = scan.meta(_u("docNumber"), required=True) or ""
     if doc_number != selection.doc_number:
         raise UsCodeSourceError("U.S. Code title native number differs from the request")
@@ -411,11 +380,11 @@ def validate_title_xml(
         scan.meta(_dc("publisher")),
         scan.meta(_dc("creator")),
         scan.meta(_dcterms("created")),
-        scan.property("is-positive-law"),
+        _property(scan, "is-positive-law"),
         scan.schema_location,
         scan.identifier,
         tuple(basis),
-        body_present=scan.body_found,
+        body_present=scan.body_text,
     )
 
 
@@ -433,47 +402,6 @@ class UsCodeArchive:
 
     release_point: str
     entries: tuple[UsCodeArchiveEntry, ...]
-
-
-def _open_zip(body: bytes, max_bytes: int, label: str) -> zipfile.ZipFile:
-    _body(body, max_bytes, label)
-    if body[:4] != b"PK\x03\x04":
-        raise UsCodeSourceError(f"{label} does not start with a zip local file header")
-    try:
-        archive = zipfile.ZipFile(io.BytesIO(body))
-        if archive.testzip() is not None:
-            raise UsCodeSourceError(f"{label} fails its CRC check")
-    except zipfile.BadZipFile as error:
-        raise UsCodeSourceError(f"{label} is malformed") from error
-    return archive
-
-
-def _members(archive: zipfile.ZipFile, max_entries: int, label: str) -> list[zipfile.ZipInfo]:
-    members = [info for info in archive.infolist() if not info.is_dir()]
-    if len(members) > max_entries:
-        raise UsCodeSourceError(f"{label} contains more entries than max_entries")
-    seen: set[str] = set()
-    for info in members:
-        name = info.filename.rsplit("/", 1)[-1]
-        if name in seen:
-            raise UsCodeSourceError(f"{label} repeats an entry name")
-        seen.add(name)
-    return members
-
-
-def _read_member(
-    archive: zipfile.ZipFile,
-    info: zipfile.ZipInfo,
-    max_entry_bytes: int,
-    label: str,
-    bound: str = "max_entry_bytes",
-) -> bytes:
-    if info.file_size > max_entry_bytes:
-        raise UsCodeSourceError(f"{label} entry exceeds {bound}")
-    data = archive.read(info)
-    if len(data) != info.file_size:
-        raise UsCodeSourceError(f"{label} entry size differs from its header")
-    return data
 
 
 def _title_code(name: str) -> str | None:
@@ -495,15 +423,15 @@ def read_title_archive(
     _limit(max_bytes)
     _limit(max_entry_bytes, "max_entry_bytes")
     label = "U.S. Code title archive"
-    with _open_zip(body, max_bytes, label) as archive:
-        members = _members(archive, 2, label)
+    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
+        members = archive_members(archive, max_entries=2, error_type=UsCodeSourceError, label=label)
         if len(members) != 1:
             raise UsCodeSourceError("U.S. Code title archive must hold exactly one member")
         info = members[0]
         code = _title_code(info.filename.rsplit("/", 1)[-1])
         if code != selection.title:
             raise UsCodeSourceError("U.S. Code title archive member name is not the requested title")
-        data = _read_member(archive, info, max_entry_bytes, label)
+        data = read_member(archive, info, max_bytes=max_entry_bytes, error_type=UsCodeSourceError, label=label)
         metadata = validate_title_xml(data, selection=selection, max_bytes=max_entry_bytes)
         entry = UsCodeArchiveEntry(info.filename, len(data), _digest(data), metadata)
     return UsCodeArchive(selection.release_point.label, (entry,))
@@ -525,12 +453,12 @@ def read_corpus_archive(
     _count(max_entries, "max_entries")
     label = "U.S. Code corpus archive"
     entries = []
-    with _open_zip(body, max_bytes, label) as archive:
-        for info in _members(archive, max_entries, label):
+    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
+        for info in archive_members(archive, max_entries=max_entries, error_type=UsCodeSourceError, label=label):
             code = _title_code(info.filename.rsplit("/", 1)[-1])
             if code is None:
                 raise UsCodeSourceError("U.S. Code corpus archive entry name is not a title member")
-            data = _read_member(archive, info, max_entry_bytes, label)
+            data = read_member(archive, info, max_bytes=max_entry_bytes, error_type=UsCodeSourceError, label=label)
             metadata = validate_title_xml(
                 data, selection=TitleSelection(release_point, code), max_bytes=max_entry_bytes
             )
@@ -681,11 +609,11 @@ def read_annual_archive(
     others: list[AnnualArchiveEntry] = []
     carried: list[str] = []
     names: list[str] = []
-    with _open_zip(body, max_bytes, label) as archive:
-        for info in _members(archive, max_entries, label):
+    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
+        for info in archive_members(archive, max_entries=max_entries, error_type=UsCodeSourceError, label=label):
             stem = info.filename.rsplit("/", 1)[-1]
             match = _ANNUAL_MEMBER.fullmatch(stem)
-            data = _read_member(archive, info, max_entry_bytes, label)
+            data = read_member(archive, info, max_bytes=max_entry_bytes, error_type=UsCodeSourceError, label=label)
             if match is None:
                 # A member this reader does not route must not be a title in
                 # disguise: the same comments it would be validated by decide it.
@@ -1345,8 +1273,8 @@ def read_table3_bulk_member(
     _limit(max_bytes)
     _limit(max_member_bytes, "max_member_bytes")
     label = "Table III bulk archive"
-    with _open_zip(body, max_bytes, label) as archive:
-        members = _members(archive, 2, label)
+    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
+        members = archive_members(archive, max_entries=2, error_type=UsCodeSourceError, label=label)
         if len(members) != 1:
             raise UsCodeSourceError("Table III bulk archive must hold exactly one member")
         info = members[0]
@@ -1356,7 +1284,14 @@ def read_table3_bulk_member(
         return (
             info.filename,
             match["release_point"],
-            _read_member(archive, info, max_member_bytes, label, "max_member_bytes"),
+            read_member(
+                archive,
+                info,
+                max_bytes=max_member_bytes,
+                error_type=UsCodeSourceError,
+                label=label,
+                bound="max_member_bytes",
+            ),
         )
 
 
