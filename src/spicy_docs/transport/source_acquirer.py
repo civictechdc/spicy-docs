@@ -163,8 +163,9 @@ class SourceAcquirer:
                 raise self.error_type(f"{self.label} source Content-Type differs from the requested format")
             return parse(capture, max_bytes), capture
         except Exception as error:
-            # A credential refusal never carries response bytes: a body that
-            # echoed the key must not be retained as evidence.
+            # Transport already attaches bounded public refusal evidence.
+            # Do not attach a capture here after a credential refusal: its body
+            # may have echoed the key.
             if capture is not None and not isinstance(error, CredentialRefusedError):
                 error.__dict__["capture"] = capture
                 attach_refused_response(error, refused_capture(capture, stage="source-validation"))
