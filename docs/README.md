@@ -9,6 +9,7 @@
 - [Source workflows](source-workflows.md): choose raw records, releases or tables.
 - [Mapped markup](markup-reading.md): XML/HTML observations and original byte positions.
 - [Image headers](image-headers.md): declared dimensions without image decoding.
+- [JSON reading](json-reading.md): source values and exact record positions.
 - [PDF/image extraction API](pdf-extraction-api.md): injected readers, strategies
   and recognition backends with separate metadata, body and raw observations.
 - [PDF extraction choices](pdf-extraction-choices.md): saved native, OCR, vision
