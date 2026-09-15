@@ -47,6 +47,8 @@ and [Rulespec inventory](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receip
 add current callers, behavior differences and migration checks. An inventory
 finding is not a completed port.
 
+**Current: 11 of 20 shared-parsing tasks complete; nine remain open.**
+
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
   serialization, evidence helpers and dependencies across all six repositories.
@@ -205,7 +207,7 @@ finding is not a completed port.
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
-  **PAR03–PAR07 and PAR12 complete:** ordinary wheels and receiving code run outside
+  **PAR03–PAR07, PAR12, PAR13 and PAR15 complete:** ordinary wheels and receiving code run outside
   the source checkouts. Other families remain open. Runtime producer evidence
   is now complete for U.S. Code source credits, Unified Agenda and Topics.
   RefSpec `4f6c2acb` records installed reader source hashes in source-credit
@@ -238,6 +240,9 @@ finding is not a completed port.
   **PAR12 complete:** DocSpec, SpicyRegs and RefSpec GAO use the shared pypdf
   reader; retired page loops remain only as test oracles. RefSpec's styled-text
   and geometry visitors retain distinct font/position responsibilities.
+  **PAR13/PAR15 complete:** DocSpec's syntax parsers and image header loops are
+  removed; RefSpec delegates source XML parsing and retains its named formatter.
+  Frozen copies stay test-only. Both receivers removed their superseded wheels.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
@@ -275,19 +280,28 @@ finding is not a completed port.
   source commits. Provider `da531c4`; receivers `97ffe02`, `ee933b7`, `4fe282c1`.
   PAR20 separately tracks discarded multi-attachment diagnostics.
   [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par12/delivery.md>).
-- [ ] **PAR13 — Share mapped XML/HTML text reading.** Consolidate RefSpec and
-  DocSpec source parsing in SpicyDocs. Preserve named layout profiles, Unicode
-  character versus original-byte positions, inserted text, entities, XPath,
-  attributes and table boundaries. Reuse bounded scanning; qualify both
-  receivers' real fixtures before deleting their readers.
+- [x] **PAR13 — Share mapped XML/HTML text reading.** SpicyDocs 0.16.0 owns
+  bounded source events and the XML scanner. DocSpec 0.5.0 uses them for native
+  metadata and visible text; RefSpec 0.1.0.dev8 reuses the shared tree parser.
+  Layout, headings, Unicode character positions, source-byte evidence and legal
+  interpretation stay with their consumers. V2 mappings correct source spans
+  and exactness; stage identities bind installed reader files. Empty HTML and
+  inert external XML declarations retain their prior outcomes. Six retained
+  RefSpec fragments, the 157 MB title-40 parse, full provider/DocSpec checks,
+  independent review and ordinary installed wheels pass. Source commits:
+  `71566b3`, `051ce05`, `bd045e8f`.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par13/delivery.md>).
 - [ ] **PAR14 — Share source JSON decoding and record positions.** Reuse one
   SpicyDocs decoder with explicit integer, Decimal and finite-float policies.
   Preserve duplicate-key/non-finite refusals and exact record spans. DocSpec
   retains segment construction; Rulespec Artifacts retains artifact encoding.
-- [ ] **PAR15 — Move image-header observations into SpicyDocs.** Have DocSpec
-  adopt a core-only PNG/GIF/JPEG header reader. Distinguish stated header
-  dimensions from successful image decoding and oriented display geometry;
-  preserve truncated/unsupported results without requiring Pillow.
+- [x] **PAR15 — Move image-header observations into SpicyDocs.** DocSpec uses
+  the core PNG/GIF/JPEG reader without Pillow. Header dimensions remain declared
+  observations, separate from decoding or oriented display geometry. The v2
+  reader corrects PNG chunk and JPEG marker/frame handling while retaining
+  header-only, zero and unsupported/truncated outcomes. Complete encoded images,
+  frozen-oracle mutations and installed core-wheel checks pass.
+  [Guide](image-headers.md) · [Delivery](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par13/delivery.md>).
 - [ ] **PAR16 — Reuse Rulespec Artifacts in Rulespec's v2 release tools.** Delete
   duplicate canonical encoding/admission logic after checking release bytes,
   Unicode key order, integer bounds, duplicate keys and refusal cases. Keep
