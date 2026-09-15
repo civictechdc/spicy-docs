@@ -48,6 +48,11 @@ Offline, `validate_title_xml`, `read_title_archive`, `read_corpus_archive`,
 a selection. `iter_table3_acts` streams the bulk file's 48,973 acts without
 holding them.
 
+To parse the retained content, use the [structure and annual section readers](uscode-structure.md)
+and [reference and source-credit readers](uscode-references.md). They preserve
+literal source observations; applications save those results and apply their own
+citation or legal-status rules.
+
 ## Choose a budget the route can actually meet
 
 A single title zip is 42 KB and arrives in about 11 seconds. Three routes are
