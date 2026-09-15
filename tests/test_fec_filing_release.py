@@ -247,3 +247,13 @@ def test_existing_committee_release_pin_is_unchanged_by_shared_helpers(tmp_path)
         published.artifact.pin.artifact_digest
         == "sha256:df6053d86ad5f8147c930feeb47e8e0b84bd48a6de7ae2efd0d1ba678c75dc73"
     )
+
+
+def test_existing_filing_release_pin_is_unchanged_by_shared_profile_wiring(tmp_path):
+    captures, _, blobs = _inputs(tmp_path)
+    published, _ = _publish(tmp_path, captures, iter_retained_filing_pages(captures, blob_source=blobs))
+    # Frozen from c5082cc before candidate-query support and shared wiring.
+    assert (
+        published.artifact.pin.artifact_digest
+        == "sha256:41e614766d25420a943cb6c612f4ad907bf1bba4793b18f76a18921090de2413"
+    )

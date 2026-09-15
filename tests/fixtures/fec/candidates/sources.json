@@ -1,0 +1,34 @@
+[
+  {
+    "file": "selected.json",
+    "capture": {
+      "requestUrl": "https://api.open.fec.gov/v1/candidates/?candidate_id=H2AK01158&candidate_id=H2GA13095&per_page=100",
+      "resolvedUrl": "https://api.open.fec.gov/v1/candidates/?candidate_id=H2AK01158&candidate_id=H2GA13095&per_page=100",
+      "observedAt": "2026-09-12T14:44:29.554229+00:00",
+      "mediaType": "application/json",
+      "via": "direct",
+      "responseSha256": "sha256:a4fca53977f1103b3b4a812840b98d4e3f58e73dac051c987501d968a63c484c",
+      "byteSize": 738
+    },
+    "receipt": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-identity-supplements-2026-09-12/mixed-candidates.json"
+  },
+  {
+    "file": "empty.json",
+    "capture": {
+      "requestUrl": "https://api.open.fec.gov/v1/candidates/?candidate_id=H2GA13095&candidate_id=H2IL01307&candidate_id=H2NC09209&candidate_id=H4AZ03182&candidate_id=H4AZ07142&candidate_id=H4CA02122&candidate_id=H4CA37094&candidate_id=H4IA03198&candidate_id=H4IN01236&candidate_id=H4MD06274&candidate_id=H4NM02098&candidate_id=H4OH06272&candidate_id=H4OH13138&candidate_id=H6AK01076&candidate_id=H6AL07182&candidate_id=H6AR02302&candidate_id=H6AR03151&candidate_id=H6AS01013&candidate_id=H6AZ01355&candidate_id=H6AZ07188&per_page=100&sort=candidate_id",
+      "resolvedUrl": "https://api.open.fec.gov/v1/candidates/?candidate_id=H2GA13095&candidate_id=H2IL01307&candidate_id=H2NC09209&candidate_id=H4AZ03182&candidate_id=H4AZ07142&candidate_id=H4CA02122&candidate_id=H4CA37094&candidate_id=H4IA03198&candidate_id=H4IN01236&candidate_id=H4MD06274&candidate_id=H4NM02098&candidate_id=H4OH06272&candidate_id=H4OH13138&candidate_id=H6AK01076&candidate_id=H6AL07182&candidate_id=H6AR02302&candidate_id=H6AR03151&candidate_id=H6AS01013&candidate_id=H6AZ01355&candidate_id=H6AZ07188&per_page=100&sort=candidate_id",
+      "observedAt": "2026-09-12T14:50:44.653667+00:00",
+      "mediaType": "application/json",
+      "via": "direct",
+      "responseSha256": "sha256:606d2de1acd6801422e7afe71f034ecbebe14ae036c6c9ac0b280de50ca6aa7c",
+      "byteSize": 116
+    },
+    "receipt": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-identity-supplements-2026-09-12/candidate-batch-000.json"
+  },
+  {
+    "file": "invalid-id.json",
+    "sha256": "sha256:6062c1efbcae495bb9ff8297cdef91fa9db6d8d8e536bcf37aa0c45da909a41f",
+    "bytes": 182,
+    "receipt": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-identity-supplements-2026-09-12/candidate-batch-000-refusal.json"
+  }
+]

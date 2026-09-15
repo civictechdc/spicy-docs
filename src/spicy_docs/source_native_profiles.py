@@ -5,6 +5,7 @@ is needed. In particular, offline Federal Register replay must not import GAO's
 live transport as a side effect of obtaining its profile.
 """
 
+from spicy_docs.sources.fec.candidate_profile import FEC_CANDIDATE_QUERY_PROFILE
 from spicy_docs.sources.fec.filing_profile import FEC_FILING_QUERY_PROFILE
 from spicy_docs.sources.fec.profile import FEC_COMMITTEE_CENSUS_PROFILE
 from spicy_docs.sources.federal_register.profile import (
@@ -22,6 +23,7 @@ from spicy_docs.sources.regulations_gov.profile import (
 )
 
 __all__ = [
+    "FEC_CANDIDATE_QUERY_PROFILE",
     "FEC_COMMITTEE_CENSUS_PROFILE",
     "FEC_FILING_QUERY_PROFILE",
     "FEDERAL_REGISTER_ACQUISITION_POLICY_ID",

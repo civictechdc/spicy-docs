@@ -20,25 +20,21 @@ separate releases; this source layer chooses no preferred amendment or report.
 
 from __future__ import annotations
 
-import hashlib
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
-from functools import cache, partial
+from functools import partial
 from typing import Any
 
-from rulespec_artifacts import canonical_json_bytes, schema_bundle_digest
-
-from spicy_docs.releases.profile import SourceNativeProfile
+from spicy_docs.sources.fec.query_profile import (
+    RECORD_FIELDS,
+    CountedTraversal,
+    observation_schema,
+    retained_query_profile,
+)
 from spicy_docs.sources.fec.retained import (
-    QueryAcquisition,
-    exact_page_count,
     iter_pages,
-    next_page,
     page_request,
-    parse_response,
     query_scope,
-    records_included,
 )
 
 SOURCE_SYSTEM_ID = "https://api.open.fec.gov/v1/filings/"
@@ -51,7 +47,7 @@ SCOPE_ID = "fec-retained-filing-query"
 _request = partial(page_request, endpoint=SOURCE_SYSTEM_ID)
 filing_query_scope = partial(query_scope, request=_request)
 iter_retained_filing_pages = partial(iter_pages, request=_request)
-_FIELDS = {"capture", "metadata", "embedded_bodies", "assets", "source_pointer"}
+_FIELDS = RECORD_FIELDS
 
 
 def _scope(value: Mapping[str, Any]) -> dict[str, Any]:
@@ -80,101 +76,39 @@ def _classify(value: object) -> dict[str, Any]:
     return dict(value)
 
 
-@dataclass(slots=True)
-class _Traversal:
-    count: int | None = None
-    pages: int | None = None
-    observed: int = 0
-
-    def add(self, response: Mapping[str, Any], *, page_index: int) -> None:
-        count, pages = exact_page_count(response, request=_request)
-        if self.count is None:
-            self.count, self.pages = count, pages
-        if (count, pages) != (self.count, self.pages) or response["page"] != page_index + 1:
-            raise ValueError("FEC filing query count or page inventory changed")
-        for row in response["results"]:
-            _classify(row)
-            self.observed += 1
-
-    def finish(self) -> None:
-        if self.count is None or self.count != self.observed:
-            raise ValueError("FEC filing observations differ from the publisher count")
+_Traversal = partial(CountedTraversal, request=_request, classify=_classify)
 
 
-def _record_scope(record, *, query_scope, page_window) -> None:
-    index = _request(record["capture"]["requestUrl"])[1] - 1
-    if not 0 <= index < len(query_scope["captures"]) or record["capture"] != query_scope["captures"][index]:
-        raise ValueError("FEC filing observation falls outside its selected capture")
-
-
-def _wrap(record: Mapping[str, Any], *, schema_digest: str) -> dict[str, Any]:
-    return {
-        "fieldDiagnostics": [],
-        "record": dict(record),
-        "schemaDigest": schema_digest,
-        "schemaName": SCHEMA_NAME,
-        "schemaVersion": SCHEMA_VERSION,
-        "scopeId": SCOPE_ID,
-        "sourceRecordId": record["metadata"]["sub_id"],
-    }
-
-
-_SCHEMA = {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": f"urn:spicy-docs:schema:{SCHEMA_NAME}:{SCHEMA_VERSION}",
-    "type": "object",
-    "additionalProperties": False,
-    "required": sorted(_FIELDS),
-    "properties": {
-        "capture": {"type": "object"},
-        "metadata": {
-            "type": "object",
-            "required": ["sub_id"],
-            "properties": {
-                "sub_id": {"type": "string", "pattern": "^[0-9]+$"},
-                "file_number": {"type": ["integer", "null"]},
-            },
+_SCHEMA = observation_schema(
+    name=SCHEMA_NAME,
+    version=SCHEMA_VERSION,
+    identity="sub_id",
+    metadata={
+        "type": "object",
+        "required": ["sub_id"],
+        "properties": {
+            "sub_id": {"type": "string", "pattern": "^[0-9]+$"},
+            "file_number": {"type": ["integer", "null"]},
         },
-        "embedded_bodies": {"type": "array"},
-        "assets": {"type": "array"},
-        "source_pointer": {"type": "string", "pattern": "^/results/[0-9]+$"},
     },
-    "x-spicy-record-order": [
-        {
-            "fieldPath": "/metadata/sub_id",
-            "nullOrder": "forbidden",
-            "tupleComparison": "utf16-code-unit",
-            "valueType": "string",
-        }
-    ],
-}
+)
 
 
-@cache
-def _schema_digest() -> str:
-    return schema_bundle_digest({SCHEMA_KEY: _SCHEMA})
-
-
-@cache
-def _schema_declaration() -> dict[str, str]:
-    return {"schemaDigest": _schema_digest(), "schemaName": SCHEMA_NAME, "schemaVersion": SCHEMA_VERSION}
-
-
-FEC_FILING_QUERY_PROFILE = SourceNativeProfile(
+FEC_FILING_QUERY_PROFILE = retained_query_profile(
     name="Retained OpenFEC filing query",
-    source_system_id=SOURCE_SYSTEM_ID,
-    source_system_version="v1",
-    acquisition_policy_id="urn:spicy-docs:acquisition:fec-retained-filing-query",
-    acquisition_policy_version="1.0",
+    endpoint=SOURCE_SYSTEM_ID,
+    schema_name=SCHEMA_NAME,
+    schema_version=SCHEMA_VERSION,
+    schema_key=SCHEMA_KEY,
+    schema=_SCHEMA,
     scope_id=SCOPE_ID,
-    source_schema_key=SCHEMA_KEY,
-    source_schema=_SCHEMA,
     record_stem="fec-filing",
-    max_traversals=1,
-    source_state_scope="observed-crawl",
-    traversal_acceptance="single-observed-traversal",
-    acquisition_policy=lambda scope: {
-        "initialQueryScope": _scope(scope),
+    identity="sub_id",
+    request=_request,
+    scope=_scope,
+    classify=_classify,
+    traversal=_Traversal,
+    policy={
         "strategy": "replay-pinned-exact-count-filing-query",
         "coverageLimits": [
             "Only the pinned processed-filings query and its explicit publisher filters are covered.",
@@ -183,22 +117,7 @@ FEC_FILING_QUERY_PROFILE = SourceNativeProfile(
             "Original filing bytes and linked documents remain separately acquired inputs.",
         ],
         "recordIdentity": "source sub_id within this query observation; no amendment selection",
-        "decimalRepresentation": "exact decimal strings; source JSON bytes retain original numbers",
     },
-    validate_query_scope=_scope,
-    parse_page_response=partial(parse_response, request=_request),
-    next_page=next_page,
-    traversal_check=_Traversal,
-    classify_record=_classify,
-    wrap_record=_wrap,
-    record_digest=lambda record: "sha256:" + hashlib.sha256(canonical_json_bytes(dict(record))).hexdigest(),
-    rendition_rows=lambda record: (),
-    source_schema_declaration=_schema_declaration,
-    source_schema_digest=_schema_digest,
-    validate_record_scope=_record_scope,
-    records_included=records_included,
-    acquisition_check=QueryAcquisition,
-    page_window=lambda request: (_request(request), request)[1],
 )
 
 

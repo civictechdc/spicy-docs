@@ -1,4 +1,4 @@
-"""Bounded retained JSON pages shared by the two FEC release profiles.
+"""Bounded retained JSON pages shared by FEC release profiles.
 
 These helpers preserve byte evidence and one explicitly pinned ordinary-page
 query. Each source profile supplies its endpoint, identity and coverage policy.

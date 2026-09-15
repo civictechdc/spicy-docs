@@ -563,9 +563,15 @@ published formats; XML/JSON/XHTML precede equivalent HTML.
     1.2; retain `sub_id` identity, explicit filter checks and acquisition policy 1.0.
     Earlier releases retain their schema and pins. The shared publisher and
     retained-page reader need no F13-specific implementation.
-  - [ ] Add source identity/count/scope rules for the next selected family beyond
-    committee census and processed filing queries. Raw acquisition already works;
-    each additional immutable profile needs source-specific admission evidence.
+  - [x] Add the retained `/v1/candidates/` query profile with native `candidate_id`
+    identity, direct-ID filter checks, exact counts and complete capture membership.
+    Unknown fields, repeated arrays and separate body pointers survive; unreturned
+    requested IDs stay in query scope. Shared profile wiring preserves existing
+    committee/filing release pins. [API and qualification](sources/fec.md#publish-retained-candidate-queries).
+  - [ ] Extend release profiles to selected legal/audit and bulk inputs with their
+    own source identity, membership and scope rules. Raw acquisition already works;
+    candidate detail/history/search/totals also need separate admission rules.
+    Wider live query coverage and full-population acquisition remain dataset work.
 - [x] **FEC13 — Promote reusable agency-report parsing.** Offline
   `parse_foia_annual_report` and `parse_oversight_report` expose retained source
   fields through the [agency-report API](sources/agency-reports.md). Native NIEM

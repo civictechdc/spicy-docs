@@ -21,28 +21,21 @@ coverage. No request is made here, and linked files remain unrequested.
 
 from __future__ import annotations
 
-import hashlib
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from functools import cache, partial
+from functools import partial
 from typing import Any
 
-from rulespec_artifacts import canonical_json_bytes, schema_bundle_digest
-
-from spicy_docs.releases.profile import SourceNativeProfile
+from spicy_docs.sources.fec.query_profile import RECORD_FIELDS, observation_schema, retained_query_profile
 from spicy_docs.sources.fec.retained import (
     MAX_CAPTURES,  # noqa: F401 -- existing public constant
     exact_page_count,
     iter_pages,
     page_request,
-    parse_response,
     query_scope,
 )
-from spicy_docs.sources.fec.retained import QueryAcquisition as _Acquisition
 from spicy_docs.sources.fec.retained import RetainedPage as RetainedCommitteePage  # noqa: F401
-from spicy_docs.sources.fec.retained import next_page as _next
-from spicy_docs.sources.fec.retained import records_included as _included
 
 SOURCE_SYSTEM_ID = "https://api.open.fec.gov/v1/committees/"
 SCHEMA_NAME = "fec-committee-observation"
@@ -52,8 +45,7 @@ SCOPE_ID = "fec-retained-committee-census"
 _request = partial(page_request, endpoint=SOURCE_SYSTEM_ID, order_by="committee_id")
 committee_census_scope = partial(query_scope, request=_request)
 iter_retained_committee_pages = partial(iter_pages, request=_request)
-_parse = partial(parse_response, request=_request)
-_RECORD_FIELDS = {"capture", "metadata", "embedded_bodies", "assets", "source_pointer"}
+_RECORD_FIELDS = RECORD_FIELDS
 
 
 def _scope(value: Mapping[str, Any]) -> dict[str, Any]:
@@ -97,101 +89,40 @@ def _classify(value: object) -> dict[str, Any]:
     return dict(value)
 
 
-def _record_scope(record, *, query_scope, page_window) -> None:
-    # Request filters, including cycle selection, are publisher controls rather
-    # than inferred historical coverage of each current committee metadata row.
-    index = _request(record["capture"]["requestUrl"])[1] - 1
-    if not 0 <= index < len(query_scope["captures"]) or record["capture"] != query_scope["captures"][index]:
-        raise ValueError("FEC committee observation falls outside its selected capture")
-
-
-def _wrap(record: Mapping[str, Any], *, schema_digest: str) -> dict[str, Any]:
-    return {
-        "fieldDiagnostics": [],
-        "record": dict(record),
-        "schemaDigest": schema_digest,
-        "schemaName": SCHEMA_NAME,
-        "schemaVersion": SCHEMA_VERSION,
-        "scopeId": SCOPE_ID,
-        "sourceRecordId": record["metadata"]["committee_id"],
-    }
-
-
-_SCHEMA = {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "urn:spicy-docs:schema:fec-committee-observation:1.0",
-    "type": "object",
-    "additionalProperties": False,
-    "required": sorted(_RECORD_FIELDS),
-    "properties": {
-        "capture": {"type": "object"},
-        "metadata": {
-            "type": "object",
-            "required": ["committee_id"],
-            "properties": {"committee_id": {"type": "string", "pattern": "^C[0-9]{8}$"}},
-        },
-        "embedded_bodies": {"type": "array"},
-        "assets": {"type": "array"},
-        "source_pointer": {"type": "string", "pattern": "^/results/[0-9]+$"},
+_SCHEMA = observation_schema(
+    name=SCHEMA_NAME,
+    version=SCHEMA_VERSION,
+    identity="committee_id",
+    metadata={
+        "type": "object",
+        "required": ["committee_id"],
+        "properties": {"committee_id": {"type": "string", "pattern": "^C[0-9]{8}$"}},
     },
-    "x-spicy-record-order": [
-        {
-            "fieldPath": "/metadata/committee_id",
-            "nullOrder": "forbidden",
-            "tupleComparison": "utf16-code-unit",
-            "valueType": "string",
-        }
-    ],
-}
+)
 
 
-@cache
-def _schema_digest() -> str:
-    return schema_bundle_digest({SCHEMA_KEY: _SCHEMA})
-
-
-@cache
-def _schema_declaration() -> dict[str, str]:
-    return {"schemaDigest": _schema_digest(), "schemaName": SCHEMA_NAME, "schemaVersion": SCHEMA_VERSION}
-
-
-FEC_COMMITTEE_CENSUS_PROFILE = SourceNativeProfile(
+FEC_COMMITTEE_CENSUS_PROFILE = retained_query_profile(
     name="Retained OpenFEC committee census",
-    source_system_id=SOURCE_SYSTEM_ID,
-    source_system_version="v1",
-    acquisition_policy_id="urn:spicy-docs:acquisition:fec-retained-committee-census",
-    acquisition_policy_version="1.0",
+    endpoint=SOURCE_SYSTEM_ID,
+    schema_name=SCHEMA_NAME,
+    schema_version=SCHEMA_VERSION,
+    schema_key=SCHEMA_KEY,
+    schema=_SCHEMA,
     scope_id=SCOPE_ID,
-    source_schema_key=SCHEMA_KEY,
-    source_schema=_SCHEMA,
     record_stem="fec-committee",
-    max_traversals=1,
-    source_state_scope="observed-crawl",
-    traversal_acceptance="single-observed-traversal",
-    acquisition_policy=lambda scope: {
-        "initialQueryScope": _scope(scope),
+    identity="committee_id",
+    request=_request,
+    scope=_scope,
+    classify=_classify,
+    traversal=_Traversal,
+    policy={
         "strategy": "replay-pinned-exact-count-committee-id-traversal",
         "coverageLimits": [
             "Only the pinned requests and their explicit publisher filters are covered.",
             "One observed traversal establishes no frozen publisher snapshot or historical FEC completeness.",
             "Linked originals and other API collections remain outside this release.",
         ],
-        "decimalRepresentation": "exact decimal strings; source JSON bytes retain original numbers",
     },
-    validate_query_scope=_scope,
-    parse_page_response=_parse,
-    next_page=_next,
-    traversal_check=_Traversal,
-    classify_record=_classify,
-    wrap_record=_wrap,
-    record_digest=lambda record: "sha256:" + hashlib.sha256(canonical_json_bytes(dict(record))).hexdigest(),
-    rendition_rows=lambda record: (),
-    source_schema_declaration=_schema_declaration,
-    source_schema_digest=_schema_digest,
-    validate_record_scope=_record_scope,
-    records_included=_included,
-    acquisition_check=_Acquisition,
-    page_window=lambda request: (_request(request), request)[1],
 )
 
 

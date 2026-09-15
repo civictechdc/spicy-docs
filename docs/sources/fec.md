@@ -172,6 +172,34 @@ it does not establish a full filing population. Source pins, original-JSON parit
 offline replay and committee regression controls are in
 `~/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/releases-v1.1/qualification.json`.
 
+## Publish retained candidate queries
+
+`spicy_docs.sources.fec.candidate_profile` supplies `FEC_CANDIDATE_QUERY_PROFILE`,
+`candidate_query_scope(captures)` and
+`iter_retained_candidate_pages(captures, blob_source=...)`. Use the existing
+publisher and capture descriptors shown above. The profile accepts one complete
+ordinary `/v1/candidates/` query, including an unsorted or requested-empty answer.
+It preserves the captured URL rather than adding sort or filter parameters.
+
+Publication and offline replay check exact page counts, complete capture
+membership and unique native `candidate_id` values. Explicit `candidate_id`
+filters require matching returned IDs; an unreturned requested ID remains in
+query scope without an invented record. Repeated election arrays, district
+spellings, nulls, inactive flags and unknown fields survive. Embedded body fields
+remain separately addressable through their original JSON pointers.
+
+Candidate cycle filters do not reconstruct historical candidate profiles. The
+release covers the observed query, not a complete candidate population or a
+committee relationship census. Candidate detail/history/search/totals endpoints
+remain distinct raw-reader inputs; they require their own release identity rules.
+Overlapping queries stay separate. Linked originals remain unrequested.
+
+The shared query-profile wiring preserves the existing committee and filing
+schema/policy declarations and release pins. [Qualification and limits](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-candidate-release-2026-09-15/README.md>)
+cover pinned positive/empty candidate answers, synthetic multi-page controls,
+deliberate failure checks and an installed core wheel. The retained positive
+query is one page; it does not establish live multi-page stability.
+
 ## Acquire selected originals
 
 Select a URL from the observed `assets` or collection links and give an explicit
