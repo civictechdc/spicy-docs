@@ -13,8 +13,8 @@ from rulespec_artifacts import ArtifactPin, LocalMemberSource
 
 from examples.offline_release import FIXTURES, IMPLEMENTATION_ID, PRODUCT_ID, PRODUCT_URL, run_example
 from spicy_docs.source_native import SourceNativeReleaseReader
-from spicy_docs.source_native_profiles import GAO_PRODUCT_PAGE_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.source_native.profiles import GAO_PRODUCT_PAGE_PROFILE
+from spicy_docs.source_native.store import LocalSourceNativeBlobStore
 from spicy_docs.sources.gao.native import parse_gao_product_page_response
 
 

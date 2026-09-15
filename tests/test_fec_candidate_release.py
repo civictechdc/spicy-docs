@@ -11,7 +11,7 @@ import pytest
 from rulespec_artifacts import LocalMemberSource
 
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher, SourceNativeReleaseReader
-from spicy_docs.source_native_profiles import FEC_CANDIDATE_QUERY_PROFILE as PROFILE
+from spicy_docs.source_native.profiles import FEC_CANDIDATE_QUERY_PROFILE as PROFILE
 from spicy_docs.sources.fec.candidate_profile import candidate_query_scope, iter_retained_candidate_pages
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.releases.fixtures import IMPLEMENTATION_ID, PRODUCER

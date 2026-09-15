@@ -231,7 +231,7 @@ def test_new_profile_and_replay_import_without_http_dependency(tmp_path):
 import sys
 from pathlib import Path
 sys.modules['httpx'] = None
-from spicy_docs.source_native_profiles import FEC_FILING_QUERY_PROFILE
+from spicy_docs.source_native.profiles import FEC_FILING_QUERY_PROFILE
 assert FEC_FILING_QUERY_PROFILE.parse_page_response(Path(sys.argv[1]).read_bytes())['results'][0]['metadata']['sub_id'] == '200'
 """
     subprocess.run([sys.executable, "-c", code, str(path)], check=True, capture_output=True, text=True)

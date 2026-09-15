@@ -18,7 +18,7 @@ from rulespec_artifacts import ArtifactPin, LocalMemberSource
 
 from spicy_docs.cli.source_native import main as source_native_main
 from spicy_docs.source_native import SourceNativeReleaseReader
-from spicy_docs.source_native_profiles import GAO_PRODUCT_PAGE_PROFILE
+from spicy_docs.source_native.profiles import GAO_PRODUCT_PAGE_PROFILE
 from spicy_docs.sources.zyte import ZyteHttpResponse
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 

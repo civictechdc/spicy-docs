@@ -20,19 +20,19 @@ from pathlib import Path
 
 from rulespec_artifacts import ArtifactPin, LocalMemberSource
 
-from spicy_docs.regulations_gov_source_native import (
-    DOCKET_COLLECTION,
-    DOCUMENT_COLLECTION,
-    comment_source_issued_version,
-    source_issued_version,
-)
 from spicy_docs.releases.profile import SourceNativeProfile
 from spicy_docs.source_native import SourceNativeReleaseReader
-from spicy_docs.source_native_profiles import (
+from spicy_docs.source_native.profiles import (
     FEDERAL_REGISTER_PROFILE,
     REGULATIONS_GOV_COMMENT_PROFILE,
     REGULATIONS_GOV_DOCKET_PROFILE,
     REGULATIONS_GOV_DOCUMENT_PROFILE,
+)
+from spicy_docs.source_native.regulations_gov import (
+    DOCKET_COLLECTION,
+    DOCUMENT_COLLECTION,
+    comment_source_issued_version,
+    source_issued_version,
 )
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 

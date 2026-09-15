@@ -10,12 +10,12 @@ from typing import Any, cast
 
 from rulespec_artifacts import Producer
 
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
+from spicy_docs.source_native.profiles import REGULATIONS_GOV_DOCKET_PROFILE, REGULATIONS_GOV_DOCUMENT_PROFILE
+from spicy_docs.source_native.regulations_gov import (
     iter_regulations_gov_docket_pages,
     iter_regulations_gov_document_pages,
 )
-from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
-from spicy_docs.source_native_profiles import REGULATIONS_GOV_DOCKET_PROFILE, REGULATIONS_GOV_DOCUMENT_PROFILE
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.source_fixtures import counted_subsets
 from tools.analysis.cross_filing_census import census

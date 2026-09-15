@@ -9,19 +9,19 @@ from zipfile import ZipFile
 
 import pytest
 
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.source_native import (
+    SourceNativeReleasePublisher,
+)
+from spicy_docs.source_native.profiles import (
+    REGULATIONS_GOV_DOCUMENT_PROFILE,
+)
+from spicy_docs.source_native.regulations_gov import (
     RegulationsGovPage,
     RegulationsGovSourceError,
     iter_regulations_gov_docket_pages,
     iter_regulations_gov_document_pages,
     parse_document_page_response,
     parse_mirrulations_request,
-)
-from spicy_docs.source_native import (
-    SourceNativeReleasePublisher,
-)
-from spicy_docs.source_native_profiles import (
-    REGULATIONS_GOV_DOCUMENT_PROFILE,
 )
 from spicy_docs.sources.regulations_gov import acquisition
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore

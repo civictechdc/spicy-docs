@@ -14,7 +14,7 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
-from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
+from spicy_docs.source_native.profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.sources.federal_register.native import iter_federal_register_pages
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 

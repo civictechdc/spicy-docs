@@ -8,7 +8,7 @@ import pytest
 
 from examples.offline_release import PRODUCT_ID, run_example
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
-from spicy_docs.source_native_profiles import (
+from spicy_docs.source_native.profiles import (
     GAO_PRODUCT_PAGE_PROFILE,
     REGULATIONS_GOV_COMMENT_PROFILE,
     REGULATIONS_GOV_DOCKET_PROFILE,

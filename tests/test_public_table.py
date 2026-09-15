@@ -53,10 +53,6 @@ from spicy_docs.public_tables.profiles import (
     REGULATIONS_GOV_DOCUMENT_PUBLIC_TABLE,
     PublicTableProfile,
 )
-from spicy_docs.regulations_gov_source_native import (
-    COMMENT_COLLECTION,
-    iter_regulations_gov_comment_pages,
-)
 from spicy_docs.schemas.federal_register import FEDERAL_REGISTER_COLUMNS
 from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT
 from spicy_docs.source_native import VERIFIER_ID as SOURCE_VERIFIER_ID
@@ -66,7 +62,11 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
-from spicy_docs.source_native_profiles import REGULATIONS_GOV_COMMENT_PROFILE
+from spicy_docs.source_native.profiles import REGULATIONS_GOV_COMMENT_PROFILE
+from spicy_docs.source_native.regulations_gov import (
+    COMMENT_COLLECTION,
+    iter_regulations_gov_comment_pages,
+)
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from spicy_docs.storage.publication import ImmutablePublicationError
 

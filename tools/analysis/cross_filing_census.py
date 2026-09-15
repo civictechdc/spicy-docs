@@ -31,7 +31,7 @@ from rulespec_artifacts import LocalMemberSource
 
 from spicy_docs.releases.profile import SourceNativeProfile
 from spicy_docs.source_native import SourceNativeReleaseReader
-from spicy_docs.source_native_profiles import REGULATIONS_GOV_DOCKET_PROFILE, REGULATIONS_GOV_DOCUMENT_PROFILE
+from spicy_docs.source_native.profiles import REGULATIONS_GOV_DOCKET_PROFILE, REGULATIONS_GOV_DOCUMENT_PROFILE
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 DOCUMENTS_PROFILE_NAME = "regulations-gov-documents"

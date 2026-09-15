@@ -17,7 +17,7 @@ from spicy_docs.source_native import (
     SourceNativeReleaseError,
     SourceNativeReleaseReader,
 )
-from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
+from spicy_docs.source_native.profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.releases.fixtures import (
     IMPLEMENTATION_ID,

@@ -1,9 +1,7 @@
-"""Current source-native blob-store API; storage owns the implementation."""
+"""Deprecated address for ``spicy_docs.source_native.store``; remove after 0.19."""
 
-from spicy_docs.storage.blobs import (
-    LocalSourceNativeBlobStore,
-    SourceNativeBlobStore,
-    SourceNativeBlobWrite,
-)
+import sys
 
-__all__ = ["LocalSourceNativeBlobStore", "SourceNativeBlobStore", "SourceNativeBlobWrite"]
+from spicy_docs.source_native import store as _moved
+
+sys.modules[__name__] = _moved

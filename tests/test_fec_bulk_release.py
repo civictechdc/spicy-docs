@@ -20,7 +20,7 @@ from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
     SourceNativeReleaseReader,
 )
-from spicy_docs.source_native_profiles import FEC_BULK_FILES_PROFILE as PROFILE
+from spicy_docs.source_native.profiles import FEC_BULK_FILES_PROFILE as PROFILE
 from spicy_docs.sources.fec.bulk_profile import bulk_file_scope, iter_retained_bulk_files
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore, iter_verified_blob
 from tests.releases.fixtures import IMPLEMENTATION_ID, PRODUCER

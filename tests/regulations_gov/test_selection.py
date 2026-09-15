@@ -9,18 +9,18 @@ from zipfile import ZipFile
 
 import pytest
 
-from spicy_docs.regulations_gov_source_native import (
-    DOCUMENT_TIE_VOLATILE_FIELDS,
-    iter_regulations_gov_docket_pages,
-    iter_regulations_gov_document_pages,
-)
 from spicy_docs.source_native import (
     SourceNativeReleaseError,
     SourceNativeReleasePublisher,
 )
-from spicy_docs.source_native_profiles import (
+from spicy_docs.source_native.profiles import (
     REGULATIONS_GOV_DOCKET_PROFILE,
     REGULATIONS_GOV_DOCUMENT_PROFILE,
+)
+from spicy_docs.source_native.regulations_gov import (
+    DOCUMENT_TIE_VOLATILE_FIELDS,
+    iter_regulations_gov_docket_pages,
+    iter_regulations_gov_document_pages,
 )
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.regulations_gov.fixtures import (

@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from spicy_docs.cli.source_native import main
-from spicy_docs.regulations_gov_source_native import RegulationsGovSourceError
+from spicy_docs.source_native.regulations_gov import RegulationsGovSourceError
 
 IMPLEMENTATION_ID = "git+https://example.test/spicy-regs@" + "a" * 40
 FIXED_NOW = datetime(2026, 8, 25, tzinfo=UTC)

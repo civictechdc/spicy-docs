@@ -11,7 +11,7 @@ from typing import cast
 from rulespec_artifacts import Producer
 
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher
-from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
+from spicy_docs.source_native.profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.sources.federal_register.native import FederalRegisterPage, federal_register_documents_url
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tools.analysis.observation_census import LEGACY_NUMBER_PATTERN, MODERN_NUMBER_PATTERN, X_FORM_PATTERN, census

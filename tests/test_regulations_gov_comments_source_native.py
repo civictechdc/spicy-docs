@@ -16,7 +16,15 @@ import pytest
 from rulespec_artifacts import LocalMemberSource, Producer
 
 from spicy_docs.cli.source_native import main as source_native_main
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.source_native import (
+    SourceNativeReleaseBuild,
+    SourceNativeReleaseError,
+    SourceNativeReleasePublisher,
+    SourceNativeReleaseReader,
+    verify_source_native_release,
+)
+from spicy_docs.source_native.profiles import REGULATIONS_GOV_COMMENT_PROFILE
+from spicy_docs.source_native.regulations_gov import (
     COMMENT_COLLECTION,
     COMMENT_SOURCE_SYSTEM_ID,
     RegulationsGovSourceError,
@@ -25,14 +33,6 @@ from spicy_docs.regulations_gov_source_native import (
     comment_source_issued_version,
     iter_regulations_gov_comment_pages,
 )
-from spicy_docs.source_native import (
-    SourceNativeReleaseBuild,
-    SourceNativeReleaseError,
-    SourceNativeReleasePublisher,
-    SourceNativeReleaseReader,
-    verify_source_native_release,
-)
-from spicy_docs.source_native_profiles import REGULATIONS_GOV_COMMENT_PROFILE
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 _IMPLEMENTATION_ID = "git+https://example.test/spicy-docs@" + "a" * 40

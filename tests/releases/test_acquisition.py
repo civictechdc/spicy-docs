@@ -10,7 +10,7 @@ import pytest
 from spicy_docs.source_native import (
     SourceNativeReleasePublisher,
 )
-from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
+from spicy_docs.source_native.profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.sources.federal_register.native import (
     DOCUMENT_FIELDS,
     FederalRegisterPage,

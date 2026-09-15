@@ -11,7 +11,15 @@ from typing import Any
 
 from rulespec_artifacts import LocalMemberSource, Producer
 
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.source_native import (
+    SourceNativeReleaseBuild,
+    SourceNativeReleaseReader,
+)
+from spicy_docs.source_native.profiles import (
+    REGULATIONS_GOV_DOCKET_PROFILE,
+    REGULATIONS_GOV_DOCUMENT_PROFILE,
+)
+from spicy_docs.source_native.regulations_gov import (
     DOCKET_COLLECTION,
     DOCUMENT_COLLECTION,
     RegulationsGovPage,
@@ -19,14 +27,6 @@ from spicy_docs.regulations_gov_source_native import (
     document_source_record_digest,
     iter_regulations_gov_docket_pages,
     iter_regulations_gov_document_pages,
-)
-from spicy_docs.source_native import (
-    SourceNativeReleaseBuild,
-    SourceNativeReleaseReader,
-)
-from spicy_docs.source_native_profiles import (
-    REGULATIONS_GOV_DOCKET_PROFILE,
-    REGULATIONS_GOV_DOCUMENT_PROFILE,
 )
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 

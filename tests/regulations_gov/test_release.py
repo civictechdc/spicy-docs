@@ -9,21 +9,21 @@ from pathlib import Path
 import pytest
 from rulespec_artifacts import LocalMemberSource
 
-from spicy_docs.regulations_gov_source_native import (
-    DOCKET_SOURCE_SYSTEM_ID,
-    DOCUMENT_SOURCE_SYSTEM_ID,
-    classify_docket,
-    iter_regulations_gov_docket_pages,
-    iter_regulations_gov_document_pages,
-)
 from spicy_docs.source_native import (
     SourceNativeReleaseError,
     SourceNativeReleasePublisher,
     verify_source_native_release,
 )
-from spicy_docs.source_native_profiles import (
+from spicy_docs.source_native.profiles import (
     REGULATIONS_GOV_DOCKET_PROFILE,
     REGULATIONS_GOV_DOCUMENT_PROFILE,
+)
+from spicy_docs.source_native.regulations_gov import (
+    DOCKET_SOURCE_SYSTEM_ID,
+    DOCUMENT_SOURCE_SYSTEM_ID,
+    classify_docket,
+    iter_regulations_gov_docket_pages,
+    iter_regulations_gov_document_pages,
 )
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from tests.regulations_gov.fixtures import (

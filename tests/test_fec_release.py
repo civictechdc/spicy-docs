@@ -223,7 +223,7 @@ def test_profile_import_and_replay_do_not_require_live_http_libraries(tmp_path):
 import sys
 from pathlib import Path
 sys.modules['httpx'] = None
-from spicy_docs.source_native_profiles import FEC_COMMITTEE_CENSUS_PROFILE
+from spicy_docs.source_native.profiles import FEC_COMMITTEE_CENSUS_PROFILE
 parsed = FEC_COMMITTEE_CENSUS_PROFILE.parse_page_response(Path(sys.argv[1]).read_bytes())
 assert parsed['results'][0]['metadata']['committee_id'] == 'C00000001'
 assert 'spicy_docs.sources.fec.client' not in sys.modules

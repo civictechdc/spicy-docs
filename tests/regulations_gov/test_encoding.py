@@ -10,13 +10,13 @@ from zipfile import ZipFile
 import pytest
 from rulespec_artifacts import ArtifactVerificationError
 
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.source_native import SourceNativeReleasePublisher
+from spicy_docs.source_native.profiles import REGULATIONS_GOV_DOCUMENT_PROFILE
+from spicy_docs.source_native.regulations_gov import (
     RegulationsGovSourceError,
     iter_regulations_gov_document_pages,
 )
-from spicy_docs.source_native import SourceNativeReleasePublisher
-from spicy_docs.source_native_profiles import REGULATIONS_GOV_DOCUMENT_PROFILE
-from spicy_docs.source_native_store import LocalSourceNativeBlobStore
+from spicy_docs.source_native.store import LocalSourceNativeBlobStore
 from spicy_docs.sources.regulations_gov import acquisition
 from tests.regulations_gov.fixtures import (
     _build,

@@ -6,7 +6,7 @@ from copy import deepcopy
 
 import pytest
 
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.source_native.regulations_gov import (
     DOCKET_COLLECTION,
     DOCUMENT_COLLECTION,
     RegulationsGovSourceError,

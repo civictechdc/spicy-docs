@@ -39,7 +39,7 @@ from spicy_docs.source_native import (
     SourceNativeReleaseReader,
     verify_source_native_release,
 )
-from spicy_docs.source_native_profiles import SPICY_REGS_PUBLIC_COMMENT_PROFILE
+from spicy_docs.source_native.profiles import SPICY_REGS_PUBLIC_COMMENT_PROFILE
 from spicy_docs.sources.public_comments.native import (
     CAPTURE_PACK_TYPE,
     MANIFEST_ENTRY,

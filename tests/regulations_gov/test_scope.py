@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 import pytest
 
-from spicy_docs.regulations_gov_source_native import (
+from spicy_docs.source_native.regulations_gov import (
     MAX_QUERY_DAYS,
     RegulationsGovSourceError,
     docket_acquisition_policy,

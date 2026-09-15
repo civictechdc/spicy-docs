@@ -16,7 +16,7 @@ import pytest
 from rulespec_artifacts import LocalMemberSource
 
 from spicy_docs.source_native import SourceNativeReleaseBuild, SourceNativeReleasePublisher, SourceNativeReleaseReader
-from spicy_docs.source_native_profiles import FEC_AUDIT_QUERY_PROFILE, FEC_LEGAL_QUERY_PROFILE
+from spicy_docs.source_native.profiles import FEC_AUDIT_QUERY_PROFILE, FEC_LEGAL_QUERY_PROFILE
 from spicy_docs.sources.fec.audit_profile import audit_query_scope, iter_retained_audit_pages
 from spicy_docs.sources.fec.legal_profile import iter_retained_legal_pages, legal_query_scope
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore

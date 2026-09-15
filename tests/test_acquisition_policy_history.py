@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 
 from spicy_docs.source_native import SourceNativeReleaseError, verify_source_native_admission
-from spicy_docs.source_native_profiles import FEDERAL_REGISTER_PROFILE
+from spicy_docs.source_native.profiles import FEDERAL_REGISTER_PROFILE
 from spicy_docs.sources.federal_register.native import federal_register_acquisition_policy
 from tests.test_source_native_failure_shape import FIXTURE_PROFILE, _admit, _build_release
 
