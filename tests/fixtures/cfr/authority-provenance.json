@@ -1,0 +1,30 @@
+[
+  {
+    "fixture": "ecfr-authority-title1-part18.xml",
+    "input_path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-1.xml",
+    "input_bytes": 477387,
+    "input_sha256": "fe18aad18e3b6e8fde18478d1f64d946bb9963bb74f1c164183627663c695c72",
+    "retained_span": [
+      56123,
+      56479
+    ],
+    "appended_closing_xml": "</DIV5>\n",
+    "fixture_sha256": "ea12485c4de15625298c92aa55d8120cf72e78c012a05b4e68449d514f16a5c2",
+    "source_url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-10/title-1.xml",
+    "fetched_at": "2026-08-24T11:36:08+00:00"
+  },
+  {
+    "fixture": "ecfr-authority-title5-part550.xml",
+    "input_path": "/Users/mikewolfd/Work/RefSpec/output/ecfr-title-xml-2026-08-24/title-5.xml",
+    "input_bytes": 11588530,
+    "input_sha256": "c80f950b58579980776158e6a728c68025af8a75dcec83bf35401478a802224f",
+    "retained_span": [
+      2528871,
+      2529496
+    ],
+    "appended_closing_xml": "</DIV6></DIV5>\n",
+    "fixture_sha256": "544327bf3c6b8d4ff98b11bbaab8e52eba9123bb22281793028bb155551b4abc",
+    "source_url": "https://www.ecfr.gov/api/versioner/v1/full/2026-08-14/title-5.xml",
+    "fetched_at": "2026-08-24T11:36:40+00:00"
+  }
+]

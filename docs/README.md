@@ -7,6 +7,9 @@
 
 - [Installation](installation.md): core reader or optional acquisition, table and extraction tools.
 - [Source workflows](source-workflows.md): choose raw records, releases or tables.
+- [Mapped markup](markup-reading.md): XML/HTML observations and original byte positions.
+- [Image headers](image-headers.md): declared dimensions without image decoding.
+- [JSON reading](json-reading.md): source values and exact record positions.
 - [PDF/image extraction API](pdf-extraction-api.md): injected readers, strategies
   and recognition backends with separate metadata, body and raw observations.
 - [PDF extraction choices](pdf-extraction-choices.md): saved native, OCR, vision
@@ -22,6 +25,8 @@
 - [GAO pages](sources/gao.md)
 - [Congressional bills](sources/congress-bills.md)
 - [CFR/eCFR XML](sources/cfr.md)
+- [eCFR authority notes and source metadata](sources/ecfr-authority.md)
+- [CFR agencies and subject index](sources/cfr-roster-index.md)
 - [Public laws and statute compilations](sources/uslm-laws.md): keyless GovInfo USLM XML with native identity checks.
 - [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule; `spicy-docs-list` walks any of them from the [command line](cli.md).
 - [Unified Agenda](sources/unified-agenda.md): one reginfo.gov edition file, proved from every record.

@@ -1,6 +1,6 @@
 """GovInfo source metadata and USLM identity checks, available without acquisition dependencies."""
 
-from .mods import GovInfoModsError, GovInfoModsPackage, ModsElement, ModsRecord, parse_govinfo_mods
+from .mods import GovInfoModsError, GovInfoModsPackage, ModsRecord, parse_govinfo_mods
 from .uslm import (
     DEFAULT_MAX_ARCHIVE_ENTRIES,
     DEFAULT_MAX_BYTES,
@@ -28,7 +28,6 @@ __all__ = [
     "MAX_USLM_BYTES",
     "GovInfoModsError",
     "GovInfoModsPackage",
-    "ModsElement",
     "ModsRecord",
     "PublicLawSelection",
     "StatuteCompilationSelection",

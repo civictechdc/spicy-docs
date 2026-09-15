@@ -35,18 +35,71 @@ with UsCodeAcquirer(budget=budget) as source:
     title = source.acquire_title(TitleSelection(ReleasePoint(119, 103), "01"))
     act = source.acquire_table3_act("1955:360")
 
-entry = title.result.entries[0]
+entry = title.result.entry
 print(entry.metadata.doc_number, entry.metadata.release_point, entry.metadata.positive_law)
 print(act.result.stated_key, len(act.result.records))
 # Retain these exact bytes in caller-owned storage:
 title_zip = title.capture.body
+title_xml = title.result.xml_bytes
 ```
 
-Offline, `validate_title_xml`, `read_title_archive`, `read_corpus_archive`,
-`validate_annual_title_html`, `read_annual_archive`, `parse_popular_names`,
+Offline, `read_title_archive`, `read_corpus_archive` and `read_annual_archive` live in
+`spicy_docs.sources.uscode_archive`. The title reader returns a
+`UsCodeTitleArchive` containing one `entry` and its exact `xml_bytes`.
+`validate_title_xml`, `validate_annual_title_html`, `parse_popular_names`,
 `parse_table3_page` and `read_table3_bulk_archive` check retained bytes against
-a selection. `iter_table3_acts` streams the bulk file's 48,973 acts without
+a selection in `spicy_docs.sources.uscode`. `iter_table3_acts` streams the bulk file's 48,973 acts without
 holding them.
+
+To parse the retained content, use the [structure and annual section readers](uscode-structure.md)
+and [reference and source-credit readers](uscode-references.md). They preserve
+literal source observations; applications save those results and apply their own
+citation or legal-status rules.
+
+## Process a retained corpus
+
+`read_corpus_archive` calls `on_entry` in ZIP order, after checking each member's
+name, bytes and native identity. A corpus must contain at least one title;
+a directory-only ZIP is refused. Its result holds metadata only. This avoids
+collecting every title body in memory or reopening the ZIP to recover XML that
+the reader already checked.
+
+```python
+from spicy_docs.sources.uscode import ReleasePoint
+from spicy_docs.sources.uscode_archive import read_corpus_archive
+
+members = []
+
+
+def record_member(entry, xml_bytes):
+    # Parse or stage this member here; retain bytes only when needed.
+    members.append((entry.name, entry.sha256, len(xml_bytes)))
+
+
+corpus = read_corpus_archive(
+    retained_zip,
+    release_point=ReleasePoint(119, 102),
+    max_total_bytes=1024**3,
+    on_entry=record_member,
+)
+# Publish staged results only after the entire call succeeds.
+```
+
+Callbacks are provisional: a later member can refuse the archive. A callback
+exception stops the scan and propagates unchanged. Acquisition has no callback;
+callers can separately process its retained capture.
+
+`read_annual_archive` provides the same `on_entry(entry, html_bytes)` callback in
+ZIP order, including supporting files whose `entry.metadata` is `None`. Its
+result still separates `entries` and `others` and reports `carried_forward`
+members. A title's stated year remains source data, even when the archive
+reissues an earlier year's appendix. The caller decides which members to process.
+
+The compressed input is held as bytes and must fit `max_bytes`. Each member must
+fit `max_entry_bytes`. `max_total_bytes` checks aggregate declared expansion
+before the existing CRC scan; its default is `max_entries * max_entry_bytes`.
+The CRC preflight decompresses entries before they are read for validation.
+These source-size bounds do not promise a CPU or total-memory ceiling.
 
 ## Choose a budget the route can actually meet
 

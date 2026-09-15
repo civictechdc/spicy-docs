@@ -15,13 +15,16 @@ dataset selection and interpretation belong to its consumers.
 | --- | --- |
 | `GovInfoModsPackage` | Read `.package`, direct `.constituents`, and the input's `.source_sha256`, `.source_byte_size`, and `.element_count`. |
 | `ModsRecord` | Read common field groups or use `.fields(*relative_names)` for any path. `.related_items` retains every relationship type, including nested records. |
-| `ModsElement` | Read `.name`, `.attributes`, `.namespace_declarations`, ordered `.content`, and occurrence `.path`. `.children`, `.text`, `.attribute(name)`, and `.findall(*relative_names)` support inspection. |
+| `XmlTreeElement` | Read `.name`, `.attributes`, `.namespace_declarations`, ordered `.content`, and occurrence `.path`. `.children`, `.leading_text`, `.text`, `.attribute(name)`, and `.findall(*expanded_names)` support inspection. |
 
 Field groups contain repeated elements, not a single chosen value. `titles`
 contains `titleInfo` elements; `origins` contains `originInfo` elements. Read
 their children to keep each title or publication event together.
 
-Unqualified path names select the MODS namespace. Expanded names distinguish
+Unqualified paths in `ModsRecord.fields` select the MODS namespace. Direct
+`XmlTreeElement.findall` paths use expanded names; bare names there select no
+namespace. SpicyDocs 0.14 uses this shared XML tree for MODS and PREMIS, replacing
+the previous `ModsElement` name and its default namespace. Expanded names distinguish
 foreign elements and attributes, for example
 `{http://www.w3.org/1999/xlink}href`. Namespaces are part of a field's identity.
 Local namespace declarations retain their prefix/URI pairs; ancestors supply
@@ -135,6 +138,7 @@ records into selected catalog items and track subsequent captures. RefSpec or
 another processor interprets references and checks them against body text.
 See [source ownership](../source-ownership.md).
 
-This API maps MODS descriptive metadata. GovInfo separately provides PREMIS
-preservation metadata and METS package metadata; those files are outside this
-parser. [GovInfo package definitions](https://www.govinfo.gov/features/api).
+This API maps MODS descriptive metadata. The separate [PREMIS reader](govinfo-premis.md)
+maps preservation metadata and can compare a captured file's SHA-256 with a
+publisher statement. METS package metadata remains outside these readers.
+[GovInfo package definitions](https://www.govinfo.gov/features/api).

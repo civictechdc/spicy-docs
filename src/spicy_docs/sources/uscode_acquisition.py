@@ -34,27 +34,30 @@ from spicy_docs.sources.uscode import (
     DEFAULT_MAX_TABLE3_MEMBER_BYTES,
     DEFAULT_MAX_XML_BYTES,
     MAX_USCODE_BYTES,
-    AnnualArchive,
     PopularNames,
     ReleasePoint,
     Table3Bulk,
     Table3Page,
     TitleSelection,
-    UsCodeArchive,
     UsCodeSourceError,
     annual_archive_locator,
     corpus_xml_locator,
     parse_popular_names,
     parse_table3_page,
     popular_names_locator,
-    read_annual_archive,
-    read_corpus_archive,
     read_table3_bulk_archive,
-    read_title_archive,
     table3_act_locator,
     table3_bulk_locator,
     table3_file_name,
     title_xml_locator,
+)
+from spicy_docs.sources.uscode_archive import (
+    AnnualArchive,
+    UsCodeArchive,
+    UsCodeTitleArchive,
+    read_annual_archive,
+    read_corpus_archive,
+    read_title_archive,
 )
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
@@ -69,7 +72,7 @@ from spicy_docs.transport.source_acquirer import (
 if TYPE_CHECKING:
     import httpx
 
-type UsCodeResult = UsCodeArchive | AnnualArchive | PopularNames | Table3Page | Table3Bulk
+type UsCodeResult = UsCodeTitleArchive | UsCodeArchive | AnnualArchive | PopularNames | Table3Page | Table3Bulk
 
 #: The empty string is the header the publisher does not send on any download
 #: route. Accepting it declares that absence rather than hiding it; the zip
@@ -196,6 +199,7 @@ class UsCodeAcquirer(SourceAcquirer):
         max_bytes: int | None = None,
         max_entry_bytes: int = DEFAULT_MAX_XML_BYTES,
         max_entries: int = DEFAULT_MAX_ARCHIVE_ENTRIES,
+        max_total_bytes: int | None = None,
     ) -> UsCodeAcquisition:
         """Capture every title at one release point in one zip; each member proves its own identity."""
         return self._acquire(
@@ -209,6 +213,7 @@ class UsCodeAcquirer(SourceAcquirer):
                 max_bytes=limit,
                 max_entry_bytes=max_entry_bytes,
                 max_entries=max_entries,
+                max_total_bytes=max_total_bytes,
             ),
             max_bytes=max_bytes,
         )
@@ -220,6 +225,7 @@ class UsCodeAcquirer(SourceAcquirer):
         max_bytes: int | None = None,
         max_entry_bytes: int = DEFAULT_MAX_XML_BYTES,
         max_entries: int = DEFAULT_MAX_ARCHIVE_ENTRIES,
+        max_total_bytes: int | None = None,
     ) -> UsCodeAcquisition:
         """Capture one year's XHTML archive; every title member states its own edition and year."""
         return self._acquire(
@@ -228,7 +234,12 @@ class UsCodeAcquirer(SourceAcquirer):
             selection={"year": year},
             media_types=ZIP_MEDIA_TYPES,
             read=lambda body, limit: read_annual_archive(
-                body, year=year, max_bytes=limit, max_entry_bytes=max_entry_bytes, max_entries=max_entries
+                body,
+                year=year,
+                max_bytes=limit,
+                max_entry_bytes=max_entry_bytes,
+                max_entries=max_entries,
+                max_total_bytes=max_total_bytes,
             ),
             max_bytes=max_bytes,
         )

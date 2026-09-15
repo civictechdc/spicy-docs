@@ -28,12 +28,12 @@ def test_publisher_package_and_constituents_are_mapped_with_source_provenance():
     assert mapped.source_byte_size == 15418
     assert mapped.element_count == 203
     assert package.element.attribute("version") == "3.3"
-    assert package.titles[0].findall("title")[0].text == "General Provisions"
-    assert [x.text for x in package.titles[0].findall("partNumber")] == ["Title 1", "Volume 1"]
+    assert package.titles[0].findall(f"{{{NS}}}title")[0].text == "General Provisions"
+    assert [x.text for x in package.titles[0].findall(f"{{{NS}}}partNumber")] == ["Title 1", "Volume 1"]
     assert len(package.names) == 2
-    assert package.origins[0].findall("dateIssued")[0].attribute("encoding") == "w3cdtf"
-    assert package.languages[0].findall("languageTerm")[0].text == "eng"
-    assert package.record_info[0].findall("recordChangeDate")[0].text == "2025-11-19"
+    assert package.origins[0].findall(f"{{{NS}}}dateIssued")[0].attribute("encoding") == "w3cdtf"
+    assert package.languages[0].findall(f"{{{NS}}}languageTerm")[0].text == "eng"
+    assert package.record_info[0].findall(f"{{{NS}}}recordChangeDate")[0].text == "2025-11-19"
     assert len(package.extensions) == 2 and len(package.locations) == 1
     assert package.preferred_citations[0].text.endswith("January 1, 2025")
     assert [item.element.attribute("type") for item in package.related_items] == [

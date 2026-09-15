@@ -1,0 +1,58 @@
+{
+  "source_root": "/Users/mikewolfd/Work/RefSpec/output/usc-annual-2026-08-24",
+  "reductions": "XML copies opening elements through direct heading, appends each closing tag and samples wrapper. Annual is one exact contiguous byte slice. Neither fixture is an admitted full title.",
+  "source_spans": [
+    {
+      "member": "usc42.xml",
+      "member_sha256": "b72955590abe55bdbd1ce5d13c5293955a82add9c84fad92c1674ec469e86624",
+      "byte_span": [
+        68188,
+        68520
+      ]
+    },
+    {
+      "member": "usc42.xml",
+      "member_sha256": "b72955590abe55bdbd1ce5d13c5293955a82add9c84fad92c1674ec469e86624",
+      "byte_span": [
+        79202,
+        79538
+      ]
+    },
+    {
+      "member": "usc10.xml",
+      "member_sha256": "95cffae02b423464f744dbcb55df91fce386d494a74d22e56146a32e65979dd0",
+      "byte_span": [
+        1059092,
+        1059328
+      ]
+    },
+    {
+      "member": "usc05A.xml",
+      "member_sha256": "57fa919cbf9e4845291da5a69a359002e75d17a25ed7cae12d05359365ad632e",
+      "byte_span": [
+        2238,
+        2394
+      ]
+    },
+    {
+      "member": "2012/2012USC40.htm",
+      "member_sha256": "aef4d8344004840dc921b4d1f8dd8682a987ca29cfc834873cc82879390a322a",
+      "byte_span": [
+        288001,
+        289891
+      ]
+    },
+    {
+      "member": "usc14.xml",
+      "member_sha256": "f58f5a0e5637f6d16cb16b06c4c4271a28856aca110020f6969c817d31704958",
+      "byte_span": [
+        298932,
+        299115
+      ]
+    }
+  ],
+  "fixtures": {
+    "structure-observations.xml": "8550f5e7044c45b5b06bb0940f6f4836e302984f16d51b616efd5391cc53bd97",
+    "annual-2012usc40-sections.htm": "fb26057779c39d7f1d36afb2e42936514cfebb742e5834f051286fff8e560d3b"
+  }
+}

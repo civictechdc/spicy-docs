@@ -55,6 +55,10 @@ before changing either.
 
 ## Change and check
 
+For publisher lists, use the separate [agency/code readers](federal-register-reference.md)
+and [topics reader](federal-register-topics.md). They retain source observations;
+joining them to documents or reconciling vocabularies stays with the consumer.
+
 Owners: [`native.py`](../../src/spicy_docs/sources/federal_register/native.py)
 and [`profile.py`](../../src/spicy_docs/sources/federal_register/profile.py).
 Use the first check for URL, pagination, or coverage changes; use the second for

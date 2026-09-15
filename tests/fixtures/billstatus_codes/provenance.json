@@ -1,0 +1,8 @@
+{
+  "fixture": "guide-2026-08-03.md",
+  "source_url": "https://raw.githubusercontent.com/usgpo/bill-status/master/BILLSTATUS-XML_User_User-Guide.md",
+  "retrieved_at": "2026-08-03T19:29:08Z",
+  "bytes": 38802,
+  "sha256": "a10909696b2ed2244d75c76e75fa32bc3e4eb926deab7e4e00592a6a01c3ad3a",
+  "transformation": "None; exact retained guide bytes, copied from RefSpec pinned fixture."
+}

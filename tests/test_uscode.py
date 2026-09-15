@@ -20,10 +20,7 @@ from spicy_docs.sources.uscode import (
     parse_popular_names,
     parse_table3_page,
     popular_names_locator,
-    read_annual_archive,
-    read_corpus_archive,
     read_table3_bulk_archive,
-    read_title_archive,
     table3_act_locator,
     table3_bulk_locator,
     table3_file_name,
@@ -31,6 +28,7 @@ from spicy_docs.sources.uscode import (
     validate_annual_title_html,
     validate_title_xml,
 )
+from spicy_docs.sources.uscode_archive import read_annual_archive, read_corpus_archive, read_title_archive
 
 FIXTURES = Path(__file__).parent / "fixtures" / "uscode"
 CURRENT = ReleasePoint(119, 103)
@@ -253,10 +251,11 @@ def test_body_larger_than_max_bytes_is_refused_before_parsing():
 def test_title_archive_holds_one_member_named_for_the_requested_title():
     result = read_title_archive(TITLE_ZIP, selection=TitleSelection(CURRENT, "01"))
     assert result.release_point == "119-103"
-    assert [entry.name for entry in result.entries] == ["usc01.xml"]
-    assert result.entries[0].byte_size == len(TITLE_XML)
-    assert result.entries[0].sha256.startswith("sha256:")
-    assert result.entries[0].metadata.doc_number == "1"
+    assert result.entry.name == "usc01.xml"
+    assert result.entry.byte_size == len(TITLE_XML)
+    assert result.entry.sha256.startswith("sha256:")
+    assert result.entry.metadata.doc_number == "1"
+    assert result.xml_bytes == TITLE_XML
 
 
 @pytest.mark.parametrize(

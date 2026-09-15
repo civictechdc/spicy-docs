@@ -26,7 +26,7 @@ SHA-256 `5bb8e5f1f2d64150b77caef4fc4a1f22af1eb4b59f510483df2d402a48c32439`. Rece
 
 **The source-fidelity and CFR example tasks below are complete locally.**
 S21/S31 remain conditionally deferred. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
-owns the remaining CourtListener reader adoption. The merged source changes
+completes CourtListener reader adoption locally. The merged source changes
 are on `fork/main`; receiving changes remain on their own branches.
 
 **Merged simplification: 23 local items complete; two conditionally deferred.**
@@ -47,16 +47,19 @@ and [Rulespec inventory](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receip
 add current callers, behavior differences and migration checks. An inventory
 finding is not a completed port.
 
+**Current: 17 of 20 shared-parsing tasks complete; three remain open.**
+This checklist has 10 open items in total, including the two conditional deferrals.
+
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
   serialization, evidence helpers and dependencies across all six repositories.
-  PAR11–PAR19 record the additional findings. This is an initial implementation
+  PAR11–PAR20 record the additional findings. This is an initial implementation
   inventory; each port still requires current caller and fixture checks.
 - [x] **PAR02 — Share Federal Register subject-block parsing.** Move literal XML
   and text List of Subjects readers and their regression fixtures; add the missing
   publisher text acquisition path. Preserve window bounds, printed terms and
   source associations. Vocabulary resolution and scoring remain downstream.
-- [ ] **PAR18 — Search retained DocSpec data without another catalog copy.**
+- [x] **PAR18 — Search retained DocSpec data without another catalog copy.**
   Engine reads a selected catalog revision and retained results through DocSpec's
   public wheel APIs, then builds its disposable native index. Honor current
   membership and removals; raw file discovery is not a catalog reader. Map the
@@ -71,21 +74,27 @@ finding is not a completed port.
   staging only where the native reader needs it. Declare which metadata and
   retained results are searchable. [Engine EC00](../../spicyengine/PLAN.md#ec00)
   owns implementation.
-  **Status:** direct retained-state search is implemented and qualified locally
-  in Engine 0.2.0 using the DocSpec 0.4.0 wheel. Installed-package native checks
-  cover selected membership, replacements/removals, exact parsed values, scalar
-  and nested JSON, shared occurrences and changed-input refusal. Inline values
-  require no staging; the JSON content-reference fixture needed 134 temporary
-  bytes, deleted after building. No permanent catalog/body copy is produced.
-  Generic scalar values and explicitly selected fields are searchable; no agency
-  or legal interpretation is inferred. Optional Search enrichment retained and
-  reused through current Core operations remains open in Engine EC02.
-  Local commits: Engine `3b2b537` on `codex/docspec-catalog`; DocSpec reader
-  `71386d4` and test correction `9636521` on `codex/direct-core-reader`.
-  These implementation branches have not been merged or pushed.
-  Evidence is under `receipts/parsing-consolidation-2026-09-14/par18/direct-core/`.
-  Superseded prototypes remain in `abandoned-old-index/` and `abandoned-catalog-copy/`.
-- [ ] **PAR19 — Simplify Engine around indexing and retrieval.** Retire the
+  **Completed locally (2026-09-15):** Engine 0.4.0 uses DocSpec 0.6.0 to
+  read original records and optional retained Search 0.2.0 identifier additions.
+  Search runs the transformation; DocSpec owns dependencies, reuse and results.
+  An unchanged rerun and a title-only edit reuse results; changing one identifier
+  recomputes that record. Enrichment creates no additional Core value state.
+  Engine preserves source values and spellings, adds searchable identifiers, and
+  reports then deletes sparse temporary input even when reusing an existing index.
+  Generic scalar values and explicit JSON fields remain searchable; no agency or
+  legal interpretation is inferred. Baseline search needs no enrichment.
+  All **99 Engine tests** pass against its ordinary installed wheel. Native checks
+  cover exact originals, selected replacements/removals, added identifiers,
+  empty outputs, conflict/stale refusal, CLI loading and restart without source
+  mounts. The small enrichment fixture needs 1,072–1,080 temporary bytes per load;
+  this is a behavior check, not a capacity claim. DocSpec passes 1,496 source
+  tests and 51 installed tests; Search passes 36 installed tests and 351 sibling
+  checks with 99 existing adjudicated-divergence skips. Independent reviews approve.
+  Local source commits: Engine `08d2d86`, DocSpec `d714551`, Search `0f3a0bb`.
+  They remain on local implementation branches, unmerged and unpushed.
+  [Engine evidence](../../spicyengine-docspec-catalog/docs/history/2026-09-15-retained-enrichment.md)
+  and [delivery receipt](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par18/engine-enrichment-installed-qualification.md>).
+- [x] **PAR19 — Simplify Engine around indexing and retrieval.** Retire the
   old exporter and link aliases after the direct DocSpec route works. Reuse owner
   readers for agency/reference meaning and shared search definitions. Keep only
   search/display data and source references in native storage where bounded
@@ -94,82 +103,299 @@ finding is not a completed port.
   interrupted-build recovery and bounded results. Keep the local demo useful.
   [Engine's plan](../../spicyengine/PLAN.md) owns these changes; static review is
   not implementation or performance evidence.
-  **Status:** old exporters, format readers, copied normalization and domain
-  policies are removed in the local Engine branch. Eight native search/reference
+  **Completed locally (2026-09-15):** old exporters, format readers, copied
+  normalization and domain policies are removed. Eight native search/reference
   fields replace the stored full record; exact details come from DocSpec. Search
   passes after native restart with source mounts removed. The demo, actual browser
-  checks, installed wheel and 56 Python checks pass; independent review has no
-  remaining runtime blocker. Database-client replacement and storage/lookup
-  measurements remain open. Each original-record read still rechecks its selected
-  source, so this is not a latency improvement claim.
-- [ ] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
+  checks and all 75 committed tests pass against the ordinary 0.3.0 wheel;
+  independent review approved. Psycopg replaces Compose/psql/CSV with bounded
+  native calls. The same 15,784 retained Federal Register records produced
+  identical ranked IDs and a 17,552,392-byte index. Observed three-query medians
+  were 0.497 seconds before and 0.037 seconds after; five original reads remained
+  about 5.6 seconds because source validation is retained. These sequential local
+  observations cover titles/abstracts, not complete bodies or capacity; indexing
+  stays single-threaded. RefSpec dev9 coinstalls with DocSpec 0.5.1 and passes
+  516 installed checks; its 38 full-suite failures/errors reproduce on baseline.
+  Local commits: Engine `95eb2e8`, RefSpec `63947226`. Optional enrichment is
+  now qualified separately in PAR18/Engine EC02.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par19/delivery.md>).
+- [x] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
   section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
   reference occurrences and ancestor-attributed source-credit observations.
   Preserve raw spelling, ranges, stubs and unmatched text; leave enactment
   selection, citation resolution and legal-status verdicts downstream.
-- [ ] **PAR04 — Capture CFR metadata once.** Add per-part authority-note text,
+  **Completed locally (2026-09-14):** SpicyDocs 0.10.0 provides the bounded
+  readers; RefSpec 0.1.0.dev2 adopts its pinned wheel and removes the production
+  XML walkers. A current structure builder replaces the dated research scripts
+  for new builds. The old readers remain test-only comparison evidence.
+  All 58 retained XML titles passed comparison. Sections, ranges and chapters
+  match; the candidate removes exactly 364 false subsection rows caused by
+  subtitle prefixes. The source-credit table remains byte-identical. Existing
+  sealed tables stay pinned; adopting corrected candidates is separate work.
+  SpicyDocs passed 2,410 repository tests and 57 checks against its installed
+  wheel; RefSpec passed 108 focused checks and 100 installed-package checks.
+  Its 37 unrelated failing tests/errors reproduce on the unchanged baseline.
+  Architecture and independent code reviews approved. Provider commits:
+  `ad39f8e`, `376b488`, `7bd03bb`, `1118145` on `codex/uscode-readers`.
+  RefSpec commits: `1bc39535`, `1ffeb5ba` on `codex/shared-uscode-readers`.
+  These branches are local, unmerged and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par03/delivery.md>).
+- [x] **PAR04 — Capture CFR metadata once.** Add per-part authority-note text,
   the eCFR agency roster and the Archives subject-index reader. Preserve stated
   labels, malformed entries and provenance without near-match corrections.
-- [ ] **PAR05 — Complete Unified Agenda field mapping.** Reuse the existing XML
+  **Completed locally (2026-09-15):** SpicyDocs 0.11.0 captures literal `AUTH`,
+  structural headings and source notes with actual ancestry, plus agency rows
+  and subject-index blocks. RefSpec 0.1.0.dev3 adopts the agency/index readers
+  through its pinned wheel and removes its production source parsers. Its
+  snapshot checks and interpretation remain downstream. The existing authority
+  cache and historical extraction script remain frozen evidence.
+  All 49 retained XML titles match an independent scan: 9,666 parts and 9,002
+  `AUTH` elements. All 50 subject pages and the 316-agency roster preserve
+  RefSpec's accepted results. Mutation tests name intentional decoder and HTML
+  handling changes. Provider checks: 2,499 repository tests and 136 installed
+  tests. Receiver checks: 268 focused tests, eight dependency checks and 126
+  installed tests. Both independent code reviews approve after fixes.
+  Commits: SpicyDocs `132b952` on `codex/cfr-metadata`; RefSpec `cf0f3e7b` on
+  `codex/shared-cfr-metadata`. Both branches are local, unmerged and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par04/delivery.md>).
+- [x] **PAR05 — Complete Unified Agenda field mapping.** Reuse the existing XML
   reader for CFR references, legal authority, timetables and additional information;
   preserve repeated fields and raw text with their source locations.
-- [ ] **PAR06 — Share publisher code and roster readers.** Consolidate Federal
+  **Completed locally (2026-09-15):** SpicyDocs 0.12.0 captures selected field
+  trees, attributes, exact decoded text and XPath positions. RefSpec 0.1.0.dev4
+  and SpicyRegs 0.1.1 adopt the pinned wheel and remove their XML walkers;
+  SpicyRegs also replaces its download/retry loop with the existing acquirer.
+  Each receiver keeps its field selection, normalization and interpretation.
+  All 60 retained editions / 241,726 RefSpec records match the old reader,
+  including its explicit repairs to two malformed 2004 exports. SpicyRegs
+  matches all 233,250 records in the 58 valid originals; malformed editions now
+  fail before yielding partial rows. Original captures and sealed tables stay
+  unchanged. New RefSpec build receipts hash the installed provider code too.
+  Provider checks: 2,544 repository and 175 installed tests. RefSpec: 47 focused,
+  eight dependency and 35 installed tests; the full suite was not rerun.
+  SpicyRegs: 1,088 repository and 67 installed tests. Architecture and code
+  reviews approve. Extra validation and source positions increase parsing time;
+  the delivery receipt records the measured cost and intentional refusals.
+  Commits: SpicyDocs `e847f5c`, RefSpec `5d71a26c`, SpicyRegs `979872c`.
+  These branches are local, unmerged and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par05/delivery.md>).
+- [x] **PAR06 — Share publisher code and roster readers.** Consolidate Federal
   Register agencies, documented enums and topics, plus BILLSTATUS guide tables.
   Preserve source versions, unknown values and open-list semantics; keep vocabulary
   reconciliation and record-level interpretation in the consuming products.
-- [ ] **PAR07 — Add one GovInfo PREMIS reader.** Combine the useful prior parsers
+  **Completed locally (2026-09-15):** SpicyDocs 0.13.0 captures 472 agencies,
+  all 11 documented enum sets, type facets, both topic collections and the
+  BILLSTATUS guide's bill-type statements plus tables 3–6. RefSpec 0.1.0.dev5
+  adopts its pinned wheel and removes the source parsing walks and topics HTTP
+  implementation. Exact pins, strict acceptance, source identities and vocabulary
+  decisions stay in RefSpec. Guide `H`, prose `HR` and current XML `HR` remain
+  distinct observations; locator policy is unchanged.
+  All 7,767 topic rows and their digests match the frozen reader. Atlas retains
+  1,044 topic resources / 1,428 relations and the existing 8/36/88 bill-code
+  portfolios. Future topic builds use shared-reader v2 lineage; sealed artifacts
+  are unchanged. Provider checks: 2,689 repository / 155 installed tests. RefSpec:
+  220 focused / 220 installed tests, eight dependency checks, plus Atlas checks.
+  Changed-file lint passes; whole-repo lint has 28 findings in unchanged baseline
+  files, and the full RefSpec test suite was not rerun. All independent reviews
+  approve. Source commits: SpicyDocs `15d5a9c`, RefSpec `7f0d5614`; local,
+  unmerged and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par06/delivery.md>).
+- [x] **PAR07 — Add one GovInfo PREMIS reader.** Combine the useful prior parsers
   on bounded XML scanning; retain file names, algorithms, digests and entries
   without fixity. Compare selected captured bytes with an unambiguously matched
   publisher entry and test real package shapes. Report consistency, not authenticity.
+  **Completed locally (2026-09-15):** SpicyDocs 0.14.0 preserves the complete
+  PREMIS tree and shares its XML mapper with MODS. Exact CFR and public-law XML
+  captures match their publisher-stated SHA-256 digests. Missing fixity,
+  ambiguous fields, wrong locations, encoded bodies and HEAD responses cannot
+  become a positive comparison. All 30 CFR file entries without fixity survive.
+  RefSpec 0.1.0.dev6 adopts the reader with its reviewed acceptance rules intact;
+  DocSpec 0.4.1 updates its CFR example for the shared XML type and pins the same
+  provider wheel. No compatibility alias or duplicate production parser remains.
+  Provider: 2,757 repository / 238 installed tests. RefSpec: 76 focused tests
+  including dependency checks, plus 68 installed tests. DocSpec: 174 tests using
+  its documented local Iceberg catalog, including installed-wheel examples.
+  Both independent provider reviews and receiver reviews approve. Commits:
+  SpicyDocs `96ae559`, RefSpec `6cf579bf`, DocSpec `560af84`; local and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par07/delivery.md>).
 - [ ] **PAR08 — Qualify each provider and receiving change together.** Build a
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
+  **Qualified families:** PAR02–PAR07 and PAR11–PAR20 record their named
+  receiving checks; current wheel and source pins live in each delivery receipt.
+  SpicyRegs SR04 and its PAR10 follow-up are qualified through its 0.1.6 wheel
+  with SpicyDocs 0.18.0: 221 installed tests pass, including other source readers.
+  The provider passes 168 installed tests. RefSpec's
+  acquisition/archive paths below remain. Runtime producer evidence
+  is now complete for U.S. Code source credits, Unified Agenda and Topics.
+  RefSpec `4f6c2acb` records installed reader source hashes in source-credit
+  receipts and separate Topics run receipts. Replaying a capture preserves its
+  acquisition event and creates a fresh run record; sealed package identities
+  stay unchanged. Missing code refuses before output publication. Focused checks
+  and independent review pass; these hashes describe installed source files,
+  not a complete execution environment.
 - [ ] **PAR09 — Remove the replaced implementations.** Track adoption separately
   for every named consumer. Delete duplicate implementations,
   fixtures made redundant, compatibility wrappers and dead helpers after checks;
   retain regression cases and useful evidence. Record any remaining copy's reason.
+  **PAR03 complete:** current reference/source-credit parsing uses SpicyDocs;
+  historical research kernels stay frozen as evidence. RefSpec's existing
+  reference command still downloads/caches/opens U.S. Code ZIPs; its source-credit
+  command reads local ZIPs. `build_usc_structure` also walks local corpus and
+  annual ZIPs through low-level helpers. Adopt owner archive APIs that supply
+  validated member bytes without retaining every expanded title. Scope the
+  reference cache by release point and validate the edition stated in XML.
+  These remaining archive/acquisition paths are being implemented together.
+  **PAR04 complete:** RefSpec's agency walkers and subject HTML regexes are
+  removed from production. Copies remain only as test oracles; the independent
+  subject fidelity checker and historical authority extractor remain evidence.
+  **PAR05 complete:** both receivers' Agenda XML walkers are removed, along with
+  SpicyRegs' download loop and superseded provider wheels. Frozen reader copies
+  remain test-only comparison evidence; existing sealed tables are unchanged.
+  **PAR06 parsing complete:** FR and guide source walks and topics HTTP are
+  replaced. Old readers remain test-only oracles. RefSpec's BILLSTATUS capture
+  retains its pinned-resource policy and explicit local/injected-response boundary.
+  Its only production caller uses a local guide, and SpicyDocs already parses it.
+  Replace the copied cache publication mechanics with Rulespec Artifacts storage;
+  no additional live client is needed. Topics keeps its capture
+  event and package-store logic; those product responsibilities were not moved.
+  **PAR07 complete:** RefSpec's PREMIS XML walk is replaced. The old PREMIS and
+  MODS implementations remain only as test oracles. Salvaged SpicyRegs PREMIS
+  code has no active caller; it remains historical evidence, not a second reader.
+  **PAR12 complete:** DocSpec, SpicyRegs and RefSpec GAO use the shared pypdf
+  reader; retired page loops remain only as test oracles. RefSpec's styled-text
+  and geometry visitors retain distinct font/position responsibilities.
+  **PAR13/PAR15 complete:** DocSpec's syntax parsers and image header loops are
+  removed; RefSpec delegates source XML parsing and retains its named formatter.
+  Frozen copies stay test-only. Both receivers removed their superseded wheels.
+  **PAR14/PAR16/PAR17 complete:** DocSpec's JSON parser/offset table, Rulespec's
+  duplicate v2 artifact encoding/admission and manual URI encoder are removed.
+  PAR18/PAR19 remove the obsolete Search-shaped input path and Engine's duplicate
+  policies. PAR20 preserves per-file PDF results rather than adding another reader.
+  **SR04 complete:** SpicyRegs deletes its 519-line CourtListener bulk reader;
+  all three transforms import the owner directly. Table normalization stays
+  explicit and frozen old mappings remain test-only comparison evidence.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
   and DocSpec for its dataset/processing responsibilities. Assess reusable
   interpretation code under its own product owner. Keep necessary differences
   explicit; avoid creating a catch-all utility package or another layer of wrappers.
+  **PAR06 progress:** shared bounded JSON adds explicit finite-float decoding,
+  decoder-error translation and limits covering unknown fields. Transport fix
+  `663841d` bounds public 401/403 bodies before retention, discards incomplete
+  prefixes and never retries an already-known access refusal. Test correction
+  `4cfb5d5` compares retained evidence with original fixture bytes. Other shared
+  support work remains open. PAR07 supplies the shared MODS/PREMIS XML tree;
+  PAR13/PAR14 complete mapped text and JSON support.
+  **CourtListener transport complete locally:** SpicyDocs `1e8cab4` (0.18)
+  makes access refusals terminal and checks the original strong ETag, resolved
+  URL, exact resumed range and advertised length before accepting continuation.
+  Cleanup preserves the original error; retry loops no longer multiply.
+  Eligible read exceptions resume conditionally; premature EOF refuses.
+  SpicyRegs `b6cb3f1` (0.1.6) adopts the wheel. All 3,254 provider and 1,176
+  receiver source tests pass; 168 provider and 221 receiver installed tests pass.
+  Real local HTTP checks reproduce all 3,361 retained courts after interruption
+  and reject changed versions, wrong ranges, access refusal and truncated EOF.
+  Independent review approves. No live backfill or publication ran; listing
+  pins still do not bind the first download. Other tested package pins stay unchanged.
+  [Transport and receiving evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par10/delivery.md>).
+  **CourtListener writer complete locally:** SpicyRegs `dc4a33f` replaces both
+  opinion-table writers with one 49-line local helper, saving 31 production lines.
+  Schema and batch size remain caller choices. Empty, partial-batch, multi-batch
+  and failure-after-flush checks pass; full suite: 1,172 passed, three live checks
+  deselected. Independent review approves. Docket-map writing remains separate.
+  [Writer evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par10/courtlistener-writer-implementation.md>).
 - [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
   the second native XML interval index. All active callers use existing Core
   helpers and `documents.source_slicer`. Known-byte and native interval/XPath
   regressions plus the full Extrapolator suite passed: **713 tests**. Independent
   review approved with no open findings.
-- [ ] **PAR12 — Share PDF page reading across three consumers.** Add the needed
+- [x] **PAR12 — Share PDF page reading across three consumers.** Add the needed
   optional SpicyDocs backend and adopt it in DocSpec, SpicyRegs and RefSpec's GAO
   readers. Compare actual pypdf output before changing engines. Preserve blank
   pages and raw text; make encryption, failed-page and whitespace policies
   explicit. Retain each consumer's representation and interpretation work.
-- [ ] **PAR13 — Share mapped XML/HTML text reading.** Consolidate RefSpec and
-  DocSpec source parsing in SpicyDocs. Preserve named layout profiles, Unicode
-  character versus original-byte positions, inserted text, entities, XPath,
-  attributes and table boundaries. Reuse bounded scanning; qualify both
-  receivers' real fixtures before deleting their readers.
-- [ ] **PAR14 — Share source JSON decoding and record positions.** Reuse one
-  SpicyDocs decoder with explicit integer, Decimal and finite-float policies.
-  Preserve duplicate-key/non-finite refusals and exact record spans. DocSpec
-  retains segment construction; Rulespec Artifacts retains artifact encoding.
-- [ ] **PAR15 — Move image-header observations into SpicyDocs.** Have DocSpec
-  adopt a core-only PNG/GIF/JPEG header reader. Distinguish stated header
-  dimensions from successful image decoding and oriented display geometry;
-  preserve truncated/unsupported results without requiring Pillow.
-- [ ] **PAR16 — Reuse Rulespec Artifacts in Rulespec's v2 release tools.** Delete
-  duplicate canonical encoding/admission logic after checking release bytes,
-  Unicode key order, integer bounds, duplicate keys and refusal cases. Keep
-  release-specific identities and validation. Preserve the separately named
-  finite-float encoding used by other Rulespec products.
-- [ ] **PAR17 — Replace Rulespec's manual URI encoder with the standard library.**
-  Keep the public URI/fragment API and verify exact Unicode, percent, slash and
-  invalid-surrogate behavior before deleting the byte loop.
+  **Completed locally (2026-09-15):** SpicyDocs 0.15.0 supplies an optional
+  pypdf reader to DocSpec 0.4.2, SpicyRegs 0.1.2 and RefSpec 0.1.0.dev7.
+  All 222 retained pages match direct pypdf; switching to PyMuPDF would change
+  205 of them. Blank pages, whitespace and consumer formatting remain intact.
+  Failed SpicyRegs pages now report an error with no partial text. The new
+  64 MiB input cap and DocSpec's explicit reader identity are named changes.
+  Replaced loops survive only as test oracles. Full SpicyDocs/DocSpec/SpicyRegs
+  checks pass (2,784/1,346/1,106 tests), along with 154 focused RefSpec checks,
+  independent reviews and ordinary-wheel qualification. All 564 installed
+  Python files match their wheels and
+  source commits. Provider `da531c4`; receivers `97ffe02`, `ee933b7`, `4fe282c1`.
+  PAR20 separately tracks discarded multi-attachment diagnostics.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par12/delivery.md>).
+- [x] **PAR13 — Share mapped XML/HTML text reading.** SpicyDocs 0.16.0 owns
+  bounded source events and the XML scanner. DocSpec 0.5.0 uses them for native
+  metadata and visible text; RefSpec 0.1.0.dev8 reuses the shared tree parser.
+  Layout, headings, Unicode character positions, source-byte evidence and legal
+  interpretation stay with their consumers. V2 mappings correct source spans
+  and exactness; stage identities bind installed reader files. Empty HTML and
+  inert external XML declarations retain their prior outcomes. Six retained
+  RefSpec fragments, the 157 MB title-40 parse, full provider/DocSpec checks,
+  independent review and ordinary installed wheels pass. Source commits:
+  `71566b3`, `051ce05`, `bd045e8f`.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par13/delivery.md>).
+- [x] **PAR14 — Share source JSON decoding and record positions.** SpicyDocs
+  0.17.0 supplies shared number/key rules and exact character/byte spans.
+  DocSpec 0.5.1 deletes its parser and per-character JSON offset table while
+  retaining segment construction and original bytes. V2 stages bind reader
+  identity and limits; overflowing floats now refuse. Existing source-loader
+  diagnostics and retained JSON record slices pass frozen-reader comparison.
+  Full provider/DocSpec suites pass (3,189/1,479 tests), as do 303 core-provider
+  and 78 installed-consumer checks. Independent reviews approved. Local source
+  commits: `b9ff1fe`, `ff0bb02`.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par14/delivery.md>).
+- [x] **PAR15 — Move image-header observations into SpicyDocs.** DocSpec uses
+  the core PNG/GIF/JPEG reader without Pillow. Header dimensions remain declared
+  observations, separate from decoding or oriented display geometry. The v2
+  reader corrects PNG chunk and JPEG marker/frame handling while retaining
+  header-only, zero and unsupported/truncated outcomes. Complete encoded images,
+  frozen-oracle mutations and installed core-wheel checks pass.
+  [Guide](image-headers.md) · [Delivery](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par13/delivery.md>).
+- [x] **PAR16 — Reuse Rulespec Artifacts in Rulespec's v2 release tools.** Local
+  `d22d682` removes duplicate canonical encoding/admission logic. All 15 pinned
+  release fixture trees keep complete verification results; separate v1
+  finite-float encoding remains. A fresh tooling environment passes 63 tests
+  using the unchanged Artifacts 1.0.12 wheel. Owner-supported Mapping/tuple
+  inputs and structured diagnostic wording are named changes. Independent
+  review approved; one broader Core fixture failure reproduces on the baseline.
+  [Qualification](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par14/rulespec-qualification.md>).
+- [x] **PAR17 — Replace Rulespec's manual URI encoder with the standard library.**
+  Local `ce444e7` provides Projection 0.1.1 with the same public string/fragment API.
+  All Unicode scalars match the old output; all surrogates refuse. Accidental
+  non-string iterable acceptance is removed. Source and installed-wheel checks
+  pass (38/33 tests); independent review approved.
+- [x] **PAR20 — Retain PDF enrichment results per file in SpicyRegs.** Version
+  0.1.3 preserves ordered URL, observed-byte digest, status, page count and error
+  on document/comment rows. A successful attachment still makes the row `ok`;
+  failed attachments remain inspectable. Latest PDF-attempt facts stay separate
+  from retained or derived aggregate text. Parquet, catalog and backfill paths
+  preserve the field. Existing catalog tables gain one nullable column; a fresh
+  connection after that addition fixes a native schema-cache failure. Full
+  checks pass (1,139 tests), along with 216 installed-wheel checks and actual
+  local Iceberg migration/update/export tests. Independent review approved.
+  Local commit: `8b383714`; no live catalog was changed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par20/delivery.md>).
 
-CourtListener receiver adoption remains [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04).
-Do not create another provider reader. The Rulespec FAM preparation script has
+CourtListener receiver adoption is complete locally under
+[SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04). SpicyRegs `3bdb468` and `83ed49b`
+preserve all 3,361 retained court IDs and 397 federal classifications while
+correcting 11,808 quoted empty strings previously lost as null. Its initial 1,167
+source tests and 213 installed tests passed; independent review approved. The ordinary
+install also qualifies its existing BILLSTATUS, Agenda and PDF consumers;
+pypdf 6.14.2 is explicit because newer recovery changes malformed-page outcomes.
+The failed 0.1.4 qualification remains retained. PAR10 above records the subsequent
+0.1.6/0.18 transport and writer qualification. No backfill or publication ran.
+[SR04 delivery](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/sr04/delivery.md>).
+
+The Rulespec FAM preparation script has
 one known consumer; move it only when a supported source workflow or second
 consumer makes the move useful. Preserve its declared ISO-8859-1 encoding.
 
@@ -198,7 +424,7 @@ One live historical text capture passed; no population coverage is claimed.
 
 PAR08/PAR09 are complete for this family and stay open for later ports. Existing
 fidelity/carrier reports need regeneration under the new two-module identity
-before population use. PAR18 remains unqualified by these catalog checks.
+before population use. PAR18 has its own retained-input and enrichment qualification.
 Commits and wheels are local; nothing from this iteration was pushed or published.
 Exact checks, module counts, hashes, reviews and limitations are retained in
 `~/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/`.
@@ -384,7 +610,8 @@ implementations and tests for F02–F05, P01 and the DocSpec CFR example.
   backslashes using the publisher's CSV dialect. Bound record size, decompression
   and compressed reads; refuse malformed text, rows and incomplete bzip2 members.
   Resume and cleanup checks pass. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
-  owns adoption of the reader and the separate table-normalization audit.
+  completes reader adoption and the separate table-normalization audit locally.
+  PAR10 records the completed transport follow-up.
 
 F05 checks: 103 CSV, bulk-reader and listing tests passed. Retained CourtListener
 data produced 3,361 rows with 16,096 nulls and 11,808 empty strings. Re-encoding
@@ -680,7 +907,7 @@ wheel newer than the 0.3.0 SpicyRegs pins today.
 | --- | --- | --- | --- |
 | `federal_register.py` | FR API v1 documents; 90-day windows under the 10,000 cap | Covered by `sources/federal_register/native.py` | adopt |
 | `fec_committees.py` | OpenFEC `/v1/committees/`, keyset paging | Covered by the FEC committee profile | adopt |
-| `courtlistener_bulk.py` | CourtListener bulk CSV exports | Covered; SpicyRegs SR04 | adopt |
+| `courtlistener_bulk.py` | CourtListener bulk CSV exports | Shared reader adopted; SpicyRegs SR04 | done |
 | `bill_subjects.py` | GovInfo BILLSTATUS | Already on the wheel (G03) | done |
 | `gao_reports.py` | `gao.gov/rss/reports.xml` listing | Port: RSS listing route beside product pages | M01 |
 | `crs_reports.py` | `api.congress.gov/v3/crsreport`, offset/limit, keyed | Port: listing route beside `crs_summaries.py` | M02 |

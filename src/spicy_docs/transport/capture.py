@@ -24,6 +24,24 @@ class _RetryableTransportError(ConnectionError):
     """Transport failed without copying arbitrary provider text into logs."""
 
 
+def _access_refusal(response: httpx.Response, url: str, max_bytes: int) -> RefusedResponse:
+    """Retain complete bounded raw evidence; a failed read cannot undo a 401/403."""
+    media_type = (response.headers.get("content-type") or "application/octet-stream").split(";", 1)[0]
+    if response.headers.get("content-encoding", "identity").strip().lower() != "identity":
+        # Raw encoded bytes are evidence, not the decoded format named by the header.
+        media_type = "application/octet-stream"
+    body = bytearray()
+    try:
+        for chunk in response.iter_raw(chunk_size=min(max_bytes + 1, 64 * 1024)):
+            observed = len(body) + len(chunk)
+            if observed > max_bytes:
+                return RefusedResponse(url, "transport", None, media_type, "response-byte-limit", observed)
+            body.extend(chunk)
+    except httpx.RequestError:
+        return RefusedResponse(url, "transport", None, media_type, "response-unavailable", len(body))
+    return RefusedResponse(url, "transport", bytes(body), media_type, "access-refused", len(body))
+
+
 class BoundedHttpCapture:
     """One sequential client with per-operation counts and persistent pacing.
 
@@ -124,14 +142,7 @@ class BoundedHttpCapture:
                             f"Body source answered HTTP {response.status_code}; stopping acquisition"
                         )
                         if self.retain_refusal_bodies:
-                            refused = response.read()[: max_bytes + 1]
-                            media_type = (response.headers.get("content-type") or "application/octet-stream").split(
-                                ";", 1
-                            )[0]
-                            attach_refused_response(
-                                error,
-                                RefusedResponse(url, "transport", refused, media_type, "access-refused", len(refused)),
-                            )
+                            attach_refused_response(error, _access_refusal(response, url, max_bytes))
                         raise error
                     if response.status_code == 429 or response.status_code >= 500:
                         raise RetryableHTTPStatusError(

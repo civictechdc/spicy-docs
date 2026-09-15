@@ -97,8 +97,6 @@ ANNUAL_HEADER_BYTES = 16 * 1024
 
 type UsCodeSource = Literal["release-point-title", "annual-title", "popular-names", "table3-act", "table3-bulk"]
 
-_TITLE_MEMBER = re.compile(r"usc(?P<title>[0-9]{2})(?P<appendix>[aA]?)\.xml")
-_ANNUAL_MEMBER = re.compile(r"(?P<year>[0-9]{4})usc(?P<title>[0-9]{2})(?P<appendix>[aA]?)\.htm", re.IGNORECASE)
 _BULK_MEMBER = re.compile(r"fulldump@(?P<release_point>[0-9]+-[0-9]+)\.xml")
 _RELEASE_POINT = re.compile(r"(?P<congress>[1-9][0-9]{0,2})-(?P<law>[1-9][0-9]{0,4})")
 #: A Table III key is a public law (``90-148``) or a pre-1957 session-law
@@ -388,84 +386,6 @@ def validate_title_xml(
     )
 
 
-@dataclass(frozen=True, slots=True)
-class UsCodeArchiveEntry:
-    name: str
-    byte_size: int
-    sha256: str
-    metadata: UsCodeTitleMetadata
-
-
-@dataclass(frozen=True, slots=True)
-class UsCodeArchive:
-    """Every title entry validated against the identity its own bytes declare."""
-
-    release_point: str
-    entries: tuple[UsCodeArchiveEntry, ...]
-
-
-def _title_code(name: str) -> str | None:
-    match = _TITLE_MEMBER.fullmatch(name)
-    # The publisher spells the same appendix both ways: usc05A.xml and usc11a.xml.
-    return None if match is None else match["title"] + match["appendix"].lower()
-
-
-def read_title_archive(
-    body: bytes,
-    *,
-    selection: TitleSelection,
-    max_bytes: int = DEFAULT_MAX_ARCHIVE_BYTES,
-    max_entry_bytes: int = DEFAULT_MAX_XML_BYTES,
-) -> UsCodeArchive:
-    """Read one title's release-point zip; its single member must prove the requested identity."""
-    if not isinstance(selection, TitleSelection):
-        raise UsCodeSourceError("selection must be a TitleSelection")
-    _limit(max_bytes)
-    _limit(max_entry_bytes, "max_entry_bytes")
-    label = "U.S. Code title archive"
-    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
-        members = archive_members(archive, max_entries=2, error_type=UsCodeSourceError, label=label)
-        if len(members) != 1:
-            raise UsCodeSourceError("U.S. Code title archive must hold exactly one member")
-        info = members[0]
-        code = _title_code(info.filename.rsplit("/", 1)[-1])
-        if code != selection.title:
-            raise UsCodeSourceError("U.S. Code title archive member name is not the requested title")
-        data = read_member(archive, info, max_bytes=max_entry_bytes, error_type=UsCodeSourceError, label=label)
-        metadata = validate_title_xml(data, selection=selection, max_bytes=max_entry_bytes)
-        entry = UsCodeArchiveEntry(info.filename, len(data), _digest(data), metadata)
-    return UsCodeArchive(selection.release_point.label, (entry,))
-
-
-def read_corpus_archive(
-    body: bytes,
-    *,
-    release_point: ReleasePoint,
-    max_bytes: int = DEFAULT_MAX_ARCHIVE_BYTES,
-    max_entry_bytes: int = DEFAULT_MAX_XML_BYTES,
-    max_entries: int = DEFAULT_MAX_ARCHIVE_ENTRIES,
-) -> UsCodeArchive:
-    """Read the whole-corpus zip; every member must be a title of the requested release point."""
-    if not isinstance(release_point, ReleasePoint):
-        raise UsCodeSourceError("release_point must be a ReleasePoint")
-    _limit(max_bytes)
-    _limit(max_entry_bytes, "max_entry_bytes")
-    _count(max_entries, "max_entries")
-    label = "U.S. Code corpus archive"
-    entries = []
-    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
-        for info in archive_members(archive, max_entries=max_entries, error_type=UsCodeSourceError, label=label):
-            code = _title_code(info.filename.rsplit("/", 1)[-1])
-            if code is None:
-                raise UsCodeSourceError("U.S. Code corpus archive entry name is not a title member")
-            data = read_member(archive, info, max_bytes=max_entry_bytes, error_type=UsCodeSourceError, label=label)
-            metadata = validate_title_xml(
-                data, selection=TitleSelection(release_point, code), max_bytes=max_entry_bytes
-            )
-            entries.append(UsCodeArchiveEntry(info.filename, len(data), _digest(data), metadata))
-    return UsCodeArchive(release_point.label, tuple(entries))
-
-
 # --------------------------------------------------------------------------- #
 # annual historical archives
 # --------------------------------------------------------------------------- #
@@ -564,77 +484,6 @@ def validate_annual_title_html(
     if year is not None and stated_year != str(year):
         raise UsCodeSourceError("U.S. Code annual title publication year differs from the request")
     return AnnualTitleMetadata("annual-title", *(fields[name] for name in ANNUAL_FIELDS))
-
-
-@dataclass(frozen=True, slots=True)
-class AnnualArchiveEntry:
-    name: str
-    byte_size: int
-    sha256: str
-    metadata: AnnualTitleMetadata | None = None
-
-
-@dataclass(frozen=True, slots=True)
-class AnnualArchive:
-    """One year's XHTML archive: its title members and the files the publisher ships beside them.
-
-    ``carried_forward`` names the members stating another year. They are the
-    publisher's own doing and are reported rather than refused; ``others`` are
-    the stylesheet, directory listing and extra tables some years carry, each
-    kept by name, size and digest but claiming no title identity.
-    """
-
-    year: int
-    entries: tuple[AnnualArchiveEntry, ...]
-    others: tuple[AnnualArchiveEntry, ...]
-    carried_forward: tuple[str, ...]
-    publication_names: tuple[str, ...]
-
-
-def read_annual_archive(
-    body: bytes,
-    *,
-    year: int,
-    max_bytes: int = DEFAULT_MAX_ARCHIVE_BYTES,
-    max_entry_bytes: int = DEFAULT_MAX_XML_BYTES,
-    max_entries: int = DEFAULT_MAX_ARCHIVE_ENTRIES,
-) -> AnnualArchive:
-    """Read one annual zip; every title member proves its own edition, year and title."""
-    annual_archive_locator(year)
-    _limit(max_bytes)
-    _limit(max_entry_bytes, "max_entry_bytes")
-    _count(max_entries, "max_entries")
-    label = "U.S. Code annual archive"
-    entries: list[AnnualArchiveEntry] = []
-    others: list[AnnualArchiveEntry] = []
-    carried: list[str] = []
-    names: list[str] = []
-    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
-        for info in archive_members(archive, max_entries=max_entries, error_type=UsCodeSourceError, label=label):
-            stem = info.filename.rsplit("/", 1)[-1]
-            match = _ANNUAL_MEMBER.fullmatch(stem)
-            data = read_member(archive, info, max_bytes=max_entry_bytes, error_type=UsCodeSourceError, label=label)
-            if match is None:
-                # A member this reader does not route must not be a title in
-                # disguise: the same comments it would be validated by decide it.
-                if b"AUTHORITIES-USC-TITLE-ENUM" in data[:ANNUAL_HEADER_BYTES]:
-                    raise UsCodeSourceError("U.S. Code annual archive states a title under an unroutable name")
-                others.append(AnnualArchiveEntry(info.filename, len(data), _digest(data)))
-                continue
-            metadata = validate_annual_title_html(data, max_bytes=max_entry_bytes)
-            enum = metadata.title_enum.lower()
-            if enum not in (match["title"].lstrip("0") + match["appendix"].lower(), match["title"].lstrip("0")):
-                raise UsCodeSourceError("U.S. Code annual title enum differs from its member name")
-            if metadata.publication_year != str(year):
-                carried.append(info.filename)
-            if metadata.publication_name not in names:
-                names.append(metadata.publication_name)
-            entries.append(AnnualArchiveEntry(info.filename, len(data), _digest(data), metadata))
-    if not entries:
-        raise UsCodeSourceError("U.S. Code annual archive holds no title member")
-    if all(entry.name in carried for entry in entries):
-        raise UsCodeSourceError("U.S. Code annual archive states no member of the requested year")
-    return AnnualArchive(year, tuple(entries), tuple(others), tuple(carried), tuple(names))
 
 
 # --------------------------------------------------------------------------- #
@@ -1273,7 +1122,15 @@ def read_table3_bulk_member(
     _limit(max_bytes)
     _limit(max_member_bytes, "max_member_bytes")
     label = "Table III bulk archive"
-    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
+    with open_archive(
+        body,
+        max_bytes=max_bytes,
+        max_entries=2,
+        max_entry_bytes=max_member_bytes,
+        bound="max_member_bytes",
+        error_type=UsCodeSourceError,
+        label=label,
+    ) as archive:
         members = archive_members(archive, max_entries=2, error_type=UsCodeSourceError, label=label)
         if len(members) != 1:
             raise UsCodeSourceError("Table III bulk archive must hold exactly one member")
