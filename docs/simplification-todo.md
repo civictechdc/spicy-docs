@@ -41,17 +41,18 @@ Parsing and metadata capture move to SpicyDocs; other shared behavior goes to it
 existing owner. Consumers adopt wheels and delete their copies. The
 [ownership decision](source-ownership.md) defines the package responsibilities. The
 [port-candidate swarm](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/port-candidates-swarm-2026-09-14.md>)
-is one input to this effort; it inspected SpicyDocs `3386648` and did not establish
-a complete Rulespec inventory. These are planned tasks, not completed ports.
+is one input to this effort; it inspected SpicyDocs `3386648`. The deeper
+[reader inventory](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/remaining-inventory.md>)
+and [Rulespec inventory](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/rulespec-inventory.md>)
+add current callers, behavior differences and migration checks. An inventory
+finding is not a completed port.
 
-- [ ] **PAR01 — Inventory duplicated behavior across the codebases.** Read parsers,
-  models, validation, transport, format readers, serialization, evidence handling,
-  processing helpers and tools, including differently written implementations of
-  the same rule. Record exact functions, callers, fixtures, source dictionaries,
-  behavior differences and package dependencies. Prioritize widely reused code
-  and recurring fixes. Reassess vocabulary and third-party-text exclusions;
-  agree ownership and the split for mixed responsibilities before implementation.
-- [ ] **PAR02 — Share Federal Register subject-block parsing.** Move literal XML
+- [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
+  and follow-up reviews cover source readers, metadata, format extraction,
+  serialization, evidence helpers and dependencies across all six repositories.
+  PAR11–PAR17 record the additional findings. This is an initial implementation
+  inventory; each port still requires current caller and fixture checks.
+- [x] **PAR02 — Share Federal Register subject-block parsing.** Move literal XML
   and text List of Subjects readers and their regression fixtures; add the missing
   publisher text acquisition path. Preserve window bounds, printed terms and
   source associations. Vocabulary resolution and scoring remain downstream.
@@ -88,6 +89,54 @@ a complete Rulespec inventory. These are planned tasks, not completed ports.
   and DocSpec for its dataset/processing responsibilities. Assess reusable
   interpretation code under its own product owner. Keep necessary differences
   explicit; avoid creating a catch-all utility package or another layer of wrappers.
+- [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
+  Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
+  the second native XML interval index. All active callers use existing Core
+  helpers and `documents.source_slicer`. Known-byte and native interval/XPath
+  regressions plus the full Extrapolator suite passed: **713 tests**.
+- [ ] **PAR12 — Share PDF page reading across three consumers.** Add the needed
+  optional SpicyDocs backend and adopt it in DocSpec, SpicyRegs and RefSpec's GAO
+  readers. Compare actual pypdf output before changing engines. Preserve blank
+  pages and raw text; make encryption, failed-page and whitespace policies
+  explicit. Retain each consumer's representation and interpretation work.
+- [ ] **PAR13 — Share mapped XML/HTML text reading.** Consolidate RefSpec and
+  DocSpec source parsing in SpicyDocs. Preserve named layout profiles, Unicode
+  character versus original-byte positions, inserted text, entities, XPath,
+  attributes and table boundaries. Reuse bounded scanning; qualify both
+  receivers' real fixtures before deleting their readers.
+- [ ] **PAR14 — Share source JSON decoding and record positions.** Reuse one
+  SpicyDocs decoder with explicit integer, Decimal and finite-float policies.
+  Preserve duplicate-key/non-finite refusals and exact record spans. DocSpec
+  retains segment construction; Rulespec Artifacts retains artifact encoding.
+- [ ] **PAR15 — Move image-header observations into SpicyDocs.** Have DocSpec
+  adopt a core-only PNG/GIF/JPEG header reader. Distinguish stated header
+  dimensions from successful image decoding and oriented display geometry;
+  preserve truncated/unsupported results without requiring Pillow.
+- [ ] **PAR16 — Reuse Rulespec Artifacts in Rulespec's v2 release tools.** Delete
+  duplicate canonical encoding/admission logic after checking release bytes,
+  Unicode key order, integer bounds, duplicate keys and refusal cases. Keep
+  release-specific identities and validation. Preserve the separately named
+  finite-float encoding used by other Rulespec products.
+- [ ] **PAR17 — Replace Rulespec's manual URI encoder with the standard library.**
+  Keep the public URI/fragment API and verify exact Unicode, percent, slash and
+  invalid-surrogate behavior before deleting the byte loop.
+
+CourtListener receiver adoption remains [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04).
+Do not create another provider reader. The Rulespec FAM preparation script has
+one known consumer; move it only when a supported source workflow or second
+consumer makes the move useful. Preserve its declared ISO-8859-1 encoding.
+
+**Current PAR02 delivery:** SpicyDocs commit `dadd1d6` and its local 0.9.0 wheel contain the shared
+337-line List of Subjects reader and explicit publisher-text acquisition.
+All 21 transferred parsing functions and constants match their original ASTs
+(apart from docstrings). Checks passed: **2,343 repository tests**, **126 installed
+core-wheel tests without HTTPX**, and **24 installed acquisition tests**. One
+live text request validated an older publisher document; it does not establish
+population coverage. Independent review approved after adding a positive XML
+regression for headings, entities and repeated paragraphs; all **28 subject-reader
+tests** passed. SpicySearch adoption is in progress.
+Qualification evidence lives in
+`~/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/`.
 
 Work by source family or shared capability: identify callers, select or improve
 one implementation, qualify its wheel and receivers, then delete replaced code.
