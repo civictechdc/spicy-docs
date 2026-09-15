@@ -1,6 +1,6 @@
 [project]
 name = "spicy-docs"
-version = "0.14.0"
+version = "0.15.0"
 description = "Faithful acquisition from government sources and immutable source-native release publication"
 requires-python = ">=3.12,<3.13"
 dependencies = [
@@ -16,6 +16,8 @@ acquisition = ["boto3", "httpx", "loguru", "tqdm"]
 public-table = ["polars", "pyarrow"]
 # PDF/image decoding is shared; select recognition providers separately.
 pdf = ["pymupdf>=1.28,<2", "pillow>=12,<13"]
+# Raw page text for consumers that use pypdf's extraction behavior.
+pdf-pypdf = ["pypdf>=6,<7"]
 pdf-rapidocr = ["rapidocr-onnxruntime>=1.4.4,<2"]
 pdf-apple = ["ocrmac>=1.0.1,<2; sys_platform == 'darwin'"]
 pdf-mlx = ["mlx-vlm==0.7.0; sys_platform == 'darwin' and platform_machine == 'arm64'"]

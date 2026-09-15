@@ -6,6 +6,10 @@ backend. SpicyDocs owns these optional, reusable extraction adapters; DocSpec
 continues to own document lifecycle, retained stages, retries and dataset execution.
 This is a Python library API; it does not start an HTTP service.
 
+For pypdf's exact embedded page strings, use the smaller
+[page-text reader](pdf-page-text.md). Its optional dependency and output stay
+separate from the rendering and recognition backends below.
+
 Dependency injection means passing these objects into constructors. There is no
 global registry: a source-specific caller constructs the extractor it needs.
 
