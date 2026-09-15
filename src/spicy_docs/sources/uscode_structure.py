@@ -11,8 +11,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
+from spicy_docs.reading.xml_observations import XmlElement, XmlObservationScan
+
 from .uscode import DEFAULT_MAX_XML_BYTES, USLM_NAMESPACE, UsCodeSourceError, _limit
-from .xml_observations import XmlElement, XmlObservationScan
 
 _PREFIX = "{" + USLM_NAMESPACE + "}"
 _IDENTIFIER = re.compile(r"/us/usc/t(?P<title>[0-9]+[aA]?)(?P<path>/.*)")

@@ -33,7 +33,7 @@ no general PDF downloader here. Sources listed only in the
 
 ### 1. JSON attachment labels
 
-The shared [media-type helper](../src/spicy_docs/sources/media_types.py) maps
+The shared [media-type helper](../src/spicy_docs/reading/media_types.py) maps
 publisher `json` labels to `application/json`. Fallback examines only the final
 URL path extension; query strings, fragments and parent directories do not
 supply a type. An unknown type stays `application/octet-stream`.

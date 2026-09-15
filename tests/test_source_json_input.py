@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from spicy_docs.sources.json_input import load_bounded_json, load_finite_json, load_integer_json
+from spicy_docs.reading.json_input import load_bounded_json, load_finite_json, load_integer_json
 
 
 class SourceError(ValueError):

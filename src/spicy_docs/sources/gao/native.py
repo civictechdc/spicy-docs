@@ -34,11 +34,11 @@ from rulespec_artifacts import (
     schema_bundle_digest,
 )
 
-from spicy_docs.sources.evidence_zip import (
+from spicy_docs.reading.evidence_zip import (
     deterministic_zip_entry,
     has_deterministic_zip_metadata,
 )
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.sources.zyte import ZyteHttpResponse
 
 SOURCE_SYSTEM_ID: Final = "https://www.gao.gov/products"

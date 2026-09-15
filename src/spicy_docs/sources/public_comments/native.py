@@ -31,6 +31,9 @@ from rulespec_artifacts import (
     schema_bundle_digest,
 )
 
+from spicy_docs.reading.evidence_zip import deterministic_zip_entry
+from spicy_docs.reading.json_input import load_integer_json
+from spicy_docs.reading.media_types import media_type, media_type_policy
 from spicy_docs.schemas.spicy_regs_public_tables import (
     PUBLIC_COMMENT_COLUMNS,
     PUBLIC_COMMENT_FILE_COLUMNS,
@@ -39,9 +42,6 @@ from spicy_docs.schemas.spicy_regs_public_tables import (
     PUBLIC_COMMENT_VERSION_COLUMN,
     project_public_comment_row,
 )
-from spicy_docs.sources.evidence_zip import deterministic_zip_entry
-from spicy_docs.sources.json_input import load_integer_json
-from spicy_docs.sources.media_types import media_type, media_type_policy
 
 PUBLIC_TABLE_BASE_URL: Final = "https://data.spicy-regs.dev"
 PUBLIC_TABLE_HOST: Final = "data.spicy-regs.dev"

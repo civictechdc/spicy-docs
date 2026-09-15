@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from spicy_docs.reading.refusals import attach_refused_response
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.congress.bill_status import (
     BillIdentity,
@@ -26,7 +27,6 @@ from spicy_docs.sources.congress.bill_text import (
     select_bill_xml,
     validate_bill_text,
 )
-from spicy_docs.sources.refusals import attach_refused_response
 from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,

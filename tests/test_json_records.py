@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from spicy_docs.reading.json_input import read_json_records
 from spicy_docs.sources import json_input
-from spicy_docs.sources.json_input import read_json_records
 from tests import json_record_ranges_oracle as old_records
 from tests import source_json_input_oracle as old_loaders
 

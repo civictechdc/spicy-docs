@@ -186,6 +186,6 @@ class NoHttpx(importlib.abc.MetaPathFinder):
             raise AssertionError('raw parser imported HTTPX')
 sys.meta_path.insert(0, NoHttpx())
 from spicy_docs.sources.govinfo.premis import read_govinfo_premis, compare_govinfo_premis
-from spicy_docs.sources.xml_tree import XmlTreeElement
+from spicy_docs.reading.xml_tree import XmlTreeElement
 """
     subprocess.run([sys.executable, "-c", code], check=True, capture_output=True, text=True)

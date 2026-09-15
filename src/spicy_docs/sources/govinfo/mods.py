@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 
-from ..xml_tree import XmlTreeElement, read_xml_tree
+from spicy_docs.reading.xml_tree import XmlTreeElement, read_xml_tree
 
 MODS_NAMESPACE = "http://www.loc.gov/mods/v3"
 DEFAULT_MAX_ELEMENTS = 100_000

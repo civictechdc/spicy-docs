@@ -2,7 +2,7 @@
 
 import pytest
 
-from spicy_docs.sources.pdf_bytes import TRAILER_WINDOW, check_pdf_bytes
+from spicy_docs.reading.pdf_bytes import TRAILER_WINDOW, check_pdf_bytes
 from spicy_docs.transport.source_acquirer import check_final_url
 
 

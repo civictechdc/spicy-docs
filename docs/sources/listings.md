@@ -23,7 +23,7 @@ zero never establishes absence.
 
 ## One traversal rule for every JSON list
 
-`sources/paged_json.py` states each publisher's contract as data: the HTTPS
+`reading/paged_json.py` states each publisher's contract as data: the HTTPS
 host, the request method, how the next page is named, where the count lives,
 and how a credential is spelled in its header. Three continuation kinds cover
 every publisher here: a full next URL (Congress.gov, GovInfo, LDA,
@@ -62,7 +62,7 @@ from pathlib import Path
 from spicy_docs.sources.congress.listing import CongressListingReader, bill_list_url
 from spicy_docs.sources.gao.rss import GaoFeedAcquirer, GaoFeedBudget
 from spicy_docs.sources.govinfo.discovery import GovInfoDiscoveryReader, collection_url
-from spicy_docs.sources.paged_json import PagedJsonBudget
+from spicy_docs.reading.paged_json import PagedJsonBudget
 from spicy_docs.transport.credentials import read_api_key
 
 key = read_api_key(Path(".env"), "API_GOV")

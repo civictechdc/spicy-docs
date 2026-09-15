@@ -2,7 +2,7 @@
 
 import pytest
 
-from spicy_docs.sources.media_types import media_type
+from spicy_docs.reading.media_types import media_type
 
 
 @pytest.mark.parametrize(

@@ -66,7 +66,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlsplit
 
-from spicy_docs.sources.pdf_bytes import check_pdf_bytes
+from spicy_docs.reading.pdf_bytes import check_pdf_bytes
 from spicy_docs.sources.regulations_gov.definitions import _ASCII_ID
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.credentials import CredentialRefusedError

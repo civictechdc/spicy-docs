@@ -13,7 +13,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from spicy_docs.sources.paged_json import PagedJsonBudget, PagedJsonSourceError
+from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonSourceError
 from spicy_docs.sources.sam import (
     MAX_REACHABLE_RECORDS,
     SAM,

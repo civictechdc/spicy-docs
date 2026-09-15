@@ -1,6 +1,6 @@
 # Read image header observations
 
-`spicy_docs.sources.image_header.read_image_header(bytes)` returns an immutable
+`spicy_docs.reading.image_header.read_image_header(bytes)` returns an immutable
 `ImageHeader(format, width, height)`. It needs no renderer or network package.
 Retain the original bytes alongside these observations.
 

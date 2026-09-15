@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from decimal import InvalidOperation
 from typing import Any
 
-from spicy_docs.sources.json_input import load_decimal_json
+from spicy_docs.reading.json_input import load_decimal_json
 
 from .models import DEFAULT_MAX_BYTES, CfrSourceError, _limit
 

@@ -7,8 +7,8 @@ import json
 
 import pytest
 
+from spicy_docs.reading.refusals import RefusedResponse
 from spicy_docs.sources import zyte
-from spicy_docs.sources.refusals import RefusedResponse
 
 
 class _Response:

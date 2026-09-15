@@ -11,8 +11,8 @@ from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
+from spicy_docs.reading.refusals import retain_refused_response
 from spicy_docs.sources.fec.catalog import official_sources
-from spicy_docs.sources.refusals import retain_refused_response
 from spicy_docs.transport.credentials import read_api_key, scrub_credential
 
 

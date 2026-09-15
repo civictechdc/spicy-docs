@@ -29,11 +29,11 @@ from uuid import uuid4
 
 from rulespec_artifacts import LocalBlobSource
 
+from spicy_docs.reading.refusals import retain_refused_response
+from spicy_docs.reading.s3_listing import parse_s3_listing
 from spicy_docs.sources.fec.catalog import BUCKET, BUCKET_URL, official_url
 from spicy_docs.sources.fec.client import FecClient
 from spicy_docs.sources.fec.metadata import api_page, parse_api, resolve_link, split_record
-from spicy_docs.sources.refusals import retain_refused_response
-from spicy_docs.sources.s3_listing import parse_s3_listing
 from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key, scrub_credential
 from spicy_docs.transport.download import HttpRefusal
 

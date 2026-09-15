@@ -27,15 +27,7 @@ from uuid import uuid4
 
 from rulespec_artifacts import LocalBlobWriter
 
-from spicy_docs.sources.congress.listing import BILLS_KEY, CONGRESS_GOV, CRS_REPORTS_KEY
-from spicy_docs.sources.courtlistener_search import COURTLISTENER
-from spicy_docs.sources.courtlistener_search import RESULTS_KEY as SEARCH_RESULTS_KEY
-from spicy_docs.sources.fcc_ecfs import FCC_ECFS, PROCEEDINGS_KEY
-from spicy_docs.sources.fcc_ecfs import FILINGS_KEY as FCC_FILINGS_KEY
-from spicy_docs.sources.govinfo.discovery import GOVINFO, GRANULES_KEY, PACKAGES_KEY
-from spicy_docs.sources.lda import FILINGS_KEY as LDA_FILINGS_KEY
-from spicy_docs.sources.lda import LDA
-from spicy_docs.sources.paged_json import (
+from spicy_docs.reading.paged_json import (
     DEFAULT_MAX_PAGE_BYTES,
     DEFAULT_MAX_PAGES,
     JsonPage,
@@ -44,7 +36,15 @@ from spicy_docs.sources.paged_json import (
     PagedJsonReader,
     PagedJsonSourceError,
 )
-from spicy_docs.sources.refusals import retain_refused_response
+from spicy_docs.reading.refusals import retain_refused_response
+from spicy_docs.sources.congress.listing import BILLS_KEY, CONGRESS_GOV, CRS_REPORTS_KEY
+from spicy_docs.sources.courtlistener_search import COURTLISTENER
+from spicy_docs.sources.courtlistener_search import RESULTS_KEY as SEARCH_RESULTS_KEY
+from spicy_docs.sources.fcc_ecfs import FCC_ECFS, PROCEEDINGS_KEY
+from spicy_docs.sources.fcc_ecfs import FILINGS_KEY as FCC_FILINGS_KEY
+from spicy_docs.sources.govinfo.discovery import GOVINFO, GRANULES_KEY, PACKAGES_KEY
+from spicy_docs.sources.lda import FILINGS_KEY as LDA_FILINGS_KEY
+from spicy_docs.sources.lda import LDA
 from spicy_docs.sources.regulations_gov.api import DOCUMENTS_KEY, REGULATIONS_GOV_API
 from spicy_docs.sources.sam import ENTITIES_KEY, SAM
 from spicy_docs.sources.usaspending import RECIPIENTS_URL, USASPENDING

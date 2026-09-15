@@ -12,7 +12,7 @@ from rulespec_artifacts import (
     framed_section_digest,
 )
 
-from spicy_docs.sources.media_types import media_type
+from spicy_docs.reading.media_types import media_type
 from spicy_docs.sources.regulations_gov.definitions import (
     _KEY_REFETCH_SUFFIX,
     COMMENT_ATTRIBUTE_FIELDS,

@@ -21,7 +21,7 @@ from urllib.parse import urljoin
 import httpx
 from rulespec_artifacts import LocalBlobWriter
 
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.retry import retry_http
 

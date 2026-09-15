@@ -19,11 +19,11 @@ from zipfile import ZIP_DEFLATED, BadZipFile, ZipFile
 
 from rulespec_artifacts import BlobSource, canonical_json_bytes
 
+from spicy_docs.reading.evidence_zip import deterministic_zip_entry, has_deterministic_zip_metadata
+from spicy_docs.reading.json_input import load_integer_json
 from spicy_docs.releases.format import MAX_ROW_BYTES
-from spicy_docs.sources.evidence_zip import deterministic_zip_entry, has_deterministic_zip_metadata
 from spicy_docs.sources.fec.catalog import MAX_METADATA_BYTES, official_url
 from spicy_docs.sources.fec.metadata import api_page, parse_api, split_record
-from spicy_docs.sources.json_input import load_integer_json
 
 MAX_CAPTURES = 1_000
 MAX_MANIFEST_BYTES = 16 * 1024

@@ -1,6 +1,6 @@
 """Current-element capture retains source positions without copying ancestry."""
 
-from spicy_docs.sources.xml_observations import XmlObservationScan
+from spicy_docs.reading.xml_observations import XmlObservationScan
 
 
 def test_current_element_matches_ancestry_snapshot_with_namespaces_and_siblings():

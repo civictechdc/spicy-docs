@@ -18,8 +18,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
-from ..xml import IdentityXmlScan
-from ..zip_archive import archive_members, open_archive, read_member
+from spicy_docs.reading.xml import IdentityXmlScan
+from spicy_docs.reading.zip_archive import archive_members, open_archive, read_member
 
 USLM_NAMESPACE = "http://schemas.gpo.gov/xml/uslm"
 DUBLIN_CORE_NAMESPACE = "http://purl.org/dc/elements/1.1/"

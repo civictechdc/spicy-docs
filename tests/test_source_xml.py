@@ -2,7 +2,7 @@
 
 import pytest
 
-from spicy_docs.sources.xml import parse_xml, scan_xml
+from spicy_docs.reading.xml import parse_xml, scan_xml
 
 
 @pytest.mark.parametrize("fragment,split,decoded", [(b"&amp;", 2, "&"), ("é".encode(), 1, "é")])

@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from spicy_docs.sources.json_input import load_bounded_json
+from spicy_docs.reading.json_input import load_bounded_json
 
 FR_AGENCIES_URL = "https://www.federalregister.gov/api/v1/agencies"
 FR_DOCUMENTATION_URL = "https://www.federalregister.gov/api/v1/documentation.json"

@@ -14,12 +14,12 @@ from urllib.parse import unquote, urlsplit
 
 from rulespec_artifacts import canonical_json_bytes, schema_bundle_digest
 
+from spicy_docs.reading.zip_archive import inspect_archive_stream
 from spicy_docs.releases.format import MAX_ROW_BYTES
 from spicy_docs.releases.profile import SourceNativeBlobPage, SourceNativeProfile
 from spicy_docs.sources.fec.catalog import BUCKET_URL, official_url
 from spicy_docs.sources.fec.originals import MAX_FILE_BYTES, original_capture
 from spicy_docs.sources.fec.retained import MAX_CAPTURES, MAX_SCOPE_BYTES
-from spicy_docs.sources.zip_archive import inspect_archive_stream
 
 SOURCE_SYSTEM_ID = BUCKET_URL + "bulk-downloads/"
 SCHEMA_NAME = "fec-bulk-file-observation"

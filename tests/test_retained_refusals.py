@@ -1,7 +1,7 @@
 import pytest
 from rulespec_artifacts import LocalBlobSource
 
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response, retain_refused_response
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response, retain_refused_response
 
 
 @pytest.mark.parametrize("body", [b"", b"<broken>"])

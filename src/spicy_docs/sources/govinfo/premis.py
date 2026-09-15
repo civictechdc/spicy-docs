@@ -8,9 +8,8 @@ from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import urlsplit
 
+from spicy_docs.reading.xml_tree import XmlTreeElement, read_xml_tree
 from spicy_docs.transport.captured import CapturedBodyResponse
-
-from ..xml_tree import XmlTreeElement, read_xml_tree
 
 PREMIS_NAMESPACE = "info:lc/xmlns/premis-v2"
 XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"

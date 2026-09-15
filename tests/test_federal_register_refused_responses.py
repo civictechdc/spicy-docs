@@ -6,8 +6,8 @@ from typing import cast
 
 import pytest
 
+from spicy_docs.reading.refusals import RefusedResponse
 from spicy_docs.sources.federal_register import native as federal
-from spicy_docs.sources.refusals import RefusedResponse
 from tests.releases.fixtures import _document
 from tests.source_fixtures import federal_response
 

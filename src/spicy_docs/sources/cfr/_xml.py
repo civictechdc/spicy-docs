@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from ..xml import IdentityXmlScan as _IdentityXmlScan
+from spicy_docs.reading.xml import IdentityXmlScan as _IdentityXmlScan
+
 from .models import CfrSourceError, _limit
 
 

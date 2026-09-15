@@ -7,8 +7,8 @@ from typing import cast
 
 import pytest
 
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.sources.gao import native as gao
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.sources.zyte import ZyteHttpResponse, ZyteTransportError
 from tests.test_gao_product_pages_source_native import PRODUCT_ID, PRODUCT_URL, _capture, _html
 

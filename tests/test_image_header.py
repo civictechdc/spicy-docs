@@ -4,7 +4,7 @@ from io import BytesIO
 
 import pytest
 
-from spicy_docs.sources.image_header import ImageHeader, read_image_header
+from spicy_docs.reading.image_header import ImageHeader, read_image_header
 
 PNG = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x02\x80\x00\x00\x01\xe0"
 SOF = b"\xff\xc0\x00\x0b\x08\x01\xe0\x02\x80\x01\x01\x11\x00"

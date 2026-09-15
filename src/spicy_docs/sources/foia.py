@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 
-from spicy_docs.sources.xml import scan_xml
+from spicy_docs.reading.xml import scan_xml
 
 _EXCHANGE = "http://leisp.usdoj.gov/niem/FoiaAnnualReport/exchange/"
 _EXTENSION = "http://leisp.usdoj.gov/niem/FoiaAnnualReport/extension/"

@@ -18,8 +18,8 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 from xml.etree.ElementTree import Element
 
+from spicy_docs.reading.xml import parse_xml
 from spicy_docs.sources.gao.native import SOURCE_SYSTEM_ID, GaoProductSourceError, gao_product_url
-from spicy_docs.sources.xml import parse_xml
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,

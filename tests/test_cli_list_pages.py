@@ -10,9 +10,9 @@ import httpx
 import pytest
 
 from spicy_docs.cli.list_pages import FAMILIES, main, parser, run
+from spicy_docs.reading.paged_json import PagedJsonReader
 from spicy_docs.sources.congress.listing import bill_list_url
 from spicy_docs.sources.govinfo.discovery import package_granules_url
-from spicy_docs.sources.paged_json import PagedJsonReader
 
 FIXTURES = Path(__file__).parent / "fixtures" / "listings"
 BILLS = (FIXTURES / "congress-bill-list.json").read_bytes()

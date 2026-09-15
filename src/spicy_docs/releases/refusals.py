@@ -10,9 +10,9 @@ from typing import Any
 
 from rulespec_artifacts import MemberDescriptor
 
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.releases.profile import SourceNativeBlobPage, SourceNativePage
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.storage.blobs import SourceNativeBlobStore
 from spicy_docs.transport.credentials import scrub_credential
 

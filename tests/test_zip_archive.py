@@ -5,7 +5,7 @@ import zipfile
 
 import pytest
 
-from spicy_docs.sources.zip_archive import open_archive, read_member
+from spicy_docs.reading.zip_archive import open_archive, read_member
 
 
 def archive(*members):

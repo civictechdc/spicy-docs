@@ -36,7 +36,7 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from spicy_docs.sources.pdf_bytes import check_pdf_bytes
+from spicy_docs.reading.pdf_bytes import check_pdf_bytes
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,

@@ -15,6 +15,7 @@ from typing import Literal, Self
 
 import httpx
 
+from spicy_docs.reading.refusals import attach_refused_response
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.federal_register.body_sources import (
     FederalRegisterBodySourceError,
@@ -35,7 +36,6 @@ from spicy_docs.sources.federal_register.body_xml import (
     publisher_xml_locator,
     validate_publisher_xml,
 )
-from spicy_docs.sources.refusals import attach_refused_response
 from spicy_docs.transport.capture import BoundedHttpCapture, CapturedBodyResponse, refused_capture
 from spicy_docs.transport.source_acquirer import check_byte_bound, check_request_count, check_timing
 

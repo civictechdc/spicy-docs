@@ -6,7 +6,7 @@ from dataclasses import replace
 import httpx
 import pytest
 
-from spicy_docs.sources.paged_json import (
+from spicy_docs.reading.paged_json import (
     JsonPageFamily,
     PagedJsonBudget,
     PagedJsonReader,

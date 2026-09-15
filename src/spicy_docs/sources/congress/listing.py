@@ -16,8 +16,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 from urllib.parse import urlencode
 
-from spicy_docs.sources.congress.bill_status import BILL_TYPES
-from spicy_docs.sources.paged_json import (
+from spicy_docs.reading.paged_json import (
     DEFAULT_MAX_PAGES,
     JsonPage,
     JsonPageFamily,
@@ -25,6 +24,7 @@ from spicy_docs.sources.paged_json import (
     PagedJsonReader,
     PagedJsonSourceError,
 )
+from spicy_docs.sources.congress.bill_status import BILL_TYPES
 from spicy_docs.transport.source_acquirer import utc_now
 
 if TYPE_CHECKING:

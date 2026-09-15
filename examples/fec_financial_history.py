@@ -14,8 +14,8 @@ import re
 from datetime import UTC, datetime
 from pathlib import Path
 
+from spicy_docs.reading.refusals import retain_refused_response
 from spicy_docs.sources.fec.client import FecClient
-from spicy_docs.sources.refusals import retain_refused_response
 from spicy_docs.transport.credentials import CredentialRefusedError, scrub_credential
 
 PREFIXES = ("bulk-downloads/19", "bulk-downloads/20", "bulk-downloads/data.fec.gov/lobbyist_bundle.csv")

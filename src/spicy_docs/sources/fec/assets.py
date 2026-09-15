@@ -6,9 +6,9 @@ from urllib.parse import urlsplit
 
 from rulespec_artifacts import LocalBlobSource
 
+from spicy_docs.reading.media_types import media_type
 from spicy_docs.sources.fec.catalog import official_url
 from spicy_docs.sources.fec.metadata import parse_api
-from spicy_docs.sources.media_types import media_type
 
 FORMAT_ORDER = (
     "application/xml",

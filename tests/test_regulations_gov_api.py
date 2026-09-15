@@ -7,7 +7,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from spicy_docs.sources.paged_json import PagedJsonBudget, PagedJsonSourceError
+from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonSourceError
 from spicy_docs.sources.regulations_gov.api import (
     MAX_PAGE_NUMBER,
     MAX_PAGE_SIZE,

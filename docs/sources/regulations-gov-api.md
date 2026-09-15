@@ -147,7 +147,7 @@ name across the api.data.gov publishers is `API_GOV`.
 ```python
 from pathlib import Path
 
-from spicy_docs.sources.paged_json import PagedJsonBudget
+from spicy_docs.reading.paged_json import PagedJsonBudget
 from spicy_docs.sources.regulations_gov.api import RegulationsGovApiReader, document_list_url
 from spicy_docs.sources.regulations_gov.attachments import (
     AttachmentBudget,

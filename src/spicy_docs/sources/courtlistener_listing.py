@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from urllib.parse import quote
 
-from spicy_docs.sources.s3_listing import MAX_LISTING_PAGE_BYTES, parse_s3_listing
+from spicy_docs.reading.s3_listing import MAX_LISTING_PAGE_BYTES, parse_s3_listing
 
 # Downloads use the public alias, which does not answer the listing API.
 # Enumeration therefore uses the S3 bucket host below.

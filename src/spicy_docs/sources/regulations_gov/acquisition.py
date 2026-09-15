@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Generator, Mapping, Sequence
 from typing import Any, cast
 
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.sources.regulations_gov.definitions import (
     _ASCII_KEY,
     COMMENT_COLLECTION,

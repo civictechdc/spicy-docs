@@ -32,8 +32,8 @@ from html.parser import HTMLParser
 from typing import TYPE_CHECKING, Final
 from urllib.parse import urljoin, urlsplit
 
+from spicy_docs.reading.pdf_bytes import check_pdf_bytes
 from spicy_docs.sources.gao.native import GaoProductSourceError, gao_product_url
-from spicy_docs.sources.pdf_bytes import check_pdf_bytes
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,

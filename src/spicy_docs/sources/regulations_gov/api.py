@@ -47,8 +47,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from spicy_docs.sources.json_input import load_decimal_json
-from spicy_docs.sources.paged_json import (
+from spicy_docs.reading.json_input import load_decimal_json
+from spicy_docs.reading.paged_json import (
     DEFAULT_MAX_PAGES,
     JsonPage,
     JsonPageFamily,

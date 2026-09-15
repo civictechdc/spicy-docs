@@ -12,12 +12,12 @@ from typing import Any
 import httpx
 import pytest
 
+from spicy_docs.reading.refusals import RefusedResponse
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.congress import crs_summaries
 from spicy_docs.sources.federal_register import body_acquisition as acquisition
 from spicy_docs.sources.federal_register.body_acquisition import FederalRegisterBodyAcquirer, FederalRegisterBodyBudget
 from spicy_docs.sources.federal_register.body_sources import FederalRegisterBodySourceError
-from spicy_docs.sources.refusals import RefusedResponse
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from spicy_docs.transport import capture, retry
 from spicy_docs.transport.credentials import CredentialRefusedError

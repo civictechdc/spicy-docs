@@ -7,8 +7,8 @@ import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from urllib.parse import parse_qsl, quote, urljoin, urlsplit, urlunsplit
 
-from spicy_docs.sources.json_input import load_decimal_json
-from spicy_docs.sources.media_types import media_type
+from spicy_docs.reading.json_input import load_decimal_json
+from spicy_docs.reading.media_types import media_type
 
 BODY_FIELDS = frozenset({"text", "body", "html", "document_text", "extracted_text", "full_text"})
 ASSET_SUFFIXES = (

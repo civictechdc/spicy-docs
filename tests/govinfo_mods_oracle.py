@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 
-from spicy_docs.sources.xml import scan_xml
+from spicy_docs.reading.xml import scan_xml
 
 MODS_NAMESPACE = "http://www.loc.gov/mods/v3"
 DEFAULT_MAX_ELEMENTS = 100_000

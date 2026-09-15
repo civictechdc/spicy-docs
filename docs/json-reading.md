@@ -1,12 +1,12 @@
 # JSON source values and record positions
 
-Use `spicy_docs.sources.json_input` for captured UTF-8 JSON. It retains source
+Use `spicy_docs.reading.json_input` for captured UTF-8 JSON. It retains source
 values and refuses duplicate decoded keys and non-finite number constants.
 RulespecArtifacts owns canonical encoding and artifact identity; these readers
 do not encode, normalize, or publish artifacts.
 
 ```python
-from spicy_docs.sources.json_input import read_json_records
+from spicy_docs.reading.json_input import read_json_records
 
 source = b' [ {"value":1.00e+2}, null ] '
 read = read_json_records(

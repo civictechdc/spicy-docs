@@ -8,13 +8,13 @@ from xml.parsers.expat import ExpatError
 
 import pytest
 
+from spicy_docs.reading.xml_observations import XmlObservationScan
 from spicy_docs.sources.unified_agenda import (
     UnifiedAgendaEdition,
     unified_agenda_xml_locator,
     validate_unified_agenda_xml,
 )
 from spicy_docs.sources.unified_agenda_records import UnifiedAgendaSourceError, scan_unified_agenda_records
-from spicy_docs.sources.xml_observations import XmlObservationScan
 
 FIXTURE = Path(__file__).parent / "fixtures" / "unified_agenda" / "reginfo-rin-data-202510.xml"
 

@@ -12,8 +12,8 @@ from urllib.parse import quote
 import httpx
 import pytest
 
+from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonSourceError
 from spicy_docs.sources.fcc_ecfs import FCC_ECFS, FccEcfsReader, filings_url, proceedings_url
-from spicy_docs.sources.paged_json import PagedJsonBudget, PagedJsonSourceError
 from spicy_docs.transport import retry
 
 FIXTURES = Path(__file__).parent / "fixtures" / "listings"

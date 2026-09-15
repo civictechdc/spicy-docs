@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass, field
 
-from spicy_docs.sources.refusals import RefusedResponse
+from spicy_docs.reading.refusals import RefusedResponse
 
 
 @dataclass(frozen=True, slots=True)

@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 
 import httpx
 
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.http import RetryableHTTPStatusError

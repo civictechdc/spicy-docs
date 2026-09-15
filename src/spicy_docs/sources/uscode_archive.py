@@ -12,6 +12,8 @@ import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from spicy_docs.reading.zip_archive import archive_members, open_archive, read_member
+
 from .uscode import (
     ANNUAL_HEADER_BYTES,
     DEFAULT_MAX_ARCHIVE_BYTES,
@@ -29,7 +31,6 @@ from .uscode import (
     validate_annual_title_html,
     validate_title_xml,
 )
-from .zip_archive import archive_members, open_archive, read_member
 
 _TITLE_MEMBER = re.compile(r"usc(?P<title>[0-9]{2})(?P<appendix>[aA]?)\.xml")
 _ANNUAL_MEMBER = re.compile(r"(?P<year>[0-9]{4})usc(?P<title>[0-9]{2})(?P<appendix>[aA]?)\.htm", re.IGNORECASE)

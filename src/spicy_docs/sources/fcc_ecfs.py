@@ -46,7 +46,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 
-from spicy_docs.sources.paged_json import (
+from spicy_docs.reading.paged_json import (
     DEFAULT_MAX_PAGES,
     JsonPage,
     JsonPageFamily,

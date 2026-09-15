@@ -14,10 +14,10 @@ from rulespec_artifacts import describe_member_from_receipt
 
 from examples.offline_release import FIXED_NOW, HTML, PRODUCT_ID, PRODUCT_URL, capture
 from spicy_docs.cli.source_native import main
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.releases import indexing, refusals
 from spicy_docs.releases.publish import SourceNativeReleasePublisher
 from spicy_docs.sources.federal_register.native import FederalRegisterSourceError
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 from spicy_docs.transport.http import fetch_federal_register
 from tests.releases.fixtures import (

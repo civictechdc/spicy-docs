@@ -1,12 +1,12 @@
 # XML and HTML source events
 
-Use `spicy_docs.sources.markup` when you need decoded text linked to original
+Use `spicy_docs.reading.markup` when you need decoded text linked to original
 source bytes. These core readers require no optional backend or network access.
 They return observations; the caller decides which text is visible, which tags
 are headings, and how to lay out paragraphs or tables.
 
 ```python
-from spicy_docs.sources.markup import read_xml_events
+from spicy_docs.reading.markup import read_xml_events
 
 source = b"<p>A<![CDATA[B]]> &amp; C</p>"
 read = read_xml_events(source)

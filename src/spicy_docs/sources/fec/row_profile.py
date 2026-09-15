@@ -15,11 +15,11 @@ from zipfile import ZipFile
 
 from rulespec_artifacts import canonical_json_bytes, schema_bundle_digest
 
+from spicy_docs.reading.zip_archive import inspect_archive_stream, seekable_stream
 from spicy_docs.releases.profile import SourceNativeBlobPage, SourceNativeProfile
 from spicy_docs.sources.fec.bulk_profile import MAX_DECODED_BYTES, MAX_INVENTORY_BYTES, MAX_MEMBERS
 from spicy_docs.sources.fec.filings import _Lines, filing_records_from_stream
 from spicy_docs.sources.fec.originals import MAX_FILE_BYTES, original_capture
-from spicy_docs.sources.zip_archive import inspect_archive_stream, seekable_stream
 
 SCHEMA_NAME = "fec-positional-row"
 SCHEMA_KEY = f"schemas/{SCHEMA_NAME}-1.0.json"

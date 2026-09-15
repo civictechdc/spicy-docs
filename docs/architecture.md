@@ -26,16 +26,16 @@ Paths below are relative to `src/spicy_docs/`.
 | Publisher text and printed List of Subjects | `sources/federal_register/body_text.py` checks text identity; `list_of_subjects.py` owns shared XML/text block and atom reading |
 | Explicit CFR/eCFR captures and native identity | `sources/cfr/acquisition.py`; `ecfr.py`; `annual.py` |
 | GovInfo MODS package/constituent metadata | `sources/govinfo/mods.py`; CFR edition checks in `sources/cfr/edition.py` |
-| USLM documents (GovInfo laws and compilations, OLRC U.S. Code) | `sources/govinfo/uslm.py` holds `UslmScan`, bound per publisher by namespace and body sections; `sources/zip_archive.py` is the one bounded zip reader; `uslm_acquisition.py` and `uscode_acquisition.py` capture |
-| Publisher list pages | `sources/paged_json.py` one traversal rule, including each family's reach bounds; `sources/congress/listing.py`, `sources/govinfo/discovery.py`, `sources/lda.py`, `sources/courtlistener_search.py`, `sources/sam.py`, `sources/usaspending.py`, `sources/fcc_ecfs.py` state each publisher's contract; `sources/gao/rss.py` reads the feed; `cli/list_pages.py` walks any family from the command line |
+| USLM documents (GovInfo laws and compilations, OLRC U.S. Code) | `sources/govinfo/uslm.py` holds `UslmScan`, bound per publisher by namespace and body sections; `reading/zip_archive.py` is the one bounded zip reader; `uslm_acquisition.py` and `uscode_acquisition.py` capture |
+| Publisher list pages | `reading/paged_json.py` one traversal rule, including each family's reach bounds; `sources/congress/listing.py`, `sources/govinfo/discovery.py`, `sources/lda.py`, `sources/courtlistener_search.py`, `sources/sam.py`, `sources/usaspending.py`, `sources/fcc_ecfs.py` state each publisher's contract; `sources/gao/rss.py` reads the feed; `cli/list_pages.py` walks any family from the command line |
 | Unified Agenda editions | `sources/unified_agenda.py` |
 | U.S. Code, Supreme Court, CBO | `sources/uscode.py` and `uscode_acquisition.py`; `sources/supreme_court.py`; `sources/cbo.py` |
-| Document files beside listings | `sources/congress/crs_files.py`; `sources/gao/files.py`; `sources/regulations_gov/api.py` and `attachments.py`; PDF checks in `sources/pdf_bytes.py` |
+| Document files beside listings | `sources/congress/crs_files.py`; `sources/gao/files.py`; `sources/regulations_gov/api.py` and `attachments.py`; PDF checks in `reading/pdf_bytes.py` |
 | Explicit bill status and selected text XML | `sources/congress/bill_acquisition.py`; `bill_status.py`; `bill_text.py` |
 | GAO pages | `sources/gao/native.py` |
 | Captured public comments | `sources/public_comments/native.py` |
 | Raw streams | `sources/mirrulations.py`, `sources/courtlistener_bulk.py` |
-| Shared S3 listing grammar | `sources/s3_listing.py`; `courtlistener_listing.py` adds source facts |
+| Shared S3 listing grammar | `reading/s3_listing.py`; `courtlistener_listing.py` adds source facts |
 | FEC metadata, source routes and selected originals | `sources/fec/` |
 
 Each native source's `profile.py` connects its rules to `SourceNativeProfile`
@@ -78,7 +78,7 @@ checks integrity with bounded memory; full verification also replays source mean
   HTTPX calls, and `download.py` streams bounded assets to the shared blob writer.
   `capture.py` retains bounded regulation/bill captures and refused bytes;
   `retry.py` and `credentials.py` hold shared request rules.
-- **Source helpers:** `sources/json_input.py`, `media_types.py` and `evidence_zip.py`
+- **Source helpers:** `reading/json_input.py`, `media_types.py` and `evidence_zip.py`
   share parsing/encoding; `source_domains.py` owns documented-value comparisons.
 - **Maintenance tools:** [scripts](../scripts/README.md) check repository inputs;
   [tools](../tools/README.md) investigate retained corpus evidence.

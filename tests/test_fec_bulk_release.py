@@ -13,6 +13,7 @@ from zipfile import ZIP_STORED, BadZipFile, ZipFile, ZipInfo
 import pytest
 from rulespec_artifacts import BlobIntegrityError, LocalMemberSource
 
+from spicy_docs.reading.zip_archive import inspect_archive_stream
 from spicy_docs.source_native import (
     MAX_EVIDENCE_BYTES,
     SourceNativeReleaseBuild,
@@ -21,7 +22,6 @@ from spicy_docs.source_native import (
 )
 from spicy_docs.source_native_profiles import FEC_BULK_FILES_PROFILE as PROFILE
 from spicy_docs.sources.fec.bulk_profile import bulk_file_scope, iter_retained_bulk_files
-from spicy_docs.sources.zip_archive import inspect_archive_stream
 from spicy_docs.storage.blobs import LocalSourceNativeBlobStore, iter_verified_blob
 from tests.releases.fixtures import IMPLEMENTATION_ID, PRODUCER
 

@@ -11,8 +11,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from spicy_docs.reading.xml_observations import XmlElement, XmlObservationScan
+
 from .uscode import DEFAULT_MAX_XML_BYTES, UsCodeSourceError, _limit
-from .xml_observations import XmlElement, XmlObservationScan
 
 
 @dataclass(frozen=True, slots=True)

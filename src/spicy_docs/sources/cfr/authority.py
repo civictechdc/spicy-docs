@@ -11,7 +11,8 @@ import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from ..xml_observations import XmlElement, XmlObservationScan
+from spicy_docs.reading.xml_observations import XmlElement, XmlObservationScan
+
 from .models import DEFAULT_MAX_BYTES, CfrSourceError, _limit
 
 _DIVISIONS = frozenset(f"DIV{number}" for number in range(1, 10))

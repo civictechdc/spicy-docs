@@ -18,7 +18,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 
 from rulespec_artifacts import FramedSection, canonical_json_bytes, framed_section_digest, schema_bundle_digest
 
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
 
 SOURCE_SYSTEM_ID: Final = "https://www.federalregister.gov/api/v1"
 SOURCE_SYSTEM_VERSION: Final = "v1"

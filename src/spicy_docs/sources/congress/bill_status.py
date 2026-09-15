@@ -10,7 +10,7 @@ import re
 from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
-from spicy_docs.sources.xml import parse_xml
+from spicy_docs.reading.xml import parse_xml
 
 BILL_TYPES = frozenset({"hr", "s", "hjres", "sjres", "hconres", "sconres", "hres", "sres"})
 _BILL_TYPES = BILL_TYPES

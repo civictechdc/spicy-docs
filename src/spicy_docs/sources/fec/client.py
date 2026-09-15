@@ -11,6 +11,8 @@ from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 from rulespec_artifacts import LocalBlobWriter
 
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
+from spicy_docs.reading.s3_listing import parse_s3_listing
 from spicy_docs.sources.fec.assets import validate_original_prefix
 from spicy_docs.sources.fec.catalog import (
     API_ROOT,
@@ -22,8 +24,6 @@ from spicy_docs.sources.fec.catalog import (
     official_url,
 )
 from spicy_docs.sources.fec.metadata import api_page, parse_api, parse_page_links, parse_sitemap, split_record
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
-from spicy_docs.sources.s3_listing import parse_s3_listing
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.download import (
     AcquisitionError,

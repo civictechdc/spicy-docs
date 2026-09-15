@@ -11,9 +11,9 @@ import httpx
 import pytest
 from rulespec_artifacts import LocalBlobWriter
 
+from spicy_docs.reading.s3_listing import NAMESPACE
 from spicy_docs.sources.fec.catalog import BUCKET, BUCKET_URL
 from spicy_docs.sources.fec.client import FecClient
-from spicy_docs.sources.s3_listing import NAMESPACE
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.download import HttpRefusal
 

@@ -13,7 +13,7 @@ from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Self
 
-from spicy_docs.sources.refusals import attach_refused_response
+from spicy_docs.reading.refusals import attach_refused_response
 from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 

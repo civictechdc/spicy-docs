@@ -6,7 +6,7 @@ import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from .xml_observations import XmlElement, XmlObservationScan
+from spicy_docs.reading.xml_observations import XmlElement, XmlObservationScan
 
 ROOT = "REGINFO_RIN_DATA"
 RECORD = "RIN_INFO"

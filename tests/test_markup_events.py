@@ -6,8 +6,8 @@ from xml.etree import ElementTree
 
 import pytest
 
-from spicy_docs.sources.markup import MarkupRead, MarkupReadError, read_html_events, read_xml_events
-from spicy_docs.sources.xml import scan_xml
+from spicy_docs.reading.markup import MarkupRead, MarkupReadError, read_html_events, read_xml_events
+from spicy_docs.reading.xml import scan_xml
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -99,7 +99,7 @@ def test_xml_events_are_independent_of_feed_and_character_callback_boundaries(mo
             parser.Parse(body[start : start + chunk], False)
         parser.Parse(b"", True)
 
-    monkeypatch.setattr("spicy_docs.sources.markup._feed_xml", feed)
+    monkeypatch.setattr("spicy_docs.reading.markup._feed_xml", feed)
     assert read_xml_events(body) == expected
 
 
@@ -108,7 +108,7 @@ def test_xml_events_are_independent_of_feed_and_character_callback_boundaries(mo
 def test_html_events_are_independent_of_feed_boundaries(monkeypatch, chunk, ending):
     body = ("<p>" + "a" * 65530 + "é\n&amp; &#233;<!--comment-->" + ending).encode()
     expected = read_html_events(body)
-    monkeypatch.setattr("spicy_docs.sources.markup._HTML_FEED_CHARACTERS", chunk)
+    monkeypatch.setattr("spicy_docs.reading.markup._HTML_FEED_CHARACTERS", chunk)
     assert read_html_events(body) == expected
 
 

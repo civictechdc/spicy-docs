@@ -6,6 +6,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonSourceError
 from spicy_docs.sources.congress.listing import (
     BILLS_KEY,
     CONGRESS_GOV,
@@ -15,7 +16,6 @@ from spicy_docs.sources.congress.listing import (
     bill_list_url,
     crs_report_list_url,
 )
-from spicy_docs.sources.paged_json import PagedJsonBudget, PagedJsonSourceError
 from spicy_docs.transport import retry
 
 FIXTURES = Path(__file__).parent / "fixtures" / "listings"

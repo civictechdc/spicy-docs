@@ -13,11 +13,11 @@ import pytest
 from rulespec_artifacts import BlobIntegrityError, BlobLimitError
 
 from spicy_docs.cli.fec import main
+from spicy_docs.reading.s3_listing import NAMESPACE
 from spicy_docs.sources.fec.assets import choose_rendition, embedded_text
 from spicy_docs.sources.fec.catalog import API_ROOT, BUCKET, BUCKET_URL, api_operations, official_sources, official_url
 from spicy_docs.sources.fec.client import FecClient, api_page
 from spicy_docs.sources.fec.metadata import parse_api, parse_page_links, parse_sitemap, split_record
-from spicy_docs.sources.s3_listing import NAMESPACE
 from spicy_docs.sources.zyte import ZyteHttpResponse
 from spicy_docs.transport.download import AcquisitionError, HttpRefusal
 

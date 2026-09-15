@@ -18,7 +18,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Final
 
-from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
+from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
 
 ZYTE_API_URL: Final = "https://api.zyte.com/v1/extract"
 ZYTE_TOKEN_ENV: Final = "ZYTE_TOKEN"
