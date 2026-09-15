@@ -50,9 +50,11 @@ The reader preserves these distinctions:
   Ancestor elements also preserve an appendix context where one is present.
 - A section part means an identifier one path component below `/s…`. Its
   actual element may be `paragraph`, `subsection` or another source tag.
-- The longer native markers `st` (subtitle), `sch` (subchapter) and `spt`
-  (subpart) take precedence over `s` (section). `/stI/ch1` identifies a chapter,
-  while `/s1/ch1` and `/sa/ch1` retain section-part coordinates.
+- Longer markers precede `s` (section): `st` (subtitle), `sch` (subchapter),
+  `sp`/`spt` (subpart) and `sd` (subdivision). `/stI/ch1` identifies a chapter,
+  while `/s1/ch1` and `/sa/ch1` retain section-part coordinates. The
+  [USLM 1.0 guide, section 12.4](https://github.com/usgpo/uslm/blob/main/USLM-User-Guide.md#124-identifiers)
+  defines the standard markers; the reader also recognizes OLRC's `spt` spelling.
 - Section and chapter elements without identifiers remain observations,
   including structures quoted inside notes. Applications choose which qualify
   for an existence or citation index.

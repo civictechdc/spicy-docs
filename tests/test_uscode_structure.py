@@ -99,15 +99,17 @@ def test_longer_native_scope_markers_do_not_become_sections_or_section_parts():
       <chapter identifier="/us/usc/t14/stI/ch1"/>
       <chapter identifier="/us/usc/t14/schI/ch1"/>
       <chapter identifier="/us/usc/t14/sptI/ch1"/>
+      <chapter identifier="/us/usc/t14/spI/ch1"/>
+      <chapter identifier="/us/usc/t14/sdI/ch1"/>
       <part identifier="/us/usc/t14/stI/ptA"/>
       <paragraph identifier="/us/usc/t14/s1/ch1"/>
       <paragraph identifier="/us/usc/t14/sa/ch1"/>
       <section identifier="/us/usc/t14/sa"/>
-      <section identifier="/us/usc/t14/stI /us/usc/t14/schI /us/usc/t14/sptI"/>
+      <section identifier="/us/usc/t14/stI /us/usc/t14/schI /us/usc/t14/sptI /us/usc/t14/spI /us/usc/t14/sdI"/>
     </uscDoc>"""
     chapters, parts, sections = [], [], []
     scan_uscode_structure(body, on_chapter=chapters.append, on_section_part=parts.append, on_section=sections.append)
-    assert len(chapters) == 3 and all(row.identifier_pieces[0].kind == "chapter" for row in chapters)
+    assert len(chapters) == 5 and all(row.identifier_pieces[0].kind == "chapter" for row in chapters)
     assert [(row.identifier_pieces[0].section, row.identifier_pieces[0].section_part) for row in parts] == [
         ("1", "ch1"),
         ("a", "ch1"),
@@ -118,6 +120,8 @@ def test_longer_native_scope_markers_do_not_become_sections_or_section_parts():
         "/us/usc/t14/stI",
         "/us/usc/t14/schI",
         "/us/usc/t14/sptI",
+        "/us/usc/t14/spI",
+        "/us/usc/t14/sdI",
     ]
     assert all(piece.kind is None for piece in sections[1].identifier_pieces)
 
