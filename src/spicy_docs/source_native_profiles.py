@@ -6,6 +6,7 @@ live transport as a side effect of obtaining its profile.
 """
 
 from spicy_docs.sources.fec.audit_profile import FEC_AUDIT_QUERY_PROFILE
+from spicy_docs.sources.fec.bulk_profile import FEC_BULK_FILES_PROFILE
 from spicy_docs.sources.fec.candidate_profile import FEC_CANDIDATE_QUERY_PROFILE
 from spicy_docs.sources.fec.filing_profile import FEC_FILING_QUERY_PROFILE
 from spicy_docs.sources.fec.legal_profile import FEC_LEGAL_QUERY_PROFILE
@@ -26,6 +27,7 @@ from spicy_docs.sources.regulations_gov.profile import (
 
 __all__ = [
     "FEC_AUDIT_QUERY_PROFILE",
+    "FEC_BULK_FILES_PROFILE",
     "FEC_CANDIDATE_QUERY_PROFILE",
     "FEC_COMMITTEE_CENSUS_PROFILE",
     "FEC_FILING_QUERY_PROFILE",

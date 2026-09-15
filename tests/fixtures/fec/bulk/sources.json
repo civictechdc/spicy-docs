@@ -1,0 +1,42 @@
+[
+  {
+    "file": "ccl24.zip",
+    "source_asset": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-cycle-2024-2026-09-12/ccl24.zip.asset.json",
+    "source_blob": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-cycle-2024-2026-09-12/blobs/sha256/e6fe43d195063b871269c2d1a7008f439d8dd15d770c02a9c4e53890e8b816aa",
+    "capture": {
+      "requestUrl": "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/2024/ccl24.zip",
+      "objectKey": "bulk-downloads/2024/ccl24.zip",
+      "responseSha256": "sha256:e6fe43d195063b871269c2d1a7008f439d8dd15d770c02a9c4e53890e8b816aa",
+      "byteSize": 94262,
+      "representation": "zip",
+      "observedAt": "2026-09-12T13:43:01.574841+00:00",
+      "resolvedUrl": "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/2024/ccl24.zip",
+      "mediaType": "application/zip",
+      "via": "direct",
+      "etag": "\"f05c64a951d83b3673f77741ae33fa27\"",
+      "lastModified": "Sat, 12 Sep 2026 05:46:19 GMT",
+      "contentEncoding": "identity",
+      "contentLength": "94262"
+    }
+  },
+  {
+    "file": "ccl_header_file.csv",
+    "source_asset": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-cycle-2024-2026-09-12/ccl_header_file.csv.asset.json",
+    "source_blob": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-cycle-2024-2026-09-12/blobs/sha256/9de902716f8c5086fc91cc7b26b675c49916e43c742693df939278cb7d91c633",
+    "capture": {
+      "requestUrl": "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/data_dictionaries/ccl_header_file.csv",
+      "objectKey": "bulk-downloads/data_dictionaries/ccl_header_file.csv",
+      "responseSha256": "sha256:9de902716f8c5086fc91cc7b26b675c49916e43c742693df939278cb7d91c633",
+      "byteSize": 79,
+      "representation": "opaque",
+      "observedAt": "2026-09-12T13:43:02.324634+00:00",
+      "resolvedUrl": "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/data_dictionaries/ccl_header_file.csv",
+      "mediaType": "binary/octet-stream",
+      "via": "direct",
+      "etag": "\"4e1c2c1562b5b9197d3186420c3ae896\"",
+      "lastModified": "Wed, 10 Jan 2018 18:30:11 GMT",
+      "contentEncoding": "identity",
+      "contentLength": "79"
+    }
+  }
+]

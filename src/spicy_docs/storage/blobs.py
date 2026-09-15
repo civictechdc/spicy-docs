@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterable, Iterator
 from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO, Protocol, runtime_checkable
 
-from rulespec_artifacts import BlobIntegrityError, BlobLimitError, LocalBlobSource, LocalBlobWriter
+from rulespec_artifacts import BlobIntegrityError, BlobLimitError, BlobSource, LocalBlobSource, LocalBlobWriter
 
 from spicy_docs.storage.publication import ImmutablePublicationError
 
@@ -70,3 +71,28 @@ __all__ = [
     "SourceNativeBlobStore",
     "SourceNativeBlobWrite",
 ]
+
+
+def iter_verified_blob(source: BlobSource, blob_ref: str, byte_size: int) -> Iterator[bytes]:
+    """Stream bounded reads; full exhaustion verifies exact size and SHA-256.
+
+    Earlier chunks are provisional. Closing early makes no integrity claim.
+    """
+    if type(byte_size) is not int or byte_size < 0:
+        raise ValueError("blob byte size must be a nonnegative integer")
+    observed, digest = 0, hashlib.sha256()
+    with source.open(blob_ref) as stream:
+        while True:
+            requested = min(64 * 1024, byte_size - observed + 1)
+            chunk = stream.read(requested)
+            if not isinstance(chunk, bytes) or len(chunk) > requested:
+                raise BlobIntegrityError("blob stream did not return bounded binary bytes")
+            if not chunk:
+                break
+            observed += len(chunk)
+            if observed > byte_size:
+                raise BlobIntegrityError("blob exceeds its declared byte size")
+            digest.update(chunk)
+            yield chunk
+    if observed != byte_size or "sha256:" + digest.hexdigest() != blob_ref:
+        raise BlobIntegrityError("blob bytes differ from their declared size or digest")

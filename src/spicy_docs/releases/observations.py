@@ -235,8 +235,11 @@ def _accepted_traversal(
     raise SourceNativeReleaseError("observed crawl lacks two stable consecutive traversals")
 
 
-def _validate_evidence_media_type(page: SourceNativePage) -> None:
-    if page.evidence_media_type not in {"application/json", "application/zip"}:
+def _validate_evidence_media_type(page: SourceNativePage, *, streamed: bool = False) -> None:
+    allowed = {"application/json", "application/zip"}
+    if streamed:
+        allowed.add("application/octet-stream")
+    if page.evidence_media_type not in allowed:
         raise SourceNativeReleaseError("source-native evidence media type is unsupported")
 
 

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, Protocol
+from typing import Any, BinaryIO, Literal, Protocol
+
+from rulespec_artifacts import BlobSource
+
+from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 
 
 class SourceNativePage(Protocol):
@@ -27,10 +31,40 @@ class SourceNativePage(Protocol):
     def source_cursor(self) -> str | None: ...
 
     @property
-    def response_bytes(self) -> bytes: ...
+    def response_bytes(self) -> bytes | None: ...
 
     @property
     def evidence_media_type(self) -> str: ...
+
+
+@dataclass(frozen=True, slots=True)
+class SourceNativeBlobPage:
+    """One retained original streamed from an injected store, with no byte copy in metadata."""
+
+    page_index: int
+    window_index: int
+    request_key: str
+    blob_ref: str
+    byte_size: int
+    blob_source: BlobSource
+    evidence_media_type: str
+    traversal_index: int = 0
+    window_page_index: int = 0
+    source_cursor: str | None = None
+    response_bytes: None = None
+
+
+class ParsePageStream(Protocol):
+    def __call__(
+        self,
+        stream: BinaryIO,
+        *,
+        query_scope: Mapping[str, Any],
+        request_key: str,
+        evidence_ref: str,
+        byte_size: int,
+        media_type: str,
+    ) -> Mapping[str, Any]: ...
 
 
 class TraversalCheck(Protocol):
@@ -84,7 +118,7 @@ class AcquisitionCheck(Protocol):
         *,
         page_window: object | None,
         records_included: bool,
-        response_bytes: bytes,
+        response_bytes: bytes | None,
     ) -> None: ...
 
     def finish(self, *, query_scope: Mapping[str, Any]) -> None: ...
@@ -140,7 +174,15 @@ class SourceNativeProfile:
     # stored, and it must not change what record_digest covers.
     tie_comparison_digest: Callable[[Mapping[str, Any]], str] | None = None
 
+    # Opt-in source rules for whole files; existing byte profiles keep their bound.
+    parse_page_stream: ParsePageStream | None = None
+    max_evidence_bytes: int = MAX_EVIDENCE_BYTES
+
     def __post_init__(self) -> None:
+        if type(self.max_evidence_bytes) is not int or self.max_evidence_bytes < 1:
+            raise ValueError("source evidence bound must be a positive integer")
+        if self.parse_page_stream is None and self.max_evidence_bytes != MAX_EVIDENCE_BYTES:
+            raise ValueError("only stream profiles may select a different evidence bound")
         if not self.name or not self.source_system_id or not self.source_system_version:
             raise ValueError("source-native profile identity must be nonempty")
         if not self.acquisition_policy_id or not self.acquisition_policy_version:
@@ -162,6 +204,7 @@ __all__ = [
     "AcquisitionCheck",
     "ObservationVersion",
     "RecordsIncluded",
+    "SourceNativeBlobPage",
     "SourceNativePage",
     "SourceNativeProfile",
     "TraversalCheck",

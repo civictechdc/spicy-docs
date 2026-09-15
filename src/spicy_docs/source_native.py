@@ -53,6 +53,7 @@ from spicy_docs.releases.format import (
     installed_release_schema_bundle,
     release_schema_bundle,
 )
+from spicy_docs.releases.profile import SourceNativeBlobPage
 from spicy_docs.releases.publish import (
     SourceNativeReleasePublisher,
 )
@@ -66,6 +67,7 @@ from spicy_docs.releases.verify import (
 __all__ = [
     "KIND",
     "PublishedSourceNativeRelease",
+    "SourceNativeBlobPage",
     "SourceNativeReleaseBuild",
     "SourceNativeReleaseError",
     "SourceNativeReleasePublisher",

@@ -575,11 +575,25 @@ published formats; XML/JSON/XHTML precede equivalent HTML.
     survive. Retained AO/AF queries qualify success; partial audit inputs qualify
     refusal, while audit/ADR/MUR success and pagination controls are synthetic.
     [API and qualification](sources/fec.md#publish-retained-legal-and-audit-queries).
-  - [ ] Extend release profiles to bulk inputs and remaining distinct API shapes:
-    legal detail, rulemakings (`rm_id`), statutes, audit category references, and
-    candidate detail/history/search/totals. Establish each source's identity,
-    membership and scope rules; raw acquisition already works. Wider native query
-    qualification and full-population acquisition remain separate dataset work.
+  - [x] Add the [retained bulk file profile](sources/fec-bulk.md): stream exact
+    originals through the existing publisher, with complete ZIP member inventories,
+    decoded hashes, native names and duplicate-entry ordinals. Opaque files retain
+    bytes without invented rows. Counts mean files; stored/deflate decoding has
+    explicit bounds. Existing byte profiles and release formats remain unchanged.
+  - [ ] Publish bulk financial rows and parsed raw filings with source-specific
+    identities, row/member coordinates and schema/layout provenance. Reuse retained
+    originals and existing parsers; file inventories do not complete this work.
+  - [ ] Add legal-detail and rulemaking releases, preserving native case/document
+    associations and `rm_id` identity without treating search results as full cases.
+  - [ ] Add entity detail/history/search/totals and relationship releases with
+    explicit historical scope and native relationship identity.
+  - [ ] Add financial/report API releases for ordinary, keyset and electronic-filing
+    response shapes; preserve native transaction/report identity and query coverage.
+  - [ ] Add reference and publication collection releases, including statutes,
+    audit categories and agency/publication indexes where useful. Reuse shared
+    acquisition, parsers and publication; source-specific identity, membership and
+    scope checks remain necessary. Wider retained-input qualification, population
+    backfills and downstream adoption are separate dataset work.
 - [x] **FEC13 — Promote reusable agency-report parsing.** Offline
   `parse_foia_annual_report` and `parse_oversight_report` expose retained source
   fields through the [agency-report API](sources/agency-reports.md). Native NIEM

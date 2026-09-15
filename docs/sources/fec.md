@@ -117,6 +117,12 @@ list of links: filing `html_url` navigation remains in metadata. Select such a
 page explicitly with `allow_html=True` if its content is needed; listing it does
 not establish equivalence with an original filing or PDF.
 
+## Publish retained bulk originals
+
+The [bulk file profile](fec-bulk.md) streams exact originals into the existing
+release publisher and inventories ZIP members without repacking archives. Counts
+mean files; financial row parsing and publication remain separate.
+
 ## Publish a retained committee census
 
 `spicy_docs.sources.fec.profile` supplies `FEC_COMMITTEE_CENSUS_PROFILE`,

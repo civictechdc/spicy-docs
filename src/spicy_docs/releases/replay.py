@@ -13,10 +13,10 @@ from rulespec_artifacts import (
     canonical_json_bytes,
 )
 
+from spicy_docs.releases.evidence import parse_evidence
 from spicy_docs.releases.format import (
     _PAGE_SHAPE,
     _UNCLASSIFIED_RECORD_ID_PREFIX,
-    MAX_EVIDENCE_BYTES,
     SourceNativeReleaseError,
 )
 from spicy_docs.releases.observations import (
@@ -145,11 +145,15 @@ def _replay_acquisition(
             raise SourceNativeReleaseError("acquisition page evidence pin differs")
         assert isinstance(evidence_ref, str)
         seen_evidence.add(evidence_ref)
-        with _open_descriptor(source, blob_source, member) as stream:
-            response_bytes = stream.read(MAX_EVIDENCE_BYTES + 1)
-        if len(response_bytes) > MAX_EVIDENCE_BYTES:
-            raise SourceNativeReleaseError("acquisition evidence exceeds its product bound")
-        response = profile.parse_page_response(response_bytes)
+        response, response_bytes = parse_evidence(
+            profile,
+            opener=lambda selected=member: _open_descriptor(source, blob_source, selected),
+            evidence_ref=evidence_ref,
+            byte_size=member.byte_size,
+            media_type=member.media_type,
+            request_key=request_key,
+            query_scope=query_scope,
+        )
         records_included = profile.records_included(
             response,
             query_scope=query_scope,

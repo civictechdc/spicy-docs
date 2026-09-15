@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import sqlite3
 from collections.abc import Iterable, Mapping
+from contextlib import closing, nullcontext
 from typing import Any
 
 from rulespec_artifacts import (
@@ -13,6 +14,7 @@ from rulespec_artifacts import (
     describe_member_from_receipt,
 )
 
+from spicy_docs.releases.evidence import parse_evidence
 from spicy_docs.releases.format import (
     FAILURE_CLASS_DETERMINISTIC,
     MAX_EVIDENCE_BYTES,
@@ -33,11 +35,12 @@ from spicy_docs.releases.partitions import (
 )
 from spicy_docs.releases.profile import (
     AcquisitionCheck,
+    SourceNativeBlobPage,
     SourceNativePage,
     SourceNativeProfile,
 )
 from spicy_docs.releases.refusals import capture_refused_page
-from spicy_docs.storage.blobs import SourceNativeBlobStore
+from spicy_docs.storage.blobs import SourceNativeBlobStore, iter_verified_blob
 
 
 def index_pages(
@@ -74,32 +77,36 @@ def index_pages(
     for page in pages:
         with capture_refused_page(page):
             saw_page = True
-            if len(page.response_bytes) > MAX_EVIDENCE_BYTES:
+            _validate_evidence_media_type(page, streamed=profile.parse_page_stream is not None)
+            if isinstance(page, SourceNativeBlobPage):
+                if profile.parse_page_stream is None:
+                    raise SourceNativeReleaseError("streamed evidence requires an explicit stream profile")
+                evidence_ref, evidence_size = page.blob_ref, page.byte_size
+                chunks = iter_verified_blob(page.blob_source, evidence_ref, evidence_size)
+            else:
+                if not isinstance(page.response_bytes, bytes):
+                    raise SourceNativeReleaseError("byte page omitted its response bytes")
+                if len(page.response_bytes) > MAX_EVIDENCE_BYTES:
+                    raise SourceNativeReleaseError(f"{profile.name} page exceeds the evidence bound")
+                evidence_ref = "sha256:" + hashlib.sha256(page.response_bytes).hexdigest()
+                evidence_size, chunks = len(page.response_bytes), (page.response_bytes,)
+            if type(evidence_size) is not int or not 0 <= evidence_size <= profile.max_evidence_bytes:
                 raise SourceNativeReleaseError(f"{profile.name} page exceeds the evidence bound")
-            _validate_evidence_media_type(page)
-            evidence_ref = "sha256:" + hashlib.sha256(page.response_bytes).hexdigest()
             evidence_descriptor = evidence_members.get(evidence_ref)
             if evidence_descriptor is None:
-                write = blob_store.put_blob(
-                    evidence_ref,
-                    len(page.response_bytes),
-                    (page.response_bytes,),
-                )
-                accounting.add(
-                    byte_size=len(page.response_bytes),
-                    reused=write.reused,
-                    bytes_written=write.bytes_written,
-                )
+                with closing(chunks) if isinstance(page, SourceNativeBlobPage) else nullcontext():
+                    write = blob_store.put_blob(evidence_ref, evidence_size, chunks)
+                accounting.add(byte_size=evidence_size, reused=write.reused, bytes_written=write.bytes_written)
                 evidence_descriptor = describe_member_from_receipt(
                     blob_ref=evidence_ref,
                     role=ROLE_EVIDENCE,
                     media_type=page.evidence_media_type,
-                    byte_size=len(page.response_bytes),
+                    byte_size=evidence_size,
                     record_count=0,
                 )
                 evidence_members[evidence_ref] = evidence_descriptor
             elif (
-                evidence_descriptor.byte_size != len(page.response_bytes)
+                evidence_descriptor.byte_size != evidence_size
                 or evidence_descriptor.media_type != page.evidence_media_type
             ):
                 raise SourceNativeReleaseError("source-native evidence content has conflicting declarations")
@@ -120,7 +127,16 @@ def index_pages(
                     current_window = None
                 else:
                     current_window = profile.page_window(page.request_key)
-            response = profile.parse_page_response(page.response_bytes)
+            response, response_bytes = parse_evidence(
+                profile,
+                opener=lambda ref=evidence_ref: blob_store.open(ref),
+                evidence_ref=evidence_ref,
+                byte_size=evidence_size,
+                media_type=page.evidence_media_type,
+                request_key=page.request_key,
+                query_scope=query_scope,
+                response_bytes=page.response_bytes,
+            )
             records_included = profile.records_included(
                 response,
                 query_scope=query_scope,
@@ -137,7 +153,7 @@ def index_pages(
                     response,
                     page_window=current_window,
                     records_included=records_included,
-                    response_bytes=page.response_bytes,
+                    response_bytes=response_bytes,
                 )
             elif not records_included:
                 raise SourceNativeReleaseError(f"{profile.name} non-record evidence cannot continue a page chain")

@@ -11,7 +11,7 @@ from typing import Any
 from rulespec_artifacts import MemberDescriptor
 
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
-from spicy_docs.releases.profile import SourceNativePage
+from spicy_docs.releases.profile import SourceNativeBlobPage, SourceNativePage
 from spicy_docs.sources.refusals import RefusedResponse, attach_refused_response
 from spicy_docs.storage.blobs import SourceNativeBlobStore
 from spicy_docs.transport.credentials import scrub_credential
@@ -33,7 +33,10 @@ def capture_refused_page(page: SourceNativePage) -> Iterator[None]:
         payload = page.response_bytes
         size = len(payload) if isinstance(payload, bytes) else None
         reason = None
-        if size is None:
+        if isinstance(page, SourceNativeBlobPage):
+            size, reason = page.byte_size, "streamed-response"
+            error.__dict__["refused_blob_ref"] = page.blob_ref
+        elif size is None:
             reason = "unsupported-response"
         elif size > MAX_EVIDENCE_BYTES:
             reason = "response-byte-limit"
@@ -109,13 +112,25 @@ def record_failed_acquisition(
     response = getattr(error, "refused_response", None)
     if not isinstance(response, RefusedResponse):
         response = None
+    response_status = _retain_response(response, blob_store=blob_store, evidence_members=evidence_members)
+    refused_ref = getattr(error, "refused_blob_ref", None)
+    member = evidence_members.get(refused_ref) if isinstance(refused_ref, str) else None
+    if (
+        response is not None
+        and member is not None
+        and response.unavailable_reason == "streamed-response"
+        and member.byte_size == response.observed_byte_size
+        and member.media_type == response.media_type
+    ):
+        response_status.pop("reason", None)
+        response_status.update(status="retained", blobRef=refused_ref, mediaType=member.media_type)
     references = [
         {"blobRef": ref, "byteSize": evidence_members[ref].byte_size, "mediaType": evidence_members[ref].media_type}
         for ref in islice(reversed(evidence_members), _CONTEXT_LIMIT)
     ]
     error.__dict__["failed_acquisition"] = {
         "sourceSystemId": source_system_id,
-        "response": _retain_response(response, blob_store=blob_store, evidence_members=evidence_members),
+        "response": response_status,
         "retainedPageEvidence": {
             "contextOnly": True,
             "count": len(evidence_members),

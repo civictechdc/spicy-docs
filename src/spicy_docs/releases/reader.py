@@ -41,6 +41,7 @@ from spicy_docs.releases.partitions import (
 from spicy_docs.releases.profile import (
     SourceNativeProfile,
 )
+from spicy_docs.storage.blobs import iter_verified_blob
 
 
 def _collection_outcome(
@@ -195,6 +196,17 @@ class SourceNativeReleaseReader:
             for row in rows:
                 if row["failure"] is None:
                     yield row
+
+    def iter_evidence(self, blob_ref: str) -> Iterator[bytes]:
+        """Stream an admitted original; exhausting the iterator rechecks size and digest.
+
+        Consume into temporary storage before using it as verified input. A partial
+        read does not establish integrity. Unknown and non-evidence refs refuse.
+        """
+        member = self._evidence_members.get(blob_ref) if isinstance(blob_ref, str) else None
+        if member is None:
+            raise SourceNativeReleaseError("reference is not an admitted source evidence member")
+        yield from iter_verified_blob(self._blob_source, blob_ref, member.byte_size)
 
     def read_evidence(self, blob_ref: str, *, max_bytes: int = MAX_EVIDENCE_BYTES) -> bytes:
         """Read one admitted evidence member within a caller-selected byte limit.
