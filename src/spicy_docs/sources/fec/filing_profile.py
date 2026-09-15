@@ -43,10 +43,10 @@ from spicy_docs.sources.fec.retained import (
 
 SOURCE_SYSTEM_ID = "https://api.open.fec.gov/v1/filings/"
 SCHEMA_NAME = "fec-filing-observation"
-# 1.1 admits source-null or absent file numbers; sub_id supplies record identity.
-# Earlier 1.0 qualification releases keep their original schema and input pins.
-SCHEMA_VERSION = "1.1"
-SCHEMA_KEY = "schemas/fec-filing-observation-1.1.json"
+# 1.2 admits source-negative numbers observed in F13; sub_id still supplies identity.
+# Earlier qualification releases keep their original schemas and input pins.
+SCHEMA_VERSION = "1.2"
+SCHEMA_KEY = f"schemas/{SCHEMA_NAME}-{SCHEMA_VERSION}.json"
 SCOPE_ID = "fec-retained-filing-query"
 _request = partial(page_request, endpoint=SOURCE_SYSTEM_ID)
 filing_query_scope = partial(query_scope, request=_request)
@@ -66,10 +66,10 @@ def _classify(value: object) -> dict[str, Any]:
     metadata = value["metadata"]
     if not isinstance(metadata.get("sub_id"), str) or re.fullmatch(r"[0-9]+", metadata["sub_id"]) is None:
         raise ValueError("FEC filing observation lacks its native processed-record sub_id")
-    # Official OpenFEC Filings.file_number is nullable; it is not this profile's
-    # identity. Preserve null/absence unless a direct filter needs a known match.
+    # File numbers may be negative, null or absent in official responses.
+    # Preserve them as metadata; a direct filter still needs a known match.
     number = metadata.get("file_number")
-    if number is not None and (type(number) is not int or number < 0):
+    if number is not None and type(number) is not int:
         raise ValueError("FEC filing observation has an invalid file number")
     # This filter names the returned field directly. Other source filters may
     # select through associations, so their meaning stays with the publisher.
@@ -121,7 +121,7 @@ def _wrap(record: Mapping[str, Any], *, schema_digest: str) -> dict[str, Any]:
 
 _SCHEMA = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "urn:spicy-docs:schema:fec-filing-observation:1.1",
+    "$id": f"urn:spicy-docs:schema:{SCHEMA_NAME}:{SCHEMA_VERSION}",
     "type": "object",
     "additionalProperties": False,
     "required": sorted(_FIELDS),
@@ -132,7 +132,7 @@ _SCHEMA = {
             "required": ["sub_id"],
             "properties": {
                 "sub_id": {"type": "string", "pattern": "^[0-9]+$"},
-                "file_number": {"type": ["integer", "null"], "minimum": 0},
+                "file_number": {"type": ["integer", "null"]},
             },
         },
         "embedded_bodies": {"type": "array"},

@@ -143,7 +143,41 @@ def test_nullable_or_absent_file_number_is_metadata_not_identity(tmp_path, numbe
         observed = list(reader.iter_records())
         assert len(observed) == 1 and observed[0]["sourceRecordId"] == "100"
         assert observed[0]["record"]["metadata"] == row
-        assert observed[0]["schemaVersion"] == "1.1"
+        assert observed[0]["schemaVersion"] == "1.2"
+
+
+@pytest.mark.parametrize("selected", [None, -9668190, 9668190])
+def test_source_negative_file_number_round_trips_without_changing_identity(tmp_path, selected):
+    # Literal values from the retained F13 response. File number is not identity.
+    row = {"sub_id": "1072820200239473774", "file_number": -9668190, "form_type": "F13"}
+    captures, originals, blobs = _inputs(tmp_path, records=[row])
+    url = "https://api.open.fec.gov/v1/filings/?form_type=F13&per_page=1"
+    if selected is not None:
+        url += f"&file_number={selected}"
+    captures[0]["requestUrl"] = captures[0]["resolvedUrl"] = url
+    pages = iter_retained_filing_pages(captures, blob_source=blobs)
+    if selected == 9668190:
+        with pytest.raises(ValueError, match="explicit file-number selection"):
+            _publish(tmp_path, captures, pages)
+        assert not (tmp_path / "release").exists()
+        return
+    _, reader = _publish(tmp_path, captures, pages)
+    (observed,) = reader.iter_records()
+    assert observed["record"]["metadata"] == row
+    assert observed["sourceRecordId"] == row["sub_id"]
+    assert observed["schemaVersion"] == "1.2"
+    (evidence,) = reader.iter_record_evidence()
+    with ZipFile(BytesIO(reader.read_evidence(evidence["evidenceBlobRef"]))) as archive:
+        assert archive.read("response.json") == originals[0]
+
+
+@pytest.mark.parametrize("number", [True, False, "-9668190", -1.5, [], {}])
+def test_file_number_still_requires_an_integer_or_null(tmp_path, number):
+    captures, _, blobs = _inputs(tmp_path, records=[{"sub_id": "100", "file_number": number}])
+    captures[0]["requestUrl"] = captures[0]["resolvedUrl"] = "https://api.open.fec.gov/v1/filings/?per_page=1"
+    with pytest.raises(ValueError, match="invalid file number"):
+        _publish(tmp_path, captures, iter_retained_filing_pages(captures, blob_source=blobs))
+    assert not (tmp_path / "release").exists()
 
 
 @pytest.mark.parametrize(
