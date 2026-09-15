@@ -26,7 +26,7 @@ SHA-256 `5bb8e5f1f2d64150b77caef4fc4a1f22af1eb4b59f510483df2d402a48c32439`. Rece
 
 **The source-fidelity and CFR example tasks below are complete locally.**
 S21/S31 remain conditionally deferred. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
-owns the remaining CourtListener reader adoption. The merged source changes
+completes CourtListener reader adoption locally. The merged source changes
 are on `fork/main`; receiving changes remain on their own branches.
 
 **Merged simplification: 23 local items complete; two conditionally deferred.**
@@ -224,8 +224,9 @@ This checklist has 10 open items in total, including the two conditional deferra
   separately from parity; update receiver dependency pins and public API examples.
   **Qualified families:** PAR02–PAR07 and PAR11–PAR20 record their named
   receiving checks; current wheel and source pins live in each delivery receipt.
-  Remaining source-reader adoption includes SpicyRegs SR04 and RefSpec's
-  acquisition/archive paths below. Runtime producer evidence
+  SpicyRegs SR04 is qualified through its 0.1.5 wheel with SpicyDocs 0.17.0:
+  213 installed tests pass, including its other source readers. RefSpec's
+  acquisition/archive paths below remain. Runtime producer evidence
   is now complete for U.S. Code source credits, Unified Agenda and Topics.
   RefSpec `4f6c2acb` records installed reader source hashes in source-credit
   receipts and separate Topics run receipts. Replaying a capture preserves its
@@ -265,6 +266,9 @@ This checklist has 10 open items in total, including the two conditional deferra
   duplicate v2 artifact encoding/admission and manual URI encoder are removed.
   PAR18/PAR19 remove the obsolete Search-shaped input path and Engine's duplicate
   policies. PAR20 preserves per-file PDF results rather than adding another reader.
+  **SR04 complete:** SpicyRegs deletes its 519-line CourtListener bulk reader;
+  all three transforms import the owner directly. Table normalization stays
+  explicit and frozen old mappings remain test-only comparison evidence.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
@@ -283,6 +287,10 @@ This checklist has 10 open items in total, including the two conditional deferra
   Its resume path also needs returned Content-Range offset checks and object-version
   binding; a 206 response alone does not prove same-version continuation. Keep
   those fixes in the owner. This is separate from SR04's reader adoption.
+  SpicyRegs' body and cluster builders also share identical bounded Parquet
+  writer/abort logic except schema and batch size. Extract that small local writer
+  with the existing failure-after-flush checks; its whole-iterable `StagingWriter`
+  has different storage behavior and is not a suitable replacement.
 - [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
   the second native XML interval index. All active callers use existing Core
@@ -360,8 +368,17 @@ This checklist has 10 open items in total, including the two conditional deferra
   Local commit: `8b383714`; no live catalog was changed.
   [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par20/delivery.md>).
 
-CourtListener receiver adoption remains [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04).
-Do not create another provider reader. The Rulespec FAM preparation script has
+CourtListener receiver adoption is complete locally under
+[SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04). SpicyRegs `3bdb468` and `83ed49b`
+preserve all 3,361 retained court IDs and 397 federal classifications while
+correcting 11,808 quoted empty strings previously lost as null. Its 1,167 source
+tests and 213 installed tests pass; independent review approves. The ordinary
+install also qualifies its existing BILLSTATUS, Agenda and PDF consumers;
+pypdf 6.14.2 is explicit because newer recovery changes malformed-page outcomes.
+The failed 0.1.4 qualification remains retained. No backfill or publication ran.
+[SR04 delivery](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/sr04/delivery.md>).
+
+The Rulespec FAM preparation script has
 one known consumer; move it only when a supported source workflow or second
 consumer makes the move useful. Preserve its declared ISO-8859-1 encoding.
 
@@ -576,7 +593,8 @@ implementations and tests for F02–F05, P01 and the DocSpec CFR example.
   backslashes using the publisher's CSV dialect. Bound record size, decompression
   and compressed reads; refuse malformed text, rows and incomplete bzip2 members.
   Resume and cleanup checks pass. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
-  owns adoption of the reader and the separate table-normalization audit.
+  completes reader adoption and the separate table-normalization audit locally.
+  Additional transport checks remain in PAR10.
 
 F05 checks: 103 CSV, bulk-reader and listing tests passed. Retained CourtListener
 data produced 3,361 rows with 16,096 nulls and 11,808 empty strings. Re-encoding
@@ -795,7 +813,7 @@ wheel newer than the 0.3.0 SpicyRegs pins today.
 | --- | --- | --- | --- |
 | `federal_register.py` | FR API v1 documents; 90-day windows under the 10,000 cap | Covered by `sources/federal_register/native.py` | adopt |
 | `fec_committees.py` | OpenFEC `/v1/committees/`, keyset paging | Covered by the FEC committee profile | adopt |
-| `courtlistener_bulk.py` | CourtListener bulk CSV exports | Covered; SpicyRegs SR04 | adopt |
+| `courtlistener_bulk.py` | CourtListener bulk CSV exports | Shared reader adopted; SpicyRegs SR04 | done |
 | `bill_subjects.py` | GovInfo BILLSTATUS | Already on the wheel (G03) | done |
 | `gao_reports.py` | `gao.gov/rss/reports.xml` listing | Port: RSS listing route beside product pages | M01 |
 | `crs_reports.py` | `api.congress.gov/v3/crsreport`, offset/limit, keyed | Port: listing route beside `crs_summaries.py` | M02 |
