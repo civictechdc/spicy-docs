@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from spicy_docs.sources.uscode import UsCodeSourceError
-from spicy_docs.sources.uscode_annual import scan_uscode_annual_sections
+from spicy_docs.sources.uscode.annual import scan_uscode_annual_sections
 
 FIXTURES = Path(__file__).parent / "fixtures" / "uscode"
 

@@ -26,10 +26,10 @@ Paths below are relative to `src/spicy_docs/`.
 | Publisher text and printed List of Subjects | `sources/federal_register/body_text.py` checks text identity; `list_of_subjects.py` owns shared XML/text block and atom reading |
 | Explicit CFR/eCFR captures and native identity | `sources/cfr/acquisition.py`; `ecfr.py`; `annual.py` |
 | GovInfo MODS package/constituent metadata | `sources/govinfo/mods.py`; CFR edition checks in `sources/cfr/edition.py` |
-| USLM documents (GovInfo laws and compilations, OLRC U.S. Code) | `sources/govinfo/uslm.py` holds `UslmScan`, bound per publisher by namespace and body sections; `reading/zip_archive.py` is the one bounded zip reader; `uslm_acquisition.py` and `uscode_acquisition.py` capture |
+| USLM documents (GovInfo laws and compilations, OLRC U.S. Code) | `sources/govinfo/uslm.py` holds `UslmScan`, bound per publisher by namespace and body sections; `reading/zip_archive.py` is the one bounded zip reader; `uslm_acquisition.py` and `uscode/acquisition.py` capture |
 | Publisher list pages | `reading/paged_json.py` one traversal rule, including each family's reach bounds; `sources/congress/listing.py`, `sources/govinfo/discovery.py`, `sources/lda.py`, `sources/courtlistener_search.py`, `sources/sam.py`, `sources/usaspending.py`, `sources/fcc_ecfs.py` state each publisher's contract; `sources/gao/rss.py` reads the feed; `cli/list_pages.py` walks any family from the command line |
 | Unified Agenda editions | `sources/unified_agenda.py` |
-| U.S. Code, Supreme Court, CBO | `sources/uscode.py` and `uscode_acquisition.py`; `sources/supreme_court.py`; `sources/cbo.py` |
+| U.S. Code, Supreme Court, CBO | `sources/uscode/` (release points, archives, Popular Name Tool, Table III); `sources/supreme_court.py`; `sources/cbo.py` |
 | Document files beside listings | `sources/congress/crs_files.py`; `sources/gao/files.py`; `sources/regulations_gov/api.py` and `attachments.py`; PDF checks in `reading/pdf_bytes.py` |
 | Explicit bill status and selected text XML | `sources/congress/bill_acquisition.py`; `bill_status.py`; `bill_text.py` |
 | GAO pages | `sources/gao/native.py` |

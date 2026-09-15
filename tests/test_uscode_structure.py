@@ -8,7 +8,7 @@ from xml.parsers.expat import ExpatError
 import pytest
 
 from spicy_docs.sources.uscode import USLM_NAMESPACE, UsCodeSourceError
-from spicy_docs.sources.uscode_structure import scan_uscode_structure
+from spicy_docs.sources.uscode.structure import scan_uscode_structure
 
 FIXTURES = Path(__file__).parent / "fixtures" / "uscode"
 

@@ -10,7 +10,7 @@ from xml.parsers.expat import ExpatError
 import pytest
 
 from spicy_docs.sources.uscode import UsCodeSourceError
-from spicy_docs.sources.uscode_references import scan_uscode_references
+from spicy_docs.sources.uscode.references import scan_uscode_references
 
 FIXTURES = Path(__file__).parent / "fixtures" / "uscode"
 

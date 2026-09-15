@@ -26,7 +26,7 @@ Acquisition needs the `acquisition` extra.
 
 ```python
 from spicy_docs.sources.uscode import ReleasePoint, TitleSelection
-from spicy_docs.sources.uscode_acquisition import UsCodeAcquirer, UsCodeAcquisitionBudget
+from spicy_docs.sources.uscode.acquisition import UsCodeAcquirer, UsCodeAcquisitionBudget
 
 budget = UsCodeAcquisitionBudget(
     max_requests=2, max_bytes=128 * 1024**2, timeout_seconds=900, min_request_interval_seconds=1.5
@@ -44,7 +44,7 @@ title_xml = title.result.xml_bytes
 ```
 
 Offline, `read_title_archive`, `read_corpus_archive` and `read_annual_archive` live in
-`spicy_docs.sources.uscode_archive`. The title reader returns a
+`spicy_docs.sources.uscode.archive`. The title reader returns a
 `UsCodeTitleArchive` containing one `entry` and its exact `xml_bytes`.
 `validate_title_xml`, `validate_annual_title_html`, `parse_popular_names`,
 `parse_table3_page` and `read_table3_bulk_archive` check retained bytes against
@@ -66,7 +66,7 @@ the reader already checked.
 
 ```python
 from spicy_docs.sources.uscode import ReleasePoint
-from spicy_docs.sources.uscode_archive import read_corpus_archive
+from spicy_docs.sources.uscode.archive import read_corpus_archive
 
 members = []
 

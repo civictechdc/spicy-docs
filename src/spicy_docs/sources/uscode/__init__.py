@@ -59,7 +59,7 @@ from xml.etree.ElementTree import Element
 from spicy_docs.reading.xml import parse_xml
 from spicy_docs.reading.zip_archive import archive_members, open_archive, read_member
 
-from .govinfo.uslm import UslmScan
+from ..govinfo.uslm import UslmScan
 
 OLRC = "https://uscode.house.gov"
 USLM_NAMESPACE = "http://xml.house.gov/schemas/uslm/1.0"

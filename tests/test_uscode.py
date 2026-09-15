@@ -28,7 +28,7 @@ from spicy_docs.sources.uscode import (
     validate_annual_title_html,
     validate_title_xml,
 )
-from spicy_docs.sources.uscode_archive import read_annual_archive, read_corpus_archive, read_title_archive
+from spicy_docs.sources.uscode.archive import read_annual_archive, read_corpus_archive, read_title_archive
 
 FIXTURES = Path(__file__).parent / "fixtures" / "uscode"
 CURRENT = ReleasePoint(119, 103)

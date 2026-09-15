@@ -6,7 +6,7 @@ Use [the U.S. Code acquisition routes](uscode.md) to fetch and check a title's
 identity first. This reader also accepts XML fragments without title metadata.
 
 ```python
-from spicy_docs.sources.uscode_references import scan_uscode_references
+from spicy_docs.sources.uscode.references import scan_uscode_references
 
 references, credits = [], []
 counts = scan_uscode_references(

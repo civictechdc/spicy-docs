@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from spicy_docs.sources import uscode_archive as reader
 from spicy_docs.sources.uscode import ReleasePoint, TitleSelection, UsCodeSourceError
+from spicy_docs.sources.uscode import archive as reader
 
 FIXTURES = Path(__file__).parent / "fixtures" / "uscode"
 TITLE_ZIP = (FIXTURES / "xml_usc01@119-103.zip").read_bytes()

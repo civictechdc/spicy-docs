@@ -12,7 +12,7 @@ accept fragments and make no claim about a complete edition.
 ## XML sections, chapters and section parts
 
 ```python
-from spicy_docs.sources.uscode_structure import scan_uscode_structure
+from spicy_docs.sources.uscode.structure import scan_uscode_structure
 
 sections, parts, chapters = [], [], []
 counts = scan_uscode_structure(
@@ -67,7 +67,7 @@ refuses the read.
 ## Annual section labels
 
 ```python
-from spicy_docs.sources.uscode_annual import scan_uscode_annual_sections
+from spicy_docs.sources.uscode.annual import scan_uscode_annual_sections
 
 observations = []
 scan_uscode_annual_sections(retained_xhtml, on_section=observations.append)

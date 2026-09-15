@@ -10,7 +10,7 @@ import httpx
 import pytest
 
 from spicy_docs.sources.uscode import ReleasePoint, TitleSelection, UsCodeSourceError
-from spicy_docs.sources.uscode_acquisition import (
+from spicy_docs.sources.uscode.acquisition import (
     UsCodeAcquirer,
     UsCodeAcquisitionBudget,
     UsCodeSourceUnavailableError,
