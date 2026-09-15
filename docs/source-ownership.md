@@ -11,11 +11,22 @@ consumers use its wheel. SpicyDocs remains an independent source provider.
 | SpicyDocs | Shared source acquisition, document parsing and metadata capture; faithful fields, structure, identity, coverage, evidence and immutable source publication; optional reusable PDF/image extraction adapters. |
 | SpicyRegs | Its independently useful regulatory-data pipeline and mutable public tables. |
 | DocSpec | Dataset catalogs, selection, injected fetchers/processors, capture, experiments, reuse and comparison. |
+| SpicySearch | Catalog enrichment, query interpretation and reranking; reusable search policies. |
+| SpicyEngine | Native index construction, index replacement and query execution over retained inputs; a small local search/inspection client. |
 | Rulespec Artifacts | Shared canonical encoding, artifact admission/publication and bounded physical blob writes. |
 
 DocSpec owns dataset semantics; Dagster or another executor schedules and runs
 its work. RefSpec and other supplied processors/resources own their domain meaning.
 A source release, catalog or retained capture can each be a useful stopping point.
+
+Reuse retained data as well as code. Engine should read existing DocSpec catalogs
+and selected processing results without requiring another complete catalog export.
+Its index may store the fields needed for fast retrieval and display; full source
+records remain addressable through DocSpec. Search enrichment adds results linked
+to the original inputs and uses DocSpec's existing run and reuse facilities. A
+separate materialized dataset needs a demonstrated consumer or performance benefit.
+These are target responsibilities; the current consumer wheels and direct Engine
+reader still require qualification in [PAR18](simplification-todo.md#shared-parsing-and-metadata-capture).
 
 Apply this goal to parsers, metadata models, validation, transport, format readers,
 hashing, serialization, evidence handling, processing helpers and maintenance tools.

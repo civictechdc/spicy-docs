@@ -50,25 +50,39 @@ finding is not a completed port.
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
   serialization, evidence helpers and dependencies across all six repositories.
-  PAR11–PAR18 record the additional findings. This is an initial implementation
+  PAR11–PAR19 record the additional findings. This is an initial implementation
   inventory; each port still requires current caller and fixture checks.
 - [x] **PAR02 — Share Federal Register subject-block parsing.** Move literal XML
   and text List of Subjects readers and their regression fixtures; add the missing
   publisher text acquisition path. Preserve window bounds, printed terms and
   source associations. Vocabulary resolution and scoring remain downstream.
-- [ ] **PAR18 — Load an existing DocSpec catalog in SpicyEngine.** User direction
-  supersedes the old Search index migration: SpicyEngine owns native indexes and
-  serving; SpicySearch supplies catalog enhancement, query parsing, reranking and
-  reusable search preparation. Reuse the existing direct Parquet builder through
-  an installed Search wheel and DocSpec's public catalog reader. Add one Engine
-  command that prepares metadata only when the catalog or preparation changes,
-  then uses the ordinary Engine dataset loader. Preserve source records, metadata
-  scopes, dispositions, exact pins and existing prepare/activate behavior. Prove
-  installed catalog-to-Engine input, cache reuse and damaged-input refusal.
-  **In progress:** `codex/docspec-catalog` in `~/Work/spicyengine-docspec-catalog`
-  and a current Search provider branch. The unqualified old-index prototype was
-  saved under `receipts/parsing-consolidation-2026-09-14/par18/abandoned-old-index/`
-  and removed from its worktree. No old-index upgrade is required.
+- [ ] **PAR18 — Search retained DocSpec data without another catalog copy.**
+  Engine reads a selected catalog revision and retained results through DocSpec's
+  public wheel APIs, then builds its disposable native index. Honor current
+  membership and removals; raw file discovery is not a catalog reader. Map the
+  fields needed for search; require no intermediate Search-shaped Parquet catalog,
+  metadata segmentation or repeated acquisition. Preserve source IDs, versions,
+  dispositions and input references. Retain optional Search enrichment once in
+  DocSpec, linked to its inputs; reuse the current Core model rather than extending
+  the older segment-only runner. Qualify the needed provider wheel APIs before
+  claiming that workflow works. **Done when:** installed-package checks reuse
+  retained inputs, retrieve expected records and refuse changed inputs. Create no
+  additional permanent catalog/body dataset; permit bounded disposable build
+  staging only where the native reader needs it. Declare which metadata and
+  retained results are searchable. [Engine EC00](../../spicyengine/PLAN.md#ec00)
+  owns implementation.
+  **Status:** architecture review; no replacement runtime is qualified. Superseded
+  prototypes are preserved under `receipts/parsing-consolidation-2026-09-14/par18/`
+  in `abandoned-old-index/` and `abandoned-catalog-copy/`.
+- [ ] **PAR19 — Simplify Engine around indexing and retrieval.** Retire the
+  old exporter and link aliases after the direct DocSpec route works. Reuse owner
+  readers for agency/reference meaning and shared search definitions. Keep only
+  search/display data and source references in native storage where bounded
+  DocSpec record lookup can replace the full stored record. Simplify per-request
+  validation and database transport while preserving safe index replacement,
+  interrupted-build recovery and bounded results. Keep the local demo useful.
+  [Engine's plan](../../spicyengine/PLAN.md) owns these changes; static review is
+  not implementation or performance evidence.
 - [ ] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
   section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
   reference occurrences and ancestor-attributed source-credit observations.
