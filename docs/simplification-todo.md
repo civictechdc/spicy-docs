@@ -580,9 +580,19 @@ published formats; XML/JSON/XHTML precede equivalent HTML.
     decoded hashes, native names and duplicate-entry ordinals. Opaque files retain
     bytes without invented rows. Counts mean files; stored/deflate decoding has
     explicit bounds. Existing byte profiles and release formats remain unchanged.
-  - [ ] Publish bulk financial rows and parsed raw filings with source-specific
-    identities, row/member coordinates and schema/layout provenance. Reuse retained
-    originals and existing parsers; file inventories do not complete this work.
+  - [x] Publish [positional rows and parsed raw filings](sources/fec-rows.md) from
+    one retained original or selected ZIP member. Shared streamed pages preserve
+    complete selected-stream membership, original/member/row coordinates, literal
+    fields, native filing headers and separate body references. Bounded pages reuse
+    one open original for each parse/replay; equal-content rows remain distinct.
+    The API requires explicit delimiter, quoting and encoding. Counts include
+    source headers/blank records; transaction identities and field names are not
+    inferred. Named financial views remain separate from source observations.
+  - [ ] Add efficient multi-member row publication and qualify bulk companion/header
+    mappings. Separate selected-member releases currently repeat archive-wide
+    verification. Reuse the existing file inventory and field-mapping interfaces;
+    do not introduce a universal financial model or label positional cells as
+    publisher-defined fields without their dictionary provenance.
   - [ ] Add legal-detail and rulemaking releases, preserving native case/document
     associations and `rm_id` identity without treating search results as full cases.
   - [ ] Add entity detail/history/search/totals and relationship releases with

@@ -76,10 +76,9 @@ with destination_file.open("wb") as output:
 
 Exhaust the iterator to verify its complete size and digest. Closing it early
 closes the underlying stream but does not establish full verification. The existing
-`read_evidence` API retains its small-response limit. Financial parsing can read
-the retained original through existing ZIP/CSV or filing readers; this profile
-does not publish financial rows, restore databases, interpret amendments or join
-header companions automatically.
+`read_evidence` API retains its small-response limit. The [positional row profile](fec-rows.md) can publish a selected decoded stream
+through the same publisher. File inventories do not restore databases, interpret
+amendments or join header companions automatically.
 
 ## Bounds and refusal behavior
 

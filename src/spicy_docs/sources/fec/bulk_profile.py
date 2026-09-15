@@ -9,7 +9,6 @@ import hashlib
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import datetime
 from functools import cache
 from urllib.parse import unquote, urlsplit
 
@@ -18,6 +17,7 @@ from rulespec_artifacts import canonical_json_bytes, schema_bundle_digest
 from spicy_docs.releases.format import MAX_ROW_BYTES
 from spicy_docs.releases.profile import SourceNativeBlobPage, SourceNativeProfile
 from spicy_docs.sources.fec.catalog import BUCKET_URL, official_url
+from spicy_docs.sources.fec.originals import MAX_FILE_BYTES, original_capture
 from spicy_docs.sources.fec.retained import MAX_CAPTURES, MAX_SCOPE_BYTES
 from spicy_docs.sources.zip_archive import inspect_archive_stream
 
@@ -26,7 +26,6 @@ SCHEMA_NAME = "fec-bulk-file-observation"
 SCHEMA_VERSION = "1.0"
 SCHEMA_KEY = f"schemas/{SCHEMA_NAME}-{SCHEMA_VERSION}.json"
 SCOPE_ID = "fec-retained-bulk-files"
-MAX_FILE_BYTES = 64 * 1024**3
 MAX_DECODED_BYTES = 1024**4
 MAX_MEMBERS = 10_000
 MAX_INVENTORY_BYTES = MAX_ROW_BYTES // 2
@@ -76,29 +75,7 @@ def bulk_file_scope(captures, *, max_members, max_decoded_bytes):
             raise ValueError("FEC bulk resolved URL names a different object")
         if value["representation"] not in ("zip", "opaque"):
             raise ValueError("FEC bulk representation must be explicitly zip or opaque")
-        if type(value["byteSize"]) is not int or not 0 < value["byteSize"] <= MAX_FILE_BYTES:
-            raise ValueError("FEC bulk original size exceeds its bound")
-        if (
-            not isinstance(value["responseSha256"], str)
-            or re.fullmatch(r"sha256:[0-9a-f]{64}", value["responseSha256"]) is None
-        ):
-            raise ValueError("FEC bulk original digest is invalid")
-        try:
-            instant = datetime.fromisoformat(value["observedAt"])
-        except (TypeError, ValueError) as error:
-            raise ValueError("FEC bulk observation time is invalid") from error
-        if instant.utcoffset() is None:
-            raise ValueError("FEC bulk observation time must include a timezone")
-        if any(not isinstance(value[field], str) for field in _OPTIONAL_FIELDS if field in value):
-            raise ValueError("FEC bulk optional capture facts must be source strings")
-        if "contentLength" in value:
-            if re.fullmatch(r"[0-9]+", value["contentLength"]) is None:
-                raise ValueError("FEC bulk Content-Length is not a nonnegative integer")
-            if (
-                value.get("contentEncoding", "").strip().lower() == "identity"
-                and int(value["contentLength"]) != value["byteSize"]
-            ):
-                raise ValueError("FEC bulk identity Content-Length differs from captured byte size")
+        original_capture(value)
         selected.append(value)
     result = {"captures": selected, "maxMembers": max_members, "maxDecodedBytes": max_decoded_bytes}
     if len(canonical_json_bytes(result)) > MAX_SCOPE_BYTES:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, BinaryIO, Literal, Protocol
 
@@ -65,6 +65,19 @@ class ParsePageStream(Protocol):
         byte_size: int,
         media_type: str,
     ) -> Mapping[str, Any]: ...
+
+
+class ParseFileStream(Protocol):
+    def __call__(
+        self,
+        stream: BinaryIO,
+        *,
+        query_scope: Mapping[str, Any],
+        request_key: str,
+        evidence_ref: str,
+        byte_size: int,
+        media_type: str,
+    ) -> Iterator[Mapping[str, Any]]: ...
 
 
 class TraversalCheck(Protocol):
@@ -177,11 +190,19 @@ class SourceNativeProfile:
     # Opt-in source rules for whole files; existing byte profiles keep their bound.
     parse_page_stream: ParsePageStream | None = None
     max_evidence_bytes: int = MAX_EVIDENCE_BYTES
+    # One original may yield bounded record pages while its stream remains open.
+    parse_file_stream: ParseFileStream | None = None
 
     def __post_init__(self) -> None:
         if type(self.max_evidence_bytes) is not int or self.max_evidence_bytes < 1:
             raise ValueError("source evidence bound must be a positive integer")
-        if self.parse_page_stream is None and self.max_evidence_bytes != MAX_EVIDENCE_BYTES:
+        if self.parse_page_stream is not None and self.parse_file_stream is not None:
+            raise ValueError("select one source stream parser")
+        if (
+            self.parse_page_stream is None
+            and self.parse_file_stream is None
+            and self.max_evidence_bytes != MAX_EVIDENCE_BYTES
+        ):
             raise ValueError("only stream profiles may select a different evidence bound")
         if not self.name or not self.source_system_id or not self.source_system_version:
             raise ValueError("source-native profile identity must be nonempty")

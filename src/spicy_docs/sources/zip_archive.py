@@ -15,6 +15,7 @@ import io
 import struct
 import zipfile
 import zlib
+from contextlib import contextmanager
 from tempfile import TemporaryFile
 
 from rulespec_artifacts import canonical_json_bytes
@@ -106,29 +107,42 @@ def inspect_archive_stream(stream, *, byte_size, max_entries, max_decoded_bytes,
     for bound in (byte_size, max_entries, max_decoded_bytes, max_metadata_bytes):
         if type(bound) is not int or bound < 1:
             raise ValueError("ZIP inspection bounds must be positive integers")
-    if not stream.seekable():
-        with TemporaryFile() as seekable:
-            observed = 0
-            while True:
-                requested = min(64 * 1024, byte_size - observed + 1)
-                chunk = stream.read(requested)
-                if not isinstance(chunk, bytes) or len(chunk) > requested:
-                    raise ValueError("ZIP stream did not return bounded binary bytes")
-                if not chunk:
-                    break
-                observed += len(chunk)
-                if observed > byte_size:
-                    raise ValueError("ZIP stream exceeds its selected byte size")
-                seekable.write(chunk)
-            if observed != byte_size:
-                raise ValueError("ZIP stream is short")
-            return inspect_archive_stream(
-                seekable,
-                byte_size=byte_size,
-                max_entries=max_entries,
-                max_decoded_bytes=max_decoded_bytes,
-                max_metadata_bytes=max_metadata_bytes,
-            )
+    with seekable_stream(stream, byte_size=byte_size) as selected:
+        return _inspect_seekable_archive(
+            selected,
+            byte_size=byte_size,
+            max_entries=max_entries,
+            max_decoded_bytes=max_decoded_bytes,
+            max_metadata_bytes=max_metadata_bytes,
+        )
+
+
+@contextmanager
+def seekable_stream(stream, *, byte_size):
+    """Reuse a seekable original or spool bounded reads once without closing the caller."""
+    if stream.seekable():
+        yield stream
+        return
+    with TemporaryFile() as seekable:
+        observed = 0
+        while True:
+            requested = min(64 * 1024, byte_size - observed + 1)
+            chunk = stream.read(requested)
+            if not isinstance(chunk, bytes) or len(chunk) > requested:
+                raise ValueError("ZIP stream did not return bounded binary bytes")
+            if not chunk:
+                break
+            observed += len(chunk)
+            if observed > byte_size:
+                raise ValueError("ZIP stream exceeds its selected byte size")
+            seekable.write(chunk)
+        if observed != byte_size:
+            raise ValueError("ZIP stream is short")
+        seekable.seek(0)
+        yield seekable
+
+
+def _inspect_seekable_archive(stream, *, byte_size, max_entries, max_decoded_bytes, max_metadata_bytes):
     stream.seek(0)
     if stream.read(4) not in (b"PK\x03\x04", b"PK\x05\x06"):
         raise ValueError("ZIP original lacks a local file or empty-archive header")

@@ -121,7 +121,8 @@ not establish equivalence with an original filing or PDF.
 
 The [bulk file profile](fec-bulk.md) streams exact originals into the existing
 release publisher and inventories ZIP members without repacking archives. Counts
-mean files; financial row parsing and publication remain separate.
+mean files. The [positional row profile](fec-rows.md) separately publishes a
+selected delimited stream or raw filing, retaining coordinates and body references.
 
 ## Publish a retained committee census
 

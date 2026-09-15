@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Mapping, Sequence
+from contextlib import ExitStack, closing
 from typing import Any
 
 from rulespec_artifacts import (
@@ -13,7 +14,7 @@ from rulespec_artifacts import (
     canonical_json_bytes,
 )
 
-from spicy_docs.releases.evidence import parse_evidence
+from spicy_docs.releases.evidence import parse_evidence, parse_file_evidence
 from spicy_docs.releases.format import (
     _PAGE_SHAPE,
     _UNCLASSIFIED_RECORD_ID_PREFIX,
@@ -72,190 +73,229 @@ def _replay_acquisition(
     current_check: AcquisitionCheck | None = None
     ordinal = 0
     saw_page = False
-    for raw_page_row in pages:
-        page_row = _PAGE_SHAPE.parse(raw_page_row)
-        traversal = page_row.get("traversalIndex")
-        page_index = page_row.get("pageIndex")
-        window_index = page_row.get("windowIndex")
-        window_page_index = page_row.get("windowPageIndex")
-        declared_records_included = page_row.get("recordsIncluded")
-        accepted_flag = page_row.get("accepted")
-        assert isinstance(traversal, int)
-        assert isinstance(page_index, int)
-        assert isinstance(window_index, int)
-        assert isinstance(window_page_index, int)
-        assert isinstance(declared_records_included, bool)
-        assert isinstance(accepted_flag, bool)
-        starts_traversal = traversal != previous_traversal
-        starts_window = window_page_index == 0
-        if starts_traversal:
-            if current_check is not None:
-                current_check.finish(query_scope=query_scope)
+    with ExitStack() as stream_stack:
+        stream_stack.enter_context(closing(pages))
+        responses = None
+        file_ref = None
+        for raw_page_row in pages:
+            page_row = _PAGE_SHAPE.parse(raw_page_row)
+            traversal = page_row.get("traversalIndex")
+            page_index = page_row.get("pageIndex")
+            window_index = page_row.get("windowIndex")
+            window_page_index = page_row.get("windowPageIndex")
+            declared_records_included = page_row.get("recordsIncluded")
+            accepted_flag = page_row.get("accepted")
+            assert isinstance(traversal, int)
+            assert isinstance(page_index, int)
+            assert isinstance(window_index, int)
+            assert isinstance(window_page_index, int)
+            assert isinstance(declared_records_included, bool)
+            assert isinstance(accepted_flag, bool)
+            starts_traversal = traversal != previous_traversal
+            starts_window = window_page_index == 0
+            if starts_traversal:
+                if current_check is not None:
+                    current_check.finish(query_scope=query_scope)
+                if (
+                    traversal != previous_traversal + 1
+                    or page_index != 0
+                    or window_index != 0
+                    or not starts_window
+                    or previous_next is not None
+                ):
+                    raise SourceNativeReleaseError("acquisition traversal indexes are missing or forked")
+                current_check = profile.acquisition_check()
+                previous_page = -1
+                previous_window = -1
+                previous_window_page = -1
+                ordinal = 0
+            elif page_index != previous_page + 1:
+                raise SourceNativeReleaseError("acquisition page indexes are not contiguous")
+            source_cursor = page_row.get("sourceCursor")
+            request_key = page_row.get("requestKey")
             if (
-                traversal != previous_traversal + 1
-                or page_index != 0
-                or window_index != 0
-                or not starts_window
-                or previous_next is not None
+                source_cursor is not None
+                and (not isinstance(source_cursor, str) or not source_cursor)
+                or not isinstance(request_key, str)
+                or not request_key
             ):
-                raise SourceNativeReleaseError("acquisition traversal indexes are missing or forked")
-            current_check = profile.acquisition_check()
-            previous_page = -1
-            previous_window = -1
-            previous_window_page = -1
-            ordinal = 0
-        elif page_index != previous_page + 1:
-            raise SourceNativeReleaseError("acquisition page indexes are not contiguous")
-        source_cursor = page_row.get("sourceCursor")
-        request_key = page_row.get("requestKey")
-        if (
-            source_cursor is not None
-            and (not isinstance(source_cursor, str) or not source_cursor)
-            or not isinstance(request_key, str)
-            or not request_key
-        ):
-            raise SourceNativeReleaseError("acquisition page cursor or request key is invalid")
-        if starts_window:
-            if source_cursor is not None or previous_next is not None or window_index != previous_window + 1:
-                raise SourceNativeReleaseError("acquisition window indexes are missing or forked")
-            if profile.page_window is None:
-                if window_index != 0:
-                    raise SourceNativeReleaseError(f"{profile.name} acquisition declares an unsupported nested window")
-                current_window = None
+                raise SourceNativeReleaseError("acquisition page cursor or request key is invalid")
+            if starts_window:
+                if source_cursor is not None or previous_next is not None or window_index != previous_window + 1:
+                    raise SourceNativeReleaseError("acquisition window indexes are missing or forked")
+                if profile.page_window is None:
+                    if window_index != 0:
+                        raise SourceNativeReleaseError(
+                            f"{profile.name} acquisition declares an unsupported nested window"
+                        )
+                    current_window = None
+                else:
+                    current_window = profile.page_window(request_key)
+                current_inventory = profile.traversal_check()
+                current_seen_urls = {request_key}
+            elif (
+                window_index != previous_window
+                or window_page_index != previous_window_page + 1
+                or source_cursor != previous_next
+                or request_key != source_cursor
+            ):
+                raise SourceNativeReleaseError("acquisition continuation request differs from its cursor chain")
+            evidence_ref = page_row.get("evidenceBlobRef")
+            evidence_media_type = page_row.get("evidenceMediaType")
+            member = evidence_members.get(evidence_ref) if isinstance(evidence_ref, str) else None
+            if (
+                member is None
+                or member.blob_ref != evidence_ref
+                or evidence_ref != page_row.get("responseDigest")
+                or member.media_type != evidence_media_type
+            ):
+                raise SourceNativeReleaseError("acquisition page evidence pin differs")
+            assert isinstance(evidence_ref, str)
+            seen_evidence.add(evidence_ref)
+            if profile.parse_file_stream is not None:
+                if page_index == 0 and traversal == 0:
+                    file_ref = evidence_ref
+                    responses = stream_stack.enter_context(
+                        parse_file_evidence(
+                            profile,
+                            opener=lambda selected=member: _open_descriptor(source, blob_source, selected),
+                            evidence_ref=evidence_ref,
+                            byte_size=member.byte_size,
+                            media_type=member.media_type,
+                            request_key=request_key,
+                            query_scope=query_scope,
+                        )
+                    )
+                if evidence_ref != file_ref or window_index != 0 or traversal != 0:
+                    raise SourceNativeReleaseError("record stream changed its original or window")
+                try:
+                    response = next(responses)
+                except StopIteration:
+                    raise SourceNativeReleaseError("record stream ended before its declared pages") from None
+                if response["requestKey"] != request_key:
+                    raise SourceNativeReleaseError("record stream request key differs")
+                response_bytes = None
             else:
-                current_window = profile.page_window(request_key)
-            current_inventory = profile.traversal_check()
-            current_seen_urls = {request_key}
-        elif (
-            window_index != previous_window
-            or window_page_index != previous_window_page + 1
-            or source_cursor != previous_next
-            or request_key != source_cursor
-        ):
-            raise SourceNativeReleaseError("acquisition continuation request differs from its cursor chain")
-        evidence_ref = page_row.get("evidenceBlobRef")
-        evidence_media_type = page_row.get("evidenceMediaType")
-        member = evidence_members.get(evidence_ref) if isinstance(evidence_ref, str) else None
-        if (
-            member is None
-            or member.blob_ref != evidence_ref
-            or evidence_ref != page_row.get("responseDigest")
-            or member.media_type != evidence_media_type
-        ):
-            raise SourceNativeReleaseError("acquisition page evidence pin differs")
-        assert isinstance(evidence_ref, str)
-        seen_evidence.add(evidence_ref)
-        response, response_bytes = parse_evidence(
-            profile,
-            opener=lambda selected=member: _open_descriptor(source, blob_source, selected),
-            evidence_ref=evidence_ref,
-            byte_size=member.byte_size,
-            media_type=member.media_type,
-            request_key=request_key,
-            query_scope=query_scope,
-        )
-        records_included = profile.records_included(
-            response,
-            query_scope=query_scope,
-            page_window=current_window,
-        )
-        if records_included is not declared_records_included:
-            raise SourceNativeReleaseError("acquisition page disposition differs from source evidence")
-        if starts_window:
-            assert current_check is not None
-            current_check.add_window(
-                response,
-                page_window=current_window,
-                records_included=records_included,
-                response_bytes=response_bytes,
-            )
-        elif not records_included:
-            raise SourceNativeReleaseError(f"{profile.name} non-record evidence cannot continue a page chain")
-        if current_inventory is None:
-            raise SourceNativeReleaseError("acquisition window begins without an explicit boundary")
-        if records_included:
-            current_inventory.add(response, page_index=window_page_index)
-            next_cursor = profile.next_page(response, seen_urls=current_seen_urls)
-        else:
-            next_cursor = None
-        terminal = next_cursor is None
-        if records_included and terminal:
-            current_inventory.finish()
-        if page_row.get("terminal") is not terminal:
-            raise SourceNativeReleaseError("acquisition terminal marker differs from source evidence")
-        discovered = page_row.get("discoveredRecords")
-        if not isinstance(discovered, list):
-            raise SourceNativeReleaseError("acquisition page discoveredRecords is not an array")
-        expected_discovered = []
-        for record_index, raw in enumerate(response["results"] if records_included else ()):
-            try:
-                classified = profile.classify_record(raw)
-                profile.validate_record_scope(
-                    classified,
+                response, response_bytes = parse_evidence(
+                    profile,
+                    opener=lambda selected=member: _open_descriptor(source, blob_source, selected),
+                    evidence_ref=evidence_ref,
+                    byte_size=member.byte_size,
+                    media_type=member.media_type,
+                    request_key=request_key,
                     query_scope=query_scope,
-                    page_window=current_window,
                 )
-            except ValueError:
-                # Derive failed positions from the evidence, independently of the
-                # writer's failure table and ledger construction.
-                connection.execute(
-                    "INSERT INTO failures VALUES (?, ?, ?)",
-                    (
-                        traversal,
-                        f"{_UNCLASSIFIED_RECORD_ID_PREFIX}:{traversal}:{page_index}:{record_index}",
-                        evidence_ref,
-                    ),
-                )
-                continue
-            wrapped = profile.wrap_record(
-                classified,
-                schema_digest=profile.source_schema_digest(),
+            records_included = profile.records_included(
+                response,
+                query_scope=query_scope,
+                page_window=current_window,
             )
-            identity = wrapped.get("sourceRecordId")
-            if not isinstance(identity, str) or not identity:
-                raise SourceNativeReleaseError(f"{profile.name} wrapped record lacks sourceRecordId")
-            digest = profile.record_digest(classified)
-            expected_discovered.append({"recordDigest": digest, "sourceRecordId": identity})
-            try:
-                connection.execute(
-                    "INSERT INTO observations VALUES (?, ?, ?, ?, 0, ?, ?, ?)",
-                    (
-                        traversal,
-                        ordinal,
-                        identity,
-                        _observation_version(profile, classified),
-                        digest,
-                        canonical_json_bytes(wrapped),
-                        evidence_ref,
-                    ),
+            if records_included is not declared_records_included:
+                raise SourceNativeReleaseError("acquisition page disposition differs from source evidence")
+            if starts_window:
+                assert current_check is not None
+                current_check.add_window(
+                    response,
+                    page_window=current_window,
+                    records_included=records_included,
+                    response_bytes=response_bytes,
                 )
-            except sqlite3.IntegrityError as error:
-                raise SourceNativeReleaseError(f"accepted acquisition repeats observation ordinal {ordinal}") from error
-            ordinal += 1
-        if discovered != expected_discovered:
-            raise SourceNativeReleaseError("acquisition page record inventory differs")
-        connection.execute(
-            "INSERT INTO pages VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                traversal,
-                page_index,
-                window_index,
-                window_page_index,
-                int(records_included),
-                int(accepted_flag),
-                request_key,
-                source_cursor,
-                next_cursor,
-                evidence_ref,
-                canonical_json_bytes(page_row),
-            ),
-        )
-        saw_page = True
-        previous_traversal = traversal
-        previous_page = page_index
-        previous_window = window_index
-        previous_window_page = window_page_index
-        previous_next = next_cursor if isinstance(next_cursor, str) else None
+            elif not records_included:
+                raise SourceNativeReleaseError(f"{profile.name} non-record evidence cannot continue a page chain")
+            if current_inventory is None:
+                raise SourceNativeReleaseError("acquisition window begins without an explicit boundary")
+            if records_included:
+                current_inventory.add(response, page_index=window_page_index)
+                next_cursor = profile.next_page(response, seen_urls=current_seen_urls)
+            else:
+                next_cursor = None
+            terminal = next_cursor is None
+            if records_included and terminal:
+                current_inventory.finish()
+            if page_row.get("terminal") is not terminal:
+                raise SourceNativeReleaseError("acquisition terminal marker differs from source evidence")
+            discovered = page_row.get("discoveredRecords")
+            if not isinstance(discovered, list):
+                raise SourceNativeReleaseError("acquisition page discoveredRecords is not an array")
+            expected_discovered = []
+            for record_index, raw in enumerate(response["results"] if records_included else ()):
+                try:
+                    classified = profile.classify_record(raw)
+                    profile.validate_record_scope(
+                        classified,
+                        query_scope=query_scope,
+                        page_window=current_window,
+                    )
+                except ValueError:
+                    # Derive failed positions from the evidence, independently of the
+                    # writer's failure table and ledger construction.
+                    connection.execute(
+                        "INSERT INTO failures VALUES (?, ?, ?)",
+                        (
+                            traversal,
+                            f"{_UNCLASSIFIED_RECORD_ID_PREFIX}:{traversal}:{page_index}:{record_index}",
+                            evidence_ref,
+                        ),
+                    )
+                    continue
+                wrapped = profile.wrap_record(
+                    classified,
+                    schema_digest=profile.source_schema_digest(),
+                )
+                identity = wrapped.get("sourceRecordId")
+                if not isinstance(identity, str) or not identity:
+                    raise SourceNativeReleaseError(f"{profile.name} wrapped record lacks sourceRecordId")
+                digest = profile.record_digest(classified)
+                expected_discovered.append({"recordDigest": digest, "sourceRecordId": identity})
+                try:
+                    connection.execute(
+                        "INSERT INTO observations VALUES (?, ?, ?, ?, 0, ?, ?, ?)",
+                        (
+                            traversal,
+                            ordinal,
+                            identity,
+                            _observation_version(profile, classified),
+                            digest,
+                            canonical_json_bytes(wrapped),
+                            evidence_ref,
+                        ),
+                    )
+                except sqlite3.IntegrityError as error:
+                    raise SourceNativeReleaseError(
+                        f"accepted acquisition repeats observation ordinal {ordinal}"
+                    ) from error
+                ordinal += 1
+            if discovered != expected_discovered:
+                raise SourceNativeReleaseError("acquisition page record inventory differs")
+            connection.execute(
+                "INSERT INTO pages VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    traversal,
+                    page_index,
+                    window_index,
+                    window_page_index,
+                    int(records_included),
+                    int(accepted_flag),
+                    request_key,
+                    source_cursor,
+                    next_cursor,
+                    evidence_ref,
+                    canonical_json_bytes(page_row),
+                ),
+            )
+            saw_page = True
+            previous_traversal = traversal
+            previous_page = page_index
+            previous_window = window_index
+            previous_window_page = window_page_index
+            previous_next = next_cursor if isinstance(next_cursor, str) else None
+        if responses is not None:
+            try:
+                next(responses)
+            except StopIteration:
+                pass
+            else:
+                raise SourceNativeReleaseError("record stream has undeclared pages")
     if not saw_page or current_check is None:
         raise SourceNativeReleaseError("acquisition has no evidence pages")
     if seen_evidence != set(evidence_members):

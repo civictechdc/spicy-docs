@@ -11,6 +11,7 @@ from spicy_docs.sources.fec.candidate_profile import FEC_CANDIDATE_QUERY_PROFILE
 from spicy_docs.sources.fec.filing_profile import FEC_FILING_QUERY_PROFILE
 from spicy_docs.sources.fec.legal_profile import FEC_LEGAL_QUERY_PROFILE
 from spicy_docs.sources.fec.profile import FEC_COMMITTEE_CENSUS_PROFILE
+from spicy_docs.sources.fec.row_profile import FEC_POSITIONAL_ROWS_PROFILE
 from spicy_docs.sources.federal_register.profile import (
     FEDERAL_REGISTER_ACQUISITION_POLICY_ID,
     FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION,
@@ -32,6 +33,7 @@ __all__ = [
     "FEC_COMMITTEE_CENSUS_PROFILE",
     "FEC_FILING_QUERY_PROFILE",
     "FEC_LEGAL_QUERY_PROFILE",
+    "FEC_POSITIONAL_ROWS_PROFILE",
     "FEDERAL_REGISTER_ACQUISITION_POLICY_ID",
     "FEDERAL_REGISTER_ACQUISITION_POLICY_VERSION",
     "FEDERAL_REGISTER_PROFILE",

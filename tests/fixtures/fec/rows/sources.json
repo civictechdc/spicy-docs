@@ -1,0 +1,45 @@
+[
+  {
+    "file": "94293.fec",
+    "capture": {
+      "requestUrl": "https://docquery.fec.gov/dcdev/posted/94293.fec",
+      "responseSha256": "sha256:af91733544fb80797dd830550a6f835265c2c3624bc9640dd10c1e24f9ca6d50",
+      "byteSize": 15825,
+      "representation": "opaque",
+      "observedAt": "2026-09-14T22:05:08.197044+00:00",
+      "resolvedUrl": "https://docquery.fec.gov/dcdev/posted/94293.fec",
+      "mediaType": "application/octet-stream",
+      "via": "direct",
+      "etag": "\"36034a44737e9387d4eb9f6670ed9e6c\"",
+      "lastModified": "Sat, 06 Apr 2024 18:23:39 GMT",
+      "contentEncoding": "identity",
+      "contentLength": "15825"
+    },
+    "format": "fec",
+    "source_asset": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-next-collections-2026-09-14/historical/additional-acquisition.json",
+    "source_blob": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-next-collections-2026-09-14/historical/blobs/sha256/af91733544fb80797dd830550a6f835265c2c3624bc9640dd10c1e24f9ca6d50",
+    "independent_csv_records": 60,
+    "embedded_body_count": 0
+  },
+  {
+    "file": "ElectioneeringComm_2026.csv",
+    "capture": {
+      "requestUrl": "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/2026/ElectioneeringComm_2026.csv",
+      "responseSha256": "sha256:0164f207806f8213d87c12994dc858a2d22e4723447394cf99fadc08b2c89a18",
+      "byteSize": 5026,
+      "representation": "opaque",
+      "observedAt": "2026-09-13T17:17:05.028324+00:00",
+      "resolvedUrl": "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/2026/ElectioneeringComm_2026.csv",
+      "mediaType": "text/csv",
+      "via": "direct",
+      "etag": "\"7909ccd8dfbb6395257b95b343c28458\"",
+      "lastModified": "Sun, 13 Sep 2026 10:12:37 GMT",
+      "contentEncoding": "identity",
+      "contentLength": "5026"
+    },
+    "format": "delimited",
+    "source_asset": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/bulk/initial/observation.json",
+    "source_blob": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/bulk/blobs/sha256/0164f207806f8213d87c12994dc858a2d22e4723447394cf99fadc08b2c89a18",
+    "independent_csv_records": 20
+  }
+]
