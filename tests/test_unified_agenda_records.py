@@ -14,7 +14,7 @@ from spicy_docs.sources.unified_agenda import (
     unified_agenda_xml_locator,
     validate_unified_agenda_xml,
 )
-from spicy_docs.sources.unified_agenda_records import UnifiedAgendaSourceError, scan_unified_agenda_records
+from spicy_docs.sources.unified_agenda.records import UnifiedAgendaSourceError, scan_unified_agenda_records
 
 FIXTURE = Path(__file__).parent / "fixtures" / "unified_agenda" / "reginfo-rin-data-202510.xml"
 

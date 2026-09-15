@@ -7,8 +7,8 @@ results do not contain the original bytes or establish current collection covera
 
 ```python
 from pathlib import Path
-from spicy_docs.sources.foia import parse_foia_annual_report
-from spicy_docs.sources.oversight import parse_oversight_report
+from spicy_docs.sources.agency_reports.foia import parse_foia_annual_report
+from spicy_docs.sources.agency_reports.oversight import parse_oversight_report
 
 annual = parse_foia_annual_report(Path("fec-2025.xml").read_bytes())
 report = parse_oversight_report(

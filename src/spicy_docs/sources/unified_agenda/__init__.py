@@ -22,14 +22,6 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from spicy_docs.sources.unified_agenda_records import (
-    DEFAULT_MAX_BYTES,
-    MAX_EDITION_BYTES,
-    UnifiedAgendaRecordObservation,
-    UnifiedAgendaSourceError,
-    _limit,
-    _read_records,
-)
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
@@ -38,6 +30,15 @@ from spicy_docs.transport.source_acquirer import (
     check_timing,
     narrow_byte_limit,
     utc_now,
+)
+
+from .records import (
+    DEFAULT_MAX_BYTES,
+    MAX_EDITION_BYTES,
+    UnifiedAgendaRecordObservation,
+    UnifiedAgendaSourceError,
+    _limit,
+    _read_records,
 )
 
 if TYPE_CHECKING:

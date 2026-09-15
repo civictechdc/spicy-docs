@@ -935,7 +935,7 @@ retained fixtures plus a guide.
 - [x] **M04** — GovInfo JSON discovery: `sources/govinfo/discovery.py` (`/published`, `/collections`, package granules); zero count is an observation.
   Shared traversal: `reading/paged_json.py` (host, next path, count path as data; header-only credential; declared-count checks). Pinned pages: `receipts/spicyregs-merge-probes-2026-09-14/`.
 - [x] **M05** — CourtListener REST search: `sources/courtlistener/search.py`, keyless or token; cursor continuations.
-- [x] **M06** — Unified Agenda edition XML: `sources/unified_agenda.py`; 202510 capture matched RefSpec's pin. [Guide](sources/unified-agenda.md).
+- [x] **M06** — Unified Agenda edition XML: `sources/unified_agenda/`; 202510 capture matched RefSpec's pin. [Guide](sources/unified-agenda.md).
 - [x] **M07** — LDA lobbying filings: `sources/lda.py`, keyless or token.
 - [x] **M08** — SAM entity management: `sources/sam.py`; needs the SAM.gov key (`SAM_GOV` in `.env`); placeholder `api_key` dropped from continuations.
 - [x] **M09** — USAspending recipients: `sources/usaspending.py`; POST page-number walk with request bodies recorded.

@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from spicy_docs.sources.foia import FoiaReportError, parse_foia_annual_report
-from spicy_docs.sources.oversight import OversightReportError, parse_oversight_report
+from spicy_docs.sources.agency_reports.foia import FoiaReportError, parse_foia_annual_report
+from spicy_docs.sources.agency_reports.oversight import OversightReportError, parse_oversight_report
 
 FIXTURES = Path(__file__).parent / "fixtures/agency_reports"
 URL = "https://www.oversight.gov/reports/example-report"
