@@ -279,8 +279,10 @@ This checklist has 10 open items in total, including the two conditional deferra
   support work remains open. PAR07 supplies the shared MODS/PREMIS XML tree;
   PAR13/PAR14 complete mapped text and JSON support. A current owner-side gap is
   CourtListener bulk `_open`: its broad exception retry also retries HTTP 401/403.
-  Make known access refusals terminal and qualify that behavior in SpicyDocs;
-  do not copy a fix into a receiver. This is separate from SR04's reader adoption.
+  Make known access refusals terminal and qualify that behavior in SpicyDocs.
+  Its resume path also needs returned Content-Range offset checks and object-version
+  binding; a 206 response alone does not prove same-version continuation. Keep
+  those fixes in the owner. This is separate from SR04's reader adoption.
 - [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
   the second native XML interval index. All active callers use existing Core
