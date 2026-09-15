@@ -47,8 +47,8 @@ and [Rulespec inventory](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receip
 add current callers, behavior differences and migration checks. An inventory
 finding is not a completed port.
 
-**Current: 16 of 20 shared-parsing tasks complete; four remain open.**
-This checklist has 11 open items in total, including the two conditional deferrals.
+**Current: 17 of 20 shared-parsing tasks complete; three remain open.**
+This checklist has 10 open items in total, including the two conditional deferrals.
 
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
@@ -59,7 +59,7 @@ This checklist has 11 open items in total, including the two conditional deferra
   and text List of Subjects readers and their regression fixtures; add the missing
   publisher text acquisition path. Preserve window bounds, printed terms and
   source associations. Vocabulary resolution and scoring remain downstream.
-- [ ] **PAR18 — Search retained DocSpec data without another catalog copy.**
+- [x] **PAR18 — Search retained DocSpec data without another catalog copy.**
   Engine reads a selected catalog revision and retained results through DocSpec's
   public wheel APIs, then builds its disposable native index. Honor current
   membership and removals; raw file discovery is not a catalog reader. Map the
@@ -74,20 +74,26 @@ This checklist has 11 open items in total, including the two conditional deferra
   staging only where the native reader needs it. Declare which metadata and
   retained results are searchable. [Engine EC00](../../spicyengine/PLAN.md#ec00)
   owns implementation.
-  **Status:** direct retained-state search is implemented and qualified locally
-  in Engine 0.2.0 using the DocSpec 0.4.0 wheel. Installed-package native checks
-  cover selected membership, replacements/removals, exact parsed values, scalar
-  and nested JSON, shared occurrences and changed-input refusal. Inline values
-  require no staging; the JSON content-reference fixture needed 134 temporary
-  bytes, deleted after building. No permanent catalog/body copy is produced.
-  Generic scalar values and explicitly selected fields are searchable; no agency
-  or legal interpretation is inferred. Optional Search enrichment retained and
-  reused through current Core operations remains open in Engine EC02.
-  Local commits: Engine `3b2b537` on `codex/docspec-catalog`; DocSpec reader
-  `71386d4` and test correction `9636521` on `codex/direct-core-reader`.
-  These implementation branches have not been merged or pushed.
-  Evidence is under `receipts/parsing-consolidation-2026-09-14/par18/direct-core/`.
-  Superseded prototypes remain in `abandoned-old-index/` and `abandoned-catalog-copy/`.
+  **Completed locally (2026-09-15):** Engine 0.4.0 uses DocSpec 0.6.0 to
+  read original records and optional retained Search 0.2.0 identifier additions.
+  Search runs the transformation; DocSpec owns dependencies, reuse and results.
+  An unchanged rerun and a title-only edit reuse results; changing one identifier
+  recomputes that record. Enrichment creates no additional Core value state.
+  Engine preserves source values and spellings, adds searchable identifiers, and
+  reports then deletes sparse temporary input even when reusing an existing index.
+  Generic scalar values and explicit JSON fields remain searchable; no agency or
+  legal interpretation is inferred. Baseline search needs no enrichment.
+  All **99 Engine tests** pass against its ordinary installed wheel. Native checks
+  cover exact originals, selected replacements/removals, added identifiers,
+  empty outputs, conflict/stale refusal, CLI loading and restart without source
+  mounts. The small enrichment fixture needs 1,072–1,080 temporary bytes per load;
+  this is a behavior check, not a capacity claim. DocSpec passes 1,496 source
+  tests and 51 installed tests; Search passes 36 installed tests and 351 sibling
+  checks with 99 existing adjudicated-divergence skips. Independent reviews approve.
+  Local source commits: Engine `08d2d86`, DocSpec `d714551`, Search `0f3a0bb`.
+  They remain on local implementation branches, unmerged and unpushed.
+  [Engine evidence](../../spicyengine-docspec-catalog/docs/history/2026-09-15-retained-enrichment.md)
+  and [delivery receipt](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par18/engine-enrichment-installed-qualification.md>).
 - [x] **PAR19 — Simplify Engine around indexing and retrieval.** Retire the
   old exporter and link aliases after the direct DocSpec route works. Reuse owner
   readers for agency/reference meaning and shared search definitions. Keep only
@@ -110,8 +116,8 @@ This checklist has 11 open items in total, including the two conditional deferra
   observations cover titles/abstracts, not complete bodies or capacity; indexing
   stays single-threaded. RefSpec dev9 coinstalls with DocSpec 0.5.1 and passes
   516 installed checks; its 38 full-suite failures/errors reproduce on baseline.
-  Local commits: Engine `95eb2e8`, RefSpec `63947226`. Optional enrichment remains
-  PAR18/Engine EC02.
+  Local commits: Engine `95eb2e8`, RefSpec `63947226`. Optional enrichment is
+  now qualified separately in PAR18/Engine EC02.
   [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par19/delivery.md>).
 - [x] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
   section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
