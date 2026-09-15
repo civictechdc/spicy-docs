@@ -80,16 +80,30 @@ Use a new reader per pass. For a full network pass:
 3. Retain `source_url`, `rows_scanned`, `rows_yielded`, `compressed_bytes`,
    `decompressed_bytes`, `stopped_early`, and `resumes` beside the input pin.
 
-Network failures resume at the compressed-byte offset. Nonzero offsets require
-HTTP 206; a restart at zero is refused to prevent decompressor corruption.
-Natural source exhaustion must finish a bzip2 member; a missing footer raises.
-A configured byte cutoff remains a partial pass, even at a member boundary.
+**Changed in 0.18:** eligible read exceptions resume only when the initial HTTP
+response supplied a strong ETag. Each resume sends that exact `If-Match` with
+`Range` at the consumed compressed-byte offset, including zero. Before reading
+the resumed body, the reader requires HTTP 206, the same ETag and resolved URL,
+and an exact `Content-Range` covering the remaining bytes. It requests identity
+HTTP encoding and refuses other encodings. Absent or weak initial ETags allow an
+uninterrupted read; malformed or repeated metadata refuses. See the focused
+[HTTP owner](../../src/spicy_docs/sources/courtlistener_http.py).
 
-Know the limits before treating a pass as complete:
+HTTP 401/403 raises `CredentialRefusedError`; HTTP 412 and invalid resume
+metadata also stop immediately. Initial connection attempts and subsequent
+resume attempts each have a five-attempt limit, without nested retries. Refusal
+closes the response; a cleanup failure does not replace the original error.
 
-- Listed ETags mark revisions, not content hashes. The reader sends no
-  `If-Match` and hashes no downloaded object; a matching pin does not bind the
-  later transfer to listed bytes.
+Natural exhaustion must finish a bzip2 member and match the advertised total
+length when known. A shorter response refuses even after a complete member;
+the reader does not automatically restart it. Missing initial length is allowed,
+and the first valid resume establishes a total. Configured record/byte cutoffs
+remain partial passes, including a cutoff at a complete member boundary.
+
+Listing pins and transfer identity are separate. Listed ETags mark revisions,
+not content hashes; `published_object_pin()` checks only listing metadata.
+Conditional resumes bind to the first download response, not an earlier listing.
+The raw reader does not hash or retain the downloaded object for the caller.
 
 ### Reuse listing rules through the installed wheel
 

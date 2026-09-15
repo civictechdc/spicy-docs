@@ -16,7 +16,6 @@ import bz2
 import io
 import time
 import urllib.parse
-import urllib.request
 from collections.abc import Callable, Iterator
 from datetime import date
 from pathlib import Path
@@ -31,6 +30,15 @@ from spicy_docs.sources.courtlistener_csv import (
     iter_postgres_csv,
     validate_record_limit,
 )
+from spicy_docs.sources.courtlistener_http import (
+    MAX_ATTEMPTS,
+    BulkIdentity,
+    close_response,
+    raise_terminal,
+)
+from spicy_docs.sources.courtlistener_http import (
+    open_response as _open,
+)
 from spicy_docs.sources.courtlistener_listing import (
     BULK_BASE_URL,
     BULK_LIST_URL,
@@ -40,45 +48,9 @@ from spicy_docs.sources.courtlistener_listing import (
     parse_listing_page,
 )
 
-#: Identify honestly. CourtListener publishes this data for public reuse; the
-#: least we owe them is a contactable agent string.
-USER_AGENT = "spicy-regs/0.1 (+https://spicy-regs.dev) courtlistener-bulk-ingest"
-
-_TIMEOUT = 180.0
-_MAX_RETRIES = 5
 _CHUNK = 4 << 20
 _PROGRESS_EVERY = 50_000
-
 _DECOMPRESSED_CHUNK = 64 * 1024
-
-
-def _request(url: str, *, extra_headers: dict[str, str] | None = None):
-    headers = {"User-Agent": USER_AGENT}
-    if extra_headers:
-        headers.update(extra_headers)
-    return urllib.request.Request(url, headers=headers)
-
-
-def _open(url: str, *, extra_headers: dict[str, str] | None = None):
-    """Open a URL with bounded retries and exponential backoff."""
-    last: Exception | None = None
-    for attempt in range(1, _MAX_RETRIES + 1):
-        try:
-            return urllib.request.urlopen(_request(url, extra_headers=extra_headers), timeout=_TIMEOUT)
-        except Exception as exc:  # noqa: BLE001 - urllib raises a wide family
-            last = exc
-            if attempt == _MAX_RETRIES:
-                break
-            backoff = min(2**attempt, 60)
-            logger.warning(
-                "CourtListener bulk: {} (attempt {}/{}), retrying in {}s",
-                exc,
-                attempt,
-                _MAX_RETRIES,
-                backoff,
-            )
-            time.sleep(backoff)
-    raise RuntimeError(f"CourtListener bulk: giving up on {url}") from last
 
 
 def list_bulk_dumps(prefix: str = BULK_PREFIX) -> list[BulkObject]:
@@ -178,10 +150,6 @@ def find_dump(objects: list[BulkObject], dataset: str, dump_date: date) -> BulkO
     return None
 
 
-class _UnrangeableResume(RuntimeError):
-    """A resume the server answered with a whole new stream instead of a range."""
-
-
 class _BinarySource(Protocol):
     def read(self, size: int, /) -> bytes: ...
 
@@ -203,7 +171,7 @@ class _CountingStream(io.RawIOBase):
         response: _BinarySource,
         *,
         max_compressed_bytes: int | None = None,
-        reopen: Callable[[int], _BinarySource] | None = None,
+        reopen: Callable[[dict[str, str]], _BinarySource] | None = None,
     ) -> None:
         self._response = response
         self._reopen = reopen
@@ -215,72 +183,50 @@ class _CountingStream(io.RawIOBase):
         self.resumes = 0
         self._exhausted = False
         self.budget_exhausted = False
+        try:
+            self._identity = BulkIdentity.initial(response) if reopen is not None else None
+        except BaseException:
+            self.close()
+            raise
 
     def readable(self) -> bool:
         return True
 
     def close(self) -> None:
         """Close whichever response is current — after a resume it is not the first."""
-        try:
-            self._response.close()
-        except Exception:  # noqa: BLE001, S110 - closing a broken socket
-            pass
+        close_response(self._response)
         super().close()
 
     def _read_chunk(self, size: int) -> bytes:
-        """Pull the next compressed chunk, reconnecting mid-stream if need be."""
+        """Resume a failed read only after proving the original object identity."""
         try:
             return self._response.read(size)
         except Exception as exc:
-            if self._reopen is None:
+            raise_terminal(exc)
+            if self._reopen is None or self._identity is None:
                 raise
-            logger.warning(
-                "CourtListener bulk: transfer failed after {:.3f} GiB ({}); resuming",
-                self.compressed_bytes / 2**30,
-                exc,
-            )
-        for attempt in range(1, _MAX_RETRIES + 1):
+            headers = self._identity.resume_headers(self.compressed_bytes)
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            close_response(self._response)
             try:
-                self._response.close()
-            except Exception:  # noqa: BLE001, S110 - closing a broken socket
-                pass
-            try:
-                resumed = self._reopen(self.compressed_bytes)
-                # A server that ignores Range answers 200 and starts over from
-                # byte zero. Feeding that to a decompressor already 30 GiB into
-                # the stream does not fail — it produces garbage rows that look
-                # like data, which is the one outcome worse than the dropped
-                # connection this is recovering from.
-                status = getattr(resumed, "status", None)
-                if self.compressed_bytes and status != 206:
-                    # Not retryable: a server that ignores Range will ignore it
-                    # again, and every retry is another chance to splice.
-                    resumed.close()
-                    raise _UnrangeableResume(
-                        f"CourtListener bulk: resume at byte {self.compressed_bytes} "
-                        f"answered {status}, not 206 — refusing to splice a restarted "
-                        f"stream onto a partial one"
-                    )
+                resumed = self._reopen(headers)
+                try:
+                    self._identity.admit_resume(resumed, self.compressed_bytes)
+                except BaseException:
+                    close_response(resumed)
+                    raise
                 self._response = resumed
                 self.resumes += 1
-                return self._response.read(size)
-            except _UnrangeableResume:
-                raise
+                return resumed.read(size)
             except Exception as exc:
-                if attempt == _MAX_RETRIES:
+                raise_terminal(exc)
+                if attempt == MAX_ATTEMPTS:
                     raise RuntimeError(
                         f"CourtListener bulk: could not resume at byte {self.compressed_bytes} after {attempt} attempts"
                     ) from exc
-                backoff = min(2**attempt, 60)
-                logger.warning(
-                    "CourtListener bulk: resume attempt {}/{} failed ({}), retrying in {}s",
-                    attempt,
-                    _MAX_RETRIES,
-                    exc,
-                    backoff,
-                )
-                time.sleep(backoff)
-        return b""  # pragma: no cover - the loop either returns or raises
+                logger.warning("CourtListener bulk: resume attempt {}/{} failed; retrying", attempt, MAX_ATTEMPTS)
+                time.sleep(min(2**attempt, 60))
+        return b""  # pragma: no cover - the loop returns or raises
 
     def readinto(self, target) -> int:  # type: ignore[override]
         while not self._buffer and not self._exhausted:
@@ -298,11 +244,15 @@ class _CountingStream(io.RawIOBase):
                     size = min(size, self._max_compressed_bytes - self.compressed_bytes)
                 chunk = self._read_chunk(size)
                 if not chunk:
+                    if self._identity is not None:
+                        self._identity.check_length(self.compressed_bytes, eof=True)
                     if not member_finished:
                         raise EOFError("CourtListener bulk: incomplete bzip2 member at source EOF")
                     self._exhausted = True
                     break
                 self.compressed_bytes += len(chunk)
+                if self._identity is not None:
+                    self._identity.check_length(self.compressed_bytes)
             # Drain already-read compressed bytes before checking the input budget.
             # max_length prevents one compressed chunk allocating an entire dump.
             self._buffer = self._decompressor.decompress(chunk, max_length=_DECOMPRESSED_CHUNK)
@@ -373,12 +323,13 @@ class CourtListenerBulkReader(Reader):
         return response, response
 
     def iter_records(self) -> Iterator[dict]:
+        self.stopped_early = True
         handle, response = self._stream()
         counter = _CountingStream(
             handle,
             max_compressed_bytes=self.max_compressed_bytes,
             reopen=(
-                (lambda offset: _open(str(self.source_url), extra_headers={"Range": f"bytes={offset}-"}))
+                (lambda headers: _open(str(self.source_url), extra_headers=headers, attempts=1))
                 if response is not None
                 else None
             ),

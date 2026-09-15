@@ -246,7 +246,13 @@ class _FlakyResponse:
         self._served = 0
         self._fail_after = fail_after
         self.status = status if status is not None else (206 if offset else 200)
+        self.headers = {"ETag": '"fixture-object"', "Content-Length": str(len(payload) - offset)}
+        if offset:
+            self.headers["Content-Range"] = f"bytes {offset}-{len(payload) - 1}/{len(payload)}"
         self.closed = False
+
+    def geturl(self):
+        return "https://storage.courtlistener.com/bulk-data/fixture.csv.bz2"
 
     def read(self, size: int) -> bytes:
         if self._fail_after is not None and self._served >= self._fail_after:
@@ -279,7 +285,9 @@ def test_counting_stream_resumes_a_dropped_transfer_at_the_exact_offset(monkeypa
 
     ranges: list[int] = []
 
-    def reopen(offset: int):
+    def reopen(headers):
+        offset = int(headers["Range"][6:-1])
+        assert headers["If-Match"] == '"fixture-object"'
         ranges.append(offset)
         return _FlakyResponse(payload, offset=offset, fail_after=None)
 
@@ -309,7 +317,7 @@ def test_a_resume_that_restarts_the_stream_is_refused_not_spliced(monkeypatch):
 
     refused = _FlakyResponse(payload, offset=0, fail_after=None, status=200)
 
-    def restart_from_zero(offset: int):
+    def restart_from_zero(headers):
         return refused
 
     stream = _CountingStream(_FlakyResponse(payload, offset=0, fail_after=2048), reopen=restart_from_zero)
@@ -476,7 +484,8 @@ def test_unaligned_budget_caps_the_resumed_read_and_closes_current_response(monk
         def close(self):
             self.closed = True
 
-    def reopen(offset):
+    def reopen(headers):
+        offset = int(headers["Range"][6:-1])
         response = Response(payload, offset=offset, fail_after=None)
         resumed.append(response)
         return response
