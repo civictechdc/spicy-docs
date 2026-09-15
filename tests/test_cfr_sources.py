@@ -269,7 +269,7 @@ def test_response_url_and_xml_safety_are_checked_before_acceptance():
 
 
 def test_xml_validation_does_not_build_a_tree(monkeypatch):
-    from spicy_docs.sources import xml
+    from spicy_docs.reading import xml
 
     def refuse(*args, **kwargs):
         raise AssertionError("source identity validation must scan, not build a tree")

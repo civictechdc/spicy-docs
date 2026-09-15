@@ -91,7 +91,7 @@ def test_decimal_decoder_limit_uses_source_error():
 
 
 def test_node_budget_refuses_before_enumerating_wide_children(monkeypatch):
-    from spicy_docs.sources import json_input
+    from spicy_docs.reading import json_input
 
     class WideArray(list):
         def __iter__(self):

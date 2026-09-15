@@ -67,13 +67,15 @@ publisher topic survive; interpreting that topic belongs downstream. The
 
 ## Supported entry points
 
-The package root keeps five public export modules for current consumers:
+The package root keeps one public export module for current consumers, with
+the rest of the family under the `spicy_docs.source_native` package (the flat
+`*_source_native` addresses were deprecated aliases, removed after 0.19):
 
 - `spicy_docs.source_native`: release publishing, reading, schemas and verification.
-- `spicy_docs.source_native_profiles`: source profile exports.
-- `spicy_docs.federal_register_source_native`: Federal Register source operations.
-- `spicy_docs.regulations_gov_source_native`: Regulations.gov source operations.
-- `spicy_docs.source_native_store`: source blob-store API.
+- `spicy_docs.source_native.profiles`: source profile exports.
+- `spicy_docs.source_native.federal_register`: Federal Register source operations.
+- `spicy_docs.source_native.regulations_gov`: Regulations.gov source operations.
+- `spicy_docs.source_native.store`: source blob-store API.
 
 Implementations live under their [owning packages](architecture.md). Public
 tables use `spicy_docs.public_tables.api` and `.profiles`; raw readers stay under

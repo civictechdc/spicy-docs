@@ -379,7 +379,7 @@ def validate_partition_columns(columns: Sequence[str], dtypes: Sequence[object])
     ``agency_code`` column is itself drift.
 
     polars is imported here, not at module scope, so importing
-    ``spicy_docs.source_native_profiles`` does not require it. Parsing captured
+    ``spicy_docs.source_native.profiles`` does not require it. Parsing captured
     Parquet and fully replaying this source require the ``public-table`` extra;
     reading admitted source records does not.
     """

@@ -16,11 +16,11 @@ import pytest
 #: Kept in step with DocSpec's installed-wheel probe. Adding a module to the
 #: read/verify contract there means adding it here.
 _READER_MODULES = (
-    "spicy_docs.federal_register_source_native",
-    "spicy_docs.regulations_gov_source_native",
     "spicy_docs.source_native",
-    "spicy_docs.source_native_profiles",
-    "spicy_docs.source_native_store",
+    "spicy_docs.source_native.federal_register",
+    "spicy_docs.source_native.profiles",
+    "spicy_docs.source_native.regulations_gov",
+    "spicy_docs.source_native.store",
 )
 
 _HEAVY_MODULES = (
