@@ -47,7 +47,7 @@ and [Rulespec inventory](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receip
 add current callers, behavior differences and migration checks. An inventory
 finding is not a completed port.
 
-**Current: 14 of 20 shared-parsing tasks complete; six remain open.**
+**Current: 15 of 20 shared-parsing tasks complete; five remain open.**
 
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
@@ -317,18 +317,21 @@ finding is not a completed port.
   review approved; one broader Core fixture failure reproduces on the baseline.
   [Qualification](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par14/rulespec-qualification.md>).
 - [x] **PAR17 — Replace Rulespec's manual URI encoder with the standard library.**
-  Local `ce444e7` ships Projection 0.1.1 with the same public string/fragment API.
+  Local `ce444e7` provides Projection 0.1.1 with the same public string/fragment API.
   All Unicode scalars match the old output; all surrogates refuse. Accidental
   non-string iterable acceptance is removed. Source and installed-wheel checks
   pass (38/33 tests); independent review approved.
-- [ ] **PAR20 — Retain PDF enrichment results per file in SpicyRegs.** Keep each
-  URL, captured-source digest, extraction status, page count and error linked to
-  the enriched row. The current row-level `OK` means at least one attachment
-  supplied text; `_extract_unique` and `_combine` discard failed-attachment
-  details. Preserve that declared aggregate meaning while making missing text
-  and retries inspectable. Test one successful and one failed attachment on
-  the same row. This existing aggregation limit is separate from PAR12's reader
-  and single-file failure handling.
+- [x] **PAR20 — Retain PDF enrichment results per file in SpicyRegs.** Version
+  0.1.3 preserves ordered URL, observed-byte digest, status, page count and error
+  on document/comment rows. A successful attachment still makes the row `ok`;
+  failed attachments remain inspectable. Latest PDF-attempt facts stay separate
+  from retained or derived aggregate text. Parquet, catalog and backfill paths
+  preserve the field. Existing catalog tables gain one nullable column; a fresh
+  connection after that addition fixes a native schema-cache failure. Full
+  checks pass (1,139 tests), along with 216 installed-wheel checks and actual
+  local Iceberg migration/update/export tests. Independent review approved.
+  Local commit: `8b383714`; no live catalog was changed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par20/delivery.md>).
 
 CourtListener receiver adoption remains [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04).
 Do not create another provider reader. The Rulespec FAM preparation script has
