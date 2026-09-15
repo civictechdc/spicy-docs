@@ -484,18 +484,29 @@ def test_the_two_host_refusals_are_told_apart_by_their_retained_bytes():
 
 
 @pytest.mark.parametrize(
-    "answer,kind,meaning",
+    "answer,expected_body,kind,meaning",
     [
-        (pdf_response(CLOUDFRONT_BLOCK, 403, content_type="text/html"), "client-rejected", "rejected this client"),
+        (
+            pdf_response(CLOUDFRONT_BLOCK, 403, content_type="text/html"),
+            CLOUDFRONT_BLOCK,
+            "client-rejected",
+            "rejected this client",
+        ),
         (
             pdf_response(S3_ACCESS_DENIED, 403, content_type="application/xml"),
+            S3_ACCESS_DENIED,
             "object-access-denied",
             "states nothing about the file existing",
         ),
-        (pdf_response(b"<html>Forbidden</html>", 401, content_type="text/html"), "unrecognized", "neither shape"),
+        (
+            pdf_response(b"<html>Forbidden</html>", 401, content_type="text/html"),
+            b"<html>Forbidden</html>",
+            "unrecognized",
+            "neither shape",
+        ),
     ],
 )
-def test_a_refusal_names_its_kind_aborts_and_never_establishes_absence(answer, kind, meaning):
+def test_a_refusal_names_its_kind_aborts_and_never_establishes_absence(answer, expected_body, kind, meaning):
     transport = Transport(answer)
     with (
         RegulationsGovAttachmentAcquirer(budget=FILE_BUDGET, transport=transport) as source,
@@ -509,7 +520,7 @@ def test_a_refusal_names_its_kind_aborts_and_never_establishes_absence(answer, k
     assert raised.value.locator.document_id == DOCUMENT
     # The bytes that decided the kind stay the caller's evidence, and the
     # acquisition context the shared client attached carries over.
-    assert raised.value.refused_response.response_bytes == answer.read()
+    assert raised.value.refused_response.response_bytes == expected_body
     assert raised.value.regulations_gov_attachment_acquisition["documentId"] == DOCUMENT
     assert not hasattr(raised.value, "capture"), "a refusal is not a capture"
 
