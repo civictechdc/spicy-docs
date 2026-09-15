@@ -1,7 +1,8 @@
 # Who owns what
 
-SpicyDocs remains an independent source provider. Reuse through installed wheels
-reduces duplicate implementation without forcing source users into a dataset platform.
+The cross-repository goal is one maintained implementation per shared behavior.
+Consolidate duplicate code in the package that owns its responsibility and have
+consumers use its wheel. SpicyDocs remains an independent source provider.
 
 ## Product responsibilities
 
@@ -15,6 +16,19 @@ reduces duplicate implementation without forcing source users into a dataset pla
 DocSpec owns dataset semantics; Dagster or another executor schedules and runs
 its work. RefSpec and other supplied processors/resources own their domain meaning.
 A source release, catalog or retained capture can each be a useful stopping point.
+
+Apply this goal to parsers, metadata models, validation, transport, format readers,
+hashing, serialization, evidence handling, processing helpers and maintenance tools.
+Inspect behavior and callers as well as matching code: differently written functions
+can implement the same rule. Existing shared packages take precedence over creating
+another helper library. Interpretation can also be shared through its owning product;
+keeping it downstream does not justify separate copies in every consumer.
+
+Consolidation should remove more maintenance than it introduces. Prefer a small
+shared implementation with explicit inputs over copied variants. Keep a separate
+implementation only for a demonstrated difference in behavior or dependency needs,
+with tests and a recorded reason. Track copies and dead support code removed,
+consumers migrated, and adapters added; fewer lines alone do not prove success.
 
 Parsing [GovInfo MODS metadata](sources/govinfo-metadata.md), including its nested
 records and source links, is core source work. DocSpec chooses which records

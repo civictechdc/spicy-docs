@@ -35,20 +35,22 @@ completed task; follow the receiving backlog for its status.
 
 ## Shared parsing and metadata capture
 
-**New effort (2026-09-14):** centralize reusable parsing from SpicySearch,
-RefSpec and Rulespec in SpicyDocs, then replace the receiving copies with wheel
-imports. The [ownership decision](source-ownership.md#consolidate-parsing-across-consumers)
-defines the boundary. The
+**Goal (2026-09-14):** remove as much duplicated behavior and maintenance as
+practical across SpicyDocs, SpicySearch, RefSpec, Rulespec, DocSpec and SpicyRegs.
+Parsing and metadata capture move to SpicyDocs; other shared behavior goes to its
+existing owner. Consumers adopt wheels and delete their copies. The
+[ownership decision](source-ownership.md) defines the package responsibilities. The
 [port-candidate swarm](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/port-candidates-swarm-2026-09-14.md>)
 is one input to this effort; it inspected SpicyDocs `3386648` and did not establish
 a complete Rulespec inventory. These are planned tasks, not completed ports.
 
-- [ ] **PAR01 — Inventory parsing beyond fetch routes.** Read current SpicySearch,
-  RefSpec and Rulespec parsers, including helpers inside processors and tools.
-  Record exact functions, callers, fixtures, source dictionaries, duplicate
-  behavior and package dependencies. Expand the candidate list when warranted;
-  reassess earlier vocabulary and third-party-text exclusions, and agree the
-  split for mixed parsing/interpretation before implementing it.
+- [ ] **PAR01 — Inventory duplicated behavior across the codebases.** Read parsers,
+  models, validation, transport, format readers, serialization, evidence handling,
+  processing helpers and tools, including differently written implementations of
+  the same rule. Record exact functions, callers, fixtures, source dictionaries,
+  behavior differences and package dependencies. Prioritize widely reused code
+  and recurring fixes. Reassess vocabulary and third-party-text exclusions;
+  agree ownership and the split for mixed responsibilities before implementation.
 - [ ] **PAR02 — Share Federal Register subject-block parsing.** Move literal XML
   and text List of Subjects readers and their regression fixtures; add the missing
   publisher text acquisition path. Preserve window bounds, printed terms and
@@ -77,14 +79,22 @@ a complete Rulespec inventory. These are planned tasks, not completed ports.
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
 - [ ] **PAR09 — Remove the replaced implementations.** Track adoption separately
-  for each SpicySearch, RefSpec and Rulespec caller. Delete duplicate parsers,
+  for every named consumer. Delete duplicate implementations,
   fixtures made redundant, compatibility wrappers and dead helpers after checks;
   retain regression cases and useful evidence. Record any remaining copy's reason.
+- [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
+  evidence to replace duplicate helpers, models and validators alongside each
+  migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
+  and DocSpec for its dataset/processing responsibilities. Assess reusable
+  interpretation code under its own product owner. Keep necessary differences
+  explicit; avoid creating a catch-all utility package or another layer of wrappers.
 
-Work by source family: identify callers, implement the shared reader, qualify its
-wheel and receivers, then delete replaced code to close that family's consolidation.
+Work by source family or shared capability: identify callers, select or improve
+one implementation, qualify its wheel and receivers, then delete replaced code.
 PAR02–PAR07 record provider delivery; PAR08/PAR09 record receiving completion.
-New Rulespec candidates found by PAR01 receive named tasks before migration.
+PAR10 applies throughout. Record before/after implementation counts, migrated
+callers, removed support code and any new adapters with each completed change.
+Additional candidates found by PAR01 receive named tasks before migration.
 DocSpec retains dataset selection, execution history, reuse and comparison;
 source-campaign replacement remains the separate S21 decision.
 
