@@ -40,8 +40,8 @@ completed task; follow the receiving backlog for its status.
   Local repository checks, mutation checks, a core/PDF installed-wheel probe and
   bounded real-provider smoke checks passed. Receipts:
   `~/Work/corpora/supply-2026-09-02/receipts/spicydocs-extraction-api-2026-09-14/`.
-  Implementation remains uncommitted; source-specific qualification and DocSpec
-  adoption are separate from this provider API.
+  The API is included in SpicyDocs 0.8.0; source-specific qualification and
+  DocSpec adoption remain separate from this provider API.
 
 ## Canonical CFR/eCFR acquisition
 
@@ -357,24 +357,52 @@ downstream adoption remain separate.
   work. The regional approach improved selected outputs but failed its
   no-regression gate.
 
-- [ ] **FEC06 — Extend real historical filing qualification.** Acquire complete
-  originals for CSV 5.0–5.2 and other declared layouts before extending body-field
-  mappings. Preserve unsupported cases and source-declared encoding evidence.
-- [ ] **FEC07 — Extend legal acquisition beyond AO-number year 2024.** Reuse
-  explicit JSON/XML selection for other AO years, enforcement, administrative
-  fines, ADR and rulemakings; qualify each family's attachment associations.
-- [ ] **FEC08 — Acquire remaining financial bulk families.** Inventory and bound
-  transaction/raw dumps, qualify archive membership and historical schema inputs,
-  and prove restoration capacity before large transfers. Keep source originals
-  separate from downstream financial interpretation.
-- [ ] **FEC09 — Extend historical refresh across official collections.** Add
-  source-specific update/deletion observations and resumable acquisition where
-  the next selected collection requires them. Recurring scheduling remains with
-  the dataset caller.
-- [ ] **FEC10 — Qualify additional immutable source releases.** Add only the
-  family-specific identity/count/scope checks required by the next retained
-  collection, using the existing publisher; legal/bulk raw captures are not
-  automatically admitted releases.
+- [ ] **FEC06 — Extend real historical filing qualification.** Complete originals
+  qualify TEXT bodies for literal `5.00`, `5.1` and `5.2`; a v3.00 original
+  preserves an additional Schedule I row. The complete observed F13 query now
+  retains every supplied raw filing and a bounded PDF selection, with literal
+  positional fields and separate narrative bodies. Acquire the oversized PDFs;
+  preserve missing raw URLs as source observations. Literal `5.0`, unobserved
+  layouts, publisher encoding evidence and broader populations remain open.
+- [ ] **FEC07 — Extend legal and agency collection acquisition.** Selected AO
+  and administrative-fine years, the XML-linked FOIA history, paired FOIA.gov
+  native reports, the retained Oversight 2026 subset and a bounded archived-MUR
+  difference set have separate metadata and originals. Finish the named large
+  enforcement originals and unresolved exact case associations, then further
+  AO/enforcement/ADR/rulemaking years and agency collections. A related case or
+  filename does not establish document identity.
+- [ ] **FEC08 — Acquire remaining financial bulk families.** Complete observed
+  2024 committee-to-candidate and independent-expenditure notice files pass
+  every-field comparison. F13 donation/refund records remain source-positioned;
+  versioned financial field naming and amendment views remain downstream work.
+  Large A/B dump restoration remains unqualified: prove scratch, restored-table
+  and index capacity before transfer. Other populations and years remain open.
+- [ ] **FEC09 — Extend historical refresh across official collections.** The
+  F13 metadata query has a new observation; the research imports retain their
+  original observation times. Reuse the existing acquisition/resume loop and
+  add source-specific update/deletion checks for each next collection.
+  Recurring scheduling remains with the dataset caller.
+- [ ] **FEC10 — Qualify additional immutable source releases.** First handle
+  observed negative F13 `file_number` values in the filing profile without
+  changing the source values or using them as universal identity. The raw
+  reader retains them, but the current release profile refuses those rows.
+  Then add only the identity/count/scope checks needed by the next collection,
+  using the existing publisher. Acquired originals are not admitted releases.
+
+The [September 14 collection qualification](research/fec-next-collections-2026-09-14.md)
+records completed scopes, source pins, checks and the remaining file and identity
+gaps for FEC06–FEC08. The research follow-up shares the existing acquisition/resume
+code across all three collections; only source selection and qualification differ.
+[Local integration and combined checks](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-local-integration-2026-09-14/integration.json>)
+record code delivery separately from captured data. Wider refresh remains FEC09
+and release admission FEC10.
+
+The [earlier full check](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-next-collections-2026-09-14/checks.json>)
+passed before the follow-up proxy-refusal fix. After that fix,
+[focused FEC tests, mutation, lint/format and shared controls](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-research-integration-2026-09-14/checks.json>)
+passed on the acquisition worktree. The integration receipt above records the
+subsequent combined full-suite check; installed-wheel qualification and a package
+release remain separate.
 
 ## SpicyRegs fetcher merge
 

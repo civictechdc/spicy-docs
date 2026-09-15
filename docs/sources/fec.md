@@ -233,9 +233,10 @@ source syntax, not a mapping to financial field names or amendment selection.
 
 Bracketed free text and recognized `TEXT` fields become `embedded_bodies`
 references: position 5 for ASCII-FS and position 3 for exact CSV versions
-`5.0`, `5.1`, `5.2` and `5.3` (zero-based). The latter follows `4-TEXT4000`
+`5.0`, `5.00`, `5.1`, `5.2` and `5.3` (zero-based). The latter follows `4-TEXT4000`
 in the publisher's historical `e-filing headers all versions` workbook, `TEXT`
-rows 11–14. The amended indicator and extra fields stay positional metadata.
+rows 11–14; the literal `5.00` label is independently qualified by original
+FEC-91256. The amended indicator and extra fields stay positional metadata.
 Other CSV versions remain positional until qualified; labels are not rounded
 or interpreted as ranges. Each reference
 identifies the original digest, byte offset, byte length and encoding; a delimited
@@ -271,10 +272,24 @@ financial mappings.
 
 The additional format qualification preserves the recorded interpretations of
 47 retained originals and proves reversible CP1252 body decoding on two Form 99
-files. Versions 5.0–5.2 have official workbook evidence and known-answer tests;
-this retained file selection contains no originals in those versions. The receipt
-keeps that limit beside its source pins and checks:
+files. That selection contains no 5.0–5.2 originals; its receipt keeps that
+historical limit beside its source pins and checks:
 `~/Work/corpora/supply-2026-09-02/receipts/fec-source-expansion-2026-09-13/formats/qualification.json`.
+
+The [subsequent collection qualification](../research/fec-next-collections-2026-09-14.md)
+adds complete originals with TEXT narratives for literal versions `5.00`, `5.1`
+and `5.2`, including independent positional and body-range comparison. Literal
+`5.0` remains supported from workbook evidence and known-answer tests, without
+a genuine original in the selected evidence. The observed `5.00` does not
+establish other zero-padded labels.
+
+The same qualification record covers a complete observed `form_type=F13`
+query, preserving amendments, every supplied raw filing and separately acquired
+PDFs. Missing raw URLs and PDFs exceeding the selected byte bound remain explicit.
+Some official F13 `file_number` values are negative: the raw reader
+preserves them, while the current filing release profile rejects those rows.
+Use retained `sub_id` and source pointers to distinguish observations; do not
+rewrite file numbers or infer that raw capture implies release admission.
 
 ## Capture selected financial histories and refresh them
 
