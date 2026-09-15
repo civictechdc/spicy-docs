@@ -141,9 +141,27 @@ finding is not a completed port.
   Commits: SpicyDocs `132b952` on `codex/cfr-metadata`; RefSpec `cf0f3e7b` on
   `codex/shared-cfr-metadata`. Both branches are local, unmerged and unpushed.
   [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par04/delivery.md>).
-- [ ] **PAR05 — Complete Unified Agenda field mapping.** Reuse the existing XML
+- [x] **PAR05 — Complete Unified Agenda field mapping.** Reuse the existing XML
   reader for CFR references, legal authority, timetables and additional information;
   preserve repeated fields and raw text with their source locations.
+  **Completed locally (2026-09-15):** SpicyDocs 0.12.0 captures selected field
+  trees, attributes, exact decoded text and XPath positions. RefSpec 0.1.0.dev4
+  and SpicyRegs 0.1.1 adopt the pinned wheel and remove their XML walkers;
+  SpicyRegs also replaces its download/retry loop with the existing acquirer.
+  Each receiver keeps its field selection, normalization and interpretation.
+  All 60 retained editions / 241,726 RefSpec records match the old reader,
+  including its explicit repairs to two malformed 2004 exports. SpicyRegs
+  matches all 233,250 records in the 58 valid originals; malformed editions now
+  fail before yielding partial rows. Original captures and sealed tables stay
+  unchanged. New RefSpec build receipts hash the installed provider code too.
+  Provider checks: 2,544 repository and 175 installed tests. RefSpec: 47 focused,
+  eight dependency and 35 installed tests; the full suite was not rerun.
+  SpicyRegs: 1,088 repository and 67 installed tests. Architecture and code
+  reviews approve. Extra validation and source positions increase parsing time;
+  the delivery receipt records the measured cost and intentional refusals.
+  Commits: SpicyDocs `e847f5c`, RefSpec `5d71a26c`, SpicyRegs `979872c`.
+  These branches are local, unmerged and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par05/delivery.md>).
 - [ ] **PAR06 — Share publisher code and roster readers.** Consolidate Federal
   Register agencies, documented enums and topics, plus BILLSTATUS guide tables.
   Preserve source versions, unknown values and open-list semantics; keep vocabulary
@@ -156,10 +174,10 @@ finding is not a completed port.
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
-  **PAR03 and PAR04 complete:** ordinary wheels and receiving code run outside
+  **PAR03–PAR05 complete:** ordinary wheels and receiving code run outside
   the source checkouts. Other families remain open. Follow up on runtime
-  source-credit receipts: record the provider implementation pin there as well
-  as in qualification receipts.
+  U.S. Code source-credit receipts: record the provider implementation pin there
+  as well as in qualification receipts. Unified Agenda build receipts now do so.
 - [ ] **PAR09 — Remove the replaced implementations.** Track adoption separately
   for every named consumer. Delete duplicate implementations,
   fixtures made redundant, compatibility wrappers and dead helpers after checks;
@@ -171,6 +189,9 @@ finding is not a completed port.
   **PAR04 complete:** RefSpec's agency walkers and subject HTML regexes are
   removed from production. Copies remain only as test oracles; the independent
   subject fidelity checker and historical authority extractor remain evidence.
+  **PAR05 complete:** both receivers' Agenda XML walkers are removed, along with
+  SpicyRegs' download loop and superseded provider wheels. Frozen reader copies
+  remain test-only comparison evidence; existing sealed tables are unchanged.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
