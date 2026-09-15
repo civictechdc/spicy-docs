@@ -423,7 +423,14 @@ def read_title_archive(
     _limit(max_bytes)
     _limit(max_entry_bytes, "max_entry_bytes")
     label = "U.S. Code title archive"
-    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
+    with open_archive(
+        body,
+        max_bytes=max_bytes,
+        max_entries=2,
+        max_entry_bytes=max_entry_bytes,
+        error_type=UsCodeSourceError,
+        label=label,
+    ) as archive:
         members = archive_members(archive, max_entries=2, error_type=UsCodeSourceError, label=label)
         if len(members) != 1:
             raise UsCodeSourceError("U.S. Code title archive must hold exactly one member")
@@ -453,7 +460,14 @@ def read_corpus_archive(
     _count(max_entries, "max_entries")
     label = "U.S. Code corpus archive"
     entries = []
-    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
+    with open_archive(
+        body,
+        max_bytes=max_bytes,
+        max_entries=max_entries,
+        max_entry_bytes=max_entry_bytes,
+        error_type=UsCodeSourceError,
+        label=label,
+    ) as archive:
         for info in archive_members(archive, max_entries=max_entries, error_type=UsCodeSourceError, label=label):
             code = _title_code(info.filename.rsplit("/", 1)[-1])
             if code is None:
@@ -609,7 +623,14 @@ def read_annual_archive(
     others: list[AnnualArchiveEntry] = []
     carried: list[str] = []
     names: list[str] = []
-    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
+    with open_archive(
+        body,
+        max_bytes=max_bytes,
+        max_entries=max_entries,
+        max_entry_bytes=max_entry_bytes,
+        error_type=UsCodeSourceError,
+        label=label,
+    ) as archive:
         for info in archive_members(archive, max_entries=max_entries, error_type=UsCodeSourceError, label=label):
             stem = info.filename.rsplit("/", 1)[-1]
             match = _ANNUAL_MEMBER.fullmatch(stem)
@@ -1273,7 +1294,15 @@ def read_table3_bulk_member(
     _limit(max_bytes)
     _limit(max_member_bytes, "max_member_bytes")
     label = "Table III bulk archive"
-    with open_archive(body, max_bytes=max_bytes, error_type=UsCodeSourceError, label=label) as archive:
+    with open_archive(
+        body,
+        max_bytes=max_bytes,
+        max_entries=2,
+        max_entry_bytes=max_member_bytes,
+        bound="max_member_bytes",
+        error_type=UsCodeSourceError,
+        label=label,
+    ) as archive:
         members = archive_members(archive, max_entries=2, error_type=UsCodeSourceError, label=label)
         if len(members) != 1:
             raise UsCodeSourceError("Table III bulk archive must hold exactly one member")

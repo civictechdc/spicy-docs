@@ -394,7 +394,14 @@ def _read_archive[Selection](
         raise UslmSourceError("max_entries must be a positive integer")
     label = "USLM archive"
     entries = []
-    with open_archive(body, max_bytes=max_bytes, error_type=UslmSourceError, label=label) as archive:
+    with open_archive(
+        body,
+        max_bytes=max_bytes,
+        max_entries=max_entries,
+        max_entry_bytes=max_entry_bytes,
+        error_type=UslmSourceError,
+        label=label,
+    ) as archive:
         for info in archive_members(archive, max_entries=max_entries, error_type=UslmSourceError, label=label):
             selection = select(info.filename.rsplit("/", 1)[-1])
             data = read_member(archive, info, max_bytes=max_entry_bytes, error_type=UslmSourceError, label=label)
