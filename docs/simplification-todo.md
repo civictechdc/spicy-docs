@@ -50,7 +50,7 @@ finding is not a completed port.
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
   serialization, evidence helpers and dependencies across all six repositories.
-  PAR11–PAR19 record the additional findings. This is an initial implementation
+  PAR11–PAR20 record the additional findings. This is an initial implementation
   inventory; each port still requires current caller and fixture checks.
 - [x] **PAR02 — Share Federal Register subject-block parsing.** Move literal XML
   and text List of Subjects readers and their regression fixtures; add the missing
@@ -205,13 +205,15 @@ finding is not a completed port.
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
-  **PAR03–PAR07 complete:** ordinary wheels and receiving code run outside
-  the source checkouts. Other families remain open. Follow up on runtime
-  U.S. Code source-credit receipts: record the provider implementation pin there
-  as well as in qualification receipts. Unified Agenda build receipts now do so.
-  Topics also needs per-run producer evidence outside its sealed content; its
-  parser-policy version is not a complete installed-code pin. PAR06 qualification
-  records exact wheel and module hashes, without adding a new receipt framework.
+  **PAR03–PAR07 and PAR12 complete:** ordinary wheels and receiving code run outside
+  the source checkouts. Other families remain open. Runtime producer evidence
+  is now complete for U.S. Code source credits, Unified Agenda and Topics.
+  RefSpec `4f6c2acb` records installed reader source hashes in source-credit
+  receipts and separate Topics run receipts. Replaying a capture preserves its
+  acquisition event and creates a fresh run record; sealed package identities
+  stay unchanged. Missing code refuses before output publication. Focused checks
+  and independent review pass; these hashes describe installed source files,
+  not a complete execution environment.
 - [ ] **PAR09 — Remove the replaced implementations.** Track adoption separately
   for every named consumer. Delete duplicate implementations,
   fixtures made redundant, compatibility wrappers and dead helpers after checks;
@@ -233,6 +235,9 @@ finding is not a completed port.
   **PAR07 complete:** RefSpec's PREMIS XML walk is replaced. The old PREMIS and
   MODS implementations remain only as test oracles. Salvaged SpicyRegs PREMIS
   code has no active caller; it remains historical evidence, not a second reader.
+  **PAR12 complete:** DocSpec, SpicyRegs and RefSpec GAO use the shared pypdf
+  reader; retired page loops remain only as test oracles. RefSpec's styled-text
+  and geometry visitors retain distinct font/position responsibilities.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
@@ -252,11 +257,24 @@ finding is not a completed port.
   helpers and `documents.source_slicer`. Known-byte and native interval/XPath
   regressions plus the full Extrapolator suite passed: **713 tests**. Independent
   review approved with no open findings.
-- [ ] **PAR12 — Share PDF page reading across three consumers.** Add the needed
+- [x] **PAR12 — Share PDF page reading across three consumers.** Add the needed
   optional SpicyDocs backend and adopt it in DocSpec, SpicyRegs and RefSpec's GAO
   readers. Compare actual pypdf output before changing engines. Preserve blank
   pages and raw text; make encryption, failed-page and whitespace policies
   explicit. Retain each consumer's representation and interpretation work.
+  **Completed locally (2026-09-15):** SpicyDocs 0.15.0 supplies an optional
+  pypdf reader to DocSpec 0.4.2, SpicyRegs 0.1.2 and RefSpec 0.1.0.dev7.
+  All 222 retained pages match direct pypdf; switching to PyMuPDF would change
+  205 of them. Blank pages, whitespace and consumer formatting remain intact.
+  Failed SpicyRegs pages now report an error with no partial text. The new
+  64 MiB input cap and DocSpec's explicit reader identity are named changes.
+  Replaced loops survive only as test oracles. Full SpicyDocs/DocSpec/SpicyRegs
+  checks pass (2,784/1,346/1,106 tests), along with 154 focused RefSpec checks,
+  independent reviews and ordinary-wheel qualification. All 564 installed
+  Python files match their wheels and
+  source commits. Provider `da531c4`; receivers `97ffe02`, `ee933b7`, `4fe282c1`.
+  PAR20 separately tracks discarded multi-attachment diagnostics.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par12/delivery.md>).
 - [ ] **PAR13 — Share mapped XML/HTML text reading.** Consolidate RefSpec and
   DocSpec source parsing in SpicyDocs. Preserve named layout profiles, Unicode
   character versus original-byte positions, inserted text, entities, XPath,
@@ -278,6 +296,14 @@ finding is not a completed port.
 - [ ] **PAR17 — Replace Rulespec's manual URI encoder with the standard library.**
   Keep the public URI/fragment API and verify exact Unicode, percent, slash and
   invalid-surrogate behavior before deleting the byte loop.
+- [ ] **PAR20 — Retain PDF enrichment results per file in SpicyRegs.** Keep each
+  URL, captured-source digest, extraction status, page count and error linked to
+  the enriched row. The current row-level `OK` means at least one attachment
+  supplied text; `_extract_unique` and `_combine` discard failed-attachment
+  details. Preserve that declared aggregate meaning while making missing text
+  and retries inspectable. Test one successful and one failed attachment on
+  the same row. This existing aggregation limit is separate from PAR12's reader
+  and single-file failure handling.
 
 CourtListener receiver adoption remains [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04).
 Do not create another provider reader. The Rulespec FAM preparation script has
