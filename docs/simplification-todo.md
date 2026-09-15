@@ -47,7 +47,8 @@ and [Rulespec inventory](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receip
 add current callers, behavior differences and migration checks. An inventory
 finding is not a completed port.
 
-**Current: 15 of 20 shared-parsing tasks complete; five remain open.**
+**Current: 16 of 20 shared-parsing tasks complete; four remain open.**
+This checklist has 11 open items in total, including the two conditional deferrals.
 
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
@@ -87,7 +88,7 @@ finding is not a completed port.
   These implementation branches have not been merged or pushed.
   Evidence is under `receipts/parsing-consolidation-2026-09-14/par18/direct-core/`.
   Superseded prototypes remain in `abandoned-old-index/` and `abandoned-catalog-copy/`.
-- [ ] **PAR19 — Simplify Engine around indexing and retrieval.** Retire the
+- [x] **PAR19 — Simplify Engine around indexing and retrieval.** Retire the
   old exporter and link aliases after the direct DocSpec route works. Reuse owner
   readers for agency/reference meaning and shared search definitions. Keep only
   search/display data and source references in native storage where bounded
@@ -96,14 +97,22 @@ finding is not a completed port.
   interrupted-build recovery and bounded results. Keep the local demo useful.
   [Engine's plan](../../spicyengine/PLAN.md) owns these changes; static review is
   not implementation or performance evidence.
-  **Status:** old exporters, format readers, copied normalization and domain
-  policies are removed in the local Engine branch. Eight native search/reference
+  **Completed locally (2026-09-15):** old exporters, format readers, copied
+  normalization and domain policies are removed. Eight native search/reference
   fields replace the stored full record; exact details come from DocSpec. Search
   passes after native restart with source mounts removed. The demo, actual browser
-  checks, installed wheel and 56 Python checks pass; independent review has no
-  remaining runtime blocker. Database-client replacement and storage/lookup
-  measurements remain open. Each original-record read still rechecks its selected
-  source, so this is not a latency improvement claim.
+  checks and all 75 committed tests pass against the ordinary 0.3.0 wheel;
+  independent review approved. Psycopg replaces Compose/psql/CSV with bounded
+  native calls. The same 15,784 retained Federal Register records produced
+  identical ranked IDs and a 17,552,392-byte index. Observed three-query medians
+  were 0.497 seconds before and 0.037 seconds after; five original reads remained
+  about 5.6 seconds because source validation is retained. These sequential local
+  observations cover titles/abstracts, not complete bodies or capacity; indexing
+  stays single-threaded. RefSpec dev9 coinstalls with DocSpec 0.5.1 and passes
+  516 installed checks; its 38 full-suite failures/errors reproduce on baseline.
+  Local commits: Engine `95eb2e8`, RefSpec `63947226`. Optional enrichment remains
+  PAR18/Engine EC02.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par19/delivery.md>).
 - [x] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
   section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
   reference occurrences and ancestor-attributed source-credit observations.
