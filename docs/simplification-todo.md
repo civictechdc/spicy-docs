@@ -222,8 +222,10 @@ This checklist has 10 open items in total, including the two conditional deferra
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
-  **PAR03–PAR07, PAR12, PAR13 and PAR15 complete:** ordinary wheels and receiving code run outside
-  the source checkouts. Other families remain open. Runtime producer evidence
+  **Qualified families:** PAR02–PAR07 and PAR11–PAR20 record their named
+  receiving checks; current wheel and source pins live in each delivery receipt.
+  Remaining source-reader adoption includes SpicyRegs SR04 and RefSpec's
+  acquisition/archive paths below. Runtime producer evidence
   is now complete for U.S. Code source credits, Unified Agenda and Topics.
   RefSpec `4f6c2acb` records installed reader source hashes in source-credit
   receipts and separate Topics run receipts. Replaying a capture preserves its
@@ -237,7 +239,8 @@ This checklist has 10 open items in total, including the two conditional deferra
   retain regression cases and useful evidence. Record any remaining copy's reason.
   **PAR03 complete:** current reference/source-credit parsing uses SpicyDocs;
   historical research kernels stay frozen as evidence. RefSpec's existing
-  acquisition loops in those two commands still need owner-reader adoption;
+  reference command still downloads/caches/opens U.S. Code ZIPs; its source-credit
+  command reads local ZIPs. Those archive/acquisition paths need owner adoption;
   this parsing port does not claim to remove them.
   **PAR04 complete:** RefSpec's agency walkers and subject HTML regexes are
   removed from production. Copies remain only as test oracles; the independent
@@ -258,6 +261,10 @@ This checklist has 10 open items in total, including the two conditional deferra
   **PAR13/PAR15 complete:** DocSpec's syntax parsers and image header loops are
   removed; RefSpec delegates source XML parsing and retains its named formatter.
   Frozen copies stay test-only. Both receivers removed their superseded wheels.
+  **PAR14/PAR16/PAR17 complete:** DocSpec's JSON parser/offset table, Rulespec's
+  duplicate v2 artifact encoding/admission and manual URI encoder are removed.
+  PAR18/PAR19 remove the obsolete Search-shaped input path and Engine's duplicate
+  policies. PAR20 preserves per-file PDF results rather than adding another reader.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
@@ -269,8 +276,11 @@ This checklist has 10 open items in total, including the two conditional deferra
   `663841d` bounds public 401/403 bodies before retention, discards incomplete
   prefixes and never retries an already-known access refusal. Test correction
   `4cfb5d5` compares retained evidence with original fixture bytes. Other shared
-  support work remains open. PAR07 adds the shared bounded XML tree used by MODS
-  and PREMIS; mapped body-text readers remain PAR13.
+  support work remains open. PAR07 supplies the shared MODS/PREMIS XML tree;
+  PAR13/PAR14 complete mapped text and JSON support. A current owner-side gap is
+  CourtListener bulk `_open`: its broad exception retry also retries HTTP 401/403.
+  Make known access refusals terminal and qualify that behavior in SpicyDocs;
+  do not copy a fix into a receiver. This is separate from SR04's reader adoption.
 - [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
   the second native XML interval index. All active callers use existing Core
@@ -378,7 +388,7 @@ One live historical text capture passed; no population coverage is claimed.
 
 PAR08/PAR09 are complete for this family and stay open for later ports. Existing
 fidelity/carrier reports need regeneration under the new two-module identity
-before population use. PAR18 remains unqualified by these catalog checks.
+before population use. PAR18 has its own retained-input and enrichment qualification.
 Commits and wheels are local; nothing from this iteration was pushed or published.
 Exact checks, module counts, hashes, reviews and limitations are retained in
 `~/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/`.
