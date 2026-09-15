@@ -50,6 +50,12 @@ APIs. FEC acquisition permits the named FEC hosts and its exact public S3 bucket
 it does not silently expand into a general web crawler. Adjacent IRS, state,
 academic and commercial datasets from the research remain outside this integration.
 
+For retained agency-report content, use the shared
+[FOIA XML and Oversight.gov readers](agency-reports.md). They preserve source
+fields and separate report descriptions/recommendation tables from metadata.
+Oversight parsing uses the optional `html` extra; original-file acquisition stays
+independent. The FOIA reader distinguishes native NIEM from Word XML packages.
+
 ## Read metadata first
 
 Use a fresh observation file for each operation. Set `FEC_API_KEY` in the

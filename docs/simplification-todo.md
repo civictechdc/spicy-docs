@@ -566,11 +566,17 @@ published formats; XML/JSON/XHTML precede equivalent HTML.
   - [ ] Add source identity/count/scope rules for the next selected family beyond
     committee census and processed filing queries. Raw acquisition already works;
     each additional immutable profile needs source-specific admission evidence.
-- [ ] **FEC13 — Promote reusable agency-report parsing.** Move useful FOIA XML
-  and Oversight report-field parsing from research scripts into thin source readers
-  over existing XML/archive/HTTP support. Preserve native namespaces, repeated
-  fields, timestamps and body links. Separate Word Flat OPC from native FOIA data;
-  keep collection selection, interpretation and campaign loops in the caller.
+- [x] **FEC13 — Promote reusable agency-report parsing.** Offline
+  `parse_foia_annual_report` and `parse_oversight_report` expose retained source
+  fields through the [agency-report API](sources/agency-reports.md). Native NIEM
+  1.02/1.03 parsing shares the XML scanner and preserves every element, namespace
+  declaration and repeated association. Oversight uses the optional `html` extra;
+  descriptions and recommendation tables remain separate from metadata, with
+  literal values, repeated items/links and source positions. Word Flat OPC refuses
+  as a distinct representation. Collection selection, interpretation, downloads
+  and campaign loops remain with existing callers. Historical research scripts
+  remain dated evidence; package adoption and full-population imports stay open.
+  [Qualification and limits](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-agency-interfaces-2026-09-14/README.md>).
 - [ ] **FEC14 — Add evidence-backed raw filing field mappings.** Provide source
   form/version labels where public dictionaries and retained examples establish
   them. Preserve unknown columns and layouts positionally. Faithful source field

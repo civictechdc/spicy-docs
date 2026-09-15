@@ -14,6 +14,8 @@ dependencies = [
 acquisition = ["boto3", "httpx", "loguru", "tqdm"]
 # Captured comment Parquet parsing/full replay and flat-table publication.
 public-table = ["polars", "pyarrow"]
+# Retained publisher HTML whose source fields lack a structured representation.
+html = ["beautifulsoup4==4.14.3"]
 # PDF/image decoding is shared; select recognition providers separately.
 pdf = ["pymupdf>=1.28,<2", "pillow>=12,<13"]
 pdf-rapidocr = ["rapidocr-onnxruntime>=1.4.4,<2"]
