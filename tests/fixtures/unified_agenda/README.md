@@ -9,3 +9,14 @@ equals the digest and length RefSpec pinned independently for the same edition.
 Abstracts carry HTML inside CDATA, including a literal `<!DOCTYPE html>` that
 is text, not a declaration. The full file is in
 `corpora/supply-2026-09-02/receipts/spicyregs-merge-probes-2026-09-14/`.
+
+`record-199704-1115-AE47.xml` retains a historical record with a legal-authority
+continuation in `ADDITIONAL_INFO`. `record-200404-1084-AA00.xml` retains the
+publisher's XML-invalid `0x19` byte in an abstract; the source reader must refuse
+it. Neither fixture repairs or normalizes the publisher's text.
+
+Both fixtures combine the unchanged source prolog/root opening and one complete
+record with an appended closing root tag. `records-provenance.json` records
+their original URLs, byte spans, source and fixture pins, and transformations.
+Full retained editions remain in RefSpec's
+`output/registry-real-data-sources/unified-agenda-editions/`.

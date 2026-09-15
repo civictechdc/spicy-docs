@@ -22,7 +22,14 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from spicy_docs.sources.xml import scan_xml
+from spicy_docs.sources.unified_agenda_records import (
+    DEFAULT_MAX_BYTES,
+    MAX_EDITION_BYTES,
+    UnifiedAgendaRecordObservation,
+    UnifiedAgendaSourceError,
+    _limit,
+    _read_records,
+)
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
@@ -37,32 +44,17 @@ if TYPE_CHECKING:
     import httpx
 
 EXPORT_URL = "https://www.reginfo.gov/public/do/XMLViewFileAction"
-ROOT = "REGINFO_RIN_DATA"
-RECORD = "RIN_INFO"
 _SCHEMA_LOCATION = "{http://www.w3.org/2001/XMLSchema-instance}noNamespaceSchemaLocation"
 _EDITION_STEM = re.compile(r"(?:199[5-9]|20[0-9]{2})(?:04|10)")
 # The publisher's one off-pattern file name; its records state the Fall 2012 edition.
 LEGACY_FILE_STEMS = {"2012": "201210"}
-# The Fall 2025 edition is 17.6 MB; sixty editions total 981 MB.
-DEFAULT_MAX_BYTES = 64 * 1024 * 1024
-MAX_EDITION_BYTES = 256 * 1024 * 1024
-MAX_RECORDS = 100_000
 _MAX_FIELD_CHARACTERS = 4096
-
-
-class UnifiedAgendaSourceError(ValueError):
-    """The request or response cannot establish the selected edition."""
 
 
 class UnifiedAgendaUnavailableError(UnifiedAgendaSourceError):
     def __init__(self, capture: CapturedBodyResponse) -> None:
         super().__init__(f"Unified Agenda export answered HTTP {capture.status_code}")
         self.capture = capture
-
-
-def _limit(max_bytes: int) -> None:
-    if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_EDITION_BYTES:
-        raise UnifiedAgendaSourceError("max_bytes must be a positive integer no greater than 256 MiB")
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,69 +96,6 @@ class UnifiedAgendaMetadata:
     rins: tuple[str, ...]
 
 
-class _Scan:
-    """Stream the edition; keep the root's identity and every record's RIN, never a tree."""
-
-    def __init__(self, publication_id: str) -> None:
-        self.publication_id = publication_id
-        self.path: list[str] = []
-        self.run_date: str | None = None
-        self.schema_location: str | None = None
-        self.rins: list[str] = []
-        self._seen: set[str] = set()
-        self._rin: list[str] | None = None
-        self._publication: list[str] | None = None
-        self._record_rins: list[str] = []
-        self._record_publications: list[str] = []
-
-    def start(self, tag: str, attributes: dict[str, str]) -> None:
-        self.path.append(tag)
-        depth = len(self.path)
-        if depth == 1:
-            if tag != ROOT:
-                raise UnifiedAgendaSourceError("Unified Agenda XML root is not REGINFO_RIN_DATA")
-            self.run_date = attributes.get("RUN_DATE")
-            self.schema_location = attributes.get(_SCHEMA_LOCATION)
-        elif tag == ROOT:
-            raise UnifiedAgendaSourceError("Unified Agenda XML contains a nested document root")
-        path = tuple(self.path)
-        if path == (ROOT, RECORD):
-            if len(self.rins) >= MAX_RECORDS:
-                raise UnifiedAgendaSourceError("Unified Agenda edition lists more records than supported")
-            self._record_rins, self._record_publications = [], []
-        elif path == (ROOT, RECORD, "RIN"):
-            self._rin = []
-        elif path == (ROOT, RECORD, "PUBLICATION", "PUBLICATION_ID"):
-            self._publication = []
-
-    def data(self, text: str) -> None:
-        for parts in (self._rin, self._publication):
-            if parts is not None:
-                parts.append(text)
-                if sum(map(len, parts)) > _MAX_FIELD_CHARACTERS:
-                    raise UnifiedAgendaSourceError("Unified Agenda identity field exceeds 4,096 characters")
-
-    def end(self, tag: str) -> None:
-        path = tuple(self.path)
-        if path == (ROOT, RECORD, "RIN") and self._rin is not None:
-            self._record_rins.append("".join(self._rin).strip())
-            self._rin = None
-        elif path == (ROOT, RECORD, "PUBLICATION", "PUBLICATION_ID") and self._publication is not None:
-            self._record_publications.append("".join(self._publication).strip())
-            self._publication = None
-        elif path == (ROOT, RECORD):
-            if len(self._record_rins) != 1 or not self._record_rins[0]:
-                raise UnifiedAgendaSourceError("Unified Agenda record requires exactly one RIN")
-            if self._record_publications != [self.publication_id]:
-                raise UnifiedAgendaSourceError("Unified Agenda record states another edition than the request")
-            rin = self._record_rins[0]
-            if rin in self._seen:
-                raise UnifiedAgendaSourceError("Unified Agenda edition repeats a RIN")
-            self._seen.add(rin)
-            self.rins.append(rin)
-        self.path.pop()
-
-
 def validate_unified_agenda_xml(
     body: bytes,
     *,
@@ -178,25 +107,41 @@ def validate_unified_agenda_xml(
     _limit(max_bytes)
     if final_url != unified_agenda_xml_locator(edition):
         raise UnifiedAgendaSourceError("Unified Agenda response URL differs from the requested edition")
-    scan = _Scan(edition.publication_id)
-    scan_xml(
-        body,
-        start=scan.start,
-        end=scan.end,
-        data=scan.data,
-        max_bytes=max_bytes,
-        error_type=UnifiedAgendaSourceError,
-        label="Unified Agenda XML",
-    )
-    if not scan.rins:
+    rins: list[str] = []
+    seen: set[str] = set()
+
+    def validate_record(record: UnifiedAgendaRecordObservation) -> None:
+        raw_rins = [field.text for field in record.fields if field.element.tag == "RIN"]
+        publications = [
+            child.text
+            for field in record.fields
+            if field.element.tag == "PUBLICATION"
+            for child in field.children
+            if child.element.tag == "PUBLICATION_ID"
+        ]
+        if any(len(value) > _MAX_FIELD_CHARACTERS for value in (*raw_rins, *publications)):
+            raise UnifiedAgendaSourceError("Unified Agenda identity field exceeds 4,096 characters")
+        record_rins = [value.strip() for value in raw_rins]
+        if len(record_rins) != 1 or not record_rins[0]:
+            raise UnifiedAgendaSourceError("Unified Agenda record requires exactly one RIN")
+        if [value.strip() for value in publications] != [edition.publication_id]:
+            raise UnifiedAgendaSourceError("Unified Agenda record states another edition than the request")
+        rin = record_rins[0]
+        if rin in seen:
+            raise UnifiedAgendaSourceError("Unified Agenda edition repeats a RIN")
+        seen.add(rin)
+        rins.append(rin)
+
+    result = _read_records(body, on_record=validate_record, max_bytes=max_bytes, identity_only=True)
+    if not rins:
         raise UnifiedAgendaSourceError("Unified Agenda edition lists no RIN_INFO records")
     return UnifiedAgendaMetadata(
         edition.file_stem,
         edition.publication_id,
-        scan.run_date,
-        scan.schema_location,
-        len(scan.rins),
-        tuple(scan.rins),
+        result.root.attributes.get("RUN_DATE"),
+        result.root.attributes.get(_SCHEMA_LOCATION),
+        result.record_count,
+        tuple(rins),
     )
 
 
@@ -252,7 +197,10 @@ class UnifiedAgendaAcquirer(SourceAcquirer):
         return self._budget
 
     def acquire_edition(
-        self, edition: UnifiedAgendaEdition, *, max_bytes: int | None = None
+        self,
+        edition: UnifiedAgendaEdition,
+        *,
+        max_bytes: int | None = None,
     ) -> UnifiedAgendaAcquisition:
         limit = narrow_byte_limit(self.budget.max_bytes, max_bytes)
         metadata, capture = self.capture_validated(

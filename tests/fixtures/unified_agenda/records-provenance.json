@@ -1,0 +1,42 @@
+[
+  {
+    "fixture": "record-199704-1115-AE47.xml",
+    "source_path": "/Users/mikewolfd/Work/RefSpec/output/registry-real-data-sources/unified-agenda-editions/REGINFO_RIN_DATA_199704.xml",
+    "source_url": "https://www.reginfo.gov/public/do/XMLViewFileAction?f=REGINFO_RIN_DATA_199704.xml",
+    "source_sha256": "0fcd4b6a833f39ea136cdbf883cbe3475554b100bf1594f56463dc329af218e0",
+    "source_bytes": 17690546,
+    "retained_spans": [
+      [
+        0,
+        246
+      ],
+      [
+        7419561,
+        7427194
+      ]
+    ],
+    "transformation": "Concatenate unchanged prolog/root-open and record byte spans with newline separators; append root closing tag. No byte repair.",
+    "fixture_bytes": 7901,
+    "fixture_sha256": "1b91d93245b35a23f794447479de3d15e1a8ed186f7feccc2338709e38c9c2c1"
+  },
+  {
+    "fixture": "record-200404-1084-AA00.xml",
+    "source_path": "/Users/mikewolfd/Work/RefSpec/output/registry-real-data-sources/unified-agenda-editions/REGINFO_RIN_DATA_200404.xml",
+    "source_url": "https://www.reginfo.gov/public/do/XMLViewFileAction?f=REGINFO_RIN_DATA_200404.xml",
+    "source_sha256": "df0cc8d24c544b3a2d9a0b025cb91973cf598e7cfa9181efa6af4494bbc24562",
+    "source_bytes": 17865654,
+    "retained_spans": [
+      [
+        0,
+        246
+      ],
+      [
+        7119253,
+        7122553
+      ]
+    ],
+    "transformation": "Concatenate unchanged prolog/root-open and record byte spans with newline separators; append root closing tag. No byte repair.",
+    "fixture_bytes": 3568,
+    "fixture_sha256": "a24515a42afabe2d4d0dff28238ffbde0e648848d6fa9bd09021b1a88c076515"
+  }
+]

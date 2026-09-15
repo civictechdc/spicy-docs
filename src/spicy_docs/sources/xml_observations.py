@@ -67,6 +67,12 @@ class XmlObservationScan:
             elements.append(XmlElement(frame.tag, dict(frame.attributes), path))
         return tuple(elements)
 
+    def current_element(self) -> XmlElement:
+        """Snapshot the current position without copying ancestor attributes."""
+        current = self.stack[-1]
+        path = "".join(f"/*[{frame.position}]" for frame in self.stack)
+        return XmlElement(current.tag, dict(current.attributes), path)
+
     def observe_start(self, tag: str, attributes: dict[str, str]) -> None:
         pass
 
