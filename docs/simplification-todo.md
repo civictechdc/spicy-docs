@@ -123,9 +123,24 @@ finding is not a completed port.
   RefSpec commits: `1bc39535`, `1ffeb5ba` on `codex/shared-uscode-readers`.
   These branches are local, unmerged and unpushed.
   [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par03/delivery.md>).
-- [ ] **PAR04 — Capture CFR metadata once.** Add per-part authority-note text,
+- [x] **PAR04 — Capture CFR metadata once.** Add per-part authority-note text,
   the eCFR agency roster and the Archives subject-index reader. Preserve stated
   labels, malformed entries and provenance without near-match corrections.
+  **Completed locally (2026-09-15):** SpicyDocs 0.11.0 captures literal `AUTH`,
+  structural headings and source notes with actual ancestry, plus agency rows
+  and subject-index blocks. RefSpec 0.1.0.dev3 adopts the agency/index readers
+  through its pinned wheel and removes its production source parsers. Its
+  snapshot checks and interpretation remain downstream. The existing authority
+  cache and historical extraction script remain frozen evidence.
+  All 49 retained XML titles match an independent scan: 9,666 parts and 9,002
+  `AUTH` elements. All 50 subject pages and the 316-agency roster preserve
+  RefSpec's accepted results. Mutation tests name intentional decoder and HTML
+  handling changes. Provider checks: 2,499 repository tests and 136 installed
+  tests. Receiver checks: 268 focused tests, eight dependency checks and 126
+  installed tests. Both independent code reviews approve after fixes.
+  Commits: SpicyDocs `132b952` on `codex/cfr-metadata`; RefSpec `cf0f3e7b` on
+  `codex/shared-cfr-metadata`. Both branches are local, unmerged and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par04/delivery.md>).
 - [ ] **PAR05 — Complete Unified Agenda field mapping.** Reuse the existing XML
   reader for CFR references, legal authority, timetables and additional information;
   preserve repeated fields and raw text with their source locations.
@@ -141,7 +156,7 @@ finding is not a completed port.
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
-  **PAR03 complete:** both ordinary wheels and the receiving scripts run outside
+  **PAR03 and PAR04 complete:** ordinary wheels and receiving code run outside
   the source checkouts. Other families remain open. Follow up on runtime
   source-credit receipts: record the provider implementation pin there as well
   as in qualification receipts.
@@ -153,6 +168,9 @@ finding is not a completed port.
   historical research kernels stay frozen as evidence. RefSpec's existing
   acquisition loops in those two commands still need owner-reader adoption;
   this parsing port does not claim to remove them.
+  **PAR04 complete:** RefSpec's agency walkers and subject HTML regexes are
+  removed from production. Copies remain only as test oracles; the independent
+  subject fidelity checker and historical authority extractor remain evidence.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
