@@ -39,6 +39,7 @@ identity = result.identity
 | `prefer-xml` (default) | Try publisher XML; use HTML only after a complete, bounded XML 404/410 response. |
 | `xml` | Require publisher XML. No HTML fallback. |
 | `html` | Request GovInfo HTML directly. |
+| `txt` | Request publisher text directly, including its HTML-wrapped text rendition. |
 
 `html_route="granule"` requests the known GovInfo document. Use
 `html_route="mods-start-page", start_page=30359` when the document needs an issue
@@ -53,13 +54,20 @@ to the exact canonical URL; the filing date is a separate fact. DTDs, declared
 entities, malformed XML, ambiguous markers and wrong identities are refused.
 This checks identity and XML shape, not complete publisher-schema conformance.
 
+Text validation checks the canonical URL and `[FR Doc No: ...]` header, including
+the same narrow split-number rule as GovInfo HTML. It accepts `text/plain` or
+`text/html` because the text route can return an HTML `<pre>` wrapper. The result
+keeps those exact bytes. Its footer's filing number/date remain separate from the
+header and requested publication date. Text requests use `route="publisher-text"`
+and refuse MODS/start-page options; text failures stop without a format fallback.
+
 A 200 HTML challenge page, empty body, wrong content type, or invalid XML does
 not trigger fallback. Neither do access refusal, redirect, transport failure,
-exhausted retries or byte limits. Plain-text publisher URLs remain locators only.
+exhausted retries or byte limits.
 
 Apply these bounds:
 
-- Every XML, MODS, HTML and retry attempt consumes the same `max_requests`.
+- Every XML, text, MODS, HTML and retry attempt consumes the same `max_requests`.
   One request can suffice for XML; fallback stops if the budget is exhausted.
 - Transport failures and HTTP 429/5xx retry with bounded exponential backoff.
   Except for the XML 404/410 fallback above, other status failures stop
@@ -96,6 +104,40 @@ The example retains all used responses and `capture.json`, including the XML 404
 in the fallback case. The JSON is an example report, not a sealed release receipt.
 For installed-wheel testing, copy both `examples/fixtures/federal-register/` and
 `examples/fixtures/govinfo/` beside the script.
+
+## Read the printed List of Subjects
+
+The core wheel provides `spicy_docs.sources.federal_register.list_of_subjects`:
+
+```python
+from spicy_docs.sources.federal_register.list_of_subjects import (
+    extract_blocks_from_xml_body,
+    inspect_text_body,
+    split_printed_atoms,
+)
+
+blocks = extract_blocks_from_xml_body(xml_text)
+text_blocks, printed_headings = inspect_text_body(publisher_text)
+atoms = [split_printed_atoms(block) for block in blocks]
+```
+
+Pass decoded retained text; acquisition and identity validation stay separate.
+XML reading takes term paragraphs inside `LSTSUB`, excluding headings. Text reading
+handles the observed fused headings, wrapped lists, agency labels and page breaks.
+Results preserve paragraph order and repeated blocks. They normalize whitespace
+and markup; keep the original body, encoding and source identity alongside them.
+The reader returns strings, not exact source offsets or vocabulary concept IDs.
+
+Each text heading scans at most 200 paragraphs and 120,000 characters. The separate
+heading scan uses `SUBHEADING_SCAN_GAP=2`. `unread_subheading_candidate` flags more
+printed CFR headings than recovered blocks; empty parts can also trigger it.
+Headings omitting `CFR` are outside that diagnostic. These inherited bounds and
+known limits are preserved by the transferred SpicySearch regression cases.
+
+`split_printed_atoms` separates commas/semicolons, removes list conjunctions and
+stops at the sentence boundary while preserving known abbreviation shapes. Atoms
+are not resolved terms: a vocabulary label may contain commas. SpicySearch owns
+joining those atoms against its vocabulary, spelling folds and fidelity scoring.
 
 ## Refused evidence
 
@@ -142,7 +184,7 @@ successful MODS as the refused response. Refusal returns no release or success r
 
 ## Bounds and handoff
 
-The pure `body_sources` and `body_xml` helpers make no network requests or file
+The pure `body_sources`, `body_xml` and `body_text` helpers make no network requests or file
 writes. For URL length `U`, body bytes `B`, and MODS bytes `M`:
 
 | Operation | Time | Auxiliary/output space |

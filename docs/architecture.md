@@ -23,6 +23,7 @@ Paths below are relative to `src/spicy_docs/`.
 | --- | --- |
 | Federal Register pages and date windows | `sources/federal_register/native.py` |
 | XML-first body fetching; pure identity checks | `sources/federal_register/body_acquisition.py`; `body_sources.py`; `body_xml.py` |
+| Publisher text and printed List of Subjects | `sources/federal_register/body_text.py` checks text identity; `list_of_subjects.py` owns shared XML/text block and atom reading |
 | Explicit CFR/eCFR captures and native identity | `sources/cfr/acquisition.py`; `ecfr.py`; `annual.py` |
 | GovInfo MODS package/constituent metadata | `sources/govinfo/mods.py`; CFR edition checks in `sources/cfr/edition.py` |
 | USLM documents (GovInfo laws and compilations, OLRC U.S. Code) | `sources/govinfo/uslm.py` holds `UslmScan`, bound per publisher by namespace and body sections; `sources/zip_archive.py` is the one bounded zip reader; `uslm_acquisition.py` and `uscode_acquisition.py` capture |

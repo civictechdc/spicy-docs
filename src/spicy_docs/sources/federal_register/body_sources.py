@@ -121,6 +121,18 @@ def govinfo_mods_locator(publication_date: str) -> str:
     return f"https://www.govinfo.gov/metadata/pkg/FR-{safe_date}/mods.xml"
 
 
+def _matching_document_marker(body: bytes, source_id: str) -> tuple[str, Literal["exact-source", "split-base"]] | None:
+    """Both publisher text and GovInfo HTML print the same document header."""
+    if f"[FR Doc No: {source_id}]".encode("ascii") in body:
+        return source_id, "exact-source"
+    split = _SPLIT_DOCUMENT_NUMBER.fullmatch(source_id)
+    if split is not None:
+        base = split.group("base")
+        if f"[FR Doc No: {base}]".encode("ascii") in body:
+            return base, "split-base"
+    return None
+
+
 def body_source_locators(record: Mapping[str, object]) -> FederalRegisterBodyLocators:
     """Derive all known body locators without choosing a DocSpec candidate.
 
@@ -219,26 +231,16 @@ def validate_govinfo_granule(
             source_document_number=source_id,
         )
 
-    exact_marker = f"[FR Doc No: {source_id}]".encode("ascii")
-    if exact_marker in exact_body:
+    matched = _matching_document_marker(exact_body, source_id)
+    if matched is not None:
+        marker_number, match_kind = matched
         return GovInfoGranuleIdentity(
             access_id=resolved_id,
-            marker_document_number=source_id,
-            match_kind="exact-source",
+            marker_document_number=marker_number,
+            match_kind=match_kind,
             publication_date=safe_date,
             source_document_number=source_id,
         )
-    split = _SPLIT_DOCUMENT_NUMBER.fullmatch(source_id)
-    if split is not None:
-        base = split.group("base")
-        if f"[FR Doc No: {base}]".encode("ascii") in exact_body:
-            return GovInfoGranuleIdentity(
-                access_id=resolved_id,
-                marker_document_number=base,
-                match_kind="split-base",
-                publication_date=safe_date,
-                source_document_number=source_id,
-            )
     raise FederalRegisterBodySourceError("govinfo granule does not carry the requested document marker")
 
 

@@ -25,6 +25,11 @@ from spicy_docs.sources.federal_register.body_sources import (
     resolve_govinfo_granule_from_mods,
     validate_govinfo_granule,
 )
+from spicy_docs.sources.federal_register.body_text import (
+    PublisherTextIdentity,
+    publisher_text_locator,
+    validate_publisher_text,
+)
 from spicy_docs.sources.federal_register.body_xml import (
     PublisherXmlIdentity,
     publisher_xml_locator,
@@ -35,8 +40,8 @@ from spicy_docs.transport.capture import BoundedHttpCapture, CapturedBodyRespons
 from spicy_docs.transport.source_acquirer import check_byte_bound, check_request_count, check_timing
 
 GovInfoBodyRoute = Literal["granule", "mods-start-page"]
-BodyFormatPreference = Literal["prefer-xml", "xml", "html"]
-FederalRegisterBodyRoute = Literal["publisher-xml", "granule", "mods-start-page"]
+BodyFormatPreference = Literal["prefer-xml", "xml", "html", "txt"]
+FederalRegisterBodyRoute = Literal["publisher-xml", "publisher-text", "granule", "mods-start-page"]
 _USER_AGENT = "spicy-docs-federal-register-body/1.0"
 
 
@@ -44,7 +49,7 @@ _USER_AGENT = "spicy-docs-federal-register-body/1.0"
 class FederalRegisterBodyBudget:
     """Per-acquisition request/byte bounds and per-client request-start pacing.
 
-    ``max_requests`` includes every XML/MODS/HTML request and retry. Redirects are
+    ``max_requests`` includes every XML/text/MODS/HTML request and retry. Redirects are
     always refused. The timeout bounds transport waits, not total elapsed time.
     A zero start interval explicitly disables pacing within this client.
     """
@@ -67,9 +72,9 @@ class FederalRegisterBodyAcquisition:
     """Validated source identity and captures, without a separate publication."""
 
     requested_format: BodyFormatPreference
-    format: Literal["xml", "html"]
+    format: Literal["xml", "html", "txt"]
     route: FederalRegisterBodyRoute
-    identity: PublisherXmlIdentity | GovInfoGranuleIdentity
+    identity: PublisherXmlIdentity | PublisherTextIdentity | GovInfoGranuleIdentity
     body: CapturedBodyResponse
     mods: CapturedBodyResponse | None
     mods_resolution: GovInfoModsResolution | None
@@ -140,16 +145,18 @@ class FederalRegisterBodyAcquirer:
     ) -> FederalRegisterBodyAcquisition:
         """Return exact XML when available, or the chosen HTML route after 404/410.
 
-        Use ``format="xml"`` to require XML or ``format="html"`` for direct
-        GovInfo acquisition. A successful fallback retains the XML response
+        Use ``format="xml"`` to require XML, ``format="txt"`` for publisher
+        text or ``format="html"`` for GovInfo. A successful fallback retains the XML response
         that caused it. Source failures never become implicit format absence.
         """
         if self._closed:
             raise ValueError("Federal Register body acquirer is closed")
         xml_url = publisher_xml_locator(document_number, publication_date)
         granule_url = govinfo_granule_locator(document_number, publication_date)
-        if format not in ("prefer-xml", "xml", "html"):
-            raise ValueError("format must be prefer-xml, xml or html")
+        if format not in ("prefer-xml", "xml", "html", "txt"):
+            raise ValueError("format must be prefer-xml, xml, html or txt")
+        if format == "txt" and (html_route != "granule" or start_page is not None):
+            raise ValueError("publisher text does not use an HTML route or start_page")
         if html_route not in ("granule", "mods-start-page"):
             raise ValueError("html_route must be granule or mods-start-page")
         if html_route == "mods-start-page":
@@ -164,6 +171,34 @@ class FederalRegisterBodyAcquirer:
         active_capture = None
         route: FederalRegisterBodyRoute = "publisher-xml" if format != "html" else html_route
         try:
+            if format == "txt":
+                route = "publisher-text"
+                body = self._http.capture(
+                    publisher_text_locator(document_number, publication_date), max_bytes=self.budget.max_body_bytes
+                )
+                active_capture = body
+                media_type = (body.content_type or "").split(";", 1)[0].strip().casefold()
+                if media_type not in ("text/plain", "text/html"):
+                    raise FederalRegisterBodySourceError("Publisher text Content-Type must be text/plain or text/html")
+                text_identity = validate_publisher_text(
+                    body.body,
+                    source_document_number=document_number,
+                    publication_date=publication_date,
+                    final_url=body.resolved_url,
+                    max_bytes=self.budget.max_body_bytes,
+                )
+                return FederalRegisterBodyAcquisition(
+                    requested_format=format,
+                    format="txt",
+                    route=route,
+                    identity=text_identity,
+                    body=body,
+                    mods=None,
+                    mods_resolution=None,
+                    unavailable_xml=None,
+                    request_count=self._http.request_count,
+                    budget=self.budget,
+                )
             if format != "html":
                 xml = self._http.capture(
                     xml_url, max_bytes=self.budget.max_body_bytes, allow_unavailable=format == "prefer-xml"
