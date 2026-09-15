@@ -1,0 +1,23 @@
+[
+  {
+    "file": "electronic-headers.xlsx",
+    "url": "https://www.fec.gov/files/bulk-downloads/electronic/eFilingFormats.zip",
+    "member": "eFilingFormats/e-filing headers all versions.xlsx",
+    "sha256": "sha256:6f7041f7cec6c3da27fbeb4c99165658eefe6902c6a0a16be50854e545c9efc9",
+    "bytes": 401361
+  },
+  {
+    "file": "electronic-8.5.xlsx",
+    "url": "https://docquery.fec.gov/formatspecs/FEC_EFO_Format_Specifications.xlsx",
+    "member": null,
+    "sha256": "sha256:c667016493df28c186445201cf8a2bcff43563bccc41b75b2bcc06366b69132b",
+    "bytes": 269187
+  },
+  {
+    "file": "paper-headers.xlsx",
+    "url": "https://www.fec.gov/files/bulk-downloads/paper/PaperFormats.zip",
+    "member": "paper filing headers all versions.xlsx",
+    "sha256": "sha256:e9516194d0496291e0829a11054798abc01e452c0768bff05b2f66135d86b763",
+    "bytes": 264482
+  }
+]

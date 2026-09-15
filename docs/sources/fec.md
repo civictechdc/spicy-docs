@@ -220,6 +220,10 @@ moving acquisition into their metadata model.
 
 ## Read retained raw filings offline
 
+Use the [filing-field API](fec-filing-fields.md) to select a pinned official
+electronic or paper dictionary and annotate its positional records. Layout choice
+is explicit; raw versions/types, unknown columns and separate bodies survive.
+
 `spicy_docs.sources.fec.filings.filing_records` reads a retained `.fec` original
 without network access or a financial schema dependency:
 

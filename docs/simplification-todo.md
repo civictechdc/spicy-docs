@@ -577,11 +577,15 @@ published formats; XML/JSON/XHTML precede equivalent HTML.
   and campaign loops remain with existing callers. Historical research scripts
   remain dated evidence; package adoption and full-population imports stay open.
   [Qualification and limits](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-agency-interfaces-2026-09-14/README.md>).
-- [ ] **FEC14 — Add evidence-backed raw filing field mappings.** Provide source
-  form/version labels where public dictionaries and retained examples establish
-  them. Preserve unknown columns and layouts positionally. Faithful source field
-  mapping belongs here; amendment selection and financial views remain downstream.
-  A new year or an unqualified historical sample alone does not need a new parser.
+- [x] **FEC14 — Add evidence-backed raw filing field mappings.** The core-only
+  [filing-field API](sources/fec-filing-fields.md) exposes pinned electronic/paper
+  dictionaries and explicitly selected positional annotations. Native versions,
+  unknown columns, repeated labels, absent/blank values and separate body references
+  survive. Ambiguous source rows require a row selector; matching width is not a
+  compatibility verdict. Dictionary notes and rules stay outside repeated records.
+  Source-cell replay and selected real filings qualify the supplied definitions;
+  automatic routing, new dictionary editions, amendment selection and financial
+  views remain separate. [Evidence and scope](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-filing-fields-2026-09-15/README.md>).
 
 Interface code and focused regression checks are on `codex/fec-interfaces`.
 [Qualification receipts](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-interfaces-2026-09-14/>)

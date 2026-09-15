@@ -72,3 +72,7 @@ These operations ship with `spicy_docs` and accept caller-selected paths. Use
 
 [Repository checks and artifact maintenance](../scripts/README.md) live in
 `scripts/`.
+
+The offline [FEC layout generator](build_fec_layouts.py) rebuilds packaged field
+definitions from pinned workbook fixtures. Its OpenPyXL dependency is used only
+for generation; the [runtime API](../docs/sources/fec-filing-fields.md) uses core JSON.
