@@ -56,20 +56,19 @@ finding is not a completed port.
   and text List of Subjects readers and their regression fixtures; add the missing
   publisher text acquisition path. Preserve window bounds, printed terms and
   source associations. Vocabulary resolution and scoring remain downstream.
-- [ ] **PAR18 — Adopt current DocSpec processing outputs in SpicySearch.** This
-  is the next receiving integration. Its active document-content command expects
-  an older DocSpec bundle; current DocSpec releases use retained layers and blob
-  references. Map source items, files, selected representations and segments
-  through current public APIs. Prove exact text bytes, coordinates, source joins,
-  retention and serving admission with a real installed producer-to-search fixture.
-  Then delete the old mapper and obsolete corpus checks. Add no compatibility
-  bundle. The source-catalog checks below do not qualify this separate path.
-  **In progress:** `codex/par18-processed-results` in
-  `~/Work/spicysearch-par18-processed-results` adopts DocSpec's existing public
-  result-export reader. Search explicitly selects representation IDs and content
-  roles; DocSpec retains ownership of bytes, source links and processing evidence.
-  Verification uses an independently produced installed-wheel fixture whose
-  original workspace is unavailable. Implementation and review are ongoing.
+- [ ] **PAR18 — Load an existing DocSpec catalog in SpicyEngine.** User direction
+  supersedes the old Search index migration: SpicyEngine owns native indexes and
+  serving; SpicySearch supplies catalog enhancement, query parsing, reranking and
+  reusable search preparation. Reuse the existing direct Parquet builder through
+  an installed Search wheel and DocSpec's public catalog reader. Add one Engine
+  command that prepares metadata only when the catalog or preparation changes,
+  then uses the ordinary Engine dataset loader. Preserve source records, metadata
+  scopes, dispositions, exact pins and existing prepare/activate behavior. Prove
+  installed catalog-to-Engine input, cache reuse and damaged-input refusal.
+  **In progress:** `codex/docspec-catalog` in `~/Work/spicyengine-docspec-catalog`
+  and a current Search provider branch. The unqualified old-index prototype was
+  saved under `receipts/parsing-consolidation-2026-09-14/par18/abandoned-old-index/`
+  and removed from its worktree. No old-index upgrade is required.
 - [ ] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
   section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
   reference occurrences and ancestor-attributed source-credit observations.
