@@ -102,11 +102,27 @@ finding is not a completed port.
   remaining runtime blocker. Database-client replacement and storage/lookup
   measurements remain open. Each original-record read still rechecks its selected
   source, so this is not a latency improvement claim.
-- [ ] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
+- [x] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
   section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
   reference occurrences and ancestor-attributed source-credit observations.
   Preserve raw spelling, ranges, stubs and unmatched text; leave enactment
   selection, citation resolution and legal-status verdicts downstream.
+  **Completed locally (2026-09-14):** SpicyDocs 0.10.0 provides the bounded
+  readers; RefSpec 0.1.0.dev2 adopts its pinned wheel and removes the production
+  XML walkers. A current structure builder replaces the dated research scripts
+  for new builds. The old readers remain test-only comparison evidence.
+  All 58 retained XML titles passed comparison. Sections, ranges and chapters
+  match; the candidate removes exactly 364 false subsection rows caused by
+  subtitle prefixes. The source-credit table remains byte-identical. Existing
+  sealed tables stay pinned; adopting corrected candidates is separate work.
+  SpicyDocs passed 2,410 repository tests and 57 checks against its installed
+  wheel; RefSpec passed 108 focused checks and 100 installed-package checks.
+  Its 37 unrelated failing tests/errors reproduce on the unchanged baseline.
+  Architecture and independent code reviews approved. Provider commits:
+  `ad39f8e`, `376b488`, `7bd03bb`, `1118145` on `codex/uscode-readers`.
+  RefSpec commits: `1bc39535`, `1ffeb5ba` on `codex/shared-uscode-readers`.
+  These branches are local, unmerged and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par03/delivery.md>).
 - [ ] **PAR04 — Capture CFR metadata once.** Add per-part authority-note text,
   the eCFR agency roster and the Archives subject-index reader. Preserve stated
   labels, malformed entries and provenance without near-match corrections.
@@ -125,10 +141,18 @@ finding is not a completed port.
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
+  **PAR03 complete:** both ordinary wheels and the receiving scripts run outside
+  the source checkouts. Other families remain open. Follow up on runtime
+  source-credit receipts: record the provider implementation pin there as well
+  as in qualification receipts.
 - [ ] **PAR09 — Remove the replaced implementations.** Track adoption separately
   for every named consumer. Delete duplicate implementations,
   fixtures made redundant, compatibility wrappers and dead helpers after checks;
   retain regression cases and useful evidence. Record any remaining copy's reason.
+  **PAR03 complete:** current reference/source-credit parsing uses SpicyDocs;
+  historical research kernels stay frozen as evidence. RefSpec's existing
+  acquisition loops in those two commands still need owner-reader adoption;
+  this parsing port does not claim to remove them.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
