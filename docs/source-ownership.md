@@ -7,7 +7,7 @@ reduces duplicate implementation without forcing source users into a dataset pla
 
 | Component | Responsibility |
 | --- | --- |
-| SpicyDocs | Source acquisition and metadata parsing, faithful fields, identity, coverage, evidence and immutable source publication; optional reusable PDF/image extraction adapters. |
+| SpicyDocs | Shared source acquisition, document parsing and metadata capture; faithful fields, structure, identity, coverage, evidence and immutable source publication; optional reusable PDF/image extraction adapters. |
 | SpicyRegs | Its independently useful regulatory-data pipeline and mutable public tables. |
 | DocSpec | Dataset catalogs, selection, injected fetchers/processors, capture, experiments, reuse and comparison. |
 | Rulespec Artifacts | Shared canonical encoding, artifact admission/publication and bounded physical blob writes. |
@@ -25,6 +25,39 @@ The [extraction API](pdf-extraction-api.md) accepts retained bytes and injected
 readers, strategies and recognition backends. It returns derived page observations
 without assuming source authority. DocSpec owns selection, retained processing
 stages, reuse, comparison and run completion; SpicyDocs does not import that lifecycle.
+
+## Consolidate parsing across consumers
+
+SpicyDocs is the shared home for reusable source parsing and metadata capture
+currently spread across SpicySearch, RefSpec and Rulespec. This includes reading
+retained files, document structure, literal reference occurrences, and publisher
+code tables, labels and rosters. Ownership follows what a function does, including
+when it currently lives inside a vocabulary builder or an interpretation pipeline.
+
+Source readers preserve the publisher's text, structure, repeated fields and
+source locations. Split mixed functions so consumers can use those observations
+without inheriting a particular search or legal policy. Vocabulary reconciliation,
+citation resolution, applicability, ranking and quality scoring remain downstream.
+For example, retain every source-credit observation and its enclosing section;
+the policy choosing which citation counts as enactment belongs to its consumer.
+
+A source may publish derived text. A reader can retain that exact output with
+its supplier, tool and source associations; choosing it over the original document
+is a consumer decision. Publisher dictionaries likewise describe observed codes
+and labels; they do not make an explicitly open list exhaustive.
+
+Choose the best evidenced implementation, reuse existing bounded readers, and
+organize public APIs by source family. Keep source spellings and unresolved cases
+available. Use publisher guides and dictionaries to explain mappings. Shared
+canonical encoding and artifact storage remain in Rulespec Artifacts; inspect
+package dependencies before moving Rulespec code to avoid an import or wheel cycle.
+
+A consolidation is complete when the named consumers use a qualified SpicyDocs
+wheel and delete their replaced parsers and support code. Check source fidelity
+against retained inputs and receiver behavior, documenting any intentional fixes.
+Keep only adapters that translate between different product data types; remove
+compatibility wrappers and unused helpers. A provider port alone is partial work.
+Track the work in the [parsing checklist](simplification-todo.md#shared-parsing-and-metadata-capture).
 
 ## Keep, share or retire
 

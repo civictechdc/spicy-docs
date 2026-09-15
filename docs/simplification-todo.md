@@ -33,6 +33,61 @@ are on `fork/main`; receiving changes remain on their own branches.
 Six original items moved to their implementation owners. A moved task is not a
 completed task; follow the receiving backlog for its status.
 
+## Shared parsing and metadata capture
+
+**New effort (2026-09-14):** centralize reusable parsing from SpicySearch,
+RefSpec and Rulespec in SpicyDocs, then replace the receiving copies with wheel
+imports. The [ownership decision](source-ownership.md#consolidate-parsing-across-consumers)
+defines the boundary. The
+[port-candidate swarm](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/port-candidates-swarm-2026-09-14.md>)
+is one input to this effort; it inspected SpicyDocs `3386648` and did not establish
+a complete Rulespec inventory. These are planned tasks, not completed ports.
+
+- [ ] **PAR01 — Inventory parsing beyond fetch routes.** Read current SpicySearch,
+  RefSpec and Rulespec parsers, including helpers inside processors and tools.
+  Record exact functions, callers, fixtures, source dictionaries, duplicate
+  behavior and package dependencies. Expand the candidate list when warranted;
+  reassess earlier vocabulary and third-party-text exclusions, and agree the
+  split for mixed parsing/interpretation before implementing it.
+- [ ] **PAR02 — Share Federal Register subject-block parsing.** Move literal XML
+  and text List of Subjects readers and their regression fixtures; add the missing
+  publisher text acquisition path. Preserve window bounds, printed terms and
+  source associations. Vocabulary resolution and scoring remain downstream.
+- [ ] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
+  section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
+  reference occurrences and ancestor-attributed source-credit observations.
+  Preserve raw spelling, ranges, stubs and unmatched text; leave enactment
+  selection, citation resolution and legal-status verdicts downstream.
+- [ ] **PAR04 — Capture CFR metadata once.** Add per-part authority-note text,
+  the eCFR agency roster and the Archives subject-index reader. Preserve stated
+  labels, malformed entries and provenance without near-match corrections.
+- [ ] **PAR05 — Complete Unified Agenda field mapping.** Reuse the existing XML
+  reader for CFR references, legal authority, timetables and additional information;
+  preserve repeated fields and raw text with their source locations.
+- [ ] **PAR06 — Share publisher code and roster readers.** Consolidate Federal
+  Register agencies, documented enums and topics, plus BILLSTATUS guide tables.
+  Preserve source versions, unknown values and open-list semantics; keep vocabulary
+  reconciliation and record-level interpretation in the consuming products.
+- [ ] **PAR07 — Add one GovInfo PREMIS reader.** Combine the useful prior parsers
+  on bounded XML scanning; retain file names, algorithms, digests and entries
+  without fixity. Compare selected captured bytes with an unambiguously matched
+  publisher entry and test real package shapes. Report consistency, not authenticity.
+- [ ] **PAR08 — Qualify each provider and receiving change together.** Build a
+  pinned wheel, run the named consumers outside source checkouts, and compare
+  source facts and evidence against retained fixtures. Record intentional fixes
+  separately from parity; update receiver dependency pins and public API examples.
+- [ ] **PAR09 — Remove the replaced implementations.** Track adoption separately
+  for each SpicySearch, RefSpec and Rulespec caller. Delete duplicate parsers,
+  fixtures made redundant, compatibility wrappers and dead helpers after checks;
+  retain regression cases and useful evidence. Record any remaining copy's reason.
+
+Work by source family: identify callers, implement the shared reader, qualify its
+wheel and receivers, then delete replaced code to close that family's consolidation.
+PAR02–PAR07 record provider delivery; PAR08/PAR09 record receiving completion.
+New Rulespec candidates found by PAR01 receive named tasks before migration.
+DocSpec retains dataset selection, execution history, reuse and comparison;
+source-campaign replacement remains the separate S21 decision.
+
 ## PDF/image extraction
 
 - [x] **PDF01 — Provide a unified API with injected extraction components.**
@@ -414,7 +469,9 @@ release remain separate.
 
 Decision (2026-09-14): every SpicyRegs reader connector that fetches a publisher
 moves into SpicyDocs as an explicit source; SpicyRegs adopts the wheel and
-deletes its copy. RefSpec's vocabulary fetchers stay in RefSpec. SpicyRegs'
+deletes its copy. RefSpec's source acquisition and parsing now enter the
+[shared parsing effort](#shared-parsing-and-metadata-capture); vocabulary building
+remains in RefSpec. SpicyRegs'
 `cloudflare.py` is a cache purge, not a fetcher, and stays. Adoption needs a
 wheel newer than the 0.3.0 SpicyRegs pins today.
 
@@ -463,8 +520,9 @@ retained fixtures plus a guide.
 
 Inventory of 2026-09-14 across spicysearch, RefSpec, DocSpec and every corpora
 tree including archived and salvaged copies, keyed by publisher host and route
-rather than by file. Vocabulary fetchers (OSTI thesaurus, LOC FAST) stay in
-RefSpec. Own-site and own-storage traffic is not fetching a publisher.
+rather than by file. PAR01 reopens source acquisition and parsing exclusions,
+including vocabulary sources such as OSTI and LOC FAST; their vocabulary-building
+policies stay in RefSpec. Own-site and own-storage traffic keeps its existing owner.
 
 | Item | Publisher route | Where it is fetched today | Disposition |
 | --- | --- | --- | --- |
@@ -489,13 +547,12 @@ Follow-up (same day, three parallel workstreams):
 - [x] **C01** — `spicy-docs-list`: one command over the paged traversal, family chosen by name from a registry (`cli/list_pages.py`), exact page bytes into a content-addressed store and one JSONL row per page. Live smoke: five GovInfo granule pages. Receipt: `receipts/cli-list-smoke-2026-09-14/`.
 - [x] **D02** — Reach bounds moved onto `JsonPageFamily` as data (`max_reachable_records`, `max_page_number`, `window_hint`), so the generic walk the command uses refuses in one request where the SAM and regulations.gov readers used to; their copies are deleted.
 
-Adoption, not porting (SpicyDocs already serves the route): spicysearch
-`scripts/fetch_presidential_bodies*.py` (GovInfo FR granule bodies); RefSpec
-`cfr_authority_notes.py` (eCFR full titles), `federal_register_topics_api.py`
-and `govinfo_collections.py` captures, `billstatus_codes.py` readme fetch;
-DocSpec `tools/fr_topic_receipt.py` and its generic HTTPS content fetcher.
-GovInfo PREMIS fixity digests (RefSpec `govinfo_collections.py`) remain the
-one cross-check worth adding to SpicyDocs captures.
+Existing routes support adoption by spicysearch's presidential-body scripts
+and RefSpec's eCFR title captures. Route coverage does not establish complete
+parsing or metadata coverage. The [shared parsing effort](#shared-parsing-and-metadata-capture)
+tracks the additional readers, publisher tables and PREMIS comparison identified
+by the later swarm. DocSpec's generic content fetchers remain its injected
+dataset adapters; source-specific parsing follows the shared ownership decision.
 
 ## Deferred local work
 
