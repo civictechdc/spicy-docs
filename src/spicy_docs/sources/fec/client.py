@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 from collections.abc import Iterator, Mapping
 from dataclasses import asdict
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Self
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
@@ -29,9 +28,7 @@ from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.download import (
     AcquisitionError,
     BoundedAcquirer,
-    HttpRefusal,
     ResponseCapture,
-    validate_body_prefix,
 )
 
 
@@ -63,9 +60,10 @@ class FecClient:
         self.store = Path(store)
         self._writer = LocalBlobWriter(self.store)
         self._key = api_key
-        self._zyte = zyte_on_denial
         self.http = BoundedAcquirer(
             validate_url=official_url,
+            zyte_on_denial=zyte_on_denial,
+            public_fallback_url=lambda url: urlsplit(url).hostname != "api.open.fec.gov",
             headers=lambda url: (
                 {"X-Api-Key": self._key} if self._key and urlsplit(url).hostname == "api.open.fec.gov" else {}
             ),
@@ -80,38 +78,10 @@ class FecClient:
         self.http.__exit__(*error)
 
     def _capture(self, url: str) -> ResponseCapture:
-        try:
-            result = self.http.capture(url, max_bytes=MAX_METADATA_BYTES)
-        except HttpRefusal as error:
-            result = self._after_denial(error, url, max_bytes=MAX_METADATA_BYTES)
+        result = self.http.capture(url, max_bytes=MAX_METADATA_BYTES)
         if self._key and self._key.encode() in result.body:
             raise CredentialRefusedError("source response echoed the API credential; capture was not retained")
         return result
-
-    def _after_denial(self, error: HttpRefusal, url: str, *, max_bytes: int) -> ResponseCapture:
-        # Only an explicitly supplied public-site adapter can retry a 403.
-        # OpenFEC authentication refusals always end the operation.
-        if error.status != 403 or self._zyte is None or urlsplit(url).hostname == "api.open.fec.gov":
-            raise error
-        if max_bytes > 32 * 1024**2:
-            raise AcquisitionError("Zyte extract is bounded to 32 MiB; acquire large assets directly") from None
-        self.http._start()
-        response = self._zyte.fetch(official_url(url), timeout_seconds=60, max_bytes=max_bytes)
-        official_url(response.resolved_url)
-        if response.status_code in {401, 403}:
-            raise HttpRefusal(response.status_code)
-        if response.status_code != 200:
-            raise AcquisitionError(f"Zyte target answered HTTP {response.status_code}")
-        if len(response.body) > max_bytes:
-            raise AcquisitionError("Zyte target exceeded the selected byte bound")
-        return ResponseCapture(
-            url,
-            response.resolved_url,
-            response.content_type or "application/octet-stream",
-            datetime.now(UTC).isoformat(),
-            response.body,
-            "zyte_after_http_403",
-        )
 
     def _page(
         self, capture: ResponseCapture, *, records: list[tuple[str, object]], continuation: str | None, **context
@@ -280,37 +250,4 @@ class FecClient:
         if urlsplit(url).hostname == "api.open.fec.gov" and not self._key:
             raise ValueError("OpenFEC acquisition requires an explicit API key")
         options.setdefault("validate_prefix", lambda chunk: validate_original_prefix(chunk, url=url))
-        try:
-            return self.http.download(url, store=self.store, max_bytes=max_bytes, **options)
-        except HttpRefusal as error:
-            if options.get("etag"):
-                error.add_note("selected ETag requires direct transfer; Zyte extract cannot bind If-Match")
-                raise
-            capture = self._after_denial(error, url, max_bytes=max_bytes)
-        if not capture.body:
-            raise AcquisitionError("asset response is empty")
-        validate_body_prefix(
-            capture.body[:65536], media_type=capture.media_type, allow_html=options.get("allow_html", False)
-        )
-        if options.get("validate_prefix"):
-            options["validate_prefix"](capture.body[:65536])
-        result = self._writer.put(
-            [capture.body],
-            max_bytes=max_bytes,
-            expected_digest=options.get("expected_sha256"),
-            expected_size=options.get("expected_size"),
-        )
-        return {
-            "url": url,
-            "sha256": result.digest,
-            "bytes": result.byte_size,
-            "blob_path": result.object_key,
-            "reused": result.reused,
-            "downloaded": True,
-            "response": {
-                "resolved_url": capture.resolved_url,
-                "media_type": capture.media_type,
-                "observed_at": capture.observed_at,
-                "via": capture.via,
-            },
-        }
+        return self.http.download(url, store=self.store, max_bytes=max_bytes, **options)

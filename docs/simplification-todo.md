@@ -542,37 +542,66 @@ downstream adoption remain separate.
   work. The regional approach improved selected outputs but failed its
   no-regression gate.
 
-- [ ] **FEC06 — Extend real historical filing qualification.** Complete originals
-  qualify TEXT bodies for literal `5.00`, `5.1` and `5.2`; a v3.00 original
-  preserves an additional Schedule I row. The complete observed F13 query now
-  retains every supplied raw filing and a bounded PDF selection, with literal
-  positional fields and separate narrative bodies. Acquire the oversized PDFs;
-  preserve missing raw URLs as source observations. Literal `5.0`, unobserved
-  layouts, publisher encoding evidence and broader populations remain open.
-- [ ] **FEC07 — Extend legal and agency collection acquisition.** Selected AO
-  and administrative-fine years, the XML-linked FOIA history, paired FOIA.gov
-  native reports, the retained Oversight 2026 subset and a bounded archived-MUR
-  difference set have separate metadata and originals. Finish the named large
-  enforcement originals and unresolved exact case associations, then further
-  AO/enforcement/ADR/rulemaking years and agency collections. A related case or
-  filename does not establish document identity.
-- [ ] **FEC08 — Acquire remaining financial bulk families.** Complete observed
-  2024 committee-to-candidate and independent-expenditure notice files pass
-  every-field comparison. F13 donation/refund records remain source-positioned;
-  versioned financial field naming and amendment views remain downstream work.
-  Large A/B dump restoration remains unqualified: prove scratch, restored-table
-  and index capacity before transfer. Other populations and years remain open.
-- [ ] **FEC09 — Extend historical refresh across official collections.** The
-  F13 metadata query has a new observation; the research imports retain their
-  original observation times. Reuse the existing acquisition/resume loop and
-  add source-specific update/deletion checks for each next collection.
-  Recurring scheduling remains with the dataset caller.
-- [ ] **FEC10 — Qualify additional immutable source releases.** First handle
-  observed negative F13 `file_number` values in the filing profile without
-  changing the source values or using them as universal identity. The raw
-  reader retains them, but the current release profile refuses those rows.
-  Then add only the identity/count/scope checks needed by the next collection,
-  using the existing publisher. Acquired originals are not admitted releases.
+### Interface implementation
+
+Existing `FecClient` methods cover the researched official JSON operations,
+XML listings/sitemaps, explicit collection links and independent original files.
+An unfetched year, large file or unavailable URL is an acquisition outcome;
+it does not imply a missing interface. Native archives and filings retain their
+published formats; XML/JSON/XHTML precede equivalent HTML.
+
+- [x] **FEC12 — Share public-source denial recovery.** `BoundedAcquirer` accepts
+  an injected Zyte fetcher and explicit public-URL predicate. FecClient delegates
+  to it; FOIA.gov/Oversight.gov callers no longer need a separate proxy transfer
+  implementation. Direct/proxy originals share prefix, size, digest and storage
+  checks. Request budgets, source credentials, direct redirect chains and ETag
+  conditions remain explicit. Opaque proxy redirects and unavailable transfer
+  headers cannot be checked as direct responses are. Historical campaign receipts
+  retain their original scripts; new callers use the public interface.
+- [ ] **FEC10 — Extend immutable source-release interfaces.**
+  - [x] Admit genuine negative F13 `file_number` values unchanged in filing schema
+    1.2; retain `sub_id` identity, explicit filter checks and acquisition policy 1.0.
+    Earlier releases retain their schema and pins. The shared publisher and
+    retained-page reader need no F13-specific implementation.
+  - [ ] Add source identity/count/scope rules for the next selected family beyond
+    committee census and processed filing queries. Raw acquisition already works;
+    each additional immutable profile needs source-specific admission evidence.
+- [ ] **FEC13 — Promote reusable agency-report parsing.** Move useful FOIA XML
+  and Oversight report-field parsing from research scripts into thin source readers
+  over existing XML/archive/HTTP support. Preserve native namespaces, repeated
+  fields, timestamps and body links. Separate Word Flat OPC from native FOIA data;
+  keep collection selection, interpretation and campaign loops in the caller.
+- [ ] **FEC14 — Add evidence-backed raw filing field mappings.** Provide source
+  form/version labels where public dictionaries and retained examples establish
+  them. Preserve unknown columns and layouts positionally. Faithful source field
+  mapping belongs here; amendment selection and financial views remain downstream.
+  A new year or an unqualified historical sample alone does not need a new parser.
+
+Interface code and focused regression checks are on `codex/fec-interfaces`.
+[Qualification receipts](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-interfaces-2026-09-14/>)
+record checks and source replay separately from full-data acquisition.
+
+### Representative qualification and acquisition backlog
+
+These tasks exercise and run the interfaces above. Full-population transfers,
+database restoration, recurring refresh and downstream catalogs are separate work.
+
+- [ ] **FEC06 — Extend historical filing qualification and acquisition.** The
+  selected `5.00`, `5.1`, `5.2` and v3.00 originals and supplied F13 raw filings
+  are retained. Literal `5.0`, broader layout/encoding evidence, oversized PDFs
+  and missing raw URLs remain separate qualification or acquisition gaps.
+- [ ] **FEC07 — Extend legal and agency collection acquisition.** Continue the
+  named large enforcement originals, unresolved exact case associations and
+  additional legal/agency years using existing readers. A related case or filename
+  does not establish identity. FEC13 tracks reusable agency parsing separately.
+- [ ] **FEC08 — Acquire remaining financial bulk families.** Extend beyond the
+  selected financial histories and 2024 files. Large A/B dump restoration needs
+  scratch, restored-table and index capacity before transfer; it does not need
+  another downloader. Source field mapping is FEC14; financial views are downstream.
+- [ ] **FEC09 — Extend refresh qualification and historical coverage.** The F13
+  metadata query has a new observation; imported research captures retain their
+  observation times. Reuse the existing acquisition/resume path. Source-specific
+  replacement/deletion checks need selected examples; scheduling stays with the caller.
 
 The [September 14 collection qualification](research/fec-next-collections-2026-09-14.md)
 records completed scopes, source pins, checks and the remaining file and identity
@@ -580,7 +609,7 @@ gaps for FEC06–FEC08. The research follow-up shares the existing acquisition/r
 code across all three collections; only source selection and qualification differ.
 [Local integration and combined checks](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-local-integration-2026-09-14/integration.json>)
 record code delivery separately from captured data. Wider refresh remains FEC09
-and release admission FEC10.
+and additional release interfaces FEC10.
 
 The [earlier full check](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-next-collections-2026-09-14/checks.json>)
 passed before the follow-up proxy-refusal fix. After that fix,

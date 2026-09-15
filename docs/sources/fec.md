@@ -151,9 +151,11 @@ complete, pinned `/v1/filings/` query with ordinary page/per-page pagination.
 Publication and offline replay check page membership, exact counts and native
 processed-record `sub_id` identity. File numbers, amendment fields, document
 links, unknown fields and metadata/body references remain source observations.
-Schema 1.1 preserves nullable or absent file numbers on unfiltered queries;
-an explicit file-number selection requires a matching returned value. The
-initial schema 1.0 qualification releases remain retained with their original pins.
+Schema 1.2 also preserves negative file numbers observed in official F13 rows,
+as well as null or absent values. An explicit file-number selection still requires
+a matching returned value. Source identity remains `sub_id`; acquisition policy
+1.0 is unchanged. Earlier schema 1.0/1.1 releases keep their original pins and
+require the matching version of their profile for replay.
 
 Keep overlapping queries in separate releases. A requested-empty query retains
 its evidence with zero records; a requested file number omitted from a response
@@ -286,10 +288,12 @@ establish other zero-padded labels.
 The same qualification record covers a complete observed `form_type=F13`
 query, preserving amendments, every supplied raw filing and separately acquired
 PDFs. Missing raw URLs and PDFs exceeding the selected byte bound remain explicit.
-Some official F13 `file_number` values are negative: the raw reader
-preserves them, while the current filing release profile rejects those rows.
-Use retained `sub_id` and source pointers to distinguish observations; do not
-rewrite file numbers or infer that raw capture implies release admission.
+Some official F13 `file_number` values are negative. Filing schema 1.2 admits
+those source values unchanged; `sub_id` and source pointers distinguish
+observations. Raw capture and release admission remain separate operations.
+The interface qualification replays the retained F13 response without new HTTP
+requests; its evidence is under
+`~/Work/corpora/supply-2026-09-02/receipts/fec-interfaces-2026-09-14/`.
 
 ## Capture selected financial histories and refresh them
 
@@ -368,6 +372,34 @@ identifies implemented choices. Callers retain metadata, derived bodies and raw
 observations separately. Automatic selection and financial fidelity remain
 unqualified.
 
+## Reuse acquisition for FEC publications on other official hosts
+
+`BoundedAcquirer` in `spicy_docs.transport.download` exposes the same bounded
+`capture` and streamed `download` operations to FOIA.gov and Oversight.gov
+callers. Inject `validate_url` to select permitted source URLs, and optionally
+supply `zyte_on_denial` plus `public_fallback_url` to identify public URLs eligible
+for recovery. An injected `ZyteHttpFetcher` supplies the existing extract endpoint.
+Both arguments are required to enable recovery; no source headers are forwarded.
+FecClient uses this implementation with its existing FEC-only URL restrictions.
+
+```python
+with BoundedAcquirer(
+    validate_url=validate_selected_source,
+    public_fallback_url=is_selected_public_source,
+    zyte_on_denial=zyte,
+) as client:
+    capture = client.capture(metadata_url, max_bytes=8 * 1024**2)
+    original = client.download(original_url, store=blob_store, max_bytes=32 * 1024**2)
+```
+
+The caller supplies those URLs and validation functions from its selected source
+inventory. `capture` returns exact response bytes and provenance; `download`
+returns a separately stored original and response facts. Both use one request
+budget. Original downloads share prefix, size, digest and blob-reuse checks across
+direct and proxy paths. The source parser must still check the expected format.
+Use the existing XML/archive readers for FOIA originals; a reusable source-field
+mapping for agency reports remains distinct from acquisition.
+
 ## Bounds, failures and coverage
 
 Requests are sequential and paced. Metadata pages are bounded to 8 MiB; API,
@@ -392,6 +424,10 @@ extract adapter; OpenFEC authentication failures still stop. Its retained method
 is `zyte_after_http_403`. Extract transfers have a 32 MiB bound and cannot bind a
 selected ETag; use direct streaming for large/version-bound assets. This path is
 covered with an injected provider, not a claim that every denied URL works live.
+All observed direct redirects must remain public and header-free. The proxy
+exposes requested/final URLs and target bytes, but not intermediate redirects or
+Content-Length/Content-Encoding; direct transfer checks for those headers cannot
+be repeated on proxy responses.
 
 The focused tests include retained official audit, legal-detail and keyset
 responses, metadata/body separation, negative response shapes, exact amounts,

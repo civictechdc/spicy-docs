@@ -57,9 +57,15 @@ class ResponseCapture:
 class BoundedAcquirer:
     """Sequential, injected HTTP transport with caller-selected bounds.
 
-    The URL validator runs before each request, including redirects. The header
+    The URL validator runs before each direct request and checks the final proxy
+    URL. Intermediate proxy redirects are opaque to this transport. The header
     callback can restrict credentials to one host; requests never forward them
     implicitly. No HTTPX exception text or request headers enter diagnostics.
+
+    Optional Zyte recovery requires both an injected fetcher and an explicit
+    ``public_fallback_url`` predicate. Only public, header-free HTTP 403 requests
+    qualify; authentication refusals and ETag-bound requests stop. Proxy bytes
+    are buffered up to 32 MiB; ordinary originals continue to stream.
     """
 
     def __init__(
@@ -71,6 +77,8 @@ class BoundedAcquirer:
         min_interval: float = 0.25,
         timeout: float = 60,
         transport: httpx.BaseTransport | None = None,
+        zyte_on_denial=None,
+        public_fallback_url: Callable[[str], bool] | None = None,
     ) -> None:
         if type(max_requests) is not int or max_requests <= 0:
             raise ValueError("max_requests must be a positive integer")
@@ -78,6 +86,9 @@ class BoundedAcquirer:
             raise ValueError("request interval and timeout must be finite and within bounds")
         self.validate_url = validate_url
         self.headers = headers or (lambda _: {})
+        self._zyte = zyte_on_denial
+        self._public_fallback_url = public_fallback_url or (lambda _: False)
+        self._timeout = timeout
         self.max_requests = max_requests
         self.min_interval = min_interval
         self.request_count = 0
@@ -99,14 +110,52 @@ class BoundedAcquirer:
         self._last_start = time.monotonic()
         self.request_count += 1
 
+    def _after_denial(
+        self, error: HttpRefusal, url: str, *, public_chain: bool, max_bytes: int, conditional: bool
+    ) -> ResponseCapture:
+        # Every observed direct hop must be public and header-free before the
+        # original URL can be proxied. No source headers or If-Match are forwarded.
+        if error.status != 403 or self._zyte is None or conditional or not public_chain:
+            raise error
+        if max_bytes > 32 * 1024**2:
+            raise AcquisitionError("Zyte extract is bounded to 32 MiB; acquire large assets directly") from None
+        self._start()
+        response = self._zyte.fetch(self.validate_url(url), timeout_seconds=self._timeout, max_bytes=max_bytes)
+        resolved = self.validate_url(response.resolved_url)
+        if response.requested_url != url or not self._public_fallback_url(resolved) or self.headers(resolved):
+            raise AcquisitionError("Zyte target differs from the selected public source")
+        if response.status_code in {401, 403}:
+            raise HttpRefusal(response.status_code)
+        if response.status_code != 200:
+            raise AcquisitionError(f"Zyte target answered HTTP {response.status_code}")
+        if len(response.body) > max_bytes:
+            raise AcquisitionError("Zyte target exceeded the selected byte bound")
+        return ResponseCapture(
+            url,
+            resolved,
+            response.content_type or "application/octet-stream",
+            datetime.now(UTC).isoformat(),
+            response.body,
+            "zyte_after_http_403",
+        )
+
     def _chunks(
-        self, url: str, *, facts: dict, extra_headers: dict | None = None, require_identity: bool = False
+        self,
+        url: str,
+        *,
+        facts: dict,
+        max_bytes: int,
+        extra_headers: dict | None = None,
+        require_identity: bool = False,
     ) -> Iterator[bytes]:
         current = self.validate_url(url)
+        public_chain = True
         for _ in range(4):
             self._start()
             request_headers = {"User-Agent": "spicy-docs/0.2 FEC acquisition", "Accept-Encoding": "identity"}
-            request_headers.update(self.headers(current))
+            source_headers = self.headers(current)
+            public_chain = public_chain and bool(self._public_fallback_url(current)) and not source_headers
+            request_headers.update(source_headers)
             request_headers.update(extra_headers or {})
             try:
                 # Do not carry response cookies into a different source request.
@@ -120,7 +169,22 @@ class BoundedAcquirer:
                         current = self.validate_url(urljoin(current, location))
                         continue
                     if status in (401, 403):
-                        raise HttpRefusal(status)
+                        capture = self._after_denial(
+                            HttpRefusal(status),
+                            url,
+                            public_chain=public_chain,
+                            max_bytes=max_bytes,
+                            conditional=bool(extra_headers),
+                        )
+                        facts.update(
+                            resolved_url=capture.resolved_url,
+                            media_type=capture.media_type,
+                            observed_at=capture.observed_at,
+                            via=capture.via,
+                        )
+                        for offset in range(0, len(capture.body), 64 * 1024):
+                            yield capture.body[offset : offset + 64 * 1024]
+                        return
                     if status == 429 or status >= 500:
                         raise _Retryable(f"source answered retryable HTTP {status}")
                     if status != 200:
@@ -170,14 +234,16 @@ class BoundedAcquirer:
             facts = {}
             body = bytearray()
             try:
-                for chunk in self._chunks(url, facts=facts):
+                for chunk in self._chunks(url, facts=facts, max_bytes=max_bytes):
                     if len(body) + len(chunk) > max_bytes:
                         raise AcquisitionError("metadata response exceeds its byte bound")
                     body.extend(chunk)
             except Exception as error:
                 attach_refused_response(error, RefusedResponse(url, "transport", None, "application/octet-stream"))
                 raise
-            return ResponseCapture(url, facts["resolved_url"], facts["media_type"], facts["observed_at"], bytes(body))
+            return ResponseCapture(
+                url, facts["resolved_url"], facts["media_type"], facts["observed_at"], bytes(body), facts["via"]
+            )
 
         return retry_http(attempt, retryable=(_Retryable,), max_attempts=3)
 
@@ -211,7 +277,9 @@ class BoundedAcquirer:
             def chunks() -> Iterator[bytes]:
                 first = True
                 extra = {"If-Match": etag} if etag else None
-                for chunk in self._chunks(url, facts=facts, extra_headers=extra, require_identity=True):
+                for chunk in self._chunks(
+                    url, facts=facts, max_bytes=max_bytes, extra_headers=extra, require_identity=True
+                ):
                     if first:
                         first = False
                         validate_body_prefix(chunk, media_type=facts["media_type"], allow_html=allow_html)
