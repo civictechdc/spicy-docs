@@ -135,16 +135,34 @@ Do not create another provider reader. The Rulespec FAM preparation script has
 one known consumer; move it only when a supported source workflow or second
 consumer makes the move useful. Preserve its declared ISO-8859-1 encoding.
 
-**Current PAR02 delivery:** SpicyDocs commit `dadd1d6` and its local 0.9.0 wheel contain the shared
-337-line List of Subjects reader and explicit publisher-text acquisition.
-All 21 transferred parsing functions and constants match their original ASTs
-(apart from docstrings). Checks passed: **2,343 repository tests**, **126 installed
-core-wheel tests without HTTPX**, and **24 installed acquisition tests**. One
-live text request validated an older publisher document; it does not establish
-population coverage. Independent review approved after adding a positive XML
-regression for headings, entities and repeated paragraphs; all **28 subject-reader
-tests** passed. SpicySearch adoption is in progress.
-Qualification evidence lives in
+**PAR02 is complete through its named receiver.** SpicyDocs `dadd1d6` supplies
+the shared reader and explicit publisher-text acquisition. SpicySearch `df5a19e`
+adopts its 0.9.0 wheel and deletes the old reader bodies. Its combined 741-line
+module is now an 80-line resolver plus the 337-line shared provider. The 21
+transferred parsing functions and constants retain their original behavior;
+27 source regression cases moved to the provider, with one positive XML case
+added during review. No parser forwarding wrappers remain.
+
+The same receiving commit uses DocSpec's public admitted-catalog API and
+Rulespec's canonical encoding/batch framing. It removes the obsolete SpicyRegs
+test wheel and expected-failure markers. Ordinary dependencies now align
+SpicyDocs **0.9.0**, DocSpec **0.3.2** (`2e333de`), RefSpec **0.1.0.dev1**
+(`564e760b`) and Rulespec Artifacts **1.0.12**. DocSpec's optional provider
+installation works too; its changes remain on `codex/par01-arrow-alignment`.
+
+Provider, receiver and dependency reviews approved. SpicyDocs' full suite and
+installed core/acquisition checks passed, including the added XML regression.
+DocSpec's full suite and installed-wheel checks passed. SpicySearch's final
+clean-commit suite, lint, package and source-to-catalog-to-search checks passed
+after test-only correction `6a3b8b3` updated an obsolete landing-page assertion.
+The Search runs establish functional results, not performance measurements.
+One live historical text capture passed; no population coverage is claimed.
+
+PAR08/PAR09 are complete for this family and stay open for later ports. Existing
+fidelity/carrier reports need regeneration under the new two-module identity
+before population use. PAR18 remains unqualified by these catalog checks.
+Commits and wheels are local; nothing from this iteration was pushed or published.
+Exact checks, module counts, hashes, reviews and limitations are retained in
 `~/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/`.
 
 Work by source family or shared capability: identify callers, select or improve
