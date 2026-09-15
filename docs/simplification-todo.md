@@ -64,6 +64,12 @@ finding is not a completed port.
   retention and serving admission with a real installed producer-to-search fixture.
   Then delete the old mapper and obsolete corpus checks. Add no compatibility
   bundle. The source-catalog checks below do not qualify this separate path.
+  **In progress:** `codex/par18-processed-results` in
+  `~/Work/spicysearch-par18-processed-results` adopts DocSpec's existing public
+  result-export reader. Search explicitly selects representation IDs and content
+  roles; DocSpec retains ownership of bytes, source links and processing evidence.
+  Verification uses an independently produced installed-wheel fixture whose
+  original workspace is unavailable. Implementation and review are ongoing.
 - [ ] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
   section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
   reference occurrences and ancestor-attributed source-credit observations.
