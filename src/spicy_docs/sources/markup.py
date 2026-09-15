@@ -349,7 +349,7 @@ def read_html_events(
     Unknown tags and duplicate attributes survive. This is a source parser, not
     browser DOM construction: it does not infer missing tags or layout breaks.
     """
-    _validate_xml_input(body, max_bytes=max_bytes, error_type=MarkupReadError, label="HTML markup")
+    _validate_xml_input(body, max_bytes=max_bytes, error_type=MarkupReadError, label="HTML markup", allow_empty=True)
     try:
         text = body.decode("utf-8")
     except UnicodeDecodeError as error:

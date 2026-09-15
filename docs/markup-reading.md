@@ -62,6 +62,9 @@ infer missing tags, suppress head/script/style, or insert a break for `<br>`.
 The caller retains those policies. Source bytes retain lexical spelling that
 the parser normalizes, such as HTML tag case and attribute quotes.
 
+Empty HTML returns no events, zero elements, and absent root names; empty XML
+refuses. All bounds must still be positive integers for an empty HTML read.
+
 Defaults are 64 MiB of input, 1,000,000 emitted events, and nesting depth 256.
 Set `max_bytes`, `max_events`, and `max_depth` explicitly for other bounded
 inputs. A malformed or over-limit read raises `MarkupReadError` and returns no

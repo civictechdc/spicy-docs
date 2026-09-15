@@ -6,7 +6,7 @@ from xml.etree import ElementTree
 
 import pytest
 
-from spicy_docs.sources.markup import MarkupReadError, read_html_events, read_xml_events
+from spicy_docs.sources.markup import MarkupRead, MarkupReadError, read_html_events, read_xml_events
 from spicy_docs.sources.xml import scan_xml
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -228,6 +228,19 @@ def test_invalid_bound_configuration_refuses(reader, setting, limit):
         reader(b"<r/>", **{setting: limit})
 
 
+def test_empty_html_is_an_empty_observation_but_empty_xml_refuses():
+    assert read_html_events(b"") == MarkupRead((), 0, None, None)
+    with pytest.raises(MarkupReadError, match="nonempty bytes"):
+        read_xml_events(b"")
+
+
+@pytest.mark.parametrize("setting", ["max_bytes", "max_events", "max_depth"])
+@pytest.mark.parametrize("limit", [0, -1, True, 1.5])
+def test_empty_html_still_validates_all_bounds(setting, limit):
+    with pytest.raises(MarkupReadError, match=setting):
+        read_html_events(b"", **{setting: limit})
+
+
 @pytest.mark.parametrize("reader", [read_xml_events, read_html_events])
 def test_input_event_and_depth_limits_refuse_before_success(reader):
     body = b"<r>" * 4 + b"text" + b"</r>" * 4
@@ -237,9 +250,8 @@ def test_input_event_and_depth_limits_refuse_before_success(reader):
         reader(body, max_events=4)
     with pytest.raises(MarkupReadError, match="nesting depth"):
         reader(body, max_depth=3)
-    for invalid in (b"", "<r/>"):
-        with pytest.raises(MarkupReadError, match="nonempty bytes"):
-            reader(invalid)
+    with pytest.raises(MarkupReadError, match="bytes"):
+        reader("<r/>")
 
 
 def test_html_invalid_utf8_refuses():

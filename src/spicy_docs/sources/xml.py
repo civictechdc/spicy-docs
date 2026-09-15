@@ -48,11 +48,19 @@ def scan_xml(
     _feed_xml(body, parser, error_type=error_type, label=label)
 
 
-def _validate_xml_input(body: bytes, *, max_bytes: int, error_type: type[ValueError], label: str) -> None:
+def _validate_xml_input(
+    body: bytes,
+    *,
+    max_bytes: int,
+    error_type: type[ValueError],
+    label: str,
+    allow_empty: bool = False,
+) -> None:
     if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes <= 0:
         raise error_type("max_bytes must be a positive integer")
-    if not isinstance(body, bytes) or not body or len(body) > max_bytes:
-        raise error_type(f"{label} must be nonempty bytes within max_bytes")
+    if not isinstance(body, bytes) or (not body and not allow_empty) or len(body) > max_bytes:
+        requirement = "bytes" if allow_empty else "nonempty bytes"
+        raise error_type(f"{label} must be {requirement} within max_bytes")
 
 
 def _configure_xml_parser(
