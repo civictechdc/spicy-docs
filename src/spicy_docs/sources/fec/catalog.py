@@ -27,7 +27,16 @@ def api_operations() -> dict[str, str | list[str]]:
 def official_url(url: str) -> str:
     """Permit public FEC hosts and the exact published bucket; reject credentials."""
     p = urlsplit(url)
-    hosts = {"www.fec.gov", "fec.gov", "api.open.fec.gov", "docquery.fec.gov", "sers.fec.gov", "transition.fec.gov"}
+    # Current agency-report indexes still publish legacy beta URLs; validate each redirect too.
+    hosts = {
+        "www.fec.gov",
+        "fec.gov",
+        "beta.fec.gov",
+        "api.open.fec.gov",
+        "docquery.fec.gov",
+        "sers.fec.gov",
+        "transition.fec.gov",
+    }
     hosts.add(urlsplit(BUCKET_URL).hostname)
     if p.scheme != "https" or p.hostname not in hosts or p.port not in (None, 443) or p.username or p.password:
         raise ValueError("FEC acquisition requires an approved, credential-free HTTPS source URL")
