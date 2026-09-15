@@ -71,9 +71,20 @@ finding is not a completed port.
   staging only where the native reader needs it. Declare which metadata and
   retained results are searchable. [Engine EC00](../../spicyengine/PLAN.md#ec00)
   owns implementation.
-  **Status:** architecture review; no replacement runtime is qualified. Superseded
-  prototypes are preserved under `receipts/parsing-consolidation-2026-09-14/par18/`
-  in `abandoned-old-index/` and `abandoned-catalog-copy/`.
+  **Status:** direct retained-state search is implemented and qualified locally
+  in Engine 0.2.0 using the DocSpec 0.4.0 wheel. Installed-package native checks
+  cover selected membership, replacements/removals, exact parsed values, scalar
+  and nested JSON, shared occurrences and changed-input refusal. Inline values
+  require no staging; the JSON content-reference fixture needed 134 temporary
+  bytes, deleted after building. No permanent catalog/body copy is produced.
+  Generic scalar values and explicitly selected fields are searchable; no agency
+  or legal interpretation is inferred. Optional Search enrichment retained and
+  reused through current Core operations remains open in Engine EC02.
+  Local commits: Engine `3b2b537` on `codex/docspec-catalog`; DocSpec reader
+  `71386d4` and test correction `9636521` on `codex/direct-core-reader`.
+  These implementation branches have not been merged or pushed.
+  Evidence is under `receipts/parsing-consolidation-2026-09-14/par18/direct-core/`.
+  Superseded prototypes remain in `abandoned-old-index/` and `abandoned-catalog-copy/`.
 - [ ] **PAR19 — Simplify Engine around indexing and retrieval.** Retire the
   old exporter and link aliases after the direct DocSpec route works. Reuse owner
   readers for agency/reference meaning and shared search definitions. Keep only
@@ -83,6 +94,14 @@ finding is not a completed port.
   interrupted-build recovery and bounded results. Keep the local demo useful.
   [Engine's plan](../../spicyengine/PLAN.md) owns these changes; static review is
   not implementation or performance evidence.
+  **Status:** old exporters, format readers, copied normalization and domain
+  policies are removed in the local Engine branch. Eight native search/reference
+  fields replace the stored full record; exact details come from DocSpec. Search
+  passes after native restart with source mounts removed. The demo, actual browser
+  checks, installed wheel and 56 Python checks pass; independent review has no
+  remaining runtime blocker. Database-client replacement and storage/lookup
+  measurements remain open. Each original-record read still rechecks its selected
+  source, so this is not a latency improvement claim.
 - [ ] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
   section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
   reference occurrences and ancestor-attributed source-credit observations.

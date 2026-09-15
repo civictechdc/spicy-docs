@@ -4,6 +4,12 @@ The cross-repository goal is one maintained implementation per shared behavior.
 Consolidate duplicate code in the package that owns its responsibility and have
 consumers use its wheel. SpicyDocs remains an independent source provider.
 
+SpicyDocs fetches source files and turns their content and metadata into reusable
+parsed data, linked to the original bytes. Supported source publishers save those
+results directly. Library readers can also return the same parsed values for a
+DocSpec caller to retain. Fetching a file does not replace parsing it, and callers
+should reuse saved parsed results when they already exist.
+
 ## Product responsibilities
 
 | Component | Responsibility |
@@ -25,8 +31,9 @@ Its index may store the fields needed for fast retrieval and display; full sourc
 records remain addressable through DocSpec. Search enrichment adds results linked
 to the original inputs and uses DocSpec's existing run and reuse facilities. A
 separate materialized dataset needs a demonstrated consumer or performance benefit.
-These are target responsibilities; the current consumer wheels and direct Engine
-reader still require qualification in [PAR18](simplification-todo.md#shared-parsing-and-metadata-capture).
+The direct Engine reader is qualified locally against bounded retained JSON
+states through DocSpec 0.4.0. Optional enrichment reuse and wider measurements
+remain open in [PAR18](simplification-todo.md#shared-parsing-and-metadata-capture).
 
 Apply this goal to parsers, metadata models, validation, transport, format readers,
 hashing, serialization, evidence handling, processing helpers and maintenance tools.
