@@ -287,10 +287,13 @@ This checklist has 10 open items in total, including the two conditional deferra
   Its resume path also needs returned Content-Range offset checks and object-version
   binding; a 206 response alone does not prove same-version continuation. Keep
   those fixes in the owner. This is separate from SR04's reader adoption.
-  SpicyRegs' body and cluster builders also share identical bounded Parquet
-  writer/abort logic except schema and batch size. Extract that small local writer
-  with the existing failure-after-flush checks; its whole-iterable `StagingWriter`
-  has different storage behavior and is not a suitable replacement.
+  **CourtListener writer complete locally:** SpicyRegs `dc4a33f` replaces both
+  opinion-table writers with one 49-line local helper, saving 31 production lines.
+  Schema and batch size remain caller choices. Empty, partial-batch, multi-batch
+  and failure-after-flush checks pass; full suite: 1,172 passed, three live checks
+  deselected. Independent review approves. Docket-map writing remains separate;
+  its whole-iterable `StagingWriter` has different storage behavior.
+  [Writer evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par10/courtlistener-writer-implementation.md>).
 - [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
   the second native XML interval index. All active callers use existing Core
