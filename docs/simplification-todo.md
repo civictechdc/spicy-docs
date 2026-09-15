@@ -224,8 +224,9 @@ This checklist has 10 open items in total, including the two conditional deferra
   separately from parity; update receiver dependency pins and public API examples.
   **Qualified families:** PAR02–PAR07 and PAR11–PAR20 record their named
   receiving checks; current wheel and source pins live in each delivery receipt.
-  SpicyRegs SR04 is qualified through its 0.1.5 wheel with SpicyDocs 0.17.0:
-  213 installed tests pass, including its other source readers. RefSpec's
+  SpicyRegs SR04 and its PAR10 follow-up are qualified through its 0.1.6 wheel
+  with SpicyDocs 0.18.0: 221 installed tests pass, including other source readers.
+  The provider passes 168 installed tests. RefSpec's
   acquisition/archive paths below remain. Runtime producer evidence
   is now complete for U.S. Code source credits, Unified Agenda and Topics.
   RefSpec `4f6c2acb` records installed reader source hashes in source-credit
@@ -281,18 +282,24 @@ This checklist has 10 open items in total, including the two conditional deferra
   prefixes and never retries an already-known access refusal. Test correction
   `4cfb5d5` compares retained evidence with original fixture bytes. Other shared
   support work remains open. PAR07 supplies the shared MODS/PREMIS XML tree;
-  PAR13/PAR14 complete mapped text and JSON support. A current owner-side gap is
-  CourtListener bulk `_open`: its broad exception retry also retries HTTP 401/403.
-  Make known access refusals terminal and qualify that behavior in SpicyDocs.
-  Its resume path also needs returned Content-Range offset checks and object-version
-  binding; a 206 response alone does not prove same-version continuation. Keep
-  those fixes in the owner. This is separate from SR04's reader adoption.
+  PAR13/PAR14 complete mapped text and JSON support.
+  **CourtListener transport complete locally:** SpicyDocs `1e8cab4` (0.18)
+  makes access refusals terminal and checks the original strong ETag, resolved
+  URL, exact resumed range and advertised length before accepting continuation.
+  Cleanup preserves the original error; retry loops no longer multiply.
+  Eligible read exceptions resume conditionally; premature EOF refuses.
+  SpicyRegs `b6cb3f1` (0.1.6) adopts the wheel. All 3,254 provider and 1,176
+  receiver source tests pass; 168 provider and 221 receiver installed tests pass.
+  Real local HTTP checks reproduce all 3,361 retained courts after interruption
+  and reject changed versions, wrong ranges, access refusal and truncated EOF.
+  Independent review approves. No live backfill or publication ran; listing
+  pins still do not bind the first download. Other tested package pins stay unchanged.
+  [Transport and receiving evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par10/delivery.md>).
   **CourtListener writer complete locally:** SpicyRegs `dc4a33f` replaces both
   opinion-table writers with one 49-line local helper, saving 31 production lines.
   Schema and batch size remain caller choices. Empty, partial-batch, multi-batch
   and failure-after-flush checks pass; full suite: 1,172 passed, three live checks
-  deselected. Independent review approves. Docket-map writing remains separate;
-  its whole-iterable `StagingWriter` has different storage behavior.
+  deselected. Independent review approves. Docket-map writing remains separate.
   [Writer evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par10/courtlistener-writer-implementation.md>).
 - [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
@@ -374,11 +381,12 @@ This checklist has 10 open items in total, including the two conditional deferra
 CourtListener receiver adoption is complete locally under
 [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04). SpicyRegs `3bdb468` and `83ed49b`
 preserve all 3,361 retained court IDs and 397 federal classifications while
-correcting 11,808 quoted empty strings previously lost as null. Its 1,167 source
-tests and 213 installed tests pass; independent review approves. The ordinary
+correcting 11,808 quoted empty strings previously lost as null. Its initial 1,167
+source tests and 213 installed tests passed; independent review approved. The ordinary
 install also qualifies its existing BILLSTATUS, Agenda and PDF consumers;
 pypdf 6.14.2 is explicit because newer recovery changes malformed-page outcomes.
-The failed 0.1.4 qualification remains retained. No backfill or publication ran.
+The failed 0.1.4 qualification remains retained. PAR10 above records the subsequent
+0.1.6/0.18 transport and writer qualification. No backfill or publication ran.
 [SR04 delivery](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/sr04/delivery.md>).
 
 The Rulespec FAM preparation script has
@@ -597,7 +605,7 @@ implementations and tests for F02–F05, P01 and the DocSpec CFR example.
   and compressed reads; refuse malformed text, rows and incomplete bzip2 members.
   Resume and cleanup checks pass. [SpicyRegs SR04](../../spicy-regs/PLAN.md#sr04)
   completes reader adoption and the separate table-normalization audit locally.
-  Additional transport checks remain in PAR10.
+  PAR10 records the completed transport follow-up.
 
 F05 checks: 103 CSV, bulk-reader and listing tests passed. Retained CourtListener
 data produced 3,361 rows with 16,096 nulls and 11,808 empty strings. Re-encoding
