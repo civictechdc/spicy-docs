@@ -47,7 +47,7 @@ and [Rulespec inventory](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receip
 add current callers, behavior differences and migration checks. An inventory
 finding is not a completed port.
 
-**Current: 11 of 20 shared-parsing tasks complete; nine remain open.**
+**Current: 14 of 20 shared-parsing tasks complete; six remain open.**
 
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
@@ -291,10 +291,16 @@ finding is not a completed port.
   independent review and ordinary installed wheels pass. Source commits:
   `71566b3`, `051ce05`, `bd045e8f`.
   [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par13/delivery.md>).
-- [ ] **PAR14 — Share source JSON decoding and record positions.** Reuse one
-  SpicyDocs decoder with explicit integer, Decimal and finite-float policies.
-  Preserve duplicate-key/non-finite refusals and exact record spans. DocSpec
-  retains segment construction; Rulespec Artifacts retains artifact encoding.
+- [x] **PAR14 — Share source JSON decoding and record positions.** SpicyDocs
+  0.17.0 supplies shared number/key rules and exact character/byte spans.
+  DocSpec 0.5.1 deletes its parser and per-character JSON offset table while
+  retaining segment construction and original bytes. V2 stages bind reader
+  identity and limits; overflowing floats now refuse. Existing source-loader
+  diagnostics and retained JSON record slices pass frozen-reader comparison.
+  Full provider/DocSpec suites pass (3,189/1,479 tests), as do 303 core-provider
+  and 78 installed-consumer checks. Independent reviews approved. Local source
+  commits: `b9ff1fe`, `ff0bb02`.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par14/delivery.md>).
 - [x] **PAR15 — Move image-header observations into SpicyDocs.** DocSpec uses
   the core PNG/GIF/JPEG reader without Pillow. Header dimensions remain declared
   observations, separate from decoding or oriented display geometry. The v2
@@ -302,14 +308,19 @@ finding is not a completed port.
   header-only, zero and unsupported/truncated outcomes. Complete encoded images,
   frozen-oracle mutations and installed core-wheel checks pass.
   [Guide](image-headers.md) · [Delivery](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par13/delivery.md>).
-- [ ] **PAR16 — Reuse Rulespec Artifacts in Rulespec's v2 release tools.** Delete
-  duplicate canonical encoding/admission logic after checking release bytes,
-  Unicode key order, integer bounds, duplicate keys and refusal cases. Keep
-  release-specific identities and validation. Preserve the separately named
-  finite-float encoding used by other Rulespec products.
-- [ ] **PAR17 — Replace Rulespec's manual URI encoder with the standard library.**
-  Keep the public URI/fragment API and verify exact Unicode, percent, slash and
-  invalid-surrogate behavior before deleting the byte loop.
+- [x] **PAR16 — Reuse Rulespec Artifacts in Rulespec's v2 release tools.** Local
+  `d22d682` removes duplicate canonical encoding/admission logic. All 15 pinned
+  release fixture trees keep complete verification results; separate v1
+  finite-float encoding remains. A fresh tooling environment passes 63 tests
+  using the unchanged Artifacts 1.0.12 wheel. Owner-supported Mapping/tuple
+  inputs and structured diagnostic wording are named changes. Independent
+  review approved; one broader Core fixture failure reproduces on the baseline.
+  [Qualification](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par14/rulespec-qualification.md>).
+- [x] **PAR17 — Replace Rulespec's manual URI encoder with the standard library.**
+  Local `ce444e7` ships Projection 0.1.1 with the same public string/fragment API.
+  All Unicode scalars match the old output; all surrogates refuse. Accidental
+  non-string iterable acceptance is removed. Source and installed-wheel checks
+  pass (38/33 tests); independent review approved.
 - [ ] **PAR20 — Retain PDF enrichment results per file in SpicyRegs.** Keep each
   URL, captured-source digest, extraction status, page count and error linked to
   the enriched row. The current row-level `OK` means at least one attachment
