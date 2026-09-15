@@ -10,13 +10,18 @@ results directly. Library readers can also return the same parsed values for a
 DocSpec caller to retain. Fetching a file does not replace parsing it, and callers
 should reuse saved parsed results when they already exist.
 
+DocSpec can also start with an existing catalog and call SpicyDocs fetchers and
+parsers for selected entries. DocSpec manages the run and retains the downloaded
+files and parsed results with their catalog associations. It can therefore drive
+acquisition as well as reuse data already captured by SpicyDocs.
+
 ## Product responsibilities
 
 | Component | Responsibility |
 | --- | --- |
 | SpicyDocs | Shared source acquisition, document parsing and metadata capture; faithful fields, structure, identity, coverage, evidence and immutable source publication; optional reusable PDF/image extraction adapters. |
 | SpicyRegs | Its independently useful regulatory-data pipeline and mutable public tables. |
-| DocSpec | Dataset catalogs, selection, injected fetchers/processors, capture, experiments, reuse and comparison. |
+| DocSpec | Dataset catalogs, selection, catalog-driven acquisition through injected fetchers such as SpicyDocs, processing runs, retained results, experiments, reuse and comparison. |
 | SpicySearch | Catalog enrichment, query interpretation and reranking; reusable search policies. |
 | SpicyEngine | Native index construction, index replacement and query execution over retained inputs; a small local search/inspection client. |
 | Rulespec Artifacts | Shared canonical encoding, artifact admission/publication and bounded physical blob writes. |
