@@ -18,7 +18,7 @@ _PREFIX = "{" + USLM_NAMESPACE + "}"
 _IDENTIFIER = re.compile(r"/us/usc/t(?P<title>[0-9]+[aA]?)(?P<path>/.*)")
 # Native subtitle/subchapter/subpart/subdivision markers precede section's s.
 # Section coordinates can contain letters, so a numeric-only rule is too narrow.
-_SECTION_COMPONENT = r"/s(?!t|ch|p|d)([^/]+)"
+_SECTION_COMPONENT = r"/s(?!(?i:t|ch|p|d))([^/]+)"
 _SECTION = re.compile(_SECTION_COMPONENT)
 _PART = re.compile(_SECTION_COMPONENT + r"/([^/]+)")
 _CHAPTER = re.compile(r"(?:/[^/]+)*/ch([^/]+)")
