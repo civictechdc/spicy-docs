@@ -1,0 +1,53 @@
+{
+  "scope": "Exact header and one TEXT record per genuine original, concatenated as bounded parser fixtures. These fragments are not complete filings; original offsets apply only to the pinned originals. Full-file qualification is retained under fec-next-collections-2026-09-14/historical.",
+  "fragments": [
+    {
+      "url": "https://docquery.fec.gov/dcdev/posted/91256.fec",
+      "original_sha256": "sha256:bb7d56abce9f7e6ca24c1c28a157795caa6ec41c923c55f88b9327a3c634c8d6",
+      "original_bytes": 3706779,
+      "header": "\"HDR\",\"FEC\",\"5.00\",\"Proprietary\",\"2003M07\",\" \",\"\",0,\"2002 M7\"\n",
+      "record": "TEXT,F1A,,\"SCHEDULE H4 JOINT FEDERAL/NON FEDERAL DISBURSEMENT and SCHEDULE B OTHER FEDERAL DISBURSEMENT.  No expenditures listed under Line 21 of our report related to media production and advertising are intended for or directed by a specific candidate.  They are either generic overhead costs or RNC fundraising costs.\"\n",
+      "original_record_offset": 3706457,
+      "record_bytes": 322,
+      "body_sha256": "150f37e97590e5f793a6876fef84434765f5b59feefcaac497317a5546b1178a",
+      "metadata_fields": {
+        "0": "TEXT",
+        "1": "F1A",
+        "2": ""
+      },
+      "declared_version": "5.00"
+    },
+    {
+      "url": "https://docquery.fec.gov/dcdev/posted/112364.fec",
+      "original_sha256": "sha256:965501132e65189c29bfba40f95f064b3309fbd8ebaf1488dd30f8fb0c9ec91b",
+      "original_bytes": 20201,
+      "header": "\"HDR\",\"FEC\",\"5.1\",\"Aristotle International CM4 PM4\",\"Version 4.2.1\",\"^\",\"\",\"\"\n",
+      "record": "\"TEXT\",\"F3XN\",\"C00172510\",\"This report does not reflect any salary payments because no employees have spent 25 percent or more of their time during any reporting period on activities in connection with a federal election.  All salaries to this point have therefore been appropriately paid from the Committees non-federal accounts.  The telemarketing expenses disclosed on Schedule B are activities that do not refer to any clearly identified candidate for federal office.  Therefore, none of these expenditures represent in-kind contributions, independent expenditures, or coordinated expenditures.\"\n",
+      "original_record_offset": 971,
+      "record_bytes": 600,
+      "body_sha256": "93734fdd5a889dc1c350e88428a000b39edea3bd72e689f44bae37981e3f75fd",
+      "metadata_fields": {
+        "0": "TEXT",
+        "1": "F3XN",
+        "2": "C00172510"
+      },
+      "declared_version": "5.1"
+    },
+    {
+      "url": "https://docquery.fec.gov/dcdev/posted/168357.fec",
+      "original_sha256": "sha256:c06d31f007d0cd836755aa29189966af518aaf47a9513836956c2021af8c3119",
+      "original_bytes": 2251046,
+      "header": "\"HDR\",\"FEC\",\"5.2\",\"Proprietary\",\"2005.03\",\" \",\"\",0,\"2005 M03\"\n",
+      "record": "TEXT,SA11ai,,\"Regarding negative receipts listed on line 11(a)(i) with the description of 'ACH Return', these are interbank clearing of electronic payments processed by the Automated Clearing House (ACH) network of participating banks and the Federal Reserve.  These are returns of contributions by individuals which have been deducted from our credit card merchant account or bank account by the credit card company or bank.\"\n",
+      "original_record_offset": 2248442,
+      "record_bytes": 427,
+      "body_sha256": "7b095cfcf53dd98649718fd3a9da45a098db2651852a64be81b3d0e15d6dcac1",
+      "metadata_fields": {
+        "0": "TEXT",
+        "1": "SA11ai",
+        "2": ""
+      },
+      "declared_version": "5.2"
+    }
+  ]
+}

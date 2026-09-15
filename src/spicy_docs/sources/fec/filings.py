@@ -12,8 +12,9 @@ from rulespec_artifacts import LocalBlobSource
 BEGIN_TEXT = {"[BEGINTEXT]", "[BEGIN TEXT]"}
 END_TEXT = {"[ENDTEXT]", "[END TEXT]"}
 # Publisher "e-filing headers all versions", TEXT rows 11–14:
-# v5.0–5.3 TEXT4000 is field 4 (zero-based 3). Other CSV versions stay positional.
-CSV_TEXT_FIELDS = dict.fromkeys(("5.0", "5.1", "5.2", "5.3"), 3)
+# v5.0–5.3 TEXT4000 is field 4 (zero-based 3). FEC-91256 independently
+# qualifies literal 5.00 at that position; version labels are never rounded.
+CSV_TEXT_FIELDS = dict.fromkeys(("5.0", "5.00", "5.1", "5.2", "5.3"), 3)
 
 
 class _Lines:

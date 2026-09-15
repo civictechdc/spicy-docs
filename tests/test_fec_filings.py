@@ -3,6 +3,8 @@
 import csv
 import hashlib
 import io
+import json
+from pathlib import Path
 
 import pytest
 from rulespec_artifacts import ArtifactVerificationError, LocalBlobWriter
@@ -89,12 +91,34 @@ def test_qualified_csv_text_lifts_only_narrative_and_resolves_exactly(tmp_path, 
         list(filing_records(**captured(tmp_path, raw), max_record_bytes=len(record) - 1))
 
 
-@pytest.mark.parametrize("version", ["3", "3.00", "5.20", "5.30", "6.1", "unqualified"])
+@pytest.mark.parametrize("version", ["3", "3.00", "5.000", "5.20", "5.30", "6.1", "unqualified"])
 def test_unqualified_csv_text_remains_positional(tmp_path, version):
     raw = f"HDR,FEC,{version}\nTEXT,SB29,parent,Narrative,,EXTRA\n".encode()
     row = list(filing_records(**captured(tmp_path, raw)))[1]
     assert row["embedded_bodies"] == []
     assert row["fields"] == {"0": "TEXT", "1": "SB29", "2": "parent", "3": "Narrative", "4": "", "5": "EXTRA"}
+
+
+@pytest.mark.parametrize(
+    "fragment",
+    json.loads((Path(__file__).parent / "fixtures/fec/historical-text-fragments.json").read_text())["fragments"],
+    ids=lambda fragment: fragment["declared_version"],
+)
+def test_genuine_historical_text_fragments_separate_and_preserve_body(tmp_path, fragment):
+    # Complete source pins and original offsets live with the exact fragments.
+    # The fixture concatenates its header and one record, not a complete report.
+    header, record = fragment["header"].encode(), fragment["record"].encode()
+    rows = list(filing_records(**captured(tmp_path, header + record)))
+    assert len(rows) == 2
+    assert rows[0]["format_version"] == fragment["declared_version"]
+    row = rows[1]
+    assert row["field_count"] == 4 and row["fields"] == fragment["metadata_fields"]
+    (body,) = row["embedded_bodies"]
+    assert body["field_index"] == 3 and body["delimiter"] == ","
+    assert body["byte_offset"] == len(header)
+    assert body["byte_length"] == len(record) == fragment["record_bytes"]
+    text = filing_body(store=tmp_path, body=body)
+    assert hashlib.sha256(text.encode()).hexdigest() == fragment["body_sha256"]
 
 
 @pytest.mark.parametrize("record", [b"TEXT,form,parent\n", b"text,form,parent,not-a-TEXT-record\n"])
