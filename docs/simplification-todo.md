@@ -162,10 +162,27 @@ finding is not a completed port.
   Commits: SpicyDocs `e847f5c`, RefSpec `5d71a26c`, SpicyRegs `979872c`.
   These branches are local, unmerged and unpushed.
   [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par05/delivery.md>).
-- [ ] **PAR06 — Share publisher code and roster readers.** Consolidate Federal
+- [x] **PAR06 — Share publisher code and roster readers.** Consolidate Federal
   Register agencies, documented enums and topics, plus BILLSTATUS guide tables.
   Preserve source versions, unknown values and open-list semantics; keep vocabulary
   reconciliation and record-level interpretation in the consuming products.
+  **Completed locally (2026-09-15):** SpicyDocs 0.13.0 captures 472 agencies,
+  all 11 documented enum sets, type facets, both topic collections and the
+  BILLSTATUS guide's bill-type statements plus tables 3–6. RefSpec 0.1.0.dev5
+  adopts its pinned wheel and removes the source parsing walks and topics HTTP
+  implementation. Exact pins, strict acceptance, source identities and vocabulary
+  decisions stay in RefSpec. Guide `H`, prose `HR` and current XML `HR` remain
+  distinct observations; locator policy is unchanged.
+  All 7,767 topic rows and their digests match the frozen reader. Atlas retains
+  1,044 topic resources / 1,428 relations and the existing 8/36/88 bill-code
+  portfolios. Future topic builds use shared-reader v2 lineage; sealed artifacts
+  are unchanged. Provider checks: 2,689 repository / 155 installed tests. RefSpec:
+  220 focused / 220 installed tests, eight dependency checks, plus Atlas checks.
+  Changed-file lint passes; whole-repo lint has 28 findings in unchanged baseline
+  files, and the full RefSpec test suite was not rerun. All independent reviews
+  approve. Source commits: SpicyDocs `15d5a9c`, RefSpec `7f0d5614`; local,
+  unmerged and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par06/delivery.md>).
 - [ ] **PAR07 — Add one GovInfo PREMIS reader.** Combine the useful prior parsers
   on bounded XML scanning; retain file names, algorithms, digests and entries
   without fixity. Compare selected captured bytes with an unambiguously matched
@@ -174,10 +191,13 @@ finding is not a completed port.
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
-  **PAR03–PAR05 complete:** ordinary wheels and receiving code run outside
+  **PAR03–PAR06 complete:** ordinary wheels and receiving code run outside
   the source checkouts. Other families remain open. Follow up on runtime
   U.S. Code source-credit receipts: record the provider implementation pin there
   as well as in qualification receipts. Unified Agenda build receipts now do so.
+  Topics also needs per-run producer evidence outside its sealed content; its
+  parser-policy version is not a complete installed-code pin. PAR06 qualification
+  records exact wheel and module hashes, without adding a new receipt framework.
 - [ ] **PAR09 — Remove the replaced implementations.** Track adoption separately
   for every named consumer. Delete duplicate implementations,
   fixtures made redundant, compatibility wrappers and dead helpers after checks;
@@ -192,12 +212,22 @@ finding is not a completed port.
   **PAR05 complete:** both receivers' Agenda XML walkers are removed, along with
   SpicyRegs' download loop and superseded provider wheels. Frozen reader copies
   remain test-only comparison evidence; existing sealed tables are unchanged.
+  **PAR06 parsing complete:** FR and guide source walks and topics HTTP are
+  replaced. Old readers remain test-only oracles. RefSpec's BILLSTATUS injected
+  acquisition/cache still needs owner-reader adoption. Topics keeps its capture
+  event and package-store logic; those product responsibilities were not moved.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
   and DocSpec for its dataset/processing responsibilities. Assess reusable
   interpretation code under its own product owner. Keep necessary differences
   explicit; avoid creating a catch-all utility package or another layer of wrappers.
+  **PAR06 progress:** shared bounded JSON adds explicit finite-float decoding,
+  decoder-error translation and limits covering unknown fields. Transport fix
+  `663841d` bounds public 401/403 bodies before retention, discards incomplete
+  prefixes and never retries an already-known access refusal. Test correction
+  `4cfb5d5` compares retained evidence with original fixture bytes. Other shared
+  support work remains open.
 - [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
   the second native XML interval index. All active callers use existing Core
