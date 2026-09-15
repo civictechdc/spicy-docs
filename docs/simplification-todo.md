@@ -50,12 +50,20 @@ finding is not a completed port.
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
   serialization, evidence helpers and dependencies across all six repositories.
-  PAR11–PAR17 record the additional findings. This is an initial implementation
+  PAR11–PAR18 record the additional findings. This is an initial implementation
   inventory; each port still requires current caller and fixture checks.
 - [x] **PAR02 — Share Federal Register subject-block parsing.** Move literal XML
   and text List of Subjects readers and their regression fixtures; add the missing
   publisher text acquisition path. Preserve window bounds, printed terms and
   source associations. Vocabulary resolution and scoring remain downstream.
+- [ ] **PAR18 — Adopt current DocSpec processing outputs in SpicySearch.** This
+  is the next receiving integration. Its active document-content command expects
+  an older DocSpec bundle; current DocSpec releases use retained layers and blob
+  references. Map source items, files, selected representations and segments
+  through current public APIs. Prove exact text bytes, coordinates, source joins,
+  retention and serving admission with a real installed producer-to-search fixture.
+  Then delete the old mapper and obsolete corpus checks. Add no compatibility
+  bundle. The source-catalog checks below do not qualify this separate path.
 - [ ] **PAR03 — Share U.S. Code structure and reference readers.** Consolidate
   section/chapter/subsection enumeration, annual itempath/usckey reading, USLM
   reference occurrences and ancestor-attributed source-credit observations.
@@ -93,7 +101,8 @@ finding is not a completed port.
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
   the second native XML interval index. All active callers use existing Core
   helpers and `documents.source_slicer`. Known-byte and native interval/XPath
-  regressions plus the full Extrapolator suite passed: **713 tests**.
+  regressions plus the full Extrapolator suite passed: **713 tests**. Independent
+  review approved with no open findings.
 - [ ] **PAR12 — Share PDF page reading across three consumers.** Add the needed
   optional SpicyDocs backend and adopt it in DocSpec, SpicyRegs and RefSpec's GAO
   readers. Compare actual pypdf output before changing engines. Preserve blank
