@@ -3,6 +3,7 @@
 import io
 import zipfile
 from pathlib import Path
+from xml.parsers.expat import ExpatError
 
 import pytest
 
@@ -156,12 +157,13 @@ def test_partial_callbacks_are_not_a_success_when_later_xml_fails():
         scan_uscode_structure(b"<section/>", on_section=123)
 
 
-def test_valid_xml_preserves_a_sink_value_error_instead_of_claiming_malformed_input():
-    error = ValueError("sink rejected this row")
+@pytest.mark.parametrize("error_type", [ValueError, ExpatError])
+def test_valid_xml_preserves_a_sink_error_instead_of_claiming_malformed_input(error_type):
+    error = error_type("sink rejected this row")
 
     def reject(row):
         raise error
 
-    with pytest.raises(ValueError) as caught:
+    with pytest.raises(error_type) as caught:
         scan_uscode_structure(b'<section identifier="/us/usc/t1/s1"/>', on_section=reject)
     assert caught.value is error

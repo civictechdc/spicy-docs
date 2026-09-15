@@ -11,8 +11,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
-from .uscode import DEFAULT_MAX_XML_BYTES, USLM_NAMESPACE, UsCodeSourceError
-from .uscode_xml import UsCodeElement, UsCodeXmlScan
+from .uscode import DEFAULT_MAX_XML_BYTES, USLM_NAMESPACE, UsCodeSourceError, _limit
+from .xml_observations import XmlElement, XmlObservationScan
 
 _PREFIX = "{" + USLM_NAMESPACE + "}"
 _IDENTIFIER = re.compile(r"/us/usc/t(?P<title>[0-9]+[aA]?)(?P<path>/.*)")
@@ -60,14 +60,14 @@ def _identifier_piece(raw: str) -> UsCodeIdentifierPiece:
 
 @dataclass(frozen=True, slots=True)
 class UsCodeStructureText:
-    element: UsCodeElement
+    element: XmlElement
     text: str
 
 
 @dataclass(frozen=True, slots=True)
 class UsCodeStructureObservation:
-    element: UsCodeElement
-    ancestors: tuple[UsCodeElement, ...]
+    element: XmlElement
+    ancestors: tuple[XmlElement, ...]
     identifier_pieces: tuple[UsCodeIdentifierPiece, ...]
     numbers: tuple[UsCodeStructureText, ...]
     headings: tuple[UsCodeStructureText, ...]
@@ -91,19 +91,19 @@ class UsCodeStructureCounts:
 @dataclass(slots=True)
 class _Capture:
     depth: int
-    elements: tuple[UsCodeElement, ...]
+    elements: tuple[XmlElement, ...]
     pieces: tuple[UsCodeIdentifierPiece, ...]
     callbacks: tuple[Callable[[UsCodeStructureObservation], None], ...]
     numbers: list[UsCodeStructureText] = field(default_factory=list)
     headings: list[UsCodeStructureText] = field(default_factory=list)
-    text_element: UsCodeElement | None = None
+    text_element: XmlElement | None = None
     text_parts: list[str] = field(default_factory=list)
     text_characters: int = 0
 
 
-class _StructureScan(UsCodeXmlScan):
+class _StructureScan(XmlObservationScan):
     def __init__(self, callbacks: dict[str, Callable[[UsCodeStructureObservation], None] | None]) -> None:
-        super().__init__()
+        super().__init__(error_type=UsCodeSourceError, label="U.S. Code XML")
         self.callbacks = callbacks
         self.counts = dict.fromkeys(callbacks, 0)
         self.captures: list[_Capture] = []
@@ -180,6 +180,7 @@ def scan_uscode_structure(
     callbacks = {"sections": on_section, "section_parts": on_section_part, "chapters": on_chapter}
     if any(callback is not None and not callable(callback) for callback in callbacks.values()):
         raise UsCodeSourceError("U.S. Code structure callbacks must be callable")
+    _limit(max_bytes)
     scanner = _StructureScan(callbacks)
-    scanner.read(body, max_bytes)
+    scanner.read(body, max_bytes=max_bytes)
     return UsCodeStructureCounts(**scanner.counts)

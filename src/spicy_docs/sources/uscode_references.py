@@ -11,8 +11,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from .uscode import DEFAULT_MAX_XML_BYTES, UsCodeSourceError
-from .uscode_xml import UsCodeElement, UsCodeXmlScan
+from .uscode import DEFAULT_MAX_XML_BYTES, UsCodeSourceError, _limit
+from .xml_observations import XmlElement, XmlObservationScan
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,8 +24,8 @@ class UsCodeReference:
     ``ancestors`` excludes the observed element, in root-to-parent order.
     """
 
-    element: UsCodeElement
-    ancestors: tuple[UsCodeElement, ...]
+    element: XmlElement
+    ancestors: tuple[XmlElement, ...]
 
     @property
     def href(self) -> str | None:
@@ -42,8 +42,8 @@ class UsCodeSourceCredit:
     remains in ``ancestors``; it does not inherit an outer section identifier.
     """
 
-    element: UsCodeElement
-    ancestors: tuple[UsCodeElement, ...]
+    element: XmlElement
+    ancestors: tuple[XmlElement, ...]
     text: str
 
 
@@ -58,12 +58,12 @@ class UsCodeReferenceScan:
 
 @dataclass(slots=True)
 class _CreditText:
-    ancestry: tuple[UsCodeElement, ...]
+    ancestry: tuple[XmlElement, ...]
     parts: list[str] = field(default_factory=list)
     characters: int = 0
 
 
-class _ReferenceScan(UsCodeXmlScan):
+class _ReferenceScan(XmlObservationScan):
     def __init__(
         self,
         on_reference: Callable[[UsCodeReference], object] | None,
@@ -72,7 +72,7 @@ class _ReferenceScan(UsCodeXmlScan):
         max_text_characters: int,
         max_depth: int,
     ) -> None:
-        super().__init__(max_depth=max_depth)
+        super().__init__(error_type=UsCodeSourceError, label="U.S. Code XML", max_depth=max_depth)
         self.on_reference = on_reference
         self.on_source_credit = on_source_credit
         self.max_observations = max_observations
@@ -139,6 +139,7 @@ def scan_uscode_references(
     for name, value in (("max_observations", max_observations), ("max_text_characters", max_text_characters)):
         if type(value) is not int or value <= 0:
             raise UsCodeSourceError(f"{name} must be a positive integer")
+    _limit(max_bytes)
     scan = _ReferenceScan(on_reference, on_source_credit, max_observations, max_text_characters, max_depth)
     scan.read(xml, max_bytes=max_bytes)
     return UsCodeReferenceScan(scan.elements, scan.references, scan.source_credits)

@@ -22,6 +22,8 @@
 - [GAO pages](sources/gao.md)
 - [Congressional bills](sources/congress-bills.md)
 - [CFR/eCFR XML](sources/cfr.md)
+- [eCFR authority notes and source metadata](sources/ecfr-authority.md)
+- [CFR agencies and subject index](sources/cfr-roster-index.md)
 - [Public laws and statute compilations](sources/uslm-laws.md): keyless GovInfo USLM XML with native identity checks.
 - [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule; `spicy-docs-list` walks any of them from the [command line](cli.md).
 - [Unified Agenda](sources/unified-agenda.md): one reginfo.gov edition file, proved from every record.

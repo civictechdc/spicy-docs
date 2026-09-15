@@ -5,6 +5,7 @@ import re
 import zipfile
 from pathlib import Path
 from xml.etree import ElementTree as ET
+from xml.parsers.expat import ExpatError
 
 import pytest
 
@@ -195,13 +196,14 @@ def test_callback_mutation_does_not_change_later_ancestry():
 
 
 @pytest.mark.parametrize("callback", ["on_reference", "on_source_credit"])
-def test_callback_errors_keep_their_identity_instead_of_claiming_malformed_xml(callback):
-    error = ValueError("output refused this row")
+@pytest.mark.parametrize("error_type", [ValueError, ExpatError])
+def test_callback_errors_keep_their_identity_instead_of_claiming_malformed_xml(callback, error_type):
+    error = error_type("output refused this row")
 
     def refuse(_row):
         raise error
 
-    with pytest.raises(ValueError) as raised:
+    with pytest.raises(error_type) as raised:
         scan_uscode_references(
             b'<root><ref href="source"/><sourceCredit>credit</sourceCredit></root>', **{callback: refuse}
         )

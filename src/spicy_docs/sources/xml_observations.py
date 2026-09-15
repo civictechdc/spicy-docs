@@ -1,16 +1,15 @@
-"""Bounded OLRC XML ancestry shared by the structure and reference readers."""
+"""Bounded XML element positions shared by source observation readers."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from .uscode import DEFAULT_MAX_XML_BYTES, UsCodeSourceError, _limit
 from .xml import scan_xml
 
 
 @dataclass(frozen=True, slots=True)
-class UsCodeElement:
+class XmlElement:
     """One element's literal attributes and namespace-independent positional XPath.
 
     ``/*[1]/*[2]`` selects the root's second element child, regardless of XML
@@ -31,14 +30,16 @@ class _Frame:
 
 
 class _CallbackError(Exception):
-    def __init__(self, original: ValueError) -> None:
+    def __init__(self, original: Exception) -> None:
         self.original = original
 
 
-class UsCodeXmlScan:
-    """Observe a retained OLRC title or fragment without constructing its tree."""
+class XmlObservationScan:
+    """Observe retained source XML or a fragment without constructing its tree."""
 
-    def __init__(self, *, max_depth: int = 256) -> None:
+    def __init__(self, *, error_type: type[ValueError], label: str, max_depth: int = 256) -> None:
+        self.error_type = error_type
+        self.label = label
         self.stack: list[_Frame] = []
         self.max_depth = max_depth
 
@@ -58,12 +59,12 @@ class UsCodeXmlScan:
     def data(self, text: str) -> None:
         self.observe_text(text)
 
-    def snapshot(self) -> tuple[UsCodeElement, ...]:
+    def snapshot(self) -> tuple[XmlElement, ...]:
         path = ""
         elements = []
         for frame in self.stack:
             path += f"/*[{frame.position}]"
-            elements.append(UsCodeElement(frame.tag, dict(frame.attributes), path))
+            elements.append(XmlElement(frame.tag, dict(frame.attributes), path))
         return tuple(elements)
 
     def observe_start(self, tag: str, attributes: dict[str, str]) -> None:
@@ -76,15 +77,14 @@ class UsCodeXmlScan:
         pass
 
     def emit(self, callback: Callable, observation: object) -> None:
-        # scan_xml labels parser ValueErrors as malformed source XML. A sink's
-        # ValueError instead belongs to the caller and must retain its identity.
+        # Only the sink invocation is wrapped: parser/capture errors remain source
+        # errors, while caller exceptions keep their original type and identity.
         try:
             callback(observation)
-        except ValueError as error:
+        except Exception as error:
             raise _CallbackError(error) from error
 
-    def read(self, body: bytes, max_bytes: int = DEFAULT_MAX_XML_BYTES) -> None:
-        _limit(max_bytes)
+    def read(self, body: bytes, *, max_bytes: int) -> None:
         try:
             scan_xml(
                 body,
@@ -92,8 +92,8 @@ class UsCodeXmlScan:
                 end=self.end,
                 data=self.data,
                 max_bytes=max_bytes,
-                error_type=UsCodeSourceError,
-                label="U.S. Code XML",
+                error_type=self.error_type,
+                label=self.label,
                 max_depth=self.max_depth,
             )
         except _CallbackError as failure:
