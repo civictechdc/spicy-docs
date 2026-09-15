@@ -87,8 +87,6 @@ def index_pages(
         for page, response, response_bytes, evidence_ref in parsed:
             with capture_refused_page(page):
                 saw_page = True
-                if page.traversal_index >= profile.max_traversals:
-                    raise SourceNativeReleaseError(f"{profile.name} acquisition exceeds its traversal bound")
                 starts_window = page.window_page_index == 0
                 _validate_page_chain(page, previous, previous_next, profile)
                 if previous is not None and page.traversal_index != previous.traversal_index:
@@ -308,6 +306,8 @@ def _captured_pages(pages, *, blob_store, accounting, evidence_members, query_sc
                 or evidence_descriptor.media_type != page.evidence_media_type
             ):
                 raise SourceNativeReleaseError("source-native evidence content has conflicting declarations")
+            if page.traversal_index >= profile.max_traversals:
+                raise SourceNativeReleaseError(f"{profile.name} acquisition exceeds its traversal bound")
             if profile.parse_file_stream is not None:
                 with parse_file_evidence(
                     profile,
