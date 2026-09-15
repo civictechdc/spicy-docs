@@ -242,8 +242,11 @@ This checklist has 10 open items in total, including the two conditional deferra
   **PAR03 complete:** current reference/source-credit parsing uses SpicyDocs;
   historical research kernels stay frozen as evidence. RefSpec's existing
   reference command still downloads/caches/opens U.S. Code ZIPs; its source-credit
-  command reads local ZIPs. Those archive/acquisition paths need owner adoption;
-  this parsing port does not claim to remove them.
+  command reads local ZIPs. `build_usc_structure` also walks local corpus and
+  annual ZIPs through low-level helpers. Adopt owner archive APIs that supply
+  validated member bytes without retaining every expanded title. Scope the
+  reference cache by release point and validate the edition stated in XML.
+  These remaining archive/acquisition paths are being implemented together.
   **PAR04 complete:** RefSpec's agency walkers and subject HTML regexes are
   removed from production. Copies remain only as test oracles; the independent
   subject fidelity checker and historical authority extractor remain evidence.
@@ -251,8 +254,11 @@ This checklist has 10 open items in total, including the two conditional deferra
   SpicyRegs' download loop and superseded provider wheels. Frozen reader copies
   remain test-only comparison evidence; existing sealed tables are unchanged.
   **PAR06 parsing complete:** FR and guide source walks and topics HTTP are
-  replaced. Old readers remain test-only oracles. RefSpec's BILLSTATUS injected
-  acquisition/cache still needs owner-reader adoption. Topics keeps its capture
+  replaced. Old readers remain test-only oracles. RefSpec's BILLSTATUS capture
+  retains its pinned-resource policy and explicit local/injected-response boundary.
+  Its only production caller uses a local guide, and SpicyDocs already parses it.
+  Replace the copied cache publication mechanics with Rulespec Artifacts storage;
+  no additional live client is needed. Topics keeps its capture
   event and package-store logic; those product responsibilities were not moved.
   **PAR07 complete:** RefSpec's PREMIS XML walk is replaced. The old PREMIS and
   MODS implementations remain only as test oracles. Salvaged SpicyRegs PREMIS
