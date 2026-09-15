@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-from ..govinfo.mods import GovInfoModsError, GovInfoModsPackage, ModsRecord, parse_govinfo_mods
+from ..govinfo.mods import MODS_NAMESPACE, GovInfoModsError, GovInfoModsPackage, ModsRecord, parse_govinfo_mods
 from .models import DEFAULT_MAX_BYTES, AnnualCfrSelection, CfrSourceError, _date, _limit
 
 
@@ -124,7 +124,10 @@ def _parse_annual_cfr_metadata(
     # Alternate/repeated titles belong in the full mapping. A singular display
     # title is available only when the package supplies one untyped title.
     titles = [
-        title for info in metadata.package.titles if info.attribute("type") is None for title in info.findall("title")
+        title
+        for info in metadata.package.titles
+        if info.attribute("type") is None
+        for title in info.findall(f"{{{MODS_NAMESPACE}}}title")
     ]
     edition = AnnualCfrEdition(
         selection.year,
