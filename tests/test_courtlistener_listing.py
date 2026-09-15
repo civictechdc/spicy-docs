@@ -9,8 +9,8 @@ from xml.sax.saxutils import escape
 
 import pytest
 
-from spicy_docs.sources import courtlistener_bulk, courtlistener_listing
-from spicy_docs.sources.courtlistener_listing import BulkObject, parse_listing_page
+from spicy_docs.sources.courtlistener import bulk, listing
+from spicy_docs.sources.courtlistener.listing import BulkObject, parse_listing_page
 
 
 def _entry(key: str, *, size: str = "10", etag: str = '"etag-3"', modified: str = "2026-06-30T04:11:47.000Z") -> str:
@@ -121,7 +121,7 @@ def test_page_refuses_invalid_or_timezone_free_timestamp(modified: str) -> None:
 
 def test_page_byte_bound_includes_the_whole_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = _page()
-    monkeypatch.setattr(courtlistener_listing, "MAX_LISTING_PAGE_BYTES", len(payload))
+    monkeypatch.setattr(listing, "MAX_LISTING_PAGE_BYTES", len(payload))
     assert parse_listing_page(payload) == ((), None)
     with pytest.raises(ValueError, match="byte limit"):
         parse_listing_page(payload + b" ")
@@ -133,14 +133,14 @@ def _live_pages(monkeypatch: pytest.MonkeyPatch, pages: list[bytes]) -> list[str
 
     class BoundedResponse(io.BytesIO):
         def read(self, size: int | None = -1, /) -> bytes:
-            assert size == courtlistener_bulk.MAX_LISTING_PAGE_BYTES + 1
+            assert size == bulk.MAX_LISTING_PAGE_BYTES + 1
             return super().read(size)
 
     def open_page(url: str):
         calls.append(url)
         return BoundedResponse(next(pending))
 
-    monkeypatch.setattr(courtlistener_bulk, "_open", open_page)
+    monkeypatch.setattr(bulk, "_open", open_page)
     return calls
 
 
@@ -153,7 +153,7 @@ def test_live_listing_uses_the_public_parser_and_exact_continuation(monkeypatch:
             _page(_entry(f"{prefix}second.csv"), prefix=prefix),
         ],
     )
-    objects = courtlistener_bulk.list_bulk_dumps(prefix)
+    objects = bulk.list_bulk_dumps(prefix)
     assert [obj.key for obj in objects] == [f"{prefix}first.csv", f"{prefix}second.csv"]
     assert all(obj.etag == '"etag-3"' for obj in objects)
     assert parse_qs(urlsplit(calls[1]).query)["continuation-token"] == ["opaque+token&value"]
@@ -171,18 +171,18 @@ def test_live_listing_uses_the_public_parser_and_exact_continuation(monkeypatch:
             [_page(_entry("bulk-data/a.csv"), truncated="true", token="next"), _page(_entry("bulk-data/a.csv"))],
             "across pages",
         ),
-        ([b"x" * (courtlistener_bulk.MAX_LISTING_PAGE_BYTES + 2)], "byte limit"),
+        ([b"x" * (bulk.MAX_LISTING_PAGE_BYTES + 2)], "byte limit"),
     ],
 )
 def test_live_listing_never_returns_a_partial_or_duplicate_population(monkeypatch, pages, message) -> None:
     calls = _live_pages(monkeypatch, pages)
     with pytest.raises(ValueError, match=message):
-        courtlistener_bulk.list_bulk_dumps()
+        bulk.list_bulk_dumps()
     assert len(calls) == len(pages)
 
 
 def test_live_listing_rejects_an_unrelated_prefix_before_requesting(monkeypatch: pytest.MonkeyPatch) -> None:
     calls = _live_pages(monkeypatch, [])
     with pytest.raises(ValueError, match="under bulk-data/"):
-        courtlistener_bulk.list_bulk_dumps("other/")
+        bulk.list_bulk_dumps("other/")
     assert calls == []

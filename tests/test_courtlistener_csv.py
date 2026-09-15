@@ -11,13 +11,13 @@ import io
 
 import pytest
 
-from spicy_docs.sources import courtlistener_csv
-from spicy_docs.sources.courtlistener_csv import CourtListenerCsvError, iter_postgres_csv
+from spicy_docs.sources.courtlistener import csv
+from spicy_docs.sources.courtlistener.csv import CourtListenerCsvError, iter_postgres_csv
 
 
 @pytest.mark.parametrize("chunk_size", [1, 2, 3, 7, 65536])
 def test_native_values_survive_every_kind_of_chunk_boundary(monkeypatch, chunk_size):
-    monkeypatch.setattr(courtlistener_csv, "_TEXT_CHUNK", chunk_size)
+    monkeypatch.setattr(csv, "_TEXT_CHUNK", chunk_size)
     body = (
         "id,empty,missing,text,marker\r\n"
         '"1","",,"café\\\\path \\"quoted\\"\r\nsecond line",\\N\r\n'

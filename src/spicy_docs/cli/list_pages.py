@@ -38,8 +38,8 @@ from spicy_docs.reading.paged_json import (
 )
 from spicy_docs.reading.refusals import retain_refused_response
 from spicy_docs.sources.congress.listing import BILLS_KEY, CONGRESS_GOV, CRS_REPORTS_KEY
-from spicy_docs.sources.courtlistener_search import COURTLISTENER
-from spicy_docs.sources.courtlistener_search import RESULTS_KEY as SEARCH_RESULTS_KEY
+from spicy_docs.sources.courtlistener.search import COURTLISTENER
+from spicy_docs.sources.courtlistener.search import RESULTS_KEY as SEARCH_RESULTS_KEY
 from spicy_docs.sources.fcc_ecfs import FCC_ECFS, PROCEEDINGS_KEY
 from spicy_docs.sources.fcc_ecfs import FILINGS_KEY as FCC_FILINGS_KEY
 from spicy_docs.sources.govinfo.discovery import GOVINFO, GRANULES_KEY, PACKAGES_KEY

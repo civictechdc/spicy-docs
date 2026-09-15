@@ -907,7 +907,7 @@ wheel newer than the 0.3.0 SpicyRegs pins today.
 | --- | --- | --- | --- |
 | `federal_register.py` | FR API v1 documents; 90-day windows under the 10,000 cap | Covered by `sources/federal_register/native.py` | adopt |
 | `fec_committees.py` | OpenFEC `/v1/committees/`, keyset paging | Covered by the FEC committee profile | adopt |
-| `courtlistener_bulk.py` | CourtListener bulk CSV exports | Shared reader adopted; SpicyRegs SR04 | done |
+| `sources/courtlistener/bulk.py` | CourtListener bulk CSV exports | Shared reader adopted; SpicyRegs SR04 | done |
 | `bill_subjects.py` | GovInfo BILLSTATUS | Already on the wheel (G03) | done |
 | `gao_reports.py` | `gao.gov/rss/reports.xml` listing | Port: RSS listing route beside product pages | M01 |
 | `crs_reports.py` | `api.congress.gov/v3/crsreport`, offset/limit, keyed | Port: listing route beside `crs_summaries.py` | M02 |
@@ -934,7 +934,7 @@ retained fixtures plus a guide.
 - [x] **M03** — Congress.gov bill listing: same module; continuation spaces re-encoded before request.
 - [x] **M04** — GovInfo JSON discovery: `sources/govinfo/discovery.py` (`/published`, `/collections`, package granules); zero count is an observation.
   Shared traversal: `reading/paged_json.py` (host, next path, count path as data; header-only credential; declared-count checks). Pinned pages: `receipts/spicyregs-merge-probes-2026-09-14/`.
-- [x] **M05** — CourtListener REST search: `sources/courtlistener_search.py`, keyless or token; cursor continuations.
+- [x] **M05** — CourtListener REST search: `sources/courtlistener/search.py`, keyless or token; cursor continuations.
 - [x] **M06** — Unified Agenda edition XML: `sources/unified_agenda.py`; 202510 capture matched RefSpec's pin. [Guide](sources/unified-agenda.md).
 - [x] **M07** — LDA lobbying filings: `sources/lda.py`, keyless or token.
 - [x] **M08** — SAM entity management: `sources/sam.py`; needs the SAM.gov key (`SAM_GOV` in `.env`); placeholder `api_key` dropped from continuations.

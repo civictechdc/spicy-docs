@@ -77,7 +77,7 @@ add a body downloader.
 
 ### 4. Preserve CourtListener empty strings
 
-The [CSV reader](../src/spicy_docs/sources/courtlistener_bulk.py) now preserves
+The [CSV reader](../src/spicy_docs/sources/courtlistener/bulk.py) now preserves
 unquoted empty fields as `None` and quoted empty strings as `""`. Its bounded
 source decoder follows the
 [publisher's PostgreSQL export dialect](https://github.com/freelawproject/courtlistener/blob/main/scripts/make_bulk_data.sh).

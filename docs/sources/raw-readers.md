@@ -45,7 +45,7 @@ cancels queued work; running calls finish under their transport limits.
 
 ## CourtListener
 
-[`courtlistener_bulk.py`](../../src/spicy_docs/sources/courtlistener_bulk.py)
+[`courtlistener_bulk.py`](../../src/spicy_docs/sources/courtlistener/bulk.py)
 streams a dated network `.csv.bz2` dump or local file. It handles concatenated
 bzip2 streams and incremental CSV. An unquoted empty field becomes `None`;
 `""` remains an empty string. Other values remain strings, including whitespace
@@ -87,7 +87,7 @@ the resumed body, the reader requires HTTP 206, the same ETag and resolved URL,
 and an exact `Content-Range` covering the remaining bytes. It requests identity
 HTTP encoding and refuses other encodings. Absent or weak initial ETags allow an
 uninterrupted read; malformed or repeated metadata refuses. See the focused
-[HTTP owner](../../src/spicy_docs/sources/courtlistener_http.py).
+[HTTP owner](../../src/spicy_docs/sources/courtlistener/http.py).
 
 HTTP 401/403 raises `CredentialRefusedError`; HTTP 412 and invalid resume
 metadata also stop immediately. Initial connection attempts and subsequent
@@ -107,12 +107,12 @@ The raw reader does not hash or retain the downloaded object for the caller.
 
 ### Reuse listing rules through the installed wheel
 
-[`courtlistener_listing.py`](../../src/spicy_docs/sources/courtlistener_listing.py)
+[`courtlistener_listing.py`](../../src/spicy_docs/sources/courtlistener/listing.py)
 is a public standard-library parser. Importing it starts no transport, loads no
 CSV reader or third-party package, and changes no CSV limits:
 
 ```python
-from spicy_docs.sources.courtlistener_listing import BulkObject, parse_listing_page
+from spicy_docs.sources.courtlistener.listing import BulkObject, parse_listing_page
 
 objects, next_token = parse_listing_page(retained_page_bytes)
 for obj in objects:

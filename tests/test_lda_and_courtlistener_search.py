@@ -7,7 +7,7 @@ import httpx
 import pytest
 
 from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonSourceError
-from spicy_docs.sources.courtlistener_search import COURTLISTENER, CourtListenerSearchReader, search_url
+from spicy_docs.sources.courtlistener.search import COURTLISTENER, CourtListenerSearchReader, search_url
 from spicy_docs.sources.lda import LDA, LdaFilingsReader, filings_url
 from spicy_docs.transport import retry
 

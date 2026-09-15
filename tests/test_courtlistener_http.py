@@ -8,8 +8,7 @@ from email.message import Message
 
 import pytest
 
-from spicy_docs.sources import courtlistener_bulk as bulk
-from spicy_docs.sources import courtlistener_http as http
+from spicy_docs.sources.courtlistener import bulk, http
 from spicy_docs.transport.credentials import CredentialRefusedError
 
 URL = "https://storage.courtlistener.com/bulk-data/courts-2026-06-30.csv.bz2"
