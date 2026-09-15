@@ -9,7 +9,7 @@ The library is `spicy_docs.sources.fec.client.FecClient`; the command is
 `spicy-docs-fec`. Install the `acquisition` extra for HTTP access. These are raw
 acquisition APIs, like the CourtListener reader. They do not publish sealed
 releases, normalize financial tables, or manage a dataset across runs. The
-separate committee and filing-query profiles below reuse the existing release
+separate query profiles below reuse the existing release
 publisher without adding a second publication pipeline.
 
 ## Choose a collection and route
@@ -199,6 +199,46 @@ schema/policy declarations and release pins. [Qualification and limits](</Users/
 cover pinned positive/empty candidate answers, synthetic multi-page controls,
 deliberate failure checks and an installed core wheel. The retained positive
 query is one page; it does not establish live multi-page stability.
+
+## Publish retained legal and audit queries
+
+Use these core-only profiles with the same publisher, capture descriptors and
+blob store as the other retained queries:
+
+| Module in `spicy_docs.sources.fec` | Profile | Scope and input iterator |
+| --- | --- | --- |
+| `legal_profile` | `FEC_LEGAL_QUERY_PROFILE` | `legal_query_scope(captures)`, `iter_retained_legal_pages(captures, blob_source=...)` |
+| `audit_profile` | `FEC_AUDIT_QUERY_PROFILE` | `audit_query_scope(captures)`, `iter_retained_audit_pages(captures, blob_source=...)` |
+
+Legal publication accepts one `/v1/legal/search/` query with exactly one `type`:
+`advisory_opinions`, `murs`, `admin_fines` or `adrs`. Supply an explicit
+`hits_returned` from 1 through 200. Captures begin at `from_hit=0` (or omit that
+first offset) and advance by that size without changing filters. Publication
+checks the selected result group, stable publisher totals, exact row counts,
+continuation membership and unique native `doc_id` values. It preserves each
+row's `type`; no case ID is inferred from a document ID prefix or case number.
+
+Audit publication accepts one complete ordinary `/v1/audit-case/` query with
+explicit `per_page`, exact counts and unique native string `audit_case_id`
+values. `audit_id`, committees, candidates, cycles and nested category/subcategory
+lists remain separate source fields. Neither profile interprets source statuses,
+findings, financial amounts or the meaning of arbitrary filters.
+
+Nested document associations, citations, participant roles, repeated vote actions,
+unknown fields and query highlights survive. Document body strings stay as
+pointers into the exact retained response; linked originals are acquired
+independently. Publisher summaries remain metadata. Complete observed search
+results do not establish complete case files, historical coverage or a frozen
+publisher snapshot. Legal detail JSON, the separate rulemaking endpoint with
+`rm_id`, statutes, and audit category-reference endpoints require their own
+release rules. They remain available through the raw acquisition interface.
+
+[Qualification and limits](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-legal-audit-release-2026-09-15/README.md>)
+cover exact retained AO/AF queries and synthetic pagination/empty-query controls.
+Retained audit listings are partial and qualify refusal only; complete audit
+success is synthetic. ADR/MUR release success also has synthetic controls rather
+than complete native query qualification. No new acquisition or live pagination
+stability is claimed.
 
 ## Acquire selected originals
 

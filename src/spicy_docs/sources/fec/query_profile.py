@@ -33,12 +33,13 @@ class CountedTraversal:
 
     request: RequestCheck
     classify: Callable
+    count_page: Callable = exact_page_count
     count: int | None = None
     pages: int | None = None
     observed: int = 0
 
     def add(self, response: Mapping, *, page_index: int) -> None:
-        count, pages = exact_page_count(response, request=self.request)
+        count, pages = self.count_page(response, request=self.request)
         if self.count is None:
             self.count, self.pages = count, pages
         if (count, pages) != (self.count, self.pages) or response["page"] != page_index + 1:
@@ -52,7 +53,9 @@ class CountedTraversal:
             raise ValueError("FEC observations differ from the publisher count")
 
 
-def observation_schema(*, name: str, version: str, identity: str, metadata: dict) -> dict:
+def observation_schema(
+    *, name: str, version: str, identity: str, metadata: dict, pointer_pattern: str = "^/results/[0-9]+$"
+) -> dict:
     """Describe the shared metadata/body split with source-owned identity fields."""
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -65,7 +68,7 @@ def observation_schema(*, name: str, version: str, identity: str, metadata: dict
             "metadata": metadata,
             "embedded_bodies": {"type": "array"},
             "assets": {"type": "array"},
-            "source_pointer": {"type": "string", "pattern": "^/results/[0-9]+$"},
+            "source_pointer": {"type": "string", "pattern": pointer_pattern},
         },
         "x-spicy-record-order": [
             {
@@ -94,6 +97,7 @@ def retained_query_profile(
     classify,
     traversal,
     policy,
+    parse_page=None,
 ) -> SourceNativeProfile:
     """Wire the existing publisher without changing a source's sealed declarations."""
 
@@ -140,7 +144,7 @@ def retained_query_profile(
             "decimalRepresentation": "exact decimal strings; source JSON bytes retain original numbers",
         },
         validate_query_scope=scope,
-        parse_page_response=partial(parse_response, request=request),
+        parse_page_response=parse_page if parse_page is not None else partial(parse_response, request=request),
         next_page=next_page,
         traversal_check=traversal,
         classify_record=classify,

@@ -1,0 +1,32 @@
+[
+  {
+    "file": "ao-2025.json",
+    "source_metadata": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-next-collections-2026-09-14/legal/ao-2025/metadata-06e977fcff8144099d733f99a8757590.jsonl",
+    "source_line": 2,
+    "source_blob": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-next-collections-2026-09-14/legal/ao-2025/blobs/sha256/d34884d2563af76963b65613b772dff7b5b2a6beddeb93eeac2d98d6d7e35ec3",
+    "capture": {
+      "requestUrl": "https://api.open.fec.gov/v1/legal/search/?type=advisory_opinions&ao_year=2025&hits_returned=100",
+      "resolvedUrl": "https://api.open.fec.gov/v1/legal/search/?type=advisory_opinions&ao_year=2025&hits_returned=100",
+      "observedAt": "2026-09-14T22:01:32.198619+00:00",
+      "responseSha256": "sha256:d34884d2563af76963b65613b772dff7b5b2a6beddeb93eeac2d98d6d7e35ec3",
+      "byteSize": 21334,
+      "mediaType": "application/json",
+      "via": "direct"
+    }
+  },
+  {
+    "file": "af-2025.json",
+    "source_metadata": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-next-collections-2026-09-14/legal/af-2025/metadata.jsonl",
+    "source_line": 1,
+    "source_blob": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/fec-next-collections-2026-09-14/legal/af-2025/blobs/sha256/171cf590f89e00cd6f9f84323e1fcffc7917214cdc75bc12fe6599e93273f91b",
+    "capture": {
+      "requestUrl": "https://api.open.fec.gov/v1/legal/search/?type=admin_fines&af_min_fd_date=2025-01-01&af_max_fd_date=2025-12-31&hits_returned=100",
+      "resolvedUrl": "https://api.open.fec.gov/v1/legal/search/?type=admin_fines&af_min_fd_date=2025-01-01&af_max_fd_date=2025-12-31&hits_returned=100",
+      "observedAt": "2026-09-14T22:02:34.649640+00:00",
+      "responseSha256": "sha256:171cf590f89e00cd6f9f84323e1fcffc7917214cdc75bc12fe6599e93273f91b",
+      "byteSize": 30786,
+      "mediaType": "application/json",
+      "via": "direct"
+    }
+  }
+]

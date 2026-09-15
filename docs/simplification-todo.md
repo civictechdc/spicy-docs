@@ -568,10 +568,18 @@ published formats; XML/JSON/XHTML precede equivalent HTML.
     Unknown fields, repeated arrays and separate body pointers survive; unreturned
     requested IDs stay in query scope. Shared profile wiring preserves existing
     committee/filing release pins. [API and qualification](sources/fec.md#publish-retained-candidate-queries).
-  - [ ] Extend release profiles to selected legal/audit and bulk inputs with their
-    own source identity, membership and scope rules. Raw acquisition already works;
-    candidate detail/history/search/totals also need separate admission rules.
-    Wider live query coverage and full-population acquisition remain dataset work.
+  - [x] Add retained legal-search and audit-query profiles over the same publisher.
+    Legal AO/MUR/AF/ADR queries use native `doc_id` and selected `type`, with exact
+    offset membership and declared totals. Audit queries use `audit_case_id` and
+    exact ordinary page counts. Nested associations and separate body pointers
+    survive. Retained AO/AF queries qualify success; partial audit inputs qualify
+    refusal, while audit/ADR/MUR success and pagination controls are synthetic.
+    [API and qualification](sources/fec.md#publish-retained-legal-and-audit-queries).
+  - [ ] Extend release profiles to bulk inputs and remaining distinct API shapes:
+    legal detail, rulemakings (`rm_id`), statutes, audit category references, and
+    candidate detail/history/search/totals. Establish each source's identity,
+    membership and scope rules; raw acquisition already works. Wider native query
+    qualification and full-population acquisition remain separate dataset work.
 - [x] **FEC13 — Promote reusable agency-report parsing.** Offline
   `parse_foia_annual_report` and `parse_oversight_report` expose retained source
   fields through the [agency-report API](sources/agency-reports.md). Native NIEM

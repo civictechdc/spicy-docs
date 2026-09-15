@@ -1,6 +1,6 @@
 """Bounded retained JSON pages shared by FEC release profiles.
 
-These helpers preserve byte evidence and one explicitly pinned ordinary-page
+These helpers preserve byte evidence and one explicitly pinned page or offset
 query. Each source profile supplies its endpoint, identity and coverage policy.
 """
 
@@ -33,13 +33,18 @@ _OPTIONAL_CAPTURE = {"resolvedUrl", "mediaType", "via"}
 RequestCheck = Callable[[object], tuple[list[tuple[str, str]], int]]
 
 
-def page_request(url: object, *, endpoint: str, order_by: str | None = None) -> tuple[list[tuple[str, str]], int]:
+def request_pairs(url: object, *, endpoint: str) -> list[tuple[str, str]]:
+    """Validate a bounded, credential-free URL before interpreting its controls."""
     if not isinstance(url, str) or len(url) > MAX_MANIFEST_BYTES:
         raise ValueError("FEC query request must be a bounded URL")
     parsed = urlsplit(official_url(url))
     if urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", "")) != endpoint:
         raise ValueError("FEC query request must use the selected endpoint")
-    pairs = parse_qsl(parsed.query, keep_blank_values=True)
+    return parse_qsl(parsed.query, keep_blank_values=True)
+
+
+def page_request(url: object, *, endpoint: str, order_by: str | None = None) -> tuple[list[tuple[str, str]], int]:
+    pairs = request_pairs(url, endpoint=endpoint)
     controls = {key: [value for name, value in pairs if name == key] for key in ("page", "per_page", "sort")}
     if (
         (order_by is not None and controls["sort"] != [order_by])
@@ -90,7 +95,9 @@ def capture_descriptor(value: object, *, request: RequestCheck) -> dict[str, Any
     return result
 
 
-def query_scope(captures: Sequence[Mapping[str, Any]], *, request: RequestCheck) -> dict[str, Any]:
+def query_scope(
+    captures: Sequence[Mapping[str, Any]], *, request: RequestCheck, page_parameter: str = "page"
+) -> dict[str, Any]:
     """Pin the ordered capture inventory without inferring source coverage."""
     if not isinstance(captures, (list, tuple)) or not 1 <= len(captures) <= MAX_CAPTURES:
         raise ValueError("FEC query needs a bounded, nonempty capture sequence")
@@ -98,7 +105,7 @@ def query_scope(captures: Sequence[Mapping[str, Any]], *, request: RequestCheck)
     base = None
     for index, capture in enumerate(values):
         pairs, page = request(capture["requestUrl"])
-        filters = [(key, value) for key, value in pairs if key != "page"]
+        filters = [(key, value) for key, value in pairs if key != page_parameter]
         if page != index + 1 or base is not None and filters != base:
             raise ValueError("FEC query capture inventory omits pages or changes source filters")
         base = filters
@@ -126,7 +133,7 @@ def pack_response(capture: Mapping[str, Any], raw: bytes) -> bytes:
     return output.getvalue()
 
 
-def parse_response(raw: bytes, *, request: RequestCheck) -> Mapping[str, Any]:
+def parse_response(raw: bytes, *, request: RequestCheck, mode: str = "page") -> Mapping[str, Any]:
     try:
         with ZipFile(BytesIO(raw)) as archive:
             infos = archive.infolist()
@@ -149,9 +156,11 @@ def parse_response(raw: bytes, *, request: RequestCheck) -> Mapping[str, Any]:
     ):
         raise ValueError("FEC capture bytes differ from their declared pin")
     value = parse_api(response)
-    rows, changes, _ = api_page(value, url=capture["requestUrl"], mode="page")
-    parsed = urlsplit(capture["requestUrl"])
     pairs, page = request(capture["requestUrl"])
+    if mode == "legal" and not isinstance(value.get(dict(pairs)["type"]), list):
+        raise ValueError("FEC legal response omitted the selected result group")
+    rows, changes, context = api_page(value, url=capture["requestUrl"], mode=mode)
+    parsed = urlsplit(capture["requestUrl"])
     next_url = None
     if changes is not None:
         pairs = [(key, item) for key, item in pairs if key not in changes]
@@ -160,7 +169,7 @@ def parse_response(raw: bytes, *, request: RequestCheck) -> Mapping[str, Any]:
     return {
         "capture": capture,
         "page": page,
-        "pagination": value["pagination"],
+        "pagination": context["pagination"],
         "next_url": next_url,
         "results": [
             {"capture": capture, **decimal_strings(split_record(record, source_pointer=pointer))}
@@ -185,7 +194,11 @@ class RetainedPage:
 
 
 def iter_pages(
-    captures: Sequence[Mapping[str, Any]], *, blob_source: BlobSource, request: RequestCheck
+    captures: Sequence[Mapping[str, Any]],
+    *,
+    blob_source: BlobSource,
+    request: RequestCheck,
+    page_parameter: str = "page",
 ) -> Iterator[RetainedPage]:
     """Read and pin each original once; retain O(captures + largest page) memory.
 
@@ -193,7 +206,7 @@ def iter_pages(
     pagination/counts/order and full selected membership are checked again by the
     publisher and its independent replay through this profile.
     """
-    scope = query_scope(captures, request=request)
+    scope = query_scope(captures, request=request, page_parameter=page_parameter)
     for index, capture in enumerate(scope["captures"]):
         content = bytearray()
         with blob_source.open(capture["responseSha256"]) as stream:
