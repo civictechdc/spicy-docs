@@ -183,15 +183,29 @@ finding is not a completed port.
   approve. Source commits: SpicyDocs `15d5a9c`, RefSpec `7f0d5614`; local,
   unmerged and unpushed.
   [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par06/delivery.md>).
-- [ ] **PAR07 — Add one GovInfo PREMIS reader.** Combine the useful prior parsers
+- [x] **PAR07 — Add one GovInfo PREMIS reader.** Combine the useful prior parsers
   on bounded XML scanning; retain file names, algorithms, digests and entries
   without fixity. Compare selected captured bytes with an unambiguously matched
   publisher entry and test real package shapes. Report consistency, not authenticity.
+  **Completed locally (2026-09-15):** SpicyDocs 0.14.0 preserves the complete
+  PREMIS tree and shares its XML mapper with MODS. Exact CFR and public-law XML
+  captures match their publisher-stated SHA-256 digests. Missing fixity,
+  ambiguous fields, wrong locations, encoded bodies and HEAD responses cannot
+  become a positive comparison. All 30 CFR file entries without fixity survive.
+  RefSpec 0.1.0.dev6 adopts the reader with its reviewed acceptance rules intact;
+  DocSpec 0.4.1 updates its CFR example for the shared XML type and pins the same
+  provider wheel. No compatibility alias or duplicate production parser remains.
+  Provider: 2,757 repository / 238 installed tests. RefSpec: 76 focused tests
+  including dependency checks, plus 68 installed tests. DocSpec: 174 tests using
+  its documented local Iceberg catalog, including installed-wheel examples.
+  Both independent provider reviews and receiver reviews approve. Commits:
+  SpicyDocs `96ae559`, RefSpec `6cf579bf`, DocSpec `560af84`; local and unpushed.
+  [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par07/delivery.md>).
 - [ ] **PAR08 — Qualify each provider and receiving change together.** Build a
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
-  **PAR03–PAR06 complete:** ordinary wheels and receiving code run outside
+  **PAR03–PAR07 complete:** ordinary wheels and receiving code run outside
   the source checkouts. Other families remain open. Follow up on runtime
   U.S. Code source-credit receipts: record the provider implementation pin there
   as well as in qualification receipts. Unified Agenda build receipts now do so.
@@ -216,6 +230,9 @@ finding is not a completed port.
   replaced. Old readers remain test-only oracles. RefSpec's BILLSTATUS injected
   acquisition/cache still needs owner-reader adoption. Topics keeps its capture
   event and package-store logic; those product responsibilities were not moved.
+  **PAR07 complete:** RefSpec's PREMIS XML walk is replaced. The old PREMIS and
+  MODS implementations remain only as test oracles. Salvaged SpicyRegs PREMIS
+  code has no active caller; it remains historical evidence, not a second reader.
 - [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
@@ -227,7 +244,8 @@ finding is not a completed port.
   `663841d` bounds public 401/403 bodies before retention, discards incomplete
   prefixes and never retries an already-known access refusal. Test correction
   `4cfb5d5` compares retained evidence with original fixture bytes. Other shared
-  support work remains open.
+  support work remains open. PAR07 adds the shared bounded XML tree used by MODS
+  and PREMIS; mapped body-text readers remain PAR13.
 - [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
   the second native XML interval index. All active callers use existing Core
