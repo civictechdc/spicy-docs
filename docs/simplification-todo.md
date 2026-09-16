@@ -90,7 +90,7 @@ This checklist has 10 open items in total, including the two conditional deferra
   this is a behavior check, not a capacity claim. DocSpec passes 1,496 source
   tests and 51 installed tests; Search passes 36 installed tests and 351 sibling
   checks with 99 existing adjudicated-divergence skips. Independent reviews approve.
-  Local source commits: Engine `08d2d86`, DocSpec `d714551`, Search `0f3a0bb`.
+  Local source commits: Engine `08d2d86`, DocSpec `d714551`, Search `adfa072` (rebased on 2026-09-16; the original local commit was `0f3a0bb`).
   They remain on local implementation branches, unmerged and unpushed.
   [Engine evidence](../../spicyengine-docspec-catalog/docs/history/2026-09-15-retained-enrichment.md)
   and [delivery receipt](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par18/engine-enrichment-installed-qualification.md>).
