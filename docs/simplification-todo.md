@@ -47,8 +47,9 @@ and [Rulespec inventory](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receip
 add current callers, behavior differences and migration checks. An inventory
 finding is not a completed port.
 
-**Current: 17 of 20 shared-parsing tasks complete; three remain open.**
-This checklist has 10 open items in total, including the two conditional deferrals.
+**Current: all 20 shared-parsing tasks complete.** This checklist has seven
+open items: the two conditional deferrals (S21/S31) and the FEC backlog
+(FEC06–FEC10).
 
 - [x] **PAR01 — Inventory duplicated behavior across the codebases.** The swarm
   and follow-up reviews cover source readers, metadata, format extraction,
@@ -218,7 +219,7 @@ This checklist has 10 open items in total, including the two conditional deferra
   Both independent provider reviews and receiver reviews approve. Commits:
   SpicyDocs `96ae559`, RefSpec `6cf579bf`, DocSpec `560af84`; local and unpushed.
   [Delivery and evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par07/delivery.md>).
-- [ ] **PAR08 — Qualify each provider and receiving change together.** Build a
+- [x] **PAR08 — Qualify each provider and receiving change together.** Build a
   pinned wheel, run the named consumers outside source checkouts, and compare
   source facts and evidence against retained fixtures. Record intentional fixes
   separately from parity; update receiver dependency pins and public API examples.
@@ -232,10 +233,18 @@ This checklist has 10 open items in total, including the two conditional deferra
   RefSpec `4f6c2acb` records installed reader source hashes in source-credit
   receipts and separate Topics run receipts. Replaying a capture preserves its
   acquisition event and creates a fresh run record; sealed package identities
-  stay unchanged. Missing code refuses before output publication. Focused checks
+  stay unchanged. Missing code refuses before output publication.   Focused checks
   and independent review pass; these hashes describe installed source files,
   not a complete execution environment.
-- [ ] **PAR09 — Remove the replaced implementations.** Track adoption separately
+  **Completed (2026-09-16):** the last named receivers are qualified. RefSpec
+  dev11 (`d4a22979`) re-pins the SpicyDocs 0.20.0 wheel with the vendored
+  wheel matching source, and its acquisition/archive paths now run through the
+  shared readers (`daa59e25`: U.S. Code archive readers for acquisition and
+  builds, with `uscode_cache.py` retaining validated title captures by release
+  point). Unified Agenda rebuild #16 (`fd22acdf`) ran on those readers with
+  every delta attributed shape-by-shape. No further named receiver remains;
+  future ports reopen this item with their own qualification.
+- [x] **PAR09 — Remove the replaced implementations.** Track adoption separately
   for every named consumer. Delete duplicate implementations,
   fixtures made redundant, compatibility wrappers and dead helpers after checks;
   retain regression cases and useful evidence. Record any remaining copy's reason.
@@ -276,7 +285,14 @@ This checklist has 10 open items in total, including the two conditional deferra
   **SR04 complete:** SpicyRegs deletes its 519-line CourtListener bulk reader;
   all three transforms import the owner directly. Table normalization stays
   explicit and frozen old mappings remain test-only comparison evidence.
-- [ ] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
+  **Completed (2026-09-16):** the last named remainder — RefSpec's own U.S. Code
+  archive handling — is replaced: `uscode_cache.py` retains validated title
+  captures by release point through the shared acquirer, and builds read
+  archives through SpicyDocs readers (`daa59e25`); BILLSTATUS capture
+  publication moved to SpicyDocs storage (`2c84fe0b`). Old walkers remain
+  only as frozen test oracles. SpicyRegs M01–M10 fetcher adoption is the one
+  remaining receiver family and is tracked in its own plan (not started).
+- [x] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
   and DocSpec for its dataset/processing responsibilities. Assess reusable
@@ -307,6 +323,10 @@ This checklist has 10 open items in total, including the two conditional deferra
   and failure-after-flush checks pass; full suite: 1,172 passed, three live checks
   deselected. Independent review approves. Docket-map writing remains separate.
   [Writer evidence](</Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/parsing-consolidation-2026-09-14/par10/courtlistener-writer-implementation.md>).
+  **Completed (2026-09-16):** the one named remainder — BILLSTATUS cache
+  publication mechanics — moved to shared storage in RefSpec `2c84fe0b`.
+  No other shared-support candidates are named; a new candidate gets a named
+  task rather than reopening this umbrella.
 - [x] **PAR11 — Reuse Rulespec's digest and source-interval helpers.** Local
   Rulespec commit `8ec1417` removes two duplicate digest/encoding functions and
   the second native XML interval index. All active callers use existing Core
@@ -422,7 +442,8 @@ after test-only correction `6a3b8b3` updated an obsolete landing-page assertion.
 The Search runs establish functional results, not performance measurements.
 One live historical text capture passed; no population coverage is claimed.
 
-PAR08/PAR09 are complete for this family and stay open for later ports. Existing
+PAR08/PAR09 were complete for this family and stayed open for later ports; the
+last receiver family (RefSpec dev11, 2026-09-16) closed them. Existing
 fidelity/carrier reports need regeneration under the new two-module identity
 before population use. PAR18 has its own retained-input and enrichment qualification.
 Commits and wheels are local; nothing from this iteration was pushed or published.

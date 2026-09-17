@@ -190,7 +190,10 @@ are not native FCC topics; genre/procedure classifiers belong to experiments.
 Prior Rulespec probe results remain historical. Its current-provider probe lists
 installed native profiles and the absent CFR adapter, separately citing SpicyRegs
 CFR metadata. DocSpec [D32/D34](../../DocSpec/docs/dataset-experiments-todo.md#d32)
-own experiment configuration/cleanup; Search [SC04](../../spicysearch/PLAN.md#sc04)
-owns its selected recipe. Removing flags completes neither destination's work.
+own experiment configuration/cleanup. Search's former SC04 recipe task no longer
+exists: its SC lane was superseded by the direct Parquet dataset lane
+(spicysearch `docs/history/2026-09-11-parquet-dataset.md`), and Engine reads
+DocSpec's retained state directly (`EC00`–`EC02`). Removing flags completes
+neither destination's work.
 Use [documented-value drift](source-domain-drift.md) to compare retained table
 values with pinned publisher documentation.
