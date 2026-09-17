@@ -42,6 +42,7 @@
 - [Source-field references](source-reference.md) · [Documented-value drift](source-domain-drift.md)
 - [FEC acquisition](sources/fec.md): official JSON/XML metadata and separate originals.
 - [FEC research and integration handoff](research/fec-data-2026-09-11.md): inventory, bulk acquisition plan and retained evidence.
+- [BillTrax intake plan](research/billtrax-port-2026-09-15.md): acquisition and parsing port from the sibling BillTrax app, phased with open decisions.
 
 ## Change shared behavior
 
