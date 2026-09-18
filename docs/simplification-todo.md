@@ -1007,11 +1007,15 @@ dataset adapters; source-specific parsing follows the shared ownership decision.
 
 <a id="s21"></a>
 
-- [ ] **S21 — Replace the campaign after a better workflow exists.** The current
+- [x] **S21 — Replace the campaign after a better workflow exists.** The current
   campaign publishes independent source releases. Reopen when a named workflow
   and DocSpec D22 demonstrate source ordering, interruption, root ownership,
   resource bounds, retained pins and stale-resume refusal. Then remove replaced
   pools, receipts, locks and recovery branches while preserving useful diagnostics.
+  **Closed 2026-09-18, together with DocSpec D22.** Each waited on the other for
+  a named workflow that never appeared, so neither could start. Closed rather
+  than deferred; reopen only when a named acquisition campaign supplies those
+  requirements. The current campaign stays as it is.
 
 <a id="s31"></a>
 
