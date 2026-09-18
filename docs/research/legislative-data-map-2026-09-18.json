@@ -615,14 +615,280 @@
     "withAccrualPeriodicity": 119,
     "withFormatOrTemporal": 0
   },
+  "compareRequests": {
+    "congress-gov": 31,
+    "govinfo": 7,
+    "keyless": 16
+  },
+  "comparedAt": "2026-09-18T18:00:22.834262+00:00",
+  "comparisons": {
+    "committee-reports": {
+      "a": "Congress.gov committee-report",
+      "aCount": 1316,
+      "b": "GovInfo CRPT",
+      "bCount": 1316,
+      "both": 1316,
+      "detail": "API rows 1332 (parts collapse into 1316 reports); GovInfo packages in window 1847",
+      "onlyA": [],
+      "onlyACount": 0,
+      "onlyB": [],
+      "onlyBCount": 0,
+      "scope": "118th Congress"
+    },
+    "daily-record": {
+      "a": "Congress.gov daily-congressional-record",
+      "aCount": 216,
+      "b": "GovInfo CREC",
+      "bCount": 217,
+      "both": 216,
+      "detail": "API issues 219 for volume 171, 2 dated outside 2025; GovInfo packages 220 issued in 2025, 1 belonging to volume 170; package ids that are not one plain date ['CREC-2025-01-03-v170', 'CREC-2025-01-03-v171', 'CREC-2025-03-11-i45', 'CREC-2025-03-11-i46']",
+      "onlyA": [],
+      "onlyACount": 0,
+      "onlyB": [
+        "2025-01-02"
+      ],
+      "onlyBCount": 1,
+      "scope": "volume 171 within 2025"
+    },
+    "hearings": {
+      "a": "Congress.gov hearing",
+      "aCount": 2234,
+      "b": "GovInfo CHRG",
+      "bCount": 2229,
+      "both": 2224,
+      "detail": "API rows 2241; GovInfo packages in window 3006; keyed by jacket number",
+      "onlyA": [
+        "1",
+        "2",
+        "3",
+        "39104017",
+        "51183",
+        "54204",
+        "58231",
+        "59985",
+        "60092",
+        "63968"
+      ],
+      "onlyACount": 10,
+      "onlyB": [
+        "53237",
+        "53705",
+        "53947",
+        "57048",
+        "57177"
+      ],
+      "onlyBCount": 5,
+      "scope": "118th Congress"
+    },
+    "house-vote": {
+      "a": "Congress.gov house-vote members",
+      "aCount": 430,
+      "b": "Clerk roll XML",
+      "bCount": 430,
+      "both": 430,
+      "detail": "vote disagreements 0; API totals {'Yea': 397, 'Not Voting': 32, 'Nay': 1}; Clerk totals {'yea-total': '397', 'nay-total': '1', 'present-total': '0', 'not-voting-total': '32'}",
+      "disagreements": [],
+      "onlyA": [],
+      "onlyACount": 0,
+      "onlyB": [],
+      "onlyBCount": 0,
+      "scope": "roll 240, session 1, 119th"
+    },
+    "laws": {
+      "a": "Congress.gov law",
+      "aCount": 108,
+      "b": "GovInfo PLAW bulkdata",
+      "bCount": 104,
+      "both": 104,
+      "detail": "API bills with a law number 108; bulk folders and file counts {'public': 103, 'private': 3} (each folder also holds one zip)",
+      "onlyA": [
+        "public 119-103",
+        "public 119-104",
+        "public 119-109",
+        "public 119-110"
+      ],
+      "onlyACount": 4,
+      "onlyB": [],
+      "onlyBCount": 0,
+      "scope": "119th Congress"
+    },
+    "members": {
+      "a": "Congress.gov member/congress",
+      "aCount": 555,
+      "apiOnlyMembers": [
+        {
+          "bioguideId": "C001078",
+          "ended": true,
+          "name": "Connolly, Gerald E.",
+          "state": "Virginia"
+        },
+        {
+          "bioguideId": "G000359",
+          "ended": true,
+          "name": "Graham, Lindsey",
+          "state": "South Carolina"
+        },
+        {
+          "bioguideId": "G000551",
+          "ended": true,
+          "name": "Grijalva, Ra\u00fal M.",
+          "state": "Arizona"
+        },
+        {
+          "bioguideId": "G000590",
+          "ended": true,
+          "name": "Green, Mark E.",
+          "state": "Tennessee"
+        },
+        {
+          "bioguideId": "G000596",
+          "ended": true,
+          "name": "Greene, Marjorie Taylor",
+          "state": "Georgia"
+        },
+        {
+          "bioguideId": "L000578",
+          "ended": true,
+          "name": "LaMalfa, Doug",
+          "state": "California"
+        },
+        {
+          "bioguideId": "M001190",
+          "ended": true,
+          "name": "Mullin, Markwayne",
+          "state": "Oklahoma"
+        },
+        {
+          "bioguideId": "R000595",
+          "ended": true,
+          "name": "Rubio, Marco",
+          "state": "Florida"
+        },
+        {
+          "bioguideId": "S001157",
+          "ended": true,
+          "name": "Scott, David",
+          "state": "Georgia"
+        },
+        {
+          "bioguideId": "S001193",
+          "ended": true,
+          "name": "Swalwell, Eric",
+          "state": "California"
+        },
+        {
+          "bioguideId": "S001207",
+          "ended": true,
+          "name": "Sherrill, Mikie",
+          "state": "New Jersey"
+        },
+        {
+          "bioguideId": "T000489",
+          "ended": true,
+          "name": "Turner, Sylvester",
+          "state": "Texas"
+        },
+        {
+          "bioguideId": "V000137",
+          "ended": true,
+          "name": "Vance, J. D.",
+          "state": "Ohio"
+        },
+        {
+          "bioguideId": "W000823",
+          "ended": true,
+          "name": "Waltz, Michael",
+          "state": "Florida"
+        }
+      ],
+      "b": "House members.xml + MemberData + Senate cvc XML",
+      "bCount": 541,
+      "both": 541,
+      "detail": "House members.xml 441, House MemberData 439 (symmetric difference 2), Senate cvc 100; of the API-only members 14 of 14 have an ended term",
+      "onlyA": [
+        "C001078",
+        "G000359",
+        "G000551",
+        "G000590",
+        "G000596",
+        "L000578",
+        "M001190",
+        "R000595",
+        "S001157",
+        "S001193",
+        "S001207",
+        "T000489",
+        "V000137",
+        "W000823"
+      ],
+      "onlyACount": 14,
+      "onlyB": [],
+      "onlyBCount": 0,
+      "scope": "119th Congress"
+    },
+    "nominations": {
+      "a": "Congress.gov nomination",
+      "aCount": 1315,
+      "b": "Senate LIS nomination feeds (union of 9)",
+      "bCount": 1316,
+      "both": 1315,
+      "detail": "API rows 2208 collapse to 1315 nominations; feed counts sum to 1402 over a union of 1316; feed-only nominations on the API detail route: {'PN753': {'receivedDate': '2026-01-13', 'updateDate': '2026-03-05T12:00:27Z'}}",
+      "feedOnlyOnDetail": {
+        "PN753": {
+          "receivedDate": "2026-01-13",
+          "updateDate": "2026-03-05T12:00:27Z"
+        }
+      },
+      "feeds": {
+        "CivilianConfirmed": {
+          "congress": "119",
+          "count": 84
+        },
+        "CivilianPendingCalendar": {
+          "congress": "119",
+          "count": 7
+        },
+        "CivilianPendingCommittee": {
+          "congress": "119",
+          "count": 24
+        },
+        "FailedOrReturned": {
+          "congress": "119",
+          "count": 55
+        },
+        "NonCivilianConfirmed": {
+          "congress": "119",
+          "count": 980
+        },
+        "NonCivilianPendingCalendar": {
+          "congress": "119",
+          "count": 23
+        },
+        "NonCivilianPendingCommittee": {
+          "congress": "119",
+          "count": 200
+        },
+        "Privileged": {
+          "congress": "119",
+          "count": 2
+        },
+        "Withdrawn": {
+          "congress": "119",
+          "count": 27
+        }
+      },
+      "onlyA": [],
+      "onlyACount": 0,
+      "onlyB": [
+        "PN753"
+      ],
+      "onlyBCount": 1,
+      "scope": "119th Congress"
+    }
+  },
   "congress": {
     "amendment": {
       "byKey": {
-        "95": 0,
-        "96": 0,
-        "97": 8200,
-        "98": 8366,
-        "99": 4760,
         "100": 4690,
         "101": 4140,
         "102": 4333,
@@ -642,7 +908,12 @@
         "116": 3647,
         "117": 6961,
         "118": 4597,
-        "119": 7066
+        "119": 7066,
+        "95": 0,
+        "96": 0,
+        "97": 8200,
+        "98": 8366,
+        "99": 4760
       },
       "descentPath": "amendment/{c}",
       "descentStop": "two-empty",
@@ -653,26 +924,6 @@
     },
     "bill": {
       "byKey": {
-        "80": 0,
-        "81": 0,
-        "82": 1617,
-        "83": 1783,
-        "84": 1921,
-        "85": 1717,
-        "86": 1292,
-        "87": 1567,
-        "88": 1024,
-        "89": 1279,
-        "90": 994,
-        "91": 938,
-        "92": 767,
-        "93": 26222,
-        "94": 24285,
-        "95": 22313,
-        "96": 14590,
-        "97": 13236,
-        "98": 12202,
-        "99": 11602,
         "100": 11278,
         "101": 11787,
         "102": 12016,
@@ -692,7 +943,27 @@
         "116": 16606,
         "117": 17828,
         "118": 19315,
-        "119": 18962
+        "119": 18962,
+        "80": 0,
+        "81": 0,
+        "82": 1617,
+        "83": 1783,
+        "84": 1921,
+        "85": 1717,
+        "86": 1292,
+        "87": 1567,
+        "88": 1024,
+        "89": 1279,
+        "90": 994,
+        "91": 938,
+        "92": 767,
+        "93": 26222,
+        "94": 24285,
+        "95": 22313,
+        "96": 14590,
+        "97": 13236,
+        "98": 12202,
+        "99": 11602
       },
       "descentPath": "bill/{c}",
       "descentStop": "two-empty",
@@ -742,6 +1013,26 @@
     },
     "committee": {
       "byKey": {
+        "100": 308,
+        "101": 304,
+        "102": 301,
+        "103": 276,
+        "104": 212,
+        "105": 213,
+        "106": 213,
+        "107": 220,
+        "108": 221,
+        "109": 226,
+        "110": 259,
+        "111": 241,
+        "112": 263,
+        "113": 257,
+        "114": 268,
+        "115": 271,
+        "116": 278,
+        "117": 234,
+        "118": 237,
+        "119": 238,
         "60": 101,
         "61": 102,
         "62": 102,
@@ -781,27 +1072,7 @@
         "96": 57,
         "97": 309,
         "98": 310,
-        "99": 306,
-        "100": 308,
-        "101": 304,
-        "102": 301,
-        "103": 276,
-        "104": 212,
-        "105": 213,
-        "106": 213,
-        "107": 220,
-        "108": 221,
-        "109": 226,
-        "110": 259,
-        "111": 241,
-        "112": 263,
-        "113": 257,
-        "114": 268,
-        "115": 271,
-        "116": 278,
-        "117": 234,
-        "118": 237,
-        "119": 238
+        "99": 306
       },
       "descentPath": "committee/{c}",
       "descentStop": "cap",
@@ -833,7 +1104,6 @@
     },
     "committee-print": {
       "byKey": {
-        "99": 0,
         "100": 0,
         "101": 1,
         "102": 2,
@@ -853,7 +1123,8 @@
         "116": 191,
         "117": 156,
         "118": 118,
-        "119": 79
+        "119": 79,
+        "99": 0
       },
       "descentPath": "committee-print/{c}",
       "descentStop": "two-empty",
@@ -1008,26 +1279,6 @@
     },
     "law": {
       "byKey": {
-        "80": 0,
-        "81": 0,
-        "82": 1617,
-        "83": 1783,
-        "84": 1921,
-        "85": 1719,
-        "86": 1292,
-        "87": 1569,
-        "88": 1026,
-        "89": 1283,
-        "90": 1002,
-        "91": 942,
-        "92": 768,
-        "93": 774,
-        "94": 729,
-        "95": 803,
-        "96": 736,
-        "97": 529,
-        "98": 677,
-        "99": 688,
         "100": 761,
         "101": 666,
         "102": 610,
@@ -1047,7 +1298,27 @@
         "116": 344,
         "117": 365,
         "118": 274,
-        "119": 108
+        "119": 108,
+        "80": 0,
+        "81": 0,
+        "82": 1617,
+        "83": 1783,
+        "84": 1921,
+        "85": 1719,
+        "86": 1292,
+        "87": 1569,
+        "88": 1026,
+        "89": 1283,
+        "90": 1002,
+        "91": 942,
+        "92": 768,
+        "93": 774,
+        "94": 729,
+        "95": 803,
+        "96": 736,
+        "97": 529,
+        "98": 677,
+        "99": 688
       },
       "descentPath": "law/{c}",
       "descentStop": "two-empty",
@@ -1063,6 +1334,26 @@
     },
     "member": {
       "byKey": {
+        "100": 549,
+        "101": 551,
+        "102": 553,
+        "103": 551,
+        "104": 546,
+        "105": 549,
+        "106": 544,
+        "107": 553,
+        "108": 544,
+        "109": 546,
+        "110": 554,
+        "111": 560,
+        "112": 552,
+        "113": 554,
+        "114": 547,
+        "115": 561,
+        "116": 550,
+        "117": 557,
+        "118": 554,
+        "119": 555,
         "66": 0,
         "67": 0,
         "68": 1,
@@ -1096,27 +1387,7 @@
         "96": 545,
         "97": 550,
         "98": 546,
-        "99": 547,
-        "100": 549,
-        "101": 551,
-        "102": 553,
-        "103": 551,
-        "104": 546,
-        "105": 549,
-        "106": 544,
-        "107": 553,
-        "108": 544,
-        "109": 546,
-        "110": 554,
-        "111": 560,
-        "112": 552,
-        "113": 554,
-        "114": 547,
-        "115": 561,
-        "116": 550,
-        "117": 557,
-        "118": 554,
-        "119": 555
+        "99": 547
       },
       "descentPath": "member/congress/{c}",
       "descentStop": "two-empty",
@@ -1127,11 +1398,6 @@
     },
     "nomination": {
       "byKey": {
-        "95": 0,
-        "96": 0,
-        "97": 1641,
-        "98": 1351,
-        "99": 1637,
         "100": 1534,
         "101": 1676,
         "102": 1574,
@@ -1151,7 +1417,12 @@
         "116": 2384,
         "117": 2787,
         "118": 2308,
-        "119": 2208
+        "119": 2208,
+        "95": 0,
+        "96": 0,
+        "97": 1641,
+        "98": 1351,
+        "99": 1637
       },
       "descentPath": "nomination/{c}",
       "descentStop": "two-empty",
@@ -1162,12 +1433,6 @@
     },
     "senate-communication": {
       "byKey": {
-        "94": 0,
-        "95": 0,
-        "96": 6343,
-        "97": 6211,
-        "98": 4990,
-        "99": 4945,
         "100": 4866,
         "101": 4528,
         "102": 4856,
@@ -1187,7 +1452,13 @@
         "116": 6524,
         "117": 6196,
         "118": 7278,
-        "119": 4842
+        "119": 4842,
+        "94": 0,
+        "95": 0,
+        "96": 6343,
+        "97": 6211,
+        "98": 4990,
+        "99": 4945
       },
       "descentPath": "senate-communication/{c}",
       "descentStop": "two-empty",
@@ -1211,22 +1482,6 @@
     },
     "treaty": {
       "byKey": {
-        "84": 0,
-        "85": 0,
-        "86": 1,
-        "87": 1,
-        "88": 1,
-        "89": 10,
-        "90": 28,
-        "91": 28,
-        "92": 37,
-        "93": 37,
-        "94": 29,
-        "95": 29,
-        "96": 61,
-        "97": 28,
-        "98": 32,
-        "99": 33,
         "100": 23,
         "101": 22,
         "102": 41,
@@ -1246,7 +1501,23 @@
         "116": 4,
         "117": 4,
         "118": 2,
-        "119": 2
+        "119": 2,
+        "84": 0,
+        "85": 0,
+        "86": 1,
+        "87": 1,
+        "88": 1,
+        "89": 10,
+        "90": 28,
+        "91": 28,
+        "92": 37,
+        "93": 37,
+        "94": 29,
+        "95": 29,
+        "96": 61,
+        "97": 28,
+        "98": 32,
+        "99": 33
       },
       "descentPath": "treaty/{c}",
       "descentStop": "two-empty",

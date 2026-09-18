@@ -160,6 +160,20 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `0
 | votes | Bill⇄vote matching | BillTrax | `rejected (here)` | n/a |  |  | interpretation; stays BillTrax-side |
 | members | Member matching | BillTrax | `rejected (here)` | n/a |  |  | interpretation |
 
+### Comparisons: overlapping routes on one bounded scope
+
+Requests for this pass: 54. Only the first forty differing identifiers are kept in the JSON.
+
+| Pair | Scope | A | B | Both | Only A | Only B | Measured | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| Congress.gov house-vote members vs Clerk roll XML | roll 240, session 1, 119th | 430 | 430 | 430 | 0 | 0 | vote disagreements 0; API totals {'Yea': 397, 'Not Voting': 32, 'Nay': 1}; Clerk totals {'yea-total': '397', 'nay-total': '1', 'present-total': '0', 'not-voting-total': '32'} | Same content: every member, every position and the totals agree. The API is tier-1 and indexes votes with bill links but reaches only the 115th Congress; the Clerk XML is keyless, one document per vote, and reaches 1990. API-first; Clerk XML for history and as the source document the API itself names. |
+| Congress.gov member/congress vs House members.xml + MemberData + Senate cvc XML | 119th Congress | 555 | 541 | 541 | 14 | 0 | House members.xml 441, House MemberData 439 (symmetric difference 2), Senate cvc 100; of the API-only members 14 of 14 have an ended term | The API lists everyone who served in the Congress, the publisher files only the seats filled today, so the API is the roster of record. The House and Senate files add committee assignments and the Senate LIS crosswalk the API lacks, and the crosswalk is what joins Senate votes to members. Both, for different fields. |
+| Congress.gov daily-congressional-record vs GovInfo CREC | volume 171 within 2025 | 216 | 217 | 216 | 0 | 1 | API issues 219 for volume 171, 2 dated outside 2025; GovInfo packages 220 issued in 2025, 1 belonging to volume 170; package ids that are not one plain date ['CREC-2025-01-03-v170', 'CREC-2025-01-03-v171', 'CREC-2025-03-11-i45', 'CREC-2025-03-11-i46'] | Issue for issue the same once scoped alike; the differences are scope artifacts (a volume runs past the calendar year, and two issues can share a date). The API's identity is volume and issue, GovInfo's is date and part. API for the index, GovInfo for bodies, and never key the Record on a date alone. |
+| Congress.gov committee-report vs GovInfo CRPT | 118th Congress | 1,316 | 1,316 | 1,316 | 0 | 0 | API rows 1332 (parts collapse into 1316 reports); GovInfo packages in window 1847 | Identical sets for the 118th Congress. The API is the cheaper index and carries typed fields and text links; GovInfo holds the bodies and reaches 1817. API index, GovInfo bodies; they agree, so either can check the other. |
+| Congress.gov hearing vs GovInfo CHRG | 118th Congress | 2,234 | 2,229 | 2,224 | 10 | 5 | API rows 2241; GovInfo packages in window 3006; keyed by jacket number | Near-identical, but the API carries jacket numbers that cannot be real (1, 2, 3, an eight-digit value) and GovInfo holds a few jackets the API lacks. The GovInfo package id is the durable key; the API is the index with committee metadata. Key on GovInfo and treat a short API jacket number as invalid. |
+| Congress.gov nomination vs Senate LIS nomination feeds (union of 9) | 119th Congress | 1,315 | 1,316 | 1,315 | 0 | 1 | API rows 2208 collapse to 1315 nominations; feed counts sum to 1402 over a union of 1316; feed-only nominations on the API detail route: {'PN753': {'receivedDate': '2026-01-13', 'updateDate': '2026-03-05T12:00:27Z'}} | Equal for the current Congress but for one nomination the feeds list and the API list omits while the API detail route serves it, so the API list lags its own detail. The feeds partition by status and overlap, so a nomination can sit in two feeds. API for acquisition and history (97th Congress on); feeds as a keyless status cross-check for the current Congress only. |
+| Congress.gov law vs GovInfo PLAW bulkdata | 119th Congress | 108 | 104 | 104 | 4 | 0 | API bills with a law number 108; bulk folders and file counts {'public': 103, 'private': 3} (each folder also holds one zip) | Agree on every law both hold. The API runs ahead by the newest laws, and bulk lags by several numbers, so neither is complete at any instant. Bulk holds the USLM bodies, the API holds the bill-to-law links. Both; the bulk lag is the fact an acquisition schedule has to carry. |
+
 ### Catalog measurements
 
 - CDTF entries: 119; with `accrualPeriodicity`: 119; with any format or temporal field: 0.
@@ -192,9 +206,12 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `0
 - **Everything else is small or separate.** LDA sub-collections are URL
   builders on the existing family; STATUTE volumes fit the USLM archive
   readers; the publisher XML in Table C waits on its identity judgment; JCT
-  and EveryCRSReport are genuinely new and go last. Where an API and a
-  bulk route overlap (House votes, BILLSTATUS), run a bounded measurement
-  on real data before choosing.
+  and EveryCRSReport are genuinely new and go last. Where two routes
+  overlap, the comparisons block above already measured seven pairs on one
+  Congress or one year each; the pattern is that the Congress.gov API is the
+  index and GovInfo or the publisher file is the body or the crosswalk, and
+  the two agree wherever both hold the item. BILLSTATUS bulk against the
+  bill API is the one overlap still unmeasured; it is the Phase 6 parity run.
 - **Port conventions apply to every candidate** (tier-1 first, credentials
   header-only, decision record for new scope, one `docs/sources/*.md` page
   per source).

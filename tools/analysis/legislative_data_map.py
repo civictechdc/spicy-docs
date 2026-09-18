@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from collections import Counter
@@ -597,6 +598,372 @@ def measure_samples(probe: KeylessProbe) -> dict[str, Any]:
     return out
 
 
+# --- comparisons: overlapping routes measured against each other on a bounded scope ---------------
+
+COMPARE_CONGRESS = 118
+COMPARE_YEAR = 2025
+COMPARE_VOLUME = 171
+NOMINATION_FEEDS = (
+    "CivilianConfirmed", "CivilianPendingCalendar", "CivilianPendingCommittee", "FailedOrReturned",
+    "NonCivilianConfirmed", "NonCivilianPendingCommittee", "NonCivilianPendingCalendar", "Privileged", "Withdrawn",
+)  # fmt: skip
+BIOGUIDE_TAGS = frozenset({"bioguideID", "bioguideId", "bioguide_id"})
+
+
+def _bioguides(root: Any) -> set[str]:
+    """Bioguide ids wherever a publisher file keeps them: a named child element or any attribute naming bioguide."""
+    found = set(_texts(root, BIOGUIDE_TAGS))
+    for el in root.iter():
+        found |= {v.strip() for k, v in el.attrib.items() if "bioguide" in k.lower() and v.strip()}
+    return found
+
+
+def _local(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
+
+
+def _texts(root: Any, names: frozenset[str] | set[str]) -> list[str]:
+    return [el.text.strip() for el in root.iter() if _local(el.tag) in names and el.text and el.text.strip()]
+
+
+def _walk(reader: PagedJsonReader, url: str, records_key: str, max_pages: int) -> list[Mapping[str, Any]]:
+    rows: list[Mapping[str, Any]] = []
+    for page in reader.pages(url, records_key=records_key, max_pages=max_pages):
+        REQUESTS[reader.family.name] += 1
+        rows.extend(page.records)
+    return rows
+
+
+def _congress_list(reader: PagedJsonReader, path: str, key: str, max_pages: int) -> list[Mapping[str, Any]]:
+    return _walk(reader, f"{CONGRESS_API}/{path}?{urlencode({'format': 'json', 'limit': 250})}", key, max_pages)
+
+
+def _govinfo_published(
+    reader: PagedJsonReader, code: str, start: str, end: str, max_pages: int
+) -> list[Mapping[str, Any]]:
+    return _walk(reader, published_url(start, end, collections=[code], page_size=1000), "packages", max_pages)
+
+
+def _keyed_json(reader: PagedJsonReader, url: str) -> Mapping[str, Any]:
+    REQUESTS[reader.family.name] += 1
+    value, _ = reader.capture_validated(
+        url,
+        media_types=JSON_TYPES,
+        parse=lambda capture, _limit: json.loads(capture.body),
+        max_bytes=4 * 1024 * 1024,
+        unavailable=ProbeUnavailableError,
+        context={"operation": "json", "url": url},
+    )
+    return value
+
+
+def _xml(probe: KeylessProbe, url: str, key: str) -> Any:
+    capture = probe.get(url, media_types=XML_TYPES, max_bytes=SAMPLE_MAX_BYTES)
+    return parse_xml(
+        capture.body,
+        max_bytes=len(capture.body),
+        error_type=ProbeError,
+        label=key,
+        allow_external_doctype=True,
+        max_depth=64,
+    )
+
+
+def _result(a: str, b: str, scope: str, left: set[str], right: set[str], detail: str, **extra: Any) -> dict[str, Any]:
+    return {
+        "a": a, "b": b, "scope": scope,
+        "aCount": len(left), "bCount": len(right), "both": len(left & right),
+        "onlyA": sorted(left - right)[:40], "onlyACount": len(left - right),
+        "onlyB": sorted(right - left)[:40], "onlyBCount": len(right - left),
+        "detail": detail, **extra,
+    }  # fmt: skip
+
+
+def compare_house_vote(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, Any]:
+    url = f"{CONGRESS_API}/house-vote/{CURRENT_CONGRESS}/1/240/members?{urlencode({'format': 'json', 'limit': 250})}"
+    api: dict[str, str] = {}
+    for _ in range(4):
+        value = _keyed_json(congress, url)
+        for member in value.get("houseRollCallVoteMemberVotes", {}).get("results", []):
+            api[str(member.get("bioguideID"))] = str(member.get("voteCast"))
+        url = value.get("pagination", {}).get("next") or ""
+        if not url:
+            break
+    root = _xml(probe, SAMPLES["clerk-vote"][0], "clerk-vote")
+    clerk: dict[str, str] = {}
+    for recorded in root.iter():
+        if _local(recorded.tag) != "recorded-vote":
+            continue
+        legislator = next((c for c in recorded if _local(c.tag) == "legislator"), None)
+        vote = next((c for c in recorded if _local(c.tag) == "vote"), None)
+        if legislator is not None and vote is not None:
+            clerk[str(legislator.get("name-id"))] = (vote.text or "").strip()
+    clerk_totals = {
+        _local(e.tag): e.text for e in root.iter() if _local(e.tag).endswith("-total") and "party" not in _local(e.tag)
+    }
+    disagreements = sorted((k, api[k], clerk[k]) for k in api.keys() & clerk.keys() if api[k] != clerk[k])
+    detail = f"vote disagreements {len(disagreements)}; API totals {dict(Counter(api.values()))}; Clerk totals {clerk_totals}"
+    return _result(
+        "Congress.gov house-vote members", "Clerk roll XML", f"roll 240, session 1, {CURRENT_CONGRESS}th",
+        set(api), set(clerk), detail, disagreements=disagreements[:20],
+    )  # fmt: skip
+
+
+def compare_members(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, Any]:
+    rows = _congress_list(congress, f"member/congress/{CURRENT_CONGRESS}", "members", max_pages=4)
+    api = {str(r.get("bioguideId")): r for r in rows}
+    house_file = _bioguides(_xml(probe, SAMPLES["house-members-xml"][0], "house-members"))
+    memberdata = _bioguides(_xml(probe, SAMPLES["house-memberdata"][0], "house-memberdata"))
+    senate = _bioguides(_xml(probe, SAMPLES["senate-cvc"][0], "senate-cvc"))
+    publisher = house_file | memberdata | senate
+    former = []
+    for bioguide in sorted(api.keys() - publisher):
+        terms = api[bioguide].get("terms", {}).get("item", [])
+        ended = any(t.get("endYear") for t in terms)
+        former.append(
+            {
+                "bioguideId": bioguide,
+                "name": api[bioguide].get("name"),
+                "state": api[bioguide].get("state"),
+                "ended": ended,
+            }
+        )
+    detail = (
+        f"House members.xml {len(house_file)}, House MemberData {len(memberdata)} (symmetric difference {len(house_file ^ memberdata)}), "
+        f"Senate cvc {len(senate)}; of the API-only members {sum(1 for f in former if f['ended'])} of {len(former)} have an ended term"
+    )
+    return _result(
+        "Congress.gov member/congress",
+        "House members.xml + MemberData + Senate cvc XML",
+        f"{CURRENT_CONGRESS}th Congress",
+        set(api),
+        publisher,
+        detail,
+        apiOnlyMembers=former[:40],
+    )
+
+
+def compare_daily_record(congress: PagedJsonReader, govinfo: PagedJsonReader) -> dict[str, Any]:
+    rows = _congress_list(
+        congress, f"daily-congressional-record/{COMPARE_VOLUME}", "dailyCongressionalRecord", max_pages=2
+    )
+    api_all = {str(r.get("issueDate", ""))[:10] for r in rows}
+    api = {d for d in api_all if d.startswith(str(COMPARE_YEAR))}
+    packages = _govinfo_published(govinfo, "CREC", f"{COMPARE_YEAR}-01-01", f"{COMPARE_YEAR}-12-31", max_pages=2)
+    prior_volume = [
+        str(p.get("packageId")) for p in packages if str(p.get("packageId")).endswith(f"-v{COMPARE_VOLUME - 1}")
+    ]
+    gi = {str(p.get("dateIssued", ""))[:10] for p in packages if str(p.get("packageId")) not in prior_volume}
+    odd = sorted(
+        str(p.get("packageId"))
+        for p in packages
+        if not re.fullmatch(r"CREC-\d{4}-\d{2}-\d{2}", str(p.get("packageId")))
+    )
+    detail = (
+        f"API issues {len(rows)} for volume {COMPARE_VOLUME}, {len(api_all - api)} dated outside {COMPARE_YEAR}; "
+        f"GovInfo packages {len(packages)} issued in {COMPARE_YEAR}, {len(prior_volume)} belonging to volume {COMPARE_VOLUME - 1}; "
+        f"package ids that are not one plain date {odd[:6]}"
+    )
+    return _result(
+        "Congress.gov daily-congressional-record",
+        "GovInfo CREC",
+        f"volume {COMPARE_VOLUME} within {COMPARE_YEAR}",
+        api,
+        gi,
+        detail,
+    )
+
+
+def compare_committee_reports(congress: PagedJsonReader, govinfo: PagedJsonReader) -> dict[str, Any]:
+    rows = _congress_list(congress, f"committee-report/{COMPARE_CONGRESS}", "reports", max_pages=12)
+    api = {f"{str(r.get('type')).lower()}{r.get('number')}" for r in rows}
+    packages = _govinfo_published(
+        govinfo, "CRPT", f"{COMPARE_CONGRESS * 2 + 1787}-01-01", f"{COMPARE_YEAR}-12-31", max_pages=6
+    )
+    gi: set[str] = set()
+    for package in packages:
+        match = re.fullmatch(r"CRPT-(\d+)([a-z]+)(\d+)", str(package.get("packageId")))
+        if match and int(match[1]) == COMPARE_CONGRESS:
+            gi.add(f"{match[2]}{int(match[3])}")
+    detail = (
+        f"API rows {len(rows)} (parts collapse into {len(api)} reports); GovInfo packages in window {len(packages)}"
+    )
+    return _result("Congress.gov committee-report", "GovInfo CRPT", f"{COMPARE_CONGRESS}th Congress", api, gi, detail)
+
+
+def compare_hearings(congress: PagedJsonReader, govinfo: PagedJsonReader) -> dict[str, Any]:
+    rows = _congress_list(congress, f"hearing/{COMPARE_CONGRESS}", "hearings", max_pages=20)
+    api = {str(r.get("jacketNumber")).lstrip("0") for r in rows if r.get("jacketNumber")}
+    packages = _govinfo_published(
+        govinfo, "CHRG", f"{COMPARE_CONGRESS * 2 + 1787}-01-01", f"{COMPARE_YEAR}-12-31", max_pages=8
+    )
+    gi: set[str] = set()
+    for package in packages:
+        match = re.fullmatch(r"CHRG-(\d+)([a-z]+?)(\d+)", str(package.get("packageId")))
+        if match and int(match[1]) == COMPARE_CONGRESS:
+            gi.add(match[3].lstrip("0"))
+    detail = f"API rows {len(rows)}; GovInfo packages in window {len(packages)}; keyed by jacket number"
+    return _result("Congress.gov hearing", "GovInfo CHRG", f"{COMPARE_CONGRESS}th Congress", api, gi, detail)
+
+
+def compare_nominations(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, Any]:
+    rows = _congress_list(congress, f"nomination/{CURRENT_CONGRESS}", "nominations", max_pages=12)
+    api = {str(r.get("citation") or f"PN{r.get('number')}").split("-")[0] for r in rows}
+    feeds: dict[str, Any] = {}
+    union: set[str] = set()
+    for category in NOMINATION_FEEDS:
+        root = _xml(probe, f"https://www.senate.gov/legislative/LIS/nominations/Nom{category}.xml", category)
+        numbers = {m for el in root.iter() if el.text for m in re.findall(r"PN\d+", el.text)}
+        feeds[category] = {"congress": (_texts(root, {"Congress"}) or [None])[0], "count": len(numbers)}
+        union |= numbers
+    on_detail: dict[str, Any] = {}
+    for citation in sorted(union - api)[:5]:
+        try:
+            value = _keyed_json(congress, f"{CONGRESS_API}/nomination/{CURRENT_CONGRESS}/{citation[2:]}?format=json")
+            nomination = value.get("nomination", {})
+            on_detail[citation] = {k: nomination.get(k) for k in ("receivedDate", "updateDate")}
+        except (PagedJsonSourceError, ProbeError, httpx.HTTPError) as error:
+            on_detail[citation] = _error(error)
+    detail = (
+        f"API rows {len(rows)} collapse to {len(api)} nominations; feed counts sum to {sum(v['count'] for v in feeds.values())} "
+        f"over a union of {len(union)}; feed-only nominations on the API detail route: {on_detail}"
+    )
+    return _result(
+        "Congress.gov nomination",
+        "Senate LIS nomination feeds (union of 9)",
+        f"{CURRENT_CONGRESS}th Congress",
+        api,
+        union,
+        detail,
+        feeds=feeds,
+        feedOnlyOnDetail=on_detail,
+    )
+
+
+def compare_laws(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, Any]:
+    rows = _congress_list(congress, f"law/{CURRENT_CONGRESS}", "bills", max_pages=4)
+    api = {
+        f"{'private' if 'rivate' in str(law.get('type')) else 'public'} {law.get('number')}"
+        for r in rows
+        for law in r.get("laws", [])
+    }
+    bulk: set[str] = set()
+    folders: dict[str, int] = {}
+    listing = json.loads(
+        probe.get(
+            f"{GOVINFO_BULK}/PLAW/{CURRENT_CONGRESS}",
+            media_types=JSON_TYPES,
+            max_bytes=4 * 1024 * 1024,
+            accept="application/json",
+        ).body
+    )
+    for folder in [f["name"] for f in listing.get("files", []) if f.get("folder")]:
+        files = json.loads(
+            probe.get(
+                f"{GOVINFO_BULK}/PLAW/{CURRENT_CONGRESS}/{folder}",
+                media_types=JSON_TYPES,
+                max_bytes=4 * 1024 * 1024,
+                accept="application/json",
+            ).body
+        )
+        names = [str(f.get("name")) for f in files.get("files", []) if not f.get("folder")]
+        folders[str(folder)] = len(names)
+        for name in names:
+            match = re.fullmatch(r"PLAW-(\d+)(publ|pvtl)(\d+)\.xml", name)
+            if match:
+                bulk.add(f"{'public' if match[2] == 'publ' else 'private'} {match[1]}-{int(match[3])}")
+    detail = f"API bills with a law number {len(rows)}; bulk folders and file counts {folders} (each folder also holds one zip)"
+    return _result("Congress.gov law", "GovInfo PLAW bulkdata", f"{CURRENT_CONGRESS}th Congress", api, bulk, detail)
+
+
+def measure_comparisons(
+    congress: PagedJsonReader, govinfo: PagedJsonReader, probe: KeylessProbe, api_key: str
+) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    pairs = {
+        "house-vote": lambda: compare_house_vote(congress, probe),
+        "members": lambda: compare_members(congress, probe),
+        "daily-record": lambda: compare_daily_record(congress, govinfo),
+        "committee-reports": lambda: compare_committee_reports(congress, govinfo),
+        "hearings": lambda: compare_hearings(congress, govinfo),
+        "nominations": lambda: compare_nominations(congress, probe),
+        "laws": lambda: compare_laws(congress, probe),
+    }
+    for key, run in pairs.items():
+        try:
+            out[key] = run()
+        except (PagedJsonSourceError, ProbeError, httpx.HTTPError, ValueError) as error:
+            out[key] = _error(error, api_key)
+        print(f"compare {key}: {json.dumps(out[key])[:160]}", file=sys.stderr)
+    return out
+
+
+VERDICTS: dict[str, str] = {
+    "house-vote": (
+        "Same content: every member, every position and the totals agree. The API is tier-1 and indexes votes with "
+        "bill links but reaches only the 115th Congress; the Clerk XML is keyless, one document per vote, and reaches "
+        "1990. API-first; Clerk XML for history and as the source document the API itself names."
+    ),
+    "members": (
+        "The API lists everyone who served in the Congress, the publisher files only the seats filled today, so the "
+        "API is the roster of record. The House and Senate files add committee assignments and the Senate LIS "
+        "crosswalk the API lacks, and the crosswalk is what joins Senate votes to members. Both, for different fields."
+    ),
+    "daily-record": (
+        "Issue for issue the same once scoped alike; the differences are scope artifacts (a volume runs past the "
+        "calendar year, and two issues can share a date). The API's identity is volume and issue, GovInfo's is date "
+        "and part. API for the index, GovInfo for bodies, and never key the Record on a date alone."
+    ),
+    "committee-reports": (
+        "Identical sets for the 118th Congress. The API is the cheaper index and carries typed fields and text "
+        "links; GovInfo holds the bodies and reaches 1817. API index, GovInfo bodies; they agree, so either can "
+        "check the other."
+    ),
+    "hearings": (
+        "Near-identical, but the API carries jacket numbers that cannot be real (1, 2, 3, an eight-digit value) "
+        "and GovInfo holds a few jackets the API lacks. The GovInfo package id is the durable key; the API is the "
+        "index with committee metadata. Key on GovInfo and treat a short API jacket number as invalid."
+    ),
+    "nominations": (
+        "Equal for the current Congress but for one nomination the feeds list and the API list omits while the API "
+        "detail route serves it, so the API list lags its own detail. The feeds partition by status and overlap, so "
+        "a nomination can sit in two feeds. API for acquisition and history (97th Congress on); feeds as a keyless "
+        "status cross-check for the current Congress only."
+    ),
+    "laws": (
+        "Agree on every law both hold. The API runs ahead by the newest laws, and bulk lags by several numbers, so "
+        "neither is complete at any instant. Bulk holds the USLM bodies, the API holds the bill-to-law links. Both; "
+        "the bulk lag is the fact an acquisition schedule has to carry."
+    ),
+}
+
+
+def render_comparisons(measures: Mapping[str, Any]) -> list[str]:
+    comparisons = measures.get("comparisons")
+    if not comparisons:
+        return []
+    lines = [
+        "### Comparisons: overlapping routes on one bounded scope",
+        "",
+        f"Requests for this pass: {sum(measures.get('compareRequests', {}).values())}. Only the first forty differing identifiers are kept in the JSON.",
+        "",
+        "| Pair | Scope | A | B | Both | Only A | Only B | Measured | Verdict |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for key, c in comparisons.items():
+        if "error" in c:
+            lines.append(f"| {key} | | | | | | | error: {_cell(c.get('message', ''))[:80]} | |")
+            continue
+        lines.append(
+            "| " + " | ".join(_cell(v) for v in (
+                f"{c['a']} vs {c['b']}", c["scope"], f"{c['aCount']:,}", f"{c['bCount']:,}", f"{c['both']:,}",
+                f"{c['onlyACount']:,}", f"{c['onlyBCount']:,}", c["detail"], VERDICTS.get(key, ""),
+            )) + " |"
+        )  # fmt: skip
+    lines.append("")
+    return lines
+
+
 # --- rendering -----------------------------------------------------------------
 
 
@@ -727,6 +1094,7 @@ def render_tables(measures: Mapping[str, Any]) -> str:
                 + " |"
             )
         lines.append("")
+    lines += render_comparisons(measures)
     catalog = measures.get("catalog", {})
     dist = catalog.get("distributionAccessUrl", {})
     duplicates = ", ".join(f"`{u}` ×{n}" for u, n in catalog.get("duplicateLandingPages", {}).items()) or "none"
@@ -784,6 +1152,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--env-file", type=Path, help="file holding the api.data.gov key")
     parser.add_argument("--env-var", default="API_GOV")
     parser.add_argument("--offline", action="store_true")
+    parser.add_argument("--compare", action="store_true", help="run only the comparisons and merge them into --output")
     parser.add_argument("--max-descent", type=int, default=60, help="requests per route when walking back by Congress")
     parser.add_argument("--min-interval-seconds", type=float, default=0.3)
     parser.add_argument("--timeout", type=float, default=60.0)
@@ -792,6 +1161,32 @@ def main(argv: list[str] | None = None) -> int:
     check_evidence(root)
     if args.offline:
         measures = json.loads(args.output.read_text())
+    elif args.compare:
+        if args.env_file is None:
+            parser.error("--env-file is required for --compare")
+        api_key = read_api_key(args.env_file, args.env_var)
+        budget = PagedJsonBudget(
+            max_requests=3,
+            max_page_bytes=16 * 1024 * 1024,
+            timeout_seconds=args.timeout,
+            min_request_interval_seconds=args.min_interval_seconds,
+        )
+        measures = json.loads(args.output.read_text())
+        try:
+            with (
+                CongressListingReader(budget=budget, api_key=api_key) as congress,
+                GovInfoDiscoveryReader(budget=budget, api_key=api_key) as govinfo,
+                KeylessProbe(
+                    timeout_seconds=args.timeout, min_request_interval_seconds=args.min_interval_seconds
+                ) as probe,
+            ):
+                measures["comparisons"] = measure_comparisons(congress, govinfo, probe, api_key)
+        except CredentialRefusedError as error:
+            print(f"credential refused; stopping: {scrub_credential(str(error), api_key)}", file=sys.stderr)
+            return 1
+        measures["compareRequests"] = dict(REQUESTS)
+        measures["comparedAt"] = datetime.now(UTC).isoformat()
+        args.output.write_text(json.dumps(measures, indent=2, sort_keys=True) + "\n")
     else:
         if args.env_file is None:
             parser.error("--env-file is required unless --offline")
