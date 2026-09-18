@@ -50,6 +50,14 @@ Both outputs record `sourceReleaseDigest` and resume only against the same sourc
 release. Rows lacking that digest require a fresh output file. The resolver also
 retries when an issue's requested unmatched-number set changes.
 
+- [legislative_data_map](analysis/legislative_data_map.py): measure what each
+  Congress.gov and GovInfo collection route lists and from when, sample the
+  publisher XML candidates, and rewrite the generated tables in
+  `docs/research/legislative-data-map-2026-09-18.md` from those measurements
+  and the judgments held in the tool. Supply an explicit credential file, the
+  JSON output path and the map path; `--offline` rewrites from a prior output.
+  Coverage is a lower bound from a capped walk, never proof of absence.
+
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,
 count mismatches, or a full 1,000-row page. A full page is indeterminate even when
