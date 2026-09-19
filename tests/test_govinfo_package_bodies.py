@@ -42,6 +42,10 @@ CPRT_PACKAGE = "CPRT-118HPRT57104"
 CPRT_SUMMARY = (FIXTURES / f"summary-{CPRT_PACKAGE}.json").read_bytes()
 CPRT_MODS = (FIXTURES / f"mods-{CPRT_PACKAGE}.xml").read_bytes()
 
+BILLS_FIXTURES = Path(__file__).parent / "fixtures" / "govinfo_bills"
+USLM_BILL_PACKAGE = "BILLS-119hconres11enr"
+USLM_BILL_MODS = (BILLS_FIXTURES / "mods-119hconres11enr.xml").read_bytes()
+
 
 def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = "") -> bytes:
     renditions = urls or (
@@ -143,7 +147,7 @@ def test_keyed_locators_carry_no_credential() -> None:
 
 def test_unsupported_format_refuses() -> None:
     with pytest.raises(GovInfoBodySourceError, match="body format must be"):
-        package_body_locator(PACKAGE, "uslm")
+        package_body_locator(PACKAGE, "jpeg")
 
 
 def test_real_summary_states_the_package_and_no_body_rendition() -> None:
@@ -241,22 +245,49 @@ def test_real_cprt_summary_and_mods_state_the_committee_print() -> None:
     assert mods.other_renditions == ()
 
 
+def test_real_bills_mods_offers_uslm_directly_not_moved() -> None:
+    """B7: BILLS-119hconres11enr, the raw-data sidecar's one file-name-matched USLM package."""
+    mods_url = f"https://api.govinfo.gov/packages/{USLM_BILL_PACKAGE}/mods"
+    mods = validate_package_mods(USLM_BILL_MODS, package=USLM_BILL_PACKAGE, final_url=mods_url, max_bytes=200_000)
+    assert mods.access_ids == (USLM_BILL_PACKAGE,)
+    assert mods.offered_formats == ("htm", "pdf", "xml", "uslm")
+    # Before B7 this package's USLM rendition read as "moved" (a supported
+    # file type at an address this module did not derive); it is now offered
+    # directly, at its own locator.
+    assert mods.moved_renditions == ()
+    assert package_body_locator(USLM_BILL_PACKAGE, "uslm") == (
+        f"https://www.govinfo.gov/content/pkg/{USLM_BILL_PACKAGE}/uslm/{USLM_BILL_PACKAGE}.xml"
+    )
+
+
 def test_this_packages_rendition_at_another_address_reads_as_disagreement() -> None:
-    # BILLS states a USLM rendition this way: the package's own content
-    # address, a supported file type, a folder this module does not derive.
-    uslm = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/uslm/{PACKAGE}.xml"
+    # A supported file type at the package's own content address, but a
+    # folder this module does not derive -- before B7 this was BILLS's own
+    # USLM rendition; now that uslm has its own locator (uslm/{id}.xml), any
+    # other folder still demonstrates the same disagreement.
+    moved = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/alt/{PACKAGE}.pdf"
     body = mods_xml(
         urls=(
             f'<url displayLabel="HTML rendition" access="raw object">{BODY_URL}</url>'
-            f'<url displayLabel="USLM rendition" access="raw object">{uslm}</url>'
+            f'<url displayLabel="PDF rendition" access="raw object">{moved}</url>'
             '<url displayLabel="Content Detail" access="object in context">'
             f"https://www.govinfo.gov/app/details/{PACKAGE}</url>"
         )
     )
     mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
     assert mods.offered_formats == ("htm",)
-    assert mods.moved_renditions == (("xml", uslm),)
+    assert mods.moved_renditions == (("pdf", moved),)
     assert mods.other_renditions == ()
+
+
+def test_uslm_and_xml_share_an_extension_but_xml_wins_the_moved_label() -> None:
+    # uslm and xml both serve xml/{id}.xml-shaped addresses (folder differs,
+    # extension does not), so a rendition found at neither locator can only
+    # be labelled by extension; xml is the tie-break (bodies._FORMAT_BY_EXTENSION).
+    moved = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/alt/{PACKAGE}.xml"
+    body = mods_xml(urls=f'<url displayLabel="XML rendition" access="raw object">{moved}</url>')
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.moved_renditions == (("xml", moved),)
 
 
 def test_another_packages_rendition_and_an_unsupported_file_type_say_nothing_here() -> None:

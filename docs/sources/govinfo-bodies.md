@@ -41,7 +41,7 @@ from spicy_docs.extraction.body_text import body_text
 
 derived = body_text(result)
 derived.text  # parser-ready text
-derived.rendition  # "xml", "htm", "txt" or "pdf" -- what the publisher offered
+derived.rendition  # "xml", "uslm", "htm", "txt" or "pdf" -- what the publisher offered
 derived.derivation  # "markup-reader", "text-rendition-cleanup" or "pdf-extraction-gpo-normalized"
 derived.record  # the cleanup counts for that branch
 ```
@@ -49,11 +49,12 @@ derived.record  # the cleanup counts for that branch
 ## The preference rule
 
 `BODY_PREFERENCE` in `sources/govinfo/bodies.py` is **one sealed order for
-every caller**: `("xml", "htm", "txt", "pdf")`. It is `acquire`'s default, and
-`sources/congress/bill_versions.py::DEFAULT_FORMAT_PREFERENCE` is the same
-order in Congress.gov's own format names (`("xml", "html", "txt", "pdf")` —
-the GovInfo rendition `htm` is spelled `html` there). A test pins the two
-equal, so a version chosen in one spelling is fetched in the other.
+every caller**: `("xml", "uslm", "htm", "txt", "pdf")`. It is `acquire`'s
+default, and `sources/congress/bill_versions.py::DEFAULT_FORMAT_PREFERENCE` is
+the same order in Congress.gov's own format names (`("xml", "uslm", "html",
+"txt", "pdf")` — the GovInfo rendition `htm` is spelled `html` there). A test
+pins the two equal, so a version chosen in one spelling is fetched in the
+other.
 
 `prefer` is still a plain tuple a caller can override, and `bill_pdf.py` does,
 naming `("pdf",)` because it wants that rendition specifically rather than the
@@ -65,8 +66,12 @@ What the sealed order changes, measured over the original six collections
 CHRG, CDOC, CDIR and BILLS it picks exactly what the previous default picked.
 The one collection whose answer changes is **CREC**, which offers PDF and
 nothing else: it used to refuse with `GovInfoFormatNotOfferedError` and now
-returns a body. That is the whole of the ruling this seals. CPRT was added
-later (§A10): it offers `htm`, `pdf` and `xml` and picks `xml`, the same
+returns a body. That is the whole of the ruling this seals. Two additions
+came later, under the same order: `uslm` (§B7) — BILLS states a second
+structured rendition at `uslm/{id}.xml`, which this module now fetches
+directly rather than reporting it as a
+[moved rendition](#formats-and-how-the-offered-set-is-read) — and CPRT
+(§A10), which offers `htm`, `pdf` and `xml` and picks `xml`, the same
 structure-first rule the rest of the order already follows.
 
 ## Package ids
@@ -121,14 +126,18 @@ address. `BODY_PREFERENCE` above is the order to ask for them in.
 | Format | Path | Media type | Text derivation |
 | --- | --- | --- | --- |
 | `xml` | `xml/{id}.xml` | `application/xml`, `text/xml` | `markup-reader` |
+| `uslm` | `uslm/{id}.xml` | `application/xml`, `text/xml` | `markup-reader` |
 | `htm` | `html/{id}.htm` | `text/html` | `markup-reader` |
 | `txt` | `text/{id}.txt` | `text/plain` | `text-rendition-cleanup` |
 | `pdf` | `pdf/{id}.pdf` | `application/pdf` | `pdf-extraction-gpo-normalized` |
 
 The folder is not the format name: text is served from `text/`, HTML from
-`html/`. No package offers all four. The offered set is read from the package
-MODS, from each `location/url` whose `access` is `raw object` and whose URL is
-exactly this module's locator for a supported format. Measured 2026-09-19:
+`html/`, USLM from `uslm/` — the last shares `xml`'s file extension, so only
+the folder (and the caller's own locator, which this module derives) tells
+the two apart. No package offers all five. The offered set is read from the
+package MODS, from each `location/url` whose `access` is `raw object` and
+whose URL is exactly this module's locator for a supported format. Measured
+2026-09-19:
 
 | Package | MODS says offered | Keyless routes answering 200 | Summary `download` body links |
 | --- | --- | --- | --- |
@@ -138,7 +147,7 @@ exactly this module's locator for a supported format. Measured 2026-09-19:
 | `CPRT-118HPRT57104` | HTML, PDF, XML | `htm`, `pdf`, `xml` | none |
 | `CREC-2026-01-02` | PDF | `pdf` | four PDF links |
 | `CDIR-2026-02-20` | PDF, Text | `pdf` (18.3 MB), `txt` | `txtLink`, `pdfLink` |
-| `BILLS-119hr1enr` | HTML, PDF, XML, USLM | `htm`, `xml`, `pdf` | `xmlLink`, `txtLink`, `xhtmlLink`, `uslmLink`, `pdfLink` |
+| `BILLS-119hr1enr` | HTML, PDF, XML, USLM | `htm`, `xml`, `pdf`, `uslm` | `xmlLink`, `txtLink`, `xhtmlLink`, `uslmLink`, `pdfLink` |
 
 The MODS statement agreed exactly with what the routes served, in both
 directions, for every package measured: each stated rendition answered 200 and
@@ -153,11 +162,15 @@ from those links and the offered set comes from MODS alone.
 A stated rendition that is not one of these locators is separated by what it
 means. `moved_renditions` holds `(format, url)` for a rendition of this
 package in a supported file type at an address this module does not derive —
-BILLS states its USLM rendition at `uslm/{id}.xml`, so that reads as `xml` in
-a place this module does not fetch from, not as absence; fetching USLM is the
-[USLM route's](uslm-laws.md) job. `other_renditions` holds `(displayLabel,
-url)` verbatim for everything else: another package's address, another file
-type, another host.
+before §B7, BILLS's own USLM rendition was the standing example (stated at
+`uslm/{id}.xml`, an address this module did not then fetch from); now that
+`uslm` is a first-class format with that exact locator, this case is any
+supported extension found at an unexpected folder, and `other_renditions`
+holds `(displayLabel, url)` verbatim for everything else: another package's
+address, another file type, another host. `uslm` and `xml` share a file
+extension, so a rendition found this way can only be labelled by extension
+when the folder disagrees; `xml` is the tie-break
+(`sources/govinfo/bodies.py::_FORMAT_BY_EXTENSION`).
 
 ## Turning a body into text
 
@@ -168,9 +181,20 @@ rendition, named on the result, never guessed from the bytes:
 
 | Derivation | Renditions | Built from |
 | --- | --- | --- |
-| `markup-reader` | `xml`, `htm` | `reading/markup.py`'s event readers |
+| `markup-reader` | `xml`, `uslm`, `htm` | `reading/markup.py`'s event readers |
 | `text-rendition-cleanup` | `txt` | the shared rules below, nothing else |
 | `pdf-extraction-gpo-normalized` | `pdf` | `DocumentExtractor(NativeText())`, then [`normalize_gpo_pages`](../extraction-gpo.md) |
+
+`uslm` takes the same branch as `xml`, not a dedicated USLM parser: measured
+2026-09-19 on BILLS-119hconres11enr, its root is `<resolution>` in the same
+`schemas.gpo.gov/xml/uslm` namespace GPO's PLAW/COMPS USLM uses, but neither
+of `sources/govinfo/uslm.py`'s two fixed roots (`pLaw`, `statuteCompilation`)
+— and a bill's own root varies by bill type (`bill`, `resolution`,
+`jointResolution`, …) where a law or compilation each has exactly one. That
+grammar validates identity against a `PublicLawSelection` or
+`StatuteCompilationSelection`, and a bill has neither, so it does not apply;
+the generic markup reader, which reads any well-formed XML's text in document
+order regardless of vocabulary, does.
 
 `BodyText` is frozen and carries `text`, `pages` (the per-page text for a PDF,
 `None` otherwise — no other rendition states a page boundary), `rendition`,
@@ -182,19 +206,26 @@ hosted row to say how its text was made without holding the bytes.
 
 Measured 2026-09-19 over four keyless `htm` bodies (CRPT-119hrpt1,
 -119hrpt105, -113hrpt135, -113srpt77), one `txt` body (CDIR-2026-02-20 — the
-only collection measured that offers one) and three BILLS `xml` bodies. The
-per-file counts are in `tests/fixtures/govinfo_bodies/README.md`; only what
-was counted above zero has a rule.
+only collection measured that offers one), three BILLS `xml` bodies and one
+BILLS `uslm` body (BILLS-119hconres11enr). The per-file counts are in
+`tests/fixtures/govinfo_bodies/README.md` and
+`tests/fixtures/govinfo_bills/README.md`; only what was counted above zero
+has a rule.
 
 | Rule | Artifact | Renditions | Measured |
 | --- | --- | --- | --- |
 | `metadata_element` | HTML `<title>`: document metadata restating the printed heading | `htm` | 591, 703, 80, 77 characters |
-| `element_line_break` | An XML element boundary, kept as a line break so two elements' text never runs together | `xml` | 26 on BILLS-119hr6028ih |
-| `whitespace_only_line` | XML pretty-print indentation between elements | `xml` | 38 on BILLS-119hr6028ih |
-| `line_ending` | CRLF/CR line endings | `xml`, `htm`, `txt` | 27,717 in the CDIR text; 0 elsewhere |
-| `end_of_text_marker` | GPO's trailing `U+001A` terminator | `xml`, `htm`, `txt` | 1 each in the CRPT-113hrpt135 and -113srpt77 `htm` |
-| `gpo_quote_pair` | GPO's `` `` ``/`''` typewriter quote pairs | `xml`, `htm`, `txt` | 6, 2, 54, 119 pairs in the four `htm` bodies |
-| `trailing_space` | Trailing spaces from GPO's fixed-width columns; leading spaces are the layout and stay | `xml`, `htm`, `txt` | 19,077 lines in the CDIR text |
+| `element_line_break` | An XML element boundary, kept as a line break so two elements' text never runs together | `xml`, `uslm` | 26 on BILLS-119hr6028ih; 31 on the USLM body |
+| `whitespace_only_line` | XML pretty-print indentation between elements | `xml`, `uslm` | 38 on BILLS-119hr6028ih; 32 on the USLM body |
+| `line_ending` | CRLF/CR line endings | `xml`, `htm`, `txt` | 27,717 in the CDIR text; 0 elsewhere, including the USLM body |
+| `end_of_text_marker` | GPO's trailing `U+001A` terminator | `xml`, `htm`, `txt` | 1 each in the CRPT-113hrpt135 and -113srpt77 `htm`; 0 on the USLM body |
+| `gpo_quote_pair` | GPO's `` `` ``/`''` typewriter quote pairs | `xml`, `htm`, `txt` | 6, 2, 54, 119 pairs in the four `htm` bodies; 0 on the USLM body |
+| `trailing_space` | Trailing spaces from GPO's fixed-width columns; leading spaces are the layout and stay | `xml`, `htm`, `txt` | 19,077 lines in the CDIR text; 0 on the USLM body |
+
+The last four rules are not named for `uslm` in
+`RENDITION_CLEANUP_RULES`, though the same shared code produces their counts:
+this one small USLM fixture measured zero on each, and only what is counted
+above zero has a rule, the standard this table already holds itself to.
 
 Four things are deliberately **not** stripped:
 
@@ -209,7 +240,7 @@ Four things are deliberately **not** stripped:
   report from both renditions: `report_blocks`'s `agency_key` is
   `upper().strip()` only, so the same heading yields `OFFICE OF  THE
   COMPTROLLER…` from `htm` and `OFFICE OF THE COMPTROLLER…` from the PDF.
-- **`[[Page N]]` markers and form feeds.** Zero in all eight bodies measured.
+- **`[[Page N]]` markers and form feeds.** Zero in all nine bodies measured.
   Unmeasured, so no rule — the same standard `gpo_normalize` holds itself to.
 - **`VerDate` print footers.** A PDF artifact; `normalize_gpo_pages` already
   owns them and this module does not duplicate the rule.

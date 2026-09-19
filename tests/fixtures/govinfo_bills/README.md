@@ -13,6 +13,32 @@ these shapes; they do not establish coverage or continuing live availability.
 | `text-119hjres25enr.xml` | [119 HJRES 25 ENR XML](https://www.govinfo.gov/content/pkg/BILLS-119hjres25enr/xml/BILLS-119hjres25enr.xml) | Complete, unchanged 2,751-byte response. |
 | `status-119s5.xml` | [119 S 5 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/s/BILLSTATUS-119s5.xml) | Retrieved with unauthenticated GET on 2026-09-19: `200`, `content-type: text/xml`, 269,519 bytes, SHA-256 `060213ff9909c0d5683d586fc7b9b4150c1c5a1d46b5bdb99ada5c49c89dc5eb`, publisher Last-Modified 2026-07-30 18:58:58 GMT. Reduced: kept 5 of 39 actions in publisher order and dropped `relatedBills`, `cosponsors`, `subjects`, `summaries`, `titles`, `amendments` and `textVersions`; reformatted XML. Retained elements are unchanged publisher bytes. |
 | `status-119hr300.xml` | [119 HR 300 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr300.xml) | Retrieved with unauthenticated GET on 2026-09-19: `200`, `content-type: text/xml`, 6,855 bytes live, SHA-256 `fed90a2cdb9fb962825376322b33225fca5e0419ef82691ec3a0d510dc596f24`, publisher Last-Modified 2026-07-30 18:44:05 GMT. Reduced: dropped `<constitutionalAuthorityStatementText>`; every other element is unchanged publisher bytes. Added to cover `<titles>` and `<relatedBills>`: no other fixture in this directory carries `<relatedBills>` at all (`status-119s5.xml` had it stripped when reduced, see above), and this is the smallest live bill found carrying both. |
+| `mods-119hconres11enr.xml` | [`packages/BILLS-119hconres11enr/mods`](https://api.govinfo.gov/packages/BILLS-119hconres11enr/mods), keyed with `X-Api-Key` | Complete, unchanged 5,727-byte response, SHA-256 `1ea18296309270fdceccf631f8b74ed58ad09a0b4df691e3c0de61a33f15ece1`. Retrieved 2026-09-19. |
+| `uslm-119hconres11enr.xml` | [USLM rendition](https://www.govinfo.gov/content/pkg/BILLS-119hconres11enr/uslm/BILLS-119hconres11enr.xml), keyless | Complete, unchanged 3,113-byte response, SHA-256 `a0e2847ee6883b64c881053c781ce0a289e25e59be7b812fcd7fbab5f2e9f5ff`, `content-type: application/xml`. Retrieved 2026-09-19. |
+
+## The USLM bill rendition (B7)
+
+`BILLS-119hconres11enr` is the package `docs/research/billtrax-raw-data-2026-09-19.md`
+§7 names as the one version its 240-format-entry sample matched by file name
+to a real package: the enrolled H. Con. Res. 11, one of ten `United States
+Legislative Markup` format entries out of 240 sampled. Its MODS states HTML,
+PDF, XML and USLM renditions, all four at the standard
+`content/pkg/{id}/{folder}/{id}.{extension}` addresses; the USLM one adds
+`PACKAGE_BODY_FORMATS["uslm"]` (folder `uslm`, extension `xml`).
+
+The USLM body's root is `<resolution>` in the `http://schemas.gpo.gov/xml/uslm`
+namespace -- the same namespace GPO's PLAW/COMPS USLM uses, but a different
+root than either of `sources/govinfo/uslm.py`'s two fixed roots (`pLaw`,
+`statuteCompilation`), and a root that varies by bill type where PLAW and
+COMPS each have exactly one. `uslm.py`'s grammar validates identity against a
+`PublicLawSelection`/`StatuteCompilationSelection` keyed to one fixed root
+each; a bill has no such selection type to validate against here, and its own
+root varies (`bill`, `resolution`, `jointResolution`, and so on by bill type),
+so `uslm.py`'s grammar does not apply. `extraction/body_text.py` reads it
+through the same generic markup-reader branch as a BILLS `xml` body instead --
+measured on this fixture: 42 elements, 31 element-boundary line breaks, 32
+whitespace-only pretty-print lines, and the document's own text recovered in
+order (see `RENDITION_DERIVATIONS["uslm"]` and `docs/sources/govinfo-bodies.md`).
 
 `status-119s5.xml` is the only enacted bill here, and it is the one that
 carries `<laws>` and `<recordedVotes>`: the Laken Riley Act, Public Law 119-1.

@@ -15,8 +15,8 @@ Source rules, each measured on 2026-09-19 (receipts in the fixture README):
   HTML from ``html/{id}.htm``.
 - Not every package offers every format. CRPT/CHRG/CDOC offer HTML and PDF,
   CPRT offers HTML, PDF and XML, CREC offers PDF, CDIR offers PDF and text,
-  BILLS offers HTML, PDF and XML. A format a package does not offer redirects
-  to ``/error``, which answers
+  BILLS offers HTML, PDF, XML and USLM. A format a package does not offer
+  redirects to ``/error``, which answers
   HTTP 200 with the publisher's 44,165-byte "Page Not Found" page. A 200 that
   is not the requested object is a refusal with its bytes retained, never data
   and never absence.
@@ -103,6 +103,13 @@ class BodyFormat:
 PACKAGE_BODY_FORMATS: dict[str, BodyFormat] = {
     "htm": BodyFormat("htm", "html", "htm", ("text/html",)),
     "xml": BodyFormat("xml", "xml", "xml", ("application/xml", "text/xml")),
+    # United States Legislative Markup: a second, richer structured rendition
+    # BILLS offers alongside its own xml -- same folder-not-format-name rule,
+    # ``uslm/{id}.xml``, and the same media types, since GovInfo serves it as
+    # plain XML (measured 2026-09-19, BILLS-119hconres11enr: content-type
+    # application/xml). See ``extraction/body_text.py`` for why its text
+    # derivation is the same markup reader as ``xml``, not a dedicated parser.
+    "uslm": BodyFormat("uslm", "uslm", "xml", ("application/xml", "text/xml")),
     "txt": BodyFormat("txt", "text", "txt", ("text/plain",)),
     "pdf": BodyFormat("pdf", "pdf", "pdf", ("application/pdf",)),
 }
@@ -145,9 +152,26 @@ PACKAGE_BODY_FORMATS: dict[str, BodyFormat] = {
 #: (CRPT/CHRG/CDOC offer htm and pdf, CDIR offers txt and pdf, BILLS offers
 #: htm, xml and pdf), so the two never compete. They are ordered by the same
 #: structure-first rule, since markup can only add to what plain text states.
-BODY_PREFERENCE: tuple[str, ...] = ("xml", "htm", "txt", "pdf")
+#:
+#: ``uslm`` sits right after ``xml``: it is the second structured rendition
+#: (§B7, measured 2026-09-19 on BILLS-119hconres11enr), and BILLS offers both
+#: on the same package, so an order was needed. XML wins the top slot because
+#: every BILLS package that offers USLM offers XML too (both are Formatted-XML
+#: siblings on the same publisher record), so nothing is lost by trying XML
+#: first; USLM still outranks HTML and text, since it is markup over the same
+#: structured source, not a plain-text reduction of it.
+BODY_PREFERENCE: tuple[str, ...] = ("xml", "uslm", "htm", "txt", "pdf")
 
-_FORMAT_BY_EXTENSION = {body_format.extension: name for name, body_format in PACKAGE_BODY_FORMATS.items()}
+# uslm shares xml's file extension -- both are xml/{id}.xml-shaped, just in
+# different folders -- so an extension alone cannot always name a rendition
+# found at an unexpected folder (see _package_rendition_format). xml is kept
+# as that fallback's answer for the shared extension, since it existed first
+# and is the far more common of the two; setdefault leaves it untouched by
+# uslm's later, colliding entry.
+_FORMAT_BY_EXTENSION: dict[str, str] = {}
+for _name, _body_format in PACKAGE_BODY_FORMATS.items():
+    _FORMAT_BY_EXTENSION.setdefault(_body_format.extension, _name)
+del _name, _body_format
 _PACKAGE_RENDITION = re.compile(
     rf"{re.escape(CONTENT)}/content/pkg/(?P<package>[^/]+)/[^/]+/[^/]+\.(?P<extension>[A-Za-z0-9]+)"
 )
@@ -383,10 +407,10 @@ def validate_package_mods(
 
     The renditions that do not match are separated, because they mean
     different things. One at another address for this package in a supported
-    file type -- BILLS states its USLM rendition at ``uslm/{id}.xml`` -- is a
-    disagreement about where a format lives, and the caller can see the address
-    the publisher gave. Anything else (another package, another file type,
-    another host) is recorded verbatim and means nothing about this fetch.
+    file type is a disagreement about where a format lives, and the caller
+    can see the address the publisher gave. Anything else (another package,
+    another file type, another host) is recorded verbatim and means nothing
+    about this fetch.
     """
     identity = _identity(package)
     exact = _checked_bytes(body, max_bytes, label="package MODS")
