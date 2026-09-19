@@ -379,11 +379,12 @@ Concretely, for `congress_bills.stage`:
 
 ```python
 # spicy-regs: src/spicy_regs/transforms/build_congress_bill_stages.py (new)
-from spicy_docs.interpretation.bill_stage import infer_stage_from_action
+from spicy_docs.interpretation.bill_stage import infer_stage_from_text
 
 
 def _add_stage(row: dict) -> dict:
-    row["stage"] = infer_stage_from_action(row["latest_action_text"])
+    # The finding names the rule that fired; the table stores the stage.
+    row["stage"] = infer_stage_from_text(row["latest_action_text"]).stage
     return row
 ```
 
@@ -440,7 +441,7 @@ not a landed decision; a maintainer should confirm it before relying on it.
   its result in the right column (a mapping test, same shape as
   `test_shape_maps_and_serializes_fields` in `test_congress_bills.py:52-...`,
   but asserting "the `stage` column equals what
-  `spicy_docs.interpretation.bill_stage.infer_stage_from_action` returns for
+  `spicy_docs.interpretation.bill_stage.infer_stage_from_text(...).stage` returns for
   this input" rather than re-deriving the stage logic itself); the schema
   includes the new column with the right type and dedup-key behavior; the
   data-dictionary description exists and matches (`spicy-regs-dict check`,
