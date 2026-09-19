@@ -67,6 +67,14 @@ CURRENT_YEAR = 2026
 FIRST_YEAR = 1789
 ERROR_TOLERANCE = 6
 LEADING_EMPTY_TOLERANCE = 6
+# committee's own walk found no stop at all within --max-descent's default 60 steps (still
+# populated at the 57th); 65 more steps from any recorded floor at or below the 66th reaches the
+# 1st Congress. committee-print's real floor sat six empty Congresses past its false two-empty
+# stop (94th, past a run from the 100th to the 95th) and treaty's sat four past its (81st, past
+# the 85th to the 82nd); eight tolerates both without costing every other route more than a few
+# confirming requests (measured 2026-09-19).
+FLOOR_DESCENT_STEPS = 65
+FLOOR_EMPTY_TOLERANCE = 8
 JSON_TYPES = ("application/json",)
 SAMPLE_MAX_BYTES = 16 * 1024 * 1024
 BULK_SIZED = ("BILLSTATUS", "BILLS", "BILLSUM", "PLAW")
@@ -2693,23 +2701,57 @@ def render_flow(measures: Mapping[str, Any]) -> list[str]:
 
 
 def measure_floors(reader: PagedJsonReader, measures: dict[str, Any], api_key: str) -> None:
-    """Probe five keys below each measured floor; the walk stopped at two empties, a wider gap would hide older material."""
+    """Continue each route's descent below its recorded floor until a real run of empties, not just two.
+
+    ``measure_congress``'s own walk is bounded by ``--max-descent`` steps from the current Congress and
+    stops on the first two consecutive empty Congresses, so a route whose real floor sits further back
+    either exhausts that cap while still finding rows (``committee``, stop ``cap``) or stops on a false
+    two-empty separated from older rows by a gap wider than two (``committee-print``: six empty Congresses
+    before the 94th; ``treaty``: four before the 81st). Re-applying the same two-empty rule one Congress
+    below the recorded floor would hit that identical false stop immediately, so this walks up to
+    ``FLOOR_DESCENT_STEPS`` further Congresses regardless, resetting its empty run on every non-zero count,
+    and only concludes real absence after ``FLOOR_EMPTY_TOLERANCE`` empties in a row -- wide enough to
+    cross both measured gaps. A route whose recorded floor was already real costs a few requests
+    confirming it, all landing empty.
+    """
     for route in CONGRESS_ROUTES:
         facts = measures.get("congress", {}).get(route.route, {})
         earliest = facts.get("earliest")
         if not route.descent or earliest is None:
             continue
         below: dict[int, int | None] = {}
-        for key in range(earliest - 3, earliest - 8, -1):
+        new_earliest, empty_run, stop = earliest, 0, "cap"
+        for step in range(FLOOR_DESCENT_STEPS):
+            key = earliest - 1 - step
             if key < 1:
+                stop = "floor"
                 break
             try:
-                below[key] = _count(reader, _congress_url(route.descent.format(c=key)), route.records_key)
+                count = _count(reader, _congress_url(route.descent.format(c=key)), route.records_key)
             except (PagedJsonSourceError, httpx.HTTPError):
                 below[key] = None
+                if sum(1 for v in below.values() if v is None) >= ERROR_TOLERANCE:
+                    stop = "error"
+                    break
+                continue
+            below[key] = count
+            if count > 0:
+                new_earliest, empty_run = key, 0
+            else:
+                empty_run += 1
+                if empty_run >= FLOOR_EMPTY_TOLERANCE:
+                    stop = "empty-run"
+                    break
         facts["belowFloor"] = below
-        facts["floorGap"] = sorted(k for k, v in below.items() if v)
-        print(f"floor {route.route}: earliest {earliest}, below {below}", file=sys.stderr)
+        # Only a find *below* the adopted floor is still an open anomaly; `new_earliest` is by
+        # construction the deepest non-zero key already probed, so a clean run reports none.
+        facts["floorGap"] = sorted(k for k, v in below.items() if v and k < new_earliest)
+        if new_earliest != earliest:
+            facts["earliest"], facts["descentStop"] = new_earliest, stop
+        print(
+            f"floor {route.route}: earliest {facts.get('earliest')} (was {earliest}), stop {stop}, below {below}",
+            file=sys.stderr,
+        )
 
 
 SAMPLE_ONLY = {
