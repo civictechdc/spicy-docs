@@ -14,6 +14,10 @@ count, an observed total that disagrees with the declared one, or a page bound
 reached before the publisher's terminal page are refusals, not quiet ends. A
 declared count of zero is an observation of that query on that day, not source
 absence.
+
+``records_key`` is a top-level key for most routes; a tuple path reaches rows
+a publisher nests inside a wrapper object alongside its own count and url,
+the way Congress.gov's ``committee/{chamber}/{code}/bills`` does.
 """
 
 from __future__ import annotations
@@ -176,10 +180,16 @@ def _encode_body(body: Mapping[str, Any]) -> bytes:
 
 @dataclass(frozen=True, slots=True)
 class JsonPage:
-    """One exact list response, its rows as the publisher spelled them, and the next request if any."""
+    """One exact list response, its rows as the publisher spelled them, and the next request if any.
+
+    ``records_key`` is a top-level key for most publishers; a tuple reaches
+    rows a publisher nests inside a wrapper object, the way Congress.gov's
+    ``committee/{chamber}/{code}/bills`` route nests its ``bills`` array
+    under a ``committee-bills`` object rather than at the top level.
+    """
 
     page_index: int
-    records_key: str
+    records_key: str | tuple[str, ...]
     capture: CapturedBodyResponse
     records: tuple[Mapping[str, Any], ...]
     declared_count: int | None
@@ -317,13 +327,13 @@ class PagedJsonReader(SourceAcquirer):
         *,
         url: str,
         body: Mapping[str, Any] | None,
-        records_key: str,
+        records_key: str | tuple[str, ...],
         page_index: int,
     ) -> JsonPage:
         value = load_decimal_json(capture.body, source=self.family.label, error_type=PagedJsonSourceError)
         if not isinstance(value, Mapping):
             raise PagedJsonSourceError(f"{self.family.label} list response is not a JSON object")
-        rows = value.get(records_key)
+        rows = _lookup(value, records_key) if isinstance(records_key, tuple) else value.get(records_key)
         if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
             raise PagedJsonSourceError(f"{self.family.label} list response omitted its {records_key} list")
         count = _lookup(value, self.family.count_path) if self.family.count_path else None
@@ -336,7 +346,7 @@ class PagedJsonReader(SourceAcquirer):
         self,
         url: str,
         *,
-        records_key: str,
+        records_key: str | tuple[str, ...],
         page_index: int = 0,
         body: Mapping[str, Any] | None = None,
     ) -> JsonPage:
@@ -375,7 +385,7 @@ class PagedJsonReader(SourceAcquirer):
         self,
         url: str,
         *,
-        records_key: str,
+        records_key: str | tuple[str, ...],
         max_pages: int = DEFAULT_MAX_PAGES,
         body: Mapping[str, Any] | None = None,
     ) -> Iterator[JsonPage]:

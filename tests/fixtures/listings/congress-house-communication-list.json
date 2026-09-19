@@ -1,0 +1,46 @@
+{
+    "houseCommunications": [
+        {
+            "chamber": "House",
+            "communicationType": {
+                "code": "EC",
+                "name": "Executive Communication"
+            },
+            "congress": 119,
+            "number": 4752,
+            "updateDate": "2026-09-18",
+            "url": "https://api.congress.gov/v3/house-communication/119/ec/4752?format=json"
+        },
+        {
+            "chamber": "House",
+            "communicationType": {
+                "code": "ML",
+                "name": "Memorial"
+            },
+            "congress": 119,
+            "number": 136,
+            "updateDate": "2026-09-17",
+            "url": "https://api.congress.gov/v3/house-communication/119/ml/136?format=json"
+        },
+        {
+            "chamber": "House",
+            "communicationType": {
+                "code": "EC",
+                "name": "Executive Communication"
+            },
+            "congress": 119,
+            "number": 4748,
+            "updateDate": "2026-09-17",
+            "url": "https://api.congress.gov/v3/house-communication/119/ec/4748?format=json"
+        }
+    ],
+    "pagination": {
+        "count": 4975,
+        "next": "https://api.congress.gov/v3/house-communication/119?offset=3&limit=3&format=json"
+    },
+    "request": {
+        "congress": "119",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}

@@ -1,0 +1,46 @@
+{
+    "pagination": {
+        "count": 950,
+        "next": "https://api.congress.gov/v3/committee-report/119?offset=3&limit=3&format=json"
+    },
+    "reports": [
+        {
+            "chamber": "House",
+            "citation": "H. Rept. 119-1",
+            "cmte_rpt_id": 289187,
+            "congress": 119,
+            "number": 1,
+            "part": 1,
+            "type": "HRPT",
+            "updateDate": "2025-05-27T14:12:39Z",
+            "url": "https://api.congress.gov/v3/committee-report/119/HRPT/1?format=json"
+        },
+        {
+            "chamber": "House",
+            "citation": "H. Rept. 119-2",
+            "cmte_rpt_id": 289189,
+            "congress": 119,
+            "number": 2,
+            "part": 1,
+            "type": "HRPT",
+            "updateDate": "2025-05-27T14:12:41Z",
+            "url": "https://api.congress.gov/v3/committee-report/119/HRPT/2?format=json"
+        },
+        {
+            "chamber": "House",
+            "citation": "H. Rept. 119-3",
+            "cmte_rpt_id": 289190,
+            "congress": 119,
+            "number": 3,
+            "part": 1,
+            "type": "HRPT",
+            "updateDate": "2025-05-27T14:12:42Z",
+            "url": "https://api.congress.gov/v3/committee-report/119/HRPT/3?format=json"
+        }
+    ],
+    "request": {
+        "congress": "119",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}

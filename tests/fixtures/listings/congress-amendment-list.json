@@ -1,0 +1,40 @@
+{
+    "amendments": [
+        {
+            "congress": 119,
+            "number": "1",
+            "type": "SAMDT",
+            "updateDate": "2025-01-14T12:08:21Z",
+            "url": "https://api.congress.gov/v3/amendment/119/samdt/1?format=json"
+        },
+        {
+            "congress": 119,
+            "number": "2",
+            "type": "SAMDT",
+            "updateDate": "2025-01-14T12:08:21Z",
+            "url": "https://api.congress.gov/v3/amendment/119/samdt/2?format=json"
+        },
+        {
+            "congress": 119,
+            "description": "An amendment to elect officers of the House.",
+            "latestAction": {
+                "actionDate": "2025-01-03",
+                "actionTime": "15:40:08",
+                "text": "On agreeing to the Aguilar amendment (A001) Failed by voice vote."
+            },
+            "number": "1",
+            "type": "HAMDT",
+            "updateDate": "2025-01-06T19:42:24Z",
+            "url": "https://api.congress.gov/v3/amendment/119/hamdt/1?format=json"
+        }
+    ],
+    "pagination": {
+        "count": 7066,
+        "next": "https://api.congress.gov/v3/amendment/119?offset=3&limit=3&format=json"
+    },
+    "request": {
+        "congress": "119",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}
