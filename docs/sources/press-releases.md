@@ -64,32 +64,40 @@ Everything the feed states is kept; nothing is truncated to an excerpt.
 Measured against the pinned captures in
 [`tests/fixtures/press_releases/`](../../tests/fixtures/press_releases/README.md):
 
-| Channel field | House | Senate |
-| --- | --- | --- |
-| `title` | yes | yes |
-| `link` | yes | yes |
-| `description` | yes (empty element) | yes |
-| `language` | yes | yes |
-| `copyright` | — | yes |
-| `docs` | — | yes |
-| `lastBuildDate` | **never stated** | yes (`EST`, see below) |
-| `ttl` / `skipDays` / `skipHours` | — | yes — the publisher's own polling contract |
+| Channel field | `PressReleaseChannel` attribute | House | Senate |
+| --- | --- | --- | --- |
+| `title` | `.title` | yes | yes |
+| `link` | `.link` | yes | yes |
+| `description` | `.description` | yes (empty element → `None`) | yes |
+| `language` | `.language` | yes (`en`) | yes (`en-us`) |
+| `copyright` | `.copyright` | — | yes |
+| `docs` | `.docs` | — | yes |
+| `lastBuildDate` | `.last_build_date` | **never stated** | yes (`EST`, see below) |
+| `ttl` | `.ttl` (parsed `int`) | — | yes (`1`) |
+| `skipDays` | `.skip_days` (tuple of `<day>` text) | — | yes (`("Saturday", "Sunday")`) |
+| `skipHours` | `.skip_hours` (tuple of `<hour>` as `int`) | — | yes (`(1, 2, 3, 4, 5)`) |
 
-| Item field | House (10 items) | Senate (15 items) |
-| --- | --- | --- |
-| `title` | yes | yes |
-| `link` | yes | yes |
-| `description` | yes, HTML | **never stated** |
-| `author` | — | yes, a shared `webmaster@appropriations.senate.gov` mailbox, not per-article |
-| `dc:creator` | yes, a named staffer's `mail.house.gov` address | — |
-| `pubDate` | yes, `+0000` offset | yes, spelled `EST` (see below) |
-| `guid` | yes, `isPermaLink="false"`, value **not a URL** (`"14637 at http://appropriations.house.gov"`) | yes, no attributes (`isPermaLink` defaults `true` per RSS 2.0), value **equal to `<link>`** |
-| `category` / `enclosure` | not observed | not observed |
+`ttl`/`skipDays`/`skipHours` are the Senate's own polling contract — how
+often and when it wants a reader to re-fetch — and BillTrax dropped all
+three along with `lastBuildDate`; here they land on the channel record
+whole, not just noted as absent.
 
-`PressRelease` still carries `categories` and `enclosure_url`/`_length`/`_type`
-fields — `None`/`()` on both measured feeds today, populated the day either
-publisher adds one, since the reader (`reading/rss.py`) is a generic RSS 2.0
-item reader, not one fit only to today's two bodies.
+| Item field | `PressRelease` attribute | House (10 items) | Senate (15 items) |
+| --- | --- | --- | --- |
+| `title` | `.title` | yes | yes |
+| `link` | `.link` | yes | yes |
+| `description` | `.description` (raw) / `.description_text` (stripped) | yes, HTML | **never stated** (`None`) |
+| `author` | `.author` | — | yes, a shared `webmaster@appropriations.senate.gov` mailbox, not per-article |
+| `dc:creator` | `.creator` | yes, a named staffer's `mail.house.gov` address | — |
+| `pubDate` | `.pub_date` (as spelled) / `.pub_date_instant` (parsed) | yes, `+0000` offset | yes, spelled `EST` (see below) |
+| `guid` | `.guid` / `.guid_is_permalink` | yes, `isPermaLink="false"`, value **not a URL** (`"14637 at http://appropriations.house.gov"`) | yes, no attributes (`isPermaLink` defaults `true` per RSS 2.0), value **equal to `<link>`** |
+| `category` | `.categories` (tuple) | not observed | not observed |
+| `enclosure` | `.enclosure_url` / `.enclosure_length` / `.enclosure_type` | not observed | not observed |
+
+`.categories` and the three `.enclosure_*` fields are `()`/`None` on both
+measured feeds today, populated the day either publisher adds one, since the
+reader (`reading/rss.py`) is a generic RSS 2.0 item reader, not one fit only
+to today's two bodies.
 
 ## The Senate spells its zone `EST` in September
 

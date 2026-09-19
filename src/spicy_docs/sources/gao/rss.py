@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 from xml.etree.ElementTree import Element
 
-from spicy_docs.reading.rss import child_text, read_rss2_channel
+from spicy_docs.reading.rss import DEFAULT_MAX_ITEMS, child_text, read_rss2_channel
 from spicy_docs.sources.gao.native import SOURCE_SYSTEM_ID, GaoProductSourceError, gao_product_url
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
@@ -35,7 +35,6 @@ if TYPE_CHECKING:
 GAO_REPORTS_FEED_URL = "https://www.gao.gov/rss/reports.xml"
 DEFAULT_MAX_BYTES = 4 * 1024 * 1024
 MAX_FEED_BYTES = 64 * 1024 * 1024
-MAX_FEED_ITEMS = 1000
 _ITEM_FIELDS = ("title", "link", "guid", "description", "pubDate")
 
 
@@ -102,7 +101,7 @@ def parse_gao_reports_feed(body: bytes, *, max_bytes: int = DEFAULT_MAX_BYTES) -
     if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or not 1 <= max_bytes <= MAX_FEED_BYTES:
         raise GaoFeedSourceError("max_bytes must be a positive integer no greater than 64 MiB")
     channel, item_elements = read_rss2_channel(
-        body, max_bytes=max_bytes, error_type=GaoFeedSourceError, label="GAO feed", max_items=MAX_FEED_ITEMS
+        body, max_bytes=max_bytes, error_type=GaoFeedSourceError, label="GAO feed", max_items=DEFAULT_MAX_ITEMS
     )
     items = []
     for index, element in enumerate(item_elements):

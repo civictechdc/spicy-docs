@@ -16,6 +16,8 @@ from xml.etree.ElementTree import Element
 
 from spicy_docs.reading.xml import parse_xml
 
+DEFAULT_MAX_ITEMS = 1000
+
 
 def read_rss2_channel(
     body: bytes,
@@ -23,7 +25,7 @@ def read_rss2_channel(
     max_bytes: int,
     error_type: type[ValueError],
     label: str,
-    max_items: int = 1000,
+    max_items: int = DEFAULT_MAX_ITEMS,
 ) -> tuple[Element, tuple[Element, ...]]:
     """Parse an RSS 2.0 document; return its one channel and item elements, in feed order."""
     root = parse_xml(body, max_bytes=max_bytes, error_type=error_type, label=label)

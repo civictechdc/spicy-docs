@@ -58,7 +58,7 @@ from urllib.parse import urlsplit
 from xml.etree.ElementTree import Element
 
 from spicy_docs.reading.markup import MarkupReadError, read_html_events
-from spicy_docs.reading.rss import child_text, read_rss2_channel, single_child
+from spicy_docs.reading.rss import DEFAULT_MAX_ITEMS, child_text, read_rss2_channel, single_child
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
@@ -77,7 +77,6 @@ type Chamber = Literal["house", "senate"]
 MEDIA_TYPES = ("application/rss+xml", "application/xml", "text/xml")
 DEFAULT_MAX_BYTES = 4 * 1024 * 1024
 MAX_FEED_BYTES = 64 * 1024 * 1024
-MAX_FEED_ITEMS = 1000
 DC_CREATOR = "{http://purl.org/dc/elements/1.1/}creator"
 
 
@@ -172,11 +171,24 @@ class PressRelease:
 
 @dataclass(frozen=True, slots=True)
 class PressReleaseChannel:
-    """The channel-level facts BillTrax drops entirely, plus every item."""
+    """The channel-level facts BillTrax drops entirely, plus every item.
+
+    ``ttl``, ``skip_days`` and ``skip_hours`` are the Senate's own polling
+    contract (measured 2026-09-19: the House states none of the three).
+    ``skip_days`` and ``skip_hours`` are empty tuples, not ``None``, when the
+    channel carries no ``<skipDays>``/``<skipHours>`` container at all.
+    """
 
     title: str | None
     link: str | None
+    description: str | None
+    language: str | None
+    copyright: str | None
+    docs: str | None
     last_build_date: str | None
+    ttl: int | None
+    skip_days: tuple[str, ...]
+    skip_hours: tuple[int, ...]
     releases: tuple[PressRelease, ...]
 
 
@@ -198,6 +210,40 @@ def _check_feed_identity(feed: PressReleaseFeed, *, title: str | None, link: str
         raise PressReleaseFeedSourceError(
             f"{feed.chamber} press-release feed channel link {link!r} does not name {feed.identity_link_host}"
         )
+
+
+def _read_channel_ttl(channel: Element, *, label: str) -> int | None:
+    raw = child_text(channel, "ttl", error_type=PressReleaseFeedSourceError, label=label)
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        raise PressReleaseFeedSourceError(f"{label} channel ttl is not an integer: {raw!r}") from None
+
+
+def _read_channel_skip_days(channel: Element, *, label: str) -> tuple[str, ...]:
+    container = single_child(channel, "skipDays", error_type=PressReleaseFeedSourceError, label=label)
+    if container is None:
+        return ()
+    return tuple(child.text.strip() for child in container if child.tag == "day" and child.text and child.text.strip())
+
+
+def _read_channel_skip_hours(channel: Element, *, label: str) -> tuple[int, ...]:
+    container = single_child(channel, "skipHours", error_type=PressReleaseFeedSourceError, label=label)
+    if container is None:
+        return ()
+    hours = []
+    for child in container:
+        if child.tag != "hour" or not child.text or not child.text.strip():
+            continue
+        try:
+            hours.append(int(child.text.strip()))
+        except ValueError:
+            raise PressReleaseFeedSourceError(
+                f"{label} channel skipHours hour is not an integer: {child.text!r}"
+            ) from None
+    return tuple(hours)
 
 
 def _strip_description(html: str, *, label: str) -> str:
@@ -291,14 +337,28 @@ def parse_press_release_feed(
         raise PressReleaseFeedSourceError("max_bytes must be a positive integer no greater than 64 MiB")
     label = f"{feed.chamber} press-release feed"
     channel, item_elements = read_rss2_channel(
-        body, max_bytes=max_bytes, error_type=PressReleaseFeedSourceError, label=label, max_items=MAX_FEED_ITEMS
+        body, max_bytes=max_bytes, error_type=PressReleaseFeedSourceError, label=label, max_items=DEFAULT_MAX_ITEMS
     )
-    title = child_text(channel, "title", error_type=PressReleaseFeedSourceError, label=label)
-    link = child_text(channel, "link", error_type=PressReleaseFeedSourceError, label=label)
-    last_build_date = child_text(channel, "lastBuildDate", error_type=PressReleaseFeedSourceError, label=label)
+
+    def channel_text(tag: str) -> str | None:
+        return child_text(channel, tag, error_type=PressReleaseFeedSourceError, label=label)
+
+    title, link = channel_text("title"), channel_text("link")
     _check_feed_identity(feed, title=title, link=link)
     releases = tuple(_read_item(feed, index, element, label=label) for index, element in enumerate(item_elements))
-    return PressReleaseChannel(title=title, link=link, last_build_date=last_build_date, releases=releases)
+    return PressReleaseChannel(
+        title=title,
+        link=link,
+        description=channel_text("description"),
+        language=channel_text("language"),
+        copyright=channel_text("copyright"),
+        docs=channel_text("docs"),
+        last_build_date=channel_text("lastBuildDate"),
+        ttl=_read_channel_ttl(channel, label=label),
+        skip_days=_read_channel_skip_days(channel, label=label),
+        skip_hours=_read_channel_skip_hours(channel, label=label),
+        releases=releases,
+    )
 
 
 @dataclass(frozen=True, slots=True)

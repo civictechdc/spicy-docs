@@ -15,6 +15,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from spicy_docs.reading.rss import DEFAULT_MAX_ITEMS, read_rss2_channel
 from spicy_docs.sources.congress.press_releases import (
     DEFAULT_MAX_BYTES,
     MAX_FEED_BYTES,
@@ -75,7 +76,11 @@ def test_house_feed_matches_the_2026_09_19_measurement():
     channel = parse_press_release_feed(HOUSE, HOUSE_FEED)
     assert channel.title == "House Committee on Appropriations - Republicans"
     assert channel.link == "http://appropriations.house.gov/"
+    assert channel.description is None  # <description/> is present but empty
+    assert channel.language == "en"
+    assert channel.copyright is None and channel.docs is None  # House states neither
     assert channel.last_build_date is None  # House's channel never states one (measured)
+    assert channel.ttl is None and channel.skip_days == () and channel.skip_hours == ()  # no polling contract stated
     assert len(channel.releases) == 10
     first = channel.releases[0]
     assert first.title.startswith("Diaz-Balart Remarks at Budget Hearing")
@@ -93,7 +98,15 @@ def test_senate_feed_matches_the_2026_09_19_measurement():
     channel = parse_press_release_feed(SENATE, SENATE_FEED)
     assert channel.title == "United States Senate Committee on Appropriations Press Feed"
     assert channel.link == "https://www.appropriations.senate.gov/rss/feeds/"
+    assert channel.description == "Feed from United States Senate Committee on Appropriations"
+    assert channel.language == "en-us"
+    assert channel.copyright == "Copyright 2026"
+    assert channel.docs == "https://www.appropriations.senate.gov/rss/feeds/"
     assert channel.last_build_date and "EST" in channel.last_build_date
+    # The Senate's own polling contract, kept whole rather than dropped like BillTrax does.
+    assert channel.ttl == 1
+    assert channel.skip_days == ("Saturday", "Sunday")
+    assert channel.skip_hours == (1, 2, 3, 4, 5)
     assert len(channel.releases) == 15
     first = channel.releases[0]
     assert first.title.startswith("Murray, Kaptur Demand Energy Department")
@@ -239,6 +252,20 @@ def test_a_call_may_narrow_the_byte_allowance():
 def test_feed_argument_must_be_a_press_release_feed():
     with pytest.raises(TypeError):
         parse_press_release_feed(HOUSE_MINIMAL, "house")  # type: ignore[arg-type]
+
+
+def test_read_rss2_channel_refuses_more_items_than_the_cap():
+    """The item-count bound now lives centrally in ``read_rss2_channel``; prove it there directly."""
+    item = b"<item><title>x</title><link>http://x/a</link></item>"
+    body = b'<rss version="2.0"><channel><title>T</title>' + item * (DEFAULT_MAX_ITEMS + 1) + b"</channel></rss>"
+    with pytest.raises(PressReleaseFeedSourceError, match="lists more items than supported"):
+        read_rss2_channel(body, max_bytes=len(body), error_type=PressReleaseFeedSourceError, label="test feed")
+    # Exactly the cap still passes.
+    at_cap = b'<rss version="2.0"><channel><title>T</title>' + item * DEFAULT_MAX_ITEMS + b"</channel></rss>"
+    _channel, items = read_rss2_channel(
+        at_cap, max_bytes=len(at_cap), error_type=PressReleaseFeedSourceError, label="test feed"
+    )
+    assert len(items) == DEFAULT_MAX_ITEMS
 
 
 # --- acquisition, mocked -------------------------------------------------------------
