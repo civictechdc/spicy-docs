@@ -48,6 +48,10 @@ Verdict legend: **PDF-only** (no other rendition of the body exists or is reacha
 | Roll-call votes (House Clerk EVS, Senate LIS) | `xml` | `docs/sources/congress-votes.md` | structured |
 | FEC official data (bulk, OpenFEC JSON, sitemaps, link discovery) | Mixed by design: bulk master files, native `.fec` delimited filings, CSV, XML `legal/` listings, JSON, plus linked PDFs (`pdf_url`) and HTML (`html_url`, gated behind `allow_html=True`) | `docs/sources/fec.md`, `fec-rows.md` (`format="fec"`/`"delimited"`) | structured/mixed |
 
+**Correction, 2026-09-19 (gap B3):** the CRS row's single 403 was one flaky sample, not the route's
+behavior — an eight-request re-probe got HTML 200s on both reports tried, so `crs_files.py` now prefers
+HTML and falls back to PDF only on a refusal (`docs/sources/crs-files.md`).
+
 ### Metadata-only families in this repo (no document body at all)
 
 Congress bills status (BILLSTATUS XML — bill *metadata*, not the bill's legislative text; the text
