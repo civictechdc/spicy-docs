@@ -80,11 +80,16 @@ checks integrity with bounded memory; full verification also replays source mean
   [reconstruction](reconstruction.md).
 - **Document capture schemas:** `schemas/document_capture/1.0/` ships the
   family profiles that compose Rulespec's `DocumentCapture v1` parent schema,
-  with the parent and rulespec's `SourceFragment` schema vendored beside them and
-  pinned in `PINS.json`. Package data only: the converter that produces captures
-  is the diagnostic `tools/analysis/document_capture.py`, and
-  `tests/test_document_capture.py` re-validates the committed captures offline.
-  See the [design record](research/document-capture-schema-2026-09-19.md).
+  with four Rulespec files vendored beside them and pinned in `PINS.json`: the
+  parent, the profile meta-schema that states the composition rule as data,
+  the invariant validator (`rulespec/document_capture.py`) and the
+  `SourceFragment` schema. The three new ones are copies only until the
+  `rulespec-artifacts` pin moves; nothing here re-implements them. Package
+  data plus one vendored module: the converter that produces captures is the
+  diagnostic `tools/analysis/document_capture.py`, and
+  `tests/test_document_capture.py` re-validates the committed captures
+  offline, resolves their fragments against the inputs and refuses a mutated
+  capture. See the [design record](research/document-capture-schema-2026-09-19.md).
 - **Tables:** `public_tables/profiles.py` declares columns and ordering through
   `PublicTableProfile`; `publish.py`, `verify.py` and `reader.py` implement the
   operations exported by `public_tables/api.py`.
