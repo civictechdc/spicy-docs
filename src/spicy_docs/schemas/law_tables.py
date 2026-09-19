@@ -83,8 +83,8 @@ LAWS = table_contract(
         "uslm_sha256": "Digest of the captured PLAW USLM bytes, so the citation is traceable to one file.",
         "uslm_observed_at": "When the PLAW USLM was captured.",
         "uslm_outcome": (
-            "`captured`, `unavailable` (the publisher answered 404 or 410 for this law's USLM: the bulk lag) "
-            "or `not_requested`; a NULL citation is read through this column, never as absence."
+            "`captured`, `unavailable` (the law's PLAW was absent from the bulkdata folder on the measured day: "
+            "the bulk lag) or `not_requested`; a NULL citation is read through this column, never as absence."
         ),
     },
 )

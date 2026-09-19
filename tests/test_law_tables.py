@@ -25,7 +25,7 @@ from spicy_docs.schemas.law_tables import (
     shape_law_code_section,
     shape_table3_record,
 )
-from spicy_docs.schemas.tables import TableContractError, read_json_column
+from spicy_docs.schemas.tables import TableContractError, digest, read_json_column
 from spicy_docs.sources.govinfo.uslm import (
     PublicLawSelection,
     public_law_xml_locator,
@@ -37,9 +37,11 @@ from spicy_docs.sources.uscode.classification import parse_classification_table
 FIXTURES = Path(__file__).parent / "fixtures"
 LAW_RECORD = json.loads((FIXTURES / "listings/congress-law-119-1.json").read_text())
 SELECTION = PublicLawSelection(119, "public", 1)
-USLM = validate_public_law_xml(
-    (FIXTURES / "uslm/plaw-119publ1.xml").read_bytes(), selection=SELECTION, final_url=public_law_xml_locator(SELECTION)
-)
+USLM_BYTES = (FIXTURES / "uslm/plaw-119publ1.xml").read_bytes()
+USLM = validate_public_law_xml(USLM_BYTES, selection=SELECTION, final_url=public_law_xml_locator(SELECTION))
+#: Digested from the fixture's own bytes, so the pin cannot drift from the
+#: file; a literal here once carried the law-list page's digest instead.
+USLM_SHA256 = digest(USLM_BYTES.decode("utf-8"))
 OBSERVED_AT = "2026-09-19T00:00:00Z"
 
 
@@ -48,7 +50,7 @@ def captured_row():
         LAW_RECORD,
         LAW_RECORD["laws"][0],
         uslm=USLM,
-        uslm_sha256="sha256:12310cec6b55a64d909c302879d0011c556ae121836111b881b3b0b0088cbc27",
+        uslm_sha256=USLM_SHA256,
         uslm_observed_at=OBSERVED_AT,
         uslm_outcome="captured",
     )
@@ -66,7 +68,7 @@ def test_the_statutes_at_large_citation_comes_from_the_uslm_meta_only_through_a_
     assert row["approved_date"] == "2025-01-29"
     assert row["uslm_title"].startswith("Public Law 119–1:")
     assert row["uslm_processed_date"] == "2026-09-09"
-    assert row["uslm_outcome"] == "captured"
+    assert row["uslm_sha256"] == USLM_SHA256 and row["uslm_outcome"] == "captured"
 
 
 def test_a_uslm_meta_for_another_law_never_fills_a_row():

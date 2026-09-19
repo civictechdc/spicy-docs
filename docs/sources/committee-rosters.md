@@ -33,10 +33,11 @@ say what it is:
   senator, and a duplicate would give one person two rows under one key.
 - **A vacancy is a seat without a member.** Two of the House file's 441
   members are vacancies: every `member-info` field empty and a single
-  `<committee rank=""/>` placeholder (nine seated members carry the same
-  placeholder as their only assignment). A placeholder is counted and skipped
-  as "no assignment"; a vacancy that still lists a real assignment refuses as
-  a malformed file.
+  `<committee rank=""/>` placeholder (seven seated members carry the same
+  placeholder as their only assignment — nine placeholders in all, counting
+  the two vacancies). A placeholder is counted and skipped as "no
+  assignment"; a vacancy that still lists a real assignment refuses as a
+  malformed file.
 
 ## System codes are the join
 

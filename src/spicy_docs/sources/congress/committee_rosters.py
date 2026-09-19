@@ -25,7 +25,9 @@ Two unrelated XML grammars, measured 2026-09-19 (556,936 and 67,618 bytes):
   block naming all 27 committees and 109 subcommittees by code with their
   full names and party ratios. Two of the 441 are **vacancies**: every
   ``member-info`` field empty and one ``<committee rank=""/>`` placeholder.
-  Nine members carry that same placeholder as their only assignment. A
+  Seven seated members carry that same placeholder as their only
+  assignment -- nine placeholders in all, counting the two vacancies
+  (``inspect_memberdata.out`` in the receipt directory above). A
   placeholder is "no assignment", not a malformed row, so it is counted and
   skipped rather than refused. Leadership values seen: ``Chair``,
   ``Chairman``, ``Chairwoman``, ``Vice Chair``, ``Vice Chairman``,
@@ -299,7 +301,8 @@ def _read_house_assignments(element: Element | None, label: str) -> tuple[tuple[
             raise CommitteeRosterError(f"{label} committee-assignments carries an unknown <{child.tag}>")
         if not code:
             # ``<committee rank=""/>``: the file's spelling of "no assignment",
-            # on every vacancy and on nine seated members (measured 2026-09-19).
+            # on seven seated members -- nine placeholders in all, counting the
+            # two vacancies (measured 2026-09-19).
             placeholders += 1
             continue
         assignments.append(HouseAssignment(code, child.tag, child.get("rank") or None, child.get("leadership") or None))

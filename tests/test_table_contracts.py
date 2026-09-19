@@ -726,6 +726,7 @@ def _report_cases() -> list[ShapedCase]:
 #: and the retained USLM fixture, so the citation join runs between two real
 #: captures of one law.
 _LAW_RECORD = json.loads((FIXTURES / "listings/congress-law-119-1.json").read_text())
+_LAW_USLM_BYTES = (FIXTURES / "uslm/plaw-119publ1.xml").read_bytes()
 
 
 def _law_uslm():
@@ -736,11 +737,7 @@ def _law_uslm():
     )
 
     selection = PublicLawSelection(119, "public", 1)
-    return validate_public_law_xml(
-        (FIXTURES / "uslm/plaw-119publ1.xml").read_bytes(),
-        selection=selection,
-        final_url=public_law_xml_locator(selection),
-    )
+    return validate_public_law_xml(_LAW_USLM_BYTES, selection=selection, final_url=public_law_xml_locator(selection))
 
 
 def _laws_cases() -> list[ShapedCase]:
@@ -757,7 +754,8 @@ def _laws_cases() -> list[ShapedCase]:
                 _LAW_RECORD,
                 _LAW_RECORD["laws"][0],
                 uslm=_law_uslm(),
-                uslm_sha256="sha256:12310cec6b55a64d909c302879d0011c556ae121836111b881b3b0b0088cbc27",
+                # The fixture's own digest, computed here so it cannot drift from the file.
+                uslm_sha256=digest(_LAW_USLM_BYTES.decode("utf-8")),
                 uslm_observed_at=observed,
                 uslm_outcome="captured",
             ),
