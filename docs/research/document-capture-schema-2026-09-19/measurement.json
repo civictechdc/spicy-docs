@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-19T23:47:41+00:00",
+ "generatedAt": "2026-09-19T23:54:44+00:00",
  "parentSchema": {
   "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
   "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
@@ -55,7 +55,7 @@
     "withoutSpanSource": 129784,
     "withoutNodeSource": 91917
    },
-   "seconds": 0.0012,
+   "seconds": 0.0011,
    "errors": []
   },
   {
@@ -95,7 +95,7 @@
     "withoutSpanSource": 17089,
     "withoutNodeSource": 14266
    },
-   "seconds": 0.0004,
+   "seconds": 0.0003,
    "errors": []
   },
   {
@@ -135,7 +135,7 @@
     "withoutSpanSource": 105454,
     "withoutNodeSource": 119317
    },
-   "seconds": 0.0012,
+   "seconds": 0.0011,
    "errors": []
   },
   {
@@ -215,7 +215,7 @@
     "withoutSpanSource": 141773,
     "withoutNodeSource": 183612
    },
-   "seconds": 0.001,
+   "seconds": 0.0011,
    "errors": []
   },
   {
@@ -255,7 +255,7 @@
     "withoutSpanSource": 95383,
     "withoutNodeSource": 110394
    },
-   "seconds": 0.0008,
+   "seconds": 0.0009,
    "errors": []
   }
  ]

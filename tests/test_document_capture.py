@@ -168,6 +168,19 @@ def test_every_capture_names_when_its_bytes_were_read(path: Path) -> None:
 
 
 @pytest.mark.parametrize("path", CAPTURES, ids=[p.name for p in CAPTURES])
+def test_every_capture_names_the_converter_that_made_it(path: Path) -> None:
+    """A stale converter pin is how the first draft's `revision` came to name a commit without the converter.
+
+    The file digest is checkable from here, so it is checked: editing the
+    converter without regenerating leaves a capture claiming a producer that no
+    longer exists, and that is a provenance claim, not a formatting detail.
+    """
+    implementation = load(path)["converter"]["implementation"]
+    assert implementation["repository"] == "spicy-docs"
+    assert implementation["fileSha256"] == dc.sha256(Path(dc.__file__).read_bytes())
+
+
+@pytest.mark.parametrize("path", CAPTURES, ids=[p.name for p in CAPTURES])
 def test_the_artifact_is_the_publishers_own_bytes(path: Path) -> None:
     """A consumer following locator.url and checking sha256 lands on the artifact, not on a derived file."""
     capture = load(path)

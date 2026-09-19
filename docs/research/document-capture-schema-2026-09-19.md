@@ -199,17 +199,17 @@ Six documents, one converter, one shape. Produced by
 `tools/analysis/document_capture.py`, retained in
 [`document-capture-schema-2026-09-19/`](document-capture-schema-2026-09-19/README.md)
 beside their input pins, re-checked offline by `tests/test_document_capture.py`
-(61 tests, one skipped until the wheel bump). The receipt for the five keyless
+(67 tests, one skipped until the wheel bump). The receipt for the five keyless
 requests is `~/Work/corpora/supply-2026-09-02/receipts/document-capture-schema-2026-09-19/`.
 
 | Document | Family | Rendition | Artifact bytes | Capture bytes | Nodes | Leaves | Empty leaves | Non-contiguous leaves | Spans | Unresolved | Issues | Code points | Partition digest | Independent derivation | Schema, profile, invariants, fragments | Seconds |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
-| `plaw-119publ1` | `uslm-law` | xml | 23,379 | 141,485 | 321 | 216 | 0 | 0 | 325 | 0 | 1 | 8,660 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0012 |
-| `bills-119hjres25enr` | `bill-xml` | xml | 2,751 | 18,638 | 26 | 18 | 3 | 0 | 45 | 0 | 6 | 1,335 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0004 |
-| `crpt-119hrpt1` | `committee-report-html` | html | 13,953 | 127,644 | 217 | 170 | 0 | 0 | 625 | 0 | 0 | 13,900 | match | match, html.parser.HTMLParser(convert_charrefs=True) handle_data | all pass | 0.0012 |
+| `plaw-119publ1` | `uslm-law` | xml | 23,379 | 141,485 | 321 | 216 | 0 | 0 | 325 | 0 | 1 | 8,660 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0011 |
+| `bills-119hjres25enr` | `bill-xml` | xml | 2,751 | 18,638 | 26 | 18 | 3 | 0 | 45 | 0 | 6 | 1,335 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0003 |
+| `crpt-119hrpt1` | `committee-report-html` | html | 13,953 | 127,644 | 217 | 170 | 0 | 0 | 625 | 0 | 0 | 13,900 | match | match, html.parser.HTMLParser(convert_charrefs=True) handle_data | all pass | 0.0011 |
 | `fr-2026-19200` | `federal-register-xml` | xml | 10,224 | 62,503 | 76 | 59 | 2 | 0 | 209 | 0 | 5 | 8,758 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0005 |
-| `cfr-2025-title30-vol3-sec716-2` | `cfr-reconstruction` | pdf | 157,908 | 186,831 | 87 | 71 | 0 | 2 | 721 | 0 | 0 | 12,694 | match | match, json: evidence blocks rejoined by page | all pass | 0.001 |
-| `scotus-26a274_l537` | `slip-opinion-pdf` | pdf | 66,165 | 124,689 | 168 | 160 | 0 | 0 | 473 | 0 | 2 | 8,024 | match | match, json: evidence blocks rejoined by page | all pass | 0.0008 |
+| `cfr-2025-title30-vol3-sec716-2` | `cfr-reconstruction` | pdf | 157,908 | 186,831 | 87 | 71 | 0 | 2 | 721 | 0 | 0 | 12,694 | match | match, json: evidence blocks rejoined by page | all pass | 0.0011 |
+| `scotus-26a274_l537` | `slip-opinion-pdf` | pdf | 66,165 | 124,689 | 168 | 160 | 0 | 0 | 473 | 0 | 2 | 8,024 | match | match, json: evidence blocks rejoined by page | all pass | 0.0009 |
 
 Reading the table:
 
