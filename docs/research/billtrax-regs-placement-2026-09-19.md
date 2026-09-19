@@ -36,8 +36,14 @@ would re-derive. It also names the exact spicy-docs target module for every
 interpretation rule (`billtrax-value-inventory-2026-09-19.md:102-123`), so §4
 below reuses those names rather than inventing new ones.
 
-**What that document does not finish.** It repeatedly forward-references
-sections it never writes: `(§2)` (a sealed-vocabulary appendix, cited at
+**What that document did not finish when this was drafted** (it has since
+been completed: §2 sealed vocabularies, §3 schema, §4 DeltaTrack measured
+function by function, §5 API routes, §6 discarded publisher fields and §7
+open questions all exist in the committed 1,467-line file, and the
+[raw-data measurement](billtrax-raw-data-2026-09-19.md) settled the port
+plan's decisions 1, 3, 5 and 7 the same day). The paragraph below is kept
+as the record of what this study could and could not check at the time.
+It repeatedly forward-referenced sections not yet written: `(§2)` (a sealed-vocabulary appendix, cited at
 lines 99, 108, 118, 121, 187, 203), `(§3)` (the table/schema contract, cited
 at lines 128, 134, 153), `(§4)` (measured behavioral divergences, cited at
 lines 94, 111, 113, 121, 194), and `(§7 Q3)` (open questions, cited at lines
@@ -375,6 +381,7 @@ Concretely, for `congress_bills.stage`:
 # spicy-regs: src/spicy_regs/transforms/build_congress_bill_stages.py (new)
 from spicy_docs.interpretation.bill_stage import infer_stage_from_action
 
+
 def _add_stage(row: dict) -> dict:
     row["stage"] = infer_stage_from_action(row["latest_action_text"])
     return row
@@ -540,7 +547,11 @@ table set in §3:
   code that `SR01` may delete out from under it. Sequencing a BillTrax port
   after `SR01`/`SR03` land avoids building on a reader spicy-regs itself
   plans to delete.
-- **DeltaTrack's absorption is unresolved.** `interpretation/section_diff.py`
+- **DeltaTrack's absorption: settled 2026-09-19** (port plan decision 3):
+  absorbed into spicy-docs, both copies deleted; the inventory §4 measured
+  the vendored directory as a committed copy with no pin, so there is no
+  library to depend on. The original question, for the record:
+  `interpretation/section_diff.py`
   (§4) is described as merging with DeltaTrack's `diff_bill.py`
   (`billtrax-value-inventory-2026-09-19.md:112`), but DeltaTrack is a
   separate, existing Python package (vendored as a BillTrax git submodule,
@@ -549,7 +560,11 @@ table set in §3:
   it as a library the way it does `rulespec-artifacts`? Neither this
   document nor the port plan nor the value inventory says; a maintainer
   needs to decide before `interpretation/section_diff.py` can be written.
-- **The value-inventory's own gaps (§0) block parts of this document.**
+- **The value-inventory's gaps are closed** (§0): its §2, §4 and §7 now
+  exist, and the vote-matching "measured broken" claim is verified there
+  (§2.10) and in the raw-data study §5 (`recordedVotes` is six
+  always-present structured fields, so no regex is needed). Original
+  wording, for the record:
   `§2` (sealed vocabularies — including the vote-matching regex's "measured
   broken" claim this document repeats in §3 without being able to verify
   it), `§4` (measured behavioral divergences between the TS `bill-tree.ts`
@@ -558,6 +573,19 @@ table set in §3:
   but do not exist in the 230-line committed file. Finishing those sections
   — or confirming they were dropped on purpose — is a prerequisite for
   treating this placement as final, not just a nice-to-have.
+- **Recommended resolution of the rollup-chain conflict** (the build
+  proceeds on this assumption; the maintainer can reverse it): collapse
+  the chain inside spicy-docs, not across spicy-regs rollups. A spicy-docs
+  table builder reads the captured sources once and produces the whole
+  bill family (versions, sections, diffs, classifications) as sibling
+  tables in one pass, so every spicy-regs rollup keeps `inputs = ()` and
+  the "never another rollup's output" contract needs no exception. The
+  same builder derives `public_activity_events` by comparing against the
+  prior published snapshot, the way `build_congress_bills` already
+  downloads the prior table, so no ingest-time writer is needed. Row
+  shaping (column tuples, identity keys, provenance columns) lives in
+  spicy-docs beside the logic that fills it, and the spicy-regs transform
+  only converts rows to Arrow, merges with the prior table and publishes.
 - **What a maintainer must decide, gathered in one place:** (1) confirm the
   "spicy-regs imports the function" pattern over the unused
   `public_tables`/`releases` alternative (§4); (2) resolve the rollup-on-rollup

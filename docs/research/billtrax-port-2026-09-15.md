@@ -8,6 +8,13 @@ Revised 2026-09-19 after the
 record in `docs/decisions.md`: bulk status backfill runs ahead of the listing
 routes for bills, Phase 4 is table-driven, the press-release source lands in
 Phase 2, and the zip reader lives at `src/spicy_docs/reading/zip_archive.py`.
+Revised again 2026-09-19 after the
+[raw-data measurement](billtrax-raw-data-2026-09-19.md) and the
+[value inventory](billtrax-value-inventory-2026-09-19.md): decisions 1, 3,
+5 and 7 are settled below by measurement, and the port now covers the
+interpretation rules too, because spicy-docs is the one home for ingestion,
+parsing and shared logic while spicy-regs hosts the resulting tables
+([placement study](billtrax-regs-placement-2026-09-19.md)).
 
 ## Goal and boundary
 
@@ -92,10 +99,18 @@ Bake these fixes into the port; do not port the bugs:
 3. Slug-map drift: `validate-pdf-xml-concordance.ts:44-64` missing `pch,
    rds, rfh, hds`; its test only checks the 10 slugs it uses — a
    one-directional check hiding exactly the drift. Canonical map lives in
-   `govinfo-pdf-fetch.ts:26-58`.
+   `govinfo-pdf-fetch.ts:26-58`. **Measured 2026-09-19** (raw data §1): the
+   119th used 24 version codes; the canonical map reaches 12 correctly,
+   misses 12 (1,027 files) and maps three to the wrong document, and the
+   Congress.gov `type` name is not unique (`eas`/`eas2`). The fix is not a
+   repaired map: take the code from the package id in the publisher's
+   stated format URL, and keep a name→code table only as a documented
+   fallback for rows without one.
 4. `sync-roll-call-votes.ts:39-43` unbounded 429 recursion.
 5. Press-release lib crashes on single-item Atom; lib and script disagree on
-   feed URLs, env semantics, timeouts.
+   feed URLs, env semantics, timeouts. **Measured 2026-09-19** (raw data
+   §4): all four URLs are dead and neither publisher serves Atom, so the
+   Atom path is deleted, not fixed; see decision 5.
 6. Dead `/api/feed.xml` reference (`public-activity.ts:6`) — build or delete.
 7. `amendments.status` hardcoded `"Proposed"` at `ingest.ts:292` — carry the
    real source field once amendments port.
@@ -141,13 +156,13 @@ port as-is.
 
 | # | Question | Blocks |
 |---|---|---|
-| 1 | PDF capture success semantics: no structural identity proof exists for PDFs. Byte bounds + package URL + content-type + magic-prefix (FEC `download.py` precedent), or stronger? | Phase 5 |
+| 1 | PDF capture success semantics: no structural identity proof exists for PDFs. Byte bounds + package URL + content-type + magic-prefix (FEC `download.py` precedent), or stronger? Settled 2026-09-19 by measurement (raw data §3): stronger, cheaply. The publisher states the page count twice (summary `pages`, MODS `extent`) and it agreed with a decode 15/15, so the proof is bounds + package id + content-type + magic prefix + decoded page count equal to the stated one. No byte size is stated anywhere, so size is measured, not checked; bill PDFs run median 246 KB, max 4.77 MB, none over the 24 MiB bound. | Phase 5 |
 | 2 | Settled 2026-09-19 by the families record in `docs/decisions.md`: each crawl states its bound and byte budget (one Congress and one bill type; 52 MB of status zips for the 119th). | Phase 6 |
-| 3 | DeltaTrack relationship: spicy-docs vendors/imports it, absorbs reconciled implementations, or it stays BillTrax-side? | Phase 7 |
+| 3 | DeltaTrack relationship: spicy-docs vendors/imports it, absorbs reconciled implementations, or it stays BillTrax-side? Settled 2026-09-19: absorbed. The inventory (§4) measured `submodules/DeltaTrack` as a committed directory with no pin, not a submodule, and `bill-tree.ts` as a fork with four divergences; the reconciled parser and diff engine land in spicy-docs (`congress/bill_tree.py`, `interpretation/section_diff.py`) and both copies are deleted. | Phase 7 |
 | 4 | `acquire_text` is stricter than BillTrax (exactly-once XML link, DC-title grammar, congress-in-words ≤ 199): relax, or accept that some currently-stored versions refuse on re-fetch? Settled 2026-09-19 on the status side: the 113 refusals in the 119th H.Res. zip were two publisher shapes the parser now reads (summary text inside a `<cdata>` wrapper, 984 files across three types; an action item with no text, 7 files), with every identity check unchanged; 0 of 1,566 refuse now, and a 40,260-file sweep over three Congresses leaves one file in the superseded 1.0.0 schema, refused by name (`docs/sources/congress-bulk-status.md`, "Decision 4, measured"). The text side (`acquire_text`'s exactly-once link, DC-title grammar, spelled-out Congress) is still unmeasured. | Phase 4/8 |
-| 5 | Canonical press-release feed URLs (lib vs script divergence). | Phase 2 |
+| 5 | Canonical press-release feed URLs (lib vs script divergence). Settled 2026-09-19 by measurement (raw data §4): neither. All four spellings answer 404, 404, 410 Gone or a 200 error page. Canonical: `https://appropriations.house.gov/rss.xml` and `https://www.appropriations.senate.gov/rss/feeds/?type=press`, both RSS 2.0; the Senate item carries no `<description>` and an unknown `?type=` returns the byte-identical default feed, so the identity proof must read the channel, not the URL. | Phase 2 |
 | 6 | The 5 request-time routes (`congress/versions`, `bills` POST, `catalog/import`, `upload/commit`, `press-releases`): migrate to capture-backed cache or keep live fetch? | Phase 8 |
-| 7 | `resolution-body` in bill-tree: support it, or keep the current throw→text-fallback behavior deliberately? | Phase 3 |
+| 7 | `resolution-body` in bill-tree: support it, or keep the current throw→text-fallback behavior deliberately? Settled 2026-09-19 by measurement (raw data §2): support it. 29 of 40 sampled files and 3,416 of 21,947 in the 119th are `resolution-body`, and the only appropriations-structured document in the sample was a resolution. | Phase 3 |
 
 ## Phased sequence
 
