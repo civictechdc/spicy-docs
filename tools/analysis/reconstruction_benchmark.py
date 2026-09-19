@@ -703,7 +703,11 @@ CONTAMINATING_GRANULES: tuple[str, ...] = (
     "CFR-2025-title30-vol3-sec700-1",
 )
 #: Set true only by a run whose rules were frozen before it drew its corpus.
-RULES_FROZEN_BEFORE_RUN = False
+#: The 2026-09-19 re-score is the first such run: every parser and check
+#: change landed before it started and none was made while it read. That
+#: makes *this* run honest; it does not make the corpus naive, which is what
+#: ``contaminatingGranules`` is still here to say.
+RULES_FROZEN_BEFORE_RUN = True
 
 
 def split_integrity(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
