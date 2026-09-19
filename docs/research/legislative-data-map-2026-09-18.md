@@ -106,7 +106,7 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 | bills | BILLSTATUS bulk ZIP | `bulkdata/BILLSTATUS` | `have` | none | API 2021+; bulk 108–119 | 172,703 pkgs; 119th zips 52 MB, 18,956 files, zip modified 18-Sep-2026 08:28 | `congress/bulk_status.py` (landed 2026-09-19): one Congress and one bill type per call, per-member outcomes with digests, bounds from the measured sizes; the parser now reads both publisher summary placements and 0 of 1,566 H.Res. files refuse |
 | bills | Bill text bulk ZIP | `bulkdata/BILLS` | `rejected` | none | API 1993+; bulk 113–119 | 290,720 pkgs; 119th bulk nested one level deeper (1, 2); unsized | derived re-export of the routes in use; revisit only as a resync optimization |
 | bills | Bill summaries bulk | `bulkdata/BILLSUM` | `rejected` | none | API 2019+; bulk 113–119 | 9,343 pkgs; 119th zips 8 MB, 5,662 files, zip modified 31-Jul-2026 08:04 | CRS bill summaries already arrive as a typed bill field (Table A) |
-| bills | Bill PDFs | `content/pkg/BILLS-…/pdf` | `port 5` | none |  |  | decision 1 (PDF identity semantics) first; the slug map is a sealed vocabulary (port contract) |
+| bills | Bill PDFs | `content/pkg/BILLS-…/pdf` | `have` | none |  |  | `congress/bill_pdf.py`: ported from BillTrax's `govinfo-pdf-fetch.ts` fetch half; the slug map is a sealed vocabulary |
 | laws | Public and private laws (PLAW) | `bulkdata/PLAW` USLM | `have` | none | API 1995+; bulk 113–119 | 5,999 pkgs; 119th zips 3 MB, 104 files, zip modified 23-Jul-2026 14:14 | `govinfo/uslm.py` |
 | laws | Statute compilations (COMPS) | `bulkdata/COMPS` USLM | `have` | none | API 1862+; bulk, flat | 2,685 pkgs; bulk 2,682 files, 718 MB | `govinfo/uslm_acquisition.py` |
 | laws | Statutes at Large | `bulkdata/STATUTE` | `candidate` | none | API 1845+; bulk 1–137 | 137 pkgs | one XML per volume; the only XML route for every law before PLAW bulk begins |
@@ -127,11 +127,11 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 
 | Subject | Data | Route | Status | Credential | Coverage | Count / sample | Note |
 |---|---|---|---|---|---|---|---|
-| votes | House per-vote XML | `clerk.house.gov/evs/{year}/roll{N}.xml` | `candidate` | none |  | sample 82,515 B, root `rollcall-vote`, 2 children; names congress, session, rollcall-num | the `house-vote` API names this file as its source; bioguide-keyed |
-| votes | Senate per-vote XML | `senate.gov/legislative/LIS/roll_call_votes/vote{c}{s}/vote_{c}_{s}_{n}.xml` | `candidate` | none |  | sample 28,670 B, root `roll_call_vote`, 18 children; names congress, congress_year, document_congress, session | LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source |
+| votes | House per-vote XML | `clerk.house.gov/evs/{year}/roll{N}.xml` | `have` | none |  | sample 82,515 B, root `rollcall-vote`, 2 children; names congress, session, rollcall-num | `congress/votes.py`: the `house-vote` API names this file as its source; bioguide-keyed |
+| votes | Senate per-vote XML | `senate.gov/legislative/LIS/roll_call_votes/vote{c}{s}/vote_{c}_{s}_{n}.xml` | `have` | none |  | sample 28,670 B, root `roll_call_vote`, 18 children; names congress, congress_year, document_congress, session | `congress/votes.py`: LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source |
 | members | House MemberData.xml | `clerk.house.gov/xml/lists/MemberData.xml` | `candidate` | none |  | sample 556,936 B, root `MemberData`, 3 children; names congress-num, congress-text, session | members plus committee assignments with codes; only for fields the `member` API lacks |
 | members | House members.xml extras | `member-info.house.gov/members.xml` | `candidate` | none |  | sample 397,944 B, root `Members`, 441 children; dated only (last_updated) | photos and social; only if the API lacks a needed field |
-| members | Senate committee XML | `senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml` | `candidate` | none |  | sample 67,616 B, root `senators`, 101 children; dated only (date, lastUpdate) | bioguide⇄LIS crosswalk, needed to join Senate votes to members |
+| members | Senate committee XML | `senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml` | `candidate` | none |  | sample 67,616 B, root `senators`, 101 children; dated only (date, lastUpdate) | bioguide⇄LIS crosswalk; the community legislators JSON (Table D) is the crosswalk `congress/votes.py` actually uses, since it also covers Senate voters who have already left the roster |
 | members | Senate contact XML | `senate.gov/general/contact_information/senators_cfm.xml` | `rejected` | none |  | sample 52,541 B, root `contact_information`, 101 children; dated only (last_updated) | cvc covers it |
 | members | Bioguide bulk JSON | `bioguide.congress.gov` | `rejected` | none |  | CDTF #67, irregular | the `member` route is bioguide-keyed and tier-1 but its floor measured at the 68th Congress; Bioguide holds the earlier members, so take it only for them or for biography text |
 | nominations | Senate LIS nomination feeds (9) | `senate.gov/legislative/LIS/nominations/Nom{Category}.xml` | `candidate` | none |  | sample 48,536 B, root `Nominations`, 76 children; names Congress, SessionNumber, NominationDisplayNumber | alternative to the `nomination` API; take only for fields the API lacks |
@@ -166,10 +166,10 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 |---|---|---|---|---|---|---|---|
 | crs | EveryCRSReport bulk | `everycrsreport.com` (AmericaLabs) | `candidate` | none |  | CDTF #4, continuous | versioned and broader than congress.gov; verify maintenance cadence first |
 | members | Community legislators JSON (current + historical) | `unitedstates.github.io/congress-legislators/legislators-*.json` | `have` | none |  | sample 13,483,039 B, 12,231 records; ids bioguide 12,231, fec 995, govtrack 12,231, icpsr 11,979, lis 228, opensecrets 919 | `sources/legislators.py` (landed 2026-09-19): keyless, byte-bounded, shape-checked, pinned by capture digest; an identifier hub keyed by bioguide with LIS, FEC candidate, ICPSR, GovTrack and OpenSecrets ids; presidential FEC ids carry no state letters, which the shape rule accepts |
-| press | Press releases (member and committee RSS) | varied | `port 2` | none |  |  | lands in Phase 2 beside the feed-URL unification it depends on (decision 5), as a clone of `gao/rss.py` |
-| reports | Agency uploaded-report PDFs | BillTrax uploads | `port 5` | none |  |  | `report-parser` ports; extraction channel |
-| votes | Bill⇄vote matching | BillTrax | `rejected (here)` | n/a |  |  | interpretation; stays BillTrax-side |
-| members | Member matching | BillTrax | `rejected (here)` | n/a |  |  | interpretation |
+| press | Press releases (member and committee RSS) | varied | `have` | none |  |  | `congress/press_releases.py`: the House and Senate Appropriations Committees' feeds, a clone of `gao/rss.py`'s shape |
+| reports | Agency uploaded-report PDFs | BillTrax uploads | `have` | none |  |  | `agency_reports/report_blocks.py` ports `report-parser.ts`'s header split; `extraction/gpo_normalize.py` strips GPO print artifacts first |
+| votes | Bill⇄vote matching | BillTrax | `have` | n/a |  |  | `interpretation/vote_matching.py`: joins a roll call to its bill from `recordedVotes` references only, replacing BillTrax's Senate-unreachable regex |
+| members | Member matching | BillTrax | `have` | n/a |  |  | `interpretation/member_matching.py`: bioguide, then the LIS crosswalk, then name, replacing BillTrax's name-only path |
 
 ### Comparisons: overlapping routes on one bounded scope
 
