@@ -82,7 +82,7 @@ Measured on 2026-09-19 unless stated:
 | D5 | Closed by plan: acceptable; measured when D1 runs. |
 | E1, E2 | Open; the user files the upstream issues. |
 | E3 | Measured, not gated: `ty check` on main finds 1,139 errors (553 invalid-argument-type, 517 unresolved-attribute, then a thin tail; 1 unresolved-import), so gating now would fail the tree; the cleanup is scoped for after the in-flight branches merge, and spicy-regs gates it in CI and pre-commit: clean at 1f18898 under the default install, the earlier `test_fec_relationships` diagnostic fixed on the linkages branch, and two latent diagnostics in `vectordb/embed.py` that surface only with the `embed` extra, which the gate never installs. |
-| Releases | spicy-docs 0.21.2 owed once the in-flight branches merge; spicy-regs adoption follows. |
+| Releases | spicy-docs 0.21.2 cut (commit 3642aa1, tag v0.21.2, wheel sha256 `96eb4897…`); spicy-regs adoption in progress: vendor the wheel, bump the pins, delete the interim `_mods_bills` copy for `PackageModsIdentity.primary_bill`; the rollup wave follows. |
 
 ### A. Joins the data map measured and nothing drives
 

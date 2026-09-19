@@ -588,6 +588,18 @@ spicy-docs 0.21.1 (cut 2026-09-19: commit 6f8d20e, tag v0.21.1 pushed,
 sealed body preference and `body_text`, the bulk listing skip and the
 normalization fixes; its adoption on the fork branch follows the same steps.
 
+spicy-docs 0.21.2 (cut 2026-09-19: commit 3642aa1, tag v0.21.2 pushed,
+`dist/spicy_docs-0.21.2-py3-none-any.whl` 1,152,040 bytes, sha256
+`96eb4897935998e903ed7e93ab26c120860baf3d677eeffd02599b760dbc8ca3`): the
+route table, the ten wave-2 contracts (thirty-two over 617 columns), the
+OLRC classification and chamber roster sources, the Senate vote-menu index,
+granule bodies, the USLM rendition, the CPRT row, the ModsBill accessor,
+the CRS HTML rendition, table observations, the normalizer corpus
+validation, the reconstruction package and CFR benchmark, the HTML-to-XML
+gap measurement, the hardened data map, the live workflow and the docs-index
+test. spicy-regs adopts it by vendoring this wheel and deleting its interim
+`_mods_bills` copy for `PackageModsIdentity.primary_bill`.
+
 spicy-regs adoption (done 2026-09-19 on the fork branch `billtrax-hosting-prep`;
 no push to origin unless the user names the branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
 `[tool.uv.sources] spicy-docs` at it; set both `source-readers` pins to
