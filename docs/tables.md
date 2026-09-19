@@ -20,7 +20,7 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 
 ## The tables
 
-`TABLE_CONTRACTS` holds all twenty-two by name. Each carries its columns in
+`TABLE_CONTRACTS` holds all twenty-seven by name. Each carries its columns in
 publish order, its identity, its version column — the column a merge prefers the
 larger value of when two rows share an identity — a one-sentence grain, and one
 sentence per column for the host's data dictionary.
@@ -42,15 +42,20 @@ sentence per column for the host's data dictionary.
 | `public_activity_events` | One row per change detected between two runs of the bill family. | `bill_id`, `event_type`, `subject_id`, `occurred_at` | `detected_at` | 6 | `schemas.activity_events` |
 | `amendments` | One row per amendment, as the Congress.gov amendment list route states it. | `congress`, `amendment_type`, `amendment_number` | `update_date` | 18 | `sources.congress.listing` (`amendment`) |
 | `press_releases` | One row per item in one appropriations committee press-release feed capture. | `release_id` | `observed_at` | 34 | `sources.congress.press_releases` |
-| `roll_call_votes` | One row per roll call: the publisher's own tally, and the bill it refers to. | `congress`, `chamber`, `session`, `roll_number` | `vote_date` | 19 | `sources.congress.votes` |
+| `roll_call_votes` | One row per roll call: the publisher's own tally, and the bill it refers to. | `congress`, `chamber`, `session`, `roll_number` | `vote_date` | 20 | `sources.congress.votes` |
 | `member_votes` | One row per member's position on one roll call. | `congress`, `chamber`, `session`, `roll_number`, `member_key` | `vote_date` | 14 | `sources.congress.votes` |
 | `members` | One row per legislator in one capture of the community crosswalk. | `bioguide_id` | `observed_at` | 18 | `sources.legislators` |
 | `member_terms` | One row per term a legislator served, in the crosswalk's own order. | `bioguide_id`, `term_index` | `observed_at` | 9 | `sources.legislators` |
 | `committee_reports` | One row per captured GovInfo committee report package. | `package_id` | `last_modified` | 19 | `sources.govinfo.body_acquisition` |
 | `report_sections` | One row per agency block parsed out of one committee report's text. | `package_id`, `seq` | `last_modified` | 12 | `sources.agency_reports.report_blocks` |
-| `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | 19 | `sources.govinfo.body_acquisition` |
+| `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | 20 | `sources.govinfo.body_acquisition`, `sources.congress.listing` (`hearing-detail`) |
+| `house_communications` | One row per House executive communication, as the Congress.gov house-communication routes state it. | `congress`, `communication_type`, `number` | `update_date` | 27 | `sources.congress.listing` (`house-communication`, `house-communication-detail`), `interpretation.communication_rin` |
+| `committee_meetings` | One row per scheduled committee meeting, as the Congress.gov committee-meeting routes state it. | `congress`, `chamber`, `event_id` | `update_date` | 27 | `sources.congress.listing` (`committee-meeting`, `committee-meeting-detail`) |
+| `record_issues` | One row per daily Congressional Record issue, which is also one legislative day per chamber named. | `volume`, `issue` | `update_date` | 17 | `sources.congress.listing` (`daily-congressional-record`, `daily-congressional-record-detail`) |
+| `treaties` | One row per treaty document, as the Congress.gov treaty routes state it. | `congress_received`, `number`, `suffix` | `update_date` | 24 | `sources.congress.listing` (`treaty`, `treaty-detail`) |
+| `nominations` | One row per nomination or part, as the Congress.gov nomination list route states it. | `congress`, `citation` | `update_date` | 13 | `sources.congress.listing` (`nomination`) |
 
-Four hundred and six columns in all, each with its own sentence.
+Five hundred and sixteen columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -88,6 +93,50 @@ Nothing is dropped silently. A pair that cannot be compared, a row whose
 identity has a null part, a version the summarizer declined — each becomes a
 `FamilyRefusal` naming the table, the identity and the reason.
 
+## The Congress.gov index tables are read from a list row and its detail
+
+`schemas/congress_index_tables.py` holds the five tables wave 2 of the
+[gap register](research/closing-the-gaps-2026-09-19.md) asked for (A5, A7,
+A10). Each is one row per record of one Congress.gov route in
+`sources/congress/listing.py`, and four of them take two records at once: the
+list row, the only place the publisher states `url`, and the detail record,
+which carries everything else. A shaper reads the detail's fields over the
+list row's; a list-valued column comes from the detail alone and is NULL when
+no detail was read, `[]` when the detail was read and states none. Nothing is
+invented for either.
+
+- **`house_communications`** is the regulatory bridge: every typed detail
+  field, the referral's system code and date, `is_rulemaking` (the publisher's
+  `"True"`/`"False"` strings folded, any other spelling refused), the cited
+  `legal_authority`, the matching requirement number, and the RIN as three
+  columns (`rin`, `rin_rule`, `rin_matched_text`) from
+  `interpretation/communication_rin.py`, whose rule is the data map's own
+  measured `RIN: nnnn-XXnn` pattern. Re-measured 2026-09-19 on 18 of the 25
+  newest communications inside the day's request budget: 18 carry a dated
+  referral, 12 are rulemakings and the same 12 carry a RIN under the measured
+  rule and under a relaxed one shaped like the Federal Register validator, 15
+  name a requirement (receipt
+  `corpora/supply-2026-09-02/receipts/house-communications-rin-2026-09-19/`).
+  The Federal Register side needs no change: the source record already carries
+  `regulation_id_numbers` and `schemas/federal_register.py` publishes it as
+  `regulation_id_numbers_json`, so `communication ↔ rule` is a host-side join
+  on `rin`. There is no `senate_communications` table: the Senate detail
+  carries the abstract, the referral and the Record date and none of the
+  bridge's fields, so it could not fill the same columns without invention.
+- **`committee_meetings`** is keyed on the publisher's own address
+  `(congress, chamber, event_id)`, with `hearing_jacket` (the first jacket)
+  beside `hearing_jackets_json` (every one: the captured hearing's meeting
+  names two), `bill_ids_json` from `relatedItems.bills`, and
+  `document_urls_json` over witness then meeting documents.
+  `hearing_transcripts` gained `event_id`, appended last, filled from the
+  `hearing-detail` route's `associatedMeeting.eventId`.
+- **`record_issues`** is keyed `(volume, issue)` and doubles as the
+  legislative-day calendar: `chambers` is derived from the detail's section
+  names by the map's rule (`House Section`, `Senate Section`), and
+  `package_id` from the whole-issue link's file stem.
+- **`treaties`** carries `package_id` by the map's `CDOC-{c}tdoc{n}` rule on an
+  unpartitioned treaty; **`nominations`** is keyed `(congress, citation)`.
+
 ## What the tests do not establish
 
 Every contract has at least one shaped row built from a fixture in this
@@ -104,6 +153,16 @@ response, and neither says anything about what the publisher serves:
   differ from `committee_reports` and the chamber lookup, and nothing about
   GovInfo's hearing packages. The table is registered because
   `GovInfoBodyAcquirer` can fill it today, not because it has been filled.
+  Its identity is now the package the captured hearing detail (jacket 64431)
+  names in its own `formats[].url`, so the `event_id` on that row is the real
+  linkage the publisher stated, on a body that is still synthetic.
+
+The five index tables are built from captured list pages (three rows each,
+`limit=3`) and the captured details for the rows that have one; where a list
+row has no detail the case shapes it list-only, and meeting 119003 shapes from
+its detail alone. Those establish the shapes on the day they were captured,
+not coverage: `record_issues.chambers` has been exercised on one issue that
+names one chamber, and `treaties.package_id` on one unpartitioned treaty.
 
 ## What is still a preserved NULL
 

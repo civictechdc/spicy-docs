@@ -1,0 +1,27 @@
+{
+    "dateIssued": "2026-09-18",
+    "packageId": "CREC-2026-09-18",
+    "packageLink": "https://api.govinfo.gov/packages/CREC-2026-09-18/summary",
+    "collectionCode": "CREC",
+    "detailsLink": "https://www.govinfo.gov/app/details/CREC-2026-09-18/CREC-2026-09-18-pt1-PgS4837-4",
+    "title": "APPOINTMENT OF ACTING PRESIDENT PRO TEMPORE",
+    "collectionName": "Congressional Record",
+    "granuleClass": "SENATE",
+    "granuleId": "CREC-2026-09-18-pt1-PgS4837-4",
+    "download": {
+        "premisLink": "https://api.govinfo.gov/packages/CREC-2026-09-18/premis",
+        "txtLink": "https://api.govinfo.gov/packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/htm",
+        "zipLink": "https://api.govinfo.gov/packages/CREC-2026-09-18/zip",
+        "modsLink": "https://api.govinfo.gov/packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/mods",
+        "pdfLink": "https://api.govinfo.gov/packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/pdf"
+    },
+    "bookNumber": "1",
+    "pagePrefix": "S",
+    "relatedLink": "https://api.govinfo.gov/related/CREC-2026-09-18-pt1-PgS4837-4",
+    "subGranuleClass": "ALLOTHER",
+    "docClass": "CREC",
+    "lastModified": "2026-09-19T10:19:24Z",
+    "category": "Proceedings of Congress and General Congressional Publications",
+    "granulesLink": "https://api.govinfo.gov/packages/CREC-2026-09-18/granules?offsetMark=*&pageSize=100",
+    "granuleDate": "2026-09-18"
+}

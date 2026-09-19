@@ -15,11 +15,66 @@ responses fit well inside the fixture bound.
 | `mods-CRPT-119hrpt1.xml` | [`packages/CRPT-119hrpt1/mods`](https://api.govinfo.gov/packages/CRPT-119hrpt1/mods), keyed with `X-Api-Key` | 9,787 | `d73ea7b12140ca7e1ad08649092a9e14a432a9fce8948d8a4975e4f3cd43f9d2` |
 | `body-CRPT-119hrpt1.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt1/html/CRPT-119hrpt1.htm), keyless | 13,953 | `d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9` |
 | `body-CRPT-119hrpt105.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt105/html/CRPT-119hrpt105.htm), keyless | 8,504 | `903f3aadd805b3ed85066bef29fa4d3f236501b6e94cb531168ed189362eca19` |
+| `summary-CPRT-118HPRT57104.json` | [`packages/CPRT-118HPRT57104/summary`](https://api.govinfo.gov/packages/CPRT-118HPRT57104/summary), keyed with `X-Api-Key` | 1,220 | `b3fedfb456de587366b84087248f7a075fc22567fc3c814b580ae87ef5ce2547` |
+| `mods-CPRT-118HPRT57104.xml` | [`packages/CPRT-118HPRT57104/mods`](https://api.govinfo.gov/packages/CPRT-118HPRT57104/mods), keyed with `X-Api-Key` | 6,221 | `7d30cbee9e219929472608daf15871c46f3c5ade926d698f48485c2ef798fe19` |
 
 No fixture above was reduced or reformatted. The credential travels only in the
 request header, and the capture script refused to write any file whose bytes
 contained the key or an `api_key=` parameter; none did. The keyless body route
 takes no credential at all.
+
+## The committee-print collection (CPRT)
+
+`CPRT-118HPRT57104` was found through a keyed `published` walk scoped to the
+`CPRT` collection (2020-01-01 through 2024-12-31, 1,118 packages) and chosen
+for its `"pages": "1"` summary field, the smallest found. Its summary states
+`"documentType": "HPRT"` and `"docClass": "HPRT"` -- the chamber-plus-doctype
+token is spelled **upper-case** here, unlike `CRPT`'s own lower-case
+`hrpt`/`srpt`/`erpt` -- so `bodies.py`'s `CPRT` grammar
+(`{congress}{HPRT|SPRT|JPRT}{number}`) is measured, not inferred from `CRPT`'s
+shape. A wider walk (2018-2024, 100 packages) also turned up real `SPRT` ids
+(`CPRT-113SPRT52146` and others) and `JPRT` ids (`CPRT-116JPRT41347` and
+others), confirming all three chambers' tokens without needing to fetch any of
+them. The MODS states HTML, PDF and XML renditions, all at the standard
+`content/pkg/{id}/{folder}/{id}.{extension}` addresses `package_body_locator`
+already derives, so no new locator code was needed for this collection --
+only the grammar entry.
+
+## Granule bodies for the daily Record (B2)
+
+`CREC-2026-09-18` is a three-page issue (the day this fixture set was
+captured) with 11 granules, walked through the keyed
+`packages/CREC-2026-09-18/granules` route. `CREC-2026-09-18-pt1-PgS4837-4`
+("APPOINTMENT OF ACTING PRESIDENT PRO TEMPORE") was chosen as the smallest.
+
+| Fixture | Publisher response | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `granule-summary-CREC-2026-09-18-pt1-PgS4837-4.json` | [`packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/summary`](https://api.govinfo.gov/packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/summary), keyed with `X-Api-Key` | 1,448 | `6fffa582c4382db83fffdb8134ba1440ab28a68a67713e884beafe833ce69b7b` |
+| `granule-mods-CREC-2026-09-18-pt1-PgS4837-4.xml` | [`packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/mods`](https://api.govinfo.gov/packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/mods), keyed with `X-Api-Key` | 6,658 | `2e436a5449935b90e7bd6076b659c94d6c69f5cb09d885260729454afbe3459a` |
+| `granule-body-CREC-2026-09-18-pt1-PgS4837-4.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CREC-2026-09-18/html/CREC-2026-09-18-pt1-PgS4837-4.htm), keyless | 1,333 | `e52adaf8783f047024f762eff21cf33f626efb018a29c8ac56b08d3d7ae82c31` |
+
+The measured shape: the granule summary states both `packageId` and
+`granuleId` directly, so membership is a field check, not a second route. The
+granule MODS states its own `accessId` the same way a package MODS states its
+own (a direct-child `extension`), and states its host package's `accessId`
+nested inside a `relatedItem type="host"` -- GovInfo's own proof of
+membership. Its own `location` (also a direct child, not nested) states HTML
+and PDF renditions, both raw-object, both addressed at
+`content/pkg/{packageId}/{folder}/{granuleId}.{extension}` -- the package's
+folder, the granule's own file stem.
+
+**A granule that does not belong to the requested package answers HTTP 400,
+not 404.** Measured 2026-09-19, two ways: a wrong-day granule id
+(`CREC-2026-09-17-pt1-PgS4800`, not a real id) requested under
+`CREC-2026-09-18`, and this fixture's own real granule id requested under
+`CREC-2026-09-17` (a real, different day) instead of its actual package. Both
+answered `400 {"message":"invalid granuleId"}`, no `packageId` or `granuleId`
+field at all -- unlike a missing *package*, which answers 404 on `/summary`.
+`GovInfoBodyAcquirer.acquire_granule` reads this the same way it reads a
+package's own 404/410: `_unavailable`, typed `GovInfoPackageUnavailableError`.
+That response body is small and carries no credential, so
+`tests/test_govinfo_granule_body_acquisition.py` inlines it rather than
+keeping a fourth fixture file for 32 bytes.
 
 `body-CRPT-119hrpt105.htm` is the one package this repository holds in **two**
 renditions: its PyMuPDF page text is `tests/fixtures/gpo_pdf_text/CRPT-119hrpt105.json`

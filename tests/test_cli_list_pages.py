@@ -224,6 +224,7 @@ def test_a_refused_page_writes_the_acquisition_context_and_retains_its_bytes(wal
         "requestBody": None,
         "pageIndex": 0,
         "recordsKey": "granules",
+        "singleRecord": False,
         "requestCount": 1,
     }
     assert failure["refused_evidence"]["stage"] == "source-validation"

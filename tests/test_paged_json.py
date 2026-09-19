@@ -72,6 +72,30 @@ def test_credential_travels_only_as_a_header_and_pages_carry_exact_bytes():
     assert pages[0].sha256 == pages[0].capture.sha256
 
 
+def test_a_single_object_under_the_records_key_reads_as_one_record_page():
+    """A detail route answers one record, not a list; the reader wraps it when the caller opts
+    in with single_record, rather than refusing."""
+    body = json.dumps({"things": {"id": 1, "name": "widget"}}).encode()
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        (result,) = list(source.pages(URL, records_key="things", single_record=True))
+    assert result.records == ({"id": 1, "name": "widget"},)
+    assert result.declared_count is None and result.next_url is None
+
+
+def test_a_wrapper_object_without_single_record_still_refuses():
+    """single_record is opt-in, not a blanket rule: a caller that does not ask for it still gets
+    the pre-existing refusal when records_key resolves to an object instead of a list -- the
+    same shape a caller's own wrong or mismatched records_key could produce by accident."""
+    body = json.dumps({"things": {"id": 1, "name": "widget"}}).encode()
+    transport = Transport(response(body))
+    with (
+        reader(transport) as source,
+        pytest.raises(PagedJsonSourceError, match="omitted its things list"),
+    ):
+        source.page(URL, records_key="things")
+
+
 @pytest.mark.parametrize(
     "responses,message",
     [
@@ -90,8 +114,11 @@ def test_credential_travels_only_as_a_header_and_pages_carry_exact_bytes():
             "HTTPS api.example.gov",
         ),
         ((response(page([{"id": 1}], count=2, next_url="https://api.example.gov/v1/things?api_key=x")),), "credential"),
+        # An empty object still refuses -- empty success is not absence, and a detail route
+        # answering {} carries no record to read (unlike the non-empty-object case above).
         ((response(b'{"things": {}, "paging": {"count": 1}}'),), "omitted its things list"),
         ((response(b'{"things": [1], "paging": {"count": 1}}'),), "omitted its things list"),
+        ((response(b'{"things": "nope", "paging": {"count": 1}}'),), "omitted its things list"),
         ((response(b'{"things": [], "paging": {"count": -1}}'),), "declared count is invalid"),
         ((response(b'{"things": [], "paging": {"count": true}}'),), "declared count is invalid"),
         ((response(b'{"things": [], "paging": {"count": 0, "next": ""}}'),), "continuation is invalid"),
@@ -106,6 +133,34 @@ def test_page_shape_and_traversal_refusals(responses, message):
     with reader(transport) as source, pytest.raises(PagedJsonSourceError, match=message) as raised:
         list(source.pages(URL, records_key="things"))
     assert raised.value.paged_json_acquisition["family"] == "example"
+
+
+def test_a_traversal_refusals_context_carries_single_record_too():
+    """The traversal-level refuse() context (pages()'s own, not just page()'s) carries
+    singleRecord alongside recordsKey, the same shape a page refusal's context uses -- so a
+    receipt from either operation is read the same way."""
+    transport = Transport(response(page([{"id": 1}], count=2)))
+    with (
+        reader(transport) as source,
+        pytest.raises(PagedJsonSourceError, match="declared and observed") as raised,
+    ):
+        list(source.pages(URL, records_key="things", single_record=True))
+    context = raised.value.paged_json_acquisition
+    assert context["operation"] == "traversal"
+    assert context["singleRecord"] is True
+    assert context["recordsKey"] == "things"
+
+
+def test_an_empty_object_still_refuses_with_single_record_too():
+    """The single_record twin of the {"things": {}} case above: opting in does not turn an
+    empty object into a record. Empty success is not absence."""
+    body = b'{"things": {}, "paging": {"count": 1}}'
+    transport = Transport(response(body))
+    with (
+        reader(transport) as source,
+        pytest.raises(PagedJsonSourceError, match="omitted its things list"),
+    ):
+        source.page(URL, records_key="things", single_record=True)
 
 
 def test_page_bound_reached_before_terminal_page_refuses_rather_than_ending():
@@ -447,3 +502,41 @@ def test_tuple_records_key_miss_refuses_with_a_dotted_label():
         pytest.raises(PagedJsonSourceError, match="omitted its wrapper.things list"),
     ):
         source.page(URL, records_key=("wrapper", "things"))
+
+
+def test_a_records_key_naming_one_object_reads_as_a_single_record_page():
+    """A detail route answers one JSON object at records_key, not an array -- Congress.gov's
+    law/{congress}/{law_type}/{number} answers {"bill": {...}}. The object is the whole record;
+    with single_record, it reads as a one-record page rather than being shaped down to a chosen
+    field or refused."""
+    body = json.dumps({"thing": {"id": 1, "nested": {"more": True}}}).encode()
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        result = source.page(URL, records_key="thing", single_record=True)
+    assert result.records == ({"id": 1, "nested": {"more": True}},)
+    assert result.declared_count is None
+    assert result.next_url is None
+
+
+def test_a_tuple_records_key_naming_one_object_also_reads_as_a_single_record_page():
+    body = json.dumps({"wrapper": {"thing": {"id": 1}}}).encode()
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        result = source.page(URL, records_key=("wrapper", "thing"), single_record=True)
+    assert result.records == ({"id": 1},)
+
+
+def test_the_committee_bills_wrapper_key_refuses_without_single_record():
+    """Reproduces the review finding: reading committee-bills' own records_key ("committee-bills")
+    as a plain string, instead of the tuple that reaches inside it, resolves to the wrapper
+    object {"bills": [...], "count": N, "url": "..."}. Without single_record this still refuses
+    -- it does not silently read the wrapper itself as one bogus record."""
+    body = json.dumps(
+        {"committee-bills": {"bills": [{"congress": 110}], "count": 1, "url": "https://api.example.gov/x"}}
+    ).encode()
+    transport = Transport(response(body))
+    with (
+        reader(transport) as source,
+        pytest.raises(PagedJsonSourceError, match="omitted its committee-bills list"),
+    ):
+        source.page(URL, records_key="committee-bills")

@@ -36,6 +36,7 @@ from spicy_docs.schemas.tables import (
     flag,
     joined,
     json_column,
+    natural_key,
     table_contract,
     text,
 )
@@ -192,7 +193,7 @@ MEMBER_VOTES = table_contract(
 
 
 def _amendment_id(congress: object, amendment_type: object, number: object) -> str:
-    return f"{congress}-{str(amendment_type).lower()}-{number}"
+    return natural_key(congress, amendment_type, number)
 
 
 def _amended(record: Mapping[str, Any], key: str) -> Mapping[str, Any] | None:

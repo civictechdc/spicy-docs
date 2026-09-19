@@ -1,0 +1,29 @@
+{
+    "dateIssued": "2024-09-19",
+    "documentType": "HPRT",
+    "congress": "118",
+    "session": "2",
+    "documentNumber": "51",
+    "packageId": "CPRT-118HPRT57104",
+    "collectionCode": "CPRT",
+    "detailsLink": "https://www.govinfo.gov/app/details/CPRT-118HPRT57104",
+    "title": "TEXT OF H.R. 8205, KEEPING VIOLENT OFFENDERS OFF OUR STREETS ACT",
+    "branch": "legislative",
+    "collectionName": "Congressional Committee Prints",
+    "download": {
+        "premisLink": "https://api.govinfo.gov/packages/CPRT-118HPRT57104/premis",
+        "zipLink": "https://api.govinfo.gov/packages/CPRT-118HPRT57104/zip",
+        "modsLink": "https://api.govinfo.gov/packages/CPRT-118HPRT57104/mods"
+    },
+    "pages": "1",
+    "governmentAuthor2": "House of Representatives",
+    "chamber": "HOUSE",
+    "governmentAuthor1": "Congress",
+    "publisher": "U.S. Government Publishing Office",
+    "suDocClassNumber": "Y 4.R 86/1:",
+    "docClass": "HPRT",
+    "lastModified": "2026-02-25T22:03:49Z",
+    "category": "Congressional Committee Materials",
+    "otherIdentifier": {"migrated-doc-id": "f:57104.txt"},
+    "granulesLink": "https://api.govinfo.gov/packages/CPRT-118HPRT57104/granules?offsetMark=*&pageSize=100"
+}

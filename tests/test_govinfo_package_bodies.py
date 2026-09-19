@@ -19,6 +19,7 @@ from spicy_docs.sources.federal_register.body_sources import (
 from spicy_docs.sources.govinfo.bodies import (
     PACKAGE_BODY_FORMATS,
     GovInfoBodySourceError,
+    ModsBill,
     package_body_locator,
     package_mods_locator,
     package_summary_locator,
@@ -37,6 +38,14 @@ SUMMARY_URL = f"https://api.govinfo.gov/packages/{PACKAGE}/summary"
 MODS_URL = f"https://api.govinfo.gov/packages/{PACKAGE}/mods"
 BODY_URL = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/html/{PACKAGE}.htm"
 ERROR_PAGE = b'<html><a href="https://www.govinfo.gov/error">Page Not Found</a></html>'
+
+CPRT_PACKAGE = "CPRT-118HPRT57104"
+CPRT_SUMMARY = (FIXTURES / f"summary-{CPRT_PACKAGE}.json").read_bytes()
+CPRT_MODS = (FIXTURES / f"mods-{CPRT_PACKAGE}.xml").read_bytes()
+
+BILLS_FIXTURES = Path(__file__).parent / "fixtures" / "govinfo_bills"
+USLM_BILL_PACKAGE = "BILLS-119hconres11enr"
+USLM_BILL_MODS = (BILLS_FIXTURES / "mods-119hconres11enr.xml").read_bytes()
 
 
 def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = "") -> bytes:
@@ -62,6 +71,12 @@ def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = 
         ("CHRG-116jhrg43189", {"congress": 116, "document_type": "jhrg", "number": "43189"}),
         ("CDOC-119tdoc2", {"congress": 119, "document_type": "tdoc", "number": "2"}),
         ("CDOC-113hdoc132", {"congress": 113, "document_type": "hdoc", "number": "132"}),
+        # Upper-case, unlike CRPT's own hrpt/srpt/erpt -- measured on a real
+        # package summary (CPRT-118HPRT57104); SPRT and JPRT confirmed real
+        # via a published walk (fixture README).
+        ("CPRT-118HPRT57104", {"congress": 118, "document_type": "HPRT", "number": "57104"}),
+        ("CPRT-113SPRT52146", {"congress": 113, "document_type": "SPRT", "number": "52146"}),
+        ("CPRT-116JPRT41347", {"congress": 116, "document_type": "JPRT", "number": "41347"}),
         ("CREC-2026-01-02", {"issue_date": "2026-01-02", "issue_suffix": None}),
         ("CREC-2019-01-03-v164", {"issue_date": "2019-01-03", "issue_suffix": "v164"}),
         ("CREC-2009-12-18-i194", {"issue_date": "2009-12-18", "issue_suffix": "i194"}),
@@ -89,6 +104,7 @@ def test_each_collection_grammar_keeps_the_publishers_own_parts(package_id: str,
         ("GPO-CRPT-116hrpt562", "collection is unsupported"),
         ("CHRG-119xhrg64242", "grammar"),
         ("CRPT-119hrpt0", "grammar"),
+        ("CPRT-118hprt57104", "grammar"),  # lower-case: not the measured spelling
         ("BILLS-119hr1", "grammar"),
         ("CREC-2026-01-02-p3", "grammar"),
         ("CREC-2026-02-30", "calendar date"),
@@ -132,7 +148,7 @@ def test_keyed_locators_carry_no_credential() -> None:
 
 def test_unsupported_format_refuses() -> None:
     with pytest.raises(GovInfoBodySourceError, match="body format must be"):
-        package_body_locator(PACKAGE, "uslm")
+        package_body_locator(PACKAGE, "jpeg")
 
 
 def test_real_summary_states_the_package_and_no_body_rendition() -> None:
@@ -208,22 +224,157 @@ def test_real_mods_states_the_access_id_and_the_offered_renditions() -> None:
     assert mods.other_renditions == ()
 
 
+def test_real_mods_states_every_bill_and_primary_bill_is_not_the_first_listed() -> None:
+    """Measured on CRPT-119hrpt1: S. 5 (OTHER) is listed before H. Res. 53 (PRIMARY)."""
+    mods = validate_package_mods(MODS, package=PACKAGE, final_url=MODS_URL, max_bytes=200_000)
+    assert mods.bills == (
+        ModsBill(congress=119, bill_type="S", number="5", context="OTHER", normalized_bill_type="s"),
+        ModsBill(congress=119, bill_type="HRES", number="53", context="OTHER", normalized_bill_type="hres"),
+        ModsBill(congress=119, bill_type="HRES", number="53", context="PRIMARY", normalized_bill_type="hres"),
+        ModsBill(congress=119, bill_type="HR", number="471", context="OTHER", normalized_bill_type="hr"),
+    )
+    # First-listed is S. 5, which is not the bill this report is about.
+    assert mods.bills[0].bill_type == "S" and mods.bills[0].context != "PRIMARY"
+    assert mods.primary_bill == ModsBill(
+        congress=119, bill_type="HRES", number="53", context="PRIMARY", normalized_bill_type="hres"
+    )
+
+
+def test_a_mods_with_no_bill_elements_has_no_primary_bill() -> None:
+    mods = validate_package_mods(mods_xml(), package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == ()
+    assert mods.primary_bill is None
+
+
+def test_a_bill_element_missing_a_required_attribute_is_skipped_not_guessed() -> None:
+    body = (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><accessId>{PACKAGE}</accessId>"
+        '<bill congress="119" context="PRIMARY" number="1"></bill>'  # no type
+        '<bill congress="119" context="PRIMARY" number="2" type="HR"></bill>'
+        "</extension></mods>"
+    ).encode()
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == (
+        ModsBill(congress=119, bill_type="HR", number="2", context="PRIMARY", normalized_bill_type="hr"),
+    )
+
+
+def test_a_bill_element_with_a_non_numeric_number_is_skipped_not_guessed() -> None:
+    body = (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><accessId>{PACKAGE}</accessId>"
+        '<bill congress="119" context="PRIMARY" number="unknown" type="HR"></bill>'
+        '<bill congress="119" context="PRIMARY" number="2" type="HR"></bill>'
+        "</extension></mods>"
+    ).encode()
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == (
+        ModsBill(congress=119, bill_type="HR", number="2", context="PRIMARY", normalized_bill_type="hr"),
+    )
+
+
+def test_a_bill_element_with_no_context_is_kept_as_an_empty_mention() -> None:
+    # spicy-regs's own MODS reader keeps a context-less <bill> as a mention
+    # rather than dropping it; this module does the same.
+    body = (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><accessId>{PACKAGE}</accessId>"
+        '<bill congress="119" number="1" type="HR"></bill>'  # no context
+        "</extension></mods>"
+    ).encode()
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == (ModsBill(congress=119, bill_type="HR", number="1", context="", normalized_bill_type="hr"),)
+    # An empty context is never PRIMARY, so it does not become the primary bill.
+    assert mods.primary_bill is None
+
+
+def test_an_unrecognized_bill_type_normalizes_to_none() -> None:
+    body = (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><accessId>{PACKAGE}</accessId>"
+        '<bill congress="119" context="PRIMARY" number="1" type="XX"></bill>'
+        "</extension></mods>"
+    ).encode()
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == (
+        ModsBill(congress=119, bill_type="XX", number="1", context="PRIMARY", normalized_bill_type=None),
+    )
+
+
+def test_real_cprt_summary_and_mods_state_the_committee_print() -> None:
+    """CPRT-118HPRT57104: the committee-print collection added for the A10 CPRT row."""
+    summary_url = f"https://api.govinfo.gov/packages/{CPRT_PACKAGE}/summary"
+    mods_url = f"https://api.govinfo.gov/packages/{CPRT_PACKAGE}/mods"
+
+    summary = validate_package_summary(CPRT_SUMMARY, package=CPRT_PACKAGE, final_url=summary_url, max_bytes=200_000)
+    assert summary.identity.package_id == CPRT_PACKAGE
+    assert summary.identity.collection == "CPRT"
+    assert summary.identity.document_type == "HPRT"
+    assert summary.collection_code == "CPRT"
+    assert summary.title is not None and "KEEPING VIOLENT OFFENDERS" in summary.title
+
+    mods = validate_package_mods(CPRT_MODS, package=CPRT_PACKAGE, final_url=mods_url, max_bytes=200_000)
+    assert mods.access_ids == (CPRT_PACKAGE, CPRT_PACKAGE)
+    assert mods.collection_code == "CPRT"
+    # Unlike CRPT/CHRG/CDOC (htm, pdf only), the one committee print measured
+    # also offers xml -- confirmed by the real MODS, not assumed.
+    assert mods.offered_formats == ("htm", "pdf", "xml")
+    assert mods.moved_renditions == ()
+    assert mods.other_renditions == ()
+    # This print's own <bill> states context="COVER", not "PRIMARY" -- a
+    # third context spelling beyond the two CRPT-119hrpt1 measures, and
+    # proof primary_bill does not mistake a cover-page mention for the
+    # report's own bill.
+    assert mods.bills == (
+        ModsBill(congress=118, bill_type="HR", number="8205", context="COVER", normalized_bill_type="hr"),
+    )
+    assert mods.primary_bill is None
+
+
+def test_real_bills_mods_offers_uslm_directly_not_moved() -> None:
+    """B7: BILLS-119hconres11enr, the raw-data sidecar's one file-name-matched USLM package."""
+    mods_url = f"https://api.govinfo.gov/packages/{USLM_BILL_PACKAGE}/mods"
+    mods = validate_package_mods(USLM_BILL_MODS, package=USLM_BILL_PACKAGE, final_url=mods_url, max_bytes=200_000)
+    assert mods.access_ids == (USLM_BILL_PACKAGE,)
+    assert mods.offered_formats == ("htm", "pdf", "xml", "uslm")
+    # Before B7 this package's USLM rendition read as "moved" (a supported
+    # file type at an address this module did not derive); it is now offered
+    # directly, at its own locator.
+    assert mods.moved_renditions == ()
+    assert package_body_locator(USLM_BILL_PACKAGE, "uslm") == (
+        f"https://www.govinfo.gov/content/pkg/{USLM_BILL_PACKAGE}/uslm/{USLM_BILL_PACKAGE}.xml"
+    )
+
+
 def test_this_packages_rendition_at_another_address_reads_as_disagreement() -> None:
-    # BILLS states a USLM rendition this way: the package's own content
-    # address, a supported file type, a folder this module does not derive.
-    uslm = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/uslm/{PACKAGE}.xml"
+    # A supported file type at the package's own content address, but a
+    # folder this module does not derive -- before B7 this was BILLS's own
+    # USLM rendition; now that uslm has its own locator (uslm/{id}.xml), any
+    # other folder still demonstrates the same disagreement.
+    moved = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/alt/{PACKAGE}.pdf"
     body = mods_xml(
         urls=(
             f'<url displayLabel="HTML rendition" access="raw object">{BODY_URL}</url>'
-            f'<url displayLabel="USLM rendition" access="raw object">{uslm}</url>'
+            f'<url displayLabel="PDF rendition" access="raw object">{moved}</url>'
             '<url displayLabel="Content Detail" access="object in context">'
             f"https://www.govinfo.gov/app/details/{PACKAGE}</url>"
         )
     )
     mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
     assert mods.offered_formats == ("htm",)
-    assert mods.moved_renditions == (("xml", uslm),)
+    assert mods.moved_renditions == (("pdf", moved),)
     assert mods.other_renditions == ()
+
+
+def test_uslm_and_xml_share_an_extension_but_xml_wins_the_moved_label() -> None:
+    # uslm and xml both serve xml/{id}.xml-shaped addresses (folder differs,
+    # extension does not), so a rendition found at neither locator can only
+    # be labelled by extension; xml is the tie-break (bodies._FORMAT_BY_EXTENSION).
+    moved = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/alt/{PACKAGE}.xml"
+    body = mods_xml(urls=f'<url displayLabel="XML rendition" access="raw object">{moved}</url>')
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.moved_renditions == (("xml", moved),)
 
 
 def test_another_packages_rendition_and_an_unsupported_file_type_say_nothing_here() -> None:

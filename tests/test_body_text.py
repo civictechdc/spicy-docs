@@ -37,6 +37,7 @@ HRPT1_HTM = (BODIES / "body-CRPT-119hrpt1.htm").read_bytes()
 HRPT105_HTM = (BODIES / "body-CRPT-119hrpt105.htm").read_bytes()
 CDIR_TXT = (BODIES / "body-CDIR-2026-02-20.excerpt.txt").read_bytes()
 BILL_XML = (BILLS / "text-119hr6028ih.xml").read_bytes()
+BILL_USLM = (BILLS / "uslm-119hconres11enr.xml").read_bytes()
 HRPT105_PDF_PAGES: tuple[str, ...] = tuple(json.loads((PDF_TEXT / "CRPT-119hrpt105.json").read_text()))
 
 
@@ -138,6 +139,30 @@ def test_xml_rendition_keeps_element_boundaries_as_line_breaks() -> None:
     assert all(line.strip() for line in lines)
 
 
+def test_uslm_rendition_takes_the_same_markup_reader_branch_as_xml() -> None:
+    """B7: USLM's root varies by bill type (this one is <resolution>), so it reads as generic XML."""
+    derived = rendition_text(BILL_USLM, rendition="uslm", media_type="application/xml")
+
+    assert derived.derivation == RENDITION_DERIVATIONS["uslm"] == "markup-reader"
+    assert derived.rendition == "uslm"
+    assert derived.pages is None
+    record = derived.record
+    assert isinstance(record, RenditionCleanup)
+    # Measured 2026-09-19 on BILLS-119hconres11enr (fixture README): 42
+    # elements, no CRLF, no end-of-text marker, no GPO quote pair, no
+    # trailing space on this one small fixture.
+    assert record.markup_elements == 42
+    assert record.element_line_breaks == 31
+    assert record.whitespace_only_lines == 32
+    assert record.line_endings_normalized == 0
+    assert record.trailing_space_lines == 0
+    lines = derived.text.split("\n")
+    assert "119 HCONRES 11 ENR: Concurrent Resolution" in lines
+    assert "Concurrent Resolution" in lines
+    assert "Resolved by the House of Representatives (the Senate concurring)," in derived.text
+    assert all(line.strip() for line in lines)
+
+
 def test_pdf_rendition_is_extraction_then_gpo_normalization() -> None:
     extractor = FakeExtractor(HRPT105_PDF_PAGES)
     derived = rendition_text(b"%PDF-1.4\nstub", rendition="pdf", extractor=extractor)
@@ -160,6 +185,7 @@ def test_pdf_rendition_is_extraction_then_gpo_normalization() -> None:
         (HRPT1_HTM, "htm", "text/html"),
         (CDIR_TXT, "txt", "text/plain"),
         (BILL_XML, "xml", "application/xml"),
+        (BILL_USLM, "uslm", "application/xml"),
     ],
 )
 def test_every_rendition_yields_nonempty_text_and_its_own_derivation(
@@ -287,7 +313,7 @@ def test_the_pdf_branch_splits_words_the_htm_branch_keeps_whole() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("rendition", ["", "html", "uslm", None, 7])
+@pytest.mark.parametrize("rendition", ["", "html", "jpeg", None, 7])
 def test_an_unknown_rendition_is_refused_by_name(rendition: object) -> None:
     with pytest.raises(BodyTextError, match="rendition must be one of"):
         rendition_text(b"body", rendition=rendition)  # type: ignore[arg-type]
