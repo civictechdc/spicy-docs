@@ -110,7 +110,12 @@ down to a chosen field -- but only when `CongressListRoute.single_record` is
 `True`, which these three carry; an empty object still refuses either way,
 and a route that leaves `single_record` at its `False` default still refuses
 a wrapper object outright, so a caller's wrong or mismatched `records_key`
-never silently reads as one bogus record. `committee-print`'s
+never silently reads as one bogus record. `single_record` states a fact
+about the JSON shape at `records_key` -- "this route's records key holds an
+object, not an array" -- not a fact about how many records the route yields:
+`committee-print-detail` is a detail route that answers exactly one record
+too, with `single_record` left `False`, because the publisher answers it
+with a real one-item array. `committee-print`'s
 detail route needed no such opt-in: the publisher answers
 `committee-print/{congress}/{chamber}/{number}` with a real one-item array
 under `committeePrint` and a `pagination.count` of 1. None of the four detail
@@ -175,7 +180,12 @@ records key as a one-row page, with no declared count and no continuation,
 only when the caller opts in with `single_record` -- `CongressListRoute`'s
 `single_record=True` on the five object-shaped routes here (not `treaty`,
 whose one-element array already reads through the ordinary list path) is
-what `CongressListingReader.records`/`.page` set it from. The opt-in matters
+what `CongressListingReader.records`/`.page` set it from. `single_record`
+states a fact about the JSON shape at `records_key` -- "this route's
+records key holds an object, not an array" -- not a fact about how many
+records the route yields: `treaty-detail` is a detail route that answers
+exactly one record too, with `single_record` left `False`, because its one
+record already arrives inside a one-element array. The opt-in matters
 because the wrapping is not safe as a blanket rule for every family this
 reader serves: without it, a caller's wrong or mismatched `records_key` that
 happens to resolve to a wrapper object -- reading `committee-bills` by its

@@ -412,6 +412,46 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "committee-print": True,
         "committee-print-detail": False,
     }
+    # Exhaustive, not spot-checked, so a flip on a route with no dedicated single_record test
+    # (daily-congressional-record and senate-communication, for instance, whose *-detail
+    # siblings carry the flag but whose own list routes must not) cannot pass silently.
+    # single_record states a JSON-shape fact ("records_key holds an object, not an array"), not
+    # "this is a detail route": treaty-detail and committee-print-detail are detail routes that
+    # answer one record with the flag False, because their one record already arrives inside a
+    # one-element array (see the class docstring).
+    assert {name: route.single_record for name, route in LIST_ROUTES.items()} == {
+        "bill": False,
+        "crsreport": False,
+        "amendment": False,
+        "committee-bills": False,
+        "bill-actions": False,
+        "nomination": False,
+        "hearing": False,
+        "committee-report": False,
+        "house-communication": False,
+        "house-vote": False,
+        "committee-meeting": False,
+        "committee-meeting-detail": True,
+        "treaty": False,
+        "treaty-detail": False,
+        "daily-congressional-record": False,
+        "daily-congressional-record-detail": True,
+        "house-communication-detail": True,
+        "senate-communication": False,
+        "senate-communication-detail": True,
+        "house-requirement": False,
+        "house-requirement-detail": True,
+        "house-requirement-communications": False,
+        "law": False,
+        "law-detail": True,
+        "committee": False,
+        "committee-detail": True,
+        "member": False,
+        "member-congress": False,
+        "member-detail": True,
+        "committee-print": False,
+        "committee-print-detail": False,
+    }
     assert LIST_ROUTES["bill"].records_key == BILLS_KEY
     assert LIST_ROUTES["crsreport"].records_key == CRS_REPORTS_KEY
     assert LIST_ROUTES["amendment"].records_key == "amendments"
@@ -740,13 +780,18 @@ def test_list_route_url_refuses_a_date_window_on_every_detail_route(route_name):
         {"name": "x", "path": "x", "records_key": ""},
         {"name": "x", "path": "x", "records_key": ()},
         {"name": "x", "path": "x/{congress}", "records_key": "rows", "optional_params": frozenset({"chamber"})},
+        # A single_record route has no list to reorder or window against; both must be False.
+        {"name": "x", "path": "x/{congress}", "records_key": "rows", "single_record": True, "sort_honored": True},
+        {"name": "x", "path": "x/{congress}", "records_key": "rows", "single_record": True, "window_honored": True},
     ],
 )
 def test_congress_list_route_refuses_invalid_construction(kwargs):
     """A route whose ``optional_params`` makes an interior parameter optional while a later one stays
     required (``congress`` optional but ``type`` is not), an empty path, an empty name or an empty
     records key all refuse at construction, the same as an ``optional_params`` entry the path never
-    declares as a parameter at all."""
+    declares as a parameter at all; so does a ``single_record`` route that also claims
+    ``sort_honored`` or ``window_honored`` (listing.py's ``__post_init__``), since a single record
+    has nothing to reorder or window."""
     with pytest.raises(ValueError):
         CongressListRoute(**kwargs)
 
