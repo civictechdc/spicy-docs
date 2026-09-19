@@ -146,20 +146,30 @@ class KeylessBody(SourceAcquirer):
             unavailable=lambda capture: BenchmarkError(f"HTTP {capture.status_code} for {url}"),
             context={"operation": "body", "url": url},
         )
-        self.log.append(
-            {
-                "url": url,
-                "resolvedUrl": capture.resolved_url,
-                "statusCode": capture.status_code,
-                "contentType": capture.content_type,
-                "byteSize": capture.byte_size,
-                "sha256": capture.sha256,
-                "observedAt": capture.observed_at,
-            }
-        )
+        self.log.append(_capture_facts(capture, url, keyed=False))
         if is_error_page_url(capture.resolved_url) or has_error_page_marker(capture.body):
             raise BenchmarkError(f"{url} answered the publisher's error page, not the object")
         return capture
+
+
+def _capture_facts(capture: CapturedBodyResponse, url: str, *, keyed: bool = True) -> dict[str, Any]:
+    """One request, as the receipt records it.
+
+    ``keyed`` says which client made it, because the two are answered by
+    different hosts under different rules. No credential can reach here: the
+    key travels only in the ``X-Api-Key`` header on the keyed route, and both
+    URLs are scrubbed anyway rather than trusted to be clean.
+    """
+    return {
+        "keyed": keyed,
+        "url": scrub_credential(url, ""),
+        "resolvedUrl": scrub_credential(capture.resolved_url, ""),
+        "statusCode": capture.status_code,
+        "contentType": capture.content_type,
+        "byteSize": capture.byte_size,
+        "sha256": capture.sha256,
+        "observedAt": capture.observed_at,
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -207,6 +217,13 @@ class Listing:
     declared: int | None
     complete: bool
     stride: int
+    #: The exact keyed request this sample came from. Without it the corpus
+    #: cannot be re-drawn: page size, offset mark and all decide which
+    #: granules the stride ran over.
+    url: str
+    #: The keyed request's own capture facts, so the receipt's request log
+    #: covers every request the run made rather than only the keyless half.
+    captures: tuple[dict[str, Any], ...] = ()
 
 
 def choose_granules(reader: GovInfoDiscoveryReader, edition: tuple[int, int, int], wanted: int) -> Listing:
@@ -221,13 +238,16 @@ def choose_granules(reader: GovInfoDiscoveryReader, edition: tuple[int, int, int
     """
     year, title, volume = edition
     package = f"CFR-{year}-title{title}-vol{volume}"
+    url = package_granules_url(package, page_size=1000)
     rows: list[Mapping[str, Any]] = []
     declared: int | None = None
     complete = True
+    captures: list[dict[str, Any]] = []
     try:
-        for page in reader.granules(package_granules_url(package, page_size=1000), max_pages=1):
+        for page in reader.granules(url, max_pages=1):
             rows.extend(page.records)
             declared = page.declared_count if declared is None else declared
+            captures.append(_capture_facts(page.capture, url))
     except PagedJsonSourceError:
         # The reader refuses a walk that ends at its page bound rather than at
         # the publisher's last page; here the bound is the point, so the
@@ -252,7 +272,16 @@ def choose_granules(reader: GovInfoDiscoveryReader, edition: tuple[int, int, int
     if not sections:
         raise BenchmarkError(f"{package} listed no section granule in its first page")
     stride = max(len(sections) // wanted, 1)
-    return Listing(tuple(sections[::stride][:wanted]), len(rows), len(sections), declared, complete, stride)
+    return Listing(
+        tuple(sections[::stride][:wanted]),
+        len(rows),
+        len(sections),
+        declared,
+        complete,
+        stride,
+        url,
+        tuple(captures),
+    )
 
 
 # --- the reference side ------------------------------------------------------------------
@@ -331,8 +360,14 @@ def score(
     *,
     schema: bool,
 ) -> dict[str, Any]:
-    """Every number this benchmark reports for one document, from the findings and the reference."""
-    findings = validate.check(
+    """Every number this benchmark reports for one document, from the findings and the reference.
+
+    The scores come back from ``validate.check``; nothing is recomputed here.
+    A second alignment over the same two token streams would be the expensive
+    half of the run done twice, and it could disagree with the one the
+    acceptance gate actually decided on.
+    """
+    result = validate.check(
         document,
         serialized,
         section=granule.section,
@@ -340,30 +375,36 @@ def score(
         reference_markers=reference.markers,
         schema=schema,
     )
-    by_name = {finding.check: finding for finding in findings}
-    comparison = validate.compare_text(reference.text, validate.serialized_text(serialized))
-    f1, shared, reference_pairs, candidate_pairs = validate.hierarchy_f1(
-        validate.marker_pairs(reference.markers),
-        validate.document_marker_pairs(document, section=granule.section),
-    )
+    by_name = result.by_name()
+    comparison = result.comparison
+    hierarchy = result.hierarchy
+    assert comparison is not None and hierarchy is not None, "a paired run always supplies both references"
+    review = validate.review_load(serialized)
     coverage = by_name["coverage"].measures
     return {
         "precision": comparison.precision,
         "recall": comparison.recall,
         "referenceTokens": comparison.reference_tokens,
         "candidateTokens": comparison.candidate_tokens,
+        "normalization": dict(comparison.normalization),
         "criticalDiscrepancies": len(comparison.critical),
         "criticalSample": list(dict.fromkeys(comparison.critical))[:8],
-        "hierarchyF1": f1,
-        "hierarchyShared": shared,
-        "referencePairs": reference_pairs,
-        "candidatePairs": candidate_pairs,
+        "hierarchyF1": hierarchy.f1,
+        "hierarchyShared": hierarchy.shared,
+        "hasLadder": hierarchy.has_ladder,
+        "referencePairs": hierarchy.reference_pairs,
+        "candidatePairs": hierarchy.candidate_pairs,
+        "elementsInScope": review.elements,
+        "nodesNeedingReviewInScope": review.flagged_nodes,
+        "modelPlacedNodesInScope": review.model_nodes,
+        "unresolvedInScope": review.unresolved_regions,
+        "modelCalls": review.model_nodes,
         "blocks": coverage["blocks"],
         "outOfScopeBlocks": coverage["outOfScopeBlocks"],
         "unresolvedRegions": coverage["unresolvedRegions"],
         "nodesNeedingReview": coverage["nodesNeedingReview"],
         "sectionsInRendition": by_name["structural_fidelity"].measures["sections"],
-        "findings": [finding.to_json() for finding in findings],
+        "findings": [finding.to_json() for finding in result.findings],
         "accepted": by_name["acceptance"].passed,
     }
 
@@ -432,6 +473,15 @@ def measure(
         yield row
 
 
+def accepted_count(rows: Sequence[Mapping[str, Any]]) -> int:
+    return sum(1 for row in rows if row.get("accepted"))
+
+
+def _per(total: float, accepted: int) -> float | None:
+    """A per-accepted-document rate, or ``None`` when nothing was accepted to divide by."""
+    return round(total / accepted, 6) if accepted else None
+
+
 def _mean(values: Sequence[float | None]) -> float | None:
     """The mean of the values that exist; ``None`` when none do, never a zero standing in for absence."""
     known = [value for value in values if value is not None]
@@ -453,7 +503,10 @@ def summarize(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     ]:
         if not subset:
             continue
-        laddered = [row for row in subset if row["referencePairs"]]
+        # Either side: a candidate ladder against a reference without one is a
+        # ladder the parser invented, and filtering on the reference alone hid
+        # exactly that case by scoring it a vacuous 1.0 and then excluding it.
+        laddered = [row for row in subset if row.get("hasLadder", bool(row["referencePairs"]))]
         summary[name] = {
             "documents": len(subset),
             "precision": _mean([row["precision"] for row in subset]),
@@ -467,6 +520,12 @@ def summarize(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
             "documentsWithCriticalDiscrepancy": sum(1 for row in subset if row["criticalDiscrepancies"]),
             "criticalDiscrepancies": sum(row["criticalDiscrepancies"] for row in subset),
             "unresolvedRegions": sum(row["unresolvedRegions"] for row in subset),
+            "unresolvedInScope": sum(row.get("unresolvedInScope", 0) for row in subset),
+            "nodesNeedingReviewInScope": sum(row.get("nodesNeedingReviewInScope", 0) for row in subset),
+            "documentsFlaggedInScope": sum(
+                1 for row in subset if row.get("nodesNeedingReviewInScope") or row.get("unresolvedInScope")
+            ),
+            "modelCalls": sum(row.get("modelCalls", 0) for row in subset),
             "outOfScopeBlocks": sum(row["outOfScopeBlocks"] for row in subset),
             "blocks": sum(row["blocks"] for row in subset),
             "accepted": sum(1 for row in subset if row["accepted"]),
@@ -476,6 +535,15 @@ def summarize(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
             "coverageComplete": sum(1 for row in subset if _finding(row, "coverage")),
             "reconstructSeconds": _mean([row.get("reconstructSeconds") for row in subset]),
             "fetchSeconds": _mean([row.get("fetchSeconds") for row in subset]),
+            # §3.3 asks for cost per accepted document. The only cost this
+            # pipeline incurs is compute and requests: no model was called, so
+            # `modelCallsPerAccepted` is the number that would have to move
+            # before a money figure means anything.
+            "secondsPerAccepted": _per(
+                sum(row.get("reconstructSeconds") or 0.0 for row in subset), accepted_count(subset)
+            ),
+            "requestsPerAccepted": _per(2 * len(subset), accepted_count(subset)),
+            "modelCallsPerAccepted": _per(sum(row.get("modelCalls", 0) for row in subset), accepted_count(subset)),
         }
     return summary
 
@@ -573,17 +641,24 @@ def write_receipts(directory: Path, measures: Mapping[str, Any], *, command: Seq
     (directory / "summary.json").write_text(json.dumps(measures.get("summary", {}), indent=2, sort_keys=True) + "\n")
     scored_from = measures.get("scoredFrom")
     requests = measures.get("requests", {})
+    logged = measures.get("requestLog") or []
+    keyed = sum(1 for entry in logged if entry.get("keyed"))
     origin = (
         f"The bodies were fetched by an earlier run of this tool at revision "
         f"`{scored_from.get('fetchRevision')}` on {str(scored_from.get('fetchedAt'))[:19]} "
         f"({(scored_from.get('requests') or {}).get('total', '?')} requests); this run re-read them from "
         f"`{scored_from.get('bodies')}` and made **no request**. Each body's digest was checked against the one "
         "that run recorded before it was read, so these numbers are over the same bytes.\n\n"
-        "`requests.jsonl` is therefore empty; `fetch-command.txt` holds the command that did make the requests, "
-        "and `corpus-manifest.json` is the fetch's retained evidence: every body's URL, byte size and SHA-256.\n"
+        "**`requests.jsonl` is empty because this run made no request, and because the run that did make them "
+        "kept no per-request log** -- that log was added after it. `fetch-command.txt` holds the command that "
+        "fetched the bodies and `corpus-manifest.json` their URLs and digests, but neither is a request log, so "
+        "this receipt cannot show what the publisher answered. A run whose numbers are meant to be re-derivable "
+        "should fetch and score in one pass with `--receipts`.\n"
         if scored_from
-        else f"This run made {requests.get('total', '?')} requests; `requests.jsonl` lists each one with its "
-        "resolved URL, status, byte size and digest.\n"
+        else f"This run made {requests.get('total', '?')} requests: {requests.get('granuleListings', 0)} keyed "
+        f"granule listings and {requests.get('bodies', 0)} keyless body fetches. `requests.jsonl` holds "
+        f"{len(logged)} of them ({keyed} keyed), each with its resolved URL, status, content type, byte size, "
+        "SHA-256 and the time it was observed.\n"
     )
     (directory / "README.md").write_text(
         f"""# Reconstruction benchmark receipt
@@ -613,11 +688,58 @@ are not retained here; the manifest's digests re-derive them from the URLs.
     )
 
 
+#: The granules whose evidence was read while a parsing rule was being
+#: written or changed. A split only means anything on a run whose rules were
+#: settled before it read the corpus, so the ones that were not are named here
+#: and travel with every measurement this tool writes. Keep it empty only when
+#: that is true.
+CONTAMINATING_GRANULES: tuple[str, ...] = (
+    "CFR-2022-title40-vol1-sec23-2",
+    "CFR-2023-title7-vol1-sec3-52",
+    "CFR-2023-title7-vol1-sec15-86",
+    "CFR-2023-title7-vol1-sec1-313",
+    "CFR-2024-title12-vol1-sec19-16",
+    "CFR-2024-title12-vol1-sec28-5",
+    "CFR-2025-title30-vol3-sec700-1",
+)
+#: Set true only by a run whose rules were frozen before it drew its corpus.
+RULES_FROZEN_BEFORE_RUN = False
+
+
+def split_integrity(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Whether the splits in this run mean what the word "blind" means.
+
+    A blind split is a claim about *when* rules were written, which no amount
+    of data can establish after the fact; it has to be declared. This records
+    the declaration beside the granules that contradict it, and which split
+    each of those landed in, so a reader never has to take the column heading
+    on trust.
+    """
+    contaminated = [row for row in rows if row["granuleId"] in CONTAMINATING_GRANULES]
+    per_split: dict[str, int] = {}
+    for row in contaminated:
+        per_split[row["split"]] = per_split.get(row["split"], 0) + 1
+    return {
+        "rulesFrozenBeforeRun": RULES_FROZEN_BEFORE_RUN,
+        "contaminatingGranules": [row["granuleId"] for row in contaminated],
+        "contaminatedBySplit": per_split,
+        "blindIsBlind": RULES_FROZEN_BEFORE_RUN and not per_split.get("blind"),
+    }
+
+
 # --- the report -------------------------------------------------------------------------------
 
 
 def _percent(value: float | None) -> str:
     return "n/a" if value is None else f"{value * 100:.2f}%"
+
+
+def _seconds(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.3f} s"
+
+
+def _rate(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.2f}"
 
 
 def render_block(measures: Mapping[str, Any]) -> str:
@@ -701,9 +823,54 @@ def render_block(measures: Mapping[str, Any]) -> str:
         )
         + " |"
     )
+    lines.append(
+        "| Documents with an in-scope flagged node or unresolved region | 0 | "
+        + " | ".join(
+            cell(split, lambda b: f"{b.get('documentsFlaggedInScope', 0)} of {b['documents']}") for split in splits
+        )
+        + " |"
+    )
     lines.append("")
     lines.append(f"Gate thresholds as run: `{json.dumps(gates, sort_keys=True)}`.")
     lines.append("")
+    everything = summary.get("all") or {}
+    lines.append(
+        "Review load in scope, over the elements the source map emitted rather than over the whole rendition: "
+        f"{everything.get('nodesNeedingReviewInScope', 0)} flagged node(s) and "
+        f"{everything.get('unresolvedInScope', 0)} unresolved region(s) across "
+        f'{everything.get("documents", 0)} documents. "Accepted without review" counts a document only when '
+        "both are zero for it."
+    )
+    lines.append("")
+    lines.append(
+        "Cost per accepted document: "
+        f"{_seconds(everything.get('secondsPerAccepted'))} of reconstruction, "
+        f"{_rate(everything.get('requestsPerAccepted'))} publisher requests, "
+        f"{_rate(everything.get('modelCallsPerAccepted'))} model calls. "
+        "No model was called in this run; the seam is declared and unwired."
+    )
+    lines.append("")
+    integrity = measures.get("splitIntegrity") or {}
+    frozen = integrity.get("rulesFrozenBeforeRun")
+    contaminating = integrity.get("contaminatingGranules") or []
+    lines.append("### Split integrity")
+    lines.append("")
+    lines.append(
+        f"Rules frozen before this run: **{'yes' if frozen else 'no'}**. "
+        + (
+            "The blind column is a blind column."
+            if integrity.get("blindIsBlind")
+            else "The blind column is therefore a development column, and every number in it should be read that way."
+        )
+    )
+    lines.append("")
+    if contaminating:
+        lines.append("| Granule whose evidence shaped a rule | Split it landed in |")
+        lines.append("|---|---|")
+        by_id = {row["granuleId"]: row.get("split", "?") for row in rows}
+        for granule_id in contaminating:
+            lines.append(f"| `{granule_id}` | {by_id.get(granule_id, 'not in this corpus')} |")
+        lines.append("")
     lines.append("### Per edition")
     lines.append("")
     lines.append(
@@ -868,6 +1035,7 @@ def main(argv: list[str] | None = None) -> int:
             },
         }
         measures["summary"] = summarize(rows)
+        measures["splitIntegrity"] = split_integrity(rows)
         if args.receipts:
             measures["receipts"] = str(args.receipts)
         args.output.write_text(json.dumps(measures, indent=2, sort_keys=True) + "\n")
@@ -889,6 +1057,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     granules: list[Granule] = []
     listings: list[dict[str, Any]] = []
+    listing_log: list[dict[str, Any]] = []
     listing_requests = 0
     try:
         with GovInfoDiscoveryReader(budget=budget, api_key=api_key) as reader:
@@ -896,6 +1065,7 @@ def main(argv: list[str] | None = None) -> int:
                 listing = choose_granules(reader, edition, per_edition)
                 granules.extend(listing.granules)
                 listing_requests += 1
+                listing_log.extend(listing.captures)
                 listings.append(
                     {
                         "package": listing.granules[0].package,
@@ -905,6 +1075,7 @@ def main(argv: list[str] | None = None) -> int:
                         "listingComplete": listing.complete,
                         "stride": listing.stride,
                         "sampled": len(listing.granules),
+                        "url": listing.url,
                     }
                 )
                 note(f"listed {edition}: {len(granules)} granules so far")
@@ -927,7 +1098,8 @@ def main(argv: list[str] | None = None) -> int:
             state = row.get("error") or f"recall {row.get('recall', 0):.4f} f1 {row.get('hierarchyF1', 0):.3f}"
             note(f"{len(rows):3d}/{len(granules)} {row['granuleId']}: {state}")
         body_requests = bodies.requests
-        request_log = list(bodies.log)
+        # Keyed listings first, then the bodies, which is the order they were made.
+        request_log = listing_log + list(bodies.log)
     measures = {
         "generatedAt": datetime.now(UTC).isoformat(),
         "revision": _revision(root),
@@ -964,6 +1136,7 @@ def main(argv: list[str] | None = None) -> int:
         ],
     }
     measures["summary"] = summarize(rows)
+    measures["splitIntegrity"] = split_integrity(rows)
     if args.receipts:
         measures["receipts"] = str(args.receipts)
     args.output.write_text(json.dumps(measures, indent=2, sort_keys=True) + "\n")

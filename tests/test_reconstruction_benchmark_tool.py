@@ -11,6 +11,7 @@ the pin can drift apart without anyone noticing.
 from __future__ import annotations
 
 import json
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -24,9 +25,11 @@ from tools.analysis.reconstruction_benchmark import (
     SPLITS,
     TARGET_SECTIONS,
     Granule,
+    _digest,
     _section_number,
     read_reference,
     render_block,
+    rescore,
     score,
     summarize,
 )
@@ -90,6 +93,40 @@ def test_the_fixture_section_scores_against_the_published_xml_of_the_same_sectio
     # whose blocks are out of scope rather than lost.
     assert len(row["sectionsInRendition"]) > 1 and row["outOfScopeBlocks"] > 0
     assert row["blocks"] == evidence.to_json()["blocks"].__len__()
+
+
+def test_rescore_refuses_a_body_whose_digest_moved() -> None:
+    """A re-score cannot quietly measure different bytes than the numbers it replaces.
+
+    Only the refusal is exercised: the agreeing-digest path would need a real
+    PDF to reconstruct, and the fixture set holds evidence documents, not PDFs.
+    """
+    granule = Granule(2025, 30, 3, "CFR-2025-title30-vol3-sec716-2", "716.2")
+    with tempfile.TemporaryDirectory() as name:
+        scratch = Path(name)
+        (scratch / f"{granule.granule_id}.pdf").write_bytes(b"%PDF-1.4 recorded bytes")
+        (scratch / f"{granule.granule_id}.xml").write_bytes(b"<CFRGRANULE/>")
+        row = {
+            "granuleId": granule.granule_id,
+            "package": granule.package,
+            "year": granule.year,
+            "title": granule.title,
+            "volume": granule.volume,
+            "section": granule.section,
+            "split": granule.split,
+            "pdfUrl": granule.pdf_url,
+            "xmlUrl": granule.xml_url,
+            "pdfSha256": _digest(b"%PDF-1.4 different bytes"),
+            "xmlSha256": _digest(b"<CFRGRANULE/>"),
+        }
+        rows, manifest = rescore({"documents": [row]}, scratch, schema=False)
+        assert rows[0]["error"] == "DigestMoved"
+        assert "pdfSha256" in rows[0]["message"]
+        assert manifest == [], "a body whose digest moved is not scored"
+        # And a missing body is reported the same way rather than skipped.
+        (scratch / f"{granule.granule_id}.pdf").unlink()
+        rows, _ = rescore({"documents": [row]}, scratch, schema=False)
+        assert rows[0]["error"] == "MissingBody"
 
 
 def test_summarize_counts_a_failed_row_rather_than_dropping_it() -> None:
