@@ -4,9 +4,9 @@ Every snapshot here comes from ``build_bill_family`` output, never from a
 hand-written dict: an event comparison that reads rows the contracts did not
 shape would agree with itself whatever the shapers did.
 
-The comparison itself needs no diff engine -- it reads published rows -- but the
-rows do, so the cases that need real ``bill_versions`` or ``bill_summaries``
-skip with the extra, the way ``tests/test_section_diff.py`` does.
+The comparison itself needs no diff engine -- it reads published rows -- but
+every row here is built by ``build_bill_family`` over a parsed capture, so every
+case that builds one is guarded, the way ``tests/test_section_diff.py`` is.
 """
 
 from __future__ import annotations
@@ -155,6 +155,7 @@ def test_an_event_falls_back_to_the_run_instant_only_when_the_publisher_states_n
     assert {row["detected_at"] for row in added} == {DETECTED_AT}
 
 
+@needs_engine
 def test_a_bill_with_no_introduced_date_falls_back_to_its_update_date() -> None:
     """The fallback chain is introduced, then update, then the run instant."""
     tables = family(_status_only_capture(), diff=False)
@@ -176,6 +177,7 @@ def test_the_event_vocabulary_is_sealed_at_four_types() -> None:
     assert EVENT_TYPES == ("bill_added", "version_added", "stage_changed", "summary_generated")
 
 
+@needs_engine
 def test_snapshot_keys_come_from_each_contracts_own_identity() -> None:
     """A hand-written key is how a comparison quietly stops agreeing with its table."""
     tables = family(_status_only_capture(), diff=False)
@@ -183,6 +185,7 @@ def test_snapshot_keys_come_from_each_contracts_own_identity() -> None:
     assert set(snapshot.bills) == {TABLE_CONTRACTS["congress_bills"].key(row) for row in tables.bills}
 
 
+@needs_engine
 def test_a_row_that_cannot_be_keyed_refuses_rather_than_snapshotting_none() -> None:
     from spicy_docs.schemas.tables import TableContractError
 

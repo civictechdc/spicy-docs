@@ -17,13 +17,17 @@ Three identity decisions, each one a correction the placement study called for:
 * ``member_votes`` is keyed on ``member_key`` rather than on ``bioguide_id``.
   The design named the bioguide id, but ``MemberVote.bioguide_id`` is nullable
   by measurement -- roughly four of ninety-nine Senate voters on any one roll
-  call -- and an identity column cannot be null.  The bioguide id stays its own
-  column.
+  call -- and an identity column cannot be null.  It keys on the *file-stated*
+  id for the same reason: a Senate bioguide comes from the crosswalk, so
+  preferring it would give one member two permanent rows across a run where the
+  crosswalk resolved and one where it did not.  The bioguide keeps its own
+  column, where a change is a correction rather than a new row.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
+from types import MappingProxyType
 from typing import Any
 
 from spicy_docs.schemas.tables import (
@@ -81,8 +85,8 @@ PRESS_RELEASES = table_contract(
         "channel_docs": "The channel docs URL, which only the Senate feed states.",
         "channel_last_build_date": "The channel lastBuildDate, which only the Senate feed states.",
         "channel_ttl": "The channel ttl: the publisher's own polling contract.",
-        "channel_skip_days": "The channel skipDays, unit-separator joined; empty where the channel states none.",
-        "channel_skip_hours": "The channel skipHours, unit-separator joined; empty where the channel states none.",
+        "channel_skip_days": "The channel skipDays, unit-separator joined; NULL where the channel states none.",
+        "channel_skip_hours": "The channel skipHours, unit-separator joined; NULL where the channel states none.",
         "item_index": "Zero-based position of this item in the captured channel.",
         "title": "The item title in full, never truncated to a display length.",
         "link": "The item's full link.",
@@ -112,16 +116,18 @@ PRESS_RELEASES = table_contract(
 #: same bucket; the published column is ``not_voting``, and ``RollCallVote.tallies``
 #: still carries whichever word the publisher used, so nothing is lost by the
 #: fold -- it is stated here rather than left to a reader to guess.
-TALLY_COLUMNS: Mapping[str, str] = {
-    "yea-total": "yea",
-    "yeas": "yea",
-    "nay-total": "nay",
-    "nays": "nay",
-    "present-total": "present",
-    "present": "present",
-    "not-voting-total": "not_voting",
-    "absent": "not_voting",
-}
+TALLY_COLUMNS: Mapping[str, str] = MappingProxyType(
+    {
+        "yea-total": "yea",
+        "yeas": "yea",
+        "nay-total": "nay",
+        "nays": "nay",
+        "present-total": "present",
+        "present": "present",
+        "not-voting-total": "not_voting",
+        "absent": "not_voting",
+    }
+)
 
 ROLL_CALL_VOTES = table_contract(
     "roll_call_votes",
@@ -142,6 +148,10 @@ ROLL_CALL_VOTES = table_contract(
         "nay": "Nay votes, from the Clerk's nay-total or the Senate's nays.",
         "present": "Present votes, as each publisher counts them.",
         "not_voting": "Members not voting: the Clerk's not-voting-total, or the Senate's absent, folded to one column.",
+        "tallies_json": (
+            "Every count the publisher stated, under the publisher's own names, as a JSON object. "
+            "The four columns above fold two vocabularies onto one; this is what was folded."
+        ),
         "member_vote_count": "How many member positions the file carried; the member_votes row count for this roll call.",
         "bill_id": "The bill this roll call refers to, from a recorded-vote reference or a vote-list reference.",
         "match_rule": "Which vote-matching rule named that bill, including unmatched.",
@@ -163,9 +173,11 @@ MEMBER_VOTES = table_contract(
         "session": "The session number within that Congress.",
         "roll_number": "The roll-call number within that session.",
         "member_key": (
-            "The bioguide id, or the LIS id, or the publisher's name, whichever the file first supplies. "
-            "The design keyed on bioguide_id alone; the Senate does not always state one, "
-            "and an identity column cannot be null."
+            "The file-stated id: `lis:` plus the LIS id on a Senate record, the bare bioguide id on a House "
+            "one, and `name:` plus the publisher's name where the file states neither. A Senate bioguide "
+            "comes from the crosswalk and does not always resolve, so keying on it would split one member's "
+            "votes across two rows; an identity column also cannot be null, which the design's bioguide key "
+            "would have been."
         ),
         "bioguide_id": "The voting member's bioguide id, where the publisher or the crosswalk supplies one.",
         "lis_id": "The voting member's Senate LIS id, which only the Senate file carries.",
@@ -368,6 +380,7 @@ def shape_roll_call_vote(
         "nay": text(counts.get("nay")),
         "present": text(counts.get("present")),
         "not_voting": text(counts.get("not_voting")),
+        "tallies_json": json_column(dict(tally or {})),
         "member_vote_count": text(member_vote_count),
         "bill_id": None if match is None or match.bill is None else bill_key(match.bill),
         "match_rule": text(None if match is None else match.rule),
@@ -380,18 +393,25 @@ def shape_roll_call_vote(
 def member_key(member: object) -> str:
     """The non-null identity part ``member_votes`` keys on.
 
-    The bioguide id where the publisher or the crosswalk supplies one, the
-    Senate LIS id where it does not, and the publisher's own name where neither
-    exists.  Roughly four of ninety-nine Senate voters on any one roll call
-    carry no resolvable bioguide id -- a member who has just left the current
-    roster -- so keying on bioguide alone would drop them.
+    The *file-stated* id wins, not the best id available: ``lis:`` plus the LIS
+    id for a Senate record, the bare bioguide id for a House one, and ``name:``
+    plus the publisher's own name only where the file states neither.
+
+    That order matters more than it looks.  A Senate record's bioguide id comes
+    from the crosswalk, and roughly four of ninety-nine voters on any one roll
+    call do not resolve -- a member who has just left the current roster.
+    Preferring the bioguide would give such a member ``name:...`` on the run
+    where the crosswalk missed and a bioguide on the run where it hit, so one
+    vote would become two permanent rows.  The LIS id is on the page either way.
+    The bioguide keeps its own column, where changing is a correction rather
+    than a new row.
     """
-    bioguide = member.bioguide_id
-    if bioguide:
-        return str(bioguide)
     lis = member.lis_id
     if lis:
         return f"lis:{lis}"
+    bioguide = member.bioguide_id
+    if bioguide:
+        return str(bioguide)
     return f"name:{member.name}"
 
 

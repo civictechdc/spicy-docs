@@ -369,6 +369,48 @@ def test_only_consecutive_pairs_are_diffed() -> None:
 
 
 @needs_engine
+def test_a_pdf_twin_resolves_through_both_halves_of_its_reference() -> None:
+    """A twin reference needs the code *and* the source, or the pair reads as pdf-xml.
+
+    ``pair_type`` indexes rows on ``joined((version_code, source))``, so a twin
+    naming only the code matches nothing and the pair is classified as a
+    comparison neither side can supply -- the exact failure that function was
+    written to prevent.  The XML side here is sourced ``congress``, which a
+    hardcoded ``govinfo`` would miss.
+    """
+    pair = captured_pair_capture()
+    xml_side = replace(pair.versions[0], source="congress")
+    twin = replace(
+        pair.versions[1],
+        version_code=xml_side.version_code,
+        source="govinfo-pdf",
+        document=None,
+        equivalent_xml_version_code=xml_side.version_code,
+        equivalent_xml_source="congress",
+    )
+    rows = family(replace(pair, versions=(xml_side, twin))).bill_versions
+    assert [row["equivalent_xml_source"] for row in rows] == [None, "congress"]
+
+    from spicy_docs.interpretation.section_diff import VersionRef, pair_type
+
+    refs = [
+        VersionRef(
+            version_id=entry.reference_id,
+            source=entry.source,
+            equivalent_xml_version_id=entry.equivalent_xml_reference_id,
+        )
+        for entry in (xml_side, twin)
+    ]
+    assert pair_type(xml_side.reference_id, twin.reference_id, refs) == "pdf-pdf"
+
+    # Drop the source half and the same pair reads as pdf-xml again.
+    half = replace(twin, equivalent_xml_source=None)
+    blind = [refs[0], replace(refs[1], equivalent_xml_version_id=half.equivalent_xml_reference_id)]
+    assert half.equivalent_xml_reference_id is None
+    assert pair_type(xml_side.reference_id, half.reference_id, blind) == "pdf-xml"
+
+
+@needs_engine
 def test_financial_rows_appear_only_when_the_caller_asks_for_the_pairing() -> None:
     capture = replace(three_printing_capture(), versions=three_printing_capture().versions[:2])
     assert family(capture).financial_changes == ()
@@ -404,6 +446,7 @@ def test_no_model_seam_means_no_model_rows_and_no_refusal() -> None:
     tables = family()
     assert tables.section_classifications == ()
     assert tables.bill_summaries == ()
+    assert tables.diff_summaries == ()
     assert tables.refusals == ()
 
 
@@ -463,6 +506,111 @@ def test_a_model_answer_naming_an_unpublished_section_is_refused() -> None:
 def test_section_reference_is_unique_per_printing_and_position() -> None:
     assert section_reference("ih", "govinfo", 3) != section_reference("ih", "govinfo-pdf", 3)
     assert section_reference("ih", "govinfo", 3) != section_reference("ih", "govinfo", 4)
+
+
+def test_a_version_type_outside_the_sealed_vocabulary_refuses_one_row_not_the_bill() -> None:
+    """``version_slug_reprints`` refuses an unknown slug; that must not abort the family.
+
+    The reprint check reaches ``govinfo_suffix``, which raises for a slug the
+    sealed vocabulary does not name -- and the publisher is free to print a
+    version type this repository has never seen.  Before the guard, one such
+    printing raised out of ``shape_bill_version`` and took the whole bill with
+    it, which is a silent gap wearing a traceback.
+    """
+    # Unparsed printings: the vocabulary guard has nothing to do with the diff
+    # engine, so this case runs whether or not the extra is installed.
+    stray = printing(
+        CAPTURED / "text-119hr6028ih.xml",
+        version=constructed_version("Heretofore Unknown Printing", "2025-01-01T00:00:00Z"),
+        version_code="introduced-in-house",
+        parse=False,
+    )
+    known = printing(
+        CAPTURED / "text-119hr6028eh.xml",
+        version=constructed_version("Engrossed in House", "2026-06-08T04:00:00Z"),
+        version_code="engrossed-in-house",
+        parse=False,
+    )
+    capture = BillFamilyCapture(
+        status=status_for("status-119hr6028.xml", HR6028), versions=(stray, known), observed_at=OBSERVED_AT
+    )
+    tables = family(capture, diff=False)
+
+    # The bill, its actions and its summaries all survive, and so does the
+    # unrecognised printing: the slug is unknown, not the row.
+    assert len(tables.bills) == 1
+    assert len(tables.bill_versions) == 2
+    # Neither printing was parsed, so both refuse their sections and nothing
+    # refuses a version row.
+    assert [refusal.table for refusal in tables.refusals] == ["bill_sections", "bill_sections"]
+    # An unnamed type is not ambiguous -- nothing else claims it -- while
+    # "Engrossed in House" beside it genuinely is, naming both eh and eh1s.
+    assert [row["version_code_is_reprint_ambiguous"] for row in tables.bill_versions] == ["false", "true"]
+
+
+def test_a_shaper_that_refuses_becomes_a_named_refusal_not_an_abort() -> None:
+    """Whatever a shaper refuses with, the identity it would have had is recorded."""
+    from spicy_docs.interpretation import bill_family as module
+    from spicy_docs.sources.congress.bill_versions import VersionCodeError
+
+    admit = module._Admitter()
+    rows: list[dict[str, str | None]] = []
+    for error in (VersionCodeError("no such slug"), TypeError("wrong shape")):
+
+        def build(raised: Exception = error) -> dict[str, str | None]:
+            raise raised
+
+        assert admit(TABLE_CONTRACTS["bill_versions"], rows, ("119-hr-1", "ih", "govinfo"), build) is None
+    assert rows == []
+    assert [refusal.identity for refusal in admit.refusals] == [("119-hr-1", "ih", "govinfo")] * 2
+    assert all(refusal.table == "bill_versions" for refusal in admit.refusals)
+    assert [reason.split(":")[-1].strip() for reason in (r.reason for r in admit.refusals)] == [
+        "no such slug",
+        "wrong shape",
+    ]
+
+
+def test_concat_is_one_pass_where_folding_merged_is_quadratic() -> None:
+    """A rollup accumulates one family per bill, so the join has to be linear.
+
+    Folding ``merged`` copies every row already accumulated on every bill: at
+    4,000 bills that is sixteen times the work of 1,000. ``concat`` copies each
+    row once. Asserted as a count of row copies rather than a wall-clock bound,
+    so a slow machine cannot make it flap.
+    """
+    copies = 0
+    original = tuple.__add__
+
+    class _Counted(tuple):
+        def __add__(self, other):
+            nonlocal copies
+            copies += len(self) + len(other)
+            return _Counted(original(self, other))
+
+    one = BillFamilyTables(bills=_Counted(({"a": None},)), bill_actions=_Counted(({"b": None},)))
+    count = 4_000
+
+    folded = BillFamilyTables(bills=_Counted(()), bill_actions=_Counted(()))
+    for _ in range(count):
+        folded = folded.merged(one)
+    quadratic = copies
+
+    copies = 0
+    joined_tables = BillFamilyTables.concat([one] * count)
+    linear = copies
+
+    assert len(folded.bills) == len(joined_tables.bills) == count
+    assert folded.bills == joined_tables.bills
+    # The fold copies on the order of N^2 rows; concat copies none, because it
+    # extends one list per field and builds each tuple once.
+    assert quadratic > count * count
+    assert linear == 0
+
+
+def test_concat_refuses_anything_that_is_not_a_family() -> None:
+    with pytest.raises(TypeError):
+        BillFamilyTables.concat([BillFamilyTables(), {"bills": ()}])
+    assert BillFamilyTables.concat([]) == BillFamilyTables()
 
 
 def test_merged_concatenates_every_table_and_keeps_every_refusal() -> None:

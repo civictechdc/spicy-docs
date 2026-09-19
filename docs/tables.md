@@ -88,6 +88,23 @@ Nothing is dropped silently. A pair that cannot be compared, a row whose
 identity has a null part, a version the summarizer declined — each becomes a
 `FamilyRefusal` naming the table, the identity and the reason.
 
+## What the tests do not establish
+
+Every contract has at least one shaped row built from a fixture in this
+repository, and `tests/test_table_contracts.py` proves each of those rows
+against its own column tuple. Two of them are not built from a captured
+response, and neither says anything about what the publisher serves:
+
+- the diff of three printings uses the constructed division fixtures, because
+  they are the only files here that differ in an amount, an addition and a
+  move;
+- **`hearing_transcripts` is exercised only by a synthetic record**: this
+  repository holds no captured CHRG body, so the case reads a captured CRPT
+  response under a CHRG package identity. It establishes the two columns that
+  differ from `committee_reports` and the chamber lookup, and nothing about
+  GovInfo's hearing packages. The table is registered because
+  `GovInfoBodyAcquirer` can fill it today, not because it has been filled.
+
 ## What is still a preserved NULL
 
 | Column | Why | What would fill it |

@@ -100,10 +100,18 @@ REPORT_SECTIONS = table_contract(
     columns={
         "package_id": "The report package this block was parsed from.",
         "seq": "Zero-based position of this block in the report, in reading order.",
-        "agency_label": "The agency heading this block sits under, or the Full Report sentinel when none matched.",
+        "agency_label": (
+            "The agency heading this block sits under, or the `Full Report` sentinel where no header "
+            "matched anywhere in the report.  NULL on a preamble block, which precedes the first header "
+            "and so has neither."
+        ),
         "agency_key": "The normalized agency key, which is what a recurrence count groups on.",
         "body": "The block's text, trimmed the way the original trimmed it.",
-        "pattern": "Which header pattern fired to start this block; this table's provenance column.",
+        "pattern": (
+            "Which header pattern fired to start this block; this table's provenance column.  Two values "
+            "are not pattern names: `preamble` for the text before the first header, and `full_report` "
+            "for a report where no header matched at all."
+        ),
         "char_start": "Start offset of this block's span in the flattened report text.",
         "char_end": "End offset, exclusive; spans partition the whole input with no gap and no overlap.",
         "page_start": "First page the span touches, where the input carried page boundaries.",

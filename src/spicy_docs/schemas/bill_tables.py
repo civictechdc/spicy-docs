@@ -72,8 +72,15 @@ CONGRESS_BILLS = table_contract(
         "latest_action_source_system_code": "Source-system code of that same actions[] entry.",
         "latest_action_source_system_name": "Source-system name of that same actions[] entry.",
         "action_count": "How many action entries this document carries; the bill_actions row count for this bill.",
-        "committee_count": "How many committees and subcommittees this document names; the bill_committees row count.",
-        "version_count": "How many text versions this document offers; the bill_versions row count from BILLSTATUS.",
+        "committee_count": (
+            "How many committees and subcommittees this document names, at any nesting depth.  This is "
+            "the bill_committees row count except where the publisher states a committee with no "
+            "systemCode, which cannot be keyed and is refused."
+        ),
+        "version_count": (
+            "How many text versions this BILLSTATUS document offers.  Not the bill_versions row count: "
+            "a PDF twin and an upload are rows the publisher's own list does not name."
+        ),
         "public_law_number": "Public law number from the publisher's laws entry, when the measure was enacted.",
         "law_type": "The publisher's law type for the first laws entry (Public Law or Private Law).",
         "statutes_at_large_cite": (

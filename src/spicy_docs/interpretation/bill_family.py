@@ -29,8 +29,10 @@ classified version and one per summarized version.  Consecutive pairs is
 deliberate: the diff is the only superlinear operation in the family.
 
 **Refusals are never silent.**  A pair that cannot be diffed, a row whose
-identity has a null part, a version the summarizer declined -- each becomes a
-named :class:`FamilyRefusal` rather than a missing row nobody can account for.
+identity has a null part, a version the summarizer declined, a printing whose
+version type the sealed vocabulary does not name -- each becomes a named
+:class:`FamilyRefusal` rather than a missing row nobody can account for, and
+none of them aborts the rest of the bill.
 """
 
 from __future__ import annotations
@@ -39,6 +41,7 @@ import hashlib
 from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from functools import partial
 from importlib import metadata
 from json import JSONDecodeError, loads
 from typing import Any, Protocol
@@ -84,7 +87,11 @@ from spicy_docs.schemas.bill_version_tables import (
     shape_bill_version,
 )
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError, bill_id, joined
-from spicy_docs.sources.congress.bill_versions import VERSION_CODES, version_slug_reprints
+from spicy_docs.sources.congress.bill_versions import (
+    VERSION_CODES,
+    VersionCodeError,
+    version_slug_reprints,
+)
 from spicy_docs.sources.congress.bill_versions import format_name as format_name_of
 
 #: Version codes in the sealed vocabulary's own declaration order, which is
@@ -197,11 +204,20 @@ class BillVersionCapture:
         ``version_slug_reprints`` already excludes the slug it resolved to and
         its aliases, so its own contract is that *non-empty* means ambiguous.
         The record type wins.
+
+        A type the sealed vocabulary does not name is *not* ambiguous: nothing
+        else claims it.  ``version_slug_reprints`` reaches ``govinfo_suffix``,
+        which refuses an unknown slug, so that refusal is answered here rather
+        than left to abort a whole bill over one unrecognised printing --
+        ``_sorted_versions`` already tolerates the same type.
         """
         version_type = self.version.type
         if not version_type:
             return False
-        return len(version_slug_reprints(version_type)) > 0
+        try:
+            return len(version_slug_reprints(version_type)) > 0
+        except VersionCodeError:
+            return False
 
 
 @dataclass(frozen=True, slots=True)
@@ -261,15 +277,34 @@ class BillFamilyTables:
 
         Every field is a tuple, so one concatenation over the declared fields
         covers all of them and a table added later needs no second edit here.
-        The rollup accumulates one of these per bill; deduplication is the
-        merge's job in spicy-regs, keyed on each contract's own identity, so
-        nothing is dropped here.
+        Deduplication is the merge's job in spicy-regs, keyed on each contract's
+        own identity, so nothing is dropped here.
+
+        This is a pairwise join, and a tuple concatenation copies both sides, so
+        *folding* it over a run is quadratic in the number of bills -- 4,000
+        bills cost sixteen times what 1,000 do.  A rollup accumulating one of
+        these per bill calls :meth:`concat` once instead.
         """
         if not isinstance(other, BillFamilyTables):
             raise TypeError("merged takes another BillFamilyTables")
         return BillFamilyTables(
             **{name: getattr(self, name) + getattr(other, name) for name in BillFamilyTables.__dataclass_fields__}
         )
+
+    @classmethod
+    def concat(cls, families: Iterable[BillFamilyTables]) -> BillFamilyTables:
+        """Every family's rows, in order, in one pass over each field.
+
+        What a rollup over many bills uses: each row is copied once, so the cost
+        is linear in the rows produced rather than in the bills times the rows.
+        """
+        collected: dict[str, list[Any]] = {name: [] for name in cls.__dataclass_fields__}
+        for family in families:
+            if not isinstance(family, BillFamilyTables):
+                raise TypeError("concat takes BillFamilyTables values")
+            for name, rows in collected.items():
+                rows.extend(getattr(family, name))
+        return cls(**{name: tuple(rows) for name, rows in collected.items()})
 
 
 def classification_vocabulary_hash() -> str:
@@ -346,24 +381,45 @@ def _body_text(document: Any) -> str:
     return "\n\n".join(node.body_text for node in document.sections if node.body_text)
 
 
+#: What a shaper is allowed to fail with before the failure becomes a refusal
+#: rather than an abort.  ``VersionCodeError`` is the one this layer provoked in
+#: practice -- a publisher version type the sealed vocabulary does not name --
+#: and ``TypeError`` covers a record whose shape is not what the shaper reads.
+#: Nothing wider: an exception outside these is a defect, and swallowing it
+#: would turn a broken shaper into a quietly short table.
+SHAPER_REFUSALS = (TableContractError, VersionCodeError, TypeError)
+
+
 class _Admitter:
-    """Collect rows that satisfy their contract, and a named refusal for each that does not."""
+    """Shape one row, admit it if it satisfies its contract, and name why if it does not.
+
+    The shaping happens inside the guard, not before it: one unrecognised
+    printing used to raise out of ``shape_bill_version`` and abort the whole
+    bill, which is exactly the silent-gap-by-another-name this record type
+    exists to prevent.  ``identity`` is what the refusal is filed under when
+    there is no row to read one from.
+    """
 
     def __init__(self) -> None:
         self.refusals: list[FamilyRefusal] = []
 
-    def __call__(self, contract: TableContract, row: Row, rows: list[Row]) -> Row | None:
+    def __call__(
+        self,
+        contract: TableContract,
+        rows: list[Row],
+        identity: tuple[str, ...],
+        build: Callable[[], Row],
+    ) -> Row | None:
+        try:
+            row = build()
+        except SHAPER_REFUSALS as error:
+            self.refuse(contract.name, identity, f"the shaper refused this row: {error}")
+            return None
         try:
             contract.key(row)
             rows.append(contract.checked(row))
         except TableContractError as error:
-            self.refusals.append(
-                FamilyRefusal(
-                    table=contract.name,
-                    identity=tuple(row.get(column) or "" for column in contract.identity),
-                    reason=str(error),
-                )
-            )
+            self.refuse(contract.name, tuple(row.get(column) or "" for column in contract.identity), str(error))
             return None
         return row
 
@@ -428,7 +484,12 @@ def build_bill_family(
 
     # 3. The four tables one BILLSTATUS document fills.
     bills: list[Row] = []
-    admit(CONGRESS_BILLS, shape_bill(status, referrals=referrals, stage=stage, signing=signing, money=money), bills)
+    admit(
+        CONGRESS_BILLS,
+        bills,
+        (key,),
+        lambda: shape_bill(status, referrals=referrals, stage=stage, signing=signing, money=money),
+    )
 
     actions: list[Row] = []
     # The publisher states latestAction as a separate element carrying only a
@@ -438,33 +499,42 @@ def build_bill_family(
     for index, action in enumerate(status.actions):
         admit(
             BILL_ACTIONS,
-            shape_bill_action(
+            actions,
+            (key, str(index)),
+            partial(
+                shape_bill_action,
                 identity,
                 action,
                 action_index=index,
                 is_latest=index == latest,
                 stage=bill_stage.infer_stage_from_text(action.text),
             ),
-            actions,
         )
 
     committees: list[Row] = []
     for committee, parent in _walk_committees(status.committees):
         admit(
             BILL_COMMITTEES,
-            shape_bill_committee(
+            committees,
+            (key, committee.system_code or ""),
+            partial(
+                shape_bill_committee,
                 identity,
                 committee,
                 parent_system_code=parent,
                 update_date=status.update_date,
                 referral_signal=_referral_signal(committee.system_code),
             ),
-            committees,
         )
 
     publisher_summaries: list[Row] = []
     for summary in status.summaries:
-        admit(BILL_PUBLISHER_SUMMARIES, shape_bill_publisher_summary(identity, summary), publisher_summaries)
+        admit(
+            BILL_PUBLISHER_SUMMARIES,
+            publisher_summaries,
+            (key, summary.version_code or "", summary.action_date or ""),
+            partial(shape_bill_publisher_summary, identity, summary),
+        )
 
     # 4. One row per acquired printing, with the kind it classifies as.
     ordered = _sorted_versions(capture.versions)
@@ -480,14 +550,16 @@ def build_bill_family(
         kinds[(entry.version_code, entry.source)] = finding
         admit(
             BILL_VERSIONS,
-            shape_bill_version(
+            versions,
+            (key, entry.version_code, entry.source),
+            partial(
+                shape_bill_version,
                 entry,
                 identity=identity,
                 kind=finding,
                 kind_label=version_kind.VERSION_KIND_LABELS.get(finding.kind),
                 kind_warning=version_kind.VERSION_KIND_WARNINGS.get(finding.kind),
             ),
-            versions,
         )
 
     # 5. One row per content-bearing node, and the map a model answer resolves through.
@@ -503,15 +575,21 @@ def build_bill_family(
             continue
         version_date = entry.version.date
         for seq, node in enumerate(entry.document.sections):
-            row = shape_bill_section(
-                node,
-                bill_id=key,
-                version_code=entry.version_code,
-                source=entry.source,
-                seq=seq,
-                version_date=version_date,
+            row = admit(
+                BILL_SECTIONS,
+                sections,
+                (key, entry.version_code, entry.source, str(seq)),
+                partial(
+                    shape_bill_section,
+                    node,
+                    bill_id=key,
+                    version_code=entry.version_code,
+                    source=entry.source,
+                    seq=seq,
+                    version_date=version_date,
+                ),
             )
-            if admit(BILL_SECTIONS, row, sections) is not None:
+            if row is not None:
                 section_by_reference[section_reference(entry.version_code, entry.source, seq)] = row
 
     # 6. Consecutive pairs only: the diff is the one superlinear step in the family.
@@ -654,7 +732,10 @@ def _diff_pairs(
             continue
         admit(
             SECTION_DIFFS,
-            shape_section_diff(
+            diffs,
+            pair,
+            partial(
+                shape_section_diff,
                 comparison,
                 bill_id=key,
                 from_ref=older,
@@ -665,18 +746,30 @@ def _diff_pairs(
                 engine=engine,
                 computed_at=computed_at,
             ),
-            diffs,
         )
         for item in comparison.items:
-            row = shape_section_diff_item(item, bill_id=key, from_ref=older, to_ref=newer, text_diff_cap=text_diff_cap)
-            if admit(SECTION_DIFF_ITEMS, row, diff_items) is None:
+            row = admit(
+                SECTION_DIFF_ITEMS,
+                diff_items,
+                (*pair, str(item.seq)),
+                partial(
+                    shape_section_diff_item,
+                    item,
+                    bill_id=key,
+                    from_ref=older,
+                    to_ref=newer,
+                    text_diff_cap=text_diff_cap,
+                ),
+            )
+            if row is None:
                 continue
             financial = item.financial
             for amount_index, amounts in enumerate(() if financial is None else financial.pairs):
                 admit(
                     FINANCIAL_CHANGES,
-                    shape_financial_change(amounts, item_key=row, amount_index=amount_index),
                     financials,
+                    (*pair, str(item.seq), str(amount_index)),
+                    partial(shape_financial_change, amounts, item_key=row, amount_index=amount_index),
                 )
         compared.append((older, newer, comparison))
     return compared
@@ -742,8 +835,9 @@ def _summarize_pair(
         return
     admit(
         DIFF_SUMMARIES,
-        shape_diff_summary(result, from_source=older.source, to_source=newer.source),
         rows,
+        pair,
+        partial(shape_diff_summary, result, from_source=older.source, to_source=newer.source),
     )
 
 
@@ -777,8 +871,14 @@ def _classify_version(
             continue
         admit(
             SECTION_CLASSIFICATIONS,
-            shape_section_classification(result, section_key=section, vocabulary_hash=vocabulary_hash),
             rows,
+            (*BILL_SECTIONS.key(section), result.label),
+            partial(
+                shape_section_classification,
+                result,
+                section_key=section,
+                vocabulary_hash=vocabulary_hash,
+            ),
         )
 
 
@@ -815,13 +915,15 @@ def _summarize_version(
         return
     admit(
         BILL_SUMMARIES,
-        shape_bill_summary(
+        rows,
+        (bill_key, entry.version_code, entry.source),
+        partial(
+            shape_bill_summary,
             result,
             source=entry.source,
             money_bill_kind=money.kind,
             frame=frame_for_kind(money.kind),
         ),
-        rows,
     )
 
 

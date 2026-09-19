@@ -22,6 +22,7 @@ The diff-dependent cases skip cleanly without the ``bill-diff`` extra, the way
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -45,6 +46,7 @@ from spicy_docs.schemas.committee_report_tables import (
     shape_report_section,
 )
 from spicy_docs.schemas.congress_activity_tables import (
+    member_key,
     press_release_id,
     shape_amendment,
     shape_member_vote,
@@ -413,17 +415,20 @@ def _vote_cases() -> list[ShapedCase]:
             )
         )
         for member in vote.member_votes:
-            row = shape_member_vote(member, vote=vote)
+            # Rebuilt from the member record, not read off the row: the LIS id
+            # the Senate file states, else the bioguide the Clerk file states,
+            # else the publisher's name.
+            expected_key = f"lis:{member.lis_id}" if member.lis_id else (member.bioguide_id or f"name:{member.name}")
             cases.append(
                 _case(
                     "member_votes",
-                    row,
+                    shape_member_vote(member, vote=vote),
                     (
                         str(vote.congress),
                         vote.chamber,
                         str(vote.session),
                         str(vote.roll_number),
-                        row["member_key"],
+                        expected_key,
                     ),
                 )
             )
@@ -684,6 +689,80 @@ def test_every_column_is_described_in_one_sentence(contract: TableContract) -> N
         assert sentence.rstrip().endswith("."), column
 
 
+#: Where each table's values are produced, so a description naming one can be
+#: held to it.  Every registered contract needs an entry: a new table has to say
+#: which code fills it before its prose can be checked at all.
+SOURCE = Path(__file__).parent.parent / "src" / "spicy_docs"
+FILLED_BY: dict[str, tuple[str, ...]] = {
+    "congress_bills": ("schemas/bill_tables.py", "interpretation/bill_stage.py", "interpretation/money_bills.py"),
+    "bill_actions": ("schemas/bill_tables.py", "interpretation/bill_stage.py"),
+    "bill_committees": ("schemas/bill_tables.py", "interpretation/money_bills.py"),
+    "bill_publisher_summaries": ("schemas/bill_tables.py",),
+    "bill_versions": (
+        "schemas/bill_version_tables.py",
+        "interpretation/version_kind.py",
+        "sources/congress/bill_versions.py",
+        "extraction/gpo_normalize.py",
+    ),
+    "bill_sections": ("schemas/bill_version_tables.py",),
+    "section_diffs": ("schemas/bill_diff_tables.py", "interpretation/section_diff.py"),
+    "section_diff_items": ("schemas/bill_diff_tables.py", "interpretation/section_diff.py"),
+    "financial_changes": ("schemas/bill_diff_tables.py", "interpretation/section_diff.py"),
+    "section_classifications": ("schemas/bill_model_tables.py", "interpretation/section_classification.py"),
+    "bill_summaries": ("schemas/bill_model_tables.py", "interpretation/bill_summaries.py"),
+    "diff_summaries": ("schemas/bill_model_tables.py", "interpretation/bill_summaries.py"),
+    "public_activity_events": ("schemas/activity_events.py",),
+    "amendments": ("schemas/congress_activity_tables.py",),
+    "press_releases": (
+        "schemas/congress_activity_tables.py",
+        "sources/congress/press_releases.py",
+        "interpretation/release_matching.py",
+    ),
+    "roll_call_votes": (
+        "schemas/congress_activity_tables.py",
+        "sources/congress/votes.py",
+        "interpretation/vote_matching.py",
+    ),
+    "member_votes": ("schemas/congress_activity_tables.py", "sources/congress/votes.py"),
+    "members": ("schemas/legislator_tables.py", "sources/legislators.py"),
+    "member_terms": ("schemas/legislator_tables.py", "sources/legislators.py"),
+    "committee_reports": ("schemas/committee_report_tables.py", "sources/govinfo/bodies.py"),
+    "report_sections": ("schemas/committee_report_tables.py", "sources/agency_reports/report_blocks.py"),
+    "hearing_transcripts": ("schemas/committee_report_tables.py", "sources/govinfo/bodies.py"),
+}
+
+#: A value a description names in backticks.  Prose that says a column carries
+#: ``full_text_slug_thin`` is a claim about the data, and this is where it is
+#: held to one: the string has to appear in the code that fills that column.
+_BACKTICKED = re.compile(r"`([^`]+)`")
+
+
+def test_every_contract_declares_where_its_values_come_from() -> None:
+    assert set(FILLED_BY) == set(TABLE_CONTRACTS)
+
+
+@pytest.mark.parametrize("contract", TABLE_CONTRACTS.values(), ids=lambda c: c.name)
+def test_a_description_that_names_a_value_names_one_the_code_produces(contract: TableContract) -> None:
+    """The floor under the data dictionary: a named value has to exist somewhere.
+
+    A grep, deliberately: it cannot prove the column carries the value on any
+    given row, only that the string is not invented. That is enough to catch the
+    failure that matters here -- a sentence that survives a rename, or names a
+    value a reader will then look for and never find.
+    """
+    filled = "\n".join((SOURCE / path).read_text() for path in FILLED_BY[contract.name])
+    for column in contract.columns:
+        for value in _BACKTICKED.findall(contract.descriptions[column]):
+            assert value in filled, f"{contract.name}.{column} names {value!r}, which its code never produces"
+
+
+def test_the_value_check_would_notice_an_invented_value() -> None:
+    """The check above passes trivially if nothing is ever named; prove it bites."""
+    filled = "\n".join((SOURCE / path).read_text() for path in FILLED_BY["bill_versions"])
+    assert "full_text_slug_thin" in filled
+    assert "full_text_slug_thinned" not in filled
+
+
 # ---------------------------------------------------------------------------
 # The helpers the shapers lean on, checked directly.
 # ---------------------------------------------------------------------------
@@ -709,6 +788,52 @@ def test_the_publishers_titles_and_related_bills_reach_their_own_columns() -> No
     # The publisher's relationship details are nested, not a JSON document
     # quoted inside a JSON document.
     assert related[0]["relationship_details"] == [{"identifiedBy": "CRS", "type": "Related bill"}]
+
+
+def test_member_key_prefers_the_id_the_file_states_over_a_crosswalked_one() -> None:
+    """A Senate bioguide comes from the crosswalk, so it cannot be the identity.
+
+    The failure this precedence prevents: a member the crosswalk misses on one
+    run and resolves on the next would get ``name:...`` once and a bioguide
+    once -- one member's vote as two permanent rows.  The LIS id is on the page
+    either way.
+    """
+
+    @dataclass(frozen=True, slots=True)
+    class _Member:
+        bioguide_id: str | None
+        lis_id: str | None
+        name: str
+
+    senate = _Member(bioguide_id="M000133", lis_id="S1234", name="Murray (D-WA)")
+    unresolved = replace(senate, bioguide_id=None)
+    house = _Member(bioguide_id="C000266", lis_id=None, name="Cole")
+    neither = _Member(bioguide_id=None, lis_id=None, name="Nobody")
+
+    # The Senate member keys the same whether or not the crosswalk resolved.
+    assert member_key(senate) == member_key(unresolved) == "lis:S1234"
+    assert member_key(house) == "C000266"
+    assert member_key(neither) == "name:Nobody"
+
+    # And on the captured Senate file, with the drift made real: the same 99
+    # votes read twice, once with a crosswalk and once without.  The crosswalk
+    # resolves 3 of the 99 bioguide ids, and not one key moves.
+    body = (FIXTURES / "congress_votes/senate-vote-119-1-00001.xml").read_bytes()
+    locator = VoteLocator(chamber="senate", congress=119, session=1, roll_number=1)
+    crosswalk = parse_legislators(
+        (FIXTURES / "legislators/legislators-current-excerpt.json").read_bytes(), max_bytes=8_000_000
+    )
+    without = parse_senate_vote(body, locator)
+    with_ids = parse_senate_vote(body, locator, crosswalk)
+
+    resolved = [shape_member_vote(member, vote=with_ids) for member in with_ids.member_votes]
+    unresolved = [shape_member_vote(member, vote=without) for member in without.member_votes]
+    assert len(resolved) == 99
+    assert sum(row["bioguide_id"] is not None for row in unresolved) == 0
+    assert sum(row["bioguide_id"] is not None for row in resolved) == 3
+    assert [row["member_key"] for row in resolved] == [row["member_key"] for row in unresolved]
+    assert all(row["member_key"].startswith("lis:") for row in resolved)
+    assert len({row["member_key"] for row in resolved}) == len(resolved)
 
 
 def test_a_null_identity_part_refuses_rather_than_keying_on_none() -> None:
@@ -745,6 +870,8 @@ def test_a_word_diff_over_the_cap_is_truncated_and_says_so() -> None:
 
 def test_the_gpo_cleanup_record_reaches_the_version_row() -> None:
     """``cleanup_json`` is processing provenance, and it has to survive shaping."""
+    if not engine_available():
+        pytest.skip("needs the 'bill-diff' extra: uv sync --extra bill-diff")
     from spicy_docs.schemas.bill_version_tables import shape_bill_version
 
     pages = json.loads((FIXTURES / "gpo_pdf_text/BILLS-119hr4727ih.json").read_text())

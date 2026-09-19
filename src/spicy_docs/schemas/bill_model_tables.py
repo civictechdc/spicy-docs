@@ -99,7 +99,12 @@ DIFF_SUMMARIES = table_contract(
         "to_version_code": "The later printing's version code.",
         "to_source": "Which acquisition path supplied the later printing.",
         "headline": "One sentence naming the most important change.",
-        "key_changes_json": "Up to five bullet points describing the most significant changes, as a JSON array.",
+        "key_changes_json": (
+            "The bullet points describing the most significant changes, as a JSON array in the model's order. "
+            "The prompt asks for at most five and nothing enforces it -- unlike bill_summaries.top_provisions_json, "
+            "whose cap is checked before the row is stored -- because the ported answer schema states no maximum "
+            "either, so a longer list is the model's answer and not a defect to hide."
+        ),
         "sections_added_json": "Section headings that were added, as a JSON array.",
         "sections_removed_json": "Section headings that were removed, as a JSON array.",
         "dollar_changes_json": "Notable dollar-amount changes in prose, as a JSON array.",

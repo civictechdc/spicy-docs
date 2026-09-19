@@ -76,13 +76,22 @@ BILL_VERSIONS = table_contract(
         "cleanup_small_caps_merges": "GPO PDF normalization: how many lone-uppercase-letter lines were merged.",
         "cleanup_hyphen_rejoins": "GPO PDF normalization: how many gutter-corroborated hyphen wraps were rejoined.",
         "cleanup_json": "The per-page GPO cleanup breakdown, including which evidence gated bare-digit stripping.",
-        "kind": "Interpreted document kind: full text, an amendment document, a procedural summary or unknown.",
+        "kind": (
+            "Interpreted document kind: `full_text`, `kind_uncertain` (a full-text slug whose document is "
+            "too thin to be sure), `procedural_amendments`, `procedural_summary`, or `unknown`."
+        ),
         "kind_rule": (
-            "Which version-kind rule fired: a slug list, the size heuristic that downgraded a full-text "
-            "slug, or the amendment-substring fallback for a slug the vocabulary does not name."
+            "Which version-kind rule fired, as the classifier names them: `procedural_amendments_slug`, "
+            "`procedural_summary_slug`, `full_text_slug`, `full_text_slug_thin` (a full-text slug the size "
+            "heuristic demoted to kind_uncertain), `amendment_substring` (an unlisted slug this "
+            "repository's own heuristic caught), `size_heuristic` (an unlisted slug a large body promoted "
+            "to full_text), or `unknown` when nothing claimed it."
         ),
         "kind_label": "The display label for this kind, supplied by the caller that owns the vocabulary.",
-        "kind_warning": "The inline warning for a non-full-text kind, or NULL for full text.",
+        "kind_warning": (
+            "The inline warning this kind carries, for a version picker.  NULL for `full_text` and for "
+            "`unknown`, which states none of its own."
+        ),
         "kind_section_count": "The section count the kind heuristic was given, recorded so the answer re-derives.",
         "kind_body_bytes": "The body byte length the kind heuristic was given, recorded for the same reason.",
     },
