@@ -236,6 +236,18 @@ LIST_ROUTES: dict[str, CongressListRoute] = {
         "nomination", "nomination/{congress}", "nominations", optional_params=frozenset({"congress"})
     ),
     "hearing": CongressListRoute("hearing", "hearing/{congress}", "hearings", optional_params=frozenset({"congress"})),
+    # One hearing by jacket number, answered as a bare object under "hearing"
+    # (measured 2026-09-19, hearing/119/house/64431; fixtures README). It is
+    # where hearing_transcripts.event_id comes from: the record's
+    # associatedMeeting.eventId, which the map's hearing->meeting edge resolved.
+    "hearing-detail": CongressListRoute(
+        "hearing-detail",
+        "hearing/{congress}/{chamber}/{number}",
+        "hearing",
+        sort_honored=False,
+        window_honored=False,
+        single_record=True,
+    ),
     "committee-report": CongressListRoute(
         "committee-report",
         "committee-report/{congress}",
