@@ -381,6 +381,7 @@ Concretely, for `congress_bills.stage`:
 # spicy-regs: src/spicy_regs/transforms/build_congress_bill_stages.py (new)
 from spicy_docs.interpretation.bill_stage import infer_stage_from_action
 
+
 def _add_stage(row: dict) -> dict:
     row["stage"] = infer_stage_from_action(row["latest_action_text"])
     return row
