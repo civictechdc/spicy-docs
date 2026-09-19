@@ -96,7 +96,15 @@ DEFAULT_MAX_ENTRIES_PER_PAGE = 65_536
 #: bytes into the file across all 1,781 title members of the 31 retained zips.
 ANNUAL_HEADER_BYTES = 16 * 1024
 
-type UsCodeSource = Literal["release-point-title", "annual-title", "popular-names", "table3-act", "table3-bulk"]
+type UsCodeSource = Literal[
+    "release-point-title",
+    "annual-title",
+    "popular-names",
+    "table3-act",
+    "table3-bulk",
+    "classification-index",
+    "classification-table",
+]
 
 _BULK_MEMBER = re.compile(r"fulldump@(?P<release_point>[0-9]+-[0-9]+)\.xml")
 _RELEASE_POINT = re.compile(r"(?P<congress>[1-9][0-9]{0,2})-(?P<law>[1-9][0-9]{0,4})")

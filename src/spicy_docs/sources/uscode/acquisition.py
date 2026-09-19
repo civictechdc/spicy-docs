@@ -69,11 +69,29 @@ from .archive import (
     read_corpus_archive,
     read_title_archive,
 )
+from .classification import (
+    CLASSIFICATION_INDEX_URL,
+    ClassificationIndex,
+    ClassificationTable,
+    TableOrder,
+    classification_table_locator,
+    parse_classification_index,
+    parse_classification_table,
+)
 
 if TYPE_CHECKING:
     import httpx
 
-type UsCodeResult = UsCodeTitleArchive | UsCodeArchive | AnnualArchive | PopularNames | Table3Page | Table3Bulk
+type UsCodeResult = (
+    UsCodeTitleArchive
+    | UsCodeArchive
+    | AnnualArchive
+    | PopularNames
+    | Table3Page
+    | Table3Bulk
+    | ClassificationIndex
+    | ClassificationTable
+)
 
 #: The empty string is the header the publisher does not send on any download
 #: route. Accepting it declares that absence rather than hiding it; the zip
@@ -296,6 +314,48 @@ class UsCodeAcquirer(SourceAcquirer):
             media_types=ZIP_MEDIA_TYPES,
             read=lambda body, limit: read_table3_bulk_archive(
                 body, release_point=release_point, max_bytes=limit, max_member_bytes=max_member_bytes
+            ),
+            max_bytes=max_bytes,
+        )
+
+    def acquire_classification_index(self, *, max_bytes: int | None = None) -> UsCodeAcquisition:
+        """Capture ``classification/tables.shtml``: the links to the current Congress's session tables.
+
+        Read this before a session table when the file name should come from
+        the publisher rather than from :func:`classification_table_locator`'s
+        grammar; the index proves itself by its own ``<title>``.
+        """
+        return self._acquire(
+            CLASSIFICATION_INDEX_URL,
+            operation="classification-index",
+            selection=None,
+            media_types=HTML_MEDIA_TYPES,
+            read=lambda body, limit: parse_classification_index(body, max_bytes=limit),
+            max_bytes=max_bytes,
+        )
+
+    def acquire_classification_table(
+        self,
+        congress: int,
+        session: int,
+        *,
+        order: TableOrder = "public-law",
+        max_bytes: int | None = None,
+        max_rows: int = DEFAULT_MAX_ENTRIES_PER_PAGE,
+    ) -> UsCodeAcquisition:
+        """Capture one session's classification table and prove the Congress and session it states.
+
+        The page states both in its caption; a page for another session, or
+        a challenge page served with status 200, is refused before any row is
+        read, with its bytes attached.
+        """
+        return self._acquire(
+            classification_table_locator(congress, session, order),
+            operation="classification-table",
+            selection={"congress": congress, "session": session, "order": order},
+            media_types=HTML_MEDIA_TYPES,
+            read=lambda body, limit: parse_classification_table(
+                body, congress=congress, session=session, order=order, max_bytes=limit, max_rows=max_rows
             ),
             max_bytes=max_bytes,
         )
