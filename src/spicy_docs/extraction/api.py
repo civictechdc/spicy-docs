@@ -111,10 +111,24 @@ class DocumentExtractor:
 
     Iterate to exhaustion or close the returned generator to release the document.
     A failure after earlier yielded pages does not make the whole document complete.
+    ``tables=True`` runs PyMuPDF's ``find_tables()`` on each retained PDF page
+    and attaches the result to ``PageResult.tables``, independent of ``strategy``
+    and never merged into ``PageResult.text``; it costs nothing extra for image
+    input (``PageResult.tables`` stays empty) and defaults to ``False`` so no
+    existing caller's output changes. Measured on two real committee reports
+    (``docs/sources/govinfo-bodies.md``, "Table geometry recovered from the
+    PDF"), ``tables=True`` adds six to seven times the whole-document wall
+    time of ``tables=False`` (1.7 s to 11.8 s; 1.4 s to 7.7 s) for a recovery
+    rate that depends entirely on whether the source PDF's tables are ruled.
     """
 
     def __init__(
-        self, strategy: PageStrategy, *, reader: DocumentReader | None = None, max_input_bytes: int = 64 * 1024**2
+        self,
+        strategy: PageStrategy,
+        *,
+        reader: DocumentReader | None = None,
+        max_input_bytes: int = 64 * 1024**2,
+        tables: bool = False,
     ):
         if max_input_bytes < 1:
             raise ValueError("max_input_bytes must be positive")
@@ -122,7 +136,7 @@ class DocumentExtractor:
             from .pages import DefaultReader
 
             reader = DefaultReader()
-        self.strategy, self.reader, self.max_input_bytes = strategy, reader, max_input_bytes
+        self.strategy, self.reader, self.max_input_bytes, self.tables = strategy, reader, max_input_bytes, tables
 
     def extract(
         self,
@@ -163,4 +177,5 @@ class DocumentExtractor:
                         "coordinates": "normalized displayed page; top-left origin",
                     },
                     content,
+                    page.find_tables() if self.tables else (),
                 )
