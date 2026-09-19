@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from difflib import SequenceMatcher
 from typing import Any
@@ -190,16 +190,62 @@ def _tokens(text: str) -> list[str]:
     return text.split(" ") if text else []
 
 
+#: Every dash a publisher sets inside a number. The en dash is the one that
+#: matters most and was the one originally missing: GPO's print sets a range
+#: as ``95–87`` where its own XML spells it ``95-87``, so a class built from
+#: the ASCII hyphen alone could not see a changed digit on either side of the
+#: dominant spelling. A check that cannot fail on the corpus's own spelling is
+#: not a check.
+#: Written as regex escapes, with the ASCII hyphen escaped, so the class is
+#: correct wherever it is interpolated rather than only when it happens to sit
+#: last (an unescaped ``-`` after ``§`` silently became the range ``§``-``‐``,
+#: which admitted hundreds of characters and not the hyphen itself).
+_DASHES_IN_NUMBERS = r"\-‐‑‒–—―"
+#: What may follow the first digit of a numeric token: more digits, the
+#: separators a citation uses, a dash of any spelling, and letters, so that
+#: ``30-day``, ``95th`` and ``716.2a`` are one token rather than a number
+#: followed by something this check stops looking at.
+_NUMERIC_TAIL = rf"[0-9A-Za-z,.:;/()§{_DASHES_IN_NUMBERS}]*"
+#: A month, spelled as the Federal Register and the CFR spell it. A date is
+#: critical under §3.3, and half of a printed date is a word.
+_MONTHS = (
+    "Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sept|Sep|Oct|Nov|Dec"
+    "|January|February|March|April|June|July|August|September|October|November|December"
+)
+_NEGATIONS = "no|not|nor|none|never|neither|nothing|unless|except|without|fail|fails|failure"
+#: Trailing punctuation a word carries into a space-split token: a negation at
+#: the end of a clause reaches here as ``not,`` or ``otherwise.``
+_WORD_TAIL = r"[,.;:)\]]*"
+
 #: A discrepancy in one of these is critical: §3.3 admits no unresolved change
 #: to a number, a date, a negation or a provision marker.
+#:
+#: What it still cannot see, stated so nobody reads a zero as proof: a changed
+#: word that is none of these (an amount written out as "twenty", a changed
+#: unit, a changed proper noun), and a number that both renditions spell the
+#: same way but place differently. The count is a floor on the critical
+#: differences between two token streams, not a ceiling on the errors between
+#: two documents.
 _CRITICAL = re.compile(
-    r"^(?:[0-9][0-9,.\-/()§]*|[Nn]o|[Nn]ot|[Nn]or|[Nn]one|[Nn]ever|[Uu]nless|[Ee]xcept|[Nn]either|\([0-9A-Za-z]{1,6}\))$"
+    rf"^(?:"
+    rf"\$?[0-9]{_NUMERIC_TAIL}%?"  # 95–87, $500, 10%, 30-day, 716.2(a), 1977,
+    rf"|(?:{_MONTHS})\.?{_WORD_TAIL}"  # Dec., September,
+    rf"|(?:{_NEGATIONS}){_WORD_TAIL}"  # not, unless,
+    rf"|\([0-9A-Za-z]{{1,6}}\){_WORD_TAIL}"  # (a), (iii),
+    rf")$",
+    re.IGNORECASE,
 )
 
 
 @dataclass(frozen=True, slots=True)
 class TextComparison:
-    """Precision and recall over normalized word tokens, plus the critical tokens that differ."""
+    """Precision and recall over normalized word tokens, the critical tokens that differ, and what the normalization touched.
+
+    ``normalization`` is :data:`NORMALIZATION_RULES`' per-rule counts summed
+    over both sides. It travels with the comparison rather than being thrown
+    away inside it, because a rule that fired on nothing and a rule that folded
+    a thousand characters make the same equality and mean opposite things.
+    """
 
     precision: float
     recall: float
@@ -207,11 +253,14 @@ class TextComparison:
     candidate_tokens: int
     matched_tokens: int
     critical: tuple[str, ...]
+    normalization: Mapping[str, int] = field(default_factory=dict)
 
 
 def compare_text(reference: str, candidate: str) -> TextComparison:
     """Token precision and recall between a reference text and a reconstruction, ``O(n log n)`` in practice."""
-    left, right = _tokens(normalize_for_comparison(reference)[0]), _tokens(normalize_for_comparison(candidate)[0])
+    left_text, left_counts = normalize_for_comparison(reference)
+    right_text, right_counts = normalize_for_comparison(candidate)
+    left, right = _tokens(left_text), _tokens(right_text)
     matcher = SequenceMatcher(None, left, right, autojunk=False)
     matched = sum(block.size for block in matcher.get_matching_blocks())
     critical: list[str] = []
@@ -227,6 +276,7 @@ def compare_text(reference: str, candidate: str) -> TextComparison:
         candidate_tokens=len(right),
         matched_tokens=matched,
         critical=tuple(critical),
+        normalization={rule.name: left_counts[rule.name] + right_counts[rule.name] for rule in NORMALIZATION_RULES},
     )
 
 
@@ -240,13 +290,20 @@ def content_fidelity(serialized: Serialized, evidence: EvidenceDocument) -> Find
     """
     total = matched = 0
     mismatched: list[str] = []
+    touched = {rule.name: 0 for rule in NORMALIZATION_RULES}
+    # Index both sides once. Walking the node list and the block list per
+    # entry made this O(E·N + E·B) on a document where O(E + N + B) does.
+    nodes = {node.id: node for node in serialized.nodes}
+    blocks = {block.id: block for block in evidence.blocks}
     for entry in serialized.source_map.entries:
-        node = next((node for node in serialized.nodes if node.id == entry.node), None)
+        node = nodes.get(entry.node)
         if node is None or entry.element == SECTION:
             continue
-        source = normalize_gpo_glyphs(" ".join(evidence.block(block_id).text for block_id in entry.evidence))
-        wanted, _ = normalize_for_comparison(node.text)
-        available, _ = normalize_for_comparison(source)
+        source = normalize_gpo_glyphs(" ".join(blocks[block_id].text for block_id in entry.evidence))
+        wanted, wanted_counts = normalize_for_comparison(node.text)
+        available, available_counts = normalize_for_comparison(source)
+        for rule in NORMALIZATION_RULES:
+            touched[rule.name] += wanted_counts[rule.name] + available_counts[rule.name]
         total += 1
         # The join removes a print wrap's hyphen, so the node's text is not a
         # substring of its evidence; comparing the two with the hyphen and the
@@ -266,7 +323,7 @@ def content_fidelity(serialized: Serialized, evidence: EvidenceDocument) -> Find
             "elements": total,
             "matched": matched,
             "mismatched": len(mismatched),
-            "normalization": [rule.name for rule in NORMALIZATION_RULES],
+            "normalization": touched,
         },
     )
 
@@ -359,6 +416,29 @@ def structural_fidelity(document: ReconstructedDocument, *, expected_sections: S
     )
 
 
+@dataclass(frozen=True, slots=True)
+class HierarchyComparison:
+    """F1 over parent-child marker pairs, with both sides' counts kept.
+
+    Both counts are kept because either one being zero means something
+    different and a caller filtering on one of them alone hides the other: a
+    reference with no ladder is a section the publisher wrote without
+    designations, while a *candidate* with no ladder against a reference that
+    has one is a ladder the parser missed, and a candidate with a ladder
+    against a reference without one is a ladder the parser invented.
+    """
+
+    f1: float
+    shared: int
+    reference_pairs: int
+    candidate_pairs: int
+
+    @property
+    def has_ladder(self) -> bool:
+        """Whether either side proposed a ladder at all, which is when the F1 says anything."""
+        return bool(self.reference_pairs or self.candidate_pairs)
+
+
 def hierarchy_f1(reference: set[tuple[str, str]], candidate: set[tuple[str, str]]) -> tuple[float, int, int, int]:
     """F1 over ``(parent marker, child marker)`` pairs, and the three counts behind it.
 
@@ -418,12 +498,44 @@ def coverage(document: ReconstructedDocument, serialized: Serialized | None = No
 # --- 5. acceptance --------------------------------------------------------------------
 
 
+@dataclass(frozen=True, slots=True)
+class ReviewLoad:
+    """What a reviewer would have to look at in the part of the document that was serialized.
+
+    Counted **in scope**: over the elements the source map actually emitted,
+    not over the whole rendition. A section PDF carries its neighbours, and a
+    flagged marker three sections away is not this granule's problem.
+    """
+
+    elements: int
+    flagged_nodes: int
+    model_nodes: int
+    unresolved_regions: int
+
+    @property
+    def clean(self) -> bool:
+        """Whether this document could be accepted *without review*, which is what §3.3 asks."""
+        return not (self.flagged_nodes or self.model_nodes or self.unresolved_regions)
+
+
+def review_load(serialized: Serialized) -> ReviewLoad:
+    """Count the in-scope decisions a reviewer would have to confirm."""
+    flagged = model = 0
+    for entry in serialized.source_map.entries:
+        if entry.review_status != "accepted":
+            flagged += 1
+        if entry.method == "model":
+            model += 1
+    return ReviewLoad(len(serialized.source_map.entries), flagged, model, len(serialized.source_map.unresolved))
+
+
 def acceptance(
     findings: Sequence[Finding],
     *,
     gates: Gates = DEFAULT_GATES,
     comparison: TextComparison | None = None,
     hierarchy: float | None = None,
+    review: ReviewLoad | None = None,
 ) -> Finding:
     """The §3.3 gates over the findings, as a pure function.
 
@@ -431,12 +543,22 @@ def acceptance(
     reference exists. Without them the text and hierarchy gates cannot be
     decided, and this says so rather than passing by default: an undecided
     gate is not a met gate.
+
+    ``review`` is what §3.3's "accepted **without review**" turns on, and
+    leaving it out used to make that phrase untrue: a document whose nodes
+    were flagged ``needs_review``, or placed by a model, still passed. A node
+    the parser could not place confidently is exactly the work a reviewer
+    does, so it is counted here, in scope, and it blocks acceptance.
     """
     by_name = {finding.check: finding for finding in findings}
     reasons: list[str] = []
     undecided: list[str] = []
-    if gates.schema_valid and not by_name.get("schema_validity", Finding("", False, "absent")).passed:
-        reasons.append("schema invalid")
+    schema_finding = by_name.get("schema_validity", Finding("", False, "absent"))
+    if gates.schema_valid and not schema_finding.passed:
+        # A check that did not run and a check that failed are different
+        # answers, and reporting the first as the second would read as a
+        # serializer defect that nobody had evidence for.
+        reasons.append("schema not checked" if schema_finding.measures.get("skipped") else "schema invalid")
     if not by_name.get("content_fidelity", Finding("", False, "absent")).passed:
         reasons.append("content fidelity failed")
     if gates.coverage_complete and not by_name.get("coverage", Finding("", False, "absent")).passed:
@@ -461,11 +583,49 @@ def acceptance(
         measures["hierarchyF1"] = hierarchy
         if hierarchy < gates.hierarchy_f1:
             reasons.append(f"hierarchy F1 {hierarchy:.4f} below {gates.hierarchy_f1}")
+    if review is None:
+        undecided.append("review load (no serialized document)")
+    else:
+        measures |= {
+            "elementsInScope": review.elements,
+            "nodesNeedingReviewInScope": review.flagged_nodes,
+            "modelPlacedNodesInScope": review.model_nodes,
+            "unresolvedInScope": review.unresolved_regions,
+        }
+        if not review.clean:
+            parts = [
+                f"{review.flagged_nodes} flagged node(s)" if review.flagged_nodes else "",
+                f"{review.model_nodes} model-placed node(s)" if review.model_nodes else "",
+                f"{review.unresolved_regions} unresolved region(s)" if review.unresolved_regions else "",
+            ]
+            reasons.append("needs review: " + ", ".join(part for part in parts if part))
     measures["undecided"] = undecided
     measures["reasons"] = reasons
     passed = not reasons and not undecided
     detail = "accepted" if passed else "; ".join(reasons + [f"undecided: {item}" for item in undecided])
     return Finding("acceptance", passed, detail, measures)
+
+
+@dataclass(frozen=True, slots=True)
+class CheckResult:
+    """Every finding, and the two paired measurements the acceptance gate read.
+
+    They are returned rather than recomputed by the caller: the token
+    alignment behind ``comparison`` is the most expensive thing this module
+    does, and a second run of it could quietly disagree with the one the gate
+    actually decided on.
+    """
+
+    findings: tuple[Finding, ...]
+    comparison: TextComparison | None = None
+    hierarchy: HierarchyComparison | None = None
+
+    def __iter__(self) -> Iterator[Finding]:
+        """Iterating a result yields its findings, which is what most callers want."""
+        return iter(self.findings)
+
+    def by_name(self) -> dict[str, Finding]:
+        return {finding.check: finding for finding in self.findings}
 
 
 def check(
@@ -478,7 +638,7 @@ def check(
     reference_markers: Sequence[str] | None = None,
     gates: Gates = DEFAULT_GATES,
     schema: bool = True,
-) -> tuple[Finding, ...]:
+) -> CheckResult:
     """Run every check; ``schema=False`` skips the one that needs the extra and says so.
 
     ``section`` is the one section a paired run asked for: the structural
@@ -498,10 +658,20 @@ def check(
     hierarchy = (
         None
         if reference_markers is None
-        else hierarchy_f1(marker_pairs(reference_markers), document_marker_pairs(document, section=section))[0]
+        else HierarchyComparison(
+            *hierarchy_f1(marker_pairs(reference_markers), document_marker_pairs(document, section=section))
+        )
     )
-    findings.append(acceptance(findings, gates=gates, comparison=comparison, hierarchy=hierarchy))
-    return tuple(findings)
+    findings.append(
+        acceptance(
+            findings,
+            gates=gates,
+            comparison=comparison,
+            hierarchy=None if hierarchy is None else hierarchy.f1,
+            review=review_load(serialized),
+        )
+    )
+    return CheckResult(tuple(findings), comparison, hierarchy)
 
 
 def serialized_text(serialized: Serialized) -> str:
@@ -517,9 +687,12 @@ def serialized_text(serialized: Serialized) -> str:
 __all__ = [
     "DEFAULT_GATES",
     "NORMALIZATION_RULES",
+    "CheckResult",
     "Finding",
     "Gates",
+    "HierarchyComparison",
     "NormalizationRule",
+    "ReviewLoad",
     "TextComparison",
     "ValidateError",
     "acceptance",
@@ -530,6 +703,7 @@ __all__ = [
     "document_marker_pairs",
     "hierarchy_f1",
     "normalize_for_comparison",
+    "review_load",
     "schema_validity",
     "serialized_text",
     "structural_fidelity",

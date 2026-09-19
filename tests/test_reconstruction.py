@@ -62,6 +62,7 @@ from spicy_docs.reconstruction.validate import (
     NORMALIZATION_RULES,
     Finding,
     Gates,
+    ReviewLoad,
     ValidateError,
     acceptance,
     check,
@@ -71,6 +72,7 @@ from spicy_docs.reconstruction.validate import (
     document_marker_pairs,
     hierarchy_f1,
     normalize_for_comparison,
+    review_load,
     schema_validity,
     serialized_text,
     structural_fidelity,
@@ -522,7 +524,7 @@ def test_the_five_findings_on_a_deliberately_broken_document_each_name_their_own
         document.unresolved,
     )
     out = serialize_cfr(broken, section="1.1")
-    findings = {finding.check: finding for finding in check(broken, out, section="1.1", schema=False)}
+    findings = check(broken, out, section="1.1", schema=False).by_name()
     assert not findings["content_fidelity"].passed
     assert findings["content_fidelity"].measures["mismatched"] == 1
     assert not findings["coverage"].passed and findings["coverage"].measures["unaccounted"] == 1
@@ -536,7 +538,11 @@ def test_content_fidelity_compares_each_element_against_its_own_evidence() -> No
     out = serialize_cfr(parse_cfr(evidence), section="46.1")
     finding = content_fidelity(out, evidence)
     assert finding.passed and finding.measures["matched"] == finding.measures["elements"]
-    assert finding.measures["normalization"] == [rule.name for rule in NORMALIZATION_RULES]
+    counts = finding.measures["normalization"]
+    assert set(counts) == {rule.name for rule in NORMALIZATION_RULES}
+    assert all(isinstance(count, int) and count >= 0 for count in counts.values()), (
+        "the finding states what its normalization touched, not merely that it exists"
+    )
 
 
 def test_the_comparison_normalization_states_and_counts_what_each_rule_touched() -> None:
@@ -572,34 +578,78 @@ def test_text_comparison_reports_a_changed_number_as_a_critical_discrepancy() ->
     assert "not" in negated.critical
 
 
-def test_acceptance_is_a_pure_function_that_refuses_to_pass_a_gate_it_could_not_decide() -> None:
-    clean = [
+def _clean_findings() -> list[Finding]:
+    return [
         Finding("schema_validity", True, ""),
         Finding("content_fidelity", True, ""),
         Finding("structural_fidelity", True, ""),
         Finding("coverage", True, ""),
     ]
+
+
+def test_acceptance_is_a_pure_function_that_refuses_to_pass_a_gate_it_could_not_decide() -> None:
+    clean = _clean_findings()
     undecided = acceptance(clean)
     assert not undecided.passed and "undecided" in undecided.detail
     assert undecided.measures["undecided"] == [
         "text precision and recall (no reference)",
         "hierarchy F1 (no reference)",
+        "review load (no serialized document)",
     ]
-    decided = acceptance(clean, comparison=compare_text("a b", "a b"), hierarchy=1.0)
+    nothing_flagged = ReviewLoad(elements=4, flagged_nodes=0, model_nodes=0, unresolved_regions=0)
+    decided = acceptance(clean, comparison=compare_text("a b", "a b"), hierarchy=1.0, review=nothing_flagged)
     assert decided.passed and decided.measures["gates"]["text_precision"] == 0.999
     lenient = acceptance(
         clean,
         comparison=compare_text("a b c d", "a b c e"),
         hierarchy=1.0,
+        review=nothing_flagged,
         gates=Gates(text_precision=0.5, text_recall=0.5, critical_discrepancies=5),
     )
     assert lenient.passed, "the gates are data, so a caller can state the slice they ran against"
 
 
+def test_accepted_without_review_means_without_review() -> None:
+    """§3.3 asks for acceptance *without review*, so a flagged node has to block it."""
+    clean = _clean_findings()
+    comparison, hierarchy = compare_text("a b", "a b"), 1.0
+    for load, reason in [
+        (ReviewLoad(4, 1, 0, 0), "1 flagged node(s)"),
+        (ReviewLoad(4, 0, 1, 0), "1 model-placed node(s)"),
+        (ReviewLoad(4, 0, 0, 2), "2 unresolved region(s)"),
+    ]:
+        finding = acceptance(clean, comparison=comparison, hierarchy=hierarchy, review=load)
+        assert not finding.passed, load
+        assert reason in finding.detail
+        assert finding.measures["nodesNeedingReviewInScope"] == load.flagged_nodes
+        assert finding.measures["unresolvedInScope"] == load.unresolved_regions
+        assert finding.measures["modelPlacedNodesInScope"] == load.model_nodes
+
+
+def test_the_review_load_is_counted_in_scope_not_over_the_whole_rendition() -> None:
+    document = parse_cfr(load("716.2"))
+    out = serialize_cfr(document, section="716.2")
+    flagged_anywhere = sum(1 for node in document.nodes if node.review_status != "accepted")
+    counted = review_load(out)
+    assert flagged_anywhere > 0
+    assert counted.elements == len(out.source_map.entries)
+    assert counted.flagged_nodes <= flagged_anywhere, "a neighbour's flagged node is not this granule's"
+    assert counted.flagged_nodes == sum(1 for e in out.source_map.entries if e.review_status != "accepted")
+
+
+def test_a_skipped_schema_check_is_not_reported_as_an_invalid_one() -> None:
+    findings = [*_clean_findings()[1:], Finding("schema_validity", False, EXTRA_REQUIRED, {"skipped": True})]
+    skipped = acceptance(findings, comparison=compare_text("a", "a"), hierarchy=1.0, review=ReviewLoad(1, 0, 0, 0))
+    assert "schema not checked" in skipped.detail and "schema invalid" not in skipped.detail
+    broken = [*_clean_findings()[1:], Finding("schema_validity", False, "element not expected", {"errors": 1})]
+    invalid = acceptance(broken, comparison=compare_text("a", "a"), hierarchy=1.0, review=ReviewLoad(1, 0, 0, 0))
+    assert "schema invalid" in invalid.detail
+
+
 def test_check_without_the_extra_reports_the_schema_finding_as_skipped_and_names_the_extra() -> None:
     document = parse_cfr(load("1.1"))
     out = serialize_cfr(document, section="1.1")
-    findings = {finding.check: finding for finding in check(document, out, section="1.1", schema=False)}
+    findings = check(document, out, section="1.1", schema=False).by_name()
     assert findings["schema_validity"].measures["skipped"] is True
     assert EXTRA_REQUIRED in findings["schema_validity"].detail
     assert "reconstruct" in EXTRA_REQUIRED
@@ -630,3 +680,130 @@ def test_the_core_package_imports_reconstruction_without_the_extra() -> None:
             stripped = line.strip()
             if stripped.startswith(("import lxml", "from lxml")):
                 assert line.startswith(("    ", "        ")), f"{path.name}: lxml at module scope"
+
+
+# --- what the checks must be able to fail on ------------------------------------------
+
+
+def _numbered(*lines: str) -> EvidenceDocument:
+    """A tiny PDF-shaped document: one column, body face, each line its own block."""
+    blocks = []
+    for index, text in enumerate(lines, 1):
+        indent = 0.229 if text.startswith(("(", "§")) else 0.216
+        top = 0.30 + index * 0.012
+        blocks.append(
+            EvidenceBlock(
+                f"b{index:04d}",
+                text,
+                (StyledRun(text, font="MIonic", size=8.0, bold=text.startswith("§")),),
+                "pdf",
+                page=1,
+                line=index,
+                box=Box(indent, top, 0.49, top + 0.010),
+            )
+        )
+    return EvidenceDocument("pdf", "pdf-extraction-lines", tuple(blocks), page_count=1)
+
+
+def test_a_changed_digit_is_critical_even_when_both_sides_use_an_en_dash() -> None:
+    """The corpus's dominant numeric spelling is the en dash, so the class has to see it.
+
+    A class built from the ASCII hyphen alone could not fail here, which is
+    what made the earlier "no unresolved change to a number" gate a report
+    that could only ever be a lower bound.
+    """
+    en_dash = compare_text("under Pub. L. 95–87, 91 Stat. 445", "under Pub. L. 95–88, 91 Stat. 445")
+    assert "95–87," in en_dash.critical and "95–88," in en_dash.critical
+    em_dash = compare_text("sections 200—499", "sections 200—500")
+    assert em_dash.critical
+    # And the shapes the class used to miss entirely.
+    for reference, candidate in [
+        ("within 30-day limits", "within 3-day limits"),
+        ("not less than 10%", "not less than 15%"),
+        ("a fee of $500", "a fee of $900"),
+        ("on Dec. 13, 1977", "on Nov. 13, 1977"),
+        ("shall not apply", "shall apply"),
+    ]:
+        assert compare_text(reference, candidate).critical, (reference, candidate)
+    # A prose change that touches no number, date, negation or marker is a
+    # difference but not a critical one, or the count would mean nothing.
+    assert not compare_text("the permittee shall", "the operator shall").critical
+
+
+def test_the_comparison_carries_what_each_normalization_rule_touched() -> None:
+    comparison = compare_text("  “a” b ", "“a” b")
+    assert set(comparison.normalization) == {rule.name for rule in NORMALIZATION_RULES}
+    assert comparison.normalization["quotes"] == 4, "two curly pairs, one per side"
+    assert comparison.normalization["spaces"] >= 1
+    plain = compare_text("a b", "a b")
+    assert plain.normalization["quotes"] == 0, "a rule that fired on nothing reports zero, not absence"
+
+
+def test_a_section_cut_inside_a_nested_paragraph_is_flagged_as_truncated() -> None:
+    """The rendition ends mid-ladder, which is exactly when the reader must be told."""
+    nested = parse_cfr(
+        _numbered("§ 1.1 Scope.", "(a) The first paragraph runs on.", "(1) A nested designation ends the page")
+    )
+    section = nested.section("1.1")
+    assert section is not None
+    assert section.review_status == "needs_review"
+    assert "may continue beyond it" in section.decision.detail
+    # A section whose last line is a top-level child of its own is flagged too:
+    # the walk is over the descendant set, and a direct child is one of those.
+    top = parse_cfr(_numbered("§ 1.1 Scope.", "(a) The first paragraph runs on"))
+    opened = top.section("1.1")
+    assert opened is not None and opened.review_status == "needs_review"
+    # And a section that ends on its own citation is not flagged.
+    closed = parse_cfr(
+        _numbered("§ 1.1 Scope.", "(a) The first paragraph runs on.", "§ 1.2 Next.", "(a) Another section entirely.")
+    )
+    finished = closed.section("1.1")
+    assert finished is not None and finished.review_status == "accepted"
+
+
+def test_an_out_of_range_model_choice_is_an_abstention_not_an_index_error() -> None:
+    document = parse_cfr(load("21.1"), classify=lambda **_: Classification(99, "off the end"))
+    assert {region.issue for region in document.unresolved} == {"abstained"}
+    assert all(node.decision.method != "model" for node in document.nodes)
+
+
+def test_a_run_in_designation_with_no_later_sibling_leaves_the_ladder_alone() -> None:
+    """Nothing fires, and that is the honest answer the print supports.
+
+    GPO sets `(a) *heading.* (1) text` inside one paragraph. When a later
+    sibling follows, the ladder notices the gap and flags it. When none does,
+    there is no evidence of a gap at all -- the run-in `(1)` is invisible to a
+    parser reading line starts -- so no node is flagged and the section is
+    accepted. The text is complete either way; what is lost is a marker the
+    print never placed on a line of its own. (`(a)` opens the ladder, so the
+    paragraph itself is in sequence and nothing else can fire.)
+    """
+    document = parse_cfr(_numbered("§ 1.1 Scope.", "(a) Variances. (1) This section applies to operations."))
+    paragraphs = [node for node in document.nodes if node.kind == "paragraph"]
+    assert [node.marker for node in paragraphs] == ["(a)"], "the run-in (1) never begins a line"
+    assert all(node.review_status == "accepted" for node in paragraphs)
+    assert "(1)" in paragraphs[0].text, "and its text is carried whole"
+
+
+def test_a_text_rendition_parses_through_the_same_profile() -> None:
+    """No box, no font: every geometry rule abstains and the numbering still carries the tree."""
+    evidence = evidence_from_text("§ 1.1 Scope.\n(a) The first paragraph.\n(1) A nested one.\n(b) The second.")
+    document = parse_cfr(evidence)
+    section = document.section("1.1")
+    assert section is not None
+    assert document_marker_pairs(document, section="1.1") == {
+        (SECTION_ROOT, "(a)"),
+        ("(a)", "(1)"),
+        (SECTION_ROOT, "(b)"),
+    }
+    out = serialize_cfr(document, section="1.1")
+    assert content_fidelity(out, evidence).passed
+
+
+def test_serializing_the_same_document_twice_gives_the_same_bytes_and_the_same_map() -> None:
+    """A derivative a consumer can diff has to be deterministic, ids and paths included."""
+    document = parse_cfr(load("716.2"))
+    first, second = serialize_cfr(document, section="716.2"), serialize_cfr(document, section="716.2")
+    assert first.xml == second.xml
+    assert first.source_map.dumps() == second.source_map.dumps()
+    assert serialize_cfr(parse_cfr(load("716.2")), section="716.2").xml == first.xml, "and across a reparse"

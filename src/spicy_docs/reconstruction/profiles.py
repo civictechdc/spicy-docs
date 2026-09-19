@@ -213,7 +213,8 @@ CFR_RULES: tuple[Rule, ...] = (
         "section_heading_continuation",
         "heuristic",
         "A bold line directly after a section heading, without a section sign, continues the subject",
-        "wrapped subjects in the benchmark corpus",
+        "CFR-2023-title7-vol1-sec1-313 (blind split): '§ 1.311 Referral of complaint and an-' / 'swer to the "
+        "ALJ.' keeps the wrap hyphen out; the first corpus witness was 'exam-' / 'ination.'",
     ),
     Rule(
         "division_heading",
@@ -270,8 +271,8 @@ CFR_RULES: tuple[Rule, ...] = (
         "A line matching extraction.gpo_normalize's verdate_footer or dsk_user rule is GPO's print-shop "
         "chrome, not content; reusing those rules rather than restating them keeps the corpus that measured "
         "them behind this one",
-        "extraction/gpo_normalize.py METADATA_RULES; the footer reaches the extractor as a dozen fragments and "
-        "would otherwise read as a table row on every page that carries one",
+        "extraction/gpo_normalize.py METADATA_RULES; derived from CFR-2023-title7-vol1-sec1-313 (blind split), "
+        "whose footer reached the extractor as a dozen fragments and read as a table row on every page",
     ),
     Rule(
         "column_left_edge",
@@ -306,7 +307,8 @@ CFR_RULES: tuple[Rule, ...] = (
         "A line ending with a hyphen followed by a line beginning with a lowercase letter is a print wrap; "
         "the two join without the hyphen. A real compound split at the wrap is joined wrongly and the "
         "benchmark counts it",
-        f"{_FIXTURE_PDF}: 'ini-' / 'tial', 'sep-' / 'arately'",
+        f"{_FIXTURE_PDF}: 'ini-' / 'tial', 'sep-' / 'arately'; CFR-2024-title12-vol1-sec1-1 (tuning split): "
+        "'non-' / 'speculative purpose.' is a compound and keeps its hyphen",
     ),
     Rule(
         "citation_line",

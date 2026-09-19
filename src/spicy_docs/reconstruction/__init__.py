@@ -8,8 +8,10 @@ serialized file travels with a source map back to the evidence it was built
 from, every node names the rule or the model call that placed it, and a
 hosted row derived from it says ``derivation = reconstructed``. Interpretation
 (``spicy_docs.interpretation``) runs after, over facts and findings, and never
-rewrites text; reconstruction rewrites nothing either -- it assembles and
-classifies the extractor's own text and reports where it could not.
+rewrites text; reconstruction rewrites only what it names -- the three
+rule-named repairs in ``parse`` (small-capital case, a print wrap's hyphen,
+GPO's typewriter quote pairs) -- and otherwise assembles and classifies the
+extractor's own text and reports where it could not.
 
 The five modules, in the order a document passes through them:
 

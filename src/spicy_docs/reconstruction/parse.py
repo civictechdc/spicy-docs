@@ -3,10 +3,16 @@
 One pass over the evidence blocks in reading order, ``O(B)`` for ``B``
 blocks. Numbering, indentation, typography and context jointly propose the
 tree, and every node carries the blocks it rests on and a :class:`Decision`
-naming the rule from ``profiles.CFR_RULES`` that placed it. Nothing is
-rewritten: a node's text is its blocks' text joined under the profile's two
-stated joins (a single space between lines, and ``wrap_hyphen_rejoin`` at a
-print wrap), and the serializer's source map leads back to the blocks.
+naming the rule from ``profiles.CFR_RULES`` that placed it.
+
+Three things are rewritten, each by a named profile rule and each visible to
+the checks that compare text: the case of a small-capital run
+(``small_caps_restore``, because the print encodes case as size), the hyphen
+of a print wrap (``wrap_hyphen_rejoin``), and GPO's typewriter quote pairs
+(``gpo_quote_pair``, the shared ``normalize_gpo_glyphs`` spelling). Beyond
+those, assembly only: a node's text is its blocks' text joined with a single
+space between lines, and the serializer's source map leads back to the
+blocks.
 
 What the parser reads from a block, in this order (the profile's ladder):
 
@@ -73,6 +79,10 @@ CFR_KINDS: dict[str, str | None] = {
     "section_number": "SECTNO",
     "subject": "SUBJECT",
     "paragraph": "P",
+    # The guide's own element for a paragraph set flush rather than indented.
+    # The model seam's second alternative places one of these, and it must
+    # serialize as what its rule names rather than as an ordinary P.
+    "flush_paragraph": "FP",
     "heading": "HD",
     "citation": "CITA",
     "note": "NOTE",
@@ -152,7 +162,7 @@ class ClassifyAndAttach(Protocol):
 #: ``table`` stays unresolved even when chosen and is only labelled.
 SMALL_FACE_ALTERNATIVES: tuple[Alternative, ...] = (
     Alternative("note", "note_line", "a note or editorial note set small under the section"),
-    Alternative("paragraph", "flush_paragraph_fp", "an extract or flush paragraph set small"),
+    Alternative("flush_paragraph", "flush_paragraph_fp", "an extract or flush paragraph set small"),
     Alternative("table", "table_region", "a table; left unresolved with the label attached"),
 )
 
@@ -498,9 +508,9 @@ def _hyphen_join(tail: str, head: str) -> str | None:
     * an uppercase successor after an all-capital word is a small-capital
       word wrapped mid-word (``FED-`` / ``ERAL``), so the hyphen goes too;
     * an uppercase successor otherwise is a genuine compound that the line
-      break happens to fall inside (``non-`` / ``Federal``, which the
-      published XML spells ``non-Federal``), so the hyphen stays and no space
-      is added.
+      break happens to fall inside (``non-`` / ``speculative purpose.`` in
+      12 CFR 1.1, which the published XML spells ``non-speculative``), so
+      the hyphen stays and no space is added.
     """
     if not tail.endswith("-") or not head:
         return None
@@ -643,7 +653,13 @@ class _Parser:
             else:
                 choice = SMALL_FACE_ALTERNATIVES[answer.choice]
                 if choice.kind != "table":
-                    node = self._add(_Node(choice.kind, choice.rule, parent, list(blocks), method="model"))
+                    # A model choice is a reviewable decision, not a rule
+                    # firing: it is placed, and it is flagged, so the
+                    # "accepted without review" gate can never count it as
+                    # unreviewed work.
+                    node = self._add(
+                        _Node(choice.kind, choice.rule, parent, list(blocks), method="model", review="needs_review")
+                    )
                     node.detail = answer.reason
                     return
                 issue = "table_region"
@@ -862,11 +878,23 @@ class _Parser:
         self._body(block, text)
 
     def _mark_truncated(self) -> None:
-        """``section_truncated``: the last section may continue past the rendition's last line."""
+        """``section_truncated``: the last section may continue past the rendition's last line.
+
+        The open section owns the last line whenever *any* node beneath it
+        does, at any depth. Checking only its direct children missed the
+        common shape: a rendition cut inside a nested paragraph -- last line
+        ``(1) ...`` under ``(a)`` under the section -- left the section
+        ``accepted``, which is the one case where the reader most needs to be
+        told the text may go on.
+        """
         section, last = self.section, self.previous
         if section is None or last is None:
             return
-        if any(n.blocks and n.blocks[-1] is last and (n is section or n.parent == section.id) for n in self.nodes):
+        beneath = {section.id}
+        for node in self.nodes:
+            if node.parent in beneath:
+                beneath.add(node.id)
+        if any(n.blocks and n.blocks[-1] is last and (n is section or n.id in beneath) for n in self.nodes):
             section.review = "needs_review"
             note = "ends at the rendition's last line: the section may continue beyond it"
             section.detail = f"{section.detail}; {note}" if section.detail else note

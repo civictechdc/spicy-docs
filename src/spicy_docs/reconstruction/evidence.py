@@ -55,7 +55,10 @@ _BAND_OVERLAP = 0.5
 #: fraction of the page width before the previous fragment's right edge.
 _ADVANCE_TOLERANCE = 0.002
 
-REVIEW_STATUSES = ("accepted", "needs_review", "abstained")
+#: What a node's review can say. There is no "abstained": an abstention is
+#: not a state a node reaches, it is the reason a run never became a node and
+#: stayed an :class:`UnresolvedRegion` instead, where the issue records it.
+REVIEW_STATUSES = ("accepted", "needs_review")
 DECISION_METHODS = ("rule", "model", "generated")
 
 
