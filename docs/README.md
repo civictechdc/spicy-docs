@@ -46,6 +46,7 @@
 - [Bill versions](sources/congress-bill-versions.md): the sealed version-code vocabulary against the publisher's measured codes, format choice by rendition folder, and bill PDFs through the GovInfo body acquirer.
 - [Bill tree and section diff](sources/congress-bill-tree.md): the DeltaTrack engine as a pinned dependency behind the `bill-diff` extra, with thin adapters that gate bytes through this repo's XML entry, keep an inventory of dropped elements, and shape diff records with provenance.
 - [Interpretation](interpretation.md): shared judgment over publisher facts, rules in tables and findings that name the rule: bill stage, money bills, bill signals, vote, release and member matching, section classification and summaries.
+- [Tables](tables.md): the twenty-two table contracts spicy-regs hosts, each with grain, identity, version column, supplier and per-column descriptions, and the one-pass bill-family build behind them.
 - [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records.
 - [Captured public comments](sources/public-comments.md)
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.
