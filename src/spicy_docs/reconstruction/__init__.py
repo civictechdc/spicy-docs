@@ -49,7 +49,9 @@ ID_ORIGIN = "generated"
 def extra_available() -> bool:
     """Whether the ``reconstruct`` extra is installed. Tests skip on this rather than fail."""
     try:
-        import lxml.etree  # noqa: F401
+        # lxml ships no type stubs, so `ty` cannot resolve the import; whether
+        # the module is importable at all is exactly what is being asked.
+        import lxml.etree  # noqa: F401  # ty: ignore[unresolved-import]
     except ModuleNotFoundError:
         return False
     return True

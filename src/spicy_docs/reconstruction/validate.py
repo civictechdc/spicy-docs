@@ -92,7 +92,8 @@ def schema_validity(xml: bytes, *, profile: Profile = CFR_PROFILE) -> Finding:
     never decide what it is validated against.
     """
     try:
-        from lxml import etree
+        # lxml ships no type stubs; `_catalog` below states the one shape used.
+        from lxml import etree  # ty: ignore[unresolved-import]
     except ModuleNotFoundError as error:  # pragma: no cover - exercised by the skip guard
         raise ValidateError(EXTRA_REQUIRED) from error
     entries = list(check_schema_bundle(profile))

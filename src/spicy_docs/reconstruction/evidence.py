@@ -236,13 +236,26 @@ def _block_json(block: EvidenceBlock) -> dict[str, Any]:
     return {key: value for key, value in data.items() if value is not None}
 
 
+def _run_from_json(data: Mapping[str, Any]) -> StyledRun:
+    """Read one run field by field, so an unknown key in a stored fixture is refused rather than splatted."""
+    return StyledRun(
+        text=data["text"],
+        font=data.get("font"),
+        size=data.get("size"),
+        bold=data.get("bold", False),
+        italic=data.get("italic", False),
+        tags=tuple(data.get("tags", ())),
+        break_to_page=data.get("break_to_page"),
+    )
+
+
 def _block_from_json(data: Mapping[str, Any]) -> EvidenceBlock:
     box = data.get("box")
     span = data.get("span")
     return EvidenceBlock(
         id=data["id"],
         text=data["text"],
-        runs=tuple(StyledRun(**{**run, "tags": tuple(run.get("tags", ()))}) for run in data["runs"]),
+        runs=tuple(_run_from_json(run) for run in data["runs"]),
         rendition=data["rendition"],
         page=data.get("page"),
         line=data.get("line"),
