@@ -22,7 +22,7 @@ rather than buried in control flow.
 | `vote_matching` | `BillAction.recorded_votes`, and House vote `legislationType`/`legislationNumber` | `RecordedVoteReferences` (references plus per-entry refusals), a `VoteIndex` with conflicts, and one `VoteMatch` per vote |
 | `release_matching` | committee RSS items (title, and description where a feed sends one) and bill identities | one compiled `BillPattern` per bill, and `ReleaseMatch` naming the field the mention was found in |
 | `member_matching` | a bioguide id, a Senate LIS id or a sponsor display string, the legislators crosswalk, and a `MemberIndex` built once from published member rows | `MemberMatch` (bioguide, rule, score) |
-| `interest_areas` | a reader's keyword list and parsed bill sections | `SectionMatch` (excerpt, area, matched keywords, rule) |
+| `interest_areas` | a reader's keyword list and parsed bill sections | `SectionMatch` (excerpt, area, matched keywords, rule, relevance) |
 | `version_kind` | a bill version's `version_code` slug and, for the size heuristic, its extracted section count or body byte length | `VersionKindFinding` (kind, the rule that fired, section count, body bytes); `version_kind` is a thin wrapper returning just the kind |
 | `section_classification` | parsed bill sections and an injected `ModelCall` | `SectionClassification` with model, prompt version, prompt hash, batch and timestamps |
 | `bill_summaries` | one bill version's text, title, status and money-bill kind, and an injected `ModelCall`; or, for `summarize_diff`, a section diff's changed items (`op`, both placements' heading and body) and an injected `ModelCall` | `BillSummaryResult` with model, prompt version, content hash, token counts and timestamps; `summarize_diff` produces `DiffSummaryResult` (headline, key changes, sections added/removed, dollar changes) with the same provenance columns |
@@ -55,6 +55,14 @@ old outcome beside the new one.
   became law; the action whose `actionCode` is the publisher's became-public-law
   code supplies the date. Neither of the two disagreeing keyword scans survives,
   and a law without a coded action is reported as such rather than guessed at.
+  Measured 2026-09-19 over the 118th Congress's `hr` and `s` BILLSTATUS bulk
+  zips (16,213 members, none refused): 269 bills carry a `laws` entry, and all
+  269 carry the coded became-law action -- none carries `type == "BecameLaw"`
+  without the code, and none hits the `public_law_without_became_law_action`
+  fallback. The fallback rule stays regardless, both because it is cheaper
+  than assuming every future bill's action will be coded and because the
+  measurement covers two bill types of one Congress, not `hjres`/`sjres` or
+  every Congress.
 - **Vote matching reads structured references.** The regex over vote question
   text could not match any Senate bill. `recordedVotes` on the bill's own action
   is the join, and the House vote route states the legislation in two fields.
@@ -86,11 +94,27 @@ unattributable.
 
 ## What these rules cannot see
 
-`interest_areas` reproduces the decision in the original MySQL boolean-mode
-query -- a section matches when it holds any keyword token -- and reproduces
-neither the engine's minimum token length, its stopword list nor its relevance
-order. Comparing the two on real data is a measurement still owed, not an
-assumption made here.
+`interest_areas` now encodes the InnoDB boolean-mode defaults BillTrax's
+`MySQL 8.4` ran under, measured from its `docker-compose*.yml` files (all pin
+`mysql:8.4`, none overrides the full-text variables) against the MySQL 8.4
+Reference Manual: a token shorter than `innodb_ft_min_token_size` (3) or
+longer than `innodb_ft_max_token_size` (84), or one of the 35 distinct words
+in the default `INNODB_FT_DEFAULT_STOPWORD` table (36 rows; the manual's own
+example output lists "the" twice), is dropped from both a keyword and a body
+before matching -- see
+[`fulltext-fine-tuning.html`](https://dev.mysql.com/doc/refman/8.4/en/fulltext-fine-tuning.html)
+and
+[`information-schema-innodb-ft-default-stopword-table.html`](https://dev.mysql.com/doc/refman/8.4/en/information-schema-innodb-ft-default-stopword-table.html).
+Results are ordered by relevance -- the count of distinct matched keywords,
+then the section's position -- which is the documented boolean-mode formula
+(sum of matched terms' weights) with each term weighted 1, because a pure
+per-call function has no corpus-wide document frequency to weight it
+properly; see
+[`fulltext-boolean.html`](https://dev.mysql.com/doc/refman/8.4/en/fulltext-boolean.html).
+That page also states boolean-mode results are **not** sorted by relevance
+automatically, and BillTrax's own query carried no `ORDER BY`, so this
+ordering is a rule this module adopts rather than one BillTrax's rows ever
+actually had -- their real order was whatever InnoDB's query plan produced.
 
 `STAGES` is display order, not progress order, and `stage_index` and
 `stage_progress` answer only "where does this rung get drawn". They cannot say

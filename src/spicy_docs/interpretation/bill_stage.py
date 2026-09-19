@@ -337,6 +337,19 @@ def signed_date(status: object) -> SignedDateFinding:
     keyword scan of prose -- the outcome BillTrax's two derivations disagreed
     about. The count of that rule is what says whether a fallback is ever
     needed, which a silent regex would have hidden.
+
+    **Measured 2026-09-19**, the 118th Congress's ``hr`` and ``s`` BILLSTATUS
+    bulk zips (the two enacted-bill-bearing types the fix names), 16,213
+    members downloaded keyless through ``BulkStatusAcquirer`` and parsed with
+    none refused: 269 carry a ``laws`` entry (178 H.R., 91 S.), and every one
+    of the 269 carries the coded became-law action (36000 or E40000) -- none
+    carries ``type == "BecameLaw"`` without the code, and none hits the
+    ``public_law_without_became_law_action`` fallback. The fallback exists for
+    a case this Congress's two chambers never produced; it stays because an
+    absent action is not a promise no future one will lack the code, and
+    because "measured zero" is a fact about the 118th's ``hr``/``s`` sample,
+    not about every bill type or every Congress -- ``hjres`` and ``sjres`` (a
+    joint resolution can become law) were not walked here.
     """
     number = _public_law_number(_field(status, "laws"))
     if number is None:
