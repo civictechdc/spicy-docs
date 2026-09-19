@@ -162,7 +162,7 @@ pdf-parse's (suffix-glued number) and PyMuPDF's (number on its own following
 line). `pdf_text.py:31` anchors every rule on a **prefix** match,
 `_NUMBERED_LINE = re.compile(r"^(\d{1,2}) (.*)$")`, because PDFium's reading
 order puts the left-margin gutter digit before the line's content; and its
-hyphen handling (`pdf_text.py:43`, `_HYPHEN_BREAK = re.compile(r"￾(\d{1,2}) ")`)
+hyphen handling (`pdf_text.py:44`, `_HYPHEN_BREAK = re.compile(r"￾(\d{1,2}) ")`)
 depends on a PDFium-specific soft-hyphen glyph (U+FFFE) that PyMuPDF never
 emits. Feeding PyMuPDF's `PageResult.text` through those functions would not
 raise — it would silently match nothing (no line starts with a digit; no
@@ -180,23 +180,24 @@ Two of DeltaTrack's choices are extractor-shape-independent enough that this
 port adopted the same design, checked and re-derived against this repo's own
 fixtures rather than assumed from theirs:
 
-- Its footer rule (`pdf_text.py:64-65`,
-  `_VERDATE_AND_BELOW = re.compile(r"\n?VerDate\b.*\Z", re.DOTALL)`,
-  applied `pdf_text.py:157-158`) truncates from `VerDate` to the end of the
-  page instead of matching each field. This port independently reached and
-  then adopted the same conclusion after measuring that a VerDate line is
-  always its page's last line across every fixture here — see the module
+- Its footer rule (`pdf_text.py:72-73`,
+  `_VERDATE_AND_BELOW = re.compile(r"\n?VerDate\b.*\Z", re.DOTALL)` at 72,
+  `_WATERMARK_AND_BELOW` at 73, applied `pdf_text.py:164-165` inside
+  `strip_page_chrome`, def at 149) truncates from `VerDate` to the end of
+  the page instead of matching each field. This port independently reached
+  and then adopted the same conclusion after measuring that a VerDate line
+  is always its page's last line across every fixture here — see the module
   docstring's artifact 2 and `_strip_metadata` in `gpo_normalize.py`.
-- Its glyph normalization (`pdf_text.py:170-183`,
-  `normalize_glyphs`) collapses GPO's doubled-single-curly-quote convention
-  (`‘‘…’’`) into one straight double quote (`text.replace("''", '"')`
-  after the curly-to-straight step). This port adopted the same collapse in
+- Its glyph normalization (`pdf_text.py:179`, `normalize_glyphs`) collapses
+  GPO's doubled-single-curly-quote convention (`‘‘…’’`) into one straight
+  double quote (`pdf_text.py:192`, `text.replace("''", '"')`, after the
+  curly-to-straight step). This port adopted the same collapse in
   `_normalize_encoding`, independently confirmed against
   `CRPT-119hrpt105`'s own `‘‘Review of Final Rule…’’` — see
   `test_collapses_gpos_doubled_single_quote_into_one_double_quote`.
 
 **Where this port did not adopt a DeltaTrack design, with the measured
-reason.** DeltaTrack's hyphen-rejoin (`pdf_text.py:236-259`,
+reason.** DeltaTrack's hyphen-rejoin (`pdf_text.py:213-241`,
 `_merge_print_lines`) runs unconditionally on any line ending in an
 alphanumeric character plus `-` whose next line starts lowercase — it does
 not gate on gutter-numbering the way BillTrax's, and this port's, does. That
@@ -217,14 +218,14 @@ without_gutter_numbers`.
 — they are DeltaTrack's rules, not BillTrax's, and none is exercised by a
 fixture in this repo):
 
-- `_WATERMARK_AND_BELOW` (`pdf_text.py:65`) still requires a literal `DSK`
+- `_WATERMARK_AND_BELOW` (`pdf_text.py:73`) still requires a literal `DSK`
   substring (`\S+ on DSK\S*PROD with .*`). The real, non-`DSK`-prefixed
   machine id this port measured (`ssavage on LAPJG3WLY3PROD with BILLS`,
   `BILLS-119hr4727ih`) would not match it either. Likely masked in practice
   by `_VERDATE_AND_BELOW` running first on the same page (VerDate precedes
   the watermark in every sample either project has), but a latent gap if the
   watermark ever appears without a preceding VerDate match.
-- `_RUNNING_FOOTER` (`pdf_text.py:66-71`) strips an **unbulleted** running
+- `_RUNNING_FOOTER` (`pdf_text.py:68-71`) strips an **unbulleted** running
   bill-stage line (e.g. `HR 5895 PCS`, for print stages GPO does not prefix
   with a bullet) — an artifact neither BillTrax's `BULLET_BILL_RE` (requires
   a bullet character) nor this port's kept-verbatim `_BULLET_BILL_RE`
@@ -269,8 +270,7 @@ rather than given a rule with a sample size of one.
 ## Decision
 
 **Normalization is a post-extraction step, applied before any text-driven
-parser** — the agency-block splitter (`report-parser.ts`'s port target,
-`report_blocks.py`, not yet built) chief among them.
+parser** — the agency-block splitter chief among them.
 `docs/research/billtrax-raw-data-2026-09-19.md` §6 measured this directly:
 `report-parser.ts`'s only call site skips `normalizePdfText` entirely and
 feeds it raw `pdf-parse` text, and the hyphen-wrap fragments that produces
@@ -279,12 +279,22 @@ false "agency" heading) are a direct consequence of that omission, not of the
 heading grammar itself. The fix the raw-data research already named — route
 every PDF-derived text body through the normalizer before any
 heading/section/agency splitter reads it — carries over unchanged to this
-port; `normalize_gpo_pages` is that shared step; a future
-`report_blocks.py` should call it on `DocumentExtractor` output the same way
-any future bill-PDF section parser would, rather than each parser deciding
-independently whether to normalize first.
+port; `normalize_gpo_pages` is that shared step.
 
-This document and its rule table are for the maintainer landing that parser
-to move into wherever the extraction pipeline's own documentation index
-lives (`docs/architecture.md` and its extraction pipeline listing were
-outside this port's stated scope).
+`sources/agency_reports/report_blocks.py` (the `report-parser.ts` port
+target) has since landed on `main` and already says as much in its own
+docstring: "This parser expects **normalized** text ... the sibling
+`pdf-normalize` port is a post-extraction step, not this module's job." Its
+`parse_agency_blocks` takes either a flat string or a `Sequence[PageResult]`
+directly, not this module's `tuple[str, ...]` output, so the two are not yet
+wired together — a caller still has to run `normalize_gpo_pages` over
+`DocumentExtractor` output and hand the result to `parse_agency_blocks`
+itself (as a joined string, since `PageResult` is not this module's to
+construct). That wiring, and doing the same for any future bill-PDF section
+parser rather than each parser deciding independently whether to normalize
+first, is for the maintainer landing the caller to move into place.
+
+This document and its rule table are for that maintainer to move into
+wherever the extraction pipeline's own documentation index lives
+(`docs/architecture.md` and its extraction pipeline listing were outside
+this port's stated scope).

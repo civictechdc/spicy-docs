@@ -82,14 +82,14 @@ def test_false_for_enr_text_without_gutter_numbers():
     assert is_gpo_layout(text) is False
 
 
-def test_false_for_fewer_than_three_content_lines():
+def test_false_for_two_content_lines_each_followed_by_its_own_gutter_number_line():
     """Adapted: two content lines, each still followed by its own gutter
     number line, rather than two inline-numbered lines."""
     text = page("enacted", "1", "Section", "2")
     assert is_gpo_layout(text) is False
 
 
-def test_filters_verdate_and_dsk_lines_before_counting_content():
+def test_filters_a_tail_verdate_footer_and_a_real_2025_job_code_line_before_counting_content():
     """Adapted: the footer sits at the real tail of the page (a VerDate line
     is always followed only by more footer, never real content -- see
     test_strips_the_multiline_verdate_footer_* below), and the job-code line
@@ -545,6 +545,44 @@ def test_cleans_enr_format_and_leaves_hyphen_wraps_unrejoined_without_gutter_num
 
 
 # ---------------------------------------------------------------------------
+# Bare-digit stripping is evidence-gated per page (not one of BillTrax's 27;
+# added directly for non-GPO safety -- see the module docstring)
+# ---------------------------------------------------------------------------
+
+
+def test_non_gpo_page_keeps_a_standalone_digit_line_without_gpo_evidence():
+    """A standalone 1-4 digit line is not GPO-specific by its own text -- it
+    could be a year or a footnote number. Without this page's own VerDate
+    footer or the document-level gutter layout, it must not be dropped."""
+    text = page(
+        "The fiscal year in question is as follows.",
+        "2024",
+        "Total appropriations remained unchanged from the prior year.",
+    )
+    normalized, record = normalize_gpo_pages(text)
+    assert "2024" in normalized[0].split("\n")
+    assert record.pages[0].bare_page_number_lines == 1
+    assert record.pages[0].bare_page_number_evidence == "none"
+
+
+def test_gpo_page_strips_the_same_standalone_digit_line():
+    """Same shape as above, but this page carries a VerDate footer -- GPO
+    evidence -- so the otherwise-identical standalone digit line is
+    stripped."""
+    text = page(
+        "The fiscal year in question is as follows.",
+        "2024",
+        "Total appropriations remained unchanged from the prior year.",
+        "VerDate Sep 11 2014",
+        "00:08 Jan 21, 2026",
+    )
+    normalized, record = normalize_gpo_pages(text)
+    assert "2024" not in normalized[0].split("\n")
+    assert record.pages[0].bare_page_number_lines == 1
+    assert record.pages[0].bare_page_number_evidence == "page_footer"
+
+
+# ---------------------------------------------------------------------------
 # Real-document fixtures: measured GpoCleanupRecord counts
 # ---------------------------------------------------------------------------
 
@@ -573,6 +611,7 @@ def test_introduced_house_bill_fixture_measured_counts():
                 footer_continuation_lines=8,
                 dsk_user_lines=1,
                 bare_page_number_lines=6,
+                bare_page_number_evidence="both",
                 bullet_bill_lines=0,
                 small_caps_merges=0,
                 hyphen_rejoin_count=2,
@@ -606,6 +645,7 @@ def test_enrolled_bill_fixture_measured_counts():
                 footer_continuation_lines=0,
                 dsk_user_lines=0,
                 bare_page_number_lines=0,
+                bare_page_number_evidence="none",
                 bullet_bill_lines=0,
                 small_caps_merges=0,
                 hyphen_rejoin_count=0,
@@ -637,6 +677,16 @@ def test_committee_report_fixture_measured_counts():
         assert page_record.verdate_footer_lines == 1
         assert page_record.footer_continuation_lines == 8
         assert page_record.dsk_user_lines == 1
+
+    # Pages 2 and 3 each carry a real page-number header ("2", "3") that
+    # must still be stripped -- by this page's own VerDate footer, since the
+    # document-level gutter layout is False (record.line_numbers above).
+    assert record.pages[1].bare_page_number_lines == 1
+    assert record.pages[1].bare_page_number_evidence == "page_footer"
+    assert record.pages[2].bare_page_number_lines == 1
+    assert record.pages[2].bare_page_number_evidence == "page_footer"
+    assert "\n2\n" not in normalized[1]
+    assert "\n3\n" not in normalized[2]
 
     assert "DEPART-\nMENT OF THE TREASURY" in normalized[0]
     assert "RE-\nPORTED FROM THE COMMITTEE ON RULES" in normalized[0]

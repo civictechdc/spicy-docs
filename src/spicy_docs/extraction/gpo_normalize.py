@@ -30,8 +30,8 @@ decoded with this extractor (see ``docs/extraction-gpo.md``):
    truncating the page at that line -- checked against DeltaTrack
    (civictechdc/DeltaTrack, commit c636448)'s own PyPDFium2-derived
    normalizer, which reached the same conclusion independently
-   (``parsers/pdf_text.py::_VERDATE_AND_BELOW``, a DOTALL "to end of text"
-   cut) -- rather than by enumerating each field (time+date, Jkt, PO, Frm,
+   (``parsers/pdf_text.py:72``, ``_VERDATE_AND_BELOW``, a DOTALL "to end of
+   text" cut) -- rather than by enumerating each field (time+date, Jkt, PO, Frm,
    Fmt, Sfmt, file path, file stem): a field GPO adds later needs no new
    rule. BillTrax's job-code line ("kjohnson on DSK7ZCZBW3PROD with $_JOB")
    no longer matches real 2025 output either -- current jackets use a
@@ -52,6 +52,22 @@ artifact); the rules stay for compatibility and are marked unmeasured rather
 than removed, per the same "keep spacingNormalized" precedent BillTrax set
 for its own always-true field.
 
+**Bare-digit stripping is evidence-gated per page, not by one document-level
+flag.** Docs recommend running this normalizer on every PDF-derived text
+before a downstream parser, including non-GPO documents. A VerDate line and
+a job-code line are self-evidencing -- the match itself is GPO-specific, so
+both are always dropped. A standalone 1-4 digit line is not: outside a GPO
+document it could be a year or a footnote number, and stripping it
+unconditionally (as BillTrax's ``PAGE_NUM_RE`` does, and this port did before
+this was measured) would silently lose real content on a non-GPO page. It is
+now stripped only when *this page* carries GPO evidence: its own VerDate
+footer, or the document-level gutter-number layout (``is_gpo_layout``) --
+never from the absence of both. A committee report page can have
+``line_numbers=False`` at the document level yet still legitimately strip its
+page-number header, because its own page carries a VerDate footer; that is
+why the gate checks both, not the layout verdict alone. See
+``GpoPageCleanup.bare_page_number_evidence``.
+
 Normalization runs per page and keeps page boundaries: a hyphen-wrapped word
 split across a page break is not rejoined, since doing so would move
 characters onto the wrong page's text.
@@ -62,6 +78,7 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 # ---------------------------------------------------------------------------
 # Named rules, one per GPO artifact. Simple, single-line rules are a table;
@@ -115,6 +132,12 @@ METADATA_RULES: tuple[MetadataRule, ...] = (
 # ---------------------------------------------------------------------------
 
 
+#: Which GPO evidence, if any, gated this page's bare-digit-line stripping
+#: (module docstring: "Bare-digit stripping is evidence-gated per page").
+#: ``"none"`` means the lines were found but kept, for lack of evidence.
+BareNumberEvidence = Literal["none", "page_footer", "gutter_layout", "both"]
+
+
 @dataclass(frozen=True, slots=True)
 class GpoPageCleanup:
     """Counts for one page. ``page`` is one-based, matching extraction output."""
@@ -124,6 +147,7 @@ class GpoPageCleanup:
     footer_continuation_lines: int
     dsk_user_lines: int
     bare_page_number_lines: int
+    bare_page_number_evidence: BareNumberEvidence
     bullet_bill_lines: int
     small_caps_merges: int
     hyphen_rejoin_count: int
@@ -157,6 +181,11 @@ class _Line:
     #: ``is_gpo_layout`` and hyphen-rejoin eligibility (see module docstring,
     #: artifact 1).
     gutter_adjacent: bool
+    #: True for a standalone 1-4 digit line. Provisionally kept, not yet
+    #: dropped, by ``_strip_metadata``: whether it survives depends on
+    #: page-level GPO evidence decided afterward (module docstring,
+    #: "Bare-digit stripping is evidence-gated per page").
+    is_bare_digit: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,11 +200,19 @@ class _PageMetadataCounts:
 
 
 def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCounts]:
-    """Drop the four single-line artifacts and the VerDate footer's tail.
+    """Drop the self-evidencing artifacts and the VerDate footer's tail.
+
+    A bare page/gutter-number line is not dropped here: it is GPO-specific
+    only in context, not by its own text ("2024" is indistinguishable from a
+    stripped gutter number), so it is kept in the returned lines, tagged
+    ``is_bare_digit``, for the caller to strip or keep once page-level GPO
+    evidence is known (see ``_gate_bare_digits`` and the module docstring).
+    Everything else self-evidences (VerDate, the job-code line, the bullet
+    bill id) and is dropped unconditionally, as BillTrax's was.
 
     Returns the surviving lines (blanks kept) tagged with gutter adjacency,
-    and the counts of what was dropped plus what is left to detect layout
-    and hyphen-wraps from.
+    and the counts of what was dropped or tagged, plus what is left to
+    detect layout and hyphen-wraps from.
     """
     kept: list[_Line] = []
     verdate = footer_continuation = dsk = page_num = bullet = 0
@@ -191,6 +228,9 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
             # Nothing meaningful follows a VerDate line on its page (see
             # module docstring, artifact 2): drop it and the rest of the
             # page in one step, tallying what kind of line each was.
+            # Proven on the three fixtures in tests/fixtures/gpo_pdf_text/
+            # only; a page where real content genuinely follows a VerDate
+            # line would lose that content here, silently.
             verdate += 1
             tail = [line.strip() for line in lines[i + 1 :]]
             dsk_in_tail = sum(1 for line in tail if _DSK_USER_RE.match(line))
@@ -204,6 +244,7 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
             continue
         if _PAGE_NUM_RE.match(t):
             page_num += 1
+            kept.append(_Line(t, False, is_bare_digit=True))
             i += 1
             continue
         if _BULLET_BILL_RE.match(t):
@@ -219,6 +260,30 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
         i += 1
     counts = _PageMetadataCounts(verdate, footer_continuation, dsk, page_num, bullet, content, gutter_adjacent)
     return kept, counts
+
+
+def _gate_bare_digits(
+    kept: list[_Line], *, page_has_footer: bool, document_gpo_layout: bool
+) -> tuple[list[_Line], BareNumberEvidence]:
+    """Strip tagged bare-digit lines only where this page has GPO evidence.
+
+    Two independent sources of evidence, either sufficient on its own: this
+    page's own VerDate footer, or the document-level gutter-number layout
+    (a committee report page can have neither/either -- ``line_numbers`` is
+    ``False`` for the whole document, but a page with its own footer still
+    strips its page-number header; see the module docstring).
+    """
+    if page_has_footer and document_gpo_layout:
+        evidence: BareNumberEvidence = "both"
+    elif page_has_footer:
+        evidence = "page_footer"
+    elif document_gpo_layout:
+        evidence = "gutter_layout"
+    else:
+        evidence = "none"
+    if evidence == "none":
+        return kept, evidence
+    return [line for line in kept if not line.is_bare_digit], evidence
 
 
 def _layout_verdict(page_counts: Sequence[_PageMetadataCounts]) -> bool:
@@ -291,8 +356,9 @@ def _normalize_encoding(raw: str) -> str:
     # replacements above those are two straight single quotes, not one
     # double quote. Collapse them -- independently confirmed against
     # DeltaTrack's own extractor-agnostic ``normalize_glyphs``
-    # (parsers/pdf_text.py: ``text.replace("''", '"')``), not adopting its
-    # em/en-dash rewrite alongside it, since no fixture here measures one.
+    # (parsers/pdf_text.py:179, doubled-quote collapse at line 192:
+    # ``text.replace("''", '"')``), not adopting its em/en-dash rewrite
+    # alongside it, since no fixture here measures one.
     return text.replace("''", '"')
 
 
@@ -314,12 +380,13 @@ def normalize_gpo_pages(pages: Sequence[str]) -> tuple[tuple[str, ...], GpoClean
     total_small_caps = total_hyphen = 0
 
     for number, (kept, counts) in enumerate(per_page, start=1):
-        merged, small_caps = _merge_small_caps(kept)
+        page_has_footer = counts.verdate_footer_lines > 0 or counts.dsk_user_lines > 0
+        gated, evidence = _gate_bare_digits(kept, page_has_footer=page_has_footer, document_gpo_layout=gpo_layout)
+        merged, small_caps = _merge_small_caps(gated)
         rejoined, hyphen_count = _rejoin_hyphens(merged, gpo_layout)
         collapsed = [_SPACE_COLLAPSE_RE.sub(" ", line) for line in rejoined]
         normalized.append("\n".join(collapsed))
 
-        page_has_footer = counts.verdate_footer_lines > 0 or counts.dsk_user_lines > 0
         gpo_footers = gpo_footers or page_has_footer
         total_small_caps += small_caps
         total_hyphen += hyphen_count
@@ -330,6 +397,7 @@ def normalize_gpo_pages(pages: Sequence[str]) -> tuple[tuple[str, ...], GpoClean
                 footer_continuation_lines=counts.footer_continuation_lines,
                 dsk_user_lines=counts.dsk_user_lines,
                 bare_page_number_lines=counts.bare_page_number_lines,
+                bare_page_number_evidence=evidence,
                 bullet_bill_lines=counts.bullet_bill_lines,
                 small_caps_merges=small_caps,
                 hyphen_rejoin_count=hyphen_count,
@@ -349,6 +417,7 @@ def normalize_gpo_pages(pages: Sequence[str]) -> tuple[tuple[str, ...], GpoClean
 
 __all__ = [
     "METADATA_RULES",
+    "BareNumberEvidence",
     "GpoCleanupRecord",
     "GpoPageCleanup",
     "MetadataRule",
