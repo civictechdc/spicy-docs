@@ -1,0 +1,219 @@
+# House Clerk and Senate LIS roll-call votes
+
+Capture one roll-call vote's full tally and member-level roster from its
+publisher of record: the House Clerk's EVS XML for House votes, the Senate's
+LIS XML for Senate votes. Both are keyless. Neither Congress.gov route that
+touches a vote -- `bill/{c}/{type}/{n}/actions`'s `recordedVotes` references
+and `house-vote/{c}/{session}/{roll}/members` -- carries the tally or, for
+the Senate, any member-level detail at all; see "Decision" below.
+
+## What the files are
+
+Two unrelated XML grammars, one per chamber, joined only by the identity
+every recorded vote carries (congress, chamber, session, roll number):
+
+| | House Clerk | Senate LIS |
+| --- | --- | --- |
+| Root element | `<rollcall-vote>` | `<roll_call_vote>` |
+| DOCTYPE | External (`-//US Congress//DTDs/vote v1.0 20031119 //EN`), tolerated but not resolved | None |
+| Member key | bioguide (`legislator/@name-id`) | LIS (`member/lis_member_id`) |
+| Vote values seen | `Yea`, `Nay`, `Not Voting` (measured; `Aye`/`No`/`Present` are in the wider DTD vocabulary this module also accepts) | `Yea`, `Nay`, `Not Voting` (measured) |
+
+Senate votes carry no bioguide id at all -- only `lis_member_id`. The only
+LIS-to-bioguide crosswalk already in this package is
+[`sources/legislators.py`](../../src/spicy_docs/sources/legislators.py)'s
+`LegislatorsFile.by_lis`, so `parse_senate_vote` takes one as an optional
+parameter instead of this module building a second crosswalk (the Senate's
+own `cvc_member_data.xml` is a Table C candidate, not built here). A LIS id
+the crosswalk does not carry resolves to `bioguide_id=None`, not a refusal:
+`docs/research/legislative-data-map-2026-09-18.md` measured this as a real,
+common absence -- roughly 4 of 99 voters on any one 119th-Congress vote,
+almost always a member who has just left the seat the crosswalk's current
+roster no longer lists.
+
+## URL grammars
+
+| Publisher | Grammar | Example |
+| --- | --- | --- |
+| House Clerk | `clerk.house.gov/evs/{year}/roll{roll_number}.xml` | `https://clerk.house.gov/evs/2025/roll240.xml` |
+| Senate LIS | `senate.gov/legislative/LIS/roll_call_votes/vote{congress}{session}/vote_{congress}_{session}_{roll_number:05d}.xml` | `https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00001.xml` |
+
+The Senate's URL states congress, session and the roll number directly (both
+in the folder and the filename; `locator_from_recorded_vote_url` refuses a
+url where the two disagree). The Clerk's URL states only a calendar year and
+the roll number -- no congress or session -- so `VoteLocator`'s Clerk URL
+builder and its reverse parser both go through one fixed rule: session 1 of
+Congress *N* convenes January 3 of the odd calendar year `1789 + 2*(N-1)`;
+session 2 falls in the following (even) year. The 20th Amendment fixed this
+from the 73rd Congress (1935) onward, and the Clerk's EVS archive begins in
+1990 (101st Congress, per the data map), well inside that range, so the rule
+is exact everywhere this source reaches; `clerk_url`/`locator_from_recorded_vote_url`
+refuse a congress before the 74th rather than guess at an irregular session.
+
+`VoteLocator(chamber, congress, session, roll_number).url()` dispatches to
+the right grammar; `locator_from_recorded_vote_url(url)` parses either one
+back, for exactly the shape a Congress.gov `recordedVotes[].url` names
+(`docs/research/billtrax-raw-data-2026-09-19.md` §5).
+
+## Field tables
+
+**House Clerk** (`parse_clerk_vote`) -- every `vote-metadata` field, both
+totals blocks, and every `recorded-vote`:
+
+| Field | Source element/attribute | Kept as |
+| --- | --- | --- |
+| `majority` | `vote-metadata/majority` | `RollCallVote.majority` |
+| `congress`, `session` (shared identity) | `.../congress`, `.../session` (ordinal, e.g. `1st`) | `RollCallVote.congress` (int), `.session` (int, parsed from the ordinal) |
+| `session_raw`, `chamber_raw` | `.../session`, `.../chamber` verbatim | kept beside the normalized `session`/`chamber` |
+| `chamber` (shared identity) | `.../chamber` (`U.S. House of Representatives`) | normalized to `RollCallVote.chamber = "house"` |
+| `rollcall-num` (shared identity) | `.../rollcall-num` | `RollCallVote.roll_number` |
+| `legis-num` | `.../legis-num` | `RollCallVote.legis_num` |
+| `vote-question` | `.../vote-question` | `RollCallVote.question` |
+| `vote-type` | `.../vote-type` | `RollCallVote.vote_type` |
+| `vote-result` | `.../vote-result` | `RollCallVote.result` |
+| `action-date` | `.../action-date` | `RollCallVote.date` |
+| `action-time` (text and `time-etz`) | `.../action-time` | `RollCallVote.action_time`, `.action_time_etz` |
+| `vote-desc` | `.../vote-desc` | `RollCallVote.vote_desc` |
+| Totals by party | `vote-totals/totals-by-party` (repeated) | `RollCallVote.party_totals: tuple[PartyTotal, ...]`, each `{party, counts}` with the publisher's own count names |
+| Overall totals | `vote-totals/totals-by-vote` | `RollCallVote.tallies`, the publisher's own count names (`yea-total`, `nay-total`, `present-total`, `not-voting-total`) |
+| `recorded-vote/legislator/@name-id` | bioguide | `MemberVote.bioguide_id` |
+| `.../@sort-field`, `@unaccented-name`, `@role` | | `MemberVote.sort_field`, `.unaccented_name`, `.role` |
+| `.../@party`, `@state` | | `MemberVote.party`, `.state` |
+| legislator element text | display name | `MemberVote.name` |
+| `recorded-vote/vote` | spelled vote | `MemberVote.vote` (raw), `.vote_normalized` (see below) |
+
+**Senate LIS** (`parse_senate_vote`) -- every top-level field except
+`document`/`amendment` (bill and nomination linkage; that is
+`vote_matching`'s job, not this reader's -- see the data map's
+`senate-vote→document` edge), `count`, `tie_breaker`, and every `member`:
+
+| Field | Source element | Kept as |
+| --- | --- | --- |
+| `congress`, `session`, `vote_number` (shared identity) | top-level | `RollCallVote.congress`, `.session`, `.roll_number` |
+| `congress_year` | top-level | `RollCallVote.congress_year` |
+| `vote_date` | top-level | `RollCallVote.date` |
+| `modify_date` | top-level | `RollCallVote.modify_date` |
+| `vote_question_text` | top-level | `RollCallVote.vote_question_text` |
+| `vote_document_text` | top-level | `RollCallVote.vote_document_text` |
+| `vote_result_text` | top-level | `RollCallVote.vote_result_text` |
+| `question` | top-level | `RollCallVote.question` |
+| `vote_title` | top-level | `RollCallVote.vote_title` |
+| `majority_requirement` | top-level | `RollCallVote.majority_requirement` |
+| `vote_result` | top-level | `RollCallVote.result` |
+| `count/{yeas,nays,present,absent}` | | `RollCallVote.tallies`, the publisher's own count names; a blank count (`<present/>`) is `0` |
+| `tie_breaker/{by_whom,tie_breaker_vote}` | | `RollCallVote.tie_breaker: TieBreaker`, both `None` when the vote was not tied |
+| `member/member_full`, `last_name`, `first_name` | | `MemberVote.member_full` (also mirrored onto the shared `.name`), `.last_name`, `.first_name` |
+| `member/party`, `state` | | `MemberVote.party`, `.state` |
+| `member/vote_cast` | spelled vote | `MemberVote.vote` (raw), `.vote_normalized` |
+| `member/lis_member_id` | | `MemberVote.lis_id`, and `.bioguide_id` when a crosswalk resolves it |
+
+`RollCallVote.chamber` is always the normalized `"house"`/`"senate"`; a
+Clerk-only field is `None`/`()` on a Senate record and vice versa.
+
+## Vote value normalization
+
+`normalize_vote` maps every spelled value either chamber's DTD carries to one
+of four buckets, case-insensitively: `Yea`/`Aye` → `yea`; `Nay`/`No` → `nay`;
+`Present` → `present`; `Not Voting` → `not_voting`. `MemberVote.vote` keeps
+the exact publisher spelling beside `.vote_normalized`. Both pinned fixtures
+only ever spell `Yea`, `Nay` and `Not Voting`; `Aye`/`No`/`Present` are
+accepted but unexercised by them (a plain RECORDED VOTE, rather than a
+YEA-AND-NAY vote, is where the Clerk uses `Aye`/`No`).
+
+## Identity rule
+
+`parse_clerk_vote(body, locator)` and `parse_senate_vote(body, locator, crosswalk=None)`
+both take the `VoteLocator` the caller requested the file for, and check the
+file's own stated congress/session/roll number against it before returning
+anything. A mismatch raises `VoteIdentityError` (a `VoteSourceError`), naming
+both the requested locator and what the file actually stated. This proves
+the fetched bytes are the vote requested, not only that the request URL was
+built correctly -- the same shape as `press_releases.py`'s
+`_check_feed_identity`, which proves a Senate RSS response is the requested
+committee's feed rather than a byte-identical default channel.
+
+## Refusals
+
+| Error | When |
+| --- | --- |
+| `VoteUnavailableError` | HTTP 404 or 410 |
+| `VoteRefusedError` | HTTP 401/403 on either keyless host -- no credential exists to reject, so this is recast from `CredentialRefusedError` the way `LegislatorsRefusedError` and `PressReleaseFeedRefusedError` already are |
+| `VoteIdentityError` | The fetched file's own congress/session/roll number does not match the locator |
+| `VoteSourceError` | Any other shape violation (wrong root element, a missing required field, an unrecognized vote value, a non-integer count) |
+
+Every refusal from `VoteAcquirer.acquire` carries the fetched bytes: `.capture`
+(when a body was received) and `.refused_response` (bounded evidence,
+credential-safe by construction since neither host takes one).
+
+## Use the route
+
+```python
+from spicy_docs.sources.congress.votes import VoteAcquirer, VoteBudget, VoteLocator
+from spicy_docs.sources.legislators import LegislatorsAcquirer, LegislatorsBudget
+
+budget = VoteBudget(max_requests=2, max_bytes=512 * 1024, timeout_seconds=30, min_request_interval_seconds=1.0)
+
+with VoteAcquirer(budget=budget) as source:
+    house = source.acquire(VoteLocator("house", 119, 1, 240))
+
+legislators_budget = LegislatorsBudget(
+    max_requests=2, max_bytes=4 * 1024**2, timeout_seconds=60, min_request_interval_seconds=1.0
+)
+with LegislatorsAcquirer(budget=legislators_budget) as legislators, VoteAcquirer(budget=budget) as source:
+    crosswalk = legislators.acquire_current().file
+    senate = source.acquire(VoteLocator("senate", 119, 1, 1), crosswalk=crosswalk)
+
+print(house.vote.tallies)  # {'yea-total': 397, 'nay-total': 1, 'present-total': 0, 'not-voting-total': 32}
+print(senate.vote.tallies)  # {'yeas': 84, 'nays': 9, 'present': 0, 'absent': 6}
+```
+
+A `recordedVotes[].url` from the Congress.gov bill-actions route resolves to
+a locator without any network access:
+
+```python
+from spicy_docs.sources.congress.votes import locator_from_recorded_vote_url
+
+locator = locator_from_recorded_vote_url("https://clerk.house.gov/evs/2025/roll240.xml")
+```
+
+## Evidence
+
+Real, unmodified fixtures with provenance:
+[`tests/fixtures/congress_votes/README.md`](../../tests/fixtures/congress_votes/README.md).
+`tests/test_congress_votes.py` includes two `@pytest.mark.integration` tests,
+one per publisher, excluded by default
+(`-m 'not integration and not httpfs'`).
+
+## Change and check
+
+Owner: [`votes.py`](../../src/spicy_docs/sources/congress/votes.py).
+
+```sh
+uv run --frozen pytest -q tests/test_congress_votes.py
+```
+
+Run the live pair explicitly before trusting a re-pin:
+
+```sh
+uv run --frozen pytest -q -m integration tests/test_congress_votes.py
+```
+
+## Decision
+
+**The Clerk and Senate LIS files are the tally source; the Congress.gov
+house-vote route and `recordedVotes` references are the index.** Neither
+Congress.gov route this package already reads carries a vote's actual tally.
+`recordedVotes` is a reference -- six identity fields plus the url this
+module resolves, nothing else (`billtrax-raw-data-2026-09-19.md` §5).
+`house-vote/{c}/{session}/{roll}/members` does carry a member-level House
+roster, but it only reaches the 115th Congress on and it is bioguide-keyed
+for House votes only; it names the Clerk XML as its own `sourceDataURL`, and
+the data map's comparison (`Congress.gov house-vote members vs Clerk roll
+XML`) found the two agree on every member, every position and every total
+for a sampled vote. The Senate has no member-level API route at all -- the
+LIS file is the *only* source. Given that, one reading path for both
+chambers, rather than a House-only shortcut through the API plus a
+Senate-only file, is the plainer design and the only one that also fills
+`RollCallVote.tallies`, which no Congress.gov route states for either
+chamber. This is a proposal for the maintainer to move into
+`docs/decisions.md`, not a decision recorded there yet.
