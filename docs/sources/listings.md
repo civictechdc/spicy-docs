@@ -30,10 +30,13 @@ on a single `CongressListRoute` table in
 reader method (`CongressListingReader.records(route, url)`). (Named
 `CongressListRoute`, not `ListRoute`, because `cli/list_pages.py` already
 defines a different `ListRoute`.) A route's `path` names its placeholders
-(`{congress}`, `{chamber}`, `{code}`, `{type}`, `{number}`); `optional_params`
-names the trailing ones a caller may omit — `bill` may omit both `congress`
-and `bill_type`, but only in that order, so a bill type without a Congress
-refuses. `bill_list_url` and `crs_report_list_url` keep their original names,
+(`{congress}`, `{chamber}`, `{code}`, `{type}`, `{number}`, `{session}`,
+`{law_type}`, `{system_code}`, `{bioguide_id}`); `optional_params` names the
+trailing ones a caller may omit — `bill` may omit both `congress` and
+`bill_type`, but only in that order, so a bill type without a Congress
+refuses; `law` may likewise omit `law_type`, since a bare `law/{congress}`
+already enumerates both public and private laws for that Congress.
+`bill_list_url` and `crs_report_list_url` keep their original names,
 arguments and behavior as thin aliases over the same table and builder, so
 existing callers are unaffected — including refusing a literal `sort=None`,
 which `list_route_url`'s optional `sort` allows but these two named builders

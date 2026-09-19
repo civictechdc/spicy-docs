@@ -142,13 +142,17 @@ class CongressListRoute:
     the rows inside a wrapper object instead of the top level -- confirmed
     live 2026-09-19: ``committee/{chamber}/{code}/bills`` answers
     ``{"committee-bills": {"bills": [...], "count": N, "url": "..."}, ...}``,
-    not a top-level ``bills`` array, unlike every other route here. A detail
-    route's ``records_key`` names a single JSON object instead of an array --
-    ``law/{congress}/{law_type}/{number}`` answers ``{"bill": {...}}`` -- and
-    ``PagedJsonReader`` reads that object as the walk's one record rather
-    than shaping it down to a chosen field; a detail route also has no list
-    to reorder or window, so it carries ``sort_honored=False`` and
-    ``window_honored=False`` on structural grounds, not a live probe.
+    not a top-level ``bills`` array, unlike every other route here. Some
+    detail routes' ``records_key`` names a single JSON object instead of an
+    array -- ``law/{congress}/{law_type}/{number}`` answers
+    ``{"bill": {...}}``, and ``committee``'s and ``member``'s detail routes
+    answer the same way -- and ``PagedJsonReader`` reads that object as the
+    walk's one record rather than shaping it down to a chosen field;
+    ``committee-print``'s detail route instead answers a real one-item array
+    with a ``pagination.count`` of 1, needing no such reading. Every detail
+    route still has no list to reorder or window against, so each carries
+    ``sort_honored=False`` and ``window_honored=False`` on structural
+    grounds, not a live probe.
     """
 
     name: str
@@ -258,12 +262,16 @@ LIST_ROUTES: dict[str, CongressListRoute] = {
     # member/congress/119?limit=1, sort=updateDate desc vs asc, identical
     # first record (bioguideId W000832) either way -- sort ignored. Every
     # list route here keeps window_honored's carried-forward default (True);
-    # none has been probed the way committee-bills/bill-actions were. The
-    # four detail routes ("law-detail", "committee-detail", "member-detail",
-    # "committee-print-detail") answer one record, not a list -- there is
-    # nothing to reorder or window against a single record, so both flags are
+    # none has been probed the way committee-bills/bill-actions were.
+    # "law-detail", "committee-detail" and "member-detail" answer a bare
+    # object at records_key, not an array or a pagination wrapper -- there is
+    # nothing to reorder or window against a single object, so both flags are
     # False on structural grounds, not a live measurement (see the class
-    # docstring).
+    # docstring). "committee-print-detail" is different: the publisher
+    # answers it with a real one-item array and a pagination.count of 1: both
+    # flags are still False, because no reordering or windowing is possible
+    # against a one-item array either, but the shape itself needed no reader
+    # change the way the other three did.
     "law": CongressListRoute(
         "law", "law/{congress}/{law_type}", BILLS_KEY, optional_params=frozenset({"law_type"}), sort_honored=False
     ),
