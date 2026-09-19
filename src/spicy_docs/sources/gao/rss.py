@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 from xml.etree.ElementTree import Element
 
-from spicy_docs.reading.xml import parse_xml
+from spicy_docs.reading.rss import child_text, read_rss2_channel
 from spicy_docs.sources.gao.native import SOURCE_SYSTEM_ID, GaoProductSourceError, gao_product_url
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
@@ -75,12 +75,7 @@ def gao_reports_feed_locator() -> str:
 
 
 def _text(element: Element, tag: str) -> str | None:
-    children = [child for child in element if child.tag == tag]
-    if len(children) > 1:
-        raise GaoFeedSourceError(f"GAO feed repeats {tag}")
-    if not children or children[0].text is None or not children[0].text.strip():
-        return None
-    return children[0].text.strip()
+    return child_text(element, tag, error_type=GaoFeedSourceError, label="GAO feed")
 
 
 def _product_id_from_link(link: str) -> str:
@@ -106,17 +101,11 @@ def parse_gao_reports_feed(body: bytes, *, max_bytes: int = DEFAULT_MAX_BYTES) -
     """Read the RSS 2.0 channel; every item must link a canonical product page."""
     if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or not 1 <= max_bytes <= MAX_FEED_BYTES:
         raise GaoFeedSourceError("max_bytes must be a positive integer no greater than 64 MiB")
-    root = parse_xml(body, max_bytes=max_bytes, error_type=GaoFeedSourceError, label="GAO feed")
-    if root.tag != "rss" or root.get("version") != "2.0":
-        raise GaoFeedSourceError("GAO feed is not an RSS 2.0 document")
-    channels = [child for child in root if child.tag == "channel"]
-    if len(channels) != 1:
-        raise GaoFeedSourceError("GAO feed requires exactly one channel")
-    channel = channels[0]
+    channel, item_elements = read_rss2_channel(
+        body, max_bytes=max_bytes, error_type=GaoFeedSourceError, label="GAO feed", max_items=MAX_FEED_ITEMS
+    )
     items = []
-    for index, element in enumerate(child for child in channel if child.tag == "item"):
-        if index >= MAX_FEED_ITEMS:
-            raise GaoFeedSourceError("GAO feed lists more items than supported")
+    for index, element in enumerate(item_elements):
         title, link = _text(element, "title"), _text(element, "link")
         if title is None or link is None:
             raise GaoFeedSourceError("GAO feed item requires a title and a link")
