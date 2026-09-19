@@ -1,0 +1,27 @@
+{
+    "houseRequirements": [
+        {
+            "number": 12478,
+            "updateDate": "2021-11-05",
+            "url": "https://api.congress.gov/v3/house-requirement/12478?format=json"
+        },
+        {
+            "number": 12557,
+            "updateDate": "2021-11-05",
+            "url": "https://api.congress.gov/v3/house-requirement/12557?format=json"
+        },
+        {
+            "number": 2471,
+            "updateDate": "2021-11-05",
+            "url": "https://api.congress.gov/v3/house-requirement/2471?format=json"
+        }
+    ],
+    "pagination": {
+        "count": 3226,
+        "next": "https://api.congress.gov/v3/house-requirement?offset=3&limit=3&format=json"
+    },
+    "request": {
+        "contentType": "application/json",
+        "format": "json"
+    }
+}

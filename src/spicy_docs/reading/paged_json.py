@@ -17,7 +17,11 @@ absence.
 
 ``records_key`` is a top-level key for most routes; a tuple path reaches rows
 a publisher nests inside a wrapper object alongside its own count and url,
-the way Congress.gov's ``committee/{chamber}/{code}/bills`` does.
+the way Congress.gov's ``committee/{chamber}/{code}/bills`` does. A detail
+route -- one record identified by its full path, not a list -- answers with
+either a single object or a one-element array under its key; both read as a
+one-row page with no declared count and no continuation, the same
+``records()``/``page()`` walk a list route uses.
 """
 
 from __future__ import annotations
@@ -339,6 +343,14 @@ class PagedJsonReader(SourceAcquirer):
         if not isinstance(value, Mapping):
             raise PagedJsonSourceError(f"{self.family.label} list response is not a JSON object")
         rows = _lookup(value, records_key) if isinstance(records_key, tuple) else value.get(records_key)
+        if isinstance(rows, Mapping):
+            # A detail route answers one record, not a list -- Congress.gov's house-communication,
+            # daily-congressional-record and house-requirement detail routes all nest a single object
+            # under their records key rather than an array (measured 2026-09-19; its sibling treaty
+            # detail route nests a one-element array instead, which the list branch below already
+            # reads). Reading it as a one-row page keeps every field reachable through the same
+            # records()/page() walk a list route uses, with no continuation and no declared count.
+            rows = [rows]
         if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
             raise PagedJsonSourceError(f"{self.family.label} list response omitted its {_key_label(records_key)} list")
         count = _lookup(value, self.family.count_path) if self.family.count_path else None

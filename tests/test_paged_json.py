@@ -72,6 +72,24 @@ def test_credential_travels_only_as_a_header_and_pages_carry_exact_bytes():
     assert pages[0].sha256 == pages[0].capture.sha256
 
 
+def test_a_single_object_under_the_records_key_reads_as_one_record_page():
+    """A detail route answers one record, not a list; the reader wraps it rather than refusing."""
+    body = json.dumps({"things": {"id": 1, "name": "widget"}}).encode()
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        (result,) = list(source.pages(URL, records_key="things"))
+    assert result.records == ({"id": 1, "name": "widget"},)
+    assert result.declared_count is None and result.next_url is None
+
+
+def test_an_empty_object_under_the_records_key_reads_as_one_empty_record():
+    body = b'{"things": {}, "paging": {"count": 1}}'
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        (result,) = list(source.pages(URL, records_key="things"))
+    assert result.records == ({},) and result.declared_count == 1
+
+
 @pytest.mark.parametrize(
     "responses,message",
     [
@@ -90,8 +108,8 @@ def test_credential_travels_only_as_a_header_and_pages_carry_exact_bytes():
             "HTTPS api.example.gov",
         ),
         ((response(page([{"id": 1}], count=2, next_url="https://api.example.gov/v1/things?api_key=x")),), "credential"),
-        ((response(b'{"things": {}, "paging": {"count": 1}}'),), "omitted its things list"),
         ((response(b'{"things": [1], "paging": {"count": 1}}'),), "omitted its things list"),
+        ((response(b'{"things": "nope", "paging": {"count": 1}}'),), "omitted its things list"),
         ((response(b'{"things": [], "paging": {"count": -1}}'),), "declared count is invalid"),
         ((response(b'{"things": [], "paging": {"count": true}}'),), "declared count is invalid"),
         ((response(b'{"things": [], "paging": {"count": 0, "next": ""}}'),), "continuation is invalid"),

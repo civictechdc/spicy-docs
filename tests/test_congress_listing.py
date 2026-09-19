@@ -40,6 +40,19 @@ ROUTE_PARAMS: dict[str, dict[str, object]] = {
     "committee-report": {"congress": 119},
     "house-communication": {"congress": 119},
     "house-vote": {"congress": 119, "session": 1},
+    # A5, A6, A7, A10
+    "committee-meeting": {"congress": 119, "chamber": "house"},
+    "committee-meeting-detail": {"congress": 119, "chamber": "house", "event_id": 119565},
+    "treaty": {"congress": 119},
+    "treaty-detail": {"congress": 119, "number": 2},
+    "daily-congressional-record": {},
+    "daily-congressional-record-detail": {"volume": 172, "issue": 148},
+    "house-communication-detail": {"congress": 119, "communication_type": "ec", "number": 4752},
+    "senate-communication": {"congress": 119},
+    "senate-communication-detail": {"congress": 119, "communication_type": "ec", "number": 4712},
+    "house-requirement": {},
+    "house-requirement-detail": {"number": 8070},
+    "house-requirement-communications": {"number": 8070},
 }
 ROUTE_FIXTURE_BYTES: dict[str, bytes] = {
     "amendment": (FIXTURES / "congress-amendment-list.json").read_bytes(),
@@ -50,6 +63,11 @@ ROUTE_FIXTURE_BYTES: dict[str, bytes] = {
     "committee-report": (FIXTURES / "congress-committee-report-list.json").read_bytes(),
     "house-communication": (FIXTURES / "congress-house-communication-list.json").read_bytes(),
     "house-vote": (FIXTURES / "congress-house-vote-list.json").read_bytes(),
+    "committee-meeting": (FIXTURES / "congress-committee-meeting-list.json").read_bytes(),
+    "daily-congressional-record": (FIXTURES / "congress-daily-congressional-record-list.json").read_bytes(),
+    "senate-communication": (FIXTURES / "congress-senate-communication-list.json").read_bytes(),
+    "house-requirement": (FIXTURES / "congress-house-requirement-list.json").read_bytes(),
+    "house-requirement-communications": (FIXTURES / "congress-house-requirement-communications.json").read_bytes(),
 }
 # (declared count, next URL, one distinguishing field on the first record, its value)
 ROUTE_PAGE_EXPECTATIONS: dict[str, tuple[int, str, str, object]] = {
@@ -91,6 +109,60 @@ ROUTE_PAGE_EXPECTATIONS: dict[str, tuple[int, str, str, object]] = {
         "rollCallNumber",
         240,
     ),
+    "committee-meeting": (
+        1611,
+        "https://api.congress.gov/v3/committee-meeting/119/house?offset=3&limit=3&format=json",
+        "eventId",
+        "119569",
+    ),
+    "daily-congressional-record": (
+        5869,
+        "https://api.congress.gov/v3/daily-congressional-record?offset=3&limit=3&format=json",
+        "issueNumber",
+        "148",
+    ),
+    "senate-communication": (
+        4842,
+        "https://api.congress.gov/v3/senate-communication/119?offset=3&limit=3&format=json",
+        "number",
+        4712,
+    ),
+    "house-requirement": (
+        3226,
+        "https://api.congress.gov/v3/house-requirement?offset=3&limit=3&format=json",
+        "number",
+        12478,
+    ),
+    "house-requirement-communications": (
+        92450,
+        "https://api.congress.gov/v3/house-requirement/8070/matching-communications?offset=3&limit=3&format=json",
+        "number",
+        2,
+    ),
+}
+# treaty answers only 2 rows for the 119th Congress (declared count 2 < limit 3), so it cannot
+# share the fixed "3 records" assumption in test_table_driven_pages_parse_with_publisher_spellings
+# above; see test_treaty_list_page_parses_with_its_own_short_count below instead.
+TREATY_FIXTURE_BYTES = (FIXTURES / "congress-treaty-list.json").read_bytes()
+# One captured record per detail route (congress, chamber/type/number path fully specified);
+# each answers a single object or a one-element array under its key, not a paginated list -- see
+# tests/fixtures/listings/README.md and reading/paged_json.py's Mapping-wrapping in _read_page.
+DETAIL_ROUTE_FIXTURE_BYTES: dict[str, bytes] = {
+    "committee-meeting-detail": (FIXTURES / "congress-committee-meeting-detail.json").read_bytes(),
+    "treaty-detail": (FIXTURES / "congress-treaty-detail.json").read_bytes(),
+    "daily-congressional-record-detail": (FIXTURES / "congress-daily-congressional-record-detail.json").read_bytes(),
+    "house-communication-detail": (FIXTURES / "congress-house-communication-detail.json").read_bytes(),
+    "senate-communication-detail": (FIXTURES / "congress-senate-communication-detail.json").read_bytes(),
+    "house-requirement-detail": (FIXTURES / "congress-house-requirement-detail.json").read_bytes(),
+}
+# (a field on the one record, its value) -- spot-checks the field survives the generic reader unchanged.
+DETAIL_ROUTE_EXPECTATIONS: dict[str, tuple[str, object]] = {
+    "committee-meeting-detail": ("title", "Various Measures"),
+    "treaty-detail": ("topic", "Taxation"),
+    "daily-congressional-record-detail": ("issueNumber", "148"),
+    "house-communication-detail": ("isRulemaking", "True"),
+    "senate-communication-detail": ("congressionalRecordDate", "2026-09-17"),
+    "house-requirement-detail": ("nature", "Congressional review of agency rulemaking."),
 }
 
 
@@ -212,6 +284,22 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "committee-report": True,
         "house-communication": False,
         "house-vote": False,
+        # Measured live 2026-09-19 (see the fixtures README): each list route below was probed
+        # directly (limit=3, sort=updateDate desc vs asc) and every one ignores sort; the six
+        # detail routes answer one record, not a list, so sort does not apply and is False by
+        # construction, not by probe.
+        "committee-meeting": False,
+        "committee-meeting-detail": False,
+        "treaty": False,
+        "treaty-detail": False,
+        "daily-congressional-record": False,
+        "daily-congressional-record-detail": False,
+        "house-communication-detail": False,
+        "senate-communication": False,
+        "senate-communication-detail": False,
+        "house-requirement": False,
+        "house-requirement-detail": False,
+        "house-requirement-communications": False,
     }
     # Measured live 2026-09-19 (see the fixtures README): a one-day fromDateTime window cut
     # committee-bills' declared count from 41,822 to 9 (honored) but left bill-actions' declared
@@ -227,6 +315,25 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "committee-report": True,
         "house-communication": True,
         "house-vote": True,
+        # Measured live 2026-09-19 (see the fixtures README): a one-day fromDateTime window cut
+        # committee-meeting's declared count from 1,611 to 8 and treaty's from 786 to 0 (both
+        # honored), but left daily-congressional-record's declared count at 5,869 and
+        # senate-communication's at 4,842 unchanged either way (both ignored).
+        # house-requirement/house-requirement-communications keep the carried-forward default,
+        # not measured this round. Every detail route is False by construction: one record has
+        # no window to narrow.
+        "committee-meeting": True,
+        "committee-meeting-detail": False,
+        "treaty": True,
+        "treaty-detail": False,
+        "daily-congressional-record": False,
+        "daily-congressional-record-detail": False,
+        "house-communication-detail": False,
+        "senate-communication": False,
+        "senate-communication-detail": False,
+        "house-requirement": True,
+        "house-requirement-detail": False,
+        "house-requirement-communications": True,
     }
     assert LIST_ROUTES["bill"].records_key == BILLS_KEY
     assert LIST_ROUTES["crsreport"].records_key == CRS_REPORTS_KEY
@@ -240,6 +347,19 @@ def test_route_table_states_records_keys_and_measured_sort_support():
     # Confirmed live 2026-09-19: this route alone nests its rows under a wrapper
     # object instead of a top-level array; see tests/fixtures/listings/README.md.
     assert LIST_ROUTES["committee-bills"].records_key == ("committee-bills", "bills")
+    # A5, A6, A7, A10: records keys as Congress.gov spells them (fixtures README).
+    assert LIST_ROUTES["committee-meeting"].records_key == "committeeMeetings"
+    assert LIST_ROUTES["committee-meeting-detail"].records_key == "committeeMeeting"
+    assert LIST_ROUTES["treaty"].records_key == "treaties"
+    assert LIST_ROUTES["treaty-detail"].records_key == "treaty"
+    assert LIST_ROUTES["daily-congressional-record"].records_key == "dailyCongressionalRecord"
+    assert LIST_ROUTES["daily-congressional-record-detail"].records_key == "issue"
+    assert LIST_ROUTES["house-communication-detail"].records_key == "houseCommunication"
+    assert LIST_ROUTES["senate-communication"].records_key == "senateCommunications"
+    assert LIST_ROUTES["senate-communication-detail"].records_key == "senateCommunication"
+    assert LIST_ROUTES["house-requirement"].records_key == "houseRequirements"
+    assert LIST_ROUTES["house-requirement-detail"].records_key == "houseRequirement"
+    assert LIST_ROUTES["house-requirement-communications"].records_key == "matchingCommunications"
 
 
 @pytest.mark.parametrize(
@@ -253,6 +373,34 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         ("committee-report", "https://api.congress.gov/v3/committee-report/119?format=json&limit=3"),
         ("house-communication", "https://api.congress.gov/v3/house-communication/119?format=json&limit=3"),
         ("house-vote", "https://api.congress.gov/v3/house-vote/119/1?format=json&limit=3"),
+        # A5, A6, A7, A10
+        ("committee-meeting", "https://api.congress.gov/v3/committee-meeting/119/house?format=json&limit=3"),
+        (
+            "committee-meeting-detail",
+            "https://api.congress.gov/v3/committee-meeting/119/house/119565?format=json&limit=3",
+        ),
+        ("treaty", "https://api.congress.gov/v3/treaty/119?format=json&limit=3"),
+        ("treaty-detail", "https://api.congress.gov/v3/treaty/119/2?format=json&limit=3"),
+        ("daily-congressional-record", "https://api.congress.gov/v3/daily-congressional-record?format=json&limit=3"),
+        (
+            "daily-congressional-record-detail",
+            "https://api.congress.gov/v3/daily-congressional-record/172/148?format=json&limit=3",
+        ),
+        (
+            "house-communication-detail",
+            "https://api.congress.gov/v3/house-communication/119/ec/4752?format=json&limit=3",
+        ),
+        ("senate-communication", "https://api.congress.gov/v3/senate-communication/119?format=json&limit=3"),
+        (
+            "senate-communication-detail",
+            "https://api.congress.gov/v3/senate-communication/119/ec/4712?format=json&limit=3",
+        ),
+        ("house-requirement", "https://api.congress.gov/v3/house-requirement?format=json&limit=3"),
+        ("house-requirement-detail", "https://api.congress.gov/v3/house-requirement/8070?format=json&limit=3"),
+        (
+            "house-requirement-communications",
+            "https://api.congress.gov/v3/house-requirement/8070/matching-communications?format=json&limit=3",
+        ),
     ],
 )
 def test_list_route_url_builds_the_exact_publisher_request(route_name, expected):
@@ -266,6 +414,25 @@ def test_list_route_url_bare_route_omits_the_congress_segment():
     assert (
         list_route_url(LIST_ROUTES["nomination"], limit=3)
         == "https://api.congress.gov/v3/nomination?format=json&limit=3"
+    )
+
+
+def test_new_list_routes_omit_their_optional_trailing_segments():
+    """A5, A6, A7, A10: committee-meeting, treaty and senate-communication all support a bare
+    request the same way amendment/nomination do; committee-meeting also supports congress alone,
+    omitting only its trailing chamber."""
+    assert (
+        list_route_url(LIST_ROUTES["committee-meeting"], limit=3)
+        == "https://api.congress.gov/v3/committee-meeting?format=json&limit=3"
+    )
+    assert (
+        list_route_url(LIST_ROUTES["committee-meeting"], congress=119, limit=3)
+        == "https://api.congress.gov/v3/committee-meeting/119?format=json&limit=3"
+    )
+    assert list_route_url(LIST_ROUTES["treaty"], limit=3) == "https://api.congress.gov/v3/treaty?format=json&limit=3"
+    assert (
+        list_route_url(LIST_ROUTES["senate-communication"], limit=3)
+        == "https://api.congress.gov/v3/senate-communication?format=json&limit=3"
     )
 
 
@@ -301,6 +468,36 @@ def test_list_route_url_bare_route_omits_the_congress_segment():
         ("bill", {"congress": 119, "bill_type": "HR"}),
         ("bill", {"chamber": "house"}),
         ("crsreport", {"congress": 119}),
+        # A5, A6, A7, A10
+        ("committee-meeting", {"chamber": "house"}),
+        ("committee-meeting-detail", {"congress": 119, "chamber": "house"}),
+        ("committee-meeting-detail", {"chamber": "house", "event_id": 119565}),
+        ("committee-meeting-detail", {"congress": 119, "chamber": "upper", "event_id": 119565}),
+        ("committee-meeting-detail", {"congress": 119, "chamber": "house", "event_id": 0}),
+        ("committee-meeting-detail", {"congress": 119, "chamber": "house", "event_id": True}),
+        ("treaty-detail", {"congress": 119}),
+        ("treaty-detail", {"number": 2}),
+        ("treaty-detail", {"congress": 0, "number": 2}),
+        ("treaty-detail", {"congress": 119, "number": 0}),
+        ("daily-congressional-record", {"issue": 148}),
+        ("daily-congressional-record-detail", {"volume": 172}),
+        ("daily-congressional-record-detail", {"issue": 148}),
+        ("daily-congressional-record-detail", {"volume": 0, "issue": 148}),
+        ("daily-congressional-record-detail", {"volume": 172, "issue": 0}),
+        ("house-communication-detail", {"congress": 119, "number": 4752}),
+        ("house-communication-detail", {"congress": 119, "communication_type": "ec"}),
+        ("house-communication-detail", {"congress": 119, "communication_type": "EC", "number": 4752}),
+        ("house-communication-detail", {"congress": 119, "communication_type": "e", "number": 4752}),
+        ("house-communication-detail", {"congress": 119, "communication_type": "1c", "number": 4752}),
+        ("senate-communication-detail", {"congress": 119, "communication_type": "ec"}),
+        ("senate-communication-detail", {"congress": 119, "number": 4712}),
+        ("senate-communication-detail", {"communication_type": "ec", "number": 4712}),
+        ("house-requirement", {"number": 8070}),
+        ("house-requirement-detail", {}),
+        ("house-requirement-detail", {"number": 0}),
+        ("house-requirement-detail", {"number": True}),
+        ("house-requirement-communications", {}),
+        ("house-requirement-communications", {"number": -1}),
     ],
 )
 def test_list_route_url_refuses_invalid_or_missing_path_params(route_name, kwargs):
@@ -366,6 +563,26 @@ def test_list_route_url_accepts_a_date_window_the_publisher_honors():
     assert "fromDateTime=2026-09-18T00%3A00%3A00Z" in url
 
 
+@pytest.mark.parametrize("route_name", sorted(name for name, route in LIST_ROUTES.items() if not route.window_honored))
+def test_list_route_url_refuses_a_date_window_the_publisher_ignores_table_driven(route_name):
+    """Table-driven over every route, not only bill-actions: the window check fires before path
+    assembly, so this exercises every ``window_honored=False`` route in ``LIST_ROUTES`` --
+    including the six A5/A6/A7/A10 detail routes, where a window is not applicable by
+    construction, and daily-congressional-record/senate-communication, measured ignored."""
+    with pytest.raises(PagedJsonSourceError, match="ignores the date window"):
+        list_route_url(
+            LIST_ROUTES[route_name], from_datetime="2026-09-18T00:00:00Z", **ROUTE_PARAMS.get(route_name, {})
+        )
+
+
+@pytest.mark.parametrize("route_name", sorted(name for name, route in LIST_ROUTES.items() if route.window_honored))
+def test_list_route_url_accepts_a_date_window_the_publisher_honors_table_driven(route_name):
+    url = list_route_url(
+        LIST_ROUTES[route_name], from_datetime="2026-09-18T00:00:00Z", limit=3, **ROUTE_PARAMS.get(route_name, {})
+    )
+    assert "fromDateTime=2026-09-18T00%3A00%3A00Z" in url
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [
@@ -409,6 +626,112 @@ def test_records_method_walks_a_table_driven_route():
     with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
         page = next(source.records(route, url, max_pages=1))
     assert page.records_key == "nominations" and page.declared_count == 2208 and len(page.records) == 3
+
+
+def test_treaty_list_page_parses_with_its_own_short_count():
+    """A10: the 119th Congress answers only 2 treaties for a limit=3 request -- fewer rows than
+    the limit, and no publisher ``next`` -- so it cannot share the fixed "3 records" assumption
+    every other table-driven fixture above uses."""
+    route = LIST_ROUTES["treaty"]
+    transport = Transport(TREATY_FIXTURE_BYTES)
+    url = list_route_url(route, limit=3, congress=119)
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        page = source.page(url, records_key=route.records_key)
+    assert page.records_key == "treaties"
+    assert page.declared_count == 2
+    assert page.next_url is None
+    assert len(page.records) == 2
+    assert page.records[0]["number"] == 2 and page.records[0]["topic"] == "Taxation"
+    assert transport.calls[0].headers["x-api-key"] == KEY and "api_key" not in str(transport.calls[0].url)
+
+
+@pytest.mark.parametrize("route_name", sorted(DETAIL_ROUTE_FIXTURE_BYTES))
+def test_detail_routes_parse_one_record_with_no_pagination(route_name):
+    """A5, A6, A7, A10: a detail route answers one record identified by its full path, not a
+    list -- house-communication, daily-congressional-record, senate-communication and
+    house-requirement nest a single object under their key; treaty nests a one-element array
+    instead. Both shapes read as a single-record page with no declared count and no
+    continuation (reading/paged_json.py's Mapping-wrapping in ``_read_page``), and every field
+    the fixture carries is reachable unchanged through the same ``records()``/``page()`` walk a
+    list route uses."""
+    route = LIST_ROUTES[route_name]
+    field, value = DETAIL_ROUTE_EXPECTATIONS[route_name]
+    transport = Transport(DETAIL_ROUTE_FIXTURE_BYTES[route_name])
+    url = list_route_url(route, **ROUTE_PARAMS[route_name])
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        page = source.page(url, records_key=route.records_key)
+    assert page.records_key == route.records_key
+    assert page.declared_count is None
+    assert page.next_url is None
+    assert len(page.records) == 1
+    assert page.records[0][field] == value
+    assert transport.calls[0].headers["x-api-key"] == KEY and "api_key" not in str(transport.calls[0].url)
+
+
+def test_committee_meeting_detail_carries_related_bills_and_documents_unshaped():
+    """A7: relatedItems.bills, meetingDocuments and the other nested arrays the map's
+    meeting->bill and meeting->documents edges rely on all survive through the generic reader,
+    not just the scalar fields spot-checked above."""
+    route = LIST_ROUTES["committee-meeting-detail"]
+    transport = Transport(DETAIL_ROUTE_FIXTURE_BYTES["committee-meeting-detail"])
+    url = list_route_url(route, **ROUTE_PARAMS["committee-meeting-detail"])
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        page = source.page(url, records_key=route.records_key)
+    (record,) = page.records
+    bills = record["relatedItems"]["bills"]
+    assert {"congress": 119, "number": "1653", "type": "HR"}.items() <= bills[0].items()
+    assert record["meetingDocuments"] and record["committees"][0]["systemCode"] == "hsba00"
+
+
+def test_house_communication_detail_carries_the_regulatory_bridge_fields_unshaped():
+    """A5: isRulemaking, reportNature (which carries the RIN), the committee referral's
+    systemCode and matchingRequirements[].number -- the fields the regulatory-bridge gap names --
+    all reach the caller exactly as the publisher spelled them."""
+    route = LIST_ROUTES["house-communication-detail"]
+    transport = Transport(DETAIL_ROUTE_FIXTURE_BYTES["house-communication-detail"])
+    url = list_route_url(route, **ROUTE_PARAMS["house-communication-detail"])
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        page = source.page(url, records_key=route.records_key)
+    (record,) = page.records
+    assert record["isRulemaking"] == "True"
+    assert "RIN: 3133-AF97" in record["reportNature"]
+    assert record["committees"][0]["systemCode"] == "hsba00"
+    assert record["matchingRequirements"][0]["number"] == 8070
+
+
+def test_daily_congressional_record_detail_carries_full_issue_sections_unshaped():
+    """A10: fullIssue.sections, the legislative-day calendar the map's record->legislative-day
+    edge reads, reaches the caller unshaped."""
+    route = LIST_ROUTES["daily-congressional-record-detail"]
+    transport = Transport(DETAIL_ROUTE_FIXTURE_BYTES["daily-congressional-record-detail"])
+    url = list_route_url(route, **ROUTE_PARAMS["daily-congressional-record-detail"])
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        page = source.page(url, records_key=route.records_key)
+    (record,) = page.records
+    sections = record["fullIssue"]["sections"]
+    assert {section["name"] for section in sections} == {"Daily Digest", "Senate Section"}
+
+
+def test_house_requirement_detail_carries_the_matching_communications_pointer_unshaped():
+    """A6: matchingCommunications.count and .url on the detail record, and the requirement number
+    on each row the sibling matching-communications list answers."""
+    detail_route = LIST_ROUTES["house-requirement-detail"]
+    transport = Transport(DETAIL_ROUTE_FIXTURE_BYTES["house-requirement-detail"])
+    url = list_route_url(detail_route, **ROUTE_PARAMS["house-requirement-detail"])
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        page = source.page(url, records_key=detail_route.records_key)
+    (record,) = page.records
+    assert record["matchingCommunications"]["count"] == 92450
+    assert record["matchingCommunications"]["url"].endswith(
+        "/house-requirement/8070/matching-communications?format=json"
+    )
+
+    communications_route = LIST_ROUTES["house-requirement-communications"]
+    transport = Transport(ROUTE_FIXTURE_BYTES["house-requirement-communications"])
+    url = list_route_url(communications_route, limit=3, **ROUTE_PARAMS["house-requirement-communications"])
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        page = source.page(url, records_key=communications_route.records_key)
+    assert page.records[0]["communicationType"]["code"] == "EC"
 
 
 # --- live pagination contract (one request per route, not run by default) ------

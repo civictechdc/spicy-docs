@@ -127,7 +127,8 @@ class CongressListRoute:
     imported both.
 
     ``path`` is a ``/``-joined template whose ``{name}`` segments are path
-    parameters (``congress``, ``chamber``, ``code``, ``type``, ``number``).
+    parameters (``congress``, ``chamber``, ``code``, ``type``, ``number``,
+    ``session``, ``eventId``, ``volume``, ``issue``, ``commtype``).
     ``optional_params`` names the ones a caller may omit; they must be the
     template's *trailing* parameters, since omitting one also omits every
     parameter after it (a caller cannot narrow by bill type without naming a
@@ -238,6 +239,115 @@ LIST_ROUTES: dict[str, CongressListRoute] = {
         "houseRollCallVotes",
         sort_honored=False,
     ),
+    # meetings, treaties, record, communications, requirements (A5, A6, A7, A10)
+    #
+    # Path shapes and records keys measured live 2026-09-19 against the API
+    # (docs/research/closing-the-gaps-2026-09-19.md gaps A5, A6, A7, A10; see
+    # the fixtures README for every probe). Every list route here was probed
+    # directly (limit=3, sort=updateDate desc vs asc, comparing the first
+    # record and the declared count) and ignores sort. window_honored got the
+    # same direct probe (a bare request vs one day's fromDateTime) for
+    # committee-meeting, treaty, daily-congressional-record and
+    # senate-communication; house-requirement and
+    # house-requirement-communications keep the dataclass default
+    # (window_honored=True), a carried-forward assumption from bill/crsreport,
+    # not a measurement -- see the module docstring. Detail routes
+    # (*-detail, and house-requirement-communications' own detail-adjacent
+    # sibling house-requirement-detail) answer one record identified by its
+    # full path, not a list: sort_honored and window_honored are both False
+    # by construction there, not by probe, since there is nothing to reorder
+    # or window. Congress.gov spells a detail record's row two ways --
+    # house-communication, daily-congressional-record, senate-communication
+    # and house-requirement detail nest a single object under their key;
+    # treaty detail nests a one-element array instead -- and
+    # ``reading/paged_json.py``'s ``_read_page`` now reads either shape as a
+    # one-row page with no continuation and no declared count.
+    "committee-meeting": CongressListRoute(
+        "committee-meeting",
+        "committee-meeting/{congress}/{chamber}",
+        "committeeMeetings",
+        optional_params=frozenset({"congress", "chamber"}),
+        sort_honored=False,
+        window_honored=True,
+    ),
+    "committee-meeting-detail": CongressListRoute(
+        "committee-meeting-detail",
+        "committee-meeting/{congress}/{chamber}/{eventId}",
+        "committeeMeeting",
+        sort_honored=False,
+        window_honored=False,
+    ),
+    "treaty": CongressListRoute(
+        "treaty",
+        "treaty/{congress}",
+        "treaties",
+        optional_params=frozenset({"congress"}),
+        sort_honored=False,
+        window_honored=True,
+    ),
+    "treaty-detail": CongressListRoute(
+        "treaty-detail",
+        "treaty/{congress}/{number}",
+        "treaty",
+        sort_honored=False,
+        window_honored=False,
+    ),
+    "daily-congressional-record": CongressListRoute(
+        "daily-congressional-record",
+        "daily-congressional-record/{volume}",
+        "dailyCongressionalRecord",
+        optional_params=frozenset({"volume"}),
+        sort_honored=False,
+        window_honored=False,
+    ),
+    "daily-congressional-record-detail": CongressListRoute(
+        "daily-congressional-record-detail",
+        "daily-congressional-record/{volume}/{issue}",
+        "issue",
+        sort_honored=False,
+        window_honored=False,
+    ),
+    "house-communication-detail": CongressListRoute(
+        "house-communication-detail",
+        "house-communication/{congress}/{commtype}/{number}",
+        "houseCommunication",
+        sort_honored=False,
+        window_honored=False,
+    ),
+    "senate-communication": CongressListRoute(
+        "senate-communication",
+        "senate-communication/{congress}",
+        "senateCommunications",
+        optional_params=frozenset({"congress"}),
+        sort_honored=False,
+        window_honored=False,
+    ),
+    "senate-communication-detail": CongressListRoute(
+        "senate-communication-detail",
+        "senate-communication/{congress}/{commtype}/{number}",
+        "senateCommunication",
+        sort_honored=False,
+        window_honored=False,
+    ),
+    "house-requirement": CongressListRoute(
+        "house-requirement",
+        "house-requirement",
+        "houseRequirements",
+        sort_honored=False,
+    ),
+    "house-requirement-detail": CongressListRoute(
+        "house-requirement-detail",
+        "house-requirement/{number}",
+        "houseRequirement",
+        sort_honored=False,
+        window_honored=False,
+    ),
+    "house-requirement-communications": CongressListRoute(
+        "house-requirement-communications",
+        "house-requirement/{number}/matching-communications",
+        "matchingCommunications",
+        sort_honored=False,
+    ),
 }
 
 _CHAMBERS = frozenset({"house", "senate", "joint"})
@@ -251,6 +361,10 @@ _KWARG_FOR_PARAM = {
     "type": "bill_type",
     "number": "number",
     "session": "session",
+    "eventId": "event_id",
+    "volume": "volume",
+    "issue": "issue",
+    "commtype": "communication_type",
 }
 
 
@@ -290,6 +404,15 @@ def _session_param(value: int | None) -> str:
     return str(value)
 
 
+_COMMUNICATION_TYPE = re.compile(r"[a-z]{2,3}")
+
+
+def _communication_type_param(value: str | None) -> str:
+    if not isinstance(value, str) or _COMMUNICATION_TYPE.fullmatch(value) is None:
+        raise PagedJsonSourceError("communication_type must be a lowercase two- or three-letter code, e.g. 'ec'")
+    return value
+
+
 _VALIDATE_PARAM: dict[str, Callable[[object], str]] = {
     "congress": _congress_param,
     "chamber": _chamber_param,
@@ -297,6 +420,10 @@ _VALIDATE_PARAM: dict[str, Callable[[object], str]] = {
     "type": _bill_type_param,
     "number": lambda value: _positive_int_param(value, "number"),
     "session": _session_param,
+    "eventId": lambda value: _positive_int_param(value, "event_id"),
+    "volume": lambda value: _positive_int_param(value, "volume"),
+    "issue": lambda value: _positive_int_param(value, "issue"),
+    "commtype": _communication_type_param,
 }
 
 
@@ -309,6 +436,10 @@ def _route_path(
     bill_type: str | None = None,
     number: int | None = None,
     session: int | None = None,
+    event_id: int | None = None,
+    volume: int | None = None,
+    issue: int | None = None,
+    communication_type: str | None = None,
 ) -> str:
     """Fill ``route.path``'s placeholders from explicit, validated parameters.
 
@@ -325,6 +456,10 @@ def _route_path(
         "type": bill_type,
         "number": number,
         "session": session,
+        "eventId": event_id,
+        "volume": volume,
+        "issue": issue,
+        "commtype": communication_type,
     }
     params = set(route.path_params)
     for name, value in values.items():
@@ -358,6 +493,10 @@ def list_route_url(
     bill_type: str | None = None,
     number: int | None = None,
     session: int | None = None,
+    event_id: int | None = None,
+    volume: int | None = None,
+    issue: int | None = None,
+    communication_type: str | None = None,
     from_datetime: str | None = None,
     to_datetime: str | None = None,
     limit: int = MAX_LIMIT,
@@ -380,6 +519,10 @@ def list_route_url(
         bill_type=bill_type,
         number=number,
         session=session,
+        event_id=event_id,
+        volume=volume,
+        issue=issue,
+        communication_type=communication_type,
     )
     query = _query(from_datetime=from_datetime, to_datetime=to_datetime, limit=limit, sort=sort)
     return f"{API}/{path}?{urlencode(query)}"

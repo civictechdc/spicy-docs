@@ -106,3 +106,87 @@ inference (the sibling `house-vote/{c}/{session}/{roll}/members` route,
 measured `sort ignored` in the legislative data map) until the direct probe
 above replaced the inference with a measurement of the exact route this
 package uses.
+
+Fifth round, captured 2026-09-19 for the A5, A6, A7 and A10 list and detail
+routes (`docs/research/closing-the-gaps-2026-09-19.md`; api.data.gov key as
+`X-Api-Key`, list pages at `limit=3` except where the query itself narrows
+to fewer rows). Each response's `request` echo block was checked
+byte-for-byte against the key with `scrub_credential` before it was saved;
+none of the twelve carried it.
+
+| Fixture | Request | Bytes | SHA-256 | Transformation |
+| --- | --- | --- | --- | --- |
+| `congress-committee-meeting-list.json` | GET https://api.congress.gov/v3/committee-meeting/119/house | 1,118 | `4465958620844652d282f2edb1c68c82c246f6ccfbedc5a0c3c16b3073a93ad6` | Complete, unchanged response; 3 of a declared 1,611. |
+| `congress-committee-meeting-detail.json` | GET https://api.congress.gov/v3/committee-meeting/119/house/119565 | 31,002 | `ff5d18f60faa03557b2384032c627ca8f839d910a0c4627da882d587b281b134` | Complete, unchanged response; one record, chosen over two other captured event ids because it carries `relatedItems.bills` (the meeting->bill edge). |
+| `congress-treaty-list.json` | GET https://api.congress.gov/v3/treaty/119 | 978 | `d1b33e8cbb8f7575f7e42bc53349bdde59672e4214016552c6dac0e22cdd9995` | Complete, unchanged response; the 119th Congress answers only 2 treaties, fewer than `limit=3`. |
+| `congress-treaty-detail.json` | GET https://api.congress.gov/v3/treaty/119/2 | 2,288 | `dd485a871156da2b7131ef433dafda7712dd56998e0e74cfe57023b6fa69dcef` | Complete, unchanged response; the same treaty the legislative data map's `treaty->cdoc` edge resolved. |
+| `congress-daily-congressional-record-list.json` | GET https://api.congress.gov/v3/daily-congressional-record | 1,318 | `85aa4fb9633e81a56863a9d064755d74dc8515c4b7dcbaa9aff69f6c1d0dddac` | Complete, unchanged response; 3 of a declared 5,869; captured bare (no volume) since the route's own bare listing is a supported, measured shape. |
+| `congress-daily-congressional-record-detail.json` | GET https://api.congress.gov/v3/daily-congressional-record/172/148 | 2,076 | `c1f40d70becc51ae15b5fc6202754f81c718e848d80e5003a20b7e73dc78b541` | Complete, unchanged response. |
+| `congress-house-communication-detail.json` | GET https://api.congress.gov/v3/house-communication/119/ec/4752 | 1,758 | `444e2e99526f5b1955f7bd8658f6b2981dbabaa95e0c9abc8de3a397c739c2a5` | Complete, unchanged response; the same EC 4752 record the legislative data map's `communication-typing`/`communication->committee`/`communication->federal-register`/`communication->requirement` edges resolved. |
+| `congress-senate-communication-list.json` | GET https://api.congress.gov/v3/senate-communication/119 | 1,462 | `eb134534e308e27e730010e567f55b4d41874b203bfa3d84badb283b56e2e80e` | Complete, unchanged response; 3 of a declared 4,842. |
+| `congress-senate-communication-detail.json` | GET https://api.congress.gov/v3/senate-communication/119/ec/4712 | 1,319 | `2ddfee041eb8566680d13c99b1e7a51703f68023fc04e7f067c12741f98a9d0d` | Complete, unchanged response; the same EC 4712 record the map's `senate-communication->committee` edge resolved. |
+| `congress-house-requirement-list.json` | GET https://api.congress.gov/v3/house-requirement | 793 | `4ae32fd2772d0168874871e52e3adbbe9f71f60be230d9e2ae4d313c95ad5400` | Complete, unchanged response; 3 of a declared 3,226. |
+| `congress-house-requirement-detail.json` | GET https://api.congress.gov/v3/house-requirement/8070 | 761 | `089f7d77eb02d82004e7edfb3c21d7d596c03abf21fe9aa76f1d21a9dd2dc494` | Complete, unchanged response; requirement 8070, the CRA requirement the map's `requirement->communications` edge and `communication->requirement` edge both name. |
+| `congress-house-requirement-communications.json` | GET https://api.congress.gov/v3/house-requirement/8070/matching-communications | 1,286 | `098e062b5bfa7d8b62ced73b60783784399e6a5cedaff643fa6cc7b06eac91a3` | Complete, unchanged response; 3 of a declared 92,450. |
+
+Congress.gov spells a detail record's row two different ways, both
+confirmed live 2026-09-19: `house-communication`, `daily-congressional-record`,
+`senate-communication` and `house-requirement` detail nest a single JSON
+object under their records key (`{"houseCommunication": {...}}`), while
+`treaty` detail nests a one-element array instead
+(`{"treaty": [{...}]}`). `reading/paged_json.py`'s `_read_page` now reads
+either shape as a one-row page with no declared count and no continuation
+(a single Mapping under the records key is wrapped as a one-element list
+before the existing list checks run), so every field a fixture record
+carries reaches `CongressListingReader.records`/`.page` unchanged, the same
+way a list route's rows do.
+
+Sort and date-window support for every new list route was measured the same
+way as the fourth round's `committee-bills`/`bill-actions`/`house-vote`
+probes: a keyed request pair at `limit=3`, not saved as fixtures.
+
+| Route | Asked | Came back | Date |
+| --- | --- | --- | --- |
+| `committee-meeting` | `GET committee-meeting/119/house?limit=3&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (eventId 119569, `updateDate` 2026-09-18T21:34:11Z) and identical declared count (1,611) — sort ignored | 2026-09-19 |
+| `treaty` | `GET treaty/119?limit=3&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical order both times (treaty 2 first) and identical declared count (2) — sort ignored | 2026-09-19 |
+| `daily-congressional-record` | `GET daily-congressional-record?limit=3&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (volume 172 issue 148) and identical declared count (5,869) — sort ignored | 2026-09-19 |
+| `senate-communication` | `GET senate-communication/119?limit=3&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (EC 4712) and identical declared count (4,842) — sort ignored | 2026-09-19 |
+| `house-requirement` | `GET house-requirement?limit=3&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (requirement 12478) and identical declared count (3,226) — sort ignored | 2026-09-19 |
+| `house-requirement-communications` | `GET house-requirement/8070/matching-communications?limit=3&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (EC 2, 112th) and identical declared count (92,450) — sort ignored | 2026-09-19 |
+| `committee-meeting` | `GET committee-meeting/119/house?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 1,611 unfiltered vs 8 with the one-day window — window honored | 2026-09-19 |
+| `treaty` | `GET treaty?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 786 unfiltered vs 0 with the one-day window — window honored | 2026-09-19 |
+| `daily-congressional-record` | `GET daily-congressional-record?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 5,869 both times, unchanged — window ignored | 2026-09-19 |
+| `senate-communication` | `GET senate-communication/119?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 4,842 both times, unchanged — window ignored | 2026-09-19 |
+
+`CongressListRoute.sort_honored` is `False` for all twelve new routes: the
+six list routes above are measured (the pairs immediately above), and the
+six `*-detail` routes are `False` by construction — a detail route answers
+one record, not a list, so there is nothing to reorder. `window_honored` is
+measured `True` for `committee-meeting` and `treaty`, measured `False` for
+`daily-congressional-record` and `senate-communication`, and `False` by
+construction for the same six detail routes. `house-requirement` and
+`house-requirement-communications` keep the dataclass default
+(`window_honored=True`), a carried-forward assumption, not a measurement —
+consistent with `nomination`/`hearing`/`committee-report`/
+`house-communication`/`house-vote` above, and noted here rather than spending
+two more requests on a route whose every record already shares one frozen
+`updateDate` (2021-11-05, see the third-round note above and Table A in
+`docs/research/legislative-data-map-2026-09-18.md`).
+
+Two more requests (not saved as fixtures) confirmed the bare-collection
+design `optional_params` states: `GET committee-meeting?limit=1` answered a
+declared count of 18,133, matching Table A's total for the route with no
+`congress`/`chamber` at all, and `GET senate-communication?limit=1` answered
+175,597, matching Table A's total the same way. `treaty` and
+`daily-congressional-record`'s bare shape is confirmed by the window-probe
+and list-fixture requests above, which already omitted `congress`/`volume`.
+
+This round used 38 keyed requests, two over the 36-request plan: the first
+two (`house-communication/119/ec/4752`, checked once to confirm the records
+key before a save-to-disk helper existed, then re-fetched to print the full
+record) were spent without saving bytes, so a third, saved request was
+needed to capture `congress-house-communication-detail.json` with genuine,
+verifiable wire bytes rather than reconstructing the file from a
+`json.dumps` of the second request's console output. Every other route's
+fixture, sort probe and window probe above cost exactly the one request its
+row states.
