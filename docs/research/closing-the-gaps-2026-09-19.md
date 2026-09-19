@@ -1,8 +1,10 @@
 # Proposal: close the known gaps as one spicy-docs program
 
-Status: proposal, 2026-09-19, written against spicy-docs `main` at v0.21.1
+Status: in execution, 2026-09-19 evening; see §2.0 for per-row state
+(written against spicy-docs `main` at v0.21.1
 plus docs (5,425 tests), spicy-regs fork branch `billtrax-hosting-prep`
-(1,433 tests, 46 hosted tables), and the day's measurements. It answers the
+(1,433 tests, 46 hosted tables), and the day's measurements; both trees
+have moved since -- each row's status below is the live record). It answers the
 GovernmentXML proposal (an external draft dated the same day, not in this
 repository) by folding its sound parts into this repository
 and replacing its corpus choice with what the census measured. Every gap
@@ -51,6 +53,33 @@ Measured on 2026-09-19 unless stated:
   metadata-only ([census](pdf-only-corpus-2026-09-19.md)).
 
 ## 2. The gap register
+
+### 2.0 Execution status (maintained; updated as each branch merges or stalls)
+
+| # | Status, 2026-09-19 evening |
+|---|---|
+| A1, A2, A3 | Landed on spicy-regs `billtrax-hosting-prep` (merge 1f18898), twice reviewed. The linkage receipt corrected the hearing figures to 10 hearings with mentions in 31 entries; the load-bearing 12-of-12 report agreement and 0-of-52 PRIMARY hearings held throughout. The `press_releases` NULL-match exposure is a documented residual, not a refusal. |
+| A4 | Landed in spicy-docs: the Senate LIS vote-menu index (`VoteAcquirer.list_senate_votes`, `parse_senate_vote_menu`, `locator_from_menu_entry`). |
+| A5, A7, A10 | The route table they sit on landed at 1f515bb (three review rounds). Contracts built on branch `worktree-agent-ac6103583fbda985e` (`house_communications`, `committee_meetings`, `record_issues`, `treaties`, `nominations`, `hearing_transcripts.event_id`, `interpretation/communication_rin.py`); review in progress. Receipts: an 18-detail RIN sample (18 dated referrals, 12 rulemakings, the same 12 with a RIN) and a 2-request meeting-edges run (hearing 64431 <-> meeting 119003, jackets both ways). `senate_communications` deliberately omitted: the Senate detail lacks the bridge's fields. The Federal Register `rin` join column is spicy-regs rollup work; no acquisition-policy change was needed. |
+| A6 | Measured and landed with the map merge: the 370-page walk histograms all 92,450 requirement communications at roughly a 29 percent detail-era share, under the stated 50 percent useful-share threshold, so `house_requirements` is not hosted; the histogram and the detail floor are written into the map. |
+| A8, A9 | In progress: builder branch `worktree-agent-a95d88c5a12a6e7de`, resumed after an API outage killed it mid-measurement. |
+| A11 | In progress: spicy-regs branch `hosting-a11-backfill` (worktree `spicy-regs-wt-a11`), resumed after the same outage. |
+| A12, A13, E4, E5 | Built and reviewed APPROVE on branch `worktree-agent-ad19194ecd76ab500` (every `have` row verified against live `LIST_ROUTES`, `check_evidence` hardened so a `have` row must name a real route and a defined symbol, the weekly live-publisher workflow, the README index test); landed on main. |
+| B1 | Sized: the held-out measurement merged at 8c0e023 -- section recovery 100/100 out of sample, quoted-block macro recall 83 percent (the one fitted rule), 141 requests with a retained receipt. The reconstruction pilot (§3) is in its review fix round on `reconstruction-pilot`. |
+| B2, B7, A10 (the CPRT row), the ModsBill accessor | Fix round in progress on `worktree-agent-acc262b1a0cfd2cdd`: a `docs/decisions.md` record is owed for the `uslm` order move, and the USLM proof is being re-derived (the census's ten appears to double-count `hconres11` under two version codes and to mix in PLAW collection entries outside BILLS scope). |
+| B3 | Landed: the CRS HTML rendition is preferred for the current version, with the preference structural rather than a passed-arg convention (merge 4e9ab7c). |
+| B5 | Landed: `TableObservation` in the evidence model, opt-in via `tables=True` (merge 1477d84). |
+| B6 | Landed: the 42-document corpus validation (merge b16c77c); two `_layout_verdict` false negatives fixed; the widened rule's blast radius pinned by a multi-page test. |
+| C1, C4 | Not started. |
+| C2, C3 | Landed, with post-merge review fixes: real receipts for both measurements, the fabricated 40,260-row claim rewritten, the Federal Register locator claim actually asserted and its inputs pinned. |
+| C5 | Closed as no-change: the HTML rendition removed the measured defect. |
+| D1, D4 | Open. |
+| D2 | Landed (SR01: the bill reader walks spicy-docs's listing route). |
+| D3 | Waiting on the user: re-vendor after the fork merges upstream. |
+| D5 | Closed by plan: acceptable; measured when D1 runs. |
+| E1, E2 | Open; the user files the upstream issues. |
+| E3 | Open in spicy-docs (`ty` not yet in `scripts/check`); spicy-regs already gates it. |
+| Releases | spicy-docs 0.21.2 owed once the in-flight branches merge; spicy-regs adoption follows. |
 
 ### A. Joins the data map measured and nothing drives
 

@@ -135,6 +135,22 @@ def test_page_shape_and_traversal_refusals(responses, message):
     assert raised.value.paged_json_acquisition["family"] == "example"
 
 
+def test_a_traversal_refusals_context_carries_single_record_too():
+    """The traversal-level refuse() context (pages()'s own, not just page()'s) carries
+    singleRecord alongside recordsKey, the same shape a page refusal's context uses -- so a
+    receipt from either operation is read the same way."""
+    transport = Transport(response(page([{"id": 1}], count=2)))
+    with (
+        reader(transport) as source,
+        pytest.raises(PagedJsonSourceError, match="declared and observed") as raised,
+    ):
+        list(source.pages(URL, records_key="things", single_record=True))
+    context = raised.value.paged_json_acquisition
+    assert context["operation"] == "traversal"
+    assert context["singleRecord"] is True
+    assert context["recordsKey"] == "things"
+
+
 def test_an_empty_object_still_refuses_with_single_record_too():
     """The single_record twin of the {"things": {}} case above: opting in does not turn an
     empty object into a record. Empty success is not absence."""

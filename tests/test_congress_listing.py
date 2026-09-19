@@ -16,6 +16,7 @@ from spicy_docs.sources.congress.listing import (
     MAX_LIMIT,
     CongressListingReader,
     CongressListRoute,
+    _route_path,
     bill_list_url,
     crs_report_list_url,
     list_route_url,
@@ -641,9 +642,14 @@ def test_new_list_routes_omit_their_optional_trailing_segments():
         ("house-communication-detail", {"congress": 119, "communication_type": "EC", "number": 4752}),
         ("house-communication-detail", {"congress": 119, "communication_type": "e", "number": 4752}),
         ("house-communication-detail", {"congress": 119, "communication_type": "1c", "number": 4752}),
+        # Per-chamber, not a shared union: "pom" is Senate-only, so House refuses it even though
+        # it is a real, valid code on the sibling route -- the old union would have accepted it.
+        ("house-communication-detail", {"congress": 119, "communication_type": "pom", "number": 4752}),
         ("senate-communication-detail", {"congress": 119, "communication_type": "ec"}),
         ("senate-communication-detail", {"congress": 119, "number": 4712}),
         ("senate-communication-detail", {"communication_type": "ec", "number": 4712}),
+        # "pt" is House-only; the old union would have accepted it on Senate too.
+        ("senate-communication-detail", {"congress": 119, "communication_type": "pt", "number": 4712}),
         ("house-requirement", {"number": 8070}),
         ("house-requirement-detail", {}),
         ("house-requirement-detail", {"number": 0}),
@@ -684,6 +690,38 @@ def test_new_list_routes_omit_their_optional_trailing_segments():
 def test_list_route_url_refuses_invalid_or_missing_path_params(route_name, kwargs):
     with pytest.raises(PagedJsonSourceError):
         list_route_url(LIST_ROUTES[route_name], limit=3, **kwargs)
+
+
+def test_communication_type_accepts_a_code_the_other_chamber_lacks():
+    """Per-chamber, not a shared union: "pt" (House: Petition) is not in the Senate's
+    enumeration, and "pom" (Senate: Petition or Memorial) is not in the House's -- each still
+    builds on its own route, which the old shared closed set would not have distinguished from
+    the refusal cases above."""
+    assert (
+        list_route_url(LIST_ROUTES["house-communication-detail"], congress=119, communication_type="pt", number=1)
+        == "https://api.congress.gov/v3/house-communication/119/pt/1?format=json&limit=250"
+    )
+    assert (
+        list_route_url(LIST_ROUTES["senate-communication-detail"], congress=119, communication_type="pom", number=1)
+        == "https://api.congress.gov/v3/senate-communication/119/pom/1?format=json&limit=250"
+    )
+
+
+def test_a_hypothetical_commtype_route_missing_from_the_enumeration_refuses_by_name():
+    """A route that names "commtype" but is not in _COMMUNICATION_TYPES_BY_ROUTE (a future
+    route the map was never extended for) refuses naming itself, not a bare KeyError."""
+    route = CongressListRoute("new-communication-detail", "new-communication/{congress}/{commtype}", "x")
+    with pytest.raises(PagedJsonSourceError, match="new-communication-detail has no known communication_type"):
+        list_route_url(route, congress=119, communication_type="ec")
+
+
+def test_route_path_refuses_a_values_mapping_missing_one_of_the_routes_own_tokens():
+    """_route_path itself, called directly with an incomplete mapping (a key absent entirely,
+    not present and None): the route's own path names "type" among its tokens, and a caller
+    that forgot the key -- not one that explicitly passed type=None -- gets a refusal naming
+    the missing token, not values.get() silently treating the omission as None."""
+    with pytest.raises(PagedJsonSourceError, match=r"bill values mapping is missing \['type'\]"):
+        _route_path(LIST_ROUTES["bill"], {"congress": 119})
 
 
 @pytest.mark.parametrize("route_name", sorted(name for name, route in LIST_ROUTES.items() if not route.sort_honored))
