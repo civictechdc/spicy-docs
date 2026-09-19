@@ -60,8 +60,12 @@ each citing the section it was derived against.
 
 The guide is convention in a way that matters here: it names
 `GPOTABLE`/`BOXHD`/`CHED`/`ROW`/`ENT` for a table, but a page image states no
-cell boundary, so the parser leaves a table region **unresolved** rather than
-inventing a structure the guide would accept. And the guide gives the
+cell boundary *in its text stream*, so the parser leaves a table region
+**unresolved** rather than inventing a structure the guide would accept.
+`extraction.model.TableObservation` (gap B5) now carries the geometry PyMuPDF
+detects on the retained page, kept beside the text and never merged into it;
+resolving these regions from that observation is the next measurement this
+package should make, and it is deliberately not a rule yet. And the guide gives the
 vocabulary but not the paragraph ladder — `(a)`, `(1)`, `(i)`, `(A)` — so
 `marker_hierarchy` is a heuristic citing the OFR drafting handbook and the
 section it was confirmed on, not a guide rule.

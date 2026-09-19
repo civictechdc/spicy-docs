@@ -326,8 +326,11 @@ CFR_RULES: tuple[Rule, ...] = (
         "table_region",
         "heuristic",
         "A run of small-face lines assembled from three or more fragments, or a line of leader dots, is a "
-        "table region and is left unresolved",
-        "the benchmark corpus",
+        "table region and is left unresolved. The print states no cell boundary in the text stream, so a "
+        "GPOTABLE built from it would be invented; `extraction.model.TableObservation` now carries the "
+        "geometry PyMuPDF detects, and resolving these regions from it is the next measurement, not a "
+        "guess this rule may make",
+        "the benchmark corpus; extraction/model.py TableObservation (gap B5)",
     ),
     Rule(
         "italic_emphasis",
