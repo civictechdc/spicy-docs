@@ -62,7 +62,9 @@ old outcome beside the new one.
   fallback. The fallback rule stays regardless, both because it is cheaper
   than assuming every future bill's action will be coded and because the
   measurement covers two bill types of one Congress, not `hjres`/`sjres` or
-  every Congress.
+  every Congress. The receipt -- script, command, both zips' sha256 digests
+  and the full output -- is retained outside this repository at
+  `~/Work/corpora/supply-2026-09-02/receipts/signed-date-fallback-118th-2026-09-19/`.
 - **Vote matching reads structured references.** The regex over vote question
   text could not match any Senate bill. `recordedVotes` on the bill's own action
   is the join, and the House vote route states the legislation in two fields.
@@ -95,8 +97,11 @@ unattributable.
 ## What these rules cannot see
 
 `interest_areas` now encodes the InnoDB boolean-mode defaults BillTrax's
-`MySQL 8.4` ran under, measured from its `docker-compose*.yml` files (all pin
-`mysql:8.4`, none overrides the full-text variables) against the MySQL 8.4
+`MySQL 8.4` ran under, measured from its `docker-compose*.yml` files (every
+one that defines a `mysql` service -- `docker-compose.yml.example`,
+`docker-compose.prod.yml`, `docker-compose.staging.yml` -- pins `mysql:8.4`
+and none overrides the full-text variables; `docker-compose.test.yml`
+defines no `mysql` service) against the MySQL 8.4
 Reference Manual: a token shorter than `innodb_ft_min_token_size` (3) or
 longer than `innodb_ft_max_token_size` (84), or one of the 35 distinct words
 in the default `INNODB_FT_DEFAULT_STOPWORD` table (36 rows; the manual's own
@@ -112,9 +117,11 @@ per-call function has no corpus-wide document frequency to weight it
 properly; see
 [`fulltext-boolean.html`](https://dev.mysql.com/doc/refman/8.4/en/fulltext-boolean.html).
 That page also states boolean-mode results are **not** sorted by relevance
-automatically, and BillTrax's own query carried no `ORDER BY`, so this
-ordering is a rule this module adopts rather than one BillTrax's rows ever
-actually had -- their real order was whatever InnoDB's query plan produced.
+automatically, and BillTrax's own query carried no `ORDER BY`, so BillTrax's
+rows arrived in storage order, not relevance order. This module's ordering is
+therefore a rule it adopts, not a reproduction of an order BillTrax's rows
+ever actually carried; no live comparison of the two orders has been run (see
+`docs/research/billtrax-value-inventory-2026-09-19.md` §7 Q5).
 
 `STAGES` is display order, not progress order, and `stage_index` and
 `stage_progress` answer only "where does this rung get drawn". They cannot say
