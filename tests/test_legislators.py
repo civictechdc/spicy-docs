@@ -52,7 +52,7 @@ def base_row() -> dict:
         },
         "name": {"first": "Test", "last": "Legislator"},
         "terms": [{"type": "sen", "start": "2001-01-03", "end": "2007-01-03", "state": "WA", "party": "Democrat"}],
-    }  # "party" is real publisher data but deliberately unread; see the Term docstring.
+    }
 
 
 def encoded(rows: list) -> bytes:
@@ -76,7 +76,17 @@ def test_a_well_formed_record_round_trips_every_field():
     assert (record.name_first, record.name_last) == ("Test", "Legislator")
     (term,) = record.terms
     assert (term.type, term.start, term.end, term.state) == ("sen", "2001-01-03", "2007-01-03", "WA")
-    assert not hasattr(term, "party"), "party is real publisher data but deliberately unmodeled here"
+    assert term.party == "Democrat"
+    assert term.district is None  # a "sen" term carries no district in the raw
+
+
+def test_a_rep_terms_district_is_kept_as_the_publisher_spelled_string():
+    row = base_row()
+    row["terms"][0].update({"type": "rep", "state": "VT", "district": 0})  # at-large: 0, not falsy-absent
+    del row["terms"][0]["party"]
+    result = parse_legislators(encoded([row]), max_bytes=BOUND)
+    term = result.records[0].terms[0]
+    assert term.district == "0" and term.party is None
 
 
 @pytest.mark.parametrize("field", ["lis", "fec", "icpsr", "govtrack", "opensecrets", "wikidata"])
@@ -140,6 +150,9 @@ def test_both_real_fec_candidate_id_shapes_are_accepted(fec_id):
         (lambda r: r["terms"][0].__setitem__("end", "2026-02-30"), "not a real calendar date"),
         (lambda r: r["terms"][0].pop("state"), "non-empty state"),
         (lambda r: r["terms"][0].__setitem__("state", ""), "non-empty state"),
+        (lambda r: r["terms"][0].__setitem__("party", 1), "non-string party"),
+        (lambda r: r["terms"][0].__setitem__("district", "4"), "district must be an integer"),
+        (lambda r: r["terms"][0].__setitem__("district", True), "district must be an integer"),
         (lambda r: r["terms"].__setitem__(0, "not-an-object"), "must be an object"),
     ],
 )
@@ -226,8 +239,10 @@ def test_current_excerpt_parses_and_indexes_every_kept_shape():
     assert warner.lis == "S327" and warner.fec == ("S6VA00093", "P80003023")
     assert result.by_lis["S327"] is warner
     assert result.by_fec["P80003023"] is warner
+    assert warner.terms[-1].party == "Democrat" and warner.terms[-1].district is None  # senator: no district
     aderholt = result.by_bioguide["A000055"]
     assert aderholt.lis is None and aderholt.fec == ("H6AL04098",)
+    assert aderholt.terms[-1].party == "Republican" and aderholt.terms[-1].district == "4"
     gallagher = result.by_bioguide["G000607"]
     assert gallagher.wikidata is None and gallagher.lis is None
     assert len(result.by_lis) == 3  # Cantwell, Sanders, Warner
@@ -242,8 +257,9 @@ def test_historical_excerpt_parses_and_carries_the_former_senator_crosswalk():
     bassett = result.by_bioguide["B000226"]
     assert bassett.lis is None and bassett.fec == ()
     bland = result.by_bioguide["B000546"]
-    assert bland.terms[0].type == "rep" and bland.lis is None  # 1st Congress; its term carries no party in the raw
-    assert not hasattr(bland.terms[0], "party")
+    assert bland.terms[0].type == "rep" and bland.lis is None
+    assert bland.terms[0].party is None  # 1st Congress; its term carries no party in the raw
+    assert bland.terms[0].district == "9"
     mccain = result.by_bioguide["M000303"]
     assert "P80002801" in mccain.fec and result.by_fec["P80002801"] is mccain
     assert len(result.by_lis) == 13

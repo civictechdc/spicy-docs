@@ -10,6 +10,8 @@ from spicy_docs.sources.congress.bill_status import (
     BillIdentity,
     BillSourceError,
     BillStatus,
+    BillTitle,
+    RelatedBill,
     bill_package_id_from_url,
     bill_status_locator,
     bill_xml_locator,
@@ -359,3 +361,80 @@ def test_a_subcommittee_is_read_as_a_committee_without_chamber_or_type() -> None
     subcommittee = status.committees[0].subcommittees[0]
     assert (subcommittee.system_code, subcommittee.name) == ("hsru13", "Legislative and Budget Process")
     assert (subcommittee.chamber, subcommittee.type) == (None, None)
+
+
+# --- titles and relatedBills: neither carried by status-119hr6028.xml or status-119s5.xml -------------
+#
+# The govinfo_bills README records status-119s5.xml as reduced with both `titles` and
+# `relatedBills` dropped; only the three hres fixtures carry `titles`, and none of the five
+# original fixtures carries `relatedBills` at all. status-119hr300.xml was added (measured
+# live 2026-09-19, see the README) specifically because it is small and carries both.
+
+
+def test_a_bill_without_titles_or_relatedbills_reads_them_as_empty() -> None:
+    status = parse_bill_status(status_body(), identity=IDENTITY)
+    assert status.titles == ()
+    assert status.related_bills == ()
+
+
+def test_titles_are_read_with_chamber_and_text_version_fields_where_the_publisher_states_them() -> None:
+    status = parse_bill_status(
+        (FIXTURES / "status-119hres214.xml").read_bytes(), identity=BillIdentity(119, "hres", 214)
+    )
+    display, official_eh, official_intro = status.titles
+    assert display == BillTitle(
+        title="Electing Members to certain standing committees of the House of Representatives.",
+        title_type="Display Title",
+        chamber_code=None,
+        chamber_name=None,
+        bill_text_version_code=None,
+        bill_text_version_name=None,
+        update_date="2026-07-11T21:24:28Z",
+    )
+    # Only this title carries chamberCode/chamberName in this fixture -- the guide names them
+    # optional, and the corpus agrees most titles omit them.
+    assert (official_eh.chamber_code, official_eh.chamber_name) == ("H", "House")
+    assert (official_eh.bill_text_version_code, official_eh.bill_text_version_name) == ("EH", "Engrossed in House")
+    assert official_intro.title_type == "Official Title as Introduced"
+    assert (official_intro.chamber_code, official_intro.bill_text_version_code) == (None, None)
+
+
+def test_related_bills_read_the_publisher_s_title_element_not_the_guide_s_latesttitle() -> None:
+    """The guide names this child `latestTitle`; live BILLSTATUS from the 108th, 113th and
+    119th Congresses (measured 2026-09-19) states it as `<title>` instead -- see the module
+    docstring on `RelatedBill`."""
+    status = parse_bill_status((FIXTURES / "status-119hr300.xml").read_bytes(), identity=BillIdentity(119, "hr", 300))
+    assert status.related_bills == (
+        RelatedBill(
+            congress="119",
+            bill_type="HR",
+            number="1630",
+            title="To allow States to elect to observe year-round daylight saving time, and for other purposes.",
+            latest_action_date="2025-02-26",
+            latest_action_text="Referred to the House Committee on Energy and Commerce.",
+            relationship_details_json='[{"identifiedBy":"CRS","type":"Related bill"}]',
+        ),
+    )
+
+
+def test_related_bills_relationship_details_keeps_every_item_as_canonical_json() -> None:
+    """A related bill can carry more than one relationshipDetails item (measured live against
+    BILLSTATUS-108hr1.xml, which the offline fixtures do not need to hold to prove the shape)."""
+    body = (
+        (FIXTURES / "status-119hr300.xml")
+        .read_bytes()
+        .replace(
+            b"          <item>\n            <type>Related bill</type>\n"
+            b"            <identifiedBy>CRS</identifiedBy>\n          </item>\n        </relationshipDetails>",
+            b"          <item>\n            <type>Related bill</type>\n"
+            b"            <identifiedBy>CRS</identifiedBy>\n          </item>\n"
+            b"          <item>\n            <type>Related document</type>\n"
+            b"            <identifiedBy>Senate</identifiedBy>\n          </item>\n        </relationshipDetails>",
+            1,
+        )
+    )
+    status = parse_bill_status(body, identity=BillIdentity(119, "hr", 300))
+    (related,) = status.related_bills
+    assert related.relationship_details_json == (
+        '[{"identifiedBy":"CRS","type":"Related bill"},{"identifiedBy":"Senate","type":"Related document"}]'
+    )

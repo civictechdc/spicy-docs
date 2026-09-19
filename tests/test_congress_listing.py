@@ -39,6 +39,7 @@ ROUTE_PARAMS: dict[str, dict[str, object]] = {
     "hearing": {"congress": 119},
     "committee-report": {"congress": 119},
     "house-communication": {"congress": 119},
+    "house-vote": {"congress": 119, "session": 1},
 }
 ROUTE_FIXTURE_BYTES: dict[str, bytes] = {
     "amendment": (FIXTURES / "congress-amendment-list.json").read_bytes(),
@@ -48,6 +49,7 @@ ROUTE_FIXTURE_BYTES: dict[str, bytes] = {
     "hearing": (FIXTURES / "congress-hearing-list.json").read_bytes(),
     "committee-report": (FIXTURES / "congress-committee-report-list.json").read_bytes(),
     "house-communication": (FIXTURES / "congress-house-communication-list.json").read_bytes(),
+    "house-vote": (FIXTURES / "congress-house-vote-list.json").read_bytes(),
 }
 # (declared count, next URL, one distinguishing field on the first record, its value)
 ROUTE_PAGE_EXPECTATIONS: dict[str, tuple[int, str, str, object]] = {
@@ -82,6 +84,12 @@ ROUTE_PAGE_EXPECTATIONS: dict[str, tuple[int, str, str, object]] = {
         "https://api.congress.gov/v3/house-communication/119?offset=3&limit=3&format=json",
         "number",
         4752,
+    ),
+    "house-vote": (
+        362,
+        "https://api.congress.gov/v3/house-vote/119/1?offset=3&limit=3&format=json",
+        "rollCallNumber",
+        240,
     ),
 }
 
@@ -203,6 +211,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "hearing": False,
         "committee-report": True,
         "house-communication": False,
+        "house-vote": False,
     }
     # Measured live 2026-09-19 (see the fixtures README): a one-day fromDateTime window cut
     # committee-bills' declared count from 41,822 to 9 (honored) but left bill-actions' declared
@@ -217,6 +226,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "hearing": True,
         "committee-report": True,
         "house-communication": True,
+        "house-vote": True,
     }
     assert LIST_ROUTES["bill"].records_key == BILLS_KEY
     assert LIST_ROUTES["crsreport"].records_key == CRS_REPORTS_KEY
@@ -226,6 +236,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
     assert LIST_ROUTES["committee-report"].records_key == "reports"
     assert LIST_ROUTES["house-communication"].records_key == "houseCommunications"
     assert LIST_ROUTES["bill-actions"].records_key == "actions"
+    assert LIST_ROUTES["house-vote"].records_key == "houseRollCallVotes"
     # Confirmed live 2026-09-19: this route alone nests its rows under a wrapper
     # object instead of a top-level array; see tests/fixtures/listings/README.md.
     assert LIST_ROUTES["committee-bills"].records_key == ("committee-bills", "bills")
@@ -241,6 +252,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         ("hearing", "https://api.congress.gov/v3/hearing/119?format=json&limit=3"),
         ("committee-report", "https://api.congress.gov/v3/committee-report/119?format=json&limit=3"),
         ("house-communication", "https://api.congress.gov/v3/house-communication/119?format=json&limit=3"),
+        ("house-vote", "https://api.congress.gov/v3/house-vote/119/1?format=json&limit=3"),
     ],
 )
 def test_list_route_url_builds_the_exact_publisher_request(route_name, expected):
@@ -278,6 +290,12 @@ def test_list_route_url_bare_route_omits_the_congress_segment():
         ("bill-actions", {"congress": 119, "bill_type": "hr", "number": True}),
         ("nomination", {"congress": 119, "chamber": "house"}),
         ("hearing", {"congress": 1000}),
+        ("house-vote", {"session": 1}),
+        ("house-vote", {"congress": 119}),
+        ("house-vote", {"congress": 119, "session": 0}),
+        ("house-vote", {"congress": 119, "session": 3}),
+        ("house-vote", {"congress": 119, "session": "1"}),
+        ("house-vote", {"congress": 119, "session": True}),
         ("bill", {"congress": 0}),
         ("bill", {"bill_type": "hr"}),
         ("bill", {"congress": 119, "bill_type": "HR"}),

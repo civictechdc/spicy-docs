@@ -72,6 +72,7 @@ refuses `sort`.
 | `hearing` | `hearing/{congress}` | `hearings` | no | yes (default) | `congress-hearing-list.json` |
 | `committee-report` | `committee-report/{congress}` | `reports` | yes | yes (default) | `congress-committee-report-list.json` |
 | `house-communication` | `house-communication/{congress}` | `houseCommunications` | no | yes (default) | `congress-house-communication-list.json` |
+| `house-vote` | `house-vote/{congress}/{session}` | `houseRollCallVotes` | no (measured on the sibling `/{roll}/members` route) | yes (default) | `congress-house-vote-list.json` |
 
 `committee-bills` is the one route here whose rows are not a top-level array:
 the publisher nests them inside a `committee-bills` wrapper object alongside
@@ -79,6 +80,18 @@ its own `count` and `url` (confirmed live 2026-09-19; see the [fixtures
 README](../../tests/fixtures/listings/README.md)). `records_key` there is the
 tuple `("committee-bills", "bills")`, and `reading/paged_json.py` reads a
 tuple records key the same way it already reads `count_path`/`next_path`.
+
+`house-vote` has no bare or congress-only collection: both `congress` and
+`session` (1 or 2) are always required, the way `committee-bills` and
+`bill-actions` require every one of theirs. Its rows carry exactly thirteen
+fields every time, measured 2026-09-19 against `house-vote/119/1?limit=3`
+(see the fixtures README): `congress`, `identifier`, `legislationNumber`,
+`legislationType`, `legislationUrl`, `result`, `rollCallNumber`,
+`sessionNumber`, `sourceDataURL`, `startDate`, `updateDate`, `url`,
+`voteType` -- the same field set the raw-data study's
+`congressHouseVoteListingFields` names. This is the index only: member-level
+positions live at `house-vote/{congress}/{session}/{roll}/members`, one level
+deeper and not in `LIST_ROUTES`.
 
 ```python
 from spicy_docs.sources.congress.listing import LIST_ROUTES, CongressListingReader, list_route_url
