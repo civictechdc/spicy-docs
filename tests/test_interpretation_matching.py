@@ -360,6 +360,36 @@ def test_an_area_with_no_keywords_matches_nothing() -> None:
     assert find_matching_sections((InterestArea("Empty", ()),), SECTIONS) == ()
 
 
+@pytest.mark.parametrize(
+    ("keyword", "rule"),
+    [
+        pytest.param("ai", "innodb_ft_min_token_size", id="below-the-3-character-floor"),
+        pytest.param("x" * 85, "innodb_ft_max_token_size", id="above-the-84-character-ceiling"),
+        pytest.param("for", "innodb_ft_default_stopword", id="a-word-in-the-default-stopword-table"),
+    ],
+)
+def test_a_keyword_the_innodb_index_would_drop_never_matches_even_though_the_word_is_present(
+    keyword: str, rule: str
+) -> None:
+    section = Section("sec-x", "ver-1", "119-hr-1", f"Provisions on {keyword} apply broadly.")
+    matches = find_matching_sections((InterestArea("Area", (keyword,)),), (section,))
+    assert matches == (), f"{keyword!r} should be dropped by {rule} before matching"
+
+
+def test_relevance_is_the_count_of_distinct_matched_keywords_ordered_then_by_position() -> None:
+    sections = (
+        Section("sec-a", "v", "b", "levee repair funding.", "A"),
+        Section("sec-b", "v", "b", "levee aquifer repair funding.", "B"),
+        Section("sec-c", "v", "b", "levee repair funding.", "C"),
+    )
+    area = InterestArea("Water", ("levee", "aquifer", "repair"))
+    matches = find_matching_sections((area,), sections)
+    # sec-b matches all three keywords (relevance 3); sec-a and sec-c tie at
+    # two (levee, repair) and keep their input order (0 before 2).
+    assert [match.section_id for match in matches] == ["sec-b", "sec-a", "sec-c"]
+    assert [match.relevance for match in matches] == [3, 2, 2]
+
+
 # --- end to end: the parser's own output feeds the rules, no hand-built input ---
 
 GOVINFO_BILLS = Path(__file__).parent / "fixtures" / "govinfo_bills"
