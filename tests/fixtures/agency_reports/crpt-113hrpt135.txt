@@ -1,0 +1,1598 @@
+81–683 
+113TH CONGRESS 
+REPORT 
+" 
+! 
+HOUSE OF REPRESENTATIVES 
+1st Session 
+113–135 
+ENERGY AND WATER DEVELOPMENT APPROPRIATIONS 
+BILL, 2014 
+JULY 2, 2013.—Committed to the Committee of the Whole House on the State of 
+the Union and ordered to be printed 
+Mr. FRELINGHUYSEN, from the Committee on Appropriations, 
+submitted the following 
+R E P O R T 
+together with 
+ADDITIONAL VIEWS 
+[To accompany H.R. 2609] 
+The Committee on Appropriations submits the following report in 
+explanation of the accompanying bill making appropriations for en-
+ergy and water development for the fiscal year ending September 
+30, 2014, and for other purposes. 
+INDEX TO BILL AND REPORT 
+Page Number 
+Bill 
+Report 
+Introduction ................................................................................................
+00 
+5 
+I. Department of Defense—Civil: 
+Corps of Engineers—Civil ..................................................................
+2 
+15 
+Investigations ...............................................................................
+2 
+25 
+Construction .................................................................................
+3 
+30 
+Mississippi River and Tributaries ..............................................
+4 
+38 
+Operation and Maintenance .......................................................
+4 
+41 
+Regulatory Program .....................................................................
+6 
+65 
+Formerly Utilized Sites Remedial Action Program ...................
+6 
+66 
+Flood Control and Coastal Emergencies ....................................
+6 
+67 
+Expenses .......................................................................................
+6 
+67 
+Office of the Assistant Secretary of the Army (Civil Works) 
+7 
+68 
+Administrative Provision .............................................................
+7 
+68 
+General Provisions ..............................................................................
+8 
+69 
+II. Department of the Interior: 
+Central Utah Project ...........................................................................
+14 
+70 
+Central Utah Project Completion Account ................................
+14 
+70 
+Bureau of Reclamation: 
+VerDate Mar 15 2010 
+06:39 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00001
+Fmt 6659
+Sfmt 6659
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+2 
+Page Number 
+Bill 
+Report 
+Fiscal Year 2014 Budget Overview ............................................
+00 
+71 
+Water and Related Resources .....................................................
+14 
+72 
+Central Valley Project Restoration Fund ...................................
+16 
+79 
+California Bay-Delta Restoration ...............................................
+16 
+79 
+Policy and Administration ..........................................................
+17 
+80 
+General Provisions .......................................................................
+18 
+81 
+III. Department of Energy: 
+Introduction .........................................................................................
+00 
+81 
+Committee Recommendations ............................................................
+00 
+81 
+Energy Programs: 
+Renewable Energy, Energy Reliability and Efficiency .............
+21 
+87 
+Nuclear Energy ............................................................................
+22 
+95 
+Fossil Energy Research and Development .................................
+23 
+98 
+Naval Petroleum and Oil Shale Reserves ..................................
+24 
+101 
+Strategic Petroleum Reserve .......................................................
+24 
+102 
+Northeast Home Heating Oil Reserve ........................................
+24 
+102 
+Energy Information Administration ...........................................
+25 
+103 
+Non-Defense Environmental Cleanup ........................................
+25 
+103 
+Uranium Enrichment Decontamination and Decommissioning 
+Fund ..........................................................................................
+25 
+104 
+Science ..........................................................................................
+26 
+105 
+Advanced Research Projects Agency—Energy ...........................
+26 
+111 
+Title 17 Innovative Technology Loan Guarantee Program ......
+26 
+112 
+Advanced Technology Vehicles Manufacturing Loan Program 
+27 
+113 
+Departmental Administration .....................................................
+28 
+114 
+Office of Inspector General .........................................................
+29 
+115 
+Atomic Energy Defense Activities: 
+National Nuclear Security Administration: 
+Weapons Activities .......................................................................
+29 
+118 
+Defense Nuclear Nonproliferation ..............................................
+29 
+129 
+Naval Reactors .............................................................................
+30 
+135 
+Office of the Administrator .........................................................
+30 
+136 
+Environmental and Other Defense Activities ...................................
+31 
+137 
+Defense Environmental Cleanup ................................................
+31 
+137 
+Other Defense Activities .............................................................
+31 
+142 
+Power Marketing Administrations: 
+Bonneville Power Administration ...............................................
+32 
+144 
+Southeastern Power Administration ..........................................
+33 
+145 
+Southwestern Power Administration .........................................
+34 
+145 
+Western Area Power Administration .........................................
+35 
+146 
+Falcon and Amistad Operating and Maintenance Fund ..........
+37 
+148 
+Federal Energy Regulatory Commission ...........................................
+38 
+148 
+Committee Recommendation ..............................................................
+00 
+149 
+General Provisions ..............................................................................
+39 
+179 
+IV. Independent Agencies: 
+Appalachian Regional Commission ...................................................
+48 
+179 
+Defense Nuclear Facilities Safety Board ...........................................
+49 
+180 
+Delta Regional Authority ...................................................................
+49 
+180 
+Denali Commission .............................................................................
+49 
+181 
+Northern Border Regional Commission ............................................
+50 
+181 
+Southeast Crescent Regional Commission ........................................
+50 
+182 
+Nuclear Regulatory Commission .......................................................
+51 
+182 
+Nuclear Waste Technical Review Board ...........................................
+53 
+185 
+Federal Coordinator for Alaska Natural Gas Transportation 
+Projects .............................................................................................
+53 
+185 
+Tennessee Valley Authority ...............................................................
+00 
+186 
+V. General Provisions 
+House of Representatives Report Requirements .....................................
+00 
+188 
+VerDate Mar 15 2010 
+06:47 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00002
+Fmt 6659
+Sfmt 6659
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+3 
+SUMMARY OF ESTIMATES AND RECOMMENDATIONS 
+The Committee has considered budget estimates, which are con-
+tained in the Budget of the United States Government, Fiscal Year 
+2014. The following table summarizes appropriations for fiscal year 
+2013, the budget estimates, and amounts recommended in the bill 
+for fiscal year 2014. The appropriations for fiscal year 2013 are de-
+fined as the amounts provided within Public Law 113–6 and ex-
+cluding emergency funding, disaster relief adjustments, the 251A 
+sequester, and any other adjustments imposed by the Office of 
+Management and Budget pursuant to section 3004 of Public Law 
+113–6. 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00003
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+4 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00004
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+Insert graphic folio 01 81287A.001
+jbell on DSK7SPTVN1PROD with REPORTS
+5 
+INTRODUCTION 
+The Energy and Water Development Appropriations bill for fiscal 
+year 2014 totals $30,426,000,000, $2,857,000,000 less than the 
+amount appropriated in fiscal year 2013 (defined as the amount 
+provided within Public Law 113–6 and excluding emergency fund-
+ing, disaster relief adjustments, the 251A sequester, and any other 
+adjustments imposed by the Office of Management and Budget pur-
+suant to section 3004 of Public Law 113–6) and $4,057,519,000 
+below the President’s budget request. Total security funding is 
+$11,104,000,000, $397,000,000 less than the amount appropriated 
+in fiscal year 2013 and $548,469,000 below the budget request. 
+Total non-security funding is $19,322,000,000, $2,460,000,000 less 
+than 
+the 
+amount 
+appropriated 
+in 
+fiscal 
+year 
+2013 
+and 
+$3,509,050,000 below the budget request. 
+Title I of the bill provides $4,876,000,000 for the Civil Works pro-
+grams of the U.S. Army Corps of Engineers, $104,000,000 below 
+fiscal year 2013 (excluding funding provided in Public Law 113–2, 
+the Disaster Relief Appropriations Act, 2013) and $50,000,000 
+above the budget request. Total funding for activities eligible for re-
+imbursement from the Harbor Maintenance Trust Fund is 
+$1,000,000,000, $110,000,000 above the budget request. 
+Title II provides $964,757,000 for the Department of the Interior 
+and the Bureau of Reclamation, $103,962,000 below fiscal year 
+2013 and $84,827,000 below the budget request. The Committee 
+recommends 
+$956,032,000 
+for 
+the 
+Bureau 
+of 
+Reclamation, 
+$91,687,000 below fiscal year 2013 and $90,052,000 below the 
+budget request for accounts traditionally within the Bureau of Rec-
+lamation. The Committee recommends $8,725,000 for the Central 
+Utah Project, $12,275,000 below fiscal year 2013 and $5,225,000 
+above the budget request. 
+Title III provides $24,925,252,000 for the Department of Energy, 
+$2,118,175,000 below fiscal year 2013 and $4,028,641,000 below the 
+budget request. Funding for the National Nuclear Security Admin-
+istration (NNSA), which includes nuclear weapons activities, de-
+fense nuclear nonproliferation, naval reactors, and the Office of the 
+NNSA Administrator, is $11,266,000,000, $235,644,000 below fiscal 
+year 2013 and $386,469,000 below the budget request. 
+The Committee recommends $4,653,000,000 for the Office of 
+Science, $982,637,000 for renewable energy, energy reliability and 
+efficiency programs; $656,389,000 for nuclear energy programs; 
+$450,000,000 for fossil energy research and development; and 
+$50,000,000 for the Advanced Research Projects Agency—Energy. 
+Environmental management activities—non-defense environ-
+mental cleanup, uranium enrichment decontamination and decom-
+missioning, and defense environmental cleanup—are funded at 
+$5,489,000,000, 
+$242,651,000 
+below 
+fiscal 
+year 
+2013 
+and 
+$132,688,000 below the budget request. 
+Funding for the Power Marketing Administrations is provided at 
+the requested levels. 
+Title IV provides $249,279,000 for several Independent Agencies, 
+$5,217,000 below fiscal year 2013 and $5,949,000 above the budget 
+request. Net funding for the Nuclear Regulatory Commission is 
+$123,216,000, $4,298,000 below fiscal year 2013 and the same as 
+the budget request. 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00005
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+6 
+Title V includes a rescission of $519,000,000 of prior year appro-
+priations, 
+$513,000,000 
+more 
+than 
+fiscal 
+year 
+2013 
+and 
+$419,000,000 more than the budget request. The rescission includes 
+$200,000,000 from title I and $319,000,000 from title III. Within 
+title III, $157,000,000 is rescinded from Energy Efficiency and Re-
+newable Energy, $142,000,000 is rescinded from Weapons Activi-
+ties, and $20,000,000 is rescinded from Defense Nuclear Non-
+proliferation. 
+OVERVIEW OF THE RECOMMENDATION 
+The Committee recommendation makes clear the tradeoffs forced 
+by relying on cuts in discretionary spending to achieve deficit re-
+ductions. In fiscal year 2013, sequestration cut the activities funded 
+in this bill by more than $2,100,000,000 with the greatest percent-
+age taken from the most critical area this bill funds: our national 
+security. Yet, beyond this percentage difference between security 
+and non-security activities, sequestration was indifferent to the 
+programs, projects, and activities being cut. Compounding the prob-
+lem, the Energy and Water Appropriations bill for fiscal year 2013 
+was not enacted into law, so the funding levels were based on pri-
+orities at least one year out of date. 
+The Committee recommendation clearly articulates priorities for 
+fiscal year 2014, differentiating among programs, projects, and ac-
+tivities that are inherently federal responsibilities and those that 
+might be supported by the private sector or other non-federal enti-
+ties. Above all else, it supports the most critical of inherently fed-
+eral responsibilities: the national defense and the maintenance of 
+our nation’s waterways. Strong support is provided for basic science 
+programs, which are critical to our country’s long-term prosperity, 
+and which the private sector is unlikely to assume. Activities to 
+clean up contamination from the Manhattan Project are also inher-
+ently federal responsibilities and are required to fulfill agreements 
+with states, tribes, and other non-federal entities. In contrast, ap-
+plied energy research and development has the greatest oppor-
+tunity for support from the private sector and the states. 
+The Committee does recognize that the federal government can, 
+and should, play a role in helping our private sector compete. Many 
+foreign companies enjoy heavy subsidies and other protections from 
+their governments. This assistance can give those companies at 
+least a short-term advantage in the global marketplace. The rec-
+ommendation continues applied research and development for en-
+ergy technologies by focusing the limited available resources on 
+programs that help keep the cost of energy low and those that help 
+the American private sector quickly identify and pursue promising 
+technologies. 
+NATIONAL DEFENSE PROGRAMS 
+As in previous years, the Committee considers the national de-
+fense programs, run by the National Nuclear Security Administra-
+tion (NNSA), to be the Department of Energy’s top priority. Even 
+within the limited resources available for fiscal year 2014, the rec-
+ommendation provides strong support for the President’s proposals 
+to increase investments in the NNSA’s infrastructure through the 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00006
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+7 
+following national defense accounts: Weapons Activities, Defense 
+Nuclear Nonproliferation, and Naval Reactors. 
+The Committee recognizes and supports the close working rela-
+tionship that the NNSA and the Department of Defense are dem-
+onstrating. Properly executed, this unity of mission will help the 
+Department of Defense to better understand the costs of its re-
+quirements and the NNSA to build upon Department of Defense 
+budgeting experience to provide more accurate estimates of costs. 
+The Committee is concerned that assumed within the NNSA’s 
+budget are more than $300,000,000 in ‘‘efficiencies’’ that must be 
+realized to allow the NNSA to attain its objectives for fiscal year 
+2014, and that these ‘‘efficiencies’’ must be maintained in the fu-
+ture. The Committee believes that all options must be considered 
+to find these ‘‘efficiencies’’ and includes bill language to reduce the 
+percentage of overhead at the weapons laboratories that may be 
+used for discretionary research and development. Implementation 
+of this reduction should free more than $100,000,000 to be applied 
+to the direct support of our nation’s nuclear weapons. The NNSA 
+shall report to the Committees on Appropriations of the House of 
+Representatives and the Senate not later than 180 days after en-
+actment of this Act regarding its ‘‘efficiencies’’ for fiscal years 2014 
+and 2015. 
+The recommendation continues the Committee’s strong support 
+for modernization of the nuclear stockpile and its supporting infra-
+structure. At the same time, the Committee notes that the full ex-
+tent of the consequences of the NNSA’s project management prob-
+lems, especially at the largest of the NNSA’s construction projects, 
+is still coming to light. As the Administration gains a more com-
+plete understanding of cost increases and construction delays, it 
+must take the lead to determine whether a new long-term budget 
+plan is needed to meet the nation’s strategic objectives. 
+The Committee notes that the Administration has proposed a 
+new structure for our nuclear stockpile, the so-called ‘‘3+2 strat-
+egy’’, to be implemented in the coming decades. This proposal may 
+be an attempt to accommodate the budgetary environment facing 
+our nation’s strategic defense. While in concept some of the claimed 
+benefits, including lower overall costs for maintaining the stockpile, 
+are appealing, the Administration has yet to fully analyze and esti-
+mate the costs of the workforce implications, infrastructure needs, 
+and strategic risks of the proposed changes. This analysis and full 
+estimation of risks, benefits, and costs is critical for this Committee 
+to determine its support for the proposal. The recommendation 
+takes a balanced approach by funding work needed to complete this 
+analysis as well as ongoing work that will be needed for our stock-
+pile regardless of its outcome. 
+The recommendation largely supports the Administration’s budg-
+et request to prohibit the spread of fissile materials overseas, al-
+though the Committee would have preferred to allocate more to the 
+core nonproliferation programs had funding been available. While 
+the United States government has made great strides working with 
+its global partners to limit the potential spread of fissile materials, 
+much more is left to be done. The Committee notes that the United 
+States and Russia have not yet determined the next steps of its bi-
+lateral nonproliferation relationship and understands that the out-
+come of this discussion will have important implications for the 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00007
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+8 
+nonproliferation program in the coming years. The Committee re-
+quests regular updates from the NNSA regarding the status of 
+these discussions. 
+Finally, the Committee strongly supports the strategic protection 
+afforded by our country’s nuclear fleet, which is supported through 
+the Naval Reactors account. The recommendation prioritizes stra-
+tegic activities, such as the Ohio-class ballistic submarine replace-
+ment reactor program, while delaying infrastructure needs that, 
+while also important, can be slightly deferred with no strategic re-
+percussions. The Committee greatly appreciates the service of the 
+members of our country’s armed forces and will continue to place 
+the highest priority on support for them and their work. 
+SUPPORTING AMERICAN COMPETITIVENESS 
+The agencies and programs funded by the recommendation are 
+critical engines for the prosperity of the nation. The Army Corps 
+of Engineers is responsible for keeping our federal waterways open 
+for business. The Corps also has been instrumental in reducing the 
+risk of flooding for much of this country’s food-producing lands. The 
+Bureau of Reclamation supplies reliable water to approximately ten 
+percent of this country’s population and to much of its fertile agri-
+cultural lands. The Department of Energy has been at the forefront 
+of developing intellectual property in energy sciences and other dis-
+ciplines, the commercialization of new ideas, and improvements in 
+energy supply and utilization. Working together, these agencies un-
+derpin the country’s economic competitiveness and energy security. 
+As the agency responsible for our nation’s federal waterways, the 
+Army Corps of Engineers maintains 926 ports and 25,000 miles of 
+commercial channels serving 41 states. The maintenance of these 
+commercial waterways is directly tied to the ability of this country 
+to ship its manufactured and bulk products, as well as to compete 
+with the ports of neighboring countries for the business of ships ar-
+riving from around the world. These waterways handled foreign 
+commerce valued at more than $1,724,000,000,000 in 2012 alone. 
+As a primary supporter of America’s waterway infrastructure, the 
+Corps is ensuring that the nation has the tools to maintain a com-
+petitive edge in the global market. While the Committee must 
+make hard choices with limited resources, this recommendation 
+makes key changes to the budget request to ensure that the Corps 
+has the necessary tools to continue to support America’s shipping 
+infrastructure. 
+The flood protection infrastructure that the Corps builds or 
+maintains reduces the risk of flooding to people, businesses, and 
+other public infrastructure investments. In fact, Corps projects pre-
+vented damages of $149,600,000,000 in 2012 alone. Between 1928 
+and 2012, each inflation-adjusted dollar invested in these projects 
+prevented $7.89 in damages. The properties and investments pro-
+tected by the Corps infrastructure would often be flooded without 
+that infrastructure, destroying homes, businesses, and many valu-
+able acres of cropland. 
+The Bureau of Reclamation’s water infrastructure is a critical 
+component of the agricultural productivity of this country. These 
+facilities deliver water to one of every five western farmers result-
+ing in approximately 10 million acres of irrigated land that pro-
+duces 60 percent of the nation’s vegetables and 25 percent of its 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00008
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+9 
+fruits and nuts. Additionally, these facilities deliver water to more 
+than 31 million people for municipal, rural, and industrial uses. 
+Without these dams and water supply facilities, American agricul-
+tural producers in the West would not be able to access reliable, 
+safe water for their families and their businesses and many munic-
+ipal and industrial users would face critical water shortages. 
+The Department of Energy supports essential research that has 
+helped keep America at the cutting edge of science and technology 
+innovation. Given the limited resources available this year, the rec-
+ommendation places a higher priority on research that only the 
+government is likely to do, research that advances our basic sci-
+entific understanding, and research that has commercialization 
+possibilities only in the distant future. 
+Research and development for technologies that are closer to 
+commercialization, and thus that the private sector has more incen-
+tive to take up, receives less funding than in previous years. How-
+ever, the recommendation does continue a long-standing commit-
+ment by the Committee to the type of research that will improve 
+American energy security and independence. The recommendation 
+for Fossil Energy; Nuclear Energy; and Renewable Energy, Energy 
+Reliability and Efficiency are balanced to improve the efficiency 
+and cleanliness of existing forms of energy production, while pro-
+viding support for longer-term development of new and innovative 
+forms of energy for this nation’s security and prosperity. 
+As noted in previous years, the Department has not been suc-
+cessful at ensuring that intellectual property developed with U.S. 
+taxpayer funds benefits those same taxpayers. The Department 
+still has no coherent strategy to track and improve domestic exploi-
+tation of Department-developed intellectual property. Without such 
+a strategy, U.S. manufacturing will too frequently be forced to play 
+‘‘catch-up’’ with foreign competitors benefitting from ideas formed 
+here in the U.S. The Committee strongly urges the Secretary to 
+take more of a leadership role in improving U.S. manufacturing 
+and domestic intellectual property retention and includes direction 
+to this effect in the ‘‘Department of Energy’’ section. 
+PROJECT AND PROGRAM MANAGEMENT 
+While the Department of Energy has made significant progress 
+in the last few years, until the Committee can have confidence in 
+the cost and schedule baselines upon which it must form its budg-
+etary decisions, project and program management will continue to 
+be a core concern. The Department continues its two decade pres-
+ence on the Government Accountability Office’s ‘‘high-risk list’’ for 
+project management, although it is a hopeful sign that the Depart-
+ment’s management of its smaller projects has been removed from 
+the list. Unfortunately, management of the largest projects remains 
+on the ‘‘high-risk list’’ and funding for these projects—including the 
+Mixed Oxide Fuel Fabrication Facility, Waste Treatment Plant, 
+and Uranium Processing Facility—to a large extent drives the De-
+partment’s budget request. Even though the Committee has strong-
+ly supported nuclear weapons, nonproliferation, and cleanup activi-
+ties, as costs for these construction projects grow and budgets re-
+main constrained, available non-construction program resources 
+will likely fall. The Department must get these projects onto a clear 
+and enforceable path. 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00009
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+10 
+The Committee remains concerned about the management of the 
+Department’s research and development activities, although it 
+notes significant improvements from previous years. The Depart-
+ment has taken steps to ensure that taxpayer funding is only in-
+vested into programs with clear guidelines and expectations, and 
+the Committee expects that the nascent reforms within the energy 
+efficiency and renewable energy activities will help foster a culture 
+in which projects are terminated when those expectations are not 
+met. 
+The Committee recognizes the improvements made by most of 
+the Department to reduce ‘‘mortgages’’, funding in any fiscal year 
+promised to awards or agreements started in prior years. Energy 
+Efficiency and Renewable Energy (funded under Renewable En-
+ergy, Energy Reliability and Efficiency in this recommendation), 
+once one of the greatest offenders, is now on par with Nuclear En-
+ergy and Fossil Energy. Minimal mortgages allow these offices to 
+ensure that new resources in any fiscal year are allocated to the 
+highest value projects, rather than to previous years’ priorities. 
+Program managers can actively manage their portfolios, ensuring 
+that well-performing awardees are fully resourced without having 
+to accommodate uncertainties about future-years’ budgets. 
+Unfortunately, the Office of Science has failed to follow this 
+trend. Most of its new multi-year awards continue to be mortgaged 
+against out-year funding. Most of these new awards are small and 
+should be fully funded. In fiscal year 2013, more than 70 percent 
+of Science’s multi-year awards were valued at less than $1,500,000. 
+In a nearly $5,000,000,000 account, the practice of carrying mort-
+gages for smaller awards is avoidable and should be terminated. 
+The recommendation includes language to do so. 
+The Committee’s concerns regarding program and project man-
+agement are not limited to the Department of Energy. The Corps 
+of Engineers has suffered several significant failings in recent 
+years regarding its projects. The massive increase in the cost of the 
+Olmsted Locks and Dam project, which this recommendation con-
+tains authorization language to accommodate, is the most obvious 
+example. Coupled with the failure of the involved parties to solve 
+the revenue challenge limiting projects cost-shared with the Inland 
+Waterways Trust Fund (IWTF), this cost increase means that the 
+Trust Fund’s limited resources will be dedicated to making 
+progress at the Olmsted project for many years in the future, rath-
+er than addressing the many other priorities awaiting funding. 
+Smaller projects have faced problems as well. In some cases, the 
+Administration has not requested authorization increases in time 
+for the Congress to accommodate them. This lack of planning and 
+management is unacceptable. The Corps is directed to develop and 
+maintain a database of all current projects, spending-to-date 
+against each authorization limit, and a trigger date at which the 
+Administration must notify the Congress that an authorization in-
+crease is needed to maintain progress on the project. Further direc-
+tion regarding this topic is included in the ‘‘Corps of Engineers— 
+Civil’’ section. 
+The Committee also has been made aware of concerns regarding 
+the limited manner in which the Corps and the Bureau of Reclama-
+tion use technology in their contracting processes. Not later than 
+180 days after enactment of this Act, the Comptroller General of 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00010
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+11 
+the United States shall conduct a review of implementation by the 
+Army Corps of Engineers and the Bureau of Reclamation of the re-
+quirement regarding the use of electronic submission in federal 
+procurement in section 850 of Public Law 105–85. The review shall 
+include analysis of: 1) The ability of the data collected through elec-
+tronic submissions to be used for broader reporting and data usage 
+by each agency; 2) potential benefits and obstacles to implementing 
+fuller use of electronic submissions, including cost savings, in-
+creased security, reduction in errors, paperwork reduction, broader 
+bidder participation, competition, and the enhanced use of data col-
+lection for management and timely reporting to Congress; and 3) 
+available options and technologies for broader implementation and 
+the suitability of each option, by contract type and size, for imple-
+mentation. When analyzing options for possible improvements, the 
+Comptroller General should consider the processes or systems used 
+for construction-related contracting by other federal and state 
+agencies, including departments of transportation. 
+Finally, the Committee notes that the Corps only recently sub-
+mitted its spending plan for fiscal year 2013, months after it was 
+required. The Administration’s inability to submit a spending plan 
+for this critical agency is unacceptable. This delay will be more dis-
+ruptive to project implementation than the sequestration cuts, es-
+pecially since the post-sequester funding levels of most of the 
+project-based accounts will still be higher than the fiscal year 2013 
+budget request. 
+On the other hand, the Committee notes and appreciates the 
+work of the Bureau of Reclamation and the Department of Energy 
+to keep the Committee up-to-date with their plans for fiscal year 
+2013. Sequestration has posed significant challenges for all parties, 
+and the Bureau and Department have tried hard to proactively 
+manage their resources with congressional input. 
+COMMITTEE OVERSIGHT INITIATIVES 
+The highest priority mission of any federal agency is to be an ef-
+fective steward of taxpayer dollars. Any waste, fraud, or abuse of 
+taxpayer dollars is unacceptable. The Committee uses hearings, re-
+views by the Government Accountability Office, the Committee on 
+Appropriations’ Surveys and Investigations staff, and its annual 
+appropriations Act, including the accompanying report, to promote 
+strong oversight of the agencies under its jurisdiction, with an em-
+phasis on the U.S. Army Corps of Engineers, the Bureau of Rec-
+lamation, and the Department of Energy. 
+The Committee requires detailed reporting from its agencies 
+when specific information is needed to inform appropriations Acts 
+and to fulfill oversight responsibilities. The Committee is deeply 
+concerned that agencies are failing to produce these reports in a 
+timely manner. These reports provide critical information that the 
+Committee must have to effectively oversee taxpayer funds. With-
+out them, the Committee must make substantive decisions without 
+the full input of the executive branch. 
+The inability of the Army Corps of Engineers, the Bureau of Rec-
+lamation, and the Department of Energy to provide accurate and 
+timely financial information to the Committee calls into question 
+the strategic planning functions of those agencies and within the 
+Administration’s interagency process. The Committee will continue 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00011
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+12 
+to direct oversight and financial reports in an effort to build a more 
+open and transparent budgeting process. The Committee expects 
+that the Army Corps of Engineers, the Bureau of Reclamation, and 
+the Department of Energy will renew their commitment to address-
+ing and completing these congressionally directed reports in a time-
+ly manner. 
+The Committee has determined the following reports are no 
+longer necessary to fulfill its oversight functions and is hereby 
+eliminating or otherwise modifying the original reporting require-
+ment: 
+Department of Energy.—Annual Report on Enforcement Actions 
+for Stripper Well and Exxon Funds, required by H.R. 100–498, the 
+Conference Report accompanying Public Law 100–202 (Eliminate). 
+Department of Energy.—Report on Marine and Hydrokinetic 
+Technologies, required by H.R. 111–278, the Conference Report ac-
+companying Public Law 111–85 (Eliminate). 
+Army Corps of Engineers.—Quarterly Report on Project Execu-
+tion, required by House Report 110–185 (Combine with monthly re-
+porting on emergency funding, except include non-emergency fund-
+ing each quarter only). 
+The recommendation continues the Committee’s responsibility to 
+conduct in-depth oversight into all activities funded in this bill. 
+Each agency shall designate a specific point of contact to track each 
+report required in the bill and ensure its timely production and de-
+livery. 
+A summary of the major oversight efforts in the bill is provided 
+below: 
+Agency/Account 
+Requirement 
+Army Corps of Engineers ..................................
+Report on credit for work by non-Federal sponsors 
+Army Corps of Engineers ..................................
+Guidance on risk estimation in cost estimating activites 
+Army Corps of Engineers ..................................
+Report on cost related measures of aquatic ecosystem restoration 
+Army Corps of Engineers ..................................
+Comprehensive estimate for completing ongoing projects 
+Army Corps of Engineers ..................................
+Final spending plan for fiscal year 2014 
+Army Corps of Engineers ..................................
+Guidance on ratings systems for allocating additional funds 
+Army Corps of Engineers ..................................
+Plan for management of 902 limit project modifications 
+Army Corps of Engineers ..................................
+List of projects that may exceed 902 limits 
+Army Corps of Engineers/Investigations ...........
+Guidance on flood risk in small cities 
+Army Corps of Engineers/Construction .............
+Guidance and report on alternatives to dam safety activites at Isabella 
+Dam and Reservoir project 
+Army Corps of Engineers/Construction .............
+Report on actions to mitigate threat of predatory birds on endangered 
+Salmon species in the Columbia River 
+Army Corps of Engineers/Construction .............
+Report on distribution of Continuing Authorities Program funds 
+Army Corps of Engineers/FUSRAP .....................
+Guidance on investigation and study at former Sylvania site 
+Army Corps of Engineers/Flood Control and 
+Coastal Emergencies.
+Guidance on tracking emergency related activities 
+Army Corps of Engineers/Expenses ..................
+Report on plan for allowing firearms on Corps lands 
+Army Corps of Engineers/General Provisions ...
+Reprogramming requirements 
+Army Corps of Engineers/General Provisions ...
+Restriction on use of continuing contracts 
+Army Corps of Engineers and Bureau of Rec-
+lamation.
+GAO Report on electronic submission in contracting 
+Army Corps of Engineers and Bureau of Rec-
+lamation.
+Report on performance metrics 
+Bureau of Reclamation/Water and Related Re-
+sources.
+Report on water needs in Kettleman City, California 
+Bureau of Reclamation/Water and Related Re-
+sources.
+Report on compliance with direction on buried metallic water pipe 
+Bureau of Reclamation/Water and Related Re-
+sources.
+Guidance on assembly and analysis of data on pipeline reliability 
+Bureau of Reclamation/Water and Related Re-
+sources.
+Report on costs and benefits to address quagga and zebra mussels 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00012
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+13 
+Agency/Account 
+Requirement 
+Bureau of Reclamation/Policy and Administra-
+tion.
+Guidance on new scope of information for budget justifications 
+Bureau of Reclamation/Policy and Administra-
+tion.
+Report on five year comprehensive spending plan 
+Bureau of Reclamation/General Provisions ......
+Reprogramming requirements 
+Department of Energy .......................................
+Guidance on proposal of budget structure changes 
+Department of Energy .......................................
+Requirement for monthly financial balances report 
+Department of Energy .......................................
+Report on Department’s Program Direction accounts 
+Department of Energy .......................................
+Report on historical funding of DOE Centers 
+Department of Energy .......................................
+Guidance on inclusion of centers in future budget justifications 
+Department of Energy .......................................
+Report on intellectual property protections 
+Department of Energy .......................................
+Report on educational funding activities 
+Department of Energy .......................................
+Reprogramming requirements 
+Department of Energy/Renewable Energy, En-
+ergy Reliability, and Efficiency (REERE).
+Report on programs supporting thermal energy generation 
+Department of Energy/REERE ...........................
+Guidance on cost competetive transmission components 
+Department of Energy/REERE ...........................
+Requirement for grid cyber security testing capabilities list 
+Department of Energy/REERE ...........................
+Report on strategic workforce plan for OER program 
+Department of Energy/REERE ...........................
+Guidance on biomass activities that use non-food sources. 
+Department of Energy/REERE ...........................
+Report on feasibility of dual-fuel in Class 8 trucks 
+Department of Energy/REERE ...........................
+Guidance on Building America program 
+Department of Energy/REERE ...........................
+Study to improve manufacturing of consumer electronics 
+Department of Energy/REERE ...........................
+Guidance on engagement for housing energy standards 
+Department of Energy/REERE ...........................
+Guidance on support for geothermal technologies 
+Department of Energy/Nuclear ..........................
+Report on nuclear science and engineering workforce 
+Department of Energy/Fossil .............................
+Guidance on full-time equivalent information in budget justifications 
+Department of Energy/Fossil .............................
+Report on feasibility of recovering rare earth elements 
+Department of Energy/Fossil .............................
+Direction on interagency research plan regarding methane hydrates 
+Department of Energy/Non-Defense Cleanup ...
+Plan for cleanup of SEFOR at University of Arkansas 
+Department of Energy/Science ..........................
+Plan on Minority Serving Institutions Partnerships 
+Department of Energy/Science ..........................
+Report on free-electron laser array light source project 
+Department of Energy/Science ..........................
+Guidance for ten-year plan for Fusion Energy Sciences. 
+Department of Energy/Science ..........................
+Guidance on budget materials and project baseline for ITER 
+Department of Energy/Science ..........................
+Report on Office of Science Graduate Fellowship program 
+Department of Energy/ARPA-E ..........................
+Report on need for program direction 
+Department of Energy/Title 17 .........................
+Prohibition on subordinating U.S. interests in loan guarantees 
+Department of Energy/Title 17 .........................
+Report on status of loan guarantee applications 
+Department of Energy/ATVM .............................
+Plan on use of remaining AVTM funds 
+Department of Energy/DA .................................
+Report on costs and benefits of idle reduction in DOE vehicle fleet 
+Department of Energy/NNSA .............................
+Comprehensive review of security management 
+Department of Energy/NNSA .............................
+Limitation on NNSA laboratory directed research and development 
+Department of Energy/NNSA .............................
+Guidance on reform of contractor pension and other benefits 
+Department of Energy/Weapons ........................
+Guidance on new stockpile concept development 
+Department of Energy/Weapons ........................
+Investigation and report on certification of new LEP concepts 
+Department of Energy/Weapons ........................
+Guidance on supporting stockpile production operations 
+Department of Energy/Weapons ........................
+Guidance on requests for budget structure changes 
+Department of Energy/Weapons ........................
+Guidance on budgeting for new stockpile development 
+Department of Energy/Weapons ........................
+Guidance on budgeting for National Ignition Facility operations 
+Department of Energy/Weapons ........................
+Establishment of new reporting controls for stockpile work and infrastruc-
+ture 
+Department of Energy/Weapons ........................
+Requirement for project plans for infrastructure and construction 
+Department of Energy/Weapons ........................
+Prohibition on starting construction of Uranium Processing Facility 
+Department of Energy/Weapons ........................
+Guidance on Minority Serving Institutions Partnerships 
+Department of Energy/Defense Nuclear Non-
+proliferation.
+Guidance on lead program office for nuclear forensics 
+Department of Energy/Defense Nuclear Non-
+proliferation.
+Report on outcome of four-year goal to secure nuclear materials 
+Department of Energy/Defense Nuclear Non-
+proliferation.
+Review of DNN performance measures 
+Department of Energy/Defense Nuclear Non-
+proliferation.
+Prohibition of continued study of MOX alternatives 
+Department of Energy/Defense Nuclear Non-
+proliferation.
+Report on NNSA construction Other Project Costs 
+Department of Energy/Defense Nuclear Non-
+proliferation.
+Establishment of new reporting controls for GTRI 
+Department of Energy/Defense Nuclear Non-
+proliferation.
+Program review of Domestic Radiological Protection and Removal 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00013
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+14 
+Agency/Account 
+Requirement 
+Department of Energy/Naval Reactors .............
+Guidance on alternatives for spent fuel handling infrastructure 
+Department of Energy/Naval Reactors .............
+Report on ten year site plan 
+Department of Energy/Defense Environmental 
+Cleanup.
+Independent study of risks of outstanding environmental cleanup 
+Department of Energy/Defense Environmental 
+Cleanup.
+Establishment of reporting controls for Waste Treatment Plant 
+Department of Energy/Defense Environmental 
+Cleanup.
+Guidance on semi-annual reports for Waste Treatment Plant 
+Department of Energy/Defense Environmental 
+Cleanup.
+Prohibition on restarting construction of Pretreament Plant 
+Department of Energy/Other Defense Activities 
+Report on HSS annual oversight activities 
+Department of Energy/Other Defense Activities 
+Guidance on development of graded security posture 
+Department of Energy/Bonneville Power ...........
+Report on any direction from the Secretary of Energy 
+Department of Energy/Southeastern Power 
+Admin.
+Report on any direction from the Secretary of Energy 
+Department of Energy/Southwestern Power 
+Admin.
+Report on any direction from the Secretary of Energy 
+Department of Energy/Western Area Power 
+Admin.
+Report on any direction from the Secretary of Energy 
+Department of Energy .......................................
+Prohibit funds for activities not approved by Congress 
+Department of Energy .......................................
+Prohibit funds for high hazard nuclear facilities construction unless cost 
+estimates have been developed 
+Department of Energy .......................................
+Prohibit implementation of section 407, division A, ARRA 2009 
+Department of Energy .......................................
+Prohibit certain multi year funding agreements in Office of Science 
+Department of Energy .......................................
+Report on plan for tritium and enriched uranium 
+Department of Energy .......................................
+Requirement for analysis of alternatives and certification for warhead re-
+furbishment programs 
+Nuclear Regulatory Commission .......................
+Requirement for joint management of salaries and expenses 
+Nuclear Regulatory Commission .......................
+Prohibition on terminiating programs without Congressional approval 
+Nuclear Regulatory Commission .......................
+Requirement for notification of use of emergency functions 
+Nuclear Regulatory Commission .......................
+Guidance on funding for Yucca Mountain license application 
+Nuclear Regulatory Commission .......................
+Semi-annual report on licensing and regulatory activities 
+Nuclear Regulatory Commission .......................
+Report on input and regulatory analysis of 10 CFR Part 50 or 52 
+Nuclear Regulatory Commission .......................
+Report on National Framework recommendations 
+Tennessee Valley Authority ...............................
+Guidance on audit and inspection reports 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00014
+Fmt 6659
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+15 
+TITLE I—CORPS OF ENGINEERS—CIVIL 
+DEPARTMENT OF THE ARMY 
+CORPS OF ENGINEERS—CIVIL 
+INTRODUCTION 
+The Energy and Water Development Appropriations Act funds 
+the Civil Works missions of the Army Corps of Engineers (Corps). 
+This program is responsible for activities in support of coastal and 
+inland navigation, flood and coastal storm damage reduction, envi-
+ronmental protection and restoration, hydropower, recreation, 
+water supply, and disaster preparedness and response. The Corps 
+also performs regulatory oversight of navigable waters. Approxi-
+mately 23,000 civilians and almost 300 military personnel located 
+in eight Division offices and 38 District offices work to carry out 
+the Civil Works program. 
+FISCAL YEAR 2014 BUDGET REQUEST OVERVIEW AND ANALYSIS 
+The fiscal year 2014 budget request for the Civil Works program 
+of the Corps of Engineers is a program level of $4,826,000,000, a 
+decrease of $154,000,000 from fiscal year 2013. As in previous 
+years, the largest dollar reduction is in the Construction account 
+($331,000,000), although the Investigations account sees the largest 
+percentage reduction (28 percent) from fiscal year 2013. The Mis-
+sissippi River and Tributaries and Operation and Maintenance ac-
+counts are proposed to increase by 11 percent and 7 percent, re-
+spectively. The budget request also includes a rescission of 
+$100,000,000 of prior-year appropriations. 
+The Committee acknowledges that, for the second year in a row, 
+the Administration’s request shows an increased focus on naviga-
+tion improvements over the previous budget request. For the sec-
+ond year in a row, however, this focus seems to come at the ex-
+pense of investments in flood and storm damage reduction efforts. 
+Investments in both of these mission areas not only provide short- 
+term economic benefits by directly creating jobs, but also provide 
+the foundation necessary for long-term economic growth. Further, 
+in the case of flood and storm damage reduction, investment can 
+prevent or reduce the costs of recovery from flood events. Rather 
+than accepting the approach proposed in the budget request, the 
+Committee has allocated funds to enhance the focus on navigation 
+improvements while mitigating the cuts to flood and storm damage 
+reduction efforts in the budget request. 
+Budget Criteria.—According to the Administration, the Corps 
+budget request is a performance-based budget developed using ob-
+jective performance criteria. Within the Investigations account, 
+funding was ostensibly allocated based on continuing the ‘‘highest 
+performing studies and design,’’ but the Committee has been un-
+able to ascertain what objective measures qualify a study as high- 
+performing. 
+Construction funds were allocated based on a mix of factors, in-
+cluding severity of dam safety problems, benefit-to-cost ratio, risk- 
+to-life index, Endangered Species Act compliance, and restoration 
+of a nationally- or regionally-significant aquatic ecosystem. Oper-
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00015
+Fmt 6602
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+16 
+ation and Maintenance funds were allocated based on a mix of fac-
+tors, including tonnage movements, risk and consequences assess-
+ment, and visitation at recreation sites. It is entirely unclear, 
+though, how any of these factors were ranked or weighted during 
+development of the budget. 
+Most concerning is the fact that these metrics were not applied 
+consistently to all previously-funded projects. In other words, nu-
+merous ongoing studies and projects, previously funded by congres-
+sional direction, were not even eligible to compete for inclusion in 
+the President’s budget, with the only explanation the vague charac-
+terization of not being consistent with Administration policy. While 
+this exclusion is not new this year, or even with this Administra-
+tion, it nevertheless casts doubt on the true objectivity of the budg-
+et development process. 
+The Committee notes that the budget again includes a Construc-
+tion account criterion that makes any coastal navigation project eli-
+gible for funding if the project would support jobs or economic ac-
+tivity. The budget request claims this is consistent with guidance 
+provided in the fiscal year 2012 Act. On the contrary, the clear in-
+tent of the fiscal year 2012 Act guidance was for the Corps to con-
+sider, as one of many factors, the amount of job growth or economic 
+activity to be supported by a project when determining allocation 
+of the additional funds provided. The intent was not to make every 
+project that supports any amount of jobs or economic activity eligi-
+ble for funding regardless of other criteria. 
+Project Completions and Initiations.—The budget request for the 
+Investigations account includes funding to complete a total of 21 
+studies. Funding is requested for 10 new studies. The budget re-
+quest for the Construction account includes funding to complete six 
+projects and to initiate four new projects. Funding for one new pro-
+gram in the Operation and Maintenance account also is requested. 
+DEEP-DRAFT NAVIGATION 
+More than 95 percent of the nation’s overseas trade by weight 
+and more than 75 percent by value moves through the nation’s 
+ports. Significant changes are occurring in the world’s shipping 
+fleets, and the scheduled opening of an expanded Panama Canal in 
+2015 has prompted a move towards larger ships requiring deeper 
+drafts. The United States must address these evolving infrastruc-
+ture needs if the nation is to remain competitive in international 
+markets and to continue advancing economic development and job 
+creation domestically. 
+Investigations and construction of port projects, including the 
+deepening of existing projects, are cost-shared between the federal 
+government and non-federal sponsors, often local or regional port 
+authorities. The operation and maintenance of these projects are 
+federal responsibilities and are funded as reimbursements from the 
+Harbor Maintenance Trust Fund (HMTF), which is supported by a 
+tax on the value of imported and domestic cargo. Expenditures 
+from the trust fund are subject to annual appropriations. The bal-
+ance in the HMTF by the beginning of fiscal year 2015 is estimated 
+to be nearly $9,000,000,000. 
+Congress historically has appropriated more funding for HMTF- 
+related activities each year than is included in that year’s budget 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00016
+Fmt 6602
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+17 
+request. For fiscal year 2014, the Committee provides a total of 
+$1,000,000,000 
+for 
+HMTF-related 
+activities, 
+an 
+increase 
+of 
+$110,000,000 above the budget request. While not equal to total an-
+ticipated annual receipts, this increase is substantial and should 
+allow the Corps to make progress on the backlog of dredging needs. 
+INLAND WATERWAYS SYSTEM 
+The inland waterways system consists of approximately 12,000 
+miles of commercially navigable channels and 239 lock chambers to 
+support the movement of goods to and from 38 states. The inland 
+waterways system carries more than 600,000,000 tons of cargo, val-
+ued at nearly $70,000,000,000, each year. This freight includes a 
+significant portion of the nation’s grain exports, domestic petroleum 
+and petroleum products, and coal used in electricity generation. 
+Much of the physical infrastructure of the system is aging, how-
+ever, and in need of improvements. For example, commercial navi-
+gation locks typically have a design life of 50 years, yet nearly 60 
+percent of these locks in the United States are more than 60 years 
+old. 
+Capital improvements to the inland waterways system are fund-
+ed 50 percent from the General Treasury and 50 percent from the 
+Inland Waterways Trust Fund (IWTF), which is supported by a 
+$0.20 per gallon tax on barge fuel. Operation and maintenance 
+costs are funded 100 percent from the General Treasury. 
+The fiscal year 2008 budget request noted the depletion of accu-
+mulated balances in the IWTF. Since that time, at least three pro-
+posals have been developed to address this situation, but none has 
+gained support from a majority of interested parties within the Ad-
+ministration, the Congress, and industry. 
+The Committee continues to support the only prudent budgetary 
+option under these circumstances—that of limiting investment to 
+no more than annual revenue. This decision is not without cost or 
+risk, however. As each fiscal year passes with no legislative 
+changes to provide additional funding, costs go up for projects de-
+layed or deferred, and the chance of one or more significant failures 
+of aging infrastructure increases. The Committee is concerned that 
+the chance of significant failure(s) is quickly becoming a question 
+of when, not if. The Committee continues to encourage the Admin-
+istration to work with industry and the appropriate committees of 
+the Congress to develop an equitable solution to this problem as 
+soon as possible. 
+Most of the construction funds available for work on the inland 
+waterways system remain concentrated to the Olmsted Locks and 
+Dam project in the budget request and the Committee rec-
+ommendation. The Committee provides additional funding, how-
+ever, that the Corps may use for high priority operation and main-
+tenance work to avoid catastrophic failure on the inland waterways 
+system while a long-term solution to the construction problem is 
+developed. 
+HURRICANE SANDY 
+On October 29, 2012, Hurricane Sandy made landfall in the 
+Northeastern United States. While still off the coast, the storm be-
+came the largest Atlantic hurricane on record, as measured by di-
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00017
+Fmt 6602
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+18 
+ameter, with winds spanning 1,100 miles. Although damages oc-
+curred in areas as far south as Florida, as far north as New Eng-
+land, and as far west as the Great Lakes, the most severe damages 
+occurred along the coasts of New Jersey, New York, and Con-
+necticut. The Disaster Relief Appropriations Act of 2013 (P.L. 113– 
+2) provided the Corps of Engineers with funding in the amount of 
+$5,350,000,000 to respond to the storm, repair damages to Corps 
+projects, and to make improvements that will reduce future flood 
+risks. 
+The Committee is pleased to note that the Corps has begun work 
+on repairing damages to existing projects, including restoring cer-
+tain projects to design level. The Committee is concerned, however, 
+with the Administration’s tardiness in submitting two required in-
+terim reports and with the lack of detail expressed in those reports. 
+The Act made clear that the Corps was to pursue near-term steps 
+to reduce flood risks and development of a long-term comprehen-
+sive plan simultaneously. The Corps currently has a number of au-
+thorized projects that will provide significant protection against fu-
+ture storms once construction is completed. Many of these projects 
+involve ‘‘soft infrastructure’’ such as sand placement, and, there-
+fore, will not unduly constrain long-term options. The Committee 
+expects the Corps to proceed with work on both near-term and 
+long-term goals expeditiously. 
+CREDIT FOR WORK PERFORMED BY NON-FEDERAL SPONSORS 
+The Committee has heard concerns from a number of commu-
+nities regarding the existing policy on credits for work performed 
+by non-federal sponsors, particularly as it relates to flood control 
+projects. Specifically, these communities are concerned that ER 
+1165–2–208, issued in February 2012, restricts credit for construc-
+tion to work performed only after release of the draft feasibility re-
+port. While this milestone is an improvement from an earlier 
+version of the policy, it still could act as a disincentive for non-fed-
+eral interests to construct urgently needed flood control projects. 
+The Committee believes that the release of a draft feasibility re-
+port may be a reasonable milestone for many situations, but that 
+there may be situations in which a more flexible policy on crediting 
+is appropriate. Such situations may include when the proposed con-
+struction is an improvement or modification to an existing federally 
+authorized levee system or when the proposed construction will sig-
+nificantly follow an existing levee alignment, especially in reaches 
+where the existing levee alignment protects existing infrastructure. 
+The Secretary is directed to review existing policy to determine 
+if changes could be made to base credit decisions on a set of project 
+conditions rather than a one-size-fits-all point in time. The Sec-
+retary shall report the results of this review to the Committee not 
+later than 60 days after enactment of this Act. If a decision is made 
+to update ER 1165–2–208, the Secretary shall provide the Com-
+mittee with a copy of the updated guidance once it is finalized. If 
+a decision is made not to update ER 1165–2–208, the Secretary 
+sh
+[omitted: characters 60000-471565 of the full extracted text; see tests/fixtures/agency_reports/README.md]
+CALIFORNIA.— 
+(A) IN GENERAL.—The project for environmental restora-
+tion, Napa River Salt Marsh Restoration, Napa, California: 
+Report of the Chief of Engineers dated December 22, 2004, 
+at a total cost of $134,500,000, with an estimated Federal 
+cost of $87,500,000 and an estimated non-Federal cost of 
+$47,000,000. 
+(B) ADMINISTRATION.—In carrying out the project au-
+thorized by this paragraph, the Secretary shall— 
+(i) construct a recycled water pipeline extending 
+from the Sonoma Valley County Sanitation District 
+Waste Water Treatment Plant and the Napa Sanita-
+tion District Waste Water Treatment Plant to the 
+project; and 
+(ii) restore or enhance Salt Ponds 1, 1A, 2, and 3. 
+(13) DENVER COUNTY REACH, SOUTH PLATTE RIVER, DENVER, 
+COLORADO.—The project for environmental restoration, Denver 
+County Reach, South Platte River, Denver, Colorado: Report of 
+the Chief of Engineers dated May 16, 2003, at a total cost of 
+$20,100,000, with an estimated Federal cost of $13,065,000 and 
+an estimated non-Federal cost of $7,035,000. 
+(14) CENTRAL AND SOUTHERN FLORIDA, INDIAN RIVER LAGOON, 
+FLORIDA.— 
+(A) IN
+GENERAL.—The Secretary may carry out the 
+project for ecosystem restoration, water supply, flood con-
+trol, and protection of water quality, Central and Southern 
+Florida, Indian River Lagoon, Florida, at a total cost of 
+$1,365,000,000, 
+with 
+an 
+estimated 
+Federal 
+cost 
+of 
+$682,500,000 and an estimated non-Federal cost of 
+$682,500,000, in accordance with section 601 of the Water 
+Resources Development Act of 2000 (114 Stat. 2680) and 
+the recommendations of the report of the Chief of Engi-
+neers dated August 6, 2004. 
+(B) DEAUTHORIZATIONS.—The following projects are not 
+authorized after the date of enactment of this Act: 
+(i) The uncompleted portions of the project for the 
+C–44 Basin Storage Reservoir of the Comprehensive 
+Everglades Restoration Plan, authorized by section 
+601(b)(2)(C)(i) of the Water Resources Development 
+Act of 2000 (114 Stat. 2682), at a total cost of 
+$147,800,000, with an estimated Federal cost of 
+$73,900,000 and an estimated non-Federal cost of 
+$73,900,000. 
+(ii) The uncompleted portions of the Martin County, 
+Florida, modifications to the project for Central and 
+Southern Florida, authorized by section 203 of the 
+Flood Control Act of 1968 (82 Stat. 740), at a total cost 
+of $15,471,000, with an estimated Federal cost of 
+$8,073,000 and an estimated non-Federal cost of 
+$7,398,000. 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00201
+Fmt 6602
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+202 
+(iii) The uncompleted portions of the East Coast 
+Backpumping, St. Lucie–Martin County, Spillway 
+Structure S–311 modifications to the project for Cen-
+tral and Southern Florida, authorized by section 203 
+of the Flood Control Act of 1968 (82 Stat. 740), at a 
+total cost of $77,118,000, with an estimated Federal 
+cost of $55,124,000 and an estimated non-Federal cost 
+of $21,994,000. 
+(15) COMPREHENSIVE EVERGLADES RESTORATION PLAN, CEN-
+TRAL AND SOUTHERN FLORIDA, PICAYUNE STRAND RESTORATION 
+PROJECT, COLLIER COUNTY, FLORIDA.—The project for ecosystem 
+restoration, Comprehensive Everglades Restoration Plan, Cen-
+tral and Southern Florida, Picayune Strand Restoration 
+Project, Collier County, Florida: Report of the Chief of Engi-
+neers dated September 15, 2005, at a total cost of $375,330,000 
+with an estimated Federal cost of $187,665,000 and an esti-
+mated non-Federal cost of $187,665,000. 
+(16) COMPREHENSIVE EVERGLADES RESTORATION PLAN, CEN-
+TRAL AND SOUTHERN FLORIDA, SITE 1 IMPOUNDMENT PROJECT, 
+PALM BEACH COUNTY, FLORIDA.—The project for ecosystem res-
+toration, Comprehensive Everglades Restoration Plan, Central 
+and Southern Florida, Site 1 Impoundment Project, Palm 
+Beach County, Florida: Report of the Chief of Engineers dated 
+December 19, 2006, at a total cost of $80,840,000, with an esti-
+mated Federal cost of $40,420,000 and an estimated non-Fed-
+eral cost of $40,420,000. 
+(17) MIAMI HARBOR, MIAMI-DADE COUNTY, FLORIDA.— 
+(A) IN GENERAL.—The project for navigation, Miami Har-
+bor, Miami-Dade County, Florida: Report of the Chief of 
+Engineers dated April 25, 2005, at a total cost of 
+ø$125,270,000¿ $152,510,000, with an estimated Federal 
+cost of ø$75,140,000¿ $92,007,000 and an estimated non- 
+Federal cost of ø$50,130,000¿ $60,503,000. 
+(B) GENERAL REEVALUATION REPORT.—The non-Federal 
+share of the cost of the general reevaluation report that re-
+sulted in the report of the Chief of Engineers referred to 
+in subparagraph (A) shall be the same percentage as the 
+non-Federal share of cost of construction of the project. 
+(C) AGREEMENT.—The Secretary shall enter into a new 
+partnership with the non-Federal interest to reflect the 
+cost sharing required by subparagraph (B). 
+(18) EAST ST. LOUIS AND VICINITY, ILLINOIS.—The project for 
+environmental restoration and recreation, East St. Louis and 
+Vicinity, Illinois: Report of the Chief of Engineers dated De-
+cember 22, 2004, at a total cost of $208,260,000, with an esti-
+mated Federal cost of $134,910,000 and an estimated non-Fed-
+eral cost of $73,350,000. 
+(19) 
+PEORIA
+RIVERFRONT
+DEVELOPMENT, 
+ILLINOIS.—The 
+project for environmental restoration, Peoria Riverfront Devel-
+opment, Illinois: Report of the Chief of Engineers dated July 
+28, 2003, at a total cost of $18,220,000, with an estimated Fed-
+eral cost of $11,840,000 and an estimated non-Federal cost of 
+$6,380,000. 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00202
+Fmt 6602
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+203 
+(20) WOOD RIVER LEVEE SYSTEM RECONSTRUCTION, MADISON 
+COUNTY, ILLINOIS.—The project for flood damage reduction, 
+Wood River Levee System Reconstruction, Madison County, Il-
+linois: Report of the Chief of Engineers dated July 18, 2006, at 
+a total cost of $17,220,000, with an estimated Federal cost of 
+$11,193,000 and an estimated non-Federal cost of $6,027,000. 
+(21) DES MOINES AND RACCOON RIVERS, DES MOINES, IOWA.— 
+The project for flood damage reduction, Des Moines and Rac-
+coon Rivers, Des Moines, Iowa: Report of the Chief of Engi-
+neers dated March 28, 2006, at a total cost of $10,780,000, 
+with an estimated Federal cost of $6,967,000 and an estimated 
+non-Federal cost of $3,813,000. 
+(22) LICKING
+RIVER
+BASIN, CYNTHIANA, KENTUCKY.—The 
+project for flood damage reduction, Licking River Basin, 
+Cynthiana, Kentucky: Report of the Chief of Engineers dated 
+October 24, 2006, at a total cost of $18,200,000, with an esti-
+mated Federal cost of $11,830,000 and an estimated non-Fed-
+eral cost of $6,370,000. 
+(23) BAYOU SORREL LOCK, LOUISIANA.—The project for navi-
+gation, Bayou Sorrel Lock, Louisiana: Report of the Chief of 
+Engineers dated January 3, 2005, at a total cost of $9,600,000. 
+The costs of construction of the project are to be paid 1⁄2 from 
+amounts appropriated from the general fund of the Treasury 
+and 1⁄2 from amounts appropriated from the Inland Waterways 
+Trust Fund. 
+(24) MORGANZA TO THE GULF OF MEXICO, LOUISIANA.— 
+(A) IN GENERAL.—The project for hurricane and storm 
+damage reduction, Morganza to the Gulf of Mexico, Lou-
+isiana: Reports of the Chief of Engineers dated August 23, 
+2002, and July 22, 2003, at a total cost of $886,700,000, 
+with an estimated Federal cost of $576,355,000 and an es-
+timated non-Federal cost of $310,345,000. 
+(B) OPERATION
+AND
+MAINTENANCE.—The operation, 
+maintenance, repair, rehabilitation, and replacement of the 
+Houma Navigation Canal lock complex and the Gulf Intra-
+coastal Waterway floodgate features of the project de-
+scribed in subparagraph (A) that provide for inland water-
+way transportation shall be a Federal responsibility in ac-
+cordance with section 102 of the Water Resources Develop-
+ment Act of 1986 (33 U.S.C. 2212). 
+(25) PORT OF IBERIA, LOUISIANA.—The project for navigation, 
+Port of Iberia, Louisiana: Report of the Chief of Engineers 
+dated December 31, 2006, at a total cost of $131,250,000, with 
+an estimated Federal cost of $105,315,000 and an estimated 
+non-Federal cost of $25,935,000; except that the Secretary, in 
+consultation with Vermillion and Iberia Parishes, Louisiana, 
+and consistent with the mitigation plan in the report, shall use 
+available dredged material and rock placement on the south 
+bank of the Gulf Intracoastal Waterway and the west bank of 
+the Freshwater Bayou Channel to provide incidental storm 
+surge protection that does not adversely affect the mitigation 
+plan. 
+(26) SMITH
+ISLAND, SOMERSET
+COUNTY, MARYLAND.—The 
+project for environmental restoration, Smith Island, Somerset 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00203
+Fmt 6602
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+204 
+County, Maryland: Report of the Chief of Engineers dated Oc-
+tober 29, 2001, at a total cost of $15,580,000, with an esti-
+mated Federal cost of $10,127,000 and an estimated non-Fed-
+eral cost of $5,453,000. 
+(27) ROSEAU
+RIVER, ROSEAU, MINNESOTA.—The project for 
+flood damage reduction, Roseau River, Roseau, Minnesota: Re-
+port of the Chief of Engineers dated December 19, 2006, at a 
+total cost of $25,100,000, with an estimated Federal cost of 
+$13,820,000 and an estimated non-Federal cost of $11,280,000. 
+(28) ARGENTINE, EAST BOTTOMS, FAIRFAX-JERSEY CREEK, AND 
+NORTH KANSAS LEVEES UNITS, MISSOURI RIVER AND TRIBUTARIES 
+AT KANSAS CITIES, MISSOURI AND KANSAS.—The project for flood 
+damage reduction, Argentine, East Bottoms, Fairfax-Jersey 
+Creek, and North Kansas Levees units, Missouri River and 
+tributaries at Kansas Cities, Missouri and Kansas: Report of 
+the Chief of Engineers dated December 19, 2006, at a total cost 
+of $65,430,000, with an estimated Federal cost of $42,530,000 
+and an estimated non-Federal cost of $22,900,000. 
+(29) SWOPE PARK INDUSTRIAL AREA, BLUE RIVER, KANSAS CITY, 
+MISSOURI.—The project for flood damage reduction, Swope Park 
+Industrial Area, Blue River, Kansas City, Missouri: Report of 
+the Chief of Engineers dated December 30, 2003, at a total cost 
+of $16,980,000, with an estimated Federal cost of $11,037,000 
+and an estimated non-Federal cost of $5,943,000. 
+(30) GREAT EGG HARBOR INLET TO TOWNSENDS INLET, NEW 
+JERSEY.—The project for hurricane and storm damage reduc-
+tion, Great Egg Harbor Inlet to Townsends Inlet, New Jersey: 
+Report of the Chief of Engineers dated October 24, 2006, at a 
+total cost of $54,360,000, with an estimated Federal cost of 
+$35,069,000 and an estimated non-Federal cost of $19,291,000, 
+and at an estimated total cost of $202,500,000 for periodic 
+nourishment over the 50-year life of the project, with an esti-
+mated Federal cost of $101,250,000 and an estimated non-Fed-
+eral cost of $101,250,000. 
+(31) HUDSON RARITAN ESTUARY, LIBERTY STATE PARK, NEW 
+JERSEY.— 
+(A) IN GENERAL.—The project for environmental restora-
+tion, Hudson Raritan Estuary, Liberty State Park, New 
+Jersey: Report of the Chief of Engineers dated August 25, 
+2006, at a total cost of $34,100,000, with an estimated 
+Federal cost of $22,200,000 and an estimated non-Federal 
+cost of $11,900,000. 
+(B) RESTORATION TEAMS.—In carrying out the project, 
+the Secretary shall establish and utilize watershed restora-
+tion teams composed of estuary restoration experts from 
+the Corps of Engineers, the New Jersey department of en-
+vironmental protection, and the Port Authority of New 
+York and New Jersey and other experts designated by the 
+Secretary for the purpose of developing habitat restoration 
+and water quality enhancement. 
+(32) NEW
+JERSEY
+SHORE
+PROTECTION
+STUDY, MANASQUAN 
+INLET TO BARNEGAT INLET, NEW JERSEY.—The project for hurri-
+cane and storm damage reduction, New Jersey Shore Protec-
+tion Study, Manasquan Inlet to Barnegat Inlet, New Jersey: 
+VerDate Mar 15 2010 
+05:36 Jul 03, 2013
+Jkt 081683
+PO 00000
+Frm 00204
+Fmt 6602
+Sfmt 6602
+E:\HR\OC\HR135.XXX
+HR135
+jbell on DSK7SPTVN1PROD with REPORTS
+205 
+Report of t

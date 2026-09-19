@@ -17,5 +17,39 @@
     "url": "https://beta.fec.gov/resources/foia/foiareport2010.xml",
     "sha256": "2054df8816bb665f84a0a780d417211c14b12a9bfad5f80fc940634fc32c4b75",
     "bytes": 29995
+  },
+  {
+    "file": "crpt-119hrpt105.txt",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-119hrpt105/pdf/CRPT-119hrpt105.pdf",
+    "sha256": "7ea9d9c7ca1911726e025847a979a36febbf95df1429aa82dfaf1ecb8e561232",
+    "bytes": 7140,
+    "complete": true,
+    "sourcePdfSha256": "sha256:0b8f5c52ce09396f40c400ed23d2d52ec8cb638e5b2227d5592656557fce9911",
+    "sourcePdfBytes": 199803,
+    "extractedWith": "spicy_docs.extraction.api.DocumentExtractor(NativeText()) over pymupdf 1.28.2"
+  },
+  {
+    "file": "crpt-113hrpt135.txt",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-113hrpt135/pdf/CRPT-113hrpt135.pdf",
+    "sha256": "4b125fd0059edddca91b4b8f42eb63032d87e798288165aeee874e1cc5c23662",
+    "bytes": 72466,
+    "complete": false,
+    "sourcePdfSha256": "sha256:cb6a9d0aa131f60be5c1635cd044ff06dcdb1a7da0db9789c3bd1e3bdd087af7",
+    "sourcePdfBytes": 3233438,
+    "extractedWith": "spicy_docs.extraction.api.DocumentExtractor(NativeText()) over pymupdf 1.28.2",
+    "fullExtractedTextChars": 513773,
+    "fullExtractedTextSha256": "98dab470762fb2930c1b00e6e76a3c32b02a5e9f1389ce08430fd483c6ddbb20"
+  },
+  {
+    "file": "crpt-113srpt77.txt",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-113srpt77/pdf/CRPT-113srpt77.pdf",
+    "sha256": "2ef3047c5c7f1e5f7e922c039958cde534ee9f439653bb43e06593e367354280",
+    "bytes": 180900,
+    "complete": false,
+    "sourcePdfSha256": "sha256:d533775b53de0ba1fd4d35d9d4345727a87979aa578d18db778e917be4b7f76a",
+    "sourcePdfBytes": 531055,
+    "extractedWith": "spicy_docs.extraction.api.DocumentExtractor(NativeText()) over pymupdf 1.28.2",
+    "fullExtractedTextChars": 615326,
+    "fullExtractedTextSha256": "96837ef7f728ba568891d065eb1dbe1fb0121e8f4a40df348b6b946a8287e1af"
   }
 ]

@@ -39,6 +39,9 @@
 - [Congress bulk status](sources/congress-bulk-status.md): one BILLSTATUS zip per Congress and bill type, every member proved or refused with its digest.
 - [GovInfo package bodies](sources/govinfo-bodies.md): a report, hearing, Record, document or directory body by package id, identity proved from the summary and MODS before any body byte.
 - [Legislators crosswalk](sources/legislators.md): the community legislators JSON as the bioguide, LIS and FEC identifier crosswalk, pinned by capture.
+- [Appropriations press releases](sources/press-releases.md): the House and Senate Appropriations Committees' RSS feeds at their two live URLs, every channel and item field kept, identity proved from the channel body.
+- [Agency report blocks](sources/agency-report-blocks.md): the committee-report heading splitter over extracted page text and the two report-section aggregates, measured on real reports.
+- [Bill versions](sources/congress-bill-versions.md): the sealed version-code vocabulary against the publisher's measured codes, format choice by rendition folder, and bill PDFs through the GovInfo body acquirer.
 - [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records.
 - [Captured public comments](sources/public-comments.md)
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.
