@@ -169,23 +169,6 @@ live to re-measure. `tests/test_legislators.py` includes one
 `@pytest.mark.integration` test that acquires both live files and asserts at
 least the counts measured above.
 
-## Decision
-
-*For the maintainer to move into `docs/decisions.md`.*
-
-This module adds a pinned civil-society crosswalk
-(`unitedstates/congress-legislators`), taken specifically for the two ids no
-publisher route carries: a *former* senator's Senate LIS id, and FEC
-candidate ids generally. It is a capture-and-check source like CBO's
-per-Congress feed, not a listing or release-publishing source: two fixed
-keyless routes, byte-bounded (16 MiB for the historical file, matched to its
-measured 12.86 MiB), shape-checked record by record, with duplicate
-bioguide/LIS/FEC ids refused. Because the source carries no publisher version
-or date, its pin is the observed capture (bytes, SHA-256, time), and its
-only cadence signal is the GitHub repository's own commit history, not the
-JSON. This confirms and implements the crosswalk role already recorded in
-"Congress.gov and GovInfo collections are each one family" in
-`docs/decisions.md`.
 
 ## Change and check
 
