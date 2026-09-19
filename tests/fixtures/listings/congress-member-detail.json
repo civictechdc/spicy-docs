@@ -1,0 +1,64 @@
+{
+    "member": {
+        "addressInformation": {
+            "city": "Washington",
+            "district": "DC",
+            "officeAddress": "174 Cannon House Office Building",
+            "phoneNumber": "(202) 225-5065",
+            "zipCode": 20515
+        },
+        "bioguideId": "W000832",
+        "birthYear": "1987",
+        "cosponsoredLegislation": {
+            "count": 1,
+            "url": "https://api.congress.gov/v3/member/W000832/cosponsored-legislation"
+        },
+        "currentMember": true,
+        "depiction": {
+            "attribution": "Image courtesy of the Member",
+            "imageUrl": "https://www.congress.gov/img/member/6a986b632a68122e10181e6b_200.jpg"
+        },
+        "directOrderName": "Aisha Wahab",
+        "district": 14,
+        "firstName": "Aisha",
+        "honorificName": "Ms.",
+        "invertedOrderName": "Wahab, Aisha",
+        "lastName": "Wahab",
+        "officialWebsiteUrl": "https://wahab.house.gov/",
+        "partyHistory": [
+            {
+                "partyAbbreviation": "D",
+                "partyName": "Democratic",
+                "startYear": 2026
+            }
+        ],
+        "previousNames": [
+            {
+                "directOrderName": "Aisha Wahab",
+                "firstName": "Aisha",
+                "honorificName": "Ms.",
+                "invertedOrderName": "Wahab, Aisha",
+                "lastName": "Wahab",
+                "startDate": "2026-09-02T04:00:00Z"
+            }
+        ],
+        "state": "California",
+        "terms": [
+            {
+                "chamber": "House of Representatives",
+                "congress": 119,
+                "district": 14,
+                "memberType": "Representative",
+                "startYear": 2026,
+                "stateCode": "CA",
+                "stateName": "California"
+            }
+        ],
+        "updateDate": "2026-09-19T07:40:27Z"
+    },
+    "request": {
+        "bioguideId": "w000832",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}
