@@ -52,11 +52,17 @@ retries when an issue's requested unmatched-number set changes.
 
 - [legislative_data_map](analysis/legislative_data_map.py): measure what each
   Congress.gov and GovInfo collection route lists and from when, sample the
-  publisher XML candidates, and rewrite the generated tables in
+  publisher XML candidates, compare overlapping routes, follow every
+  cross-source reference on real items, and rewrite the generated tables in
   `docs/research/legislative-data-map-2026-09-18.md` from those measurements
   and the judgments held in the tool. Supply an explicit credential file, the
-  JSON output path and the map path; `--offline` rewrites from a prior output.
-  Coverage is a lower bound from a capped walk, never proof of absence.
+  JSON output path and the map path. A full run measures everything;
+  `--freshness`, `--floors`, `--samples`, `--compare` and `--flow --sample N`
+  re-measure one part and merge it; `--offline` rewrites from the saved output;
+  `--diff PREVIOUS.json` prints what moved. Coverage is a lower bound from a
+  capped walk, never proof of absence; a freshness date is a floor where the
+  API ignored the sort. `tests/test_legislative_data_map_tool.py` renders the
+  saved output and proves every `have` or `port` row against its evidence file.
 
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,
