@@ -214,13 +214,26 @@ pushed to origin.
   merge column-wise so a null never overwrites a prior value, pinned by a
   behavioral test. Opening a pull request against the upstream origin needs
   the user to name the branch.
-- **Follow-ups the hosting side named**: the bulk status archives are still
-  downloaded whole every run because neither `bulk_status.py` nor the listing
-  route surfaces the bulk listing's per-file `formattedLastModifiedTime` (the
-  map measured it); exposing it in spicy-docs would let the family rollup skip
-  unchanged zips, which for one Congress is on the order of 50 MB a night.
-  spicysearch vendors a stale `catalog.json` (24 tables; now 45 and a grown
-  `congress_bills`) and needs a re-vendor.
+- **Follow-ups closed 2026-09-19 by 0.21.1** (commit 6f8d20e, tag pushed) and
+  its adoption on the fork branch (five more commits, pushed to
+  mikewolfd/spicy-regs): the bulk listing's per-file modified time and size
+  are read keyless and the family rollup skips a status zip whose retained
+  entry still matches, so an unchanged folder costs one small listing read
+  and no download; every GovInfo body follows one sealed order, XML first and
+  PDF last, through `extraction/body_text.py`, chosen by measuring the same
+  committee report in every rendition (PDF text keeps no account-table rows
+  and splits about 1,870 words per report where the HTML keeps them); the
+  report transform no longer splits on a page break that never occurs. The
+  adoption also found that spicy-regs installs pypdf, not PyMuPDF, so its PDF
+  branch runs the GPO normalizer over a third extractor layout; PDF is the
+  last resort and today applies to the daily Record and pre-113th bills, but
+  the normalizer's rules were derived on PyMuPDF, which is the strongest
+  reason to measure upstream DeltaTrack's pypdfium2 `pdf_text` pipeline
+  against ours and delete ours if it is equal or better.
+- **Still open**: spicysearch vendors a stale `catalog.json` (24 tables; now
+  46 and a grown `congress_bills`) and needs a re-vendor; a pinned
+  Federal Register day's live replay test fails on a digest mismatch, which
+  is publisher drift on a pinned day and needs its own look.
 - **Fix-ledger item 7** closes when the `amendments` transform lands on that
   branch; item 6 (`/api/feed.xml`) is BillTrax-side and stays open.
 - **The BillTrax-side deletions are out of scope.** The user ruled on
