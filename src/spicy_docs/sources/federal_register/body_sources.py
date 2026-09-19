@@ -3,7 +3,9 @@
 Source rules:
 - body_html_url paths have sibling XML and text paths.
 - GovInfo granules use publication date and printed document number. Check the
-  [FR Doc No: ...] marker because a missing granule can return HTTP 200.
+  [FR Doc No: ...] marker because a missing granule can return HTTP 200. The
+  error page that answers it is one publisher rule, so its check lives with the
+  other GovInfo body rules in sources/govinfo/bodies.py.
 - A FederalRegister.gov split suffix may differ from the printed marker.
 - Resolve synthetic X numbers through issue MODS start pages while preserving
   the original source identity.
@@ -29,6 +31,9 @@ from typing import Literal
 from urllib.parse import urlsplit
 from xml.parsers import expat
 
+from spicy_docs.sources.govinfo.bodies import check_not_error_page
+from spicy_docs.transport.source_acquirer import check_final_url, check_payload
+
 _BODY_HTML_PATH = re.compile(
     r"^/documents/full_text/html/"
     r"(?P<year>\d{4})/(?P<month>\d{2})/(?P<day>\d{2})/"
@@ -36,12 +41,18 @@ _BODY_HTML_PATH = re.compile(
 )
 _SOURCE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]{0,127}$")
 _SPLIT_DOCUMENT_NUMBER = re.compile(r"^(?P<base>(?:\d{2}|\d{4})-\d{1,6})-\d+$")
-_SOFT_404_BODY_MARKER = re.compile(rb"govinfo\.gov/error", re.IGNORECASE)
 _MODS_NAMESPACE = "http://www.loc.gov/mods/v3"
 
 
 class FederalRegisterBodySourceError(ValueError):
     """Federal Register body-source evidence does not prove the named item."""
+
+
+def _validated_bytes(payload: object, max_bytes: object, *, label: str, allow_empty: bool = True) -> bytes:
+    """This family's spelling of the shared bounded-evidence rule."""
+    return check_payload(
+        payload, max_bytes, label=label, error_type=FederalRegisterBodySourceError, allow_empty=allow_empty
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,16 +105,6 @@ def _validated_publication_date(value: object) -> str:
     if parsed.isoformat() != value:
         raise FederalRegisterBodySourceError("Federal Register publication_date is not canonical")
     return value
-
-
-def _validated_max_bytes(payload: object, max_bytes: object, *, label: str) -> bytes:
-    if not isinstance(payload, bytes):
-        raise FederalRegisterBodySourceError(f"{label} must be exact bytes")
-    if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes <= 0:
-        raise FederalRegisterBodySourceError(f"{label} byte bound must be a positive integer")
-    if len(payload) > max_bytes:
-        raise FederalRegisterBodySourceError(f"{label} exceeds its {max_bytes}-byte bound")
-    return payload
 
 
 def govinfo_granule_locator(access_id: str, publication_date: str) -> str:
@@ -201,9 +202,7 @@ def validate_govinfo_granule(
     not enough.  This closes the old alternate-granule validation gap.
     """
 
-    exact_body = _validated_max_bytes(body, max_bytes, label="govinfo granule")
-    if not exact_body:
-        raise FederalRegisterBodySourceError("govinfo granule is empty")
+    exact_body = _validated_bytes(body, max_bytes, label="govinfo granule", allow_empty=False)
     source_id = _validated_source_id(
         source_document_number,
         label="document_number",
@@ -211,13 +210,15 @@ def validate_govinfo_granule(
     resolved_id = _validated_source_id(access_id, label="govinfo accessId")
     safe_date = _validated_publication_date(publication_date)
     expected_url = govinfo_granule_locator(resolved_id, safe_date)
-    parsed_final = urlsplit(final_url)
-    if parsed_final.scheme == "https" and parsed_final.netloc == "www.govinfo.gov" and parsed_final.path == "/error":
-        raise FederalRegisterBodySourceError("govinfo returned its HTTP-200 soft-404")
-    if final_url != expected_url:
-        raise FederalRegisterBodySourceError("govinfo granule final URL differs from the requested locator")
-    if _SOFT_404_BODY_MARKER.search(exact_body):
-        raise FederalRegisterBodySourceError("govinfo returned its HTTP-200 soft-404")
+    # The error page is refused before the locator check so a redirected
+    # response reports the page it landed on, not a URL mismatch.
+    check_not_error_page(exact_body, final_url, error_type=FederalRegisterBodySourceError)
+    check_final_url(
+        final_url,
+        expected_url,
+        error_type=FederalRegisterBodySourceError,
+        message="govinfo granule final URL differs from the requested locator",
+    )
 
     if resolved_id != source_id:
         marker = f"[FR Doc No: {resolved_id}]".encode("ascii")
@@ -351,9 +352,7 @@ def resolve_govinfo_granule_from_mods(
     granule; it turns already captured source evidence into an exact locator.
     """
 
-    exact_mods = _validated_max_bytes(mods_bytes, max_bytes, label="govinfo MODS")
-    if not exact_mods:
-        raise FederalRegisterBodySourceError("govinfo MODS is empty")
+    exact_mods = _validated_bytes(mods_bytes, max_bytes, label="govinfo MODS", allow_empty=False)
     if isinstance(start_page, bool) or not isinstance(start_page, int) or start_page <= 0:
         raise FederalRegisterBodySourceError("Federal Register start_page is invalid")
     safe_date = _validated_publication_date(publication_date)

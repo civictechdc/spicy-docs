@@ -13,9 +13,11 @@ from dataclasses import dataclass
 from typing import Literal, NoReturn
 from xml.parsers import expat
 
+from spicy_docs.transport.source_acquirer import check_final_url
+
 from .body_sources import (
     FederalRegisterBodySourceError,
-    _validated_max_bytes,
+    _validated_bytes,
     _validated_publication_date,
     _validated_source_id,
 )
@@ -115,13 +117,15 @@ def validate_publisher_xml(
     it retains no document tree. The original body remains the caller's evidence.
     """
 
-    exact_body = _validated_max_bytes(body, max_bytes, label="publisher XML")
-    if not exact_body:
-        raise FederalRegisterBodySourceError("publisher XML is empty")
+    exact_body = _validated_bytes(body, max_bytes, label="publisher XML", allow_empty=False)
     source_id = _validated_source_id(source_document_number, label="document_number")
     safe_date = _validated_publication_date(publication_date)
-    if final_url != publisher_xml_locator(source_id, safe_date):
-        raise FederalRegisterBodySourceError("publisher XML final URL differs from the requested locator")
+    check_final_url(
+        final_url,
+        publisher_xml_locator(source_id, safe_date),
+        error_type=FederalRegisterBodySourceError,
+        message="publisher XML final URL differs from the requested locator",
+    )
 
     handler = _PublisherXmlHandler()
     parser = expat.ParserCreate(namespace_separator="}")

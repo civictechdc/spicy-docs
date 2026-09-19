@@ -47,6 +47,33 @@ def check_timing(timeout_seconds: object, min_request_interval_seconds: object) 
             raise ValueError(f"{name} must be finite and {'positive' if positive else 'nonnegative'}")
 
 
+def check_payload(
+    payload: object,
+    max_bytes: object,
+    *,
+    label: str,
+    error_type: type[ValueError],
+    allow_empty: bool = True,
+) -> bytes:
+    """Return exact captured bytes within a positive caller bound, or refuse.
+
+    One rule for every source validator: evidence is complete ``bytes``, its
+    bound is a positive integer the caller chose, and nothing past that bound
+    becomes evidence. ``allow_empty=False`` refuses an empty response where the
+    source cannot mean one, keeping "the publisher sent nothing" separate from
+    "the publisher sent something this module could not read".
+    """
+    if not isinstance(payload, bytes):
+        raise error_type(f"{label} must be exact bytes")
+    if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes <= 0:
+        raise error_type(f"{label} byte bound must be a positive integer")
+    if not payload and not allow_empty:
+        raise error_type(f"{label} is empty")
+    if len(payload) > max_bytes:
+        raise error_type(f"{label} exceeds its {max_bytes}-byte bound")
+    return payload
+
+
 def narrow_byte_limit(limit: int, max_bytes: int | None) -> int:
     """A call may narrow the client's byte allowance, never raise it."""
     if max_bytes is None:
