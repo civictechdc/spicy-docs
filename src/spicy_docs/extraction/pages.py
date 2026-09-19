@@ -19,10 +19,11 @@ def _png(image) -> bytes:
 def _display_box(page, rect_like, width: float, height: float) -> Box | None:
     """Map a PyMuPDF page-space rect into normalized displayed-page coordinates.
 
-    Same rotation and page-bounds handling as ``_PDFPage.native``'s line
-    boxes. ``None`` means the rect has no area on the displayed page (a
-    cell PyMuPDF reports no bounding box for, or geometry entirely
-    outside the crop), not a zero-sized box.
+    Shared by ``_PDFPage.native``'s line boxes and ``_PDFPage.find_tables``'s
+    table and cell boxes: the same rotation-matrix transform, clipped to the
+    displayed page rect. ``None`` means the rect has no area on the displayed
+    page (a table cell PyMuPDF reports no bounding box for, or geometry
+    entirely outside the crop), not a zero-sized box.
     """
     import pymupdf
 
@@ -111,13 +112,11 @@ class _PDFPage:
         for block in raw["blocks"]:
             for line in block.get("lines", []):
                 text = "".join(span["text"] for span in line["spans"])
-                rect = pymupdf.Rect(line["bbox"]) * self.page.rotation_matrix
-                rect &= self.page.rect
-                if rect.is_empty:
+                box = _display_box(self.page, line["bbox"], width, height)
+                if box is None:
                     if text.strip():
                         raise ExtractionError("native text falls outside displayed page bounds", details=line)
                     continue
-                box = Box(rect.x0 / width, rect.y0 / height, rect.x1 / width, rect.y1 / height)
                 blocks.append(TextBlock(text, box))
         return Recognition(
             "\n".join(b.text for b in blocks),

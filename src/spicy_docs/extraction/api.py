@@ -115,7 +115,11 @@ class DocumentExtractor:
     and attaches the result to ``PageResult.tables``, independent of ``strategy``
     and never merged into ``PageResult.text``; it costs nothing extra for image
     input (``PageResult.tables`` stays empty) and defaults to ``False`` so no
-    existing caller's output changes.
+    existing caller's output changes. Measured on two real committee reports
+    (``docs/sources/govinfo-bodies.md``, "Table geometry recovered from the
+    PDF"), ``tables=True`` adds six to seven times the whole-document wall
+    time of ``tables=False`` (1.7 s to 11.8 s; 1.4 s to 7.7 s) for a recovery
+    rate that depends entirely on whether the source PDF's tables are ruled.
     """
 
     def __init__(

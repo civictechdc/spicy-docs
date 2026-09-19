@@ -161,6 +161,15 @@ def test_table_observation_on_a_real_committee_report_page():
     assert len(enacted) == 15 and enacted[0] == "4,280" and enacted[-1] == "( 3 )"
 
     assert total == (None, "129,827", "126,554", "123,600")
+    # The model docstring's invariant: a cell is None exactly where its box
+    # is None (no cell region there at all, not a zero-sized one) -- pinned
+    # on the total row's own empty first cell and checked over every cell.
+    assert table.cell_boxes[2][0] is None
+    assert all(
+        (cell is None) == (box is None)
+        for row_cells, row_boxes in zip(table.cells, table.cell_boxes, strict=True)
+        for cell, box in zip(row_cells, row_boxes, strict=True)
+    )
     assert table.confidence is None
     # Recovering per-account rows from this geometry (label first cell, amount
     # last cell) is a measurement-time reconstruction over these newline-split

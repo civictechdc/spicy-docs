@@ -287,7 +287,11 @@ Measured 2026-09-19 on the same two reports, re-fetched keyless through
 `sources.govinfo.bodies.package_body_locator` (both PDF digests agree with
 "The rendition comparison that ordered `BODY_PREFERENCE`" above -- an
 independent re-fetch, not a restatement) and run through the shipped
-default: no strategy override, PyMuPDF's line-ruled `find_tables()`.
+default: no strategy override, PyMuPDF's line-ruled `find_tables()`. Input
+pins, the fetch and analysis scripts and their full output are in
+`~/Work/corpora/supply-2026-09-02/receipts/gpo-pdf-tables-2026-09-19/`; the
+one committed fixture this measurement's pinned test reads from is
+`tests/fixtures/gpo_pdf_tables/README.md`.
 
 An account row is counted the same way on both sides: a line (`htm`) or a
 table cell (PDF) whose label is non-empty text that is not itself an amount,
