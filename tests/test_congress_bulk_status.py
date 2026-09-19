@@ -6,8 +6,11 @@ that cannot be what their names claim. Building it here keeps every byte of the
 archive reviewable; the publisher's own zip is the live test below.
 """
 
+import dataclasses
 import hashlib
+import json
 import zipfile
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -18,7 +21,9 @@ from spicy_docs.sources.congress.bill_status import BillIdentity, BillSourceErro
 from spicy_docs.sources.congress.bulk_status import (
     BulkStatusAcquirer,
     BulkStatusBudget,
+    bulk_listing_locator,
     bulk_status_locator,
+    read_bulk_listing,
     read_bulk_status_archive,
 )
 from spicy_docs.transport import retry
@@ -28,6 +33,7 @@ FIXTURES = Path(__file__).parent / "fixtures" / "govinfo_bills"
 PLAIN = (FIXTURES / "status-119hres1376.xml").read_bytes()
 CDATA = (FIXTURES / "status-119hres10.xml").read_bytes()
 UNTEXTED_ACTION = (FIXTURES / "status-119hres214.xml").read_bytes()
+LISTING = (FIXTURES / "listing-119hres.json").read_bytes()
 FOREIGN = b"not a BILLSTATUS file"
 MEMBERS = (
     ("BILLSTATUS-119hres10.xml", CDATA),
@@ -39,6 +45,7 @@ MEMBERS = (
 )
 ZIP = archive_bytes(*MEMBERS)
 URL = "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hres/BILLSTATUS-119-hres.zip"
+LISTING_URL = "https://www.govinfo.gov/bulkdata/json/BILLSTATUS/119/hres"
 BUDGET = BulkStatusBudget(2, 4 * 1024 * 1024, 7, 0)
 
 
@@ -47,6 +54,10 @@ def digest(data: bytes) -> str:
 
 
 def response(body=ZIP, status=200, *, content_type="application/zip"):
+    return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
+
+
+def listing_response(body=LISTING, status=200, *, content_type="application/json"):
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
@@ -257,3 +268,137 @@ def test_live_hres_archive_parses_at_least_what_was_measured():
     assert result.archive.refused_count == 0
     assert result.archive.parsed_count == len(result.archive.members)
     assert all(member.identity is not None for member in result.archive.members)
+
+
+def test_bulk_listing_locator_is_the_keyless_publisher_json_route_and_refuses_anything_else():
+    assert bulk_listing_locator(119, "hres") == LISTING_URL
+    assert bulk_listing_locator(108, "s") == "https://www.govinfo.gov/bulkdata/json/BILLSTATUS/108/s"
+    for congress, bill_type in [(119, "HRES"), (119, "hres/../hr"), (119, "bill"), (0, "hres"), (True, "hres")]:
+        with pytest.raises(BillSourceError):
+            bulk_listing_locator(congress, bill_type)
+
+
+def test_read_bulk_listing_parses_every_field_and_proves_the_zip_entry():
+    listing = read_bulk_listing(LISTING, congress=119, bill_type="hres")
+    assert (listing.congress, listing.bill_type) == (119, "hres")
+    assert len(listing.entries) == 4
+    # Measured 2026-09-19: this route answers only {"files": [...]}, no own stamp.
+    assert listing.folder_modified is None
+
+    zip_entry = listing.zip_entry
+    assert (zip_entry.name, zip_entry.display_label, zip_entry.just_file_name) == (
+        "BILLSTATUS-119-hres.zip",
+        "BILLSTATUS-119-hres.zip",
+        "BILLSTATUS-119-hres.zip",
+    )
+    assert zip_entry.link == URL
+    assert zip_entry.folder is False
+    assert (zip_entry.mime_type, zip_entry.file_extension, zip_entry.formatted_size) == (
+        "application/zip",
+        "zip",
+        "3.8 MB",
+    )
+    assert zip_entry.formatted_last_modified_time == "18-Sep-2026 20:26"
+    assert zip_entry.modified_at == datetime(2026, 9, 18, 20, 26, tzinfo=UTC)
+    assert zip_entry.size == 3934575
+
+    xml_entry = next(entry for entry in listing.entries if entry.name == "BILLSTATUS-119hres10.xml")
+    assert (xml_entry.size, xml_entry.mime_type, xml_entry.file_extension) == (8109, "application/xml", "xml")
+    assert xml_entry.link == "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hres/BILLSTATUS-119hres10.xml"
+    assert xml_entry.modified_at == datetime(2025, 1, 30, 15, 7, tzinfo=UTC)
+
+
+def test_a_listing_entry_that_belongs_to_another_folder_refuses_the_whole_listing():
+    body = json.loads(LISTING.decode())
+    body["files"][0]["link"] = body["files"][0]["link"].replace("/119/hres/", "/119/hr/")
+    with pytest.raises(BillSourceError, match="belongs to another Congress or bill type"):
+        read_bulk_listing(json.dumps(body).encode(), congress=119, bill_type="hres")
+
+
+def test_a_listing_with_no_zip_entry_for_the_folder_refuses_by_name():
+    """Empty success is not absence: {"files": [...]} with no zip row still refuses."""
+    body = json.loads(LISTING.decode())
+    body["files"] = [entry for entry in body["files"] if not entry["name"].endswith(".zip")]
+    with pytest.raises(BillSourceError, match="has no zip entry"):
+        read_bulk_listing(json.dumps(body).encode(), congress=119, bill_type="hres")
+
+
+def test_list_archives_captures_the_listing_with_the_json_accept_header():
+    transport = Transport(listing_response())
+    with BulkStatusAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.list_archives(119, "hres")
+    assert result.capture.body == LISTING
+    assert result.capture.requested_url == LISTING_URL and result.capture.resolved_url == LISTING_URL
+    assert result.capture.content_type == "application/json"
+    assert transport.calls[0].headers.get("accept") == "application/json"
+    assert (result.listing.congress, result.listing.bill_type) == (119, "hres")
+    assert result.listing.zip_entry.size == 3934575
+    assert (result.request_count, result.budget) == (1, BUDGET)
+
+
+def test_acquire_skips_the_zip_download_when_the_listing_proves_it_is_unchanged():
+    seen = read_bulk_listing(LISTING, congress=119, bill_type="hres").zip_entry
+    transport = Transport(listing_response())
+    with BulkStatusAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.acquire(119, "hres", unchanged_since=seen)
+    # Only the listing was requested; a StopIteration on a second call would have
+    # meant the zip was asked for too.
+    assert len(transport.calls) == 1
+    assert str(transport.calls[0].url) == LISTING_URL
+    assert result.skipped_unchanged is True
+    assert result.archive is None
+    assert result.capture is None
+    assert result.listing_capture is not None and result.listing_capture.body == LISTING
+    assert result.listing_entry == seen
+
+
+def test_acquire_downloads_the_zip_when_the_listing_shows_it_changed():
+    seen = read_bulk_listing(LISTING, congress=119, bill_type="hres").zip_entry
+    stale = dataclasses.replace(seen, size=seen.size - 1)
+    transport = Transport(listing_response(), response())
+    with BulkStatusAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.acquire(119, "hres", unchanged_since=stale)
+    assert len(transport.calls) == 2
+    assert str(transport.calls[0].url) == LISTING_URL
+    assert str(transport.calls[1].url) == URL
+    assert result.skipped_unchanged is False
+    assert result.archive is not None
+    assert result.capture.body == ZIP
+    assert result.listing_capture is not None and result.listing_capture.body == LISTING
+    assert result.listing_entry == seen
+
+
+def test_acquire_without_unchanged_since_never_reads_the_listing():
+    transport = Transport(response())
+    with BulkStatusAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.acquire(119, "hres")
+    assert len(transport.calls) == 1
+    assert str(transport.calls[0].url) == URL
+    assert result.skipped_unchanged is False
+    assert (result.listing_capture, result.listing_entry) == (None, None)
+
+
+def test_unchanged_since_must_be_a_bulk_listing_entry():
+    with (
+        BulkStatusAcquirer(budget=BUDGET, transport=Transport()) as source,
+        pytest.raises(TypeError, match="BulkListingEntry"),
+    ):
+        source.acquire(119, "hres", unchanged_since="not-an-entry")
+
+
+@pytest.mark.integration
+def test_live_hres_listing_states_the_zip_entry_the_archive_capture_also_names():
+    """The 119th H.Res. folder listing on 2026-09-19: at least the 1,566 members plus the zip."""
+    budget = BulkStatusBudget(3, 64 * 1024 * 1024, 120, 1)
+    with BulkStatusAcquirer(budget=budget) as source:
+        result = source.list_archives(119, "hres")
+    assert result.capture.requested_url == LISTING_URL and result.capture.resolved_url == LISTING_URL
+    assert not httpx.URL(result.capture.requested_url).query
+    assert result.capture.status_code == 200
+    assert (result.capture.content_type or "").split(";")[0].strip() == "application/json"
+    assert len(result.listing.entries) >= 1567
+    zip_entry = result.listing.zip_entry
+    assert zip_entry.name == "BILLSTATUS-119-hres.zip"
+    assert zip_entry.link == URL
+    assert zip_entry.size >= 3_934_575
+    assert zip_entry.modified_at.tzinfo is UTC
