@@ -11,9 +11,28 @@ public domain.
 | --- | --- | --- | --- |
 | `clerk-roll240.xml` | [`clerk.house.gov/evs/2025/roll240.xml`](https://clerk.house.gov/evs/2025/roll240.xml), keyless | 82,515 | `0297b0c76d3c14452a91daf9828943e5669c00dcc408c07bc80870b9d8223542` |
 | `senate-vote-119-1-00001.xml` | [`www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00001.xml`](https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00001.xml), keyless | 28,670 | `9d71d78a54c83522babd743209ca4a1a27baa2df122d6830c50ec2aa512ea17e` |
+| `senate-vote-menu-119-1.xml` | [`www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_119_1.xml`](https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_119_1.xml), keyless -- **excerpt**, see below | 19,841 | `55c6f51697a46eac80bf151971bf6d9f428681e7eb1b54f828d7a62c3502789d` |
 
-No fixture was reduced, truncated or reformatted; both are well under the 200
-KB bound. Neither route takes a credential.
+Both vote-body fixtures are the complete, unmodified publisher response and
+are well under the 200 KB bound. Neither route takes a credential.
+
+The menu fixture is not complete: captured 2026-09-19, the real
+`vote_menu_119_1.xml` body is 419,112 bytes (sha256
+`bbf37be1e0fe327fb6cd623cc7b2ed56253f5410ec0066831ba5eba605244a0c`) -- over
+the 200 KB fixture bound named in the gap this fixture closes (A4), because
+the 119th Congress's 1st session had recorded 659 votes by the capture date.
+Per that bound, `senate-vote-menu-119-1.xml` keeps a **byte-exact head plus
+tail excerpt** of the real response rather than the whole body: the first six
+`<vote>` elements (`vote_number` 659 down to 654, in the publisher's own
+newest-first order, including one `<en_bloc>` batch-confirmation vote) and
+the last four (`vote_number` 4 down to 1, including two votes whose
+`<question>` carries a nested `<measure>`), each copied verbatim from the
+real response and concatenated around the unchanged `<vote_summary>`/
+`<votes>` header and footer -- nothing in either kept span was rewritten,
+reformatted or re-encoded. The table's SHA-256 is this 19,841-byte excerpt's
+own digest (what the file on disk actually hashes to); the digest above is
+the full 419,112-byte body's, for anyone re-fetching the live route to
+confirm the excerpt is still a faithful subset.
 
 ## What each fixture is
 
@@ -43,10 +62,24 @@ excerpt rather than adding a second one; the other 96 members resolve to
 `bioguide_id=None`, since that small excerpt (5 of 539 current legislators)
 carries only those three.
 
+`senate-vote-menu-119-1.xml` -- the 119th Congress's 1st-session Senate
+roll-call index (see above for how it was excerpted). Its ten `<vote>`
+entries are exactly the real menu's first six and last four, in the
+publisher's own order: `vote_number` 659 ("Motion to Invoke Cloture: Sara
+Bailey to be Director of National Drug Control Policy") down through 654,
+then 4 down through 1. The last entry, `vote_number` 1, is the same vote
+`senate-vote-119-1-00001.xml` carries in full, so the locator this menu
+entry builds round-trips to that already-fixtured file without a second live
+fetch. Vote 655 is the excerpt's one `<en_bloc>` batch-confirmation vote (97
+`<matter>` rows, no vote-level `issue`/`question`/`result` of its own); votes
+4 and 3 each carry a `<question>` with a nested `<measure>` (`S.Amdt. 23`,
+`S.Amdt. 14`) -- the one other shape the menu states beside the plain form.
+
 ## Refusal and identity fixtures
 
 Refusal tests in `tests/test_congress_votes.py` mutate small
-synthetic-but-realistic bodies (`CLERK_MINIMAL`, `SENATE_MINIMAL`) rather than
-these two files, so a shape violation is isolated to exactly the field under
-test. The identity-proof tests reuse these real fixtures directly, parsed
-against a deliberately wrong `VoteLocator`.
+synthetic-but-realistic bodies (`CLERK_MINIMAL`, `SENATE_MINIMAL`,
+`SENATE_MENU_MINIMAL`) rather than these real files, so a shape violation is
+isolated to exactly the field under test. The identity-proof tests reuse the
+real fixtures directly, parsed against a deliberately wrong `VoteLocator` or
+a deliberately wrong `(congress, session)` pair.

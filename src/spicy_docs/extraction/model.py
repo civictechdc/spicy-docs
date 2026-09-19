@@ -95,9 +95,57 @@ class PageContent:
 
 
 @dataclass(frozen=True, slots=True)
+class TableObservation:
+    """One detected table's geometry and cell text, kept beside a page's text.
+
+    Built from PyMuPDF's ``page.find_tables()`` on the retained page (see
+    ``pages.py::_PDFPage.find_tables``). Never merged into ``PageContent`` or
+    ``PageResult.text``: the CRPT measurement (``docs/sources/govinfo-bodies.md``,
+    "Why PDF is last") showed native text extraction emits every table label
+    then every amount, destroying the row; a table observation is the row or
+    nothing, not a guess folded back into the line-by-line text.
+    """
+
+    page: int
+    bbox: Box
+    row_count: int
+    column_count: int
+    #: Row-major cell text, exactly as PyMuPDF's ``Table.extract()`` returns
+    #: it: ``""`` for a ruled, empty cell; ``None`` where PyMuPDF finds no
+    #: cell region at all at that position (measured on a real committee
+    #: report's total row, position 0 -- see the pinned real-page test in
+    #: ``tests/extraction/test_api.py``), matching a ``None`` at the same
+    #: position in ``cell_boxes`` below.
+    cells: tuple[tuple[str | None, ...], ...]
+    #: Row-major per-cell boxes in the same normalized displayed-page
+    #: coordinates as ``TextBlock.box``. ``None`` exactly where ``cells`` is
+    #: ``None`` at that position: no cell region there to place.
+    cell_boxes: tuple[tuple[Box | None, ...], ...]
+    #: The extractor's own confidence, when it states one. PyMuPDF's table
+    #: finder does not, so this is ``None`` for every observation it produces.
+    confidence: float | None = None
+
+    def __post_init__(self):
+        if self.page < 1:
+            raise ValueError("table page must be 1 or greater")
+        if self.row_count < 1 or self.column_count < 1:
+            raise ValueError("table must have at least one row and one column")
+        shape = (self.row_count, self.column_count)
+        for name, rows in (("cells", self.cells), ("cell_boxes", self.cell_boxes)):
+            if len(rows) != shape[0] or any(len(row) != shape[1] for row in rows):
+                raise ValueError(f"{name} must be shaped row_count x column_count")
+        if self.confidence is not None and not 0 <= self.confidence <= 1:
+            raise ValueError("confidence must be between 0 and 1")
+
+
+@dataclass(frozen=True, slots=True)
 class PageResult:
     metadata: dict[str, Any]
     content: PageContent
+    #: Table geometry for the page, kept beside ``content`` and never merged
+    #: into it. Empty unless the caller opted in (``DocumentExtractor(...,
+    #: tables=True)``) and the retained page supports table detection.
+    tables: tuple[TableObservation, ...] = ()
 
     @property
     def text(self) -> str:
@@ -115,6 +163,7 @@ class Page(Protocol):
 
     def native(self) -> Recognition: ...
     def render(self) -> Raster: ...
+    def find_tables(self) -> tuple[TableObservation, ...]: ...
 
 
 class Document(Protocol):

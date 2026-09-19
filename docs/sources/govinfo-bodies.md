@@ -331,6 +331,92 @@ CHRG and CDOC offer `htm` and `pdf`; CDIR offers `txt` and `pdf`; BILLS offers
 ordered by the same structure-first rule, since markup can only add to what
 plain text already states.
 
+## Table geometry recovered from the PDF
+
+B5 of `docs/research/closing-the-gaps-2026-09-19.md`: does retaining PyMuPDF's
+table geometry (`extraction.DocumentExtractor(strategy, tables=True)`, a
+`TableObservation` per detected table -- see
+[the extraction API doc](../extraction/pdf-extraction-api.md#table-geometry))
+recover any of the rows the section above shows native text destroying?
+Measured 2026-09-19 on the same two reports, re-fetched keyless through
+`sources.govinfo.bodies.package_body_locator` (both PDF digests agree with
+"The rendition comparison that ordered `BODY_PREFERENCE`" above -- an
+independent re-fetch, not a restatement) and run through the shipped
+default: no strategy override, PyMuPDF's line-ruled `find_tables()`. Input
+pins, the fetch and analysis scripts and their full output are in
+`~/Work/corpora/supply-2026-09-02/receipts/gpo-pdf-tables-2026-09-19/`; the
+one committed fixture this measurement's pinned test reads from is
+`tests/fixtures/gpo_pdf_tables/README.md`.
+
+An account row is counted the same way on both sides: a line (`htm`) or a
+table cell (PDF) whose label is non-empty text that is not itself an amount,
+followed by dot leaders or two or more spaces, then a token that parses as a
+dollar amount (`$`-prefixed, thousands-grouped, decimal, or parenthesized/
+signed for a negative delta) -- the row rule this measurement is pinned to,
+implemented once and applied to both renditions of both reports. On the PDF
+side, PyMuPDF rules only a table's header, its whole account block and its
+total, never between individual accounts, so one `TableObservation` row can
+hold many accounts as one `\n`-joined cell per column (the fixture behind
+`tests/extraction/test_api.py`'s pinned real-page test is exactly this
+shape); recovering one row per account means splitting each cell on its own
+newlines and zipping the split cells of one raw row by line position --
+a post-processing step over the retained geometry, not something the frozen
+`TableObservation` record does itself.
+
+| | CRPT-113srpt77 | CRPT-113hrpt135 |
+| --- | ---: | ---: |
+| Pages | 190 | 229 |
+| PDF bytes | 531,055 | 3,233,438 |
+| Ruled tables PyMuPDF finds | 69 | 0 |
+| Account rows recovered from PDF tables | 199 | 0 |
+| Account rows by the same rule over `htm` | 802 | 273 |
+| Row-recovery rate | 25% | 0% |
+| Wall time, `tables=True` (whole document) | 11.8 s | 7.7 s |
+| Wall time, `tables=False` (same document) | 1.7 s | 1.4 s |
+| False account rows on a prose page (page 1, title/letter page) | 0 of 22 nonblank lines | 0 of 84 nonblank lines |
+| False account rows on a dollar-figure-dense narrative page | -- | 0 of 85 nonblank lines (page 5, "INTRODUCTION", every sentence carries a `$` figure) |
+
+The `htm` counts here (802, 273) are this same rule re-derived today, not a
+rerun of the script that produced the 841 and 190 stated above and in
+`docs/research/closing-the-gaps-2026-09-19.md`; they track that measurement
+(close for srpt77, higher for hrpt135, because this rule also counts the many
+per-project "Appropriation / Budget estimate / Recommended" comparison
+triplets printed throughout the narrative body, not only rows inside the
+report's one summary table) without reproducing it byte-for-byte. The
+qualitative finding does not depend on matching that number exactly:
+
+- **Recovery tracks ruling, not report size or row count.** srpt77 rules 69
+  real tables (header/body/total boxes) and recovers a quarter of its rows
+  that way; hrpt135 -- six times the PDF bytes -- rules **none**: every one
+  of its appropriations tables is leader-dot or whitespace-aligned, the same
+  layout `find_tables()`'s default line-based strategy cannot see, so table
+  geometry recovers nothing there and native text stays the only PDF-derived
+  source (0 or 3 rows, per the section above).
+- **The default strategy never invents a row.** Zero false account rows on
+  every prose page tested, including one packed with dollar figures inside
+  ordinary sentences (`$30,426,000,000, $2,857,000,000 less than the amount
+  appropriated in fiscal year 2013 ...`). Switching PyMuPDF's table finder to
+  its whitespace-based `vertical_strategy="text"` to try to reach the
+  leader-dot tables was tried on that same prose page: it fabricates one
+  58-row, 6-column table out of ordinary justified prose, splitting words
+  mid-sentence into spurious columns -- the row rule still finds no false
+  account row in that wreckage, but the geometry itself is garbage. That is
+  why the shipped default stays the plain, unparameterized
+  `page.find_tables()` the gap asked for, not a tuned strategy.
+- **The cost is real and the option defaults off.** Table detection adds 6-7x
+  wall time to whole-document extraction (1.7 s to 11.8 s; 1.4 s to 7.7 s) for
+  a quarter, or zero, of the rows native text already destroys. `tables`
+  defaults to `False`.
+
+**Verdict: reach for PDF table geometry only where no HTML (or other
+text-bearing) rendition exists.** Every collection in the package-id grammar
+that offers a committee report, hearing, document or bill also offers `htm`
+or `xml`, and `BODY_PREFERENCE` already prefers it; `htm`'s rows arrive
+already joined, for nothing, and stay the reference above. The one collection
+where this changes anything is CREC, PDF-only in this grammar -- and even
+there, recovery is not guaranteed: it depends on whether GPO ruled that
+particular table, exactly as measured above.
+
 ## Decision
 
 **One sealed body preference, XML first and PDF last, and one text-derivation
