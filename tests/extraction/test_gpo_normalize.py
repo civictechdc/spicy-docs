@@ -76,6 +76,18 @@ def gutter_filler(n: int) -> tuple[str, ...]:
     return tuple(filler)
 
 
+def unnumbered_filler(n: int) -> tuple[str, ...]:
+    """``n`` plain content lines with no adjacent gutter number at all --
+    the shape a resolution's unnumbered "Whereas" preamble takes (see
+    ``test_true_at_or_above_the_floor_when_a_long_unnumbered_preamble_
+    dilutes_the_ratio_but_a_page_shows_a_real_run`` below), used to push a
+    synthetic document's content-line count at or above the floor while
+    driving its numbered/content ratio down, independently of
+    ``gutter_filler``, which keeps that ratio high.
+    """
+    return tuple(f"Whereas clause number {i} of the preamble recites a finding." for i in range(n))
+
+
 # ---------------------------------------------------------------------------
 # is_gpo_layout (BillTrax: detectLineNumbered) -- 4 cases
 # ---------------------------------------------------------------------------
@@ -180,6 +192,103 @@ def test_filters_a_tail_verdate_footer_and_a_real_2025_job_code_line_before_coun
         "ssavage on LAPJG3WLY3PROD with BILLS",
     )
     assert is_gpo_layout(text) is False
+
+
+# ---------------------------------------------------------------------------
+# Layout verdict fixes from the gap B6 corpus validation -- 3 cases
+# (docs/extraction-gpo.md, "Corpus validation"; see _layout_verdict's own
+# docstring in gpo_normalize.py for the two real documents that caught these)
+# ---------------------------------------------------------------------------
+
+
+def test_true_below_the_floor_on_an_exact_thirty_percent_ratio():
+    """New (gap B6 corpus validation): a strict ``> 0.3`` made two real
+    GPO-numbered documents (``BILLS-119sjres141is``, ``BILLS-119hconres11eh``)
+    fail on a ratio that landed exactly at 30%, even with a real per-page
+    consecutive run confirming genuine numbering. Reproduced synthetically:
+    10 content lines, 3 numbered (a valid run, 1-2-3) -- ratio exactly 0.3."""
+    text = page(
+        "Resolved by the Senate and House of Representatives",
+        "1",
+        "of the United States of America in Congress assembled,",
+        "2",
+        "That Congress disapproves the rule submitted by the agency",
+        "3",
+        "relating to a matter of significant public interest today,",
+        "which was published in the Federal Register on this date,",
+        "and which the agency described in its own submitted filing,",
+        "concerning matters within the jurisdiction of this committee,",
+        "as further explained in the accompanying committee report,",
+        "and no additional gutter numbers appear on the lines below,",
+        "since this excerpt intentionally stops short of the full text.",
+    )
+    assert is_gpo_layout(text) is True
+
+
+def test_true_at_or_above_the_floor_when_a_long_unnumbered_preamble_dilutes_the_ratio_but_a_page_shows_a_real_run():
+    """New (gap B6 corpus validation): the per-page run test used to run
+    only below the floor, gated behind the same ratio check. A real 10-page
+    House concurrent resolution (``BILLS-119hconres26ih``) has a six-page
+    unnumbered "Whereas" preamble before its "Resolved" operative text
+    begins, diluting its whole-document ratio to 0.268 despite four pages
+    of unambiguous gutter numbering -- one of them a run 25 long. Reproduced
+    synthetically: 55 unnumbered preamble lines (``unnumbered_filler``)
+    followed by a short numbered "Resolved" section with its own real run of
+    5 -- ratio 5/60 = 0.083, far under 0.3, but the run test now decides the
+    verdict independently once the document clears the floor."""
+    text = page(
+        *unnumbered_filler(55),
+        "Resolved by the Senate and House of Representatives",
+        "1",
+        "of the United States of America in Congress assembled,",
+        "2",
+        "That the previously recited findings are hereby affirmed,",
+        "3",
+        "and the Congress further declares its support for the matter,",
+        "4",
+        "concluding the operative text of this resolution today.",
+        "5",
+    )
+    normalized, record = normalize_gpo_pages(text)
+    assert record.line_numbers is True
+    assert "Representatives" in normalized[0]
+
+
+def test_false_below_the_floor_when_a_real_run_exists_but_the_ratio_is_too_low():
+    """Regression guard for the more conservative half of the fix above:
+    below the floor, both signals stay required together, unchanged from
+    the original design (BillTrax's own concern, quoted in
+    ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``'s docstring: "a two-page memo
+    should not be declared GPO-numbered on three lines just because they
+    happen to be numbered"). Only three of this excerpt's seventeen content
+    lines are gutter-adjacent; even though those three form a valid run from
+    1, the ratio (3/17 = 0.176) sits well under 0.3, and unlike the case
+    above this excerpt never clears the 50-line floor, so the run alone
+    must not decide it."""
+    text = page(
+        "Resolved by the Senate and House of Representatives",
+        "1",
+        "of the United States of America in Congress assembled,",
+        "2",
+        "That the following findings are affirmed by the Congress,",
+        "3",
+        "and no further line in this excerpt carries a gutter number,",
+        "since the remainder is entirely unnumbered narrative text,",
+        "continuing across several more lines of plain prose content,",
+        "each one just as unnumbered as the line that came before it,",
+        "padding this excerpt out to twenty total lines of content,",
+        "still without a second gutter number anywhere in the text,",
+        "so the document-wide ratio stays well under the 0.3 mark,",
+        "even though the first three lines still form a real run,",
+        "which is exactly the shape this test exists to distinguish,",
+        "from a genuinely numbered document like the one tested above,",
+        "where the numbered lines make up a much larger share of it,",
+        "not just a small fraction buried in an otherwise plain page,",
+        "and this line and the next both stay plain narrative text,",
+        "ending the excerpt here without any further gutter numbers.",
+    )
+    _normalized, record = normalize_gpo_pages(text)
+    assert record.line_numbers is False
 
 
 # ---------------------------------------------------------------------------

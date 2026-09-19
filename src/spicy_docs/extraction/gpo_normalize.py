@@ -93,14 +93,21 @@ upstream gaps -- so they are ported here rather than raised there:
 4. **The layout verdict's minimum-size floor.** Ported from DeltaTrack's own
    derivation (``compare/pdf.py:85``, table at ``:62-78``), but not its
    constant alone: upstream derived 50 for a document-wide ratio guard, while
-   this port's own signal is structural per page, so below the floor the
-   ratio must still hold *and* at least one page's gutter digits must form a
-   consecutive run starting at 1 (see ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``
-   and ``_starts_consecutive_run_from_one``). Both real one-page/two-page
+   this port's own signal is also structural per page. At or above the
+   floor, a document-wide ratio of at least 30% numbered decides True by
+   itself, *or* a per-page consecutive run of gutter digits starting at 1
+   decides True independently; below the floor both must hold together (see
+   ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` and
+   ``_starts_consecutive_run_from_one``). Both real one-page/two-page
    fixtures here (``BILLS-119hr4727ih``, ``BILLS-119hr1009rfs``) sit under the
-   50-line floor and are genuinely gutter-numbered with a real run on at
-   least one page, so both correctly report ``line_numbers=True`` and rejoin
-   their real hyphen-wraps.
+   50-line floor and are genuinely gutter-numbered with both a qualifying
+   ratio and a real run on at least one page, so both correctly report
+   ``line_numbers=True`` and rejoin their real hyphen-wraps. A 42-document
+   corpus validation (``docs/extraction-gpo.md``, "Corpus validation") found
+   the run test originally could not fire above the floor at all, and the
+   ratio's strict ``>`` missed two real documents landing at exactly 30% --
+   both fixed; see ``_layout_verdict``'s own docstring for the documents that
+   caught each one.
 """
 
 from __future__ import annotations
@@ -368,23 +375,28 @@ def _gate_bare_digits(
 #: (``compare/pdf.py:62-78``), swept over 60 real GPO PDFs, found a hard cliff
 #: between 28 and 29 judged lines (minimum accepted ratio 0.4286 -> 0.5517)
 #: and picked 50 for a comfortable margin past it while declining the same 14
-#: documents 29 would. At or above this floor the ratio alone decides, as
-#: upstream's own guard does. Below it, upstream's constant does not port
-#: directly: its 50 was derived for a *document-wide* ratio guard over a
-#: corpus with no page concept in the same sense, while this port's signal
-#: is structural per page (a content line immediately followed by its own
-#: digit line) -- so below the floor, the ratio must still hold (a two-page
-#: memo should not be declared GPO-numbered on three lines just because they
-#: happen to be numbered) *and* at least one page's gutter digits must form
-#: a consecutive run starting at 1, at least
-#: ``_MIN_GUTTER_RUN_LENGTH`` long (see ``_starts_consecutive_run_from_one``):
-#: GPO's own gutter numbering restarts at 1 on every page and steps by one
-#: per typeset line, which a footnote marker or outline number need not do.
-#: Residual false positive: a numbered outline whose own numbers sit on
-#: their own lines and happen to restart at 1 on every page would pass this
-#: test too -- the run test is validated on this repo's four real fixtures
-#: plus synthetic cases below the floor, not against a corpus the way
-#: upstream's 50 was.
+#: documents 29 would. At or above this floor, a ratio of at least 30%
+#: numbered decides the verdict True by itself, as upstream's own guard does
+#: -- *or* a per-page consecutive run (see ``_starts_consecutive_run_from_one``,
+#: at least ``_MIN_GUTTER_RUN_LENGTH`` long) decides it True independently,
+#: since GPO's own gutter numbering restarts at 1 on every page and steps by
+#: one per typeset line, which a footnote marker or outline number need not
+#: do, and a real run spanning many lines across several pages is strong
+#: evidence on its own once the document is this big. Below the floor, both
+#: signals are required together, unchanged from the original design: a
+#: two-page memo should not be declared GPO-numbered on three lines just
+#: because they happen to be numbered, and the floor's own minimum run length
+#: (3, "the smallest run that cannot also be a single coincidental pair") is
+#: comparatively weak evidence for a document this small without the ratio
+#: also backing it. A first version of this floor gated the run test behind
+#: the floor (below only) and behind a strict ``> 0.3`` ratio everywhere; a
+#: 42-document corpus validation (``docs/extraction-gpo.md``, "Corpus
+#: validation") found real GovInfo documents on both sides of that mistake --
+#: see ``_layout_verdict``'s docstring. Residual false positive: at or above
+#: the floor, a numbered outline whose own numbers sit on their own lines and
+#: happen to restart at 1 on every page would pass the run test too, now
+#: without a ratio to also require -- unmeasured on this corpus (none of its
+#: documents exercises the case), tracked here rather than assumed safe.
 _MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT = 50
 
 #: How many consecutive gutter numbers, starting at 1, one page must carry
@@ -417,16 +429,56 @@ def _layout_verdict(page_counts: Sequence[_PageMetadataCounts]) -> bool:
     layout is one ``_strip_metadata`` pass per page, not two.
 
     See ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` for the two-tier rule this
-    implements: the ratio alone at or above the floor, the ratio plus a
-    per-page structural run below it.
+    implements: at or above the floor, a document-wide ratio of at least 30%
+    numbered decides True by itself, *or* a per-page structural run decides
+    True independently -- a run spans real evidence (GPO's numbering
+    restarting at 1 every page) that does not need a document-wide ratio to
+    back it up once the document is big enough for the floor to apply at
+    all. Below the floor, both signals are still required together, as
+    before: a short document's minimum run (``_MIN_GUTTER_RUN_LENGTH``, 3)
+    is comparatively weak evidence on its own, and BillTrax's original
+    "a two-page memo should not be declared GPO-numbered on three lines just
+    because they happen to be numbered" concern is about exactly that case,
+    not the one below.
+
+    **Two false negatives found validating this against a 42-document
+    corpus** (``docs/extraction-gpo.md``, "Corpus validation"), both fixed
+    here:
+
+    1. A strict ``> 0.3`` made two real GPO-numbered documents fail on an
+       exact 30% ratio: ``BILLS-119sjres141is`` (9 of 30 content lines
+       numbered, both of its two pages independently showing a perfect
+       consecutive run from 1 -- 6 long and 3 long) and
+       ``BILLS-119hconres11eh`` (6 of 20, one page's run 4 long). Both are
+       below the floor and both signals already agreed (ratio exactly at the
+       line, run confirmed); only the strict inequality was wrong. Changed
+       to ``>= 0.3``.
+    2. The per-page run test only ever ran *below* the floor. A document at
+       or above the floor whose numbered pages are diluted by a long
+       unnumbered run -- ``BILLS-119hconres26ih``, a 10-page,
+       261-content-line House concurrent resolution whose first six pages
+       are entirely unnumbered "Whereas" recitals (a print convention this
+       resolution type uses; a plain bill's enacting clause carries no
+       comparable preamble) before its "Resolved" operative text begins --
+       fails the whole-document ratio (0.268, genuinely under 30%, not a
+       boundary tie) despite four pages (70 of the 261 content lines) each
+       showing an unambiguous consecutive run from 1, one of them 25 long.
+       Unlike case 1, raising the ratio's own ceiling would not have fixed
+       this; the run test itself needed to reach documents at or above the
+       floor, as an alternative to the ratio rather than a corroboration of
+       it -- justified by scale, not just by evidence type: 70 lines across
+       four pages is far past the 3-line minimum the floor's below-line
+       guard exists to distrust.
     """
     content = sum(c.content_lines for c in page_counts)
-    numbered = sum(c.gutter_adjacent_lines for c in page_counts)
-    if content == 0 or not (numbered / content > 0.3):
+    if content == 0:
         return False
+    numbered = sum(c.gutter_adjacent_lines for c in page_counts)
+    ratio_qualifies = numbered / content >= 0.3
+    has_structural_run = any(_starts_consecutive_run_from_one(c.gutter_numbers) for c in page_counts)
     if content >= _MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT:
-        return True
-    return any(_starts_consecutive_run_from_one(c.gutter_numbers) for c in page_counts)
+        return ratio_qualifies or has_structural_run
+    return ratio_qualifies and has_structural_run
 
 
 def is_gpo_layout(pages: Sequence[str]) -> bool:
@@ -436,10 +488,11 @@ def is_gpo_layout(pages: Sequence[str]) -> bool:
     "numbered" when the next physical line, before stripping, is a bare 1-2
     digit gutter number -- not, as under pdf-parse, when the content line's
     own text ends in a trailing digit suffix, which this extractor never
-    produces. Over 30% numbered always has to hold; at
-    ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` content lines or more that ratio
-    decides alone, and below it a page's gutter digits must additionally form
-    a consecutive run starting at 1 (see ``_layout_verdict`` and
+    produces. At ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` content lines or
+    more, a document-wide ratio of at least 30% numbered decides the verdict
+    True by itself, or a page's gutter digits forming a consecutive run
+    starting at 1 decides it True independently; below that floor both
+    signals are required together (see ``_layout_verdict`` and
     ``_starts_consecutive_run_from_one``).
     """
     return _layout_verdict([_strip_metadata(normalize_gpo_glyphs(page).split("\n"))[1] for page in pages])
