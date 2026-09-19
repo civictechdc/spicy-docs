@@ -24,6 +24,7 @@ from spicy_docs.sources.legislators import (
     MAX_RECORDS_CAP,
     LegislatorsAcquirer,
     LegislatorsBudget,
+    LegislatorsRefusedError,
     LegislatorsSourceError,
     LegislatorsUnavailableError,
     parse_legislators,
@@ -51,7 +52,7 @@ def base_row() -> dict:
         },
         "name": {"first": "Test", "last": "Legislator"},
         "terms": [{"type": "sen", "start": "2001-01-03", "end": "2007-01-03", "state": "WA", "party": "Democrat"}],
-    }
+    }  # "party" is real publisher data but deliberately unread; see the Term docstring.
 
 
 def encoded(rows: list) -> bytes:
@@ -74,13 +75,8 @@ def test_a_well_formed_record_round_trips_every_field():
     assert (record.icpsr, record.govtrack, record.opensecrets, record.wikidata) == (12345, 400001, "N00000001", "Q1")
     assert (record.name_first, record.name_last) == ("Test", "Legislator")
     (term,) = record.terms
-    assert (term.type, term.start, term.end, term.state, term.party) == (
-        "sen",
-        "2001-01-03",
-        "2007-01-03",
-        "WA",
-        "Democrat",
-    )
+    assert (term.type, term.start, term.end, term.state) == ("sen", "2001-01-03", "2007-01-03", "WA")
+    assert not hasattr(term, "party"), "party is real publisher data but deliberately unmodeled here"
 
 
 @pytest.mark.parametrize("field", ["lis", "fec", "icpsr", "govtrack", "opensecrets", "wikidata"])
@@ -92,12 +88,12 @@ def test_absent_optional_id_fields_are_none_or_empty_not_refused(field):
     assert getattr(record, field) in (None, ())
 
 
-def test_a_term_with_no_party_parses_as_none_not_a_refusal():
-    """The 1st Congress predates political parties; a missing party is a fact. See B000546 in the fixture."""
+def test_a_term_with_no_end_date_parses_as_in_progress_not_a_refusal():
+    """The publisher omits end elsewhere in these files for an in-progress item; refusing that shape is wrong."""
     row = base_row()
-    del row["terms"][0]["party"]
+    del row["terms"][0]["end"]
     result = parse_legislators(encoded([row]), max_bytes=BOUND)
-    assert result.records[0].terms[0].party is None
+    assert result.records[0].terms[0].end is None
 
 
 @pytest.mark.parametrize("fec_id", ["S8WA00194", "H2CA06028", "P80003023", "P00003483"])
@@ -139,10 +135,11 @@ def test_both_real_fec_candidate_id_shapes_are_accepted(fec_id):
         (lambda r: r["terms"][0].__setitem__("type", "del"), "must be 'rep' or 'sen'"),
         (lambda r: r["terms"][0].pop("type"), "must be 'rep' or 'sen'"),
         (lambda r: r["terms"][0].__setitem__("start", "2001-1-3"), "start must be an ISO date"),
-        (lambda r: r["terms"][0].pop("end"), "end must be an ISO date"),
+        (lambda r: r["terms"][0].__setitem__("end", "2001-1-3"), "end must be an ISO date"),
+        (lambda r: r["terms"][0].__setitem__("start", "2026-13-45"), "not a real calendar date"),
+        (lambda r: r["terms"][0].__setitem__("end", "2026-02-30"), "not a real calendar date"),
         (lambda r: r["terms"][0].pop("state"), "non-empty state"),
         (lambda r: r["terms"][0].__setitem__("state", ""), "non-empty state"),
-        (lambda r: r["terms"][0].__setitem__("party", 1), "non-string party"),
         (lambda r: r["terms"].__setitem__(0, "not-an-object"), "must be an object"),
     ],
 )
@@ -245,7 +242,8 @@ def test_historical_excerpt_parses_and_carries_the_former_senator_crosswalk():
     bassett = result.by_bioguide["B000226"]
     assert bassett.lis is None and bassett.fec == ()
     bland = result.by_bioguide["B000546"]
-    assert bland.terms[0].party is None
+    assert bland.terms[0].type == "rep" and bland.lis is None  # 1st Congress; its term carries no party in the raw
+    assert not hasattr(bland.terms[0], "party")
     mccain = result.by_bioguide["M000303"]
     assert "P80002801" in mccain.fec and result.by_fec["P80002801"] is mccain
     assert len(result.by_lis) == 13
@@ -280,6 +278,18 @@ def test_acquirer_captures_exact_current_bytes_keyless():
     assert len(result.file.records) == 5 and result.request_count == 1 and result.budget == BUDGET
     assert transport.calls[0].headers["accept-encoding"] == "identity"
     assert "x-api-key" not in transport.calls[0].headers and "authorization" not in transport.calls[0].headers
+
+
+def test_acquire_current_refuses_a_file_with_no_lis_entries():
+    """Roughly 100 sitting senators always carry id.lis; an empty by_lis means a bad file, not a fact about Congress."""
+    row = base_row()
+    del row["id"]["lis"]
+    transport = Transport(response(encoded([row])))
+    with (
+        LegislatorsAcquirer(budget=BUDGET, transport=transport) as source,
+        pytest.raises(LegislatorsSourceError, match="no id.lis"),
+    ):
+        source.acquire_current()
 
 
 def test_acquirer_captures_exact_historical_bytes_at_its_own_bound():
@@ -330,14 +340,23 @@ def test_a_malformed_200_retains_its_exact_bytes_as_refused_evidence():
 
 
 @pytest.mark.parametrize("status", [401, 403])
-def test_a_public_access_refusal_on_a_keyless_route_retains_its_body(status):
+def test_a_public_access_refusal_on_a_keyless_route_is_named_not_a_credential_refusal(status):
+    """A keyless route holds no credential, so 401/403 is this family's own error, not CredentialRefusedError.
+
+    Catchable as ``LegislatorsSourceError`` -- unlike ``CredentialRefusedError``,
+    which the earlier, unfixed acquirer let escape uncaught.
+    """
     body = b"rate limited"
     transport = Transport(response(body, status, content_type="text/plain"))
     with (
         LegislatorsAcquirer(budget=BUDGET, transport=transport) as source,
-        pytest.raises(CredentialRefusedError) as raised,
+        pytest.raises(LegislatorsRefusedError) as raised,
     ):
         source.acquire_current()
+    assert isinstance(raised.value, LegislatorsSourceError)
+    assert not isinstance(raised.value, CredentialRefusedError)
+    assert raised.value.url == LEGISLATORS_CURRENT_URL
+    assert raised.value.legislators_acquisition["operation"] == "current"
     refusal = raised.value.refused_response
     assert refusal.response_bytes == body and refusal.request_key == LEGISLATORS_CURRENT_URL
 

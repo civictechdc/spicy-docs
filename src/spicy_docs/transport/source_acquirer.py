@@ -9,7 +9,8 @@ one capture becomes a validated result with refusal evidence attached.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Self
 
@@ -64,6 +65,29 @@ def check_final_url(final_url: str, locator: str, *, error_type: type[ValueError
     """The response must have come from exactly the locator the request named."""
     if final_url != locator:
         raise error_type(message)
+
+
+@contextmanager
+def named_challenge(url: str, *, error_type: Callable[[str], Exception], context_key: str) -> Iterator[None]:
+    """Recast a keyless route's 401/403 as the family's own error, not a credential refusal.
+
+    The shared client maps 401/403 to ``CredentialRefusedError`` so a keyed
+    family aborts rather than treating a refusal as a bad row. A keyless
+    family holds no credential, so the same status is a bot wall or an
+    access refusal, not a key being rejected -- and a caller catching the
+    family's own ``error_type`` (typically a subclass of its shared source
+    error) would otherwise miss it, since ``CredentialRefusedError`` is not
+    one. This substitutes ``error_type(url)`` while keeping the acquisition
+    context and refusal record the shared client already attached, so the
+    refusal's bytes still reach the caller on ``refused_response``.
+    """
+    try:
+        yield
+    except CredentialRefusedError as error:
+        challenge = error_type(url)
+        carried = (context_key, "refused_response")
+        challenge.__dict__.update({key: error.__dict__[key] for key in carried if key in error.__dict__})
+        raise challenge from error
 
 
 class SourceAcquirer:

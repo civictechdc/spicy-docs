@@ -24,6 +24,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import date
 from types import MappingProxyType
 from typing import TYPE_CHECKING
 
@@ -34,6 +35,7 @@ from spicy_docs.transport.source_acquirer import (
     check_byte_bound,
     check_request_count,
     check_timing,
+    named_challenge,
     narrow_byte_limit,
     utc_now,
 )
@@ -84,10 +86,15 @@ _NAME_STRING_RULES = (
 )
 _TERM_STRING_RULES = (
     ("start", True, _ISO_DATE, "terms[{i}].start must be an ISO date"),
-    ("end", True, _ISO_DATE, "terms[{i}].end must be an ISO date"),
+    # end is optional: the publisher omits it elsewhere in these files for an
+    # in-progress item, and a whole-file refusal for that shape is wrong even
+    # though no term lacks it today (measured 2026-09-19).
+    ("end", False, _ISO_DATE, "terms[{i}].end must be an ISO date"),
     ("state", True, None, "terms[{i}] needs a non-empty state"),
-    ("party", False, None, "terms[{i}] has a non-string party"),
 )
+# The regex above proves start/end are spelled ####-##-##; it does not prove
+# the date exists ("2026-13-45" matches it). This proves the calendar date.
+_CALENDAR_DATE_FIELDS = ("start", "end")
 
 
 class LegislatorsSourceError(ValueError):
@@ -100,15 +107,34 @@ class LegislatorsUnavailableError(LegislatorsSourceError):
         self.capture = capture
 
 
+class LegislatorsRefusedError(LegislatorsSourceError):
+    """A keyless route answered 401/403; there is no credential here to reject.
+
+    GitHub Pages can still refuse a keyless request (for example when rate
+    limited). ``named_challenge`` recasts that refusal into this error so it
+    is catchable as a ``LegislatorsSourceError``, with its body retained as
+    evidence on ``refused_response``.
+    """
+
+    def __init__(self, url: str) -> None:
+        super().__init__(f"community legislators source refused access to {url}; no credential exists to reject")
+        self.url = url
+
+
 @dataclass(frozen=True, slots=True)
 class Term:
-    """One publisher term row. ``party`` is ``None`` for the party-less 1st Congress, a real value."""
+    """One publisher term row. ``end`` is ``None`` for an in-progress term. Party is not modeled here.
+
+    The publisher's single ``party`` field per term cannot represent a
+    mid-term party change (Strom Thurmond's 1964 switch, for example,
+    collapses to whichever party the row states), and this crosswalk's job
+    is ids, not party history, so ``party``/``party_affiliations`` stay unread.
+    """
 
     type: str
     start: str
-    end: str
+    end: str | None
     state: str
-    party: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -191,7 +217,17 @@ def _read_term(term: object, record_index: int, term_index: int) -> Term:
         key: _string(term, key, message.format(i=term_index), required=required, pattern=pattern, index=record_index)
         for key, required, pattern, message in _TERM_STRING_RULES
     }
-    return Term(type=term_type, start=values["start"], end=values["end"], state=values["state"], party=values["party"])
+    for field in _CALENDAR_DATE_FIELDS:
+        value = values[field]
+        if value is not None:
+            try:
+                date.fromisoformat(value)
+            except ValueError:
+                raise LegislatorsSourceError(
+                    f"community legislators record {record_index} terms[{term_index}].{field} is not a real "
+                    f"calendar date: {value!r}"
+                ) from None
+    return Term(type=term_type, start=values["start"], end=values["end"], state=values["state"])
 
 
 def _read_record(row: object, index: int) -> Legislator:
@@ -318,10 +354,12 @@ class LegislatorsAcquisition:
 class LegislatorsAcquirer(SourceAcquirer):
     """Keyless capture of the two community legislators crosswalk files.
 
-    Neither route needs a credential; GitHub Pages can still answer 403 (for
-    example when rate limited), so this stays a ``keyless`` acquirer like
-    ``CboAcquirer`` -- a refusal body is evidence to retain, not a credential
-    being rejected.
+    Neither route needs a credential; GitHub Pages can still answer 401/403
+    (for example when rate limited), so this stays a ``keyless`` acquirer
+    like ``CboAcquirer``. ``named_challenge`` (``transport/source_acquirer.py``)
+    recasts that refusal as ``LegislatorsRefusedError`` -- catchable as a
+    ``LegislatorsSourceError``, with its body retained as evidence -- rather
+    than letting it escape as ``CredentialRefusedError``.
     """
 
     def __init__(
@@ -352,19 +390,34 @@ class LegislatorsAcquirer(SourceAcquirer):
         return self._budget
 
     def _acquire(self, url: str, operation: str, max_bytes: int) -> LegislatorsAcquisition:
-        legislators_file, capture = self.capture_validated(
-            url,
-            media_types=MEDIA_TYPES,
-            parse=lambda response, allowance: parse_legislators(response.body, max_bytes=allowance),
-            max_bytes=max_bytes,
-            unavailable=LegislatorsUnavailableError,
-            context={"operation": operation, "url": url},
-        )
+        with named_challenge(url, error_type=LegislatorsRefusedError, context_key="legislators_acquisition"):
+            legislators_file, capture = self.capture_validated(
+                url,
+                media_types=MEDIA_TYPES,
+                parse=lambda response, allowance: parse_legislators(response.body, max_bytes=allowance),
+                max_bytes=max_bytes,
+                unavailable=LegislatorsUnavailableError,
+                context={"operation": operation, "url": url},
+            )
         return LegislatorsAcquisition(legislators_file, capture, self.request_count, self.budget)
 
     def acquire_current(self, *, max_bytes: int | None = None) -> LegislatorsAcquisition:
-        """Everyone serving today. Measured 2026-09-19: 539 records, 1,468,926 bytes."""
-        return self._acquire(LEGISLATORS_CURRENT_URL, "current", narrow_byte_limit(self.budget.max_bytes, max_bytes))
+        """Everyone serving today. Measured 2026-09-19: 539 records, 1,468,926 bytes.
+
+        Refuses a file with no ``id.lis`` entries at all: roughly 100 sitting
+        senators always carry one, so an empty ``by_lis`` is a bad file, not
+        a fact about Congress.
+        """
+        result = self._acquire(LEGISLATORS_CURRENT_URL, "current", narrow_byte_limit(self.budget.max_bytes, max_bytes))
+        if not result.file.by_lis:
+            error = LegislatorsSourceError("community legislators current file carries no id.lis entries")
+            error.__dict__["legislators_acquisition"] = {
+                "operation": "current",
+                "url": LEGISLATORS_CURRENT_URL,
+                "requestCount": self.request_count,
+            }
+            raise error
+        return result
 
     def acquire_historical(self, *, max_bytes: int | None = None) -> LegislatorsAcquisition:
         """Everyone who has left; the only route to a former senator's LIS id.

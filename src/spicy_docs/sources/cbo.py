@@ -54,8 +54,8 @@ Byte counts, digests and the measurements behind every claim here:
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from collections.abc import Callable
+from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -64,13 +64,13 @@ from urllib.parse import urlsplit
 from spicy_docs.reading.pdf_bytes import check_pdf_bytes
 from spicy_docs.reading.xml import scan_xml
 from spicy_docs.transport.captured import CapturedBodyResponse
-from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
     check_final_url,
     check_request_count,
     check_timing,
+    named_challenge,
     narrow_byte_limit,
     utc_now,
 )
@@ -331,23 +331,15 @@ class CboDocumentAcquisition:
     budget: CboBudget
 
 
-@contextmanager
-def _named_challenge(url: str) -> Iterator[None]:
-    """Name cbo.gov's bot wall for what it is: no credential exists to be refused.
+def _named_challenge(url: str) -> AbstractContextManager[None]:
+    """cbo.gov's bot wall, named for what it is: no credential exists to be refused.
 
-    The shared client maps 401/403 to ``CredentialRefusedError`` so a keyed
-    family aborts rather than treating a refusal as a bad row. This family is
-    keyless, so the same status means a bot wall, and the client retains the
-    challenge body. The substitution keeps the acquisition context and refusal
-    record the shared client attached, so the challenge bytes reach the caller.
+    Delegates to the shared ``named_challenge`` (``transport/source_acquirer.py``),
+    which every keyless family uses so a 401/403 arrives as that family's own
+    error -- catchable alongside its other errors -- rather than escaping as
+    ``CredentialRefusedError``.
     """
-    try:
-        yield
-    except CredentialRefusedError as error:
-        challenge = CboChallengeError(url)
-        carried = ("cbo_acquisition", "refused_response")
-        challenge.__dict__.update({key: error.__dict__[key] for key in carried if key in error.__dict__})
-        raise challenge from error
+    return named_challenge(url, error_type=CboChallengeError, context_key="cbo_acquisition")
 
 
 class CboAcquirer(SourceAcquirer):

@@ -54,11 +54,13 @@ observations.
 
 Between them the two excerpts exercise every shape rule `parse_legislators`
 enforces on real data: both `id.fec` shapes, missing `id.lis`, missing
-`id.wikidata`, a term with no `party`, and a chamber roster spanning the 1st
-Congress to a seat that turned over three months ago.
+`id.wikidata`, a 1789 term recorded with no `party` (real data; unread by
+this module), and a chamber roster spanning the 1st Congress to a seat that
+turned over three months ago.
 
 ## Refusal fixtures
 
-Refusal tests in `tests/test_legislators.py` mutate these real records in
-memory (drop a field, corrupt an id, duplicate an entry) rather than shipping
-separate malformed fixture files; the starting point stays real data.
+Refusal tests in `tests/test_legislators.py` mutate a small
+synthetic-but-realistic record (`base_row()`), not these excerpts, so a
+shape violation is isolated to exactly the field under test; see that
+module's docstring.

@@ -21,8 +21,10 @@ GitHub, not a government publisher. It ships two files relevant here:
 Both are one JSON array of records with the same shape: `id` (a bag of
 cross-reference ids), `name`, `bio`, and `terms` (one entry per election won,
 carrying `type`, `start`, `end`, `state`, `party`, and other fields this
-module does not read). There is no third "everyone, ever" file, and no field
-in either file states when the file itself was generated.
+module does not read). `party` is real publisher data, but is deliberately
+not modeled here — see the shape-rule table below. There is no third
+"everyone, ever" file, and no field in either file states when the file
+itself was generated.
 
 ## Routes, bounds and their measured basis
 
@@ -59,11 +61,20 @@ dropped or half-parsed.
 | Rule | Why |
 | --- | --- |
 | The file is a JSON list. | The publisher's whole contract is "an array of legislators"; anything else is not this file. |
+| JSON numbers decode as integers only, never floats. | Every number in this file (`govtrack`, `icpsr`, ...) is an integer id; a float would be a different, unexpected shape, not a normal id. |
 | Every record has a non-empty `id.bioguide`. | This is the join key every other Congress.gov/GovInfo route already uses; a record with no bioguide cannot be crosswalked to anything. |
 | `id.lis`, when present, matches `S\d{3}`. | The Senate LIS id is exactly what this source exists to carry; any other shape is not an LIS id. |
 | `id.fec`, when present, is a list of strings, each matching a real FEC candidate id shape. | Garbage in this field would silently poison FEC lookups keyed on it. |
-| `terms` is a non-empty list; each entry's `type` is `rep` or `sen` with ISO `start`/`end` dates. | A person with no terms is not a legislator record this crosswalk can place in time; malformed dates would break every downstream date comparison. |
+| `terms` is a non-empty list; each entry's `type` is `rep` or `sen`, `start` is a real ISO calendar date, and `end` is a real ISO calendar date **when present**. | A person with no terms is not a legislator record this crosswalk can place in time. The regex proves a date is spelled `####-##-##`; `datetime.date.fromisoformat` proves it is a real date (`2026-13-45` matches the regex but is not a month). `end` is optional because the publisher omits it elsewhere in these files for an in-progress item; refusing the whole file over that shape would be wrong even though no term lacks it today (measured 2026-09-19). |
 | A bioguide, LIS or FEC id names **at most one** record in the file. | These are the join keys this crosswalk exists to supply; a duplicate would make a lookup ambiguous, which is worse than refusing the file. |
+
+**Party is not modeled.** `terms[].party` is read by nothing here, and there
+is no `Term.party` field. The publisher's one `party` value per term cannot
+represent a mid-term party change — Strom Thurmond's 1964 switch, for
+example, collapses to whichever party the row states — and this crosswalk's
+job is ids, not party history. Neither this repeated-per-term `party` nor any
+alternate party field a future revision might add (a `party_affiliations`
+key, say) is read.
 
 **FEC ids come in two real shapes, discovered against the live data, not
 assumed.** A House or Senate candidate id embeds the office letter, a decade
@@ -81,14 +92,12 @@ excerpt below, alongside Warner. See the module docstring in
 [`legislators.py`](../../src/spicy_docs/sources/legislators.py) for the full
 list and reasoning.
 
-Fields this module reads but does not gate a refusal on —
-`id.icpsr`, `id.govtrack`, `id.opensecrets`, `id.wikidata`, and a term's
-`party` — are read as optional. Real records are missing each of them:
-`id.icpsr` is absent on 252 current-era and many historical records,
-`id.opensecrets` on the large majority of historical records (its tracking
-starts around 1989), a freshly seated House member (`G000607`, current file)
-has no `id.wikidata` yet, and every term of the 1st Congress (1789) has no
-`party`, because political parties did not exist yet. All four are real,
+Fields this module reads but does not gate a refusal on — `id.icpsr`,
+`id.govtrack`, `id.opensecrets`, `id.wikidata` — are read as optional. Real
+records are missing each of them: `id.icpsr` is absent on 252 current-era and
+many historical records, `id.opensecrets` on the large majority of historical
+records (its tracking starts around 1989), and a freshly seated House member
+(`G000607`, current file) has no `id.wikidata` yet. All three are real,
 common absences, not malformed input.
 
 ## This is a civil-society source, not a publisher
@@ -133,6 +142,19 @@ print(warner.lis, warner.fec)  # S327 ('S6VA00093', 'P80003023')
 graham = historical.file.by_lis["S293"]  # left office 2026-07-11; no longer in the current file
 print(graham.bioguide, graham.terms[-1].end)
 ```
+
+`acquire_current` additionally refuses a file whose `by_lis` is empty
+(`LegislatorsSourceError`, "carries no id.lis entries"): roughly 100 sitting
+senators always carry one, so a file with none is a bad file, not a fact
+about Congress, and only this check would have caught it before a caller
+found an empty crosswalk downstream.
+
+Both routes are keyless, but GitHub Pages can still answer 401/403 (for
+example when rate limited). There is no credential to reject, so that
+refusal is recast as `LegislatorsRefusedError` — catchable as a
+`LegislatorsSourceError` like every other refusal here — instead of escaping
+as the shared client's `CredentialRefusedError`. The refusal body, when one
+exists, is retained on `refused_response`.
 
 `result.capture` carries the exact bytes, both URLs, status, observed time
 and SHA-256 (`sha256:...`); retain `capture.body` as the pin. `result.file`
