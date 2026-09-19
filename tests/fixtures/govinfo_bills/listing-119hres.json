@@ -1,0 +1,52 @@
+{
+  "files": [
+    {
+      "displayLabel": "BILLSTATUS-119hres10.xml",
+      "fileExtension": "xml",
+      "folder": false,
+      "formattedLastModifiedTime": "30-Jan-2025 15:07",
+      "formattedSize": "7.9 KB",
+      "justFileName": "BILLSTATUS-119hres10.xml",
+      "link": "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hres/BILLSTATUS-119hres10.xml",
+      "mimeType": "application/xml",
+      "name": "BILLSTATUS-119hres10.xml",
+      "size": 8109
+    },
+    {
+      "displayLabel": "BILLSTATUS-119-hres.zip",
+      "fileExtension": "zip",
+      "folder": false,
+      "formattedLastModifiedTime": "18-Sep-2026 20:26",
+      "formattedSize": "3.8 MB",
+      "justFileName": "BILLSTATUS-119-hres.zip",
+      "link": "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hres/BILLSTATUS-119-hres.zip",
+      "mimeType": "application/zip",
+      "name": "BILLSTATUS-119-hres.zip",
+      "size": 3934575
+    },
+    {
+      "displayLabel": "BILLSTATUS-119hres214.xml",
+      "fileExtension": "xml",
+      "folder": false,
+      "formattedLastModifiedTime": "19-Jul-2026 02:30",
+      "formattedSize": "6 KB",
+      "justFileName": "BILLSTATUS-119hres214.xml",
+      "link": "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hres/BILLSTATUS-119hres214.xml",
+      "mimeType": "application/xml",
+      "name": "BILLSTATUS-119hres214.xml",
+      "size": 6181
+    },
+    {
+      "displayLabel": "BILLSTATUS-119hres1376.xml",
+      "fileExtension": "xml",
+      "folder": false,
+      "formattedLastModifiedTime": "24-Aug-2026 12:15",
+      "formattedSize": "5.1 KB",
+      "justFileName": "BILLSTATUS-119hres1376.xml",
+      "link": "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hres/BILLSTATUS-119hres1376.xml",
+      "mimeType": "application/xml",
+      "name": "BILLSTATUS-119hres1376.xml",
+      "size": 5230
+    }
+  ]
+}

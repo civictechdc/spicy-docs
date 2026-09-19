@@ -12,6 +12,7 @@ daily and the Congress.gov API is what carries the days since.
 | Route | Required selection | What it supplies |
 | --- | --- | --- |
 | Folder archive | Congress and one bill type | `bulkdata/BILLSTATUS/{congress}/{type}/BILLSTATUS-{congress}-{type}.zip`, validated member by member |
+| Folder listing | Congress and one bill type | `bulkdata/json/BILLSTATUS/{congress}/{type}`, every file the folder holds, the zip included, with its own last-modified stamp and size |
 
 Bill types are the publisher's own lowercase folder names: `hr`, `s`, `hjres`,
 `sjres`, `hconres`, `sconres`, `hres`, `sres`. Anything else is refused before a
@@ -76,6 +77,107 @@ name, byte size and SHA-256, and exactly one of `status` or `refusal`.
 A refused member never ends the read. One unreadable file out of ten thousand is
 one refused row, and `parsed_count` plus `refused_count` always equals
 `len(members)`, because both counts are read off the members themselves.
+
+## The folder listing: a small request that answers "has the zip moved"
+
+GovInfo answers a keyless JSON listing for the same folder, at
+`bulkdata/json/BILLSTATUS/{congress}/{type}`, naming every file it holds — the
+zip and every individual member XML the publisher also serves loose. It is a
+fraction of the zip's own bytes: measured 2026-09-19, the 119th H.Res. listing
+is 569,986 bytes over 1,567 entries against a 3,934,575-byte zip (14%), and
+H.R., the largest folder, listed 10,504 entries in 3,744,366 bytes against a
+31,656,886-byte zip (12%). `bulk_listing_locator(congress, bill_type)`
+names the route and `read_bulk_listing` reads a retained response offline,
+the same way `read_bulk_status_archive` replays a retained zip.
+`list_archives` bounds the request by the smaller of the caller's own
+`max_bytes` (sized for the zip) and `DEFAULT_MAX_LISTING_BYTES`, so a budget
+built for a 64 MiB zip does not also become a 64 MiB cap on an 8 MiB-bounded
+listing.
+
+Every entry proves its own identity: its `link` must rebuild the single-file
+locator `bulk_status_locator` would spell for its `name` in the requested
+Congress and bill type, the same "prove it, don't reinterpret it" rule a zip
+member's name is held to. An entry that fails this — another folder's file,
+or a listing shape this route has never stated — refuses the **whole**
+listing, because a response that cannot be proved to be this folder's own is
+not evidence about this folder. A listing with no zip entry for the folder
+also refuses by name: `{"files": []}` is a well-formed answer, and "empty
+success is not absence."
+
+| Field | Type | Publisher key | Notes |
+| --- | --- | --- | --- |
+| `name` | `str` | `name` | The file or subfolder's own name. |
+| `display_label` | `str` | `displayLabel` | The name as the publisher's own UI would show it. |
+| `just_file_name` | `str` | `justFileName` | Measured identical to `name` in every one of 18,964 entries checked. |
+| `link` | `str` | `link` | The single-file URL; what proves the entry's identity. |
+| `folder` | `bool` | `folder` | `false` for every entry this route has answered so far — a bulk status folder holds no subfolders — kept typed because a sibling listing level (`BILLSTATUS/{congress}`, no bill type) does answer `folder: true` rows. |
+| `formatted_last_modified_time` | `str` | `formattedLastModifiedTime` | The publisher's own `DD-Mon-YYYY HH:MM` spelling, GMT, seconds truncated. |
+| `modified_at` | `datetime` | *(parsed)* | `formatted_last_modified_time` parsed to a UTC instant, confirmed 2026-09-19 against the zip's own HTTP `Last-Modified` header to the minute. |
+| `mime_type` | `str \| None` | `mimeType` | `None` on a `folder: true` row, which states no MIME type. |
+| `file_extension` | `str \| None` | `fileExtension` | Same optionality as `mime_type`. |
+| `formatted_size` | `str \| None` | `formattedSize` | The publisher's human-readable size (`"3.8 MB"`); same optionality. |
+| `size` | `int \| None` | `size` | The byte count a caller compares; `None` on a `folder: true` row. |
+
+All ten publisher fields were present on every one of 18,964 entries measured
+2026-09-19 across all eight 119th bill-type listings; the four
+file-only fields stay typed `| None` for the folder-row shape this route has
+never itself answered, not because this route's own entries have been seen
+missing them. `BulkListing` also carries `folder_modified: datetime | None`,
+the listing response's own stamp for the whole folder when the publisher
+states one — measured `None` here, since this route answers only
+`{"files": [...]}` at its own top level, with no sibling of `formattedLastModifiedTime`
+beside `files`.
+
+### Skip a zip download the listing proves is unchanged
+
+`BulkStatusAcquirer.acquire` takes an optional `unchanged_since:
+BulkListingEntry | None`. Pass the zip entry retained from a prior call's
+`listing_entry` (or a standalone `list_archives`), and `acquire` reads the
+folder's listing first — one small request — before ever asking for the zip.
+`unchanged_since` must first name the same file the listing's own zip entry
+does (`name` and `link` both equal): an entry retained from a different
+folder or a different call names a different file, not a stale version of
+this one, and comparing its `modified_at`/`size` against this folder's zip
+would risk a false skip, so a mismatch there refuses outright rather than
+silently falling through to "changed." Once identity agrees, if the listing's
+own zip entry also states the same `modified_at` and `size` as
+`unchanged_since`, the zip download is skipped entirely: the returned
+`BulkStatusAcquisition` carries `skipped_unchanged=True`, `archive` and
+`capture` both `None`, and `listing_capture`/`listing_entry` set from the
+listing alone. Otherwise the zip downloads exactly as it always has, and
+`listing_entry` still carries the entry this call saw, for the next run's
+`unchanged_since`. Without `unchanged_since`, `acquire` behaves exactly as
+before: one zip request, no listing read.
+
+The listing and the zip share this call's one `max_requests` budget rather
+than each getting its own: the listing's capture never resets the client's
+request count, so a listing that already spent the whole budget (retries
+included) leaves none for the zip, and the zip request is refused with the
+same "exhausted its total request budget" error a single over-budget request
+would raise — never silently granted a second, independent allowance.
+`request_count` on the returned acquisition is always the true total for the
+call, the listing's request counted in it whenever one was made. The zip
+capture is wrapped in `named_challenge` exactly as the listing's is, so a
+401/403 bot wall on either request raises this family's own `BillSourceError`
+rather than the shared client's generic credential-refusal error.
+
+```python
+from spicy_docs.sources.congress.bulk_status import BulkStatusAcquirer, BulkStatusBudget
+
+budget = BulkStatusBudget(max_requests=2, max_bytes=64 * 1024**2, timeout_seconds=120, min_request_interval_seconds=1)
+with BulkStatusAcquirer(budget=budget) as source:
+    # First run: nothing retained yet, so the zip downloads; retain the listing entry it saw.
+    first = source.acquire(119, "hres")
+    seen = source.list_archives(119, "hres").listing.zip_entry  # Retain this in caller-owned storage.
+
+    # A later run: skip unless the listing shows the zip has moved.
+    result = source.acquire(119, "hres", unchanged_since=seen)
+    if result.skipped_unchanged:
+        print("unchanged since", seen.modified_at, seen.size)
+    else:
+        archive_zip = result.capture.body
+        seen = result.listing_entry  # Retain the new entry for the next run.
+```
 
 ## Use it in an application
 
@@ -191,6 +293,53 @@ in 40,260 is the evidence for answering it.
 rules on the *text* side — the exactly-once XML link, the DC-title grammar and
 the spelled-out Congress. Nothing here touches them; they need their own
 measurement over bill text packages.
+
+## Decision: the bulk listing is the freshness witness for a status zip
+
+For a maintainer to move into [`docs/decisions.md`](../decisions.md).
+
+The folder listing, not a cheaper request against the zip's own URL, is what a
+caller asks whether a retained BILLSTATUS zip is still current. This
+package's transport (`transport/capture.py`) has one request shape --
+`capture()` streams a complete `GET` or `POST` body, never a header-only
+`HEAD` -- so there is no existing primitive that would read the zip's own
+`Last-Modified`/`Content-Length` without pulling every one of its bytes; the
+zip's HTTP headers, whatever they state, are not cheaper to read than the zip
+itself through this client. The folder's listing already states the same two
+facts, `formattedLastModifiedTime` and `size`, as one entry among the files it
+holds, at a fraction of the zip's own bytes (measured 2026-09-19: the 119th
+H.R. listing is 3,744,366 bytes, 12%, against its 31,656,886-byte zip).
+Reusing it, rather than adding a `HEAD` capability to the transport for this
+one route, is the smaller change and the one already proven against this
+publisher. `bulk_listing_locator`/`read_bulk_listing` read exactly that
+listing and nothing more.
+
+Skipping is a caller's choice, not the acquirer's. `BulkStatusAcquirer.acquire`
+never skips unless handed an explicit `unchanged_since`, and the decision it
+made — skipped or not — is recorded on the returned `BulkStatusAcquisition`
+rather than hidden as a side effect: `skipped_unchanged` says which happened,
+and `listing_capture`/`listing_entry` carry the evidence either way, so a
+caller can audit *why* a run skipped a zip it needed, or retain the entry for
+its own next run, without re-deriving either from a separate log.
+
+Comparison is on the two typed, parsed facts (`modified_at`, an instant;
+`size`, an int), not the publisher's raw strings, because "has this changed"
+should never depend on two runs restringing the same instant identically.
+Nothing about the zip's own bytes is trusted from the listing: a caller that
+skips is trusting that the publisher's listing and the publisher's zip agree
+with each other, the same trust an HTTP `If-Modified-Since` conditional
+request already places in a publisher's own headers — this is not a new kind
+of trust, just one this client has no cheap way to place directly against the
+zip's own URL (see above).
+
+Identity is checked before freshness: `unchanged_since` must name the same
+file (`name` and `link`) the listing's own zip entry does before its
+`modified_at`/`size` are compared at all, so a caller that mixes up which
+retained entry belongs to which folder gets a refusal, never a skip that
+happens to be right by accident. And the listing read never grants the zip a
+second, independent `max_requests` — it spends from the one budget the call
+was given, so `unchanged_since` cannot let one `acquire` call spend twice its
+configured request ceiling merely by first asking a question about it.
 
 ## Source shapes and evidence
 

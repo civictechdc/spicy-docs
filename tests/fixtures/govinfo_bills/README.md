@@ -60,3 +60,35 @@ byte-identical there, so the zip member and the published file are one object.
 Both shapes are [decision 4, measured](../../../docs/sources/congress-bulk-status.md#decision-4-measured).
 The whole-zip measurement, its per-type counts and the H.R. and S.Res. zips it
 also covers stay outside the repository.
+
+## Bulk folder listing
+
+`listing-119hres.json` is a reduced copy of the keyless
+[`bulkdata/json/BILLSTATUS/119/hres`](https://www.govinfo.gov/bulkdata/json/BILLSTATUS/119/hres)
+listing, retrieved with unauthenticated GET and `Accept: application/json` on
+2026-09-19: `200`, `content-type: application/json`, 569,986 bytes live,
+SHA-256 `c2841f003c4833e35c9062470b36851da67f17f4dca5c420c3b29ff4b02214e0`,
+1,567 entries. Reduced to 4 of those entries, in the publisher's own order,
+byte-identical to the live response: the folder's own zip entry and the same
+three archive members documented above (`status-119hres10.xml`,
+`status-119hres214.xml`, `status-119hres1376.xml`), found here as their own
+listing rows. Every other entry -- 1,563 more `BILLSTATUS-119hres*.xml` rows
+in the same shape -- is omitted; nothing here was reworded or reformatted.
+
+The kept zip entry (`BILLSTATUS-119-hres.zip`, `formattedLastModifiedTime`
+`18-Sep-2026 20:26`, `size` 3,934,575) names the same instant and byte count
+as the zip fixture above, confirmed the same day: `18-Sep-2026 20:26:06 GMT`
+to the minute and the identical byte count. The three kept XML rows'
+`size` fields (8,109, 6,181, 5,230) also agree with the archive members'
+own byte counts above, member and listing row describing one object twice.
+
+The module's own sidecar measurement,
+[`legislative-data-map-2026-09-18.json`](../../../docs/research/legislative-data-map-2026-09-18.json)
+(`govinfo.bulkdata.BILLSTATUS.currentCongress.types.hres`), captured this same
+folder's zip a day earlier at 3,933,064 bytes, `zipModified` `18-Sep-2026
+16:20` -- a different instant and a different byte count from this fixture's,
+because GovInfo rebuilds the zip through the day (the module docstring records
+the same behavior for H.R.: 31,656,886 bytes one morning, 31,658,670 that
+afternoon). The sidecar is evidence that the listing states the same two facts
+the zip's own HTTP `Last-Modified`/`Content-Length` state, not a source of
+this fixture's rows.
