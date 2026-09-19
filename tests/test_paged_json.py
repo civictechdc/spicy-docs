@@ -135,6 +135,18 @@ def test_page_shape_and_traversal_refusals(responses, message):
     assert raised.value.paged_json_acquisition["family"] == "example"
 
 
+def test_an_empty_object_still_refuses_with_single_record_too():
+    """The single_record twin of the {"things": {}} case above: opting in does not turn an
+    empty object into a record. Empty success is not absence."""
+    body = b'{"things": {}, "paging": {"count": 1}}'
+    transport = Transport(response(body))
+    with (
+        reader(transport) as source,
+        pytest.raises(PagedJsonSourceError, match="omitted its things list"),
+    ):
+        source.page(URL, records_key="things", single_record=True)
+
+
 def test_page_bound_reached_before_terminal_page_refuses_rather_than_ending():
     transport = Transport(
         response(page([{"id": 1}], count=3, next_url="https://api.example.gov/v1/things?offset=1")),

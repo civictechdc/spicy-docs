@@ -152,10 +152,17 @@ class CongressListRoute:
     record rather than refusing it as a malformed list; ``committee-print``'s
     detail route instead answers a real one-item array with a
     ``pagination.count`` of 1, needing no such opt-in (the ordinary list path
-    already reads it), the same as ``treaty``'s. Every detail route still has
-    no list to reorder or window against, so each carries
-    ``sort_honored=False`` and ``window_honored=False`` on structural
-    grounds, not a live probe.
+    already reads it), the same as ``treaty``'s. ``single_record`` states a
+    fact about the JSON shape at ``records_key`` -- "this route's records key
+    holds an object, not an array" -- not a fact about how many records the
+    route yields: ``treaty-detail`` and ``committee-print-detail`` are
+    detail routes that answer exactly one record too, with ``single_record``
+    left at ``False``, because their one record already arrives inside an
+    array. Reading ``single_record`` as "this is a detail route" would be
+    wrong for those two; use ``"-detail"`` in the route name, or read the
+    fixture, to ask that question instead. Every detail route still has no
+    list to reorder or window against, so each carries ``sort_honored=False``
+    and ``window_honored=False`` on structural grounds, not a live probe.
     """
 
     name: str
@@ -447,11 +454,18 @@ _CHAMBERS = frozenset({"house", "senate", "joint"})
 _COMMITTEE_CODE = re.compile(r"[a-z]{4}[0-9]{2}")
 _LAW_TYPES = frozenset({"pub", "priv"})
 _BIOGUIDE_ID = re.compile(r"[A-Z][0-9]{6}")
-# House and Senate communication type codes sampled live 2026-09-19 (fixtures README):
-# executive communication, presidential message, petition, memorial, and the Senate's combined
-# petition-or-memorial. A closed set, not an open [a-z]{2,3} pattern, so an unknown code refuses
-# locally rather than reaching the publisher on a guess.
-_COMMUNICATION_TYPES = frozenset({"ec", "pm", "pt", "ml", "pom"})
+# House and Senate communication type codes, from the publisher's own endpoint documentation
+# (github.com/LibraryOfCongress/api.congress.gov), not sampled: the shipped fixtures alone only
+# ever carry "EC" and one "ML", nowhere near enough to infer a closed set from. The two chambers'
+# enumerations differ -- the House has no "pom", the Senate has no "pt"/"ml" -- so each route
+# validates against its own set, not a union; see the fixtures README for the source URLs,
+# retrieval commits and digests.
+_HOUSE_COMMUNICATION_TYPES = frozenset({"ec", "pm", "pt", "ml"})
+_SENATE_COMMUNICATION_TYPES = frozenset({"ec", "pm", "pom"})
+_COMMUNICATION_TYPES_BY_ROUTE: dict[str, frozenset[str]] = {
+    "house-communication-detail": _HOUSE_COMMUNICATION_TYPES,
+    "senate-communication-detail": _SENATE_COMMUNICATION_TYPES,
+}
 # One kwarg name per path-parameter token, and one validator per token,
 # shared by every route so a parameter is checked in exactly one place.
 _KWARG_FOR_PARAM = {
@@ -507,9 +521,17 @@ def _session_param(value: int | None) -> str:
     return str(value)
 
 
-def _communication_type_param(value: str | None) -> str:
-    if value not in _COMMUNICATION_TYPES:
-        raise PagedJsonSourceError(f"communication_type must be one of {sorted(_COMMUNICATION_TYPES)}")
+def _communication_type_param(value: str | None, route_name: str) -> str:
+    """Validated against the calling route's own chamber, not a House/Senate union.
+
+    Not dispatched through ``_VALIDATE_PARAM``: every other token's valid values are the same
+    regardless of which route names it, but ``commtype`` is not -- the House and Senate
+    enumerations differ -- so ``_route_path`` calls this directly, keyed by ``route.name``,
+    instead of through the single-argument dispatch table.
+    """
+    valid = _COMMUNICATION_TYPES_BY_ROUTE[route_name]
+    if value not in valid:
+        raise PagedJsonSourceError(f"communication_type must be one of {sorted(valid)} for {route_name}")
     return value
 
 
@@ -535,7 +557,10 @@ _VALIDATE_PARAM: dict[str, Callable[[object], str]] = {
     "eventId": lambda value: _positive_int_param(value, "event_id"),
     "volume": lambda value: _positive_int_param(value, "volume"),
     "issue": lambda value: _positive_int_param(value, "issue"),
-    "commtype": _communication_type_param,
+    # "commtype" is deliberately absent: its valid values depend on which route calls it (the
+    # House and Senate communication type enumerations differ), so _route_path dispatches it
+    # directly to _communication_type_param with the route's name, not through this
+    # single-argument table.
     "law_type": _law_type_param,
     # A committee's systemCode is the same shape wherever a route names it;
     # reusing the validator keeps that one check in one place.
@@ -559,9 +584,17 @@ def _route_path(route: CongressListRoute, values: Mapping[str, object]) -> str:
     A value for a parameter the route does not name is refused outright; an
     omitted optional parameter also omits every parameter after it, so
     ``bill``'s ``type`` without a ``congress`` refuses rather than silently
-    addressing a different route.
+    addressing a different route. ``values`` must carry a key -- explicitly
+    ``None`` where the caller has nothing to offer -- for every one of the
+    route's own path tokens; a token missing from ``values`` entirely (as
+    opposed to present and ``None``) is a caller bug, not an omission, and
+    refuses here rather than being read the same as an explicit ``None`` by
+    ``.get()`` below.
     """
     params = set(route.path_params)
+    missing = params - set(values)
+    if missing:
+        raise PagedJsonSourceError(f"{route.name} values mapping is missing {sorted(missing)}")
     for name, value in values.items():
         if value is not None and name not in params:
             raise PagedJsonSourceError(f"{route.name} does not take a {_KWARG_FOR_PARAM[name]}")
@@ -580,7 +613,14 @@ def _route_path(route: CongressListRoute, values: Mapping[str, object]) -> str:
             continue
         if stopped_at is not None:
             raise PagedJsonSourceError(f"{_KWARG_FOR_PARAM[name]} requires an explicit {_KWARG_FOR_PARAM[stopped_at]}")
-        segments.append(_VALIDATE_PARAM[name](value))
+        # "commtype" is the one token whose valid values depend on the route asking for it (the
+        # House and Senate communication type enumerations differ), so it is dispatched directly
+        # rather than through _VALIDATE_PARAM's single-argument table; see
+        # _communication_type_param.
+        if name == "commtype":
+            segments.append(_communication_type_param(value, route.name))
+        else:
+            segments.append(_VALIDATE_PARAM[name](value))
     return "/".join(segments)
 
 
