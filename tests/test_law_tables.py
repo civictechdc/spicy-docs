@@ -13,6 +13,7 @@ whole-corpus facts (108 laws on the list route, 104 in PLAW bulk, 4 lagging;
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -84,6 +85,17 @@ def test_a_null_citation_is_read_through_its_outcome_column():
     assert plain["uslm_sha256"] is None and plain["approved_date"] is None
     lagged = shape_law(LAW_RECORD, LAW_RECORD["laws"][0], uslm_outcome="unavailable")
     assert lagged["statutes_at_large_cite"] is None and lagged["uslm_outcome"] == "unavailable"
+
+
+def test_a_captured_uslm_that_names_no_statutes_citation_is_refused():
+    # ``captured`` promises a citation; a meta without one must not publish a NULL that reads as the bulk lag.
+    with pytest.raises(TableContractError, match="names no Statutes at Large citation"):
+        shape_law(
+            LAW_RECORD,
+            LAW_RECORD["laws"][0],
+            uslm=replace(USLM, citable_as=("Public Law 119-1",)),
+            uslm_outcome="captured",
+        )
 
 
 def test_the_outcome_and_the_uslm_record_travel_together():
@@ -163,3 +175,17 @@ def test_the_committee_fold_builds_one_json_row_per_detail_record():
     assert row["history_count"] == "1"
     assert read_json_column(row["history_json"])[0]["officialName"] == "Committee on the Judiciary"
     assert row["is_current"] == "true" and row["bill_count"] == "74362"
+
+
+def test_the_detail_wins_the_subcommittee_fold_even_when_it_lists_none():
+    from spicy_docs.schemas.roster_tables import shape_committee
+
+    list_row = json.loads((FIXTURES / "listings/congress-committee-hsju00-list-row.json").read_text())
+    detail = json.loads((FIXTURES / "listings/congress-committee-detail.json").read_text())["committee"]
+    assert len(list_row["subcommittees"]) == 7 and len(detail["subcommittees"]) == 15
+    assert shape_committee(list_row)["subcommittee_count"] == "7"
+    assert shape_committee(list_row, detail)["subcommittee_count"] == "15"
+    emptied = shape_committee(list_row, {**detail, "subcommittees": []})
+    assert emptied["subcommittee_count"] == "0" and read_json_column(emptied["subcommittees_json"]) == []
+    with pytest.raises(TableContractError, match="needs a systemCode"):
+        shape_committee(list_row, {**detail, "subcommittees": [{"name": "no code"}]})

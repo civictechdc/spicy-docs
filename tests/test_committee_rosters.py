@@ -160,7 +160,8 @@ def test_a_subcommittee_seat_carries_its_parents_code():
     sub = next(a for a in member.assignments if a.kind == "subcommittee")
     row = shape_house_assignment(member, sub, roster=roster, observed_at=OBSERVED_AT)
     assert row["is_subcommittee"] == "true"
-    assert row["parent_system_code"] == "hsii00"
+    assert row["parent_system_code"] == roster.parent_system_code(sub.code) == "hsii00"
+    assert roster.parent_system_code("II00") is None  # a full committee has no parent
     assert row["committee_name"] == "Energy and Mineral Resources"
 
 

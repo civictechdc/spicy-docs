@@ -105,9 +105,16 @@ def _mapping(value: object) -> Mapping[str, Any] | None:
 
 
 def _codes(subcommittees: object) -> list[str]:
+    """The listed subcommittees' systemCodes in publisher order; an entry without one is refused, not spelled None."""
     if not isinstance(subcommittees, list):
         return []
-    return [str(entry.get("systemCode")) for entry in subcommittees if isinstance(entry, Mapping)]
+    codes: list[str] = []
+    for entry in subcommittees:
+        code = entry.get("systemCode") if isinstance(entry, Mapping) else None
+        if not code:
+            raise TableContractError("committees: a subcommittees[] entry needs a systemCode")
+        codes.append(str(code))
+    return codes
 
 
 def shape_committee(record: Mapping[str, Any], detail: Mapping[str, Any] | None = None) -> Row:
@@ -115,11 +122,14 @@ def shape_committee(record: Mapping[str, Any], detail: Mapping[str, Any] | None 
 
     The detail's ``systemCode`` must equal the record's or the fold is
     refused: a detail fetched for one code cannot describe another row.
+    Where a detail was captured its ``subcommittees`` are the row's, an
+    explicit empty list included; the list row's copy is read only when no
+    detail was (the hsju00 fixtures list 7 on the row and 15 on the detail).
     """
     if detail is not None and detail.get("systemCode") != record.get("systemCode"):
         raise TableContractError(f"committees: detail {detail.get('systemCode')!r} is not {record.get('systemCode')!r}")
     parent = _mapping(record.get("parent")) or (_mapping(detail.get("parent")) if detail else None)
-    subcommittees = _codes((detail or {}).get("subcommittees")) or _codes(record.get("subcommittees"))
+    subcommittees = _codes((record if detail is None else detail).get("subcommittees"))
     history = (detail or {}).get("history")
     history = history if isinstance(history, list) else []
 
@@ -161,7 +171,7 @@ def shape_house_assignment(member: object, assignment: object, *, roster: object
     if member.bioguide_id is None:
         raise TableContractError("committee_assignments: a vacant seat has no member to key on")
     is_subcommittee = assignment.kind == "subcommittee"
-    parent_code = roster.parent_codes.get(assignment.code) if is_subcommittee else None
+    parent_code = roster.parent_system_code(assignment.code) if is_subcommittee else None
     return {
         "congress": text(roster.congress),
         "congress_basis": "file",
@@ -170,7 +180,7 @@ def shape_house_assignment(member: object, assignment: object, *, roster: object
         "system_code": text(assignment.system_code),
         "committee_code": text(assignment.code),
         "is_subcommittee": flag(is_subcommittee),
-        "parent_system_code": None if parent_code is None else f"hs{parent_code.lower()}",
+        "parent_system_code": parent_code,
         "committee_name": text(roster.committee_names.get(assignment.code)),
         "bioguide_id": text(member.bioguide_id),
         "lis_id": None,

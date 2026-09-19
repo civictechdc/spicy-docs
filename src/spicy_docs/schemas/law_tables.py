@@ -33,7 +33,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from spicy_docs.schemas.tables import Row, TableContractError, table_contract, text
+from spicy_docs.schemas.tables import Row, TableContractError, natural_key, table_contract, text
 
 #: The Statutes at Large citation as the PLAW USLM ``citableAs`` spells it,
 #: the rule the legislative data map's ``plaw→statute`` edge proved.
@@ -73,7 +73,8 @@ LAWS = table_contract(
         "url": "The publisher's own URL for the enacted measure.",
         "statutes_at_large_cite": (
             "The Statutes at Large citation the PLAW USLM meta states in citableAs, spelled NNN Stat. NNN; "
-            "NULL until that file is captured, which the bulk folder lags the list route by several laws."
+            "NULL exactly when uslm_outcome is not `captured` (the bulk folder lags the list route by several "
+            "laws). A captured file whose citableAs names no such citation is refused, never published here as NULL."
         ),
         "statutes_at_large_volume": "The volume part of that citation.",
         "statutes_at_large_page": "The page part of that citation.",
@@ -156,7 +157,7 @@ def _law_type(publisher_type: object) -> str:
 
 
 def law_id(congress: object, law_type: str, number: object) -> str:
-    return f"{congress}-{law_type}-{number}"
+    return natural_key(congress, law_type, number)
 
 
 def _split_law_number(law_number: object, congress: object) -> str:
@@ -166,6 +167,19 @@ def _split_law_number(law_number: object, congress: object) -> str:
     if match["congress"] != str(congress):
         raise TableContractError(f"laws: law number {law_number!r} names another Congress than {congress}")
     return match["number"]
+
+
+def _stat_cite(citable_as: tuple[str, ...]) -> tuple[str, str, str]:
+    """``(cite, volume, page)`` from the first ``NNN Stat. NNN`` in ``citableAs``; none is a refusal.
+
+    ``captured`` promises a citation: a validated PLAW whose meta names none
+    would otherwise publish a NULL that reads as the bulk lag.
+    """
+    for citation in citable_as:
+        match = STAT_CITE.fullmatch(citation.strip())
+        if match is not None:
+            return match[0], match["volume"], match["page"]
+    raise TableContractError(f"laws: the USLM meta's citableAs {citable_as!r} names no Statutes at Large citation")
 
 
 def shape_law(
@@ -181,8 +195,9 @@ def shape_law(
 
     ``uslm`` is the ``UslmMetadata`` the PLAW reader proved for this law; its
     own congress, kind and number must agree with the row or the join is
-    refused, so a citation can never land on the wrong law. ``uslm_outcome``
-    says why a citation is NULL when it is.
+    refused, so a citation can never land on the wrong law, and a meta whose
+    ``citableAs`` names no ``NNN Stat. NNN`` is refused too, so ``captured``
+    always carries one. ``uslm_outcome`` says why a citation is NULL when it is.
     """
     if uslm_outcome not in USLM_OUTCOMES:
         raise TableContractError(f"laws: uslm_outcome must be one of {USLM_OUTCOMES}")
@@ -199,11 +214,7 @@ def shape_law(
         stated = (str(uslm.congress), uslm.public_private, str(uslm.doc_number))
         if stated != (str(congress), law_type, number):
             raise TableContractError(f"laws: USLM meta states {stated}, not {(str(congress), law_type, number)}")
-        for citation in uslm.citable_as:
-            match = STAT_CITE.fullmatch(citation.strip())
-            if match is not None:
-                cite, volume, page = match[0], match["volume"], match["page"]
-                break
+        cite, volume, page = _stat_cite(uslm.citable_as)
     return {
         "law_id": law_id(congress, law_type, number),
         "congress": text(congress),
@@ -212,7 +223,7 @@ def shape_law(
         "law_number": text(law.get("number")),
         "publisher_law_type": text(law.get("type")),
         "package_id": f"PLAW-{congress}{_PACKAGE_KINDS[law_type]}{number}",
-        "bill_id": f"{congress}-{str(bill_type).lower()}-{record.get('number')}",
+        "bill_id": natural_key(congress, bill_type, record.get("number")),
         "bill_type": None if bill_type is None else str(bill_type).lower(),
         "bill_number": text(record.get("number")),
         "title": text(record.get("title")),

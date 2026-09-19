@@ -232,6 +232,11 @@ class HouseMemberData:
     def vacancies(self) -> int:
         return sum(1 for member in self.members if member.vacant)
 
+    def parent_system_code(self, code: str) -> str | None:
+        """The parent committee's systemCode for a subcommittee code, by the rule ``HouseAssignment.system_code`` uses."""
+        parent = self.parent_codes.get(code)
+        return None if parent is None else house_system_code(parent)
+
 
 @dataclass(frozen=True, slots=True)
 class SenateCommitteeAssignment:
