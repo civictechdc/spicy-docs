@@ -5,6 +5,19 @@ fetches; this module decides what that rendition's bytes mean as text. There
 is one derivation per rendition and no second stripper:
 
 - ``xml`` -- ``markup-reader``, over ``reading.markup.read_xml_events``.
+- ``uslm`` -- ``markup-reader``, the same branch as ``xml`` (measured
+  2026-09-19 on every BILLS package in the text-versions sample offering a
+  USLM rendition -- five enrolled packages, pins in
+  ``tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json``: root
+  ``resolution`` (hconres) or ``bill`` (the four H.R. bills),
+  not the fixed ``pLaw``/``statuteCompilation`` roots
+  ``sources.govinfo.uslm`` validates identity against for PLAW and COMPS, and
+  a bill's own root varies by bill type -- ``bill``, ``resolution``,
+  ``jointResolution`` and so on -- where PLAW and COMPS each have exactly one.
+  ``uslm.py``'s grammar is keyed to one selection type per fixed root and has
+  no bill identity to validate against, so it does not apply; the generic
+  markup reader, which reads any well-formed XML's text in document order
+  regardless of vocabulary, does).
 - ``htm`` -- ``markup-reader``, over ``reading.markup.read_html_events``.
 - ``txt`` -- ``text-rendition-cleanup``, the shared rules below and nothing
   else.
@@ -18,15 +31,21 @@ package. It imports no ``sources`` module: the fetched body is read
 structurally (:class:`FetchedBody`), so ``sources`` keeps depending on
 ``extraction`` and not the other way round. ``RENDITION_MEDIA_TYPES`` restates
 the media types ``sources.govinfo.bodies.PACKAGE_BODY_FORMATS`` states for the
-same four names, and ``tests/test_body_text.py`` pins the two equal rather
+same five names, and ``tests/test_body_text.py`` pins the two equal rather
 than letting one import the other.
 
 **What the non-PDF renditions actually carry**, measured 2026-09-19 over four
 keyless GovInfo ``htm`` bodies (CRPT-119hrpt1, -119hrpt105, -113hrpt135,
 -113srpt77), one ``txt`` body (CDIR-2026-02-20, the only collection measured
-that offers one) and three BILLS ``xml`` bodies. Only what was counted above
-zero has a rule; see ``RENDITION_CLEANUP_RULES`` for the table and
-``docs/sources/govinfo-bodies.md`` for the per-file numbers.
+that offers one), three BILLS ``xml`` bodies and five BILLS ``uslm`` bodies
+(every package in the 2026-09-19 sample offering one; reading facts pinned in
+``tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json``. The per-rule
+numbers are measured on the one USLM fixture whose bytes are retained,
+BILLS-119hconres11enr: 42 elements, 31 element-boundary line breaks, 32
+whitespace-only pretty-print lines; no CRLF, no end-of-text marker, no GPO
+quote pair and no trailing space on this one small fixture). Only what was
+counted above zero has a rule; see ``RENDITION_CLEANUP_RULES`` for the table
+and ``docs/sources/govinfo-bodies.md`` for the per-file numbers.
 
 - The ``htm`` body is GPO's plain text inside ``<html><title>..</title>
   <body><pre>``. There is no HTML formatting to read: the four measured
@@ -44,7 +63,7 @@ zero has a rule; see ``RENDITION_CLEANUP_RULES`` for the table and
   otherwise, so this module allows it explicitly. Nothing is ever fetched for
   it: the reader never loads an external resource and still refuses every
   entity declaration.
-- None of those eight bodies carries a ``[[Page N]]`` marker, a form feed, a
+- None of those nine bodies carries a ``[[Page N]]`` marker, a form feed, a
   ``VerDate`` footer or a non-breaking space. Those are PDF artifacts, handled
   in the PDF branch by ``normalize_gpo_pages``; no rule is written for them
   here, because there is nothing measured to write one against.
@@ -69,6 +88,7 @@ from .model import PageResult
 #: ``sources.govinfo.bodies.PACKAGE_BODY_FORMATS``'s own names.
 RENDITION_DERIVATIONS: dict[str, str] = {
     "xml": "markup-reader",
+    "uslm": "markup-reader",
     "htm": "markup-reader",
     "txt": "text-rendition-cleanup",
     "pdf": "pdf-extraction-gpo-normalized",
@@ -79,6 +99,7 @@ RENDITION_DERIVATIONS: dict[str, str] = {
 RENDITION_MEDIA_TYPES: dict[str, tuple[str, ...]] = {
     "htm": ("text/html",),
     "xml": ("application/xml", "text/xml"),
+    "uslm": ("application/xml", "text/xml"),
     "txt": ("text/plain",),
     "pdf": ("application/pdf",),
 }
@@ -119,13 +140,13 @@ RENDITION_CLEANUP_RULES: tuple[RenditionCleanupRule, ...] = (
     RenditionCleanupRule(
         "element_line_break",
         "An XML element boundary, kept as a line break so text from two elements never runs together",
-        ("xml",),
+        ("xml", "uslm"),
     ),
     RenditionCleanupRule(
         "whitespace_only_line",
         "XML pretty-print indentation between elements, which is formatting and not content; "
         "never applied to htm, whose blank lines are the document's own layout",
-        ("xml",),
+        ("xml", "uslm"),
     ),
     RenditionCleanupRule(
         "line_ending",
@@ -385,7 +406,10 @@ def rendition_text(
             "whitespace_only_lines": 0,
         }
     else:
-        xml = name == "xml"
+        # uslm takes the same branch as xml: both are well-formed XML read by
+        # the same generic markup reader, whatever vocabulary each declares
+        # (module docstring).
+        xml = name in {"xml", "uslm"}
         # A BILLS XML body declares an external DOCTYPE; allowing it is a
         # statement that the declaration is inert, not a fetch: the reader
         # never loads the resource and still refuses every entity.

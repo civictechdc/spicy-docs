@@ -247,6 +247,86 @@ its original by name alone, so a stated package id always wins when both are
 available — see "Bill-version codes are a sealed, additions-only vocabulary"
 below.
 
+## USLM joins the sealed body preference; granules and committee prints join the grammar
+
+Adopted 2026-09-19 with [GovInfo bodies](sources/govinfo-bodies.md)
+(updated); gaps B7, B2 and the CPRT row of A10 in
+[closing the gaps](research/closing-the-gaps-2026-09-19.md).
+
+**`uslm` is inserted into `BODY_PREFERENCE` right after `xml`, not merely
+appended after `pdf`.** BILLS states a USLM rendition (`uslm/{id}.xml`)
+alongside its own `xml` on the same package — measured 2026-09-19 on
+`BILLS-119hconres11enr` (the raw-data sidecar's one file-name-matched USLM
+package) and then on every other BILLS package in the same sample offering
+USLM: five enrolled packages in all, each MODS offering `htm`, `pdf`, `xml`
+and `uslm` together, pinned per package in
+`tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json`. (The
+sidecar's "10 of 240" USLM aggregate counts each sampled bill once per
+version code that pinned it: `hconres11` is the sample for both `enr` and
+`rds`, so its one USLM entry is counted twice. Of the 9 distinct entries, 4
+are PLAW-collection packages — the `Public Law` version on a bill's `/text`
+endpoint — outside this BILLS grammar, in `sources/govinfo/uslm.py`'s
+territory.) So an order was needed between two structured renditions of one
+document, not only between structure and prose. `xml` keeps the top slot
+because every BILLS package that offers USLM offers XML too (both are
+Formatted-XML siblings on the same publisher record), so trying XML first
+costs nothing;
+`uslm` still outranks `htm` and `txt` for the same structure-first reason
+the original ruling already applied between XML and everything else — it is
+markup over the same structured source, not a plain-text reduction of it.
+The sealed order is now `("xml", "uslm", "htm", "txt", "pdf")`, and
+`bill_versions.DEFAULT_FORMAT_PREFERENCE` carries the same slot in
+Congress.gov's own spelling, still pinned equal to it by test.
+
+USLM's text is read through `extraction/body_text.py`'s existing
+`markup-reader` branch — the same one `xml` uses, not a dedicated USLM
+parser. The fetched body's root varies by bill type (`<resolution>` on the hconres
+fixture, `<bill>` on the four H.R. packages; `<jointResolution>` and others
+named by type), where
+`sources/govinfo/uslm.py`'s grammar validates identity against one fixed
+root per selection (`PublicLawSelection`, `StatuteCompilationSelection`,
+built for PLAW/COMPS) and has no bill identity to check against, so that
+grammar does not apply here; the generic reader, which needs no schema,
+does. `uslm` and `xml` also share a file extension (`uslm/{id}.xml` vs
+`xml/{id}.xml`, folder differs), so the fallback that labels a rendition
+found at an unexpected folder can no longer rely on extension alone;
+`_FORMAT_BY_EXTENSION` tie-breaks toward `xml`, the pre-existing and more
+common of the two.
+
+**Granule bodies for the Record (B2).** The Record is PDF-only at package
+level, but its granules — one speech, one page range — carry their own
+HTML, measured on `CREC-2026-09-18` (a three-page issue, 11 granules, every
+one offering HTML and PDF through the granule's own locator).
+`GovInfoBodyAcquirer.acquire_granule` mirrors `acquire`'s three-request
+shape (granule summary, granule MODS, then the body) with identity proved
+before bytes the same way, plus one departure the granule route itself
+forces: a granule that does not belong to the requested package answers
+HTTP 400, not 404 — confirmed both directions (a wrong-day granule id under
+the right package, and the fixture's own real granule id under the wrong
+day) — so a 400 whose body is exactly the documented
+`{"message": "invalid granuleId"}` is typed `GovInfoPackageUnavailableError`
+the same way a package's own 404/410 is, and any other 400 is left as a
+generic refusal with its capture.
+`GRANULE_BODY_PREFERENCE` (`("htm", "pdf")`) is a separate, granule-scoped
+constant, not a second reading of `BODY_PREFERENCE`: the whole-issue
+package PDF stays reachable unchanged through `acquire(package_id)`.
+
+**Committee prints join the package-id grammar (A10).**
+`CPRT-{congress}{HPRT|SPRT|JPRT}{number}` — verified upper-case on a real
+package summary (`CPRT-118HPRT57104`), unlike CRPT's own lower-case
+`hrpt`/`srpt`/`erpt`, so this is measured, not inferred from CRPT's
+spelling. No locator or validator code changed: CPRT packages address
+their HTML, PDF and XML renditions at the same
+`content/pkg/{id}/{folder}/{id}.{extension}` shape every other collection
+already uses.
+
+**Correction to "Bill-version codes are a sealed, additions-only
+vocabulary" below:** that section's last paragraph stated USLM "is
+recognized by name and folder but not yet fetchable: no acquirer supports
+it for a BILLS package today." This record is what makes that false;
+`PACKAGE_BODY_FORMATS["uslm"]` now reads a BILLS package's own
+`uslm/{id}.xml` rendition directly.
+
 ## Bill-version codes are a sealed, additions-only vocabulary
 
 Adopted 2026-09-19 with [bill-version codes and bill PDFs](sources/congress-bill-versions.md).
@@ -292,8 +372,9 @@ code against the data this repository actually parses, and the live path
 names a format from the URL's rendition folder (`xml/`, `html/`, `text/`,
 `pdf/`, `uslm/`), because BILLS states its USLM rendition at `uslm/{id}.xml`,
 indistinguishable from `xml/{id}.xml` by extension alone. USLM is recognized
-by name and folder but not yet fetchable: no acquirer supports it for a
-BILLS package today.
+by name and folder and, since "USLM joins the sealed body preference;
+granules and committee prints join the grammar" above,
+`PACKAGE_BODY_FORMATS["uslm"]` fetches it directly for a BILLS package.
 
 ## DeltaTrack is a pinned dependency, not a port
 

@@ -1,0 +1,85 @@
+{
+  "measured": "2026-09-19",
+  "what": "Every BILLS package in the 2026-09-19 text-versions census sample (docs/research/billtrax-raw-data-2026-09-19.json) that offers a United States Legislative Markup rendition, with that rendition fetched through GovInfoBodyAcquirer.acquire(package, prefer=('uslm',)) -- keyed summary, keyed MODS, keyless body -- and its text derived through extraction.body_text.body_text, exactly as a caller would.",
+  "census_reconciliation": {
+    "census_sample": "sources.textVersionsVocabulary pins 24 version codes, each to one representative sample file; the run's own formatTypeCounts aggregate sums to 240 format entries with 10 United States Legislative Markup.",
+    "correction": "The 240/10 aggregate counts each sampled bill once per version code that pinned it: hconres11 is the sample for both enr and rds, hres1274 for eh and rh, hr3426 for eh1s, rfs2 and rhuc. Re-deriving the 20 distinct bills' full version histories (receipt 01_discovery_result.json, 20 keyed Congress.gov /text requests) gives 61 versions and 188 distinct format entries, 9 of them USLM; hconres11's single USLM entry counted twice is the whole of the census's 10. Of the 9 distinct entries, 4 are the 'Public Law' version on a bill's /text endpoint -- PLAW-collection packages (PLAW-119publN_uslm.xml), which sources/govinfo/uslm.py's own grammar already reads and which the BILLS package grammar this gap closes does not cover. In scope: the 5 BILLS enrolled packages below.",
+    "distinct_bills_in_sample": 20,
+    "distinct_format_entries": 188,
+    "distinct_uslm_entries": 9,
+    "plaw_collection_uslm_entries_out_of_scope": 4,
+    "bills_packages_in_scope": 5
+  },
+  "packages": [
+    {
+      "package_id": "BILLS-119hconres11enr",
+      "offered_formats": ["htm", "pdf", "xml", "uslm"],
+      "root_localname": "resolution",
+      "root_namespace": "http://schemas.gpo.gov/xml/uslm",
+      "media_type": "application/xml",
+      "content_type": "application/xml",
+      "byte_size": 3113,
+      "sha256": "a0e2847ee6883b64c881053c781ce0a289e25e59be7b812fcd7fbab5f2e9f5ff",
+      "derivation": "markup-reader",
+      "text_line_count": 31,
+      "body_url": "https://www.govinfo.gov/content/pkg/BILLS-119hconres11enr/uslm/BILLS-119hconres11enr.xml",
+      "source": "Re-derived offline from the retained fixture uslm-119hconres11enr.xml in this directory (publisher response, unchanged bytes); no request."
+    },
+    {
+      "package_id": "BILLS-119hr6644enr",
+      "offered_formats": ["htm", "pdf", "xml", "uslm"],
+      "root_localname": "bill",
+      "root_namespace": "http://schemas.gpo.gov/xml/uslm",
+      "media_type": "application/xml",
+      "content_type": "application/xml",
+      "byte_size": 1091262,
+      "sha256": "89bba7b4a6be8a26b50e2503a99ddf7aa95804af10dc17de83fac8c03eb0a88c",
+      "derivation": "markup-reader",
+      "text_line_count": 9543,
+      "body_url": "https://www.govinfo.gov/content/pkg/BILLS-119hr6644enr/uslm/BILLS-119hr6644enr.xml",
+      "source": "Measured live 2026-09-19 (corpus receipt uslm-bill-rendition-2026-09-19, script 02_fetch_uslm_bills.py); bytes not retained."
+    },
+    {
+      "package_id": "BILLS-119hr7147enr",
+      "offered_formats": ["htm", "pdf", "xml", "uslm"],
+      "root_localname": "bill",
+      "root_namespace": "http://schemas.gpo.gov/xml/uslm",
+      "media_type": "application/xml",
+      "content_type": "application/xml",
+      "byte_size": 222046,
+      "sha256": "44a131ab4b9d15e30aa7ff1b9391ea75bdd711862ddd007804656d7e72a19fa8",
+      "derivation": "markup-reader",
+      "text_line_count": 1396,
+      "body_url": "https://www.govinfo.gov/content/pkg/BILLS-119hr7147enr/uslm/BILLS-119hr7147enr.xml",
+      "source": "Measured live 2026-09-19 (corpus receipt uslm-bill-rendition-2026-09-19, script 02_fetch_uslm_bills.py); bytes not retained."
+    },
+    {
+      "package_id": "BILLS-119hr7148enr",
+      "offered_formats": ["htm", "pdf", "xml", "uslm"],
+      "root_localname": "bill",
+      "root_namespace": "http://schemas.gpo.gov/xml/uslm",
+      "media_type": "application/xml",
+      "content_type": "application/xml",
+      "byte_size": 3086446,
+      "sha256": "5255f234baf51983751675f5c036928a76c6edb676159d35a16b843294aaf87c",
+      "derivation": "markup-reader",
+      "text_line_count": 22516,
+      "body_url": "https://www.govinfo.gov/content/pkg/BILLS-119hr7148enr/uslm/BILLS-119hr7148enr.xml",
+      "source": "Measured live 2026-09-19 (corpus receipt uslm-bill-rendition-2026-09-19, script 02_fetch_uslm_bills.py); bytes not retained."
+    },
+    {
+      "package_id": "BILLS-119s4138enr",
+      "offered_formats": ["htm", "pdf", "xml", "uslm"],
+      "root_localname": "bill",
+      "root_namespace": "http://schemas.gpo.gov/xml/uslm",
+      "media_type": "application/xml",
+      "content_type": "application/xml",
+      "byte_size": 3367,
+      "sha256": "2392d1316909000de1cc31f5beb10d67449600c44a0128c761222352d8abf2ce",
+      "derivation": "markup-reader",
+      "text_line_count": 32,
+      "body_url": "https://www.govinfo.gov/content/pkg/BILLS-119s4138enr/uslm/BILLS-119s4138enr.xml",
+      "source": "Measured live 2026-09-19 (corpus receipt uslm-bill-rendition-2026-09-19, script 02_fetch_uslm_bills.py); bytes not retained."
+    }
+  ]
+}

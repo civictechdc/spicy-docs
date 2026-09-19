@@ -110,7 +110,7 @@ def test_acquires_the_first_offered_preferred_format_with_every_capture() -> Non
     assert transport.urls == [SUMMARY_URL, MODS_URL, HTM_URL]
     assert result.request_count == 3
     assert result.format == "htm"
-    assert result.preference == BODY_PREFERENCE == ("xml", "htm", "txt", "pdf")
+    assert result.preference == BODY_PREFERENCE == ("xml", "uslm", "htm", "txt", "pdf")
     # The publisher offers no XML for a committee report, so the second
     # preference is taken; the summary states no body rendition at all.
     assert result.offered_formats == ("htm", "pdf")
@@ -198,8 +198,11 @@ def test_a_format_the_package_does_not_offer_refuses_before_any_body_request() -
 
 
 def test_a_preferred_format_stated_elsewhere_refuses_as_disagreement() -> None:
-    uslm = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/uslm/{PACKAGE}.xml"
-    renditions = f'<url displayLabel="USLM rendition" access="raw object">{uslm}</url>'
+    # A folder this module does not derive for a supported file type -- xml
+    # is chosen because it and uslm share the extension the folder-less
+    # classifier reads (bodies._FORMAT_BY_EXTENSION's documented tie-break).
+    moved = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/alt/{PACKAGE}.xml"
+    renditions = f'<url displayLabel="XML rendition" access="raw object">{moved}</url>'
     transport = Transport(**{MODS_URL: reply(mods_xml(urls=renditions), content_type="application/xml")})
     with pytest.raises(GovInfoRenditionAddressError, match="not where this module fetches it") as caught:
         acquire(transport, prefer=("xml",))
@@ -207,8 +210,8 @@ def test_a_preferred_format_stated_elsewhere_refuses_as_disagreement() -> None:
     # The package does state XML; it states it somewhere this module does not
     # derive, which is a different answer from "no XML rendition exists".
     assert transport.urls == [SUMMARY_URL, MODS_URL]
-    assert caught.value.moved_renditions == (("xml", uslm),)
-    assert uslm in str(caught.value)
+    assert caught.value.moved_renditions == (("xml", moved),)
+    assert moved in str(caught.value)
 
 
 def test_a_missing_package_is_unavailable_not_absent() -> None:
@@ -331,7 +334,7 @@ def test_a_body_over_its_bound_returns_no_partial_bytes() -> None:
         ({"package_id": "PPP-2026-01-02"}, GovInfoBodySourceError),
         ({"prefer": ()}, ValueError),
         ({"prefer": ("htm", "htm")}, ValueError),
-        ({"prefer": ("uslm",)}, ValueError),
+        ({"prefer": ("jpeg",)}, ValueError),
         ({"prefer": "htm"}, TypeError),
         ({"max_bytes": 0}, ValueError),
     ],

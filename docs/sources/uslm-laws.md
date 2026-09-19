@@ -5,6 +5,13 @@ identifier. It returns the exact GovInfo bulkdata XML, the native identity it
 proved, and bounded HTTP evidence. Both collections are keyless and use United
 States Legislative Markup (USLM), which the publisher labels beta.
 
+This module is PLAW and COMPS only. A BILLS package's own USLM rendition
+(`uslm/{id}.xml`, a bill's own text before it becomes law) is a different
+route with a different identity shape — its root varies by bill type where a
+law or compilation each has exactly one fixed root — and is fetched through
+`sources/govinfo/bodies.py::PACKAGE_BODY_FORMATS["uslm"]` instead; see
+[GovInfo package bodies](govinfo-bodies.md).
+
 | Route | Required selection | What it supplies |
 | --- | --- | --- |
 | Public law | Congress, `public` or `private`, law number | One law's USLM XML. Native Congress, kind, number and citable form must match the request. |
