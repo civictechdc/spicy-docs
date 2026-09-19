@@ -64,6 +64,24 @@ retries when an issue's requested unmatched-number set changes.
   API ignored the sort. `tests/test_legislative_data_map_tool.py` renders the
   saved output and proves every `have` or `port` row against its evidence file.
 
+- [reconstruction_benchmark](analysis/reconstruction_benchmark.py): build the
+  paired CFR corpus, reconstruct each section from its PDF with the XML
+  hidden, and score text precision and recall, hierarchy F1, critical
+  discrepancies, coverage and wall time against the XML that was hidden; then
+  rewrite the generated block in
+  `docs/research/reconstruction-benchmark-2026-09-19.md`. Supply an explicit
+  credential file (one keyed route, the granule listing; both body routes are
+  keyless), the JSON output path and the report path. `--sections` sets the
+  corpus size and `--max-requests` bounds the run. `--rescore --scratch DIR`
+  re-reads the bodies an earlier run left there, checking each digest against
+  the one that run recorded, so changing a parsing rule costs no request;
+  `--offline` re-renders the report from the saved output; `--receipts DIR`
+  retains the command, the run log, the request log and the corpus manifest
+  outside this repository. Splits are whole editions, so no volume's
+  typography reaches two splits — but a split only pays on a run whose rules
+  were fixed before it read the corpus, which the document states for each
+  run. `tests/test_reconstruction_benchmark_tool.py` renders the committed
+  block from the committed sidecar and fails if they have drifted apart.
 - [bill_html_xml_gap](analysis/bill_html_xml_gap.py): measure how far a bill's
   HTML rendition is from its XML, to size the reconstruction profile gap B1 and
   §3.1 of the closing-the-gaps proposal name. Fetches a paired corpus of 113th

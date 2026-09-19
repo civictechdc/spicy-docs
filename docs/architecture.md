@@ -69,6 +69,15 @@ checks integrity with bounded memory; full verification also replays source mean
   and `ocr.py`/`gemini.py` adapt optional recognition providers. `tests/extraction/`
   checks data retention, coordinates, errors and injection. No source adapter depends
   on extraction and no model package loads through core imports.
+- **Reconstruction:** `reconstruction/` builds a publisher's own vocabulary from
+  a rendition that has none, behind the `reconstruct` extra. `profiles.py` holds
+  the per-family rule table and the schema bundle pinned by digest, `evidence.py`
+  the evidence-linked document model built from `extraction`'s retained pages or
+  the markup reader's events, `parse.py` the deterministic parser and the model
+  seam, `serialize.py` the target XML plus a sidecar source map, `validate.py` the
+  five findings and the gates. It depends on `extraction` and `reading`, never the
+  other way round, and no source adapter depends on it. See
+  [reconstruction](reconstruction.md).
 - **Tables:** `public_tables/profiles.py` declares columns and ordering through
   `PublicTableProfile`; `publish.py`, `verify.py` and `reader.py` implement the
   operations exported by `public_tables/api.py`.
