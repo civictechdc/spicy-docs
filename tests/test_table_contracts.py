@@ -23,13 +23,13 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, fields, replace
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from spicy_docs.extraction.gpo_normalize import normalize_gpo_pages
+from spicy_docs.extraction.gpo_normalize import GpoPageCleanup, normalize_gpo_pages
 from spicy_docs.interpretation.bill_family import BillFamilyCapture
 from spicy_docs.interpretation.release_matching import compile_bill_patterns, match_releases
 from spicy_docs.interpretation.section_diff import diff_sections
@@ -886,7 +886,12 @@ def test_the_gpo_cleanup_record_reaches_the_version_row() -> None:
     )
     assert row["cleanup_line_numbers"] == ("true" if record.line_numbers else "false")
     assert row["cleanup_hyphen_rejoins"] == str(record.hyphen_rejoin_count)
-    assert [page["page"] for page in json.loads(row["cleanup_json"])] == [page.page for page in record.pages]
+    # Field parity, not just page numbers: every GpoPageCleanup field has to
+    # survive `_page_cleanup`, so a field added to the dataclass and never
+    # wired into the shaper is caught here rather than silently dropped.
+    field_names = {field.name for field in fields(GpoPageCleanup)}
+    expected_pages = [{name: getattr(page, name) for name in field_names} for page in record.pages]
+    assert json.loads(row["cleanup_json"]) == expected_pages
     assert TABLE_CONTRACTS["bill_versions"].checked(row) is row
 
 

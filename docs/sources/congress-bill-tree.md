@@ -141,49 +141,98 @@ cannot silently rewire which sections the diff compares.
 ### To raise upstream
 
 Not patched locally. Each is a thing BillTrax learned that upstream has no
-equivalent for; the file:line is upstream's, at `c636448`.
+equivalent for; the file:line is upstream's, at `c636448`. Each claim below
+was independently re-derived and measured against that pin — not copied from
+BillTrax's own comments — in
+[`docs/research/deltatrack-upstream-issues-2026-09-19.md`](../research/deltatrack-upstream-issues-2026-09-19.md),
+which also has the suggested issue titles and bodies; they are not repeated
+here.
 
 - **A collision-group cap.** BillTrax's `GREEDY_PAIR_GROUP_CAP = 200`
   (`section-diff.ts:26`) bounds the O(p×q) similarity matrix inside one
   match-path group, falling back to body-equality pairing above it. Upstream's
-  `_match_collision_group` (`diff_bill.py:803`) has no cap; its retrieval gates
-  each candidate with `real_quick_ratio`/`quick_ratio`, which bounds the cost per
-  pair but not the number of pairs.
-- **An asymmetric-pair guard.** `SECTION_COUNT_THRESHOLD = 10`
-  (`section-diff.ts:40`) came from a measured 120-second SIGKILL on the 118th
-  NDAA: an enrolled bill with 988 sections against a public law with 1 ran the
-  whole removed×added matrix against a single huge blob. Upstream's round 2
-  (`diff_bill.py:1468`) runs unconditionally.
-- **A body-size cap on inline word segments.** `BODY_CAP = 30_000`
-  (`diff_service.py:31`). Upstream has no word-segment rendering at all, so this
-  has no home there yet — worth raising with the feature rather than alone.
+  `_match_collision_group` (`diff_bill.py:803`, dispatched at `:958`) has no
+  cap; its retrieval gates each candidate with `real_quick_ratio`/`quick_ratio`,
+  which bounds the cost per pair but not the number of pairs. Measured directly
+  against upstream's own `match_nodes`: cost holds flat at ~95 µs per pair
+  across group sizes 25 through 300 (98.7 µs/pair at 25 per side, 97.1 µs/pair
+  at 300), so a single 300-section `match_path` group costs **8.736 s** with no
+  ceiling — clean O(N²), each doubling of group size costing ~4×. No existing
+  issue covers group-size capping.
 - **Hyphen-tolerant matching tokens.** `canonicalToken`
   (`section-diff.ts:104`) folds `cyber-security` and `cybersecurity` to one key,
   which matters when one side of a comparison came from a PDF. Upstream's
-  `similarity.py:73` compares raw `split()` tokens; its only hyphen handling is
-  the PDF page-break rejoin in `amounts.py:59`, a different problem.
-- **The `" "` versus `""` join change (D4).** Upstream moved section text to a
-  space join. Anyone holding `bill_sections` rows produced by the vendored
-  snapshot has bodies that will not compare equal to freshly parsed ones. Worth
-  a note upstream that the change is observable in stored output, and worth a
-  reparse here before any such rows are trusted.
-- **A version that is not read from a file name.** `normalize_bill`
-  (`bill_tree.py:1470`) derives `BillTree.version` from `xml_path.stem` after
-  splitting on `_`. A caller holding bytes has to encode the version into a
-  temporary file name to pass it, which this adapter does. A keyword argument
-  would remove the temp file from every byte-oriented caller, upstream's own
-  `compare/xml.py:_build` included.
-- **An entry point that takes a parsed tree.** The same function parses the file
-  itself, so a caller that must gate the bytes first — as this repository's rule
-  requires — parses the document twice. `normalize_bill` accepting an
-  `ET.Element` root, with the path form calling it, would close both this and
-  the point above.
-- **The XML path imports the PDF stack.** `bill_tree.py:8` imports from
-  `parsers/pdf_anchors`, which loads `pypdfium2`. Reading one bill's XML
-  therefore pulls a native PDF library into the process and emits its SWIG
-  deprecation warnings. Upstream's own `[project.dependencies]` comment says the
-  engine's dependency list "is what a consumer of the engine actually gets", and
-  a consumer who only reads XML gets more than they asked for.
+  `text_similarity` (`similarity.py:73`) compares raw `split()` tokens at the
+  operative line, `similarity.py:75`; its only hyphen handling is the PDF
+  page-break rejoin, `PAGE_HYPHEN_RE` (`amounts.py:68`), a different problem.
+  How often a hyphen split actually flips a pairing on real bills is not
+  measured; upstream's open #706 (different change categories depending on
+  whether a bill was compared from XML or PDF) is the symptom class this would
+  contribute to.
+- **A version keyword and a parsed-tree entry point (one issue).**
+  `normalize_bill` (`bill_tree.py:1470`) derives `BillTree.version` from
+  `xml_path.stem` after splitting on `_` (`bill_tree.py:1316-1320`), and parses
+  the file itself, so a caller holding bytes — as this repository's rule
+  requires it to gate first — has to both encode the version into a temp file
+  name and parse the document twice. **Upstream's own byte-oriented caller pays
+  this cost**: `compare/xml.py:84-96`'s `_build` writes `start.xml`/`end.xml`
+  into a `tempfile.TemporaryDirectory` so `normalize_bill` can read them, and
+  since neither name contains `_`, `version` comes back `""` on every web
+  upload — `_build_from_trees` (`compare/xml.py:39-60`) has to carry
+  `start_label`/`end_label` as a separate workaround to put it back. A
+  `version` keyword on `normalize_bill`, plus an overload taking an
+  already-parsed `ET.Element` root (the diff stage already has one,
+  `_build_from_trees` at `compare/xml.py:39`; the parse stage does not), would
+  let upstream's own upload path drop both the temp directory and the label
+  workaround, and let a byte-holding caller stop parsing each document twice.
+  Adjacent: upstream's open #698 (the XML pipeline's intermediate-dictionary
+  detour) and open #676 (the epic motivating an outside consumer not needing a
+  privileged path).
+- **The XML path imports the PDF stack.** `bill_tree.py:8` imports
+  `_RUNIN_QUOTED_LINE` and `_match_runin_subsection` from `parsers/pdf_anchors`,
+  which imports `parsers/pdf_text`, which imports `pypdfium2` and
+  `pypdfium2.raw` at module scope (`pdf_text.py:28-29`). Reading one bill's XML
+  therefore pulls a native PDF library into the process — measured at **69 ms**
+  for `import deltatrack.bill_tree`, with both modules left resident in
+  `sys.modules`. Upstream's own `[project.dependencies]` comment
+  (`pyproject.toml:51`) says the engine's dependency list "is what a consumer
+  of the engine actually gets," and an XML-only consumer gets more than that.
+  The two imported helpers are a compiled regex and a run-in subsection
+  matcher, neither PDF-specific, so moving them to a module both parsers
+  import — or inlining them in `bill_tree` — would decouple the XML path from
+  PDFium without changing either parser's behavior.
+
+#### Already addressed upstream
+
+**The asymmetric-pair guard.** `SECTION_COUNT_THRESHOLD = 10`
+(`section-diff.ts:40`) came from a measured 120-second SIGKILL on the 118th
+NDAA: an enrolled bill with 988 sections against a public law with 1.
+Checked directly against upstream at the pin: `diff_bill.py:1468`'s round 2
+does run unconditionally, but it delegates scoring to `move_candidates`
+(`similarity.py:97`), which gates every pair on `real_quick_ratio`
+(`similarity.py:143`) — a length-ratio bound that prunes extreme asymmetry
+hardest, not least. The exact 988×1 shape costs **0.014 s** and yields **0
+candidates** before `quick_ratio` or `ratio` ever runs; that gate predates the
+pin substantially (present since `4b23e65`, 2026-07-09). BillTrax's own
+attribution of the 120 s SIGKILL to "the Python DeltaTrack engine" does not
+reproduce against this engine at this pin. The residual population the length
+gate cannot prune — many×many at similar lengths — is real and is already
+tracked as upstream's open #356 (measured there at 1192×1700 = 5.65 s of
+5.84 s total).
+
+#### Not worth raising
+
+- **A body-size cap on inline word segments** (`BODY_CAP = 30_000`,
+  `diff_service.py:31`). Upstream has no word-segment rendering at all — a
+  grep for `word_segment` across its `src/` returns nothing — so there is no
+  feature for the cap to attach to. Revisit only if the feature is proposed
+  upstream.
+- **The `" "` versus `""` join change (D4).** Accurate as stated (see the D4
+  row above), but it describes a consumer-side migration — spicy-docs's own
+  stale `bill_sections` rows need a reparse — not an upstream defect;
+  upstream's behavior is the intended one. Upstream's open #676 is explicit
+  that a downstream consumer's stored-row concerns are being retired from its
+  tracker.
 
 ## Financial rows carry a claim upstream declines to publish
 
