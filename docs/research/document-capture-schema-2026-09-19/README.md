@@ -25,6 +25,12 @@ receipt's digest.
 | `cfr-2025-title30-vol3-sec716-2.*` | `tests/fixtures/reconstruction/cfr/CFR-2025-title30-vol3-sec716-2.evidence.json` | `tests/fixtures/reconstruction/cfr/README.md` |
 | `scotus-26a274_l537.*` | `inputs/26a274_l537.evidence.json`, extracted from the 66,165-byte PDF (sha256 `7c14a9d1e945641c23b82a8838f94d4af5113ef51424d21bd1d623bffbdf2e60`) by `extraction.DocumentExtractor(NativeText())` and `reconstruction.evidence.evidence_from_pages` | `inputs/requests.jsonl`, line 1 |
 
+`inputs/<name>.pages.json` retains each PDF's page sizes in points, pinned to
+the PDF's digest, because `evidence_from_pages` keeps line boxes in permille
+of the displayed page and drops the size that produced them. Without them a
+`page` node cannot state `pageSize` and a page region cannot be cited in the
+unit RFC 8118 names.
+
 `inputs/requests.jsonl` is a copy of the request log in
 `~/Work/corpora/supply-2026-09-02/receipts/document-capture-schema-2026-09-19/`,
 which also holds the fetch commands and this run's `summary.json`. Five keyless
@@ -36,4 +42,10 @@ documents. The slip opinion PDF itself is not committed, following the
 Each `*.fragments.json` renders two leaves of its capture as
 `rkaf:SourceFragment`s: one into the capture's text stream (with the
 carrier-local URN where the leaf is one contiguous run) and one into the
-rendition artifact in its own coordinates.
+publisher's artifact in its own coordinates. `tests/test_document_capture.py`
+resolves every selector of both against the bytes it names.
+
+`visual-review.md` and `png/` are the 2026-09-19 visual review of the six
+profiles against the print rendition of each family's document, retained as
+received with the fourteen pages it viewed. The design record says what each
+finding changed.

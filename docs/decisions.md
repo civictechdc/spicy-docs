@@ -4,6 +4,49 @@ Use [source guides](README.md#work-on-a-source) for current procedures and the
 [release specification](superpowers/specs/2026-08-25-source-native-release-spec.md)
 for exact requirements. This page keeps the reasons that future changes must preserve.
 
+## SpicyDocs owns document parsing and exact captured text; the capture shape is Rulespec's
+
+**2026-09-19 owner ruling**, recorded in the sibling rulespec repository's
+`docs/decisions.md` under that date and indexed in the stack `DECISIONS.md`
+under "Product boundaries". It amends the
+rulespec 2026-08-02 entry, which had assigned DocSpec "document parsing, exact
+captured text, durable structural passages, and model-input segmentation"
+under RefSpec REF-048. Three of those four move here: SpicyDocs owns document
+parsing and the exact captured text, and the durable structural shape is
+Rulespec's `DocumentCapture v1` parent schema composed by the family profiles
+in this repository. DocSpec keeps model-input segmentation over captures it is
+given, and REF-048's catalog ownership is untouched.
+
+What that means in this repository, and what a later change must preserve:
+
+- **The parent shape is not ours to change.** `DocumentCapture v1`, the
+  profile meta-schema that states how a family composes it, and the validator
+  for the invariants JSON Schema cannot see all live in Rulespec and ship in
+  the `rulespec-artifacts` wheel. The copies under
+  [`src/spicy_docs/schemas/document_capture/1.0/`](../src/spicy_docs/schemas/document_capture/1.0/README.md)
+  are vendored bytes pinned by digest, not a second implementation, and they
+  go away at the next wheel bump.
+- **The family profiles and the converters are ours.** A family is a grammar
+  from the publisher's element names to structural roles, plus a closed
+  extension block. A new family is a profile file, never a change to the
+  parent.
+- **Capture is not interpretation.** This is the same boundary `AGENTS.md`
+  draws: node kinds are structural, the publisher's own element name travels
+  in `source.element`, and any rule that placed a node names itself in
+  `decision`. A kind that meant "requirement" would be an extraction result
+  wearing a capture's clothes.
+- **The artifact is always the publisher's bytes.** A PDF capture names the
+  PDF in `artifact` and the retained extractor document in
+  `rendition.intermediate`, so a consumer that follows `artifact.locator.url`
+  and checks `artifact.sha256` lands on what the publisher issued. The first
+  draft put the extractor's JSON in the artifact slot with the PDF's URL
+  beside it, and the 2026-09-19 architecture review found that a consumer
+  doing both would see two different documents.
+
+The design record, the six worked conversions and the two reviews behind this
+shape are in
+[`docs/research/document-capture-schema-2026-09-19.md`](research/document-capture-schema-2026-09-19.md).
+
 ## Community supply precedes origin acquisition
 
 Prefer spicy-regs public tables where they carry the required data; origin
