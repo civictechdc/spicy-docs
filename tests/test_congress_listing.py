@@ -15,6 +15,7 @@ from spicy_docs.sources.congress.listing import (
     LIST_ROUTES,
     MAX_LIMIT,
     CongressListingReader,
+    CongressListRoute,
     bill_list_url,
     crs_report_list_url,
     list_route_url,
@@ -130,6 +131,7 @@ def test_list_urls_are_explicit_and_bounded():
         {"limit": 251},
         {"limit": True},
         {"sort": "title"},
+        {"sort": None},
         {"from_datetime": "2026-09-01"},
         {"from_datetime": "2026-13-01T00:00:00Z"},
         {"from_datetime": "2026-09-02T00:00:00Z", "to_datetime": "2026-09-01T00:00:00Z"},
@@ -201,6 +203,20 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "hearing": False,
         "committee-report": True,
         "house-communication": False,
+    }
+    # Measured live 2026-09-19 (see the fixtures README): a one-day fromDateTime window cut
+    # committee-bills' declared count from 41,822 to 9 (honored) but left bill-actions' declared
+    # count at 59 either way (ignored). Every other route keeps the carried-forward default.
+    assert {name: route.window_honored for name, route in LIST_ROUTES.items()} == {
+        "bill": True,
+        "crsreport": True,
+        "amendment": True,
+        "committee-bills": True,
+        "bill-actions": False,
+        "nomination": True,
+        "hearing": True,
+        "committee-report": True,
+        "house-communication": True,
     }
     assert LIST_ROUTES["bill"].records_key == BILLS_KEY
     assert LIST_ROUTES["crsreport"].records_key == CRS_REPORTS_KEY
@@ -308,6 +324,50 @@ def test_list_route_url_refuses_sort_on_crsreport_but_the_legacy_builder_still_s
     assert "sort=updateDate+desc" in crs_report_list_url(sort="updateDate desc")
 
 
+@pytest.mark.parametrize("builder", [bill_list_url, crs_report_list_url])
+def test_legacy_builders_still_refuse_a_literal_sort_none(builder):
+    """`_query` now accepts an optional sort for `list_route_url`, but the two legacy, named
+    builders never accepted a missing one; a literal `sort=None` must still refuse."""
+    with pytest.raises(PagedJsonSourceError, match="sort must be"):
+        builder(sort=None)
+
+
+def test_list_route_url_refuses_a_date_window_the_publisher_ignores():
+    with pytest.raises(PagedJsonSourceError, match="ignores the date window"):
+        list_route_url(
+            LIST_ROUTES["bill-actions"], from_datetime="2026-09-18T00:00:00Z", **ROUTE_PARAMS["bill-actions"]
+        )
+    with pytest.raises(PagedJsonSourceError, match="ignores the date window"):
+        list_route_url(LIST_ROUTES["bill-actions"], to_datetime="2026-09-18T00:00:00Z", **ROUTE_PARAMS["bill-actions"])
+
+
+def test_list_route_url_accepts_a_date_window_the_publisher_honors():
+    url = list_route_url(
+        LIST_ROUTES["committee-bills"], from_datetime="2026-09-18T00:00:00Z", **ROUTE_PARAMS["committee-bills"]
+    )
+    assert "fromDateTime=2026-09-18T00%3A00%3A00Z" in url
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"name": "x", "path": "x/{congress}/{type}", "records_key": "rows", "optional_params": frozenset({"congress"})},
+        {"name": "x", "path": "", "records_key": "rows"},
+        {"name": "", "path": "x", "records_key": "rows"},
+        {"name": "x", "path": "x", "records_key": ""},
+        {"name": "x", "path": "x", "records_key": ()},
+        {"name": "x", "path": "x/{congress}", "records_key": "rows", "optional_params": frozenset({"chamber"})},
+    ],
+)
+def test_congress_list_route_refuses_invalid_construction(kwargs):
+    """A route whose ``optional_params`` makes an interior parameter optional while a later one stays
+    required (``congress`` optional but ``type`` is not), an empty path, an empty name or an empty
+    records key all refuse at construction, the same as an ``optional_params`` entry the path never
+    declares as a parameter at all."""
+    with pytest.raises(ValueError):
+        CongressListRoute(**kwargs)
+
+
 @pytest.mark.parametrize("route_name", sorted(ROUTE_PAGE_EXPECTATIONS))
 def test_table_driven_pages_parse_with_publisher_spellings(route_name):
     route = LIST_ROUTES[route_name]
@@ -335,7 +395,7 @@ def test_records_method_walks_a_table_driven_route():
 
 # --- live pagination contract (one request per route, not run by default) ------
 
-ENV_FILE = Path("/Users/mikewolfd/Work/spicy-stack/spicy-docs/.env")
+ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
 LIVE_BUDGET = PagedJsonBudget(2, 4 * 1024 * 1024, 30, 0.5)
 
 

@@ -425,3 +425,25 @@ def test_family_reach_bounds_refuse_in_one_request_and_at_the_page_bound():
     for fields in ({"max_reachable_records": 0}, {"max_page_number": True}):
         with pytest.raises(ValueError):
             replace(FLAG_FAMILY, **fields)
+
+
+def test_tuple_records_key_reaches_rows_nested_in_a_wrapper_object():
+    """A tuple records key reads a publisher's nested rows the way count_path/next_path already do --
+    Congress.gov's committee/{chamber}/{code}/bills route answers this shape, not a top-level array."""
+    body = json.dumps({"wrapper": {"things": [{"id": 1}, {"id": 2}]}, "paging": {"count": 2, "next": None}}).encode()
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        result = source.page(URL, records_key=("wrapper", "things"))
+    assert result.records_key == ("wrapper", "things")
+    assert [row["id"] for row in result.records] == [1, 2]
+    assert result.declared_count == 2
+
+
+def test_tuple_records_key_miss_refuses_with_a_dotted_label():
+    body = json.dumps({"wrapper": {}, "paging": {"count": 0, "next": None}}).encode()
+    transport = Transport(response(body))
+    with (
+        reader(transport) as source,
+        pytest.raises(PagedJsonSourceError, match="omitted its wrapper.things list"),
+    ):
+        source.page(URL, records_key=("wrapper", "things"))

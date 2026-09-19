@@ -174,6 +174,11 @@ def _lookup(value: Mapping[str, Any], path: tuple[str, ...]) -> object:
     return current
 
 
+def _key_label(records_key: str | tuple[str, ...]) -> str:
+    """Spell a records key for a message the way a reader would ask for it, not as a Python repr."""
+    return records_key if isinstance(records_key, str) else ".".join(records_key)
+
+
 def _encode_body(body: Mapping[str, Any]) -> bytes:
     return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
@@ -335,7 +340,7 @@ class PagedJsonReader(SourceAcquirer):
             raise PagedJsonSourceError(f"{self.family.label} list response is not a JSON object")
         rows = _lookup(value, records_key) if isinstance(records_key, tuple) else value.get(records_key)
         if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
-            raise PagedJsonSourceError(f"{self.family.label} list response omitted its {records_key} list")
+            raise PagedJsonSourceError(f"{self.family.label} list response omitted its {_key_label(records_key)} list")
         count = _lookup(value, self.family.count_path) if self.family.count_path else None
         if count is not None and (isinstance(count, bool) or not isinstance(count, int) or count < 0):
             raise PagedJsonSourceError(f"{self.family.label} declared count is invalid")

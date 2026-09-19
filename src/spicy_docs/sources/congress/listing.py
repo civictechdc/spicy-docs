@@ -4,28 +4,46 @@ Every Congress.gov list route shares one shape -- a JSON page with its rows
 under a named key, a ``pagination.count`` and a ``pagination.next`` URL -- so
 one table, ``LIST_ROUTES``, states each route as data (its path template,
 records key, which of its trailing path parameters are optional, and whether
-the publisher reorders on ``sort``) and one pair of functions,
-``_route_path``/``list_route_url``, and one reader method,
-``CongressListingReader.records``, build and walk any of them. ``bill_list_url``,
-``crs_report_list_url`` and the reader's ``bills``/``crs_reports`` methods are
-the original, named entry points for the first two routes ported; they now
-delegate to the same table and the same path builder rather than duplicating
-it, and their contracts (arguments, defaults, return shapes) are unchanged.
-The api.data.gov key travels as ``X-Api-Key``. Callers choose the window with
-``fromDateTime``/``toDateTime``; the walk runs to the publisher's terminal
-page or refuses. A count is the publisher's statement for that query on that
-day, not a frozen inventory.
+the publisher honors ``sort`` and a ``fromDateTime``/``toDateTime`` window)
+and one pair of functions, ``_route_path``/``list_route_url``, and one reader
+method, ``CongressListingReader.records``, build and walk any of them.
+``bill_list_url``, ``crs_report_list_url`` and the reader's
+``bills``/``crs_reports`` methods are the original, named entry points for the
+first two routes ported; they now delegate to the same table and the same
+path builder rather than duplicating it, and their contracts (arguments,
+defaults, return shapes) are unchanged. The api.data.gov key travels as
+``X-Api-Key``. The walk runs to the publisher's terminal page or refuses. A
+count is the publisher's statement for that query on that day, not a frozen
+inventory.
 
-Sort support is measured, not assumed: a 2026-09-19 pass over the legislative
-data map (``docs/research/legislative-data-map-2026-09-18.md`` Table A) found
-only ``bill``, ``amendment``, ``summaries``, ``committee-report`` and
-``committee`` reorder on ``sort=updateDate``; every other list answers the
-same row order regardless. ``list_route_url`` refuses a ``sort`` argument on a
-route that ignores it instead of sending one that would silently do nothing.
-``crs_report_list_url`` is the one deliberate exception: it predates this
-measurement, already sent ``sort`` unconditionally, and keeps doing so rather
-than newly refuse a call that has always worked -- a caller who wants the
-refusal uses ``list_route_url(LIST_ROUTES["crsreport"], ...)`` instead.
+Sort support is measured, not assumed, for every route in the table: a
+2026-09-19 pass over the legislative data map
+(``docs/research/legislative-data-map-2026-09-18.md`` Table A) found only
+``bill``, ``amendment``, ``summaries``, ``committee-report`` and ``committee``
+reorder on ``sort=updateDate``; a same-day direct probe of ``committee-bills``
+and ``bill-actions`` (``limit=1``, ``sort=updateDate desc`` vs ``asc``,
+comparing the first record) found both answer the identical first record
+either way -- see the fixtures README for the four requests and responses.
+Every other list answers the same row order regardless. ``list_route_url``
+refuses a ``sort`` argument on a route that ignores it instead of sending one
+that would silently do nothing. ``crs_report_list_url`` is the one deliberate
+exception: it predates this measurement, already sent ``sort``
+unconditionally, and keeps doing so rather than newly refuse a call that has
+always worked -- a caller who wants the refusal uses
+``list_route_url(LIST_ROUTES["crsreport"], ...)`` instead, and so does
+``bill_list_url``/``crs_report_list_url`` themselves when handed a literal
+``sort=None``, since that was never a legal value for either.
+
+Date-window support (``window_honored``) is the same same-day probe applied to
+``fromDateTime``: a one-day-old window against ``committee-bills`` cut its
+declared count from 41,822 to 9 (honored), while the same window against
+``bill-actions`` left the declared count at 59 either way (ignored) -- also in
+the fixtures README. Every other route defaults to ``window_honored=True``:
+``bill`` and ``crsreport`` have always accepted the window unconditionally
+(the original, pre-existing contract this module preserves), and nothing has
+surfaced evidence any of the other newly added routes ignore it. That default
+is a carried-forward assumption, not a measurement, and is named as such --
+unlike ``sort_honored``, which is now measured for every route.
 """
 
 from __future__ import annotations
@@ -100,8 +118,13 @@ def _query(
 
 
 @dataclass(frozen=True, slots=True)
-class ListRoute:
-    """One Congress.gov list route: its path template, records key, and ``sort`` support.
+class CongressListRoute:
+    """One Congress.gov list route: its path template, records key, and ``sort``/window support.
+
+    Named ``CongressListRoute`` (not ``ListRoute``) because
+    ``spicy_docs.cli.list_pages.ListRoute`` already names a different,
+    publisher-agnostic route wrapper; the two would collide if a caller
+    imported both.
 
     ``path`` is a ``/``-joined template whose ``{name}`` segments are path
     parameters (``congress``, ``chamber``, ``code``, ``type``, ``number``).
@@ -111,10 +134,12 @@ class ListRoute:
     Congress). A route with no optional parameters requires every one it
     names on every request, the way ``committee/{chamber}/{code}/bills`` and
     ``bill/{congress}/{type}/{number}/actions`` do -- the publisher has no
-    bare listing for either. ``sort_honored`` is a measurement, not a guess:
-    see the module docstring. ``records_key`` is a tuple where the publisher
-    nests the rows inside a wrapper object instead of the top level --
-    confirmed live 2026-09-19: ``committee/{chamber}/{code}/bills`` answers
+    bare listing for either. ``sort_honored`` is measured for every route;
+    ``window_honored`` is measured for ``committee-bills`` and
+    ``bill-actions`` and a carried-forward default elsewhere: see the module
+    docstring for both. ``records_key`` is a tuple where the publisher nests
+    the rows inside a wrapper object instead of the top level -- confirmed
+    live 2026-09-19: ``committee/{chamber}/{code}/bills`` answers
     ``{"committee-bills": {"bills": [...], "count": N, "url": "..."}, ...}``,
     not a top-level ``bills`` array, unlike every other route here.
     """
@@ -124,6 +149,7 @@ class ListRoute:
     records_key: str | tuple[str, ...]
     optional_params: frozenset[str] = frozenset()
     sort_honored: bool = False
+    window_honored: bool = True
 
     @property
     def path_params(self) -> tuple[str, ...]:
@@ -151,25 +177,56 @@ class ListRoute:
                 raise ValueError("optional_params must be the path's trailing parameters")
 
 
-# Path shapes, records keys and per-route sort support measured 2026-09-19
-# against the live API (docs/research/legislative-data-map-2026-09-18.md);
-# only bill, amendment, summaries, committee-report and committee reorder on
-# sort. "bill" keeps its historical bare-collection/Congress/type narrowing
-# (both congress and type may be omitted, but type only follows congress);
-# "committee-bills" and "bill-actions" have no bare collection at all.
-LIST_ROUTES: dict[str, ListRoute] = {
-    "bill": ListRoute("bill", "bill/{congress}/{type}", BILLS_KEY, frozenset({"congress", "type"}), True),
-    "crsreport": ListRoute("crsreport", "crsreport", CRS_REPORTS_KEY),
-    "amendment": ListRoute("amendment", "amendment/{congress}", "amendments", frozenset({"congress"}), True),
-    "committee-bills": ListRoute("committee-bills", "committee/{chamber}/{code}/bills", ("committee-bills", "bills")),
-    "bill-actions": ListRoute("bill-actions", "bill/{congress}/{type}/{number}/actions", "actions"),
-    "nomination": ListRoute("nomination", "nomination/{congress}", "nominations", frozenset({"congress"})),
-    "hearing": ListRoute("hearing", "hearing/{congress}", "hearings", frozenset({"congress"})),
-    "committee-report": ListRoute(
-        "committee-report", "committee-report/{congress}", "reports", frozenset({"congress"}), True
+# Path shapes and records keys measured 2026-09-19 against the live API
+# (docs/research/legislative-data-map-2026-09-18.md). sort_honored is
+# measured for every route: only bill, amendment, summaries, committee-report
+# and committee reorder on sort; committee-bills and bill-actions were probed
+# directly the same day (see the module docstring and the fixtures README)
+# and neither does. window_honored is measured only for committee-bills
+# (True) and bill-actions (False); every other route keeps the default,
+# which is a carried-forward assumption, not a measurement -- see the module
+# docstring. "bill" keeps its historical bare-collection/Congress/type
+# narrowing (both congress and type may be omitted, but type only follows
+# congress); "committee-bills" and "bill-actions" have no bare collection at
+# all.
+LIST_ROUTES: dict[str, CongressListRoute] = {
+    "bill": CongressListRoute(
+        "bill", "bill/{congress}/{type}", BILLS_KEY, optional_params=frozenset({"congress", "type"}), sort_honored=True
     ),
-    "house-communication": ListRoute(
-        "house-communication", "house-communication/{congress}", "houseCommunications", frozenset({"congress"})
+    "crsreport": CongressListRoute("crsreport", "crsreport", CRS_REPORTS_KEY),
+    "amendment": CongressListRoute(
+        "amendment", "amendment/{congress}", "amendments", optional_params=frozenset({"congress"}), sort_honored=True
+    ),
+    "committee-bills": CongressListRoute(
+        "committee-bills",
+        "committee/{chamber}/{code}/bills",
+        ("committee-bills", "bills"),
+        sort_honored=False,
+        window_honored=True,
+    ),
+    "bill-actions": CongressListRoute(
+        "bill-actions",
+        "bill/{congress}/{type}/{number}/actions",
+        "actions",
+        sort_honored=False,
+        window_honored=False,
+    ),
+    "nomination": CongressListRoute(
+        "nomination", "nomination/{congress}", "nominations", optional_params=frozenset({"congress"})
+    ),
+    "hearing": CongressListRoute("hearing", "hearing/{congress}", "hearings", optional_params=frozenset({"congress"})),
+    "committee-report": CongressListRoute(
+        "committee-report",
+        "committee-report/{congress}",
+        "reports",
+        optional_params=frozenset({"congress"}),
+        sort_honored=True,
+    ),
+    "house-communication": CongressListRoute(
+        "house-communication",
+        "house-communication/{congress}",
+        "houseCommunications",
+        optional_params=frozenset({"congress"}),
     ),
 }
 
@@ -226,7 +283,7 @@ _VALIDATE_PARAM: dict[str, Callable[[object], str]] = {
 
 
 def _route_path(
-    route: ListRoute,
+    route: CongressListRoute,
     *,
     congress: int | None = None,
     chamber: str | None = None,
@@ -273,7 +330,7 @@ def _route_path(
 
 
 def list_route_url(
-    route: ListRoute,
+    route: CongressListRoute,
     *,
     congress: int | None = None,
     chamber: str | None = None,
@@ -285,16 +342,28 @@ def list_route_url(
     limit: int = MAX_LIMIT,
     sort: ListSort | None = None,
 ) -> str:
-    """Name one query on any ``LIST_ROUTES`` entry; refuses ``sort`` a route does not honor."""
-    if not isinstance(route, ListRoute):
-        raise TypeError("route must be a ListRoute")
+    """Name one query on any ``LIST_ROUTES`` entry; refuses ``sort`` or a date window a route does not honor."""
+    if not isinstance(route, CongressListRoute):
+        raise TypeError("route must be a CongressListRoute")
     if sort is not None and not route.sort_honored:
         raise PagedJsonSourceError(f"{route.name} route: Congress.gov ignores sort here; omit it")
+    if not route.window_honored and (from_datetime is not None or to_datetime is not None):
+        raise PagedJsonSourceError(
+            f"{route.name} route: Congress.gov ignores the date window here; omit from_datetime/to_datetime"
+        )
     path = _route_path(
         route, congress=congress, chamber=chamber, committee_code=committee_code, bill_type=bill_type, number=number
     )
     query = _query(from_datetime=from_datetime, to_datetime=to_datetime, limit=limit, sort=sort)
     return f"{API}/{path}?{urlencode(query)}"
+
+
+def _required_sort(sort: object) -> ListSort:
+    """``bill_list_url``/``crs_report_list_url`` have never accepted a missing sort, unlike
+    ``list_route_url``'s optional one; a literal ``sort=None`` refuses here exactly as it always has."""
+    if sort not in ("updateDate asc", "updateDate desc"):
+        raise PagedJsonSourceError("sort must be 'updateDate asc' or 'updateDate desc'")
+    return sort
 
 
 def bill_list_url(
@@ -308,7 +377,7 @@ def bill_list_url(
 ) -> str:
     """Name one bill list query; a bill type requires its Congress."""
     path = _route_path(LIST_ROUTES["bill"], congress=congress, bill_type=bill_type)
-    query = _query(from_datetime=from_datetime, to_datetime=to_datetime, limit=limit, sort=sort)
+    query = _query(from_datetime=from_datetime, to_datetime=to_datetime, limit=limit, sort=_required_sort(sort))
     return f"{API}/{path}?{urlencode(query)}"
 
 
@@ -327,7 +396,7 @@ def crs_report_list_url(
     always worked.
     """
     path = _route_path(LIST_ROUTES["crsreport"])
-    query = _query(from_datetime=from_datetime, to_datetime=to_datetime, limit=limit, sort=sort)
+    query = _query(from_datetime=from_datetime, to_datetime=to_datetime, limit=limit, sort=_required_sort(sort))
     return f"{API}/{path}?{urlencode(query)}"
 
 
@@ -344,10 +413,10 @@ class CongressListingReader(PagedJsonReader):
     ) -> None:
         super().__init__(family=CONGRESS_GOV, budget=budget, api_key=api_key, transport=transport, clock=clock)
 
-    def records(self, route: ListRoute, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
+    def records(self, route: CongressListRoute, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
         """Walk any ``LIST_ROUTES`` entry's pages, keyed the way its publisher spells its rows."""
-        if not isinstance(route, ListRoute):
-            raise TypeError("route must be a ListRoute")
+        if not isinstance(route, CongressListRoute):
+            raise TypeError("route must be a CongressListRoute")
         return self.pages(url, records_key=route.records_key, max_pages=max_pages)
 
     def bills(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:

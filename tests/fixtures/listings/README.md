@@ -69,8 +69,29 @@ seven carried it.
 `congress-committee-bills-list.json` contradicts the naive reading of "records
 key `bills`": the publisher nests the array inside a `committee-bills` wrapper
 object alongside its own `count` and `url`, not at the top level the way
-every other route here answers. `ListRoute.records_key` for that route is the
-tuple `("committee-bills", "bills")`; `reading/paged_json.py` reads a tuple
-records key the same way it already reads `count_path`/`next_path`. The other
-six routes matched the brief's flat top-level keys exactly (`actions`,
-`nominations`, `hearings`, `reports`, `houseCommunications`).
+every other route here answers. `CongressListRoute.records_key` for that
+route is the tuple `("committee-bills", "bills")`; `reading/paged_json.py`
+reads a tuple records key the same way it already reads
+`count_path`/`next_path`. The other six routes matched the brief's flat
+top-level keys exactly (`actions`, `nominations`, `hearings`, `reports`,
+`houseCommunications`).
+
+`committee-bills` and `bill-actions` initially carried `sort_honored=False`
+and `window_honored` unset as dataclass defaults rather than measurements.
+Probed live 2026-09-19, not saved as fixtures (each is a `limit=1` request,
+not a captured page): four observations, one per route per axis.
+
+| Route | Asked | Came back | Date |
+| --- | --- | --- | --- |
+| `committee-bills` | `GET committee/house/hsju00/bills?limit=1&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (`bill 110/hconres/30`, `updateDate` 2015-12-07T16:53:38Z) — sort ignored | 2026-09-19 |
+| `committee-bills` | `GET committee/house/hsju00/bills?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 41,822 unfiltered vs 9 with the one-day window — window honored | 2026-09-19 |
+| `bill-actions` | `GET bill/119/hr/1/actions?limit=1&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (`actionCode` E40000, `actionDate` 2025-07-04) — sort ignored | 2026-09-19 |
+| `bill-actions` | `GET bill/119/hr/1/actions?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 59 both times, unchanged — window ignored | 2026-09-19 |
+
+`CongressListRoute.sort_honored` and `.window_honored` for both routes are set
+from these four observations: `committee-bills` is `sort_honored=False,
+window_honored=True`; `bill-actions` is `sort_honored=False,
+window_honored=False`. Every other route's `window_honored` stays the
+dataclass default (`True`), which is a carried-forward assumption from
+`bill`/`crsreport`'s original, always-accepted contract, not a measurement —
+see `sources/congress/listing.py`'s module docstring.
