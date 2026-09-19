@@ -20,22 +20,29 @@ import pytest
 from spicy_docs.sources.congress.votes import (
     CLERK_URL_RE,
     DEFAULT_MAX_BYTES,
+    DEFAULT_MENU_MAX_BYTES,
     MAX_VOTE_BYTES,
     SENATE_URL_RE,
     RollCallVote,
+    SenateVoteMenu,
+    SenateVoteMenuEntry,
     VoteAcquirer,
     VoteBudget,
     VoteIdentityError,
     VoteLocator,
+    VoteMenuIdentityError,
     VoteRefusedError,
     VoteSourceError,
     VoteUnavailableError,
     clerk_url,
+    locator_from_menu_entry,
     locator_from_recorded_vote_url,
     normalize_vote,
     parse_clerk_vote,
     parse_senate_vote,
+    parse_senate_vote_menu,
     senate_url,
+    senate_vote_menu_url,
 )
 from spicy_docs.sources.legislators import parse_legislators
 from spicy_docs.transport import retry
@@ -44,6 +51,7 @@ from spicy_docs.transport.credentials import CredentialRefusedError
 FIXTURES = Path(__file__).parent / "fixtures" / "congress_votes"
 CLERK_FIXTURE = (FIXTURES / "clerk-roll240.xml").read_bytes()
 SENATE_FIXTURE = (FIXTURES / "senate-vote-119-1-00001.xml").read_bytes()
+SENATE_MENU_FIXTURE = (FIXTURES / "senate-vote-menu-119-1.xml").read_bytes()
 
 LEGISLATORS_FIXTURE = Path(__file__).parent / "fixtures" / "legislators" / "legislators-current-excerpt.json"
 CURRENT_LEGISLATORS = parse_legislators(LEGISLATORS_FIXTURE.read_bytes(), max_bytes=DEFAULT_MAX_BYTES)
@@ -89,6 +97,16 @@ SENATE_MINIMAL = (
     b"<first_name>Tex</first_name><party>R</party><state>TX</state><vote_cast>Yea</vote_cast>"
     b"<lis_member_id>S001</lis_member_id></member></members>"
     b"</roll_call_vote>"
+)
+
+SENATE_MENU_MINIMAL = (
+    b'<?xml version="1.0" encoding="UTF-8"?><vote_summary>'
+    b"<congress>119</congress><session>1</session><congress_year>2025</congress_year>"
+    b"<votes><vote><vote_number>1</vote_number><vote_date>09-Jan</vote_date>"
+    b"<issue>S. 5</issue><question>On Cloture on the Motion to Proceed</question>"
+    b"<result>Agreed to</result><vote_tally><yeas>84</yeas><nays>9</nays></vote_tally>"
+    b"<title>Motion to Invoke Cloture: Motion to Proceed to S. 5</title></vote></votes>"
+    b"</vote_summary>"
 )
 
 MINIMAL_LOCATOR = VoteLocator("house", 119, 1, 1)
@@ -468,6 +486,137 @@ def test_senate_vote_with_no_members_is_a_refusal_not_an_empty_success():
         parse_senate_vote(SENATE_EMPTY_ROSTER, MINIMAL_SENATE_LOCATOR)
 
 
+# --- the Senate LIS vote menu: the session index gap A4 adds -------------------------------------------------
+
+
+def test_senate_vote_menu_fixture_matches_the_measured_2026_09_19_shape():
+    """``tests/fixtures/congress_votes/README.md`` documents this fixture's head-plus-tail excerpt."""
+    menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
+    assert isinstance(menu, SenateVoteMenu)
+    assert (menu.congress, menu.session, menu.congress_year) == (119, 1, 2025)
+    assert len(menu.votes) == 10
+    assert all(isinstance(entry, SenateVoteMenuEntry) for entry in menu.votes)
+
+
+def test_senate_vote_menu_first_and_last_entries_carry_every_field():
+    menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
+    first, last = menu.votes[0], menu.votes[-1]
+
+    assert first.vote_number == 659
+    assert first.vote_date == "18-Dec"
+    assert first.issue == "PN373"
+    assert first.question == "On the Cloture Motion"
+    assert first.question_measure is None
+    assert first.result == "Agreed to"
+    assert dict(first.tallies) == {"yeas": 51, "nays": 42}
+    assert first.title == "Motion to Invoke Cloture: Sara Bailey to be Director of National Drug Control Policy"
+    assert first.matters == ()
+
+    assert last.vote_number == 1
+    assert last.vote_date == "09-Jan"
+    assert last.issue == "S. 5"
+    assert last.question == "On Cloture on the Motion to Proceed"
+    assert last.question_measure is None
+    assert last.result == "Agreed to"
+    assert dict(last.tallies) == {"yeas": 84, "nays": 9}
+    assert last.title == (
+        "Motion to Invoke Cloture: Motion to Proceed to S. 5; A bill to require the Secretary of "
+        "Homeland Security to take into custody aliens who have been charged in the United States "
+        "with theft, and for other purposes."
+    )
+    assert last.matters == ()
+
+
+def test_senate_vote_menu_en_bloc_entry_carries_matters_instead_of_a_top_level_issue():
+    menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
+    by_number = {entry.vote_number: entry for entry in menu.votes}
+    en_bloc = by_number[655]
+    assert en_bloc.issue is None and en_bloc.question is None and en_bloc.result is None
+    assert en_bloc.title == "Confirmation: En Bloc Nominations as Provided for Under the Provisions of S. Res. 532"
+    assert len(en_bloc.matters) == 97
+    assert en_bloc.matters[0].issue == "PN416-9"
+    assert en_bloc.matters[0].question == "On the Nomination"
+    assert en_bloc.matters[0].result == "Confirmed"
+
+
+def test_senate_vote_menu_question_measure_is_kept_when_the_question_names_an_amendment():
+    menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
+    by_number = {entry.vote_number: entry for entry in menu.votes}
+    assert by_number[4].question_measure == "S.Amdt. 23"
+    assert by_number[3].question_measure == "S.Amdt. 14"
+
+
+SENATE_MENU_QUESTION_WITH_MEASURE_TAIL = SENATE_MENU_MINIMAL.replace(
+    b"<question>On Cloture on the Motion to Proceed</question>",
+    b"<question>On the Amendment<measure>S.Amdt. 99</measure> to the bill</question>",
+)
+
+
+def test_senate_vote_menu_refuses_text_after_a_question_measure():
+    """Every measured `<measure>` (113 of 650 non-en_bloc votes, 119th Congress 1st session) carries no tail
+    text; a `<question>` that states more prose after `</measure>` is an unmeasured shape this module has no
+    rule for keeping, so it refuses rather than silently drop that text."""
+    with pytest.raises(VoteSourceError, match="text after <measure>"):
+        parse_senate_vote_menu(SENATE_MENU_QUESTION_WITH_MEASURE_TAIL, congress=119, session=1)
+
+
+def test_senate_vote_menu_identity_refusal_on_a_mismatched_session():
+    with pytest.raises(VoteMenuIdentityError) as raised:
+        parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=2)
+    assert raised.value.requested == (119, 2)
+    assert raised.value.parsed == (119, 1)
+
+
+def test_senate_vote_menu_minimal_body_parses_cleanly():
+    menu = parse_senate_vote_menu(SENATE_MENU_MINIMAL, congress=119, session=1)
+    assert len(menu.votes) == 1 and menu.votes[0].vote_number == 1
+
+
+SENATE_MENU_EMPTY_ROSTER = SENATE_MENU_MINIMAL.replace(
+    b"<vote><vote_number>1</vote_number><vote_date>09-Jan</vote_date>"
+    b"<issue>S. 5</issue><question>On Cloture on the Motion to Proceed</question>"
+    b"<result>Agreed to</result><vote_tally><yeas>84</yeas><nays>9</nays></vote_tally>"
+    b"<title>Motion to Invoke Cloture: Motion to Proceed to S. 5</title></vote>",
+    b"",
+)
+
+
+def test_senate_vote_menu_with_no_votes_is_a_refusal_not_an_empty_success():
+    assert b"<vote>" not in SENATE_MENU_EMPTY_ROSTER  # the mutation actually emptied votes
+    with pytest.raises(VoteSourceError, match="lists no votes"):
+        parse_senate_vote_menu(SENATE_MENU_EMPTY_ROSTER, congress=119, session=1)
+
+
+def test_senate_vote_menu_url_matches_the_grammar_and_shares_the_archive_floor():
+    url = senate_vote_menu_url(119, 1)
+    assert url == "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_119_1.xml"
+    with pytest.raises(VoteSourceError, match="predates the Senate LIS archive"):
+        senate_vote_menu_url(99, 1)
+
+
+def test_locator_from_menu_entry_round_trips_to_the_already_fixtured_vote():
+    """Vote 1 on the menu is the same vote ``senate-vote-119-1-00001.xml`` carries in full."""
+    menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
+    last_entry = menu.votes[-1]
+    assert last_entry.vote_number == 1
+
+    locator = locator_from_menu_entry(menu, last_entry)
+    assert locator == SENATE_LOCATOR
+    assert locator.url() == "https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00001.xml"
+
+    # proof, not just url arithmetic: the locator this menu entry built actually resolves the pinned fixture.
+    vote = parse_senate_vote(SENATE_FIXTURE, locator)
+    assert vote.roll_number == 1 and vote.congress == 119 and vote.session == 1
+
+
+def test_locator_from_menu_entry_requires_the_right_types():
+    menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
+    with pytest.raises(TypeError, match="SenateVoteMenu"):
+        locator_from_menu_entry("not-a-menu", menu.votes[0])  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="SenateVoteMenuEntry"):
+        locator_from_menu_entry(menu, "not-an-entry")  # type: ignore[arg-type]
+
+
 # --- acquisition, mocked ----------------------------------------------------------------------------------
 
 
@@ -508,6 +657,45 @@ def test_acquirer_captures_exact_senate_bytes_and_resolves_the_crosswalk():
     assert result.capture.body == SENATE_FIXTURE
     by_lis = {member.lis_id: member for member in result.vote.member_votes}
     assert by_lis["S275"].bioguide_id == "C000127"
+
+
+MENU_BUDGET = VoteBudget(3, DEFAULT_MENU_MAX_BYTES, 7, 0)
+
+
+def test_list_senate_votes_captures_the_menu_keyless():
+    transport = Transport(response(SENATE_MENU_FIXTURE))
+    with VoteAcquirer(budget=MENU_BUDGET, transport=transport) as source:
+        result = source.list_senate_votes(119, 1)
+    assert result.capture.body == SENATE_MENU_FIXTURE
+    assert result.capture.requested_url == senate_vote_menu_url(119, 1)
+    assert isinstance(result.menu, SenateVoteMenu)
+    assert (result.menu.congress, result.menu.session) == (119, 1)
+    assert len(result.menu.votes) == 10
+    assert result.request_count == 1 and result.budget == MENU_BUDGET
+    assert transport.calls[0].headers["accept-encoding"] == "identity"
+    assert "x-api-key" not in transport.calls[0].headers
+
+
+def test_list_senate_votes_identity_refusal_retains_the_fetched_bytes_as_evidence():
+    """The acquirer-level identity refusal: a real menu fetched for the wrong session."""
+    transport = Transport(response(SENATE_MENU_FIXTURE))
+    with (
+        VoteAcquirer(budget=MENU_BUDGET, transport=transport) as source,
+        pytest.raises(VoteMenuIdentityError) as raised,
+    ):
+        source.list_senate_votes(119, 2)
+    assert raised.value.capture.body == SENATE_MENU_FIXTURE
+    assert raised.value.refused_response.response_bytes == SENATE_MENU_FIXTURE
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_list_senate_votes_refusal_on_a_keyless_route_is_named_not_a_credential_refusal(status):
+    body = b"rate limited"
+    transport = Transport(response(body, status, content_type="text/plain"))
+    with VoteAcquirer(budget=MENU_BUDGET, transport=transport) as source, pytest.raises(VoteRefusedError) as raised:
+        source.list_senate_votes(119, 1)
+    assert raised.value.url == senate_vote_menu_url(119, 1)
+    assert raised.value.refused_response.response_bytes == body
 
 
 @pytest.mark.parametrize(
@@ -589,5 +777,18 @@ def test_live_senate_vote_meets_the_2026_09_18_measured_floor():
     with VoteAcquirer(budget=budget) as source:
         result = source.acquire(SENATE_LOCATOR)
     assert result.vote.roll_number == 1 and len(result.vote.member_votes) >= 90
+    assert result.capture.sha256.startswith("sha256:")
+    assert result.request_count == 1
+
+
+@pytest.mark.integration
+def test_live_senate_vote_menu_meets_the_2026_09_19_measured_floor():
+    """The real ``vote_menu_119_1.xml`` is 419,112 B as of 2026-09-19 (README provenance); it only grows."""
+    budget = VoteBudget(2, 2 * 1024 * 1024, 30, 1.0)
+    with VoteAcquirer(budget=budget) as source:
+        result = source.list_senate_votes(119, 1)
+    assert (result.menu.congress, result.menu.session) == (119, 1)
+    assert len(result.menu.votes) >= 659
+    assert result.menu.votes[-1].vote_number == 1  # the oldest listed vote never changes
     assert result.capture.sha256.startswith("sha256:")
     assert result.request_count == 1

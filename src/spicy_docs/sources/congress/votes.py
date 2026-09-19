@@ -47,6 +47,19 @@ like every other refusal here, so the acquirer's ``capture_validated``
 attaches the fetched bytes as evidence to it the same way it does for a
 malformed body -- proving the fetched file is the one requested, not just
 that the URL was built correctly.
+
+**The Senate roll-call index.** Congress.gov has no Senate equivalent of
+``house-vote`` (data map, gap A4): the only Senate index at all is the LIS
+menu file itself, ``senate.gov/.../roll_call_lists/vote_menu_{congress}_{session}.xml``,
+one row per vote for the session (``vote_number``, ``vote_date``, ``issue``,
+``question``, ``result``, ``vote_tally``, ``title``, in the publisher's own
+newest-vote-first order; measured floor the same 101st Congress as one
+vote's own url). ``parse_senate_vote_menu``/``VoteAcquirer.list_senate_votes``
+read it the same way as the vote files above: the file's own ``congress``/
+``session`` proved against what was requested (``VoteMenuIdentityError`` on a
+mismatch) and a well-formed file with zero listed votes refused rather than
+returned as an empty success. ``locator_from_menu_entry`` turns one row into
+the ``VoteLocator`` that resolves its full tally and roster.
 """
 
 from __future__ import annotations
@@ -87,6 +100,10 @@ MEDIA_TYPES = ("text/xml", "application/xml")
 # DEFAULT_MAX_BYTES keeps roughly 6x headroom over the larger measured file.
 DEFAULT_MAX_BYTES = 512 * 1024
 MAX_VOTE_BYTES = 4 * 1024 * 1024
+# Measured 2026-09-19: vote_menu_119_1.xml (the 119th Congress, 1st session,
+# 659 votes so far) is 419,112 B -- a session-length list, not one vote, so it
+# needs its own headroom rather than sharing DEFAULT_MAX_BYTES.
+DEFAULT_MENU_MAX_BYTES = 1024 * 1024
 
 CLERK_URL_RE = re.compile(r"^https://clerk\.house\.gov/evs/(?P<year>\d{4})/roll(?P<roll>\d+)\.xml$")
 SENATE_URL_RE = re.compile(
@@ -115,6 +132,10 @@ _EARLIEST_SENATE_CONGRESS = 101
 
 _CLERK_COUNT_FIELDS = ("yea-total", "nay-total", "present-total", "not-voting-total")
 _SENATE_COUNT_FIELDS = ("yeas", "nays", "present", "absent")
+# The menu's own <vote_tally> states only yeas/nays (measured 2026-09-19,
+# 659/659 entries of vote_menu_119_1.xml) -- present/absent live only on the
+# per-vote file this menu indexes, not the index itself.
+_SENATE_MENU_TALLY_FIELDS = ("yeas", "nays")
 
 # The Clerk spells Yea/Nay on a YEA-AND-NAY vote and Aye/No on some
 # RECORDED VOTEs; both fixtures pinned here only ever carry Yea/Nay/Not
@@ -168,6 +189,26 @@ class VoteIdentityError(VoteSourceError):
             f"roll={parsed[2]}"
         )
         self.locator = locator
+        self.parsed = parsed
+
+
+class VoteMenuIdentityError(VoteSourceError):
+    """The menu file's own stated congress/session does not match the (congress, session) requested.
+
+    A menu carries no roll number of its own (it *lists* roll numbers), so
+    this is not a ``VoteIdentityError`` -- that error's message and fields
+    are shaped around one vote's congress/session/roll triple against a
+    ``VoteLocator``. This is the same proof one level up: the file fetched
+    for one session is checked against its own stated ``<congress>``/
+    ``<session>`` before any of its listed votes are returned.
+    """
+
+    def __init__(self, *, requested: tuple[int, int], parsed: tuple[int, int]) -> None:
+        super().__init__(
+            f"senate vote menu fetched for congress={requested[0]} session={requested[1]} "
+            f"states a different identity: congress={parsed[0]} session={parsed[1]}"
+        )
+        self.requested = requested
         self.parsed = parsed
 
 
@@ -253,6 +294,34 @@ def senate_url(locator: VoteLocator) -> str:
         "https://www.senate.gov/legislative/LIS/roll_call_votes/"
         f"vote{congress}{locator.session}/vote_{congress}_{locator.session}_{locator.roll_number:05d}.xml"
     )
+
+
+def _check_congress_session(congress: int, session: int) -> None:
+    """The menu's own (chamber-less) congress/session shape, reusing ``VoteKey``'s non-negative-int rule
+    (``interpretation/vote_matching.py``) through ``_as_vote_key`` rather than restating it a third time.
+    Every call site here is Senate-only and carries no roll number of its own, so both are supplied as
+    fixed, always-valid placeholders purely to reach the shared check; ``VoteMatchError``'s message names
+    ``congress``/``session`` by field, so nothing here leaks the placeholder chamber or roll number.
+    """
+    _as_vote_key("senate", congress, session, 0)
+
+
+def senate_vote_menu_url(congress: int, session: int) -> str:
+    """Build the Senate LIS vote-menu url for one session: the index ``list_senate_votes`` reads.
+
+    Same three-digit congress and bare session number as ``senate_url``, and
+    the same 101st-Congress floor (measured 2026-09-19:
+    ``vote_menu_101_1.xml`` serves a real 149,123-byte listing while
+    ``vote_menu_100_1.xml``/``vote_menu_099_1.xml`` each redirect to
+    ``roll-call-vote-not-available.htm``, the same floor ``_EARLIEST_SENATE_CONGRESS``
+    already names for one vote's own url).
+    """
+    _check_congress_session(congress, session)
+    if congress < _EARLIEST_SENATE_CONGRESS:
+        raise VoteSourceError(
+            f"congress {congress} predates the Senate LIS archive (measured floor: the 101st Congress)"
+        )
+    return f"https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_{congress:03d}_{session}.xml"
 
 
 def locator_from_recorded_vote_url(url: str) -> VoteLocator:
@@ -418,6 +487,70 @@ class RollCallVote:
 
     def vote_key(self) -> VoteKey:
         return _as_vote_key(self.chamber, self.congress, self.session, self.roll_number)
+
+
+@dataclass(frozen=True, slots=True)
+class SenateVoteMenuMatter:
+    """One ``<matter>`` row inside a menu vote's ``<en_bloc>`` batch: one item's own issue/question/result."""
+
+    issue: str
+    question: str
+    result: str
+
+
+@dataclass(frozen=True, slots=True)
+class SenateVoteMenuEntry:
+    """One ``<vote>`` row from the Senate LIS vote menu, every field it states, as spelled.
+
+    ``vote_date`` is a bare day-month the publisher states with no year of
+    its own (e.g. ``"18-Dec"``); ``SenateVoteMenu.congress_year`` is only
+    *presumptively* that vote's year, not a fact this record states -- a
+    session can run into the following January before it adjourns (the
+    119th's 1st session did not, but nothing here proves a future one
+    won't), so a caller that builds an instant from ``vote_date`` must
+    account for that year-boundary case itself rather than assume
+    ``congress_year`` always applies.
+
+    ``issue``/``question``/``result`` are ``None`` and ``matters`` is
+    non-empty on the roughly 1-in-70 "en_bloc" batch confirmation votes
+    (measured: 9 of 659, 119th Congress 1st session) -- the menu states no
+    single issue/question/result for the vote as a whole there, only per-item
+    rows inside ``<en_bloc>``. ``question_measure`` is the nested
+    ``<question><measure>...</measure></question>`` some amendment votes
+    carry beside their question text (measured 113 of the 650 non-en_bloc
+    votes in that same session); it is ``None`` when the vote's own
+    ``<question>`` carries no ``<measure>``, and reading it refuses if the
+    ``<question>`` carries any text after ``</measure>`` -- an unmeasured
+    shape this module has no rule for keeping. ``tallies`` keeps the menu's
+    own count names (``yeas``, ``nays``) the same way ``RollCallVote.tallies``
+    does -- the menu states no ``present``/``absent`` count, unlike the vote
+    file itself.
+    """
+
+    vote_number: int
+    vote_date: str
+    issue: str | None
+    question: str | None
+    question_measure: str | None
+    result: str | None
+    tallies: Mapping[str, int]
+    title: str
+    matters: tuple[SenateVoteMenuMatter, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class SenateVoteMenu:
+    """One session's Senate roll-call index, in the publisher's own (newest-vote-first) order.
+
+    ``congress``/``session`` are the file's own stated identity, already
+    checked against what ``parse_senate_vote_menu`` was asked for;
+    ``congress_year`` is the calendar year the menu states beside them.
+    """
+
+    congress: int
+    session: int
+    congress_year: int
+    votes: tuple[SenateVoteMenuEntry, ...]
 
 
 def _required_int(value: str | None, label: str, field: str) -> int:
@@ -712,6 +845,129 @@ def parse_senate_vote(body: bytes, locator: VoteLocator, crosswalk: LegislatorsF
     )
 
 
+def _read_menu_matter(element: Element, label: str) -> SenateVoteMenuMatter:
+    def text(tag: str) -> str:
+        value = child_text(element, tag, error_type=VoteSourceError, label=label)
+        if value is None:
+            raise VoteSourceError(f"{label} en_bloc matter is missing <{tag}>")
+        return value
+
+    return SenateVoteMenuMatter(issue=text("issue"), question=text("question"), result=text("result"))
+
+
+def _read_menu_entry(element: Element, label: str) -> SenateVoteMenuEntry:
+    def required(tag: str) -> str:
+        value = child_text(element, tag, error_type=VoteSourceError, label=label)
+        if value is None:
+            raise VoteSourceError(f"{label} vote is missing <{tag}>")
+        return value
+
+    vote_number = _required_int(required("vote_number"), label, "vote_number")
+    vote_date = required("vote_date")
+    title = required("title")
+
+    tally_element = single_child(element, "vote_tally", error_type=VoteSourceError, label=label)
+    if tally_element is None:
+        raise VoteSourceError(f"{label} vote {vote_number} is missing <vote_tally>")
+    tallies = _read_counts(tally_element, _SENATE_MENU_TALLY_FIELDS, label)
+
+    en_bloc_element = single_child(element, "en_bloc", error_type=VoteSourceError, label=label)
+    if en_bloc_element is not None:
+        matters = tuple(_read_menu_matter(el, label) for el in en_bloc_element.findall("matter"))
+        if not matters:
+            raise VoteSourceError(f"{label} vote {vote_number} en_bloc lists no matters")
+        issue = question = question_measure = result = None
+    else:
+        matters = ()
+        issue, result = required("issue"), required("result")
+        question_element = single_child(element, "question", error_type=VoteSourceError, label=label)
+        if question_element is None:
+            raise VoteSourceError(f"{label} vote {vote_number} is missing <question>")
+        question = (question_element.text or "").strip() or None
+        if question is None:
+            raise VoteSourceError(f"{label} vote {vote_number} <question> is empty")
+        measure_element = single_child(question_element, "measure", error_type=VoteSourceError, label=label)
+        question_measure = None
+        if measure_element is not None:
+            if (measure_element.tail or "").strip():
+                # Every measured occurrence (113 of 650 non-en_bloc votes,
+                # 119th Congress 1st session) carries no text after
+                # </measure>; refuse rather than silently drop text this
+                # module has no rule for keeping.
+                raise VoteSourceError(f"{label} vote {vote_number} <question> carries text after <measure>")
+            question_measure = (measure_element.text or "").strip() or None
+
+    return SenateVoteMenuEntry(
+        vote_number=vote_number,
+        vote_date=vote_date,
+        issue=issue,
+        question=question,
+        question_measure=question_measure,
+        result=result,
+        tallies=tallies,
+        title=title,
+        matters=matters,
+    )
+
+
+def parse_senate_vote_menu(body: bytes, *, congress: int, session: int) -> SenateVoteMenu:
+    """Read one Senate LIS vote-menu file (``<vote_summary>``) whole, newest vote first, as the publisher orders it.
+
+    ``congress``/``session`` are the session requested (``list_senate_votes``'s
+    own arguments, not a ``VoteLocator`` -- a menu names a session, not one
+    roll number); they are checked against the file's own ``<congress>``/
+    ``<session>`` before any vote is returned, the same identity-proof shape
+    ``parse_clerk_vote``/``parse_senate_vote`` use against a ``VoteLocator``,
+    raising ``VoteMenuIdentityError`` on a mismatch. A well-formed file
+    listing zero ``<vote>`` rows is also a refusal, not an empty success, the
+    same rule ``parse_clerk_vote``/``parse_senate_vote`` apply to an empty
+    roster.
+    """
+    _check_congress_session(congress, session)
+    label = "Senate LIS vote menu"
+    root = parse_xml(body, max_bytes=len(body), error_type=VoteSourceError, label=label)
+    if root.tag != "vote_summary":
+        raise VoteSourceError(f"{label} root must be <vote_summary>, got <{root.tag}>")
+
+    def text(tag: str) -> str | None:
+        return child_text(root, tag, error_type=VoteSourceError, label=label)
+
+    def required(tag: str) -> str:
+        value = text(tag)
+        if value is None:
+            raise VoteSourceError(f"{label} is missing <{tag}>")
+        return value
+
+    parsed_congress = _required_int(required("congress"), label, "congress")
+    parsed_session = _required_int(required("session"), label, "session")
+    if (parsed_congress, parsed_session) != (congress, session):
+        raise VoteMenuIdentityError(requested=(congress, session), parsed=(parsed_congress, parsed_session))
+    congress_year = _required_int(required("congress_year"), label, "congress_year")
+
+    votes_element = single_child(root, "votes", error_type=VoteSourceError, label=label)
+    if votes_element is None:
+        raise VoteSourceError(f"{label} is missing <votes>")
+    entries = tuple(_read_menu_entry(el, label) for el in votes_element.findall("vote"))
+    if not entries:
+        raise VoteSourceError(f"{label} for congress={congress} session={session} lists no votes")
+
+    return SenateVoteMenu(congress=parsed_congress, session=parsed_session, congress_year=congress_year, votes=entries)
+
+
+def locator_from_menu_entry(menu: SenateVoteMenu, entry: SenateVoteMenuEntry) -> VoteLocator:
+    """Build the ``VoteLocator`` for one menu row: the menu's own proven congress/session plus its roll number.
+
+    The menu carries no chamber field of its own -- every row on it is a
+    Senate vote by construction (the file it came from), so this always
+    builds a ``"senate"`` locator.
+    """
+    if not isinstance(menu, SenateVoteMenu):
+        raise TypeError("menu must be a SenateVoteMenu")
+    if not isinstance(entry, SenateVoteMenuEntry):
+        raise TypeError("entry must be a SenateVoteMenuEntry")
+    return VoteLocator("senate", menu.congress, menu.session, entry.vote_number)
+
+
 @dataclass(frozen=True, slots=True)
 class VoteBudget:
     max_requests: int
@@ -728,6 +984,14 @@ class VoteBudget:
 @dataclass(frozen=True, slots=True)
 class VoteAcquisition:
     vote: RollCallVote
+    capture: CapturedBodyResponse
+    request_count: int
+    budget: VoteBudget
+
+
+@dataclass(frozen=True, slots=True)
+class SenateVoteMenuAcquisition:
+    menu: SenateVoteMenu
     capture: CapturedBodyResponse
     request_count: int
     budget: VoteBudget
@@ -794,16 +1058,47 @@ class VoteAcquirer(SourceAcquirer):
             )
         return VoteAcquisition(vote, capture, self.request_count, self.budget)
 
+    def list_senate_votes(self, congress: int, session: int) -> SenateVoteMenuAcquisition:
+        """Capture one session's Senate LIS vote menu -- the index a votes rollup walks newest first.
+
+        Shares this acquirer's budget, error family and ``named_challenge``
+        refusal recasting with ``acquire``; a caller building a ``VoteAcquirer``
+        to call both needs a ``VoteBudget.max_bytes`` sized for the larger of
+        the two (see ``DEFAULT_MENU_MAX_BYTES``). ``parse_senate_vote_menu``
+        proves the file's own congress/session before any row is returned.
+        """
+        _check_congress_session(congress, session)
+        url = senate_vote_menu_url(congress, session)
+
+        def parse(response: CapturedBodyResponse, _allowance: int) -> SenateVoteMenu:
+            return parse_senate_vote_menu(response.body, congress=congress, session=session)
+
+        with named_challenge(url, error_type=VoteRefusedError, context_key="vote_acquisition"):
+            menu, capture = self.capture_validated(
+                url,
+                media_types=MEDIA_TYPES,
+                parse=parse,
+                max_bytes=self.budget.max_bytes,
+                unavailable=VoteUnavailableError,
+                context={"operation": "senate-vote-menu", "chamber": "senate", "url": url},
+            )
+        return SenateVoteMenuAcquisition(menu, capture, self.request_count, self.budget)
+
 
 __all__ = [
     "CLERK_URL_RE",
     "DEFAULT_MAX_BYTES",
+    "DEFAULT_MENU_MAX_BYTES",
     "MAX_VOTE_BYTES",
     "MEDIA_TYPES",
     "SENATE_URL_RE",
     "MemberVote",
     "PartyTotal",
     "RollCallVote",
+    "SenateVoteMenu",
+    "SenateVoteMenuAcquisition",
+    "SenateVoteMenuEntry",
+    "SenateVoteMenuMatter",
     "TieBreaker",
     "VoteAcquirer",
     "VoteAcquisition",
@@ -812,13 +1107,17 @@ __all__ = [
     "VoteDocument",
     "VoteIdentityError",
     "VoteLocator",
+    "VoteMenuIdentityError",
     "VoteRefusedError",
     "VoteSourceError",
     "VoteUnavailableError",
     "clerk_url",
+    "locator_from_menu_entry",
     "locator_from_recorded_vote_url",
     "normalize_vote",
     "parse_clerk_vote",
     "parse_senate_vote",
+    "parse_senate_vote_menu",
     "senate_url",
+    "senate_vote_menu_url",
 ]
