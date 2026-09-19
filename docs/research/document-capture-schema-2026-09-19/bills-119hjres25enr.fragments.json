@@ -1,0 +1,114 @@
+[
+ {
+  "node": "n0003",
+  "kind": "text",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:400a198b3eb03650b04c7181f01173d8cc4381b872eaee7f11b39b89001183e2",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 4,
+     "oa:end": 273,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": " HJ 25 ENR: Providing for congressional disapproval under chapter 8 of title 5, United States Code, of the rule submitted by the Internal Revenue Service relating to “Gross Proceeds Reporting by Brokers That Regularly Provide Services Effectuating Digital Asset Sales”."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:400a198b3eb03650b04c7181f01173d8cc4381b872eaee7f11b39b89001183e2",
+   "rkaf:fragmentContentDigest": "sha256:7f52a5640ecdd22d6845be328d7523a85aea6a01920b53a6dabfaaff718f097c"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A400a198b3eb03650b04c7181f01173d8cc4381b872eaee7f11b39b89001183e2:4:273:sha256-7f52a5640ecdd22d6845be328d7523a85aea6a01920b53a6dabfaaff718f097c",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:690ca61f34b0927bf8da34addcf721e4fd704c22c98cf99aaccfbd26e31889e4",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:XPathSelector",
+     "rdf:value": "/resolution[1]/metadata[1]/dublinCore[1]/dc:title[1]"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 423,
+     "oa:end": 696,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": " HJ 25 ENR: Providing for congressional disapproval under chapter 8 of title 5, United States Code, of the rule submitted by the Internal Revenue Service relating to “Gross Proceeds Reporting by Brokers That Regularly Provide Services Effectuating Digital Asset Sales”."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:XPathSelector",
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:690ca61f34b0927bf8da34addcf721e4fd704c22c98cf99aaccfbd26e31889e4",
+   "rkaf:fragmentContentDigest": "sha256:7f52a5640ecdd22d6845be328d7523a85aea6a01920b53a6dabfaaff718f097c"
+  }
+ },
+ {
+  "node": "n0026",
+  "kind": "text",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:400a198b3eb03650b04c7181f01173d8cc4381b872eaee7f11b39b89001183e2",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 1270,
+     "oa:end": 1334,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "Vice President of the United States and President of the Senate."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:400a198b3eb03650b04c7181f01173d8cc4381b872eaee7f11b39b89001183e2",
+   "rkaf:fragmentContentDigest": "sha256:86598bcd31e29b229fef31fbfbf7a9cddf04b2106a5e5700630e691a53801915"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A400a198b3eb03650b04c7181f01173d8cc4381b872eaee7f11b39b89001183e2:1270:1334:sha256-86598bcd31e29b229fef31fbfbf7a9cddf04b2106a5e5700630e691a53801915",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:690ca61f34b0927bf8da34addcf721e4fd704c22c98cf99aaccfbd26e31889e4",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:XPathSelector",
+     "rdf:value": "/resolution[1]/attestation[1]/attestation-group[2]/role[1]"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 2629,
+     "oa:end": 2693,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "Vice President of the United States and President of the Senate."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:XPathSelector",
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:690ca61f34b0927bf8da34addcf721e4fd704c22c98cf99aaccfbd26e31889e4",
+   "rkaf:fragmentContentDigest": "sha256:86598bcd31e29b229fef31fbfbf7a9cddf04b2106a5e5700630e691a53801915"
+  }
+ }
+]

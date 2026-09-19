@@ -78,6 +78,13 @@ checks integrity with bounded memory; full verification also replays source mean
   five findings and the gates. It depends on `extraction` and `reading`, never the
   other way round, and no source adapter depends on it. See
   [reconstruction](reconstruction.md).
+- **Document capture schemas:** `schemas/document_capture/1.0/` ships the
+  family profiles that compose Rulespec's `DocumentCapture v1` parent schema,
+  with the parent and rulespec's `SourceFragment` schema vendored beside them and
+  pinned in `PINS.json`. Package data only: the converter that produces captures
+  is the diagnostic `tools/analysis/document_capture.py`, and
+  `tests/test_document_capture.py` re-validates the committed captures offline.
+  See the [design record](research/document-capture-schema-2026-09-19.md).
 - **Tables:** `public_tables/profiles.py` declares columns and ordering through
   `PublicTableProfile`; `publish.py`, `verify.py` and `reader.py` implement the
   operations exported by `public_tables/api.py`.

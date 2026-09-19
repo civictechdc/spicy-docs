@@ -1,0 +1,208 @@
+{
+ "generatedAt": "2026-09-19T22:48:35+00:00",
+ "parentSchema": {
+  "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+  "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+ },
+ "sourceFragmentSchema": {
+  "$id": "https://rulespec.org/jsonschema/source-fragment.json",
+  "sha256": "0d87ede33d56f7a0b6be39d2a3d777087f35e8e56e6b36eccb4b8a9fd728060e"
+ },
+ "profileComposition": {
+  "bill-xml": [],
+  "cfr-reconstruction": [],
+  "committee-report-html": [],
+  "federal-register-xml": [],
+  "slip-opinion-pdf": [],
+  "uslm-law": []
+ },
+ "receipts": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-schema-2026-09-19",
+ "documents": [
+  {
+   "name": "plaw-119publ1",
+   "family": "uslm-law",
+   "rendition": "xml",
+   "artifactBytes": 23379,
+   "captureBytes": 234059,
+   "nodes": 320,
+   "leaves": 216,
+   "emptyLeaves": 0,
+   "nonContiguousLeaves": 0,
+   "spans": 325,
+   "unresolved": 0,
+   "issues": 0,
+   "codePoints": 8660,
+   "textStreamSha256": "f77fdbbba017bbab468b890f1167a3f2f4eb0de54a75638493d390f83699e2fd",
+   "roundTrip": {
+    "partitionDigestMatches": true,
+    "independentDerivationMatches": true,
+    "independentTool": "lxml.etree (libxml2) itertext"
+   },
+   "schemaValid": true,
+   "profileValid": true,
+   "invariantsHold": true,
+   "fragmentsValid": true,
+   "fragments": [
+    "n0042",
+    "n0319"
+   ],
+   "seconds": 0.0009,
+   "errors": []
+  },
+  {
+   "name": "bills-119hjres25enr",
+   "family": "bill-xml",
+   "rendition": "xml",
+   "artifactBytes": 2751,
+   "captureBytes": 30648,
+   "nodes": 26,
+   "leaves": 18,
+   "emptyLeaves": 3,
+   "nonContiguousLeaves": 0,
+   "spans": 45,
+   "unresolved": 0,
+   "issues": 6,
+   "codePoints": 1335,
+   "textStreamSha256": "400a198b3eb03650b04c7181f01173d8cc4381b872eaee7f11b39b89001183e2",
+   "roundTrip": {
+    "partitionDigestMatches": true,
+    "independentDerivationMatches": true,
+    "independentTool": "lxml.etree (libxml2) itertext"
+   },
+   "schemaValid": true,
+   "profileValid": true,
+   "invariantsHold": true,
+   "fragmentsValid": true,
+   "fragments": [
+    "n0003",
+    "n0026"
+   ],
+   "seconds": 0.0003,
+   "errors": []
+  },
+  {
+   "name": "crpt-119hrpt1",
+   "family": "committee-report-html",
+   "rendition": "html",
+   "artifactBytes": 13953,
+   "captureBytes": 172209,
+   "nodes": 44,
+   "leaves": 41,
+   "emptyLeaves": 0,
+   "nonContiguousLeaves": 0,
+   "spans": 461,
+   "unresolved": 0,
+   "issues": 0,
+   "codePoints": 13900,
+   "textStreamSha256": "46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d",
+   "roundTrip": {
+    "partitionDigestMatches": true,
+    "independentDerivationMatches": true,
+    "independentTool": "html.parser.HTMLParser(convert_charrefs=True) handle_data"
+   },
+   "schemaValid": true,
+   "profileValid": true,
+   "invariantsHold": true,
+   "fragmentsValid": true,
+   "fragments": [
+    "n0007",
+    "n0043"
+   ],
+   "seconds": 0.0005,
+   "errors": []
+  },
+  {
+   "name": "fr-2026-19200",
+   "family": "federal-register-xml",
+   "rendition": "xml",
+   "artifactBytes": 10224,
+   "captureBytes": 107420,
+   "nodes": 75,
+   "leaves": 59,
+   "emptyLeaves": 2,
+   "nonContiguousLeaves": 0,
+   "spans": 209,
+   "unresolved": 0,
+   "issues": 1,
+   "codePoints": 8758,
+   "textStreamSha256": "1ca5f8cab7088a52db34d8940d1273b23f2d194a526aeb799c72b9caabfe3196",
+   "roundTrip": {
+    "partitionDigestMatches": true,
+    "independentDerivationMatches": true,
+    "independentTool": "lxml.etree (libxml2) itertext"
+   },
+   "schemaValid": true,
+   "profileValid": true,
+   "invariantsHold": true,
+   "fragmentsValid": true,
+   "fragments": [
+    "n0010",
+    "n0069"
+   ],
+   "seconds": 0.0005,
+   "errors": []
+  },
+  {
+   "name": "cfr-2025-title30-vol3-sec716-2",
+   "family": "cfr-reconstruction",
+   "rendition": "evidence-lines",
+   "artifactBytes": 101921,
+   "captureBytes": 319633,
+   "nodes": 87,
+   "leaves": 71,
+   "emptyLeaves": 0,
+   "nonContiguousLeaves": 2,
+   "spans": 721,
+   "unresolved": 0,
+   "issues": 0,
+   "codePoints": 12694,
+   "textStreamSha256": "110ac81e1c5ec2cc7338e1c6d0eb3785e3fe7bd5940fbb4011e1fe3f430e9370",
+   "roundTrip": {
+    "partitionDigestMatches": true,
+    "independentDerivationMatches": true,
+    "independentTool": "json: evidence blocks rejoined by page"
+   },
+   "schemaValid": true,
+   "profileValid": true,
+   "invariantsHold": true,
+   "fragmentsValid": true,
+   "fragments": [
+    "n0010",
+    "n0087"
+   ],
+   "seconds": 0.0009,
+   "errors": []
+  },
+  {
+   "name": "scotus-26a274_l537",
+   "family": "slip-opinion-pdf",
+   "rendition": "evidence-lines",
+   "artifactBytes": 73533,
+   "captureBytes": 241496,
+   "nodes": 243,
+   "leaves": 237,
+   "emptyLeaves": 0,
+   "nonContiguousLeaves": 0,
+   "spans": 473,
+   "unresolved": 0,
+   "issues": 0,
+   "codePoints": 8024,
+   "textStreamSha256": "6a056037e026b8740387d967845a243d28e7cad4b682f5dadd2cb7272cac5464",
+   "roundTrip": {
+    "partitionDigestMatches": true,
+    "independentDerivationMatches": true,
+    "independentTool": "json: evidence blocks rejoined by page"
+   },
+   "schemaValid": true,
+   "profileValid": true,
+   "invariantsHold": true,
+   "fragmentsValid": true,
+   "fragments": [
+    "n0023",
+    "n0243"
+   ],
+   "seconds": 0.0011,
+   "errors": []
+  }
+ ]
+}

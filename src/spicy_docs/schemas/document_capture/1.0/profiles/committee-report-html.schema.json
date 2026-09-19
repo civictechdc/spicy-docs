@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:committee-report-html",
+  "title": "DocumentCapture profile: committee-report-html v1",
+  "description": "A GovInfo committee-report HTML body: one preformatted run split into blank-line blocks, each a paragraph, page marker, banner or rule. Block structure is markup-derived, not the publisher's.",
+  "x-parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+  },
+  "allOf": [
+    {
+      "$ref": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json"
+    },
+    {
+      "properties": {
+        "profile": {
+          "properties": {
+            "name": {
+              "const": "committee-report-html"
+            },
+            "version": {
+              "const": "1"
+            },
+            "ext": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "blockRule",
+                "packageId"
+              ],
+              "properties": {
+                "packageId": {
+                  "type": "string"
+                },
+                "blockRule": {
+                  "const": "blank-line"
+                }
+              }
+            }
+          }
+        },
+        "nodes": {
+          "items": {
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^committee-report-html:"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "committee-report-html:banner",
+                        "committee-report-html:rule",
+                        "committee-report-html:preformatted"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "ext": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [],
+                    "properties": {}
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

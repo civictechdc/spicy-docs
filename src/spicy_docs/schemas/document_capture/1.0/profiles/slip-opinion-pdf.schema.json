@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:slip-opinion-pdf",
+  "title": "DocumentCapture profile: slip-opinion-pdf v1",
+  "description": "A Supreme Court slip opinion PDF through extraction's native text and line assembly: pages and lines only. No rule classifies a line, so this is the no-reference case and the profile adds no node kind.",
+  "x-parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+  },
+  "allOf": [
+    {
+      "$ref": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json"
+    },
+    {
+      "properties": {
+        "profile": {
+          "properties": {
+            "name": {
+              "const": "slip-opinion-pdf"
+            },
+            "version": {
+              "const": "1"
+            },
+            "ext": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "classification",
+                "extractor",
+                "lineAssembly",
+                "pageCount",
+                "pdfBytes",
+                "pdfSha256"
+              ],
+              "properties": {
+                "pdfSha256": {
+                  "type": "string"
+                },
+                "pdfBytes": {
+                  "type": "integer"
+                },
+                "pageCount": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "extractor": {
+                  "type": "string"
+                },
+                "lineAssembly": {
+                  "type": "string"
+                },
+                "classification": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "nodes": {
+          "items": {
+            "allOf": [
+              {
+                "properties": {
+                  "ext": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [],
+                    "properties": {}
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+[
+ {
+  "node": "n0010",
+  "kind": "heading",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:110ac81e1c5ec2cc7338e1c6d0eb3785e3fe7bd5940fbb4011e1fe3f430e9370",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 506,
+     "oa:end": 526,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "General obligations."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:110ac81e1c5ec2cc7338e1c6d0eb3785e3fe7bd5940fbb4011e1fe3f430e9370",
+   "rkaf:fragmentContentDigest": "sha256:2160f70540e541790e2a8f9bc4a4d55e77cf42d642cae1e27e06ed2b85bdd161"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A110ac81e1c5ec2cc7338e1c6d0eb3785e3fe7bd5940fbb4011e1fe3f430e9370:506:526:sha256-2160f70540e541790e2a8f9bc4a4d55e77cf42d642cae1e27e06ed2b85bdd161",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:0a5c7bf6230da08409eba9f7ffee7c155cf6fbb82e5d6143a12f9526a6d6b76f",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=1&viewrect=216,413,197,10"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "General obligations."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:FragmentSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:0a5c7bf6230da08409eba9f7ffee7c155cf6fbb82e5d6143a12f9526a6d6b76f",
+   "rkaf:fragmentContentDigest": "sha256:2160f70540e541790e2a8f9bc4a4d55e77cf42d642cae1e27e06ed2b85bdd161"
+  }
+ },
+ {
+  "node": "n0087",
+  "kind": "paragraph",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:110ac81e1c5ec2cc7338e1c6d0eb3785e3fe7bd5940fbb4011e1fe3f430e9370",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 12186,
+     "oa:end": 12694,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "(1) Excavation of the mine pit takes \nplace on a relatively limited site for an \nextended period of time. For the pur-\nposes of this section, mine pit means \nan open-pit mine in which the surface \nopening is at least the full size of the \nexcavation and has a contiguous bor-\nder. The pit generally is quite deep and \nis formed by the removal of relatively \nlarge amounts of overburden to obtain \nlesser amounts of coal. The term as \nused in this section applies only to \nmining operations that extract coal "
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:110ac81e1c5ec2cc7338e1c6d0eb3785e3fe7bd5940fbb4011e1fe3f430e9370",
+   "rkaf:fragmentContentDigest": "sha256:e6cfe464b1f64c4ffd372e189566c262215f78dff39e9bdbdd56f5ca6d91746a"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A110ac81e1c5ec2cc7338e1c6d0eb3785e3fe7bd5940fbb4011e1fe3f430e9370:12186:12694:sha256-e6cfe464b1f64c4ffd372e189566c262215f78dff39e9bdbdd56f5ca6d91746a",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:0a5c7bf6230da08409eba9f7ffee7c155cf6fbb82e5d6143a12f9526a6d6b76f",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=523,747,266,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,758,279,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,769,274,11"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,781,279,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,792,279,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,804,279,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,815,274,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,826,279,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,838,279,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,849,279,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,860,279,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,872,279,10"
+    },
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=3&viewrect=510,883,279,10"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "(1) Excavation of the mine pit takes \nplace on a relatively limited site for an \nextended period of time. For the pur-\nposes of this section, mine pit means \nan open-pit mine in which the surface \nopening is at least the full size of the \nexcavation and has a contiguous bor-\nder. The pit generally is quite deep and \nis formed by the removal of relatively \nlarge amounts of overburden to obtain \nlesser amounts of coal. The term as \nused in this section applies only to \nmining operations that extract coal "
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:FragmentSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:0a5c7bf6230da08409eba9f7ffee7c155cf6fbb82e5d6143a12f9526a6d6b76f",
+   "rkaf:fragmentContentDigest": "sha256:e6cfe464b1f64c4ffd372e189566c262215f78dff39e9bdbdd56f5ca6d91746a"
+  }
+ }
+]

@@ -1,0 +1,7168 @@
+{
+ "recordType": "DocumentCapture",
+ "captureVersion": 1,
+ "schema": {
+  "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+  "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+ },
+ "capture": {
+  "id": "urn:document-capture:sha256:7b754c6d39c4e4247a1f45982619b701d79436fdb7a28cd78c656dc310f5bf36",
+  "capturedAt": "2026-09-19T22:48:34+00:00",
+  "idOrigin": "generated",
+  "idScheme": "document-order"
+ },
+ "artifact": {
+  "iri": "urn:document-capture:artifact:sha256:d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9",
+  "sha256": "d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9",
+  "byteSize": 13953,
+  "mediaType": "text/html",
+  "locator": {
+   "url": "https://www.govinfo.gov/content/pkg/CRPT-119hrpt1/html/CRPT-119hrpt1.htm",
+   "path": "tests/fixtures/govinfo_bodies/body-CRPT-119hrpt1.htm",
+   "publisher": "GovInfo",
+   "publisherId": "CRPT-119hrpt1"
+  },
+  "identifiers": [
+   {
+    "scheme": "rkaf:hash-sha256",
+    "value": "sha256:d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9"
+   },
+   {
+    "scheme": "rkaf:partner-defined",
+    "value": "govinfo:CRPT-119hrpt1"
+   }
+  ]
+ },
+ "rendition": {
+  "kind": "html",
+  "textStream": {
+   "iri": "urn:document-capture:text-stream:sha256:46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d",
+   "sha256": "46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d",
+   "codePoints": 13900,
+   "normalization": {
+    "id": "markup-character-data",
+    "statement": "The decoded character data of every text event of spicy_docs.reading.markup in document order, inside the root element, read with the tolerant HTML grammar; otherwise the XML statement. Reversible by the retained byte ranges.",
+    "reversible": true
+   }
+  }
+ },
+ "converter": {
+  "id": "spicy-docs/tools/analysis/document_capture.py#committee-report-html",
+  "version": "1",
+  "implementation": {
+   "repository": "spicy-docs",
+   "revision": "56c988b34915553fb23dfce024c731d633ad865b",
+   "fileSha256": "e40f1e33864518cbbc36a82c072810aec634c029301aa72c6181b45534761272"
+  },
+  "dependencies": [
+   {
+    "name": "python",
+    "version": "3.12.13"
+   },
+   {
+    "name": "spicy-docs",
+    "version": "0.21.2"
+   }
+  ]
+ },
+ "profile": {
+  "name": "committee-report-html",
+  "version": "1",
+  "schema": {
+   "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:committee-report-html",
+   "sha256": "0b9fcae3a9e68f4cfe561005c56264ffea9112772715ddcb06066398662eb1e8"
+  },
+  "ext": {
+   "packageId": "CRPT-119hrpt1",
+   "blockRule": "blank-line"
+  }
+ },
+ "nodes": [
+  {
+   "id": "n0001",
+   "kind": "document",
+   "parent": null,
+   "ordinal": 0,
+   "depth": 0,
+   "derivation": "native",
+   "evidence": [
+    "s0001",
+    "s0003"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/html[1]",
+    "element": "html",
+    "start": 0,
+    "end": 13952
+   }
+  },
+  {
+   "id": "n0002",
+   "kind": "title",
+   "parent": "n0001",
+   "ordinal": 0,
+   "depth": 1,
+   "derivation": "native",
+   "text": "House Report 119-1 - PROVIDING FOR CONSIDERATION OF THE BILL (H.R. 471) TO EXPEDITE UNDER THE NATIONAL ENVIRONMENTAL POLICY ACT OF 1969 AND IMPROVE FOREST MANAGEMENT ACTIVITIES ON NATIONAL FOREST SYSTEM LANDS, ON PUBLIC LANDS UNDER THE JURISDICTION OF THE BUREAU OF LAND MANAGEMENT, AND ON TRIBAL LANDS TO RETURN RESILIENCE TO OVERGROWN, FIRE-PRONE FORESTED LANDS, AND FOR OTHER PURPOSES, AND PROVIDING FOR CONSIDERATION OF THE BILL (S. 5) TO REQUIRE THE SECRETARY OF HOMELAND SECURITY TO TAKE INTO CUSTODY ALIENS WHO HAVE BEEN CHARGED IN THE UNITED STATES WITH THEFT, AND FOR OTHER PURPOSES",
+   "evidence": [
+    "s0002"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/html[1]/title[1]",
+    "element": "title",
+    "start": 7,
+    "end": 613
+   }
+  },
+  {
+   "id": "n0003",
+   "kind": "body",
+   "parent": "n0001",
+   "ordinal": 1,
+   "depth": 1,
+   "derivation": "native",
+   "evidence": [],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/html[1]/body[1]",
+    "element": "body",
+    "start": 614,
+    "end": 13945
+   }
+  },
+  {
+   "id": "n0004",
+   "kind": "committee-report-html:preformatted",
+   "parent": "n0003",
+   "ordinal": 0,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0004",
+    "s0006",
+    "s0008",
+    "s0009",
+    "s0010",
+    "s0016",
+    "s0017",
+    "s0019",
+    "s0020",
+    "s0021",
+    "s0022",
+    "s0023",
+    "s0041",
+    "s0042",
+    "s0044",
+    "s0045",
+    "s0046",
+    "s0047",
+    "s0051",
+    "s0052",
+    "s0054",
+    "s0055",
+    "s0056",
+    "s0057",
+    "s0061",
+    "s0062",
+    "s0064",
+    "s0065",
+    "s0067",
+    "s0068",
+    "s0076",
+    "s0077",
+    "s0079",
+    "s0080",
+    "s0136",
+    "s0137",
+    "s0139",
+    "s0140",
+    "s0178",
+    "s0179",
+    "s0181",
+    "s0182",
+    "s0188",
+    "s0189",
+    "s0191",
+    "s0192",
+    "s0202",
+    "s0203",
+    "s0229",
+    "s0230",
+    "s0232",
+    "s0233",
+    "s0243",
+    "s0244",
+    "s0270",
+    "s0271",
+    "s0273",
+    "s0274",
+    "s0284",
+    "s0285",
+    "s0311",
+    "s0312",
+    "s0314",
+    "s0315",
+    "s0317",
+    "s0318",
+    "s0344",
+    "s0345",
+    "s0347",
+    "s0348",
+    "s0364",
+    "s0365",
+    "s0367",
+    "s0368",
+    "s0372",
+    "s0373",
+    "s0393",
+    "s0394",
+    "s0395",
+    "s0399",
+    "s0400",
+    "s0406",
+    "s0407",
+    "s0409",
+    "s0410",
+    "s0454",
+    "s0455",
+    "s0457",
+    "s0458",
+    "s0459",
+    "s0460",
+    "s0461"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/html[1]/body[1]/pre[1]",
+    "element": "pre",
+    "start": 620,
+    "end": 13938
+   }
+  },
+  {
+   "id": "n0005",
+   "kind": "committee-report-html:banner",
+   "parent": "n0004",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "[House Report 119-1]",
+   "evidence": [
+    "s0005"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0006",
+   "kind": "committee-report-html:banner",
+   "parent": "n0004",
+   "ordinal": 1,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "[From the U.S. Government Publishing Office]",
+   "evidence": [
+    "s0007"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0007",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 2,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "119th Congress   }                                      {       Report\n                        HOUSE OF REPRESENTATIVES\n 1st Session     }                                      {        119-1",
+   "evidence": [
+    "s0011",
+    "s0012",
+    "s0013",
+    "s0014",
+    "s0015"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0008",
+   "kind": "committee-report-html:rule",
+   "parent": "n0004",
+   "ordinal": 3,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "======================================================================",
+   "evidence": [
+    "s0018"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0009",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 4,
+   "depth": 3,
+   "derivation": "markup",
+   "text": " PROVIDING FOR CONSIDERATION OF THE BILL (H.R. 471) TO EXPEDITE UNDER \n   THE NATIONAL ENVIRONMENTAL POLICY ACT OF 1969 AND IMPROVE FOREST \nMANAGEMENT ACTIVITIES ON NATIONAL FOREST SYSTEM LANDS, ON PUBLIC LANDS \nUNDER THE JURISDICTION OF THE BUREAU OF LAND MANAGEMENT, AND ON TRIBAL \nLANDS TO RETURN RESILIENCE TO OVERGROWN, FIRE-PRONE FORESTED LANDS, AND \nFOR OTHER PURPOSES, AND PROVIDING FOR CONSIDERATION OF THE BILL (S. 5) \n  TO REQUIRE THE SECRETARY OF HOMELAND SECURITY TO TAKE INTO CUSTODY \n ALIENS WHO HAVE BEEN CHARGED IN THE UNITED STATES WITH THEFT, AND FOR \n                             OTHER PURPOSES",
+   "evidence": [
+    "s0024",
+    "s0025",
+    "s0026",
+    "s0027",
+    "s0028",
+    "s0029",
+    "s0030",
+    "s0031",
+    "s0032",
+    "s0033",
+    "s0034",
+    "s0035",
+    "s0036",
+    "s0037",
+    "s0038",
+    "s0039",
+    "s0040"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0010",
+   "kind": "committee-report-html:rule",
+   "parent": "n0004",
+   "ordinal": 5,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "                                _______",
+   "evidence": [
+    "s0043"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0011",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 6,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "  January 21, 2025.--Referred to the House Calendar and ordered to be \n                                printed",
+   "evidence": [
+    "s0048",
+    "s0049",
+    "s0050"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0012",
+   "kind": "committee-report-html:rule",
+   "parent": "n0004",
+   "ordinal": 7,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "                                _______",
+   "evidence": [
+    "s0053"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0013",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 8,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "       Mr. Austin Scott of Georgia, from the Committee on Rules, \n                        submitted the following",
+   "evidence": [
+    "s0058",
+    "s0059",
+    "s0060"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0014",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 9,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "                              R E P O R T",
+   "evidence": [
+    "s0063"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0015",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 10,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "                       [To accompany H. Res. 53]",
+   "evidence": [
+    "s0066"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0016",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 11,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "    The Committee on Rules, having had under consideration \nHouse Resolution 53, by a record vote of 9 to 3, report the \nsame to the House with the recommendation that the resolution \nbe adopted.",
+   "evidence": [
+    "s0069",
+    "s0070",
+    "s0071",
+    "s0072",
+    "s0073",
+    "s0074",
+    "s0075"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0017",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 12,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "                SUMMARY OF PROVISIONS OF THE RESOLUTION",
+   "evidence": [
+    "s0078"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0018",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 13,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "    The resolution provides for consideration of H.R. 471, the \nFix Our Forests Act, under a structured rule. The resolution \nwaives all points of order against consideration of the bill. \nThe resolution provides one hour of general debate equally \ndivided and controlled by the chair and ranking minority member \nof the Committee on Natural Resources or their respective \ndesignees. The resolution provides that the bill shall be \nconsidered as read. The resolution waives all points of order \nagainst provisions in the bill. The resolution makes in order \nonly those amendments printed in the report. Each amendment may \nbe offered only in the order printed in the report, may be \noffered only by a Member designated in the report, shall be \nconsidered as read, shall be debatable for the time specified \nin the report equally divided and controlled by the proponent \nand an opponent, shall not be subject to amendment, and shall \nnot be subject to a demand for division of the question. All \npoints of order against the amendments printed in the report \nare waived. The resolution provides for one motion to recommit. \nThe resolution further provides for consideration of S. 5, the \nLaken Riley Act, under a closed rule. The resolution waives all \npoints of order against consideration of the bill. The \nresolution provides that the bill shall be considered as read. \nThe resolution waives all points of order against provisions in \nthe bill. The resolution provides one hour of general debate \nequally divided and controlled by the chair and ranking \nminority member of the Committee on the Judiciary or their \nrespective designees. The resolution provides for one motion to \ncommit.",
+   "evidence": [
+    "s0081",
+    "s0082",
+    "s0083",
+    "s0084",
+    "s0085",
+    "s0086",
+    "s0087",
+    "s0088",
+    "s0089",
+    "s0090",
+    "s0091",
+    "s0092",
+    "s0093",
+    "s0094",
+    "s0095",
+    "s0096",
+    "s0097",
+    "s0098",
+    "s0099",
+    "s0100",
+    "s0101",
+    "s0102",
+    "s0103",
+    "s0104",
+    "s0105",
+    "s0106",
+    "s0107",
+    "s0108",
+    "s0109",
+    "s0110",
+    "s0111",
+    "s0112",
+    "s0113",
+    "s0114",
+    "s0115",
+    "s0116",
+    "s0117",
+    "s0118",
+    "s0119",
+    "s0120",
+    "s0121",
+    "s0122",
+    "s0123",
+    "s0124",
+    "s0125",
+    "s0126",
+    "s0127",
+    "s0128",
+    "s0129",
+    "s0130",
+    "s0131",
+    "s0132",
+    "s0133",
+    "s0134",
+    "s0135"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0019",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 14,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "                         EXPLANATION OF WAIVERS",
+   "evidence": [
+    "s0138"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0020",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 15,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "    Although the resolution waives all points of order against \nconsideration of H.R. 471, the Committee is not aware of any \npoints of order. The waiver is prophylactic in nature.\n    Although the resolution waives all points of order against \nprovisions in H.R. 471 the Committee is not aware of any points \nof order. The waiver is prophylactic in nature.\n    Although the resolution waives all points of order against \nthe amendments printed in the report, the Committee is not \naware of any points of order. The waiver is prophylactic in \nnature.\n    The waiver of all points of order against consideration of \nS. 5 includes:\n    --Clause 11 of rule XXI, which prohibits consideration of a \nbill or joint resolution which has not been reported by a \ncommittee until such measure has been available to Members, \nDelegates, and the Resident Commissioner for 72 hours.\n    Although the resolution waives all points of order against \nprovisions in S. 5, the Committee is not aware of any points of \norder. The waiver is prophylactic in nature.",
+   "evidence": [
+    "s0141",
+    "s0142",
+    "s0143",
+    "s0144",
+    "s0145",
+    "s0146",
+    "s0147",
+    "s0148",
+    "s0149",
+    "s0150",
+    "s0151",
+    "s0152",
+    "s0153",
+    "s0154",
+    "s0155",
+    "s0156",
+    "s0157",
+    "s0158",
+    "s0159",
+    "s0160",
+    "s0161",
+    "s0162",
+    "s0163",
+    "s0164",
+    "s0165",
+    "s0166",
+    "s0167",
+    "s0168",
+    "s0169",
+    "s0170",
+    "s0171",
+    "s0172",
+    "s0173",
+    "s0174",
+    "s0175",
+    "s0176",
+    "s0177"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0021",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 16,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "                            COMMITTEE VOTES",
+   "evidence": [
+    "s0180"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0022",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 17,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "    The results of each record vote on an amendment or motion \nto report, together with the names of those voting for and \nagainst, are printed below:",
+   "evidence": [
+    "s0183",
+    "s0184",
+    "s0185",
+    "s0186",
+    "s0187"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0023",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 18,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "Rules Committee record vote No. 4",
+   "evidence": [
+    "s0190"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0024",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 19,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "    Motion by Mr. McGovern to amend the rule to make in order \namendment #2 to H.R. 471, offered by Representative Neguse, \nwhich inserts the updated text of the Tim Hart Wildland \nFirefighter Classification and Pay Parity Act, to improve pay \nand benefits for federal wildland firefighters. Defeated: 3-9",
+   "evidence": [
+    "s0193",
+    "s0194",
+    "s0195",
+    "s0196",
+    "s0197",
+    "s0198",
+    "s0199",
+    "s0200",
+    "s0201"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0025",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 20,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "----------------------------------------------------------------------------------------------------------------\n                Majority Members                      Vote               Minority Members               Vote\n----------------------------------------------------------------------------------------------------------------\nMrs. Fischbach..................................          Nay   Mr. McGovern......................          Yea\nMr. Norman......................................          Nay   Ms. Scanlon.......................          Yea\nMr. Roy.........................................          Nay   Mr. Neguse........................  ............\nMrs. Houchin....................................          Nay   Ms. Leger Fernandez...............          Yea\nMr. Langworthy..................................          Nay\nMr. Austin Scott................................          Nay\nMr. Griffith....................................          Nay\nMr. Jack........................................          Nay\nMs. Foxx, Chairwoman............................          Nay\n----------------------------------------------------------------------------------------------------------------",
+   "evidence": [
+    "s0204",
+    "s0205",
+    "s0206",
+    "s0207",
+    "s0208",
+    "s0209",
+    "s0210",
+    "s0211",
+    "s0212",
+    "s0213",
+    "s0214",
+    "s0215",
+    "s0216",
+    "s0217",
+    "s0218",
+    "s0219",
+    "s0220",
+    "s0221",
+    "s0222",
+    "s0223",
+    "s0224",
+    "s0225",
+    "s0226",
+    "s0227",
+    "s0228"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0026",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 21,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "Rules Committee record vote No. 5",
+   "evidence": [
+    "s0231"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0027",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 22,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "    Motion by Ms. Leger Fernandez to amend the rule to make in \norder amendment #7 to H.R. 471, offered by Representative Leger \nFernandez. Amendment #7 would insert authorizations for \nappropriations for activities in various sections of the bill. \nDefeated: 3-9",
+   "evidence": [
+    "s0234",
+    "s0235",
+    "s0236",
+    "s0237",
+    "s0238",
+    "s0239",
+    "s0240",
+    "s0241",
+    "s0242"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0028",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 23,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "----------------------------------------------------------------------------------------------------------------\n                Majority Members                      Vote               Minority Members               Vote\n----------------------------------------------------------------------------------------------------------------\nMrs. Fischbach..................................          Nay   Mr. McGovern......................          Yea\nMr. Norman......................................          Nay   Ms. Scanlon.......................          Yea\nMr. Roy.........................................          Nay   Mr. Neguse........................  ............\nMrs. Houchin....................................          Nay   Ms. Leger Fernandez...............          Yea\nMr. Langworthy..................................          Nay\nMr. Austin Scott................................          Nay\nMr. Griffith....................................          Nay\nMr. Jack........................................          Nay\nMs. Foxx, Chairwoman............................          Nay\n----------------------------------------------------------------------------------------------------------------",
+   "evidence": [
+    "s0245",
+    "s0246",
+    "s0247",
+    "s0248",
+    "s0249",
+    "s0250",
+    "s0251",
+    "s0252",
+    "s0253",
+    "s0254",
+    "s0255",
+    "s0256",
+    "s0257",
+    "s0258",
+    "s0259",
+    "s0260",
+    "s0261",
+    "s0262",
+    "s0263",
+    "s0264",
+    "s0265",
+    "s0266",
+    "s0267",
+    "s0268",
+    "s0269"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0029",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 24,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "Rules Committee record vote No. 6",
+   "evidence": [
+    "s0272"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0030",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 25,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "    Motion by Ms. Leger Fernandez to amend the rule to make in \norder amendment #8 to H.R. 471, offered by Representative Leger \nFernandez. Amendment #8 would provide support for the \ncollection and maintenance of native seeds and production of \ntree seedlings. Defeated: 3-9",
+   "evidence": [
+    "s0275",
+    "s0276",
+    "s0277",
+    "s0278",
+    "s0279",
+    "s0280",
+    "s0281",
+    "s0282",
+    "s0283"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0031",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 26,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "----------------------------------------------------------------------------------------------------------------\n                Majority Members                      Vote               Minority Members               Vote\n----------------------------------------------------------------------------------------------------------------\nMrs. Fischbach..................................          Nay   Mr. McGovern......................          Yea\nMr. Norman......................................          Nay   Ms. Scanlon.......................          Yea\nMr. Roy.........................................          Nay   Mr. Neguse........................  ............\nMrs. Houchin....................................          Nay   Ms. Leger Fernandez...............          Yea\nMr. Langworthy..................................          Nay\nMr. Austin Scott................................          Nay\nMr. Griffith....................................          Nay\nMr. Jack........................................          Nay\nMs. Foxx, Chairwoman............................          Nay\n----------------------------------------------------------------------------------------------------------------",
+   "evidence": [
+    "s0286",
+    "s0287",
+    "s0288",
+    "s0289",
+    "s0290",
+    "s0291",
+    "s0292",
+    "s0293",
+    "s0294",
+    "s0295",
+    "s0296",
+    "s0297",
+    "s0298",
+    "s0299",
+    "s0300",
+    "s0301",
+    "s0302",
+    "s0303",
+    "s0304",
+    "s0305",
+    "s0306",
+    "s0307",
+    "s0308",
+    "s0309",
+    "s0310"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0032",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 27,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "Rules Committee record vote No. 7",
+   "evidence": [
+    "s0313"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0033",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 28,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "    Motion by Mr. Austin Scott to report the rule. Adopted: 9-3",
+   "evidence": [
+    "s0316"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0034",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 29,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "----------------------------------------------------------------------------------------------------------------\n                Majority Members                      Vote               Minority Members               Vote\n----------------------------------------------------------------------------------------------------------------\nMrs. Fischbach..................................          Yea   Mr. McGovern......................          Nay\nMr. Norman......................................          Yea   Ms. Scanlon.......................          Nay\nMr. Roy.........................................          Yea   Mr. Neguse........................  ............\nMrs. Houchin....................................          Yea   Ms. Leger Fernandez...............          Nay\nMr. Langworthy..................................          Yea\nMr. Austin Scott................................          Yea\nMr. Griffith....................................          Yea\nMr. Jack........................................          Yea\nMs. Foxx, Chairwoman............................          Yea\n----------------------------------------------------------------------------------------------------------------",
+   "evidence": [
+    "s0319",
+    "s0320",
+    "s0321",
+    "s0322",
+    "s0323",
+    "s0324",
+    "s0325",
+    "s0326",
+    "s0327",
+    "s0328",
+    "s0329",
+    "s0330",
+    "s0331",
+    "s0332",
+    "s0333",
+    "s0334",
+    "s0335",
+    "s0336",
+    "s0337",
+    "s0338",
+    "s0339",
+    "s0340",
+    "s0341",
+    "s0342",
+    "s0343"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0035",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 30,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "          SUMMARY OF THE AMENDMENTS TO H.R. 471 MADE IN ORDER",
+   "evidence": [
+    "s0346"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0036",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 31,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "    1.  Perry (PA): Strikes carbon sequestration and ecosystem \nservices prioritization from section 301 biochar demonstration \nprojects. (10 minutes)\n    1.  Carbajal (CA): Allows the U.S. Forest Services to \napprove the removal of hazardous trees near power lines on \nfederal land without requiring a timber sale, easing a serious \nthreat that has in the past been a major cause of destructive \nwildfires. (10 minutes)",
+   "evidence": [
+    "s0349",
+    "s0350",
+    "s0351",
+    "s0352",
+    "s0353",
+    "s0354",
+    "s0355",
+    "s0356",
+    "s0357",
+    "s0358",
+    "s0359",
+    "s0360",
+    "s0361",
+    "s0362",
+    "s0363"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0037",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 32,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "              TEXT OF AMENDMENTS TO H.R. 471 MADE IN ORDER",
+   "evidence": [
+    "s0366"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0038",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 33,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "1.  An Amendment To Be Offered by Representative Perry of Pennsylvania \n               or His Designee, Debatable for 10 Minutes",
+   "evidence": [
+    "s0369",
+    "s0370",
+    "s0371"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0039",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 34,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "  Page 78, strike lines 15 through 16.\n  Page 79, strike lines 1 through 2.\n  Page 79, line 7, strike ``through (iv)'' and insert ``through \n(iii)''.\n  Page 79, line 20, strike ``through (D)'' and insert ``through \n(C)''.\n  Page 81, line 24, strike the semicolon and insert ``; and''.\n  Page 82, line 3, strike ``and''.\n  Page 82, strike lines 4 through 6.\n                              ----------                              ",
+   "evidence": [
+    "s0374",
+    "s0375",
+    "s0376",
+    "s0377",
+    "s0378",
+    "s0379",
+    "s0380",
+    "s0381",
+    "s0382",
+    "s0383",
+    "s0384",
+    "s0385",
+    "s0386",
+    "s0387",
+    "s0388",
+    "s0389",
+    "s0390",
+    "s0391",
+    "s0392"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0040",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 35,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "2.  An Amendment To Be Offered by Representative Carbajal of California \n               or His Designee, Debatable for 10 Minutes",
+   "evidence": [
+    "s0396",
+    "s0397",
+    "s0398"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0041",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 36,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "  At the end of subtitle A of title III add the following:\n  Be it enacted by the Senate and House of Representatives of \nthe United States of America in Congress assembled,",
+   "evidence": [
+    "s0401",
+    "s0402",
+    "s0403",
+    "s0404",
+    "s0405"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0042",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 37,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "SEC. 309. FIRE SAFE ELECTRICAL CORRIDORS.",
+   "evidence": [
+    "s0408"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0043",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 38,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "  (a) In General.--In any special use permit or easement on \nNational Forest System land provided to an electrical utility, \nthe Secretary may provide permission to cut and remove trees or \nother vegetation from within the vicinity of distribution lines \nor transmission lines without requiring a separate timber sale, \nif that cutting and removal is consistent with--\n          (1) the applicable land and resource management plan; \n        and\n          (2) other applicable environmental laws (including \n        regulations).\n  (b) Use of Proceeds.--A special use permit or easement that \nincludes permission for cutting and removal described in \nsubsection (a) shall include a requirement that, if the \napplicable electrical utility sells any portion of the material \nremoved under the permit or easement, the electrical utility \nshall provide to the Secretary, acting through the Chief of the \nForest Service, any proceeds received from the sale, less any \ntransportation costs incurred in the sale.\n  (c) Effect.--Nothing in subsection (b) shall require the sale \nof any material removed under a permit or easement that \nincludes permission for cutting and removal described in \nsubsection (a).",
+   "evidence": [
+    "s0411",
+    "s0412",
+    "s0413",
+    "s0414",
+    "s0415",
+    "s0416",
+    "s0417",
+    "s0418",
+    "s0419",
+    "s0420",
+    "s0421",
+    "s0422",
+    "s0423",
+    "s0424",
+    "s0425",
+    "s0426",
+    "s0427",
+    "s0428",
+    "s0429",
+    "s0430",
+    "s0431",
+    "s0432",
+    "s0433",
+    "s0434",
+    "s0435",
+    "s0436",
+    "s0437",
+    "s0438",
+    "s0439",
+    "s0440",
+    "s0441",
+    "s0442",
+    "s0443",
+    "s0444",
+    "s0445",
+    "s0446",
+    "s0447",
+    "s0448",
+    "s0449",
+    "s0450",
+    "s0451",
+    "s0452",
+    "s0453"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  },
+  {
+   "id": "n0044",
+   "kind": "paragraph",
+   "parent": "n0004",
+   "ordinal": 39,
+   "depth": 3,
+   "derivation": "markup",
+   "text": "                                  [all]",
+   "evidence": [
+    "s0456"
+   ],
+   "source": {
+    "coordinateSystem": "none"
+   }
+  }
+ ],
+ "evidence": [
+  {
+   "id": "s0001",
+   "start": 0,
+   "end": 1,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6,
+    "end": 7,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0002",
+   "start": 1,
+   "end": 592,
+   "exact": "House Report 119-1 - PROVIDING FOR CONSIDERATION OF THE BILL (H.R. 471) TO EXPEDITE UNDER THE NATIONAL ENVIRONMENTAL POLICY ACT OF 1969 AND IMPROVE FOREST MANAGEMENT ACTIVITIES ON NATIONAL FOREST SYSTEM LANDS, ON PUBLIC LANDS UNDER THE JURISDICTION OF THE BUREAU OF LAND MANAGEMENT, AND ON TRIBAL LANDS TO RETURN RESILIENCE TO OVERGROWN, FIRE-PRONE FORESTED LANDS, AND FOR OTHER PURPOSES, AND PROVIDING FOR CONSIDERATION OF THE BILL (S. 5) TO REQUIRE THE SECRETARY OF HOMELAND SECURITY TO TAKE INTO CUSTODY ALIENS WHO HAVE BEEN CHARGED IN THE UNITED STATES WITH THEFT, AND FOR OTHER PURPOSES",
+   "sha256": "0b0ec47accebe682269bb8b6719228d0f966337877f24ad336e0fb9917c13ea8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 14,
+    "end": 605,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0003",
+   "start": 592,
+   "end": 593,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 613,
+    "end": 614,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0004",
+   "start": 593,
+   "end": 594,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 625,
+    "end": 626,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0005",
+   "start": 594,
+   "end": 614,
+   "exact": "[House Report 119-1]",
+   "sha256": "a2d604c97f70a4724e20136a62d86d6eb44f21bbdb135282f65a0eaa846bea36",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 626,
+    "end": 646,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0006",
+   "start": 614,
+   "end": 615,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 646,
+    "end": 647,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0007",
+   "start": 615,
+   "end": 659,
+   "exact": "[From the U.S. Government Publishing Office]",
+   "sha256": "796a57f4a18dde6bfb0b97d36fd3787584a240404437dc9513d407c78bbbd480",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 647,
+    "end": 691,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0008",
+   "start": 659,
+   "end": 660,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 691,
+    "end": 692,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0009",
+   "start": 660,
+   "end": 661,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 692,
+    "end": 693,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0010",
+   "start": 661,
+   "end": 662,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 693,
+    "end": 694,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0011",
+   "start": 662,
+   "end": 732,
+   "exact": "119th Congress   }                                      {       Report",
+   "sha256": "48473bbfcc2bbdf9638701cac90506873c393c2abf6b806a9ab4798cecbbe534",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 694,
+    "end": 764,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0012",
+   "start": 732,
+   "end": 733,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 764,
+    "end": 765,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0013",
+   "start": 733,
+   "end": 781,
+   "exact": "                        HOUSE OF REPRESENTATIVES",
+   "sha256": "636deb447d0ba1e3401452874001746e904f90180150d8c2b2bced7058788720",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 765,
+    "end": 813,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0014",
+   "start": 781,
+   "end": 782,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 813,
+    "end": 814,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0015",
+   "start": 782,
+   "end": 852,
+   "exact": " 1st Session     }                                      {        119-1",
+   "sha256": "7666f238f04bfa7546daee1cefda4cbd6a39d8dc97d5c44f4077b94989db484a",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 814,
+    "end": 884,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0016",
+   "start": 852,
+   "end": 853,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 884,
+    "end": 885,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0017",
+   "start": 853,
+   "end": 854,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 885,
+    "end": 886,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0018",
+   "start": 854,
+   "end": 924,
+   "exact": "======================================================================",
+   "sha256": "eedd14c2f1550e60d84c66f332d49e65d0f1470d203592d952052f7030924136",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 886,
+    "end": 956,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0019",
+   "start": 924,
+   "end": 925,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 956,
+    "end": 957,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0020",
+   "start": 925,
+   "end": 926,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 957,
+    "end": 958,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0021",
+   "start": 926,
+   "end": 927,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 958,
+    "end": 959,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0022",
+   "start": 927,
+   "end": 928,
+   "exact": " ",
+   "sha256": "36a9e7f1c95b82ffb99743e0c5c4ce95d83c9a430aac59f84ef3cbfab6145068",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 959,
+    "end": 960,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0023",
+   "start": 928,
+   "end": 929,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 960,
+    "end": 961,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0024",
+   "start": 929,
+   "end": 999,
+   "exact": " PROVIDING FOR CONSIDERATION OF THE BILL (H.R. 471) TO EXPEDITE UNDER ",
+   "sha256": "edad7bb6e7e8233e25c416c917f786e049123f301a913cd93c3ad49d1a1a4611",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 961,
+    "end": 1031,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0025",
+   "start": 999,
+   "end": 1000,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1031,
+    "end": 1032,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0026",
+   "start": 1000,
+   "end": 1068,
+   "exact": "   THE NATIONAL ENVIRONMENTAL POLICY ACT OF 1969 AND IMPROVE FOREST ",
+   "sha256": "46f15417135906f8c8ffa6f9c40684ab4010cc7e33a490e80406d79482cb3b65",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1032,
+    "end": 1100,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0027",
+   "start": 1068,
+   "end": 1069,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1100,
+    "end": 1101,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0028",
+   "start": 1069,
+   "end": 1140,
+   "exact": "MANAGEMENT ACTIVITIES ON NATIONAL FOREST SYSTEM LANDS, ON PUBLIC LANDS ",
+   "sha256": "ac8296f6f069c30f1c86913a4893edb03b26db99bfe7b8b5cd99a08c45cfbdde",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1101,
+    "end": 1172,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0029",
+   "start": 1140,
+   "end": 1141,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1172,
+    "end": 1173,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0030",
+   "start": 1141,
+   "end": 1212,
+   "exact": "UNDER THE JURISDICTION OF THE BUREAU OF LAND MANAGEMENT, AND ON TRIBAL ",
+   "sha256": "3ee096d4a14f2a21dae730b6f894ba8b5a70195354130f887903a33e497b8964",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1173,
+    "end": 1244,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0031",
+   "start": 1212,
+   "end": 1213,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1244,
+    "end": 1245,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0032",
+   "start": 1213,
+   "end": 1285,
+   "exact": "LANDS TO RETURN RESILIENCE TO OVERGROWN, FIRE-PRONE FORESTED LANDS, AND ",
+   "sha256": "483805fc32d81c0e7e9698e5e9954400320eddea99605d8be2f7c5cf7fd133e4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1245,
+    "end": 1317,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0033",
+   "start": 1285,
+   "end": 1286,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1317,
+    "end": 1318,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0034",
+   "start": 1286,
+   "end": 1357,
+   "exact": "FOR OTHER PURPOSES, AND PROVIDING FOR CONSIDERATION OF THE BILL (S. 5) ",
+   "sha256": "be556698eb8556423f54c4961de66171a0f8f356bd76fb078c6f749bf60d1156",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1318,
+    "end": 1389,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0035",
+   "start": 1357,
+   "end": 1358,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1389,
+    "end": 1390,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0036",
+   "start": 1358,
+   "end": 1427,
+   "exact": "  TO REQUIRE THE SECRETARY OF HOMELAND SECURITY TO TAKE INTO CUSTODY ",
+   "sha256": "6decfb94cc2b5da4e04892ba6a6351cabbc71b71fef575dee3cc7825853f2f43",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1390,
+    "end": 1459,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0037",
+   "start": 1427,
+   "end": 1428,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1459,
+    "end": 1460,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0038",
+   "start": 1428,
+   "end": 1499,
+   "exact": " ALIENS WHO HAVE BEEN CHARGED IN THE UNITED STATES WITH THEFT, AND FOR ",
+   "sha256": "2dd6b70254da946b175644633b63f2896bd0057d48c62c98568ef36d47aa508e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1460,
+    "end": 1531,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0039",
+   "start": 1499,
+   "end": 1500,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1531,
+    "end": 1532,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0040",
+   "start": 1500,
+   "end": 1543,
+   "exact": "                             OTHER PURPOSES",
+   "sha256": "9ae8f8e50c3db9757bfe5835eb4927df6fe1dbc798d26509bb838e37561eb4a6",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1532,
+    "end": 1575,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0041",
+   "start": 1543,
+   "end": 1544,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1575,
+    "end": 1576,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0042",
+   "start": 1544,
+   "end": 1545,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1576,
+    "end": 1577,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0043",
+   "start": 1545,
+   "end": 1584,
+   "exact": "                                _______",
+   "sha256": "cbf6cdffce95040b8ffc4c63afdfa91e470c3bfb24035ea8dc3c6c687eedc4eb",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1577,
+    "end": 1616,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0044",
+   "start": 1584,
+   "end": 1585,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1616,
+    "end": 1617,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0045",
+   "start": 1585,
+   "end": 1617,
+   "exact": "                                ",
+   "sha256": "85e7eac2862f1cbd85bc18769c75172c3fdcd899ab468b9e973d59ec620d9991",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1617,
+    "end": 1649,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0046",
+   "start": 1617,
+   "end": 1618,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1649,
+    "end": 1650,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0047",
+   "start": 1618,
+   "end": 1619,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1650,
+    "end": 1651,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0048",
+   "start": 1619,
+   "end": 1689,
+   "exact": "  January 21, 2025.--Referred to the House Calendar and ordered to be ",
+   "sha256": "b3dd4373038ff9ecfc1358c1f5c8712b184521b7be3a31ea4d759191a6922a9e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1651,
+    "end": 1721,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0049",
+   "start": 1689,
+   "end": 1690,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1721,
+    "end": 1722,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0050",
+   "start": 1690,
+   "end": 1729,
+   "exact": "                                printed",
+   "sha256": "f4678062fb45210fe68adbcca6ca782c19393543fdcc211496ff3f8e164ba0aa",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1722,
+    "end": 1761,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0051",
+   "start": 1729,
+   "end": 1730,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1761,
+    "end": 1762,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0052",
+   "start": 1730,
+   "end": 1731,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1762,
+    "end": 1763,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0053",
+   "start": 1731,
+   "end": 1770,
+   "exact": "                                _______",
+   "sha256": "cbf6cdffce95040b8ffc4c63afdfa91e470c3bfb24035ea8dc3c6c687eedc4eb",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1763,
+    "end": 1802,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0054",
+   "start": 1770,
+   "end": 1771,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1802,
+    "end": 1803,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0055",
+   "start": 1771,
+   "end": 1803,
+   "exact": "                                ",
+   "sha256": "85e7eac2862f1cbd85bc18769c75172c3fdcd899ab468b9e973d59ec620d9991",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1803,
+    "end": 1835,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0056",
+   "start": 1803,
+   "end": 1804,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1835,
+    "end": 1836,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0057",
+   "start": 1804,
+   "end": 1805,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1836,
+    "end": 1837,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0058",
+   "start": 1805,
+   "end": 1870,
+   "exact": "       Mr. Austin Scott of Georgia, from the Committee on Rules, ",
+   "sha256": "62577312130a28891201e02ee767183f212baeedcb92b9f3c2f7f02fcd7aae94",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1837,
+    "end": 1902,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0059",
+   "start": 1870,
+   "end": 1871,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1902,
+    "end": 1903,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0060",
+   "start": 1871,
+   "end": 1918,
+   "exact": "                        submitted the following",
+   "sha256": "e4c28a56131bb20cec916bbe283825fa202e40f5b34da1d63972b1cf487e5e0e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1903,
+    "end": 1950,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0061",
+   "start": 1918,
+   "end": 1919,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1950,
+    "end": 1951,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0062",
+   "start": 1919,
+   "end": 1920,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1951,
+    "end": 1952,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0063",
+   "start": 1920,
+   "end": 1961,
+   "exact": "                              R E P O R T",
+   "sha256": "16eea078b0d99c545b81f6a2bc36c115e593d2b6c4408d39b76e5ebc5b1f8a50",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1952,
+    "end": 1993,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0064",
+   "start": 1961,
+   "end": 1962,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1993,
+    "end": 1994,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0065",
+   "start": 1962,
+   "end": 1963,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1994,
+    "end": 1995,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0066",
+   "start": 1963,
+   "end": 2011,
+   "exact": "                       [To accompany H. Res. 53]",
+   "sha256": "5887ed1be7d226188eff19946990b1fbddafbf8bedce3560bbbd2ed33c5787b4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1995,
+    "end": 2043,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0067",
+   "start": 2011,
+   "end": 2012,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2043,
+    "end": 2044,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0068",
+   "start": 2012,
+   "end": 2013,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2044,
+    "end": 2045,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0069",
+   "start": 2013,
+   "end": 2072,
+   "exact": "    The Committee on Rules, having had under consideration ",
+   "sha256": "1518ad127344e4393e3990db2d3f9afc20e621f041cea3ea04dad98949ec1858",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2045,
+    "end": 2104,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0070",
+   "start": 2072,
+   "end": 2073,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2104,
+    "end": 2105,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0071",
+   "start": 2073,
+   "end": 2133,
+   "exact": "House Resolution 53, by a record vote of 9 to 3, report the ",
+   "sha256": "faae46655c06363b01b0f5c6b071279b50f470fac3cb8ca2ff8bfbd6b32077a4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2105,
+    "end": 2165,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0072",
+   "start": 2133,
+   "end": 2134,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2165,
+    "end": 2166,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0073",
+   "start": 2134,
+   "end": 2196,
+   "exact": "same to the House with the recommendation that the resolution ",
+   "sha256": "77e010e13617e480f9f140cf30658eb8a346271f6f64a8adb67a46cf4e0dbca2",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2166,
+    "end": 2228,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0074",
+   "start": 2196,
+   "end": 2197,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2228,
+    "end": 2229,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0075",
+   "start": 2197,
+   "end": 2208,
+   "exact": "be adopted.",
+   "sha256": "e5b75f045058997da802794d4e38ad04387058a4ddb8b9208a30d96a0badf8d3",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2229,
+    "end": 2240,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0076",
+   "start": 2208,
+   "end": 2209,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2240,
+    "end": 2241,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0077",
+   "start": 2209,
+   "end": 2210,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2241,
+    "end": 2242,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0078",
+   "start": 2210,
+   "end": 2265,
+   "exact": "                SUMMARY OF PROVISIONS OF THE RESOLUTION",
+   "sha256": "47922fa941f9eed91a7c10804f58cf1e4b8374f83bdbfa618ea3b26bb1359ac0",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2242,
+    "end": 2297,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0079",
+   "start": 2265,
+   "end": 2266,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2297,
+    "end": 2298,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0080",
+   "start": 2266,
+   "end": 2267,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2298,
+    "end": 2299,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0081",
+   "start": 2267,
+   "end": 2330,
+   "exact": "    The resolution provides for consideration of H.R. 471, the ",
+   "sha256": "2f148e9e0375a393805b03b66febf93f25236fb0cb14ecb29a69ef0c8b01c977",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2299,
+    "end": 2362,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0082",
+   "start": 2330,
+   "end": 2331,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2362,
+    "end": 2363,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0083",
+   "start": 2331,
+   "end": 2392,
+   "exact": "Fix Our Forests Act, under a structured rule. The resolution ",
+   "sha256": "0f2507b877a90e2691d4bc5a6dcfedb8e734b8e38180740663ba03cd4a09a4a1",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2363,
+    "end": 2424,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0084",
+   "start": 2392,
+   "end": 2393,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2424,
+    "end": 2425,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0085",
+   "start": 2393,
+   "end": 2455,
+   "exact": "waives all points of order against consideration of the bill. ",
+   "sha256": "c2bdd34d9e678d9d28d1bc7f8d5d264e8ad773392744187a208d25c52971ae10",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2425,
+    "end": 2487,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0086",
+   "start": 2455,
+   "end": 2456,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2487,
+    "end": 2488,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0087",
+   "start": 2456,
+   "end": 2515,
+   "exact": "The resolution provides one hour of general debate equally ",
+   "sha256": "5f19d5cef7057bcf081f331545ec0f7e32bbef3474e850cc6fd35d37a6a4f198",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2488,
+    "end": 2547,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0088",
+   "start": 2515,
+   "end": 2516,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2547,
+    "end": 2548,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0089",
+   "start": 2516,
+   "end": 2580,
+   "exact": "divided and controlled by the chair and ranking minority member ",
+   "sha256": "ccbf8d3a4c0129bdf7543a3b563d4369cd3e8c2cf92975305da6424209630c68",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2548,
+    "end": 2612,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0090",
+   "start": 2580,
+   "end": 2581,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2612,
+    "end": 2613,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0091",
+   "start": 2581,
+   "end": 2639,
+   "exact": "of the Committee on Natural Resources or their respective ",
+   "sha256": "2899d11a46874e30d4f9ab4ddb412ff309e690a196c1e719de9ecba46769d150",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2613,
+    "end": 2671,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0092",
+   "start": 2639,
+   "end": 2640,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2671,
+    "end": 2672,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0093",
+   "start": 2640,
+   "end": 2698,
+   "exact": "designees. The resolution provides that the bill shall be ",
+   "sha256": "e762cea9d0c1e4dbee03110cc5e3c9cd8f63d2e5cfe5d4b80b109f1a3d318ad8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2672,
+    "end": 2730,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0094",
+   "start": 2698,
+   "end": 2699,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2730,
+    "end": 2731,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0095",
+   "start": 2699,
+   "end": 2761,
+   "exact": "considered as read. The resolution waives all points of order ",
+   "sha256": "3a9128742f5ee1aacb01eeddc29b8da4224f09cfc141bc4779ee1fb89903998e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2731,
+    "end": 2793,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0096",
+   "start": 2761,
+   "end": 2762,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2793,
+    "end": 2794,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0097",
+   "start": 2762,
+   "end": 2824,
+   "exact": "against provisions in the bill. The resolution makes in order ",
+   "sha256": "907f6040a31a0573bb83d9bbf2ff349f7c76dd27f85f6be1683341d6f401460d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2794,
+    "end": 2856,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0098",
+   "start": 2824,
+   "end": 2825,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2856,
+    "end": 2857,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0099",
+   "start": 2825,
+   "end": 2889,
+   "exact": "only those amendments printed in the report. Each amendment may ",
+   "sha256": "a405f0b7ca5f12ff5c8d6d9bf532c35c5bf174cc588516ed20ad5e3d7e3256bc",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2857,
+    "end": 2921,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0100",
+   "start": 2889,
+   "end": 2890,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2921,
+    "end": 2922,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0101",
+   "start": 2890,
+   "end": 2949,
+   "exact": "be offered only in the order printed in the report, may be ",
+   "sha256": "11534a1692741a7f88391bb429d2737c457e3f3456cb08943ca936a224379a6e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2922,
+    "end": 2981,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0102",
+   "start": 2949,
+   "end": 2950,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2981,
+    "end": 2982,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0103",
+   "start": 2950,
+   "end": 3010,
+   "exact": "offered only by a Member designated in the report, shall be ",
+   "sha256": "569ef0aa514fe9a7091297fc194d419d40e2f6a768168573f4642fe517943cc3",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2982,
+    "end": 3042,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0104",
+   "start": 3010,
+   "end": 3011,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3042,
+    "end": 3043,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0105",
+   "start": 3011,
+   "end": 3073,
+   "exact": "considered as read, shall be debatable for the time specified ",
+   "sha256": "f2694403903c67e80313788ea9d7cc1eeac508d2605a5131ec21c5640cc870df",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3043,
+    "end": 3105,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0106",
+   "start": 3073,
+   "end": 3074,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3105,
+    "end": 3106,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0107",
+   "start": 3074,
+   "end": 3136,
+   "exact": "in the report equally divided and controlled by the proponent ",
+   "sha256": "8bd1ab013a206e8910d862578f5347a84658ebfc3f0edb5c1089ac677ac8ef6c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3106,
+    "end": 3168,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0108",
+   "start": 3136,
+   "end": 3137,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3168,
+    "end": 3169,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0109",
+   "start": 3137,
+   "end": 3199,
+   "exact": "and an opponent, shall not be subject to amendment, and shall ",
+   "sha256": "383a36448a7da6f4d4f3e6a8dd9b3ed417e8b2aa7c7c6bdccc0c38dddc41600d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3169,
+    "end": 3231,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0110",
+   "start": 3199,
+   "end": 3200,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3231,
+    "end": 3232,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0111",
+   "start": 3200,
+   "end": 3261,
+   "exact": "not be subject to a demand for division of the question. All ",
+   "sha256": "198d4c5f6a654f10b53f4a59e52fab53e390ed7cc5d2fa4a19808f2e64ae43cb",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3232,
+    "end": 3293,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0112",
+   "start": 3261,
+   "end": 3262,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3293,
+    "end": 3294,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0113",
+   "start": 3262,
+   "end": 3323,
+   "exact": "points of order against the amendments printed in the report ",
+   "sha256": "cbebd2effad5f813e5ee80d066af98b336bedd112b52ecf68344359bba08ba2e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3294,
+    "end": 3355,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0114",
+   "start": 3323,
+   "end": 3324,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3355,
+    "end": 3356,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0115",
+   "start": 3324,
+   "end": 3388,
+   "exact": "are waived. The resolution provides for one motion to recommit. ",
+   "sha256": "c03bb64b6461ea3eb27e37cf0b83c7ae169c9ab702fd20fc8c76d917751128f7",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3356,
+    "end": 3420,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0116",
+   "start": 3388,
+   "end": 3389,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3420,
+    "end": 3421,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0117",
+   "start": 3389,
+   "end": 3452,
+   "exact": "The resolution further provides for consideration of S. 5, the ",
+   "sha256": "6c92154f5d469625b60352cb0e432d997cc9d1b607238fa983f5d3b167841fc1",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3421,
+    "end": 3484,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0118",
+   "start": 3452,
+   "end": 3453,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3484,
+    "end": 3485,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0119",
+   "start": 3453,
+   "end": 3517,
+   "exact": "Laken Riley Act, under a closed rule. The resolution waives all ",
+   "sha256": "4e6e6427f18287cdee65a1ea26290ba54cd6b3040fffac94de07793ed77c1c60",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3485,
+    "end": 3549,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0120",
+   "start": 3517,
+   "end": 3518,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3549,
+    "end": 3550,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0121",
+   "start": 3518,
+   "end": 3573,
+   "exact": "points of order against consideration of the bill. The ",
+   "sha256": "5d6a14e973bfd9604c6d84326376018c5361754b7f38e3bfae093af29cfca3b0",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3550,
+    "end": 3605,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0122",
+   "start": 3573,
+   "end": 3574,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3605,
+    "end": 3606,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0123",
+   "start": 3574,
+   "end": 3637,
+   "exact": "resolution provides that the bill shall be considered as read. ",
+   "sha256": "df8952450ad402b249ef534748a9a8a28adc3ccb5662e57211924611a89b104c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3606,
+    "end": 3669,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0124",
+   "start": 3637,
+   "end": 3638,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3669,
+    "end": 3670,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0125",
+   "start": 3638,
+   "end": 3702,
+   "exact": "The resolution waives all points of order against provisions in ",
+   "sha256": "b52e73ef8a8e01955254464f3fe2f05d544668fd11ee5fca2caf3d77a488db4f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3670,
+    "end": 3734,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0126",
+   "start": 3702,
+   "end": 3703,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3734,
+    "end": 3735,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0127",
+   "start": 3703,
+   "end": 3764,
+   "exact": "the bill. The resolution provides one hour of general debate ",
+   "sha256": "3a5549a947cfc8295b67875fd25a63f81ee3461a0aa397a3baa64a3e119f6f09",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3735,
+    "end": 3796,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0128",
+   "start": 3764,
+   "end": 3765,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3796,
+    "end": 3797,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0129",
+   "start": 3765,
+   "end": 3821,
+   "exact": "equally divided and controlled by the chair and ranking ",
+   "sha256": "268fa4456f2493319860fc60017b8c6784e20b82c147c946f4ede7dd24760e60",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3797,
+    "end": 3853,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0130",
+   "start": 3821,
+   "end": 3822,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3853,
+    "end": 3854,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0131",
+   "start": 3822,
+   "end": 3881,
+   "exact": "minority member of the Committee on the Judiciary or their ",
+   "sha256": "c595be53ab0d2de708cdaca124809b8cc2eb0d6d678fcac51875ff0bdcb3a479",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3854,
+    "end": 3913,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0132",
+   "start": 3881,
+   "end": 3882,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3913,
+    "end": 3914,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0133",
+   "start": 3882,
+   "end": 3946,
+   "exact": "respective designees. The resolution provides for one motion to ",
+   "sha256": "f811db92849cb9a35ab308ee04a2944e12d24f8c283e3b0a8a980607f4a1cc80",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3914,
+    "end": 3978,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0134",
+   "start": 3946,
+   "end": 3947,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3978,
+    "end": 3979,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0135",
+   "start": 3947,
+   "end": 3954,
+   "exact": "commit.",
+   "sha256": "5f810c0f3678933119e3323ea779c84dcff07d645f6122f65aa0316089675c65",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3979,
+    "end": 3986,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0136",
+   "start": 3954,
+   "end": 3955,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3986,
+    "end": 3987,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0137",
+   "start": 3955,
+   "end": 3956,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3987,
+    "end": 3988,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0138",
+   "start": 3956,
+   "end": 4003,
+   "exact": "                         EXPLANATION OF WAIVERS",
+   "sha256": "d822df19e748dd099b368d2afd6046205d6b59e663ca23304ce76d860269c052",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3988,
+    "end": 4035,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0139",
+   "start": 4003,
+   "end": 4004,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4035,
+    "end": 4036,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0140",
+   "start": 4004,
+   "end": 4005,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4036,
+    "end": 4037,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0141",
+   "start": 4005,
+   "end": 4068,
+   "exact": "    Although the resolution waives all points of order against ",
+   "sha256": "f9e51685bff5a997a74492b553ecba9d71253e213312569d88bd507d8c1fcb24",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4037,
+    "end": 4100,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0142",
+   "start": 4068,
+   "end": 4069,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4100,
+    "end": 4101,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0143",
+   "start": 4069,
+   "end": 4130,
+   "exact": "consideration of H.R. 471, the Committee is not aware of any ",
+   "sha256": "6a682faa81eeed9bdf641905e1392ae74f4ec5ea6c05aa1459006aae73f8e739",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4101,
+    "end": 4162,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0144",
+   "start": 4130,
+   "end": 4131,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4162,
+    "end": 4163,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0145",
+   "start": 4131,
+   "end": 4185,
+   "exact": "points of order. The waiver is prophylactic in nature.",
+   "sha256": "205743ae189d0a3704eb6196efe9caec96717e3d3f3d9d31512eabb9199fac63",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4163,
+    "end": 4217,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0146",
+   "start": 4185,
+   "end": 4186,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4217,
+    "end": 4218,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0147",
+   "start": 4186,
+   "end": 4249,
+   "exact": "    Although the resolution waives all points of order against ",
+   "sha256": "f9e51685bff5a997a74492b553ecba9d71253e213312569d88bd507d8c1fcb24",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4218,
+    "end": 4281,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0148",
+   "start": 4249,
+   "end": 4250,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4281,
+    "end": 4282,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0149",
+   "start": 4250,
+   "end": 4314,
+   "exact": "provisions in H.R. 471 the Committee is not aware of any points ",
+   "sha256": "231fa6b75cfd3bf73c6cfdd277227a676390c959ad4fbdc48cbfff57ac3da371",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4282,
+    "end": 4346,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0150",
+   "start": 4314,
+   "end": 4315,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4346,
+    "end": 4347,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0151",
+   "start": 4315,
+   "end": 4362,
+   "exact": "of order. The waiver is prophylactic in nature.",
+   "sha256": "7841b24eeb80a5941d89595eb98ad0a10d7444a907c7c051e1afe377dbd2b6b8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4347,
+    "end": 4394,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0152",
+   "start": 4362,
+   "end": 4363,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4394,
+    "end": 4395,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0153",
+   "start": 4363,
+   "end": 4426,
+   "exact": "    Although the resolution waives all points of order against ",
+   "sha256": "f9e51685bff5a997a74492b553ecba9d71253e213312569d88bd507d8c1fcb24",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4395,
+    "end": 4458,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0154",
+   "start": 4426,
+   "end": 4427,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4458,
+    "end": 4459,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0155",
+   "start": 4427,
+   "end": 4486,
+   "exact": "the amendments printed in the report, the Committee is not ",
+   "sha256": "d8bdb40992952293746e99d1997a1e945e1a41c92364376bf274c8acd139c020",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4459,
+    "end": 4518,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0156",
+   "start": 4486,
+   "end": 4487,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4518,
+    "end": 4519,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0157",
+   "start": 4487,
+   "end": 4547,
+   "exact": "aware of any points of order. The waiver is prophylactic in ",
+   "sha256": "b4cc7c115d71e1aa57f01e491cffe438238080ef92c389ea7c3bf7b3ce7943ad",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4519,
+    "end": 4579,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0158",
+   "start": 4547,
+   "end": 4548,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4579,
+    "end": 4580,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0159",
+   "start": 4548,
+   "end": 4555,
+   "exact": "nature.",
+   "sha256": "86e727b160c3b08ec92ab3d38f8ccbe6599f0d1ddea6e930341fa7e5633b76e1",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4580,
+    "end": 4587,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0160",
+   "start": 4555,
+   "end": 4556,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4587,
+    "end": 4588,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0161",
+   "start": 4556,
+   "end": 4619,
+   "exact": "    The waiver of all points of order against consideration of ",
+   "sha256": "0bef2e4c66d2dfd9045f5b05eab4caee2f94c86a8a6ca76e9979aa1eb8d3d1e6",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4588,
+    "end": 4651,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0162",
+   "start": 4619,
+   "end": 4620,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4651,
+    "end": 4652,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0163",
+   "start": 4620,
+   "end": 4634,
+   "exact": "S. 5 includes:",
+   "sha256": "5c539b58c36166d927c45bed03ef4c72ff3ad6f3f0e6467e1b5ff2fe2aa767b1",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4652,
+    "end": 4666,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0164",
+   "start": 4634,
+   "end": 4635,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4666,
+    "end": 4667,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0165",
+   "start": 4635,
+   "end": 4699,
+   "exact": "    --Clause 11 of rule XXI, which prohibits consideration of a ",
+   "sha256": "960d59c6bf4db29ea3d90ef6f6b2268938051db130509f4ef355140622cd1f09",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4667,
+    "end": 4731,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0166",
+   "start": 4699,
+   "end": 4700,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4731,
+    "end": 4732,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0167",
+   "start": 4700,
+   "end": 4758,
+   "exact": "bill or joint resolution which has not been reported by a ",
+   "sha256": "148d120b86d83728f3485f4ad6429e062ba9bd6431b8c048fab5f8b23e43de77",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4732,
+    "end": 4790,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0168",
+   "start": 4758,
+   "end": 4759,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4790,
+    "end": 4791,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0169",
+   "start": 4759,
+   "end": 4819,
+   "exact": "committee until such measure has been available to Members, ",
+   "sha256": "d5a3784affdfc144dd8e39a9d13fd851f47163c4228921707fa221f982b7b82d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4791,
+    "end": 4851,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0170",
+   "start": 4819,
+   "end": 4820,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4851,
+    "end": 4852,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0171",
+   "start": 4820,
+   "end": 4874,
+   "exact": "Delegates, and the Resident Commissioner for 72 hours.",
+   "sha256": "ceb9118a1ed5bc8ec85925ce89888f735aa66eb06e06b159fcd234fc5a730edc",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4852,
+    "end": 4906,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0172",
+   "start": 4874,
+   "end": 4875,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4906,
+    "end": 4907,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0173",
+   "start": 4875,
+   "end": 4938,
+   "exact": "    Although the resolution waives all points of order against ",
+   "sha256": "f9e51685bff5a997a74492b553ecba9d71253e213312569d88bd507d8c1fcb24",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4907,
+    "end": 4970,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0174",
+   "start": 4938,
+   "end": 4939,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4970,
+    "end": 4971,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0175",
+   "start": 4939,
+   "end": 5003,
+   "exact": "provisions in S. 5, the Committee is not aware of any points of ",
+   "sha256": "d50c7229b4c53997c6c38998a819c5dcb687c12b24259a94e8e6d31e1dc8398a",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4971,
+    "end": 5035,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0176",
+   "start": 5003,
+   "end": 5004,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5035,
+    "end": 5036,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0177",
+   "start": 5004,
+   "end": 5048,
+   "exact": "order. The waiver is prophylactic in nature.",
+   "sha256": "09d1a66cd7552b4f0f3c060651d7f64b13eba4dd2d7efad79077b4adbc7387f8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5036,
+    "end": 5080,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0178",
+   "start": 5048,
+   "end": 5049,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5080,
+    "end": 5081,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0179",
+   "start": 5049,
+   "end": 5050,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5081,
+    "end": 5082,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0180",
+   "start": 5050,
+   "end": 5093,
+   "exact": "                            COMMITTEE VOTES",
+   "sha256": "ae76fb8829935902062f85b8a1cede2e9d16a4ed922723abb8eef805f0aa71dc",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5082,
+    "end": 5125,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0181",
+   "start": 5093,
+   "end": 5094,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5125,
+    "end": 5126,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0182",
+   "start": 5094,
+   "end": 5095,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5126,
+    "end": 5127,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0183",
+   "start": 5095,
+   "end": 5157,
+   "exact": "    The results of each record vote on an amendment or motion ",
+   "sha256": "1f6ce99ab916ff87bab3386ab71259a3be559b757433fb7700a1ec986b7515df",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5127,
+    "end": 5189,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0184",
+   "start": 5157,
+   "end": 5158,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5189,
+    "end": 5190,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0185",
+   "start": 5158,
+   "end": 5217,
+   "exact": "to report, together with the names of those voting for and ",
+   "sha256": "ea342e8ca353488cb76872d487dd4c66a41e759f0e3185dd4d6e5ec26205f5e1",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5190,
+    "end": 5249,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0186",
+   "start": 5217,
+   "end": 5218,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5249,
+    "end": 5250,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0187",
+   "start": 5218,
+   "end": 5245,
+   "exact": "against, are printed below:",
+   "sha256": "4b875a85f801cdc62acd8f2cad199d688db72818d678482bbb627c268e01f14e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5250,
+    "end": 5277,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0188",
+   "start": 5245,
+   "end": 5246,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5277,
+    "end": 5278,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0189",
+   "start": 5246,
+   "end": 5247,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5278,
+    "end": 5279,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0190",
+   "start": 5247,
+   "end": 5280,
+   "exact": "Rules Committee record vote No. 4",
+   "sha256": "be817a7c26241ba564ec0fc53809162ca01d2eb0a2500c6de2375136b7fac1fd",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5279,
+    "end": 5312,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0191",
+   "start": 5280,
+   "end": 5281,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5312,
+    "end": 5313,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0192",
+   "start": 5281,
+   "end": 5282,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5313,
+    "end": 5314,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0193",
+   "start": 5282,
+   "end": 5344,
+   "exact": "    Motion by Mr. McGovern to amend the rule to make in order ",
+   "sha256": "6e0ae3d1d51b8d5fdf6724a56dab433b659096d6c7743c90ff5113fd3a660862",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5314,
+    "end": 5376,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0194",
+   "start": 5344,
+   "end": 5345,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5376,
+    "end": 5377,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0195",
+   "start": 5345,
+   "end": 5405,
+   "exact": "amendment #2 to H.R. 471, offered by Representative Neguse, ",
+   "sha256": "d1ab0c178d316a9e8edec76f32b2a010e1587ff7f786fd12cee8fdb2eb0438fa",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5377,
+    "end": 5437,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0196",
+   "start": 5405,
+   "end": 5406,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5437,
+    "end": 5438,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0197",
+   "start": 5406,
+   "end": 5462,
+   "exact": "which inserts the updated text of the Tim Hart Wildland ",
+   "sha256": "f85f163e0cc972bf279dc46b01c03f73f932ba95a3e8d35f37db89bec008fcda",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5438,
+    "end": 5494,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0198",
+   "start": 5462,
+   "end": 5463,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5494,
+    "end": 5495,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0199",
+   "start": 5463,
+   "end": 5525,
+   "exact": "Firefighter Classification and Pay Parity Act, to improve pay ",
+   "sha256": "739d4e550c7fcef11dcd36c50ed1c08ea73eb7bccb893b8a486866c7429e311a",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5495,
+    "end": 5557,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0200",
+   "start": 5525,
+   "end": 5526,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5557,
+    "end": 5558,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0201",
+   "start": 5526,
+   "end": 5587,
+   "exact": "and benefits for federal wildland firefighters. Defeated: 3-9",
+   "sha256": "6caf65b8f08c8eaca25b8bae5625aefd2363b2671d1ed9a58ef3d37a1cc68c96",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5558,
+    "end": 5619,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0202",
+   "start": 5587,
+   "end": 5588,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5619,
+    "end": 5620,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0203",
+   "start": 5588,
+   "end": 5589,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5620,
+    "end": 5621,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0204",
+   "start": 5589,
+   "end": 5701,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5621,
+    "end": 5733,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0205",
+   "start": 5701,
+   "end": 5702,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5733,
+    "end": 5734,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0206",
+   "start": 5702,
+   "end": 5810,
+   "exact": "                Majority Members                      Vote               Minority Members               Vote",
+   "sha256": "69b8b44ed8cc14bf4c1ccbdbecdf34f0da16de904fe599037ab8d6c7f5666524",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5734,
+    "end": 5842,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0207",
+   "start": 5810,
+   "end": 5811,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5842,
+    "end": 5843,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0208",
+   "start": 5811,
+   "end": 5923,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5843,
+    "end": 5955,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0209",
+   "start": 5923,
+   "end": 5924,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5955,
+    "end": 5956,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0210",
+   "start": 5924,
+   "end": 6035,
+   "exact": "Mrs. Fischbach..................................          Nay   Mr. McGovern......................          Yea",
+   "sha256": "3cd28284a9406ba74915e753ecf6d59e79ae7111b0634264e9601e2ddbec0a2c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5956,
+    "end": 6067,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0211",
+   "start": 6035,
+   "end": 6036,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6067,
+    "end": 6068,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0212",
+   "start": 6036,
+   "end": 6147,
+   "exact": "Mr. Norman......................................          Nay   Ms. Scanlon.......................          Yea",
+   "sha256": "527d66857a36701651ac355b0fc86e7110b0c9263d008d354873d6236d3dbd4e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6068,
+    "end": 6179,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0213",
+   "start": 6147,
+   "end": 6148,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6179,
+    "end": 6180,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0214",
+   "start": 6148,
+   "end": 6260,
+   "exact": "Mr. Roy.........................................          Nay   Mr. Neguse........................  ............",
+   "sha256": "0ad598b3fd52e4763bf29fe4ce7b0ddf4844d92c2699943e4184584b79779418",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6180,
+    "end": 6292,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0215",
+   "start": 6260,
+   "end": 6261,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6292,
+    "end": 6293,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0216",
+   "start": 6261,
+   "end": 6372,
+   "exact": "Mrs. Houchin....................................          Nay   Ms. Leger Fernandez...............          Yea",
+   "sha256": "fb1d3404e85a5a269a436d9c20d174ca5d2feed7c5c53229ab604c467d03d7c5",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6293,
+    "end": 6404,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0217",
+   "start": 6372,
+   "end": 6373,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6404,
+    "end": 6405,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0218",
+   "start": 6373,
+   "end": 6434,
+   "exact": "Mr. Langworthy..................................          Nay",
+   "sha256": "a8de40f8aa87070920a098f3fa529ede7da913757b633aa566806aa73b297af3",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6405,
+    "end": 6466,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0219",
+   "start": 6434,
+   "end": 6435,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6466,
+    "end": 6467,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0220",
+   "start": 6435,
+   "end": 6496,
+   "exact": "Mr. Austin Scott................................          Nay",
+   "sha256": "29f7cca0f81934f073f5432c1766a398ca678f68911c57e8caa3ce6f4eeec1ab",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6467,
+    "end": 6528,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0221",
+   "start": 6496,
+   "end": 6497,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6528,
+    "end": 6529,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0222",
+   "start": 6497,
+   "end": 6558,
+   "exact": "Mr. Griffith....................................          Nay",
+   "sha256": "340403411d3bb7bd7b9d5527522697fec3aa46c4eeb4460c1a0bbc07b6d0ddb4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6529,
+    "end": 6590,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0223",
+   "start": 6558,
+   "end": 6559,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6590,
+    "end": 6591,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0224",
+   "start": 6559,
+   "end": 6620,
+   "exact": "Mr. Jack........................................          Nay",
+   "sha256": "36de1d42822720742dff9b98fb9d3bdb27c47fb64959716eb3b5f5382a893eb4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6591,
+    "end": 6652,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0225",
+   "start": 6620,
+   "end": 6621,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6652,
+    "end": 6653,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0226",
+   "start": 6621,
+   "end": 6682,
+   "exact": "Ms. Foxx, Chairwoman............................          Nay",
+   "sha256": "80168105b10436fa26606670e0565c7607bbceca5ed1b5b06c96ae524d6d10ed",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6653,
+    "end": 6714,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0227",
+   "start": 6682,
+   "end": 6683,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6714,
+    "end": 6715,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0228",
+   "start": 6683,
+   "end": 6795,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6715,
+    "end": 6827,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0229",
+   "start": 6795,
+   "end": 6796,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6827,
+    "end": 6828,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0230",
+   "start": 6796,
+   "end": 6797,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6828,
+    "end": 6829,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0231",
+   "start": 6797,
+   "end": 6830,
+   "exact": "Rules Committee record vote No. 5",
+   "sha256": "fc525f046f5de3dfbec6f3f102b5092d07df97816879e2489c0cfd15043639c5",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6829,
+    "end": 6862,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0232",
+   "start": 6830,
+   "end": 6831,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6862,
+    "end": 6863,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0233",
+   "start": 6831,
+   "end": 6832,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6863,
+    "end": 6864,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0234",
+   "start": 6832,
+   "end": 6895,
+   "exact": "    Motion by Ms. Leger Fernandez to amend the rule to make in ",
+   "sha256": "ae791197529124f94834b638753fc89cf66bdee3f75f4f67f805644c66b832de",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6864,
+    "end": 6927,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0235",
+   "start": 6895,
+   "end": 6896,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6927,
+    "end": 6928,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0236",
+   "start": 6896,
+   "end": 6960,
+   "exact": "order amendment #7 to H.R. 471, offered by Representative Leger ",
+   "sha256": "198e679670ba4167d2df476bc8827926ecc72e51d9c8f541d9ee85109ff84684",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6928,
+    "end": 6992,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0237",
+   "start": 6960,
+   "end": 6961,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6992,
+    "end": 6993,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0238",
+   "start": 6961,
+   "end": 7017,
+   "exact": "Fernandez. Amendment #7 would insert authorizations for ",
+   "sha256": "32a601b5b7bb41f1190de8f4a1c6cf0b83bf5b8bd09845bee791ee4977ab53bb",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6993,
+    "end": 7049,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0239",
+   "start": 7017,
+   "end": 7018,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7049,
+    "end": 7050,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0240",
+   "start": 7018,
+   "end": 7081,
+   "exact": "appropriations for activities in various sections of the bill. ",
+   "sha256": "00d2eb12cf0906dd9ad958095114020b3d16b96543a8718121512ac7847b2332",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7050,
+    "end": 7113,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0241",
+   "start": 7081,
+   "end": 7082,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7113,
+    "end": 7114,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0242",
+   "start": 7082,
+   "end": 7095,
+   "exact": "Defeated: 3-9",
+   "sha256": "be3895898eb4c57861cb66bfe1602e00121465feb1fd701601eff0179cbf1346",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7114,
+    "end": 7127,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0243",
+   "start": 7095,
+   "end": 7096,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7127,
+    "end": 7128,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0244",
+   "start": 7096,
+   "end": 7097,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7128,
+    "end": 7129,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0245",
+   "start": 7097,
+   "end": 7209,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7129,
+    "end": 7241,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0246",
+   "start": 7209,
+   "end": 7210,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7241,
+    "end": 7242,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0247",
+   "start": 7210,
+   "end": 7318,
+   "exact": "                Majority Members                      Vote               Minority Members               Vote",
+   "sha256": "69b8b44ed8cc14bf4c1ccbdbecdf34f0da16de904fe599037ab8d6c7f5666524",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7242,
+    "end": 7350,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0248",
+   "start": 7318,
+   "end": 7319,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7350,
+    "end": 7351,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0249",
+   "start": 7319,
+   "end": 7431,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7351,
+    "end": 7463,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0250",
+   "start": 7431,
+   "end": 7432,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7463,
+    "end": 7464,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0251",
+   "start": 7432,
+   "end": 7543,
+   "exact": "Mrs. Fischbach..................................          Nay   Mr. McGovern......................          Yea",
+   "sha256": "3cd28284a9406ba74915e753ecf6d59e79ae7111b0634264e9601e2ddbec0a2c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7464,
+    "end": 7575,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0252",
+   "start": 7543,
+   "end": 7544,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7575,
+    "end": 7576,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0253",
+   "start": 7544,
+   "end": 7655,
+   "exact": "Mr. Norman......................................          Nay   Ms. Scanlon.......................          Yea",
+   "sha256": "527d66857a36701651ac355b0fc86e7110b0c9263d008d354873d6236d3dbd4e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7576,
+    "end": 7687,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0254",
+   "start": 7655,
+   "end": 7656,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7687,
+    "end": 7688,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0255",
+   "start": 7656,
+   "end": 7768,
+   "exact": "Mr. Roy.........................................          Nay   Mr. Neguse........................  ............",
+   "sha256": "0ad598b3fd52e4763bf29fe4ce7b0ddf4844d92c2699943e4184584b79779418",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7688,
+    "end": 7800,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0256",
+   "start": 7768,
+   "end": 7769,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7800,
+    "end": 7801,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0257",
+   "start": 7769,
+   "end": 7880,
+   "exact": "Mrs. Houchin....................................          Nay   Ms. Leger Fernandez...............          Yea",
+   "sha256": "fb1d3404e85a5a269a436d9c20d174ca5d2feed7c5c53229ab604c467d03d7c5",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7801,
+    "end": 7912,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0258",
+   "start": 7880,
+   "end": 7881,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7912,
+    "end": 7913,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0259",
+   "start": 7881,
+   "end": 7942,
+   "exact": "Mr. Langworthy..................................          Nay",
+   "sha256": "a8de40f8aa87070920a098f3fa529ede7da913757b633aa566806aa73b297af3",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7913,
+    "end": 7974,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0260",
+   "start": 7942,
+   "end": 7943,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7974,
+    "end": 7975,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0261",
+   "start": 7943,
+   "end": 8004,
+   "exact": "Mr. Austin Scott................................          Nay",
+   "sha256": "29f7cca0f81934f073f5432c1766a398ca678f68911c57e8caa3ce6f4eeec1ab",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7975,
+    "end": 8036,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0262",
+   "start": 8004,
+   "end": 8005,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8036,
+    "end": 8037,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0263",
+   "start": 8005,
+   "end": 8066,
+   "exact": "Mr. Griffith....................................          Nay",
+   "sha256": "340403411d3bb7bd7b9d5527522697fec3aa46c4eeb4460c1a0bbc07b6d0ddb4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8037,
+    "end": 8098,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0264",
+   "start": 8066,
+   "end": 8067,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8098,
+    "end": 8099,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0265",
+   "start": 8067,
+   "end": 8128,
+   "exact": "Mr. Jack........................................          Nay",
+   "sha256": "36de1d42822720742dff9b98fb9d3bdb27c47fb64959716eb3b5f5382a893eb4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8099,
+    "end": 8160,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0266",
+   "start": 8128,
+   "end": 8129,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8160,
+    "end": 8161,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0267",
+   "start": 8129,
+   "end": 8190,
+   "exact": "Ms. Foxx, Chairwoman............................          Nay",
+   "sha256": "80168105b10436fa26606670e0565c7607bbceca5ed1b5b06c96ae524d6d10ed",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8161,
+    "end": 8222,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0268",
+   "start": 8190,
+   "end": 8191,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8222,
+    "end": 8223,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0269",
+   "start": 8191,
+   "end": 8303,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8223,
+    "end": 8335,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0270",
+   "start": 8303,
+   "end": 8304,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8335,
+    "end": 8336,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0271",
+   "start": 8304,
+   "end": 8305,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8336,
+    "end": 8337,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0272",
+   "start": 8305,
+   "end": 8338,
+   "exact": "Rules Committee record vote No. 6",
+   "sha256": "4b5019e47b1faba14895d0bdf80aa890bffa2958ce9b3bc719fea321eb8a7227",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8337,
+    "end": 8370,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0273",
+   "start": 8338,
+   "end": 8339,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8370,
+    "end": 8371,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0274",
+   "start": 8339,
+   "end": 8340,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8371,
+    "end": 8372,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0275",
+   "start": 8340,
+   "end": 8403,
+   "exact": "    Motion by Ms. Leger Fernandez to amend the rule to make in ",
+   "sha256": "ae791197529124f94834b638753fc89cf66bdee3f75f4f67f805644c66b832de",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8372,
+    "end": 8435,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0276",
+   "start": 8403,
+   "end": 8404,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8435,
+    "end": 8436,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0277",
+   "start": 8404,
+   "end": 8468,
+   "exact": "order amendment #8 to H.R. 471, offered by Representative Leger ",
+   "sha256": "d81ca7029c450c159a19196b6b701b7d041c3147b06f01843d573a3c8f71958c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8436,
+    "end": 8500,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0278",
+   "start": 8468,
+   "end": 8469,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8500,
+    "end": 8501,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0279",
+   "start": 8469,
+   "end": 8523,
+   "exact": "Fernandez. Amendment #8 would provide support for the ",
+   "sha256": "e08ec24e8985169043600f00f3ea6058832f3bda8ab8a2b57ef295c97c4a877a",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8501,
+    "end": 8555,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0280",
+   "start": 8523,
+   "end": 8524,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8555,
+    "end": 8556,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0281",
+   "start": 8524,
+   "end": 8585,
+   "exact": "collection and maintenance of native seeds and production of ",
+   "sha256": "0efbe1c0c4535ff95a22166a56380e3bed24201cc65d73c12f8196b2480dc089",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8556,
+    "end": 8617,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0282",
+   "start": 8585,
+   "end": 8586,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8617,
+    "end": 8618,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0283",
+   "start": 8586,
+   "end": 8615,
+   "exact": "tree seedlings. Defeated: 3-9",
+   "sha256": "a9c28d92ead6a2f435249241ca12f9052558b830ff69a53bb6477843dc24485a",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8618,
+    "end": 8647,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0284",
+   "start": 8615,
+   "end": 8616,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8647,
+    "end": 8648,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0285",
+   "start": 8616,
+   "end": 8617,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8648,
+    "end": 8649,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0286",
+   "start": 8617,
+   "end": 8729,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8649,
+    "end": 8761,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0287",
+   "start": 8729,
+   "end": 8730,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8761,
+    "end": 8762,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0288",
+   "start": 8730,
+   "end": 8838,
+   "exact": "                Majority Members                      Vote               Minority Members               Vote",
+   "sha256": "69b8b44ed8cc14bf4c1ccbdbecdf34f0da16de904fe599037ab8d6c7f5666524",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8762,
+    "end": 8870,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0289",
+   "start": 8838,
+   "end": 8839,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8870,
+    "end": 8871,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0290",
+   "start": 8839,
+   "end": 8951,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8871,
+    "end": 8983,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0291",
+   "start": 8951,
+   "end": 8952,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8983,
+    "end": 8984,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0292",
+   "start": 8952,
+   "end": 9063,
+   "exact": "Mrs. Fischbach..................................          Nay   Mr. McGovern......................          Yea",
+   "sha256": "3cd28284a9406ba74915e753ecf6d59e79ae7111b0634264e9601e2ddbec0a2c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8984,
+    "end": 9095,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0293",
+   "start": 9063,
+   "end": 9064,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9095,
+    "end": 9096,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0294",
+   "start": 9064,
+   "end": 9175,
+   "exact": "Mr. Norman......................................          Nay   Ms. Scanlon.......................          Yea",
+   "sha256": "527d66857a36701651ac355b0fc86e7110b0c9263d008d354873d6236d3dbd4e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9096,
+    "end": 9207,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0295",
+   "start": 9175,
+   "end": 9176,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9207,
+    "end": 9208,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0296",
+   "start": 9176,
+   "end": 9288,
+   "exact": "Mr. Roy.........................................          Nay   Mr. Neguse........................  ............",
+   "sha256": "0ad598b3fd52e4763bf29fe4ce7b0ddf4844d92c2699943e4184584b79779418",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9208,
+    "end": 9320,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0297",
+   "start": 9288,
+   "end": 9289,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9320,
+    "end": 9321,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0298",
+   "start": 9289,
+   "end": 9400,
+   "exact": "Mrs. Houchin....................................          Nay   Ms. Leger Fernandez...............          Yea",
+   "sha256": "fb1d3404e85a5a269a436d9c20d174ca5d2feed7c5c53229ab604c467d03d7c5",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9321,
+    "end": 9432,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0299",
+   "start": 9400,
+   "end": 9401,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9432,
+    "end": 9433,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0300",
+   "start": 9401,
+   "end": 9462,
+   "exact": "Mr. Langworthy..................................          Nay",
+   "sha256": "a8de40f8aa87070920a098f3fa529ede7da913757b633aa566806aa73b297af3",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9433,
+    "end": 9494,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0301",
+   "start": 9462,
+   "end": 9463,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9494,
+    "end": 9495,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0302",
+   "start": 9463,
+   "end": 9524,
+   "exact": "Mr. Austin Scott................................          Nay",
+   "sha256": "29f7cca0f81934f073f5432c1766a398ca678f68911c57e8caa3ce6f4eeec1ab",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9495,
+    "end": 9556,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0303",
+   "start": 9524,
+   "end": 9525,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9556,
+    "end": 9557,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0304",
+   "start": 9525,
+   "end": 9586,
+   "exact": "Mr. Griffith....................................          Nay",
+   "sha256": "340403411d3bb7bd7b9d5527522697fec3aa46c4eeb4460c1a0bbc07b6d0ddb4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9557,
+    "end": 9618,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0305",
+   "start": 9586,
+   "end": 9587,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9618,
+    "end": 9619,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0306",
+   "start": 9587,
+   "end": 9648,
+   "exact": "Mr. Jack........................................          Nay",
+   "sha256": "36de1d42822720742dff9b98fb9d3bdb27c47fb64959716eb3b5f5382a893eb4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9619,
+    "end": 9680,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0307",
+   "start": 9648,
+   "end": 9649,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9680,
+    "end": 9681,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0308",
+   "start": 9649,
+   "end": 9710,
+   "exact": "Ms. Foxx, Chairwoman............................          Nay",
+   "sha256": "80168105b10436fa26606670e0565c7607bbceca5ed1b5b06c96ae524d6d10ed",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9681,
+    "end": 9742,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0309",
+   "start": 9710,
+   "end": 9711,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9742,
+    "end": 9743,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0310",
+   "start": 9711,
+   "end": 9823,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9743,
+    "end": 9855,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0311",
+   "start": 9823,
+   "end": 9824,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9855,
+    "end": 9856,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0312",
+   "start": 9824,
+   "end": 9825,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9856,
+    "end": 9857,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0313",
+   "start": 9825,
+   "end": 9858,
+   "exact": "Rules Committee record vote No. 7",
+   "sha256": "1c8e72df45f29aeb600c669823529592284d233aaf002c3349f97ab93d9d97da",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9857,
+    "end": 9890,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0314",
+   "start": 9858,
+   "end": 9859,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9890,
+    "end": 9891,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0315",
+   "start": 9859,
+   "end": 9860,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9891,
+    "end": 9892,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0316",
+   "start": 9860,
+   "end": 9923,
+   "exact": "    Motion by Mr. Austin Scott to report the rule. Adopted: 9-3",
+   "sha256": "ee7a64e023ff9a0b9864f787f0a48ff73676ad55e4b0f29e4b7e7fef3d96abb9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9892,
+    "end": 9955,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0317",
+   "start": 9923,
+   "end": 9924,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9955,
+    "end": 9956,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0318",
+   "start": 9924,
+   "end": 9925,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9956,
+    "end": 9957,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0319",
+   "start": 9925,
+   "end": 10037,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9957,
+    "end": 10069,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0320",
+   "start": 10037,
+   "end": 10038,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10069,
+    "end": 10070,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0321",
+   "start": 10038,
+   "end": 10146,
+   "exact": "                Majority Members                      Vote               Minority Members               Vote",
+   "sha256": "69b8b44ed8cc14bf4c1ccbdbecdf34f0da16de904fe599037ab8d6c7f5666524",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10070,
+    "end": 10178,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0322",
+   "start": 10146,
+   "end": 10147,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10178,
+    "end": 10179,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0323",
+   "start": 10147,
+   "end": 10259,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10179,
+    "end": 10291,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0324",
+   "start": 10259,
+   "end": 10260,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10291,
+    "end": 10292,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0325",
+   "start": 10260,
+   "end": 10371,
+   "exact": "Mrs. Fischbach..................................          Yea   Mr. McGovern......................          Nay",
+   "sha256": "e1634c21c76d8e6460354b6d5a193c050ec73e63fc8c2ce70194165a90873acf",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10292,
+    "end": 10403,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0326",
+   "start": 10371,
+   "end": 10372,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10403,
+    "end": 10404,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0327",
+   "start": 10372,
+   "end": 10483,
+   "exact": "Mr. Norman......................................          Yea   Ms. Scanlon.......................          Nay",
+   "sha256": "64368953ff0f7e935c1ec16978060540a6b23afd77edd6b3ca3ba600e2d8488c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10404,
+    "end": 10515,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0328",
+   "start": 10483,
+   "end": 10484,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10515,
+    "end": 10516,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0329",
+   "start": 10484,
+   "end": 10596,
+   "exact": "Mr. Roy.........................................          Yea   Mr. Neguse........................  ............",
+   "sha256": "8c55b65e92327f4f7b759e43b5f3902d885951515ff748716ae7b3c825b9d694",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10516,
+    "end": 10628,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0330",
+   "start": 10596,
+   "end": 10597,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10628,
+    "end": 10629,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0331",
+   "start": 10597,
+   "end": 10708,
+   "exact": "Mrs. Houchin....................................          Yea   Ms. Leger Fernandez...............          Nay",
+   "sha256": "d5c36aafe901f013ceb29e0e97a5ed9dab2b24bba9729fa50f2fd190d08a7705",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10629,
+    "end": 10740,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0332",
+   "start": 10708,
+   "end": 10709,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10740,
+    "end": 10741,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0333",
+   "start": 10709,
+   "end": 10770,
+   "exact": "Mr. Langworthy..................................          Yea",
+   "sha256": "7e2fb12f051a4a8c475e5c014c28d7b24cb6955f4e5f534edb7623f5427bf320",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10741,
+    "end": 10802,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0334",
+   "start": 10770,
+   "end": 10771,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10802,
+    "end": 10803,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0335",
+   "start": 10771,
+   "end": 10832,
+   "exact": "Mr. Austin Scott................................          Yea",
+   "sha256": "738862946dca6281d4da442fdbb1c5368ccff48a6dddec2c7f2effd3ab9a865b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10803,
+    "end": 10864,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0336",
+   "start": 10832,
+   "end": 10833,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10864,
+    "end": 10865,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0337",
+   "start": 10833,
+   "end": 10894,
+   "exact": "Mr. Griffith....................................          Yea",
+   "sha256": "cb3b975034f58c59e531c347683e48159e796f159dc61d13ea0a6df071aad5e9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10865,
+    "end": 10926,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0338",
+   "start": 10894,
+   "end": 10895,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10926,
+    "end": 10927,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0339",
+   "start": 10895,
+   "end": 10956,
+   "exact": "Mr. Jack........................................          Yea",
+   "sha256": "588c73d7b6c9dc98351fe4928f96c9bece109be050ada10ec3a4dcf003302778",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10927,
+    "end": 10988,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0340",
+   "start": 10956,
+   "end": 10957,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10988,
+    "end": 10989,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0341",
+   "start": 10957,
+   "end": 11018,
+   "exact": "Ms. Foxx, Chairwoman............................          Yea",
+   "sha256": "5bc0c722e6ad61693401cae9c1dc88dd25ab1e584ab27ea3cafe9f7a27e738ee",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10989,
+    "end": 11050,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0342",
+   "start": 11018,
+   "end": 11019,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11050,
+    "end": 11051,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0343",
+   "start": 11019,
+   "end": 11131,
+   "exact": "----------------------------------------------------------------------------------------------------------------",
+   "sha256": "fda2442242fda17d1d654a8331256e318c0c3854c79d76c79224ce9aca0fb826",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11051,
+    "end": 11163,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0344",
+   "start": 11131,
+   "end": 11132,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11163,
+    "end": 11164,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0345",
+   "start": 11132,
+   "end": 11133,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11164,
+    "end": 11165,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0346",
+   "start": 11133,
+   "end": 11194,
+   "exact": "          SUMMARY OF THE AMENDMENTS TO H.R. 471 MADE IN ORDER",
+   "sha256": "ea86ce5f11369f2b2cc8daf9742c50408231d244c27ba2b669eb5553353625a7",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11165,
+    "end": 11226,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0347",
+   "start": 11194,
+   "end": 11195,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11226,
+    "end": 11227,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0348",
+   "start": 11195,
+   "end": 11196,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11227,
+    "end": 11228,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0349",
+   "start": 11196,
+   "end": 11259,
+   "exact": "    1.  Perry (PA): Strikes carbon sequestration and ecosystem ",
+   "sha256": "a6896584c3e7c03d83a16bd564cf11a6922c594ee78cf380452028c6427373c9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11228,
+    "end": 11291,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0350",
+   "start": 11259,
+   "end": 11260,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11291,
+    "end": 11292,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0351",
+   "start": 11260,
+   "end": 11323,
+   "exact": "services prioritization from section 301 biochar demonstration ",
+   "sha256": "a0856d62019e71d42e274b2901428422d70a1b83a8531f63746ff33603a29005",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11292,
+    "end": 11355,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0352",
+   "start": 11323,
+   "end": 11324,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11355,
+    "end": 11356,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0353",
+   "start": 11324,
+   "end": 11346,
+   "exact": "projects. (10 minutes)",
+   "sha256": "bb4e8bf9a2287cfcdd5c1c0050cf7c55c9243078979d3beae7a751b257800705",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11356,
+    "end": 11378,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0354",
+   "start": 11346,
+   "end": 11347,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11378,
+    "end": 11379,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0355",
+   "start": 11347,
+   "end": 11405,
+   "exact": "    1.  Carbajal (CA): Allows the U.S. Forest Services to ",
+   "sha256": "b0ad1439082510fe67dce5ab7f22bda09f529a3241a98f089ff2c5ea3626c0f8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11379,
+    "end": 11437,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0356",
+   "start": 11405,
+   "end": 11406,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11437,
+    "end": 11438,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0357",
+   "start": 11406,
+   "end": 11465,
+   "exact": "approve the removal of hazardous trees near power lines on ",
+   "sha256": "f68e4f635e155f1aba0a42d1b8b4735a26ab680b55e01fce4b53c1fcd54cd30d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11438,
+    "end": 11497,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0358",
+   "start": 11465,
+   "end": 11466,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11497,
+    "end": 11498,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0359",
+   "start": 11466,
+   "end": 11529,
+   "exact": "federal land without requiring a timber sale, easing a serious ",
+   "sha256": "ff0ffdbabea3b322ef8a59698160dec6f24f2646e38bb0b84913c25c2a715316",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11498,
+    "end": 11561,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0360",
+   "start": 11529,
+   "end": 11530,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11561,
+    "end": 11562,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0361",
+   "start": 11530,
+   "end": 11592,
+   "exact": "threat that has in the past been a major cause of destructive ",
+   "sha256": "31c8b55e649031aa4f3f66320a041f8a9e184568506fbe1042923e4490d8c8c4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11562,
+    "end": 11624,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0362",
+   "start": 11592,
+   "end": 11593,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11624,
+    "end": 11625,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0363",
+   "start": 11593,
+   "end": 11616,
+   "exact": "wildfires. (10 minutes)",
+   "sha256": "44377a6233ba8de397215d72fd50c91248f8fd3c777b57c90cc3c0488c6e0847",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11625,
+    "end": 11648,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0364",
+   "start": 11616,
+   "end": 11617,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11648,
+    "end": 11649,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0365",
+   "start": 11617,
+   "end": 11618,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11649,
+    "end": 11650,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0366",
+   "start": 11618,
+   "end": 11676,
+   "exact": "              TEXT OF AMENDMENTS TO H.R. 471 MADE IN ORDER",
+   "sha256": "cd65de478728a463952a8a760ba7ea66b9aca08243cf578c71a93921d87d22cd",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11650,
+    "end": 11708,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0367",
+   "start": 11676,
+   "end": 11677,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11708,
+    "end": 11709,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0368",
+   "start": 11677,
+   "end": 11678,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11709,
+    "end": 11710,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0369",
+   "start": 11678,
+   "end": 11749,
+   "exact": "1.  An Amendment To Be Offered by Representative Perry of Pennsylvania ",
+   "sha256": "560fb6ddc58255b58d746fd8d9927549b53bceb35a235d0f86585c836199cf21",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11710,
+    "end": 11781,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0370",
+   "start": 11749,
+   "end": 11750,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11781,
+    "end": 11782,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0371",
+   "start": 11750,
+   "end": 11806,
+   "exact": "               or His Designee, Debatable for 10 Minutes",
+   "sha256": "38055acbd7044a99d2471a69ee22505a341d1179803f252d102452b505e19b7b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11782,
+    "end": 11838,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0372",
+   "start": 11806,
+   "end": 11807,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11838,
+    "end": 11839,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0373",
+   "start": 11807,
+   "end": 11808,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11839,
+    "end": 11840,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0374",
+   "start": 11808,
+   "end": 11846,
+   "exact": "  Page 78, strike lines 15 through 16.",
+   "sha256": "65afb1344abf32f459615d2f474018ffe9f23bad26c4b3fa448d4adb2e070f58",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11840,
+    "end": 11878,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0375",
+   "start": 11846,
+   "end": 11847,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11878,
+    "end": 11879,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0376",
+   "start": 11847,
+   "end": 11883,
+   "exact": "  Page 79, strike lines 1 through 2.",
+   "sha256": "35bfd41f0d04f067f9c7b6474099c82edfa784b9fa1de22da750f16c424a2b78",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11879,
+    "end": 11915,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0377",
+   "start": 11883,
+   "end": 11884,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11915,
+    "end": 11916,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0378",
+   "start": 11884,
+   "end": 11948,
+   "exact": "  Page 79, line 7, strike ``through (iv)'' and insert ``through ",
+   "sha256": "7ecd371f6859a903395417568df9f354ba50d501a052658e4605f65847736e74",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11916,
+    "end": 11980,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0379",
+   "start": 11948,
+   "end": 11949,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11980,
+    "end": 11981,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0380",
+   "start": 11949,
+   "end": 11957,
+   "exact": "(iii)''.",
+   "sha256": "f8dd6ddfb2a6e1638118b2a01b6f20e48507b227d6aebbab2d32946c398c6d5e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11981,
+    "end": 11989,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0381",
+   "start": 11957,
+   "end": 11958,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11989,
+    "end": 11990,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0382",
+   "start": 11958,
+   "end": 12022,
+   "exact": "  Page 79, line 20, strike ``through (D)'' and insert ``through ",
+   "sha256": "c4bb827dfaa8acda3efe117355bf12ef2d9c8b1077b6e038daa73ed8ab568514",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 11990,
+    "end": 12054,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0383",
+   "start": 12022,
+   "end": 12023,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12054,
+    "end": 12055,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0384",
+   "start": 12023,
+   "end": 12029,
+   "exact": "(C)''.",
+   "sha256": "35525352da42a92c515f90d5dc8d9928e2262839e0a4c3553791f52c96aa052e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12055,
+    "end": 12061,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0385",
+   "start": 12029,
+   "end": 12030,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12061,
+    "end": 12062,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0386",
+   "start": 12030,
+   "end": 12092,
+   "exact": "  Page 81, line 24, strike the semicolon and insert ``; and''.",
+   "sha256": "5c9499693eae3d56e3692d632087c2f4881d4e5cc22273bfdcb57461ba2a6d9d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12062,
+    "end": 12124,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0387",
+   "start": 12092,
+   "end": 12093,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12124,
+    "end": 12125,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0388",
+   "start": 12093,
+   "end": 12127,
+   "exact": "  Page 82, line 3, strike ``and''.",
+   "sha256": "844e1c80ebe8fb98ef38cb99f4997730b64c687799119d42fe3fc12c1f4a421b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12125,
+    "end": 12159,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0389",
+   "start": 12127,
+   "end": 12128,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12159,
+    "end": 12160,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0390",
+   "start": 12128,
+   "end": 12164,
+   "exact": "  Page 82, strike lines 4 through 6.",
+   "sha256": "8d658f55385662f105b9fc38ff5b05068d4ed253dd6973d4c6a86fe7c209e31e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12160,
+    "end": 12196,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0391",
+   "start": 12164,
+   "end": 12165,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12196,
+    "end": 12197,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0392",
+   "start": 12165,
+   "end": 12235,
+   "exact": "                              ----------                              ",
+   "sha256": "62f46cb968602e96899eca44db808e521a77ed95a066d3115d3503ada8819cbb",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12197,
+    "end": 12267,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0393",
+   "start": 12235,
+   "end": 12236,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12267,
+    "end": 12268,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0394",
+   "start": 12236,
+   "end": 12237,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12268,
+    "end": 12269,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0395",
+   "start": 12237,
+   "end": 12238,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12269,
+    "end": 12270,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0396",
+   "start": 12238,
+   "end": 12310,
+   "exact": "2.  An Amendment To Be Offered by Representative Carbajal of California ",
+   "sha256": "3a4244ae1e4b022e565a48e670ab94be79bb9f2b26eb6ca6a0d98fd00e9780aa",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12270,
+    "end": 12342,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0397",
+   "start": 12310,
+   "end": 12311,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12342,
+    "end": 12343,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0398",
+   "start": 12311,
+   "end": 12367,
+   "exact": "               or His Designee, Debatable for 10 Minutes",
+   "sha256": "38055acbd7044a99d2471a69ee22505a341d1179803f252d102452b505e19b7b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12343,
+    "end": 12399,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0399",
+   "start": 12367,
+   "end": 12368,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12399,
+    "end": 12400,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0400",
+   "start": 12368,
+   "end": 12369,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12400,
+    "end": 12401,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0401",
+   "start": 12369,
+   "end": 12427,
+   "exact": "  At the end of subtitle A of title III add the following:",
+   "sha256": "ebe87824d9c8053d2ffb8b0049ec93521fb806dcdb8232c6b713fc1e63147ac2",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12401,
+    "end": 12459,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0402",
+   "start": 12427,
+   "end": 12428,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12459,
+    "end": 12460,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0403",
+   "start": 12428,
+   "end": 12490,
+   "exact": "  Be it enacted by the Senate and House of Representatives of ",
+   "sha256": "4d0f532b8c18d41e105b1dc3e0f8d0a790e8efaef5bd10d2f0db29814fbe60d2",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12460,
+    "end": 12522,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0404",
+   "start": 12490,
+   "end": 12491,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12522,
+    "end": 12523,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0405",
+   "start": 12491,
+   "end": 12542,
+   "exact": "the United States of America in Congress assembled,",
+   "sha256": "529412460730b46d2debf47ffc8e38ef2f0fdedaa5674fade9a6c6fb5f908e35",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12523,
+    "end": 12574,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0406",
+   "start": 12542,
+   "end": 12543,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12574,
+    "end": 12575,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0407",
+   "start": 12543,
+   "end": 12544,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12575,
+    "end": 12576,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0408",
+   "start": 12544,
+   "end": 12585,
+   "exact": "SEC. 309. FIRE SAFE ELECTRICAL CORRIDORS.",
+   "sha256": "faf11ddc0c9568b5b2c832d00afcdcdca84f4b5e158259eed4293a558f384cb9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12576,
+    "end": 12617,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0409",
+   "start": 12585,
+   "end": 12586,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12617,
+    "end": 12618,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0410",
+   "start": 12586,
+   "end": 12587,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12618,
+    "end": 12619,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0411",
+   "start": 12587,
+   "end": 12647,
+   "exact": "  (a) In General.--In any special use permit or easement on ",
+   "sha256": "81cf317e30dfa5e7d8c2a60e879ab65cdf13033ebf92cc85e56c2ee3193ce831",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12619,
+    "end": 12679,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0412",
+   "start": 12647,
+   "end": 12648,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12679,
+    "end": 12680,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0413",
+   "start": 12648,
+   "end": 12711,
+   "exact": "National Forest System land provided to an electrical utility, ",
+   "sha256": "daf46233db74ef98de904b55967ee024a4e822cde03bd8ae2cf4af02bb3a515e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12680,
+    "end": 12743,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0414",
+   "start": 12711,
+   "end": 12712,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12743,
+    "end": 12744,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0415",
+   "start": 12712,
+   "end": 12776,
+   "exact": "the Secretary may provide permission to cut and remove trees or ",
+   "sha256": "a7f8143da3004211cc0cf3951e4dfe05baa577528215dfaecce8ce608ee7b040",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12744,
+    "end": 12808,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0416",
+   "start": 12776,
+   "end": 12777,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12808,
+    "end": 12809,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0417",
+   "start": 12777,
+   "end": 12841,
+   "exact": "other vegetation from within the vicinity of distribution lines ",
+   "sha256": "29667fa6826d2d474aa76a12dc4d76009752a50c0759f0cbaea5edb40d9fed9f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12809,
+    "end": 12873,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0418",
+   "start": 12841,
+   "end": 12842,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12873,
+    "end": 12874,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0419",
+   "start": 12842,
+   "end": 12906,
+   "exact": "or transmission lines without requiring a separate timber sale, ",
+   "sha256": "c1e6652301d02b2d8e2e29a4a02a78d34075bbac4f8ac855cfd9b06cc909aad6",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12874,
+    "end": 12938,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0420",
+   "start": 12906,
+   "end": 12907,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12938,
+    "end": 12939,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0421",
+   "start": 12907,
+   "end": 12955,
+   "exact": "if that cutting and removal is consistent with--",
+   "sha256": "2186500d69093023568ba078c99ca6c02a495c15fefc92fbc4dcdf0664586b1e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12939,
+    "end": 12987,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0422",
+   "start": 12955,
+   "end": 12956,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12987,
+    "end": 12988,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0423",
+   "start": 12956,
+   "end": 13020,
+   "exact": "          (1) the applicable land and resource management plan; ",
+   "sha256": "593baa38b67de9cd9a75d1c312b53715b8cacac21c25aab21d1738d456ccacde",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 12988,
+    "end": 13052,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0424",
+   "start": 13020,
+   "end": 13021,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13052,
+    "end": 13053,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0425",
+   "start": 13021,
+   "end": 13032,
+   "exact": "        and",
+   "sha256": "fb30a9f9f58a8d4b14075ec7ed2a85308dd92c89da6126aa1689a46973007653",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13053,
+    "end": 13064,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0426",
+   "start": 13032,
+   "end": 13033,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13064,
+    "end": 13065,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0427",
+   "start": 13033,
+   "end": 13094,
+   "exact": "          (2) other applicable environmental laws (including ",
+   "sha256": "898bc99bada54c1155aba73b8b2de10c768aa05cbaef09841d678ea63998fcb0",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13065,
+    "end": 13126,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0428",
+   "start": 13094,
+   "end": 13095,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13126,
+    "end": 13127,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0429",
+   "start": 13095,
+   "end": 13116,
+   "exact": "        regulations).",
+   "sha256": "75196277e694983c127e14f34bd7e95b4c2df2471fe6c8678fd759a775a97290",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13127,
+    "end": 13148,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0430",
+   "start": 13116,
+   "end": 13117,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13148,
+    "end": 13149,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0431",
+   "start": 13117,
+   "end": 13179,
+   "exact": "  (b) Use of Proceeds.--A special use permit or easement that ",
+   "sha256": "68f51bae411ad14ac69574dabccbdcc0baa4902867d36ed1372ea6aa13bde498",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13149,
+    "end": 13211,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0432",
+   "start": 13179,
+   "end": 13180,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13211,
+    "end": 13212,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0433",
+   "start": 13180,
+   "end": 13237,
+   "exact": "includes permission for cutting and removal described in ",
+   "sha256": "3f48ece3cf760e71d47d7f69c04517550ab76f28e7aa6dffdaca13081924afcc",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13212,
+    "end": 13269,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0434",
+   "start": 13237,
+   "end": 13238,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13269,
+    "end": 13270,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0435",
+   "start": 13238,
+   "end": 13294,
+   "exact": "subsection (a) shall include a requirement that, if the ",
+   "sha256": "858508b0f013f44fac59f9f1112f325ba1e6b493746253fdb65b5f4bc71bf9ff",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13270,
+    "end": 13326,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0436",
+   "start": 13294,
+   "end": 13295,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13326,
+    "end": 13327,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0437",
+   "start": 13295,
+   "end": 13359,
+   "exact": "applicable electrical utility sells any portion of the material ",
+   "sha256": "6442f103c22bab88b16f2234c0123cf5f10e70d06d0c3406ad8c87d413f35c2a",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13327,
+    "end": 13391,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0438",
+   "start": 13359,
+   "end": 13360,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13391,
+    "end": 13392,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0439",
+   "start": 13360,
+   "end": 13421,
+   "exact": "removed under the permit or easement, the electrical utility ",
+   "sha256": "fcf61d95f73992081356258a15542f7696e7e7ed6cb13f25dbe30cf3e20b0d59",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13392,
+    "end": 13453,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0440",
+   "start": 13421,
+   "end": 13422,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13453,
+    "end": 13454,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0441",
+   "start": 13422,
+   "end": 13486,
+   "exact": "shall provide to the Secretary, acting through the Chief of the ",
+   "sha256": "9e77fc38ad60cd714c6dd577c9051dae325865fb3d7ad5eb95d4971d525861b2",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13454,
+    "end": 13518,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0442",
+   "start": 13486,
+   "end": 13487,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13518,
+    "end": 13519,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0443",
+   "start": 13487,
+   "end": 13549,
+   "exact": "Forest Service, any proceeds received from the sale, less any ",
+   "sha256": "c0e0761eaebfc15d183a20aa8b1e507ab1f10c8470252532f9ca8dde59fee606",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13519,
+    "end": 13581,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0444",
+   "start": 13549,
+   "end": 13550,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13581,
+    "end": 13582,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0445",
+   "start": 13550,
+   "end": 13592,
+   "exact": "transportation costs incurred in the sale.",
+   "sha256": "934b6c22819cb367fb41c14515b3fa2cc3a261b83d9c124d242ef53eb7f5ce20",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13582,
+    "end": 13624,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0446",
+   "start": 13592,
+   "end": 13593,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13624,
+    "end": 13625,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0447",
+   "start": 13593,
+   "end": 13657,
+   "exact": "  (c) Effect.--Nothing in subsection (b) shall require the sale ",
+   "sha256": "222e115bd05626f862611c25c5da15b35fa632d6e4a05e668a3fa295ee3b1f42",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13625,
+    "end": 13689,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0448",
+   "start": 13657,
+   "end": 13658,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13689,
+    "end": 13690,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0449",
+   "start": 13658,
+   "end": 13714,
+   "exact": "of any material removed under a permit or easement that ",
+   "sha256": "845586f90217f1cc35fbd02db799715ecf15e93dd0818113e07be8a33cd6e10f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13690,
+    "end": 13746,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0450",
+   "start": 13714,
+   "end": 13715,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13746,
+    "end": 13747,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0451",
+   "start": 13715,
+   "end": 13772,
+   "exact": "includes permission for cutting and removal described in ",
+   "sha256": "3f48ece3cf760e71d47d7f69c04517550ab76f28e7aa6dffdaca13081924afcc",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13747,
+    "end": 13804,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0452",
+   "start": 13772,
+   "end": 13773,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13804,
+    "end": 13805,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0453",
+   "start": 13773,
+   "end": 13788,
+   "exact": "subsection (a).",
+   "sha256": "712918dadf518e014c47898d212a487a2b5a72971e5fa3ee642181081a787614",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13805,
+    "end": 13820,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0454",
+   "start": 13788,
+   "end": 13789,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13820,
+    "end": 13821,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0455",
+   "start": 13789,
+   "end": 13790,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13821,
+    "end": 13822,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0456",
+   "start": 13790,
+   "end": 13829,
+   "exact": "                                  [all]",
+   "sha256": "2a8ade12d561b57f4ce3ebc8a51c61447179e867370476667491b571d1d0ecea",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13822,
+    "end": 13861,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0457",
+   "start": 13829,
+   "end": 13830,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13861,
+    "end": 13862,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0458",
+   "start": 13830,
+   "end": 13864,
+   "exact": "                                  ",
+   "sha256": "68c2a5343ca146a81cb92f66c158772cc6f7bed0e8ebbd2d85e987ce3a9b3218",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13862,
+    "end": 13896,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0459",
+   "start": 13864,
+   "end": 13865,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13896,
+    "end": 13897,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0460",
+   "start": 13865,
+   "end": 13899,
+   "exact": "                                  ",
+   "sha256": "68c2a5343ca146a81cb92f66c158772cc6f7bed0e8ebbd2d85e987ce3a9b3218",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13897,
+    "end": 13931,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0461",
+   "start": 13899,
+   "end": 13900,
+   "exact": "\n",
+   "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 13931,
+    "end": 13932,
+    "literal": true
+   }
+  }
+ ],
+ "unresolved": [],
+ "issues": []
+}

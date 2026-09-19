@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:cfr-reconstruction",
+  "title": "DocumentCapture profile: cfr-reconstruction v1",
+  "description": "An annual CFR section reconstructed from a GovInfo PDF's extracted lines by spicy_docs.reconstruction. Every node carries the parser's decision and review status; derived.text is the profile's assembled text; xmlPath joins the serialized granule's source map.",
+  "x-parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+  },
+  "allOf": [
+    {
+      "$ref": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json"
+    },
+    {
+      "properties": {
+        "profile": {
+          "properties": {
+            "name": {
+              "const": "cfr-reconstruction"
+            },
+            "version": {
+              "const": "1"
+            },
+            "ext": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "granuleId",
+                "outOfScopeBlocks",
+                "pages",
+                "pdfBytes",
+                "pdfSha256",
+                "reconstructionProfile",
+                "selectedSection",
+                "serializedXmlSha256",
+                "serializer",
+                "unresolvedRegions"
+              ],
+              "properties": {
+                "reconstructionProfile": {
+                  "type": "string"
+                },
+                "selectedSection": {
+                  "type": "string"
+                },
+                "granuleId": {
+                  "type": "string"
+                },
+                "pdfSha256": {
+                  "type": "string"
+                },
+                "pdfBytes": {
+                  "type": "integer"
+                },
+                "pages": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                "serializedXmlSha256": {
+                  "type": "string"
+                },
+                "serializer": {
+                  "type": "string"
+                },
+                "outOfScopeBlocks": {
+                  "type": "integer"
+                },
+                "unresolvedRegions": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "nodes": {
+          "items": {
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^cfr-reconstruction:"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "cfr-reconstruction:flushParagraph",
+                        "cfr-reconstruction:cita",
+                        "cfr-reconstruction:blank",
+                        "cfr-reconstruction:partHeading",
+                        "cfr-reconstruction:contents",
+                        "cfr-reconstruction:authority",
+                        "cfr-reconstruction:sourceNote"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "ext": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reconstructionNode",
+                      "reconstructionKind"
+                    ],
+                    "properties": {
+                      "reconstructionNode": {
+                        "type": "string"
+                      },
+                      "reconstructionKind": {
+                        "type": "string"
+                      },
+                      "xmlPath": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

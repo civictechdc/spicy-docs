@@ -1,0 +1,36 @@
+{
+  "parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+  },
+  "sourceFragment": {
+    "$id": "https://rulespec.org/jsonschema/source-fragment.json",
+    "sha256": "0d87ede33d56f7a0b6be39d2a3d777087f35e8e56e6b36eccb4b8a9fd728060e"
+  },
+  "profiles": {
+    "uslm-law": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:uslm-law",
+      "sha256": "6b74afd1788baccd62a3e9b80f51e1453a1ea6bf1d1d233a86ba7673a9e1aba8"
+    },
+    "bill-xml": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:bill-xml",
+      "sha256": "061794dc510669f349964e9e95899e92d7e17e0ec27ac5af1054bbda97630525"
+    },
+    "committee-report-html": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:committee-report-html",
+      "sha256": "0b9fcae3a9e68f4cfe561005c56264ffea9112772715ddcb06066398662eb1e8"
+    },
+    "federal-register-xml": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:federal-register-xml",
+      "sha256": "01fe492de15bd4598246b653da37f26bddeb155a9e29b570600db79bbff51dc7"
+    },
+    "cfr-reconstruction": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:cfr-reconstruction",
+      "sha256": "536b32c4348382d1547037f9ea7812895dbfa678a384d9f43688f716a5e99d95"
+    },
+    "slip-opinion-pdf": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:slip-opinion-pdf",
+      "sha256": "26fad3bd1dcc11ad8bd2bd384531432a8c2d505fe260fbd3e05241a6f0ca0482"
+    }
+  }
+}

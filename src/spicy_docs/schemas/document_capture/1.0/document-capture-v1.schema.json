@@ -1,0 +1,816 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+  "title": "DocumentCapture v1",
+  "description": "One captured federal document: its structure as nodes, its exact text as an ordered partition of evidence spans, and the provenance of both. Capture is not interpretation: nothing here states legal meaning. A family profile composes this schema through allOf and adds only its own node kinds and extension blocks; see spec/document-capture.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "recordType",
+    "captureVersion",
+    "schema",
+    "capture",
+    "artifact",
+    "rendition",
+    "converter",
+    "profile",
+    "nodes",
+    "evidence",
+    "unresolved",
+    "issues"
+  ],
+  "properties": {
+    "recordType": {
+      "const": "DocumentCapture"
+    },
+    "captureVersion": {
+      "const": 1
+    },
+    "schema": {
+      "description": "The parent schema this document was validated against, pinned by digest so a consumer can refuse a document whose schema bytes it cannot reproduce.",
+      "$ref": "#/$defs/SchemaPin"
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "capturedAt",
+        "idOrigin",
+        "idScheme"
+      ],
+      "properties": {
+        "id": {
+          "description": "Content-derived: sha256 over the artifact digest, converter id and version, profile name and version, and the text-stream digest. Two runs of one converter over one artifact mint one id.",
+          "type": "string",
+          "pattern": "^urn:document-capture:sha256:[0-9a-f]{64}$"
+        },
+        "capturedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "idOrigin": {
+          "description": "Every node, span and region id in this document is minted by the converter. A consumer never reads one as a publisher identifier.",
+          "const": "generated"
+        },
+        "idScheme": {
+          "description": "How ids are minted. document-order: dense ordinals in document order, so the same input through the same converter version yields the same ids.",
+          "const": "document-order"
+        }
+      }
+    },
+    "artifact": {
+      "$ref": "#/$defs/Artifact"
+    },
+    "rendition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "textStream"
+      ],
+      "properties": {
+        "kind": {
+          "description": "What kind of bytes the artifact is. evidence-lines is a retained extractor output (one line per block with page geometry) standing in for a PDF whose bytes carry no text order of their own.",
+          "enum": [
+            "xml",
+            "html",
+            "text",
+            "pdf-text",
+            "evidence-lines"
+          ]
+        },
+        "textStream": {
+          "$ref": "#/$defs/TextStream"
+        }
+      }
+    },
+    "converter": {
+      "$ref": "#/$defs/Converter"
+    },
+    "profile": {
+      "$ref": "#/$defs/Profile"
+    },
+    "nodes": {
+      "description": "Every structural node in document order. nodes[0] is the root and has kind document and parent null.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Node"
+      }
+    },
+    "evidence": {
+      "description": "The ordered partition of the text stream: spans are contiguous, non-empty, and cover [0, textStream.codePoints) exactly. Concatenating exact in order reproduces the text stream; its digest is textStream.sha256.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Span"
+      }
+    },
+    "unresolved": {
+      "description": "Runs of evidence no rule placed, kept with the issue that says why. A span belongs to exactly one node or one unresolved region, never both and never neither.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/UnresolvedRegion"
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Issue"
+      }
+    }
+  },
+  "$defs": {
+    "Digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Iri": {
+      "description": "An absolute IRI, the same grammar rkaf:SourceFragment requires of oa:hasSource.",
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$"
+    },
+    "NodeId": {
+      "type": "string",
+      "pattern": "^n[0-9]{4,}$"
+    },
+    "SpanId": {
+      "type": "string",
+      "pattern": "^s[0-9]{4,}$"
+    },
+    "RegionId": {
+      "type": "string",
+      "pattern": "^u[0-9]{4,}$"
+    },
+    "SchemaPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "$id",
+        "sha256"
+      ],
+      "properties": {
+        "$id": {
+          "$ref": "#/$defs/Iri"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        }
+      }
+    },
+    "Artifact": {
+      "description": "The captured rendition bytes. Expressible as an rkaf:Artifact whose identifier scheme is rkaf:hash-sha256 and whose rkaf:hasContentDigest is sha256. The locator never carries a credential.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "iri",
+        "sha256",
+        "byteSize",
+        "mediaType",
+        "locator",
+        "identifiers"
+      ],
+      "properties": {
+        "iri": {
+          "$ref": "#/$defs/Iri"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "byteSize": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mediaType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "description": "Where the bytes were read from. A url is the publisher's stated address; a path is a retained fixture; a publisherId is the publisher's own identifier for the object (a GovInfo package id, a Federal Register document number).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "url": {
+              "type": "string",
+              "pattern": "^https?://[^\\s]+$"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "publisher": {
+              "type": "string",
+              "minLength": 1
+            },
+            "publisherId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "retrievedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "identifiers": {
+          "description": "Publisher-stated identities of the document this artifact renders, each with the rkaf artifact identifier scheme it belongs to.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "scheme",
+              "value"
+            ],
+            "properties": {
+              "scheme": {
+                "enum": [
+                  "rkaf:eli",
+                  "rkaf:eli-dl",
+                  "rkaf:eli-i",
+                  "rkaf:uslm",
+                  "rkaf:aknt-eId",
+                  "rkaf:doi",
+                  "rkaf:isbn",
+                  "rkaf:issn",
+                  "rkaf:cid",
+                  "rkaf:hash-sha256",
+                  "rkaf:urn-persistent",
+                  "rkaf:formspec-need",
+                  "rkaf:partner-defined"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "TextStream": {
+      "description": "The derived text artifact every span addresses in Unicode code points. Its digest is the round-trip witness: sha256 over the UTF-8 bytes of the concatenated span text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "iri",
+        "sha256",
+        "codePoints",
+        "normalization"
+      ],
+      "properties": {
+        "iri": {
+          "type": "string",
+          "pattern": "^urn:document-capture:text-stream:sha256:[0-9a-f]{64}$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "codePoints": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "normalization": {
+          "description": "The stated function from the artifact to the text stream. reversible means the artifact's text can be regenerated from the stream plus the retained evidence coordinates; it never means the artifact bytes can.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "statement",
+            "reversible"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reversible": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "Converter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "implementation",
+        "dependencies"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "implementation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "repository",
+            "revision",
+            "fileSha256"
+          ],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fileSha256": {
+              "$ref": "#/$defs/Digest"
+            }
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "version"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "Profile": {
+      "description": "The family profile that composed this schema. name is the prefix every namespaced node kind in the document uses; ext is the family's document-level extension block, constrained by the profile schema and left open here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "schema",
+        "ext"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema": {
+          "$ref": "#/$defs/SchemaPin"
+        },
+        "ext": {
+          "type": "object"
+        }
+      }
+    },
+    "CoreKind": {
+      "description": "The closed structural vocabulary shared by every family. A family names anything else as <profile.name>:<Kind>. label is the publisher's designation element for its parent unit (a USLM num, a bill enum, a CFR SECTNO); the parent's designation repeats its text so the stream stays whole.",
+      "enum": [
+        "document",
+        "frontMatter",
+        "body",
+        "backMatter",
+        "metadata",
+        "title",
+        "division",
+        "section",
+        "heading",
+        "paragraph",
+        "list",
+        "item",
+        "quote",
+        "table",
+        "row",
+        "cell",
+        "note",
+        "footnote",
+        "figure",
+        "signature",
+        "page",
+        "line",
+        "pageNumber",
+        "runningHead",
+        "printFooter",
+        "text",
+        "label"
+      ]
+    },
+    "Kind": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CoreKind"
+        },
+        {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*:[A-Za-z][A-Za-z0-9-]*$"
+        }
+      ]
+    },
+    "Derivation": {
+      "description": "How this node's structure was established. native: the publisher's own structural vocabulary. markup: derived from markup that is not that vocabulary (an HTML body split into blocks). pdf-text: an extractor's pages and lines. reconstructed: placed by a reconstruction rule or model over extracted lines.",
+      "enum": [
+        "native",
+        "markup",
+        "pdf-text",
+        "reconstructed"
+      ]
+    },
+    "Box": {
+      "description": "A displayed-page rectangle in integer permille of page width and height, top-left origin: [x0, y0, x1, y1]. Integers so the value is admissible to canonical identity JSON.",
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000
+      }
+    },
+    "SourceLocator": {
+      "description": "Where in the artifact a node or span sits, in the artifact's own coordinates. utf8-byte: half-open byte range of the captured file; xml-node-path: an element path with sibling indices; page-region: a 1-based page and a Box; none: the artifact states no coordinate for it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coordinateSystem"
+      ],
+      "properties": {
+        "coordinateSystem": {
+          "enum": [
+            "utf8-byte",
+            "xml-node-path",
+            "page-region",
+            "none"
+          ]
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "literal": {
+          "description": "utf8-byte only: the bytes in [start, end) are exactly the UTF-8 of the span text. False when a character or entity reference was decoded, in which case the range covers the reference.",
+          "type": "boolean"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "element": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "box": {
+          "$ref": "#/$defs/Box"
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "Style": {
+      "description": "What the extractor observed about the type, never a claim about meaning.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "font": {
+          "type": "string"
+        },
+        "size": {
+          "type": "number"
+        },
+        "bold": {
+          "type": "boolean"
+        },
+        "italic": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "start",
+        "end",
+        "exact",
+        "sha256",
+        "source"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/SpanId"
+        },
+        "start": {
+          "description": "Half-open Unicode code point interval over the text stream.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "exact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "description": "Over the UTF-8 bytes of exact: the value rkaf:fragmentContentDigest carries.",
+          "$ref": "#/$defs/Digest"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "tags": {
+          "description": "The inline elements enclosing this span inside its leaf, innermost last.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "style": {
+          "$ref": "#/$defs/Style"
+        }
+      }
+    },
+    "Decision": {
+      "description": "How a node was placed when a rule or model, not the publisher, decided it: the reconstruction package's own record.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "rule"
+      ],
+      "properties": {
+        "method": {
+          "enum": [
+            "rule",
+            "model",
+            "generated"
+          ]
+        },
+        "rule": {
+          "type": "string",
+          "minLength": 1
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    },
+    "Issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "node": {
+          "$ref": "#/$defs/NodeId"
+        }
+      }
+    },
+    "Node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "parent",
+        "ordinal",
+        "depth",
+        "derivation",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "kind": {
+          "$ref": "#/$defs/Kind"
+        },
+        "parent": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NodeId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ordinal": {
+          "description": "Dense position among the parent's children, from 0.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "derivation": {
+          "$ref": "#/$defs/Derivation"
+        },
+        "designation": {
+          "description": "The publisher's own label for the unit, verbatim: SEC. 2., (a), § 716.2, a printed page number.",
+          "type": "string"
+        },
+        "level": {
+          "description": "Heading level, 1 being the highest, as the publisher states or the family profile derives it.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "text": {
+          "description": "Leaf nodes only: exactly the concatenation of this node's spans, which are contiguous in the stream.",
+          "type": "string"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SpanId"
+          }
+        },
+        "source": {
+          "$ref": "#/$defs/SourceLocator"
+        },
+        "cell": {
+          "description": "Table cell geometry: zero-based row and column within the enclosing table, spans when the source states them, header when the source marks the cell as one.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "row",
+            "column"
+          ],
+          "properties": {
+            "row": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "column": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rowSpan": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "columnSpan": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "header": {
+              "type": "boolean"
+            }
+          }
+        },
+        "ref": {
+          "description": "A figure or other node that stands for a resource the artifact does not carry inline.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "target"
+          ],
+          "properties": {
+            "target": {
+              "type": "string",
+              "minLength": 1
+            },
+            "mediaType": {
+              "type": "string"
+            }
+          }
+        },
+        "decision": {
+          "$ref": "#/$defs/Decision"
+        },
+        "reviewStatus": {
+          "enum": [
+            "accepted",
+            "needs_review"
+          ]
+        },
+        "derived": {
+          "description": "Text a named rule assembled from the exact spans (a print wrap's hyphen dropped, small capitals restored). The exact text stays in text; this is the derivative, and the rule that made it is named.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "text",
+            "rule",
+            "method"
+          ],
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "rule": {
+              "type": "string",
+              "minLength": 1
+            },
+            "method": {
+              "enum": [
+                "rule",
+                "model"
+              ]
+            }
+          }
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Issue"
+          }
+        },
+        "ext": {
+          "description": "The family's per-node extension block, constrained by the profile schema and left open here.",
+          "type": "object"
+        }
+      }
+    },
+    "UnresolvedRegion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "evidence",
+        "issue"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/RegionId"
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/SpanId"
+          }
+        },
+        "issue": {
+          "type": "string",
+          "minLength": 1
+        },
+        "detail": {
+          "type": "string"
+        },
+        "parent": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/NodeId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

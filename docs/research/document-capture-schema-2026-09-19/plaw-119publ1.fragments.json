@@ -1,0 +1,119 @@
+[
+ {
+  "node": "n0042",
+  "kind": "paragraph",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:f77fdbbba017bbab468b890f1167a3f2f4eb0de54a75638493d390f83699e2fd",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 1010,
+     "oa:end": 1059,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "  This Act may be cited as the “Laken Riley Act”."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:f77fdbbba017bbab468b890f1167a3f2f4eb0de54a75638493d390f83699e2fd",
+   "rkaf:fragmentContentDigest": "sha256:723a5d222368a24a31ce76e8838ef500a622c178a1960b0f95fd47c30e5acf2e"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3Af77fdbbba017bbab468b890f1167a3f2f4eb0de54a75638493d390f83699e2fd:1010:1059:sha256-723a5d222368a24a31ce76e8838ef500a622c178a1960b0f95fd47c30e5acf2e",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:ee0e7a5d534411f78dd325405c42d386a1cfcf14f3870c93f5488874bb7acb54",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:XPathSelector",
+     "rdf:value": "/pLaw[1]/main[1]/section[1]/content[1]"
+    },
+    {
+     "@type": "rkaf:uslm-section",
+     "rdf:value": "/us/pl/119/1/s1"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 3436,
+     "oa:end": 3529,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "  This Act may be cited as the “Laken Riley Act”."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:XPathSelector",
+    "rkaf:uslm-section",
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:ee0e7a5d534411f78dd325405c42d386a1cfcf14f3870c93f5488874bb7acb54",
+   "rkaf:fragmentContentDigest": "sha256:723a5d222368a24a31ce76e8838ef500a622c178a1960b0f95fd47c30e5acf2e"
+  }
+ },
+ {
+  "node": "n0319",
+  "kind": "paragraph",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:f77fdbbba017bbab468b890f1167a3f2f4eb0de54a75638493d390f83699e2fd",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 8626,
+     "oa:end": 8656,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "Jan. 29, Presidential remarks."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:f77fdbbba017bbab468b890f1167a3f2f4eb0de54a75638493d390f83699e2fd",
+   "rkaf:fragmentContentDigest": "sha256:51dbadb4647b253872058e6d4f0f14c062492024de890f73defd9a0cdd531f71"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3Af77fdbbba017bbab468b890f1167a3f2f4eb0de54a75638493d390f83699e2fd:8626:8656:sha256-51dbadb4647b253872058e6d4f0f14c062492024de890f73defd9a0cdd531f71",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:ee0e7a5d534411f78dd325405c42d386a1cfcf14f3870c93f5488874bb7acb54",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:XPathSelector",
+     "rdf:value": "/pLaw[1]/legislativeHistory[1]/note[2]/p[1]"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 23281,
+     "oa:end": 23311,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "Jan. 29, Presidential remarks."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:XPathSelector",
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:ee0e7a5d534411f78dd325405c42d386a1cfcf14f3870c93f5488874bb7acb54",
+   "rkaf:fragmentContentDigest": "sha256:51dbadb4647b253872058e6d4f0f14c062492024de890f73defd9a0cdd531f71"
+  }
+ }
+]

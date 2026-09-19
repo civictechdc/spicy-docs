@@ -1,0 +1,4656 @@
+{
+ "recordType": "DocumentCapture",
+ "captureVersion": 1,
+ "schema": {
+  "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+  "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+ },
+ "capture": {
+  "id": "urn:document-capture:sha256:7ac56271653796e6615855c11ff12df1c6cc4615aace2b69ea994dab4c4562a4",
+  "capturedAt": "2026-09-19T22:48:34+00:00",
+  "idOrigin": "generated",
+  "idScheme": "document-order"
+ },
+ "artifact": {
+  "iri": "urn:document-capture:artifact:sha256:0f0653b6ea1063944e444893cb385f24a3cfe635088683465d6a9ce3e903c3e2",
+  "sha256": "0f0653b6ea1063944e444893cb385f24a3cfe635088683465d6a9ce3e903c3e2",
+  "byteSize": 10224,
+  "mediaType": "text/xml",
+  "locator": {
+   "url": "https://www.federalregister.gov/documents/full_text/xml/2026/09/18/2026-19200.xml",
+   "path": "docs/research/document-capture-schema-2026-09-19/inputs/fr-2026-19200.xml",
+   "publisher": "Federal Register",
+   "publisherId": "2026-19200"
+  },
+  "identifiers": [
+   {
+    "scheme": "rkaf:hash-sha256",
+    "value": "sha256:0f0653b6ea1063944e444893cb385f24a3cfe635088683465d6a9ce3e903c3e2"
+   },
+   {
+    "scheme": "rkaf:partner-defined",
+    "value": "federalregister:2026-19200"
+   },
+   {
+    "scheme": "rkaf:urn-persistent",
+    "value": "https://www.federalregister.gov/documents/2026/09/18/2026-19200/commission-information-collection-activities-ferc-521-comment-request-extension"
+   }
+  ],
+  "retrievedAt": "2026-09-19T22:19:03+00:00"
+ },
+ "rendition": {
+  "kind": "xml",
+  "textStream": {
+   "iri": "urn:document-capture:text-stream:sha256:1ca5f8cab7088a52db34d8940d1273b23f2d194a526aeb799c72b9caabfe3196",
+   "sha256": "1ca5f8cab7088a52db34d8940d1273b23f2d194a526aeb799c72b9caabfe3196",
+   "codePoints": 8758,
+   "normalization": {
+    "id": "markup-character-data",
+    "statement": "The decoded character data of every text event of spicy_docs.reading.markup in document order, inside the root element: entity and character references decoded, CDATA unwrapped; comments, processing instructions, declarations, and the prolog and epilog outside the root excluded; no whitespace changed. Reversible: each span carries the byte range of the artifact that produced it.",
+    "reversible": true
+   }
+  }
+ },
+ "converter": {
+  "id": "spicy-docs/tools/analysis/document_capture.py#federal-register-xml",
+  "version": "1",
+  "implementation": {
+   "repository": "spicy-docs",
+   "revision": "56c988b34915553fb23dfce024c731d633ad865b",
+   "fileSha256": "e40f1e33864518cbbc36a82c072810aec634c029301aa72c6181b45534761272"
+  },
+  "dependencies": [
+   {
+    "name": "python",
+    "version": "3.12.13"
+   },
+   {
+    "name": "spicy-docs",
+    "version": "0.21.2"
+   }
+  ]
+ },
+ "profile": {
+  "name": "federal-register-xml",
+  "version": "1",
+  "schema": {
+   "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:federal-register-xml",
+   "sha256": "01fe492de15bd4598246b653da37f26bddeb155a9e29b570600db79bbff51dc7"
+  },
+  "ext": {
+   "documentNumber": "2026-19200",
+   "type": "Notice",
+   "publicationDate": "2026-09-18",
+   "citation": "91 FR 59123",
+   "startPage": 59123,
+   "endPage": 59123,
+   "agencies": [
+    "Energy Department",
+    "Federal Energy Regulatory Commission"
+   ],
+   "documentJsonSha256": "d7ee5568bb8a19ba2399423fba2e663443aa8981adaeee85a91ae563ffe68e02"
+  }
+ },
+ "nodes": [
+  {
+   "id": "n0001",
+   "kind": "document",
+   "parent": null,
+   "ordinal": 0,
+   "depth": 0,
+   "derivation": "native",
+   "evidence": [
+    "s0001",
+    "s0072",
+    "s0205",
+    "s0207",
+    "s0209"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]",
+    "element": "NOTICE",
+    "start": 0,
+    "end": 10224
+   }
+  },
+  {
+   "id": "n0002",
+   "kind": "frontMatter",
+   "parent": "n0001",
+   "ordinal": 0,
+   "depth": 1,
+   "derivation": "native",
+   "evidence": [
+    "s0002",
+    "s0003",
+    "s0005",
+    "s0007",
+    "s0009",
+    "s0011",
+    "s0017",
+    "s0023",
+    "s0029",
+    "s0035",
+    "s0063",
+    "s0071"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]",
+    "element": "PREAMB",
+    "start": 21,
+    "end": 3886
+   }
+  },
+  {
+   "id": "n0003",
+   "kind": "pageNumber",
+   "parent": "n0002",
+   "ordinal": 0,
+   "depth": 2,
+   "derivation": "native",
+   "designation": "59123",
+   "text": "",
+   "evidence": [],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/PRTPAGE[1]",
+    "element": "PRTPAGE",
+    "attributes": {
+     "P": "59123"
+    }
+   }
+  },
+  {
+   "id": "n0004",
+   "kind": "text",
+   "parent": "n0002",
+   "ordinal": 1,
+   "depth": 2,
+   "derivation": "native",
+   "text": "DEPARTMENT OF ENERGY",
+   "evidence": [
+    "s0004"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/AGENCY[1]",
+    "element": "AGENCY",
+    "attributes": {
+     "TYPE": "S"
+    },
+    "start": 83,
+    "end": 129
+   }
+  },
+  {
+   "id": "n0005",
+   "kind": "text",
+   "parent": "n0002",
+   "ordinal": 2,
+   "depth": 2,
+   "derivation": "native",
+   "text": "Federal Energy Regulatory Commission",
+   "evidence": [
+    "s0006"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/SUBAGY[1]",
+    "element": "SUBAGY",
+    "start": 146,
+    "end": 199
+   }
+  },
+  {
+   "id": "n0006",
+   "kind": "text",
+   "parent": "n0002",
+   "ordinal": 3,
+   "depth": 2,
+   "derivation": "native",
+   "text": "[Docket No. IC26-36-000]",
+   "evidence": [
+    "s0008"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/DEPDOC[1]",
+    "element": "DEPDOC",
+    "start": 216,
+    "end": 257
+   }
+  },
+  {
+   "id": "n0007",
+   "kind": "title",
+   "parent": "n0002",
+   "ordinal": 4,
+   "depth": 2,
+   "derivation": "native",
+   "text": "Commission Information Collection Activities (Ferc-521); Comment Request; Extension",
+   "evidence": [
+    "s0010"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/SUBJECT[1]",
+    "element": "SUBJECT",
+    "start": 274,
+    "end": 376
+   }
+  },
+  {
+   "id": "n0008",
+   "kind": "section",
+   "parent": "n0002",
+   "ordinal": 5,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0012",
+    "s0014",
+    "s0016"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/AGY[1]",
+    "element": "AGY",
+    "start": 393,
+    "end": 536
+   }
+  },
+  {
+   "id": "n0009",
+   "kind": "heading",
+   "parent": "n0008",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "level": 1,
+   "text": "AGENCY:",
+   "evidence": [
+    "s0013"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/AGY[1]/HD[1]",
+    "element": "HD",
+    "attributes": {
+     "SOURCE": "HED"
+    },
+    "start": 419,
+    "end": 448
+   }
+  },
+  {
+   "id": "n0010",
+   "kind": "paragraph",
+   "parent": "n0008",
+   "ordinal": 1,
+   "depth": 3,
+   "derivation": "native",
+   "text": "Federal Energy Regulatory Commission.",
+   "evidence": [
+    "s0015"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/AGY[1]/P[1]",
+    "element": "P",
+    "start": 469,
+    "end": 513
+   }
+  },
+  {
+   "id": "n0011",
+   "kind": "section",
+   "parent": "n0002",
+   "ordinal": 6,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0018",
+    "s0020",
+    "s0022"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ACT[1]",
+    "element": "ACT",
+    "start": 553,
+    "end": 717
+   }
+  },
+  {
+   "id": "n0012",
+   "kind": "heading",
+   "parent": "n0011",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "level": 1,
+   "text": "ACTION:",
+   "evidence": [
+    "s0019"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ACT[1]/HD[1]",
+    "element": "HD",
+    "attributes": {
+     "SOURCE": "HED"
+    },
+    "start": 579,
+    "end": 608
+   }
+  },
+  {
+   "id": "n0013",
+   "kind": "paragraph",
+   "parent": "n0011",
+   "ordinal": 1,
+   "depth": 3,
+   "derivation": "native",
+   "text": "Notice of information collection and request for comments.",
+   "evidence": [
+    "s0021"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ACT[1]/P[1]",
+    "element": "P",
+    "start": 629,
+    "end": 694
+   }
+  },
+  {
+   "id": "n0014",
+   "kind": "section",
+   "parent": "n0002",
+   "ordinal": 7,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0024",
+    "s0026",
+    "s0028"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/SUM[1]",
+    "element": "SUM",
+    "start": 734,
+    "end": 1346
+   }
+  },
+  {
+   "id": "n0015",
+   "kind": "heading",
+   "parent": "n0014",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "level": 1,
+   "text": "SUMMARY:",
+   "evidence": [
+    "s0025"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/SUM[1]/HD[1]",
+    "element": "HD",
+    "attributes": {
+     "SOURCE": "HED"
+    },
+    "start": 760,
+    "end": 790
+   }
+  },
+  {
+   "id": "n0016",
+   "kind": "paragraph",
+   "parent": "n0014",
+   "ordinal": 1,
+   "depth": 3,
+   "derivation": "native",
+   "text": "In compliance with the requirements of the Paperwork Reduction Act of 1995 (PRA), the Federal Energy Regulatory Commission (Commission or FERC) is soliciting public comment on FERC-521: Payments for Benefits from Headwater Improvements (OMB Control No 1902-0087) which will be submitted to the Office of Management and Budget (OMB) for a review of the information collection requirements. There are no proposed changes to the reporting requirements. No comments were received in the 60-day comment period.",
+   "evidence": [
+    "s0027"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/SUM[1]/P[1]",
+    "element": "P",
+    "start": 811,
+    "end": 1323
+   }
+  },
+  {
+   "id": "n0017",
+   "kind": "section",
+   "parent": "n0002",
+   "ordinal": 8,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0030",
+    "s0032",
+    "s0034"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/DATES[1]",
+    "element": "DATES",
+    "start": 1363,
+    "end": 1539
+   }
+  },
+  {
+   "id": "n0018",
+   "kind": "heading",
+   "parent": "n0017",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "level": 1,
+   "text": "DATES:",
+   "evidence": [
+    "s0031"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/DATES[1]/HD[1]",
+    "element": "HD",
+    "attributes": {
+     "SOURCE": "HED"
+    },
+    "start": 1391,
+    "end": 1419
+   }
+  },
+  {
+   "id": "n0019",
+   "kind": "paragraph",
+   "parent": "n0017",
+   "ordinal": 1,
+   "depth": 3,
+   "derivation": "native",
+   "text": "Comments on the collection of information are due October 19, 2026.",
+   "evidence": [
+    "s0033"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/DATES[1]/P[1]",
+    "element": "P",
+    "start": 1440,
+    "end": 1514
+   }
+  },
+  {
+   "id": "n0020",
+   "kind": "section",
+   "parent": "n0002",
+   "ordinal": 9,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0036",
+    "s0038",
+    "s0044",
+    "s0048",
+    "s0052",
+    "s0056",
+    "s0062"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ADD[1]",
+    "element": "ADD",
+    "start": 1556,
+    "end": 3571
+   }
+  },
+  {
+   "id": "n0021",
+   "kind": "heading",
+   "parent": "n0020",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "level": 1,
+   "text": "ADDRESSES:",
+   "evidence": [
+    "s0037"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ADD[1]/HD[1]",
+    "element": "HD",
+    "attributes": {
+     "SOURCE": "HED"
+    },
+    "start": 1582,
+    "end": 1614
+   }
+  },
+  {
+   "id": "n0022",
+   "kind": "paragraph",
+   "parent": "n0020",
+   "ordinal": 1,
+   "depth": 3,
+   "derivation": "native",
+   "text": "\n                        Send written comments on FERC-521 to OMB through \n                        https://www.reginfo.gov/public/do/PRA/icrPublicCommentRequest?ref_nbr=202607-1902-007.\n                         You can also visit \n                        https://www.reginfo.gov/public/do/PRAMain\n                         and use the drop-down under “Currently under Review” to select the “Federal Energy Regulatory Commission” where you can see the open opportunities to provide comments. Comments should be sent within 30 days of publication of this notice.\n                    ",
+   "evidence": [
+    "s0039",
+    "s0040",
+    "s0041",
+    "s0042",
+    "s0043"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ADD[1]/P[1]",
+    "element": "P",
+    "start": 1635,
+    "end": 2258
+   }
+  },
+  {
+   "id": "n0023",
+   "kind": "paragraph",
+   "parent": "n0020",
+   "ordinal": 2,
+   "depth": 3,
+   "derivation": "native",
+   "text": "\n                        Please submit a copy of your comments to the Commission via email to \n                        DataClearance@FERC.gov.\n                         You must specify the docket No. (IC26-36-000) and the FERC Information Collection number (FERC-521) in your email. If you are unable to file electronically, comments may be filed by USPS mail or by hand (including courier) delivery:\n                    ",
+   "evidence": [
+    "s0045",
+    "s0046",
+    "s0047"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ADD[1]/P[2]",
+    "element": "P",
+    "start": 2279,
+    "end": 2721
+   }
+  },
+  {
+   "id": "n0024",
+   "kind": "paragraph",
+   "parent": "n0020",
+   "ordinal": 3,
+   "depth": 3,
+   "derivation": "native",
+   "text": "\n                        • \n                        Mail via U.S. Postal Service Only:\n                         Federal Energy Regulatory Commission, Secretary of the Commission, 888 First Street NE, Washington, DC 20426.\n                    ",
+   "evidence": [
+    "s0049",
+    "s0050",
+    "s0051"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ADD[1]/P[3]",
+    "element": "P",
+    "start": 2742,
+    "end": 3007
+   }
+  },
+  {
+   "id": "n0025",
+   "kind": "paragraph",
+   "parent": "n0020",
+   "ordinal": 4,
+   "depth": 3,
+   "derivation": "native",
+   "text": "\n                        • \n                        All other delivery methods:\n                         Federal Energy Regulatory Commission, Secretary of the Commission, 12225 Wilkins Avenue, Rockville, MD 20852.\n                    ",
+   "evidence": [
+    "s0053",
+    "s0054",
+    "s0055"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ADD[1]/P[4]",
+    "element": "P",
+    "start": 3028,
+    "end": 3286
+   }
+  },
+  {
+   "id": "n0026",
+   "kind": "paragraph",
+   "parent": "n0020",
+   "ordinal": 5,
+   "depth": 3,
+   "derivation": "native",
+   "text": "\n                        Docket:\n                         To view comments and issuances in this docket, please visit \n                        https://elibrary.ferc.gov/eLibrary/search.\n                    ",
+   "evidence": [
+    "s0057",
+    "s0058",
+    "s0059",
+    "s0060",
+    "s0061"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/ADD[1]/P[5]",
+    "element": "P",
+    "start": 3307,
+    "end": 3548
+   }
+  },
+  {
+   "id": "n0027",
+   "kind": "section",
+   "parent": "n0002",
+   "ordinal": 10,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0064",
+    "s0066",
+    "s0070"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/FURINF[1]",
+    "element": "FURINF",
+    "start": 3588,
+    "end": 3864
+   }
+  },
+  {
+   "id": "n0028",
+   "kind": "heading",
+   "parent": "n0027",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "level": 1,
+   "text": "FOR FURTHER INFORMATION CONTACT:",
+   "evidence": [
+    "s0065"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/FURINF[1]/HD[1]",
+    "element": "HD",
+    "attributes": {
+     "SOURCE": "HED"
+    },
+    "start": 3617,
+    "end": 3671
+   }
+  },
+  {
+   "id": "n0029",
+   "kind": "paragraph",
+   "parent": "n0027",
+   "ordinal": 1,
+   "depth": 3,
+   "derivation": "native",
+   "text": "\n                        Kayla Williams, (202) 502-6468. \n                        DataClearance@FERC.gov\n                    ",
+   "evidence": [
+    "s0067",
+    "s0068",
+    "s0069"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/PREAMB[1]/FURINF[1]/P[1]",
+    "element": "P",
+    "start": 3692,
+    "end": 3838
+   }
+  },
+  {
+   "id": "n0030",
+   "kind": "body",
+   "parent": "n0001",
+   "ordinal": 1,
+   "depth": 1,
+   "derivation": "native",
+   "evidence": [
+    "s0073",
+    "s0075",
+    "s0076",
+    "s0080",
+    "s0084",
+    "s0088",
+    "s0092",
+    "s0096",
+    "s0108",
+    "s0114",
+    "s0120",
+    "s0192",
+    "s0196",
+    "s0204"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]",
+    "element": "SUPLINF",
+    "start": 3899,
+    "end": 10083
+   }
+  },
+  {
+   "id": "n0031",
+   "kind": "heading",
+   "parent": "n0030",
+   "ordinal": 0,
+   "depth": 2,
+   "derivation": "native",
+   "level": 1,
+   "text": "SUPPLEMENTARY INFORMATION:",
+   "evidence": [
+    "s0074"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/HD[1]",
+    "element": "HD",
+    "attributes": {
+     "SOURCE": "HED"
+    },
+    "start": 3925,
+    "end": 3973
+   }
+  },
+  {
+   "id": "n0032",
+   "kind": "paragraph",
+   "parent": "n0030",
+   "ordinal": 1,
+   "depth": 2,
+   "derivation": "native",
+   "text": "",
+   "evidence": [],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/P[1]",
+    "element": "P"
+   },
+   "issues": [
+    {
+     "code": "empty-leaf",
+     "detail": "P carries no text"
+    }
+   ]
+  },
+  {
+   "id": "n0033",
+   "kind": "paragraph",
+   "parent": "n0030",
+   "ordinal": 2,
+   "depth": 2,
+   "derivation": "native",
+   "text": "\n                    Title:\n                     FERC-521, Payments for Benefits from Headwater Improvements\n                ",
+   "evidence": [
+    "s0077",
+    "s0078",
+    "s0079"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/P[2]",
+    "element": "P",
+    "start": 4011,
+    "end": 4157
+   }
+  },
+  {
+   "id": "n0034",
+   "kind": "paragraph",
+   "parent": "n0030",
+   "ordinal": 3,
+   "depth": 2,
+   "derivation": "native",
+   "text": "\n                    OMB Control No.:\n                     1902-0087\n                ",
+   "evidence": [
+    "s0081",
+    "s0082",
+    "s0083"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/P[3]",
+    "element": "P",
+    "start": 4174,
+    "end": 4280
+   }
+  },
+  {
+   "id": "n0035",
+   "kind": "paragraph",
+   "parent": "n0030",
+   "ordinal": 4,
+   "depth": 2,
+   "derivation": "native",
+   "text": "\n                    Type of Request:\n                     Three-year extension of the FERC-521 information collection requirements with no changes to the reporting requirements.\n                ",
+   "evidence": [
+    "s0085",
+    "s0086",
+    "s0087"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/P[4]",
+    "element": "P",
+    "start": 4297,
+    "end": 4513
+   }
+  },
+  {
+   "id": "n0036",
+   "kind": "paragraph",
+   "parent": "n0030",
+   "ordinal": 5,
+   "depth": 2,
+   "derivation": "native",
+   "text": "\n                    Abstract:\n                     The purpose of FERC-521 is to implement information collections pursuant to Section 10(f) of the Federal Power Act (FPA). Section 10(f) of the FPA requires hydropower licensees to reimburse upstream headwater project owners for an equitable portion of the benefits it receives as a result of construction work related to headwater improvements. These benefits, referred to as headwater benefits, are the additional energy production possible at a downstream hydropower project resulting from the regulation of river flows by an upstream storage reservoir. The Commission requires federal agencies and owners of non-federal hydropower projects to file data for determining headwater benefits as outlined in 18 Code of Federal Regulations (CFR) Part 11.\n                ",
+   "evidence": [
+    "s0089",
+    "s0090",
+    "s0091"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/P[5]",
+    "element": "P",
+    "start": 4530,
+    "end": 5371
+   }
+  },
+  {
+   "id": "n0037",
+   "kind": "paragraph",
+   "parent": "n0030",
+   "ordinal": 6,
+   "depth": 2,
+   "derivation": "native",
+   "text": "\n                    Type of Respondents:\n                     There are two types of entities that respond, Federal and Non-Federal storage and hydropower project owners. The Federal entities that typically respond include the U.S. Army Corps of Engineers and the U.S. Department of Interior Bureau of Reclamation. The Non-Federal entities may consist of any Municipal or Non-Municipal hydropower project owner.\n                ",
+   "evidence": [
+    "s0093",
+    "s0094",
+    "s0095"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/P[6]",
+    "element": "P",
+    "start": 5388,
+    "end": 5838
+   }
+  },
+  {
+   "id": "n0038",
+   "kind": "paragraph",
+   "parent": "n0030",
+   "ordinal": 7,
+   "depth": 2,
+   "derivation": "native",
+   "text": "\n                    Estimate of Annual Burden\n                     \n                    \n                    1\n                      \n                    and cost: \n                    2\n                    \n                     The Commission estimates the total Public Reporting Burden for this information collection as:\n                ",
+   "evidence": [
+    "s0097",
+    "s0098",
+    "s0099",
+    "s0100",
+    "s0101",
+    "s0102",
+    "s0103",
+    "s0104",
+    "s0105",
+    "s0106",
+    "s0107"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/P[7]",
+    "element": "P",
+    "start": 5855,
+    "end": 6269
+   }
+  },
+  {
+   "id": "n0039",
+   "kind": "footnote",
+   "parent": "n0030",
+   "ordinal": 8,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0109",
+    "s0113"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/FTNT[1]",
+    "element": "FTNT",
+    "start": 6286,
+    "end": 6738
+   }
+  },
+  {
+   "id": "n0040",
+   "kind": "paragraph",
+   "parent": "n0039",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "text": "\n                        1\n                         Burden is defined as the total time, effort, or financial resources expended by persons to generate, maintain, retain, or disclose or provide information to or for a Federal agency. For further explanation of what is included in the information collection burden, refer to 5 Code of Federal Regulations 1320.3.\n                    ",
+   "evidence": [
+    "s0110",
+    "s0111",
+    "s0112"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/FTNT[1]/P[1]",
+    "element": "P",
+    "start": 6313,
+    "end": 6714
+   }
+  },
+  {
+   "id": "n0041",
+   "kind": "footnote",
+   "parent": "n0030",
+   "ordinal": 9,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0115",
+    "s0119"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/FTNT[2]",
+    "element": "FTNT",
+    "start": 6755,
+    "end": 7042
+   }
+  },
+  {
+   "id": "n0042",
+   "kind": "paragraph",
+   "parent": "n0041",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "text": "\n                        2\n                         FERC estimates that industry hourly costs are similar to the Commission FY 2026 average salary plus benefits of $213,003 per year (or $102/hour).\n                    ",
+   "evidence": [
+    "s0116",
+    "s0117",
+    "s0118"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/FTNT[2]/P[1]",
+    "element": "P",
+    "start": 6782,
+    "end": 7018
+   }
+  },
+  {
+   "id": "n0043",
+   "kind": "table",
+   "parent": "n0030",
+   "ordinal": 10,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0121",
+    "s0123",
+    "s0159",
+    "s0175",
+    "s0191"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]",
+    "element": "GPOTABLE",
+    "attributes": {
+     "COLS": "7",
+     "OPTS": "L2(,0,),nj,tp0,i1",
+     "CDEF": "s50,12,12,12,r50,r50,12"
+    },
+    "start": 7059,
+    "end": 9100
+   },
+   "ext": {
+    "cols": "7",
+    "cdef": "s50,12,12,12,r50,r50,12"
+   }
+  },
+  {
+   "id": "n0044",
+   "kind": "title",
+   "parent": "n0043",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "text": " ",
+   "evidence": [
+    "s0122"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/TTITLE[1]",
+    "element": "TTITLE",
+    "start": 7155,
+    "end": 7175
+   }
+  },
+  {
+   "id": "n0045",
+   "kind": "row",
+   "parent": "n0043",
+   "ordinal": 1,
+   "depth": 3,
+   "derivation": "native",
+   "evidence": [
+    "s0124",
+    "s0126",
+    "s0130",
+    "s0136",
+    "s0138",
+    "s0144",
+    "s0152",
+    "s0158"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/BOXHD[1]",
+    "element": "BOXHD",
+    "start": 7196,
+    "end": 8306
+   }
+  },
+  {
+   "id": "n0046",
+   "kind": "cell",
+   "parent": "n0045",
+   "ordinal": 0,
+   "depth": 4,
+   "derivation": "native",
+   "text": " ",
+   "evidence": [
+    "s0125"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/BOXHD[1]/CHED[1]",
+    "element": "CHED",
+    "attributes": {
+     "H": "1"
+    },
+    "start": 7228,
+    "end": 7250
+   },
+   "cell": {
+    "row": 0,
+    "column": 0,
+    "header": true
+   },
+   "ext": {
+    "headLevel": "1"
+   }
+  },
+  {
+   "id": "n0047",
+   "kind": "cell",
+   "parent": "n0045",
+   "ordinal": 1,
+   "depth": 4,
+   "derivation": "native",
+   "text": "\n                            Number of\n                            respondents\n                        ",
+   "evidence": [
+    "s0127",
+    "s0128",
+    "s0129"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/BOXHD[1]/CHED[2]",
+    "element": "CHED",
+    "attributes": {
+     "H": "1"
+    },
+    "start": 7275,
+    "end": 7406
+   },
+   "cell": {
+    "row": 0,
+    "column": 1,
+    "header": true
+   },
+   "ext": {
+    "headLevel": "1"
+   }
+  },
+  {
+   "id": "n0048",
+   "kind": "cell",
+   "parent": "n0045",
+   "ordinal": 2,
+   "depth": 4,
+   "derivation": "native",
+   "text": "\n                            Annual number\n                            of responses per\n                            respondent\n                        ",
+   "evidence": [
+    "s0131",
+    "s0132",
+    "s0133",
+    "s0134",
+    "s0135"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/BOXHD[1]/CHED[3]",
+    "element": "CHED",
+    "attributes": {
+     "H": "1"
+    },
+    "start": 7431,
+    "end": 7619
+   },
+   "cell": {
+    "row": 0,
+    "column": 2,
+    "header": true
+   },
+   "ext": {
+    "headLevel": "1"
+   }
+  },
+  {
+   "id": "n0049",
+   "kind": "cell",
+   "parent": "n0045",
+   "ordinal": 3,
+   "depth": 4,
+   "derivation": "native",
+   "text": "Total number of responses",
+   "evidence": [
+    "s0137"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/BOXHD[1]/CHED[4]",
+    "element": "CHED",
+    "attributes": {
+     "H": "1"
+    },
+    "start": 7644,
+    "end": 7688
+   },
+   "cell": {
+    "row": 0,
+    "column": 3,
+    "header": true
+   },
+   "ext": {
+    "headLevel": "1"
+   }
+  },
+  {
+   "id": "n0050",
+   "kind": "cell",
+   "parent": "n0045",
+   "ordinal": 4,
+   "depth": 4,
+   "derivation": "native",
+   "text": "\n                            Average burden & cost\n                            per response\n                        ",
+   "evidence": [
+    "s0139",
+    "s0140",
+    "s0141",
+    "s0142",
+    "s0143"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/BOXHD[1]/CHED[5]",
+    "element": "CHED",
+    "attributes": {
+     "H": "1"
+    },
+    "start": 7713,
+    "end": 7861
+   },
+   "cell": {
+    "row": 0,
+    "column": 4,
+    "header": true
+   },
+   "ext": {
+    "headLevel": "1"
+   }
+  },
+  {
+   "id": "n0051",
+   "kind": "cell",
+   "parent": "n0045",
+   "ordinal": 5,
+   "depth": 4,
+   "derivation": "native",
+   "text": "\n                            Total annual burden\n                            hours & total\n                            annual cost\n                        ",
+   "evidence": [
+    "s0145",
+    "s0146",
+    "s0147",
+    "s0148",
+    "s0149",
+    "s0150",
+    "s0151"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/BOXHD[1]/CHED[6]",
+    "element": "CHED",
+    "attributes": {
+     "H": "1"
+    },
+    "start": 7886,
+    "end": 8082
+   },
+   "cell": {
+    "row": 0,
+    "column": 5,
+    "header": true
+   },
+   "ext": {
+    "headLevel": "1"
+   }
+  },
+  {
+   "id": "n0052",
+   "kind": "cell",
+   "parent": "n0045",
+   "ordinal": 6,
+   "depth": 4,
+   "derivation": "native",
+   "text": "\n                            Cost per\n                            respondent\n                            ($)\n                        ",
+   "evidence": [
+    "s0153",
+    "s0154",
+    "s0155",
+    "s0156",
+    "s0157"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/BOXHD[1]/CHED[7]",
+    "element": "CHED",
+    "attributes": {
+     "H": "1"
+    },
+    "start": 8107,
+    "end": 8277
+   },
+   "cell": {
+    "row": 0,
+    "column": 6,
+    "header": true
+   },
+   "ext": {
+    "headLevel": "1"
+   }
+  },
+  {
+   "id": "n0053",
+   "kind": "row",
+   "parent": "n0043",
+   "ordinal": 2,
+   "depth": 3,
+   "derivation": "native",
+   "evidence": [
+    "s0160",
+    "s0162",
+    "s0164",
+    "s0166",
+    "s0168",
+    "s0170",
+    "s0172",
+    "s0174"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[1]",
+    "element": "ROW",
+    "attributes": {
+     "RUL": "s"
+    },
+    "start": 8327,
+    "end": 8681
+   }
+  },
+  {
+   "id": "n0054",
+   "kind": "cell",
+   "parent": "n0053",
+   "ordinal": 0,
+   "depth": 4,
+   "derivation": "native",
+   "text": " ",
+   "evidence": [
+    "s0161"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[1]/ENT[1]",
+    "element": "ENT",
+    "attributes": {
+     "I": "25"
+    },
+    "start": 8368,
+    "end": 8389
+   },
+   "cell": {
+    "row": 1,
+    "column": 0,
+    "header": false
+   },
+   "ext": {
+    "indent": "25"
+   }
+  },
+  {
+   "id": "n0055",
+   "kind": "cell",
+   "parent": "n0053",
+   "ordinal": 1,
+   "depth": 4,
+   "derivation": "native",
+   "text": "(1)",
+   "evidence": [
+    "s0163"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[1]/ENT[2]",
+    "element": "ENT",
+    "start": 8414,
+    "end": 8428
+   },
+   "cell": {
+    "row": 1,
+    "column": 1,
+    "header": false
+   }
+  },
+  {
+   "id": "n0056",
+   "kind": "cell",
+   "parent": "n0053",
+   "ordinal": 2,
+   "depth": 4,
+   "derivation": "native",
+   "text": "(2)",
+   "evidence": [
+    "s0165"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[1]/ENT[3]",
+    "element": "ENT",
+    "start": 8453,
+    "end": 8467
+   },
+   "cell": {
+    "row": 1,
+    "column": 2,
+    "header": false
+   }
+  },
+  {
+   "id": "n0057",
+   "kind": "cell",
+   "parent": "n0053",
+   "ordinal": 3,
+   "depth": 4,
+   "derivation": "native",
+   "text": "(1) * (2) = (3)",
+   "evidence": [
+    "s0167"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[1]/ENT[4]",
+    "element": "ENT",
+    "start": 8492,
+    "end": 8518
+   },
+   "cell": {
+    "row": 1,
+    "column": 3,
+    "header": false
+   }
+  },
+  {
+   "id": "n0058",
+   "kind": "cell",
+   "parent": "n0053",
+   "ordinal": 4,
+   "depth": 4,
+   "derivation": "native",
+   "text": "(4)",
+   "evidence": [
+    "s0169"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[1]/ENT[5]",
+    "element": "ENT",
+    "start": 8543,
+    "end": 8557
+   },
+   "cell": {
+    "row": 1,
+    "column": 4,
+    "header": false
+   }
+  },
+  {
+   "id": "n0059",
+   "kind": "cell",
+   "parent": "n0053",
+   "ordinal": 5,
+   "depth": 4,
+   "derivation": "native",
+   "text": "(3) * (4) = (5)",
+   "evidence": [
+    "s0171"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[1]/ENT[6]",
+    "element": "ENT",
+    "start": 8582,
+    "end": 8608
+   },
+   "cell": {
+    "row": 1,
+    "column": 5,
+    "header": false
+   }
+  },
+  {
+   "id": "n0060",
+   "kind": "cell",
+   "parent": "n0053",
+   "ordinal": 6,
+   "depth": 4,
+   "derivation": "native",
+   "text": "(5) ÷ (1)",
+   "evidence": [
+    "s0173"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[1]/ENT[7]",
+    "element": "ENT",
+    "start": 8633,
+    "end": 8654
+   },
+   "cell": {
+    "row": 1,
+    "column": 6,
+    "header": false
+   }
+  },
+  {
+   "id": "n0061",
+   "kind": "row",
+   "parent": "n0043",
+   "ordinal": 3,
+   "depth": 3,
+   "derivation": "native",
+   "evidence": [
+    "s0176",
+    "s0178",
+    "s0180",
+    "s0182",
+    "s0184",
+    "s0186",
+    "s0188",
+    "s0190"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[2]",
+    "element": "ROW",
+    "start": 8702,
+    "end": 9072
+   }
+  },
+  {
+   "id": "n0062",
+   "kind": "cell",
+   "parent": "n0061",
+   "ordinal": 0,
+   "depth": 4,
+   "derivation": "native",
+   "text": "Federal and Non-Federal project owners",
+   "evidence": [
+    "s0177"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[2]/ENT[1]",
+    "element": "ENT",
+    "attributes": {
+     "I": "01"
+    },
+    "start": 8732,
+    "end": 8788
+   },
+   "cell": {
+    "row": 2,
+    "column": 0,
+    "header": false
+   },
+   "ext": {
+    "indent": "01"
+   }
+  },
+  {
+   "id": "n0063",
+   "kind": "cell",
+   "parent": "n0061",
+   "ordinal": 1,
+   "depth": 4,
+   "derivation": "native",
+   "text": "3",
+   "evidence": [
+    "s0179"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[2]/ENT[2]",
+    "element": "ENT",
+    "start": 8813,
+    "end": 8825
+   },
+   "cell": {
+    "row": 2,
+    "column": 1,
+    "header": false
+   }
+  },
+  {
+   "id": "n0064",
+   "kind": "cell",
+   "parent": "n0061",
+   "ordinal": 2,
+   "depth": 4,
+   "derivation": "native",
+   "text": "1",
+   "evidence": [
+    "s0181"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[2]/ENT[3]",
+    "element": "ENT",
+    "start": 8850,
+    "end": 8862
+   },
+   "cell": {
+    "row": 2,
+    "column": 2,
+    "header": false
+   }
+  },
+  {
+   "id": "n0065",
+   "kind": "cell",
+   "parent": "n0061",
+   "ordinal": 3,
+   "depth": 4,
+   "derivation": "native",
+   "text": "3",
+   "evidence": [
+    "s0183"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[2]/ENT[4]",
+    "element": "ENT",
+    "start": 8887,
+    "end": 8899
+   },
+   "cell": {
+    "row": 2,
+    "column": 3,
+    "header": false
+   }
+  },
+  {
+   "id": "n0066",
+   "kind": "cell",
+   "parent": "n0061",
+   "ordinal": 4,
+   "depth": 4,
+   "derivation": "native",
+   "text": "40 hrs.; $4,080",
+   "evidence": [
+    "s0185"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[2]/ENT[5]",
+    "element": "ENT",
+    "start": 8924,
+    "end": 8950
+   },
+   "cell": {
+    "row": 2,
+    "column": 4,
+    "header": false
+   }
+  },
+  {
+   "id": "n0067",
+   "kind": "cell",
+   "parent": "n0061",
+   "ordinal": 5,
+   "depth": 4,
+   "derivation": "native",
+   "text": "120 hrs.; $12,240",
+   "evidence": [
+    "s0187"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[2]/ENT[6]",
+    "element": "ENT",
+    "start": 8975,
+    "end": 9003
+   },
+   "cell": {
+    "row": 2,
+    "column": 5,
+    "header": false
+   }
+  },
+  {
+   "id": "n0068",
+   "kind": "cell",
+   "parent": "n0061",
+   "ordinal": 6,
+   "depth": 4,
+   "derivation": "native",
+   "text": "$4,080",
+   "evidence": [
+    "s0189"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/GPOTABLE[1]/ROW[2]/ENT[7]",
+    "element": "ENT",
+    "start": 9028,
+    "end": 9045
+   },
+   "cell": {
+    "row": 2,
+    "column": 6,
+    "header": false
+   }
+  },
+  {
+   "id": "n0069",
+   "kind": "paragraph",
+   "parent": "n0030",
+   "ordinal": 11,
+   "depth": 2,
+   "derivation": "native",
+   "text": "\n                    Comments:\n                     Comments are invited on: (1) whether the collection of information is necessary for the proper performance of the functions of the Commission, including whether the information will have practical utility; (2) the accuracy of the agency's estimate of the burden and cost of the collection of information, including the validity of the methodology and assumptions used; (3) ways to enhance the quality, utility and clarity of the information collection; and (4) ways to minimize the burden of the collection of information on those who are to respond, including the use of automated collection techniques or other forms of information technology.\n                ",
+   "evidence": [
+    "s0193",
+    "s0194",
+    "s0195"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/P[8]",
+    "element": "P",
+    "start": 9117,
+    "end": 9852
+   }
+  },
+  {
+   "id": "n0070",
+   "kind": "signature",
+   "parent": "n0030",
+   "ordinal": 12,
+   "depth": 2,
+   "derivation": "native",
+   "evidence": [
+    "s0197",
+    "s0199",
+    "s0201",
+    "s0203"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/SIG[1]",
+    "element": "SIG",
+    "start": 9869,
+    "end": 10060
+   }
+  },
+  {
+   "id": "n0071",
+   "kind": "text",
+   "parent": "n0070",
+   "ordinal": 0,
+   "depth": 3,
+   "derivation": "native",
+   "text": "Dated: September 15, 2026.",
+   "evidence": [
+    "s0198"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/SIG[1]/DATED[1]",
+    "element": "DATED",
+    "start": 9895,
+    "end": 9936
+   }
+  },
+  {
+   "id": "n0072",
+   "kind": "text",
+   "parent": "n0070",
+   "ordinal": 1,
+   "depth": 3,
+   "derivation": "native",
+   "text": "Debbie-Anne A. Reese,",
+   "evidence": [
+    "s0200"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/SIG[1]/NAME[1]",
+    "element": "NAME",
+    "start": 9957,
+    "end": 9991
+   }
+  },
+  {
+   "id": "n0073",
+   "kind": "text",
+   "parent": "n0070",
+   "ordinal": 2,
+   "depth": 3,
+   "derivation": "native",
+   "text": "Secretary.",
+   "evidence": [
+    "s0202"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/SUPLINF[1]/SIG[1]/TITLE[1]",
+    "element": "TITLE",
+    "start": 10012,
+    "end": 10037
+   }
+  },
+  {
+   "id": "n0074",
+   "kind": "text",
+   "parent": "n0001",
+   "ordinal": 2,
+   "depth": 1,
+   "derivation": "native",
+   "text": "[FR Doc. 2026-19200 Filed 9-17-26; 8:45 am]",
+   "evidence": [
+    "s0206"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/FRDOC[1]",
+    "element": "FRDOC",
+    "start": 10096,
+    "end": 10154
+   }
+  },
+  {
+   "id": "n0075",
+   "kind": "text",
+   "parent": "n0001",
+   "ordinal": 3,
+   "depth": 1,
+   "derivation": "native",
+   "text": "BILLING CODE 6717-01-P",
+   "evidence": [
+    "s0208"
+   ],
+   "source": {
+    "coordinateSystem": "xml-node-path",
+    "path": "/NOTICE[1]/BILCOD[1]",
+    "element": "BILCOD",
+    "start": 10167,
+    "end": 10206
+   }
+  }
+ ],
+ "evidence": [
+  {
+   "id": "s0001",
+   "start": 0,
+   "end": 13,
+   "exact": "\n            ",
+   "sha256": "6ba6c11bd8700086c8f00d11c7e22487a9c13a211f57e0cf06bb9e365fa87704",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8,
+    "end": 21,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0002",
+   "start": 13,
+   "end": 30,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 29,
+    "end": 46,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0003",
+   "start": 30,
+   "end": 47,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 66,
+    "end": 83,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0004",
+   "start": 47,
+   "end": 67,
+   "exact": "DEPARTMENT OF ENERGY",
+   "sha256": "74027e0626fae5bab5d9e33169eb96c4cf0eef8b93243c4f34d235679604d71b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 100,
+    "end": 120,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0005",
+   "start": 67,
+   "end": 84,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 129,
+    "end": 146,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0006",
+   "start": 84,
+   "end": 120,
+   "exact": "Federal Energy Regulatory Commission",
+   "sha256": "5e68a859e9d1a4357198d13ab2a3072b5a147756fcb24cffb5d34bebddbb4852",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 154,
+    "end": 190,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0007",
+   "start": 120,
+   "end": 137,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 199,
+    "end": 216,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0008",
+   "start": 137,
+   "end": 161,
+   "exact": "[Docket No. IC26-36-000]",
+   "sha256": "7dc6edde00bce4a0dd285e1e20bf6c4d7ced8c6bd33b06a5523403931eafebb2",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 224,
+    "end": 248,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0009",
+   "start": 161,
+   "end": 178,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 257,
+    "end": 274,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0010",
+   "start": 178,
+   "end": 261,
+   "exact": "Commission Information Collection Activities (Ferc-521); Comment Request; Extension",
+   "sha256": "49fdc1e6de4c3b5932edded37944b54d49274e1e17e3b6be78da484db28b05b6",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 283,
+    "end": 366,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0011",
+   "start": 261,
+   "end": 278,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 376,
+    "end": 393,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0012",
+   "start": 278,
+   "end": 299,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 398,
+    "end": 419,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0013",
+   "start": 299,
+   "end": 306,
+   "exact": "AGENCY:",
+   "sha256": "91c470ad38e75d3db62fb4eeb6fab686a512ee1eb6b895ebc3fdd50bdbd3b190",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 436,
+    "end": 443,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0014",
+   "start": 306,
+   "end": 327,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 448,
+    "end": 469,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0015",
+   "start": 327,
+   "end": 364,
+   "exact": "Federal Energy Regulatory Commission.",
+   "sha256": "3333e7a892440cd6a55f94d517333de0ce5ed36223bd7a0872735b96cb971f6b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 472,
+    "end": 509,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0016",
+   "start": 364,
+   "end": 381,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 513,
+    "end": 530,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0017",
+   "start": 381,
+   "end": 398,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 536,
+    "end": 553,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0018",
+   "start": 398,
+   "end": 419,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 558,
+    "end": 579,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0019",
+   "start": 419,
+   "end": 426,
+   "exact": "ACTION:",
+   "sha256": "c6d9fc6039a645287b4752230d04a5771815618505066d2c5f28db741c8ea811",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 596,
+    "end": 603,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0020",
+   "start": 426,
+   "end": 447,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 608,
+    "end": 629,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0021",
+   "start": 447,
+   "end": 505,
+   "exact": "Notice of information collection and request for comments.",
+   "sha256": "5da9097132cc93db7814621877d52242571de1965c33bfaa5dd039cbf75789d5",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 632,
+    "end": 690,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0022",
+   "start": 505,
+   "end": 522,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 694,
+    "end": 711,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0023",
+   "start": 522,
+   "end": 539,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 717,
+    "end": 734,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0024",
+   "start": 539,
+   "end": 560,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 739,
+    "end": 760,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0025",
+   "start": 560,
+   "end": 568,
+   "exact": "SUMMARY:",
+   "sha256": "097543afd1da859395e5d8ebb54a96a0327c8a3cf50a660bc33f8a1e8596e463",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 777,
+    "end": 785,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0026",
+   "start": 568,
+   "end": 589,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 790,
+    "end": 811,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0027",
+   "start": 589,
+   "end": 1094,
+   "exact": "In compliance with the requirements of the Paperwork Reduction Act of 1995 (PRA), the Federal Energy Regulatory Commission (Commission or FERC) is soliciting public comment on FERC-521: Payments for Benefits from Headwater Improvements (OMB Control No 1902-0087) which will be submitted to the Office of Management and Budget (OMB) for a review of the information collection requirements. There are no proposed changes to the reporting requirements. No comments were received in the 60-day comment period.",
+   "sha256": "329907df3458c84344f65e8e52e13ac487f6bc82f628c1d4c641ca1807844aa6",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 814,
+    "end": 1319,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0028",
+   "start": 1094,
+   "end": 1111,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1323,
+    "end": 1340,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0029",
+   "start": 1111,
+   "end": 1128,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1346,
+    "end": 1363,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0030",
+   "start": 1128,
+   "end": 1149,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1370,
+    "end": 1391,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0031",
+   "start": 1149,
+   "end": 1155,
+   "exact": "DATES:",
+   "sha256": "aabd0fc79d0cfeba006a3ea2bec5240dc87336f1f34994a274f71bf56c552dea",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1408,
+    "end": 1414,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0032",
+   "start": 1155,
+   "end": 1176,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1419,
+    "end": 1440,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0033",
+   "start": 1176,
+   "end": 1243,
+   "exact": "Comments on the collection of information are due October 19, 2026.",
+   "sha256": "cc017b79e7ce69120f413abf9c019f99552d86a81a414461f897a1a439f7521c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1443,
+    "end": 1510,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0034",
+   "start": 1243,
+   "end": 1260,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1514,
+    "end": 1531,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0035",
+   "start": 1260,
+   "end": 1277,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1539,
+    "end": 1556,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0036",
+   "start": 1277,
+   "end": 1298,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1561,
+    "end": 1582,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0037",
+   "start": 1298,
+   "end": 1308,
+   "exact": "ADDRESSES:",
+   "sha256": "90de0ea221506dc9ddba5af3f1c71ed8d41cac1fc5b581539b335420835d6c28",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1599,
+    "end": 1609,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0038",
+   "start": 1308,
+   "end": 1329,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1614,
+    "end": 1635,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0039",
+   "start": 1329,
+   "end": 1428,
+   "exact": "\n                        Send written comments on FERC-521 to OMB through \n                        ",
+   "sha256": "f25a817afa32b7a5f41b04fc288f8f9bb519126acd72ee059867068b53fb4c8b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1638,
+    "end": 1737,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0040",
+   "start": 1428,
+   "end": 1514,
+   "exact": "https://www.reginfo.gov/public/do/PRA/icrPublicCommentRequest?ref_nbr=202607-1902-007.",
+   "sha256": "435754f28dd4cc97d4e0ee258a101704e217000b8fabbf849c85535083c7b1be",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1747,
+    "end": 1833,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0041",
+   "start": 1514,
+   "end": 1584,
+   "exact": "\n                         You can also visit \n                        ",
+   "sha256": "56a28d406a42017e763c1a7cb6b2e5e9a31a03750356f4c9769b608d9f89a225",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1837,
+    "end": 1907,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0042",
+   "start": 1584,
+   "end": 1625,
+   "exact": "https://www.reginfo.gov/public/do/PRAMain",
+   "sha256": "7fe0483247ae45c6c507b42a94ac6f802e7f6c72adeb3612fe1b87dd2b9dd7c4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1917,
+    "end": 1958,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0043",
+   "start": 1625,
+   "end": 1909,
+   "exact": "\n                         and use the drop-down under “Currently under Review” to select the “Federal Energy Regulatory Commission” where you can see the open opportunities to provide comments. Comments should be sent within 30 days of publication of this notice.\n                    ",
+   "sha256": "73cc3a6519d17824eb40a29887cf88e1f0990d74d4673bd42c6eced5e9ce8a28",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 1962,
+    "end": 2254,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0044",
+   "start": 1909,
+   "end": 1930,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2258,
+    "end": 2279,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0045",
+   "start": 1930,
+   "end": 2049,
+   "exact": "\n                        Please submit a copy of your comments to the Commission via email to \n                        ",
+   "sha256": "b10890cab8c925903f4c2016353efa612eacc4c310b13700e187d60f69fd8154",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2282,
+    "end": 2401,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0046",
+   "start": 2049,
+   "end": 2072,
+   "exact": "DataClearance@FERC.gov.",
+   "sha256": "03a46796749959e431a52c87fcf687cf398a16e1c6ac8f997670d5d1ea940970",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2411,
+    "end": 2434,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0047",
+   "start": 2072,
+   "end": 2351,
+   "exact": "\n                         You must specify the docket No. (IC26-36-000) and the FERC Information Collection number (FERC-521) in your email. If you are unable to file electronically, comments may be filed by USPS mail or by hand (including courier) delivery:\n                    ",
+   "sha256": "a11d21cadd0fb4954f42a6f0229b83820f8d4e6c2ccdaee2a9b7369636f562d8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2438,
+    "end": 2717,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0048",
+   "start": 2351,
+   "end": 2372,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2721,
+    "end": 2742,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0049",
+   "start": 2372,
+   "end": 2424,
+   "exact": "\n                        • \n                        ",
+   "sha256": "da5a652e3261ef8961844b372c0f68bb4328afc3216df71d94e764617ca014ab",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2745,
+    "end": 2799,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0050",
+   "start": 2424,
+   "end": 2458,
+   "exact": "Mail via U.S. Postal Service Only:",
+   "sha256": "e882f8d374b1ea0bdb1ff620b6920721d797acc114a4d1885b43fb592635a4a9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2809,
+    "end": 2843,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0051",
+   "start": 2458,
+   "end": 2614,
+   "exact": "\n                         Federal Energy Regulatory Commission, Secretary of the Commission, 888 First Street NE, Washington, DC 20426.\n                    ",
+   "sha256": "5014edd6f63692237bce16d10a2ce54165255d9995fbe45ba9ae9d194ca8f3fa",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 2847,
+    "end": 3003,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0052",
+   "start": 2614,
+   "end": 2635,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3007,
+    "end": 3028,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0053",
+   "start": 2635,
+   "end": 2687,
+   "exact": "\n                        • \n                        ",
+   "sha256": "da5a652e3261ef8961844b372c0f68bb4328afc3216df71d94e764617ca014ab",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3031,
+    "end": 3085,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0054",
+   "start": 2687,
+   "end": 2714,
+   "exact": "All other delivery methods:",
+   "sha256": "da031912258fb83942fcbe39797a9e9f387a056c394fb27310d0f04315c8d93d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3095,
+    "end": 3122,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0055",
+   "start": 2714,
+   "end": 2870,
+   "exact": "\n                         Federal Energy Regulatory Commission, Secretary of the Commission, 12225 Wilkins Avenue, Rockville, MD 20852.\n                    ",
+   "sha256": "46f46d8bd34f5fc4f964f322fed593a4737cc28dd668be3565606560ed9cf97d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3126,
+    "end": 3282,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0056",
+   "start": 2870,
+   "end": 2891,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3286,
+    "end": 3307,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0057",
+   "start": 2891,
+   "end": 2916,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3310,
+    "end": 3335,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0058",
+   "start": 2916,
+   "end": 2923,
+   "exact": "Docket:",
+   "sha256": "00e99827364b2748ba9ca444052901a385ca588638e1a2d114be719f0159d1ed",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3345,
+    "end": 3352,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0059",
+   "start": 2923,
+   "end": 3034,
+   "exact": "\n                         To view comments and issuances in this docket, please visit \n                        ",
+   "sha256": "25f8c010d72db89999cdd0ddf7b5385ab16b4947b7a507b71db9fc1f9a026cd9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3356,
+    "end": 3467,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0060",
+   "start": 3034,
+   "end": 3076,
+   "exact": "https://elibrary.ferc.gov/eLibrary/search.",
+   "sha256": "7558c573b1f4618745c23def3513709b4e007c697e7b8477d43a8e433970f9f4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3477,
+    "end": 3519,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0061",
+   "start": 3076,
+   "end": 3097,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3523,
+    "end": 3544,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0062",
+   "start": 3097,
+   "end": 3114,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3548,
+    "end": 3565,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0063",
+   "start": 3114,
+   "end": 3131,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3571,
+    "end": 3588,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0064",
+   "start": 3131,
+   "end": 3152,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3596,
+    "end": 3617,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0065",
+   "start": 3152,
+   "end": 3184,
+   "exact": "FOR FURTHER INFORMATION CONTACT:",
+   "sha256": "6b9ffe959d80c5fbf7df9ec83cc6ff85550087458bb972ea4997bc19927d860b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3634,
+    "end": 3666,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0066",
+   "start": 3184,
+   "end": 3205,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3671,
+    "end": 3692,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0067",
+   "start": 3205,
+   "end": 3287,
+   "exact": "\n                        Kayla Williams, (202) 502-6468. \n                        ",
+   "sha256": "089e7c0b58a3a1d330d6eab3de8d9101a8af23f2a3e3a6db52a832cff5fba2e3",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3695,
+    "end": 3777,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0068",
+   "start": 3287,
+   "end": 3309,
+   "exact": "DataClearance@FERC.gov",
+   "sha256": "361abe2b72935eeaad061bcae2b236f9697fd99cad6383c098a9f05a7460f7c9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3787,
+    "end": 3809,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0069",
+   "start": 3309,
+   "end": 3330,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3813,
+    "end": 3834,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0070",
+   "start": 3330,
+   "end": 3347,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3838,
+    "end": 3855,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0071",
+   "start": 3347,
+   "end": 3360,
+   "exact": "\n            ",
+   "sha256": "6ba6c11bd8700086c8f00d11c7e22487a9c13a211f57e0cf06bb9e365fa87704",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3864,
+    "end": 3877,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0072",
+   "start": 3360,
+   "end": 3373,
+   "exact": "\n            ",
+   "sha256": "6ba6c11bd8700086c8f00d11c7e22487a9c13a211f57e0cf06bb9e365fa87704",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3886,
+    "end": 3899,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0073",
+   "start": 3373,
+   "end": 3390,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3908,
+    "end": 3925,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0074",
+   "start": 3390,
+   "end": 3416,
+   "exact": "SUPPLEMENTARY INFORMATION:",
+   "sha256": "cc07f7c9b62f4a52c54c19d70cc831c5817611ff44c35a81ddab7ea5d561a8c9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3942,
+    "end": 3968,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0075",
+   "start": 3416,
+   "end": 3433,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3973,
+    "end": 3990,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0076",
+   "start": 3433,
+   "end": 3450,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 3994,
+    "end": 4011,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0077",
+   "start": 3450,
+   "end": 3471,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4014,
+    "end": 4035,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0078",
+   "start": 3471,
+   "end": 3477,
+   "exact": "Title:",
+   "sha256": "ecd11fd9f6ba3ceb2887efa9d2cc296d91dd0b6f8bd5b6d8f45e21a1395e9feb",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4045,
+    "end": 4051,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0079",
+   "start": 3477,
+   "end": 3575,
+   "exact": "\n                     FERC-521, Payments for Benefits from Headwater Improvements\n                ",
+   "sha256": "c0d11959c5116ebda67166fa9ede4f3d929c07ec30f6563a1cec95eb01d6e447",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4055,
+    "end": 4153,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0080",
+   "start": 3575,
+   "end": 3592,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4157,
+    "end": 4174,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0081",
+   "start": 3592,
+   "end": 3613,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4177,
+    "end": 4198,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0082",
+   "start": 3613,
+   "end": 3629,
+   "exact": "OMB Control No.:",
+   "sha256": "7c4b02549e92d7d64a88b2df6877ddb0edc2da80b99c496f16faa09a53b5a2c4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4208,
+    "end": 4224,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0083",
+   "start": 3629,
+   "end": 3677,
+   "exact": "\n                     1902-0087\n                ",
+   "sha256": "ff9328e72864acc7370b44fed2f16f3a8ecd868b33213a93d25d4f4a461444ae",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4228,
+    "end": 4276,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0084",
+   "start": 3677,
+   "end": 3694,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4280,
+    "end": 4297,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0085",
+   "start": 3694,
+   "end": 3715,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4300,
+    "end": 4321,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0086",
+   "start": 3715,
+   "end": 3731,
+   "exact": "Type of Request:",
+   "sha256": "092c80a8a4476ed6ff922ac639cc5ad645acee21c21a0c488433272a345cebb7",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4331,
+    "end": 4347,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0087",
+   "start": 3731,
+   "end": 3889,
+   "exact": "\n                     Three-year extension of the FERC-521 information collection requirements with no changes to the reporting requirements.\n                ",
+   "sha256": "dd1e884c0808a5e4dd3c45aba497932882c6104cdf437359329a0fadca64ce54",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4351,
+    "end": 4509,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0088",
+   "start": 3889,
+   "end": 3906,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4513,
+    "end": 4530,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0089",
+   "start": 3906,
+   "end": 3927,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4533,
+    "end": 4554,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0090",
+   "start": 3927,
+   "end": 3936,
+   "exact": "Abstract:",
+   "sha256": "602e5431094a9b018214bbdc39a995e93cb1a24b4f628031772aca7ecb44afcc",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4564,
+    "end": 4573,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0091",
+   "start": 3936,
+   "end": 4726,
+   "exact": "\n                     The purpose of FERC-521 is to implement information collections pursuant to Section 10(f) of the Federal Power Act (FPA). Section 10(f) of the FPA requires hydropower licensees to reimburse upstream headwater project owners for an equitable portion of the benefits it receives as a result of construction work related to headwater improvements. These benefits, referred to as headwater benefits, are the additional energy production possible at a downstream hydropower project resulting from the regulation of river flows by an upstream storage reservoir. The Commission requires federal agencies and owners of non-federal hydropower projects to file data for determining headwater benefits as outlined in 18 Code of Federal Regulations (CFR) Part 11.\n                ",
+   "sha256": "f40f6cd7e9dbb08247675b762b16978e06ee6be301357d8836bd5dfc2a17ef7c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 4577,
+    "end": 5367,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0092",
+   "start": 4726,
+   "end": 4743,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5371,
+    "end": 5388,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0093",
+   "start": 4743,
+   "end": 4764,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5391,
+    "end": 5412,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0094",
+   "start": 4764,
+   "end": 4784,
+   "exact": "Type of Respondents:",
+   "sha256": "eef483f60b7f1dadb11e2cfe89890fa8fd50d803b84e448c85814a2b50bc4de9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5422,
+    "end": 5442,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0095",
+   "start": 4784,
+   "end": 5172,
+   "exact": "\n                     There are two types of entities that respond, Federal and Non-Federal storage and hydropower project owners. The Federal entities that typically respond include the U.S. Army Corps of Engineers and the U.S. Department of Interior Bureau of Reclamation. The Non-Federal entities may consist of any Municipal or Non-Municipal hydropower project owner.\n                ",
+   "sha256": "e5a6f17b88eebf1ba522504c0060fbb47f0d30390da4f110c2243a20051d6183",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5446,
+    "end": 5834,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0096",
+   "start": 5172,
+   "end": 5189,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5838,
+    "end": 5855,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0097",
+   "start": 5189,
+   "end": 5210,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5858,
+    "end": 5879,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0098",
+   "start": 5210,
+   "end": 5235,
+   "exact": "Estimate of Annual Burden",
+   "sha256": "f3abeda8cd9fc1236ddb1ec51d6f26541e8b9faeb696c2902e2d331b3db45682",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5889,
+    "end": 5914,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0099",
+   "start": 5235,
+   "end": 5278,
+   "exact": "\n                     \n                    ",
+   "sha256": "56e6e8927a7e998db761e09bb2725bd4fad6eb3cc39a51e4360a4acc2a153940",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5918,
+    "end": 5963,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0100",
+   "start": 5278,
+   "end": 5299,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5971,
+    "end": 5992,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0101",
+   "start": 5299,
+   "end": 5300,
+   "exact": "1",
+   "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 5996,
+    "end": 5997,
+    "literal": true
+   },
+   "tags": [
+    "SU"
+   ]
+  },
+  {
+   "id": "s0102",
+   "start": 5300,
+   "end": 5344,
+   "exact": "\n                      \n                    ",
+   "sha256": "e41cee214ca83d9efdfd8116da5216b2f04ed85b3fad9351d68b0a6b16f92563",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6002,
+    "end": 6046,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0103",
+   "start": 5344,
+   "end": 5354,
+   "exact": "and cost: ",
+   "sha256": "f9f8ad098ea7cb00e1e0f049a94696b1574df53b466d5f4db450e781df5c7570",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6056,
+    "end": 6068,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0104",
+   "start": 5354,
+   "end": 5375,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6072,
+    "end": 6093,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0105",
+   "start": 5375,
+   "end": 5376,
+   "exact": "2",
+   "sha256": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6097,
+    "end": 6098,
+    "literal": true
+   },
+   "tags": [
+    "SU"
+   ]
+  },
+  {
+   "id": "s0106",
+   "start": 5376,
+   "end": 5397,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6103,
+    "end": 6124,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0107",
+   "start": 5397,
+   "end": 5530,
+   "exact": "\n                     The Commission estimates the total Public Reporting Burden for this information collection as:\n                ",
+   "sha256": "e0b84c6e25765075e953782a118d8ee7fabd3612fdb7a4660e702a3f2bb76057",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6132,
+    "end": 6265,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0108",
+   "start": 5530,
+   "end": 5547,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6269,
+    "end": 6286,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0109",
+   "start": 5547,
+   "end": 5568,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6292,
+    "end": 6313,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0110",
+   "start": 5568,
+   "end": 5593,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6316,
+    "end": 6341,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0111",
+   "start": 5593,
+   "end": 5594,
+   "exact": "1",
+   "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6345,
+    "end": 6346,
+    "literal": true
+   },
+   "tags": [
+    "SU"
+   ]
+  },
+  {
+   "id": "s0112",
+   "start": 5594,
+   "end": 5951,
+   "exact": "\n                         Burden is defined as the total time, effort, or financial resources expended by persons to generate, maintain, retain, or disclose or provide information to or for a Federal agency. For further explanation of what is included in the information collection burden, refer to 5 Code of Federal Regulations 1320.3.\n                    ",
+   "sha256": "eb090bf5f0d6cee9b69925633fa956c2a838f407a3175045e846d9ca17dcd49c",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6351,
+    "end": 6710,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0113",
+   "start": 5951,
+   "end": 5968,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6714,
+    "end": 6731,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0114",
+   "start": 5968,
+   "end": 5985,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6738,
+    "end": 6755,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0115",
+   "start": 5985,
+   "end": 6006,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6761,
+    "end": 6782,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0116",
+   "start": 6006,
+   "end": 6031,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6785,
+    "end": 6810,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0117",
+   "start": 6031,
+   "end": 6032,
+   "exact": "2",
+   "sha256": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6814,
+    "end": 6815,
+    "literal": true
+   },
+   "tags": [
+    "SU"
+   ]
+  },
+  {
+   "id": "s0118",
+   "start": 6032,
+   "end": 6224,
+   "exact": "\n                         FERC estimates that industry hourly costs are similar to the Commission FY 2026 average salary plus benefits of $213,003 per year (or $102/hour).\n                    ",
+   "sha256": "a1229c05e0025282df031950a06584f640680fcbde81253e9c6020914bbc5bc4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 6820,
+    "end": 7014,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0119",
+   "start": 6224,
+   "end": 6241,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7018,
+    "end": 7035,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0120",
+   "start": 6241,
+   "end": 6258,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7042,
+    "end": 7059,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0121",
+   "start": 6258,
+   "end": 6279,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7134,
+    "end": 7155,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0122",
+   "start": 6279,
+   "end": 6280,
+   "exact": " ",
+   "sha256": "0a846272232b2dd88c85db1952c3eb47b198e7311c81a54a754478d87cedc6f8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7163,
+    "end": 7166,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0123",
+   "start": 6280,
+   "end": 6301,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7175,
+    "end": 7196,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0124",
+   "start": 6301,
+   "end": 6326,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7203,
+    "end": 7228,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0125",
+   "start": 6326,
+   "end": 6327,
+   "exact": " ",
+   "sha256": "0a846272232b2dd88c85db1952c3eb47b198e7311c81a54a754478d87cedc6f8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7240,
+    "end": 7243,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0126",
+   "start": 6327,
+   "end": 6352,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7250,
+    "end": 7275,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0127",
+   "start": 6352,
+   "end": 6419,
+   "exact": "\n                            Number of\n                            ",
+   "sha256": "72599302f1b35789ee9e24a7e3a270a7edd4e14f3b375d4d167ac419d1080da4",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7287,
+    "end": 7354,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0128",
+   "start": 6419,
+   "end": 6430,
+   "exact": "respondents",
+   "sha256": "b9820eb8fe01ac45e59913816b5fc2fba78dccff58d3bd0b5214b19f9475c46b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7358,
+    "end": 7369,
+    "literal": true
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0129",
+   "start": 6430,
+   "end": 6455,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7374,
+    "end": 7399,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0130",
+   "start": 6455,
+   "end": 6480,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7406,
+    "end": 7431,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0131",
+   "start": 6480,
+   "end": 6551,
+   "exact": "\n                            Annual number\n                            ",
+   "sha256": "8f6e219211d4abea9de6353daeb1b391501573748cb78f75c98785b8374c2a91",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7443,
+    "end": 7514,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0132",
+   "start": 6551,
+   "end": 6567,
+   "exact": "of responses per",
+   "sha256": "5efa09eb56b569fc463bd8bc246aa2030a897964ed57aceec58a800975cf2ee2",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7518,
+    "end": 7534,
+    "literal": true
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0133",
+   "start": 6567,
+   "end": 6596,
+   "exact": "\n                            ",
+   "sha256": "cea279461b4262dffa123b077d7fee7805e8c6552a7e0e3ff8c6a9c3ee232769",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7539,
+    "end": 7568,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0134",
+   "start": 6596,
+   "end": 6606,
+   "exact": "respondent",
+   "sha256": "00e3874b77243522c34e36a8daf98c2154b04630bce913e30854c13822aa1213",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7572,
+    "end": 7582,
+    "literal": true
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0135",
+   "start": 6606,
+   "end": 6631,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7587,
+    "end": 7612,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0136",
+   "start": 6631,
+   "end": 6656,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7619,
+    "end": 7644,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0137",
+   "start": 6656,
+   "end": 6681,
+   "exact": "Total number of responses",
+   "sha256": "a48e030c6f3b33cede1ea7d68241937c407e571a84781c39aed2d44df5498acd",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7656,
+    "end": 7681,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0138",
+   "start": 6681,
+   "end": 6706,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7688,
+    "end": 7713,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0139",
+   "start": 6706,
+   "end": 6750,
+   "exact": "\n                            Average burden ",
+   "sha256": "f63490504274483d4355884f469c044b68a5632cea4b711efed9d45c9d515485",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7725,
+    "end": 7769,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0140",
+   "start": 6750,
+   "end": 6751,
+   "exact": "&",
+   "sha256": "951dcee3a7a4f3aac67ec76a2ce4469cc76df650f134bf2572bf60a65c982338",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7769,
+    "end": 7774,
+    "literal": false
+   }
+  },
+  {
+   "id": "s0141",
+   "start": 6751,
+   "end": 6785,
+   "exact": " cost\n                            ",
+   "sha256": "c72d0710aeadc1ad26af9c08ff0ee147218b76d3cc7b2a030bd56d955e9710f8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7774,
+    "end": 7808,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0142",
+   "start": 6785,
+   "end": 6797,
+   "exact": "per response",
+   "sha256": "93fcb94adc963e5fe2e97fc08a0c6159e0c6a121cab66b89b72155a4bf5a21f1",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7812,
+    "end": 7824,
+    "literal": true
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0143",
+   "start": 6797,
+   "end": 6822,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7829,
+    "end": 7854,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0144",
+   "start": 6822,
+   "end": 6847,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7861,
+    "end": 7886,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0145",
+   "start": 6847,
+   "end": 6924,
+   "exact": "\n                            Total annual burden\n                            ",
+   "sha256": "65508ab0cea26b00d1b70c0cf697f0753c0b7b84a91efe43a059af041e7afd14",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7898,
+    "end": 7975,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0146",
+   "start": 6924,
+   "end": 6930,
+   "exact": "hours ",
+   "sha256": "e61c8786551a7c8f5121fbb2fd61de730e3f5551d04484aa9be6fd35015495f9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7979,
+    "end": 7985,
+    "literal": true
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0147",
+   "start": 6930,
+   "end": 6931,
+   "exact": "&",
+   "sha256": "951dcee3a7a4f3aac67ec76a2ce4469cc76df650f134bf2572bf60a65c982338",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7985,
+    "end": 7990,
+    "literal": false
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0148",
+   "start": 6931,
+   "end": 6937,
+   "exact": " total",
+   "sha256": "88c4fa9611792c998a67d25c19fdf071e831f30cb381ad6af487be1c7b86100f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 7990,
+    "end": 7996,
+    "literal": true
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0149",
+   "start": 6937,
+   "end": 6966,
+   "exact": "\n                            ",
+   "sha256": "cea279461b4262dffa123b077d7fee7805e8c6552a7e0e3ff8c6a9c3ee232769",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8001,
+    "end": 8030,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0150",
+   "start": 6966,
+   "end": 6977,
+   "exact": "annual cost",
+   "sha256": "e0170056df6ae20ea20e8a47f2802caf575a503af1171f576ef81ade4c417817",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8034,
+    "end": 8045,
+    "literal": true
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0151",
+   "start": 6977,
+   "end": 7002,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8050,
+    "end": 8075,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0152",
+   "start": 7002,
+   "end": 7027,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8082,
+    "end": 8107,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0153",
+   "start": 7027,
+   "end": 7093,
+   "exact": "\n                            Cost per\n                            ",
+   "sha256": "4039daf248afb3d0bcca6a17b79ce424743be1891ea4824ce8d4e59681f302e9",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8119,
+    "end": 8185,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0154",
+   "start": 7093,
+   "end": 7103,
+   "exact": "respondent",
+   "sha256": "00e3874b77243522c34e36a8daf98c2154b04630bce913e30854c13822aa1213",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8189,
+    "end": 8199,
+    "literal": true
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0155",
+   "start": 7103,
+   "end": 7132,
+   "exact": "\n                            ",
+   "sha256": "cea279461b4262dffa123b077d7fee7805e8c6552a7e0e3ff8c6a9c3ee232769",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8204,
+    "end": 8233,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0156",
+   "start": 7132,
+   "end": 7135,
+   "exact": "($)",
+   "sha256": "3a9629733452f8b09df2e0e888cac2eeba6b68a8f32b1d022384625537b11c65",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8237,
+    "end": 8240,
+    "literal": true
+   },
+   "tags": [
+    "LI"
+   ]
+  },
+  {
+   "id": "s0157",
+   "start": 7135,
+   "end": 7160,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8245,
+    "end": 8270,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0158",
+   "start": 7160,
+   "end": 7181,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8277,
+    "end": 8298,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0159",
+   "start": 7181,
+   "end": 7202,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8306,
+    "end": 8327,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0160",
+   "start": 7202,
+   "end": 7227,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8343,
+    "end": 8368,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0161",
+   "start": 7227,
+   "end": 7228,
+   "exact": " ",
+   "sha256": "0a846272232b2dd88c85db1952c3eb47b198e7311c81a54a754478d87cedc6f8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8380,
+    "end": 8383,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0162",
+   "start": 7228,
+   "end": 7253,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8389,
+    "end": 8414,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0163",
+   "start": 7253,
+   "end": 7256,
+   "exact": "(1)",
+   "sha256": "fd0ad9026eee596b7072a762941f60bef57e760a230edd450b3a634825685c2a",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8419,
+    "end": 8422,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0164",
+   "start": 7256,
+   "end": 7281,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8428,
+    "end": 8453,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0165",
+   "start": 7281,
+   "end": 7284,
+   "exact": "(2)",
+   "sha256": "0e77e68ba5473d98840c3212f4a8cb801226494f1162c8001a9f4ed7b00cbaa8",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8458,
+    "end": 8461,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0166",
+   "start": 7284,
+   "end": 7309,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8467,
+    "end": 8492,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0167",
+   "start": 7309,
+   "end": 7324,
+   "exact": "(1) * (2) = (3)",
+   "sha256": "8fcaf8821ccac32e728a615ddcdca71307dca91f19886fc88492bb1efee78d26",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8497,
+    "end": 8512,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0168",
+   "start": 7324,
+   "end": 7349,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8518,
+    "end": 8543,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0169",
+   "start": 7349,
+   "end": 7352,
+   "exact": "(4)",
+   "sha256": "cbe3b52ccdb46fd15e9f52b372fc95b549e6d8a1c5202fda06e4f3bf478e41ca",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8548,
+    "end": 8551,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0170",
+   "start": 7352,
+   "end": 7377,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8557,
+    "end": 8582,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0171",
+   "start": 7377,
+   "end": 7392,
+   "exact": "(3) * (4) = (5)",
+   "sha256": "09612780ea505de4af717503c80c74deb12dc235e31cc7866e92e396addb6ca0",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8587,
+    "end": 8602,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0172",
+   "start": 7392,
+   "end": 7417,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8608,
+    "end": 8633,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0173",
+   "start": 7417,
+   "end": 7426,
+   "exact": "(5) ÷ (1)",
+   "sha256": "9c21ad321920e19593aa17a94bcb243f2fa314bb1e5915db4e18fc538665e70e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8638,
+    "end": 8648,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0174",
+   "start": 7426,
+   "end": 7447,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8654,
+    "end": 8675,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0175",
+   "start": 7447,
+   "end": 7468,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8681,
+    "end": 8702,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0176",
+   "start": 7468,
+   "end": 7493,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8707,
+    "end": 8732,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0177",
+   "start": 7493,
+   "end": 7531,
+   "exact": "Federal and Non-Federal project owners",
+   "sha256": "658eafebadca5d004f2cc9eb51a86fb1dbf1e7e48e78b9b759f386781b69c6a7",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8744,
+    "end": 8782,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0178",
+   "start": 7531,
+   "end": 7556,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8788,
+    "end": 8813,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0179",
+   "start": 7556,
+   "end": 7557,
+   "exact": "3",
+   "sha256": "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8818,
+    "end": 8819,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0180",
+   "start": 7557,
+   "end": 7582,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8825,
+    "end": 8850,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0181",
+   "start": 7582,
+   "end": 7583,
+   "exact": "1",
+   "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8855,
+    "end": 8856,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0182",
+   "start": 7583,
+   "end": 7608,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8862,
+    "end": 8887,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0183",
+   "start": 7608,
+   "end": 7609,
+   "exact": "3",
+   "sha256": "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8892,
+    "end": 8893,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0184",
+   "start": 7609,
+   "end": 7634,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8899,
+    "end": 8924,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0185",
+   "start": 7634,
+   "end": 7649,
+   "exact": "40 hrs.; $4,080",
+   "sha256": "6d900bc61ee0cf9b703eff35788e30dd30690248f63c6265cea4afa0da1ce5f7",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8929,
+    "end": 8944,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0186",
+   "start": 7649,
+   "end": 7674,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8950,
+    "end": 8975,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0187",
+   "start": 7674,
+   "end": 7691,
+   "exact": "120 hrs.; $12,240",
+   "sha256": "535de445c03e697e3ad46ded7bc3740190a8bc82dce458059863559d61250af0",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 8980,
+    "end": 8997,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0188",
+   "start": 7691,
+   "end": 7716,
+   "exact": "\n                        ",
+   "sha256": "c4eb1420cc7833118ef784bdd2a7d986bc8f6fe0a4baa7d682f8a21b3719d226",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9003,
+    "end": 9028,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0189",
+   "start": 7716,
+   "end": 7722,
+   "exact": "$4,080",
+   "sha256": "591dc0e00a39b45ce2729a4736bff21463b6ef4b2383e6a53735a08c7acb9b21",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9033,
+    "end": 9039,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0190",
+   "start": 7722,
+   "end": 7743,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9045,
+    "end": 9066,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0191",
+   "start": 7743,
+   "end": 7760,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9072,
+    "end": 9089,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0192",
+   "start": 7760,
+   "end": 7777,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9100,
+    "end": 9117,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0193",
+   "start": 7777,
+   "end": 7798,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9120,
+    "end": 9141,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0194",
+   "start": 7798,
+   "end": 7807,
+   "exact": "Comments:",
+   "sha256": "200d647d1164db13dd484eeb713c1b6623bafb879cdd7058546354ae552f805e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9151,
+    "end": 9160,
+    "literal": true
+   },
+   "tags": [
+    "E"
+   ]
+  },
+  {
+   "id": "s0195",
+   "start": 7807,
+   "end": 8491,
+   "exact": "\n                     Comments are invited on: (1) whether the collection of information is necessary for the proper performance of the functions of the Commission, including whether the information will have practical utility; (2) the accuracy of the agency's estimate of the burden and cost of the collection of information, including the validity of the methodology and assumptions used; (3) ways to enhance the quality, utility and clarity of the information collection; and (4) ways to minimize the burden of the collection of information on those who are to respond, including the use of automated collection techniques or other forms of information technology.\n                ",
+   "sha256": "c612e9310e1f6e8ea75e67b06e644bac7eb3e99d5163824407fe406c1a93d4f5",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9164,
+    "end": 9848,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0196",
+   "start": 8491,
+   "end": 8508,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9852,
+    "end": 9869,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0197",
+   "start": 8508,
+   "end": 8529,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9874,
+    "end": 9895,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0198",
+   "start": 8529,
+   "end": 8555,
+   "exact": "Dated: September 15, 2026.",
+   "sha256": "0010f7a0a4174f9c231a175342e2e01ff307e6a50048977d8331bdc3ab06965f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9902,
+    "end": 9928,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0199",
+   "start": 8555,
+   "end": 8576,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9936,
+    "end": 9957,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0200",
+   "start": 8576,
+   "end": 8597,
+   "exact": "Debbie-Anne A. Reese,",
+   "sha256": "2a4b4241ee69c76bf15d7abb8370d0555a57a43d6bdd4c3e38c200eaea3ded29",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9963,
+    "end": 9984,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0201",
+   "start": 8597,
+   "end": 8618,
+   "exact": "\n                    ",
+   "sha256": "b1e38de319d581a24c979db8c0e4881a2b0d54d988d01f707de7a6d06532988f",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 9991,
+    "end": 10012,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0202",
+   "start": 8618,
+   "end": 8628,
+   "exact": "Secretary.",
+   "sha256": "4bce38353cb2b7a46597fbe0d4bf5596a50a8a37712ac2e5f455d1d743ffdc80",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10019,
+    "end": 10029,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0203",
+   "start": 8628,
+   "end": 8645,
+   "exact": "\n                ",
+   "sha256": "9085bed86afe0e5076de36797b5a6fb0568afee9757a3f128fccafd20073ed1d",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10037,
+    "end": 10054,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0204",
+   "start": 8645,
+   "end": 8658,
+   "exact": "\n            ",
+   "sha256": "6ba6c11bd8700086c8f00d11c7e22487a9c13a211f57e0cf06bb9e365fa87704",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10060,
+    "end": 10073,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0205",
+   "start": 8658,
+   "end": 8671,
+   "exact": "\n            ",
+   "sha256": "6ba6c11bd8700086c8f00d11c7e22487a9c13a211f57e0cf06bb9e365fa87704",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10083,
+    "end": 10096,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0206",
+   "start": 8671,
+   "end": 8714,
+   "exact": "[FR Doc. 2026-19200 Filed 9-17-26; 8:45 am]",
+   "sha256": "c025e36bdf67938d8275eaf79fadcbbd5bc258f8f1e19677fec38ec620d3783e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10103,
+    "end": 10146,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0207",
+   "start": 8714,
+   "end": 8727,
+   "exact": "\n            ",
+   "sha256": "6ba6c11bd8700086c8f00d11c7e22487a9c13a211f57e0cf06bb9e365fa87704",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10154,
+    "end": 10167,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0208",
+   "start": 8727,
+   "end": 8749,
+   "exact": "BILLING CODE 6717-01-P",
+   "sha256": "af4a0ba9402326b975f3dc02e6ec68a723a1118941f918b6c119461544a13746",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10175,
+    "end": 10197,
+    "literal": true
+   }
+  },
+  {
+   "id": "s0209",
+   "start": 8749,
+   "end": 8758,
+   "exact": "\n        ",
+   "sha256": "ac1e06ffe7bf6c03d4eeb288ffd1c2d65059d1711afe71c31fa857173e06221e",
+   "source": {
+    "coordinateSystem": "utf8-byte",
+    "start": 10206,
+    "end": 10215,
+    "literal": true
+   }
+  }
+ ],
+ "unresolved": [],
+ "issues": []
+}

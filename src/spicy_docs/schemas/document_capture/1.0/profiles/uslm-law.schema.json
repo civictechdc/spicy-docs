@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:uslm-law",
+  "title": "DocumentCapture profile: uslm-law v1",
+  "description": "A GovInfo USLM public law (pLaw). Structure is the publisher's: section, subsection and lower units are native; num is the label; quotedContent is a quote. Family kinds name USLM elements the core vocabulary lacks.",
+  "x-parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+  },
+  "allOf": [
+    {
+      "$ref": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json"
+    },
+    {
+      "properties": {
+        "profile": {
+          "properties": {
+            "name": {
+              "const": "uslm-law"
+            },
+            "version": {
+              "const": "1"
+            },
+            "ext": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "approvedDate",
+                "citableAs",
+                "congress",
+                "docNumber",
+                "processedBy",
+                "processedDate",
+                "schemaLocation",
+                "source",
+                "title"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "docNumber": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "congress": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "citableAs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "approvedDate": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "schemaLocation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "processedBy": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "processedDate": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "nodes": {
+          "items": {
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^uslm-law:"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "uslm-law:amendingAction",
+                        "uslm-law:sidenote",
+                        "uslm-law:toc",
+                        "uslm-law:enactingFormula",
+                        "uslm-law:sourceCredit"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "ext": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [],
+                    "properties": {
+                      "identifier": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string"
+                      },
+                      "numValue": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
