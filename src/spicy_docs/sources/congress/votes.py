@@ -296,10 +296,14 @@ def senate_url(locator: VoteLocator) -> str:
     )
 
 
-def _check_congress_session(congress: object, session: object) -> None:
-    for name, value in (("congress", congress), ("session", session)):
-        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-            raise VoteSourceError(f"{name} must be a non-negative integer")
+def _check_congress_session(congress: int, session: int) -> None:
+    """The menu's own (chamber-less) congress/session shape, reusing ``VoteKey``'s non-negative-int rule
+    (``interpretation/vote_matching.py``) through ``_as_vote_key`` rather than restating it a third time.
+    Every call site here is Senate-only and carries no roll number of its own, so both are supplied as
+    fixed, always-valid placeholders purely to reach the shared check; ``VoteMatchError``'s message names
+    ``congress``/``session`` by field, so nothing here leaks the placeholder chamber or roll number.
+    """
+    _as_vote_key("senate", congress, session, 0)
 
 
 def senate_vote_menu_url(congress: int, session: int) -> str:
@@ -498,6 +502,15 @@ class SenateVoteMenuMatter:
 class SenateVoteMenuEntry:
     """One ``<vote>`` row from the Senate LIS vote menu, every field it states, as spelled.
 
+    ``vote_date`` is a bare day-month the publisher states with no year of
+    its own (e.g. ``"18-Dec"``); ``SenateVoteMenu.congress_year`` is only
+    *presumptively* that vote's year, not a fact this record states -- a
+    session can run into the following January before it adjourns (the
+    119th's 1st session did not, but nothing here proves a future one
+    won't), so a caller that builds an instant from ``vote_date`` must
+    account for that year-boundary case itself rather than assume
+    ``congress_year`` always applies.
+
     ``issue``/``question``/``result`` are ``None`` and ``matters`` is
     non-empty on the roughly 1-in-70 "en_bloc" batch confirmation votes
     (measured: 9 of 659, 119th Congress 1st session) -- the menu states no
@@ -506,8 +519,10 @@ class SenateVoteMenuEntry:
     ``<question><measure>...</measure></question>`` some amendment votes
     carry beside their question text (measured 113 of the 650 non-en_bloc
     votes in that same session); it is ``None`` when the vote's own
-    ``<question>`` carries no ``<measure>``. ``tallies`` keeps the menu's own
-    count names (``yeas``, ``nays``) the same way ``RollCallVote.tallies``
+    ``<question>`` carries no ``<measure>``, and reading it refuses if the
+    ``<question>`` carries any text after ``</measure>`` -- an unmeasured
+    shape this module has no rule for keeping. ``tallies`` keeps the menu's
+    own count names (``yeas``, ``nays``) the same way ``RollCallVote.tallies``
     does -- the menu states no ``present``/``absent`` count, unlike the vote
     file itself.
     """
@@ -871,7 +886,16 @@ def _read_menu_entry(element: Element, label: str) -> SenateVoteMenuEntry:
         question = (question_element.text or "").strip() or None
         if question is None:
             raise VoteSourceError(f"{label} vote {vote_number} <question> is empty")
-        question_measure = child_text(question_element, "measure", error_type=VoteSourceError, label=label)
+        measure_element = single_child(question_element, "measure", error_type=VoteSourceError, label=label)
+        question_measure = None
+        if measure_element is not None:
+            if (measure_element.tail or "").strip():
+                # Every measured occurrence (113 of 650 non-en_bloc votes,
+                # 119th Congress 1st session) carries no text after
+                # </measure>; refuse rather than silently drop text this
+                # module has no rule for keeping.
+                raise VoteSourceError(f"{label} vote {vote_number} <question> carries text after <measure>")
+            question_measure = (measure_element.text or "").strip() or None
 
     return SenateVoteMenuEntry(
         vote_number=vote_number,

@@ -546,6 +546,20 @@ def test_senate_vote_menu_question_measure_is_kept_when_the_question_names_an_am
     assert by_number[3].question_measure == "S.Amdt. 14"
 
 
+SENATE_MENU_QUESTION_WITH_MEASURE_TAIL = SENATE_MENU_MINIMAL.replace(
+    b"<question>On Cloture on the Motion to Proceed</question>",
+    b"<question>On the Amendment<measure>S.Amdt. 99</measure> to the bill</question>",
+)
+
+
+def test_senate_vote_menu_refuses_text_after_a_question_measure():
+    """Every measured `<measure>` (113 of 650 non-en_bloc votes, 119th Congress 1st session) carries no tail
+    text; a `<question>` that states more prose after `</measure>` is an unmeasured shape this module has no
+    rule for keeping, so it refuses rather than silently drop that text."""
+    with pytest.raises(VoteSourceError, match="text after <measure>"):
+        parse_senate_vote_menu(SENATE_MENU_QUESTION_WITH_MEASURE_TAIL, congress=119, session=1)
+
+
 def test_senate_vote_menu_identity_refusal_on_a_mismatched_session():
     with pytest.raises(VoteMenuIdentityError) as raised:
         parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=2)

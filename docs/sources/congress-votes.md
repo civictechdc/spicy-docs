@@ -188,9 +188,9 @@ refuses a congress below 101 the same way `senate_url` does.
 | `congress`, `session` (shared identity) | top-level `<vote_summary>` | checked against the requested congress/session, then `SenateVoteMenu.congress`, `.session` |
 | `congress_year` | top-level | `SenateVoteMenu.congress_year` |
 | `vote_number` | `vote/vote_number` | `SenateVoteMenuEntry.vote_number` (the roll number `locator_from_menu_entry` resolves) |
-| `vote_date` | `vote/vote_date` | `SenateVoteMenuEntry.vote_date` (a bare day-month, e.g. `"18-Dec"`; the year lives on `congress_year`, not per vote) |
+| `vote_date` | `vote/vote_date` | `SenateVoteMenuEntry.vote_date` (a bare day-month, e.g. `"18-Dec"`, with no year of its own; `congress_year` is only *presumptively* that vote's year, not a fact this row states -- a session can run into the following January before it adjourns, so a caller building an instant from `vote_date` must account for that boundary itself) |
 | `issue` | `vote/issue` | `SenateVoteMenuEntry.issue`; `None` on an `en_bloc` vote (see below) |
-| `question`, its nested `measure` | `vote/question`, `vote/question/measure` | `SenateVoteMenuEntry.question`, `.question_measure` (`None` when the question carries no `<measure>`); both `None` on an `en_bloc` vote |
+| `question`, its nested `measure` | `vote/question`, `vote/question/measure` | `SenateVoteMenuEntry.question`, `.question_measure` (`None` when the question carries no `<measure>`; parsing refuses if `<question>` carries any text after `</measure>`, an unmeasured shape); both `None` on an `en_bloc` vote |
 | `result` | `vote/result` | `SenateVoteMenuEntry.result`; `None` on an `en_bloc` vote |
 | `vote_tally/{yeas,nays}` | `vote/vote_tally` | `SenateVoteMenuEntry.tallies`, the publisher's own count names (the menu states no `present`/`absent`, unlike the vote file itself) |
 | `title` | `vote/title` | `SenateVoteMenuEntry.title` |
