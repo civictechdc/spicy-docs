@@ -110,11 +110,12 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 | laws | Public and private laws (PLAW) | `bulkdata/PLAW` USLM | `have` | none | API 1995+; bulk 113–119 | 5,999 pkgs; 119th zips 3 MB, 104 files, zip modified 23-Jul-2026 14:14 | `govinfo/uslm.py` |
 | laws | Statute compilations (COMPS) | `bulkdata/COMPS` USLM | `have` | none | API 1862+; bulk, flat | 2,685 pkgs; bulk 2,682 files, 718 MB | `govinfo/uslm_acquisition.py` |
 | laws | Statutes at Large | `bulkdata/STATUTE` | `candidate` | none | API 1845+; bulk 1–137 | 137 pkgs | one XML per volume; the only XML route for every law before PLAW bulk begins |
-| committees | Committee report bodies | `CRPT` packages and granules | `candidate` | api.data.gov key | API 1817+ | 162,737 pkgs | discovery and MODS already reach any collection; the body fetch is missing and the FR body acquisition is its template |
-| committees | Hearing transcript bodies | `CHRG` | `candidate` | api.data.gov key | API 1896+ (1 inventory packages undated) | 47,793 pkgs | same extension as CRPT |
-| committees | Committee prints, congressional documents | `CPRT`, `CDOC` | `candidate` | api.data.gov key | API 1923+ | 7,784 pkgs | same extension; CDOC carries treaty documents |
-| record | Congressional Record bodies | `CREC` (daily), `CRECB` (bound) | `candidate` | api.data.gov key | API 1994+ | 6,020 pkgs | same extension; granules are the daily sections |
-| reference | Congressional Directory | `CDIR` | `candidate` | api.data.gov key | API 1869+ | 239 pkgs | org and staff reference; XML granules |
+| committees | Committee report bodies | `CRPT` package body | `have` | api.data.gov key | API 1817+ | 162,737 pkgs | `govinfo/body_acquisition.py` (landed 2026-09-19): summary, then MODS, then the body, identity proved before any body byte; the offered formats are read from MODS because the summary names none for this collection |
+| committees | Hearing transcript bodies | `CHRG` package body | `have` | api.data.gov key | API 1896+ (1 inventory packages undated) | 47,793 pkgs | same module; the PDF of a long hearing can exceed the 24 MiB evidence bound, which is why text formats are preferred |
+| committees | Congressional documents | `CDOC` package body | `have` | api.data.gov key | API 1817+ | 82,390 pkgs | same module; CDOC carries treaty documents (`CDOC-119tdoc2` resolved in the flow pass) |
+| committees | Committee prints | `CPRT` package body | `candidate` | api.data.gov key | API 1923+ | 7,784 pkgs | not in the body grammar yet; one more row in its collection table when a consumer asks |
+| record | Congressional Record bodies | `CREC` package body (daily); `CRECB` (bound) | `have` | api.data.gov key | API 1994+ | 6,020 pkgs | same module; the daily package id carries a volume or issue suffix on split days, which the grammar accepts |
+| reference | Congressional Directory | `CDIR` package body | `have` | api.data.gov key | API 1869+ | 239 pkgs | same module; offers PDF and text, the PDF above the evidence bound |
 | reference | Government Manual | `bulkdata/GOVMAN` | `candidate` | none | API 1935+; bulk 2011–2025 | 98 pkgs | clean org XML |
 | reference | House Rules and Manual | `bulkdata/HMAN` | `candidate` | none | API 1896+; bulk 112–117 | 25 pkgs | clean XML |
 | reference | Privacy Act Issuances | `bulkdata/PAI` | `rejected` | none | API 1995+ (42 inventory packages undated); bulk 2007–2025 | 1,685 pkgs | biennial SOR descriptions; no consumer |
@@ -500,18 +501,19 @@ establishes:
   about a tenth and bulk never, and the files the comparison could not use
   were refused by this repo's own parser for one rule, which is port
   decision 4 measured rather than a bulk defect.
-- **Everything without bulk: API index, GovInfo body.** Nominations,
-  hearings, committee reports, meetings, treaties, the Record, House votes
-  and members have no bulkdata. Each is a row in the Congress.gov listing
-  family (a URL builder and a records key, with a fixture and a live
-  pagination check) and, where a body exists, a GovInfo package fetch keyed
-  on the package id, cloned from the Federal Register body acquisition. The
-  comparisons above are the evidence that the two sides agree wherever both
-  hold an item. Land nominations, hearings and committee reports first: the
-  first fills a gap nothing covers, the other two fulfil the port's
-  re-hydration contract (`hearing_transcripts.text`, `committee_reports.text`
-  in BillTrax `catalog-tables.ts:54-59`), which today has no fetch route in
-  either repo.
+- **Everything without bulk: API index, GovInfo body.** Landed 2026-09-19.
+  `congress/listing.py` is a route table (a URL builder and a records key
+  per route, with a fixture and a live pagination check, and per route
+  whether the publisher honors sorting and date windows) holding amendments,
+  committee bills, bill actions, nominations, hearings, committee reports and
+  House executive communications beside the bill and CRS routes.
+  `govinfo/body_acquisition.py` fetches a package body by id for CRPT, CHRG,
+  CREC, CDOC, CDIR and BILLS, proving identity from the summary and MODS
+  before any body byte. Together they supply the port's re-hydration
+  contract (`hearing_transcripts.text`, `committee_reports.text` in BillTrax
+  `catalog-tables.ts:54-59`). `congress/bulk_status.py` is the Phase 6
+  backfill, and `sources/legislators.py` the LIS and FEC crosswalk. Every
+  one of these went through a semi-formal review before merging.
 - **Publisher files only for what the API lacks.** The comparisons found
   exactly three things: House and Senate committee assignments, the Senate
   bioguide⇄LIS crosswalk, and Senate member-level votes, for which no API

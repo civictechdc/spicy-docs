@@ -165,3 +165,36 @@ only cadence signal is the GitHub repository's own commit history, not the
 JSON. This confirms and implements the crosswalk role already recorded in
 "Congress.gov and GovInfo collections are each one family" in
 `docs/decisions.md`.
+
+## GovInfo package bodies are fetched by package id, never crawled
+
+Adopted 2026-09-19 with the [GovInfo bodies source](sources/govinfo-bodies.md).
+
+**A GovInfo collection is a body fetch on the existing readers, not a new
+source family.** This adds one operation: fetch the body of one package named
+by its package id, over the existing discovery, MODS and transport readers,
+with the Federal Register body module's identity rules reused rather than
+rewritten. It adds no crawling, no release publication and no dataset
+selection; callers choose packages and retain bytes.
+
+Two departures from that plan, both measured:
+
+- **The offered set comes from the package MODS, not the summary's download
+  block.** The summary lists no body rendition for CRPT, CHRG or CDOC while
+  those packages do serve HTML and PDF; the MODS `raw object` renditions
+  matched the served routes exactly in both directions for every package
+  measured. Following the weaker statement would have refused the three
+  collections this work exists to fetch.
+- **MODS is fetched before the body, not after.** Identity is then proved
+  before any body request, a missing or mismatched package costs no body
+  bytes, and the format choice is made from the publisher's own statement.
+
+The one rule that did not transfer is the printed-marker check: a GovInfo
+package body prints no package id, so the smaller rule here is locator plus
+MODS rendition agreement plus the shared error-page exclusion.
+
+The error-page rule itself moved to `sources/govinfo/error_page.py`, a module
+that imports nothing from `spicy_docs`, so the Federal Register validator can
+call it without importing this family. That validator's wording and check
+order are unchanged: its refusal text reaches command receipts, and its two
+error-page witnesses must stay on either side of the locator check.
