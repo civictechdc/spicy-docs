@@ -42,7 +42,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from typing import Protocol
 
-from spicy_docs.extraction.gpo_normalize import normalize_gpo_glyphs
+from spicy_docs.extraction.gpo_normalize import METADATA_RULES, normalize_gpo_glyphs
 
 from .evidence import (
     Decision,
@@ -62,6 +62,7 @@ from .profiles import CFR_PROFILE, Profile
 CFR_KINDS: dict[str, str | None] = {
     "page_number": None,
     "running_head": None,
+    "print_footer": None,
     "blank": None,
     "part_heading": None,
     "division_heading": None,
@@ -104,6 +105,10 @@ SMALL_CAP_STEP = 1.0
 HEADING_GAP = 1.6
 #: ``table_region``: a small-face line assembled from at least this many fragments reads as a table row.
 TABLE_FRAGMENTS = 3
+#: ``print_shop_footer``: the two ``extraction.gpo_normalize`` rules that name
+#: GPO's own print-shop chrome. Reused rather than restated, so the corpus that
+#: measured them is the corpus this rule rests on.
+_PRINT_SHOP_RULES = tuple(rule for rule in METADATA_RULES if rule.name in ("verdate_footer", "dsk_user"))
 
 
 class ParseError(ValueError):
@@ -805,6 +810,14 @@ class _Parser:
                 continue
             if _is_running_head(block):
                 self._add(_Node("running_head", "running_head_furniture", None, [block]))
+                continue
+            if any(rule.pattern.match(text) for rule in _PRINT_SHOP_RULES):
+                # GPO's print-shop footer, by `extraction.gpo_normalize`'s own
+                # rules. It is set in the reduced face and reaches the
+                # extractor as a dozen fragments, so without this it reads as
+                # a table row and every page of the volume yields a spurious
+                # unresolved region.
+                self._add(_Node("print_footer", "print_shop_footer", None, [block]))
                 continue
             self._place(block, text)
             self.previous = block

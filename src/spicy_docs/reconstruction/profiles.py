@@ -265,6 +265,15 @@ CFR_RULES: tuple[Rule, ...] = (
         f"{_FIXTURE_PDF}: 'AUTHORITY: Secs. 201, 501, 527 and 529, Pub.' / 'L. 95–87, 91 Stat. 445'",
     ),
     Rule(
+        "print_shop_footer",
+        "heuristic",
+        "A line matching extraction.gpo_normalize's verdate_footer or dsk_user rule is GPO's print-shop "
+        "chrome, not content; reusing those rules rather than restating them keeps the corpus that measured "
+        "them behind this one",
+        "extraction/gpo_normalize.py METADATA_RULES; the footer reaches the extractor as a dozen fragments and "
+        "would otherwise read as a table row on every page that carries one",
+    ),
+    Rule(
         "column_left_edge",
         "heuristic",
         "A page has two columns split at its horizontal middle; each column's left edge is the smallest left "

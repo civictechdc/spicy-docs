@@ -21,6 +21,9 @@ from spicy_docs.cli.source_native import main
 from spicy_docs.schemas.spicy_regs_public_tables import PUBLIC_COMMENT_FILE_COLUMNS
 
 _OPTIONAL = ("httpx", "boto3", "botocore", "loguru", "tqdm", "polars", "pyarrow", "duckdb")
+#: The `reconstruct` extra. Only `reconstruction.validate.schema_validity`
+#: uses it, so everything else in that package must work without it.
+_RECONSTRUCT = ("lxml",)
 _IMPLEMENTATION = "git+https://example.test/spicy-docs@" + "a" * 40
 _EXAMPLE = Path(__file__).resolve().parents[1] / "examples" / "offline_release.py"
 
@@ -212,3 +215,59 @@ def test_cli_does_not_swallow_unrelated_injected_errors(tmp_path: Path) -> None:
             stderr=StringIO(),
         )
     assert caught.value is original
+
+
+def test_reconstruction_parses_serializes_and_reports_four_of_five_findings_without_lxml() -> None:
+    """The `reconstruct` extra buys schema validation and nothing else.
+
+    Run in a subprocess with `lxml` blocked, because this contributor
+    environment has every extra installed and an import that happens to
+    succeed here proves nothing about a core-only install.
+    """
+    code = f"""
+import importlib.abc, json, sys
+from pathlib import Path
+
+class Unavailable(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname.split('.')[0] in {_RECONSTRUCT!r}:
+            raise ModuleNotFoundError(f"No module named {{fullname!r}}", name=fullname)
+
+sys.meta_path.insert(0, Unavailable())
+
+from spicy_docs.reconstruction import EXTRA_REQUIRED, extra_available
+from spicy_docs.reconstruction.evidence import EvidenceDocument
+from spicy_docs.reconstruction.parse import parse_cfr
+from spicy_docs.reconstruction.profiles import CFR_PROFILE, check_schema_bundle
+from spicy_docs.reconstruction.serialize import serialize_cfr
+from spicy_docs.reconstruction.validate import ValidateError, check, schema_validity
+
+assert not extra_available()
+assert "reconstruct" in EXTRA_REQUIRED
+
+fixtures = Path({str(Path(__file__).parent / "fixtures" / "reconstruction" / "cfr")!r})
+evidence = EvidenceDocument.from_json(json.loads((fixtures / "CFR-2024-title12-vol1-sec1-1.evidence.json").read_text()))
+document = parse_cfr(evidence)
+serialized = serialize_cfr(document, section="1.1")
+assert serialized.xml.startswith(b'<?xml version="1.0" encoding="UTF-8"?>')
+assert serialized.source_map.entries
+
+# The bundle is still readable and still checked against its pin; only the
+# validator needs the extra.
+assert [entry.name for entry in check_schema_bundle(CFR_PROFILE)] == ["CFRMergedXML.xsd"]
+
+findings = {{finding.check: finding for finding in check(document, serialized, section="1.1", schema=False)}}
+assert findings["content_fidelity"].passed and findings["coverage"].passed
+assert findings["structural_fidelity"].passed
+assert findings["schema_validity"].measures["skipped"] is True
+
+try:
+    schema_validity(serialized.xml)
+except ValidateError as error:
+    assert "reconstruct" in str(error), error
+else:
+    raise AssertionError("schema validation must refuse by name without the extra")
+
+assert "lxml" not in sys.modules
+"""
+    _without_optional(code)

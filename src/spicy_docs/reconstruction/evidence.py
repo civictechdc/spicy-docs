@@ -212,7 +212,19 @@ class EvidenceDocument:
         )
 
     def dumps(self) -> str:
-        return json.dumps(self.to_json(), indent=1, ensure_ascii=False) + "\n"
+        """One JSON document, written one block per line.
+
+        A fixture of a few hundred extracted lines is large enough that
+        indenting every field triples it and small enough that one long line
+        would make a diff unreadable. One line per block is both: a reviewer
+        sees exactly which lines moved, and the file stays a third smaller
+        than an indented one.
+        """
+        data = self.to_json()
+        blocks = data.pop("blocks")
+        head = json.dumps(data, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        lines = [json.dumps(block, ensure_ascii=False, separators=(",", ":")) for block in blocks]
+        return head[:-1] + ',"blocks":[\n' + ",\n".join(lines) + "\n]}\n"
 
 
 def _block_json(block: EvidenceBlock) -> dict[str, Any]:
