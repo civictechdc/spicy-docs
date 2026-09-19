@@ -1,11 +1,20 @@
-"""Locate and prove one GovInfo package body from its package id, offline.
+"""Locate and prove one GovInfo package or granule body, offline.
 
 A package id is the publisher's own address for a committee report, hearing
-transcript, Congressional Record issue, congressional document, directory or
-bill text. Congress.gov route URLs carry these ids as their file stems, so a
-caller that has a route has a package id. The Record's split days mean a date
-alone is not one: 2026-01-03 can publish ``CREC-2026-01-03-v172`` beside
-``-v171``, so the suffix is part of the id and never inferred.
+transcript, committee print, Congressional Record issue, congressional
+document, directory or bill text. Congress.gov route URLs carry these ids as
+their file stems, so a caller that has a route has a package id. The Record's
+split days mean a date alone is not one: 2026-01-03 can publish
+``CREC-2026-01-03-v172`` beside ``-v171``, so the suffix is part of the id and
+never inferred.
+
+A granule id names one constituent of a package -- one Record speech, one page
+range -- and carries no address of its own: every granule locator addresses it
+through its package's content path, the package id as the folder segment and
+the granule id as the file stem (measured 2026-09-19 on CREC-2026-09-18's
+granules). A granule's own summary and MODS state both its id and its host
+package's, so membership is proved the same way a package proves its own
+identity, not assumed from the URL a caller built.
 
 Source rules, each measured on 2026-09-19 (receipts in the fixture README):
 
@@ -51,7 +60,7 @@ from spicy_docs.reading.json_input import load_decimal_json
 from spicy_docs.sources.congress.bill_status import BILL_TYPES
 from spicy_docs.sources.govinfo.discovery import API
 from spicy_docs.sources.govinfo.error_page import check_not_error_page
-from spicy_docs.sources.govinfo.mods import MODS_NAMESPACE, GovInfoModsError, parse_govinfo_mods
+from spicy_docs.sources.govinfo.mods import MODS_NAMESPACE, GovInfoModsError, ModsRecord, parse_govinfo_mods
 from spicy_docs.transport.source_acquirer import check_final_url, check_payload
 
 CONTENT = "https://www.govinfo.gov"
@@ -162,6 +171,16 @@ PACKAGE_BODY_FORMATS: dict[str, BodyFormat] = {
 #: structured source, not a plain-text reduction of it.
 BODY_PREFERENCE: tuple[str, ...] = ("xml", "uslm", "htm", "txt", "pdf")
 
+#: The granule counterpart of ``BODY_PREFERENCE``, for
+#: ``GovInfoBodyAcquirer.acquire_granule``. Measured on CREC-2026-09-18 (§B2):
+#: every one of its 11 granules states HTML and PDF, both through the granule's
+#: own locator (``granule_body_locator``), never the whole-issue package's.
+#: HTML wins because it is the Record's actual reading text; the package-level
+#: PDF ``acquire(package_id)`` already reaches (CREC packages offer PDF alone,
+#: see ``BODY_PREFERENCE`` above) stays available unchanged for a caller that
+#: wants the whole issue rather than one granule.
+GRANULE_BODY_PREFERENCE: tuple[str, ...] = ("htm", "pdf")
+
 # uslm shares xml's file extension -- both are xml/{id}.xml-shaped, just in
 # different folders -- so an extension alone cannot always name a rendition
 # found at an unexpected folder (see _package_rendition_format). xml is kept
@@ -192,6 +211,19 @@ class PackageIdentity:
 
 
 @dataclass(frozen=True, slots=True)
+class GranuleIdentity:
+    """One granule id together with the package identity it was requested under.
+
+    A granule carries no address of its own -- every locator reaches it
+    through its package's content path -- so its identity is always this
+    pair, never the granule id alone.
+    """
+
+    package: PackageIdentity
+    granule_id: str
+
+
+@dataclass(frozen=True, slots=True)
 class PackageSummary:
     """The keyed summary's own statement about one package."""
 
@@ -202,6 +234,25 @@ class PackageSummary:
     title: str | None
     #: Every ``download`` link as the publisher spelled it, ``(name, url)``,
     #: repeated names included. Evidence, not a statement of what is fetchable.
+    download_links: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class GranuleSummary:
+    """The keyed granule summary's own statement about one granule and its package.
+
+    A granule summary states both ``packageId`` and ``granuleId`` directly --
+    unlike a missing package, a granule that does not belong to the requested
+    package answers HTTP 400, not 404 (measured 2026-09-19: a granule id from
+    another day under CREC-2026-09-18, and that same real granule id requested
+    under CREC-2026-09-17, both answer 400 ``invalid granuleId``), so this is
+    read as an ordinary shape mismatch rather than a distinct refusal type.
+    """
+
+    identity: GranuleIdentity
+    collection_code: str
+    date_issued: str | None
+    title: str | None
     download_links: tuple[tuple[str, str], ...]
 
 
@@ -223,10 +274,46 @@ class PackageModsIdentity:
 
 
 @dataclass(frozen=True, slots=True)
+class GranuleModsIdentity:
+    """The granule's own accessId, its host package's accessId, and offered renditions.
+
+    A granule MODS states two identities: its own, directly under the root --
+    the same shape a package MODS states its own accessId in -- and its host
+    package's, nested inside a ``relatedItem type="host"``. The second is
+    GovInfo's own proof that this granule belongs to that package, not an
+    assumption drawn from the request URL.
+    """
+
+    identity: GranuleIdentity
+    access_ids: tuple[str, ...]
+    collection_code: str | None
+    host_package_ids: tuple[str, ...]
+    offered_formats: tuple[str, ...]
+    moved_renditions: tuple[tuple[str, str], ...]
+    other_renditions: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
 class PackageBodyIdentity:
     """A body proved against its locator, media type and the publisher's error page."""
 
     identity: PackageIdentity
+    format: str
+    media_type: str
+    final_url: str
+    byte_size: int
+
+
+@dataclass(frozen=True, slots=True)
+class GranuleBodyIdentity:
+    """A granule body proved against its locator, media type and the publisher's error page.
+
+    Mirrors ``PackageBodyIdentity``: the body itself names no granule, so the
+    locator -- the package's folder, the granule's own file stem -- is the
+    identity.
+    """
+
+    identity: GranuleIdentity
     format: str
     media_type: str
     final_url: str
@@ -296,6 +383,24 @@ def _identity(value: PackageIdentity | str) -> PackageIdentity:
     return value if isinstance(value, PackageIdentity) else parse_package_id(value)
 
 
+# GovInfo publishes no per-collection granule-id grammar the way it does for
+# package ids; a granule id is an opaque publisher-assigned path segment
+# (measured: CREC-2026-09-18-pt1-PgS4837-4), so only its shape as a safe
+# single path segment is checked, at the same bound as a package id.
+_GRANULE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
+
+
+def _checked_granule_id(value: object) -> str:
+    if not isinstance(value, str) or _GRANULE_ID.fullmatch(value) is None:
+        raise GovInfoBodySourceError(f"granule id must be a nonempty string of at most {MAX_PACKAGE_ID} characters")
+    return value
+
+
+def parse_granule_identity(package: PackageIdentity | str, granule_id: object) -> GranuleIdentity:
+    """Parse one granule id against its package identity in ``O(I)`` time."""
+    return GranuleIdentity(_identity(package), _checked_granule_id(granule_id))
+
+
 def _format(name: object) -> BodyFormat:
     if not isinstance(name, str) or name not in PACKAGE_BODY_FORMATS:
         offered = ", ".join(PACKAGE_BODY_FORMATS)
@@ -319,6 +424,32 @@ def package_summary_locator(package: PackageIdentity | str) -> str:
 def package_mods_locator(package: PackageIdentity | str) -> str:
     """Return the keyed package MODS locator; the credential travels as a header."""
     return f"{API}/packages/{_identity(package).package_id}/mods"
+
+
+def granule_summary_locator(package: PackageIdentity | str, granule_id: str) -> str:
+    """Return the keyed granule summary locator; the credential travels as a header."""
+    identity = parse_granule_identity(package, granule_id)
+    return f"{API}/packages/{identity.package.package_id}/granules/{identity.granule_id}/summary"
+
+
+def granule_mods_locator(package: PackageIdentity | str, granule_id: str) -> str:
+    """Return the keyed granule MODS locator; the credential travels as a header."""
+    identity = parse_granule_identity(package, granule_id)
+    return f"{API}/packages/{identity.package.package_id}/granules/{identity.granule_id}/mods"
+
+
+def granule_body_locator(package: PackageIdentity | str, granule_id: str, format: str) -> str:
+    """Return the keyless granule rendition locator in ``O(I)`` time.
+
+    The folder comes from ``PACKAGE_BODY_FORMATS`` exactly as it does for a
+    package rendition; only the file stem differs -- the granule id, not the
+    package id (measured 2026-09-19: ``content/pkg/CREC-2026-09-18/html/
+    CREC-2026-09-18-pt1-PgS4837-4.htm``).
+    """
+    identity = parse_granule_identity(package, granule_id)
+    body_format = _format(format)
+    package_id = identity.package.package_id
+    return f"{CONTENT}/content/pkg/{package_id}/{body_format.folder}/{identity.granule_id}.{body_format.extension}"
 
 
 def validate_package_summary(
@@ -351,9 +482,73 @@ def validate_package_summary(
     collection_code = document.get("collectionCode")
     if not isinstance(collection_code, str) or collection_code != identity.collection:
         raise GovInfoBodySourceError("GovInfo summary collectionCode differs from the requested collection")
-    download = document.get("download")
+    return PackageSummary(
+        identity=identity,
+        collection_code=collection_code,
+        date_issued=_text(document.get("dateIssued")),
+        last_modified=_text(document.get("lastModified")),
+        title=_text(document.get("title")),
+        download_links=_download_links(document.get("download"), label="summary"),
+    )
+
+
+def validate_granule_summary(
+    body: bytes,
+    *,
+    package: PackageIdentity | str,
+    granule_id: str,
+    final_url: str,
+    max_bytes: int,
+) -> GranuleSummary:
+    """Prove the granule summary states the requested ``packageId`` and ``granuleId``.
+
+    Both must agree, not just the one the request URL was built from: unlike a
+    missing package, a granule that does not belong to the requested package
+    answers HTTP 400 with no ``packageId``/``granuleId`` at all (measured
+    2026-09-19), which this reads as an ordinary field mismatch rather than a
+    distinct status-code rule.
+    """
+    identity = parse_granule_identity(package, granule_id)
+    exact = _checked_bytes(body, max_bytes, label="granule summary")
+    check_final_url(
+        final_url,
+        granule_summary_locator(identity.package, identity.granule_id),
+        error_type=GovInfoBodySourceError,
+        message="GovInfo granule summary final URL differs from the requested locator",
+    )
+    document = load_decimal_json(exact, source="GovInfo granule summary", error_type=GovInfoBodySourceError)
+    if not isinstance(document, dict):
+        raise GovInfoBodySourceError("GovInfo granule summary is not a JSON object")
+    if document.get("packageId") != identity.package.package_id:
+        raise GovInfoBodySourceError("GovInfo granule summary packageId differs from the requested package")
+    if document.get("granuleId") != identity.granule_id:
+        raise GovInfoBodySourceError("GovInfo granule summary granuleId differs from the requested granule")
+    collection_code = document.get("collectionCode")
+    if not isinstance(collection_code, str) or collection_code != identity.package.collection:
+        raise GovInfoBodySourceError("GovInfo granule summary collectionCode differs from the requested collection")
+    return GranuleSummary(
+        identity=identity,
+        collection_code=collection_code,
+        date_issued=_text(document.get("dateIssued")),
+        title=_text(document.get("title")),
+        download_links=_download_links(document.get("download"), label="summary"),
+    )
+
+
+def _text(value: object) -> str | None:
+    return value if isinstance(value, str) else None
+
+
+def _download_links(download: object, *, label: str) -> tuple[tuple[str, str], ...]:
+    """Keep every ``download`` link as the publisher spelled it; derive nothing from it.
+
+    Shared by the package and granule summary readers: neither summary's
+    links state the offered rendition set (three package collections list no
+    body link at all while serving HTML and PDF, and BILLS spells its HTML
+    rendition ``txtLink``), so both keep the links as evidence only.
+    """
     if download is not None and not isinstance(download, dict):
-        raise GovInfoBodySourceError("GovInfo summary download block is not a JSON object")
+        raise GovInfoBodySourceError(f"GovInfo {label} download block is not a JSON object")
     links: list[tuple[str, str]] = []
     for name, value in sorted((download or {}).items()):
         # A link can repeat under one name: GPO-J6-REPORT states five jpegLink
@@ -361,20 +556,9 @@ def validate_package_summary(
         # not a URL string is an anomaly this block cannot state.
         for url in value if isinstance(value, list) else [value]:
             if not isinstance(url, str):
-                raise GovInfoBodySourceError("GovInfo summary download link is not a URL string")
+                raise GovInfoBodySourceError(f"GovInfo {label} download link is not a URL string")
             links.append((name, url))
-    return PackageSummary(
-        identity=identity,
-        collection_code=collection_code,
-        date_issued=_text(document.get("dateIssued")),
-        last_modified=_text(document.get("lastModified")),
-        title=_text(document.get("title")),
-        download_links=tuple(links),
-    )
-
-
-def _text(value: object) -> str | None:
-    return value if isinstance(value, str) else None
+    return tuple(links)
 
 
 def _package_rendition_format(url: str, identity: PackageIdentity) -> str | None:
@@ -434,6 +618,92 @@ def validate_package_mods(
     if codes and codes != {identity.collection}:
         raise GovInfoBodySourceError("GovInfo MODS collectionCode differs from the requested collection")
     locators = {package_body_locator(identity, name): name for name in PACKAGE_BODY_FORMATS}
+    offered, moved, other = _read_offered_renditions(root, locators, identity)
+    return PackageModsIdentity(
+        identity=identity,
+        access_ids=access_ids,
+        collection_code=next(iter(codes), None),
+        offered_formats=offered,
+        moved_renditions=moved,
+        other_renditions=other,
+    )
+
+
+def validate_granule_mods(
+    body: bytes,
+    *,
+    package: PackageIdentity | str,
+    granule_id: str,
+    final_url: str,
+    max_bytes: int,
+    max_elements: int = 200_000,
+) -> GranuleModsIdentity:
+    """Prove the granule's own accessId and its host package's, then read its offered renditions.
+
+    A granule MODS states its own identity the same way a package MODS states
+    its own -- directly under the root, in the root's own ``extension``
+    children -- and states its host package's identity nested inside a
+    ``relatedItem type="host"``. Both are read and checked before any
+    rendition is trusted, so membership rests on the publisher's own record,
+    not on the package id the caller happened to request under.
+
+    Renditions are read from the root's own ``location`` only (never the
+    nested host's), the same rule and the same three-way split
+    (offered/moved/other) ``validate_package_mods`` applies.
+    """
+    identity = parse_granule_identity(package, granule_id)
+    exact = _checked_bytes(body, max_bytes, label="granule MODS")
+    check_final_url(
+        final_url,
+        granule_mods_locator(identity.package, identity.granule_id),
+        error_type=GovInfoBodySourceError,
+        message="GovInfo granule MODS final URL differs from the requested locator",
+    )
+    try:
+        parsed = parse_govinfo_mods(exact, max_bytes=max_bytes, max_elements=max_elements)
+    except GovInfoModsError as error:
+        raise GovInfoBodySourceError(f"GovInfo granule MODS is unreadable: {error}") from error
+    root = parsed.package
+    access_ids = tuple(element.text.strip() for element in root.fields("extension", "accessId"))
+    if not access_ids:
+        raise GovInfoBodySourceError("GovInfo granule MODS states no accessId")
+    if any(value != identity.granule_id for value in access_ids):
+        raise GovInfoBodySourceError("GovInfo granule MODS accessId differs from the requested granule")
+    codes = {element.text.strip() for element in root.fields("extension", "collectionCode")}
+    if codes and codes != {identity.package.collection}:
+        raise GovInfoBodySourceError("GovInfo granule MODS collectionCode differs from the requested collection")
+    hosts = [record for record in root.related_items if record.element.attribute("type") == "host"]
+    host_ids = tuple(element.text.strip() for record in hosts for element in record.fields("extension", "accessId"))
+    if not host_ids:
+        raise GovInfoBodySourceError("GovInfo granule MODS states no host package")
+    if any(value != identity.package.package_id for value in host_ids):
+        raise GovInfoBodySourceError("GovInfo granule MODS host package differs from the requested package")
+    locators = {
+        granule_body_locator(identity.package, identity.granule_id, name): name for name in PACKAGE_BODY_FORMATS
+    }
+    offered, moved, other = _read_offered_renditions(root, locators, identity.package)
+    return GranuleModsIdentity(
+        identity=identity,
+        access_ids=access_ids,
+        collection_code=next(iter(codes), None),
+        host_package_ids=host_ids,
+        offered_formats=offered,
+        moved_renditions=moved,
+        other_renditions=other,
+    )
+
+
+def _read_offered_renditions(
+    root: ModsRecord, locators: dict[str, str], identity: PackageIdentity
+) -> tuple[tuple[str, ...], tuple[tuple[str, str], ...], tuple[tuple[str, str], ...]]:
+    """Classify every raw-object rendition URL a MODS root's own ``location`` states.
+
+    Shared by the package and granule MODS readers: both name their offered
+    set from a root-level ``location`` (never a nested one -- a granule's own
+    location sits directly under its root, its host package's sits nested
+    inside ``relatedItem type="host"`` and is never read here), so the same
+    three-way offered/moved/other split applies to either identity.
+    """
     offered: list[str] = []
     moved: list[tuple[str, str]] = []
     other: list[tuple[str, str]] = []
@@ -452,14 +722,47 @@ def validate_package_mods(
                 other.append((element.attribute("displayLabel") or "", url))
             else:
                 moved.append((elsewhere, url))
-    return PackageModsIdentity(
-        identity=identity,
-        access_ids=access_ids,
-        collection_code=next(iter(codes), None),
-        offered_formats=tuple(offered),
-        moved_renditions=tuple(moved),
-        other_renditions=tuple(other),
+    return tuple(offered), tuple(moved), tuple(other)
+
+
+def _validate_body(
+    body: bytes,
+    *,
+    format: str,
+    content_type: str | None,
+    final_url: str,
+    expected_url: str,
+    max_bytes: int,
+    label: str,
+) -> tuple[bytes, BodyFormat, str]:
+    """The identity and shape checks every rendition needs, package or granule alike.
+
+    The body itself names neither a package nor a granule, so the locator is
+    the identity: the client refuses redirects, so a response at this URL is
+    the requested object or it is the error page, which is refused first, so
+    a response that landed on it says so rather than reporting a URL mismatch
+    the caller cannot interpret.
+    """
+    body_format = _format(format)
+    exact = _checked_bytes(body, max_bytes, label=label)
+    check_not_error_page(
+        exact,
+        final_url,
+        error_type=GovInfoBodySourceError,
+        message=f"govinfo returned its HTTP-200 error page, not the requested {label}",
     )
+    check_final_url(
+        final_url,
+        expected_url,
+        error_type=GovInfoBodySourceError,
+        message=f"GovInfo {label} final URL differs from the requested locator",
+    )
+    media_type = (content_type or "").split(";", 1)[0].strip().casefold()
+    if media_type not in body_format.media_types:
+        raise GovInfoBodySourceError(f"GovInfo {label} Content-Type is not {body_format.name} for the requested format")
+    if body_format.name == "pdf" and not exact.startswith(b"%PDF-"):
+        raise GovInfoBodySourceError(f"GovInfo {label} does not begin with %PDF-")
+    return exact, body_format, media_type
 
 
 def validate_package_body(
@@ -471,35 +774,53 @@ def validate_package_body(
     final_url: str,
     max_bytes: int,
 ) -> PackageBodyIdentity:
-    """Prove a bounded body against its locator, media type and native magic.
-
-    The body itself names no package, so the locator is the identity: the
-    client refuses redirects, so a response at this URL is this package's
-    rendition or it is the error page, which is refused here.
-    """
+    """Prove a bounded body against its locator, media type and native magic."""
     identity = _identity(package)
-    body_format = _format(format)
-    exact = _checked_bytes(body, max_bytes, label="package body")
-    # The error page is refused first so a response that landed on it says so,
-    # rather than reporting a URL mismatch the caller cannot interpret.
-    check_not_error_page(
-        exact,
-        final_url,
-        error_type=GovInfoBodySourceError,
-        message="govinfo returned its HTTP-200 error page, not the requested package body",
+    exact, body_format, media_type = _validate_body(
+        body,
+        format=format,
+        content_type=content_type,
+        final_url=final_url,
+        expected_url=package_body_locator(identity, format),
+        max_bytes=max_bytes,
+        label="package body",
     )
-    check_final_url(
-        final_url,
-        package_body_locator(identity, format),
-        error_type=GovInfoBodySourceError,
-        message="GovInfo body final URL differs from the requested locator",
-    )
-    media_type = (content_type or "").split(";", 1)[0].strip().casefold()
-    if media_type not in body_format.media_types:
-        raise GovInfoBodySourceError(f"GovInfo body Content-Type is not {body_format.name} for the requested format")
-    if body_format.name == "pdf" and not exact.startswith(b"%PDF-"):
-        raise GovInfoBodySourceError("GovInfo PDF body does not begin with %PDF-")
     return PackageBodyIdentity(
+        identity=identity,
+        format=body_format.name,
+        media_type=media_type,
+        final_url=final_url,
+        byte_size=len(exact),
+    )
+
+
+def validate_granule_body(
+    body: bytes,
+    *,
+    package: PackageIdentity | str,
+    granule_id: str,
+    format: str,
+    content_type: str | None,
+    final_url: str,
+    max_bytes: int,
+) -> GranuleBodyIdentity:
+    """Prove a bounded granule body against its locator, media type and native magic.
+
+    Mirrors ``validate_package_body``: it differs only in which locator --
+    the package's folder, the granule's own file stem -- and in the label its
+    refusals carry.
+    """
+    identity = parse_granule_identity(package, granule_id)
+    exact, body_format, media_type = _validate_body(
+        body,
+        format=format,
+        content_type=content_type,
+        final_url=final_url,
+        expected_url=granule_body_locator(identity.package, identity.granule_id, format),
+        max_bytes=max_bytes,
+        label="granule body",
+    )
+    return GranuleBodyIdentity(
         identity=identity,
         format=body_format.name,
         media_type=media_type,
@@ -510,17 +831,29 @@ def validate_package_body(
 
 __all__ = [
     "BODY_PREFERENCE",
+    "GRANULE_BODY_PREFERENCE",
     "PACKAGE_BODY_FORMATS",
     "BodyFormat",
     "GovInfoBodySourceError",
+    "GranuleBodyIdentity",
+    "GranuleIdentity",
+    "GranuleModsIdentity",
+    "GranuleSummary",
     "PackageBodyIdentity",
     "PackageIdentity",
     "PackageModsIdentity",
     "PackageSummary",
+    "granule_body_locator",
+    "granule_mods_locator",
+    "granule_summary_locator",
     "package_body_locator",
     "package_mods_locator",
     "package_summary_locator",
+    "parse_granule_identity",
     "parse_package_id",
+    "validate_granule_body",
+    "validate_granule_mods",
+    "validate_granule_summary",
     "validate_package_body",
     "validate_package_mods",
     "validate_package_summary",

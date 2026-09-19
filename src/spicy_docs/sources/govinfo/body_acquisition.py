@@ -1,4 +1,4 @@
-"""Acquire one GovInfo package body: keyed summary, keyed MODS, then the keyless rendition.
+"""Acquire one GovInfo package or granule body: keyed summary, keyed MODS, then the keyless rendition.
 
 Three sequential requests under one budget. The summary proves the package
 exists and is the one asked for -- it is the only route that answers 404 for a
@@ -8,6 +8,13 @@ renditions the package offers, so the caller's preference is matched against
 the publisher's own statement instead of a guess, and the body request is only
 made for a format the publisher named. Identity is proved before the body is
 fetched, which also keeps a mistaken request from spending tens of megabytes.
+
+``acquire_granule`` follows the same three-request shape for one constituent
+of a package -- the daily Record's speeches and page ranges -- except the
+summary and MODS routes are keyed under the package id
+(``packages/{pkg}/granules/{gid}/...``), so a granule that does not belong to
+the requested package answers HTTP 400 rather than 404 (measured 2026-09-19),
+and is read the same way any other summary or MODS shape mismatch is.
 
 Two clients, because the routes differ in kind: ``api.govinfo.gov`` carries the
 credential in ``X-Api-Key`` and must never retain a refusal body that could
@@ -29,16 +36,28 @@ from spicy_docs.reading.refusals import attach_refused_response
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.govinfo.bodies import (
     BODY_PREFERENCE,
+    GRANULE_BODY_PREFERENCE,
     PACKAGE_BODY_FORMATS,
     GovInfoBodySourceError,
+    GranuleBodyIdentity,
+    GranuleIdentity,
+    GranuleModsIdentity,
+    GranuleSummary,
     PackageBodyIdentity,
     PackageIdentity,
     PackageModsIdentity,
     PackageSummary,
+    granule_body_locator,
+    granule_mods_locator,
+    granule_summary_locator,
     package_body_locator,
     package_mods_locator,
     package_summary_locator,
+    parse_granule_identity,
     parse_package_id,
+    validate_granule_body,
+    validate_granule_mods,
+    validate_granule_summary,
     validate_package_body,
     validate_package_mods,
     validate_package_summary,
@@ -107,6 +126,33 @@ class GovInfoPackageBody:
         return (self.summary_capture, self.mods_capture, self.body_capture)
 
 
+@dataclass(frozen=True, slots=True)
+class GovInfoGranuleBody:
+    """Exact bytes for one granule rendition with every capture that proved it.
+
+    Mirrors ``GovInfoPackageBody``: the granule and its host package identity
+    together, rather than a package id alone.
+    """
+
+    identity: GranuleIdentity
+    format: str
+    preference: tuple[str, ...]
+    offered_formats: tuple[str, ...]
+    summary: GranuleSummary
+    mods: GranuleModsIdentity
+    body: GranuleBodyIdentity
+    summary_capture: CapturedBodyResponse
+    mods_capture: CapturedBodyResponse
+    body_capture: CapturedBodyResponse
+    request_count: int
+    budget: GovInfoBodyBudget
+
+    @property
+    def captures(self) -> tuple[CapturedBodyResponse, ...]:
+        """The three responses in request order; each carries its own facts."""
+        return (self.summary_capture, self.mods_capture, self.body_capture)
+
+
 class GovInfoPackageUnavailableError(GovInfoBodySourceError):
     """The exact requested locator answered that the object is not there.
 
@@ -120,11 +166,11 @@ class GovInfoPackageUnavailableError(GovInfoBodySourceError):
 
 
 class GovInfoFormatNotOfferedError(GovInfoBodySourceError):
-    """The package states its renditions and none of them was preferred."""
+    """The package or granule states its renditions and none of them was preferred."""
 
-    def __init__(self, identity: PackageIdentity, preference: Sequence[str], offered: Sequence[str]) -> None:
+    def __init__(self, label: str, preference: Sequence[str], offered: Sequence[str]) -> None:
         super().__init__(
-            f"{identity.package_id} offers {', '.join(offered) or 'no supported rendition'}; "
+            f"{label} offers {', '.join(offered) or 'no supported rendition'}; "
             f"none matches the preferred {', '.join(preference)}"
         )
         self.offered_formats = tuple(offered)
@@ -132,15 +178,15 @@ class GovInfoFormatNotOfferedError(GovInfoBodySourceError):
 
 
 class GovInfoRenditionAddressError(GovInfoBodySourceError):
-    """The package states a preferred format, at an address this module does not derive.
+    """The package or granule states a preferred format, at an address this module does not derive.
 
     Absence and disagreement are different answers. The publisher's own URL is
     in the message and on the error, so the caller can see what it named.
     """
 
-    def __init__(self, identity: PackageIdentity, moved: Sequence[tuple[str, str]]) -> None:
+    def __init__(self, label: str, moved: Sequence[tuple[str, str]]) -> None:
         stated = "; ".join(f"{name} at {url}" for name, url in moved)
-        super().__init__(f"{identity.package_id} states {stated}, which is not where this module fetches it")
+        super().__init__(f"{label} states {stated}, which is not where this module fetches it")
         self.moved_renditions = tuple(moved)
 
 
@@ -311,8 +357,8 @@ class GovInfoBodyAcquirer:
             if chosen is None:
                 moved = [(name, url) for name, url in mods.moved_renditions if name in preference]
                 if moved:
-                    raise GovInfoRenditionAddressError(identity, moved)
-                raise GovInfoFormatNotOfferedError(identity, preference, offered)
+                    raise GovInfoRenditionAddressError(identity.package_id, moved)
+                raise GovInfoFormatNotOfferedError(identity.package_id, preference, offered)
 
             stage = "body"
             # A body failure must never be attributed to the metadata captures.
@@ -357,22 +403,175 @@ class GovInfoBodyAcquirer:
             }
             raise
 
-    def _body_capture(self, url: str, *, max_bytes: int) -> CapturedBodyResponse:
+    def acquire_granule(
+        self,
+        package_id: str,
+        granule_id: str,
+        *,
+        prefer: Sequence[str] = GRANULE_BODY_PREFERENCE,
+        max_bytes: int | None = None,
+    ) -> GovInfoGranuleBody:
+        """Capture the first preferred rendition one granule actually offers.
+
+        Mirrors ``acquire`` at granule scope: the granule summary proves the
+        granule and its host package both exist and agree with the request --
+        GovInfo's granule summary states both ``packageId`` and ``granuleId``,
+        and a granule that does not belong to the requested package answers
+        HTTP 400 with neither field, rather than 404 (measured 2026-09-19: a
+        wrong-day granule id under CREC-2026-09-18, and that same real granule
+        id requested under CREC-2026-09-17, both ``invalid granuleId``), so it
+        is read as the same packageId/granuleId mismatch a genuinely absent
+        granule would be, not a distinct status-code rule. The granule MODS
+        then states its own accessId directly and its host package's nested
+        in a ``relatedItem type="host"`` -- GovInfo's own proof of membership,
+        checked before any rendition is read -- and the offered renditions,
+        addressed through the granule's own locator (the package's folder,
+        the granule's file stem). ``prefer`` defaults to
+        ``GRANULE_BODY_PREFERENCE`` -- the daily Record's own HTML first,
+        measured on CREC-2026-09-18 to be what every one of its 11 granules
+        offers, its own PDF the fallback. The whole-issue package PDF stays
+        reachable unchanged through ``acquire(package_id)``.
+
+        ``max_bytes`` may narrow the body allowance for this call, never raise
+        it. Every refusal carries its capture, the stage it failed at and this
+        context.
+        """
+        if self._closed:
+            raise ValueError("GovInfo body acquirer is closed")
+        identity = parse_granule_identity(package_id, granule_id)
+        preference = _checked_preference(prefer)
+        budget = replace(self.budget, max_body_bytes=narrow_byte_limit(self.budget.max_body_bytes, max_bytes))
+        self._api.reset_budget()
+        self._content.reset_budget()
+        stage = "summary"
+        chosen: str | None = None
+        offered: tuple[str, ...] = ()
+        capture: CapturedBodyResponse | None = None
+        label = f"{identity.package.package_id}/{identity.granule_id}"
+        try:
+            summary_capture = self._granule_metadata_capture(
+                granule_summary_locator(identity.package, identity.granule_id),
+                max_bytes=budget.max_metadata_bytes,
+                label="granule summary",
+            )
+            capture = summary_capture
+            summary = validate_granule_summary(
+                summary_capture.body,
+                package=identity.package,
+                granule_id=identity.granule_id,
+                final_url=summary_capture.resolved_url,
+                max_bytes=budget.max_metadata_bytes,
+            )
+
+            stage = "mods"
+            capture = None
+            mods_capture = self._granule_metadata_capture(
+                granule_mods_locator(identity.package, identity.granule_id),
+                max_bytes=budget.max_metadata_bytes,
+                label="granule MODS",
+            )
+            capture = mods_capture
+            mods = validate_granule_mods(
+                mods_capture.body,
+                package=identity.package,
+                granule_id=identity.granule_id,
+                final_url=mods_capture.resolved_url,
+                max_bytes=budget.max_metadata_bytes,
+            )
+            offered = mods.offered_formats
+            chosen = next((name for name in preference if name in offered), None)
+            if chosen is None:
+                moved = [(name, url) for name, url in mods.moved_renditions if name in preference]
+                if moved:
+                    raise GovInfoRenditionAddressError(label, moved)
+                raise GovInfoFormatNotOfferedError(label, preference, offered)
+
+            stage = "body"
+            # A body failure must never be attributed to the metadata captures.
+            capture = None
+            body_capture = self._body_capture(
+                granule_body_locator(identity.package, identity.granule_id, chosen),
+                max_bytes=budget.max_body_bytes,
+                label="granule body rendition",
+            )
+            capture = body_capture
+            body = validate_granule_body(
+                body_capture.body,
+                package=identity.package,
+                granule_id=identity.granule_id,
+                format=chosen,
+                content_type=body_capture.content_type,
+                final_url=body_capture.resolved_url,
+                max_bytes=budget.max_body_bytes,
+            )
+            return GovInfoGranuleBody(
+                identity=identity,
+                format=chosen,
+                preference=preference,
+                offered_formats=offered,
+                summary=summary,
+                mods=mods,
+                body=body,
+                summary_capture=summary_capture,
+                mods_capture=mods_capture,
+                body_capture=body_capture,
+                request_count=self.request_count,
+                budget=budget,
+            )
+        except Exception as error:
+            # A credential refusal keeps no capture: the body may echo the key.
+            if capture is not None and not isinstance(error, CredentialRefusedError):
+                attach_refused_response(error, refused_capture(capture, stage="source-validation"))
+            error.__dict__["govinfo_granule_acquisition"] = {
+                "packageId": identity.package.package_id,
+                "granuleId": identity.granule_id,
+                "collection": identity.package.collection,
+                "stage": stage,
+                "preference": list(preference),
+                "offeredFormats": list(offered),
+                "format": chosen,
+                "requestCount": self.request_count,
+                "budget": asdict(budget),
+            }
+            raise
+
+    def _granule_metadata_capture(self, url: str, *, max_bytes: int, label: str) -> CapturedBodyResponse:
+        """Capture a granule summary or MODS request, typing a package/granule mismatch as unavailable.
+
+        GovInfo answers HTTP 400, not 404, when the requested granule does not
+        belong to the requested package (measured 2026-09-19: a wrong-day
+        granule id under CREC-2026-09-18, and that same real granule id
+        requested under CREC-2026-09-17, both ``invalid granuleId``). This
+        reads that the same way ``_require_present`` reads a package's own
+        404/410: identity proved before bytes, typed the same way either
+        route states it.
+        """
+        try:
+            capture = self._capture(url, keyed=True, max_bytes=max_bytes)
+        except GovInfoBodySourceError as error:
+            refused = attached_capture(error)
+            if refused is not None and refused.status_code == 400:
+                raise _unavailable(refused, label) from error
+            raise
+        return self._require_present(capture, label=label)
+
+    def _body_capture(self, url: str, *, max_bytes: int, label: str = "body rendition") -> CapturedBodyResponse:
         """Capture the keyless rendition, reading a redirect as the object's absence."""
         try:
             capture = self._capture(url, keyed=False, max_bytes=max_bytes)
         except GovInfoBodySourceError as error:
             refused = attached_capture(error)
             if refused is not None and refused.status_code in _REDIRECT_STATUSES:
-                raise _unavailable(refused, "body rendition") from error
+                raise _unavailable(refused, label) from error
             raise
-        return self._require_present(capture, label="body rendition")
+        return self._require_present(capture, label=label)
 
 
 __all__ = [
     "GovInfoBodyAcquirer",
     "GovInfoBodyBudget",
     "GovInfoFormatNotOfferedError",
+    "GovInfoGranuleBody",
     "GovInfoPackageBody",
     "GovInfoPackageUnavailableError",
     "GovInfoRenditionAddressError",

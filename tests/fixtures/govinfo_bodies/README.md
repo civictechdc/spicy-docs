@@ -40,6 +40,42 @@ them. The MODS states HTML, PDF and XML renditions, all at the standard
 already derives, so no new locator code was needed for this collection --
 only the grammar entry.
 
+## Granule bodies for the daily Record (B2)
+
+`CREC-2026-09-18` is a three-page issue (the day this fixture set was
+captured) with 11 granules, walked through the keyed
+`packages/CREC-2026-09-18/granules` route. `CREC-2026-09-18-pt1-PgS4837-4`
+("APPOINTMENT OF ACTING PRESIDENT PRO TEMPORE") was chosen as the smallest.
+
+| Fixture | Publisher response | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `granule-summary-CREC-2026-09-18-pt1-PgS4837-4.json` | [`packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/summary`](https://api.govinfo.gov/packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/summary), keyed with `X-Api-Key` | 1,448 | `6fffa582c4382db83fffdb8134ba1440ab28a68a67713e884beafe833ce69b7b` |
+| `granule-mods-CREC-2026-09-18-pt1-PgS4837-4.xml` | [`packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/mods`](https://api.govinfo.gov/packages/CREC-2026-09-18/granules/CREC-2026-09-18-pt1-PgS4837-4/mods), keyed with `X-Api-Key` | 6,658 | `2e436a5449935b90e7bd6076b659c94d6c69f5cb09d885260729454afbe3459a` |
+| `granule-body-CREC-2026-09-18-pt1-PgS4837-4.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CREC-2026-09-18/html/CREC-2026-09-18-pt1-PgS4837-4.htm), keyless | 1,333 | `e52adaf8783f047024f762eff21cf33f626efb018a29c8ac56b08d3d7ae82c31` |
+
+The measured shape: the granule summary states both `packageId` and
+`granuleId` directly, so membership is a field check, not a second route. The
+granule MODS states its own `accessId` the same way a package MODS states its
+own (a direct-child `extension`), and states its host package's `accessId`
+nested inside a `relatedItem type="host"` -- GovInfo's own proof of
+membership. Its own `location` (also a direct child, not nested) states HTML
+and PDF renditions, both raw-object, both addressed at
+`content/pkg/{packageId}/{folder}/{granuleId}.{extension}` -- the package's
+folder, the granule's own file stem.
+
+**A granule that does not belong to the requested package answers HTTP 400,
+not 404.** Measured 2026-09-19, two ways: a wrong-day granule id
+(`CREC-2026-09-17-pt1-PgS4800`, not a real id) requested under
+`CREC-2026-09-18`, and this fixture's own real granule id requested under
+`CREC-2026-09-17` (a real, different day) instead of its actual package. Both
+answered `400 {"message":"invalid granuleId"}`, no `packageId` or `granuleId`
+field at all -- unlike a missing *package*, which answers 404 on `/summary`.
+`GovInfoBodyAcquirer.acquire_granule` reads this the same way it reads a
+package's own 404/410: `_unavailable`, typed `GovInfoPackageUnavailableError`.
+That response body is small and carries no credential, so
+`tests/test_govinfo_granule_body_acquisition.py` inlines it rather than
+keeping a fourth fixture file for 32 bytes.
+
 `body-CRPT-119hrpt105.htm` is the one package this repository holds in **two**
 renditions: its PyMuPDF page text is `tests/fixtures/gpo_pdf_text/CRPT-119hrpt105.json`
 and its complete PDF-derived text is `tests/fixtures/agency_reports/crpt-119hrpt105.txt`,

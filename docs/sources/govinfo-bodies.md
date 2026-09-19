@@ -7,9 +7,15 @@ bill text. It reads the package summary, then the package MODS, then the one
 rendition the publisher says it offers, and returns exact bytes with every
 response that proved them. Install `spicy-docs[acquisition]`.
 
-This is a body fetch, not a crawl: the caller names the package. Discovery of
-which packages exist stays with the [list routes](listings.md), and MODS field
-meanings stay with the [MODS mapping](govinfo-metadata.md).
+`acquire_granule` does the same for one granule of a package -- the daily
+Record's individual speeches and page ranges -- reading the granule summary
+and MODS instead of the package's own, at the same three-request shape. See
+[Granule bodies](#granule-bodies-for-the-record) below.
+
+This is a body fetch, not a crawl: the caller names the package (or the
+package and granule). Discovery of which packages exist stays with the
+[list routes](listings.md), and MODS field meanings stay with the
+[MODS mapping](govinfo-metadata.md).
 
 ## Acquire a body
 
@@ -54,7 +60,8 @@ default, and `sources/congress/bill_versions.py::DEFAULT_FORMAT_PREFERENCE` is
 the same order in Congress.gov's own format names (`("xml", "uslm", "html",
 "txt", "pdf")` — the GovInfo rendition `htm` is spelled `html` there). A test
 pins the two equal, so a version chosen in one spelling is fetched in the
-other.
+other. `GRANULE_BODY_PREFERENCE` (`("htm", "pdf")`) is `acquire_granule`'s own
+default; see [Granule bodies](#granule-bodies-for-the-record).
 
 `prefer` is still a plain tuple a caller can override, and `bill_pdf.py` does,
 naming `("pdf",)` because it wants that rendition specifically rather than the
@@ -103,6 +110,12 @@ includes real packages from neighboring collections that a collection-scoped
 CRPT-scoped ids sampled on 2026-09-19). They have different addresses, so they
 are refused rather than guessed at.
 
+A **granule id** names one constituent of a package — the daily Record's
+individual speeches and page ranges — and has no per-collection grammar of its
+own; `parse_granule_identity` bounds it as a safe path segment (the same
+length limit as a package id) and pairs it with its package's identity. See
+[Granule bodies](#granule-bodies-for-the-record).
+
 ## Routes and credentials
 
 | Request | Route | Credential |
@@ -110,6 +123,9 @@ are refused rather than guessed at.
 | Summary | `https://api.govinfo.gov/packages/{id}/summary` | `X-Api-Key` header |
 | MODS | `https://api.govinfo.gov/packages/{id}/mods` | `X-Api-Key` header |
 | Body | `https://www.govinfo.gov/content/pkg/{id}/{folder}/{id}.{extension}` | none |
+| Granule summary | `https://api.govinfo.gov/packages/{id}/granules/{granuleId}/summary` | `X-Api-Key` header |
+| Granule MODS | `https://api.govinfo.gov/packages/{id}/granules/{granuleId}/mods` | `X-Api-Key` header |
+| Granule body | `https://www.govinfo.gov/content/pkg/{id}/{folder}/{granuleId}.{extension}` | none |
 
 The key travels in the header only, never in a URL, a request body or a
 retained locator. The two routes use separate clients drawing on one request
@@ -154,10 +170,9 @@ directions, for every package measured: each stated rendition answered 200 and
 every unstated one redirected to the error page. The summary's `download`
 block did not: it names no body rendition at all for CRPT, CHRG, CDOC and
 CPRT, which do serve HTML and PDF, and it spells the BILLS HTML rendition
-`txtLink`.
-So the summary is read and kept — its `download_links` exactly as spelled, its
-`dateIssued` and its `lastModified` are in the result — but nothing is derived
-from those links and the offered set comes from MODS alone.
+`txtLink`. So the summary is read and kept — its `download_links` exactly as
+spelled, its `dateIssued` and its `lastModified` are in the result — but
+nothing is derived from those links and the offered set comes from MODS alone.
 
 A stated rendition that is not one of these locators is separated by what it
 means. `moved_renditions` holds `(format, url)` for a rendition of this
@@ -376,6 +391,48 @@ instead four publisher statements about the one URL whose bytes were kept:
   with `%PDF-`.** A 200 that is not the requested format is a refusal with its
   bytes retained, never data and never absence.
 
+## Granule bodies for the Record
+
+The daily Record is `pdf`-only at package level, but its granules — one
+speech, one page range — carry their own HTML. `GovInfoBodyAcquirer.
+acquire_granule(package_id, granule_id, prefer=GRANULE_BODY_PREFERENCE)`
+reads a granule's own summary and MODS, then its body, at the same
+three-request shape `acquire` uses, and with identity proved before bytes the
+same way:
+
+- **The granule summary states `packageId` and `granuleId`.** Both must equal
+  the request; a missing or mismatched granule answers `400`, not `404` --
+  measured 2026-09-19 two ways: a wrong-day granule id under
+  `CREC-2026-09-18`, and that fixture's own real granule id requested under
+  `CREC-2026-09-17` instead. Neither body states `packageId` or `granuleId` at
+  all (`{"message":"invalid granuleId"}`), so this reads as the field mismatch
+  it is, typed `GovInfoPackageUnavailableError` the same way a package's own
+  404/410 is.
+- **The granule MODS states its own `accessId`, and its host package's,
+  separately.** Its own sits directly under the root, the same shape a
+  package MODS states its own accessId in; its host package's sits nested
+  inside a `relatedItem type="host"` — GovInfo's own proof of membership, not
+  an assumption from the request URL. Both are checked before any rendition
+  is trusted.
+- **The granule MODS states the rendition URL, from its own `location`
+  only** (never the nested host's), at `granule_body_locator` — the package's
+  folder, the granule's own file stem — the same offered/moved/other split
+  `validate_package_mods` uses, shared through `_read_offered_renditions`.
+- **A granule body carries a page-level marker, not a granule-level one.**
+  `[Congressional Record Volume 172, Number 148 …] [Senate] [Page S4837]`
+  names the issue and the page, but several granules can share one page (four
+  of CREC-2026-09-18's eleven share `PgS4837`), so it cannot stand in for
+  `granuleId` the way the Federal Register granule route's printed
+  `[FR Doc No: ...]` marker can. Identity stays on the locator and MODS
+  statement, exactly as for a package.
+- The error-page and media-type rules are unchanged from a package body's.
+
+`GRANULE_BODY_PREFERENCE` (`("htm", "pdf")`) defaults to the granule's own
+HTML first, measured on CREC-2026-09-18 to be what every one of its 11
+granules offers; its own PDF is the fallback, through the same granule
+locator — not the whole-issue package PDF, which stays reachable unchanged
+through `acquire(package_id)`.
+
 ## Bounds and measured basis
 
 - Every summary, MODS, body request and retry spends the same `max_requests`.
@@ -404,17 +461,18 @@ instead four publisher statements about the one URL whose bytes were kept:
 
 | Refusal | Meaning |
 | --- | --- |
-| `GovInfoPackageUnavailableError` | The exact locator said the object is not there: 404/410 on a keyed route, or a redirect on a body route. It carries that capture. It is not a statement about other formats or other packages. |
-| `GovInfoFormatNotOfferedError` | The package stated its renditions and none was preferred. It carries `offered_formats`; no body request was made. |
-| `GovInfoBodySourceError` | Identity or shape failed: a `packageId`, `collectionCode` or `accessId` that differs, a final URL that differs, a wrong media type, an empty body, a PDF without its magic, or a bound exceeded. |
-| `GovInfoRenditionAddressError` | The package states a preferred format at an address this module does not derive. The publisher's own URL is on the error. Disagreement, not absence; no body request was made. |
+| `GovInfoPackageUnavailableError` | The exact locator said the object is not there: 404/410 on a keyed route, or a redirect on a body route. On a granule's summary or MODS route this is HTTP 400 instead, typed the same way -- GovInfo answers that way for a granule that does not belong to the requested package. It carries that capture. It is not a statement about other formats, packages or granules. |
+| `GovInfoFormatNotOfferedError` | The package or granule stated its renditions and none was preferred. It carries `offered_formats`; no body request was made. |
+| `GovInfoBodySourceError` | Identity or shape failed: a `packageId`, `granuleId`, `collectionCode` or `accessId` that differs, a final URL that differs, a wrong media type, an empty body, a PDF without its magic, or a bound exceeded. |
+| `GovInfoRenditionAddressError` | The package or granule states a preferred format at an address this module does not derive. The publisher's own URL is on the error. Disagreement, not absence; no body request was made. |
 | `GovInfoBodySourceError` naming the error page | The publisher's error page arrived as a 200. Its bytes are retained; it is a refusal, never absence. |
-| `CredentialRefusedError` | HTTP 401/403, or a keyed response echoing the key. Stop the operation; do not continue with another route or package. |
+| `CredentialRefusedError` | HTTP 401/403, or a keyed response echoing the key. Stop the operation; do not continue with another route, package or granule. |
 
 Every refusal attaches `refused_response` (`RefusedResponse`) with the exact
-bytes where they exist, and `govinfo_body_acquisition` with the package id,
-collection, stage (`summary`, `mods` or `body`), preference, offered formats,
-chosen format, consumed requests and effective budget. The context names the
+bytes where they exist, and `govinfo_body_acquisition` (`govinfo_granule_acquisition`
+for `acquire_granule`) with the package id (and granule id), collection, stage
+(`summary`, `mods` or `body`), preference, offered formats, chosen format,
+consumed requests and effective budget. The context names the
 active offending response: a failed body never labels the earlier successful
 MODS as the refused one. A refusal returns no partial result.
 
@@ -425,9 +483,12 @@ chosen, the `preference` asked for, `offered_formats`, the validated `summary`
 (with its `download_links` as evidence), the validated `mods` (with
 `moved_renditions` and `other_renditions`) and `body` identities, the three
 captures in request order, the consumed `request_count` and the effective
-`budget`. Each capture carries its requested
-and final URL, status, content type, observation time, exact bytes, byte size
-and qualified SHA-256. To store one, pass its `sha256`, `byte_size` and
-`[body]` to `SourceNativeBlobStore.put_blob` and keep the source facts beside
-the returned reference.
+`budget`. `GovInfoGranuleBody` is the same shape for `acquire_granule`, with a
+`GranuleIdentity` (the package and granule together), a `GranuleSummary` and a
+`GranuleModsIdentity` (which also carries `host_package_ids`, the proof of
+membership) in place of their package counterparts. Each capture carries its
+requested and final URL, status, content type, observation time, exact bytes,
+byte size and qualified SHA-256. To store one, pass its `sha256`, `byte_size`
+and `[body]` to `SourceNativeBlobStore.put_blob` and keep the source facts
+beside the returned reference.
 
