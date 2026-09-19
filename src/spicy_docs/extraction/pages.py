@@ -7,13 +7,30 @@ import math
 from contextlib import contextmanager
 from importlib.metadata import version
 
-from .model import Box, ExtractionError, Raster, Recognition, TextBlock
+from .model import Box, ExtractionError, Raster, Recognition, TableObservation, TextBlock
 
 
 def _png(image) -> bytes:
     out = io.BytesIO()
     image.save(out, format="PNG")
     return out.getvalue()
+
+
+def _display_box(page, rect_like, width: float, height: float) -> Box | None:
+    """Map a PyMuPDF page-space rect into normalized displayed-page coordinates.
+
+    Same rotation and page-bounds handling as ``_PDFPage.native``'s line
+    boxes. ``None`` means the rect has no area on the displayed page (a
+    cell PyMuPDF reports no bounding box for, or geometry entirely
+    outside the crop), not a zero-sized box.
+    """
+    import pymupdf
+
+    rect = pymupdf.Rect(rect_like) * page.rotation_matrix
+    rect &= page.rect
+    if rect.is_empty:
+        return None
+    return Box(rect.x0 / width, rect.y0 / height, rect.x1 / width, rect.y1 / height)
 
 
 def crop(image: Raster, box: Box) -> Raster:
@@ -117,6 +134,21 @@ class _PDFPage:
         self.reader.check_pixels(pix.width, pix.height)
         return Raster(pix.tobytes("png"), pix.width, pix.height)
 
+    def find_tables(self):
+        width, height = self.page.rect.width, self.page.rect.height
+        observations = []
+        for table in self.page.find_tables().tables:
+            box = _display_box(self.page, table.bbox, width, height)
+            if box is None:
+                continue  # table geometry has no area on the displayed page
+            cells = tuple(tuple(row) for row in table.extract())
+            cell_boxes = tuple(
+                tuple(_display_box(self.page, cell, width, height) if cell is not None else None for cell in row.cells)
+                for row in table.rows
+            )
+            observations.append(TableObservation(self.number, box, table.row_count, table.col_count, cells, cell_boxes))
+        return tuple(observations)
+
 
 class _Images:
     def __init__(self, document, reader):
@@ -157,3 +189,8 @@ class _ImagePage:
 
     def render(self):
         return Raster(_png(self.image), self.image.width, self.image.height)
+
+    def find_tables(self):
+        # No PyMuPDF page geometry to run a table finder over; empty, not an
+        # error, so an extractor with tables=True still accepts image input.
+        return ()

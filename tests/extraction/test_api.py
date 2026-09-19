@@ -17,6 +17,7 @@ from spicy_docs.extraction import (
     NativeText,
     NativeWithRegions,
     Recognition,
+    TableObservation,
     TextBlock,
 )
 from spicy_docs.transport.credentials import CredentialRefusedError
@@ -36,6 +37,31 @@ def pdf(*, rotation=0):
         page.insert_image(pymupdf.Rect(30, 80, 270, 160), stream=png())
         page.set_rotation(rotation)
         document.new_page(width=300, height=400)
+        return document.tobytes()
+
+
+def pdf_with_table():
+    """A one-page PDF with a drawn two-column, two-row grid PyMuPDF's line-based
+    ``find_tables`` strategy detects: an account label column and an amount
+    column, the shape ``docs/sources/govinfo-bodies.md`` measures against
+    ``htm``'s 841/190 intact appropriations rows."""
+    with pymupdf.open() as document:
+        page = document.new_page(width=300, height=200)
+        x0, y0, x1, y1 = 20, 20, 280, 180
+        xm, ym = 150, 100
+        for start, end in (
+            ((x0, y0), (x1, y0)),
+            ((x0, ym), (x1, ym)),
+            ((x0, y1), (x1, y1)),
+            ((x0, y0), (x0, y1)),
+            ((xm, y0), (xm, y1)),
+            ((x1, y0), (x1, y1)),
+        ):
+            page.draw_line(start, end)
+        page.insert_text((30, 50), "Account")
+        page.insert_text((160, 50), "Amount")
+        page.insert_text((30, 140), "Widgets")
+        page.insert_text((160, 140), "100")
         return document.tobytes()
 
 
@@ -60,6 +86,86 @@ def test_native_pdf_source_identity_and_blank_control():
     assert results[1].text == ""
     assert results[1].metadata["page"] == 2
     assert not results[0].content.observations[0].images
+
+
+def test_tables_option_is_off_by_default():
+    source = pdf_with_table()
+    results = list(DocumentExtractor(NativeText()).extract(source, media_type="application/pdf"))
+    assert results[0].tables == ()
+    # Text extraction is unaffected either way: the observation stays beside it.
+    assert "Account" in results[0].text
+    assert "Amount" in results[0].text
+
+
+def test_table_observation_is_built_from_a_drawn_two_column_table():
+    source = pdf_with_table()
+    results = list(DocumentExtractor(NativeText(), tables=True).extract(source, media_type="application/pdf"))
+    tables = results[0].tables
+    assert len(tables) == 1
+    table = tables[0]
+    assert isinstance(table, TableObservation)
+    assert table.page == 1
+    assert table.row_count == 2
+    assert table.column_count == 2
+    assert table.cells == (("Account", "Amount"), ("Widgets", "100"))
+    assert len(table.cell_boxes) == 2 and all(len(row) == 2 for row in table.cell_boxes)
+    assert all(box is None or isinstance(box, Box) for row in table.cell_boxes for box in row)
+    # The table sits within the page's normalized bounds and is not merged into the text.
+    assert 0 <= table.bbox.x0 < table.bbox.x1 <= 1
+    assert 0 <= table.bbox.y0 < table.bbox.y1 <= 1
+    assert table.confidence is None
+    assert results[0].text == "Account\nAmount\nWidgets\n100"
+
+
+GPO_PDF_TABLE_FIXTURES = Path(__file__).parents[1] / "fixtures/gpo_pdf_tables"
+
+
+def test_table_observation_on_a_real_committee_report_page():
+    """Pinned against a real page (provenance in fixtures/gpo_pdf_tables/README.md):
+    page 11 of CRPT-113srpt77, an "Office of the Secretary and Executive
+    Management" account table. GPO rules only the header, the fifteen-account
+    body block and the total -- never between individual accounts -- so
+    PyMuPDF's line-based find_tables() reports three ruled rows, one
+    newline-joined multi-account cell per body column, not fifteen table
+    rows; docs/sources/govinfo-bodies.md's measurement reconstructs the
+    individual account rows from this geometry by splitting each cell on its
+    embedded newlines."""
+    fixture = GPO_PDF_TABLE_FIXTURES / "CRPT-113srpt77.page11.pdf"
+    source = fixture.read_bytes()
+    assert sha256(source).hexdigest() == "54264b3e646aaf814f99e2d768975609bcfc9fd4fb7e61ec6efab1571bb31dfc"
+
+    results = list(DocumentExtractor(NativeText(), tables=True).extract(source, media_type="application/pdf"))
+    assert len(results) == 1
+    tables = results[0].tables
+    assert len(tables) == 1
+    table = tables[0]
+    assert table.row_count == 3
+    assert table.column_count == 4
+    assert len(table.cells) == 3 and all(len(row) == 4 for row in table.cells)
+    assert len(table.cell_boxes) == 3 and all(len(row) == 4 for row in table.cell_boxes)
+
+    header, body, total = table.cells
+    assert header[0] == ""
+    assert header[1] == "Fiscal year 2013\nenacted 1"
+    assert header[2] == "Fiscal year 2014\nbudget request"
+    assert header[3] == "Committee\nrecommendations"
+
+    # 15 accounts plus the body cell's own trailing "Total," label line --
+    # GPO rules no boundary between them, so both live in this one cell; the
+    # separately-ruled total row below carries the matching total amounts.
+    accounts = body[0].split("\n")
+    assert len(accounts) == 16
+    assert accounts[0].startswith("Immediate Office of the Secretary ")
+    assert accounts[-1].startswith("Total, Office of the Secretary and Executive Management")
+    enacted = body[1].split("\n")
+    assert len(enacted) == 15 and enacted[0] == "4,280" and enacted[-1] == "( 3 )"
+
+    assert total == (None, "129,827", "126,554", "123,600")
+    assert table.confidence is None
+    # Recovering per-account rows from this geometry (label first cell, amount
+    # last cell) is a measurement-time reconstruction over these newline-split
+    # cells, not something the frozen record does itself -- see
+    # docs/sources/govinfo-bodies.md, "Table geometry recovered from the PDF".
 
 
 def test_image_and_pdf_share_backend_and_override_api():
