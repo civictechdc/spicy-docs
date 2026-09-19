@@ -135,9 +135,11 @@ def _page_cleanup(page: object) -> dict[str, object]:
         "verdate_footer_lines": page.verdate_footer_lines,
         "footer_continuation_lines": page.footer_continuation_lines,
         "dsk_user_lines": page.dsk_user_lines,
+        "running_footer_lines": page.running_footer_lines,
         "bare_page_number_lines": page.bare_page_number_lines,
         "bare_page_number_evidence": page.bare_page_number_evidence,
         "bullet_bill_lines": page.bullet_bill_lines,
+        "content_lines": page.content_lines,
         "small_caps_merges": page.small_caps_merges,
         "hyphen_rejoin_count": page.hyphen_rejoin_count,
     }

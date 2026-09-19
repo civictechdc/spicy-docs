@@ -84,16 +84,23 @@ upstream gaps -- so they are ported here rather than raised there:
    BillTrax's original rule nor this port's ``_BULLET_BILL_RE`` catches it.
    None of this port's first three fixtures carried one; the fourth,
    ``BILLS-119hr1009rfs`` (an RFS-stage bill, fetched keyless through
-   ``sources.govinfo.bodies.package_body_locator``), does.
-4. **The layout verdict's minimum-size floor.** Below
-   ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` content lines, a numbered/total
-   ratio is not evidence -- ported from DeltaTrack's own derivation
-   (``compare/pdf.py:85``, table at ``:62-78``). Both real one-page fixtures
-   here (``BILLS-119hr4727ih``, ``BILLS-119hr1009rfs``) sit under the floor:
-   each is genuinely gutter-numbered, and each now reports
-   ``line_numbers=False`` and leaves its real hyphen-wraps split, the same
-   trade-off DeltaTrack's own derivation accepts for documents this short
-   (see ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``'s docstring).
+   ``sources.govinfo.bodies.package_body_locator``), does. Matched as a whole
+   line, like upstream, but only when the *next* physical line is not itself
+   a bare gutter number: a genuine running footer is page furniture followed
+   by prose, but a real numbered content line can coincidentally share its
+   shape, and deleting that line would delete a real gutter number with it
+   (reproduced during review; see ``_strip_metadata``).
+4. **The layout verdict's minimum-size floor.** Ported from DeltaTrack's own
+   derivation (``compare/pdf.py:85``, table at ``:62-78``), but not its
+   constant alone: upstream derived 50 for a document-wide ratio guard, while
+   this port's own signal is structural per page, so below the floor the
+   ratio must still hold *and* at least one page's gutter digits must form a
+   consecutive run starting at 1 (see ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``
+   and ``_starts_consecutive_run_from_one``). Both real one-page/two-page
+   fixtures here (``BILLS-119hr4727ih``, ``BILLS-119hr1009rfs``) sit under the
+   50-line floor and are genuinely gutter-numbered with a real run on at
+   least one page, so both correctly report ``line_numbers=True`` and rejoin
+   their real hyphen-wraps.
 """
 
 from __future__ import annotations
@@ -237,6 +244,13 @@ class _PageMetadataCounts:
     bullet_bill_lines: int
     content_lines: int
     gutter_adjacent_lines: int
+    #: The gutter-adjacent digit *values* themselves, in page order -- e.g.
+    #: ``(1, 2, 3, 4, 5, 6)`` for a page whose six content lines are each
+    #: followed by their own line number. Used below
+    #: ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` to test for a real GPO
+    #: run rather than trusting the count alone (see
+    #: ``_starts_consecutive_run_from_one``).
+    gutter_numbers: tuple[int, ...]
 
 
 def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCounts]:
@@ -257,6 +271,7 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
     kept: list[_Line] = []
     verdate = footer_continuation = dsk = running_footer = page_num = bullet = 0
     content = gutter_adjacent = 0
+    gutter_numbers: list[int] = []
     i, n = 0, len(lines)
     while i < n:
         t = lines[i].strip()
@@ -282,7 +297,16 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
             dsk += 1
             i += 1
             continue
-        if _RUNNING_FOOTER_RE.match(t):
+        following = lines[i + 1].strip() if i + 1 < n else ""
+        gutter_follows = bool(_BARE_GUTTER_NUMBER_RE.match(following))
+        # A line shaped like a running footer ("HR 5895 PCS") but followed by
+        # its own gutter number is real gutter-numbered content that happens
+        # to share the chrome's shape, not chrome -- a genuine running footer
+        # is page furniture, never itself part of the numbered line count
+        # (reproduced: BILLS-119hr1009rfs's actual running footer is followed
+        # by prose and still strips; a numbered content line shaped like one
+        # must not be deleted along with its digit).
+        if _RUNNING_FOOTER_RE.match(t) and not gutter_follows:
             running_footer += 1
             i += 1
             continue
@@ -296,14 +320,21 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
             i += 1
             continue
         content += 1
-        following = lines[i + 1].strip() if i + 1 < n else ""
-        adjacent = bool(_BARE_GUTTER_NUMBER_RE.match(following))
-        if adjacent:
+        if gutter_follows:
             gutter_adjacent += 1
-        kept.append(_Line(t, adjacent))
+            gutter_numbers.append(int(following))
+        kept.append(_Line(t, gutter_follows))
         i += 1
     counts = _PageMetadataCounts(
-        verdate, footer_continuation, dsk, running_footer, page_num, bullet, content, gutter_adjacent
+        verdate,
+        footer_continuation,
+        dsk,
+        running_footer,
+        page_num,
+        bullet,
+        content,
+        gutter_adjacent,
+        tuple(gutter_numbers),
     )
     return kept, counts
 
@@ -337,24 +368,65 @@ def _gate_bare_digits(
 #: (``compare/pdf.py:62-78``), swept over 60 real GPO PDFs, found a hard cliff
 #: between 28 and 29 judged lines (minimum accepted ratio 0.4286 -> 0.5517)
 #: and picked 50 for a comfortable margin past it while declining the same 14
-#: documents 29 would. Below the floor a ratio is not evidence: a short
-#: excerpt can clear 30% numbered by chance (a two-page memo should not be
-#: declared GPO-numbered on three lines), so the verdict is withheld -- kept
-#: as a positive gate here (unlike upstream's decline-guard, which defaults a
-#: short document to "not unnumbered" so it is not blocked outright), because
-#: withholding is what keeps ``_rejoin_hyphens`` from trusting an
-#: under-evidenced hyphen the way DeltaTrack's own unconditional rule does
-#: (see ``docs/extraction-gpo.md``, "Where this port did not adopt a
-#: DeltaTrack design").
+#: documents 29 would. At or above this floor the ratio alone decides, as
+#: upstream's own guard does. Below it, upstream's constant does not port
+#: directly: its 50 was derived for a *document-wide* ratio guard over a
+#: corpus with no page concept in the same sense, while this port's signal
+#: is structural per page (a content line immediately followed by its own
+#: digit line) -- so below the floor, the ratio must still hold (a two-page
+#: memo should not be declared GPO-numbered on three lines just because they
+#: happen to be numbered) *and* at least one page's gutter digits must form
+#: a consecutive run starting at 1, at least
+#: ``_MIN_GUTTER_RUN_LENGTH`` long (see ``_starts_consecutive_run_from_one``):
+#: GPO's own gutter numbering restarts at 1 on every page and steps by one
+#: per typeset line, which a footnote marker or outline number need not do.
+#: Residual false positive: a numbered outline whose own numbers sit on
+#: their own lines and happen to restart at 1 on every page would pass this
+#: test too -- the run test is validated on this repo's four real fixtures
+#: plus synthetic cases below the floor, not against a corpus the way
+#: upstream's 50 was.
 _MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT = 50
+
+#: How many consecutive gutter numbers, starting at 1, one page must carry
+#: before its digits count as structural GPO evidence below the floor above.
+#: 3 is the smallest run that cannot also be a single coincidental pair (see
+#: ``_starts_consecutive_run_from_one``).
+_MIN_GUTTER_RUN_LENGTH = 3
+
+
+def _starts_consecutive_run_from_one(numbers: Sequence[int], minimum: int = _MIN_GUTTER_RUN_LENGTH) -> bool:
+    """True when ``numbers`` (in the order they appear on the page) begins at
+    1 and increments by exactly one for at least ``minimum`` entries.
+
+    Only the *prefix* run counts: ``(1, 2, 4)`` stops at length 2 (fails a
+    minimum of 3), and ``(3, 4, 5)`` never starts, so it is length 0 --
+    consecutive digits that do not begin at 1 are exactly what a footnote or
+    outline sequence continuing from a prior page looks like, which GPO's own
+    per-page gutter numbering never does.
+    """
+    run = 0
+    for index, value in enumerate(numbers):
+        if value != index + 1:
+            break
+        run += 1
+    return run >= minimum
 
 
 def _layout_verdict(page_counts: Sequence[_PageMetadataCounts]) -> bool:
     """Shared by ``is_gpo_layout`` and ``normalize_gpo_pages`` so a document's
-    layout is one ``_strip_metadata`` pass per page, not two."""
+    layout is one ``_strip_metadata`` pass per page, not two.
+
+    See ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` for the two-tier rule this
+    implements: the ratio alone at or above the floor, the ratio plus a
+    per-page structural run below it.
+    """
     content = sum(c.content_lines for c in page_counts)
     numbered = sum(c.gutter_adjacent_lines for c in page_counts)
-    return content >= _MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT and numbered / content > 0.3
+    if content == 0 or not (numbered / content > 0.3):
+        return False
+    if content >= _MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT:
+        return True
+    return any(_starts_consecutive_run_from_one(c.gutter_numbers) for c in page_counts)
 
 
 def is_gpo_layout(pages: Sequence[str]) -> bool:
@@ -364,9 +436,11 @@ def is_gpo_layout(pages: Sequence[str]) -> bool:
     "numbered" when the next physical line, before stripping, is a bare 1-2
     digit gutter number -- not, as under pdf-parse, when the content line's
     own text ends in a trailing digit suffix, which this extractor never
-    produces. Threshold: at least ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``
-    content lines (below that, the ratio below is not trusted either way) and
-    over 30% numbered.
+    produces. Over 30% numbered always has to hold; at
+    ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` content lines or more that ratio
+    decides alone, and below it a page's gutter digits must additionally form
+    a consecutive run starting at 1 (see ``_layout_verdict`` and
+    ``_starts_consecutive_run_from_one``).
     """
     return _layout_verdict([_strip_metadata(_normalize_encoding(page).split("\n"))[1] for page in pages])
 

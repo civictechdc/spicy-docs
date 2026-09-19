@@ -81,10 +81,10 @@ rather than removed.
 | `dsk_user` | Document-processing user/job-code line | Re-derived: generalized machine-id and job-code shape (see artifact 2 above) |
 | `bare_page_number` | Bare page number or per-line gutter number, 1-4 digits | Kept verbatim |
 | `bullet_bill_id` | Bullet-prefixed bill identifier (`•HR 7148 IH`) | Kept verbatim; unmeasured on the first three fixtures below (none contains one), confirmed still present under this extractor by the sidecar's other sampled bills (`BILLS-119hr9499rh`: 2, `BILLS-119s218is`: 4 — see `docs/research/billtrax-raw-data-2026-09-19.json`, `sources.billPdfTextArtifacts`) |
-| `running_footer` | Unbulleted running bill-stage line (e.g. `HR 5895 PCS`) | Ported from DeltaTrack's `_RUNNING_FOOTER` (`pdf_text.py:68-71`, built for its own #140) — see ["Where this port now matches a DeltaTrack rule"](#where-this-port-now-matches-a-deltatrack-rule-not-imported-ported) below |
-| gutter-number adjacency (`is_gpo_layout`) | Line-numbered IH-style layout | Re-derived: adjacency instead of trailing-suffix (see artifact 1 above); withheld below a minimum content-line floor ported from DeltaTrack's `_MIN_LINES_FOR_GUARD` (`compare/pdf.py:85`) — same section below |
+| `running_footer` | Unbulleted running bill-stage line (e.g. `HR 5895 PCS`) | Ported from DeltaTrack's `_RUNNING_FOOTER` (`pdf_text.py:68-71`, built for its own #140), with one addition upstream's own rule does not need: it strips only when the *next* line is not itself a bare gutter number, so a real numbered content line that happens to share the shape is not deleted with its digit — see ["Where this port now matches a DeltaTrack rule"](#where-this-port-now-matches-a-deltatrack-rule-not-imported-ported) below |
+| gutter-number adjacency (`is_gpo_layout`) | Line-numbered IH-style layout | Re-derived: adjacency instead of trailing-suffix (see artifact 1 above); at or above a minimum content-line floor the ratio alone decides, below it a page's gutter digits must also form a consecutive run starting at 1 — same section below |
 | small-caps merge | A lone uppercase letter split from the word it starts | Kept verbatim; unmeasured on the four fixtures below (none exercises it) |
-| hyphen rejoin | Mid-word line-wrap break | Re-derived trigger (gutter adjacency instead of trailing-digit suffix); scope kept identical to BillTrax (gutter-numbered documents only), now also gated by the minimum content-line floor above |
+| hyphen rejoin | Mid-word line-wrap break | Re-derived trigger (gutter adjacency instead of trailing-digit suffix); scope kept identical to BillTrax (gutter-numbered documents only), gated by the same layout verdict as gutter-number adjacency above |
 | space collapse | Multiple internal spaces from PDF kerning | Kept verbatim; measured at zero occurrences on all four fixtures under this extractor |
 
 ## Measured counts per fixture
@@ -95,25 +95,26 @@ assertions are in `tests/extraction/test_gpo_normalize.py`.
 
 | Fixture | Version | Pages | Content lines | `line_numbers` | `gpo_footers` | `running_footer_lines` | `small_caps_merges` | `hyphen_rejoin_count` | Chars before → after |
 | --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | --- |
-| `BILLS-119hr4727ih` | Introduced (IH) | 1 | 19 | `False` | `True` | 0 | 0 | 0 | 854 → 675 (21.0%) |
+| `BILLS-119hr4727ih` | Introduced (IH) | 1 | 19 | `True` | `True` | 0 | 0 | 2 | 854 → 675 (21.0%) |
 | `BILLS-119sconres1enr` | Enrolled (ENR) | 1 | 30 | `False` | `False` | 0 | 0 | 0 | 1,291 → 1,263 (2.2%) |
 | `CRPT-119hrpt105` | Committee report | 3 | 146 | `False` | `True` | 0 | 0 | 0 | 7,111 → 6,537 (8.1%) |
-| `BILLS-119hr1009rfs` | Referred in Senate (RFS) | 2 | 28 | `False` | `True` | 1 | 0 | 0 | 1,412 → 1,034 (26.8%) |
+| `BILLS-119hr1009rfs` | Referred in Senate (RFS) | 2 | 28 | `True` | `True` | 1 | 0 | 2 | 1,412 → 1,034 (26.8%) |
 
 `BILLS-119hr4727ih` is genuinely gutter-numbered (6 of its 19 content lines
-are each followed by their own line-number line, 1-6), but 19 sits under the
-minimum-content-line floor described below, so `line_numbers` reports `False`
-and both of its real hyphen wraps ("Representa-/tives", "relat-/ing") are
-conservatively left split rather than trusted on a ratio this thin. Its
-page-number lines still strip: the page's own VerDate/DSK footer is
-independent evidence, checked before the floor (see
-`GpoPageCleanup.bare_page_number_evidence`).
+are each followed by their own line-number line, 1-6, a consecutive run
+starting at 1) and 19 sits under the minimum-content-line floor described
+below, so it is the structural run test, not the ratio alone, that clears
+`line_numbers` here — both real hyphen wraps ("Representa-/tives",
+"relat-/ing") correctly rejoin. Its page-number lines strip on either
+evidence: the page's own VerDate/DSK footer, or the (now `True`) layout
+verdict (see `GpoPageCleanup.bare_page_number_evidence`).
 
 `BILLS-119sconres1enr` is not gutter-numbered, has no GPO footer on its one
 page, and its own genuine hyphen wraps ("concur-/ring),", "President-/elect")
 are left split — this is BillTrax's original scope, not a gap this port
 introduced: see artifact 1 above. (Its 30 content lines are also under the
-floor, but the ratio alone — 0 numbered — already declines it either way.)
+floor, but neither the ratio — 0 numbered — nor the run test finds anything
+to work with either way.)
 
 `CRPT-119hrpt105` is a 3-page House Rules Committee report — not itself a
 bill, so it is never gutter-numbered by GPO — with a full VerDate footer
@@ -133,9 +134,12 @@ so none carries the unbulleted running bill-stage line the rule strips. It is
 a short Senate-received postal-facility-naming act (H.R. 1009, 119th
 Congress); page 2 opens with `HR 1009 RFS`, stripped once. Genuinely
 gutter-numbered (12 of its 28 content lines are each followed by their own
-line number) but, like `BILLS-119hr4727ih`, under the minimum-content-line
-floor, so `line_numbers` is `False` and its one real hyphen wrap
-("Representa-/tives") stays split — the same trade-off.
+line number) and, like `BILLS-119hr4727ih`, under the minimum-content-line
+floor — but it also demonstrates the run test's per-page aggregation: page
+1's own run is only 2 long (1, 2, short of the 3 required), while page 2's is
+10 long (1 through 10), which is sufficient on its own, the same way one
+page's own footer evidence is enough for `gpo_footers`. Both real hyphen
+wraps rejoin: "Representa-/tives" on page 1, and "reg-/ulation" on page 2.
 
 ## Where this port now matches a DeltaTrack rule (not imported, ported)
 
@@ -155,22 +159,49 @@ this port lacked, not upstream gaps, so both are now ported into
   `{'modified': 1}`; 80 of 125 hunks were footer-only; the footer appeared on
   181 of 184 pages). None of this port's first three fixtures is a
   PCS/RDS/RFS print stage, so a fourth, `BILLS-119hr1009rfs`, was added
-  specifically to exercise it — see the measured counts above.
-- **The minimum-size floor on the numbered-ratio layout verdict.** DeltaTrack
-  derived, over 60 real corpus PDFs, that a numbered/unnumbered ratio is not
-  evidence below `_MIN_LINES_FOR_GUARD = 50` content lines
-  (`compare/pdf.py:85`, derivation table at `:62-78`): a hard cliff between
-  28 and 29 judged lines (minimum accepted ratio 0.4286 → 0.5517), with 50
-  chosen for a comfortable margin past it. This port kept BillTrax's original
-  3-content-line floor until now, which both real one-page fixtures above
-  clear easily (ratio > 0.3) despite being far too short to trust — exactly
-  the false-positive the floor exists to prevent (a two-page memo should not
-  be declared GPO-numbered on three lines). Upstream's own residual — a
-  genuinely unnumbered document under 50 lines is still exempt from its
-  decline-guard — is tracked in its **#261** (open, following closed #141)
-  and its active research spike **#679** (open); this port's floor instead
-  withholds the *positive* layout verdict below the same size, which is the
-  safer default for hyphen-rejoin specifically (see "Where this port did not
+  specifically to exercise it — see the measured counts above. Ported with
+  one addition of this port's own, caught in review: DeltaTrack's rule
+  strips the line unconditionally, but a real numbered content line can
+  coincidentally share the same shape, and deleting it would delete its
+  gutter number along with it — this port's rule strips only when the next
+  physical line is not itself a bare gutter number, keeping the real
+  `HR 1009 RFS` (followed by prose) stripped while a coincidental match
+  (followed by its own digit) is kept as content instead.
+- **The minimum-size floor on the numbered-ratio layout verdict — ported for
+  intent, not for its constant.** DeltaTrack derived, over 60 real corpus
+  PDFs, that a numbered/unnumbered ratio is not evidence below
+  `_MIN_LINES_FOR_GUARD = 50` content lines (`compare/pdf.py:85`, derivation
+  table at `:62-78`): a hard cliff between 28 and 29 judged lines (minimum
+  accepted ratio 0.4286 → 0.5517), with 50 chosen for a comfortable margin
+  past it. That 50 was derived for a **document-wide** ratio guard over a
+  corpus with no comparable page concept; this port's own signal is
+  **structural per page** — a content line immediately followed by its own
+  digit line — so porting the constant alone regressed the common case: a
+  first pass flipped both genuinely gutter-numbered fixtures above
+  (`BILLS-119hr4727ih` at 19 content lines, ratio 0.316; `BILLS-119hr1009rfs`
+  at 28, ratio 0.429) to `line_numbers=False`, leaving their real hyphen
+  wraps split. Caught in review and corrected: at or above the 50-line floor
+  the ratio alone still decides, as before, but below it a page also has to
+  carry a **consecutive run of gutter digits starting at 1, at least three
+  long** (`_MIN_GUTTER_RUN_LENGTH`) — GPO's own gutter numbering restarts at
+  1 on every page and steps by one per typeset line, which a footnote marker
+  or outline number need not do. Evaluated per page and aggregated the same
+  way `page_has_footer` is (any one page's evidence is enough): on
+  `BILLS-119hr1009rfs`, page 1's own run is only 2 long, but page 2's is 10,
+  which alone recovers the whole document. **Residual false positive:** a
+  numbered outline whose own numbers sit on their own lines and happen to
+  restart at 1 on every page would pass this test too — indistinguishable
+  from real GPO numbering by this signal alone. The run test is validated on
+  this repo's four real fixtures plus synthetic cases below the floor (a
+  page with digits 1, 2, 4; five footnote-style markers split across two
+  pages that number straight through, 1-2 then 3-4-5, rather than restarting
+  at 1 on the second page), not against a corpus the way upstream's 50 was.
+  Upstream's own residual — a genuinely unnumbered document under 50 lines
+  is still exempt from its decline-guard — is tracked in its **#261** (open,
+  following closed #141) and its active research spike **#679** (open); this
+  port's floor is a different mechanism entirely, gating a *positive*
+  layout verdict rather than a decline, which is what keeps hyphen-rejoin
+  from trusting an under-evidenced hyphen (see "Where this port did not
   adopt a DeltaTrack design" below).
 
 ## Concordance checks
