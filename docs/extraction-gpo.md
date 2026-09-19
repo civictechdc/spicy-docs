@@ -269,30 +269,19 @@ rather than given a rule with a sample size of one.
 
 ## Decision
 
-**Normalization is a post-extraction step, applied before any text-driven
-parser** — the agency-block splitter chief among them.
-`docs/research/billtrax-raw-data-2026-09-19.md` §6 measured this directly:
-`report-parser.ts`'s only call site skips `normalizePdfText` entirely and
-feeds it raw `pdf-parse` text, and the hyphen-wrap fragments that produces
-("MENT OF THE TREASURY RELATING TO THE REVIEW OF APPLICATIONS" as its own
-false "agency" heading) are a direct consequence of that omission, not of the
-heading grammar itself. The fix the raw-data research already named — route
-every PDF-derived text body through the normalizer before any
-heading/section/agency splitter reads it — carries over unchanged to this
-port; `normalize_gpo_pages` is that shared step.
+See ["GPO PDF text normalization runs after extraction, gated by
+evidence"](decisions.md#gpo-pdf-text-normalization-runs-after-extraction-gated-by-evidence)
+in `docs/decisions.md`.
 
-`sources/agency_reports/report_blocks.py` (the `report-parser.ts` port
-target) has since landed on `main` and already says as much in its own
-docstring: "This parser expects **normalized** text ... the sibling
-`pdf-normalize` port is a post-extraction step, not this module's job." Its
-`parse_agency_blocks` takes either a flat string or a `Sequence[PageResult]`
-directly, not this module's `tuple[str, ...]` output, so the two are not yet
-wired together — a caller still has to run `normalize_gpo_pages` over
-`DocumentExtractor` output and hand the result to `parse_agency_blocks`
-itself (as a joined string, since `PageResult` is not this module's to
-construct). That wiring, and doing the same for any future bill-PDF section
-parser rather than each parser deciding independently whether to normalize
-first, is for the maintainer landing the caller to move into place.
+`sources/agency_reports/report_blocks.py`'s `parse_agency_blocks` takes
+either a flat string or a `Sequence[PageResult]` directly, not this module's
+`tuple[str, ...]` output, so the two are not yet wired together — a caller
+still has to run `normalize_gpo_pages` over `DocumentExtractor` output and
+hand the result to `parse_agency_blocks` itself (as a joined string, since
+`PageResult` is not this module's to construct). That wiring, and doing the
+same for any future bill-PDF section parser rather than each parser deciding
+independently whether to normalize first, is for the maintainer landing the
+caller to move into place.
 
 This document and its rule table are for that maintainer to move into
 wherever the extraction pipeline's own documentation index lives

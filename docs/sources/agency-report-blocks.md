@@ -212,18 +212,6 @@ congress both matching the query agency) -- only constructed.
 
 ## Decision
 
-*For the maintainer to move to `docs/decisions.md` once settled; not yet a
-ratified decision.*
-
-This is parsing of an uploaded artifact (a committee report a user attaches
-to a bill), not acquisition -- there is no publisher endpoint to fetch here,
-and `parse_agency_blocks`/`agency_recurrence`/`sections_for_agency` take
-already-retrieved text and rows, exactly like `bill_tree.py` takes already-
-fetched bill XML. That is why the parser lives under `sources/agency_reports/`
-(alongside the other publisher-format-to-typed-fields parsers) and the two
-aggregates live under `interpretation/` (shared logic over the facts those
-parsers produce), rather than either gaining any fetch code of its own. The
-GovInfo CRPT package body that would feed `committee_reports.text` in a
-hosted system is a separate, already-existing concern
-(`sources/govinfo/body_acquisition.py`); this module does not depend on it
-and is tested entirely offline, against retained fixtures.
+See ["Agency-report blocks are parsing an uploaded artifact, not
+acquisition"](../decisions.md#agency-report-blocks-are-parsing-an-uploaded-artifact-not-acquisition)
+in `docs/decisions.md`.
