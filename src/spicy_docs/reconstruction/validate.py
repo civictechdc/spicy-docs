@@ -38,9 +38,11 @@ from dataclasses import asdict, dataclass, field
 from difflib import SequenceMatcher
 from typing import Any
 
+from spicy_docs.extraction.gpo_normalize import normalize_gpo_glyphs
+
 from . import EXTRA_REQUIRED
 from .evidence import EvidenceDocument
-from .parse import ReconstructedDocument
+from .parse import SECTION_ROOT, ReconstructedDocument, marker_pairs
 from .profiles import CFR_PROFILE, Profile, check_schema_bundle, schema_path
 from .serialize import SECTION, Serialized
 
@@ -241,7 +243,7 @@ def content_fidelity(serialized: Serialized, evidence: EvidenceDocument) -> Find
         node = next((node for node in serialized.nodes if node.id == entry.node), None)
         if node is None or entry.element == SECTION:
             continue
-        source = " ".join(evidence.block(block_id).text for block_id in entry.evidence)
+        source = normalize_gpo_glyphs(" ".join(evidence.block(block_id).text for block_id in entry.evidence))
         wanted, _ = normalize_for_comparison(node.text)
         available, _ = normalize_for_comparison(source)
         total += 1
@@ -269,38 +271,74 @@ def content_fidelity(serialized: Serialized, evidence: EvidenceDocument) -> Find
 
 
 def _welded(text: str) -> str:
-    """The comparison spelling: no spaces and no hyphens, so a print wrap's rejoin is not a difference."""
-    return text.replace(" ", "").replace("-", "")
+    """The comparison spelling, and what each part of it deliberately cannot see.
+
+    Spaces and hyphens go, because the join removes a print wrap's hyphen and
+    adds a space between lines; case goes, because the print encodes small
+    capitals as *size* rather than as case, so the restored case comes from
+    the style observation and not from the characters. What survives is every
+    letter, digit and mark in order -- which is what this check is for: that
+    an element's text came from the evidence the source map names for it, and
+    not from somewhere else in the document.
+    """
+    return text.replace(" ", "").replace("-", "").casefold()
 
 
 # --- 3. structural fidelity ----------------------------------------------------------
 
 
-def _marker_pairs(document: ReconstructedDocument) -> set[tuple[str, str]]:
-    """``(parent marker, child marker)`` for every marked paragraph; the tree as comparable pairs."""
-    markers = {node.id: node.marker for node in document.nodes}
+def document_marker_pairs(document: ReconstructedDocument, *, section: str | None = None) -> set[tuple[str, str]]:
+    """``(parent marker, child marker)`` for every marked paragraph: the parser's own tree, as comparable pairs.
+
+    ``section`` restricts the pairs to one section's descendants, which is
+    what a paired comparison against one published granule needs.
+    """
+    inside = None
+    if section is not None:
+        node = document.section(section)
+        inside = {node.id for node in document.descendants(node.id)} if node is not None else set()
+    # A paragraph hanging directly from its section hangs from the root of the
+    # ladder, not from the section's number: a section number is an address,
+    # not a paragraph designation, and pairing against it would compare two
+    # different things on the reference and candidate sides.
+    markers = {node.id: (None if node.kind == "section" else node.marker) for node in document.nodes}
     pairs: set[tuple[str, str]] = set()
     for node in document.nodes:
-        if node.kind != "paragraph" or node.marker is None:
+        if node.kind != "paragraph" or node.marker is None or (inside is not None and node.id not in inside):
             continue
         parent = markers.get(node.parent or "") if node.parent else None
-        pairs.add((parent or "§", node.marker))
+        pairs.add((parent or SECTION_ROOT, node.marker))
     return pairs
 
 
 def structural_fidelity(document: ReconstructedDocument, *, expected_sections: Sequence[str] | None = None) -> Finding:
-    """Section boundaries and marker hierarchy: are the sections the ones expected, and is the ladder sound?"""
+    """Section boundaries and marker hierarchy: are the sections the ones expected, and is the ladder sound?
+
+    When ``expected_sections`` names exactly one section the marker check is
+    scoped to it, because a section PDF is a page range that carries its
+    neighbours and their markers belong to another granule. The section list
+    the rendition yielded is reported either way, so the boundary is visible
+    rather than assumed.
+    """
     found = [node.marker for node in document.sections() if node.marker]
     unnumbered = [node for node in document.sections() if not node.marker]
+    scope: set[str] | None = None
+    scoped: str | None = None
+    if expected_sections is not None and len(expected_sections) == 1:
+        scoped = expected_sections[0]
+        node = document.section(scoped)
+        scope = {child.id for child in document.descendants(node.id)} if node is not None else set()
     out_of_sequence = [
-        node.marker for node in document.nodes if node.kind == "paragraph" and node.review_status == "needs_review"
+        node.marker
+        for node in document.nodes
+        if node.kind == "paragraph" and node.review_status == "needs_review" and (scope is None or node.id in scope)
     ]
     problems: list[str] = []
     if expected_sections is not None:
         missing = [number for number in expected_sections if number not in found]
         if missing:
             problems.append(f"sections not found: {', '.join(missing)}")
-    if unnumbered:
+    if unnumbered and expected_sections is None:
         problems.append(f"{len(unnumbered)} run(s) of text before the first section heading")
     if out_of_sequence:
         problems.append(
@@ -314,15 +352,31 @@ def structural_fidelity(document: ReconstructedDocument, *, expected_sections: S
             "sections": found,
             "unnumberedSections": len(unnumbered),
             "markersOutOfSequence": len(out_of_sequence),
-            "markerPairs": len(_marker_pairs(document)),
+            "markerPairs": len(document_marker_pairs(document, section=scoped)),
+            "scopedToSection": scoped,
         },
     )
 
 
-def hierarchy_f1(reference: ReconstructedDocument, candidate: ReconstructedDocument) -> tuple[float, int, int, int]:
-    """F1 over ``(parent marker, child marker)`` pairs, and the three counts behind it."""
-    left, right = _marker_pairs(reference), _marker_pairs(candidate)
+def hierarchy_f1(reference: set[tuple[str, str]], candidate: set[tuple[str, str]]) -> tuple[float, int, int, int]:
+    """F1 over ``(parent marker, child marker)`` pairs, and the three counts behind it.
+
+    Both sides are pair sets so a reference read from the publisher's own
+    ``<P>`` markers (``parse.marker_pairs``) compares with a candidate read
+    from the print (``document_marker_pairs``) on the one ladder.
+
+    **Two empty sides agree.** Plenty of CFR sections are a single
+    undesignated paragraph and have no ladder at all; scoring that 0.0 would
+    report disagreement where both sides say the same thing, and averaging it
+    would drag a corpus score down for sections that were reconstructed
+    perfectly. It returns 1.0 with both counts zero, and a caller that wants
+    the mean over sections that *have* a ladder filters on
+    ``reference_pairs``, which is what the benchmark reports.
+    """
+    left, right = reference, candidate
     shared = len(left & right)
+    if not left and not right:
+        return 1.0, 0, 0, 0
     precision = shared / len(right) if right else 0.0
     recall = shared / len(left) if left else 0.0
     f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
@@ -418,29 +472,44 @@ def check(
     serialized: Serialized,
     *,
     profile: Profile = CFR_PROFILE,
-    expected_sections: Sequence[str] | None = None,
+    section: str | None = None,
     reference_text: str | None = None,
-    reference_document: ReconstructedDocument | None = None,
+    reference_markers: Sequence[str] | None = None,
     gates: Gates = DEFAULT_GATES,
     schema: bool = True,
 ) -> tuple[Finding, ...]:
-    """Run every check; ``schema=False`` skips the one that needs the extra and says so."""
+    """Run every check; ``schema=False`` skips the one that needs the extra and says so.
+
+    ``section`` is the one section a paired run asked for: the structural
+    finding then expects it, and the hierarchy comparison is scoped to it,
+    because a section PDF carries its neighbours and their markers are not
+    this granule's.
+    """
     findings = [
         schema_validity(serialized.xml, profile=profile)
         if schema
         else Finding("schema_validity", False, EXTRA_REQUIRED, {"skipped": True}),
         content_fidelity(serialized, document.evidence),
-        structural_fidelity(document, expected_sections=expected_sections),
+        structural_fidelity(document, expected_sections=None if section is None else [section]),
         coverage(document, serialized),
     ]
-    comparison = None if reference_text is None else compare_text(reference_text, _serialized_text(serialized))
-    hierarchy = None if reference_document is None else hierarchy_f1(reference_document, document)[0]
+    comparison = None if reference_text is None else compare_text(reference_text, serialized_text(serialized))
+    hierarchy = (
+        None
+        if reference_markers is None
+        else hierarchy_f1(marker_pairs(reference_markers), document_marker_pairs(document, section=section))[0]
+    )
     findings.append(acceptance(findings, gates=gates, comparison=comparison, hierarchy=hierarchy))
     return tuple(findings)
 
 
-def _serialized_text(serialized: Serialized) -> str:
-    """The text the derivative carries, in document order, for a reference comparison."""
+def serialized_text(serialized: Serialized) -> str:
+    """The text the derivative carries, in document order, for a reference comparison.
+
+    The section node itself is left out: its text is the heading line, which
+    ``SECTNO`` and ``SUBJECT`` already carry, and counting it would compare a
+    sentence the publisher writes once against one written twice.
+    """
     return " ".join(node.text for node in serialized.nodes if node.kind != "section" and node.text)
 
 
@@ -457,8 +526,10 @@ __all__ = [
     "compare_text",
     "content_fidelity",
     "coverage",
+    "document_marker_pairs",
     "hierarchy_f1",
     "normalize_for_comparison",
     "schema_validity",
+    "serialized_text",
     "structural_fidelity",
 ]

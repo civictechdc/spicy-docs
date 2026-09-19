@@ -216,6 +216,36 @@ CFR_RULES: tuple[Rule, ...] = (
         "wrapped subjects in the benchmark corpus",
     ),
     Rule(
+        "division_heading",
+        "heuristic",
+        "A line in the division-heading face is a part, subpart or subject-group heading: it ends the section "
+        "above it and belongs to the part, never inside a section",
+        "AvantGarde-Demi 10 pt in every measured edition; CFR-2024-title12-vol1-sec28-5 carries "
+        "'Subpart B—Federal Branches and Agencies of Foreign Banks' inside the requested section's page range",
+    ),
+    Rule(
+        "small_caps_restore",
+        "heuristic",
+        "GPO sets small capitals by size, not by case: a run at least 1 pt below its line's full size whose "
+        "letters are all capitals is the reduced part of a small-capital word, and its case is restored",
+        "CFR-2022-title40-vol1-sec23-2: MIonic 8.0 pt 'F' beside MIonic 6.5 pt 'EDERAL' for 'Federal Register'",
+    ),
+    Rule(
+        "small_caps_continuation",
+        "heuristic",
+        "A line wholly in the reduced face that finishes a hyphen wrap out of a larger line is the rest of that "
+        "word, not a note",
+        "CFR-2022-title40-vol1-sec23-2: 'the FED-' then a line holding only 'ERAL'",
+    ),
+    Rule(
+        "gpo_quote_pair",
+        "heuristic",
+        "GPO's doubled-backtick and doubled-apostrophe typewriter quotes collapse to one double quote, by the "
+        "shared rule extraction.gpo_normalize.normalize_gpo_glyphs, so the PDF and the XML of one document "
+        "spell a quotation the same way",
+        "extraction/body_text.py RENDITION_CLEANUP_RULES; CFR-2023-title7-vol1-sec3-52 sets six quoted terms so",
+    ),
+    Rule(
         "part_heading",
         "heuristic",
         "A line beginning 'PART n' in the part heading face, before any section, is the part heading; a "

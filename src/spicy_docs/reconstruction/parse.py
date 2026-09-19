@@ -42,6 +42,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from typing import Protocol
 
+from spicy_docs.extraction.gpo_normalize import normalize_gpo_glyphs
+
 from .evidence import (
     Decision,
     DocumentNode,
@@ -62,6 +64,7 @@ CFR_KINDS: dict[str, str | None] = {
     "running_head": None,
     "blank": None,
     "part_heading": None,
+    "division_heading": None,
     "contents": None,
     "authority": None,
     "source_note": None,
@@ -92,6 +95,11 @@ BOTTOM_BAND = 0.9
 INDENT = 4 / 612
 #: A face is small or large when it differs from the body size by at least this much.
 SIZE_STEP = 0.5
+#: A run is the reduced part of a small-capital setting when it sits at least
+#: this far below its line's full size. Measured on the corpus: body 8.0 pt
+#: beside small-cap 6.5 pt, and note 7.0 pt beside small-cap 5.7 pt, so a
+#: 0.5 pt difference never qualifies and both real settings do.
+SMALL_CAP_STEP = 1.0
 #: A vertical gap at least this many body line pitches above a line marks a heading (``heading_hd``).
 HEADING_GAP = 1.6
 #: ``table_region``: a small-face line assembled from at least this many fragments reads as a table row.
@@ -290,7 +298,18 @@ def _from_roman(text: str) -> int:
     return total
 
 
-def _successor(designation: str, cls: str) -> str:
+def _successor(designation: str, cls: str) -> str | None:
+    """The designation that follows this one in its own class, or ``None`` if it is not of that class.
+
+    It is total on purpose: a level can hold a designation of a class other
+    than the one the ladder expects there (the out-of-sequence path puts it
+    wherever it fits), and asking for its successor in the wrong class must
+    answer "no successor" rather than raise. Letters run bijective base 26,
+    so ``(z)`` is followed by ``(aa)`` -- which is how the CFR numbers a long
+    run of lettered paragraphs.
+    """
+    if cls not in _classes(designation):
+        return None
     if cls == "digit":
         return str(int(designation) + 1)
     if cls == "roman":
@@ -298,38 +317,59 @@ def _successor(designation: str, cls: str) -> str:
     alphabet = "abcdefghijklmnopqrstuvwxyz"
     if cls == "upper":
         alphabet = alphabet.upper()
-    if designation[-1] == alphabet[-1]:
-        return designation + alphabet[0]
-    return designation[:-1] + alphabet[alphabet.index(designation[-1]) + 1]
+    letters = list(designation)
+    position = len(letters) - 1
+    while position >= 0:
+        if letters[position] != alphabet[-1]:
+            letters[position] = alphabet[alphabet.index(letters[position]) + 1]
+            return "".join(letters)
+        letters[position] = alphabet[0]
+        position -= 1
+    return alphabet[0] + "".join(letters)
+
+
+@dataclass(frozen=True, slots=True)
+class _Open:
+    """One open level: the designation, the class it was read as, and the node that holds it."""
+
+    designation: str
+    cls: str
+    node: str
 
 
 class _Hierarchy:
-    """``marker_hierarchy``: one open designation per level, from (a) at level 0 to italic (i) at level 5."""
+    """``marker_hierarchy``: one open designation per level, from (a) at level 0 to italic (i) at level 5.
+
+    Each level remembers the class its designation was read as, not just the
+    class the ladder expects there, so a designation placed out of sequence
+    cannot make the next lookup ask a nonsense question.
+    """
 
     def __init__(self) -> None:
-        self.open: list[tuple[str, str]] = []  # (designation, node id) per level
+        self.open: list[_Open] = []
 
-    def place(self, designation: str) -> tuple[int, bool]:
-        """The level this designation takes (never past the next unopened one) and whether it was in sequence."""
+    def place(self, designation: str) -> tuple[int, str, bool]:
+        """The level and class this designation takes, and whether it continued a run already open."""
         classes = _classes(designation)
         for level in range(len(self.open) - 1, -1, -1):
-            cls = _LEVEL_CLASSES[level]
-            if cls in classes and _successor(self.open[level][0], cls) == designation:
-                return level, True
+            entry = self.open[level]
+            if entry.cls in classes and _successor(entry.designation, entry.cls) == designation:
+                return level, entry.cls, True
         level = len(self.open)
         if level < len(_LEVEL_CLASSES) and _LEVEL_CLASSES[level] in classes and _LEVEL_FIRST[level] == designation:
-            return level, True
+            return level, _LEVEL_CLASSES[level], True
         for candidate, cls in enumerate(_LEVEL_CLASSES):
             if cls in classes:
-                return min(candidate, len(self.open)), False
-        return min(level, len(_LEVEL_CLASSES) - 1), False
+                return min(candidate, len(self.open)), cls, False
+        fallback = min(level, len(_LEVEL_CLASSES) - 1)
+        return fallback, _LEVEL_CLASSES[fallback], False
 
     def parent_of(self, level: int) -> str | None:
-        return self.open[level - 1][1] if level else None
+        return self.open[level - 1].node if level else None
 
-    def opened(self, designation: str, level: int, identifier: str) -> None:
+    def opened(self, designation: str, cls: str, level: int, identifier: str) -> None:
         del self.open[level:]
-        self.open.append((designation, identifier))
+        self.open.append(_Open(designation, cls, identifier))
 
 
 #: The marker a top-level paragraph hangs from, in a pair set.
@@ -352,10 +392,10 @@ def marker_pairs(markers: Sequence[str | None]) -> set[tuple[str, str]]:
             continue
         parent: str | None = None
         for position, designation in enumerate(_DESIGNATION.findall(marker)):
-            level, _ok = hierarchy.place(designation)
+            level, cls, _ok = hierarchy.place(designation)
             if position == 0:
                 parent = hierarchy.parent_of(level)
-            hierarchy.opened(designation, level, marker)
+            hierarchy.opened(designation, cls, level, marker)
         pairs.add((parent or SECTION_ROOT, marker))
     return pairs
 
@@ -407,36 +447,116 @@ def _drop_last_character(runs: list[StyledRun]) -> list[StyledRun]:
     return out
 
 
+def is_small_cap_run(run: StyledRun, line_size: float | None) -> bool:
+    """Whether this run is the reduced part of a small-capital setting on its line.
+
+    GPO sets a small-capital word by *size*, not by case: ``FEDERAL
+    REGISTER`` reaches the extractor as ``F`` and ``R`` at the body size and
+    ``EDERAL``/``EGISTER`` a point and a half smaller, all as capitals (the
+    measurement is in ``CFR-2022-title40-vol1-sec23-2``: MIonic 8.0 beside
+    MIonic 6.5 on one line). The case is therefore recoverable and is not a
+    property of the characters, which is why this reads the style rather than
+    the text.
+    """
+    return (
+        run.size is not None
+        and line_size is not None
+        and run.size <= line_size - SMALL_CAP_STEP
+        and any(char.isalpha() for char in run.text)
+        and run.text == run.text.upper()
+    )
+
+
+def restore_small_caps(runs: Sequence[StyledRun], line_size: float | None) -> list[StyledRun]:
+    """``small_caps_restore``: lower the reduced capitals of a small-capital setting.
+
+    Applied only where the line also carries a full-size run, so a line set
+    wholly in the smaller face -- a note, a citation, a table row -- is left
+    exactly as extracted.
+    """
+    if line_size is None or not any(is_small_cap_run(run, line_size) for run in runs):
+        return list(runs)
+    return [replace(run, text=run.text.lower()) if is_small_cap_run(run, line_size) else run for run in runs]
+
+
+def _hyphen_join(tail: str, head: str) -> str | None:
+    """How a line-ending hyphen joins to the next line, or ``None`` when it is not a hyphen at all.
+
+    ``""`` means join with nothing in between, which is what a print wrap
+    needs: the hyphen is dropped by the caller. ``"-"`` means keep the hyphen
+    and add no space, which is what a real compound word broken at the line
+    end needs.
+
+    Three cases, each measured on the corpus:
+
+    * a lowercase successor is the ordinary print wrap (``ini-`` / ``tial``);
+    * an uppercase successor after an all-capital word is a small-capital
+      word wrapped mid-word (``FED-`` / ``ERAL``), so the hyphen goes too;
+    * an uppercase successor otherwise is a genuine compound that the line
+      break happens to fall inside (``non-`` / ``Federal``, which the
+      published XML spells ``non-Federal``), so the hyphen stays and no space
+      is added.
+    """
+    if not tail.endswith("-") or not head:
+        return None
+    if head[0].islower():
+        return ""
+    if not head[0].isupper():
+        return None
+    word = tail[:-1].rsplit(" ", 1)[-1]
+    return "" if word and word.isupper() else "-"
+
+
+def _wraps(tail: str, head: str) -> bool:
+    """``wrap_hyphen_rejoin``: whether the trailing hyphen is a print wrap, so the hyphen goes."""
+    return _hyphen_join(tail, head) == ""
+
+
 def join_lines(
     blocks: Sequence[EvidenceBlock], page_numbers: dict[int, str] | None = None
 ) -> tuple[str, tuple[StyledRun, ...]]:
-    """The profile's two joins, applied to a node's blocks in order.
+    """The profile's joins, applied to a node's blocks in order.
 
-    A single space separates two lines. A line ending with a hyphen whose
-    successor begins with a lowercase letter is a print wrap
-    (``wrap_hyphen_rejoin``): the hyphen goes and the lines join directly. A
+    A single space separates two lines. A line ending with a hyphen that
+    :func:`_wraps` judges a print wrap loses the hyphen and joins directly. A
     line the extractor saw on a later page than its predecessor carries
-    ``break_to_page`` on its first run (``page_break_in_paragraph``).
+    ``break_to_page`` on its first run (``page_break_in_paragraph``). A
+    small-capital run is lowered back to the case the print encoded as size
+    (:func:`restore_small_caps`), per block, so the block's own full-size runs
+    decide what counts as reduced. Finally ``normalize_gpo_glyphs`` collapses
+    GPO's doubled-backtick/doubled-apostrophe typewriter quote pairs -- the same shared rule
+    ``extraction.body_text`` applies to every rendition, so the PDF and the
+    XML of one document spell a quotation the same way.
     """
     numbers = page_numbers or {}
     runs: list[StyledRun] = []
     previous: EvidenceBlock | None = None
+    raw_tail = ""
     for block in blocks:
-        incoming = _lstrip_runs(list(block.runs))
+        head = block.text.lstrip()
+        # `small_caps_continuation`: a line that is wholly the reduced face has
+        # no full-size run of its own to judge against, but when it continues a
+        # hyphen wrap out of a larger line it is the rest of that line's word
+        # (`FED-` / `ERAL`), so the previous line's size is what "reduced"
+        # means for it.
+        reference = block.size
+        if previous is not None and _wraps(raw_tail, head) and previous.size is not None:
+            reference = max(reference or 0.0, previous.size)
+        incoming = _lstrip_runs(restore_small_caps(block.runs, reference))
         if previous is not None and incoming:
             if block.page is not None and previous.page is not None and block.page != previous.page:
                 incoming[0] = replace(incoming[0], break_to_page=numbers.get(block.page, str(block.page)))
             runs = _rstrip_runs(runs)
-            tail = "".join(run.text for run in runs)
-            if tail.endswith("-") and incoming[0].text[:1].islower():
+            join = _hyphen_join(raw_tail, head)
+            if join == "":
                 runs = _drop_last_character(runs)
-            elif tail:
+            elif join is None and "".join(run.text for run in runs):
                 runs.append(StyledRun(" "))
-        elif previous is None:
-            incoming = _lstrip_runs(list(block.runs))
         runs.extend(incoming)
         previous = block
+        raw_tail = block.text.rstrip()
     runs = _rstrip_runs(runs)
+    runs = [replace(run, text=normalize_gpo_glyphs(run.text)) for run in runs]
     runs = [run for run in runs if run.text or run.break_to_page]
     return "".join(run.text for run in runs), tuple(runs)
 
@@ -553,8 +673,20 @@ class _Parser:
         self.subject.literal = (subject.strip(), (StyledRun(subject.strip(), bold=True),))
 
     def _continue_subject(self, block: EvidenceBlock) -> None:
+        """Extend the subject with a second bold line, through the one join every node uses.
+
+        The subject's first line is a slice of the heading line, so it cannot
+        come from ``join_lines`` alone; its continuation lines can and must,
+        or a subject that wraps at a hyphen ("exam-" / "ination.") keeps the
+        hyphen that every other node would have lost.
+        """
         assert self.subject is not None and self.subject.literal is not None
-        text = (self.subject.literal[0] + " " + block.text.strip()).strip()
+        head = self.subject.literal[0]
+        join = _hyphen_join(head, block.text.lstrip())
+        separator = "" if join == "" else " " if join is None else ""
+        if join == "":
+            head = head[:-1]
+        text = (head + separator + block.text.strip()).strip()
         self.subject.blocks.append(block)
         self.subject.literal = (text, (StyledRun(text, bold=True),))
         self.subject.rule = "section_heading_continuation"
@@ -575,11 +707,11 @@ class _Parser:
             in_sequence = True
             parent: str | None = None
             for index, designation in enumerate(_DESIGNATION.findall(node.marker)):
-                level, ok = self.hierarchy.place(designation)
+                level, cls, ok = self.hierarchy.place(designation)
                 in_sequence = in_sequence and ok
                 if index == 0:
                     parent = self.hierarchy.parent_of(level)
-                self.hierarchy.opened(designation, level, node.id)
+                self.hierarchy.opened(designation, cls, level, node.id)
             node.parent = parent or self.section.id
             if not in_sequence:
                 node.review = "needs_review"
@@ -629,6 +761,17 @@ class _Parser:
             self.paragraph = None
             self.open_node = None
             self.small_run.append(block)
+
+    def _small_caps_continuation(self, block: EvidenceBlock, text: str) -> bool:
+        """A wholly reduced-face line that finishes a hyphen wrap out of a larger line."""
+        previous = self.previous
+        return (
+            previous is not None
+            and previous.size is not None
+            and block.size is not None
+            and block.size <= previous.size - SMALL_CAP_STEP
+            and _wraps(previous.text.rstrip(), text)
+        )
 
     def _gap_above(self, block: EvidenceBlock) -> bool:
         previous = self.previous
@@ -680,16 +823,24 @@ class _Parser:
             self._continue_subject(block)
             return
         face = self.geometry.face(block)
+        if face == "small" and self._small_caps_continuation(block, text):
+            # The tail of a small-capital word that wrapped out of a body line
+            # (`small_caps_continuation`); it is body text, not a note.
+            face = "body"
         if face == "large":
-            if _PART_HEADING.match(text):
-                self._flush_small_run()
-                self._settle()
-                self.section = self.subject = None
-                self._open_multiline("part_heading", "part_heading", block, None)
-            elif self.open_node is not None and self.open_node.kind == "part_heading":
+            # The print reserves this face for a division heading -- PART,
+            # Subpart, or a subject group. Every one of them ends the section
+            # above it and belongs to the part, not to any section, so it
+            # closes the current section rather than becoming a heading inside
+            # it (`division_heading`).
+            kind = "part_heading" if _PART_HEADING.match(text) else "division_heading"
+            if self.open_node is not None and self.open_node.kind in ("part_heading", "division_heading"):
                 self.open_node.blocks.append(block)
-            else:
-                self._heading(block)
+                return
+            self._flush_small_run()
+            self._settle()
+            self.section = self.subject = None
+            self._open_multiline(kind, "part_heading" if kind == "part_heading" else "division_heading", block, None)
             return
         if face == "small":
             self._small(block, text)

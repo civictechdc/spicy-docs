@@ -1,0 +1,5569 @@
+{
+  "documents": [
+    {
+      "accepted": false,
+      "blocks": 228,
+      "candidatePairs": 18,
+      "candidateTokens": 713,
+      "criticalDiscrepancies": 1,
+      "criticalSample": [
+        "95-87,"
+      ],
+      "fetchSeconds": 0.385,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 22,
+            "matched": 22,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 18,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "700.1",
+            "sections": [
+              "700.1",
+              "700.2",
+              "700.3",
+              "700.4"
+            ],
+            "unnumberedSections": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 228,
+            "classified": 228,
+            "issues": [],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 92,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "precision 0.99719 below 0.999; recall 0.99580 below 0.999; 1 critical discrepancies",
+          "measures": {
+            "criticalDiscrepancies": 1,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 0.9971949509116409,
+            "reasons": [
+              "precision 0.99719 below 0.999",
+              "recall 0.99580 below 0.999",
+              "1 critical discrepancies"
+            ],
+            "recall": 0.9957983193277311,
+            "undecided": []
+          },
+          "passed": false
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec700-1",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 18,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 92,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 2,
+      "pdfBytes": 154799,
+      "pdfSha256": "ae537ba379923a75ac2f9c7a82288267206584370f45d290582a5e0a04fb73e3",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec700-1.pdf",
+      "precision": 0.9971949509116409,
+      "recall": 0.9957983193277311,
+      "reconstructSeconds": 0.077,
+      "referencePairs": 18,
+      "referenceTokens": 714,
+      "section": "700.1",
+      "sectionsInRendition": [
+        "700.1",
+        "700.2",
+        "700.3",
+        "700.4"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 0,
+      "volume": 3,
+      "xmlBytes": 6066,
+      "xmlSha256": "f1e6c21c41b1c9d79fe914f9b59f0dc6c8869b755b8a5cd70d8c01ee6fdb4257",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec700-1.xml",
+      "year": 2025
+    },
+    {
+      "accepted": false,
+      "blocks": 355,
+      "candidatePairs": 28,
+      "candidateTokens": 1163,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.412,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 32,
+            "matched": 32,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "1 marker(s) out of sequence: (2)",
+          "measures": {
+            "markerPairs": 28,
+            "markersOutOfSequence": 1,
+            "scopedToSection": "716.2",
+            "sections": [
+              "716.1",
+              "716.2",
+              "716.3",
+              "716.4"
+            ],
+            "unnumberedSections": 0
+          },
+          "passed": false
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 355,
+            "classified": 355,
+            "issues": [],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 149,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "structural fidelity failed",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [
+              "structural fidelity failed"
+            ],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": false
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec716-2",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 28,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 149,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 3,
+      "pdfBytes": 157908,
+      "pdfSha256": "508548281c0ab7fc68b7d4a4765b3972cbbca9dc72043861fbe696f07ef08162",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec716-2.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.052,
+      "referencePairs": 28,
+      "referenceTokens": 1163,
+      "section": "716.2",
+      "sectionsInRendition": [
+        "716.1",
+        "716.2",
+        "716.3",
+        "716.4"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 0,
+      "volume": 3,
+      "xmlBytes": 8860,
+      "xmlSha256": "4a6471fa7548dbd4402ae386c8c6f709907fe5be3afff90313d0802284b2cb98",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec716-2.xml",
+      "year": 2025
+    },
+    {
+      "accepted": false,
+      "blocks": 354,
+      "candidatePairs": 38,
+      "candidateTokens": 1465,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": null,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 41,
+            "matched": 41,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 marker(s) out of sequence: (ii), (iii), (iv)",
+          "measures": {
+            "markerPairs": 38,
+            "markersOutOfSequence": 4,
+            "scopedToSection": "732.17",
+            "sections": [
+              "732.16",
+              "732.17"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": false
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 354,
+            "classified": 354,
+            "issues": [],
+            "nodesNeedingReview": 8,
+            "outOfScopeBlocks": 86,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "structural fidelity failed; precision 0.99863 below 0.999; recall 0.99727 below 0.999",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 0.9986348122866894,
+            "reasons": [
+              "structural fidelity failed",
+              "precision 0.99863 below 0.999",
+              "recall 0.99727 below 0.999"
+            ],
+            "recall": 0.9972733469665985,
+            "undecided": []
+          },
+          "passed": false
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec732-17",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 38,
+      "nodesNeedingReview": 8,
+      "outOfScopeBlocks": 86,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 3,
+      "pdfBytes": 157969,
+      "pdfSha256": "10e1830d08b51be564a8bdba9f8fcd8b2cbec222887ab597f8e28cd80be5bd21",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec732-17.pdf",
+      "precision": 0.9986348122866894,
+      "recall": 0.9972733469665985,
+      "reconstructSeconds": 0.054,
+      "referencePairs": 38,
+      "referenceTokens": 1467,
+      "section": "732.17",
+      "sectionsInRendition": [
+        "732.16",
+        "732.17"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 0,
+      "volume": 3,
+      "xmlBytes": 11693,
+      "xmlSha256": "076a5e1e98c078214239201ad17272d7ed377088380345cace921c1310e2a41e",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec732-17.xml",
+      "year": 2025
+    },
+    {
+      "accepted": true,
+      "blocks": 116,
+      "candidatePairs": 0,
+      "candidateTokens": 3,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.566,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 2,
+            "matched": 2,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "750.20",
+            "sections": [
+              "750.19",
+              "750.20",
+              "750.21",
+              "750.25"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 116,
+            "classified": 105,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 6,
+            "outOfScopeBlocks": 115,
+            "unaccounted": 0,
+            "unresolvedBlocks": 11,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec750-20",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 6,
+      "outOfScopeBlocks": 115,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 1,
+      "pdfBytes": 152261,
+      "pdfSha256": "90faaf245d14d61c2490ec03ae3735171ff21b174d51963e8d886b46de86b412",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec750-20.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.02,
+      "referencePairs": 0,
+      "referenceTokens": 3,
+      "section": "750.20",
+      "sectionsInRendition": [
+        "750.19",
+        "750.20",
+        "750.21",
+        "750.25"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 1,
+      "volume": 3,
+      "xmlBytes": 1030,
+      "xmlSha256": "b136bdb7a098f9b182e13d0c5ae28c3a15e353038dbcea5ceb82917d409f8d9e",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec750-20.xml",
+      "year": 2025
+    },
+    {
+      "accepted": true,
+      "blocks": 117,
+      "candidatePairs": 0,
+      "candidateTokens": 122,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.588,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 4,
+            "matched": 4,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "2 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "773.16",
+            "sections": [
+              "773.16",
+              "773.17"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 117,
+            "classified": 117,
+            "issues": [],
+            "nodesNeedingReview": 6,
+            "outOfScopeBlocks": 101,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec773-16",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 6,
+      "outOfScopeBlocks": 101,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 1,
+      "pdfBytes": 152358,
+      "pdfSha256": "4e5e27dd3710e48f29540b219a7b3cb1af5ec3cde9d9d3efcda25df54a92c4c8",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec773-16.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.021,
+      "referencePairs": 0,
+      "referenceTokens": 122,
+      "section": "773.16",
+      "sectionsInRendition": [
+        "773.16",
+        "773.17"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 0,
+      "volume": 3,
+      "xmlBytes": 1759,
+      "xmlSha256": "3a322aee01274b8d8cb75514f0a3d67d04490f19cf3b55ee89eba010e1390482",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec773-16.xml",
+      "year": 2025
+    },
+    {
+      "accepted": true,
+      "blocks": 115,
+      "candidatePairs": 5,
+      "candidateTokens": 97,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.571,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 8,
+            "matched": 8,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "6 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 5,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "783.18",
+            "sections": [
+              "783.11",
+              "783.12",
+              "783.18",
+              "783.19",
+              "783.20",
+              "783.21"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 115,
+            "classified": 115,
+            "issues": [],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 97,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec783-18",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 5,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 97,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 1,
+      "pdfBytes": 140526,
+      "pdfSha256": "c1ee0335694d94c7941c2882ed51bca62aeccc1bf829b4c604391b297aac4764",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec783-18.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.02,
+      "referencePairs": 5,
+      "referenceTokens": 97,
+      "section": "783.18",
+      "sectionsInRendition": [
+        "783.11",
+        "783.12",
+        "783.18",
+        "783.19",
+        "783.20",
+        "783.21"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 0,
+      "volume": 3,
+      "xmlBytes": 1847,
+      "xmlSha256": "533ce116d28d88f488a13df5e69f74483f54d178d4ec759c6438b210e75a3e70",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec783-18.xml",
+      "year": 2025
+    },
+    {
+      "accepted": true,
+      "blocks": 113,
+      "candidatePairs": 0,
+      "candidateTokens": 54,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.652,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "5 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "815.13",
+            "sections": [
+              "810.11",
+              "815.1",
+              "815.2",
+              "815.13",
+              "815.15"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 113,
+            "classified": 113,
+            "issues": [],
+            "nodesNeedingReview": 3,
+            "outOfScopeBlocks": 103,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec815-13",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 3,
+      "outOfScopeBlocks": 103,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 1,
+      "pdfBytes": 152257,
+      "pdfSha256": "30e239576a4ddcbfd28288a3c570bfb8c6da40497636be79d08933ce8c36d423",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec815-13.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.02,
+      "referencePairs": 0,
+      "referenceTokens": 54,
+      "section": "815.13",
+      "sectionsInRendition": [
+        "810.11",
+        "815.1",
+        "815.2",
+        "815.13",
+        "815.15"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 0,
+      "volume": 3,
+      "xmlBytes": 1370,
+      "xmlSha256": "b17648fcaa93bf72a81b374bf6d43f4f7e0f74fe77c49edb84b103b9dd3569bd",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec815-13.xml",
+      "year": 2025
+    },
+    {
+      "accepted": false,
+      "blocks": 357,
+      "candidatePairs": 31,
+      "candidateTokens": 1427,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.476,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 34,
+            "matched": 34,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "9 marker(s) out of sequence: (2), (2), (2)",
+          "measures": {
+            "markerPairs": 31,
+            "markersOutOfSequence": 9,
+            "scopedToSection": "817.71",
+            "sections": [
+              "817.68",
+              "817.71",
+              "817.72"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": false
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 357,
+            "classified": 357,
+            "issues": [],
+            "nodesNeedingReview": 12,
+            "outOfScopeBlocks": 101,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "structural fidelity failed; precision 0.99860 below 0.999; recall 0.99790 below 0.999",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 0.9985984583041345,
+            "reasons": [
+              "structural fidelity failed",
+              "precision 0.99860 below 0.999",
+              "recall 0.99790 below 0.999"
+            ],
+            "recall": 0.9978991596638656,
+            "undecided": []
+          },
+          "passed": false
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec817-71",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 31,
+      "nodesNeedingReview": 12,
+      "outOfScopeBlocks": 101,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 3,
+      "pdfBytes": 158364,
+      "pdfSha256": "4b9d32dba07acec5bc50087478e15a6f8064e47657196144a19ccc10c73d6241",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec817-71.pdf",
+      "precision": 0.9985984583041345,
+      "recall": 0.9978991596638656,
+      "reconstructSeconds": 0.054,
+      "referencePairs": 31,
+      "referenceTokens": 1428,
+      "section": "817.71",
+      "sectionsInRendition": [
+        "817.68",
+        "817.71",
+        "817.72"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 0,
+      "volume": 3,
+      "xmlBytes": 11567,
+      "xmlSha256": "0bb191a6efb6019bde70b3693d65f0da3880f08cbd28cf0a820f7325f0ce50e9",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec817-71.xml",
+      "year": 2025
+    },
+    {
+      "accepted": true,
+      "blocks": 238,
+      "candidatePairs": 14,
+      "candidateTokens": 734,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.52,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 17,
+            "matched": 17,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 14,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "843.11",
+            "sections": [
+              "843.1",
+              "843.5",
+              "843.11",
+              "843.12"
+            ],
+            "unnumberedSections": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 238,
+            "classified": 238,
+            "issues": [],
+            "nodesNeedingReview": 0,
+            "outOfScopeBlocks": 110,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec843-11",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 14,
+      "nodesNeedingReview": 0,
+      "outOfScopeBlocks": 110,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 2,
+      "pdfBytes": 155072,
+      "pdfSha256": "739cda392e94423b831528544a634d0ce2c632f8b8dd4af4b7bd0c7f16bf5d7e",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec843-11.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.037,
+      "referencePairs": 14,
+      "referenceTokens": 734,
+      "section": "843.11",
+      "sectionsInRendition": [
+        "843.1",
+        "843.5",
+        "843.11",
+        "843.12"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 0,
+      "volume": 3,
+      "xmlBytes": 5871,
+      "xmlSha256": "c2715879757b7b53752ed4cf81181812cb17b0c761881af5432547ffd429dc64",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec843-11.xml",
+      "year": 2025
+    },
+    {
+      "accepted": true,
+      "blocks": 116,
+      "candidatePairs": 2,
+      "candidateTokens": 68,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.568,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 5,
+            "matched": 5,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "6 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 2,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "872.28",
+            "sections": [
+              "872.28",
+              "872.29",
+              "872.30",
+              "872.31",
+              "872.32",
+              "872.33"
+            ],
+            "unnumberedSections": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 116,
+            "classified": 116,
+            "issues": [],
+            "nodesNeedingReview": 0,
+            "outOfScopeBlocks": 104,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2025-title30-vol3-sec872-28",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 2,
+      "nodesNeedingReview": 0,
+      "outOfScopeBlocks": 104,
+      "package": "CFR-2025-title30-vol3",
+      "pages": 1,
+      "pdfBytes": 140297,
+      "pdfSha256": "e98e0c4d3d2f722150d95a662d3edc8969dc8884f496e8021d6f9fc5756006d7",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec872-28.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.02,
+      "referencePairs": 2,
+      "referenceTokens": 68,
+      "section": "872.28",
+      "sectionsInRendition": [
+        "872.28",
+        "872.29",
+        "872.30",
+        "872.31",
+        "872.32",
+        "872.33"
+      ],
+      "split": "development",
+      "title": 30,
+      "unresolvedRegions": 0,
+      "volume": 3,
+      "xmlBytes": 1439,
+      "xmlSha256": "e67cb310793aa2cd0055a9f8030f4c377c50742d961dd39574cd9ff91687c7b6",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec872-28.xml",
+      "year": 2025
+    },
+    {
+      "accepted": true,
+      "blocks": 117,
+      "candidatePairs": 4,
+      "candidateTokens": 304,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.591,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 7,
+            "matched": 7,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "2 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 4,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "1.1",
+            "sections": [
+              "1.1",
+              "1.2"
+            ],
+            "unnumberedSections": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 117,
+            "classified": 117,
+            "issues": [],
+            "nodesNeedingReview": 0,
+            "outOfScopeBlocks": 63,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec1-1",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 4,
+      "nodesNeedingReview": 0,
+      "outOfScopeBlocks": 63,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 1,
+      "pdfBytes": 139133,
+      "pdfSha256": "fb5a50999c9483316b4233b726c8b99db32e13f80482180e30a77034fab11f9d",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec1-1.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.021,
+      "referencePairs": 4,
+      "referenceTokens": 304,
+      "section": "1.1",
+      "sectionsInRendition": [
+        "1.1",
+        "1.2"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 0,
+      "volume": 1,
+      "xmlBytes": 3305,
+      "xmlSha256": "2e8adf8e8c2a1ca6f79913a67481987bf98a5b48c222d06a3734fc1a065878c6",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec1-1.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 120,
+      "candidatePairs": 2,
+      "candidateTokens": 148,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.589,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 4,
+            "matched": 4,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "1 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 2,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "3.155",
+            "sections": [
+              "3.155"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 120,
+            "classified": 120,
+            "issues": [],
+            "nodesNeedingReview": 3,
+            "outOfScopeBlocks": 93,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec3-155",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 2,
+      "nodesNeedingReview": 3,
+      "outOfScopeBlocks": 93,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 1,
+      "pdfBytes": 138530,
+      "pdfSha256": "acb94c64c9e7dd9f6021d8a75f5cd5ef39f2e7e4edb038f6c1b87696109f6a19",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec3-155.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.021,
+      "referencePairs": 2,
+      "referenceTokens": 148,
+      "section": "3.155",
+      "sectionsInRendition": [
+        "3.155"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 0,
+      "volume": 1,
+      "xmlBytes": 2200,
+      "xmlSha256": "f72c0a4ee77839eb03973c06aea6370062dddfed28d82278b8ecfb377b35fc72",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec3-155.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 109,
+      "candidatePairs": 0,
+      "candidateTokens": 80,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.668,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 4,
+            "matched": 4,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "4.75",
+            "sections": [
+              "4.75",
+              "4.76",
+              "4.81",
+              "4.82"
+            ],
+            "unnumberedSections": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 109,
+            "classified": 109,
+            "issues": [],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 96,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec4-75",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 96,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 1,
+      "pdfBytes": 138857,
+      "pdfSha256": "86a521ac707988763afa9f6ae9199ee5b9560ae06d4bafcea663c36b9483521e",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec4-75.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.019,
+      "referencePairs": 0,
+      "referenceTokens": 80,
+      "section": "4.75",
+      "sectionsInRendition": [
+        "4.75",
+        "4.76",
+        "4.81",
+        "4.82"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 0,
+      "volume": 1,
+      "xmlBytes": 1730,
+      "xmlSha256": "06de629042cedc07b46b7ac2141e8562cdcc7460dd5acaec41ad50ee28295a68",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec4-75.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 111,
+      "candidatePairs": 0,
+      "candidateTokens": 153,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.509,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 4,
+            "matched": 4,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "7 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "7.1006",
+            "sections": [
+              "7.1004",
+              "7.1005",
+              "7.1006",
+              "7.1007",
+              "7.1008",
+              "7.1009",
+              "7.1010"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 111,
+            "classified": 111,
+            "issues": [],
+            "nodesNeedingReview": 3,
+            "outOfScopeBlocks": 87,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec7-1006",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 3,
+      "outOfScopeBlocks": 87,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 1,
+      "pdfBytes": 138885,
+      "pdfSha256": "2843a806539cd342c0ea159d78df3c4db60c05ba8a29f9714fae8460a33ad1a9",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec7-1006.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.02,
+      "referencePairs": 0,
+      "referenceTokens": 153,
+      "section": "7.1006",
+      "sectionsInRendition": [
+        "7.1004",
+        "7.1005",
+        "7.1006",
+        "7.1007",
+        "7.1008",
+        "7.1009",
+        "7.1010"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 0,
+      "volume": 1,
+      "xmlBytes": 2124,
+      "xmlSha256": "24d2ce6da8b5bab15002c86bd44ba98ac9565a106ca6154791c76447d5044f3c",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec7-1006.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 113,
+      "candidatePairs": 3,
+      "candidateTokens": 114,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.565,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 5,
+            "matched": 5,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 3,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "9.6",
+            "sections": [
+              "9.3",
+              "9.4",
+              "9.5",
+              "9.6"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 113,
+            "classified": 113,
+            "issues": [],
+            "nodesNeedingReview": 2,
+            "outOfScopeBlocks": 93,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec9-6",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 3,
+      "nodesNeedingReview": 2,
+      "outOfScopeBlocks": 93,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 1,
+      "pdfBytes": 138977,
+      "pdfSha256": "91fb1fc83fa6ee6c44e3d6d30dd9d005d3769ba39b3d522305dfea4c63321f73",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec9-6.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.02,
+      "referencePairs": 3,
+      "referenceTokens": 114,
+      "section": "9.6",
+      "sectionsInRendition": [
+        "9.3",
+        "9.4",
+        "9.5",
+        "9.6"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 0,
+      "volume": 1,
+      "xmlBytes": 2016,
+      "xmlSha256": "4ca8ba9c94e66761fecf59b534e9eb91ce1e8baf6b61982c3240e0fb8dcb65c2",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec9-6.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 115,
+      "candidatePairs": 0,
+      "candidateTokens": 51,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.587,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "5 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "19.16",
+            "sections": [
+              "19.13",
+              "19.14",
+              "19.15",
+              "19.16",
+              "19.17"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 115,
+            "classified": 115,
+            "issues": [],
+            "nodesNeedingReview": 8,
+            "outOfScopeBlocks": 105,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec19-16",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 8,
+      "outOfScopeBlocks": 105,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 1,
+      "pdfBytes": 138913,
+      "pdfSha256": "251411a2299fe1dda33fd237f90efb8d95c66b8b260412c0d8d7cf4709a33c01",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec19-16.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.02,
+      "referencePairs": 0,
+      "referenceTokens": 51,
+      "section": "19.16",
+      "sectionsInRendition": [
+        "19.13",
+        "19.14",
+        "19.15",
+        "19.16",
+        "19.17"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 0,
+      "volume": 1,
+      "xmlBytes": 1442,
+      "xmlSha256": "a4c9a40893e2d511045b0e151187028ea8362004ef401d89729c89c8b0e65a72",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec19-16.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 107,
+      "candidatePairs": 2,
+      "candidateTokens": 139,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.585,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 5,
+            "matched": 5,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "3 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 2,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "21.1",
+            "sections": [
+              "21.1",
+              "21.2",
+              "21.3"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 107,
+            "classified": 96,
+            "issues": [
+              "unclassified_small_face"
+            ],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 85,
+            "unaccounted": 0,
+            "unresolvedBlocks": 11,
+            "unresolvedRegions": 4
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec21-1",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 2,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 85,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 1,
+      "pdfBytes": 139024,
+      "pdfSha256": "f7d95df44cc10977c9dda1d49fb0f47da8a258d71c899bf9d80444364ae5ab0e",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec21-1.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.019,
+      "referencePairs": 2,
+      "referenceTokens": 139,
+      "section": "21.1",
+      "sectionsInRendition": [
+        "21.1",
+        "21.2",
+        "21.3"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 4,
+      "volume": 1,
+      "xmlBytes": 2042,
+      "xmlSha256": "add3e8ad9a8ad3380522be8110dda785c9a86ea35dd530c45dbd2197cfbdeb26",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec21-1.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 113,
+      "candidatePairs": 2,
+      "candidateTokens": 65,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": null,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 5,
+            "matched": 5,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 2,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "28.5",
+            "sections": [
+              "28.4",
+              "28.5",
+              "28.10",
+              "28.11"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 113,
+            "classified": 113,
+            "issues": [],
+            "nodesNeedingReview": 7,
+            "outOfScopeBlocks": 102,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec28-5",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 2,
+      "nodesNeedingReview": 7,
+      "outOfScopeBlocks": 102,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 1,
+      "pdfBytes": 139103,
+      "pdfSha256": "24cb115c4be96b577fa06b3452c59ce51150a341406fdbd6fc01f684e29cac95",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec28-5.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.02,
+      "referencePairs": 2,
+      "referenceTokens": 65,
+      "section": "28.5",
+      "sectionsInRendition": [
+        "28.4",
+        "28.5",
+        "28.10",
+        "28.11"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 0,
+      "volume": 1,
+      "xmlBytes": 1624,
+      "xmlSha256": "a0a3094929cdd629d2a8709ce619bd93cf114a09dbd17080c874e1938ec29075",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec28-5.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 116,
+      "candidatePairs": 0,
+      "candidateTokens": 61,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.583,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "3 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "34.216",
+            "sections": [
+              "34.215",
+              "34.216",
+              "35.1"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 116,
+            "classified": 116,
+            "issues": [],
+            "nodesNeedingReview": 4,
+            "outOfScopeBlocks": 103,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec34-216",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 4,
+      "outOfScopeBlocks": 103,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 1,
+      "pdfBytes": 139108,
+      "pdfSha256": "9de5dddbd14e80c28fc7885afa2bcd1999587a0d4a17e21faa562d11f7214971",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec34-216.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.021,
+      "referencePairs": 0,
+      "referenceTokens": 61,
+      "section": "34.216",
+      "sectionsInRendition": [
+        "34.215",
+        "34.216",
+        "35.1"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 0,
+      "volume": 1,
+      "xmlBytes": 1588,
+      "xmlSha256": "7a39b673ecc877fe488b10731d10e18182deb2b9338b66d3518454a34aeb9481",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec34-216.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 193,
+      "candidatePairs": 2,
+      "candidateTokens": 68,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.61,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 4,
+            "matched": 4,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 2,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "46.1",
+            "sections": [
+              "46.1",
+              "46.2",
+              "46.3",
+              "46.4"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 193,
+            "classified": 146,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 180,
+            "unaccounted": 0,
+            "unresolvedBlocks": 47,
+            "unresolvedRegions": 2
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2024-title12-vol1-sec46-1",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 2,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 180,
+      "package": "CFR-2024-title12-vol1",
+      "pages": 2,
+      "pdfBytes": 149357,
+      "pdfSha256": "1be0e803c7dbb8e2cfddf4fb533df015a35268e6de0c939250bf3d6927a8eade",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec46-1.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.039,
+      "referencePairs": 2,
+      "referenceTokens": 68,
+      "section": "46.1",
+      "sectionsInRendition": [
+        "46.1",
+        "46.2",
+        "46.3",
+        "46.4"
+      ],
+      "split": "tuning",
+      "title": 12,
+      "unresolvedRegions": 2,
+      "volume": 1,
+      "xmlBytes": 1610,
+      "xmlSha256": "c5ef0c2cf2b925f00d2b256ff7ebaa5a8c5267e2e3bc0a54f3931d87279f66fc",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec46-1.xml",
+      "year": 2024
+    },
+    {
+      "accepted": true,
+      "blocks": 238,
+      "candidatePairs": 4,
+      "candidateTokens": 156,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.505,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 7,
+            "matched": 7,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "3 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 4,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "1.1",
+            "sections": [
+              "1.1",
+              "1.2",
+              "1.3"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 238,
+            "classified": 192,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 2,
+            "outOfScopeBlocks": 207,
+            "unaccounted": 0,
+            "unresolvedBlocks": 46,
+            "unresolvedRegions": 4
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec1-1",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 4,
+      "nodesNeedingReview": 2,
+      "outOfScopeBlocks": 207,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 2,
+      "pdfBytes": 186700,
+      "pdfSha256": "e852022e2a70e963a2d3c0a418545a5add62e846a251926c9d126a4117576d9c",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-1.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.036,
+      "referencePairs": 4,
+      "referenceTokens": 156,
+      "section": "1.1",
+      "sectionsInRendition": [
+        "1.1",
+        "1.2",
+        "1.3"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 4,
+      "volume": 1,
+      "xmlBytes": 2128,
+      "xmlSha256": "700d5fa5f3b796acebcb8966f7331eb543c26491b032eeba7135ff03ce23ff76",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-1.xml",
+      "year": 2023
+    },
+    {
+      "accepted": true,
+      "blocks": 117,
+      "candidatePairs": 2,
+      "candidateTokens": 231,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.539,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 5,
+            "matched": 5,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 2,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "1.162",
+            "sections": [
+              "1.162",
+              "1.163",
+              "1.164",
+              "1.165"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 117,
+            "classified": 115,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 78,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec1-162",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 2,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 78,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 1,
+      "pdfBytes": 183710,
+      "pdfSha256": "6d8cb552aaba2d2681817e9b409d7e2fb4c004999732a7e224d7c96a3f5e1e1c",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-162.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.022,
+      "referencePairs": 2,
+      "referenceTokens": 231,
+      "section": "1.162",
+      "sectionsInRendition": [
+        "1.162",
+        "1.163",
+        "1.164",
+        "1.165"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 2715,
+      "xmlSha256": "d1f3f6ea9c3faf65b7570a21dcf01ba8890e6b963b3497627ea9ba2037261fd7",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-162.xml",
+      "year": 2023
+    },
+    {
+      "accepted": true,
+      "blocks": 116,
+      "candidatePairs": 8,
+      "candidateTokens": 131,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.593,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 10,
+            "matched": 10,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "6 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 8,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "1.313",
+            "sections": [
+              "1.311",
+              "1.312",
+              "1.313",
+              "1.314",
+              "1.315",
+              "1.316"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 116,
+            "classified": 114,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 2,
+            "outOfScopeBlocks": 91,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec1-313",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 8,
+      "nodesNeedingReview": 2,
+      "outOfScopeBlocks": 91,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 1,
+      "pdfBytes": 203087,
+      "pdfSha256": "14efa689a3d215772452c3bd5c3e6228deee5e62aa0b450447904b33db5c3d94",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-313.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.021,
+      "referencePairs": 8,
+      "referenceTokens": 131,
+      "section": "1.313",
+      "sectionsInRendition": [
+        "1.311",
+        "1.312",
+        "1.313",
+        "1.314",
+        "1.315",
+        "1.316"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 2016,
+      "xmlSha256": "8eabb4b9a7ce245bb001f0eef4a13fb8c5e83594c818ab6c253386b5cc1e69b6",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-313.xml",
+      "year": 2023
+    },
+    {
+      "accepted": false,
+      "blocks": 239,
+      "candidatePairs": 15,
+      "candidateTokens": 358,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.562,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 18,
+            "matched": 18,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "5 marker(s) out of sequence: (i), (ii), (2)",
+          "measures": {
+            "markerPairs": 15,
+            "markersOutOfSequence": 5,
+            "scopedToSection": "1.622",
+            "sections": [
+              "1.620",
+              "1.621",
+              "1.622",
+              "1.623",
+              "1.624"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": false
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 239,
+            "classified": 235,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 9,
+            "outOfScopeBlocks": 175,
+            "unaccounted": 0,
+            "unresolvedBlocks": 4,
+            "unresolvedRegions": 2
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "structural fidelity failed",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [
+              "structural fidelity failed"
+            ],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": false
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec1-622",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 15,
+      "nodesNeedingReview": 9,
+      "outOfScopeBlocks": 175,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 2,
+      "pdfBytes": 186345,
+      "pdfSha256": "17d60d04c333685c591e1edc9306cb32d8a57d90b311cc3737d373a01a15cb13",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-622.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.035,
+      "referencePairs": 15,
+      "referenceTokens": 358,
+      "section": "1.622",
+      "sectionsInRendition": [
+        "1.620",
+        "1.621",
+        "1.622",
+        "1.623",
+        "1.624"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 2,
+      "volume": 1,
+      "xmlBytes": 3831,
+      "xmlSha256": "80881b57b56d87b344433e5378d97fd73545b7b38a241443151a296e67509195",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-622.xml",
+      "year": 2023
+    },
+    {
+      "accepted": true,
+      "blocks": 113,
+      "candidatePairs": 0,
+      "candidateTokens": 23,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.56,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "5 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "1.908",
+            "sections": [
+              "1.907",
+              "1.908",
+              "1.909",
+              "1.910",
+              "1.911"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 113,
+            "classified": 113,
+            "issues": [],
+            "nodesNeedingReview": 2,
+            "outOfScopeBlocks": 108,
+            "unaccounted": 0,
+            "unresolvedBlocks": 0,
+            "unresolvedRegions": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec1-908",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 2,
+      "outOfScopeBlocks": 108,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 1,
+      "pdfBytes": 183686,
+      "pdfSha256": "a10092d59872725b5452b5143b24c0ef3e0d18bc1d7068770ab5d5f7587c90f7",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-908.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.021,
+      "referencePairs": 0,
+      "referenceTokens": 23,
+      "section": "1.908",
+      "sectionsInRendition": [
+        "1.907",
+        "1.908",
+        "1.909",
+        "1.910",
+        "1.911"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 0,
+      "volume": 1,
+      "xmlBytes": 1205,
+      "xmlSha256": "0d783de22f442ae5d26b40d7922415a2a9c0424d55d4e2657024a785b84f495b",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-908.xml",
+      "year": 2023
+    },
+    {
+      "accepted": true,
+      "blocks": 239,
+      "candidatePairs": 14,
+      "candidateTokens": 317,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.627,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 17,
+            "matched": 17,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 14,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "2.69",
+            "sections": [
+              "2.69",
+              "2.70",
+              "2.71",
+              "2.72"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 239,
+            "classified": 235,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 9,
+            "outOfScopeBlocks": 170,
+            "unaccounted": 0,
+            "unresolvedBlocks": 4,
+            "unresolvedRegions": 2
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec2-69",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 14,
+      "nodesNeedingReview": 9,
+      "outOfScopeBlocks": 170,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 2,
+      "pdfBytes": 186812,
+      "pdfSha256": "c4bf71adb1ce9c51def9d317e785c77110e3fb48ef70ba9bebf786079fa9efc4",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec2-69.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.038,
+      "referencePairs": 14,
+      "referenceTokens": 317,
+      "section": "2.69",
+      "sectionsInRendition": [
+        "2.69",
+        "2.70",
+        "2.71",
+        "2.72"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 2,
+      "volume": 1,
+      "xmlBytes": 3687,
+      "xmlSha256": "566bc32ca929b2a2941c48274c848f0ef651cfcd4324d35335e36c3a54d7d59e",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec2-69.xml",
+      "year": 2023
+    },
+    {
+      "accepted": true,
+      "blocks": 117,
+      "candidatePairs": 0,
+      "candidateTokens": 198,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.508,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 7,
+            "matched": 7,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "5 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "3.52",
+            "sections": [
+              "3.47",
+              "3.50",
+              "3.51",
+              "3.52",
+              "3.53"
+            ],
+            "unnumberedSections": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 117,
+            "classified": 115,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 0,
+            "outOfScopeBlocks": 80,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec3-52",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 0,
+      "outOfScopeBlocks": 80,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 1,
+      "pdfBytes": 183447,
+      "pdfSha256": "94c9b438795535933372c70e4b55aa477622cd8a30220d02dc4c36bdac9d4a2b",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec3-52.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.022,
+      "referencePairs": 0,
+      "referenceTokens": 198,
+      "section": "3.52",
+      "sectionsInRendition": [
+        "3.47",
+        "3.50",
+        "3.51",
+        "3.52",
+        "3.53"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 2545,
+      "xmlSha256": "6702bfd01705deca56a4f4eccfb1fed06ba1131efd283c864f580c2c9a760b9d",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec3-52.xml",
+      "year": 2023
+    },
+    {
+      "accepted": true,
+      "blocks": 237,
+      "candidatePairs": 9,
+      "candidateTokens": 392,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": null,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 12,
+            "matched": 12,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "7 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 9,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "7.5",
+            "sections": [
+              "7.2",
+              "7.3",
+              "7.4",
+              "7.5",
+              "7.6",
+              "7.7",
+              "7.8"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 237,
+            "classified": 233,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 3,
+            "outOfScopeBlocks": 169,
+            "unaccounted": 0,
+            "unresolvedBlocks": 4,
+            "unresolvedRegions": 2
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec7-5",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 9,
+      "nodesNeedingReview": 3,
+      "outOfScopeBlocks": 169,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 2,
+      "pdfBytes": 186274,
+      "pdfSha256": "b5dcb9e253d5ca6647eb7da91a20c9e248adb14e9ce8a9191a2e20c55ba30b5f",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec7-5.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.037,
+      "referencePairs": 9,
+      "referenceTokens": 392,
+      "section": "7.5",
+      "sectionsInRendition": [
+        "7.2",
+        "7.3",
+        "7.4",
+        "7.5",
+        "7.6",
+        "7.7",
+        "7.8"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 2,
+      "volume": 1,
+      "xmlBytes": 3491,
+      "xmlSha256": "460a703c6160be9978e34f8eee7c2c921091c763a28fda7d96df614c2821c9b4",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec7-5.xml",
+      "year": 2023
+    },
+    {
+      "accepted": true,
+      "blocks": 111,
+      "candidatePairs": 0,
+      "candidateTokens": 20,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.581,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "11.20",
+            "sections": [
+              "11.20",
+              "11.21",
+              "11.22",
+              "11.30"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 111,
+            "classified": 109,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 2,
+            "outOfScopeBlocks": 107,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec11-20",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 2,
+      "outOfScopeBlocks": 107,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 1,
+      "pdfBytes": 183695,
+      "pdfSha256": "f69f309d42cebb72ed195f08c00d4c894682c1cc7425b196842f58ae290f87c3",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec11-20.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.022,
+      "referencePairs": 0,
+      "referenceTokens": 20,
+      "section": "11.20",
+      "sectionsInRendition": [
+        "11.20",
+        "11.21",
+        "11.22",
+        "11.30"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 1162,
+      "xmlSha256": "efa9bbfa692d54d726c96e673c86f499f30325ef8e9a79b83e02748383c0fe9c",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec11-20.xml",
+      "year": 2023
+    },
+    {
+      "accepted": false,
+      "blocks": 231,
+      "candidatePairs": 0,
+      "candidateTokens": 145,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.59,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 4,
+            "matched": 4,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "10 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "15.86",
+            "sections": [
+              "15.83",
+              "15.84",
+              "15.85",
+              "15.86",
+              "15.91",
+              "15.92",
+              "15.93",
+              "15.94",
+              "15.95",
+              "15.101"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 231,
+            "classified": 227,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 202,
+            "unaccounted": 0,
+            "unresolvedBlocks": 4,
+            "unresolvedRegions": 2
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "precision 0.98621 below 0.999",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 0.9862068965517241,
+            "reasons": [
+              "precision 0.98621 below 0.999"
+            ],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": false
+        }
+      ],
+      "granuleId": "CFR-2023-title7-vol1-sec15-86",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 202,
+      "package": "CFR-2023-title7-vol1",
+      "pages": 2,
+      "pdfBytes": 186192,
+      "pdfSha256": "1798335f1116fe52cb2cf02694aa1e240b07d45a74592b050e898a66c2854f01",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec15-86.pdf",
+      "precision": 0.9862068965517241,
+      "recall": 1.0,
+      "reconstructSeconds": 0.036,
+      "referencePairs": 0,
+      "referenceTokens": 143,
+      "section": "15.86",
+      "sectionsInRendition": [
+        "15.83",
+        "15.84",
+        "15.85",
+        "15.86",
+        "15.91",
+        "15.92",
+        "15.93",
+        "15.94",
+        "15.95",
+        "15.101"
+      ],
+      "split": "blind",
+      "title": 7,
+      "unresolvedRegions": 2,
+      "volume": 1,
+      "xmlBytes": 2256,
+      "xmlSha256": "d1682fb0208d7500fa6d23280d28ecc37e4c9c0af83b09e0d70564f2474fa217",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec15-86.xml",
+      "year": 2023
+    },
+    {
+      "accepted": true,
+      "blocks": 108,
+      "candidatePairs": 0,
+      "candidateTokens": 29,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.572,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "1.1",
+            "sections": [
+              "1.1",
+              "1.3",
+              "1.5",
+              "1.7"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 108,
+            "classified": 79,
+            "issues": [
+              "table_region",
+              "unclassified_small_face"
+            ],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 102,
+            "unaccounted": 0,
+            "unresolvedBlocks": 29,
+            "unresolvedRegions": 4
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec1-1",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 102,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 1,
+      "pdfBytes": 162582,
+      "pdfSha256": "458e88033a6368b5fd2d443fd597adccfc1a83943c9c960a22a0cea2bac5225e",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec1-1.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.02,
+      "referencePairs": 0,
+      "referenceTokens": 29,
+      "section": "1.1",
+      "sectionsInRendition": [
+        "1.1",
+        "1.3",
+        "1.5",
+        "1.7"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 4,
+      "volume": 1,
+      "xmlBytes": 1334,
+      "xmlSha256": "9d653a6401e070d1596a8b437aa67d69fed1c54bd7ab9ffa052ce30c33a3b9e9",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec1-1.xml",
+      "year": 2022
+    },
+    {
+      "accepted": true,
+      "blocks": 115,
+      "candidatePairs": 0,
+      "candidateTokens": 35,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": null,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "5 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "5.200",
+            "sections": [
+              "5.200",
+              "5.205",
+              "5.210",
+              "5.215",
+              "5.220"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 115,
+            "classified": 113,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 3,
+            "outOfScopeBlocks": 108,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec5-200",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 3,
+      "outOfScopeBlocks": 108,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 1,
+      "pdfBytes": 183497,
+      "pdfSha256": "7609153a4813c9a44cb7ef1c110d7b6aa68249c7c6c962a067704c20046f150b",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec5-200.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.021,
+      "referencePairs": 0,
+      "referenceTokens": 35,
+      "section": "5.200",
+      "sectionsInRendition": [
+        "5.200",
+        "5.205",
+        "5.210",
+        "5.215",
+        "5.220"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 1427,
+      "xmlSha256": "9347bf31d14fb6eac818d3475e978081210a2afdd8506a5aedfabe43cf9b6eee",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec5-200.xml",
+      "year": 2022
+    },
+    {
+      "accepted": true,
+      "blocks": 114,
+      "candidatePairs": 0,
+      "candidateTokens": 39,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.514,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "5 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "7.105",
+            "sections": [
+              "7.90",
+              "7.95",
+              "7.100",
+              "7.105",
+              "7.110"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 114,
+            "classified": 110,
+            "issues": [
+              "table_region",
+              "unclassified_small_face"
+            ],
+            "nodesNeedingReview": 2,
+            "outOfScopeBlocks": 106,
+            "unaccounted": 0,
+            "unresolvedBlocks": 4,
+            "unresolvedRegions": 2
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec7-105",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 2,
+      "outOfScopeBlocks": 106,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 1,
+      "pdfBytes": 183727,
+      "pdfSha256": "89b4f3ea5d7ed17ebb00bc43c46f005075c833a03209665e716e25f27a5cf533",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec7-105.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.022,
+      "referencePairs": 0,
+      "referenceTokens": 39,
+      "section": "7.105",
+      "sectionsInRendition": [
+        "7.90",
+        "7.95",
+        "7.100",
+        "7.105",
+        "7.110"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 2,
+      "volume": 1,
+      "xmlBytes": 1476,
+      "xmlSha256": "073d2769316b1c963ced55044c5755367ca53b135111ac3aa6078082dc1b10b3",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec7-105.xml",
+      "year": 2022
+    },
+    {
+      "accepted": true,
+      "blocks": 232,
+      "candidatePairs": 0,
+      "candidateTokens": 134,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.559,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 4,
+            "matched": 4,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "6 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "13.16",
+            "sections": [
+              "13.14",
+              "13.15",
+              "13.16",
+              "13.17",
+              "13.18",
+              "13.19"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 232,
+            "classified": 228,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 207,
+            "unaccounted": 0,
+            "unresolvedBlocks": 4,
+            "unresolvedRegions": 2
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec13-16",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 207,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 2,
+      "pdfBytes": 186503,
+      "pdfSha256": "0fcc1b42aae9b0bcbecb30d40d39eba13fb2b2fa8a9298e575bea9821cdee426",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec13-16.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.036,
+      "referencePairs": 0,
+      "referenceTokens": 134,
+      "section": "13.16",
+      "sectionsInRendition": [
+        "13.14",
+        "13.15",
+        "13.16",
+        "13.17",
+        "13.18",
+        "13.19"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 2,
+      "volume": 1,
+      "xmlBytes": 2050,
+      "xmlSha256": "8009779d4a11ba9b871649fb77c0ba20ea689fb422f960bc814e465a2c459b40",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec13-16.xml",
+      "year": 2022
+    },
+    {
+      "accepted": true,
+      "blocks": 117,
+      "candidatePairs": 0,
+      "candidateTokens": 57,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.564,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "3 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "18.9",
+            "sections": [
+              "18.8",
+              "18.9",
+              "18.10"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 117,
+            "classified": 115,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 106,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec18-9",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 106,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 1,
+      "pdfBytes": 183397,
+      "pdfSha256": "68a48b983320a45127ce1305d1d2b9edc0c03c0920cbe102c6c5a58fc6c6e155",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec18-9.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.023,
+      "referencePairs": 0,
+      "referenceTokens": 57,
+      "section": "18.9",
+      "sectionsInRendition": [
+        "18.8",
+        "18.9",
+        "18.10"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 1546,
+      "xmlSha256": "7ac82c6b40de67edd445f0cc20bee1670c0fc8d61dd10afe682fc546a2aba0ea",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec18-9.xml",
+      "year": 2022
+    },
+    {
+      "accepted": true,
+      "blocks": 114,
+      "candidatePairs": 0,
+      "candidateTokens": 117,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.582,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 3,
+            "matched": 3,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 0,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "23.2",
+            "sections": [
+              "22.52",
+              "23.1",
+              "23.2",
+              "23.3"
+            ],
+            "unnumberedSections": 0
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 114,
+            "classified": 112,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 0,
+            "outOfScopeBlocks": 94,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec23-2",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 0,
+      "nodesNeedingReview": 0,
+      "outOfScopeBlocks": 94,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 1,
+      "pdfBytes": 183738,
+      "pdfSha256": "98bdf1e56430b0ac2e42976419223eac09274335add8f791de8f480caa3475f2",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec23-2.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.023,
+      "referencePairs": 0,
+      "referenceTokens": 117,
+      "section": "23.2",
+      "sectionsInRendition": [
+        "22.52",
+        "23.1",
+        "23.2",
+        "23.3"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 1943,
+      "xmlSha256": "669c3cd54582bdc2279e46dc168a6420f9e87e8b22ff2667fdb4cea463c080f6",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec23-2.xml",
+      "year": 2022
+    },
+    {
+      "accepted": true,
+      "blocks": 117,
+      "candidatePairs": 4,
+      "candidateTokens": 146,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.584,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 7,
+            "matched": 7,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "4 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 4,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "26.405",
+            "sections": [
+              "26.403",
+              "26.404",
+              "26.405",
+              "26.406"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 117,
+            "classified": 115,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 2,
+            "outOfScopeBlocks": 91,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec26-405",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 4,
+      "nodesNeedingReview": 2,
+      "outOfScopeBlocks": 91,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 1,
+      "pdfBytes": 183436,
+      "pdfSha256": "acc88e61f86d15bb7e649d80cc237ee3a86c4bd7acf30ee1a12a3296077c57fc",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec26-405.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.023,
+      "referencePairs": 4,
+      "referenceTokens": 146,
+      "section": "26.405",
+      "sectionsInRendition": [
+        "26.403",
+        "26.404",
+        "26.405",
+        "26.406"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 2327,
+      "xmlSha256": "ac98ac6221037489195ec40dedd8674261e35356ea70b77690079c434310c194",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec26-405.xml",
+      "year": 2022
+    },
+    {
+      "accepted": true,
+      "blocks": 119,
+      "candidatePairs": 3,
+      "candidateTokens": 113,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": 0.672,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 6,
+            "matched": 6,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "3 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 3,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "27.35",
+            "sections": [
+              "27.34",
+              "27.35",
+              "27.36"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 119,
+            "classified": 117,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 2,
+            "outOfScopeBlocks": 99,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec27-35",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 3,
+      "nodesNeedingReview": 2,
+      "outOfScopeBlocks": 99,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 1,
+      "pdfBytes": 183526,
+      "pdfSha256": "47f5705dfe9f1c230a17436b9b8d02bc91fb05abc2f959d7e024f7b4796c632c",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec27-35.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.023,
+      "referencePairs": 3,
+      "referenceTokens": 113,
+      "section": "27.35",
+      "sectionsInRendition": [
+        "27.34",
+        "27.35",
+        "27.36"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 1760,
+      "xmlSha256": "061ba554fe641b146ba0e98d695764542248a241084de53674b3dee9dfbd41e1",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec27-35.xml",
+      "year": 2022
+    },
+    {
+      "accepted": false,
+      "blocks": 118,
+      "candidatePairs": 23,
+      "candidateTokens": 410,
+      "criticalDiscrepancies": 3,
+      "criticalSample": [
+        "104-134,",
+        "1321-299",
+        "105-65,"
+      ],
+      "fetchSeconds": 0.559,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 26,
+            "matched": 26,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "2 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 23,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "35.101",
+            "sections": [
+              "35.100",
+              "35.101"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 118,
+            "classified": 116,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 1,
+            "outOfScopeBlocks": 27,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "precision 0.99268 below 0.999; recall 0.99268 below 0.999; 3 critical discrepancies",
+          "measures": {
+            "criticalDiscrepancies": 3,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 0.9926829268292683,
+            "reasons": [
+              "precision 0.99268 below 0.999",
+              "recall 0.99268 below 0.999",
+              "3 critical discrepancies"
+            ],
+            "recall": 0.9926829268292683,
+            "undecided": []
+          },
+          "passed": false
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec35-101",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 23,
+      "nodesNeedingReview": 1,
+      "outOfScopeBlocks": 27,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 1,
+      "pdfBytes": 162613,
+      "pdfSha256": "8023844a9f5771421d68c4a25603fb2ce7b81ebcf134c3407923429be5f063a2",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec35-101.pdf",
+      "precision": 0.9926829268292683,
+      "recall": 0.9926829268292683,
+      "reconstructSeconds": 0.023,
+      "referencePairs": 23,
+      "referenceTokens": 410,
+      "section": "35.101",
+      "sectionsInRendition": [
+        "35.100",
+        "35.101"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 4435,
+      "xmlSha256": "d3f1680b29e22618b88b8393b46da66a47b3a1132fde91eff4230946a0c76055",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec35-101.xml",
+      "year": 2022
+    },
+    {
+      "accepted": true,
+      "blocks": 108,
+      "candidatePairs": 2,
+      "candidateTokens": 151,
+      "criticalDiscrepancies": 0,
+      "criticalSample": [],
+      "fetchSeconds": null,
+      "findings": [
+        {
+          "check": "schema_validity",
+          "detail": "valid against CFRMergedXML.xsd",
+          "measures": {
+            "catalogOnly": true,
+            "errors": 0,
+            "schema": "CFRMergedXML.xsd",
+            "sha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2"
+          },
+          "passed": true
+        },
+        {
+          "check": "content_fidelity",
+          "detail": "every element's text is its own evidence's text",
+          "measures": {
+            "elements": 5,
+            "matched": 5,
+            "mismatched": 0,
+            "normalization": [
+              "unicode_nfc",
+              "quotes",
+              "dashes",
+              "spaces",
+              "trim"
+            ]
+          },
+          "passed": true
+        },
+        {
+          "check": "structural_fidelity",
+          "detail": "7 section(s), marker ladder consistent",
+          "measures": {
+            "markerPairs": 2,
+            "markersOutOfSequence": 0,
+            "scopedToSection": "35.360",
+            "sections": [
+              "35.345",
+              "35.348",
+              "35.349",
+              "35.360",
+              "35.362",
+              "35.364",
+              "35.380"
+            ],
+            "unnumberedSections": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "coverage",
+          "detail": "every evidence block is accounted for",
+          "measures": {
+            "blocks": 108,
+            "classified": 106,
+            "issues": [
+              "table_region"
+            ],
+            "nodesNeedingReview": 5,
+            "outOfScopeBlocks": 78,
+            "unaccounted": 0,
+            "unresolvedBlocks": 2,
+            "unresolvedRegions": 1
+          },
+          "passed": true
+        },
+        {
+          "check": "acceptance",
+          "detail": "accepted",
+          "measures": {
+            "criticalDiscrepancies": 0,
+            "gates": {
+              "coverage_complete": true,
+              "critical_discrepancies": 0,
+              "hierarchy_f1": 0.98,
+              "schema_valid": true,
+              "text_precision": 0.999,
+              "text_recall": 0.999
+            },
+            "hierarchyF1": 1.0,
+            "precision": 1.0,
+            "reasons": [],
+            "recall": 1.0,
+            "undecided": []
+          },
+          "passed": true
+        }
+      ],
+      "granuleId": "CFR-2022-title40-vol1-sec35-360",
+      "hierarchyF1": 1.0,
+      "hierarchyShared": 2,
+      "nodesNeedingReview": 5,
+      "outOfScopeBlocks": 78,
+      "package": "CFR-2022-title40-vol1",
+      "pages": 1,
+      "pdfBytes": 183648,
+      "pdfSha256": "18e9ec080fb5a5197da0c63904effb1d590f453498fa7f1eb70c023dc1a1f8a8",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec35-360.pdf",
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.022,
+      "referencePairs": 2,
+      "referenceTokens": 151,
+      "section": "35.360",
+      "sectionsInRendition": [
+        "35.345",
+        "35.348",
+        "35.349",
+        "35.360",
+        "35.362",
+        "35.364",
+        "35.380"
+      ],
+      "split": "blind",
+      "title": 40,
+      "unresolvedRegions": 1,
+      "volume": 1,
+      "xmlBytes": 2486,
+      "xmlSha256": "8550b6ec0b29c71c38dbdf51d0ebcbd9c8b30bf09e311df9ef6566f3a1638b35",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec35-360.xml",
+      "year": 2022
+    }
+  ],
+  "editions": [
+    {
+      "split": "development",
+      "title": 30,
+      "volume": 3,
+      "year": 2025
+    },
+    {
+      "split": "tuning",
+      "title": 12,
+      "volume": 1,
+      "year": 2024
+    },
+    {
+      "split": "blind",
+      "title": 7,
+      "volume": 1,
+      "year": 2023
+    },
+    {
+      "split": "blind",
+      "title": 40,
+      "volume": 1,
+      "year": 2022
+    }
+  ],
+  "gates": {
+    "coverage_complete": true,
+    "critical_discrepancies": 0,
+    "hierarchy_f1": 0.98,
+    "schema_valid": true,
+    "text_precision": 0.999,
+    "text_recall": 0.999
+  },
+  "generatedAt": "2026-09-19T17:19:05.784658+00:00",
+  "guideSha256": "cdd2ead12d7f96a35514f888c9b9cd345c8b8adb2c672bb69a356aa0194ac41f",
+  "listings": [
+    {
+      "declaredCount": 2341,
+      "granulesListed": 1000,
+      "listingComplete": false,
+      "package": "CFR-2025-title30-vol3",
+      "sampled": 10,
+      "sectionGranules": 827,
+      "stride": 82
+    },
+    {
+      "declaredCount": 1497,
+      "granulesListed": 1000,
+      "listingComplete": false,
+      "package": "CFR-2024-title12-vol1",
+      "sampled": 10,
+      "sectionGranules": 771,
+      "stride": 77
+    },
+    {
+      "declaredCount": 1102,
+      "granulesListed": 1000,
+      "listingComplete": false,
+      "package": "CFR-2023-title7-vol1",
+      "sampled": 10,
+      "sectionGranules": 652,
+      "stride": 65
+    },
+    {
+      "declaredCount": 2047,
+      "granulesListed": 1000,
+      "listingComplete": false,
+      "package": "CFR-2022-title40-vol1",
+      "sampled": 10,
+      "sectionGranules": 803,
+      "stride": 80
+    }
+  ],
+  "manifest": [
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec700-1",
+      "pdfBytes": 154799,
+      "pdfSha256": "ae537ba379923a75ac2f9c7a82288267206584370f45d290582a5e0a04fb73e3",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec700-1.pdf",
+      "split": "development",
+      "xmlBytes": 6066,
+      "xmlSha256": "f1e6c21c41b1c9d79fe914f9b59f0dc6c8869b755b8a5cd70d8c01ee6fdb4257",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec700-1.xml"
+    },
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec716-2",
+      "pdfBytes": 157908,
+      "pdfSha256": "508548281c0ab7fc68b7d4a4765b3972cbbca9dc72043861fbe696f07ef08162",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec716-2.pdf",
+      "split": "development",
+      "xmlBytes": 8860,
+      "xmlSha256": "4a6471fa7548dbd4402ae386c8c6f709907fe5be3afff90313d0802284b2cb98",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec716-2.xml"
+    },
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec732-17",
+      "pdfBytes": 157969,
+      "pdfSha256": "10e1830d08b51be564a8bdba9f8fcd8b2cbec222887ab597f8e28cd80be5bd21",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec732-17.pdf",
+      "split": "development",
+      "xmlBytes": 11693,
+      "xmlSha256": "076a5e1e98c078214239201ad17272d7ed377088380345cace921c1310e2a41e",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec732-17.xml"
+    },
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec750-20",
+      "pdfBytes": 152261,
+      "pdfSha256": "90faaf245d14d61c2490ec03ae3735171ff21b174d51963e8d886b46de86b412",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec750-20.pdf",
+      "split": "development",
+      "xmlBytes": 1030,
+      "xmlSha256": "b136bdb7a098f9b182e13d0c5ae28c3a15e353038dbcea5ceb82917d409f8d9e",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec750-20.xml"
+    },
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec773-16",
+      "pdfBytes": 152358,
+      "pdfSha256": "4e5e27dd3710e48f29540b219a7b3cb1af5ec3cde9d9d3efcda25df54a92c4c8",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec773-16.pdf",
+      "split": "development",
+      "xmlBytes": 1759,
+      "xmlSha256": "3a322aee01274b8d8cb75514f0a3d67d04490f19cf3b55ee89eba010e1390482",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec773-16.xml"
+    },
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec783-18",
+      "pdfBytes": 140526,
+      "pdfSha256": "c1ee0335694d94c7941c2882ed51bca62aeccc1bf829b4c604391b297aac4764",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec783-18.pdf",
+      "split": "development",
+      "xmlBytes": 1847,
+      "xmlSha256": "533ce116d28d88f488a13df5e69f74483f54d178d4ec759c6438b210e75a3e70",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec783-18.xml"
+    },
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec815-13",
+      "pdfBytes": 152257,
+      "pdfSha256": "30e239576a4ddcbfd28288a3c570bfb8c6da40497636be79d08933ce8c36d423",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec815-13.pdf",
+      "split": "development",
+      "xmlBytes": 1370,
+      "xmlSha256": "b17648fcaa93bf72a81b374bf6d43f4f7e0f74fe77c49edb84b103b9dd3569bd",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec815-13.xml"
+    },
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec817-71",
+      "pdfBytes": 158364,
+      "pdfSha256": "4b9d32dba07acec5bc50087478e15a6f8064e47657196144a19ccc10c73d6241",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec817-71.pdf",
+      "split": "development",
+      "xmlBytes": 11567,
+      "xmlSha256": "0bb191a6efb6019bde70b3693d65f0da3880f08cbd28cf0a820f7325f0ce50e9",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec817-71.xml"
+    },
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec843-11",
+      "pdfBytes": 155072,
+      "pdfSha256": "739cda392e94423b831528544a634d0ce2c632f8b8dd4af4b7bd0c7f16bf5d7e",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec843-11.pdf",
+      "split": "development",
+      "xmlBytes": 5871,
+      "xmlSha256": "c2715879757b7b53752ed4cf81181812cb17b0c761881af5432547ffd429dc64",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec843-11.xml"
+    },
+    {
+      "granuleId": "CFR-2025-title30-vol3-sec872-28",
+      "pdfBytes": 140297,
+      "pdfSha256": "e98e0c4d3d2f722150d95a662d3edc8969dc8884f496e8021d6f9fc5756006d7",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/pdf/CFR-2025-title30-vol3-sec872-28.pdf",
+      "split": "development",
+      "xmlBytes": 1439,
+      "xmlSha256": "e67cb310793aa2cd0055a9f8030f4c377c50742d961dd39574cd9ff91687c7b6",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2025-title30-vol3/xml/CFR-2025-title30-vol3-sec872-28.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec1-1",
+      "pdfBytes": 139133,
+      "pdfSha256": "fb5a50999c9483316b4233b726c8b99db32e13f80482180e30a77034fab11f9d",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec1-1.pdf",
+      "split": "tuning",
+      "xmlBytes": 3305,
+      "xmlSha256": "2e8adf8e8c2a1ca6f79913a67481987bf98a5b48c222d06a3734fc1a065878c6",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec1-1.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec3-155",
+      "pdfBytes": 138530,
+      "pdfSha256": "acb94c64c9e7dd9f6021d8a75f5cd5ef39f2e7e4edb038f6c1b87696109f6a19",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec3-155.pdf",
+      "split": "tuning",
+      "xmlBytes": 2200,
+      "xmlSha256": "f72c0a4ee77839eb03973c06aea6370062dddfed28d82278b8ecfb377b35fc72",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec3-155.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec4-75",
+      "pdfBytes": 138857,
+      "pdfSha256": "86a521ac707988763afa9f6ae9199ee5b9560ae06d4bafcea663c36b9483521e",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec4-75.pdf",
+      "split": "tuning",
+      "xmlBytes": 1730,
+      "xmlSha256": "06de629042cedc07b46b7ac2141e8562cdcc7460dd5acaec41ad50ee28295a68",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec4-75.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec7-1006",
+      "pdfBytes": 138885,
+      "pdfSha256": "2843a806539cd342c0ea159d78df3c4db60c05ba8a29f9714fae8460a33ad1a9",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec7-1006.pdf",
+      "split": "tuning",
+      "xmlBytes": 2124,
+      "xmlSha256": "24d2ce6da8b5bab15002c86bd44ba98ac9565a106ca6154791c76447d5044f3c",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec7-1006.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec9-6",
+      "pdfBytes": 138977,
+      "pdfSha256": "91fb1fc83fa6ee6c44e3d6d30dd9d005d3769ba39b3d522305dfea4c63321f73",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec9-6.pdf",
+      "split": "tuning",
+      "xmlBytes": 2016,
+      "xmlSha256": "4ca8ba9c94e66761fecf59b534e9eb91ce1e8baf6b61982c3240e0fb8dcb65c2",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec9-6.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec19-16",
+      "pdfBytes": 138913,
+      "pdfSha256": "251411a2299fe1dda33fd237f90efb8d95c66b8b260412c0d8d7cf4709a33c01",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec19-16.pdf",
+      "split": "tuning",
+      "xmlBytes": 1442,
+      "xmlSha256": "a4c9a40893e2d511045b0e151187028ea8362004ef401d89729c89c8b0e65a72",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec19-16.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec21-1",
+      "pdfBytes": 139024,
+      "pdfSha256": "f7d95df44cc10977c9dda1d49fb0f47da8a258d71c899bf9d80444364ae5ab0e",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec21-1.pdf",
+      "split": "tuning",
+      "xmlBytes": 2042,
+      "xmlSha256": "add3e8ad9a8ad3380522be8110dda785c9a86ea35dd530c45dbd2197cfbdeb26",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec21-1.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec28-5",
+      "pdfBytes": 139103,
+      "pdfSha256": "24cb115c4be96b577fa06b3452c59ce51150a341406fdbd6fc01f684e29cac95",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec28-5.pdf",
+      "split": "tuning",
+      "xmlBytes": 1624,
+      "xmlSha256": "a0a3094929cdd629d2a8709ce619bd93cf114a09dbd17080c874e1938ec29075",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec28-5.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec34-216",
+      "pdfBytes": 139108,
+      "pdfSha256": "9de5dddbd14e80c28fc7885afa2bcd1999587a0d4a17e21faa562d11f7214971",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec34-216.pdf",
+      "split": "tuning",
+      "xmlBytes": 1588,
+      "xmlSha256": "7a39b673ecc877fe488b10731d10e18182deb2b9338b66d3518454a34aeb9481",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec34-216.xml"
+    },
+    {
+      "granuleId": "CFR-2024-title12-vol1-sec46-1",
+      "pdfBytes": 149357,
+      "pdfSha256": "1be0e803c7dbb8e2cfddf4fb533df015a35268e6de0c939250bf3d6927a8eade",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/pdf/CFR-2024-title12-vol1-sec46-1.pdf",
+      "split": "tuning",
+      "xmlBytes": 1610,
+      "xmlSha256": "c5ef0c2cf2b925f00d2b256ff7ebaa5a8c5267e2e3bc0a54f3931d87279f66fc",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2024-title12-vol1/xml/CFR-2024-title12-vol1-sec46-1.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec1-1",
+      "pdfBytes": 186700,
+      "pdfSha256": "e852022e2a70e963a2d3c0a418545a5add62e846a251926c9d126a4117576d9c",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-1.pdf",
+      "split": "blind",
+      "xmlBytes": 2128,
+      "xmlSha256": "700d5fa5f3b796acebcb8966f7331eb543c26491b032eeba7135ff03ce23ff76",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-1.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec1-162",
+      "pdfBytes": 183710,
+      "pdfSha256": "6d8cb552aaba2d2681817e9b409d7e2fb4c004999732a7e224d7c96a3f5e1e1c",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-162.pdf",
+      "split": "blind",
+      "xmlBytes": 2715,
+      "xmlSha256": "d1f3f6ea9c3faf65b7570a21dcf01ba8890e6b963b3497627ea9ba2037261fd7",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-162.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec1-313",
+      "pdfBytes": 203087,
+      "pdfSha256": "14efa689a3d215772452c3bd5c3e6228deee5e62aa0b450447904b33db5c3d94",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-313.pdf",
+      "split": "blind",
+      "xmlBytes": 2016,
+      "xmlSha256": "8eabb4b9a7ce245bb001f0eef4a13fb8c5e83594c818ab6c253386b5cc1e69b6",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-313.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec1-622",
+      "pdfBytes": 186345,
+      "pdfSha256": "17d60d04c333685c591e1edc9306cb32d8a57d90b311cc3737d373a01a15cb13",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-622.pdf",
+      "split": "blind",
+      "xmlBytes": 3831,
+      "xmlSha256": "80881b57b56d87b344433e5378d97fd73545b7b38a241443151a296e67509195",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-622.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec1-908",
+      "pdfBytes": 183686,
+      "pdfSha256": "a10092d59872725b5452b5143b24c0ef3e0d18bc1d7068770ab5d5f7587c90f7",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec1-908.pdf",
+      "split": "blind",
+      "xmlBytes": 1205,
+      "xmlSha256": "0d783de22f442ae5d26b40d7922415a2a9c0424d55d4e2657024a785b84f495b",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec1-908.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec2-69",
+      "pdfBytes": 186812,
+      "pdfSha256": "c4bf71adb1ce9c51def9d317e785c77110e3fb48ef70ba9bebf786079fa9efc4",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec2-69.pdf",
+      "split": "blind",
+      "xmlBytes": 3687,
+      "xmlSha256": "566bc32ca929b2a2941c48274c848f0ef651cfcd4324d35335e36c3a54d7d59e",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec2-69.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec3-52",
+      "pdfBytes": 183447,
+      "pdfSha256": "94c9b438795535933372c70e4b55aa477622cd8a30220d02dc4c36bdac9d4a2b",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec3-52.pdf",
+      "split": "blind",
+      "xmlBytes": 2545,
+      "xmlSha256": "6702bfd01705deca56a4f4eccfb1fed06ba1131efd283c864f580c2c9a760b9d",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec3-52.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec7-5",
+      "pdfBytes": 186274,
+      "pdfSha256": "b5dcb9e253d5ca6647eb7da91a20c9e248adb14e9ce8a9191a2e20c55ba30b5f",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec7-5.pdf",
+      "split": "blind",
+      "xmlBytes": 3491,
+      "xmlSha256": "460a703c6160be9978e34f8eee7c2c921091c763a28fda7d96df614c2821c9b4",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec7-5.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec11-20",
+      "pdfBytes": 183695,
+      "pdfSha256": "f69f309d42cebb72ed195f08c00d4c894682c1cc7425b196842f58ae290f87c3",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec11-20.pdf",
+      "split": "blind",
+      "xmlBytes": 1162,
+      "xmlSha256": "efa9bbfa692d54d726c96e673c86f499f30325ef8e9a79b83e02748383c0fe9c",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec11-20.xml"
+    },
+    {
+      "granuleId": "CFR-2023-title7-vol1-sec15-86",
+      "pdfBytes": 186192,
+      "pdfSha256": "1798335f1116fe52cb2cf02694aa1e240b07d45a74592b050e898a66c2854f01",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/pdf/CFR-2023-title7-vol1-sec15-86.pdf",
+      "split": "blind",
+      "xmlBytes": 2256,
+      "xmlSha256": "d1682fb0208d7500fa6d23280d28ecc37e4c9c0af83b09e0d70564f2474fa217",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2023-title7-vol1/xml/CFR-2023-title7-vol1-sec15-86.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec1-1",
+      "pdfBytes": 162582,
+      "pdfSha256": "458e88033a6368b5fd2d443fd597adccfc1a83943c9c960a22a0cea2bac5225e",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec1-1.pdf",
+      "split": "blind",
+      "xmlBytes": 1334,
+      "xmlSha256": "9d653a6401e070d1596a8b437aa67d69fed1c54bd7ab9ffa052ce30c33a3b9e9",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec1-1.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec5-200",
+      "pdfBytes": 183497,
+      "pdfSha256": "7609153a4813c9a44cb7ef1c110d7b6aa68249c7c6c962a067704c20046f150b",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec5-200.pdf",
+      "split": "blind",
+      "xmlBytes": 1427,
+      "xmlSha256": "9347bf31d14fb6eac818d3475e978081210a2afdd8506a5aedfabe43cf9b6eee",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec5-200.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec7-105",
+      "pdfBytes": 183727,
+      "pdfSha256": "89b4f3ea5d7ed17ebb00bc43c46f005075c833a03209665e716e25f27a5cf533",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec7-105.pdf",
+      "split": "blind",
+      "xmlBytes": 1476,
+      "xmlSha256": "073d2769316b1c963ced55044c5755367ca53b135111ac3aa6078082dc1b10b3",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec7-105.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec13-16",
+      "pdfBytes": 186503,
+      "pdfSha256": "0fcc1b42aae9b0bcbecb30d40d39eba13fb2b2fa8a9298e575bea9821cdee426",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec13-16.pdf",
+      "split": "blind",
+      "xmlBytes": 2050,
+      "xmlSha256": "8009779d4a11ba9b871649fb77c0ba20ea689fb422f960bc814e465a2c459b40",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec13-16.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec18-9",
+      "pdfBytes": 183397,
+      "pdfSha256": "68a48b983320a45127ce1305d1d2b9edc0c03c0920cbe102c6c5a58fc6c6e155",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec18-9.pdf",
+      "split": "blind",
+      "xmlBytes": 1546,
+      "xmlSha256": "7ac82c6b40de67edd445f0cc20bee1670c0fc8d61dd10afe682fc546a2aba0ea",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec18-9.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec23-2",
+      "pdfBytes": 183738,
+      "pdfSha256": "98bdf1e56430b0ac2e42976419223eac09274335add8f791de8f480caa3475f2",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec23-2.pdf",
+      "split": "blind",
+      "xmlBytes": 1943,
+      "xmlSha256": "669c3cd54582bdc2279e46dc168a6420f9e87e8b22ff2667fdb4cea463c080f6",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec23-2.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec26-405",
+      "pdfBytes": 183436,
+      "pdfSha256": "acc88e61f86d15bb7e649d80cc237ee3a86c4bd7acf30ee1a12a3296077c57fc",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec26-405.pdf",
+      "split": "blind",
+      "xmlBytes": 2327,
+      "xmlSha256": "ac98ac6221037489195ec40dedd8674261e35356ea70b77690079c434310c194",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec26-405.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec27-35",
+      "pdfBytes": 183526,
+      "pdfSha256": "47f5705dfe9f1c230a17436b9b8d02bc91fb05abc2f959d7e024f7b4796c632c",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec27-35.pdf",
+      "split": "blind",
+      "xmlBytes": 1760,
+      "xmlSha256": "061ba554fe641b146ba0e98d695764542248a241084de53674b3dee9dfbd41e1",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec27-35.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec35-101",
+      "pdfBytes": 162613,
+      "pdfSha256": "8023844a9f5771421d68c4a25603fb2ce7b81ebcf134c3407923429be5f063a2",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec35-101.pdf",
+      "split": "blind",
+      "xmlBytes": 4435,
+      "xmlSha256": "d3f1680b29e22618b88b8393b46da66a47b3a1132fde91eff4230946a0c76055",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec35-101.xml"
+    },
+    {
+      "granuleId": "CFR-2022-title40-vol1-sec35-360",
+      "pdfBytes": 183648,
+      "pdfSha256": "18e9ec080fb5a5197da0c63904effb1d590f453498fa7f1eb70c023dc1a1f8a8",
+      "pdfUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/pdf/CFR-2022-title40-vol1-sec35-360.pdf",
+      "split": "blind",
+      "xmlBytes": 2486,
+      "xmlSha256": "8550b6ec0b29c71c38dbdf51d0ebcbd9c8b30bf09e311df9ef6566f3a1638b35",
+      "xmlUrl": "https://www.govinfo.gov/content/pkg/CFR-2022-title40-vol1/xml/CFR-2022-title40-vol1-sec35-360.xml"
+    }
+  ],
+  "profile": "cfr/1",
+  "receipts": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/reconstruction-benchmark-2026-09-19",
+  "requestedSections": 40,
+  "requests": {
+    "bodies": 80,
+    "granuleListings": 4,
+    "total": 84
+  },
+  "revision": "6c617c0",
+  "schemaSha256": "1f400461602beda201e902268cdab4df4d4c5af88f47bbb760f74a3415ac6ae2",
+  "scoredFrom": {
+    "bodies": "/private/tmp/claude-501/-Users-mikewolfd-Work-spicy-stack-spicy-docs/8a5a1a5d-bd44-4a09-a525-c269c5837b3d/scratchpad/bench",
+    "fetchRevision": "6c617c0",
+    "fetchedAt": "2026-09-19T17:17:53.245111+00:00",
+    "requests": {
+      "bodies": 80,
+      "granuleListings": 4,
+      "total": 84
+    }
+  },
+  "scratch": "/private/tmp/claude-501/-Users-mikewolfd-Work-spicy-stack-spicy-docs/8a5a1a5d-bd44-4a09-a525-c269c5837b3d/scratchpad/bench",
+  "summary": {
+    "all": {
+      "accepted": 33,
+      "blocks": 6343,
+      "contentFidelity": 40,
+      "coverageComplete": 40,
+      "criticalDiscrepancies": 4,
+      "documents": 40,
+      "documentsWithCriticalDiscrepancy": 2,
+      "documentsWithLadder": 23,
+      "fetchSeconds": 0.562743,
+      "hierarchyF1": 1.0,
+      "hierarchyF1WithLadder": 1.0,
+      "outOfScopeBlocks": 4470,
+      "precision": 0.999333,
+      "recall": 0.999591,
+      "reconstructSeconds": 0.028025,
+      "schemaValid": 40,
+      "structuralFidelity": 36,
+      "unresolvedRegions": 38
+    },
+    "blind": {
+      "accepted": 17,
+      "blocks": 3020,
+      "contentFidelity": 20,
+      "coverageComplete": 20,
+      "criticalDiscrepancies": 3,
+      "documents": 20,
+      "documentsWithCriticalDiscrepancy": 1,
+      "documentsWithLadder": 10,
+      "fetchSeconds": 0.568882,
+      "hierarchyF1": 1.0,
+      "hierarchyF1WithLadder": 1.0,
+      "outOfScopeBlocks": 2405,
+      "precision": 0.998944,
+      "recall": 0.999634,
+      "reconstructSeconds": 0.0263,
+      "schemaValid": 20,
+      "structuralFidelity": 19,
+      "unresolvedRegions": 31
+    },
+    "development": {
+      "accepted": 6,
+      "blocks": 2109,
+      "contentFidelity": 10,
+      "coverageComplete": 10,
+      "criticalDiscrepancies": 1,
+      "documents": 10,
+      "documentsWithCriticalDiscrepancy": 1,
+      "documentsWithLadder": 7,
+      "fetchSeconds": 0.526444,
+      "hierarchyF1": 1.0,
+      "hierarchyF1WithLadder": 1.0,
+      "outOfScopeBlocks": 1058,
+      "precision": 0.999443,
+      "recall": 0.999097,
+      "reconstructSeconds": 0.0375,
+      "schemaValid": 10,
+      "structuralFidelity": 7,
+      "unresolvedRegions": 1
+    },
+    "documents": 40,
+    "failed": 0,
+    "failures": [],
+    "scored": 40,
+    "tuning": {
+      "accepted": 10,
+      "blocks": 1214,
+      "contentFidelity": 10,
+      "coverageComplete": 10,
+      "criticalDiscrepancies": 0,
+      "documents": 10,
+      "documentsWithCriticalDiscrepancy": 0,
+      "documentsWithLadder": 6,
+      "fetchSeconds": 0.587444,
+      "hierarchyF1": 1.0,
+      "hierarchyF1WithLadder": 1.0,
+      "outOfScopeBlocks": 1007,
+      "precision": 1.0,
+      "recall": 1.0,
+      "reconstructSeconds": 0.022,
+      "schemaValid": 10,
+      "structuralFidelity": 10,
+      "unresolvedRegions": 6
+    }
+  },
+  "targetSections": 500,
+  "wallSeconds": 1.15
+}
