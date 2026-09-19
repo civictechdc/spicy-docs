@@ -19,11 +19,20 @@ absence.
 a publisher nests inside a wrapper object alongside its own count and url,
 the way Congress.gov's ``committee/{chamber}/{code}/bills`` does. A detail
 route -- one record identified by its full path, not a list -- answers with
-either a single, non-empty JSON object or a one-element array under its key;
-both read as a one-row page with no declared count and no continuation, the
-same ``records()``/``page()`` walk a list route uses, rather than being
-shaped down to one field. An *empty* object still refuses: empty success is
-not absence, and a detail route answering ``{}`` carries no record to read.
+either a single, non-empty JSON object or a one-element array under its key.
+The one-element-array shape already reads through the ordinary list path.
+The single-object shape needs an explicit opt-in: ``page()``/``pages()``
+take ``single_record``, off by default, and only a caller that passes it
+reads a non-empty object at ``records_key`` as a one-row page with no
+declared count and no continuation, the same ``records()``/``page()`` walk a
+list route uses, rather than refusing. Left off, a wrapper object at
+``records_key`` -- including a caller's own wrong or mismatched key, such as
+asking for Congress.gov's ``committee/{chamber}/{code}/bills`` by its
+top-level wrapper key instead of the tuple that reaches inside it -- still
+refuses instead of silently reading as one bogus record; not every family
+this reader serves has a declared count to catch that downstream. An *empty*
+object still refuses either way: empty success is not absence, and a detail
+route answering ``{}`` carries no record to read.
 """
 
 from __future__ import annotations
@@ -200,7 +209,9 @@ class JsonPage:
     route answers one record as an object rather than an array at
     ``records_key`` -- Congress.gov's ``law/{congress}/{law_type}/{number}``
     answers ``{"bill": {...}}``, not ``{"bill": [...]}`` -- and reads as a
-    single-record page rather than shaping that object down to one field.
+    single-record page rather than shaping that object down to one field,
+    when the caller opted into that reading with ``page()``/``pages()``'s
+    ``single_record``.
     """
 
     page_index: int
@@ -344,12 +355,13 @@ class PagedJsonReader(SourceAcquirer):
         body: Mapping[str, Any] | None,
         records_key: str | tuple[str, ...],
         page_index: int,
+        single_record: bool,
     ) -> JsonPage:
         value = load_decimal_json(capture.body, source=self.family.label, error_type=PagedJsonSourceError)
         if not isinstance(value, Mapping):
             raise PagedJsonSourceError(f"{self.family.label} list response is not a JSON object")
         rows = _lookup(value, records_key) if isinstance(records_key, tuple) else value.get(records_key)
-        if isinstance(rows, Mapping) and rows:
+        if single_record and isinstance(rows, Mapping) and rows:
             # A detail route answers one record, not a list -- Congress.gov's law, committee,
             # member, house-communication, daily-congressional-record, senate-communication and
             # house-requirement detail routes all nest a single, non-empty object under their
@@ -360,6 +372,15 @@ class PagedJsonReader(SourceAcquirer):
             # count, rather than being shaped down to one field. An *empty* object stays a
             # refusal, unchanged from before this route shape existed: empty success is not
             # absence, and a detail route answering ``{}`` carries no record to read.
+            #
+            # This wrapping is opt-in (``single_record``), not a blanket rule for every family
+            # this reader serves: without it, a caller's wrong or mismatched ``records_key`` that
+            # happens to resolve to a wrapper object -- Congress.gov's own
+            # ``committee/{chamber}/{code}/bills`` answers a string key ``"committee-bills"`` as
+            # ``{"bills": [...], "count": N, "url": "..."}`` -- would silently read as one bogus
+            # record (the wrapper itself) instead of refusing. Not every family even has a
+            # ``count_path`` to catch that downstream: FCC ECFS states no count at all and
+            # regulations.gov's is advisory, so nothing would notice.
             rows = [rows]
         if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
             raise PagedJsonSourceError(f"{self.family.label} list response omitted its {_key_label(records_key)} list")
@@ -376,8 +397,16 @@ class PagedJsonReader(SourceAcquirer):
         records_key: str | tuple[str, ...],
         page_index: int = 0,
         body: Mapping[str, Any] | None = None,
+        single_record: bool = False,
     ) -> JsonPage:
-        """Capture one list page and read its rows, declared count and continuation."""
+        """Capture one list page and read its rows, declared count and continuation.
+
+        ``single_record`` opts a caller into reading a non-empty JSON object found at
+        ``records_key`` as the page's one record, for the routes that genuinely answer one --
+        a detail route identified by its full path, not a list. It defaults to ``False`` so a
+        caller's wrong or mismatched ``records_key`` that happens to resolve to a wrapper object
+        still refuses instead of silently reading that wrapper as a bogus record.
+        """
         url = self.family.check_url(url)
         if (body is not None) != (self.family.method == "POST"):
             raise PagedJsonSourceError(
@@ -390,7 +419,12 @@ class PagedJsonReader(SourceAcquirer):
             url,
             media_types=self.family.media_types,
             parse=lambda capture, _limit: self._read_page(
-                capture, url=url, body=body, records_key=records_key, page_index=page_index
+                capture,
+                url=url,
+                body=body,
+                records_key=records_key,
+                page_index=page_index,
+                single_record=single_record,
             ),
             max_bytes=self.budget.max_page_bytes,
             unavailable=PagedJsonUnavailableError,
@@ -401,6 +435,7 @@ class PagedJsonReader(SourceAcquirer):
                 "requestBody": dict(body) if body is not None else None,
                 "pageIndex": page_index,
                 "recordsKey": records_key,
+                "singleRecord": single_record,
             },
             method=self.family.method,
             content=content,
@@ -415,13 +450,15 @@ class PagedJsonReader(SourceAcquirer):
         records_key: str | tuple[str, ...],
         max_pages: int = DEFAULT_MAX_PAGES,
         body: Mapping[str, Any] | None = None,
+        single_record: bool = False,
     ) -> Iterator[JsonPage]:
         """Follow the publisher's continuations from the first request; refuse to end early or inconsistently.
 
         Pages already yielded remain partial observations when a later page
         refuses; only normal exhaustion means the traversal reached the
         publisher's terminal page with counts that agree. An offset walk has no
-        declared count to check and ends at the first short page.
+        declared count to check and ends at the first short page. ``single_record``
+        is forwarded to ``page()``; see its docstring.
         """
         check_request_count(max_pages, "max_pages")
         url = self.family.check_url(url)
@@ -450,7 +487,7 @@ class PagedJsonReader(SourceAcquirer):
             if request in seen:
                 raise refuse("repeated its continuation")
             seen.add(request)
-            page = self.page(url, records_key=records_key, page_index=index, body=body)
+            page = self.page(url, records_key=records_key, page_index=index, body=body, single_record=single_record)
             exact = self.family.count_kind == "exact"
             if page.declared_count is not None:
                 if declared is None:
