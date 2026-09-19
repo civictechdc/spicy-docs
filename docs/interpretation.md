@@ -23,8 +23,9 @@ rather than buried in control flow.
 | `release_matching` | committee RSS items (title, and description where a feed sends one) and bill identities | one compiled `BillPattern` per bill, and `ReleaseMatch` naming the field the mention was found in |
 | `member_matching` | a bioguide id, a Senate LIS id or a sponsor display string, the legislators crosswalk, and a `MemberIndex` built once from published member rows | `MemberMatch` (bioguide, rule, score) |
 | `interest_areas` | a reader's keyword list and parsed bill sections | `SectionMatch` (excerpt, area, matched keywords, rule) |
+| `version_kind` | a bill version's `version_code` slug and, for the size heuristic, its extracted section count or body byte length | `VersionKindFinding` (kind, the rule that fired, section count, body bytes); `version_kind` is a thin wrapper returning just the kind |
 | `section_classification` | parsed bill sections and an injected `ModelCall` | `SectionClassification` with model, prompt version, prompt hash, batch and timestamps |
-| `bill_summaries` | one bill version's text, title, status and money-bill kind, and an injected `ModelCall` | `BillSummaryResult` with model, prompt version, content hash, token counts and timestamps |
+| `bill_summaries` | one bill version's text, title, status and money-bill kind, and an injected `ModelCall`; or, for `summarize_diff`, a section diff's changed items (`op`, both placements' heading and body) and an injected `ModelCall` | `BillSummaryResult` with model, prompt version, content hash, token counts and timestamps; `summarize_diff` produces `DiffSummaryResult` (headline, key changes, sections added/removed, dollar changes) with the same provenance columns |
 | `model_call` | — | the one injected model seam (`ModelCall`, `ModelResponse`, `ModelCallError`) the two model-backed modules share |
 
 `normalize_for_comparison` and `token_jaccard` live in `bill_signals`, where
@@ -103,11 +104,6 @@ a consumer can weigh a title match differently from a body one.
 
 ## Decision
 
-**Interpretation lives in spicy-docs; the tables it produces are hosted
-elsewhere.** spicy-docs is the one home for code: acquisition, publisher-format
-parsing and shared interpretation alike. A metadata host receives tables and
-their documentation, never logic, and an application keeps only auth, email,
-per-user rows and pages. This package is the interpretation half of that split,
-and the columns each rule populates -- stage, money-bill kind and reason codes,
-identification confidence, vote and release bill links, classification and
-summary provenance -- are what the host publishes.
+See ["Interpretation lives in spicy-docs; hosted tables carry its
+outputs"](decisions.md#interpretation-lives-in-spicy-docs-hosted-tables-carry-its-outputs)
+in `docs/decisions.md`.

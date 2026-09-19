@@ -148,6 +148,43 @@ the Senate LIS crosswalk, and Senate member-level votes. For senators who
 have left, the community legislators JSON is the crosswalk, pinned and
 cadence-checked, because no publisher file carries their LIS ids.
 
+**Revised 2026-09-19** to add a third family beside the two publisher ones:
+appropriations committee press releases, captured whole from each chamber's
+own RSS 2.0 feed rather than from Congress.gov or GovInfo. Two canonical feed
+URLs replace BillTrax's four dead spellings, and identity is proved from the
+channel `<title>`/`<link>` rather than the request URL, because an
+unrecognized Senate `?type=` answers 200 with a byte-identical default
+channel instead of failing. See "Appropriations press releases: two
+canonical feeds, identity from the channel body" below.
+
+## Appropriations press releases: two canonical feeds, identity from the channel body
+
+Adopted 2026-09-19 with the [press-release source](sources/press-releases.md).
+
+Measured 2026-09-19 (`docs/research/billtrax-raw-data-2026-09-19.md` §4): all
+four of BillTrax's spellings across `press-releases.ts` and
+`sync-press-releases.ts` are dead — two 404s, a 410 Gone, and a 200 that is a
+ColdFusion error page, the same shape `sources/govinfo/error_page.py` already
+names for GovInfo. The two live, canonical feeds are
+`https://appropriations.house.gov/rss.xml` and
+`https://www.appropriations.senate.gov/rss/feeds/?type=press`, both RSS 2.0
+with no default namespace; BillTrax's single-item Atom-collapse bug in
+`fast-xml-parser` does not reproduce here because `xml.etree` never collapses
+a one-item list to a non-list.
+
+**The request URL never proves the response.** An unrecognized Senate
+`?type=` answers 200 with a byte-identical default channel instead of
+failing, so `acquire_press_releases` checks the response body itself against
+each feed's own `identity_title_contains` and `identity_link_host` rather
+than trusting the URL that was requested. Both checks must pass or the whole
+capture is refused, with the exact bytes retained as evidence — the same
+"outcome, not the URL" discipline as `gao/rss.py`'s product-link check and
+the GAO-files PDF-magic check.
+
+Everything either channel or item states is kept whole, including fields
+BillTrax dropped (`ttl`, `skipDays`, `skipHours`, `lastBuildDate`); nothing is
+truncated to an excerpt. This closes [port decision 5](research/billtrax-port-2026-09-15.md).
+
 ## Community legislators JSON is the identifier crosswalk
 
 Adopted 2026-09-19 with the [legislators source](sources/legislators.md).
@@ -198,3 +235,239 @@ that imports nothing from `spicy_docs`, so the Federal Register validator can
 call it without importing this family. That validator's wording and check
 order are unchanged: its refusal text reaches command receipts, and its two
 error-page witnesses must stay on either side of the locator check.
+
+**Extended 2026-09-19** to bill-version PDFs. `bill_pdf.acquire_bill_pdf`
+(see [bill-version codes](sources/congress-bill-versions.md)) is the same
+identity-first fetch through this acquirer: no second HTTP path, no
+independent proof rule. A caller passes the publisher's own stated
+`package_id` when it has one; only when none exists does it fall back to
+`bill_version_package_id`, a name-derived package id built from the sealed
+`version_code` vocabulary. That fallback cannot tell a numbered reprint from
+its original by name alone, so a stated package id always wins when both are
+available — see "Bill-version codes are a sealed, additions-only vocabulary"
+below.
+
+## Bill-version codes are a sealed, additions-only vocabulary
+
+Adopted 2026-09-19 with [bill-version codes and bill PDFs](sources/congress-bill-versions.md).
+
+`sources.congress.bill_versions.VERSION_CODES` ports BillTrax's
+`bill_versions.version_code` slug map. **The vocabulary is sealed: this
+module only adds slugs; it never renames or removes one**, even where the
+publisher's measured 119th-Congress data contradicts a slug's own name
+(`referred-to-senate` really names "Received in Senate"). The slug is a
+BillTrax identifier now, not a live claim about the publisher's own wording;
+that claim lives in the table's `version_types` field.
+
+**One correction, not a rename.**
+`returned-to-the-house-by-unanimous-consent` kept its slug but had its
+`govinfo_suffix` corrected from `rfh` to `rhuc`: BillTrax's canonical map
+deliberately collided it with `referred-to-house` on `rfh`, and the 119th
+measurement shows the publisher never spells it that way. `rhuc` is added as
+its own passthrough entry rather than silently overwriting the collision.
+
+24 distinct package-id suffixes were measured across the 119th Congress's
+21,947 BILLS files; BillTrax's map reached 12 of them correctly, had no entry
+for 12 more (1,027 files, 4.7% of the corpus), and mapped one (`rfh`) to the
+wrong document. The vocabulary was then cross-checked against DeltaTrack
+upstream's own authoritative govinfo code list
+(`civictechdc/DeltaTrack:tools/fetch_govinfo.py`) and extended with the 30
+further codes it carries that neither BillTrax nor the 119th measurement
+produced, each marked `measured_119th=False` and cited to that source.
+`VERSION_CODES` now holds 72 entries.
+
+**The package id is the identity; a name-derived slug is a flagged
+fallback.** A version-type name is not unique per version — a numbered
+reprint shares its original's name (`eas`/`eas2`, `eh`/`eh1s`, `rfs`/`rfs2`)
+— so `bill_version_package_id`/`version_slug` remain for a caller that holds
+only a slug or type name, but `acquire_bill_pdf` requires the caller's own
+stated `package_id` in place of `slug`, never alongside it, when one exists.
+`version_slug_reprints` names every other slug a shared type name could
+mean, so the ambiguity is queryable rather than merely present.
+
+**Format is chosen by GovInfo rendition folder, not file extension.**
+`BillTextFormat` is built in exactly one place today, from BILLSTATUS XML,
+which carries no `<type>` — so `choose_format`'s type-string table is dead
+code against the data this repository actually parses, and the live path
+names a format from the URL's rendition folder (`xml/`, `html/`, `text/`,
+`pdf/`, `uslm/`), because BILLS states its USLM rendition at `uslm/{id}.xml`,
+indistinguishable from `xml/{id}.xml` by extension alone. USLM is recognized
+by name and folder but not yet fetchable: no acquirer supports it for a
+BILLS package today.
+
+## DeltaTrack is a pinned dependency, not a port
+
+Adopted 2026-09-19 with [bill sections and section diff](sources/congress-bill-tree.md).
+
+SpicyDocs depends on [DeltaTrack](https://github.com/civictechdc/DeltaTrack),
+pinned by commit sha in `[tool.uv.sources]`, behind the optional `bill-diff`
+extra. BillTrax's vendored `submodules/DeltaTrack` and its TypeScript fork
+(`bill-tree.ts`, `financial.ts`, `diff.ts`, `section-diff.ts`'s fallback
+core, `python-diff.ts`, `scripts/diff_service.py`) **are to be deleted**.
+
+The reason is measurement, not preference. A port was planned because the
+vendored directory carried no pin and no upstream remote — true of the
+directory, false of the project: the canonical repository has since moved to
+the same Civic Tech DC organisation as SpicyDocs and SpicyRegs, and at
+`c636448` (2026-09-13) is an installable package with 12,479 lines across 25
+modules (against the vendored snapshot's 2,846), 120 test files, and every
+divergence and bug the port's own inventory had flagged already fixed,
+including the `resolution-body` gap. Porting 1,439 lines by hand to reach a
+place 12,479 maintained lines already occupy preserves effort and nothing
+else.
+
+A git pin rather than a PyPI range because nothing is published to PyPI yet:
+`deltatrack` is an unclaimed name on the index. **Move the pin to a release,
+and drop the `[tool.uv.sources]` entry, as soon as upstream publishes one** —
+a git rev names a commit on a branch that can be force-pushed out from under
+it.
+
+**Consequence for the gate.** `uv sync --extra bill-diff` clones from GitHub
+the first time a cold environment resolves it; uv caches the checkout, so
+later syncs and every `--frozen` run are offline, and the lock records the
+resolved commit either way. Without the extra, `./scripts/check` still runs;
+the adapter tests skip and say why.
+
+Gaps this port found in upstream and left there rather than patching
+locally — a collision-group cap, an asymmetric-pair guard, a body-size cap
+on inline word segments, hyphen-tolerant matching tokens, the `" "`/`""`
+join change's effect on stored rows, version derived from a file name
+instead of a keyword argument, an entry point that reparses bytes already
+parsed once, and the XML path importing the PDF stack — are listed with
+file:line citations in "To raise upstream" on the bill-tree page; raise them
+with DeltaTrack's maintainers rather than working around them here.
+
+## GPO PDF text normalization runs after extraction, gated by evidence
+
+Adopted 2026-09-19 with [GPO PDF text normalization](extraction-gpo.md).
+
+`extraction/gpo_normalize.py` is a post-extraction step, not part of PDF
+extraction itself: given the page texts `DocumentExtractor` already
+produced, it strips the seven GPO print artifacts BillTrax's
+`pdf-normalize.ts` named and rejoins line-wrap hyphens, gated on page-level
+evidence rather than running unconditionally. Two of the seven artifacts
+changed shape under this repository's PyMuPDF-based extractor and were
+re-derived, not just ported: GPO line numbers move from a suffix to their
+own physical line, and the per-page footer spans several physical lines
+whose job-code pattern no longer matches BillTrax's literal `DSK`-prefixed
+regex against real 2025-session output. `is_gpo_layout` detects a content
+line followed by a bare one- or two-digit line and gates hyphen-rejoin on
+that adjacency — never on a document without a corroborating gutter number —
+which is what keeps a genuine hyphenated compound like "President-elect"
+from being merged on an unnumbered (ENR-style) document.
+
+`sources/agency_reports/report_blocks.py` (see "Agency-report blocks are
+parsing an uploaded artifact, not acquisition" below) expects this step to
+have already run: BillTrax's own call site skipped `normalizePdfText`
+entirely, and the hyphen-wrap fragments that produced are a direct
+consequence of that omission, not of the heading grammar itself. Route every
+PDF-derived text body through `normalize_gpo_pages` before any
+heading/section/agency splitter reads it — the two modules are not yet
+wired together, so a caller does this itself today.
+
+**Compared against upstream DeltaTrack, and kept as its own port.**
+DeltaTrack solves the same problem ahead of its own diff engine, but
+extracts with pypdfium2 rather than PyMuPDF — a **licensing** choice there
+(PyMuPDF is AGPL-3.0), not a quality one — which makes its raw text a third,
+incompatible line shape: its rules anchor on a leading gutter digit and a
+PDFium-specific soft-hyphen glyph, neither of which PyMuPDF's output ever
+produces. Feeding PyMuPDF text through DeltaTrack's functions would not
+raise; it would silently match nothing and return the input unchanged — the
+same "formatting assertion, not a verification" failure shape a clean no-op
+result presents. Two extractor-shape-independent design choices carried over
+anyway, re-derived against this repository's own fixtures rather than
+assumed from DeltaTrack's: truncating from the VerDate line to the end of
+the page, and collapsing GPO's doubled-single-curly-quote convention to one
+straight double quote. DeltaTrack's own unconditional hyphen-rejoin was not
+adopted — measured unsafe against a real fixture, where it would delete the
+hyphen in a genuine compound like "President-elect".
+
+## Agency-report blocks are parsing an uploaded artifact, not acquisition
+
+Adopted 2026-09-19 with [agency-report blocks](sources/agency-report-blocks.md).
+
+`parse_agency_blocks` and its two aggregates, `agency_recurrence` and
+`sections_for_agency`, are a straight port of BillTrax's `report-parser.ts`
+and the two read-side queries of `committee-reports.ts`. **This is parsing
+of an uploaded artifact — a committee report a user attaches to a bill — not
+acquisition.** There is no publisher endpoint to fetch here; the parser and
+aggregates take already-retrieved text and rows, exactly as `bill_tree.py`
+takes already-fetched bill XML. That is why the parser lives under
+`sources/agency_reports/` (alongside the other publisher-format-to-typed-
+fields parsers) and the two aggregates live under `interpretation/` (shared
+logic over the facts those parsers produce), rather than either gaining
+fetch code of its own. The GovInfo CRPT package body that would feed
+`committee_reports.text` in a hosted system is the separate, already-
+existing `sources/govinfo/body_acquisition.py`; this module does not depend
+on it and is tested entirely offline.
+
+**It expects normalized input.** GPO line numbers, footers and hyphenated
+line-wrap rejoining are the sibling `gpo_normalize` concern (see "GPO PDF
+text normalization runs after extraction, gated by evidence" above) — this
+module does not do that work itself, and feeding it raw extraction text
+reproduces BillTrax's own measured defect of a hyphen-wrapped heading tail
+becoming its own spurious block. Despite the inherited name,
+`parse_agency_blocks` is **not** an agency-name detector: measured on real
+committee reports it fires as readily on a section title (`CONTENTS`,
+`INTRODUCTION`) as on a real heading (`DEPARTMENT OF THE ARMY`); a returned
+block's `agency` field is "the text of a heading", never "a verified federal
+agency."
+
+## Interpretation lives in spicy-docs; hosted tables carry its outputs
+
+Adopted 2026-09-19 with the [interpretation package](interpretation.md).
+
+**Interpretation lives in spicy-docs; the tables it produces are hosted
+elsewhere.** spicy-docs is the one home for code — acquisition,
+publisher-format parsing and shared interpretation alike; a metadata host
+receives tables and their documentation, never logic, and an application
+keeps only auth, email, per-user rows and pages. `spicy_docs.interpretation`
+holds the shared logic that reads publisher facts and decides something
+about them: bill stage, money-bill kind and reason codes, identification
+confidence, vote and release bill links, classification and summary
+provenance. Each module states its rule vocabulary as a tuple of frozen
+records read in order, and every output is a frozen finding naming the rule
+and the identifiers it fired on, so a hosted row can carry its own
+provenance. Every module is pure: no network, no database, no clock except
+an injected one.
+
+This corrects several of BillTrax's own behaviours in the port rather than
+carrying them forward, each covered by a test showing the old outcome beside
+the new one: stage inference now reads untruncated action text
+(`interpretation/bill_stage.py`, was truncated to 100 of 500 stored
+characters); one signing-date derivation replaces two that disagreed;
+committee referrals come from system codes, not substring name matching;
+model classifications now carry their model and prompt version, which
+BillTrax's classification table did not hold.
+
+## Row shaping lives in spicy-docs; spicy-regs converts and publishes
+
+Adopted 2026-09-19, design from
+[the table-contract layer](research/table-contracts-2026-09-19.md), still
+being built on a sibling branch — recorded here so the split it commits to
+does not drift once the layer lands.
+
+**Row shaping lives in spicy-docs; spicy-regs converts and publishes.** One
+module per table family under `src/spicy_docs/schemas/`, stdlib-only
+(`dataclasses`, `json`, `typing`, `collections.abc`, `hashlib`; no pyarrow,
+no DeltaTrack, no `sources.*`/`interpretation.*` imports), holds each
+table's column tuple, identity, version column and one pure `shape_*`
+function — `schemas/` stays the leaf `public_tables/profiles.py` already is,
+so spicy-regs can import a column tuple without pulling DeltaTrack, pyarrow
+or an HTTP client. spicy-regs's own transform imports `spicy_docs.schemas.*`
+only, builds an all-VARCHAR Arrow schema from the column tuple, and merges
+through the existing shrink-guarded upload path; it does not re-derive any
+rule.
+
+The family builder that composes interpretation findings with parsed
+documents (`build_bill_family`) lives at
+`src/spicy_docs/interpretation/bill_family.py`, not in `schemas/`, because
+composing them requires importing `sources/` and `interpretation/`, which
+the leaf must not do. **The bill family is one pass**: for a bill with A
+actions, C committees, V versions and S sections per version, building every
+table but the diff is O(A + C + V + ΣS), linear in rows produced, with no
+table re-reading another's output. Diffing is the one superlinear operation
+in the family, and it is bounded on purpose — consecutive version pairs
+only, V-1 diffs rather than V², each further bounded by DeltaTrack's own
+retrieval gate — because it is the only place in the pass where letting it
+run unbounded would cost more than the rows it produces justify.

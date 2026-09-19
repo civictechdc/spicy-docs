@@ -87,6 +87,10 @@ class BillTitle:
     here for the same reason as everywhere else in this module: the guide
     names none required, and a display title in particular carries only
     ``titleType`` and ``title``, no chamber or text-version fields at all.
+    ``title`` reads ``<title>`` first and falls back to the guide's
+    ``<latestTitle>`` spelling (``_title_text``, shared with ``RelatedBill``)
+    on the vanishing chance a title item ever uses it; no measured record
+    does.
     """
 
     title: str | None
@@ -106,8 +110,10 @@ class RelatedBill:
     ``latestTitle``; live BILLSTATUS from the 108th, 113th and 119th
     Congresses (measured 2026-09-19, three independent bills per Congress)
     states it as ``<title>`` instead, and ``<latestTitle>`` never appears.
-    This reads the element the publisher actually sends. ``relationship_details_json``
-    is the publisher's ``relationshipDetails`` items verbatim -- each one's
+    ``title`` reads ``<title>`` first, matching every measured record, and
+    falls back to ``<latestTitle>`` (``_title_text``) so a record that does
+    use the guide's spelling still yields the title instead of ``None``.
+    ``relationship_details_json`` is the publisher's ``relationshipDetails`` items verbatim -- each one's
     ``identifiedBy`` and ``type`` -- as canonical JSON, because a related bill
     can carry more than one (a Senate-identified companion CRS also flags, for
     example), and flattening to one pair of columns would drop the others.
@@ -364,9 +370,24 @@ def _recorded_vote(element: Element) -> RecordedVote:
     )
 
 
+def _title_text(element: Element) -> str | None:
+    """Read ``<title>``, falling back to ``<latestTitle>``, the guide's own spelling for it.
+
+    Every live BILLSTATUS this module measured (108th, 113th and 119th
+    Congresses) states ``<title>`` and never ``<latestTitle>``, both inside
+    ``<titles>`` items and inside ``<relatedBills>`` items -- see the
+    ``RelatedBill`` docstring. Reading ``<title>`` first keeps that measured
+    shape as the fast path; the fallback exists only so a record that ever
+    does use the guide's documented name yields the title instead of
+    ``None``, on either element.
+    """
+    value = _text(element, "title")
+    return value if value is not None else _text(element, "latestTitle")
+
+
 def _title(element: Element) -> BillTitle:
     return BillTitle(
-        title=_text(element, "title"),
+        title=_title_text(element),
         title_type=_text(element, "titleType"),
         chamber_code=_text(element, "chamberCode"),
         chamber_name=_text(element, "chamberName"),
@@ -390,7 +411,7 @@ def _related_bill(element: Element) -> RelatedBill:
         congress=_text(element, "congress"),
         bill_type=_text(element, "type"),
         number=_text(element, "number"),
-        title=_text(element, "title"),
+        title=_title_text(element),
         latest_action_date=_text(latest_action, "actionDate"),
         latest_action_text=_text(latest_action, "text"),
         relationship_details_json=_relationship_details(element),

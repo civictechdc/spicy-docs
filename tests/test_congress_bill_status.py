@@ -417,6 +417,27 @@ def test_related_bills_read_the_publisher_s_title_element_not_the_guide_s_latest
     )
 
 
+def test_related_bills_falls_back_to_the_guide_s_latesttitle_spelling_when_present() -> None:
+    """No measured record uses `<latestTitle>` (see the test above), but a historical one that
+    does must still yield the title instead of `None`."""
+    body = (
+        (FIXTURES / "status-119hr300.xml")
+        .read_bytes()
+        .replace(
+            b"<title>To allow States to elect to observe year-round daylight saving time, and for other "
+            b"purposes.</title>",
+            b"<latestTitle>To allow States to elect to observe year-round daylight saving time, and for other "
+            b"purposes.</latestTitle>",
+            1,
+        )
+    )
+    status = parse_bill_status(body, identity=BillIdentity(119, "hr", 300))
+    (related,) = status.related_bills
+    assert (
+        related.title == "To allow States to elect to observe year-round daylight saving time, and for other purposes."
+    )
+
+
 def test_related_bills_relationship_details_keeps_every_item_as_canonical_json() -> None:
     """A related bill can carry more than one relationshipDetails item (measured live against
     BILLSTATUS-108hr1.xml, which the offline fixtures do not need to hold to prove the shape)."""
