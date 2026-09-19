@@ -64,6 +64,24 @@ retries when an issue's requested unmatched-number set changes.
   API ignored the sort. `tests/test_legislative_data_map_tool.py` renders the
   saved output and proves every `have` or `port` row against its evidence file.
 
+- [bill_html_xml_gap](analysis/bill_html_xml_gap.py): measure how far a bill's
+  HTML rendition is from its XML, to size the reconstruction profile gap B1 and
+  §3.1 of the closing-the-gaps proposal name. Fetches a paired corpus of 113th
+  and 114th bill versions that offer both renditions, parses the XML through
+  `parse_bill_tree` as the reference, derives text from the HTML through
+  `extraction.body_text`, and reports text fidelity, per-kind structure
+  precision and recall, the element inventory, and the same rules run on
+  pre-113th HTML with no XML to score against. Supply an explicit credential
+  file, a cache directory for the fetched bytes, the JSON output path and the
+  document path. At most 90 requests per run; the cache is reused, so a rerun
+  against a full cache makes none. `--offline` rewrites
+  `docs/research/bill-html-xml-gap-2026-09-19.md`'s generated block from the
+  saved measurement. Precision and recall are measured against one engine's
+  reading of the XML, never against the publisher's intent, and no document in
+  the paired corpus carries a table of contents, so no contents-list rule is
+  scored. `tests/test_bill_html_xml_gap_tool.py` renders the block from the
+  committed sidecar and pins each rule against a constructed print sample.
+
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,
 count mismatches, or a full 1,000-row page. A full page is indeterminate even when
