@@ -36,6 +36,8 @@
 - [GAO report files](sources/gao-files.md): keyless report PDFs and online-report index behind product pages.
 - [regulations.gov API](sources/regulations-gov-api.md): keyed document list and detail, attachment relationships, attachment PDFs.
 - [CBO cost estimates](sources/cbo.md): per-Congress cost-estimate feeds and estimate documents.
+- [Congress bulk status](sources/congress-bulk-status.md): one BILLSTATUS zip per Congress and bill type, every member proved or refused with its digest.
+- [Legislators crosswalk](sources/legislators.md): the community legislators JSON as the bioguide, LIS and FEC identifier crosswalk, pinned by capture.
 - [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records.
 - [Captured public comments](sources/public-comments.md)
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.

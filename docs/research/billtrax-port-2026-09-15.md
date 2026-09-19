@@ -1,6 +1,6 @@
 # Intake plan: BillTrax acquisition & parsing → spicy-docs
 
-Status: planned, not started. Written 2026-09-15 against BillTrax `a6b685f`
+Status: spicy-docs side of Phases 4 and 6 landed 2026-09-19 (`congress/listing.py` route table, `congress/bulk_status.py`); BillTrax-side phases not started. Written 2026-09-15 against BillTrax `a6b685f`
 and spicy-docs `2cc2f4e` (v0.19.0). Every claim below was validated against
 those trees (file:line cites); re-verify line numbers before acting on them.
 Revised 2026-09-19 after the
