@@ -71,14 +71,30 @@
       ],
       "properties": {
         "kind": {
-          "description": "What kind of bytes the artifact is. evidence-lines is a retained extractor output (one line per block with page geometry) standing in for a PDF whose bytes carry no text order of their own.",
+          "description": "What kind of bytes the publisher's artifact is. pdf means the artifact is a PDF, whose text order is established by the extractor document named in intermediate.",
           "enum": [
             "xml",
             "html",
             "text",
-            "pdf-text",
-            "evidence-lines"
+            "pdf"
           ]
+        },
+        "intermediate": {
+          "description": "The extractor document between the artifact and the text stream, when one exists. A PDF capture names three things: the publisher's bytes (artifact), the extractor's output (this), and the text stream every span addresses. Absent when the text stream is read straight off the artifact.",
+          "$ref": "#/$defs/IntermediateArtifact"
+        },
+        "spanDefaults": {
+          "description": "Span source fields that are the same for every span of this document, stated once. A span's effective source locator is this object updated by the span's own; the effective locator must state a coordinateSystem. Hoisting the constants keeps one capture's bytes proportional to its text rather than to its span count.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "coordinateSystem": {
+              "$ref": "#/$defs/CoordinateSystem"
+            },
+            "literal": {
+              "type": "boolean"
+            }
+          }
         },
         "textStream": {
           "$ref": "#/$defs/TextStream"
@@ -209,8 +225,9 @@
           }
         },
         "retrievedAt": {
+          "description": "When these bytes were read, to the precision the retention record states: a full date-time when a request receipt records one, a date when the retained fixture's own README records only the day. Stating the day is not the same as stating nothing, and inventing a midnight would be worse than either.",
           "type": "string",
-          "format": "date-time"
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}([T ][0-9:.+Z-]+)?$"
         },
         "identifiers": {
           "description": "Publisher-stated identities of the document this artifact renders, each with the rkaf artifact identifier scheme it belongs to.",
@@ -224,6 +241,7 @@
             ],
             "properties": {
               "scheme": {
+                "description": "Copied from the rkaf artifact identifier scheme enum in rkaf-core.md §4.1, and re-pinned with it: a scheme added or retired there moves this enum and this schema's digest in the same change.",
                 "enum": [
                   "rkaf:eli",
                   "rkaf:eli-dl",
@@ -246,6 +264,72 @@
               }
             }
           }
+        }
+      }
+    },
+    "IntermediateArtifact": {
+      "description": "An extractor document standing between the publisher's artifact and the text stream: a PDF's retained extracted lines, for instance. It is a derived artifact, never the publisher's, and the capture names it so that a consumer following artifact.locator and checking artifact.sha256 lands on the publisher's bytes. Span page-region coordinates are the extractor's, and the producer that made them is named here.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "iri",
+        "sha256",
+        "mediaType",
+        "producer"
+      ],
+      "properties": {
+        "iri": {
+          "$ref": "#/$defs/Iri"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Digest"
+        },
+        "byteSize": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mediaType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "producer": {
+          "description": "The extractor and line assembly that produced this document from the artifact, named well enough to re-run.",
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "description": "Where the retained extractor document was read from. It has no publisher url: the publisher never issued these bytes.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "PageSize": {
+      "description": "The displayed page's own size, in the unit RFC 8118 names for a PDF fragment's viewrect: points, 1/72 inch. A page node carries it so a permille Box can be converted back to the unit a PDF fragment identifier states.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "width",
+        "height",
+        "unit"
+      ],
+      "properties": {
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "unit": {
+          "const": "point"
         }
       }
     },
@@ -450,20 +534,12 @@
       }
     },
     "SourceLocator": {
-      "description": "Where in the artifact a node or span sits, in the artifact's own coordinates. utf8-byte: half-open byte range of the captured file; xml-node-path: an element path with sibling indices; page-region: a 1-based page and a Box; none: the artifact states no coordinate for it.",
+      "description": "Where in the artifact a node or span sits, in the artifact's own coordinates. utf8-byte: half-open byte range of the captured file; xml-node-path: an element path with sibling indices; page-region: a 1-based page and a Box; none: the artifact states no coordinate for it. A span's locator may omit any field rendition.spanDefaults states; a node's never does.",
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "coordinateSystem"
-      ],
       "properties": {
         "coordinateSystem": {
-          "enum": [
-            "utf8-byte",
-            "xml-node-path",
-            "page-region",
-            "none"
-          ]
+          "$ref": "#/$defs/CoordinateSystem"
         },
         "start": {
           "type": "integer",
@@ -534,7 +610,6 @@
         "start",
         "end",
         "exact",
-        "sha256",
         "source"
       ],
       "properties": {
@@ -555,11 +630,12 @@
           "minLength": 1
         },
         "sha256": {
-          "description": "Over the UTF-8 bytes of exact: the value rkaf:fragmentContentDigest carries.",
+          "description": "Over the UTF-8 bytes of exact: the value rkaf:fragmentContentDigest carries. Derivable, so a producer may omit it; a validator recomputes it either way and refuses a stated digest that differs.",
           "$ref": "#/$defs/Digest"
         },
         "source": {
-          "$ref": "#/$defs/SourceLocator"
+          "$ref": "#/$defs/SourceLocator",
+          "description": "The artifact's own coordinates for this span. Fields rendition.spanDefaults states may be omitted here; the effective locator is the defaults updated by this object."
         },
         "tags": {
           "description": "The inline elements enclosing this span inside its leaf, innermost last.",
@@ -664,12 +740,16 @@
           "type": "string"
         },
         "level": {
-          "description": "Heading level, 1 being the highest, as the publisher states or the family profile derives it.",
+          "description": "Heading depth, 1 being the highest: the depth of the unit this heading opens, not the depth of the node in the tree. Absent means unlevelled, which is what a family states when its rendition marks no depth; it never means level 1. A family that sets it at all sets it on every heading it can.",
           "type": "integer",
           "minimum": 1
         },
+        "pageSize": {
+          "description": "page nodes only: the displayed page's size in points, retained from the extractor so a permille Box resolves to a PDF fragment identifier's own unit.",
+          "$ref": "#/$defs/PageSize"
+        },
         "text": {
-          "description": "Leaf nodes only: exactly the concatenation of this node's spans, which are contiguous in the stream.",
+          "description": "Leaf nodes only, and never on a node with children: exactly the concatenation of this node's spans. Derivable from the spans, so a producer may omit it; a validator recomputes it and refuses a stated text that differs.",
           "type": "string"
         },
         "evidence": {
@@ -811,6 +891,14 @@
           ]
         }
       }
+    },
+    "CoordinateSystem": {
+      "enum": [
+        "utf8-byte",
+        "xml-node-path",
+        "page-region",
+        "none"
+      ]
     }
   }
 }

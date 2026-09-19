@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:committee-report-html",
   "title": "DocumentCapture profile: committee-report-html v1",
-  "description": "A GovInfo committee-report HTML body: one preformatted run split into blank-line blocks, each a paragraph, page marker, banner or rule. Block structure is markup-derived, not the publisher's.",
+  "description": "A GovInfo committee-report HTML body: one preformatted run split into blank-line blocks. A block is a ruled column-aligned table, a centred-capitals or record-vote heading, or a paragraph, page marker, banner or rule. Block structure is markup-derived, not the publisher's, and every rule that placed a block names itself in the node's decision.",
   "x-parent": {
     "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
-    "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
   },
   "allOf": [
     {
@@ -59,9 +59,19 @@
                     "kind": {
                       "enum": [
                         "committee-report-html:banner",
-                        "committee-report-html:rule",
-                        "committee-report-html:preformatted"
+                        "committee-report-html:heading",
+                        "committee-report-html:preformatted",
+                        "committee-report-html:rule"
                       ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "not": {
+                      "pattern": "^(?!committee-report-html:)[a-z][a-z0-9-]*:"
                     }
                   }
                 }
@@ -71,7 +81,6 @@
                   "ext": {
                     "type": "object",
                     "additionalProperties": false,
-                    "required": [],
                     "properties": {}
                   }
                 }

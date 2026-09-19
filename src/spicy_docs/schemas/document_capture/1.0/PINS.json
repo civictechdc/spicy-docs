@@ -1,36 +1,44 @@
 {
   "parent": {
     "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
-    "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
+  },
+  "profileMetaSchema": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-profile-v1.schema.json",
+    "sha256": "56bafc4ca018ab85f30256867bef1c64189f95e59b0174d7fb4ce6242c298005"
+  },
+  "invariantValidator": {
+    "module": "rulespec_artifacts.document_capture",
+    "sha256": "01b093ffbcdea10fae02ddde6c4e867ef414ca8e54ad26054cc10cf08db71a90"
   },
   "sourceFragment": {
     "$id": "https://rulespec.org/jsonschema/source-fragment.json",
     "sha256": "0d87ede33d56f7a0b6be39d2a3d777087f35e8e56e6b36eccb4b8a9fd728060e"
   },
   "profiles": {
-    "uslm-law": {
-      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:uslm-law",
-      "sha256": "6b74afd1788baccd62a3e9b80f51e1453a1ea6bf1d1d233a86ba7673a9e1aba8"
-    },
     "bill-xml": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:bill-xml",
-      "sha256": "061794dc510669f349964e9e95899e92d7e17e0ec27ac5af1054bbda97630525"
-    },
-    "committee-report-html": {
-      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:committee-report-html",
-      "sha256": "0b9fcae3a9e68f4cfe561005c56264ffea9112772715ddcb06066398662eb1e8"
-    },
-    "federal-register-xml": {
-      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:federal-register-xml",
-      "sha256": "01fe492de15bd4598246b653da37f26bddeb155a9e29b570600db79bbff51dc7"
+      "sha256": "59393684ffddfea47757dfc8ab657613301b4f598bea2998b0d4b6bb6897b1e7"
     },
     "cfr-reconstruction": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:cfr-reconstruction",
-      "sha256": "536b32c4348382d1547037f9ea7812895dbfa678a384d9f43688f716a5e99d95"
+      "sha256": "18b16079947b20341d408f4306b54a877ac0b4f5b9318d6b9bf187ffa3ea76d0"
+    },
+    "committee-report-html": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:committee-report-html",
+      "sha256": "dea67e49a7b5a8885c1a72fc1b4f8c5f9e316baf03f49a0deb1e18ad4a4a6715"
+    },
+    "federal-register-xml": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:federal-register-xml",
+      "sha256": "ff12a6fa90d3005bf3eea277966b208228f442bd89d551f0b9530eb58ce224aa"
     },
     "slip-opinion-pdf": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:slip-opinion-pdf",
-      "sha256": "26fad3bd1dcc11ad8bd2bd384531432a8c2d505fe260fbd3e05241a6f0ca0482"
+      "sha256": "84af02e0d7b685654aa875707c8ce95142591cef76839cb61d528d2bcc470bd4"
+    },
+    "uslm-law": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:uslm-law",
+      "sha256": "0fa3e7f6547da5ad5e80b36b2df8aaaf9a70804c8fcfdce32250df4abf6d2652"
     }
   }
 }

@@ -32,7 +32,7 @@
    "oa:hasSelector": [
     {
      "@type": "oa:XPathSelector",
-     "rdf:value": "/resolution[1]/metadata[1]/dublinCore[1]/dc:title[1]"
+     "rdf:value": "/*[local-name()='resolution'][1]/*[local-name()='metadata'][1]/*[local-name()='dublinCore'][1]/*[local-name()='title'][1]"
     },
     {
      "@type": "oa:TextPositionSelector",
@@ -88,7 +88,7 @@
    "oa:hasSelector": [
     {
      "@type": "oa:XPathSelector",
-     "rdf:value": "/resolution[1]/attestation[1]/attestation-group[2]/role[1]"
+     "rdf:value": "/*[local-name()='resolution'][1]/*[local-name()='attestation'][1]/*[local-name()='attestation-group'][2]/*[local-name()='role'][1]"
     },
     {
      "@type": "oa:TextPositionSelector",

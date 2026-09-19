@@ -5,7 +5,7 @@
   "description": "A GovInfo bill, resolution or amendment XML (bill DTDs). Structure is the publisher's; each element DeltaTrack flattened into a BillNode carries the engine's match and display paths in ext, joined on the element id.",
   "x-parent": {
     "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
-    "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
   },
   "allOf": [
     {
@@ -152,6 +152,15 @@
                         "bill-xml:attestationGroup",
                         "bill-xml:toc"
                       ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "not": {
+                      "pattern": "^(?!bill-xml:)[a-z][a-z0-9-]*:"
                     }
                   }
                 }

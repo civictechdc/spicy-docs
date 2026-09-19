@@ -1,0 +1,23 @@
+{
+ "pdfSha256": "508548281c0ab7fc68b7d4a4765b3972cbbca9dc72043861fbe696f07ef08162",
+ "pdfBytes": 157908,
+ "unit": "point",
+ "producer": "pymupdf 1.28.2: page.rect",
+ "pages": [
+  {
+   "page": 1,
+   "width": 612.0,
+   "height": 792.0
+  },
+  {
+   "page": 2,
+   "width": 612.0,
+   "height": 792.0
+  },
+  {
+   "page": 3,
+   "width": 612.0,
+   "height": 792.0
+  }
+ ]
+}

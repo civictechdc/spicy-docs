@@ -5,7 +5,7 @@
   "description": "A GovInfo USLM public law (pLaw). Structure is the publisher's: section, subsection and lower units are native; num is the label; quotedContent is a quote. Family kinds name USLM elements the core vocabulary lacks.",
   "x-parent": {
     "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
-    "sha256": "90515b951c60d5f4c179abd4de6431993839101c2f435c1e9aa1e612e875b4fb"
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
   },
   "allOf": [
     {
@@ -108,11 +108,20 @@
                     "kind": {
                       "enum": [
                         "uslm-law:amendingAction",
-                        "uslm-law:sidenote",
-                        "uslm-law:toc",
                         "uslm-law:enactingFormula",
-                        "uslm-law:sourceCredit"
+                        "uslm-law:sidenote",
+                        "uslm-law:sourceCredit",
+                        "uslm-law:toc"
                       ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "not": {
+                      "pattern": "^(?!uslm-law:)[a-z][a-z0-9-]*:"
                     }
                   }
                 }
@@ -122,7 +131,6 @@
                   "ext": {
                     "type": "object",
                     "additionalProperties": false,
-                    "required": [],
                     "properties": {
                       "identifier": {
                         "type": "string"

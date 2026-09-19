@@ -28,12 +28,12 @@
   "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A110ac81e1c5ec2cc7338e1c6d0eb3785e3fe7bd5940fbb4011e1fe3f430e9370:506:526:sha256-2160f70540e541790e2a8f9bc4a4d55e77cf42d642cae1e27e06ed2b85bdd161",
   "renditionFragment": {
    "@type": "rkaf:SourceFragment",
-   "oa:hasSource": "urn:document-capture:artifact:sha256:0a5c7bf6230da08409eba9f7ffee7c155cf6fbb82e5d6143a12f9526a6d6b76f",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:508548281c0ab7fc68b7d4a4765b3972cbbca9dc72043861fbe696f07ef08162",
    "oa:hasSelector": [
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=1&viewrect=216,413,197,10"
+     "rdf:value": "page=1&viewrect=132.19,327.1,120.57,7.92"
     },
     {
      "@type": "oa:TextQuoteSelector",
@@ -45,7 +45,7 @@
     "oa:TextQuoteSelector"
    ],
    "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
-   "rkaf:sourceArtifactDigest": "sha256:0a5c7bf6230da08409eba9f7ffee7c155cf6fbb82e5d6143a12f9526a6d6b76f",
+   "rkaf:sourceArtifactDigest": "sha256:508548281c0ab7fc68b7d4a4765b3972cbbca9dc72043861fbe696f07ef08162",
    "rkaf:fragmentContentDigest": "sha256:2160f70540e541790e2a8f9bc4a4d55e77cf42d642cae1e27e06ed2b85bdd161"
   }
  },
@@ -78,72 +78,72 @@
   "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A110ac81e1c5ec2cc7338e1c6d0eb3785e3fe7bd5940fbb4011e1fe3f430e9370:12186:12694:sha256-e6cfe464b1f64c4ffd372e189566c262215f78dff39e9bdbdd56f5ca6d91746a",
   "renditionFragment": {
    "@type": "rkaf:SourceFragment",
-   "oa:hasSource": "urn:document-capture:artifact:sha256:0a5c7bf6230da08409eba9f7ffee7c155cf6fbb82e5d6143a12f9526a6d6b76f",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:508548281c0ab7fc68b7d4a4765b3972cbbca9dc72043861fbe696f07ef08162",
    "oa:hasSelector": [
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=523,747,266,10"
+     "rdf:value": "page=3&viewrect=320.08,591.62,162.79,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,758,279,10"
+     "rdf:value": "page=3&viewrect=312.12,600.34,170.75,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,769,274,11"
+     "rdf:value": "page=3&viewrect=312.12,609.05,167.69,8.71"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,781,279,10"
+     "rdf:value": "page=3&viewrect=312.12,618.55,170.75,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,792,279,10"
+     "rdf:value": "page=3&viewrect=312.12,627.26,170.75,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,804,279,10"
+     "rdf:value": "page=3&viewrect=312.12,636.77,170.75,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,815,274,10"
+     "rdf:value": "page=3&viewrect=312.12,645.48,167.69,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,826,279,10"
+     "rdf:value": "page=3&viewrect=312.12,654.19,170.75,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,838,279,10"
+     "rdf:value": "page=3&viewrect=312.12,663.7,170.75,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,849,279,10"
+     "rdf:value": "page=3&viewrect=312.12,672.41,170.75,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,860,279,10"
+     "rdf:value": "page=3&viewrect=312.12,681.12,170.75,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,872,279,10"
+     "rdf:value": "page=3&viewrect=312.12,690.62,170.75,7.92"
     },
     {
      "@type": "oa:FragmentSelector",
      "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
-     "rdf:value": "page=3&viewrect=510,883,279,10"
+     "rdf:value": "page=3&viewrect=312.12,699.34,170.75,7.92"
     },
     {
      "@type": "oa:TextQuoteSelector",
@@ -155,7 +155,7 @@
     "oa:TextQuoteSelector"
    ],
    "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
-   "rkaf:sourceArtifactDigest": "sha256:0a5c7bf6230da08409eba9f7ffee7c155cf6fbb82e5d6143a12f9526a6d6b76f",
+   "rkaf:sourceArtifactDigest": "sha256:508548281c0ab7fc68b7d4a4765b3972cbbca9dc72043861fbe696f07ef08162",
    "rkaf:fragmentContentDigest": "sha256:e6cfe464b1f64c4ffd372e189566c262215f78dff39e9bdbdd56f5ca6d91746a"
   }
  }

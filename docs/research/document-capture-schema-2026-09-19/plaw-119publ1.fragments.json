@@ -32,7 +32,7 @@
    "oa:hasSelector": [
     {
      "@type": "oa:XPathSelector",
-     "rdf:value": "/pLaw[1]/main[1]/section[1]/content[1]"
+     "rdf:value": "/*[local-name()='pLaw'][1]/*[local-name()='main'][1]/*[local-name()='section'][1]/*[local-name()='content'][1]"
     },
     {
      "@type": "rkaf:uslm-section",
@@ -41,6 +41,18 @@
     {
      "@type": "oa:TextPositionSelector",
      "oa:start": 3436,
+     "oa:end": 3474,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 3497,
+     "oa:end": 3512,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 3525,
      "oa:end": 3529,
      "rkaf:coordinateSystem": "rkaf:utf8-byte"
     },
@@ -61,7 +73,7 @@
   }
  },
  {
-  "node": "n0319",
+  "node": "n0320",
   "kind": "paragraph",
   "streamFragment": {
    "@type": "rkaf:SourceFragment",
@@ -93,7 +105,7 @@
    "oa:hasSelector": [
     {
      "@type": "oa:XPathSelector",
-     "rdf:value": "/pLaw[1]/legislativeHistory[1]/note[2]/p[1]"
+     "rdf:value": "/*[local-name()='pLaw'][1]/*[local-name()='legislativeHistory'][1]/*[local-name()='note'][2]/*[local-name()='p'][1]"
     },
     {
      "@type": "oa:TextPositionSelector",

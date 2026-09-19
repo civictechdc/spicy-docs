@@ -32,7 +32,7 @@
    "oa:hasSelector": [
     {
      "@type": "oa:XPathSelector",
-     "rdf:value": "/NOTICE[1]/PREAMB[1]/AGY[1]/P[1]"
+     "rdf:value": "/*[local-name()='NOTICE'][1]/*[local-name()='PREAMB'][1]/*[local-name()='AGY'][1]/*[local-name()='P'][1]"
     },
     {
      "@type": "oa:TextPositionSelector",
@@ -88,11 +88,23 @@
    "oa:hasSelector": [
     {
      "@type": "oa:XPathSelector",
-     "rdf:value": "/NOTICE[1]/SUPLINF[1]/P[8]"
+     "rdf:value": "/*[local-name()='NOTICE'][1]/*[local-name()='SUPLINF'][1]/*[local-name()='P'][8]"
     },
     {
      "@type": "oa:TextPositionSelector",
      "oa:start": 9120,
+     "oa:end": 9141,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 9151,
+     "oa:end": 9160,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 9164,
      "oa:end": 9848,
      "rkaf:coordinateSystem": "rkaf:utf8-byte"
     },
