@@ -75,7 +75,13 @@ MAX_BULK_STATUS_BYTES = 256 * 1024 * 1024
 MAX_BULK_STATUS_TOTAL_BYTES = 2 * 1024 * 1024 * 1024
 
 _LABEL = "BILLSTATUS archive"
-_MEMBER_NAME = re.compile(r"BILLSTATUS-([1-9][0-9]*)(hconres|sconres|hjres|sjres|hres|sres|hr|s)([1-9][0-9]*)\.xml")
+# Both digit runs are bounded, not just anchored: an unbounded run lets a long
+# enough name reach ``int()``, whose own digit limit raises a plain ValueError
+# that would escape the per-member handler and abort the rest of the archive.
+# Four digits cover any Congress and seven any bill number.
+_MEMBER_NAME = re.compile(
+    r"BILLSTATUS-([1-9][0-9]{0,3})(hconres|sconres|hjres|sjres|hres|sres|hr|s)([1-9][0-9]{0,6})\.xml"
+)
 
 
 def bulk_status_locator(congress: int, bill_type: str) -> str:
@@ -89,11 +95,16 @@ def bulk_status_locator(congress: int, bill_type: str) -> str:
 
 
 def _member_identity(name: str, *, congress: int, bill_type: str) -> BillIdentity:
-    """Prove the member's own name states a bill of the requested folder.
+    """Prove the member's own base name states a bill of the requested folder.
 
-    The single-file locator is the one spelling authority: a name that does not
-    rebuild it exactly -- a padded number, another Congress, another type, a
-    stray path -- is refused rather than reinterpreted.
+    ``name`` is the entry's base name, not its path. Every measured zip holds
+    flat names -- 12,938 entries across the 119th H.R., H.Res. and S.Res.,
+    none with a path component -- but a bill is identified by its file name
+    either way, so a member the publisher one day files under a folder is read
+    rather than refused for where it sits. The single-file locator is the one
+    spelling authority for that name: a base name that does not rebuild it
+    exactly -- a padded number, another Congress, another type -- is refused
+    rather than reinterpreted.
     """
     match = _MEMBER_NAME.fullmatch(name)
     if match is None:
@@ -108,9 +119,12 @@ def _member_identity(name: str, *, congress: int, bill_type: str) -> BillIdentit
 class BulkStatusMember:
     """One archive entry, in the publisher's order, with its own bytes' evidence.
 
-    Exactly one of ``status`` and ``refusal`` is set. ``identity`` is what the
-    entry's name declared and the XML confirmed; it is ``None`` when the name
-    itself could not be read, so the digest and size remain the only facts.
+    ``name`` is the entry's full path inside the zip, kept as it was found;
+    the identity was read from its base name. Exactly one of ``status`` and
+    ``refusal`` is set, and they say how far the entry got: on a parsed member
+    ``identity`` is what the name declared *and* the XML confirmed, while on a
+    refused one it is only what the name declared, or ``None`` when the name
+    itself could not be read and the size and digest are the only facts.
     """
 
     name: str

@@ -51,6 +51,12 @@ class BillAction:
     with an ``actionCode`` and ``sourceSystem`` but no ``<text>`` (2026-09-19;
     ``docs/sources/congress-bulk-status.md``). Refusing the whole document over
     an absent optional field lost those bills entirely.
+
+    An action has two states here, not three: an absent ``<text>`` and one
+    present but blank both read as ``None``, because a blank element states no
+    action text any more than a missing one does and no caller should have to
+    tell them apart. Text that is there is kept exactly as written, interior
+    and surrounding whitespace included.
     """
 
     text: str | None
@@ -70,14 +76,16 @@ class BillSponsor:
 
 @dataclass(frozen=True, slots=True)
 class BillSummary:
-    """``text_in_cdata`` records which of the publisher's two placements held ``text``.
+    """``text`` is the summary as the publisher escaped it, from either placement.
 
     Most summaries carry ``<text>`` directly; some carry it inside a ``<cdata>``
-    element, whose only child it then is. Both spell the same escaped HTML and
-    both are current: 984 of the 12,938 files in the 119th H.R., H.Res. and
-    S.Res. status zips use the wrapper, with last-update dates interleaved with
-    the direct form (2026-09-19). The value is the same either way, so the field
-    is the shape fact, not a second value.
+    element, whose only child it then is. Both are current -- 984 of the 3,984
+    summaries in the 119th H.R., H.Res. and S.Res. status zips use the wrapper,
+    with last-update dates interleaved with the direct form (2026-09-19) -- and
+    the two placements also escape differently, every direct one in that corpus
+    as a CDATA section and every wrapped one as entity references. Neither
+    difference reaches this field: the XML reader resolves both forms and this
+    module decodes nothing itself, so the value is the same HTML either way.
     """
 
     text: str
@@ -85,7 +93,6 @@ class BillSummary:
     action_date: str | None
     action_desc: str | None
     update_date: str | None
-    text_in_cdata: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -238,14 +245,14 @@ def _summary(element: Element) -> BillSummary:
         action_date=_text(element, "actionDate"),
         action_desc=_text(element, "actionDesc"),
         update_date=_text(element, "updateDate"),
-        text_in_cdata=in_cdata,
     )
 
 
 def _action(element: Element) -> BillAction:
     system = _one(element, "sourceSystem")
+    text = _text(element, "text")
     return BillAction(
-        text=_text(element, "text"),
+        text=text if text and text.strip() else None,
         action_date=_text(element, "actionDate"),
         action_time=_text(element, "actionTime"),
         action_code=_text(element, "actionCode"),
@@ -274,7 +281,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
     if root.tag != "billStatus":
         raise BillSourceError("BILLSTATUS XML root is unsupported")
     bill = _one(root, "bill", required=True)
-    # One file in the 29,623 measured across the 108th, 113th and 119th
+    # One file in the 40,260 measured across the 108th, 113th and 119th
     # Congresses (BILLSTATUS-113hr4200.xml) is still the 1.0.0 schema the
     # publisher's user guide documents: <billType>/<billNumber> for the
     # identity and <version> inside <bill>. Only 3.0.0 is read here, so say

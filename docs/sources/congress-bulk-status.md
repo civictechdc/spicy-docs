@@ -27,6 +27,11 @@ caller that wants eight makes eight, paced by its own client. Measured on
 2026-09-19, the 119th Congress costs 52,236,275 bytes over its eight zips, of
 which H.R. alone is 31,656,886 bytes.
 
+Those byte figures are one capture, not a constant: the publisher rebuilds each
+zip, and the H.R. zip was 31,656,886 bytes in the morning of 2026-09-19 and
+31,658,670 bytes that afternoon, over the same 10,503 members. Size a budget
+with headroom and re-measure rather than pinning a folder to a byte count.
+
 A folder that answers 404 raises `BillSourceUnavailableError` with the exact
 capture: it describes that folder on that day, not the Congress. Bulk lags the
 Congress.gov API by days, so a finished backfill is a floor, and the delta is an
@@ -115,31 +120,40 @@ element`, but for two different reasons, and the rule was right about neither:
 
 | Cause | H.R. | H.Res. | S.Res. | What the publisher's file actually does |
 | --- | --- | --- | --- | --- |
-| Summary `<text>` inside a `<cdata>` element | 810 | 110 | 64 | States the text one element deeper, as the wrapper's only child, in the same escaped HTML |
+| Summary `<text>` inside a `<cdata>` element | 810 | 110 | 64 | States the text one element deeper, as the wrapper's only child |
 | An `<actions><item>` with no `<text>` | 0 | 4 | 3 | States `actionCode`, `type` and `sourceSystem` and no text at all |
 
 H.Res. 10 is the first cause; its summary is `<cdata><text>` and the text is
-there in full. One H.Res. file has both causes, which is why 110 + 4 is 113.
+there in full. One H.Res. file has both causes, which is why 110 + 4 is 113. A
+third shape, an action whose `<text>` is present but blank, occurs in none of
+the 12,938 files: every action either states text or omits the element.
 
 **What the publisher says.** The
 [user guide](../../tests/fixtures/billstatus_codes/guide-2026-08-03.md) lists
 every child of `<actions>` as one the element "may include" and names none
 required, so an action without text is optional data, not a broken file. The
-guide never describes a `<cdata>` **element** at all; where it says CDATA it means
-an XML CDATA section, which is how the text is escaped in both placements. So the
-two causes needed two different answers.
+guide never describes a `<cdata>` **element** at all; where it says CDATA it
+means an XML CDATA section, which is a different thing and is also in play here:
+the two placements escape differently. In the measured corpus all 3,000 direct
+summaries hold a CDATA section and all 984 wrapped ones hold entity references.
+Both forms reach this reader as the same string, because the XML parser resolves
+them and this source decodes nothing of its own, so the placement is the only
+question and the escaping is not. The two causes needed two different answers.
 
 **What changed.**
 
 - `BillAction.text` is now `str | None`. The field is optional in the publisher's
   own statement, it is absent in real files, and refusing the whole document over
-  it lost those bills entirely. Every other field of such an action survives.
+  it lost those bills entirely. Every other field of such an action survives. An
+  action has two states, not three: a `<text>` that is present but blank reads as
+  `None` too, so no caller has to tell an empty element from a missing one.
 - A summary's `<text>` is read from the `<cdata>` wrapper when that is where the
-  publisher put it, and `BillSummary.text_in_cdata` records which placement it
-  came from. This is not an optional field: the text is present, so nulling it
-  would have discarded real CRS summary text, and refusing would have discarded
-  the bill. A summary that states text in both places is refused, because nothing
-  says which would win and no measured file does it.
+  publisher put it. This is not an optional field: the text is present, so
+  nulling it would have discarded real CRS summary text, and refusing would have
+  discarded the bill. The placement is not recorded on `BillSummary`, because the
+  value is the same either way and the original bytes remain the record of which
+  shape arrived. A summary that states text in both places is refused, because
+  nothing says which would win and no measured file does it.
 - Every identity check is unchanged. Congress, type, number, the root element,
   the one-`<bill>` rule, the policy-area agreement check, the exactly-once XML
   link rule and the byte bounds all refuse exactly what they refused before.

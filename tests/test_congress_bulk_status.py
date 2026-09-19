@@ -77,10 +77,9 @@ def test_every_member_is_proved_or_refused_in_the_publisher_order():
     assert wrapped.identity == BillIdentity(119, "hres", 10)
     assert wrapped.refusal is None
     assert wrapped.status.title == "HEALTH Act"
-    assert wrapped.status.summaries[0].text_in_cdata is True
     assert wrapped.status.summaries[0].text.startswith("<p><strong>House Endeavor")
 
-    assert plain.status.summaries[0].text_in_cdata is False
+    assert plain.status.summaries[0].text.startswith("<p>This resolution recognizes")
     assert plain.status.text_versions[0].package_id == "BILLS-119hres1376ih"
     # The one measured action without text; every other field of it survives.
     assert untexted.status.actions[-1].text is None
@@ -104,6 +103,10 @@ def test_every_member_is_proved_or_refused_in_the_publisher_order():
         ("BILLSTATUS-119hres10.XML", "does not state a bill identity"),
         ("BILLSTATUS-119hres10.xml.bak", "does not state a bill identity"),
         ("BILLSTATUS-119hres0.xml", "does not state a bill identity"),
+        # A name whose digits outrun int()'s own limit must still be one
+        # refused member, not an untyped ValueError that ends the archive.
+        (f"BILLSTATUS-119hres{'9' * 4301}.xml", "does not state a bill identity"),
+        (f"BILLSTATUS-{'9' * 4301}hres10.xml", "does not state a bill identity"),
     ],
 )
 def test_a_member_name_that_is_not_this_folder_is_one_refused_outcome(name, refusal):
