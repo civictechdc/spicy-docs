@@ -86,6 +86,61 @@ def test_summary_cdata_is_literal_html_and_not_bill_text() -> None:
     assert len(status.text_versions) == 2
 
 
+def test_summary_text_is_read_from_either_publisher_placement_and_never_from_both() -> None:
+    """Decision 4, measured: 984 of 12,938 files state summary text inside a ``<cdata>`` element."""
+    wrapped = parse_bill_status(
+        (FIXTURES / "status-119hres10.xml").read_bytes(), identity=BillIdentity(119, "hres", 10)
+    )
+    assert [summary.version_code for summary in wrapped.summaries] == ["00"]
+    assert wrapped.summaries[0].text.startswith("<p><strong>House Endeavor to Accelerate")
+    assert wrapped.summaries[0].action_desc == "Introduced in House"
+    both = status_body().replace(
+        b"<summaries>", b"<summaries><summary><text>a</text><cdata><text>b</text></cdata></summary>"
+    )
+    with pytest.raises(BillSourceError, match="states its text twice"):
+        parse_bill_status(both, identity=IDENTITY)
+    empty = status_body().replace(b"<summaries>", b"<summaries><summary><cdata/><text>a</text></summary>")
+    assert parse_bill_status(empty, identity=IDENTITY).summaries[0].text == "a"
+
+
+def test_an_action_without_text_keeps_every_other_field_the_publisher_stated() -> None:
+    """Decision 4, measured: the guide calls every ``<actions>`` child one it "may include"."""
+    status = parse_bill_status(
+        (FIXTURES / "status-119hres214.xml").read_bytes(), identity=BillIdentity(119, "hres", 214)
+    )
+    untexted = status.actions[-1]
+    assert untexted.text is None
+    assert (untexted.action_code, untexted.action_type, untexted.action_date) == (
+        "Intro-H",
+        "IntroReferral",
+        "2025-03-11",
+    )
+    assert untexted.source_system_name == "Library of Congress"
+    assert [action.text is None for action in status.actions] == [False, False, False, True]
+    assert status.latest_action.text == "Motion to reconsider laid on the table Agreed to without objection."
+    assert status.summaries == ()
+
+
+def test_an_action_text_that_is_present_but_blank_reads_as_absent() -> None:
+    """Two states, not three. No measured file does this; a caller still should not have to tell them apart."""
+    for blank in (b"<text/>", b"<text></text>", b"<text>  \n </text>"):
+        body = status_body().replace(b"<actions>", b"<actions><item>" + blank + b"</item>", 1)
+        assert parse_bill_status(body, identity=IDENTITY).actions[0].text is None
+    kept = status_body().replace(b"<actions>", b"<actions><item><text> . </text></item>", 1)
+    assert parse_bill_status(kept, identity=IDENTITY).actions[0].text == " . "
+
+
+def test_the_superseded_schema_is_named_instead_of_refused_for_a_missing_type() -> None:
+    """One file in 40,260 measured is still 1.0.0; a backfill needs to read why, not guess."""
+    body = (
+        b"<billStatus><bill><billNumber>4200</billNumber><billType>HR</billType>"
+        b"<congress>113</congress><title>SBIC Advisers Relief Act of 2014</title>"
+        b"<version>1.0.0</version></bill></billStatus>"
+    )
+    with pytest.raises(BillSourceError, match="superseded 1.0.0 element names"):
+        parse_bill_status(body, identity=BillIdentity(113, "hr", 4200))
+
+
 def test_policy_area_reconciles_both_current_source_locations() -> None:
     assert parse_bill_status(status_body(), identity=IDENTITY).policy_area == "Congress"
     top_only = (

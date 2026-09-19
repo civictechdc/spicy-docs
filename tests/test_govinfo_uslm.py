@@ -1,6 +1,5 @@
 """USLM requests and response checks prove native identity and keep publisher spellings."""
 
-import io
 import zipfile
 from pathlib import Path
 
@@ -21,6 +20,7 @@ from spicy_docs.sources.govinfo.uslm import (
     validate_public_law_xml,
     validate_statute_compilation_xml,
 )
+from tests.source_fixtures import archive_bytes as archive
 
 FIXTURES = Path(__file__).parent / "fixtures" / "uslm"
 LAW = PublicLawSelection(119, "public", 1)
@@ -53,14 +53,6 @@ def compilation(body=COMPS_XML, *, selection=COMPILATION, final_url=None, **kwar
     return validate_statute_compilation_xml(
         body, selection=selection, final_url=final_url or statute_compilation_xml_locator(selection), **kwargs
     )
-
-
-def archive(*members: tuple[str, bytes], compression=zipfile.ZIP_DEFLATED) -> bytes:
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w", compression) as zf:
-        for name, data in members:
-            zf.writestr(name, data)
-    return buffer.getvalue()
 
 
 @pytest.mark.parametrize(
