@@ -28,9 +28,11 @@ from spicy_docs.sources.congress.bill_status import BillIdentity
 from spicy_docs.sources.congress.bill_versions import bill_version_package_id
 from spicy_docs.sources.govinfo.body_acquisition import GovInfoBodyAcquirer, GovInfoPackageBody
 
-#: `acquire()` fetches a body only for a format the caller names; PDF is
-#: never the acquirer's own default (`body_acquisition.DEFAULT_PREFERENCE`
-#: is text-first), so this module always asks for it explicitly.
+#: This module wants the PDF specifically, not "the best body available", so
+#: it names PDF alone rather than leaning on the sealed
+#: `bodies.BODY_PREFERENCE`, whose last entry PDF is: under that order a bill
+#: that also offers XML would answer with XML, which is not what a PDF fetch
+#: asked for.
 _PREFER_PDF: tuple[str, ...] = ("pdf",)
 
 

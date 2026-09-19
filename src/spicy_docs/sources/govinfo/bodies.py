@@ -92,13 +92,55 @@ class BodyFormat:
     media_types: tuple[str, ...]
 
 
-#: Preference order is the caller's; this is only the supported vocabulary.
+#: The grammar: every rendition this module can address. The order callers
+#: should ask for them in is ``BODY_PREFERENCE`` below.
 PACKAGE_BODY_FORMATS: dict[str, BodyFormat] = {
     "htm": BodyFormat("htm", "html", "htm", ("text/html",)),
     "xml": BodyFormat("xml", "xml", "xml", ("application/xml", "text/xml")),
     "txt": BodyFormat("txt", "text", "txt", ("text/plain",)),
     "pdf": BodyFormat("pdf", "pdf", "pdf", ("application/pdf",)),
 }
+
+#: The one sealed body preference for every GovInfo caller: structure first,
+#: page images last.
+#:
+#: The ruling this seals, verbatim: *"shouldn't we prefer xml? and accept pdf
+#: as a final fallback?"* Before it, each caller carried its own order and
+#: stopped early -- the bill family asked for ``("xml", "txt")`` and the
+#: committee-report transform for ``("txt", "htm", "xml")`` -- so a package
+#: offered only as PDF got no body at all, and two callers disagreed about
+#: what the same publisher offers. One constant, one order, everywhere.
+#:
+#: XML is first because it is the only rendition that states the document's
+#: own structure. PDF is last because it is a rendering, not a text stream,
+#: and the measurement below says what that costs. Measured 2026-09-19 on
+#: three real committee reports, each in the rendition it offers and in its
+#: own PDF (receipts and per-package numbers in
+#: ``docs/sources/govinfo-bodies.md``, "Why PDF is last"):
+#:
+#: - **Words split in half.** PyMuPDF's page text carries 1,863 and 1,894
+#:   mid-word print wraps on CRPT-113srpt77 and CRPT-113hrpt135, which
+#:   ``gpo_normalize`` rejoins only on a gutter-numbered document -- and a
+#:   committee report never is one. The same packages' ``htm`` rendition
+#:   carries 32 and 47 hyphens, and every sampled one is a real compound word
+#:   (``man-made``, ``long-standing``), not a print wrap.
+#: - **Table rows destroyed.** 841 and 190 appropriations account rows keep
+#:   their label, leader dots and amount on one line in ``htm``; 0 and 3 do
+#:   in the PDF text, which emits the label and its amount as separate lines
+#:   in column order.
+#: - **No font cue to buy back.** GPO sets section headings in the body face
+#:   at body size: only 89 and 16 lines are bold against 297 and 201 heading
+#:   lines the report-block parser matches, and only 15 and 12 matched lines
+#:   carry any font cue at all. Reading PyMuPDF spans would label the table
+#:   body font, not the headings, and would still have to rebuild rows from
+#:   bounding boxes -- which the ``htm`` rendition already hands over joined.
+#:
+#: ``htm`` before ``txt`` is not a measured ranking: no package offers both
+#: (CRPT/CHRG/CDOC offer htm and pdf, CDIR offers txt and pdf, BILLS offers
+#: htm, xml and pdf), so the two never compete. They are ordered by the same
+#: structure-first rule, since markup can only add to what plain text states.
+BODY_PREFERENCE: tuple[str, ...] = ("xml", "htm", "txt", "pdf")
+
 _FORMAT_BY_EXTENSION = {body_format.extension: name for name, body_format in PACKAGE_BODY_FORMATS.items()}
 _PACKAGE_RENDITION = re.compile(
     rf"{re.escape(CONTENT)}/content/pkg/(?P<package>[^/]+)/[^/]+/[^/]+\.(?P<extension>[A-Za-z0-9]+)"
@@ -437,6 +479,7 @@ def validate_package_body(
 
 
 __all__ = [
+    "BODY_PREFERENCE",
     "PACKAGE_BODY_FORMATS",
     "BodyFormat",
     "GovInfoBodySourceError",

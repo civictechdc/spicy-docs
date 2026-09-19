@@ -487,16 +487,34 @@ def format_name(item: BillTextFormat) -> str | None:
     return None
 
 
+#: `sources.govinfo.bodies.BODY_PREFERENCE` spelled in this module's own
+#: format names: the GovInfo rendition `htm` is `html` here, because that is
+#: what Congress.gov's `type` string ("HTML") and this module's folder
+#: fallback already call it. The two orders are the same order and must stay
+#: so -- a version chosen in one spelling is fetched in the other, and
+#: `tests/test_congress_bill_versions.py` pins them equal. USLM stays out of
+#: the default: it is recognized by name and by folder but is not acquirable
+#: (see `FORMAT_TYPE_NAMES`).
+DEFAULT_FORMAT_PREFERENCE: tuple[str, ...] = ("xml", "html", "txt", "pdf")
+
+
 def choose_format(
-    formats: Sequence[BillTextFormat], prefer: Sequence[str] = ("xml", "txt", "pdf")
+    formats: Sequence[BillTextFormat], prefer: Sequence[str] = DEFAULT_FORMAT_PREFERENCE
 ) -> BillTextFormat | None:
     """The first offered format matching `prefer` in order, or None.
 
-    Ports `congress-api.ts chooseFormat`'s own default order (XML, then
-    text, then PDF) and `sync-govinfo.ts pickVersionUrls`'s fallback for a
-    format item with no stated `type`. `prefer` takes this module's short
-    format names (`FORMAT_TYPE_NAMES`'s values plus `uslm`), not
-    Congress.gov's `type` strings.
+    The default is the sealed body preference (`DEFAULT_FORMAT_PREFERENCE`),
+    which keeps BillTrax's `congress-api.ts chooseFormat` order -- XML, then
+    text, then PDF -- and adds HTML between XML and text, where the sealed
+    order puts it. PDF stays the last default rather than being excluded:
+    bill PDFs measured small (median 246 KB; see "The PDF path" in
+    `docs/sources/congress-bill-versions.md`), so a version a publisher
+    offers only as PDF is chosen here rather than refused.
+
+    Also ports `sync-govinfo.ts pickVersionUrls`'s fallback for a format item
+    with no stated `type`. `prefer` takes this module's short format names
+    (`FORMAT_TYPE_NAMES`'s values plus `uslm`), not Congress.gov's `type`
+    strings.
     """
     if isinstance(prefer, str) or not isinstance(prefer, Sequence):
         raise TypeError("prefer must be a sequence of format names, not one name")
@@ -509,6 +527,7 @@ def choose_format(
 
 
 __all__ = [
+    "DEFAULT_FORMAT_PREFERENCE",
     "FORMAT_TYPE_NAMES",
     "VERSION_CODES",
     "VERSION_CODES_BY_SLUG",

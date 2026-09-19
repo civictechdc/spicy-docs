@@ -27,17 +27,44 @@ budget = GovInfoBodyBudget(
     min_request_interval_seconds=0.5,
 )
 with GovInfoBodyAcquirer(budget=budget, api_key=read_api_key(Path(".env"), "API_GOV")) as client:
-    result = client.acquire("CRPT-119hrpt1")  # prefer=("xml", "htm", "txt") is the default
+    result = client.acquire("CRPT-119hrpt1")  # BODY_PREFERENCE is the default
 
 body = result.body_capture.body
 digest = result.body_capture.sha256
 chosen, offered = result.format, result.offered_formats
 ```
 
-`prefer` is a plain tuple of format names in the caller's order; the first one
-the package offers is fetched. PDF is never fetched unless the caller names it,
-because a hearing or directory PDF runs to tens of megabytes. `max_bytes` can
-narrow the body allowance for one call, never raise it.
+Then turn the body into text with one function, whatever rendition came back:
+
+```python
+from spicy_docs.extraction.body_text import body_text
+
+derived = body_text(result)
+derived.text  # parser-ready text
+derived.rendition  # "xml", "htm", "txt" or "pdf" -- what the publisher offered
+derived.derivation  # "markup-reader", "text-rendition-cleanup" or "pdf-extraction-gpo-normalized"
+derived.record  # the cleanup counts for that branch
+```
+
+## The preference rule
+
+`BODY_PREFERENCE` in `sources/govinfo/bodies.py` is **one sealed order for
+every caller**: `("xml", "htm", "txt", "pdf")`. It is `acquire`'s default, and
+`sources/congress/bill_versions.py::DEFAULT_FORMAT_PREFERENCE` is the same
+order in Congress.gov's own format names (`("xml", "html", "txt", "pdf")` —
+the GovInfo rendition `htm` is spelled `html` there). A test pins the two
+equal, so a version chosen in one spelling is fetched in the other.
+
+`prefer` is still a plain tuple a caller can override, and `bill_pdf.py` does,
+naming `("pdf",)` because it wants that rendition specifically rather than the
+best one available. `max_bytes` can narrow the body allowance for one call,
+never raise it — a PDF is the rendition most likely to exceed it.
+
+What the sealed order changes, measured over the six collections below: for
+CRPT, CHRG, CDOC, CDIR and BILLS it picks exactly what the previous default
+picked. The one collection whose answer changes is **CREC**, which offers PDF
+and nothing else: it used to refuse with `GovInfoFormatNotOfferedError` and now
+returns a body. That is the whole of the ruling this seals.
 
 ## Package ids
 
@@ -81,12 +108,15 @@ own answer. A keyed response containing the key is refused and not retained.
 
 ## Formats and how the offered set is read
 
-| Format | Path | Media type |
-| --- | --- | --- |
-| `htm` | `html/{id}.htm` | `text/html` |
-| `xml` | `xml/{id}.xml` | `application/xml`, `text/xml` |
-| `txt` | `text/{id}.txt` | `text/plain` |
-| `pdf` | `pdf/{id}.pdf` | `application/pdf` |
+`PACKAGE_BODY_FORMATS` is the grammar — every rendition this module can
+address. `BODY_PREFERENCE` above is the order to ask for them in.
+
+| Format | Path | Media type | Text derivation |
+| --- | --- | --- | --- |
+| `xml` | `xml/{id}.xml` | `application/xml`, `text/xml` | `markup-reader` |
+| `htm` | `html/{id}.htm` | `text/html` | `markup-reader` |
+| `txt` | `text/{id}.txt` | `text/plain` | `text-rendition-cleanup` |
+| `pdf` | `pdf/{id}.pdf` | `application/pdf` | `pdf-extraction-gpo-normalized` |
 
 The folder is not the format name: text is served from `text/`, HTML from
 `html/`. No package offers all four. The offered set is read from the package
@@ -119,6 +149,157 @@ a place this module does not fetch from, not as absence; fetching USLM is the
 [USLM route's](uslm-laws.md) job. `other_renditions` holds `(displayLabel,
 url)` verbatim for everything else: another package's address, another file
 type, another host.
+
+## Turning a body into text
+
+`extraction/body_text.py` is the one function that turns a fetched rendition
+into parser-ready text, so no caller re-implements a stripper and no two
+callers derive two different texts from one document. One derivation per
+rendition, named on the result, never guessed from the bytes:
+
+| Derivation | Renditions | Built from |
+| --- | --- | --- |
+| `markup-reader` | `xml`, `htm` | `reading/markup.py`'s event readers |
+| `text-rendition-cleanup` | `txt` | the shared rules below, nothing else |
+| `pdf-extraction-gpo-normalized` | `pdf` | `DocumentExtractor(NativeText())`, then [`normalize_gpo_pages`](../extraction-gpo.md) |
+
+`BodyText` is frozen and carries `text`, `pages` (the per-page text for a PDF,
+`None` otherwise — no other rendition states a page boundary), `rendition`,
+`media_type`, `byte_size`, `derivation` and `record`: a `GpoCleanupRecord` for
+the PDF branch and a `RenditionCleanup` for the others. That is enough for a
+hosted row to say how its text was made without holding the bytes.
+
+### What the non-PDF renditions carry, and the rules for it
+
+Measured 2026-09-19 over four keyless `htm` bodies (CRPT-119hrpt1,
+-119hrpt105, -113hrpt135, -113srpt77), one `txt` body (CDIR-2026-02-20 — the
+only collection measured that offers one) and three BILLS `xml` bodies. The
+per-file counts are in `tests/fixtures/govinfo_bodies/README.md`; only what
+was counted above zero has a rule.
+
+| Rule | Artifact | Renditions | Measured |
+| --- | --- | --- | --- |
+| `metadata_element` | HTML `<title>`: document metadata restating the printed heading | `htm` | 591, 703, 80, 77 characters |
+| `element_line_break` | An XML element boundary, kept as a line break so two elements' text never runs together | `xml` | 26 on BILLS-119hr6028ih |
+| `whitespace_only_line` | XML pretty-print indentation between elements | `xml` | 38 on BILLS-119hr6028ih |
+| `line_ending` | CRLF/CR line endings | `xml`, `htm`, `txt` | 27,717 in the CDIR text; 0 elsewhere |
+| `end_of_text_marker` | GPO's trailing `U+001A` terminator | `xml`, `htm`, `txt` | 1 each in the CRPT-113hrpt135 and -113srpt77 `htm` |
+| `gpo_quote_pair` | GPO's `` `` ``/`''` typewriter quote pairs | `xml`, `htm`, `txt` | 6, 2, 54, 119 pairs in the four `htm` bodies |
+| `trailing_space` | Trailing spaces from GPO's fixed-width columns; leading spaces are the layout and stay | `xml`, `htm`, `txt` | 19,077 lines in the CDIR text |
+
+Four things are deliberately **not** stripped:
+
+- **Blank lines in an `htm` or `txt` body.** They are the document's own
+  layout, and `parse_agency_blocks` decides a heading has a body by whether
+  the lines under it are blank. Dropping them merges blocks. Whitespace-only
+  lines are dropped in the XML branch only, where they are pretty-printing.
+- **Doubled internal spaces.** The PDF branch collapses them
+  (`gpo_normalize`'s space-collapse rule); the `htm` branch does not, because
+  that spacing is what keeps an appropriations account row's label, leader
+  dots and amount aligned. One consequence worth knowing before ingesting one
+  report from both renditions: `report_blocks`'s `agency_key` is
+  `upper().strip()` only, so the same heading yields `OFFICE OF  THE
+  COMPTROLLER…` from `htm` and `OFFICE OF THE COMPTROLLER…` from the PDF.
+- **`[[Page N]]` markers and form feeds.** Zero in all eight bodies measured.
+  Unmeasured, so no rule — the same standard `gpo_normalize` holds itself to.
+- **`VerDate` print footers.** A PDF artifact; `normalize_gpo_pages` already
+  owns them and this module does not duplicate the rule.
+
+One asymmetry the markup reader creates and this module does not correct: GPO
+writes its end-of-document marker as literal `[all]` in some bodies and as a
+pseudo-element `<all>` in others (`CRPT-113srpt77`, `-113hrpt135`). The reader
+drops the element form, because it carries no text, and keeps the literal
+form, because it is text. Both are one marker; making them agree would be a
+policy this module has no measurement for.
+
+A BILLS `xml` body declares an external DOCTYPE (`<!DOCTYPE bill PUBLIC …
+"bill.dtd">`), which `read_xml_events` refuses unless a caller says otherwise,
+so `body_text` allows it explicitly. Nothing is fetched for it: the reader
+never loads an external resource and still refuses every entity declaration.
+
+## Why PDF is last
+
+The order above puts the page image last, and that is a measurement, not a
+preference. Three real committee reports, each read in the rendition it offers
+and in its own PDF through `DocumentExtractor(NativeText())` and
+`normalize_gpo_pages` (receipts and digests in
+`tests/fixtures/govinfo_bodies/README.md`):
+
+| | CRPT-119hrpt105 | CRPT-113srpt77 | CRPT-113hrpt135 |
+| --- | ---: | ---: | ---: |
+| Mid-word print wraps, `htm` | 2 | 32 | 47 |
+| Mid-word print wraps, PDF text | 18 | 1,863 | 1,894 |
+| Account rows keeping label + amount on one line, `htm` | 0 | 841 | 190 |
+| Account rows keeping label + amount on one line, PDF text | 0 | 0 | 3 |
+| Heading lines the report parser matches, `htm` | 10 | 391 | 130 |
+| Heading lines the report parser matches, PDF text | 11 | 413 | 221 |
+| Character similarity, `htm` text vs PDF text | 0.66 | 0.84 | 0.94 |
+
+- **The PDF text splits words the other rendition keeps whole.** A committee
+  report is never gutter-numbered by GPO, so `normalize_gpo_pages`'s
+  hyphen-rejoin stays off by design and those ~1,870 wraps per report stay
+  split. The words only the PDF side has are the fragments (`tion` ×79,
+  `ment` ×66, `recommenda` ×28, `secu`/`rity`); the words only the `htm` side
+  has are the whole words they came from (`security` ×29, `department` ×27,
+  `recommendations` ×22). The `htm` rendition's own hyphens are real compound
+  words — `man-made`, `long-standing`, `one-size-fits-all` — not wraps.
+- **The PDF text destroys table rows.** `htm` gives
+  `Amount of 2013 appropriations\4\ \6\ \8\......  59,742,509,000` on one
+  line; PyMuPDF emits the label and `59,742,509,000` as two lines, and on a
+  multi-column table it emits every label first and then every amount, so the
+  row-to-amount association is gone rather than merely reformatted.
+- **The PDF's extra heading matches are not better ones.** Its 11th match on
+  CRPT-119hrpt105 is a block labelled `REPORT` whose entire body is `"` and
+  `!` — the two decorative cover-page glyphs
+  [`docs/extraction-gpo.md`](../extraction-gpo.md) already records as PyMuPDF
+  artifacts of that exact page. On the larger reports the extra matches are
+  headings split across two lines by the page width (`TRUSTED INTERNET
+  CONNECTIONS/HUMAN RESOURCES INFORMATION` + `TECHNOLOGY`), counted twice.
+- **There is no font cue to buy the structure back.** GPO sets section
+  headings in the body face at body size. Across CRPT-113srpt77 and
+  -113hrpt135: 89 and 16 lines are bold, against 297 and 201 heading lines the
+  parser matches, and only 15 and 12 matched lines carry any font distinction
+  at all. The 3,948 and 1,207 lines that *do* differ from the body font are
+  the table cells (`TradeGothic-CondEighteen` 7pt, `Helvetica` 6.5pt) and
+  dollar amounts. A span-aware extractor — `Recognition.raw` already retains
+  PyMuPDF's full `get_text("dict")`, so the cost is a reader, not a new
+  dependency — would therefore label the tables, not the headings, and would
+  still have to rebuild each row from bounding boxes. The `htm` rendition
+  hands those rows over already joined, for nothing.
+
+So PDF stays last, and it stays *in* the order: it is the only rendition
+CREC offers, and a body from a page image beats no body at all.
+
+`htm` before `txt` is not a measured ranking. No package offers both — CRPT,
+CHRG and CDOC offer `htm` and `pdf`; CDIR offers `txt` and `pdf`; BILLS offers
+`htm`, `xml` and `pdf`; CREC offers `pdf` — so the two never compete. They are
+ordered by the same structure-first rule, since markup can only add to what
+plain text already states.
+
+## Decision
+
+**One sealed body preference, XML first and PDF last, and one text-derivation
+function per rendition.**
+
+The ruling, verbatim: *"shouldn't we prefer xml? and accept pdf as a final
+fallback?"* Before it, each caller carried its own order and stopped early —
+the spicy-regs bill family asked for `("xml", "txt")`, its committee-report
+transform for `("txt", "htm", "xml")` — so a version or report offered only as
+PDF got no body, and two callers disagreed about what the same publisher
+offers. `BODY_PREFERENCE` is now the single order, `acquire`'s default, and
+`bill_versions.DEFAULT_FORMAT_PREFERENCE`'s source of truth.
+
+Alongside it, `extraction/body_text.py` is the one place a rendition becomes
+text. The committee-report path previously fed an `htm` body straight through
+`normalize_gpo_pages` and `parse_agency_blocks` — a normalizer and a parser
+both derived on PDF-extracted text — splitting the body on a form feed that
+the measurement above shows is never there. Each rendition now gets the
+derivation measured for it, and the record says which one ran.
+
+Both were measured before being sealed, and the measurement is above: it is
+also what decided the order between the text renditions and PDF, rather than
+an argument about which format "has structure". This section and its tables
+are for the maintainer owning the source-workflow docs to move into place.
 
 ## Identity rules and why each exists
 
@@ -165,7 +346,10 @@ instead four publisher statements about the one URL whose bytes were kept:
   24 MiB. Acquisition requests identity encoding, refuses other encodings,
   checks the stated length and bounds accumulated bytes through EOF. No partial
   body becomes evidence. Bodies above the bound refuse: the CHRG-119hhrg64242
-  PDF (46.6 MB) is one, which is why the default preference is text-first.
+  PDF (46.6 MB) is one. That is a bound, not a preference — `BODY_PREFERENCE`
+  reaches PDF only after every text-bearing rendition, so a package that
+  offers one is never asked for tens of megabytes, and a PDF-only package
+  that exceeds the bound refuses on the bound and says so.
 - Transport failures and HTTP 429/5xx retry with bounded exponential backoff.
   Request-start pacing applies across retries and successive acquisitions, and
   meters the keyed and keyless hosts separately, as they answer separately;
