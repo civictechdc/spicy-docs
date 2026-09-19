@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="billres.xsl"?>
+<!DOCTYPE resolution PUBLIC "-//US Congress//DTDs/res.dtd//EN" "res.dtd">
+<resolution resolution-stage="Introduced-in-House" dms-id="HCONSTRUCTED0001" public-private="public" resolution-type="house-joint" star-print="no-star-print">
+<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+<dublinCore>
+<dc:title>HJ 143 IH: Making continuing appropriations for fiscal year 2026, and for other purposes.</dc:title>
+<dc:publisher>U.S. House of Representatives</dc:publisher>
+<dc:format>text/xml</dc:format>
+<dc:language>EN</dc:language>
+</dublinCore>
+</metadata>
+<form>
+<distribution-code display="no">I</distribution-code>
+<congress display="yes">119th CONGRESS</congress>
+<session display="yes">1st Session</session>
+<legis-num display="yes">H. J. RES. 143</legis-num>
+<current-chamber>IN THE HOUSE OF REPRESENTATIVES</current-chamber>
+<action><action-date date="20250915">September 15, 2025</action-date><action-desc>Referred to the Committee on <committee-name committee-id="HAP00">Appropriations</committee-name></action-desc></action>
+<legis-type>JOINT RESOLUTION</legis-type>
+<official-title display="yes">Making continuing appropriations for fiscal year 2026, and for other purposes.</official-title>
+</form>
+<resolution-body style="appropriations" id="HBODY01">
+<section id="HSEC01" section-type="section-one"><enum>1.</enum><header>Short title</header><text>This joint resolution may be cited as the <quote>Continuing Appropriations Act, 2026</quote>.</text></section>
+<toc><toc-entry level="title">TITLE I—Department of Agriculture</toc-entry><toc-entry level="title">TITLE II—Department of Commerce</toc-entry></toc>
+<title id="HTITLE01"><enum>I</enum><header>Department of Agriculture</header>
+<section id="HSEC02"><enum>101.</enum><header>Agricultural programs</header>
+<text>The following sums are appropriated, out of any money in the Treasury not otherwise appropriated, for the fiscal year ending September 30, 2026.</text>
+<appropriations-major id="HAM01"><header>Office of the Secretary</header><text>For necessary expenses of the Office of the Secretary, $48,000,000, of which not to exceed $5,000,000 shall be available for the immediate Office of the Secretary.</text></appropriations-major>
+<appropriations-intermediate id="HAI01"><header>Farm Production and Conservation Programs</header><text>For necessary expenses of the Farm Production and Conservation mission area, $12,500,000.</text></appropriations-intermediate>
+<appropriations-small id="HAS01"><header>Hazardous Materials Management</header><text>For necessary expenses of the Department of Agriculture to comply with hazardous waste laws, $3,000,000, to remain available until expended.</text></appropriations-small>
+<appropriations-small id="HAS02"><header>(Including Transfer of Funds)</header><text>Of the amounts made available under this heading, $1,250,000 shall be transferred to the Office of Inspector General.</text></appropriations-small>
+</section>
+</title>
+<title id="HTITLE02"><enum>II</enum><header>Department of Commerce</header>
+<appropriations-major id="HAM02"><header>International Trade Administration</header><text>For necessary expenses of the International Trade Administration, $560,000,000, to remain available until September 30, 2027.</text></appropriations-major>
+<subtitle id="HSUB01"><enum>A</enum><header>Science and Technology</header>
+<appropriations-intermediate id="HAI02"><header>National Institute of Standards and Technology</header><text>For necessary expenses of the National Institute of Standards and Technology, $1,065,000,000.</text></appropriations-intermediate>
+<appropriations-small id="HAS03"><header>Industrial Technology Services</header><text>For necessary expenses of industrial technology services, $175,000,000, to remain available until expended.</text></appropriations-small>
+</subtitle>
+<section id="HSEC03"><enum>201.</enum><header>General provision</header><subsection id="HSS01"><enum>(a)</enum><text>None of the funds appropriated by this title may be used in contravention of section 552a of title 5, United States Code.</text></subsection><subsection id="HSS02"><enum>(b)</enum><text>Amounts made available by this title shall be available for the purposes described in the report accompanying this joint resolution.</text></subsection></section>
+</title>
+</resolution-body>
+</resolution>
