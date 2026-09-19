@@ -1,6 +1,17 @@
 # Intake plan: BillTrax acquisition & parsing → spicy-docs
 
-Status: spicy-docs side of Phases 4 and 6 landed 2026-09-19 (`congress/listing.py` route table, `congress/bulk_status.py`); BillTrax-side phases not started. Written 2026-09-15 against BillTrax `a6b685f`
+Status: spicy-docs side of Phases 2, 3, 4, 5, 6 and 7 landed 2026-09-19 —
+press releases (Phase 2, `sources/congress/press_releases.py`), GPO
+normalization and report blocks (Phase 3, `extraction/gpo_normalize.py`,
+`sources/agency_reports/report_blocks.py`), table-driven listing routes and
+bulk status (Phases 4 and 6, `congress/listing.py`, `congress/bulk_status.py`),
+the version vocabulary and bill PDFs (Phase 5,
+`sources/congress/bill_versions.py`, `sources/congress/bill_pdf.py`), and
+bill tree and section diff (Phase 7, via the DeltaTrack dependency —
+`sources/congress/bill_tree.py`, `interpretation/section_diff.py`). The
+interpretation rules package (`spicy_docs.interpretation`) also landed
+2026-09-19, widening the port's scope beyond these phases (see the revision
+notes below). BillTrax-side phases (0, 1, 8, 9) not started. Written 2026-09-15 against BillTrax `a6b685f`
 and spicy-docs `2cc2f4e` (v0.19.0). Every claim below was validated against
 those trees (file:line cites); re-verify line numbers before acting on them.
 Revised 2026-09-19 after the
@@ -93,9 +104,14 @@ Bake these fixes into the port; do not port the bugs:
 
 1. `sync-govinfo.ts:248` slices status to 100 chars **before** stage
    inference; schema allows 500 (`migrations/021`). Unify on untruncated.
+   **Settled 2026-09-19** by `interpretation/bill_stage.py`, which infers
+   stage from the untruncated action text.
 2. Two `signed_date` derivations that disagree (`congress-api.ts:245-252`
    latestAction-keyword vs `sync-govinfo.ts:225-232` `/became.*public law/i`).
-   Pick one.
+   Pick one. **Settled 2026-09-19** by `interpretation/bill_stage.py`: the
+   bill's `laws` entry establishes enactment, and the action whose
+   `actionCode` is the publisher's became-public-law code supplies the date;
+   a law without a coded action is reported as such rather than guessed at.
 3. Slug-map drift: `validate-pdf-xml-concordance.ts:44-64` missing `pch,
    rds, rfh, hds`; its test only checks the 10 slugs it uses — a
    one-directional check hiding exactly the drift. Canonical map lives in
@@ -105,15 +121,22 @@ Bake these fixes into the port; do not port the bugs:
    Congress.gov `type` name is not unique (`eas`/`eas2`). The fix is not a
    repaired map: take the code from the package id in the publisher's
    stated format URL, and keep a name→code table only as a documented
-   fallback for rows without one.
-4. `sync-roll-call-votes.ts:39-43` unbounded 429 recursion.
+   fallback for rows without one. **Settled 2026-09-19** by
+   `sources/congress/bill_versions.py` — see "Bill-version codes are a
+   sealed, additions-only vocabulary" in `docs/decisions.md`.
+4. `sync-roll-call-votes.ts:39-43` unbounded 429 recursion. Open — waits on
+   the vote readers (see "What remains" below).
 5. Press-release lib crashes on single-item Atom; lib and script disagree on
    feed URLs, env semantics, timeouts. **Measured 2026-09-19** (raw data
    §4): all four URLs are dead and neither publisher serves Atom, so the
-   Atom path is deleted, not fixed; see decision 5.
-6. Dead `/api/feed.xml` reference (`public-activity.ts:6`) — build or delete.
+   Atom path is deleted, not fixed; see decision 5. **Settled 2026-09-19**
+   by the press-release source, `sources/congress/press_releases.py`.
+6. Dead `/api/feed.xml` reference (`public-activity.ts:6`) — build or
+   delete. Open.
 7. `amendments.status` hardcoded `"Proposed"` at `ingest.ts:292` — carry the
-   real source field once amendments port.
+   real source field once amendments port. **Open** — stays open until the
+   `amendments` table lands (table-contract design §2.2, `amendments`, which
+   already names this item as the reason `status` is dropped there).
 
 ## Port contract
 
@@ -156,13 +179,38 @@ port as-is.
 
 | # | Question | Blocks |
 |---|---|---|
-| 1 | PDF capture success semantics: no structural identity proof exists for PDFs. Byte bounds + package URL + content-type + magic-prefix (FEC `download.py` precedent), or stronger? Settled 2026-09-19 by measurement (raw data §3): stronger, cheaply. The publisher states the page count twice (summary `pages`, MODS `extent`) and it agreed with a decode 15/15, so the proof is bounds + package id + content-type + magic prefix + decoded page count equal to the stated one. No byte size is stated anywhere, so size is measured, not checked; bill PDFs run median 246 KB, max 4.77 MB, none over the 24 MiB bound. | Phase 5 |
+| 1 | PDF capture success semantics: no structural identity proof exists for PDFs. Byte bounds + package URL + content-type + magic-prefix (FEC `download.py` precedent), or stronger? Settled 2026-09-19 by measurement (raw data §3): stronger, cheaply. The publisher states the page count twice (summary `pages`, MODS `extent`) and it agreed with a decode 15/15, so the proof is bounds + package id + content-type + magic prefix + decoded page count equal to the stated one. No byte size is stated anywhere, so size is measured, not checked; bill PDFs run median 246 KB, max 4.77 MB, none over the 24 MiB bound. **Landed 2026-09-19** in `sources/congress/bill_pdf.py`, via `GovInfoBodyAcquirer`. | Phase 5 |
 | 2 | Settled 2026-09-19 by the families record in `docs/decisions.md`: each crawl states its bound and byte budget (one Congress and one bill type; 52 MB of status zips for the 119th). | Phase 6 |
-| 3 | DeltaTrack relationship: spicy-docs vendors/imports it, absorbs reconciled implementations, or it stays BillTrax-side? Settled 2026-09-19, twice. First as "absorb" from the inventory's measurement of `submodules/DeltaTrack` as a stale committed copy. Reversed the same day when the user pointed at the canonical repo's new home, `civictechdc/DeltaTrack` (same org as spicy-regs and spicy-docs): upstream is an installable `deltatrack` package (0.1.0, engine dependency pypdfium2 only, 12,479 lines, 120 test files) that already parses `legis-body`, `resolution-body` and `engrossed-amendment-body`, so a port would be a third fork. Final: spicy-docs pins `deltatrack` by git commit as an optional extra; `congress/bill_tree.py` and `interpretation/section_diff.py` are thin adapters; BillTrax's vendored copy and TS fork are deleted; gaps go upstream as issues. The [overlap measurement](deltatrack-overlap-2026-09-19.md) found no other upstream module that replaces the version vocabulary, report-block or GPO-normalization work: upstream's version list (`tools/fetch_govinfo.py`, 53 codes) is a cross-check, and its committee-report parser reads a different input and finds 0 blocks on the real fixtures. | Phase 7 |
+| 3 | DeltaTrack relationship: spicy-docs vendors/imports it, absorbs reconciled implementations, or it stays BillTrax-side? Settled 2026-09-19, twice. First as "absorb" from the inventory's measurement of `submodules/DeltaTrack` as a stale committed copy. Reversed the same day when the user pointed at the canonical repo's new home, `civictechdc/DeltaTrack` (same org as spicy-regs and spicy-docs): upstream is an installable `deltatrack` package (0.1.0, engine dependency pypdfium2 only, 12,479 lines, 120 test files) that already parses `legis-body`, `resolution-body` and `engrossed-amendment-body`, so a port would be a third fork. Final: spicy-docs pins `deltatrack` by git commit as an optional extra; `congress/bill_tree.py` and `interpretation/section_diff.py` are thin adapters; BillTrax's vendored copy and TS fork are deleted; gaps go upstream as issues. The [overlap measurement](deltatrack-overlap-2026-09-19.md) found no other upstream module that replaces the version vocabulary, report-block or GPO-normalization work: upstream's version list (`tools/fetch_govinfo.py`, 53 codes) is a cross-check, and its committee-report parser reads a different input and finds 0 blocks on the real fixtures. **Landed 2026-09-19** in `sources/congress/bill_tree.py` and `interpretation/section_diff.py`. | Phase 7 |
 | 4 | `acquire_text` is stricter than BillTrax (exactly-once XML link, DC-title grammar, congress-in-words ≤ 199): relax, or accept that some currently-stored versions refuse on re-fetch? Settled 2026-09-19 on the status side: the 113 refusals in the 119th H.Res. zip were two publisher shapes the parser now reads (summary text inside a `<cdata>` wrapper, 984 files across three types; an action item with no text, 7 files), with every identity check unchanged; 0 of 1,566 refuse now, and a 40,260-file sweep over three Congresses leaves one file in the superseded 1.0.0 schema, refused by name (`docs/sources/congress-bulk-status.md`, "Decision 4, measured"). The text side (`acquire_text`'s exactly-once link, DC-title grammar, spelled-out Congress) is still unmeasured. | Phase 4/8 |
-| 5 | Canonical press-release feed URLs (lib vs script divergence). Settled 2026-09-19 by measurement (raw data §4): neither. All four spellings answer 404, 404, 410 Gone or a 200 error page. Canonical: `https://appropriations.house.gov/rss.xml` and `https://www.appropriations.senate.gov/rss/feeds/?type=press`, both RSS 2.0; the Senate item carries no `<description>` and an unknown `?type=` returns the byte-identical default feed, so the identity proof must read the channel, not the URL. | Phase 2 |
+| 5 | Canonical press-release feed URLs (lib vs script divergence). Settled 2026-09-19 by measurement (raw data §4): neither. All four spellings answer 404, 404, 410 Gone or a 200 error page. Canonical: `https://appropriations.house.gov/rss.xml` and `https://www.appropriations.senate.gov/rss/feeds/?type=press`, both RSS 2.0; the Senate item carries no `<description>` and an unknown `?type=` returns the byte-identical default feed, so the identity proof must read the channel, not the URL. **Landed 2026-09-19** in `sources/congress/press_releases.py`. | Phase 2 |
 | 6 | The 5 request-time routes (`congress/versions`, `bills` POST, `catalog/import`, `upload/commit`, `press-releases`): migrate to capture-backed cache or keep live fetch? | Phase 8 |
-| 7 | `resolution-body` in bill-tree: support it, or keep the current throw→text-fallback behavior deliberately? Settled 2026-09-19 by measurement (raw data §2): support it. 29 of 40 sampled files and 3,416 of 21,947 in the 119th are `resolution-body`, and the only appropriations-structured document in the sample was a resolution. | Phase 3 |
+| 7 | `resolution-body` in bill-tree: support it, or keep the current throw→text-fallback behavior deliberately? Settled 2026-09-19 by measurement (raw data §2): support it. 29 of 40 sampled files and 3,416 of 21,947 in the 119th are `resolution-body`, and the only appropriations-structured document in the sample was a resolution. **Landed 2026-09-19** via the DeltaTrack adapter, `sources/congress/bill_tree.py`. | Phase 3 |
+
+## What remains
+
+- **The table-contract layer** — [design](table-contracts-2026-09-19.md),
+  being built now on a sibling branch: one `shape_*` function per table
+  under `schemas/`, and `interpretation/bill_family.py` to compose them from
+  a bill's interpretation findings and parsed documents in one pass.
+- **The table-contract layer's own parser prerequisites** — `BillStatus`
+  needs `titles[]` and `relatedBills`; `Term` needs `party` and `district`;
+  `listing.py` needs a `house-vote` route; `version_kind()` needs a finding
+  wrapper (table-contracts §2.1). In flight.
+- **The vote readers** — a House Clerk and a Senate LIS reader
+  (`sources/congress/votes.py`, not yet written), which `roll_call_votes`
+  and `member_votes` wait on. In flight.
+- **The spicy-regs hosting side**, after a spicy-docs 0.21.0 release: the
+  merge helper, the six transforms and rollups, the MCP and data-dictionary
+  entries, and vendoring a `deltatrack` wheel built from the pinned commit
+  (table-contracts §5).
+- **The BillTrax-side deletions** — `submodules/DeltaTrack`, the TS fork
+  (`bill-tree.ts`, `section-diff.ts`'s fallback core, `python-diff.ts`,
+  `scripts/diff_service.py`), `financial.ts`, `diff.ts`, and the rest of the
+  [value inventory's](billtrax-value-inventory-2026-09-19.md) §1 delete
+  column (`mock-data.ts`, `db.ts`, `diff-queue.ts`, `node_backend/`, and
+  `roll-call-votes.ts`'s dead `upsertMemberVote`). None of this has started;
+  it is Phases 1 and 9, BillTrax-side.
 
 ## Phased sequence
 

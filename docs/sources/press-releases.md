@@ -152,17 +152,11 @@ same discipline as every other keyless source in this package:
 | An item lacks `title` or `link` | `PressReleaseFeedSourceError`, "requires a title and a link" |
 | `pubDate` present but not a valid RFC 822 date | `PressReleaseFeedSourceError`, "not a valid RFC 822 date" |
 
-## Decision 5, measured
+## Decision
 
-The [port plan's](../research/billtrax-port-2026-09-15.md) decision 5 asks
-which feed URLs are canonical, since BillTrax's library (`press-releases.ts`)
-and script (`sync-press-releases.ts`) disagree with each other and neither
-matches a live publisher route. The measurement above answers it: **both of
-BillTrax's spellings are wrong**, on both chambers, and the two URLs in the
-first table's "canonical" rows are the replacement —
-`https://appropriations.house.gov/rss.xml` and
-`https://www.appropriations.senate.gov/rss/feeds/?type=press`. This closes
-decision 5; the maintainer should move it into `docs/decisions.md`.
+See ["Appropriations press releases: two canonical feeds, identity from the
+channel body"](../decisions.md#appropriations-press-releases-two-canonical-feeds-identity-from-the-channel-body)
+in `docs/decisions.md`.
 
 ## Change and check
 

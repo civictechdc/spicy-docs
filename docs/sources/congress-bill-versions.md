@@ -245,56 +245,12 @@ across 15 packages sampled, none over the 24 MiB evidence bound. So:
 
 ## Decision: the vocabulary is sealed; only additions move it
 
-*For the maintainer to relocate into `docs/decisions.md`.*
-
-BillTrax's SQL keys on `bill_versions.version_code` strings. Every slug this
-port found in either of BillTrax's two copies of the map
-(`govinfo-pdf-fetch.ts:26-58`, canonical; `validate-pdf-xml-concordance.ts:44-64`,
-a private, drifted copy missing four short codes) stays in `VERSION_CODES`
-under its original spelling. This module only adds slugs; it never renames or
-removes one, even where the publisher's measured 119th data contradicts the
-slug's own name (`referred-to-senate` really names "Received in Senate";
-`reported-in-senate` really names "Reported to Senate"). The slug is a
-BillTrax identifier now, not a live claim about what the publisher calls the
-document — that claim lives in `version_types`.
-
-**One correction, not a rename.** `returned-to-the-house-by-unanimous-consent`
-kept its slug but had its `govinfo_suffix` corrected from `rfh` to `rhuc`.
-BillTrax's canonical map deliberately collided this slug with
-`referred-to-house` on `rfh`; the 119th measurement shows the publisher never
-spells "Returned to the House by Unanimous Consent" that way — its real
-suffix is `rhuc`, which a "Referred in House" document never uses. Leaving
-`rfh` in place would have made `bill_version_package_id` build the wrong
-document's package id for every bill using this slug. Outcome over rules: the
-publisher wins. `rhuc` is also added as its own passthrough entry.
-
-**The name-derived map is demoted, not deleted.** `bill_version_package_id`
-and `version_slug` remain, because BillTrax's stored rows and some
-acquisition paths carry only a slug or a type name, never a package id. But
-`acquire_bill_pdf` requires `package_id`, when the caller has one, in place
-of `slug` rather than alongside it, and this document says why: a
-version-type name is not unique per version (a numbered reprint shares its
-original's name), so a name-derived slug can silently address the wrong
-document, and a cross-check between the two would reject the exact case a
-stated package id exists to fix. `version_slug` no longer just runs
-`slugify()` blind, either: it first checks whether some sealed slug already
-claims the measured name under a different spelling (`rds`'s real type,
-"Received in Senate", slugifies to nothing this table defines on its own),
-and `version_slug_reprints` names every other slug a shared type name could
-mean, so the ambiguity is queryable rather than merely present. The map is
-the fallback for when nothing better exists, not the primary derivation, and
-it no longer silently fails for a measured type it should have covered.
-
-**Extended with DeltaTrack upstream, not just BillTrax.** Beyond BillTrax's
-two copies, this port cross-checked the vocabulary against DeltaTrack's own
-authoritative govinfo code list (`tools/fetch_govinfo.py::VERSION_CODES`,
-`https://github.com/civictechdc/DeltaTrack`) and added the 30 codes upstream
-carries that no measurement here produced, each marked `measured_119th=False`
-and citing that source. The same addition rule applies: these are new
-entries, not replacements for anything BillTrax or the 119th measurement
-already established, and two cosmetic spelling differences from upstream
-(`rs`, `as`) are recorded on their entries rather than silently chosen one
-way.
+See ["Bill-version codes are a sealed, additions-only
+vocabulary"](../decisions.md#bill-version-codes-are-a-sealed-additions-only-vocabulary)
+in `docs/decisions.md`; the package-id-as-identity rule for the PDF path is
+also now part of ["GovInfo package bodies are fetched by package id, never
+crawled"](../decisions.md#govinfo-package-bodies-are-fetched-by-package-id-never-crawled)
+there.
 
 **Left for the maintainer.** `classifyVersionKind`'s own slug lists
 (`interpretation/version_kind.py`) are ported as measured, including the five

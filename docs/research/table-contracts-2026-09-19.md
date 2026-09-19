@@ -557,7 +557,9 @@ gains the spicy-docs bullet with commit, tag and digest. Blocker: the
 `bill-diff` extra resolves to a git source, and spicy-regs's vendor discipline
 is "wheels supplied explicitly until published in a registry". Build
 `deltatrack-0.1.0-py3-none-any.whl` from the pinned commit, vendor it with its
-SHA-256, and add a `[tool.uv.sources] deltatrack` path entry. Fallback if a
+SHA-256, and add a `[tool.uv.sources] deltatrack` path entry. Measured 2026-09-19:
+`uv build --wheel` at c636448 builds it cleanly, 206,461 bytes, 29 files, sha256
+`7f060e30af9702f4e45c305fa93c53d1e3e59bd70858d3c6717f6fc9cf825197`. Fallback if a
 second vendored wheel is refused: the family rollup runs with `diff=False`,
 shipping the other eight family tables. Sequencing: the study's `SR01`
 (spicy-regs adopting `listing.py`) shares only the frozen ten-column
