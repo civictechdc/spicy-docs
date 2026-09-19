@@ -1,0 +1,1355 @@
+[
+  {
+    "id": {
+      "bioguide": "B000226",
+      "govtrack": 401222,
+      "icpsr": 507,
+      "wikipedia": "Richard Bassett (Delaware politician)",
+      "wikidata": "Q518823",
+      "google_entity_id": "kg:/m/02pz46"
+    },
+    "name": {
+      "first": "Richard",
+      "last": "Bassett"
+    },
+    "bio": {
+      "birthday": "1745-04-02",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "sen",
+        "start": "1789-03-04",
+        "end": "1793-03-03",
+        "state": "DE",
+        "class": 2,
+        "party": "Anti-Administration"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "B000546",
+      "govtrack": 401521,
+      "icpsr": 786,
+      "house_history": 9479,
+      "wikipedia": "Theodorick Bland (congressman)",
+      "wikidata": "Q1749152",
+      "google_entity_id": "kg:/m/033mf4"
+    },
+    "name": {
+      "first": "Theodorick",
+      "last": "Bland"
+    },
+    "bio": {
+      "birthday": "1742-03-21",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1789-03-04",
+        "end": "1790-06-01",
+        "state": "VA",
+        "district": 9
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "C000370",
+      "govtrack": 402509,
+      "wikipedia": "Norton P. Chipman",
+      "house_history": 10916,
+      "wikidata": "Q2819666",
+      "google_entity_id": "kg:/m/01s_tm"
+    },
+    "name": {
+      "first": "Norton",
+      "middle": "Parker",
+      "last": "Chipman"
+    },
+    "bio": {
+      "birthday": "1834-03-07",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1871-03-04",
+        "end": "1873-03-03",
+        "state": "DC",
+        "district": 0,
+        "party": "Republican"
+      },
+      {
+        "type": "rep",
+        "start": "1873-12-01",
+        "end": "1875-03-03",
+        "state": "DC",
+        "district": 0,
+        "party": "Republican"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "H000168",
+      "thomas": "00496",
+      "govtrack": 405050,
+      "icpsr": 14019,
+      "wikipedia": "Robert P. Hanrahan",
+      "house_history": 14491,
+      "wikidata": "Q4516548",
+      "google_entity_id": "kg:/m/02rkcpz"
+    },
+    "name": {
+      "first": "Robert",
+      "middle": "Paul",
+      "last": "Hanrahan"
+    },
+    "bio": {
+      "birthday": "1934-02-25",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1973-01-03",
+        "end": "1975-01-03",
+        "state": "IL",
+        "district": 3,
+        "party": "Republican"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "R000417",
+      "thomas": "00980",
+      "govtrack": 400615,
+      "wikipedia": "Carlos Romero Barceló",
+      "house_history": 20602,
+      "wikidata": "Q2183412",
+      "google_entity_id": "kg:/m/0p9vw",
+      "fec": [
+        "H2PR00016"
+      ]
+    },
+    "name": {
+      "first": "Carlos",
+      "last": "Romero-Barceló"
+    },
+    "bio": {
+      "birthday": "1932-09-04",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1993-01-05",
+        "end": "1997-01-03",
+        "state": "PR",
+        "district": 0,
+        "party": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1997-01-07",
+        "end": "2001-01-03",
+        "state": "PR",
+        "district": 0,
+        "party": "Democrat"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "M000303",
+      "thomas": "00754",
+      "lis": "S197",
+      "govtrack": 300071,
+      "opensecrets": "N00006424",
+      "votesmart": 53270,
+      "icpsr": 15039,
+      "fec": [
+        "S6AZ00019",
+        "P80002801"
+      ],
+      "cspan": 7476,
+      "wikipedia": "John McCain",
+      "house_history": 17696,
+      "ballotpedia": "John McCain",
+      "maplight": 592,
+      "wikidata": "Q10390",
+      "google_entity_id": "kg:/m/0bymv"
+    },
+    "name": {
+      "first": "John",
+      "middle": "S.",
+      "last": "McCain",
+      "official_full": "John McCain"
+    },
+    "bio": {
+      "birthday": "1936-08-29",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1983-01-03",
+        "end": "1985-01-03",
+        "state": "AZ",
+        "district": 1,
+        "party": "Republican"
+      },
+      {
+        "type": "rep",
+        "start": "1985-01-03",
+        "end": "1987-01-03",
+        "state": "AZ",
+        "district": 1,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1987-01-06",
+        "end": "1993-01-03",
+        "state": "AZ",
+        "class": 3,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1993-01-05",
+        "end": "1999-01-03",
+        "state": "AZ",
+        "class": 3,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1999-01-06",
+        "end": "2005-01-03",
+        "state": "AZ",
+        "class": 3,
+        "party": "Republican",
+        "url": "http://mccain.senate.gov/"
+      },
+      {
+        "type": "sen",
+        "start": "2005-01-04",
+        "end": "2011-01-03",
+        "state": "AZ",
+        "class": 3,
+        "party": "Republican",
+        "url": "http://mccain.senate.gov/"
+      },
+      {
+        "type": "sen",
+        "start": "2011-01-05",
+        "end": "2017-01-03",
+        "state": "AZ",
+        "class": 3,
+        "party": "Republican",
+        "url": "http://www.mccain.senate.gov",
+        "address": "218 Russell Senate Office Building Washington DC 20510",
+        "phone": "202-224-2235",
+        "fax": "202-228-2862",
+        "contact_form": "http://www.mccain.senate.gov/public/index.cfm/contact-form",
+        "office": "218 Russell Senate Office Building",
+        "state_rank": "senior"
+      },
+      {
+        "type": "sen",
+        "start": "2017-01-03",
+        "end": "2018-08-25",
+        "state": "AZ",
+        "class": 3,
+        "state_rank": "senior",
+        "party": "Republican",
+        "url": "https://www.mccain.senate.gov",
+        "address": "218 Russell Senate Office Building Washington DC 20510",
+        "office": "218 Russell Senate Office Building",
+        "phone": "202-224-2235",
+        "contact_form": "https://www.mccain.senate.gov/public/index.cfm/contact-form",
+        "fax": "202-228-2862"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "B000711",
+      "thomas": "00116",
+      "lis": "S223",
+      "govtrack": 300011,
+      "opensecrets": "N00006692",
+      "votesmart": 53274,
+      "icpsr": 15011,
+      "fec": [
+        "S2CA00286",
+        "H2CA06028",
+        "P80003247"
+      ],
+      "cspan": 2470,
+      "house_history": 9704,
+      "wikipedia": "Barbara Boxer",
+      "ballotpedia": "Barbara Boxer",
+      "maplight": 539,
+      "wikidata": "Q237560",
+      "google_entity_id": "kg:/m/01c1n5"
+    },
+    "name": {
+      "first": "Barbara",
+      "last": "Boxer",
+      "official_full": "Barbara Boxer"
+    },
+    "bio": {
+      "birthday": "1940-11-11",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1983-01-03",
+        "end": "1985-01-03",
+        "state": "CA",
+        "district": 6,
+        "party": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1985-01-03",
+        "end": "1987-01-03",
+        "state": "CA",
+        "district": 6,
+        "party": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1987-01-06",
+        "end": "1989-01-03",
+        "state": "CA",
+        "district": 6,
+        "party": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1989-01-03",
+        "end": "1991-01-03",
+        "state": "CA",
+        "district": 6,
+        "party": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1991-01-03",
+        "end": "1993-01-03",
+        "state": "CA",
+        "district": 6,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "1993-01-05",
+        "end": "1999-01-03",
+        "state": "CA",
+        "class": 3,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "1999-01-06",
+        "end": "2005-01-03",
+        "state": "CA",
+        "class": 3,
+        "party": "Democrat",
+        "url": "http://boxer.senate.gov/"
+      },
+      {
+        "type": "sen",
+        "start": "2005-01-04",
+        "end": "2011-01-03",
+        "state": "CA",
+        "class": 3,
+        "party": "Democrat",
+        "url": "http://boxer.senate.gov"
+      },
+      {
+        "type": "sen",
+        "start": "2011-01-05",
+        "end": "2017-01-03",
+        "state": "CA",
+        "class": 3,
+        "party": "Democrat",
+        "url": "https://www.boxer.senate.gov",
+        "address": "112 Hart Senate Office Building Washington DC 20510",
+        "phone": "202-224-3553",
+        "fax": "202-224-0454",
+        "contact_form": "https://www.boxer.senate.gov/contact/shareyourviews.html",
+        "office": "112 Hart Senate Office Building",
+        "state_rank": "junior"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "M001054",
+      "thomas": "01407",
+      "lis": "S113",
+      "govtrack": 400563,
+      "icpsr": 14508,
+      "wikipedia": "Daniel Patrick Moynihan",
+      "wikidata": "Q713505",
+      "google_entity_id": "kg:/m/01cny9",
+      "fec": [
+        "S6NY00052"
+      ]
+    },
+    "name": {
+      "first": "Daniel",
+      "middle": "Patrick",
+      "last": "Moynihan"
+    },
+    "bio": {
+      "birthday": "1927-03-16",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "sen",
+        "start": "1977-01-04",
+        "end": "1983-01-03",
+        "state": "NY",
+        "class": 1,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "1983-01-03",
+        "end": "1989-01-03",
+        "state": "NY",
+        "class": 1,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "1989-01-03",
+        "end": "1995-01-03",
+        "state": "NY",
+        "class": 1,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "1995-01-04",
+        "end": "2001-01-03",
+        "state": "NY",
+        "class": 1,
+        "party": "Democrat"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "T000254",
+      "thomas": "01448",
+      "lis": "S096",
+      "govtrack": 300157,
+      "icpsr": 9369,
+      "wikipedia": "Strom Thurmond",
+      "wikidata": "Q324719",
+      "google_entity_id": "kg:/m/0c4_l",
+      "fec": [
+        "S8SC00019"
+      ]
+    },
+    "name": {
+      "first": "J.",
+      "middle": "Strom",
+      "last": "Thurmond"
+    },
+    "bio": {
+      "birthday": "1902-12-05",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "sen",
+        "start": "1954-12-24",
+        "end": "1955-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "1955-01-05",
+        "end": "1956-04-04",
+        "state": "SC",
+        "class": 2,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "1956-11-07",
+        "end": "1961-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "1961-01-03",
+        "end": "1967-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican",
+        "party_affiliations": [
+          {
+            "start": "1961-01-03",
+            "end": "1964-09-16",
+            "party": "Democrat"
+          },
+          {
+            "start": "1964-09-16",
+            "end": "1967-01-03",
+            "party": "Republican"
+          }
+        ]
+      },
+      {
+        "type": "sen",
+        "start": "1967-01-10",
+        "end": "1973-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1973-01-03",
+        "end": "1979-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1979-01-15",
+        "end": "1985-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1985-01-03",
+        "end": "1991-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1991-01-03",
+        "end": "1997-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1997-01-07",
+        "end": "2003-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "H000463",
+      "thomas": "01359",
+      "lis": "S046",
+      "govtrack": 300154,
+      "icpsr": 14105,
+      "wikipedia": "Jesse Helms",
+      "wikidata": "Q503426",
+      "google_entity_id": "kg:/m/0_5w6",
+      "fec": [
+        "S8NC00015"
+      ]
+    },
+    "name": {
+      "first": "Jesse",
+      "last": "Helms"
+    },
+    "bio": {
+      "birthday": "1921-10-18",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "sen",
+        "start": "1973-01-03",
+        "end": "1979-01-03",
+        "state": "NC",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1979-01-15",
+        "end": "1985-01-03",
+        "state": "NC",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1985-01-03",
+        "end": "1991-01-03",
+        "state": "NC",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1991-01-03",
+        "end": "1997-01-03",
+        "state": "NC",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1997-01-07",
+        "end": "2003-01-03",
+        "state": "NC",
+        "class": 2,
+        "party": "Republican"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "W000288",
+      "thomas": "01454",
+      "lis": "S217",
+      "govtrack": 400566,
+      "wikipedia": "Paul Wellstone",
+      "icpsr": 49101,
+      "wikidata": "Q731783",
+      "google_entity_id": "kg:/m/010ngb",
+      "fec": [
+        "S0MN00013"
+      ]
+    },
+    "name": {
+      "first": "Paul",
+      "middle": "David",
+      "last": "Wellstone"
+    },
+    "bio": {
+      "birthday": "1944-07-21",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "sen",
+        "start": "1991-01-03",
+        "end": "1997-01-03",
+        "state": "MN",
+        "class": 2,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "1997-01-07",
+        "end": "2002-10-25",
+        "state": "MN",
+        "class": 2,
+        "party": "Democrat"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "M001170",
+      "thomas": "01820",
+      "lis": "S312",
+      "govtrack": 412243,
+      "opensecrets": "N00027694",
+      "votesmart": 2109,
+      "fec": [
+        "S6MO00305",
+        "P80005721"
+      ],
+      "cspan": 44501,
+      "wikipedia": "Claire McCaskill",
+      "house_history": 18811,
+      "ballotpedia": "Claire McCaskill",
+      "maplight": 725,
+      "icpsr": 40701,
+      "wikidata": "Q22260",
+      "google_entity_id": "kg:/m/040_w4"
+    },
+    "name": {
+      "first": "Claire",
+      "last": "McCaskill",
+      "official_full": "Claire McCaskill"
+    },
+    "bio": {
+      "birthday": "1953-07-24",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "sen",
+        "start": "2007-01-04",
+        "end": "2013-01-03",
+        "state": "MO",
+        "class": 1,
+        "party": "Democrat",
+        "url": "http://mccaskill.senate.gov/",
+        "address": "506 HART SENATE OFFICE BUILDING WASHINGTON DC 20510",
+        "phone": "202-224-6154",
+        "fax": "202-228-6326",
+        "contact_form": "http://www.mccaskill.senate.gov/?p=contact",
+        "office": "506 Hart Senate Office Building"
+      },
+      {
+        "type": "sen",
+        "start": "2013-01-03",
+        "end": "2019-01-03",
+        "state": "MO",
+        "party": "Democrat",
+        "class": 1,
+        "url": "https://www.mccaskill.senate.gov",
+        "address": "503 Hart Senate Office Building Washington DC 20510",
+        "phone": "202-224-6154",
+        "fax": "202-228-6326",
+        "contact_form": "http://www.mccaskill.senate.gov/contact",
+        "office": "503 Hart Senate Office Building",
+        "state_rank": "senior",
+        "rss_url": "http://mccaskill.senate.gov/rss/?p=news"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "G000365",
+      "thomas": "00453",
+      "lis": "S171",
+      "govtrack": 300159,
+      "icpsr": 14628,
+      "house_history": 14023,
+      "wikipedia": "Phil Gramm",
+      "wikidata": "Q2613704",
+      "google_entity_id": "kg:/m/016l53",
+      "fec": [
+        "H8TX06027",
+        "S6TX00040"
+      ]
+    },
+    "name": {
+      "first": "Phil",
+      "last": "Gramm"
+    },
+    "bio": {
+      "birthday": "1942-07-08",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1979-01-15",
+        "end": "1981-01-03",
+        "state": "TX",
+        "district": 6,
+        "party": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1981-01-05",
+        "end": "1983-01-03",
+        "state": "TX",
+        "district": 6,
+        "party": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1983-01-03",
+        "end": "1985-01-03",
+        "state": "TX",
+        "district": 6,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1985-01-03",
+        "end": "1991-01-03",
+        "state": "TX",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1991-01-03",
+        "end": "1997-01-03",
+        "state": "TX",
+        "class": 2,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1997-01-07",
+        "end": "2002-11-29",
+        "state": "TX",
+        "class": 2,
+        "party": "Republican"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "G000333",
+      "thomas": "01341",
+      "lis": "S152",
+      "govtrack": 400559,
+      "icpsr": 14904,
+      "wikipedia": "Slade Gorton",
+      "wikidata": "Q742210",
+      "google_entity_id": "kg:/m/02_b1q",
+      "fec": [
+        "S0WA00019"
+      ]
+    },
+    "name": {
+      "first": "T.",
+      "middle": "Slade",
+      "last": "Gorton"
+    },
+    "bio": {
+      "birthday": "1928-01-08",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "sen",
+        "start": "1981-01-05",
+        "end": "1987-01-03",
+        "state": "WA",
+        "class": 3,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1989-01-03",
+        "end": "1995-01-03",
+        "state": "WA",
+        "class": 1,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1995-01-04",
+        "end": "2001-01-03",
+        "state": "WA",
+        "class": 1,
+        "party": "Republican"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "G000367",
+      "thomas": "00454",
+      "lis": "S242",
+      "govtrack": 400560,
+      "wikipedia": "Rod Grams",
+      "house_history": 14026,
+      "icpsr": 29367,
+      "wikidata": "Q369047",
+      "google_entity_id": "kg:/m/01l4th",
+      "fec": [
+        "H2MN06081",
+        "H6MN08112",
+        "S4MN00213"
+      ]
+    },
+    "name": {
+      "first": "Rod",
+      "last": "Grams"
+    },
+    "bio": {
+      "birthday": "1948-02-04",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1993-01-05",
+        "end": "1995-01-03",
+        "state": "MN",
+        "district": 6,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "1995-01-04",
+        "end": "2001-01-03",
+        "state": "MN",
+        "class": 1,
+        "party": "Republican"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "G000359",
+      "thomas": "00452",
+      "lis": "S293",
+      "govtrack": 300047,
+      "opensecrets": "N00009975",
+      "votesmart": 21992,
+      "fec": [
+        "S0SC00149",
+        "H4SC03087"
+      ],
+      "cspan": 36782,
+      "wikipedia": "Lindsey Graham",
+      "house_history": 14015,
+      "ballotpedia": "Lindsey Graham",
+      "maplight": 569,
+      "icpsr": 29566,
+      "wikidata": "Q22212",
+      "google_entity_id": "kg:/m/01_pdg",
+      "pictorial": 13440
+    },
+    "name": {
+      "first": "Lindsey",
+      "middle": "O.",
+      "last": "Graham",
+      "official_full": "Lindsey Graham"
+    },
+    "bio": {
+      "birthday": "1955-07-09",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1995-01-04",
+        "end": "1997-01-03",
+        "state": "SC",
+        "district": 3,
+        "party": "Republican"
+      },
+      {
+        "type": "rep",
+        "start": "1997-01-07",
+        "end": "1999-01-03",
+        "state": "SC",
+        "district": 3,
+        "party": "Republican"
+      },
+      {
+        "type": "rep",
+        "start": "1999-01-06",
+        "end": "2001-01-03",
+        "state": "SC",
+        "district": 3,
+        "party": "Republican"
+      },
+      {
+        "type": "rep",
+        "start": "2001-01-03",
+        "end": "2003-01-03",
+        "state": "SC",
+        "district": 3,
+        "party": "Republican"
+      },
+      {
+        "type": "sen",
+        "start": "2003-01-07",
+        "end": "2009-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican",
+        "url": "http://lgraham.senate.gov/"
+      },
+      {
+        "type": "sen",
+        "start": "2009-01-06",
+        "end": "2015-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican",
+        "url": "http://www.lgraham.senate.gov",
+        "address": "290 Russell Senate Office Building Washington DC 20510",
+        "phone": "202-224-5972",
+        "fax": "202-224-3808",
+        "contact_form": "http://www.lgraham.senate.gov/public/index.cfm?FuseAction=Contact.EmailSenatorGraham",
+        "office": "290 Russell Senate Office Building",
+        "state_rank": "senior",
+        "rss_url": "http://www.lgraham.senate.gov/public/index.cfm?FuseAction=Rss.Feed"
+      },
+      {
+        "type": "sen",
+        "start": "2015-01-06",
+        "end": "2021-01-03",
+        "state": "SC",
+        "class": 2,
+        "party": "Republican",
+        "url": "https://www.lgraham.senate.gov/public",
+        "address": "290 Russell Senate Office Building Washington DC 20510",
+        "phone": "202-224-5972",
+        "fax": "202-224-3808",
+        "contact_form": "https://www.lgraham.senate.gov/public/index.cfm/e-mail-senator-graham",
+        "office": "290 Russell Senate Office Building",
+        "state_rank": "senior",
+        "rss_url": "http://www.lgraham.senate.gov/public/index.cfm?FuseAction=Rss.Feed"
+      },
+      {
+        "type": "sen",
+        "start": "2021-01-03",
+        "end": "2026-07-11",
+        "state": "SC",
+        "class": 2,
+        "state_rank": "senior",
+        "party": "Republican",
+        "url": "https://www.lgraham.senate.gov/public",
+        "rss_url": "http://www.lgraham.senate.gov/public/index.cfm?FuseAction=Rss.Feed",
+        "contact_form": "https://www.lgraham.senate.gov/public/index.cfm/e-mail-senator-graham",
+        "address": "211 Russell Senate Office Building Washington DC 20510",
+        "office": "211 Russell Senate Office Building",
+        "phone": "202-224-5972"
+      }
+    ]
+  },
+  {
+    "id": {
+      "govtrack": 412514,
+      "bioguide": "S001193",
+      "thomas": "02104",
+      "cspan": 79729,
+      "opensecrets": "N00033508",
+      "votesmart": 129529,
+      "wikipedia": "Eric Swalwell",
+      "fec": [
+        "H2CA15094"
+      ],
+      "ballotpedia": "Eric Swalwell",
+      "maplight": 1738,
+      "icpsr": 21306,
+      "wikidata": "Q3466996",
+      "google_entity_id": "kg:/m/0ncq55g",
+      "pictorial": 12928
+    },
+    "name": {
+      "first": "Eric",
+      "last": "Swalwell",
+      "official_full": "Eric Swalwell"
+    },
+    "bio": {
+      "gender": "M",
+      "birthday": "1980-11-16"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "2013-01-03",
+        "end": "2015-01-03",
+        "state": "CA",
+        "party": "Democrat",
+        "district": 15,
+        "office": "501 Cannon House Office Building",
+        "address": "501 Cannon HOB; Washington DC 20515-0515",
+        "phone": "202-225-5065",
+        "url": "http://swalwell.house.gov",
+        "contact_form": "http://swalwell.house.gov/contact-me/email-eric/"
+      },
+      {
+        "type": "rep",
+        "start": "2015-01-06",
+        "end": "2017-01-03",
+        "state": "CA",
+        "party": "Democrat",
+        "district": 15,
+        "office": "129 Cannon House Office Building",
+        "address": "129 Cannon HOB; Washington DC 20515-0515",
+        "phone": "202-225-5065",
+        "url": "http://swalwell.house.gov",
+        "contact_form": "http://swalwell.house.gov/contact-me/email-eric/"
+      },
+      {
+        "type": "rep",
+        "start": "2017-01-03",
+        "end": "2019-01-03",
+        "state": "CA",
+        "district": 15,
+        "party": "Democrat",
+        "phone": "202-225-5065",
+        "url": "https://swalwell.house.gov",
+        "address": "129 Cannon House Office Building; Washington DC 20515-0515",
+        "office": "129 Cannon House Office Building"
+      },
+      {
+        "type": "rep",
+        "start": "2019-01-03",
+        "end": "2021-01-03",
+        "state": "CA",
+        "district": 15,
+        "party": "Democrat",
+        "phone": "202-225-5065",
+        "address": "407 Cannon House Office Building Washington DC 20515-0515",
+        "office": "407 Cannon House Office Building",
+        "url": "https://swalwell.house.gov"
+      },
+      {
+        "type": "rep",
+        "start": "2021-01-03",
+        "end": "2023-01-03",
+        "state": "CA",
+        "district": 15,
+        "party": "Democrat",
+        "url": "https://swalwell.house.gov",
+        "address": "174 Cannon House Office Building Washington DC 20515-0515",
+        "office": "174 Cannon House Office Building",
+        "phone": "202-225-5065"
+      },
+      {
+        "type": "rep",
+        "start": "2023-01-03",
+        "end": "2025-01-03",
+        "state": "CA",
+        "district": 14,
+        "party": "Democrat",
+        "url": "https://swalwell.house.gov",
+        "address": "174 Cannon House Office Building Washington DC 20515-0514",
+        "office": "174 Cannon House Office Building",
+        "phone": "202-225-5065"
+      },
+      {
+        "type": "rep",
+        "start": "2025-01-03",
+        "end": "2026-04-14",
+        "state": "CA",
+        "district": 14,
+        "party": "Democrat",
+        "url": "https://swalwell.house.gov",
+        "address": "174 Cannon House Office Building Washington DC 20515-0514",
+        "office": "174 Cannon House Office Building",
+        "phone": "202-225-5065"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "G000594",
+      "fec": [
+        "H0TX35015"
+      ],
+      "opensecrets": "N00044592",
+      "govtrack": 456849,
+      "wikidata": "Q104648170",
+      "google_entity_id": "kg:/g/11fs52clcr",
+      "wikipedia": "Tony Gonzales",
+      "pictorial": 13280,
+      "votesmart": 188225,
+      "ballotpedia": "Tony Gonzales"
+    },
+    "name": {
+      "first": "Ernest",
+      "middle": "Anthony",
+      "nickname": "Tony",
+      "last": "Gonzales",
+      "official_full": "Tony Gonzales"
+    },
+    "bio": {
+      "gender": "M",
+      "birthday": "1980-10-10"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "2021-01-03",
+        "end": "2023-01-03",
+        "state": "TX",
+        "district": 23,
+        "party": "Republican",
+        "address": "1009 Longworth House Office Building Washington DC 20515-4323",
+        "office": "1009 Longworth House Office Building",
+        "phone": "202-225-4511",
+        "url": "https://gonzales.house.gov"
+      },
+      {
+        "type": "rep",
+        "start": "2023-01-03",
+        "end": "2025-01-03",
+        "state": "TX",
+        "district": 23,
+        "party": "Republican",
+        "url": "https://gonzales.house.gov",
+        "address": "2244 Rayburn House Office Building Washington DC 20515-4323",
+        "office": "2244 Rayburn House Office Building",
+        "phone": "202-225-4511"
+      },
+      {
+        "type": "rep",
+        "start": "2025-01-03",
+        "end": "2026-04-14",
+        "state": "TX",
+        "district": 23,
+        "party": "Republican",
+        "url": "https://gonzales.house.gov",
+        "address": "2239 Rayburn House Office Building Washington DC 20515-4323",
+        "office": "2239 Rayburn House Office Building",
+        "phone": "202-225-4511"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "L000550",
+      "thomas": "01546",
+      "lis": "S258",
+      "govtrack": 300063,
+      "opensecrets": "N00005395",
+      "votesmart": 661,
+      "fec": [
+        "S6LA00227",
+        "P00003483"
+      ],
+      "cspan": 22357,
+      "wikipedia": "Mary Landrieu",
+      "house_history": 17280,
+      "ballotpedia": "Mary Landrieu",
+      "maplight": 584,
+      "icpsr": 49702,
+      "wikidata": "Q22338",
+      "google_entity_id": "kg:/m/019tyn"
+    },
+    "name": {
+      "first": "Mary",
+      "middle": "L.",
+      "last": "Landrieu",
+      "official_full": "Mary L. Landrieu"
+    },
+    "bio": {
+      "birthday": "1955-11-23",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "sen",
+        "start": "1997-01-07",
+        "end": "2003-01-03",
+        "state": "LA",
+        "class": 2,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "2003-01-07",
+        "end": "2009-01-03",
+        "state": "LA",
+        "class": 2,
+        "party": "Democrat",
+        "url": "http://landrieu.senate.gov/"
+      },
+      {
+        "type": "sen",
+        "start": "2009-01-06",
+        "end": "2015-01-03",
+        "state": "LA",
+        "class": 2,
+        "party": "Democrat",
+        "url": "http://www.landrieu.senate.gov",
+        "address": "703 Hart Senate Office Building Washington DC 20510",
+        "phone": "202-224-5824",
+        "fax": "202-224-9735",
+        "contact_form": "http://www.landrieu.senate.gov/?p=contact",
+        "office": "703 Hart Senate Office Building",
+        "state_rank": "senior",
+        "rss_url": "http://www.landrieu.senate.gov/rss/"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "A000360",
+      "thomas": "01695",
+      "lis": "S289",
+      "govtrack": 300002,
+      "opensecrets": "N00009888",
+      "votesmart": 15691,
+      "fec": [
+        "S2TN00058",
+        "P60003225"
+      ],
+      "cspan": 5,
+      "wikipedia": "Lamar Alexander",
+      "ballotpedia": "Lamar Alexander",
+      "maplight": 530,
+      "icpsr": 40304,
+      "wikidata": "Q419976",
+      "google_entity_id": "kg:/m/01rbs3"
+    },
+    "name": {
+      "first": "Lamar",
+      "last": "Alexander",
+      "official_full": "Lamar Alexander"
+    },
+    "bio": {
+      "birthday": "1940-07-03",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "sen",
+        "start": "2003-01-07",
+        "end": "2009-01-03",
+        "state": "TN",
+        "class": 2,
+        "party": "Republican",
+        "url": "http://alexander.senate.gov/"
+      },
+      {
+        "type": "sen",
+        "start": "2009-01-06",
+        "end": "2015-01-03",
+        "state": "TN",
+        "class": 2,
+        "party": "Republican",
+        "url": "http://www.alexander.senate.gov",
+        "address": "455 Dirksen Senate Office Building Washington DC 20510",
+        "phone": "202-224-4944",
+        "fax": "202-228-3398",
+        "contact_form": "http://www.alexander.senate.gov/public/index.cfm?p=Email",
+        "office": "455 Dirksen Senate Office Building",
+        "state_rank": "senior",
+        "rss_url": "http://www.alexander.senate.gov/public/?a=rss.feed"
+      },
+      {
+        "type": "sen",
+        "start": "2015-01-06",
+        "end": "2021-01-03",
+        "state": "TN",
+        "class": 2,
+        "party": "Republican",
+        "url": "https://www.alexander.senate.gov/public",
+        "address": "455 Dirksen Senate Office Building Washington DC 20510",
+        "phone": "202-224-4944",
+        "fax": "202-228-3398",
+        "contact_form": "http://www.alexander.senate.gov/public/index.cfm?p=Email",
+        "office": "455 Dirksen Senate Office Building",
+        "state_rank": "senior",
+        "rss_url": "http://www.alexander.senate.gov/public/?a=rss.feed"
+      }
+    ]
+  }
+]
