@@ -385,6 +385,11 @@ graph LR
 
 Senate roster gap across the session: 1,859 of 1,899 voter ids on 19 sampled votes resolve through today's cvc, and 40 more through the legislators JSON. Absent from cvc per vote: vote 1 (January 9, 2025) 4, vote 36 (February 5, 2025) 2, vote 71 (February 20, 2025) 2, vote 106 (March 5, 2025) 2, vote 141 (March 25, 2025) 2, vote 176 (April 4, 2025) 2, vote 211 (April 11, 2025) 2, vote 246 (May 13, 2025) 2, vote 281 (May 22, 2025) 2, vote 316 (June 17, 2025) 2, vote 351 (June 30, 2025) 2, vote 386 (July 15, 2025) 2, vote 421 (July 22, 2025) 2, vote 456 (July 30, 2025) 2, vote 491 (August 2, 2025) 2, vote 526 (September 18, 2025) 2, vote 561 (October 9, 2025) 2, vote 596 (October 29, 2025) 2, vote 631 (December 3, 2025) 2.
 
+### House reporting requirements: the 8070 histogram (A6)
+
+Requirement 8070's `matching-communications` list walked in full, keyed, once: 92,450 rows across the 104th through the 119th Congress. Probing one communication's detail record per Congress from the 105th through the 119th finds the detail route answering from the 114th Congress on, so 26,725 of the 92,450 walked rows (28.9%) fall in the detail era.
+By the proposal's rule -- host only if the detail era covers a useful share -- 28.9% is not a useful share, so `house_requirements` stays a candidate rather than a hosted table.
+
 ### Catalog measurements
 
 - CDTF entries: 119; with `accrualPeriodicity`: 119; with any format or temporal field: 0.

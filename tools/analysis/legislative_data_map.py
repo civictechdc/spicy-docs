@@ -2697,6 +2697,41 @@ def render_flow(measures: Mapping[str, Any]) -> list[str]:
     return lines
 
 
+def render_requirements(measures: Mapping[str, Any]) -> list[str]:
+    """A6: requirement 8070's histogram and detail floor, read against the proposal's useful-share rule."""
+    data = measures.get("requirements")
+    if not data:
+        return []
+    histogram = data.get("histogram", {})
+    total = data.get("total", 0)
+    floor = data.get("detailFloor")
+    covered = data.get("coveredByFloor", 0)
+    share = data.get("share", 0.0)
+    lines = ["### House reporting requirements: the 8070 histogram (A6)", ""]
+    if histogram:
+        span = f"the {_ordinal(int(min(histogram, key=int)))} through the {_ordinal(int(max(histogram, key=int)))}"
+    else:
+        span = "no Congress"
+    lines.append(
+        f"Requirement 8070's `matching-communications` list walked in full, keyed, once: {total:,} rows "
+        f"across {span} Congress. Probing one communication's detail record per Congress from the 105th "
+        f"through the {_ordinal(CURRENT_CONGRESS)} finds the detail route answering from "
+        + (f"the {_ordinal(floor)} Congress on" if floor is not None else "no Congress in that range")
+        + f", so {covered:,} of the {total:,} walked rows ({share:.1%}) fall in the detail era."
+    )
+    if floor is not None:
+        useful = (
+            "a useful share, so `house_requirements` is worth hosting"
+            if share >= 0.5
+            else ("not a useful share, so `house_requirements` stays a candidate rather than a hosted table")
+        )
+        lines.append(
+            f"By the proposal's rule -- host only if the detail era covers a useful share -- {share:.1%} is {useful}."
+        )
+    lines.append("")
+    return lines
+
+
 # --- floors, edge samples, drift ---------------------------------------------------------------
 
 
@@ -2752,6 +2787,81 @@ def measure_floors(reader: PagedJsonReader, measures: dict[str, Any], api_key: s
             f"floor {route.route}: earliest {facts.get('earliest')} (was {earliest}), stop {stop}, below {below}",
             file=sys.stderr,
         )
+
+
+# A6: `house-requirement/8070/matching-communications` reaches back to the 105th Congress (the
+# map's histogram) but only carries detail records from some later floor; probed through the 119th.
+REQUIREMENT_CONGRESSES = tuple(range(105, CURRENT_CONGRESS + 1))
+
+
+def measure_requirements(reader: PagedJsonReader, api_key: str) -> dict[str, Any]:
+    """Walk requirement 8070's full matching-communications list once, then probe the detail floor.
+
+    The route is a count, not an index (A6): 92,450 rows, unordered by Congress, with no cheap way to
+    bound a walk to one era. A full walk is cheap regardless -- 370 pages of 250, about five minutes --
+    so this reads every row once, keyed, and histograms it by the ``congress`` field each row states.
+    It then probes one communication's detail record per Congress from the 105th through the 119th,
+    since the per-Congress ``house-communication`` route only answers from the 114th on and the older
+    rows may carry no detail record at all; the first Congress whose sampled row resolves is the detail
+    floor. The decision the proposal (`docs/research/closing-the-gaps-2026-09-19.md` A6) names: host
+    `house_requirements` only if the detail era -- every Congress at or above that floor -- covers a
+    useful share of the full histogram.
+    """
+    url = f"{CONGRESS_API}/house-requirement/8070/matching-communications?{urlencode({'format': 'json', 'limit': 250})}"
+    rows = _walk(reader, url, "matchingCommunications", max_pages=380)
+    histogram: Counter[int] = Counter()
+    sample_by_congress: dict[int, Mapping[str, Any]] = {}
+    for row in rows:
+        congress_num = row.get("congress")
+        if congress_num is None:
+            continue
+        congress_num = int(congress_num)
+        histogram[congress_num] += 1
+        sample_by_congress.setdefault(congress_num, row)
+
+    detail: dict[str, Any] = {}
+    floor: int | None = None
+    for congress_num in REQUIREMENT_CONGRESSES:
+        sample = sample_by_congress.get(congress_num)
+        if sample is None:
+            detail[str(congress_num)] = {"sampled": False}
+            continue
+        code = str(sample.get("communicationType", {}).get("code", "")).lower()
+        number = sample.get("number")
+        label = f"{congress_num}th {code.upper()} {number}"
+        try:
+            record = _cg(reader, f"house-communication/{congress_num}/{code}/{number}").get("houseCommunication", {})
+        except (PagedJsonSourceError, ProbeError, httpx.HTTPError) as error:
+            # A 404 here is expected, not exceptional: it is exactly how a Congress outside the
+            # detail era answers (`ProbeUnavailableError`, a `ProbeError`), so it is recorded as
+            # an unresolved sample, not raised.
+            detail[str(congress_num)] = {
+                "sampled": True,
+                "resolved": False,
+                "label": label,
+                "error": scrub_credential(str(error), api_key)[:80],
+            }
+            continue
+        resolved = str(record.get("number")) == str(number)
+        detail[str(congress_num)] = {"sampled": True, "resolved": resolved, "label": label}
+        if resolved and floor is None:
+            floor = congress_num
+
+    total = len(rows)
+    covered = sum(n for c, n in histogram.items() if floor is not None and c >= floor)
+    share = covered / total if total else 0.0
+    print(
+        f"requirements: {total} rows walked, detail floor {floor}, {covered}/{total} ({share:.1%}) at or above it",
+        file=sys.stderr,
+    )
+    return {
+        "total": total,
+        "histogram": {str(c): n for c, n in sorted(histogram.items())},
+        "detail": detail,
+        "detailFloor": floor,
+        "coveredByFloor": covered,
+        "share": share,
+    }
 
 
 SAMPLE_ONLY = {
@@ -3414,6 +3524,7 @@ def render_tables(measures: Mapping[str, Any]) -> str:
         lines.append("")
     lines += render_comparisons(measures)
     lines += render_flow(measures)
+    lines += render_requirements(measures)
     catalog = measures.get("catalog", {})
     dist = catalog.get("distributionAccessUrl", {})
     duplicates = ", ".join(f"`{u}` ×{n}" for u, n in catalog.get("duplicateLandingPages", {}).items()) or "none"
@@ -3523,7 +3634,14 @@ def main(argv: list[str] | None = None) -> int:
         "--flow", action="store_true", help="run only the data-flow edge probes and merge into --output"
     )
     parser.add_argument("--freshness", action="store_true", help="re-measure only each route's newest update date")
-    parser.add_argument("--floors", action="store_true", help="probe five keys below each measured coverage floor")
+    parser.add_argument(
+        "--floors", action="store_true", help="continue each route's descent past its recorded coverage floor"
+    )
+    parser.add_argument(
+        "--requirements",
+        action="store_true",
+        help="walk house-requirement 8070's matching-communications once and probe its detail floor",
+    )
     parser.add_argument("--sample", type=int, default=0, help="with --flow: also follow each edge from this many items")
     parser.add_argument("--diff", type=Path, help="print what moved since this earlier output file")
     parser.add_argument("--max-descent", type=int, default=60, help="requests per route when walking back by Congress")
@@ -3549,6 +3667,22 @@ def main(argv: list[str] | None = None) -> int:
             measure_floors(congress, measures, api_key)
         measures["floorsRequests"] = dict(REQUESTS)
         measures["floorsAt"] = datetime.now(UTC).isoformat()
+        args.output.write_text(json.dumps(measures, indent=2, sort_keys=True) + "\n")
+    elif args.requirements:
+        if args.env_file is None:
+            parser.error("--env-file is required for --requirements")
+        api_key = read_api_key(args.env_file, args.env_var)
+        budget = PagedJsonBudget(
+            max_requests=3,
+            max_page_bytes=4 * 1024 * 1024,
+            timeout_seconds=args.timeout,
+            min_request_interval_seconds=args.min_interval_seconds,
+        )
+        measures = json.loads(args.output.read_text())
+        with CongressListingReader(budget=budget, api_key=api_key) as congress:
+            measures["requirements"] = measure_requirements(congress, api_key)
+        measures["requirementsRequests"] = dict(REQUESTS)
+        measures["requirementsAt"] = datetime.now(UTC).isoformat()
         args.output.write_text(json.dumps(measures, indent=2, sort_keys=True) + "\n")
     elif args.freshness:
         if args.env_file is None:
@@ -3652,6 +3786,7 @@ def main(argv: list[str] | None = None) -> int:
         carried = (
             "comparisons", "compareRequests", "comparedAt", "flow", "flowRequests", "flowAt",
             "flowSamples", "flowSampleSize", "sampledAt", "freshnessAt", "floorsAt",
+            "requirements", "requirementsRequests", "requirementsAt",
         )  # fmt: skip
         measures.update({k: previous[k] for k in carried if k in previous})
         try:
