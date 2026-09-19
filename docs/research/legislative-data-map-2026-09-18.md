@@ -128,7 +128,7 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 | Subject | Data | Route | Status | Credential | Coverage | Count / sample | Note |
 |---|---|---|---|---|---|---|---|
 | votes | House per-vote XML | `clerk.house.gov/evs/{year}/roll{N}.xml` | `have` | none |  | sample 82,515 B, root `rollcall-vote`, 2 children; names congress, session, rollcall-num | `congress/votes.py`: the `house-vote` API names this file as its source; bioguide-keyed |
-| votes | Senate per-vote XML | `senate.gov/legislative/LIS/roll_call_votes/vote{c}{s}/vote_{c}_{s}_{n}.xml` | `have` | none |  | sample 28,670 B, root `roll_call_vote`, 18 children; names congress, congress_year, document_congress, session | `congress/votes.py`: LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source; `votes.py` also gains `list_senate_votes(congress, session)` over the session's vote-menu file, keyless, identity proved from its own congress and session |
+| votes | Senate per-vote XML | `senate.gov/legislative/LIS/roll_call_votes/vote{c}{s}/vote_{c}_{s}_{n}.xml` | `have` | none |  | sample 28,670 B, root `roll_call_vote`, 18 children; names congress, congress_year, document_congress, session | `congress/votes.py`: LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source; `votes.py` also gains the session's vote-menu index -- `parse_senate_vote_menu` reads the file into a `SenateVoteMenu`, identity proved from its own congress and session; `VoteAcquirer`'s `list_senate_votes` fetches and parses one keylessly into a `SenateVoteMenuAcquisition`; `locator_from_menu_entry` builds the `VoteLocator` for one entry |
 | members | House MemberData.xml | `clerk.house.gov/xml/lists/MemberData.xml` | `candidate` | none |  | sample 556,936 B, root `MemberData`, 3 children; names congress-num, congress-text, session | members plus committee assignments with codes; only for fields the `member` API lacks |
 | members | House members.xml extras | `member-info.house.gov/members.xml` | `candidate` | none |  | sample 397,944 B, root `Members`, 441 children; dated only (last_updated) | photos and social; only if the API lacks a needed field |
 | members | Senate committee XML | `senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml` | `candidate` | none |  | sample 67,616 B, root `senators`, 101 children; dated only (date, lastUpdate) | bioguide⇄LIS crosswalk; the community legislators JSON (Table D) is the crosswalk `congress/votes.py` actually uses, since it also covers Senate voters who have already left the roster |
@@ -388,7 +388,7 @@ Senate roster gap across the session: 1,859 of 1,899 voter ids on 19 sampled vot
 ### House reporting requirements: the 8070 histogram (A6)
 
 Requirement 8070's `matching-communications` list walked in full, keyed, once: 92,450 rows across the 104th through 119th Congresses. Probing one communication's detail record per Congress from the 105th through the 119th finds the detail route answering from the 114th Congress on, so 26,725 of the 92,450 walked rows (28.9%) fall in the detail era.
-By the proposal's rule -- host only if the detail era covers a useful share -- 28.9% is not a useful share, so `house_requirements` stays a candidate rather than a hosted table.
+By the proposal's rule -- host only if the detail era covers a useful share -- 28.9% is not a useful share, so `house_requirements` stays a candidate rather than a hosted table (this measurement's own stated threshold: 50%, a majority; no decisions.md record sets one).
 
 ### Catalog measurements
 
@@ -481,10 +481,16 @@ establishes:
   ways: a bill, an amendment number carried in its own element, or a
   nomination that may be an en bloc range, so a joiner has to read all
   three.
-- **Below the floors.** Probing five Congresses under each measured floor
-  found committee prints again at the 94th and treaties at the 81st, so
-  those floors are gaps in the walk, not the publisher's start; committees
-  simply continue below the walk's cap. Every other floor held.
+- **Below the floors.** `--floors` continues each route's descent past its
+  recorded floor -- resetting the empty run on every non-zero count and
+  concluding real absence only after eight consecutive empty Congresses, 65
+  steps, or the 1st Congress -- instead of a fixed five-key guess that would
+  re-hit the same false two-empty stop. Committee prints resolved to the
+  94th Congress (six empty Congresses past its old, false 101st), treaties
+  to the 81st (four past its old 86th), and committee rosters all the way
+  to the 1st, still populated: the original 60th-Congress floor was the
+  walk's request cap, not a publisher gap. No route now reports a floor
+  with more data sitting below it.
 
 ## Sequencing against the port
 

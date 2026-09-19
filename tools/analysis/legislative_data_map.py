@@ -51,7 +51,7 @@ import httpx
 
 from spicy_docs.reading.paged_json import PagedJsonBudget, PagedJsonReader, PagedJsonSourceError
 from spicy_docs.reading.xml import parse_xml
-from spicy_docs.sources.congress.listing import CongressListingReader
+from spicy_docs.sources.congress.listing import LIST_ROUTES, CongressListingReader
 from spicy_docs.sources.govinfo.discovery import GovInfoDiscoveryReader, published_url
 from spicy_docs.transport.capture import CapturedBodyResponse
 from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key, scrub_credential
@@ -297,8 +297,9 @@ ROWS = (
     Row(C, "votes", "Senate per-vote XML", "`senate.gov/legislative/LIS/roll_call_votes/vote{c}{s}/vote_{c}_{s}_{n}.xml`",
         "have", NONE,
         "`congress/votes.py`: LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source; `votes.py` also "
-        "gains `list_senate_votes(congress, session)` over the session's vote-menu file, keyless, identity proved from its own "
-        "congress and session",
+        "gains the session's vote-menu index -- `parse_senate_vote_menu` reads the file into a `SenateVoteMenu`, identity proved "
+        "from its own congress and session; `VoteAcquirer`'s `list_senate_votes` fetches and parses one keylessly into a "
+        "`SenateVoteMenuAcquisition`; `locator_from_menu_entry` builds the `VoteLocator` for one entry",
         ("sample", "senate-vote"), ("src/spicy_docs/sources/congress/votes.py",)),
     Row(C, "members", "House MemberData.xml", "`clerk.house.gov/xml/lists/MemberData.xml`", "candidate", NONE,
         "members plus committee assignments with codes; only for fields the `member` API lacks", ("sample", "house-memberdata")),
@@ -2709,6 +2710,15 @@ def render_flow(measures: Mapping[str, Any]) -> list[str]:
     return lines
 
 
+# A6's proposal row names the rule ("host only if the detail era covers a useful share") but no
+# number: no `docs/decisions.md` record and no other gap row states one. A majority is the plain
+# reading of "useful" absent a more specific rule -- a hosted table whose newer, more active half
+# has no rows at all would mislead a consumer more than the missing table does -- so this measurement
+# adopts one-half as its own stated default, not a prior decision; revisit if `decisions.md` records
+# a different bound.
+REQUIREMENTS_USEFUL_SHARE = 0.5
+
+
 def render_requirements(measures: Mapping[str, Any]) -> list[str]:
     """A6: requirement 8070's histogram and detail floor, read against the proposal's useful-share rule."""
     data = measures.get("requirements")
@@ -2736,11 +2746,13 @@ def render_requirements(measures: Mapping[str, Any]) -> list[str]:
     if floor is not None:
         useful = (
             "a useful share, so `house_requirements` is worth hosting"
-            if share >= 0.5
+            if share >= REQUIREMENTS_USEFUL_SHARE
             else ("not a useful share, so `house_requirements` stays a candidate rather than a hosted table")
         )
         lines.append(
-            f"By the proposal's rule -- host only if the detail era covers a useful share -- {share:.1%} is {useful}."
+            f"By the proposal's rule -- host only if the detail era covers a useful share -- {share:.1%} is {useful} "
+            f"(this measurement's own stated threshold: {REQUIREMENTS_USEFUL_SHARE:.0%}, a majority; no decisions.md "
+            f"record sets one)."
         )
     lines.append("")
     return lines
@@ -2792,9 +2804,13 @@ def measure_floors(reader: PagedJsonReader, measures: dict[str, Any], api_key: s
                     stop = "empty-run"
                     break
         facts["belowFloor"] = below
-        # Only a find *below* the adopted floor is still an open anomaly; `new_earliest` is by
-        # construction the deepest non-zero key already probed, so a clean run reports none.
-        facts["floorGap"] = sorted(k for k, v in below.items() if v and k < new_earliest)
+        # No separate "found data below the adopted floor" field: `new_earliest` is set to every
+        # key visited with a non-zero count, in strictly decreasing order, so it is always the
+        # deepest one already probed -- a stale `floorGap` field used to carry this warning under
+        # the old fixed five-key probe, which could find data the walk had not adopted; this walk
+        # adopts everything it finds, so that field would always serialize empty and was removed.
+        # Drop it from a sidecar written by an older run of this tool, so nothing stale lingers.
+        facts.pop("floorGap", None)
         if new_earliest != earliest:
             facts["earliest"], facts["descentStop"] = new_earliest, stop
         print(
@@ -3391,12 +3407,6 @@ def _congress_cells(facts: Mapping[str, Any]) -> tuple[str, str]:
         coverage = f"{_ordinal(earliest)} Congress+"
     if facts.get("descentStop") in ("cap", "error") and earliest is not None:
         coverage = f"≥ {coverage[:-1]} ({facts['descentStop']})"
-    if facts.get("floorGap"):
-        keys = ", ".join(str(k) for k in facts["floorGap"])
-        if facts.get("descentStop") == "cap":
-            coverage += f" (continues below the cap: {keys} populated)"
-        else:
-            coverage += f" (populated again at {keys}: a gap wider than the walk's stop)"
     latest = facts.get("latestUpdate")
     if latest:
         stamp = str(latest)[:10]
@@ -3602,25 +3612,66 @@ PROOFS: dict[str, str] = {
 }
 
 
+LISTING_MODULE = "src/spicy_docs/sources/congress/listing.py"
+_NOTE_CALL = re.compile(r"`([A-Za-z_][A-Za-z0-9_]*)\(")
+_NOTE_BARE = re.compile(r"`([A-Za-z_][A-Za-z0-9_]*)`")
+
+
+def _note_symbols(note: str) -> list[str]:
+    """Backtick names in `note` shaped like a Python function or class, not a field, file or acronym.
+
+    A call form (`` `name(` ``) or a bare backtick identifier is a candidate only if it also reads as a
+    Python name: PascalCase and not ALL_CAPS (a class, not an acronym like `RIN`), or snake_case with an
+    underscore (a function, not a bare lowercase word like `bioguide` or `hearing`).
+    """
+    candidates = {*_NOTE_CALL.findall(note), *_NOTE_BARE.findall(note)}
+    return [
+        name for name in candidates if (name[:1].isupper() and not name.isupper()) or ("_" in name and name.islower())
+    ]
+
+
+def _defines(texts: list[str], name: str) -> bool:
+    return any(re.search(rf"\b(?:def|class)\s+{re.escape(name)}\b", text) for text in texts)
+
+
 def check_evidence(root: Path) -> None:
-    """Every `have` or `port` row names a repo path that exists and whose text states what the row claims."""
+    """Every `have` or `port` row names a repo path that exists and whose text states what the row claims.
+
+    Two narrower claims get their own check, because a route's or a symbol's *name* is a specific,
+    checkable fact, and a row has previously been wrong about both while still citing a real file: a row
+    citing `congress/listing.py` for a route (its `measure` key) must name a live `LIST_ROUTES` key, not
+    a plausible-looking string, and a function or class the note names (backtick, PascalCase or
+    snake_case) must actually be defined in one of the row's evidence files.
+    """
     missing = [(row.data, p) for row in ROWS for p in row.evidence if not (root / p).exists()]
     claims = [row.data for row in ROWS if row.status.startswith(("have", "port")) and not row.evidence]
     unproven = []
+    unrouted = []
+    unsymboled = []
     for row in ROWS:
+        texts = [(root / p).read_text(errors="replace") for p in row.evidence if (root / p).is_file()]
+        if row.status.startswith(("have", "port")):
+            if row.measure is not None and LISTING_MODULE in row.evidence and row.measure[1] not in LIST_ROUTES:
+                unrouted.append((row.data, row.measure[1]))
+            for name in _note_symbols(row.note):
+                if not _defines(texts, name):
+                    unsymboled.append((row.data, name))
         phrase = PROOFS.get(row.data)
         if not phrase or not row.evidence:
             continue
-        texts = [(root / p).read_text(errors="replace").lower() for p in row.evidence if (root / p).is_file()]
-        if not any(phrase.lower() in text for text in texts):
+        if not any(phrase.lower() in text.lower() for text in texts):
             unproven.append((row.data, phrase))
-    if missing or claims or unproven:
+    if missing or claims or unproven or unrouted or unsymboled:
         for data, p in missing:
             print(f"evidence missing for {data!r}: {p}", file=sys.stderr)
         for data in claims:
             print(f"no evidence named for {data!r}", file=sys.stderr)
         for data, phrase in unproven:
             print(f"evidence for {data!r} never states {phrase!r}", file=sys.stderr)
+        for data, key in unrouted:
+            print(f"{data!r} cites listing.py for route {key!r}, not a LIST_ROUTES key", file=sys.stderr)
+        for data, name in unsymboled:
+            print(f"{data!r} names {name!r}, not defined in its evidence", file=sys.stderr)
         raise SystemExit(2)
 
 
