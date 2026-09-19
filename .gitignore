@@ -15,3 +15,6 @@ output
 
 # Generated dependency-graph dumps; machine output no code reads.
 wiki/temp/
+
+# Agent worktrees: sibling checkouts on their own branches, never content.
+.claude/worktrees/
