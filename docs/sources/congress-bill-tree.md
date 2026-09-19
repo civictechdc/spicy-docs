@@ -142,9 +142,16 @@ nothing else.
 
 A git pin rather than a PyPI range because nothing is published to PyPI yet:
 `deltatrack` is an unclaimed name on the index, so a version specifier would
-resolve to nothing at best and to an unrelated package at worst. Move the pin to
-a release when upstream publishes one, and drop the `[tool.uv.sources]` entry at
-that point.
+resolve to nothing at best and to an unrelated package at worst. **Move the pin
+to a release, and drop the `[tool.uv.sources]` entry, as soon as upstream
+publishes one** — a git rev is a worse pin than a version, because it names a
+commit on a branch that can be force-pushed out from under it.
+
+One consequence for the gate: `uv sync --extra bill-diff` clones from GitHub the
+first time, so a cold environment needs network for that one dependency. uv
+caches the checkout, so later syncs and every `--frozen` run are offline, and the
+lock records the resolved commit either way. Without the extra, `./scripts/check`
+still runs; the adapter tests skip and say why.
 
 ## What upstream already decides, measured at `c636448`
 
@@ -153,16 +160,16 @@ Every row was checked against the pinned revision, most of them as a test in
 
 | Inventory item | Upstream at `c636448` | Where |
 | --- | --- | --- |
-| §4.4 D1 — CDATA dropped from bodies | **Present.** `extract_text_content` walks `itertext`; expat reports CDATA as character data, so it reaches the body. | `bill_tree.py:328` |
-| §4.4 D2 — U+FEFF splits a word in JS, not in Python | **Present, as the Python behaviour.** Not decided explicitly; a BOM inside a text node stays in the body. 0 of 40 sampled files carry one, so this is untested by the corpus. | `bill_tree.py:328` |
-| §4.4 D3 — `enum` read as `textContent`, one trailing dot | **Present.** Direct `.text`, full `rstrip('.')`. An enum carrying markup does not re-key the section. | `bill_tree.py:896` |
+| §4.4 D1 — CDATA dropped from bodies | **Present.** `extract_text_content` delegates to `_itertext_block_spaced`, which accumulates `element.text` and each child's `tail`; expat reports CDATA as character data, so it reaches the body. | `bill_tree.py:297-321`, via `:328` |
+| §4.4 D2 — U+FEFF splits a word in JS, not in Python | **Present, as the Python behaviour.** Not decided explicitly; a BOM inside a text node stays in the body. 0 of 40 sampled files carry one, so this is untested by the corpus. | `bill_tree.py:297-321` |
+| §4.4 D3 — `enum` read as `textContent`, one trailing dot | **Present.** Direct `.text`, full `rstrip('.')`. An enum carrying markup does not re-key the section. | `bill_tree.py:929-930` |
 | §4.4 D4 — `" "` vs `""` join asymmetry | **Resolved the other way, and this is a behaviour change.** Upstream now joins **both** appropriations text and section text with `" "`. The vendored snapshot joined section text with `""`, which is what every stored `bill_sections.body` was produced with. | `bill_tree.py:1136`, `:1192` |
 | §4.4 D5 — amendment chain found only at fixed depth | **Present.** `.//engrossed-amendment-body/amendment/amendment-block`. | `bill_tree.py:175` |
 | §4.4 D6 — `getElementsByTagName` filtered by parent | **Present.** Direct-child `findall`. | `bill_tree.py:1507`, `:1554`, `:1563` |
 | §4.5 — `$[\d,]+` merges an abutting percentage | **Present.** `\$\d{1,3}(?:,\d{3})+\|\$\d+`. | `amounts.py:47` |
 | §4.5 — stateful global-regex `test()` | **Present.** `has_amendment_annotation` is a plain `re.search`. | `amounts.py:114` |
 | §4.5 — `JSON.stringify` of a comparator-less sort | **Present.** `Counter(old) != Counter(new)`. | `diff_bill.py:173` |
-| §4.5 — hand-rolled LCS emitting no `delete`/`insert` | **Present.** `SequenceMatcher(autojunk=False)` opcodes. | `diff_bill.py:74` |
+| §4.5 — hand-rolled LCS emitting no `delete`/`insert` | **Present.** `SequenceMatcher(autojunk=False)` opcodes. | `diff_bill.py:105` |
 | §4.3 — three-stage `real_quick_ratio`/`quick_ratio`/`ratio` bail-out | **Present, at the move matrix** rather than at word-segment rendering, which upstream does not have. | `similarity.py:78`, `:97` |
 | Decision 7 — `resolution-body` | **Present**, with paired committee-amendment variants refused rather than guessed. | `bill_tree.py:156` |
 
@@ -235,6 +242,26 @@ pairing in `FinancialChange.pairs` — with `from_amounts`, `to_amounts` and
 to be true. A row means "these two figures sit at the same place in the word
 alignment of the two texts". It does not mean they are the same account. Do not
 sum `delta` across rows and call it a funding change.
+
+**Two gates make that caveat structural rather than advisory**, because a
+populated field nothing reads presents as available, which is what #671/#687
+closed by deleting the field outright:
+
+- `diff_sections(..., pair_amounts=True)` is required. Off by default, a caller
+  takes the account claim by name.
+- Even then, a section whose `amounts_changed` is false contributes no rows.
+  Before this gate, a self-diff of the appropriations fixture produced eight
+  rows of `delta` 0 — findings that were really just "each figure equals
+  itself".
+
+The pairing is also the one cost this adapter adds that upstream's published
+path does not pay: `match_amounts` runs `SequenceMatcher(autojunk=False)` over
+both bodies' words, O(w²) per section with the popular-element heuristic
+switched off — that heuristic is what would drop a repeated `$1,000` out of the
+alignment. Measured on one section pair, 8,000 words of distinct wording pairs
+in 0.007 s, but 8,000 words of repetitive appropriations phrasing takes 0.46 s
+and 16,000 words 1.88 s. Repetitive is what appropriations text *is*, so the two
+gates are what keep this off the common path.
 
 One column is filled that BillTrax never filled: `label` carries the section
 heading. `financial.ts` set it to `""` at every construction site, so the column

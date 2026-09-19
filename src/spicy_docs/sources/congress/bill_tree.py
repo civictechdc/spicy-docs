@@ -60,7 +60,6 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 # nests to <subclause>. 24 MiB leaves headroom without admitting an unbounded parse.
 DEFAULT_MAX_BYTES = 24 * 1024 * 1024
 
-BODY_TAGS = ("legis-body", "resolution-body", "amendment-block")
 _VERSION_CHARACTERS = re.compile(r"[^A-Za-z0-9.-]")
 EXTRA_REQUIRED = "bill tree reading needs the 'bill-diff' extra: uv sync --extra bill-diff"
 
@@ -166,12 +165,15 @@ def _inventory(
 
     1. The element sits inside an element whose ``id`` the engine put on a node.
        That node's text was extracted from that subtree.
-    2. Its own text is one of the strings, one of the lines, or one of the
-       label parts the engine's nodes carry. This is what accounts for the front
-       matter, which the engine composes without recording which element each
-       line came from.
-    3. It has children, they are all read, and it adds no text of its own — a
-       container whose contents are wholly accounted for.
+    2. Its own text is one of the strings, or one of the lines, the engine's
+       nodes carry. This is what accounts for the front matter, which the engine
+       composes without recording which element each line came from.
+    3. It has children, they are all read, and it contributes no text of its
+       own — a container whose contents are wholly accounted for. "Its own"
+       means both ``element.text``, before the first child, and every child's
+       ``tail``, between and after them: GPO mixed content puts real words in
+       tails, and a container credited while a tail went unaccounted would be
+       the silent under-report this whole count exists to avoid.
 
     The root and each body are read by construction: their tag, stage attribute
     and body spelling are what :class:`BillDocument` reports.
@@ -221,7 +223,12 @@ def _inventory(
                 and (text := _collapse("".join(element.itertext()))) != ""
                 and text in accounted
             )
-            or (bool(children) and all(read[id(child)] for child in children) and not (element.text or "").strip())
+            or (
+                bool(children)
+                and all(read[id(child)] for child in children)
+                and not (element.text or "").strip()
+                and not any((child.tail or "").strip() for child in children)
+            )
         )
         read[id(element)] = settled
 
@@ -287,7 +294,6 @@ def parse_bill_tree(xml_bytes: bytes, *, version: str = "", max_bytes: int = DEF
 
 
 __all__ = [
-    "BODY_TAGS",
     "DEFAULT_MAX_BYTES",
     "EXTRA_REQUIRED",
     "BillDocument",

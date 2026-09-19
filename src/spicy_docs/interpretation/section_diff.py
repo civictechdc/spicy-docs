@@ -20,25 +20,45 @@ recomposition is pinned by a test that asserts it produces exactly
 ``diff_bills``'s change list, so upstream changing the sequence fails here
 rather than drifting silently.
 
-**Amount pairing is not an account claim.** Upstream removed paired amounts from
-both published contracts (#671, #687): pairing a figure on one side with a figure
-on the other and publishing the difference is a claim about an account, and an
-appropriations paragraph mixes top-line appropriations, sub-allocations, "not to
-exceed" ceilings and loan-guarantee limitations with nothing distinguishing them.
-``match_amounts`` remains public and tested upstream, and ``financial_changes``
-has ``from_amount``/``to_amount``/``delta`` columns to fill, so the pairing is
-offered here — under its real name, with ``amounts_changed`` and the two
-multisets beside it as the facts that need no account model to be true.
+**Amount pairing is not an account claim, and is off by default.** Upstream
+removed paired amounts from both published contracts (#671, #687): pairing a
+figure on one side with a figure on the other and publishing the difference is a
+claim about an account, and an appropriations paragraph mixes top-line
+appropriations, sub-allocations, "not to exceed" ceilings and loan-guarantee
+limitations with nothing distinguishing them. ``match_amounts`` remains public
+and tested upstream, and ``financial_changes`` has
+``from_amount``/``to_amount``/``delta`` columns to fill, so the pairing is
+offered here — behind ``diff_sections(..., pair_amounts=True)``, and only for a
+section whose amounts actually changed. The default output carries
+``amounts_changed`` and the two multisets, which are facts that need no account
+model to be true.
 
-**Complexity.** All of it is upstream's, bounded by upstream's guards: retrieval
-gates every candidate ratio behind ``real_quick_ratio`` and ``quick_ratio``,
-which are documented upper bounds on ``ratio``, so the O(w²) alignment runs only
-for pairs that can still clear the threshold. This module adds one linear pass
-over the settled correspondences. The three caps BillTrax's TypeScript fork
-learned in production — a collision-group cap, an asymmetric-pair guard and a
-body-size cap on inline word segments — have no upstream equivalent; they are
-recorded for upstream in ``docs/sources/congress-bill-tree.md`` rather than
-patched in here.
+**Complexity.** The matching is upstream's and is bounded by upstream's guards:
+retrieval gates every candidate ratio behind ``real_quick_ratio`` and
+``quick_ratio``, documented upper bounds on ``ratio``, so the O(w²) alignment
+runs only for pairs that can still clear the threshold. Shaping the rows is one
+linear pass over the settled correspondences.
+
+**This module adds one cost upstream's published path does not pay.**
+``match_amounts`` runs ``SequenceMatcher(autojunk=False)`` over both bodies'
+words — O(w²) per section, with the popular-element heuristic that would cap it
+switched off, because that heuristic is what would drop a repeated ``$1,000``
+out of the alignment. Upstream's own ``bill_diff_to_dict`` stopped calling it
+when #687 removed the field.
+
+The quadratic is not theoretical, and it bites on exactly the text this is for.
+Measured on one section pair: 8,000 words of *distinct* wording pairs in 0.007 s,
+but 8,000 words of repetitive appropriations phrasing ("For necessary expenses
+of", "not to exceed", "to remain available until expended") takes 0.46 s, and
+16,000 words 1.88 s — four times the cost for twice the input. Two gates keep it
+off the common path: it runs only under ``pair_amounts=True``, and then only for
+a section whose amounts changed, which in a real version pair is a small
+minority of sections and in a self-diff is none.
+
+The three caps BillTrax's TypeScript fork learned in production — a
+collision-group cap, an asymmetric-pair guard and a body-size cap on inline word
+segments — have no upstream equivalent; they are recorded for upstream in
+``docs/sources/congress-bill-tree.md`` rather than patched in here.
 """
 
 from __future__ import annotations
@@ -57,10 +77,6 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 OPS = ("added", "removed", "modified", "unchanged", "moved")
 
 EXTRA_REQUIRED = "section diffing needs the 'bill-diff' extra: uv sync --extra bill-diff"
-
-#: Upstream's assignment rounds, as ``pairing_rule`` words. Round 1 pairs within a
-#: match-path group; round 2 re-links a removal to an addition elsewhere in the bill.
-_ROUND_RULES = {1: "path-round", 2: "move-round"}
 
 
 class SectionDiffError(ValueError):
@@ -159,24 +175,51 @@ class VersionRef:
     equivalent_xml_version_id: str | None = None
 
 
+#: A version row whose body is a PDF and nothing else. It has no XML to read.
+PDF_ONLY_SOURCES = frozenset({"upload", "govinfo-pdf"})
+#: A version row that carries bill XML.
+XML_SOURCES = frozenset({"congress", "govinfo"})
+
+
 def pair_type(base_id: str, new_id: str, versions: Sequence[VersionRef]) -> str:
     """Which comparison strategy a version pair calls for: xml-xml, pdf-pdf or pdf-xml.
 
-    Ported from BillTrax's ``pair-type.ts``, which has no upstream counterpart:
+    From BillTrax's ``pair-type.ts``, which has no upstream counterpart:
     DeltaTrack compares two XML documents or two PDFs and does not model a
-    catalog of versions with uploads and twins in it. An uploaded PDF compares
-    best against another PDF, so when one side is an upload and the other side's
-    XML has a GovInfo PDF twin, both sides are read as PDFs; with no twin the
-    pair is mixed.
+    catalog of versions with uploads and twins in it.
+
+    Each side is classified on its own, which the original did not do. It asked
+    only whether *either* side was an upload, so two uploads and a
+    ``govinfo-pdf`` against an upload — pairs with no XML anywhere — both came
+    back ``pdf-xml``, naming a comparison neither side can supply. Classified
+    independently:
+
+    - a PDF-only row (an upload, or a GovInfo PDF) reads as a PDF;
+    - an XML row reads as XML, and can *also* be read as a PDF when it has a
+      GovInfo PDF twin.
+
+    Two XML rows compare as XML even when a twin exists, because the twin is a
+    fallback for reaching a PDF-only counterpart and XML is the better reading
+    when both sides have it. A shape this does not cover — an unknown version
+    id, or a ``source`` outside the two vocabularies — refuses rather than
+    guessing a strategy.
     """
     by_id = {version.version_id: version for version in versions}
-    base = by_id.get(base_id)
-    new = by_id.get(new_id)
-    if base is None or new is None:
+    sides = []
+    for version_id in (base_id, new_id):
+        version = by_id.get(version_id)
+        if version is None:
+            raise SectionDiffError(f"pair_type was given no version row for {version_id!r}")
+        if version.source not in PDF_ONLY_SOURCES | XML_SOURCES:
+            raise SectionDiffError(f"pair_type does not cover a {version.source!r} version")
+        sides.append(version)
+
+    base, new = sides
+    if base.source in PDF_ONLY_SOURCES and new.source in PDF_ONLY_SOURCES:
+        return "pdf-pdf"
+    if base.source in XML_SOURCES and new.source in XML_SOURCES:
         return "xml-xml"
-    if base.source != "upload" and new.source != "upload":
-        return "xml-xml"
-    xml_side = new if base.source == "upload" else base
+    xml_side = new if base.source in PDF_ONLY_SOURCES else base
     twin = any(
         version.source == "govinfo-pdf" and version.equivalent_xml_version_id == xml_side.version_id
         for version in versions
@@ -184,20 +227,36 @@ def pair_type(base_id: str, new_id: str, versions: Sequence[VersionRef]) -> str:
     return "pdf-pdf" if twin else "pdf-xml"
 
 
-def _financial(engine: Any, change: Any, label: str) -> FinancialChange | None:
+def _financial(engine: Any, change: Any, label: str, *, pair_amounts: bool) -> FinancialChange | None:
+    """One section's money reading. ``pairs`` is filled only when asked for, and only when it says something.
+
+    Two gates, both deliberate. ``amounts_changed`` false means every figure is
+    on both sides, so a pairing could only state that each equals itself —
+    rows of ``delta`` 0 that read as findings. And ``pair_amounts`` is off by
+    default, so a caller takes the account claim by name rather than by reading
+    a field that was already populated. This is the trap upstream's #671/#687
+    closed by deleting the field: a populated field that nothing reads presents
+    as available, which makes re-publishing the claim the path of least
+    resistance.
+
+    Skipping the pairing is also what keeps the common case cheap; see the
+    Complexity note in the module docstring.
+    """
     stated = engine.compute_financial_change(change.amount_source_old, change.amount_source_new)
     if stated is None:
         return None
-    pairs = engine.match_amounts(change.amount_source_old, change.amount_source_new)
+    pairs: tuple[AmountPair, ...] = ()
+    if pair_amounts and stated.amounts_changed:
+        pairs = tuple(
+            AmountPair(label, old, new, new - old if old is not None and new is not None else None)
+            for old, new in engine.match_amounts(change.amount_source_old, change.amount_source_new)
+        )
     return FinancialChange(
         from_amounts=tuple(stated.old_amounts),
         to_amounts=tuple(stated.new_amounts),
         amounts_changed=stated.amounts_changed,
         has_amendment_annotations=stated.has_amendment_annotations,
-        pairs=tuple(
-            AmountPair(label, old, new, new - old if old is not None and new is not None else None)
-            for old, new in pairs
-        ),
+        pairs=pairs,
     )
 
 
@@ -232,14 +291,32 @@ def _check_alignment(change: Any, old_node: BillNode | None, new_node: BillNode 
         )
 
 
-def diff_sections(old: BillDocument, new: BillDocument, *, from_version: str, to_version: str) -> SectionDiff:
+def diff_sections(
+    old: BillDocument,
+    new: BillDocument,
+    *,
+    from_version: str,
+    to_version: str,
+    pair_amounts: bool = False,
+) -> SectionDiff:
     """Compare two parsed versions and return the rows the diff tables hold.
 
     ``from_version`` and ``to_version`` are the caller's own version identifiers:
     the engine reads the publisher's XML, not the caller's key space.
+
+    ``pair_amounts`` fills ``FinancialChange.pairs``, the ``from_amount`` /
+    ``to_amount`` / ``delta`` columns of ``financial_changes``. It is off by
+    default because that pairing is a claim about an *account* that upstream
+    declines to publish, and because a field populated by default is a field
+    that gets read by accident; see :func:`_financial`. Even when asked for, a
+    section whose amounts did not change contributes no rows.
     """
     engine, similarity = _engine()
     old_tree, new_tree = old.tree, new.tree
+    # Keyed off the engine's own round constants rather than the literals 1 and
+    # 2, so a renumbering upstream reaches the rule names instead of silently
+    # making every row read "unpaired".
+    round_rules = {engine.PATH_ROUND: "path-round", engine.MOVE_ROUND: "move-round"}
 
     # Upstream's published stage sequence, as diff_bills runs it. Pinned against
     # diff_bills by tests/test_section_diff.py so this cannot drift unnoticed.
@@ -270,7 +347,7 @@ def diff_sections(old: BillDocument, new: BillDocument, *, from_version: str, to
                 op=change.change_type,
                 similarity=round(float(overlap), 4) if isinstance(overlap, (int, float)) else None,
                 moved=change.change_type == "moved",
-                pairing_rule=_ROUND_RULES.get(item.round, "unpaired") if item.correspondence.evidence else "unpaired",
+                pairing_rule=round_rules.get(item.round, "unpaired") if item.correspondence.evidence else "unpaired",
                 evidence=MappingProxyType(signals),
                 match_path=tuple(change.match_path),
                 display_path_old=tuple(change.display_path_old) if change.display_path_old else None,
@@ -282,7 +359,7 @@ def diff_sections(old: BillDocument, new: BillDocument, *, from_version: str, to
                 from_text=change.old_text,
                 to_text=change.new_text,
                 text_diff=tuple(change.text_diff) if change.text_diff else None,
-                financial=_financial(engine, change, heading),
+                financial=_financial(engine, change, heading, pair_amounts=pair_amounts),
             )
         )
 

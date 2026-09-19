@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from xml.parsers import expat
 
 import pytest
 
+from spicy_docs.reading.xml import _configure_xml_parser
 from spicy_docs.sources.congress.bill_status import BillSourceError
 from spicy_docs.sources.congress.bill_tree import (
     DEFAULT_MAX_BYTES,
@@ -139,10 +141,41 @@ def test_an_internal_dtd_subset_refuses() -> None:
 
 
 def test_the_external_dtd_is_accepted_and_never_resolved() -> None:
-    """The captured fixtures all declare a relative res.dtd/bill.dtd beside themselves."""
-    assert b"SYSTEM" not in _document("text-119hjres25enr.xml") or True
-    assert b'"res.dtd"' in _document("text-119hjres25enr.xml")
+    """A relative DTD beside the document must be tolerated and never fetched.
+
+    Tolerated is asserted on the bytes: the fixture declares `res.dtd` and still
+    parses. *Never fetched* cannot be asserted from the bytes at all — a parser
+    that resolved it would produce the same sections — so it is asserted where
+    the guarantee lives, on the parser configuration itself.
+    """
+    # The publisher writes a PUBLIC id and then a SYSTEM id relative to the document.
+    assert b'PUBLIC "-//US Congress//DTDs/res.dtd//EN" "res.dtd"' in _document("text-119hjres25enr.xml")
     assert _tree("text-119hjres25enr.xml").sections
+
+    class _Recorder:
+        """Stands in for an expat parser and records what the configuration asks of it."""
+
+        def __init__(self) -> None:
+            self.param_entity_parsing: list[int] = []
+
+        # expat's own spelling; the configuration calls it by this name.
+        def SetParamEntityParsing(self, setting: int) -> None:
+            self.param_entity_parsing.append(setting)
+
+    parser = _Recorder()
+    _configure_xml_parser(
+        parser,
+        start=lambda *_: None,
+        end=lambda *_: None,
+        data=lambda *_: None,
+        error_type=BillSourceError,
+        label="probe",
+        allow_external_doctype=True,
+    )
+    assert parser.param_entity_parsing == [expat.XML_PARAM_ENTITY_PARSING_NEVER]
+    # And the one handler that could fetch anything refuses instead.
+    with pytest.raises(BillSourceError, match="forbidden"):
+        parser.ExternalEntityRefHandler("ctx", "base", "res.dtd", None)
 
 
 # --- what the engine recovers that the TypeScript fork did not ---------------

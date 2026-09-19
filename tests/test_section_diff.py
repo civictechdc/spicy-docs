@@ -21,6 +21,7 @@ from spicy_docs.interpretation.section_diff import (
     OPS,
     AmountPair,
     SectionDiff,
+    SectionDiffError,
     VersionRef,
     diff_sections,
     engine_available,
@@ -49,11 +50,33 @@ def engrossed() -> BillDocument:
 
 
 @pytest.fixture(scope="module")
+def reported() -> BillDocument:
+    """The engrossed text with one section renumbered into a new division, text unchanged."""
+    return _document(CONSTRUCTED, "constructed-bill-divisions-reported.xml", "rh")
+
+
+@pytest.fixture(scope="module")
 def staged(introduced: BillDocument, engrossed: BillDocument) -> SectionDiff:
     return diff_sections(introduced, engrossed, from_version="ih", to_version="eh")
 
 
+@pytest.fixture(scope="module")
+def relocated(engrossed: BillDocument, reported: BillDocument) -> SectionDiff:
+    return diff_sections(engrossed, reported, from_version="eh", to_version="rh")
+
+
 # --- the adapter sits on upstream, and is pinned to it ----------------------
+
+
+def _assert_reproduces_diff_bills(old: BillDocument, new: BillDocument, diff: SectionDiff) -> None:
+    from deltatrack.diff_bill import diff_bills
+
+    upstream = diff_bills(old.tree, new.tree)
+    assert [change.change_type for change in upstream.changes] == [item.op for item in diff.items]
+    assert [change.match_path for change in upstream.changes] == [item.match_path for item in diff.items]
+    assert [change.old_text for change in upstream.changes] == [item.from_text for item in diff.items]
+    assert [change.new_text for change in upstream.changes] == [item.to_text for item in diff.items]
+    assert upstream.summary == dict(diff.summary)
 
 
 def test_the_recomposed_stage_sequence_reproduces_diff_bills(
@@ -64,14 +87,33 @@ def test_the_recomposed_stage_sequence_reproduces_diff_bills(
     Upstream changing what ``diff_bills`` composes must fail here rather than
     quietly leaving this module running an older pipeline.
     """
-    from deltatrack.diff_bill import diff_bills
+    _assert_reproduces_diff_bills(introduced, engrossed, staged)
 
-    upstream = diff_bills(introduced.tree, engrossed.tree)
-    assert [change.change_type for change in upstream.changes] == [item.op for item in staged.items]
-    assert [change.match_path for change in upstream.changes] == [item.match_path for item in staged.items]
-    assert [change.old_text for change in upstream.changes] == [item.from_text for item in staged.items]
-    assert [change.new_text for change in upstream.changes] == [item.to_text for item in staged.items]
-    assert upstream.summary == dict(staged.summary)
+
+def test_the_recomposition_holds_when_a_move_reorders_the_records(
+    engrossed: BillDocument, reported: BillDocument, relocated: SectionDiff
+) -> None:
+    """With a round-2 move present, `sorted(settled, key=round)` is no longer the identity.
+
+    The pair above yields no moves, so it cannot tell a correct sort from a
+    missing one. Here the moved record is appended after the round-1 records,
+    which is the reordering the alignment guard exists for.
+    """
+    assert relocated.summary["moved"] == 1
+    assert relocated.items[-1].op == "moved"
+    _assert_reproduces_diff_bills(engrossed, reported, relocated)
+
+
+def test_a_moved_section_names_the_move_round_and_its_score(relocated: SectionDiff) -> None:
+    moved = next(item for item in relocated.items if item.op == "moved")
+    assert moved.moved is True
+    assert moved.pairing_rule == "move-round"
+    # Same words, renumbered into another division: a perfect word overlap.
+    assert moved.similarity == 1.0
+    assert moved.evidence["word_overlap"] == 1.0
+    assert (moved.from_element_id, moved.to_element_id) == ("HDA0S4", "HDC0S1")
+    assert moved.from_text == moved.to_text
+    assert moved.text_diff is None
 
 
 def test_the_rows_carry_the_diff_table_columns(staged: SectionDiff) -> None:
@@ -121,8 +163,58 @@ def test_two_stages_of_one_bill_report_the_expected_ops(staged: SectionDiff) -> 
     modified = next(item for item in staged.items if item.from_element_id == "HDA0S1")
     assert modified.financial is not None
     assert modified.financial.amounts_changed is True
-    assert modified.financial.pairs == (AmountPair("Authorized construction", 4_500_000, 5_250_000, 750_000),)
+    assert modified.financial.from_amounts == (4_500_000,)
+    assert modified.financial.to_amounts == (5_250_000,)
     assert modified.text_diff is not None
+
+
+# --- the account claim is opt-in, and empty when it would say nothing -------
+
+
+def test_no_amount_pairs_are_built_unless_asked_for(staged: SectionDiff) -> None:
+    """The default output states the multisets and pairs nothing."""
+    assert any(item.financial is not None for item in staged.items)
+    assert all(item.financial.pairs == () for item in staged.items if item.financial is not None)
+
+
+def test_asking_for_pairs_yields_them_only_where_the_amounts_moved(
+    introduced: BillDocument, engrossed: BillDocument
+) -> None:
+    asked = diff_sections(introduced, engrossed, from_version="ih", to_version="eh", pair_amounts=True)
+    paired = {item.op: item for item in asked.items if item.financial is not None and item.financial.pairs}
+    # Exactly the three sections whose money moved: one edited, one gone, one new.
+    assert sorted(paired) == ["added", "modified", "removed"]
+    assert paired["modified"].financial.pairs == (AmountPair("Authorized construction", 4_500_000, 5_250_000, 750_000),)
+    # A one-sided section pairs its figure against nothing, and states no delta.
+    assert paired["removed"].financial.pairs == (AmountPair("Leases", 650_000, None, None),)
+    assert paired["added"].financial.pairs == (AmountPair("Energy resilience", None, 1_400_000, None),)
+
+    # Sections whose money is stated but unchanged carry the multiset facts and no rows.
+    unchanged_money = [
+        item
+        for item in asked.items
+        if item.financial is not None and not item.financial.amounts_changed and item.financial.from_amounts
+    ]
+    assert unchanged_money
+    assert all(item.financial.pairs == () for item in unchanged_money)
+
+
+@pytest.mark.parametrize("pair_amounts", [False, True])
+def test_a_self_diff_emits_no_financial_rows(pair_amounts: bool) -> None:
+    """Nothing changed, so a pairing could only report that each figure equals itself.
+
+    Eight `delta` 0 rows is what this produced before the gate — the exact
+    "populated field nothing reads presents as available" trap upstream's
+    #671/#687 closed.
+    """
+    document = _document(CONSTRUCTED, "constructed-resolution-appropriations.xml")
+    diff = diff_sections(document, document, from_version="v1", to_version="v1", pair_amounts=pair_amounts)
+    rows = [pair for item in diff.items if item.financial is not None for pair in item.financial.pairs]
+    assert rows == []
+    # The money itself is still reported, as a multiset on each side.
+    stated = [item for item in diff.items if item.financial is not None]
+    assert stated
+    assert all(item.financial.amounts_changed is False for item in stated)
 
 
 def test_a_cross_division_collision_pairs_within_its_own_division(staged: SectionDiff) -> None:
@@ -261,12 +353,12 @@ def test_amounts_changed_compares_multisets() -> None:
     assert duplicated is not None and duplicated.amounts_changed is True
 
 
-def test_the_financial_label_carries_the_section_heading(staged: SectionDiff) -> None:
+def test_the_financial_label_carries_the_section_heading(introduced: BillDocument, engrossed: BillDocument) -> None:
     """BillTrax wrote "" into this column at every construction site."""
-    labelled = [
-        pair for item in staged.items if item.financial is not None for pair in item.financial.pairs if pair.label
-    ]
+    asked = diff_sections(introduced, engrossed, from_version="ih", to_version="eh", pair_amounts=True)
+    labelled = [pair for item in asked.items if item.financial is not None for pair in item.financial.pairs]
     assert labelled
+    assert all(pair.label for pair in labelled)
     assert all(pair.label == "Authorized construction" for pair in labelled if pair.from_amount == 4_500_000)
 
 
@@ -297,27 +389,37 @@ def test_upstream_gates_the_move_matrix_with_the_two_cheap_ratios() -> None:
 # --- pair_type, which upstream has no counterpart for ----------------------
 
 
-def _versions() -> list[VersionRef]:
-    return [
-        VersionRef("xml-1", "congress"),
-        VersionRef("xml-2", "congress"),
-        VersionRef("pdf-1", "govinfo-pdf", equivalent_xml_version_id="xml-1"),
-        VersionRef("upload-1", "upload"),
-    ]
+VERSIONS = (
+    VersionRef("xml-1", "congress"),
+    VersionRef("xml-2", "congress"),
+    VersionRef("pdf-1", "govinfo-pdf", equivalent_xml_version_id="xml-1"),
+    VersionRef("upload-1", "upload"),
+    VersionRef("upload-2", "upload"),
+)
 
 
-def test_pair_type_of_two_published_versions_is_xml_xml() -> None:
-    assert pair_type("xml-1", "xml-2", _versions()) == "xml-xml"
+@pytest.mark.parametrize(
+    ("base", "new", "expected", "why"),
+    [
+        ("xml-1", "xml-2", "xml-xml", "two XML rows read as XML"),
+        ("xml-1", "upload-1", "pdf-pdf", "the XML side has a GovInfo PDF twin"),
+        ("upload-1", "xml-1", "pdf-pdf", "and the same the other way round"),
+        ("upload-1", "xml-2", "pdf-xml", "no twin, so the pair is mixed"),
+        ("upload-1", "upload-2", "pdf-pdf", "two uploads: no XML on either side"),
+        ("pdf-1", "upload-1", "pdf-pdf", "a GovInfo PDF against an upload: likewise"),
+        ("pdf-1", "xml-2", "pdf-xml", "a PDF row against an XML row with no twin"),
+    ],
+)
+def test_pair_type_classifies_each_side_on_its_own(base: str, new: str, expected: str, why: str) -> None:
+    """The last three were `pdf-xml` before, naming a comparison neither side could supply."""
+    assert pair_type(base, new, VERSIONS) == expected, why
 
 
-def test_pair_type_with_an_upload_and_a_pdf_twin_is_pdf_pdf() -> None:
-    assert pair_type("upload-1", "xml-1", _versions()) == "pdf-pdf"
-    assert pair_type("xml-1", "upload-1", _versions()) == "pdf-pdf"
+def test_pair_type_refuses_a_version_it_was_not_given() -> None:
+    with pytest.raises(SectionDiffError, match="no version row for 'missing'"):
+        pair_type("missing", "xml-1", VERSIONS)
 
 
-def test_pair_type_with_an_upload_and_no_twin_is_pdf_xml() -> None:
-    assert pair_type("upload-1", "xml-2", _versions()) == "pdf-xml"
-
-
-def test_pair_type_of_an_unknown_version_falls_back_to_xml_xml() -> None:
-    assert pair_type("missing", "xml-1", _versions()) == "xml-xml"
+def test_pair_type_refuses_a_source_outside_the_vocabulary() -> None:
+    with pytest.raises(SectionDiffError, match="does not cover a 'scanned-fax' version"):
+        pair_type("odd-1", "xml-1", (*VERSIONS, VersionRef("odd-1", "scanned-fax")))
