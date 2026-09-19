@@ -52,9 +52,12 @@ def agency_recurrence(rows: Iterable[ReportSectionRow], agency_label: str, *, li
     """Port of ``getAgencyRecurrence`` (committee-reports.ts:136-176).
 
     How many distinct congresses have report language for ``agency_label``, across every bill in
-    ``rows`` (not just one). Matches BillTrax's own normalization: both the query's ``agency_label`` and each row's are compared
-    ``upper().strip()``, not exact. Faithfully reproduces two things the SQL does that a naive re-reading
-    would not, kept because this ports the query BillTrax actually ran, not the query it meant to write:
+    ``rows`` (not just one). Matches BillTrax's own normalization: both the query's ``agency_label``
+    and each row's are compared ``upper().strip()``, not exact. A row whose ``agency_label`` is
+    ``None`` never matches, the same way SQL's ``UPPER(TRIM(rs.agency_label)) = ?`` evaluates to
+    unknown, not true, for a ``NULL`` column regardless of ``?``. Faithfully reproduces two more
+    things the SQL does that a naive re-reading would not, kept because this ports the query
+    BillTrax actually ran, not the query it meant to write:
 
     - ``SELECT DISTINCT ... LIMIT 20`` caps the matching **rows** (deduped on the four selected columns)
       before the per-congress dedup below runs, not the number of distinct congresses returned. If the
@@ -66,7 +69,9 @@ def agency_recurrence(rows: Iterable[ReportSectionRow], agency_label: str, *, li
       order -- a deterministic choice BillTrax's SQL never made, not a behavior being matched.
     """
     normalized = agency_label.upper().strip()
-    matches = [row for row in rows if str(row["agency_label"]).upper().strip() == normalized]
+    matches = [
+        row for row in rows if row["agency_label"] is not None and row["agency_label"].upper().strip() == normalized
+    ]
     # SELECT DISTINCT on exactly the four projected columns, first occurrence wins.
     distinct = list(
         {(row["congress"], row["bill_number"], row["report_label"], row["body"]): row for row in matches}.values()

@@ -104,6 +104,40 @@ def test_agency_recurrence_limit_caps_raw_rows_before_per_congress_dedup():
     assert result["congresses"][0]["congress"] == 200
 
 
+def test_agency_recurrence_select_distinct_dedupes_the_four_projected_columns_before_limit():
+    # Two rows agreeing on (congress, bill_number, report_label, body) -- the four columns BillTrax's
+    # SQL actually projects -- but differing in report_id/chamber/section_id, which the SQL never
+    # selects. SELECT DISTINCT collapses them to one row before LIMIT is applied, so together they
+    # must consume only one slot of the budget, not two. Removing the DISTINCT step (collapsing back
+    # to a plain list) would let them consume both slots of limit=2 and starve out the older congress.
+    rows = [
+        _row(
+            118,
+            "HR1",
+            "DEPARTMENT OF DEFENSE",
+            "shared body",
+            report_id="r-house",
+            chamber="house",
+            section_id="s1",
+            label="shared report label",
+        ),
+        _row(
+            118,
+            "HR1",
+            "DEPARTMENT OF DEFENSE",
+            "shared body",
+            report_id="r-senate",
+            chamber="senate",
+            section_id="s2",
+            label="shared report label",
+        ),
+        _row(117, "HR2", "DEPARTMENT OF DEFENSE", "older congress", report_id="r-old"),
+    ]
+    result = agency_recurrence(rows, "DEPARTMENT OF DEFENSE", limit=2)
+    assert result["count"] == 2
+    assert [c["congress"] for c in result["congresses"]] == [118, 117]
+
+
 def test_agency_recurrence_no_match_returns_zero_and_empty_list():
     rows = [_row(118, "HR1", "DEPARTMENT OF DEFENSE")]
     result = agency_recurrence(rows, "SMALL BUSINESS ADMINISTRATION")

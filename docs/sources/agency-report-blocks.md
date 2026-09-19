@@ -7,6 +7,13 @@ parser's output would populate. All three are a straight port of BillTrax's
 (`docs/research/billtrax-value-inventory-2026-09-19.md` §2.6, §1a). None of the
 three does I/O.
 
+This module is unrelated to the FOIA and Oversight.gov readers documented in
+[`docs/sources/agency-reports.md`](agency-reports.md), despite living in the
+same `sources/agency_reports/` package and having a similar name: those read
+retained *agency accountability reports* (FOIA annual reports, Oversight.gov
+evaluations); this one splits a *committee report* (a document Congress
+produces about a bill) into per-heading blocks, with no shared code or format.
+
 ```python
 from pathlib import Path
 from spicy_docs.extraction.api import DocumentExtractor, NativeText
