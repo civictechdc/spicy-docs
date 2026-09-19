@@ -20,12 +20,19 @@ from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 _SCOPE = {"publishedFrom": "2026-04-13", "publishedThrough": "2026-04-13"}
 _IMPLEMENTATION_ID = "pkg:pypi/spicy-regs@0.1.7?checksum=sha256:" + "a" * 64
-# Policy 1.1 uses composite identities. The 2026-09-11 fixed-day capture
-# reproduces the former digest when only record and rendition sourceRecordId
-# values are restored to document_number: the source content is unchanged.
-# The refreshed pin covers the implemented (document_number, publication_date)
-# identity. Investigate future differences before updating this expectation.
-_SOURCE_STATE_DIGEST = "sha256:cfe902f7f1de4072580219389584da7acc7440d549f0726527767ac1bed80296"
+# Policy 1.3 (commit f3b9137, 2026-09-12) added full_text_xml_url to
+# DOCUMENT_FIELDS and the body-xml rendition, landing after the 2026-09-11
+# pin above was captured; this opt-in live test was not refreshed with it.
+# The 2026-09-19 gate run found the resulting digest mismatch (spicy-docs
+# gap E4). Re-fetching this day live on 2026-09-19 confirms it is not
+# publisher drift: the record count, first/last sourceRecordId and the
+# topics-missing count below are unchanged from the prior pin, and all 93
+# records now carry a non-null full_text_xml_url with a matching non-null
+# body-xml rendition -- exactly the 93 extra renditions (279 -> 372) and the
+# one added field policy 1.3 introduced. Refresh this pin whenever
+# DOCUMENT_FIELDS or _RENDITION_FIELDS change; investigate any other
+# difference before updating this expectation.
+_SOURCE_STATE_DIGEST = "sha256:59321d448bf52c5052a51036dff0a2fd81fde8466204b802029fd158b9104993"
 
 
 def _completed_at() -> datetime:
@@ -78,7 +85,7 @@ def test_pinned_federal_register_day_publishes_and_replays_exactly(tmp_path: Pat
 
     assert reader.source_state_digest == _SOURCE_STATE_DIGEST
     assert len(records) == 93
-    assert len(renditions) == 279
+    assert len(renditions) == 372
     # _SCOPE is one closed day, so every record's publication_date is 2026-04-13.
     assert records[0]["sourceRecordId"] == "2026-07034@2026-04-13"
     assert records[-1]["sourceRecordId"] == "2026-07143@2026-04-13"
