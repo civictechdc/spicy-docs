@@ -78,7 +78,7 @@ Measured on 2026-09-19 unless stated:
 | D3 | Waiting on the user: re-vendor after the fork merges upstream. |
 | D5 | Closed by plan: acceptable; measured when D1 runs. |
 | E1, E2 | Open; the user files the upstream issues. |
-| E3 | Open in spicy-docs (`ty` not yet in `scripts/check`); spicy-regs already gates it. |
+| E3 | Measured, not gated: `ty check` on main finds 1,139 errors (553 invalid-argument-type, 517 unresolved-attribute, then a thin tail; 1 unresolved-import), so gating now would fail the tree; the cleanup is scoped for after the in-flight branches merge, and spicy-regs already gates it. |
 | Releases | spicy-docs 0.21.2 owed once the in-flight branches merge; spicy-regs adoption follows. |
 
 ### A. Joins the data map measured and nothing drives
