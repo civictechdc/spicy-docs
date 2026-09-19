@@ -224,12 +224,16 @@ pushed to origin.
   committee report in every rendition (PDF text keeps no account-table rows
   and splits about 1,870 words per report where the HTML keeps them); the
   report transform no longer splits on a page break that never occurs. The
-  adoption also found that spicy-regs installs pypdf, not PyMuPDF, so its PDF
-  branch runs the GPO normalizer over a third extractor layout; PDF is the
-  last resort and today applies to the daily Record and pre-113th bills, but
-  the normalizer's rules were derived on PyMuPDF, which is the strongest
-  reason to measure upstream DeltaTrack's pypdfium2 `pdf_text` pipeline
-  against ours and delete ours if it is equal or better.
+  adoption first routed its PDF branch through pypdf, and the
+  [normalizer measurement](gpo-normalizer-vs-upstream-2026-09-19.md) showed
+  that layout never detects the GPO gutter (pypdf glues the margin number
+  onto the content line), while upstream DeltaTrack's pypdfium2 pipeline
+  matches ours on gutter-numbered bills but welds hyphens without a gate; so
+  the normalizer stays, and spicy-regs now installs spicy-docs's `pdf` extra
+  and uses the same PyMuPDF extraction pipeline the normalizer was derived
+  on, with a test asserting the layout verdict and rejoin count on a
+  gutter-numbered PDF so a future extractor swap fails loudly. The user's
+  ruling: results only, licensing is not a concern.
 - **Still open**: spicysearch vendors a stale `catalog.json` (24 tables; now
   46 and a grown `congress_bills`) and needs a re-vendor; a pinned
   Federal Register day's live replay test fails on a digest mismatch, which
