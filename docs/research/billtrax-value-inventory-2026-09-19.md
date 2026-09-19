@@ -993,6 +993,15 @@ misleading. Python uses `Counter(...) != Counter(...)` (`:147`). Port the
 
 ### 4.6 Recommendation: **port it into spicy-docs, and delete both copies**
 
+> **Superseded 2026-09-19, same day.** This section measured the *vendored
+> copy* and reasoned from it. The canonical repo has moved to
+> `civictechdc/DeltaTrack` and is an installable `deltatrack` package with
+> pypdfium2 as its only engine dependency, 12,479 lines, 120 test files,
+> and `resolution-body` support already in `bill_tree.py`. The first option
+> below, a pin, is therefore the right one: spicy-docs pins it by git
+> commit as an optional extra and adapts over it. "Delete both copies"
+> stands. See port plan decision 3.
+
 Not a git pin. Not a vendored wheel. A port.
 
 The three options, against what was measured:
