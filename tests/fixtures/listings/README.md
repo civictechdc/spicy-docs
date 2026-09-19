@@ -298,3 +298,26 @@ route's name rather than through `_VALIDATE_PARAM`'s single-argument table,
 since this is the one path token whose valid values depend on which route
 asks for it. `EC`, the only code either fixture set carries, is valid in
 both sets, so no existing fixture or test needed to change.
+
+Seventh round, captured 2026-09-19 for the wave-2 table contracts
+(`docs/research/table-contracts-2026-09-19.md` §7; api.data.gov key as
+`X-Api-Key`). Both are the two ends of the legislative data map's
+`hearing->meeting` / `meeting->hearing` edges, chosen because the map's own
+evidence names them (jacket 64431, event 119003). Each response was checked
+for the key before it was saved (`scrub_credential`); neither carried it.
+
+| Fixture | Request | Bytes | SHA-256 | Transformation |
+| --- | --- | --- | --- | --- |
+| `congress-hearing-detail.json` | GET https://api.congress.gov/v3/hearing/119/house/64431 | 1,396 | `90187189e5e3d73ad8089eedace2aa5b31dd121f0f857309ad884f17c4c0e614` | Complete, unchanged response; one record, a bare object under `hearing`, carrying `associatedMeeting.eventId` 119003 and `formats[]` whose stem is `CHRG-119hhrg64431`. |
+| `congress-committee-meeting-detail-119003.json` | GET https://api.congress.gov/v3/committee-meeting/119/house/119003 | 36,297 | `a43cb372471870d0926748f542eafcb24756c206b6e013621d1cc31c1cc9a69f` | Complete, unchanged response; a Hearing (not a Markup like 119565) with `hearingTranscript` naming jackets 63019 and 64431, 3 witnesses, 9 witness documents, 70 meeting documents and no related bills. |
+
+`hearing-detail` is the route these two established: `hearing/{congress}/{chamber}/{number}`
+answers a bare object under `hearing` (`single_record=True`), with no
+`pagination` key; sort and window are `False` by construction.
+
+This round used 20 keyed requests in all, the day's whole budget: these 2,
+plus 18 for the House-communication sample (one list page at `limit=25`
+and 17 details, retained as a receipt rather than as fixtures, in
+`corpora/supply-2026-09-02/receipts/house-communications-rin-2026-09-19/`;
+the 18th sampled detail is the sixth round's `congress-house-communication-detail.json`,
+reused after its digest was checked against the row above).

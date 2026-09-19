@@ -38,6 +38,7 @@ ROUTE_PARAMS: dict[str, dict[str, object]] = {
     "bill-actions": {"congress": 119, "bill_type": "hr", "number": 1},
     "nomination": {"congress": 119},
     "hearing": {"congress": 119},
+    "hearing-detail": {"congress": 119, "chamber": "house", "number": 64431},
     "committee-report": {"congress": 119},
     "house-communication": {"congress": 119},
     "house-vote": {"congress": 119, "session": 1},
@@ -102,6 +103,7 @@ DETAIL_FIXTURE_BYTES: dict[str, bytes] = {
     "treaty-detail": (FIXTURES / "congress-treaty-detail.json").read_bytes(),
     "daily-congressional-record-detail": (FIXTURES / "congress-daily-congressional-record-detail.json").read_bytes(),
     "house-communication-detail": (FIXTURES / "congress-house-communication-detail.json").read_bytes(),
+    "hearing-detail": (FIXTURES / "congress-hearing-detail.json").read_bytes(),
     "senate-communication-detail": (FIXTURES / "congress-senate-communication-detail.json").read_bytes(),
     "house-requirement-detail": (FIXTURES / "congress-house-requirement-detail.json").read_bytes(),
 }
@@ -208,6 +210,7 @@ DETAIL_ROUTE_EXPECTATIONS: dict[str, tuple[str, object]] = {
     "treaty-detail": ("topic", "Taxation"),
     "daily-congressional-record-detail": ("issueNumber", "148"),
     "house-communication-detail": ("isRulemaking", "True"),
+    "hearing-detail": ("jacketNumber", 64431),
     "senate-communication-detail": ("congressionalRecordDate", "2026-09-17"),
     "house-requirement-detail": ("nature", "Congressional review of agency rulemaking."),
 }
@@ -328,6 +331,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "bill-actions": False,
         "nomination": False,
         "hearing": False,
+        "hearing-detail": False,
         "committee-report": True,
         "house-communication": False,
         "house-vote": False,
@@ -376,6 +380,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "bill-actions": False,
         "nomination": True,
         "hearing": True,
+        "hearing-detail": False,
         "committee-report": True,
         "house-communication": True,
         "house-vote": True,
@@ -423,6 +428,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "bill-actions": False,
         "nomination": False,
         "hearing": False,
+        "hearing-detail": True,
         "committee-report": False,
         "house-communication": False,
         "house-vote": False,
@@ -494,6 +500,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         ("bill-actions", "https://api.congress.gov/v3/bill/119/hr/1/actions?format=json&limit=3"),
         ("nomination", "https://api.congress.gov/v3/nomination/119?format=json&limit=3"),
         ("hearing", "https://api.congress.gov/v3/hearing/119?format=json&limit=3"),
+        ("hearing-detail", "https://api.congress.gov/v3/hearing/119/house/64431?format=json&limit=3"),
         ("committee-report", "https://api.congress.gov/v3/committee-report/119?format=json&limit=3"),
         ("house-communication", "https://api.congress.gov/v3/house-communication/119?format=json&limit=3"),
         ("house-vote", "https://api.congress.gov/v3/house-vote/119/1?format=json&limit=3"),
@@ -1062,6 +1069,7 @@ LIVE_BUDGET = PagedJsonBudget(2, 4 * 1024 * 1024, 30, 0.5)
 # wrapper, since the publisher answers it with a one-item array and a real pagination.count of 1.
 NO_PAGINATION_ROUTES = frozenset(
     {
+        "hearing-detail",
         "law-detail",
         "committee-detail",
         "member-detail",

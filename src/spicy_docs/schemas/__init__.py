@@ -45,6 +45,13 @@ from spicy_docs.schemas.congress_activity_tables import (
     PRESS_RELEASES,
     ROLL_CALL_VOTES,
 )
+from spicy_docs.schemas.congress_index_tables import (
+    COMMITTEE_MEETINGS,
+    HOUSE_COMMUNICATIONS,
+    NOMINATIONS,
+    RECORD_ISSUES,
+    TREATIES,
+)
 from spicy_docs.schemas.legislator_tables import MEMBER_TERMS, MEMBERS
 from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT, RECORD_TYPES
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError
@@ -72,6 +79,12 @@ _REGISTERED: tuple[TableContract, ...] = (
     COMMITTEE_REPORTS,
     REPORT_SECTIONS,
     HEARING_TRANSCRIPTS,
+    # Wave 2, gaps A5, A7 and A10: the Congress.gov index tables.
+    HOUSE_COMMUNICATIONS,
+    COMMITTEE_MEETINGS,
+    RECORD_ISSUES,
+    TREATIES,
+    NOMINATIONS,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -91,6 +104,7 @@ __all__ = [
     "BILL_SUMMARIES",
     "BILL_VERSIONS",
     "COMMENT",
+    "COMMITTEE_MEETINGS",
     "COMMITTEE_REPORTS",
     "CONGRESS_BILLS",
     "DIFF_SUMMARIES",
@@ -98,11 +112,14 @@ __all__ = [
     "DOCUMENT",
     "FINANCIAL_CHANGES",
     "HEARING_TRANSCRIPTS",
+    "HOUSE_COMMUNICATIONS",
     "MEMBERS",
     "MEMBER_TERMS",
     "MEMBER_VOTES",
+    "NOMINATIONS",
     "PRESS_RELEASES",
     "PUBLIC_ACTIVITY_EVENTS",
+    "RECORD_ISSUES",
     "RECORD_TYPES",
     "REPORT_SECTIONS",
     "ROLL_CALL_VOTES",
@@ -110,6 +127,7 @@ __all__ = [
     "SECTION_DIFFS",
     "SECTION_DIFF_ITEMS",
     "TABLE_CONTRACTS",
+    "TREATIES",
     "RecordType",
     "Row",
     "TableContract",

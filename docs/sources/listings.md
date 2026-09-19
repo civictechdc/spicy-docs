@@ -74,6 +74,7 @@ refuses `sort`.
 | `bill-actions` | `bill/{congress}/{type}/{number}/actions` | `actions` | no (measured) | no (measured) | `congress-bill-actions-list.json` |
 | `nomination` | `nomination/{congress}` | `nominations` | no | yes (default) | `congress-nomination-list.json` |
 | `hearing` | `hearing/{congress}` | `hearings` | no | yes (default) | `congress-hearing-list.json` |
+| `hearing-detail` | `hearing/{congress}/{chamber}/{number}` | `hearing` (one record, a bare object) | no (n/a) | no (n/a) | `congress-hearing-detail.json` |
 | `committee-report` | `committee-report/{congress}` | `reports` | yes | yes (default) | `congress-committee-report-list.json` |
 | `house-communication` | `house-communication/{congress}` | `houseCommunications` | no | yes (default) | `congress-house-communication-list.json` |
 | `house-vote` | `house-vote/{congress}/{session}` | `houseRollCallVotes` | no (measured) | yes (default) | `congress-house-vote-list.json` |
@@ -194,6 +195,14 @@ example -- would silently read as one bogus record instead of refusing.
 not by probe: a single record has no order to reorder and no window to
 narrow, so `list_route_url` refuses both the same way it refuses them on a
 route that ignores them.
+
+`hearing-detail` (added 2026-09-19 for the `hearing_transcripts.event_id`
+column) answers one hearing by jacket number as a bare object under
+`hearing`, so it carries `single_record=True` like the other bare-object
+detail routes; its record states `associatedMeeting.eventId`, the key the
+data map's `hearing→meeting` edge resolved, and `formats[].url`, whose file
+stem is the CHRG package id. Measured once, `hearing/119/house/64431`
+(receipt `corpora/supply-2026-09-02/receipts/committee-meetings-edges-2026-09-19/`).
 
 `committee-meeting` closes gap A7 (meetings, hearings and documents): its
 detail record carries `relatedItems.bills`, `hearingTranscript[].jacketNumber`,
