@@ -43,6 +43,7 @@
 - [Appropriations press releases](sources/press-releases.md): the House and Senate Appropriations Committees' RSS feeds at their two live URLs, every channel and item field kept, identity proved from the channel body.
 - [Agency report blocks](sources/agency-report-blocks.md): the committee-report heading splitter over extracted page text and the two report-section aggregates, measured on real reports.
 - [Bill versions](sources/congress-bill-versions.md): the sealed version-code vocabulary against the publisher's measured codes, format choice by rendition folder, and bill PDFs through the GovInfo body acquirer.
+- [Bill tree and section diff](sources/congress-bill-tree.md): the DeltaTrack engine as a pinned dependency behind the `bill-diff` extra, with thin adapters that gate bytes through this repo's XML entry, keep an inventory of dropped elements, and shape diff records with provenance.
 - [Interpretation](interpretation.md): shared judgment over publisher facts, rules in tables and findings that name the rule: bill stage, money bills, bill signals, vote, release and member matching, section classification and summaries.
 - [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records.
 - [Captured public comments](sources/public-comments.md)
