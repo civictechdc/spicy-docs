@@ -544,7 +544,10 @@ because a coverage statement is a spicy-regs measurement.
 spicy-docs has no changelog file; the release note is the commit body
 (`b96e083`, "chore: release 0.20.0", touched `pyproject.toml` and `uv.lock`).
 
-spicy-docs 0.21.0: land the DeltaTrack adapter branch and the contract layer;
+spicy-docs 0.21.0 (cut 2026-09-19: commit ff92406, local tag v0.21.0,
+`dist/spicy_docs-0.21.0-py3-none-any.whl` 1,009,120 bytes, sha256
+`ca3f26c5361f26bd3d38d7789277bff2a72ebfd224a65e65e0f24ec4ed241705`; neither
+the commit nor the tag is pushed): land the DeltaTrack adapter branch and the contract layer;
 add `docs/tables.md` and index it; `./scripts/check` green; bump the version,
 `uv lock`, commit both files as `chore: release 0.21.0` with a body naming what
 it carries; `uv build`; tag `v0.21.0`; record the wheel's SHA-256.

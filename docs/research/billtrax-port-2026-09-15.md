@@ -189,28 +189,40 @@ port as-is.
 
 ## What remains
 
-- **The table-contract layer** — [design](table-contracts-2026-09-19.md),
-  being built now on a sibling branch: one `shape_*` function per table
-  under `schemas/`, and `interpretation/bill_family.py` to compose them from
-  a bill's interpretation findings and parsed documents in one pass.
-- **The table-contract layer's own parser prerequisites** — `BillStatus`
-  needs `titles[]` and `relatedBills`; `Term` needs `party` and `district`;
-  `listing.py` needs a `house-vote` route; `version_kind()` needs a finding
-  wrapper (table-contracts §2.1). In flight.
-- **The vote readers** — a House Clerk and a Senate LIS reader
-  (`sources/congress/votes.py`, not yet written), which `roll_call_votes`
-  and `member_votes` wait on. In flight.
-- **The spicy-regs hosting side**, after a spicy-docs 0.21.0 release: the
-  merge helper, the six transforms and rollups, the MCP and data-dictionary
-  entries, and vendoring a `deltatrack` wheel built from the pinned commit
-  (table-contracts §5).
+Landed 2026-09-19, later the same day as the list below was written: the
+[table-contract layer](table-contracts-2026-09-19.md) (`schemas/`, twenty-two
+contracts, 407 columns, and `interpretation/bill_family.py`, documented in
+[Tables](../tables.md)), its parser prerequisites (`BillStatus.titles` and
+`related_bills`, `Term.party` and `district`, the `house-vote` route with its
+sort measured, `version_kind_finding`, and BillTrax's diff-summary generator
+ported as `summarize_diff`), and the vote readers
+(`sources/congress/votes.py`, both publishers, archive floors measured at the
+101st Congress). spicy-docs 0.21.0 was cut from that state (commit ff92406,
+local tag v0.21.0, wheel digest in the design's §5.4); neither the commit nor
+the tag is pushed.
+
+- **The spicy-regs hosting side** — on the local fork branch
+  `billtrax-hosting-prep`, never pushed: the groundwork landed (multi-output
+  rollups, `transforms/table_merge.py`, the workflow inputs, the vendored
+  `deltatrack` wheel), and the 0.21.0 adoption with the six transforms,
+  rollups, crons, data-dictionary entries and MCP lines is in flight
+  (table-contracts §5). Pushing needs the user to name the branch.
+- **Fix-ledger item 7** closes when the `amendments` transform lands on that
+  branch; item 6 (`/api/feed.xml`) is BillTrax-side and stays open.
 - **The BillTrax-side deletions** — `submodules/DeltaTrack`, the TS fork
   (`bill-tree.ts`, `section-diff.ts`'s fallback core, `python-diff.ts`,
   `scripts/diff_service.py`), `financial.ts`, `diff.ts`, and the rest of the
   [value inventory's](billtrax-value-inventory-2026-09-19.md) §1 delete
   column (`mock-data.ts`, `db.ts`, `diff-queue.ts`, `node_backend/`, and
   `roll-call-votes.ts`'s dead `upsertMemberVote`). None of this has started;
-  it is Phases 1 and 9, BillTrax-side.
+  it is Phases 1 and 9, BillTrax-side, and destructive in another repo, so it
+  waits for an explicit go-ahead.
+- **To raise upstream in `civictechdc/DeltaTrack`** — the list in
+  [`docs/sources/congress-bill-tree.md`](../sources/congress-bill-tree.md)
+  (the pairing caps, the word-segment cap, hyphen-tolerant tokens, a
+  parsed-tree entry point, the pypdfium2 import on the XML path) and the
+  GPO-normalization gaps in [`docs/extraction-gpo.md`](../extraction-gpo.md).
+  Same-org issues, not local forks.
 
 ## Phased sequence
 
