@@ -1,6 +1,6 @@
 [project]
 name = "spicy-docs"
-version = "0.21.1"
+version = "0.21.2"
 description = "Faithful acquisition from government sources and immutable source-native release publication"
 requires-python = ">=3.12,<3.13"
 dependencies = [
