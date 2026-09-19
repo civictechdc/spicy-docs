@@ -155,6 +155,21 @@ def test_govinfo_response_refusals(body: bytes, final_url: str, message: str) ->
         )
 
 
+def test_a_marker_bearing_body_at_another_locator_reports_the_locator() -> None:
+    # The MODS start-page route can request one granule and be answered by
+    # another. Both error-page witnesses hold here, so this pins which check
+    # runs first: the locator mismatch is the more precise fact.
+    with pytest.raises(FederalRegisterBodySourceError, match="final URL"):
+        validate_govinfo_granule(
+            b"<html>govinfo.gov/error</html>",
+            source_document_number="98-14931",
+            publication_date="1998-06-03",
+            access_id="98-14931",
+            final_url="https://www.govinfo.gov/content/pkg/FR-1998-06-03/html/98-14932.htm",
+            max_bytes=1_024,
+        )
+
+
 def test_dated_soft_404_byte_length_is_not_treated_as_an_identity_rule() -> None:
     marker = b"[FR Doc No: 98-14931]"
     body = marker + b" " * (44_165 - len(marker))
