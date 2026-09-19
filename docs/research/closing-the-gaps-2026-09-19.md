@@ -73,10 +73,10 @@ Measured on 2026-09-19 unless stated:
 | B4, B8 | Closed by decision: no schema target exists for the PDF-only remainder, and OCR waits for a consumer to name a scanned corpus. |
 | B5 | Landed: `TableObservation` in the evidence model, opt-in via `tables=True` (merge 1477d84). |
 | B6 | Landed: the 42-document corpus validation (merge b16c77c); two `_layout_verdict` false negatives fixed; the widened rule's blast radius pinned by a multi-page test. |
-| C1, C4 | Not started. |
+| C1, C4 | C1 is being run inside the D1 pass (one bounded live bill-summary call with model, prompt digest, tokens and cost recorded). C4 not started. |
 | C2, C3 | Landed, with post-merge review fixes: C2's measurement is the cited BillTrax configuration and the MySQL 8.4 manual, encoded and tested; C3 has the run receipt; the fabricated 40,260-row claim rewritten, the Federal Register locator claim actually asserted and its inputs pinned. |
 | C5 | Closed as no-change: the HTML rendition removed the measured defect. |
-| D1, D4 | Open. D1: fourteen tables still read "Sampled, and accumulating. No run has been measured yet"; `measured_on` is present on all 47 but holds the statement date, so the run re-dates it rather than sets it. D4: the hearing-transcript fixture is still a CRPT body under the real CHRG-119hhrg64431 identity, disclosed in `docs/tables.md`. |
+| D1, D4 | Open. D1: fourteen tables still read "Sampled, and accumulating. No run has been measured yet"; `measured_on` is present on all 47 but holds the statement date, so the run re-dates it rather than sets it. D4: the hearing-transcript fixture is still a CRPT body under the real CHRG-119hhrg64431 identity, disclosed in `docs/tables.md`. D1's measured run is in progress on spicy-regs branch `hosting-d1-measured` (one run per rollup under the production caps, local output only, request ledger kept under the hourly limit), with D5's night total and C1's one live model run folded into the same pass. |
 | D2 | Landed (SR01: the bill reader walks spicy-docs's listing route). |
 | D3 | Waiting on the user: re-vendor after the fork merges upstream. spicysearch pins the 24-table catalog `01c77a4a…`; the hosting branch's catalog is `3d9c188d…` with 47 tables (49 once A11 merges). |
 | D5 | Closed by plan: acceptable; measured when D1 runs. |
