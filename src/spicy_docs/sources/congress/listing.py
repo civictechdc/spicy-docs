@@ -529,7 +529,9 @@ def _communication_type_param(value: str | None, route_name: str) -> str:
     enumerations differ -- so ``_route_path`` calls this directly, keyed by ``route.name``,
     instead of through the single-argument dispatch table.
     """
-    valid = _COMMUNICATION_TYPES_BY_ROUTE[route_name]
+    valid = _COMMUNICATION_TYPES_BY_ROUTE.get(route_name)
+    if valid is None:
+        raise PagedJsonSourceError(f"{route_name} has no known communication_type enumeration to validate against")
     if value not in valid:
         raise PagedJsonSourceError(f"communication_type must be one of {sorted(valid)} for {route_name}")
     return value

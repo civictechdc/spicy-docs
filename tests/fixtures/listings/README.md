@@ -273,10 +273,19 @@ that cited a "sampled live 2026-09-19" fixtures README entry which did not
 exist. Fixed by sourcing the enumeration from the publisher's own endpoint
 documentation instead of the fixtures, fetched keyless 2026-09-19:
 
-| Document | URL | Retrieved at commit | Bytes | SHA-256 | Enumerated codes |
+Pinned to the exact commit fetched, not `.../blob/main/...`'s moving ref, so
+the byte count and digest below can be re-derived from the row itself:
+
+| Document | URL (pinned to the fetched commit) | Retrieved at commit | Bytes | SHA-256 | Enumerated codes |
 | --- | --- | --- | --- | --- | --- |
-| House communication endpoint | <https://github.com/LibraryOfCongress/api.congress.gov/blob/main/Documentation/HouseCommunicationEndpoint.md> | `7874d1e668e62f9994c1c337aa091ab4a7ac846d` (2025-01-28T14:42:58Z) | 6,462 | `d3e31febab446f0e1b57a04d129d008f007d16c2e17d574843e23cdb28738224` | `EC`, `PM`, `PT`, `ML` |
-| Senate communication endpoint | <https://github.com/LibraryOfCongress/api.congress.gov/blob/main/Documentation/SenateCommunicationEndpoint.md> | `94ad1a783b6b9cb5af79d53ce5c4846d70f40eaf` (2025-01-28T14:42:16Z) | 5,062 | `69a2455c6b676f113e7ed04a5a000df8b7d5a50f39b40820bb3f4c40a26f15fa` | `EC`, `POM`, `PM` |
+| House communication endpoint | <https://raw.githubusercontent.com/LibraryOfCongress/api.congress.gov/7874d1e668e62f9994c1c337aa091ab4a7ac846d/Documentation/HouseCommunicationEndpoint.md> | `7874d1e668e62f9994c1c337aa091ab4a7ac846d` (2025-01-28T14:42:58Z) | 6,462 | `d3e31febab446f0e1b57a04d129d008f007d16c2e17d574843e23cdb28738224` | `EC`, `PM`, `PT`, `ML` |
+| Senate communication endpoint | <https://raw.githubusercontent.com/LibraryOfCongress/api.congress.gov/94ad1a783b6b9cb5af79d53ce5c4846d70f40eaf/Documentation/SenateCommunicationEndpoint.md> | `94ad1a783b6b9cb5af79d53ce5c4846d70f40eaf` (2025-01-28T14:42:16Z) | 5,062 | `69a2455c6b676f113e7ed04a5a000df8b7d5a50f39b40820bb3f4c40a26f15fa` | `EC`, `POM`, `PM` |
+
+Both documents are retained unmodified in
+`~/Work/corpora/supply-2026-09-02/receipts/congress-communication-types-2026-09-19/`
+(with its own README), outside this repository per the campaign-receipts
+convention; the digests there match the row above, confirmed by fetching
+each document a second time at its pinned commit and comparing bytes.
 
 Both documents state the enumeration under "Elements and Descriptions" ->
 `<communicationType>` -> `<code>`: "Possible values are ...". The two
