@@ -15,11 +15,30 @@ responses fit well inside the fixture bound.
 | `mods-CRPT-119hrpt1.xml` | [`packages/CRPT-119hrpt1/mods`](https://api.govinfo.gov/packages/CRPT-119hrpt1/mods), keyed with `X-Api-Key` | 9,787 | `d73ea7b12140ca7e1ad08649092a9e14a432a9fce8948d8a4975e4f3cd43f9d2` |
 | `body-CRPT-119hrpt1.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt1/html/CRPT-119hrpt1.htm), keyless | 13,953 | `d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9` |
 | `body-CRPT-119hrpt105.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt105/html/CRPT-119hrpt105.htm), keyless | 8,504 | `903f3aadd805b3ed85066bef29fa4d3f236501b6e94cb531168ed189362eca19` |
+| `summary-CPRT-118HPRT57104.json` | [`packages/CPRT-118HPRT57104/summary`](https://api.govinfo.gov/packages/CPRT-118HPRT57104/summary), keyed with `X-Api-Key` | 1,220 | `b3fedfb456de587366b84087248f7a075fc22567fc3c814b580ae87ef5ce2547` |
+| `mods-CPRT-118HPRT57104.xml` | [`packages/CPRT-118HPRT57104/mods`](https://api.govinfo.gov/packages/CPRT-118HPRT57104/mods), keyed with `X-Api-Key` | 6,221 | `7d30cbee9e219929472608daf15871c46f3c5ade926d698f48485c2ef798fe19` |
 
 No fixture above was reduced or reformatted. The credential travels only in the
 request header, and the capture script refused to write any file whose bytes
 contained the key or an `api_key=` parameter; none did. The keyless body route
 takes no credential at all.
+
+## The committee-print collection (CPRT)
+
+`CPRT-118HPRT57104` was found through a keyed `published` walk scoped to the
+`CPRT` collection (2020-01-01 through 2024-12-31, 1,118 packages) and chosen
+for its `"pages": "1"` summary field, the smallest found. Its summary states
+`"documentType": "HPRT"` and `"docClass": "HPRT"` -- the chamber-plus-doctype
+token is spelled **upper-case** here, unlike `CRPT`'s own lower-case
+`hrpt`/`srpt`/`erpt` -- so `bodies.py`'s `CPRT` grammar
+(`{congress}{HPRT|SPRT|JPRT}{number}`) is measured, not inferred from `CRPT`'s
+shape. A wider walk (2018-2024, 100 packages) also turned up real `SPRT` ids
+(`CPRT-113SPRT52146` and others) and `JPRT` ids (`CPRT-116JPRT41347` and
+others), confirming all three chambers' tokens without needing to fetch any of
+them. The MODS states HTML, PDF and XML renditions, all at the standard
+`content/pkg/{id}/{folder}/{id}.{extension}` addresses `package_body_locator`
+already derives, so no new locator code was needed for this collection --
+only the grammar entry.
 
 `body-CRPT-119hrpt105.htm` is the one package this repository holds in **two**
 renditions: its PyMuPDF page text is `tests/fixtures/gpo_pdf_text/CRPT-119hrpt105.json`

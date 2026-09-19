@@ -1,11 +1,11 @@
 # GovInfo package bodies and acquisition
 
 `GovInfoBodyAcquirer` fetches the body of one GovInfo package named by its
-package id: a committee report, hearing transcript, Congressional Record issue,
-congressional document, congressional directory or bill text. It reads the
-package summary, then the package MODS, then the one rendition the publisher
-says it offers, and returns exact bytes with every response that proved them.
-Install `spicy-docs[acquisition]`.
+package id: a committee report, hearing transcript, committee print,
+Congressional Record issue, congressional document, congressional directory or
+bill text. It reads the package summary, then the package MODS, then the one
+rendition the publisher says it offers, and returns exact bytes with every
+response that proved them. Install `spicy-docs[acquisition]`.
 
 This is a body fetch, not a crawl: the caller names the package. Discovery of
 which packages exist stays with the [list routes](listings.md), and MODS field
@@ -60,11 +60,14 @@ naming `("pdf",)` because it wants that rendition specifically rather than the
 best one available. `max_bytes` can narrow the body allowance for one call,
 never raise it — a PDF is the rendition most likely to exceed it.
 
-What the sealed order changes, measured over the six collections below: for
-CRPT, CHRG, CDOC, CDIR and BILLS it picks exactly what the previous default
-picked. The one collection whose answer changes is **CREC**, which offers PDF
-and nothing else: it used to refuse with `GovInfoFormatNotOfferedError` and now
-returns a body. That is the whole of the ruling this seals.
+What the sealed order changes, measured over the original six collections
+(the formats table below adds a seventh, CPRT, after this ruling): for CRPT,
+CHRG, CDOC, CDIR and BILLS it picks exactly what the previous default picked.
+The one collection whose answer changes is **CREC**, which offers PDF and
+nothing else: it used to refuse with `GovInfoFormatNotOfferedError` and now
+returns a body. That is the whole of the ruling this seals. CPRT was added
+later (§A10): it offers `htm`, `pdf` and `xml` and picks `xml`, the same
+structure-first rule the rest of the order already follows.
 
 ## Package ids
 
@@ -73,6 +76,7 @@ returns a body. That is the whole of the ruling this seals.
 | Committee reports | `CRPT-{congress}{hrpt\|srpt\|erpt}{number}` | `CRPT-119hrpt1` |
 | Hearings | `CHRG-{congress}{hhrg\|shrg\|jhrg}{jacket}` | `CHRG-119hhrg64242` |
 | Congressional documents | `CDOC-{congress}{hdoc\|sdoc\|tdoc}{number}` | `CDOC-119tdoc2` |
+| Committee prints | `CPRT-{congress}{HPRT\|SPRT\|JPRT}{number}` | `CPRT-118HPRT57104` |
 | Congressional Record | `CREC-{yyyy-mm-dd}` with optional `-v{volume}` or `-i{issue}` | `CREC-2019-01-03-v164` |
 | Congressional Directory | `CDIR-{yyyy-mm-dd}` | `CDIR-2026-02-20` |
 | Bill text | `BILLS-{congress}{type}{number}{version}` | `BILLS-119hr1enr` |
@@ -83,6 +87,9 @@ date can publish two volumes, so the suffix belongs to the id and is never
 inferred. Report and document numbers reject a leading zero; a hearing jacket
 keeps the publisher's digits as printed. The bill-type vocabulary is the one
 `sources/congress/bill_status.py` already states, imported rather than copied.
+The committee-print token is upper-case (`HPRT`/`SPRT`/`JPRT`), unlike the
+committee-report token it otherwise resembles (`hrpt`/`srpt`/`erpt`) — verified
+on a real package summary 2026-09-19, not inferred from CRPT's own spelling.
 
 `parse_package_id` refuses anything else and names what it expected. That
 includes real packages from neighboring collections that a collection-scoped
@@ -128,6 +135,7 @@ exactly this module's locator for a supported format. Measured 2026-09-19:
 | `CRPT-119hrpt1` | HTML, PDF | `htm`, `pdf` | none |
 | `CHRG-119hhrg64242` | HTML, PDF | `htm`, `pdf` (46.6 MB) | none |
 | `CDOC-119tdoc2` | HTML, PDF | `htm`, `pdf` | none |
+| `CPRT-118HPRT57104` | HTML, PDF, XML | `htm`, `pdf`, `xml` | none |
 | `CREC-2026-01-02` | PDF | `pdf` | four PDF links |
 | `CDIR-2026-02-20` | PDF, Text | `pdf` (18.3 MB), `txt` | `txtLink`, `pdfLink` |
 | `BILLS-119hr1enr` | HTML, PDF, XML, USLM | `htm`, `xml`, `pdf` | `xmlLink`, `txtLink`, `xhtmlLink`, `uslmLink`, `pdfLink` |
@@ -135,8 +143,9 @@ exactly this module's locator for a supported format. Measured 2026-09-19:
 The MODS statement agreed exactly with what the routes served, in both
 directions, for every package measured: each stated rendition answered 200 and
 every unstated one redirected to the error page. The summary's `download`
-block did not: it names no body rendition at all for CRPT, CHRG and CDOC,
-which do serve HTML and PDF, and it spells the BILLS HTML rendition `txtLink`.
+block did not: it names no body rendition at all for CRPT, CHRG, CDOC and
+CPRT, which do serve HTML and PDF, and it spells the BILLS HTML rendition
+`txtLink`.
 So the summary is read and kept — its `download_links` exactly as spelled, its
 `dateIssued` and its `lastModified` are in the result — but nothing is derived
 from those links and the offered set comes from MODS alone.

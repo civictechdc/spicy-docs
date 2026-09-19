@@ -38,6 +38,10 @@ MODS_URL = f"https://api.govinfo.gov/packages/{PACKAGE}/mods"
 BODY_URL = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/html/{PACKAGE}.htm"
 ERROR_PAGE = b'<html><a href="https://www.govinfo.gov/error">Page Not Found</a></html>'
 
+CPRT_PACKAGE = "CPRT-118HPRT57104"
+CPRT_SUMMARY = (FIXTURES / f"summary-{CPRT_PACKAGE}.json").read_bytes()
+CPRT_MODS = (FIXTURES / f"mods-{CPRT_PACKAGE}.xml").read_bytes()
+
 
 def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = "") -> bytes:
     renditions = urls or (
@@ -62,6 +66,12 @@ def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = 
         ("CHRG-116jhrg43189", {"congress": 116, "document_type": "jhrg", "number": "43189"}),
         ("CDOC-119tdoc2", {"congress": 119, "document_type": "tdoc", "number": "2"}),
         ("CDOC-113hdoc132", {"congress": 113, "document_type": "hdoc", "number": "132"}),
+        # Upper-case, unlike CRPT's own hrpt/srpt/erpt -- measured on a real
+        # package summary (CPRT-118HPRT57104); SPRT and JPRT confirmed real
+        # via a published walk (fixture README).
+        ("CPRT-118HPRT57104", {"congress": 118, "document_type": "HPRT", "number": "57104"}),
+        ("CPRT-113SPRT52146", {"congress": 113, "document_type": "SPRT", "number": "52146"}),
+        ("CPRT-116JPRT41347", {"congress": 116, "document_type": "JPRT", "number": "41347"}),
         ("CREC-2026-01-02", {"issue_date": "2026-01-02", "issue_suffix": None}),
         ("CREC-2019-01-03-v164", {"issue_date": "2019-01-03", "issue_suffix": "v164"}),
         ("CREC-2009-12-18-i194", {"issue_date": "2009-12-18", "issue_suffix": "i194"}),
@@ -89,6 +99,7 @@ def test_each_collection_grammar_keeps_the_publishers_own_parts(package_id: str,
         ("GPO-CRPT-116hrpt562", "collection is unsupported"),
         ("CHRG-119xhrg64242", "grammar"),
         ("CRPT-119hrpt0", "grammar"),
+        ("CPRT-118hprt57104", "grammar"),  # lower-case: not the measured spelling
         ("BILLS-119hr1", "grammar"),
         ("CREC-2026-01-02-p3", "grammar"),
         ("CREC-2026-02-30", "calendar date"),
@@ -205,6 +216,28 @@ def test_real_mods_states_the_access_id_and_the_offered_renditions() -> None:
     assert mods.access_ids == (PACKAGE, PACKAGE)
     assert mods.collection_code == "CRPT"
     assert mods.offered_formats == ("htm", "pdf")
+    assert mods.other_renditions == ()
+
+
+def test_real_cprt_summary_and_mods_state_the_committee_print() -> None:
+    """CPRT-118HPRT57104: the committee-print collection added for the A10 CPRT row."""
+    summary_url = f"https://api.govinfo.gov/packages/{CPRT_PACKAGE}/summary"
+    mods_url = f"https://api.govinfo.gov/packages/{CPRT_PACKAGE}/mods"
+
+    summary = validate_package_summary(CPRT_SUMMARY, package=CPRT_PACKAGE, final_url=summary_url, max_bytes=200_000)
+    assert summary.identity.package_id == CPRT_PACKAGE
+    assert summary.identity.collection == "CPRT"
+    assert summary.identity.document_type == "HPRT"
+    assert summary.collection_code == "CPRT"
+    assert summary.title is not None and "KEEPING VIOLENT OFFENDERS" in summary.title
+
+    mods = validate_package_mods(CPRT_MODS, package=CPRT_PACKAGE, final_url=mods_url, max_bytes=200_000)
+    assert mods.access_ids == (CPRT_PACKAGE, CPRT_PACKAGE)
+    assert mods.collection_code == "CPRT"
+    # Unlike CRPT/CHRG/CDOC (htm, pdf only), the one committee print measured
+    # also offers xml -- confirmed by the real MODS, not assumed.
+    assert mods.offered_formats == ("htm", "pdf", "xml")
+    assert mods.moved_renditions == ()
     assert mods.other_renditions == ()
 
 

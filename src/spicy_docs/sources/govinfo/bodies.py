@@ -14,8 +14,9 @@ Source rules, each measured on 2026-09-19 (receipts in the fixture README):
 - The folder is not the format name: text is served from ``text/{id}.txt`` and
   HTML from ``html/{id}.htm``.
 - Not every package offers every format. CRPT/CHRG/CDOC offer HTML and PDF,
-  CREC offers PDF, CDIR offers PDF and text, BILLS offers HTML, PDF and XML.
-  A format a package does not offer redirects to ``/error``, which answers
+  CPRT offers HTML, PDF and XML, CREC offers PDF, CDIR offers PDF and text,
+  BILLS offers HTML, PDF and XML. A format a package does not offer redirects
+  to ``/error``, which answers
   HTTP 200 with the publisher's 44,165-byte "Page Not Found" page. A 200 that
   is not the requested object is a refusal with its bytes retained, never data
   and never absence.
@@ -69,6 +70,11 @@ _GRAMMARS: dict[str, tuple[re.Pattern[str], str]] = {
     "CRPT": (re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hrpt|srpt|erpt)(?P<number>{_NUMBER})"), "119hrpt1"),
     "CHRG": (re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hhrg|shrg|jhrg)(?P<number>{_JACKET})"), "119hhrg64242"),
     "CDOC": (re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hdoc|sdoc|tdoc)(?P<number>{_NUMBER})"), "119tdoc2"),
+    # Verified on a real package summary 2026-09-19 (CPRT-118HPRT57104): the
+    # chamber-plus-doctype token is spelled upper-case here, unlike CRPT's own
+    # lower-case hrpt/srpt/erpt -- the two collections do not share a case
+    # convention, so this is measured, not inferred from CRPT's shape.
+    "CPRT": (re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>HPRT|SPRT|JPRT)(?P<number>{_NUMBER})"), "118HPRT57104"),
     "CREC": (re.compile(rf"(?P<date>{_DATE})(?:-(?P<suffix>[vi]{_NUMBER}))?"), "2026-01-02 or 2019-01-03-v164"),
     "CDIR": (re.compile(rf"(?P<date>{_DATE})"), "2026-02-20"),
     "BILLS": (

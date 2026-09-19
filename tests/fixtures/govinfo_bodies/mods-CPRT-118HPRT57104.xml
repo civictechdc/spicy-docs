@@ -1,0 +1,122 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:exslt="http://exslt.org/common" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1ce086571">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CPRT</collectionCode>
+         <category>Congressional Committee Materials</category>
+         <waisDatabaseName>118_cong_house_committee_prints</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2024-11-04</dateIngested>
+    </extension>
+    <titleInfo>
+         <title>TEXT OF H.R. 8205, KEEPING VIOLENT OFFENDERS OFF OUR STREETS ACT</title>
+    </titleInfo>
+    <originInfo>
+         <publisher>U.S. Government Publishing Office</publisher>
+         <dateIssued encoding="w3cdtf">2024-09-19</dateIssued>
+         <issuance>monographic</issuance>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>1 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">Y 4.R 86/1:</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CPRT-118HPRT57104</identifier>
+    <identifier type="local">P0b002ee1ce086571</identifier>
+    <identifier type="former package identifier">f:57104.txt</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2024-11-04</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2024-11-04</recordChangeDate>
+         <recordIdentifier source="DGPO">CPRT-118HPRT57104</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <docClass>HPRT</docClass>
+         <accessId>CPRT-118HPRT57104</accessId>
+         <congress>118</congress>
+         <session>2</session>
+         <chamber>HOUSE</chamber>
+         <number>51</number>
+         <jacketId>57-104</jacketId>
+         <isFallbackTitle>false</isFallbackTitle>
+         <subType>STANDARDPRINT</subType>
+         <preferredCitation>House Committee Print 118-51</preferredCitation>
+    </extension>
+    <titleInfo>
+         <title>TEXT OF H.R. 8205, KEEPING VIOLENT OFFENDERS OFF OUR STREETS ACT</title>
+    </titleInfo>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CPRT-118HPRT57104</url>
+         <url displayLabel="HTML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CPRT-118HPRT57104/html/CPRT-118HPRT57104.htm</url>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CPRT-118HPRT57104/pdf/CPRT-118HPRT57104.pdf</url>
+         <url displayLabel="XML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CPRT-118HPRT57104/xml/CPRT-118HPRT57104.xml</url>
+    </location>
+    <identifier type="congressional committee print citation">House Committee Print 118-51</identifier>
+    <identifier type="preferred citation">House Committee Print 118-51</identifier>
+    <extension>
+         <searchTitle>TEXT OF H.R. 8205, KEEPING VIOLENT OFFENDERS OFF OUR STREETS ACT; House Committee Print 118-51</searchTitle>
+         <granuleClass>FIRSTPART</granuleClass>
+         <accessId>CPRT-118HPRT57104</accessId>
+         <dateIssued>2024-09-19</dateIssued>
+         <graphicsInPDF>true</graphicsInPDF>
+         <bill congress="118" context="COVER" number="8205" type="HR"></bill>
+         <congCommittee authorityId="hsru00" chamber="H" congress="118" type="S">
+                                    
+              <name type="authority-standard">Committee on Rules</name>
+                                    
+              <name type="authority-short">Rules</name>
+                                
+        </congCommittee>
+    </extension>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <namePart>Committee on Rules</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">associated name</roleTerm>
+              <roleTerm authority="marcrelator" type="code">asn</roleTerm>
+        </role>
+         <description>United States Congressional Committee</description>
+    </name>
+    <relatedItem type="isReferencedBy">
+         <titleInfo>
+              <title>United States House Bill 8205 (118th Congress)</title>
+        </titleInfo>
+         <identifier type="Congressional Bill citation">H.R. 8205</identifier>
+         <extension>
+              <congress>118</congress>
+              <context>COVER</context>
+        </extension>
+    </relatedItem>
+</mods>
