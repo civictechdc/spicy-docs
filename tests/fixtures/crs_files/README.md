@@ -30,9 +30,9 @@ publisher-stated URLs are in
 
 ## The HTML route, measured 2026-09-19
 
-Bounded to eight requests: two reports' `crsreport/{id}` metadata (keyed, to
-read the publisher's stated HTML URL), then three keyless header variants
-each against that URL — this module's own client headers, the same
+**Pass 1**, bounded to eight requests: two reports' `crsreport/{id}` metadata
+(keyed, to read the publisher's stated HTML URL), then three keyless header
+variants each against that URL — this module's own client headers, the same
 Accept/User-Agent built with default `httpx` transport settings, and a
 browser-like Accept.
 
@@ -45,15 +45,44 @@ browser-like Accept.
 | IF11830 | PDF route's Accept/User-Agent, default transport | 200 | `text/html` | 22,960 |
 | IF11830 | browser-like Accept | 403 | `text/html; charset=UTF-8` | 5,896 |
 
-IF12853's three variants are byte-identical (the SHA-256 above). IF11830's one
-success is not fixtured here — the point is already made with one report. The
-403s are a bot-wall page, not this module's `CrsFileSourceError`: neither
-report ever refused every variant, but no report and no single header
-combination succeeded reliably either, which is why `acquire_report` prefers
-HTML and falls back to the versioned PDF on any refusal rather than treating
-one as the answer. Every 200 states the requested report id twice
-independently: `(IF12853)`/`(IF11830)` on the cover line, and
-`data-prod-type="IF"` near the foot of the document. Neither carries a version
-anywhere in the bytes or the URL — `.../IF/HTML/IF12853.html` has no version
+Read alone, pass 1 looks like report-or-header variance: IF12853 always 200,
+IF11830 mixed. **Pass 2** repeats the identical six (report, header) pairs, to
+tell that apart from plain request-to-request flakiness — the doctrine line is
+*"one success does not establish a reliable route."*
+
+| Report | Attempt | Pass 1 | Pass 2 |
+| --- | --- | --- | --- |
+| IF12853 | file-route client | 200 | **403** |
+| IF12853 | PDF route's Accept/User-Agent, default transport | 200 | 200 |
+| IF12853 | browser-like Accept | 200 | **403** |
+| IF11830 | file-route client | 403 | 403 |
+| IF11830 | PDF route's Accept/User-Agent, default transport | 200 | 200 |
+| IF11830 | browser-like Accept | 403 | **200** |
+
+Three of six pairs flipped, including this module's own exact client headers
+on IF12853 (200 → 403). It is request-to-request flakiness, not a report- or
+header-driven rule: no combination of report and headers was reliable across
+both passes, and none should be trusted going forward either. This is why
+`acquire_report` prefers HTML and falls back to the versioned PDF on any
+refusal rather than treating one success as the answer, and why the refused
+capture is carried on the result (`html_refusal`) instead of only appearing in
+a caught, discarded exception.
+
+IF12853's three pass-1 variants are byte-identical (the SHA-256 above).
+IF11830's one success is not fixtured here — the point is already made with
+one report. The 403s are a bot-wall page, not this module's own error type:
+`named_challenge` recasts them as `CrsHtmlRefusedError`. Every 200 states the
+requested report id twice independently, both read through
+`reading/markup.py`'s parsed events rather than a raw substring search: the
+`class="CoverDate"` element's own text names the id in parentheses
+(`(IF12853)`/`(IF11830)`), and a `data-prod-type="IF"` attribute states the
+family. Scoping to that one element matters, not just to the whole page: this
+same report's `ReportContent` section cites *other* report ids by number in
+running prose (`CRS Report R48980`, `CRS In Focus IF12852`), and a page that
+happened to wrap one such citation in parentheses would satisfy an unscoped
+search without being that report's own page. Neither the cover line nor the
+URL carries a version anywhere — `.../IF/HTML/IF12853.html` has no version
 segment at all, unlike the PDF's `.../IF12853.10.pdf` — so this rendition only
-ever stands in for a report's *current* file.
+ever stands in for the version the same `formats[]` read called current;
+`CrsReportSelection` pairs the two so a caller cannot ask for one report's
+current HTML alongside another version's PDF by mistake.

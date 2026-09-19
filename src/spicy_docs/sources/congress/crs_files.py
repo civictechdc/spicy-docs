@@ -30,39 +30,53 @@ Evidence: `corpora/supply-2026-09-02/receipts/port-P03-crs-files-2026-09-14/`.
 **HTML.** The publisher's ``formats[]`` also states an HTML URL,
 ``.../{family}/HTML/{id}.html`` — no per-id directory and, unlike the PDF
 route, no version segment: congress.gov serves exactly one HTML file per
-report, whichever version is current. Measured 2026-09-19, bounded to eight
-requests (two reports' ``crsreport/{id}`` metadata, then three header variants
-each against the stated HTML URL — the file route's own client headers, the
-same Accept/User-Agent built with default transport settings, and a
-browser-like Accept): IF12853 answered 200 on all three variants; IF11830
-answered 200 on one of three and 403 (a bot-wall page, kept as evidence) on
-the other two, including the literal replica of this module's own client. So
-the route is real but not reliably reachable keyless — HTML is preferred, but
-every attempt falls back to the versioned PDF route rather than raising, and
-`acquire_report_pdf` alone remains the only way to reach a specific
-superseded version. The HTML carries no version of its own, so identity is
-the report id, stated twice independently in the bytes (the cover line's
-parenthesized id and the ``data-prod-type`` family marker) plus the final URL.
-Evidence: `docs/sources/crs-files.md`.
+report, whichever version is current. Measured 2026-09-19: two reports,
+three keyless header variants each against the stated HTML URL (the file
+route's own client headers, the same Accept/User-Agent built with default
+transport settings, and a browser-like Accept), then a repeat of all six
+(report, header) pairs to tell request-to-request flakiness apart from
+report-or-header variance. It is flakiness: three of the six repeated pairs
+flipped status between passes, including the literal replica of this
+module's own client headers on IF12853 (200, then 403 on repeat) and
+IF11830's browser-like Accept (403, then 200). No report, no header
+combination and no repeat sequence was reliable. Evidence and the full table:
+`docs/sources/crs-files.md`, `tests/fixtures/crs_files/README.md`.
+
+So HTML is preferred, never trusted: `acquire_report` tries it once and
+falls back to the versioned PDF route under the same request budget on any
+refusal, carrying the refused capture on the result (`html_refusal`) so the
+fallback stays auditable. The HTML carries no version of its own — neither
+the URL nor the bytes state one — so it can only ever stand in for the
+version the same `formats[]` read called current; `CrsReportSelection`
+freezes that pairing at construction (`crs_report_selection`), and
+`acquire_report` uses HTML only when the requested version equals it,
+routing anything else straight to the PDF path and saying why
+(`html_skipped_reason`). Identity is the report id, stated twice
+independently in the markup — the `class="CoverDate"` element's own text and
+the `data-prod-type` attribute — read through `reading/markup.py`'s events
+rather than a raw substring search, so another report's page citing this id
+in its prose cannot be mistaken for the report's own cover line.
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
+from spicy_docs.reading.markup import HTML_VOID_TAGS, MarkupEvent, MarkupReadError, read_html_events
 from spicy_docs.reading.pdf_bytes import check_pdf_bytes
+from spicy_docs.reading.refusals import RefusedResponse
 from spicy_docs.transport.captured import CapturedBodyResponse
-from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.source_acquirer import (
     SourceAcquirer,
     check_byte_bound,
     check_final_url,
     check_request_count,
     check_timing,
+    named_challenge,
     narrow_byte_limit,
     utc_now,
 )
@@ -112,6 +126,25 @@ class CrsFileUnavailableError(CrsFileSourceError):
     def __init__(self, capture: CapturedBodyResponse) -> None:
         super().__init__(f"CRS file source answered HTTP {capture.status_code} for the requested locator")
         self.capture = capture
+
+
+class CrsHtmlRefusedError(CrsFileSourceError):
+    """The keyless HTML route answered 401/403; there is no credential here to reject.
+
+    congress.gov's bot wall answers this route inconsistently -- measured
+    2026-09-19, the exact same request can answer 200 once and 403 the next
+    attempt (module docstring; docs/sources/crs-files.md). ``named_challenge``
+    recasts that refusal into this error so it is catchable as a
+    ``CrsFileSourceError``, its body retained as evidence on
+    ``refused_response``, the way ``LegislatorsRefusedError`` and
+    ``VoteRefusedError`` already do for this repo's other keyless families --
+    rather than letting it escape as ``CredentialRefusedError``, which only
+    the PDF route's ``HEAD`` probe triggers today.
+    """
+
+    def __init__(self, url: str) -> None:
+        super().__init__(f"CRS HTML source refused access to {url}; no credential exists to reject")
+        self.url = url
 
 
 def _limit(max_bytes: object) -> int:
@@ -225,6 +258,62 @@ def crs_html_selection(stated_url: str) -> CrsHtmlSelection:
 
 
 @dataclass(frozen=True, slots=True)
+class CrsReportSelection:
+    """One report, as one ``formats[]`` response named it.
+
+    ``pdf`` carries the version that response called current. ``html``, when
+    the publisher stated one, was read from the very same response, so it can
+    only ever stand in for that same version -- never a caller-chosen
+    historical one paired in after the fact. Build this with
+    ``crs_report_selection(formats)`` from the publisher's own array;
+    constructing it directly still checks that both name the same report, so
+    the mismatch a caller assembling ``CrsFileSelection`` and
+    ``CrsHtmlSelection`` by hand could otherwise make is structurally
+    impossible here.
+    """
+
+    pdf: CrsFileSelection
+    html: CrsHtmlSelection | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.pdf, CrsFileSelection):
+            raise CrsFileSourceError("pdf must be a CrsFileSelection")
+        if self.html is not None:
+            if not isinstance(self.html, CrsHtmlSelection):
+                raise CrsFileSourceError("html must be a CrsHtmlSelection or None")
+            if (self.html.family, self.html.report_id) != (self.pdf.family, self.pdf.report_id):
+                raise CrsFileSourceError("pdf and html select different reports")
+
+
+def crs_report_selection(formats: Sequence[Mapping[str, object]]) -> CrsReportSelection:
+    """Build one report's selection from its ``crsreport/{id}`` ``formats[]`` array.
+
+    Reads exactly what the publisher stated in one response: the ``PDF``
+    entry names the current version and the ``HTML`` entry, when present, is
+    paired with that same version because both came from the same read. A
+    caller with only a stated URL in hand still has
+    ``crs_file_selection``/``crs_html_selection`` directly, but assembling a
+    ``CrsReportSelection`` from two separately-fetched URLs risks pairing a
+    current HTML rendition with a different report's or a different moment's
+    PDF version; reading both from one array cannot.
+    """
+    if isinstance(formats, (str, bytes)) or not isinstance(formats, Sequence):
+        raise CrsFileSourceError("formats must be the report's formats[] sequence")
+    by_format: dict[str, str] = {}
+    for entry in formats:
+        if not isinstance(entry, Mapping):
+            raise CrsFileSourceError("formats must be a sequence of mappings")
+        name, url = entry.get("format"), entry.get("url")
+        if isinstance(name, str) and isinstance(url, str):
+            by_format[name.upper()] = url
+    if "PDF" not in by_format:
+        raise CrsFileSourceError("formats states no PDF rendition")
+    pdf = crs_file_selection(by_format["PDF"])
+    html = crs_html_selection(by_format["HTML"]) if "HTML" in by_format else None
+    return CrsReportSelection(pdf, html)
+
+
+@dataclass(frozen=True, slots=True)
 class CrsReportPdf:
     """What the bytes themselves state: the PDF version and the signed length, if present."""
 
@@ -276,6 +365,43 @@ class CrsReportHtml:
     byte_size: int
 
 
+def _cover_date_text(events: tuple[MarkupEvent, ...]) -> str | None:
+    """Text of the ``<div class="CoverDate">`` element alone -- the report's own cover line.
+
+    Never a raw substring search over the whole body: a related report cited
+    in this page's prose (``... see CRS Report (IF12853) ...``) states that
+    other id in parentheses too, and must not be mistaken for this page's own
+    cover line. Depth-tracked through the shared markup reader's events so
+    the scope is exactly one element, regardless of what it nests.
+    """
+    depth: int | None = None
+    parts: list[str] = []
+    for event in events:
+        if depth is None:
+            if event.kind == "start" and event.name == "div" and dict(event.attributes).get("class") == "CoverDate":
+                depth = 0
+            continue
+        if event.kind == "end":
+            if depth == 0:
+                return "".join(parts)
+            depth -= 1
+        elif event.kind == "start" and event.name not in HTML_VOID_TAGS:
+            depth += 1
+        elif event.kind == "text" and event.text:
+            parts.append(event.text)
+    return None
+
+
+def _prod_type(events: tuple[MarkupEvent, ...]) -> str | None:
+    """The ``data-prod-type`` attribute value, wherever the markup states it."""
+    for event in events:
+        if event.kind in ("start", "empty"):
+            value = dict(event.attributes).get("data-prod-type")
+            if value is not None:
+                return value
+    return None
+
+
 def read_crs_html(
     body: bytes, selection: CrsHtmlSelection, *, final_url: str, max_bytes: int = DEFAULT_MAX_BYTES
 ) -> CrsReportHtml:
@@ -284,9 +410,12 @@ def read_crs_html(
     The route states no version, so completeness and identity rest on the
     report id alone -- stated twice independently in the markup, the way the
     PDF path's two statements (magic and signed length) are independent of
-    each other. The cover line spells the id in parentheses
-    (``(IF12853)``) and a ``data-prod-type`` attribute near the foot of the
-    document states the family. Both must agree with the selection, and the
+    each other. The cover line's own ``class="CoverDate"`` element spells the
+    id in parentheses (``(IF12853)``), and a ``data-prod-type`` attribute
+    states the family; both are read through ``reading/markup.py``'s parsed
+    events, scoped to that one element, not a substring search over the whole
+    page -- which a citation to this id elsewhere in another report's prose
+    could otherwise satisfy. Both must agree with the selection, and the
     final URL must equal the locator. There is no version to check: a stale
     or ahead-of-metadata capture cannot be told apart from a fresh one by the
     bytes alone, which is why this rendition only ever stands in for a
@@ -306,9 +435,14 @@ def read_crs_html(
     body = bytes(body)
     if len(body) > max_bytes:
         raise CrsFileSourceError("CRS HTML exceeds its byte bound")
-    if f"({selection.report_id})".encode() not in body:
+    try:
+        events = read_html_events(body).events
+    except MarkupReadError as error:
+        raise CrsFileSourceError("CRS HTML does not parse as markup") from error
+    cover_date = _cover_date_text(events)
+    if cover_date is None or f"({selection.report_id})" not in cover_date:
         raise CrsFileSourceError("CRS HTML does not state the requested report id")
-    if f'data-prod-type="{selection.family}"'.encode() not in body:
+    if _prod_type(events) != selection.family:
         raise CrsFileSourceError("CRS HTML does not state the requested report family")
     return CrsReportHtml(selection, len(body))
 
@@ -344,12 +478,37 @@ class CrsHtmlAcquisition:
     budget: CrsFileBudget
 
 
+@dataclass(frozen=True, slots=True)
+class CrsReportAcquisition:
+    """One report, in whichever rendition congress.gov actually served -- and why, when it was not HTML.
+
+    Exactly one of ``html``/``pdf`` is set, matching ``rendition``.
+    ``html_skipped_reason`` and ``html_refusal`` are mutually exclusive and
+    both ``None`` when ``rendition == "html"``: the former is set when HTML
+    was never attempted at all (a superseded version was requested, or the
+    report states none), the latter when HTML *was* attempted and the
+    publisher refused it -- so the fallback stays auditable from the result
+    itself, not only from a caught and discarded exception.
+    """
+
+    rendition: Literal["html", "pdf"]
+    html: CrsReportHtml | None
+    pdf: CrsReportPdf | None
+    capture: CapturedBodyResponse
+    html_refusal: RefusedResponse | None
+    html_skipped_reason: str | None
+    request_count: int
+    budget: CrsFileBudget
+
+
 class CrsFileAcquirer(SourceAcquirer):
     """Keyless capture of one CRS report file. Summaries stay the separate, keyed fetch.
 
-    ``acquire_report`` prefers the current HTML rendition and falls back to
-    the versioned PDF on any refusal; ``acquire_report_pdf`` alone reaches a
-    specific, possibly superseded version, which HTML cannot express.
+    ``acquire_report`` prefers the current HTML rendition for the version its
+    ``CrsReportSelection`` calls current, and always uses the versioned PDF
+    route for any other version or when the publisher states no HTML.
+    ``acquire_report_pdf``/``acquire_report_html`` remain available directly
+    for finer control over a single rendition.
     """
 
     def __init__(
@@ -412,59 +571,127 @@ class CrsFileAcquirer(SourceAcquirer):
     def acquire_report_html(
         self, selection: CrsHtmlSelection, *, max_bytes: int | None = None, reset_budget: bool = True
     ) -> CrsHtmlAcquisition:
-        """One GET for the report's current HTML. Refused more often than the PDF route.
+        """One GET for the report's current HTML. Refused more often than the PDF route, and non-deterministically.
 
-        Measured 2026-09-19 (module docstring): congress.gov's keyless bot
-        wall answers this route 200 for some requests and 403 for others
-        against the very same report, so a caller that must have a body
-        should use ``acquire_report`` rather than treating a refusal here as
-        the report having no HTML.
+        Measured 2026-09-19 across two reports, three header variants each,
+        and a repeat of all six (module docstring; docs/sources/crs-files.md):
+        congress.gov's keyless bot wall is inconsistent request to request,
+        not just report to report or header to header -- three of six
+        repeated (report, header) pairs flipped status between passes,
+        including this method's own exact headers. A caller that must have a
+        body should use ``acquire_report`` rather than treating a refusal
+        here as the report having no HTML.
+
+        A 401/403 is recast as ``CrsHtmlRefusedError`` by ``named_challenge``
+        (this route is keyless, so it is a bot wall, not a credential being
+        rejected) rather than escaping as ``CredentialRefusedError`` --
+        consistent with this repo's other keyless families (cbo.py, votes.py,
+        legislators.py, bulk_status.py).
         """
         locator = crs_html_locator(selection)
         effective = replace(self.budget, max_bytes=narrow_byte_limit(self.budget.max_bytes, max_bytes))
 
-        html, capture = self.capture_validated(
-            locator,
-            media_types=(HTML_MEDIA_TYPE,),
-            parse=lambda response, limit: read_crs_html(
-                response.body, selection, final_url=response.resolved_url, max_bytes=limit
-            ),
-            max_bytes=effective.max_bytes,
-            unavailable=CrsFileUnavailableError,
-            context={
-                "operation": "crs-report-html",
-                "selection": asdict(selection),
-                "url": locator,
-                "budget": asdict(effective),
-            },
-            reset_budget=reset_budget,
-        )
+        with named_challenge(locator, error_type=CrsHtmlRefusedError, context_key=self.context_key):
+            html, capture = self.capture_validated(
+                locator,
+                media_types=(HTML_MEDIA_TYPE,),
+                parse=lambda response, limit: read_crs_html(
+                    response.body, selection, final_url=response.resolved_url, max_bytes=limit
+                ),
+                max_bytes=effective.max_bytes,
+                unavailable=CrsFileUnavailableError,
+                context={
+                    "operation": "crs-report-html",
+                    "selection": asdict(selection),
+                    "url": locator,
+                    "budget": asdict(effective),
+                },
+                reset_budget=reset_budget,
+            )
         return CrsHtmlAcquisition(selection, html, capture, self.request_count, effective)
 
-    def acquire_report(
+    def _report_from_pdf(
         self,
         pdf_selection: CrsFileSelection,
         *,
-        html_selection: CrsHtmlSelection | None = None,
+        max_bytes: int | None,
+        reset_budget: bool = True,
+        html_refusal: RefusedResponse | None = None,
+        html_skipped_reason: str | None = None,
+    ) -> CrsReportAcquisition:
+        pdf = self.acquire_report_pdf(pdf_selection, max_bytes=max_bytes, reset_budget=reset_budget)
+        return CrsReportAcquisition(
+            rendition="pdf",
+            html=None,
+            pdf=pdf.file,
+            capture=pdf.capture,
+            html_refusal=html_refusal,
+            html_skipped_reason=html_skipped_reason,
+            request_count=pdf.request_count,
+            budget=pdf.budget,
+        )
+
+    def acquire_report(
+        self,
+        selection: CrsReportSelection,
+        *,
+        version: int | None = None,
         max_bytes: int | None = None,
-    ) -> CrsHtmlAcquisition | CrsFileAcquisition:
+    ) -> CrsReportAcquisition:
         """Prefer the current HTML rendition; fall back to the versioned PDF on any refusal.
 
-        ``html_selection`` should come from the same ``formats[]`` response as
-        ``pdf_selection`` -- the HTML route carries no version, so it can only
-        stand in for the report's *current* file, never a caller-pinned
-        historical one. Pass ``html_selection=None`` (or omit it) for a
-        historical version; this then behaves exactly like
-        ``acquire_report_pdf``.
+        ``version`` defaults to ``selection.pdf.version`` -- the version the
+        same ``formats[]`` read called current, the only version HTML can
+        stand in for (module docstring: the route states no version of its
+        own, in the URL or the bytes). A request for any other version is
+        routed straight to the PDF route, and ``html_skipped_reason`` on the
+        result says why. This makes a caller-pinned historical version
+        silently answered with today's HTML structurally impossible rather
+        than a rule a caller has to remember: the comparison happens here,
+        not by whether an HTML selection happens to have been passed in.
 
-        A refusal fetching HTML -- the bot wall, an unexpected shape, a
-        missing identity marker -- is not a hard failure: it falls back to
-        the PDF route under the same request budget rather than raising.
-        Only a PDF-route failure (or an exhausted budget) propagates.
+        A refusal fetching HTML -- the bot wall (non-deterministic: module
+        docstring), an unexpected shape, a missing identity marker -- is not
+        a hard failure either: it falls back to the PDF route under the same
+        request budget, and the refused capture is kept on the result as
+        ``html_refusal`` so the fallback stays auditable. Only a PDF-route
+        failure (or an exhausted budget) propagates.
         """
-        if html_selection is not None:
-            try:
-                return self.acquire_report_html(html_selection, max_bytes=max_bytes)
-            except (CredentialRefusedError, CrsFileSourceError):
-                return self.acquire_report_pdf(pdf_selection, max_bytes=max_bytes, reset_budget=False)
-        return self.acquire_report_pdf(pdf_selection, max_bytes=max_bytes)
+        if not isinstance(selection, CrsReportSelection):
+            raise CrsFileSourceError("selection must be a CrsReportSelection")
+        current = selection.pdf.version
+        requested = current if version is None else version
+        if isinstance(requested, bool) or not isinstance(requested, int):
+            raise CrsFileSourceError("version must be an integer")
+        pdf_selection = (
+            selection.pdf
+            if requested == current
+            else CrsFileSelection(selection.pdf.family, selection.pdf.report_id, requested)
+        )
+
+        if selection.html is None:
+            return self._report_from_pdf(
+                pdf_selection, max_bytes=max_bytes, html_skipped_reason="the report states no HTML rendition"
+            )
+        if requested != current:
+            reason = f"version {requested} was requested; HTML only stands in for the current version {current}"
+            return self._report_from_pdf(pdf_selection, max_bytes=max_bytes, html_skipped_reason=reason)
+
+        try:
+            html = self.acquire_report_html(selection.html, max_bytes=max_bytes)
+        except CrsFileSourceError as error:
+            refusal = getattr(error, "refused_response", None)
+            html_refusal = refusal if isinstance(refusal, RefusedResponse) else None
+            return self._report_from_pdf(
+                pdf_selection, max_bytes=max_bytes, reset_budget=False, html_refusal=html_refusal
+            )
+        return CrsReportAcquisition(
+            rendition="html",
+            html=html.html,
+            pdf=None,
+            capture=html.capture,
+            html_refusal=None,
+            html_skipped_reason=None,
+            request_count=html.request_count,
+            budget=html.budget,
+        )
