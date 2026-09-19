@@ -1367,7 +1367,7 @@ def slip_formula(text: str) -> tuple[str, str | None, str | None] | None:
     return kind, match.group("author"), match.group("joined")
 
 
-def classify_slip_page(page: Node, number: int, lines: Sequence[tuple[Node, Any]], builder: Builder) -> None:
+def classify_slip_page(page: Node, number: int, lines: Sequence[tuple[Node, Any]]) -> None:
     """Separate the page furniture the print repeats from the body, and read the designator.
 
     The running-head band is the fixed geometry above; inside it the leading
@@ -2177,7 +2177,7 @@ def convert_slip_opinion(
         builder,
         "pdf-text",
         sizes,
-        lambda page, number, lines: classify_slip_page(page, number, lines, builder),
+        classify_slip_page,
     )
     opinions = group_slip_opinions(pages, builder)
     ext = {
