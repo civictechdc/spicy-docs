@@ -1,7 +1,10 @@
 # How far a bill's HTML rendition is from its XML
 
-Status: measured 2026-09-19, read-only, 81 bounded publisher requests; no
-reconstruction code was written. Sizes gap B1 and §3.1 of the
+Status: measured 2026-09-19, read-only, 141 bounded publisher requests across
+two draws (81 to build the tuning corpus, 60 for the held-out one; each process
+stayed under its own 90-request bound, and the
+[request log](#retained-receipt) reconciles those figures with the cache hits).
+No reconstruction code was written. Sizes gap B1 and §3.1 of the
 [closing-the-gaps proposal](closing-the-gaps-2026-09-19.md) with data.
 
 The proposal's §3.1 picks bill text from the 103rd to the 112th Congress as the
@@ -16,67 +19,120 @@ renditions: hide the XML, read the HTML through this repository's own
 Regenerate with:
 
 ```sh
+# The tuning corpus, and the pre-113th bodies.
 uv run --frozen python -m tools.analysis.bill_html_xml_gap --env-file .env \
   --cache "$SCRATCH/bill-gap" \
   --output docs/research/bill-html-xml-gap-2026-09-19.json \
   --doc docs/research/bill-html-xml-gap-2026-09-19.md
+
+# The held-out corpus: same listings, disjoint quantiles, every tuning
+# document excluded by package id. Merged into the sidecar's heldOut block.
+uv run --frozen python -m tools.analysis.bill_html_xml_gap --selection held-out \
+  --env-file .env --cache "$SCRATCH/bill-gap" \
+  --output docs/research/bill-html-xml-gap-2026-09-19.json \
+  --doc docs/research/bill-html-xml-gap-2026-09-19.md
 ```
 
-Add `--offline` to rewrite the generated block from the saved measurement
-without the network. Fetched bytes live in `--cache`, outside this repository;
+`--quantiles` and `--listings` override either draw. Add `--offline` to rewrite
+the generated block from the saved measurement without the network. Fetched
+bytes live in `--cache`, outside this repository;
 `tests/test_bill_html_xml_gap_tool.py` renders the block from the committed
-sidecar and pins the rules against constructed print samples.
+sidecar, pins the rules against constructed print samples and against one
+committed fixture of real GPO bytes, and proves the two corpora disjoint.
 
-**Corpus.** Thirty paired 113th/114th documents drawn by rule from five GovInfo
-bulk listings, spanning 14 version codes (`ih`, `is`, `eh`, `es`, `enr`, `rh`,
-`rs`, `rfh`, `rfs`, `rds`, `pcs`, `ats`, `fph`, `eah2`) and four measure types,
-at each listing's median and 95th-percentile file size; plus ten pre-113th HTML
-bodies, one per Congress from the 103rd to the 112th, with no XML to score
-against. **What this cannot see:** thirty documents cannot see a shape rare in
-the population, one document per pre-113th Congress cannot see variation within
-a Congress, and no document in the paired corpus carries a table of contents, so
-no contents-list rule is scored here at all.
+**Two corpora, and why.** The rules in this tool were **revised against** the
+first thirty documents: the first run recovered only half the sections, and
+each gap turned out to be a GPO print convention the rules did not yet know
+(below). A score on those same documents after that revision is an in-sample
+upper bound, not an estimate of accuracy on unseen bills. So the rules were
+frozen and a second corpus was drawn:
+
+| Corpus | Draw | Role |
+|---|---|---|
+| Tuning, 30 documents | five GovInfo bulk listings, each version code at the listing's median and 95th-percentile file size | the rules were revised against these; its score is an **upper bound** |
+| Held-out, 30 documents | the **same five listings** at disjoint quantiles (0.25, 0.75), with every tuning package id excluded by the selector | drawn and scored **once**, after the rules were frozen; **this is the headline** |
+| Pre-113th, 10 bodies | one per Congress, 103rd to 112th | no XML to score against; structure counts and a manual read only |
+
+Same listings on purpose: the two draws then differ only in *which files they
+take*, so the comparison measures tuning rather than a different slice of the
+corpus. Disjointness is enforced by the selector, not assumed — a quantile
+index landing on an excluded file steps forward through that code's files —
+and the run refuses if any overlap survives.
+
+**What this cannot see.**
+
+- **The in-sample figures are an upper bound.** The rules were fitted to those
+  thirty documents; only the held-out table estimates unseen accuracy.
+- Thirty documents per draw cannot see a shape rare in the population, and one
+  document per pre-113th Congress cannot see variation within a Congress.
+- **The struck-text rule is unexercised out of sample.** No held-out document
+  carries two `<legis-body>` elements, so `<DELETED>` is scored only in-sample
+  and on one committed fixture. Its lower-bound invariant (below) exists
+  because of that.
+- Contents lists *are* exercised out of sample (108 entries, 22 banners) but
+  only in the form that lists sections; the title-level form the 111th Congress
+  uses is still unscored, and a rule for it must not be tuned on the pre-113th
+  bodies, which have no XML reference.
+- The DTD is pinned and cited; nothing here validates a document against it.
 
 <!-- generated by tools/analysis/bill_html_xml_gap.py: start -->
 
-Measured 2026-09-19 by `tools/analysis/bill_html_xml_gap.py` at spicy-docs `1f136a9`; 81 publisher requests to build this corpus, 30 paired documents, 10 pre-113th HTML bodies. Per-kind cells read `matched/found in HTML/in XML`. The command, the run's full output and every document's digest are retained outside this repository in `~/Work/corpora/supply-2026-09-02/receipts/bill-html-xml-gap-2026-09-19/`; this document's sidecar `bill-html-xml-gap-2026-09-19.json` is the committed pin.
+Measured 2026-09-19 by `tools/analysis/bill_html_xml_gap.py` at spicy-docs `e0b0daa`; 141 publisher requests across every run that built this corpus (the request log reconciles that figure with the cache hits and the per-process 90-request bound), 30 tuning documents, 30 held-out documents, 10 pre-113th HTML bodies. Per-kind cells read `matched/found in HTML/in XML`. The command, the run's full output and every document's digest are retained outside this repository in `~/Work/corpora/supply-2026-09-02/receipts/bill-html-xml-gap-2026-09-19/`; this document's sidecar `bill-html-xml-gap-2026-09-19.json` is the committed pin.
 
-### Paired corpus: fidelity and structure per document
+### Held-out score: the rules on documents they were never revised against
 
-| Package | Stage | XML B | HTML B | Ratio | Body ratio | HTML-only | XML-only | Sections | Unnum. | Subsections | Titles | Divisions | Quoted | Headers agree |
+**This is the headline.** 30 documents drawn from the same five listings at disjoint quantiles (0.25, 0.75), with every tuning document excluded by package id, and scored once after the rules were frozen. The in-sample table further down is the upper bound; this is the number to plan against.
+
+| Kind | Found in HTML | In XML | Matched | Micro precision | Micro recall | Macro precision | Macro recall | Docs with kind | Docs exact |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| section | 170 | 170 | 170 | 100.0% | 100.0% | 100.0% | 100.0% | 24 | 24 |
+| subsection | 255 | 254 | 254 | 99.6% | 100.0% | 100.0% | 100.0% | 20 | 19 |
+| title | 18 | 18 | 18 | 100.0% | 100.0% | 100.0% | 100.0% | 2 | 2 |
+| division | 4 | 4 | 4 | 100.0% | 100.0% | 100.0% | 100.0% | 2 | 2 |
+| quotedBlock | 118 | 121 | 117 | 99.2% | 96.7% | 99.8% | 83.1% | 10 | 5 |
+
+Body text fidelity on the held-out corpus: 94.8% mean, 96.7% median, 85.1% worst. Catchlines agreeing: 147 of 149 (+21 where neither rendition spells one).
+
+Held-out documents: `BILLS-113hr721ih`, `BILLS-113hr297rh`, `BILLS-113hr1241eh`, `BILLS-113hr1410rfs`, `BILLS-113hr3588enr`, `BILLS-113hr330pcs`, `BILLS-113s2924is`, `BILLS-113s753rs`, `BILLS-113s2912es`, `BILLS-113s2599pcs`, `BILLS-113s2195enr`, `BILLS-113s2137rfh`, `BILLS-113hjres44ih`, `BILLS-113hjres85eh`, `BILLS-113hjres90pcs`, `BILLS-113hjres71fph`, `BILLS-113hjres59enr`, `BILLS-113hjres59eah3`, `BILLS-114hr4759ih`, `BILLS-114hr4712eh`, `BILLS-114hr3711rh`, `BILLS-114hr5982rfs`, `BILLS-114hr2607enr`, `BILLS-114hr5351rds`, `BILLS-114sres279ats`, `BILLS-114sres143is`, `BILLS-114sres274rs`, `BILLS-114sres54pcs`, `BILLS-114sres191ats`, `BILLS-114sres298is`.
+
+### Tuning corpus: fidelity and structure per document
+
+**In-sample.** The rules were revised against these thirty documents until they stopped losing structure, so what follows is an upper bound on the rules' accuracy, not an estimate of their accuracy on unseen bills. The held-out table above is the untuned score.
+
+| Package | Stage | XML B | HTML B | Ratio | Body ratio | HTML-only | XML-only | Sections | Unnum. | Subsections | Titles | Divisions | Quoted | Catchlines agree (+neither) |
 |---|---|---:|---:|---:|---:|---:|---:|---|---:|---|---|---|---|---|
-| `BILLS-113hr1636ih` | ih | 8,283 | 5,266 | 91.9% | 99.3% | 43 | 26 | 3/3/3 | 0 | 2/2/2 | 0/0/0 | 0/0/0 | 1/1/1 | 3/3 |
-| `BILLS-113hr1447rh` | rh | 11,081 | 8,257 | 92.8% | 96.1% | 90 | 27 | 3/3/3 | 0 | 9/9/9 | 0/0/0 | 0/0/0 | 0/0/0 | 3/3 |
-| `BILLS-113hr291eh` | eh | 6,767 | 4,166 | 88.8% | 95.0% | 49 | 27 | 2/2/2 | 0 | 6/6/6 | 0/0/0 | 0/0/0 | 0/0/0 | 2/2 |
-| `BILLS-113hr623rfs` | rfs | 8,220 | 4,116 | 92.2% | 98.2% | 26 | 34 | 2/2/2 | 0 | 5/5/5 | 0/0/0 | 0/0/0 | 0/0/0 | 2/2 |
-| `BILLS-113hr3233enr` | enr | 5,814 | 3,613 | 88.8% | 97.4% | 19 | 55 | 2/2/2 | 0 | 3/3/3 | 0/0/0 | 0/0/0 | 1/1/1 | 2/2 |
-| `BILLS-113hr2728pcs` | pcs | 12,273 | 9,371 | 94.3% | 96.4% | 58 | 27 | 7/7/7 | 0 | 2/2/2 | 3/3/3 | 0/0/0 | 1/1/1 | 7/7 |
-| `BILLS-113s2807is` | is | 10,383 | 7,244 | 94.6% | 99.8% | 50 | 28 | 3/3/3 | 0 | 9/9/9 | 0/0/0 | 0/0/0 | 0/0/0 | 3/3 |
-| `BILLS-113s2113rs` | rs | 24,029 | 18,091 | 93.8% | 95.7% | 167 | 27 | 8/8/8 | 0 | 9/9/9 | 0/0/0 | 0/0/0 | 7/7/7 | 8/8 |
-| `BILLS-113s2183es` | es | 9,599 | 6,243 | 93.2% | 98.0% | 30 | 25 | 1/1/1 | 0 | 5/5/5 | 0/0/0 | 0/0/0 | 0/0/0 | 1/1 |
-| `BILLS-113s2648pcs` | pcs | 49,816 | 32,563 | 98.3% | 89.3% | 83 | 24 | 10/10/10 | 1 | 4/4/4 | 4/4/4 | 0/0/0 | 3/3/3 | 10/10 |
-| `BILLS-113s2759enr` | enr | 8,654 | 4,340 | 91.8% | 98.2% | 22 | 51 | 1/1/1 | 0 | 5/5/5 | 0/0/0 | 0/0/0 | 0/0/0 | 0/1 |
-| `BILLS-113s2086rfh` | rfh | 7,900 | 4,258 | 93.3% | 98.4% | 30 | 30 | 4/4/4 | 0 | 4/4/4 | 0/0/0 | 0/0/0 | 0/0/0 | 4/4 |
-| `BILLS-113hjres18ih` | ih | 5,499 | 3,305 | 88.6% | 95.2% | 37 | 26 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 1/1/1 | 0/0 |
-| `BILLS-113hjres90eh` | eh | 7,577 | 4,590 | 89.9% | 91.7% | 36 | 28 | 7/7/7 | 2 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 7/7 |
-| `BILLS-113hjres73pcs` | pcs | 7,566 | 5,373 | 91.0% | 89.0% | 44 | 24 | 7/7/7 | 2 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 7/7 |
-| `BILLS-113hjres72fph` | fph | 5,991 | 3,603 | 90.2% | 93.7% | 37 | 28 | 4/4/4 | 2 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 4/4 |
-| `BILLS-113hjres91enr` | enr | 8,357 | 4,800 | 92.1% | 93.8% | 25 | 51 | 6/6/6 | 2 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 6/6 |
-| `BILLS-113hjres59eah2` | eah2 | 14,566 | 10,712 | 95.8% | 96.1% | 28 | 36 | 5/5/5 | 0 | 3/3/3 | 0/0/0 | 0/0/0 | 4/4/4 | 5/5 |
-| `BILLS-114hr6024ih` | ih | 7,603 | 5,067 | 92.0% | 99.6% | 44 | 25 | 2/2/2 | 0 | 2/2/2 | 0/0/0 | 0/0/0 | 2/2/2 | 2/2 |
-| `BILLS-114hr3620eh` | eh | 7,468 | 4,427 | 85.2% | 93.3% | 33 | 27 | 3/3/3 | 0 | 0/0/0 | 0/0/0 | 0/0/0 | 2/2/2 | 3/3 |
-| `BILLS-114hr4359rh` | rh | 11,752 | 8,046 | 91.3% | 94.6% | 107 | 22 | 2/2/2 | 0 | 4/4/4 | 0/0/0 | 0/0/0 | 2/2/2 | 2/2 |
-| `BILLS-114hr5229rfs` | rfs | 7,572 | 5,547 | 94.2% | 98.6% | 29 | 33 | 4/4/4 | 0 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 4/4 |
-| `BILLS-114hr1755enr` | enr | 4,896 | 2,441 | 85.5% | 95.4% | 20 | 39 | 1/1/1 | 0 | 3/3/3 | 0/0/0 | 0/0/0 | 3/3/3 | 1/1 |
-| `BILLS-114hr5166rds` | rds | 8,472 | 5,084 | 93.8% | 98.6% | 28 | 32 | 2/2/2 | 0 | 2/2/2 | 0/0/0 | 0/0/0 | 2/2/2 | 2/2 |
-| `BILLS-114sres236ats` | ats | 5,942 | 4,696 | 94.0% | 99.2% | 13 | 32 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 |
-| `BILLS-114sres107is` | is | 6,973 | 5,689 | 95.5% | 99.2% | 13 | 32 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 |
-| `BILLS-114sres278rs` | rs | 8,860 | 7,972 | 94.5% | 82.4% | 47 | 26 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 |
-| `BILLS-114sres252pcs` | pcs | 45,308 | 29,305 | 98.1% | 98.6% | 95 | 33 | 15/15/15 | 1 | 31/31/31 | 4/4/4 | 0/0/0 | 8/8/8 | 15/15 |
-| `BILLS-114sres165ats` | ats | 12,021 | 9,085 | 97.2% | 99.5% | 13 | 32 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 |
-| `BILLS-114sres87is` | is | 13,742 | 9,358 | 97.2% | 99.6% | 15 | 32 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/1/0 | 0/0 |
+| `BILLS-113hr1636ih` | ih | 8,283 | 5,266 | 91.9% | 99.3% | 43 | 26 | 3/3/3 | 0 | 2/2/2 | 0/0/0 | 0/0/0 | 1/1/1 | 3/3 (+0) |
+| `BILLS-113hr1447rh` | rh | 11,081 | 8,257 | 92.8% | 96.1% | 90 | 27 | 3/3/3 | 0 | 9/9/9 | 0/0/0 | 0/0/0 | 0/0/0 | 3/3 (+0) |
+| `BILLS-113hr291eh` | eh | 6,767 | 4,166 | 88.8% | 95.0% | 49 | 27 | 2/2/2 | 0 | 6/6/6 | 0/0/0 | 0/0/0 | 0/0/0 | 2/2 (+0) |
+| `BILLS-113hr623rfs` | rfs | 8,220 | 4,116 | 92.2% | 98.2% | 26 | 34 | 2/2/2 | 0 | 5/5/5 | 0/0/0 | 0/0/0 | 0/0/0 | 2/2 (+0) |
+| `BILLS-113hr3233enr` | enr | 5,814 | 3,613 | 88.8% | 97.4% | 19 | 55 | 2/2/2 | 0 | 3/3/3 | 0/0/0 | 0/0/0 | 1/1/1 | 2/2 (+0) |
+| `BILLS-113hr2728pcs` | pcs | 12,273 | 9,371 | 94.3% | 96.4% | 58 | 27 | 7/7/7 | 0 | 2/2/2 | 3/3/3 | 0/0/0 | 1/1/1 | 7/7 (+0) |
+| `BILLS-113s2807is` | is | 10,383 | 7,244 | 94.6% | 99.8% | 50 | 28 | 3/3/3 | 0 | 9/9/9 | 0/0/0 | 0/0/0 | 0/0/0 | 3/3 (+0) |
+| `BILLS-113s2113rs` | rs | 24,029 | 18,091 | 93.8% | 95.7% | 167 | 27 | 8/8/8 | 0 | 9/9/9 | 0/0/0 | 0/0/0 | 7/7/7 | 8/8 (+0) |
+| `BILLS-113s2183es` | es | 9,599 | 6,243 | 93.2% | 98.0% | 30 | 25 | 1/1/1 | 0 | 5/5/5 | 0/0/0 | 0/0/0 | 0/0/0 | 1/1 (+0) |
+| `BILLS-113s2648pcs` | pcs | 49,816 | 32,563 | 98.3% | 89.3% | 83 | 24 | 10/10/10 | 1 | 4/4/4 | 4/4/4 | 0/0/0 | 3/3/3 | 0/0 (+10) |
+| `BILLS-113s2759enr` | enr | 8,654 | 4,340 | 91.8% | 98.2% | 22 | 51 | 1/1/1 | 0 | 5/5/5 | 0/0/0 | 0/0/0 | 0/0/0 | 0/1 (+0) |
+| `BILLS-113s2086rfh` | rfh | 7,900 | 4,258 | 93.3% | 98.4% | 30 | 30 | 4/4/4 | 0 | 4/4/4 | 0/0/0 | 0/0/0 | 0/0/0 | 4/4 (+0) |
+| `BILLS-113hjres18ih` | ih | 5,499 | 3,305 | 88.6% | 95.2% | 37 | 26 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 1/1/1 | 0/0 (+0) |
+| `BILLS-113hjres90eh` | eh | 7,577 | 4,590 | 89.9% | 91.7% | 36 | 28 | 7/7/7 | 2 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 (+7) |
+| `BILLS-113hjres73pcs` | pcs | 7,566 | 5,373 | 91.0% | 89.0% | 44 | 24 | 7/7/7 | 2 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 (+7) |
+| `BILLS-113hjres72fph` | fph | 5,991 | 3,603 | 90.2% | 93.7% | 37 | 28 | 4/4/4 | 2 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 (+4) |
+| `BILLS-113hjres91enr` | enr | 8,357 | 4,800 | 92.1% | 93.8% | 25 | 51 | 6/6/6 | 2 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 (+6) |
+| `BILLS-113hjres59eah2` | eah2 | 14,566 | 10,712 | 95.8% | 96.1% | 28 | 36 | 5/5/5 | 0 | 3/3/3 | 0/0/0 | 0/0/0 | 4/4/4 | 0/0 (+5) |
+| `BILLS-114hr6024ih` | ih | 7,603 | 5,067 | 92.0% | 99.6% | 44 | 25 | 2/2/2 | 0 | 2/2/2 | 0/0/0 | 0/0/0 | 2/2/2 | 2/2 (+0) |
+| `BILLS-114hr3620eh` | eh | 7,468 | 4,427 | 85.2% | 93.3% | 33 | 27 | 3/3/3 | 0 | 0/0/0 | 0/0/0 | 0/0/0 | 2/2/2 | 3/3 (+0) |
+| `BILLS-114hr4359rh` | rh | 11,752 | 8,046 | 91.3% | 94.6% | 107 | 22 | 2/2/2 | 0 | 4/4/4 | 0/0/0 | 0/0/0 | 2/2/2 | 2/2 (+0) |
+| `BILLS-114hr5229rfs` | rfs | 7,572 | 5,547 | 94.2% | 98.6% | 29 | 33 | 4/4/4 | 0 | 2/2/2 | 0/0/0 | 0/0/0 | 0/0/0 | 4/4 (+0) |
+| `BILLS-114hr1755enr` | enr | 4,896 | 2,441 | 85.5% | 95.4% | 20 | 39 | 1/1/1 | 0 | 3/3/3 | 0/0/0 | 0/0/0 | 3/3/3 | 1/1 (+0) |
+| `BILLS-114hr5166rds` | rds | 8,472 | 5,084 | 93.8% | 98.6% | 28 | 32 | 2/2/2 | 0 | 2/2/2 | 0/0/0 | 0/0/0 | 2/2/2 | 2/2 (+0) |
+| `BILLS-114sres236ats` | ats | 5,942 | 4,696 | 94.0% | 99.2% | 13 | 32 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 (+0) |
+| `BILLS-114sres107is` | is | 6,973 | 5,689 | 95.5% | 99.2% | 13 | 32 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 (+0) |
+| `BILLS-114sres278rs` | rs | 8,860 | 7,972 | 94.5% | 82.4% | 47 | 26 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 (+0) |
+| `BILLS-114sres252pcs` | pcs | 45,308 | 29,305 | 98.1% | 98.6% | 95 | 33 | 15/15/15 | 1 | 31/31/31 | 4/4/4 | 0/0/0 | 8/8/8 | 15/15 (+0) |
+| `BILLS-114sres165ats` | ats | 12,021 | 9,085 | 97.2% | 99.5% | 13 | 32 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0/0 | 0/0 (+0) |
+| `BILLS-114sres87is` | is | 13,742 | 9,358 | 97.2% | 99.6% | 15 | 32 | 0/0/0 | 1 | 0/0/0 | 0/0/0 | 0/0/0 | 0/1/0 | 0/0 (+0) |
 
-### Structure recovered by rule, over the paired corpus
+### Structure recovered by rule, over the tuning corpus (in-sample)
 
 | Kind | Found in HTML | In XML | Matched | Micro precision | Micro recall | Macro precision | Macro recall | Docs with kind | Docs exact |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -86,7 +142,7 @@ Measured 2026-09-19 by `tools/analysis/bill_html_xml_gap.py` at spicy-docs `1f13
 | division | 0 | 0 | 0 | — | — | — | — | 0 | 0 |
 | quotedBlock | 38 | 37 | 37 | 97.4% | 100.0% | 92.9% | 100.0% | 13 | 13 |
 
-Section headings paired by number whose text agrees once casefolded: 103 of 104. Body `<section>` elements the XML carries with no `<enum>`, which print with no heading and so are held out of the section denominator: 16.
+Catchlines that read the same once casefolded: 64 of 65 sections where at least one rendition spells one, plus 39 sections where neither does (an appropriations run-in heading carries no catchline in either rendition, so it agrees trivially and is counted apart). Body `<section>` elements the XML carries with no `<enum>`, which print with no heading and so are held out of the section denominator: 16.
 
 What each rule saw, over the paired corpus:
 
@@ -189,12 +245,16 @@ HTML tags across the corpus: `body`, `html`, `pre`. Bracketed banner lines per d
 
 ### The bill DTD's content models the profile must satisfy
 
+Pinned and cited, **not validated against**: `https://xml.house.gov/bill.dtd`, 58,424 bytes, sha256 `3dd3205d267d15a4c2c7dbb04d2fe8879835af0afbf67cac7c47509b94624c8a`. Schema validation of a reconstructed document is the profile's work, not this measurement's.
+
 - `bill`: `(pre-form?, metadata?, form, legis-body, (legis-body | official-title-amendment)*, attestation?, endorsement?)`
 - `dublinCore`: `(dc:title | dc:publisher | dc:date | dc:format | dc:language | dc:rights)*`
 - `form`: `(%form-model;)+`
 - `legis-body`: `(%legis-body-model;)`
 - `metadata`: `(dublinCore)`
 - `section`: `(%section-model;)`
+
+The DTD declares an element named `DELETED`: **no**; it declares `deleted-phrase`: yes. So the `<DELETED>` marker these rules read is a GPO **print convention inferred from this corpus**, not a documented element, and the XML states the same fact structurally as a second `<legis-body>`. 1 of the paired documents carry two bodies, and the marker held on all of them.
 
 ### Front matter: what the DTD asks for and what the print carries
 
@@ -266,90 +326,118 @@ Identifiers and rendering attributes, which a print rendition has nowhere to put
 
 ### Is section-level reconstruction from HTML deterministic for bills?
 
-**Yes, at section and subsection level, with the rules stated above.** On the
-thirty paired documents:
+**Yes, at section and subsection level.** The number to plan against is the
+held-out one: thirty documents the rules had never been revised against, drawn
+from the same listings at disjoint quantiles and scored once after the rules
+were frozen.
 
-| Level | Precision | Recall | Documents exactly right |
-|---|---|---|---|
-| Section | 100.0% (104/104) | 100.0% (104/104) | 24 of 24 carrying one |
-| Subsection | 100.0% (118/118) | 100.0% (118/118) | 23 of 23 carrying one |
-| Title | 100.0% (11/11) | 100.0% (11/11) | 3 of 3 carrying one |
-| Quoted block | 97.4% (37/38) | 100.0% (37/37) | 13 of 13 carrying one |
+| Level | Held-out precision | Held-out recall | Docs exact | In-sample (upper bound) |
+|---|---|---|---|---|
+| Section | 100.0% (170/170) | 100.0% (170/170) | 24 of 24 | 100.0% / 100.0% (104/104) |
+| Subsection | 99.6% (254/255) | 100.0% (254/254) | 19 of 20 | 100.0% / 100.0% (118/118) |
+| Title | 100.0% (18/18) | 100.0% (18/18) | 2 of 2 | 100.0% / 100.0% (11/11) |
+| Division | 100.0% (4/4) | 100.0% (4/4) | 2 of 2 | not present in the tuning corpus |
+| Quoted block | 99.2% micro (117/118) | 96.7% micro (117/121) | 5 of 10 | 97.4% / 100.0% micro (macro 92.9% / 100.0%) |
 
-Section headings paired by number agree on their heading text, once casefolded,
-in 103 of 104 cases. Body text fidelity is 96.0% mean / 96.9% median difflib
-ratio, 82.4% worst; whole-document fidelity is 92.7% / 93.0% / 85.2%, and the
-difference between the two is front matter, not body prose.
+The held-out corpus is the larger test at every level that matters: 170
+sections against 104, 255 subsections against 118. **Section recovery does not
+degrade out of sample at all** — 170 of 170, exact on every one of the 24
+documents that carry a numbered section. Subsections lose one to a false
+positive in a 104-subsection continuing resolution. Catchlines agree in 147 of
+149 sections where either rendition spells one, plus 21 where neither does.
 
-That 100% is a *measured* result, not a designed one: the first run of these
-rules scored 100.0% precision but only 50.0% micro recall at section level, and
-every point of the gap was a print convention the rules did not yet know. Each
-one is now a named rule with its count in the generated block:
+Body text fidelity is 94.8% mean / 96.7% median / 85.1% worst held-out, against
+96.0% / 96.9% / 82.4% in-sample — the same distribution, slightly lower mean.
 
-- **GPO spells a section heading two ways.** 65 of 104 headings are the
-  uppercase `SEC. n.` / `SECTION n.` at column 0; the other 39 are an
+**Why the in-sample figure is only an upper bound.** The first run of these
+rules scored 100.0% precision but **50.0% micro recall** at section level.
+Every point of that gap was a GPO print convention the rules did not know, and
+each was then added as a named rule — against these documents. Three such
+revisions happened:
+
+- **GPO spells a section heading two ways.** 65 of the 104 in-sample headings
+  are the uppercase `SEC. n.` / `SECTION n.` at column 0; the other 39 are an
   appropriations general provision's run-in `    Sec. n.` at the body indent,
   with no separate catchline. A rule that knows only the uppercase form loses
-  every appropriations bill and every continuing resolution outright.
+  every appropriations bill and every continuing resolution outright. Held-out,
+  21 of 170 headings take the run-in form, and it costs nothing.
 - **A reported bill's struck text is marked in the print.** GPO wraps the
-  superseded committee-substitute text in `<DELETED>` markers, which arrive as
-  *text* (the `htm` rendition escapes them), and which sit outside the
-  provision's own indentation. Reading them recovers the second `<legis-body>`
+  superseded committee-substitute text in `<DELETED>`, which arrives as *text*
+  because the `htm` rendition escapes it, and which sits outside the
+  provision's own indentation. Reading it recovers the second `<legis-body>`
   the engine reports: `BILLS-113s2113rs` goes from 3 of 8 sections to 8 of 8.
-  This is a real capability of the HTML rendition, not a defect — the print
-  distinguishes the two texts, so the reconstruction can too.
+  **This rule is unexercised out of sample** — no held-out document carries two
+  bodies — so it rests on one in-sample document and one committed fixture, and
+  carries the invariant described below.
 - **An inline quoted term is not a quoted block.** A line merely *opening* with
-  a quote is ordinary prose naming quoted account titles; only GPO's `:` lead-in
-  introduces block amendment payload. Treating the first as a block opened a
-  span that ran 49 lines and swallowed five section headings of
+  a quote is ordinary prose naming quoted account titles; only GPO's `:`
+  lead-in introduces block amendment payload. Treating the first as a block
+  opened a span that ran 49 lines and swallowed five section headings of
   `BILLS-113hjres91enr`. A quote span now also stops at the next unquoted
   section heading, so a missed close cannot run to the end of a document.
 
-**The residual, precisely.** One false-positive quoted block in 30 documents
-(`BILLS-114sres87is`: a `:` lead-in followed by a quotation the XML spells
-`<quote>`, not `<quoted-block>`). That is the whole measured error at these
-levels.
+That the held-out score matches the in-sample one at section level is the
+evidence that these three are **print conventions rather than fitted
+parameters**: they are grammar the publisher follows, not thresholds tuned to a
+sample. The one place the fit does show is quoted blocks, where macro recall
+falls from 100.0% to 83.1% — see below.
+
+**The residual, precisely.** Held-out: one false-positive subsection and one
+false-positive quoted block in a 104-subsection continuing resolution; four
+missed quoted blocks across three documents, where the block's lead-in is not a
+colon. In-sample: one false-positive quoted block (`BILLS-114sres87is`, a `:`
+lead-in followed by a quotation the XML spells `<quote>`, not `<quoted-block>`).
 
 **What the precision and recall numbers cannot see.** Matching is on the
 enumerator as a multiset, so a heading recovered under the wrong number, where
 the same number exists elsewhere in the document, still pairs. The quoted-block
-figure is agreement of *counts*, since a block carries no enumerator to pair on,
-so it cannot see one block found where another was missed. And the heading-text
-agreement is casefolded, which deliberately hides the one thing the print
-destroys: the HTML sets headings in capitals and the XML carries them in
-sentence case, so **the profile must restore heading case from the DTD's own
-conventions, never from the print**.
+figure is agreement of *counts*, since a block carries no enumerator to pair
+on, so it cannot see one block found where another was missed — which is why
+its macro figure is quoted beside its micro one. And the catchline agreement is
+casefolded, which deliberately hides the one thing the print destroys: the HTML
+sets headings in capitals and the XML carries them in sentence case, so **the
+profile must restore heading case from the DTD's own conventions, never from
+the print**. Finally, a run-in heading carries no catchline in *either*
+rendition, so those agree trivially and are counted apart rather than inflating
+the figure with the shape that has nothing to compare.
 
 ### Which structures need a bounded model decision
 
-Three, and only three. Everything else above is settled by rule.
+The held-out draw changed this answer: one candidate was promoted to "settled
+by rule", and one was sharpened.
 
-1. **Contents lists.** Not scored at all here: no document in the paired corpus
-   carries one (`tocEntries` = 0 across all thirty), while seven of the ten
-   pre-113th bodies do. Where a contents list lists sections, a column-0
-   `Sec. n.` witness separates it from the body deterministically. Where it does
-   not — `BILLS-111hr1enr`'s contents list is title-level only — its
+1. **Quoted-block extent — the clearest case, and the only one the held-out
+   draw made worse.** Micro figures hold up (99.2% precision, 96.7% recall),
+   but **macro recall falls from 100.0% in-sample to 83.1% held-out**, exact on
+   only 5 of the 10 documents that carry a block. That spread is the signature
+   of a fitted rule: the `:` lead-in is GPO's usual way of introducing block
+   amendment payload, but not its only way, and the four held-out misses are
+   blocks whose lead-in is something else. A block's *end* is likewise inferred
+   from a closing quote at end of line, with a section heading as the stop.
+   Deciding whether a quote-opening span is this bill's structure or the
+   amended law's is the natural `classify_and_attach` point, with abstention.
+2. **Unnumbered body sections.** The XML carries 16 such `<section>` elements
+   across 12 of the 30 tuning documents and 12 across the held-out draw — a
+   resolution's resolving-clause body and a trailing short-title section. They
+   print with **no heading of any kind**, so no heading rule can find them;
+   they need a boundary rule (the span between the resolving clause and the
+   first numbered section, and the span after the last one). The boundary is
+   deterministic in the cases read by hand, but nothing here scores it, and it
+   should be scored before it is trusted.
+3. **Contents lists, in their title-level form only.** This was the flagship
+   unknown before the held-out draw, and the draw resolved most of it: the
+   held-out corpus carries **108 contents entries and 22 banners**, and with
+   them present the rules still score 18 of 18 titles and 4 of 4 divisions
+   exactly. Where a contents list lists its sections, the column-0 `Sec. n.`
+   witness separates it from the body deterministically, and that is now
+   measured rather than assumed. What remains unscored is the form where a
+   contents list names only its titles: `BILLS-111hr1enr`'s
    `DIVISION A--APPROPRIATIONS PROVISIONS` banner is **byte-identical** to the
-   body's, and the rules count both: 4 divisions found where 2 are real, and the
-   title count is inflated the same way. This is the clearest case for a bounded
-   `classify_and_attach` decision between evidence-backed alternatives
-   ("contents entry" or "provision banner"), with abstention. It is also the one
-   place where a rule must not be tuned on this corpus: there is no XML
-   reference for the pre-113th documents, so any rule tuned there would be
-   reporting agreement with itself.
-2. **Unnumbered body sections.** The XML carries 16 `<section>` elements with no
-   `<enum>` across 12 of the 30 documents — a resolution's resolving-clause body
-   and a trailing short-title section. They print with **no heading of any
-   kind**, so no heading rule can find them; they need a boundary rule (the span
-   between the resolving clause and the first numbered section, and the span
-   after the last one). The boundary is deterministic in the cases read by hand,
-   but its correctness is unmeasured here and should be scored before it is
-   trusted.
-3. **Quoted-block extent.** Counts agree at 97.4%/100.0%, but a block's *end* is
-   inferred from a closing quote at end of line, with a section heading as the
-   stop. Where a block nests structure the bill also uses, deciding which
-   enumerators belong to the amended law rather than to this bill is the second
-   natural abstention point.
+   body's, with no `Sec. n.` witness between them, and the rules count both —
+   4 divisions found where 2 are real, with the title count inflated the same
+   way. A rule for that form must not be fitted on the pre-113th bodies, which
+   have no XML reference: a rule tuned there would be reporting agreement with
+   itself. It needs a paired corpus containing one, which neither draw has.
 
 Sponsor and committee identity is a fourth candidate but is **not** a model
 decision: the print names the sponsor and the committee in words, and the
@@ -357,10 +445,30 @@ identifiers behind them (`name-id`, `committee-id`) are lookups against the
 legislators crosswalk and the committee roster this repository already has, not
 inferences.
 
+**The struck-text rule is a fourth risk of a different kind.** `<DELETED>` is
+**not** an element the bill DTD declares — the schema declares `deleted-phrase`
+(a phrase-level element whose `reported-display-style` includes
+`strikethrough`) and a `changed` attribute taking `deleted`, and neither is
+this marker. So it is a GPO **print convention inferred from this corpus**, and
+it reaches the rules only because the `htm` rendition escapes it into text. If
+GPO stopped escaping it or renamed it, the count would fall silently to zero
+and the measurement would still report a clean score, because the failure would
+look exactly like a document with no struck text. The tool therefore asserts a
+lower bound — a document whose XML carries more than one `<legis-body>` must
+show the marker — and reports any document where it does not, rather than
+averaging it away. No held-out document carries two bodies, so this rule rests
+on one in-sample document and one committed fixture of publisher bytes.
+
 ### What the DTD requires that the HTML cannot supply
 
-Read from the publisher's own DTD (`https://xml.house.gov/bill.dtd`, fetched and
-pinned in the sidecar), not from memory. The `bill` content model is
+Read from the publisher's own DTD, not from memory: `https://xml.house.gov/bill.dtd`,
+**pinned and cited in the sidecar by URL, byte count and SHA-256 — not
+validated against.** Nothing in this measurement runs a document through the
+schema; that is the profile's work (`reconstruction/validate.py` in the
+proposal's §3.2), and the milestone estimate below budgets it. What is claimed
+here is only that these are the requirements the pinned schema states.
+
+The `bill` content model is
 `(pre-form?, metadata?, form, legis-body, (legis-body | official-title-amendment)*, attestation?, endorsement?)`
 and `%form-model;` requires `congress`, `session`, `legis-num`,
 `current-chamber`, `legis-type` and `official-title`.
@@ -440,36 +548,57 @@ The same rules on ten pre-113th bodies, with two read by hand:
 ### Sizing the `bill_dtd` profile's first milestone
 
 Milestone 1, defined as: **the single-body bill in the stages this measurement
-scored, reconstructed from its HTML into DTD-valid bill XML that
-`parse_bill_tree` flattens, with the paired benchmark green.** Not included:
-contents lists, enrolled front matter, the appropriations element family,
-unnumbered boundary sections, amendment documents.
+scored, reconstructed from its HTML into bill XML that validates against the
+pinned DTD and that `parse_bill_tree` flattens, with the held-out benchmark
+green.** Not included: the title-level contents-list form, enrolled front
+matter, the appropriations element family, unnumbered boundary sections,
+amendment documents.
 
 | Task | Days | Why that size |
 |---|---:|---|
-| Profile record; pinned DTD bundle, catalog-resolved, offline lxml validation | 3 | The DTD is fetched and its content models are already read; the work is the frozen-record shape and the no-network catalog |
-| `reconstruction/parse.py`: the measured rules with evidence spans and a `decision` per node | 4 | The rules exist and score 100%/100%; the work is the evidence-linked node model, not the grammar |
+| Profile record; pinned DTD bundle, catalog-resolved, offline lxml validation | 3 | The DTD is fetched and pinned by digest and its content models are read; the work is the frozen-record shape, the no-network catalog, and the validation this measurement does **not** do |
+| `reconstruction/parse.py`: the measured rules with evidence spans and a `decision` per node | 4 | The rules exist and hold at 100%/100% for sections out of sample; the work is the evidence-linked node model, not the grammar |
 | Front matter for the non-enrolled stages | 2 | All six required fields measured present, 28–29 of 29 |
 | `reconstruction/serialize.py`: serializer, generated-id scheme, source map | 4 | Content models known; the id scheme and the generated-marking are the new design |
-| Paired benchmark reusing this tool's scorer | 2 | The scorer, the corpus selection and the per-kind metrics are written and committed here |
+| Held-out benchmark reusing this tool's scorer and its two-corpus discipline | 2 | The scorer, the disjoint draw and the per-kind metrics are written and committed here |
 | Fixtures, tests, documentation | 3 | Matches what a landed source change costs in this repository |
 | **Total** | **18** | |
 
-Milestone 2, the shapes this measurement found and deliberately left out:
-enrolled front matter (+2), contents lists (+3, and it needs a paired corpus
-that contains one, which this one does not), unnumbered boundary sections (+2),
-the appropriations run-in body with its `appropriations-*` element family (+4),
-amendment documents and nested quoted blocks (+3) — **14 further days**.
+Milestone 2, the shapes these measurements found and deliberately left out:
+enrolled front matter (+2), the title-level contents-list form (+3, and it
+needs a paired corpus that contains one, which neither draw has), unnumbered
+boundary sections (+2), the appropriations run-in body with its
+`appropriations-*` element family (+4), amendment documents and the
+quoted-block decision the held-out macro recall exposes (+3) — **14 further
+days**.
 
-Both figures are one engineer's days of implementation against measured rules;
-they exclude the review-report work the proposal's §3.2 lists separately, and
-they assume the acquisition layer is unchanged, which this measurement
-confirmed: every byte here came through `KeylessProbe`, `package_body_locator`
-and `extraction.body_text`, with no new source module.
+The held-out draw did not move either figure. It confirmed the section and
+subsection rules at full strength on unseen documents, which is what milestone
+1 rests on, and it moved the contents-list risk from milestone 1 into
+milestone 2 while adding no new task — the two effects cancel. Both figures are
+one engineer's days of implementation against measured rules; they exclude the
+review-report work the proposal's §3.2 lists separately, and they assume the
+acquisition layer is unchanged, which this measurement confirmed: every byte
+here came through `KeylessProbe`, `package_body_locator` and
+`extraction.body_text`, with no new source module.
 
 ### What would change these numbers
 
-A paired corpus containing a table of contents; any Congress whose print grammar
-differs from the two heading spellings measured; and a bill carrying divisions
-with both `<legis-body>` forms, which the paired corpus does not include
-(0 divisions in 30 paired documents, against 4 found in one pre-113th body).
+A paired corpus containing a **title-level** contents list, which is the one
+structure both draws leave unscored. A paired reported bill outside the tuning
+corpus, which would put the `<DELETED>` rule on held-out evidence instead of
+one document and one fixture. Any Congress whose print grammar differs from the
+two heading spellings measured. And a larger sample of quoted blocks: their
+macro recall is the one figure that fell out of sample, and 10 documents
+carrying them is too few to say by how much.
+
+### Retained receipt
+
+Command, run output, request log with input pins, per-document digests for both
+draws, and the DTD pin are retained outside this repository in
+`~/Work/corpora/supply-2026-09-02/receipts/bill-html-xml-gap-2026-09-19/`. The
+request log reconciles the three request figures that would otherwise
+disagree: the 141 cumulative publisher requests, the per-process
+`MAX_REQUESTS = 90` bound that each of the two draws stayed under, and the
+cache hits that make a rerun cost nothing. The JSON sidecar committed beside
+this document is the pin.

@@ -73,14 +73,23 @@ retries when an issue's requested unmatched-number set changes.
   precision and recall, the element inventory, and the same rules run on
   pre-113th HTML with no XML to score against. Supply an explicit credential
   file, a cache directory for the fetched bytes, the JSON output path and the
-  document path. At most 90 requests per run; the cache is reused, so a rerun
-  against a full cache makes none. `--offline` rewrites
+  document path. At most 90 requests **per process**; the cache is reused, so a
+  rerun against a full cache makes none.
+  **Two corpora.** The rules were revised against the default `tuning` draw, so
+  its score is an in-sample upper bound. `--selection held-out` draws the same
+  listings at disjoint quantiles, excludes every tuning package id, refuses on
+  any overlap, and merges an untuned score into the sidecar's `heldOut` block;
+  that is the figure the document leads with. `--quantiles` and `--listings`
+  override either draw. `--offline` rewrites
   `docs/research/bill-html-xml-gap-2026-09-19.md`'s generated block from the
   saved measurement. Precision and recall are measured against one engine's
-  reading of the XML, never against the publisher's intent, and no document in
-  the paired corpus carries a table of contents, so no contents-list rule is
-  scored. `tests/test_bill_html_xml_gap_tool.py` renders the block from the
-  committed sidecar and pins each rule against a constructed print sample.
+  reading of the XML, never against the publisher's intent; the bill DTD is
+  pinned by digest and cited, **not validated against**; and the title-level
+  contents-list form is unscored in both draws.
+  `tests/test_bill_html_xml_gap_tool.py` renders the block from the committed
+  sidecar, pins each rule against a constructed print sample and against the
+  real GPO bytes in `tests/fixtures/govinfo_bill_html/`, and proves the two
+  corpora disjoint.
 
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,

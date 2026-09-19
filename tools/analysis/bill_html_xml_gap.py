@@ -12,9 +12,26 @@ repository root:
       --output docs/research/bill-html-xml-gap-2026-09-19.json \\
       --doc docs/research/bill-html-xml-gap-2026-09-19.md
 
+  uv run --frozen python -m tools.analysis.bill_html_xml_gap --selection held-out \\
+      --env-file .env --cache <scratchpad>/bill-gap \\
+      --output docs/research/bill-html-xml-gap-2026-09-19.json \\
+      --doc docs/research/bill-html-xml-gap-2026-09-19.md
+
 ``--offline`` rewrites the document's generated block from the saved output
 without the network. Bytes land in ``--cache`` and are reused on a rerun, so a
 second run with a full cache makes no request at all.
+
+**Two corpora, because the rules were fitted to one of them.** The rules below
+were revised against the ``tuning`` draw: the first run recovered half the
+sections, and each gap was a GPO print convention the rules did not yet know.
+Scoring those same documents afterwards measures the fit, not the rules, so
+``--selection held-out`` draws the *same listings at disjoint quantiles*, with
+every tuning package id excluded by the selector, and merges that score into
+the sidecar's ``heldOut`` block without disturbing the first. The held-out
+score is what the document leads with; the in-sample one is labelled an upper
+bound. ``--quantiles`` and ``--listings`` override either draw. Disjointness is
+enforced rather than assumed -- a quantile index landing on an excluded file
+steps forward -- and the run refuses if any overlap survives.
 
 Four measurements, each stated with what it cannot see:
 
@@ -22,9 +39,14 @@ Four measurements, each stated with what it cannot see:
    one derivation per rendition this repository already uses), then the same
    normalization: casefold, GPO's ``--`` and the em dash as separators, word
    tokens only. The difflib ratio over the word sequences, and the words only
-   one side has, are reported for the whole document and for the body alone
-   (the XML's ``legis-body``/``resolution-body`` against the HTML from its
-   first section heading). Casefolding hides that the HTML sets headings in
+   one side has, are reported for the whole document and for the body alone.
+   The body-scope comparison takes the HTML from its first section heading (or
+   its resolving clause, where it states no heading) against ``xml_body_text``,
+   which walks the body elements directly rather than going through
+   ``rendition_text``; the two are token-equivalent under this normalization,
+   because the rendition path's element-boundary line breaks and the direct
+   walk's per-chunk lines both collapse to the same word sequence. Casefolding
+   hides that the HTML sets headings in
    capitals and quoted headers in lowercase; the case is lost, and the profile
    has to restore it from the XML's conventions, not from the HTML.
 2. **Structure by rule.** Section headings in both spellings GPO uses --
@@ -52,13 +74,18 @@ Four measurements, each stated with what it cannot see:
    structure counts, a section-number sequence check, and the banner shape.
    Two of the ten are read by hand in the document.
 
-The corpus is thirty pairs chosen by rule from five GovInfo bulk listings
-(``SELECTION``): the version codes of each listing in descending file count,
-and for each the file at the listing's median size and then its 95th
-percentile, six per listing. Thirty documents cannot see a shape that is rare
-in the population, and one Congress per pre-113th sample cannot see variation
-within a Congress. A credential refusal (401/403 on the keyed route) aborts the
-run; the sidecar carries no credential and no URL with one.
+Each corpus is thirty pairs chosen by rule from five GovInfo bulk listings: the
+version codes of each listing in descending file count, and for each the file
+at the selection's quantiles, six per listing. Thirty documents per draw cannot
+see a shape that is rare in the population, and one Congress per pre-113th
+sample cannot see variation within a Congress. The struck-text rule is
+unexercised by the held-out draw, which contains no two-body document, so it
+rests on one in-sample document and the committed fixtures in
+``tests/fixtures/govinfo_bill_html/`` -- and on ``struck_expected``'s lower
+bound, which reports rather than averages a document where the marker did not
+appear. The DTD is pinned by URL, byte count and digest, and **cited, not
+validated against**. A credential refusal (401/403 on the keyed route) aborts
+the run; the sidecar carries no credential and no URL with one.
 """
 
 from __future__ import annotations
@@ -73,7 +100,7 @@ import subprocess
 import sys
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -118,11 +145,27 @@ class Selection:
     picks_per_listing: int
 
 
+#: The tuning corpus: the documents the rules were revised against. Its score
+#: is an in-sample upper bound and the document says so.
 SELECTION = Selection(
     listings=((113, 1, "hr"), (113, 2, "s"), (113, 1, "hjres"), (114, 2, "hr"), (114, 1, "sres")),
     quantiles=(0.5, 0.95),
     picks_per_listing=6,
 )
+
+#: The held-out corpus: the same listings at **disjoint** quantiles, so no
+#: document the rules were revised against can appear in it. Drawn and scored
+#: once, after the rules were frozen; that score, not ``SELECTION``'s, is what
+#: the document leads with. The listings are deliberately the same, so the two
+#: differ only in which files they take and the comparison is about tuning
+#: rather than about a different slice of the corpus.
+HELD_OUT = Selection(
+    listings=SELECTION.listings,
+    quantiles=(0.25, 0.75),
+    picks_per_listing=6,
+)
+
+SELECTIONS: dict[str, Selection] = {"tuning": SELECTION, "held-out": HELD_OUT}
 
 #: Pre-113th bodies. Two package ids were proved on 2026-09-19 by
 #: ``GovInfoBodyAcquirer`` in the PDF-only census (``offered=('htm','pdf')``);
@@ -229,7 +272,26 @@ def fetch_text_versions(
     return json.loads(_cached(cache / "text-routes" / f"{congress}-{bill_type}-{number}.json", fetch))
 
 
-def fetch_dtd(probe: KeylessProbe, cache: Path) -> str | None:
+@dataclass(frozen=True)
+class DtdPin:
+    """The fetched DTD with the pin that identifies it.
+
+    The bytes and their digest are recorded, not just the models derived from
+    them, so a later reader can tell whether the schema this measurement read
+    is the schema they hold. Nothing here validates a document *against* the
+    DTD; that is the profile's work, and the document says so.
+    """
+
+    url: str
+    byte_size: int
+    sha256: str
+    text: str
+
+    def pin(self) -> dict[str, Any]:
+        return {"dtdUrl": self.url, "dtdBytes": self.byte_size, "dtdSha256": self.sha256}
+
+
+def fetch_dtd(probe: KeylessProbe, cache: Path) -> DtdPin | None:
     """The target DTD, so the required elements are read from the schema rather than remembered."""
     try:
         body = _cached(
@@ -243,7 +305,21 @@ def fetch_dtd(probe: KeylessProbe, cache: Path) -> str | None:
         )
     except (ProbeError, RequestBudgetExhausted):
         return None
-    return body.decode(errors="replace")
+    return DtdPin(DTD_URL, len(body), hashlib.sha256(body).hexdigest(), body.decode(errors="replace"))
+
+
+#: Whether the DTD declares an element by this name. ``<DELETED>`` does not
+#: appear: the schema declares ``deleted-phrase`` (a phrase-level element whose
+#: ``reported-display-style`` includes ``strikethrough``) and a ``changed``
+#: attribute taking ``deleted``, neither of which is the print marker. So the
+#: marker is a GPO **print convention inferred from this corpus**, not a
+#: documented element, and the XML expresses the same fact structurally, as a
+#: second ``<legis-body>``. ``dtd_declares`` records that rather than asserting
+#: it from memory.
+def dtd_declares(dtd: DtdPin | None, name: str) -> bool | None:
+    if dtd is None:
+        return None
+    return re.search(rf"<!ELEMENT\s+{re.escape(name)}\s", dtd.text) is not None
 
 
 def stated_package_id(versions: Sequence[Mapping[str, Any]]) -> str | None:
@@ -269,8 +345,20 @@ def _version_code(package_id: str) -> str:
     return parse_package_id(package_id).version or ""
 
 
-def select_pairs(entries: Iterable[Mapping[str, Any]], selection: Selection = SELECTION) -> list[str]:
-    """Package ids from one listing: codes by descending count, the median then the 95th percentile of each."""
+def select_pairs(
+    entries: Iterable[Mapping[str, Any]],
+    selection: Selection = SELECTION,
+    exclude: frozenset[str] = frozenset(),
+) -> list[str]:
+    """Package ids from one listing: codes by descending file count, each at the selection's quantiles.
+
+    ``exclude`` makes a held-out draw provably disjoint from the corpus the
+    rules were tuned on rather than merely likely to be: a quantile index that
+    lands on an excluded file steps forward through that code's files, in size
+    order, until it finds one that is not excluded. Without it, a version code
+    with few files resolves every quantile to the same document and the
+    "held-out" sample would quietly re-score the tuning set.
+    """
     by_code: dict[str, list[tuple[int, str]]] = {}
     for entry in entries:
         if entry.get("fileExtension") != "xml":
@@ -288,9 +376,12 @@ def select_pairs(entries: Iterable[Mapping[str, Any]], selection: Selection = SE
             if len(picks) >= selection.picks_per_listing:
                 return picks
             files = sorted(by_code[code])
-            _, package_id = files[min(len(files) - 1, int(quantile * (len(files) - 1)))]
-            if package_id not in picks:
-                picks.append(package_id)
+            start = min(len(files) - 1, int(quantile * (len(files) - 1)))
+            for step in range(len(files)):
+                _, package_id = files[(start + step) % len(files)]
+                if package_id not in exclude and package_id not in picks:
+                    picks.append(package_id)
+                    break
     return picks
 
 
@@ -425,7 +516,12 @@ def _is_toc_banner(lines: Sequence[str], index: int) -> bool:
     real ones.
     """
     seen = 0
-    for line in lines[index + 1 :]:
+    # Indexed, not sliced: ``lines[index + 1:]`` copies the tail of the
+    # document at every banner, which makes the scan O(S*L) in the number of
+    # headings and lines. Measured on a doubling series, per-line cost
+    # quadrupled over an 8x document; indexing holds it flat.
+    for probe in range(index + 1, len(lines)):
+        line = lines[probe]
         if not line.strip() or TITLE.match(line) or DIVISION.match(line):
             continue
         if TOC_ENTRY.match(line):
@@ -438,7 +534,9 @@ def _is_toc_banner(lines: Sequence[str], index: int) -> bool:
 
 def _section_header(lines: Sequence[str], index: int, first: str) -> str:
     parts = [first]
-    for line in lines[index + 1 :]:
+    # Indexed for the same reason as _is_toc_banner above.
+    for probe in range(index + 1, len(lines)):
+        line = lines[probe]
         stripped = line.strip()
         if not stripped or not HEADER_CONTINUATION.match(line) or any(c.islower() for c in stripped):
             break
@@ -658,9 +756,12 @@ def _contains(haystack: Sequence[str], needle: Sequence[str]) -> bool:
     """Whether the normalized word sequence appears contiguously; ``O(len(haystack))`` per call."""
     if not needle:
         return False
-    first, span = needle[0], len(needle)
+    # Hoisted: comparing against a list built once per call, not once per
+    # candidate position.
+    wanted = list(needle)
+    first, span = wanted[0], len(wanted)
     return any(
-        haystack[index : index + span] == list(needle)
+        haystack[index : index + span] == wanted
         for index, word in enumerate(haystack)
         if word == first and index + span <= len(haystack)
     )
@@ -735,19 +836,30 @@ def precision_recall(found: Sequence[Any], reference: Sequence[Any]) -> dict[str
 
 
 def _header_agreement(html: HtmlStructure, xml: XmlStructure) -> dict[str, int]:
-    """Among sections paired by number, how many headings read the same once casefolded."""
+    """Among sections paired by number, whether the two renditions spell the catchline the same.
+
+    Split in two, because an agreement of ``""`` against ``""`` is not evidence
+    that a catchline was recovered. An appropriations run-in heading carries no
+    catchline in *either* rendition, so it agrees trivially; counting those
+    beside real agreements inflates the figure with the very shape that has
+    nothing to compare. ``comparedWithCatchline`` is the number where at least
+    one side spells one, and it is the only one worth reading as a score.
+    """
     xml_headers: dict[str, list[str]] = {}
     for number, header in xml.sections:
         xml_headers.setdefault(number, []).append(" ".join(normalized_words(header)))
-    agreed = compared = 0
+    agreed = compared = empty = 0
     for number, header in html.sections:
         candidates = xml_headers.get(number)
         if not candidates:
             continue
+        spelled = " ".join(normalized_words(header))
+        if not spelled and not any(candidates):
+            empty += 1
+            continue
         compared += 1
-        if " ".join(normalized_words(header)) in candidates:
-            agreed += 1
-    return {"compared": compared, "agreed": agreed}
+        agreed += spelled in candidates
+    return {"comparedWithCatchline": compared, "agreed": agreed, "comparedEmpty": empty}
 
 
 #: What each rule saw beyond its own count, so a number in the tables can be
@@ -775,6 +887,21 @@ def _observations(html: HtmlStructure) -> dict[str, int]:
     }
 
 
+def struck_expected(document: BillDocument, html: HtmlStructure) -> bool:
+    """Whether the print's struck-text marker held for a document that carries two bodies.
+
+    The lower bound this exists for: ``<DELETED>`` is a print convention read
+    off this corpus, not a DTD element, and it reaches the rules only because
+    the ``htm`` rendition escapes it into text. If GPO stopped escaping it, or
+    renamed it, ``struck_sections`` would fall silently to zero and the
+    measurement would still report a clean score -- the failure would look
+    exactly like a document that simply has no struck text. So a document whose
+    XML carries more than one body must show the marker, and a run where this
+    is ``False`` anywhere is reported rather than averaged away.
+    """
+    return len(document.body_tags) < 2 or html.struck_sections > 0
+
+
 def measure_pair(package_id: str, xml_bytes: bytes, html_bytes: bytes) -> dict[str, Any]:
     """Everything one paired document yields; no request, no file."""
     identity = parse_package_id(package_id)
@@ -790,6 +917,8 @@ def measure_pair(package_id: str, xml_bytes: bytes, html_bytes: bytes) -> dict[s
     tags = sorted({event.name for event in read_html_events(html_bytes).events if event.kind in ("start", "empty")})
     return {
         "packageId": package_id,
+        "bodies": len(document.body_tags),
+        "struckExpected": struck_expected(document, html),
         "congress": identity.congress,
         "billType": identity.document_type,
         "version": identity.version,
@@ -885,8 +1014,7 @@ def aggregate(paired: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         }
     headers = [doc["headerAgreement"] for doc in paired]
     out["headerAgreement"] = {
-        "compared": sum(row["compared"] for row in headers),
-        "agreed": sum(row["agreed"] for row in headers),
+        key: sum(row[key] for row in headers) for key in ("comparedWithCatchline", "agreed", "comparedEmpty")
     }
     present: Counter[str] = Counter()
     discarded: Counter[str] = Counter()
@@ -894,6 +1022,8 @@ def aggregate(paired: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         present.update({_local_name(tag) for tag in doc["xmlElements"]})
         discarded.update({_local_name(tag) for tag, count in doc["discardedElements"].items() if count})
     out["unnumberedSections"] = sum(doc["unnumberedSections"] for doc in paired)
+    out["multiBodyDocuments"] = sum(1 for doc in paired if doc["bodies"] > 1)
+    out["struckMarkerHeld"] = [doc["packageId"] for doc in paired if not doc["struckExpected"]]
     out["observations"] = {name: sum(doc["observations"][name] for doc in paired) for name, _ in OBSERVATIONS}
     carried: Counter[str] = Counter()
     printed: Counter[str] = Counter()
@@ -963,43 +1093,8 @@ def _words(pairs: Sequence[Sequence[Any]], limit: int = 12) -> str:
     return ", ".join(f"`{word}`×{count}" for word, count in pairs[:limit]) or "—"
 
 
-def render(measures: Mapping[str, Any]) -> str:
-    paired = measures.get("paired", [])
-    pre = measures.get("pre113", [])
-    agg = measures.get("aggregate") or aggregate(paired)
-    requests = measures.get("requests", {})
+def _structure_table(agg: Mapping[str, Any]) -> list[str]:
     lines = [
-        MARK_START,
-        "",
-        (
-            f"Measured {measures.get('generatedAt', '')[:10]} by `tools/analysis/bill_html_xml_gap.py` at spicy-docs "
-            f"`{measures.get('revision', 'unknown')}`; "
-            f"{requests.get('cumulative', requests.get('total', 0))} publisher requests to build this corpus, "
-            f"{len(paired)} paired documents, {len(pre)} pre-113th HTML bodies. "
-            "Per-kind cells read `matched/found in HTML/in XML`. The command, the run's full output and every "
-            f"document's digest are retained outside this repository in `{RECEIPTS}`; this document's sidecar "
-            "`bill-html-xml-gap-2026-09-19.json` is the committed pin."
-        ),
-        "",
-        "### Paired corpus: fidelity and structure per document",
-        "",
-        "| Package | Stage | XML B | HTML B | Ratio | Body ratio | HTML-only | XML-only | Sections | Unnum. | Subsections | Titles | Divisions | Quoted | Headers agree |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---|---:|---|---|---|---|---|",
-    ]
-    for doc in paired:
-        s = doc["structure"]
-        lines.append(
-            f"| `{doc['packageId']}` | {doc['version']} | {doc['xmlBytes']:,} | {doc['htmlBytes']:,} | "
-            f"{_pct(doc['fidelity']['ratio'])} | {_pct(doc['bodyFidelity']['ratio'])} | "
-            f"{doc['fidelity']['htmlOnly']['count']} | {doc['fidelity']['xmlOnly']['count']} | "
-            f"{_pr(s['section'])} | {doc['unnumberedSections']} | {_pr(s['subsection'])} | {_pr(s['title'])} | "
-            f"{_pr(s['division'])} | {_pr(s['quotedBlock'])} | "
-            f"{doc['headerAgreement']['agreed']}/{doc['headerAgreement']['compared']} |"
-        )
-    lines += [
-        "",
-        "### Structure recovered by rule, over the paired corpus",
-        "",
         "| Kind | Found in HTML | In XML | Matched | Micro precision | Micro recall | Macro precision | Macro recall | Docs with kind | Docs exact |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
@@ -1010,14 +1105,119 @@ def render(measures: Mapping[str, Any]) -> str:
             f"{_pct(row['microRecall'])} | {_pct(row['macroPrecision'])} | {_pct(row['macroRecall'])} | "
             f"{row['documentsWithKind']} | {row['documentsExact']} |"
         )
+    return lines
+
+
+def _held_out_block(measures: Mapping[str, Any]) -> list[str]:
+    """The untuned score, which leads, and the documents it was drawn from."""
+    held = measures.get("heldOut")
+    if not held or not held.get("paired"):
+        return [
+            "",
+            "### Held-out score",
+            "",
+            (
+                "**Not measured.** Every figure below is in-sample: the rules were revised against these same "
+                "documents, so they are an upper bound, not an expected score on unseen bills."
+            ),
+        ]
+    agg = held.get("aggregate") or aggregate(held["paired"])
+    selection = held.get("selection", {})
+    fidelity_row = agg["fidelity"]["bodyFidelity"]
+    return [
+        "",
+        "### Held-out score: the rules on documents they were never revised against",
+        "",
+        (
+            f"**This is the headline.** {len(held['paired'])} documents drawn from the same five listings at "
+            f"disjoint quantiles {tuple(selection.get('quantiles', ()))}, with every tuning document excluded by "
+            "package id, and scored once after the rules were frozen. The in-sample table further down is the "
+            "upper bound; this is the number to plan against."
+        ),
+        "",
+        *_structure_table(agg),
+        "",
+        (
+            f"Body text fidelity on the held-out corpus: {_pct(fidelity_row['mean'])} mean, "
+            f"{_pct(fidelity_row['median'])} median, {_pct(fidelity_row['min'])} worst. Catchlines agreeing: "
+            f"{agg['headerAgreement']['agreed']} of {agg['headerAgreement']['comparedWithCatchline']} "
+            f"(+{agg['headerAgreement']['comparedEmpty']} where neither rendition spells one)."
+        ),
+        "",
+        "Held-out documents: " + ", ".join(f"`{d['packageId']}`" for d in held["paired"]) + ".",
+        *(
+            [
+                "",
+                "Refused or unavailable in the held-out draw: "
+                + "; ".join(f"`{r['packageId']}` ({r['reason']})" for r in held["refused"]),
+            ]
+            if held.get("refused")
+            else []
+        ),
+    ]
+
+
+def render(measures: Mapping[str, Any]) -> str:
+    paired = measures.get("paired", [])
+    pre = measures.get("pre113", [])
+    agg = measures.get("aggregate") or aggregate(paired)
+    requests = measures.get("requests", {})
+    held = measures.get("heldOut") or {}
+    lines = [
+        MARK_START,
+        "",
+        (
+            f"Measured {measures.get('generatedAt', '')[:10]} by `tools/analysis/bill_html_xml_gap.py` at spicy-docs "
+            f"`{measures.get('revision', 'unknown')}`; "
+            f"{requests.get('cumulative', requests.get('total', 0))} publisher requests across every run that built "
+            f"this corpus (the request log reconciles that figure with the cache hits and the per-process "
+            f"{MAX_REQUESTS}-request bound), {len(paired)} tuning documents, "
+            f"{len(held.get('paired', []))} held-out documents, {len(pre)} pre-113th HTML bodies. "
+            "Per-kind cells read `matched/found in HTML/in XML`. The command, the run's full output and every "
+            f"document's digest are retained outside this repository in `{RECEIPTS}`; this document's sidecar "
+            "`bill-html-xml-gap-2026-09-19.json` is the committed pin."
+        ),
+        *_held_out_block(measures),
+        "",
+        "### Tuning corpus: fidelity and structure per document",
+        "",
+        (
+            "**In-sample.** The rules were revised against these thirty documents until they stopped losing "
+            "structure, so what follows is an upper bound on the rules' accuracy, not an estimate of their "
+            "accuracy on unseen bills. The held-out table above is the untuned score."
+        ),
+        "",
+        "| Package | Stage | XML B | HTML B | Ratio | Body ratio | HTML-only | XML-only | Sections | Unnum. | Subsections | Titles | Divisions | Quoted | Catchlines agree (+neither) |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---|---:|---|---|---|---|---|",
+    ]
+    for doc in paired:
+        s = doc["structure"]
+        lines.append(
+            f"| `{doc['packageId']}` | {doc['version']} | {doc['xmlBytes']:,} | {doc['htmlBytes']:,} | "
+            f"{_pct(doc['fidelity']['ratio'])} | {_pct(doc['bodyFidelity']['ratio'])} | "
+            f"{doc['fidelity']['htmlOnly']['count']} | {doc['fidelity']['xmlOnly']['count']} | "
+            f"{_pr(s['section'])} | {doc['unnumberedSections']} | {_pr(s['subsection'])} | {_pr(s['title'])} | "
+            f"{_pr(s['division'])} | {_pr(s['quotedBlock'])} | "
+            f"{doc['headerAgreement']['agreed']}/{doc['headerAgreement']['comparedWithCatchline']}"
+            f" (+{doc['headerAgreement']['comparedEmpty']}) |"
+        )
+    lines += [
+        "",
+        "### Structure recovered by rule, over the tuning corpus (in-sample)",
+        "",
+        *_structure_table(agg),
+    ]
     inv = agg["inventory"]
     header = agg["headerAgreement"]
     lines += [
         "",
         (
-            f"Section headings paired by number whose text agrees once casefolded: {header['agreed']} of "
-            f"{header['compared']}. Body `<section>` elements the XML carries with no `<enum>`, which print with no "
-            f"heading and so are held out of the section denominator: {agg['unnumberedSections']}."
+            f"Catchlines that read the same once casefolded: {header['agreed']} of "
+            f"{header['comparedWithCatchline']} sections where at least one rendition spells one, plus "
+            f"{header['comparedEmpty']} sections where neither does (an appropriations run-in heading carries no "
+            f"catchline in either rendition, so it agrees trivially and is counted apart). Body `<section>` elements "
+            f"the XML carries with no `<enum>`, which print with no heading and so are held out of the section "
+            f"denominator: {agg['unnumberedSections']}."
         ),
         "",
         "What each rule saw, over the paired corpus:",
@@ -1057,10 +1257,35 @@ def render(measures: Mapping[str, Any]) -> str:
         lines.append(f"| `{tag}` | {count} | {keeps} | {dropped} |")
     models = measures.get("dtdContentModels") or {}
     particles = measures.get("dtdFormParticles") or {}
+    pin = measures.get("dtdPin") or {}
     if models:
         lines += ["", "### The bill DTD's content models the profile must satisfy", ""]
+        if pin:
+            lines += [
+                (
+                    f"Pinned and cited, **not validated against**: `{pin['dtdUrl']}`, {pin['dtdBytes']:,} bytes, "
+                    f"sha256 `{pin['dtdSha256']}`. Schema validation of a reconstructed document is the profile's "
+                    "work, not this measurement's."
+                ),
+                "",
+            ]
         for name, model in models.items():
             lines.append(f"- `{name}`: `{model}`")
+        declares = measures.get("dtdDeclaresDeleted")
+        if declares is not None:
+            lines += [
+                "",
+                (
+                    f"The DTD declares an element named `DELETED`: **{'yes' if declares else 'no'}**; it declares "
+                    f"`deleted-phrase`: {'yes' if measures.get('dtdDeclaresDeletedPhrase') else 'no'}. So the "
+                    "`<DELETED>` marker these rules read is a GPO **print convention inferred from this corpus**, "
+                    "not a documented element, and the XML states the same fact structurally as a second "
+                    f"`<legis-body>`. {agg.get('multiBodyDocuments', 0)} of the paired documents carry two bodies, "
+                    f"and the marker held on {'all' if not agg.get('struckMarkerHeld') else 'not all'} of them"
+                    + (f" (failed: {', '.join(agg['struckMarkerHeld'])})" if agg.get("struckMarkerHeld") else "")
+                    + "."
+                ),
+            ]
     front = agg.get("frontMatter") or {}
     if front:
         lines += [
@@ -1132,10 +1357,35 @@ def _revision(root: Path) -> str:
 
 
 def _refusal(package_id: str, error: Exception, api_key: str) -> dict[str, str]:
+    """A refusal kept as evidence, with the credential scrubbed before it is truncated.
+
+    Order matters and is the reason this is one function rather than an inline
+    f-string: truncating first can cut a key in half and leave its front
+    standing, which is exactly what ``scrub_credential``'s own docstring warns
+    about.
+    """
     return {"packageId": package_id, "reason": scrub_credential(f"{type(error).__name__}: {error}", api_key)[:200]}
 
 
-def measure(cache: Path, api_key: str, *, timeout: float, interval: float) -> dict[str, Any]:
+def _parse_listing(value: str) -> tuple[int, int, str]:
+    """``CONGRESS:SESSION:TYPE`` as the bulk route spells it."""
+    parts = value.split(":")
+    if len(parts) != 3 or not parts[0].isdigit() or not parts[1].isdigit() or not parts[2].isalpha():
+        raise ValueError(f"listing must be CONGRESS:SESSION:TYPE, not {value!r}")
+    return int(parts[0]), int(parts[1]), parts[2]
+
+
+def measure(
+    cache: Path,
+    api_key: str,
+    *,
+    timeout: float,
+    interval: float,
+    selection: Selection = SELECTION,
+    exclude: frozenset[str] = frozenset(),
+    pre113: bool = True,
+) -> dict[str, Any]:
+    """One corpus drawn under ``selection`` and scored; ``exclude`` keeps a held-out draw disjoint."""
     measures: dict[str, Any] = {"paired": [], "pre113": [], "refused": []}
     budget = PagedJsonBudget(
         max_requests=3, max_page_bytes=4 * 1024 * 1024, timeout_seconds=timeout, min_request_interval_seconds=interval
@@ -1145,9 +1395,10 @@ def measure(cache: Path, api_key: str, *, timeout: float, interval: float) -> di
         CongressListingReader(budget=budget, api_key=api_key) as congress,
     ):
         pairs: list[str] = []
-        for congress_number, session, bill_type in SELECTION.listings:
-            pairs.extend(select_pairs(fetch_listing(probe, cache, congress_number, session, bill_type)))
-        measures["selection"] = {**asdict(SELECTION), "pairs": pairs}
+        for congress_number, session, bill_type in selection.listings:
+            listing = fetch_listing(probe, cache, congress_number, session, bill_type)
+            pairs.extend(select_pairs(listing, selection, exclude=exclude | frozenset(pairs)))
+        measures["selection"] = {**asdict(selection), "pairs": pairs, "excluded": sorted(exclude)}
         for package_id in pairs:
             try:
                 xml_bytes = fetch_body(probe, cache, package_id, "xml")
@@ -1157,6 +1408,9 @@ def measure(cache: Path, api_key: str, *, timeout: float, interval: float) -> di
             except (ProbeError, ValueError, RequestBudgetExhausted) as error:
                 measures["refused"].append(_refusal(package_id, error, api_key))
                 print(f"refused {package_id}: {error}", file=sys.stderr)
+        if not pre113:
+            measures["aggregate"] = aggregate(measures["paired"])
+            return measures
         pre_ids: list[str] = list(PRE_113_PROVEN)
         for congress_number, bill_type, number in PRE_113_LOOKUPS:
             try:
@@ -1177,8 +1431,13 @@ def measure(cache: Path, api_key: str, *, timeout: float, interval: float) -> di
             except (ProbeError, ValueError, RequestBudgetExhausted) as error:
                 measures["refused"].append(_refusal(package_id, error, api_key))
         dtd = fetch_dtd(probe, cache)
-        measures["dtdContentModels"] = dtd_content_models(dtd)
-        measures["dtdFormParticles"] = dtd_form_particles(dtd)
+        measures["dtdContentModels"] = dtd_content_models(dtd.text if dtd else None)
+        measures["dtdFormParticles"] = dtd_form_particles(dtd.text if dtd else None)
+        measures["dtdPin"] = dtd.pin() if dtd else {}
+        # Recorded, not assumed: the print marker this tool reads is not a DTD
+        # element, and saying so needs the schema in hand.
+        measures["dtdDeclaresDeleted"] = dtd_declares(dtd, "DELETED")
+        measures["dtdDeclaresDeletedPhrase"] = dtd_declares(dtd, "deleted-phrase")
     measures["aggregate"] = aggregate(measures["paired"])
     return measures
 
@@ -1195,6 +1454,28 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--env-file", type=Path, help="file holding the api.data.gov key")
     parser.add_argument("--env-var", default="API_GOV")
     parser.add_argument("--offline", action="store_true")
+    parser.add_argument(
+        "--selection",
+        choices=sorted(SELECTIONS),
+        default="tuning",
+        help=(
+            "which corpus to draw: 'tuning' is the one the rules were revised against; 'held-out' takes the same "
+            "listings at disjoint quantiles, excluding every tuning document, and is merged into the sidecar's "
+            "heldOut block without disturbing the tuning measurement"
+        ),
+    )
+    parser.add_argument(
+        "--quantiles",
+        type=float,
+        nargs="+",
+        help="override the selection's quantiles, e.g. --quantiles 0.25 0.75",
+    )
+    parser.add_argument(
+        "--listings",
+        nargs="+",
+        metavar="CONGRESS:SESSION:TYPE",
+        help="override the selection's bulk listings, e.g. --listings 113:1:hr 114:2:s",
+    )
     parser.add_argument("--min-interval-seconds", type=float, default=0.3)
     parser.add_argument("--timeout", type=float, default=60.0)
     args = parser.parse_args(argv)
@@ -1205,11 +1486,50 @@ def main(argv: list[str] | None = None) -> int:
         if args.env_file is None or args.cache is None:
             parser.error("--env-file and --cache are required unless --offline")
         api_key = read_api_key(args.env_file, args.env_var)
+        held_out = args.selection == "held-out"
+        selection = SELECTIONS[args.selection]
+        if args.quantiles:
+            selection = replace(selection, quantiles=tuple(args.quantiles))
+        if args.listings:
+            try:
+                listings = tuple(_parse_listing(value) for value in args.listings)
+            except ValueError as error:
+                parser.error(str(error))
+            selection = replace(selection, listings=listings)
+        saved = json.loads(args.output.read_text()) if args.output.exists() else {}
+        # A held-out draw must not be able to re-score a tuning document. The
+        # exclusion is the saved run's own package ids, so it is the measured
+        # corpus that is excluded, not a list kept in step with it by hand.
+        exclude = frozenset(document["packageId"] for document in saved.get("paired", [])) if held_out else frozenset()
+        if held_out and not exclude:
+            parser.error("--selection held-out needs an existing measurement to exclude; run the tuning draw first")
         try:
-            measures = measure(args.cache, api_key, timeout=args.timeout, interval=args.min_interval_seconds)
+            drawn = measure(
+                args.cache,
+                api_key,
+                timeout=args.timeout,
+                interval=args.min_interval_seconds,
+                selection=selection,
+                exclude=exclude,
+                pre113=not held_out,
+            )
         except CredentialRefusedError as error:
             print(f"credential refused; stopping: {scrub_credential(str(error), api_key)}", file=sys.stderr)
             return 1
+        if held_out:
+            overlap = exclude & {document["packageId"] for document in drawn["paired"]}
+            if overlap:
+                raise SystemExit(f"held-out draw overlaps the tuning corpus: {', '.join(sorted(overlap))}")
+            measures = saved
+            measures["heldOut"] = drawn
+        else:
+            measures = drawn
+            # A re-drawn tuning corpus invalidates a held-out block measured
+            # against the previous one.
+            if saved.get("heldOut") and [d["packageId"] for d in saved["paired"]] == [
+                d["packageId"] for d in drawn["paired"]
+            ]:
+                measures["heldOut"] = saved["heldOut"]
         measures["generatedAt"] = datetime.now(UTC).isoformat()
         measures["revision"] = _revision(root)
         # A rerun against a full cache makes no request, which would report a
