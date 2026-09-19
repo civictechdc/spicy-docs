@@ -4,16 +4,21 @@ BillTrax originals: `src/lib/version-kind.ts`/`version-kind.test.ts` (32 cases,
 ported below verbatim), `src/lib/govinfo-pdf-fetch.ts:26-58` (canonical slug
 map) and `scripts/validate-pdf-xml-concordance.ts:44-64` (its drifted, private
 copy) -- both read-only from `/Users/mikewolfd/Work/spicy-stack/BillTrax`.
+DeltaTrack upstream's `tools/fetch_govinfo.py::VERSION_CODES` (read-only at
+`/private/tmp/claude-501/-Users-mikewolfd-Work-spicy-docs/8a5a1a5d-bd44-4a09-a525-c269c5837b3d/scratchpad/DeltaTrack-upstream`,
+canonical repo `https://github.com/civictechdc/DeltaTrack`) is the source for
+the cross-check tests near the bottom of the vocabulary section.
 """
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
 
 from spicy_docs.interpretation.version_kind import version_kind
-from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat
+from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat, parse_bill_status
 from spicy_docs.sources.congress.bill_versions import (
     VERSION_CODES,
     VERSION_CODES_BY_SLUG,
@@ -23,8 +28,11 @@ from spicy_docs.sources.congress.bill_versions import (
     govinfo_suffix,
     slugify,
     version_slug,
+    version_slug_reprints,
 )
 from spicy_docs.sources.govinfo.bodies import parse_package_id
+
+FIXTURES = Path(__file__).parent / "fixtures" / "govinfo_bills"
 
 # ---------------------------------------------------------------------------
 # The two BillTrax copies, transcribed verbatim as evidence, not imported --
@@ -117,6 +125,38 @@ _MEASURED_119TH_CODES = frozenset(
 )  # fmt: skip
 assert len(_MEASURED_119TH_CODES) == 24
 
+# DeltaTrack upstream's full authoritative govinfo code list (govinfo.gov/help/bills,
+# 53 codes), transcribed from tools/fetch_govinfo.py::VERSION_CODES.
+_DELTATRACK_UPSTREAM_CODES = frozenset(
+    {
+        "ih", "is", "ash", "sas", "sc", "rfh", "rfs", "rdh", "rds", "rch", "rcs", "rth", "rts",
+        "rih", "ris", "rah", "ras", "hdh", "hds", "rh", "rs", "pch", "pcs", "cdh", "cds", "oph",
+        "ops", "pp", "pav", "eh", "es", "eah", "eas", "reah", "res", "eph", "cph", "cps", "ath",
+        "ats", "as", "fah", "fph", "fps", "iph", "ips", "lth", "lts", "pwah", "rhuc", "enr",
+        "renr", "pap",
+    }
+)  # fmt: skip
+assert len(_DELTATRACK_UPSTREAM_CODES) == 53
+# Every 119th code "resolves" upstream in the sense the coordinator measured:
+# either a direct base-table entry, or -- for the three numbered reprints --
+# via upstream's own resolve_code() longest-known-prefix fallback (eas2 ->
+# eas, eh1s -> eh, rfs2 -> rfs), the same earliest-printing rule this module's
+# version_slug_reprints exposes rather than resolves silently.
+_MEASURED_119TH_REPRINTS = frozenset({"eas2", "eh1s", "rfs2"})
+assert (_MEASURED_119TH_CODES - _MEASURED_119TH_REPRINTS) <= _DELTATRACK_UPSTREAM_CODES
+
+# The 30 upstream codes neither BillTrax nor this port's own 119th
+# measurement produced, added as unmeasured passthrough entries.
+_UPSTREAM_ONLY_CODES = frozenset(
+    {
+        "ash", "sas", "sc", "rdh", "rch", "rth", "rts", "rih", "rah", "ras", "hdh",
+        "cds", "oph", "ops", "pp", "pav", "reah", "res", "eph", "cph", "ath",
+        "fah", "fph", "fps", "iph", "ips", "lts", "pwah", "renr", "pap",
+    }
+)  # fmt: skip
+assert len(_UPSTREAM_ONLY_CODES) == 30
+assert _UPSTREAM_ONLY_CODES == _DELTATRACK_UPSTREAM_CODES - _GOVINFO_PDF_FETCH_KEYS - _MEASURED_119TH_CODES
+
 
 def test_vocabulary_is_the_union_of_both_billtrax_copies() -> None:
     """The drift is closed, not perpetuated: no key either copy held is missing here."""
@@ -129,9 +169,10 @@ def test_vocabulary_is_the_union_of_both_billtrax_copies() -> None:
     # this replaces: a check that only confirms a subset agrees would not have
     # caught the drift. Every slug this module additionally carries is either
     # a passthrough for the corrected returned-to-the-house-by-unanimous-consent
-    # target, or a measured 119th addition -- never a silent rename.
+    # target, a measured 119th addition, or an unmeasured DeltaTrack-upstream
+    # addition -- never a silent rename.
     additions = slugs - _GOVINFO_PDF_FETCH_KEYS
-    assert additions == (_MEASURED_119TH_CODES - _GOVINFO_PDF_FETCH_KEYS)
+    assert additions == (_MEASURED_119TH_CODES - _GOVINFO_PDF_FETCH_KEYS) | _UPSTREAM_ONLY_CODES
 
 
 def test_every_slug_but_one_keeps_billtraxs_original_govinfo_suffix() -> None:
@@ -178,7 +219,35 @@ def test_billtraxs_own_unused_passthroughs_are_marked_unmeasured() -> None:
 
 
 # ---------------------------------------------------------------------------
-# slugify / version_slug
+# Cross-checked against DeltaTrack upstream's authoritative govinfo list.
+# ---------------------------------------------------------------------------
+
+
+def test_every_deltatrack_upstream_code_resolves() -> None:
+    """All 53 govinfo codes DeltaTrack's authoritative list names are addressable here."""
+    known_suffixes = {entry.govinfo_suffix for entry in VERSION_CODES} | set(VERSION_CODES_BY_SLUG)
+    missing = _DELTATRACK_UPSTREAM_CODES - known_suffixes
+    assert not missing, f"upstream codes with no entry: {sorted(missing)}"
+
+
+def test_upstream_only_codes_are_added_unmeasured_not_silently_dropped() -> None:
+    for code in _UPSTREAM_ONLY_CODES:
+        entry = VERSION_CODES_BY_SLUG[code]
+        assert entry.measured_119th is False
+        assert entry.version_types, f"{code} has no recorded name"
+        assert entry.note is not None and "DeltaTrack" in entry.note
+
+
+def test_two_cosmetic_spelling_differences_against_upstream_are_recorded() -> None:
+    """rs and as: the measured Congress.gov spelling differs from upstream's canonical one."""
+    assert "Reported to Senate" in VERSION_CODES_BY_SLUG["reported-in-senate"].version_types  # measured
+    assert "Reported in Senate" in VERSION_CODES_BY_SLUG["reported-in-senate"].version_types  # upstream
+    assert "Amendment Ordered to be Printed (Senate)" in VERSION_CODES_BY_SLUG["as"].version_types  # measured
+    assert "Amendment Ordered to be Printed Senate" in VERSION_CODES_BY_SLUG["as"].version_types  # upstream
+
+
+# ---------------------------------------------------------------------------
+# slugify / version_slug / version_slug_reprints
 # ---------------------------------------------------------------------------
 
 
@@ -202,11 +271,48 @@ def test_version_slug_is_slugify_with_no_refusal_case() -> None:
         version_slug("")
 
 
-def test_version_slug_cannot_distinguish_a_numbered_reprint() -> None:
-    """Congress.gov gives eas and eas2 the identical type string; slugify can't tell them apart."""
-    assert version_slug("Engrossed Amendment Senate") == version_slug("Engrossed Amendment Senate")
-    assert VERSION_CODES_BY_SLUG["eas2"].govinfo_suffix == "eas2"
-    assert VERSION_CODES_BY_SLUG["eas"].govinfo_suffix == "eas"
+def test_version_slug_redirects_to_the_sealed_slug_a_measured_name_actually_claims() -> None:
+    """slugify("Received in Senate") alone is not a vocabulary entry; the sealed slug is."""
+    assert version_slug("Received in Senate") == "referred-to-senate"  # BillTrax's own name
+    assert govinfo_suffix(version_slug("Received in Senate")) == "rds"
+    assert version_slug("Referred in Senate") == "rfs"  # a pure addition, not name-derived
+    assert govinfo_suffix(version_slug("Referred in Senate")) == "rfs"
+
+
+def test_version_slug_reprints_exposes_the_ambiguity_it_resolves_through() -> None:
+    """Congress.gov gives eas/eas2, eh/eh1s and rfs/rfs2 the identical type string."""
+    assert version_slug("Engrossed Amendment Senate") == "engrossed-amendment-senate"
+    assert govinfo_suffix(version_slug("Engrossed Amendment Senate")) == "eas"  # earliest printing, silently
+    assert version_slug_reprints("Engrossed Amendment Senate") == ("eas2",)  # exposed, not hidden
+    assert version_slug_reprints("Engrossed in House") == ("eh1s",)
+    assert version_slug_reprints("Referred in Senate") == ("rfs2",)
+    # An unambiguous name, and a long-slug/short-code alias for one document
+    # (not two different documents), both expose nothing.
+    assert version_slug_reprints("Introduced in House") == ()
+    assert version_slug_reprints("Returned to the House by Unanimous Consent") == ()
+
+
+@pytest.mark.parametrize("entry", [entry for entry in VERSION_CODES if entry.version_types], ids=lambda e: e.slug)
+def test_name_derived_composition_resolves_or_is_flagged_ambiguous(entry) -> None:
+    """Every measured or cited type name composes to a working package id -- ambiguous or not."""
+    identity = BillIdentity(119, "hr", 1)
+    for measured_type in entry.version_types:
+        derived_slug = version_slug(measured_type)
+        resolved_suffix = govinfo_suffix(derived_slug)  # must not raise
+        package_id = bill_version_package_id(identity, derived_slug)
+        assert package_id.endswith(resolved_suffix)
+        reprints = version_slug_reprints(measured_type)
+        if reprints:
+            # Ambiguous: this entry's own slug is one of the named claimants
+            # of the shared type name, even when version_slug resolved this
+            # particular measured_type to a different (earlier-printed) one.
+            assert entry.slug in (derived_slug, *reprints)
+        else:
+            # Unambiguous: the resolved suffix is this document's, whether
+            # reached through this entry's own slug or an alias for the same
+            # suffix declared first (long-slug/short-code pairs like
+            # returned-to-the-house-by-unanimous-consent/rhuc).
+            assert resolved_suffix == entry.govinfo_suffix
 
 
 # ---------------------------------------------------------------------------
@@ -251,7 +357,7 @@ def test_bill_version_package_id_round_trips_through_parse_package_id(slug: str)
 
 # ---------------------------------------------------------------------------
 # choose_format: congress-api.ts chooseFormat/chooseXmlFormat + sync-govinfo.ts
-# pickVersionUrls's URL-suffix fallback.
+# pickVersionUrls's fallback, now folder- not extension-based (Fix 2).
 # ---------------------------------------------------------------------------
 
 
@@ -259,36 +365,56 @@ def _fmt(url: str, type_: str | None) -> BillTextFormat:
     return BillTextFormat(url=url, type=type_, package_id=None)
 
 
-def test_choose_format_prefers_xml_then_html_then_text() -> None:
+def test_choose_format_default_matches_billtraxs_own_order() -> None:
+    """xml, then text, then PDF -- congress-api.ts chooseFormat's own default order."""
     formats = [
-        _fmt("https://example.invalid/a.htm", "HTML"),
-        _fmt("https://example.invalid/a.xml", "Formatted XML"),
-        _fmt("https://example.invalid/a.txt", "Formatted Text"),
+        _fmt("https://example.invalid/content/pkg/BILLS-119hr1ih/pdf/BILLS-119hr1ih.pdf", "PDF"),
+        _fmt("https://example.invalid/content/pkg/BILLS-119hr1ih/xml/BILLS-119hr1ih.xml", "Formatted XML"),
+        _fmt("https://example.invalid/content/pkg/BILLS-119hr1ih/text/BILLS-119hr1ih.txt", "Formatted Text"),
     ]
     assert choose_format(formats).url.endswith(".xml")
     assert choose_format(formats, prefer=("txt",)).url.endswith(".txt")
-    assert choose_format(formats, prefer=("pdf",)) is None
+    # PDF is the last *default* preference here -- unlike GovInfoBodyAcquirer's
+    # own default, which excludes PDF entirely because a hearing/directory PDF
+    # can run to tens of megabytes; bill PDFs measured small (median 246 KB).
+    assert choose_format([formats[0]]).url.endswith(".pdf")
 
 
-def test_choose_format_never_picks_pdf_unless_asked() -> None:
-    formats = [_fmt("https://example.invalid/a.pdf", "PDF")]
-    assert choose_format(formats) is None
-    assert choose_format(formats, prefer=("pdf",)) is formats[0]
-
-
-def test_choose_format_recognizes_uslm() -> None:
-    formats = [_fmt("https://example.invalid/a.xml", "United States Legislative Markup")]
+def test_choose_format_recognizes_uslm_by_type_but_not_by_default() -> None:
+    formats = [
+        _fmt(
+            "https://example.invalid/content/pkg/BILLS-119s1071enr/uslm/BILLS-119s1071enr.xml",
+            "United States Legislative Markup",
+        )
+    ]
     assert choose_format(formats, prefer=("uslm",)) is formats[0]
-    # Not in the default preference (BillTrax never read it, matching its port contract).
-    assert choose_format(formats) is None
+    assert choose_format(formats) is None  # not in the default preference, matching BillTrax's own order
 
 
-def test_choose_format_falls_back_to_the_url_suffix_when_type_is_missing() -> None:
-    """sync-govinfo.ts:262's fallback: measured to fire 0/240 times, kept as a tolerance."""
-    formats = [_fmt("https://example.invalid/a.xml", None)]
-    assert choose_format(formats, prefer=("xml",)) is formats[0]
-    assert choose_format([_fmt("https://example.invalid/a.pdf", None)], prefer=("pdf",)) is not None
-    assert choose_format([_fmt("https://example.invalid/a.unknown", None)], prefer=("xml", "html", "txt")) is None
+def test_choose_format_falls_back_to_the_url_folder_when_type_is_missing() -> None:
+    """The only live path against BILLSTATUS-sourced data: bill_status.py never sets .type."""
+    xml = _fmt("https://www.govinfo.gov/content/pkg/BILLS-119hr1ih/xml/BILLS-119hr1ih.xml", None)
+    pdf = _fmt("https://www.govinfo.gov/content/pkg/BILLS-119hr1ih/pdf/BILLS-119hr1ih.pdf", None)
+    txt = _fmt("https://www.govinfo.gov/content/pkg/BILLS-119hr1ih/text/BILLS-119hr1ih.txt", None)
+    uslm = _fmt("https://www.govinfo.gov/content/pkg/BILLS-119s1071enr/uslm/BILLS-119s1071enr.xml", None)
+    assert choose_format([xml], prefer=("xml",)) is xml
+    assert choose_format([pdf], prefer=("pdf",)) is pdf
+    assert choose_format([txt], prefer=("txt",)) is txt
+    assert choose_format([uslm], prefer=("uslm",)) is uslm
+    # xml and uslm share the .xml extension; only the folder segment tells them apart.
+    assert choose_format([uslm], prefer=("xml",)) is None
+    assert choose_format([_fmt("https://example.invalid/a.unknown", None)], prefer=("xml", "txt", "pdf")) is None
+
+
+def test_choose_format_on_real_billstatus_data_uses_the_folder_fallback() -> None:
+    """BILLSTATUS's <formats><item> carries <url> only, never <type>, on every measured fixture."""
+    status = parse_bill_status((FIXTURES / "status-119hr6028.xml").read_bytes(), identity=BillIdentity(119, "hr", 6028))
+    eh_version = next(v for v in status.text_versions if v.type == "Engrossed in House")
+    assert all(f.type is None for f in eh_version.formats)
+    chosen = choose_format(eh_version.formats)
+    assert chosen is not None
+    assert chosen.type is None
+    assert "/xml/" in chosen.url
 
 
 def test_choose_format_skips_items_with_no_url() -> None:
@@ -355,11 +481,43 @@ def test_version_kind_matches_version_kind_ts(
 
 
 # ---------------------------------------------------------------------------
+# acquire_bill_pdf's own validation (no network -- these raise before any
+# request is made).
+# ---------------------------------------------------------------------------
+
+
+def test_acquire_bill_pdf_requires_exactly_one_of_slug_or_package_id() -> None:
+    from spicy_docs.sources.congress.bill_pdf import acquire_bill_pdf
+    from spicy_docs.sources.govinfo.body_acquisition import GovInfoBodyAcquirer, GovInfoBodyBudget
+
+    budget = GovInfoBodyBudget(
+        max_requests=1,
+        max_body_bytes=1024,
+        max_metadata_bytes=1024,
+        timeout_seconds=1.0,
+        min_request_interval_seconds=0,
+    )
+    identity = BillIdentity(119, "hconres", 11)
+    with GovInfoBodyAcquirer(budget=budget, api_key="test-credential") as client:
+        with pytest.raises(ValueError, match="exactly one of"):
+            acquire_bill_pdf(identity, acquirer=client)
+        with pytest.raises(ValueError, match="exactly one of"):
+            acquire_bill_pdf(identity, acquirer=client, slug="ih", package_id="BILLS-119hconres11ih")
+
+
+def test_acquire_bill_pdf_requires_a_govinfo_body_acquirer() -> None:
+    from spicy_docs.sources.congress.bill_pdf import acquire_bill_pdf
+
+    with pytest.raises(TypeError, match="GovInfoBodyAcquirer"):
+        acquire_bill_pdf(BillIdentity(119, "hconres", 11), acquirer=object(), slug="ih")
+
+
+# ---------------------------------------------------------------------------
 # Live PDF acquisition, mirroring test_govinfo_package_body_acquisition.py's
 # read_api_key(...) pattern -- credentials header-only, never in a fixture.
 # ---------------------------------------------------------------------------
 
-ENV_FILE = Path("/Users/mikewolfd/Work/spicy-stack/spicy-docs/.env")
+ENV_FILE = Path(os.environ.get("SPICY_DOCS_ENV_FILE", Path.home() / "Work/spicy-stack/spicy-docs/.env"))
 
 
 @pytest.mark.integration
@@ -382,7 +540,7 @@ def test_live_bill_pdf_is_acquired_and_proved() -> None:
     )
     key = read_api_key(ENV_FILE, "API_GOV")
     with GovInfoBodyAcquirer(budget=budget, api_key=key) as client:
-        result = acquire_bill_pdf(identity, "engrossed-in-house", acquirer=client)
+        result = acquire_bill_pdf(identity, acquirer=client, slug="engrossed-in-house")
 
     assert result.identity.package_id == "BILLS-119hconres11eh"
     assert result.format == "pdf"

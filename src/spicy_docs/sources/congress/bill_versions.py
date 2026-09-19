@@ -12,7 +12,7 @@ duplicated `slugify`/`chooseFormat`/`pickVersionUrls` implementations named in
 so every slug string BillTrax ever emitted stays in `VERSION_CODES` unchanged;
 this module only adds entries, never renames or removes one.
 
-**What the measurement changed.** `docs/research/billtrax-raw-data-2026-09-19.md`
+**What the 119th measurement changed.** `docs/research/billtrax-raw-data-2026-09-19.md`
 §1 counted every BILLS version code the 119th Congress actually produced (24
 distinct GovInfo package-id suffixes across 21,947 XML files) and found three
 things BillTrax's name-derived map cannot fix by better naming:
@@ -27,13 +27,11 @@ things BillTrax's name-derived map cannot fix by better naming:
    its `govinfo_suffix` is corrected to `rhuc`, and `rhuc` is added as its own
    passthrough entry.
 2. Congress.gov's `type` string is **not unique per version**: "Engrossed
-   Amendment Senate" names both `eas` and its numbered reprint `eas2`, and
-   "Engrossed in House" names both `eh` and `eh1s`. No name-derived slug can
-   tell those apart -- `version_slug()`/`slugify()` produce the same string
-   for both. Only the GovInfo package id itself (or, per the doctype sample,
-   the document's own `@bill-stage`/`@resolution-stage` attribute, a *third*
-   spelling: `rs`'s API `type` is "Reported to Senate" but its XML root states
-   `resolution-stage="Reported-in-Senate"`) carries the real identity.
+   Amendment Senate" names both `eas` and its numbered reprint `eas2`,
+   "Engrossed in House" names both `eh` and `eh1s`, and "Referred in Senate"
+   names both `rfs` and `rfs2`. No name-derived slug can tell those apart --
+   `version_slug()` produces the same string for both. `version_slug_reprints`
+   exposes this rather than hiding it; see below.
 3. **The map itself is demoted, not deleted.** `bill_version_package_id` (the
    port of `buildGovinfoPdfUrl`) and `version_slug` (the port of `slugify`
    applied to a version-type name, as BillTrax's ingest path does) remain --
@@ -44,24 +42,37 @@ things BillTrax's name-derived map cannot fix by better naming:
    `sources.congress.bill_status.bill_package_id_from_url`, is preferred
    whenever a caller has one; see `bill_pdf.acquire_bill_pdf`.
 
+**Cross-checked against DeltaTrack upstream.** DeltaTrack's own
+`tools/fetch_govinfo.py::VERSION_CODES`/`resolve_code()`
+(https://github.com/civictechdc/DeltaTrack, a separate BillTrax-adjacent
+project this port does not otherwise draw on) carries govinfo's full
+authoritative 53-code list (govinfo.gov/help/bills) with its own display
+names and a documented `eas2 -> eas` prefix-fallback for numbered reprints.
+All 24 codes this port measured in the 119th resolve there, with two cosmetic
+spelling differences recorded on the affected entries below (`rs`: "Reported
+to Senate" measured vs. "Reported in Senate" upstream's canonical wording;
+`as`: parenthesized "(Senate)" measured vs. unparenthesized upstream -- both
+slugify identically). The 30 codes upstream carries that neither BillTrax nor
+this port's own 119th measurement produced are added below, `measured_119th`
+False, so a real govinfo code is not silently missing for want of a 119th
+sighting; DeltaTrack's own `version_stems.py` is unrelated (on-disk filename
+ordinals for a locally cached bill folder, not this vocabulary) and is not a
+source here.
+
 `VERSION_CODES` therefore carries, per slug, every spelling this port found
-evidence for: the `version_types` Congress.gov states (measured for the 24
-codes seen in the 119th BILLS corpus), the `stage_value` the document's own
-root attribute states (measured for 10 of them, from a 40-file structural
-sample -- `docs/research/billtrax-raw-data-2026-09-19.json`
+evidence for: the `version_types` Congress.gov or DeltaTrack upstream states
+(measured for the 24 codes seen in the 119th BILLS corpus; cited to upstream
+otherwise), the `stage_value` the document's own root attribute states
+(measured for 10 of them, from a 40-file structural sample --
+`docs/research/billtrax-raw-data-2026-09-19.json`
 `sources.billXmlStructure.doctypeAndStage`), and the `govinfo_suffix` the
 fallback path builds a package id from. `measured_119th` records whether that
-suffix appeared at all in the 119th BILLS package-id census; two of
-BillTrax's own passthrough entries (`pch`, `hds`) did not.
+suffix appeared at all in the 119th BILLS package-id census.
 
 Format choice ports `congress-api.ts chooseFormat`/`chooseXmlFormat` and
-`sync-govinfo.ts pickVersionUrls`, including the URL-suffix fallback
-`pickVersionUrls` added at `sync-govinfo.ts:262` for a format item with no
-stated `type`. Measured 2026-09-19: every one of 240 sampled format entries
-across 24 bills carried a `type`, so the fallback is kept as a tolerance, not
-a live path. A fourth format, `United States Legislative Markup` (USLM, 10 of
-240 sampled entries, offered on enrolled bills), is in `choose_format`'s known
-vocabulary -- BillTrax never read it, but `sources.govinfo.uslm` already does.
+`sync-govinfo.ts pickVersionUrls`, including the URL fallback `pickVersionUrls`
+added at `sync-govinfo.ts:262` for a format item with no stated `type` -- see
+`choose_format`'s own docstring for which producer actually needs it.
 """
 
 from __future__ import annotations
@@ -73,6 +84,16 @@ from dataclasses import dataclass
 from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat
 
 _SLUG_COLLAPSE = re.compile(r"[^a-z0-9]+")
+
+#: Shared note text for a slug carried only because DeltaTrack upstream's
+#: authoritative govinfo list names it; not observed in this port's own
+#: 119th BILLS measurement.
+_UPSTREAM_ONLY_NOTE = (
+    "Not observed in the 119th BILLS census this port measured; carried from "
+    "DeltaTrack upstream's authoritative govinfo code list "
+    "(tools/fetch_govinfo.py::VERSION_CODES, civictechdc/DeltaTrack) so a real "
+    "govinfo code is not silently missing for want of a 119th sighting."
+)
 
 
 class VersionCodeError(ValueError):
@@ -86,14 +107,17 @@ class VersionCode:
     ``slug`` is what BillTrax stores in ``bill_versions.version_code`` and is
     never renamed. ``govinfo_suffix`` is the BILLS package-id suffix the
     fallback path (``bill_version_package_id``) builds from this slug.
-    ``version_types`` are the Congress.gov ``textVersions[].type`` strings
-    measured to produce this slug via ``version_slug`` (empty when the slug
-    is a short code addressed directly, never derived by name).
-    ``stage_value`` is the document's own ``@bill-stage``/``@resolution-stage``
-    attribute spelling for this suffix, where measured -- a third, independent
-    publisher spelling `bill_text.py` already reads for three of these.
-    ``measured_119th`` is True when this exact suffix appeared in the 119th
-    Congress BILLS package-id census (24 distinct suffixes, 21,947 files).
+    ``version_types`` are the publisher version-type strings measured (or, for
+    a code neither BillTrax nor the 119th measurement named, cited to
+    DeltaTrack upstream) to name this suffix; `version_slug` resolves any of
+    them back to this slug even when it does not literally equal
+    ``slugify(version_type)`` (empty when the slug is a short code addressed
+    directly, never derived by name). ``stage_value`` is the document's own
+    ``@bill-stage``/``@resolution-stage`` attribute spelling for this suffix,
+    where measured -- a third, independent publisher spelling `bill_text.py`
+    already reads for three of these. ``measured_119th`` is True when this
+    exact suffix appeared in the 119th Congress BILLS package-id census (24
+    distinct suffixes, 21,947 files).
     """
 
     slug: str
@@ -129,7 +153,11 @@ VERSION_CODES: tuple[VersionCode, ...] = (
         "placed-on-calendar-house",
         "pch",
         ("Placed on Calendar House",),
-        note="BillTrax knew this suffix; the 119th BILLS corpus never produced it.",
+        note=(
+            "BillTrax knew this suffix; the 119th BILLS corpus never produced "
+            "it. Name confirmed (not just guessed) against DeltaTrack "
+            "upstream's authoritative list, which states the same wording."
+        ),
     ),
     VersionCode(
         "referred-to-senate",
@@ -142,8 +170,12 @@ VERSION_CODES: tuple[VersionCode, ...] = (
     VersionCode(
         "held-at-desk-senate",
         "hds",
-        ("Held at the Desk Senate",),
-        note="BillTrax knew this suffix; the 119th BILLS corpus never produced it.",
+        ("Held at Desk Senate",),
+        note=(
+            "BillTrax knew this suffix; the 119th BILLS corpus never produced "
+            "it. Name is DeltaTrack upstream's authoritative wording (no "
+            "119th measurement exists to confirm it independently)."
+        ),
     ),
     VersionCode(
         "returned-to-the-house-by-unanimous-consent",
@@ -164,10 +196,14 @@ VERSION_CODES: tuple[VersionCode, ...] = (
     VersionCode(
         "reported-in-senate",
         "rs",
-        ("Reported to Senate",),
+        # Two publisher-adjacent spellings for one document: BILLSTATUS/
+        # Congress.gov's own <type> (measured) says "to Senate"; DeltaTrack
+        # upstream's canonical GPO wording (matching this slug's own
+        # spelling) says "in Senate". version_slug resolves both.
+        ("Reported to Senate", "Reported in Senate"),
         "Reported-in-Senate",
         True,
-        note="A third spelling: API type says 'to Senate', the XML root's resolution-stage says 'in-Senate'.",
+        note="A third spelling too: the XML root's own resolution-stage attribute says 'Reported-in-Senate'.",
     ),
     # --- BillTrax's passthrough short codes (both copies key these to themselves) ---
     VersionCode("ih", "ih", measured_119th=True),
@@ -190,7 +226,12 @@ VERSION_CODES: tuple[VersionCode, ...] = (
         "rfs",
         ("Referred in Senate",),
         measured_119th=True,
-        note="568 files (2.6% of the 119th BILLS corpus) -- the single largest gap in BillTrax's map.",
+        note=(
+            "568 files (2.6% of the 119th BILLS corpus) -- the single largest "
+            "gap in BillTrax's map. 'Referred in Senate' also names rfs2's "
+            "reprint; declared here first, so version_slug resolves it to rfs "
+            "(the earliest printing) -- see version_slug_reprints."
+        ),
     ),
     VersionCode("ats", "ats", ("Agreed to Senate",), "Agreed-to-Senate", True),
     VersionCode("cps", "cps", ("Considered and Passed Senate",), measured_119th=True),
@@ -202,7 +243,14 @@ VERSION_CODES: tuple[VersionCode, ...] = (
         measured_119th=True,
         note="The correct suffix for this version type; see the note on returned-to-the-house-by-unanimous-consent.",
     ),
-    VersionCode("as", "as", ("Amendment Ordered to be Printed (Senate)",), measured_119th=True),
+    VersionCode(
+        "as",
+        "as",
+        # Measured (parenthesized "(Senate)") and DeltaTrack upstream's
+        # authoritative wording (no parens) -- cosmetic: both slugify identically.
+        ("Amendment Ordered to be Printed (Senate)", "Amendment Ordered to be Printed Senate"),
+        measured_119th=True,
+    ),
     VersionCode("cdh", "cdh", ("Committee Discharged House",), measured_119th=True),
     VersionCode(
         "eas2",
@@ -211,9 +259,10 @@ VERSION_CODES: tuple[VersionCode, ...] = (
         measured_119th=True,
         note=(
             "A numbered reprint of 'eas'; Congress.gov's type string is "
-            "identical to eas's, so version_slug() cannot recover this suffix "
-            "from a name -- only a stated package id (or this passthrough "
-            "entry, when the suffix is already known) can address it."
+            "identical to eas's, so version_slug resolves that shared name to "
+            "eas (the earliest printing), not here -- see version_slug_reprints. "
+            "Only a stated package id (or this passthrough entry, when the "
+            "suffix is already known) can address eas2 by name."
         ),
     ),
     VersionCode(
@@ -232,11 +281,60 @@ VERSION_CODES: tuple[VersionCode, ...] = (
         note="A numbered reprint of 'rfs'; same name-collision limitation as eas2.",
     ),
     VersionCode("ris", "ris", ("Referral Instructions Senate",), measured_119th=True),
+    # --- Additions: DeltaTrack upstream's authoritative govinfo code list,
+    # unmeasured in the 119th BILLS census (tools/fetch_govinfo.py::VERSION_CODES,
+    # civictechdc/DeltaTrack). Grouped by upstream's own legislative-stage tiers
+    # for the same reason upstream groups them: purely for a reader's orientation,
+    # load-bearing nowhere in this module. ---
+    # tier 1: introduced / sponsorship administration
+    VersionCode("ash", "ash", ("Additional Sponsors House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("sas", "sas", ("Additional Sponsors Senate",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("sc", "sc", ("Sponsor Change",), note=_UPSTREAM_ONLY_NOTE),
+    # tier 2: referral / receipt / reference / held at desk
+    VersionCode("rdh", "rdh", ("Received in House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("rch", "rch", ("Reference Change House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("rth", "rth", ("Referred to Committee House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("rts", "rts", ("Referred to Committee Senate",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("rih", "rih", ("Referral Instructions House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("rah", "rah", ("Referred with Amendments House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("ras", "ras", ("Referred with Amendments Senate",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("hdh", "hdh", ("Held at Desk House",), note=_UPSTREAM_ONLY_NOTE),
+    # tier 3: reported / calendar / committee discharged / print
+    VersionCode("cds", "cds", ("Committee Discharged Senate",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("oph", "oph", ("Ordered to be Printed House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("ops", "ops", ("Ordered to be Printed Senate",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("pp", "pp", ("Public Print",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("pav", "pav", ("Previous Action Vitiated",), note=_UPSTREAM_ONLY_NOTE),
+    # tier 4: engrossed / passed / agreed / amended / floor disposition
+    VersionCode("reah", "reah", ("Re-engrossed Amendment House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("res", "res", ("Re-engrossed Amendment Senate",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("eph", "eph", ("Engrossed and Deemed Passed by House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("cph", "cph", ("Considered and Passed House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("ath", "ath", ("Agreed to House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("fah", "fah", ("Failed Amendment House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("fph", "fph", ("Failed Passage House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("fps", "fps", ("Failed Passage Senate",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("iph", "iph", ("Indefinitely Postponed House",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("ips", "ips", ("Indefinitely Postponed Senate",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("lts", "lts", ("Laid on Table in Senate",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("pwah", "pwah", ("Ordered to be Printed with House Amendment",), note=_UPSTREAM_ONLY_NOTE),
+    # tier 5: enrolled / printed as passed
+    VersionCode("renr", "renr", ("Re-enrolled Bill",), note=_UPSTREAM_ONLY_NOTE),
+    VersionCode("pap", "pap", ("Printed as Passed",), note=_UPSTREAM_ONLY_NOTE),
 )
 
 VERSION_CODES_BY_SLUG: dict[str, VersionCode] = {entry.slug: entry for entry in VERSION_CODES}
 if len(VERSION_CODES_BY_SLUG) != len(VERSION_CODES):
     raise AssertionError("VERSION_CODES has a duplicate slug")
+
+#: `slugify(a measured/cited version type)` -> the slug that claims it, first
+#: entry declared wins (VERSION_CODES's own order -- always earliest printing
+#: first for a shared name; see version_slug and version_slug_reprints).
+_SLUG_BY_TYPE_NAME: dict[str, str] = {}
+for _entry in VERSION_CODES:
+    for _type_name in _entry.version_types:
+        _SLUG_BY_TYPE_NAME.setdefault(_SLUG_COLLAPSE.sub("-", _type_name.lower()).strip("-"), _entry.slug)
+del _entry, _type_name
 
 
 def slugify(value: str) -> str:
@@ -253,21 +351,49 @@ def slugify(value: str) -> str:
 def version_slug(version_type: str) -> str:
     """The `version_code` BillTrax stores for one publisher version-type string.
 
-    This is exactly `slugify(version_type)` (`congress-api.ts:291`,
-    `sync-govinfo.ts` version_code derivation): BillTrax has no separate
-    type-to-slug dictionary, so every type string produces a slug this way
-    with no refusal case -- slugify's general rule is the whole mapping and
-    its own fallback.
+    BillTrax itself computes this as plain `slugify(version_type)`
+    (`congress-api.ts:291`, `sync-govinfo.ts` version_code derivation) with no
+    separate type-to-slug dictionary. This function keeps that as the
+    fallback but checks first whether some sealed slug in `VERSION_CODES`
+    already claims this exact measured type name under a *different*
+    spelling -- `slugify("Received in Senate")` is `received-in-senate`, but
+    the sealed slug for that document is `referred-to-senate` (BillTrax's own
+    name), so composing `bill_version_package_id(identity, version_slug(...))`
+    must land on the sealed slug, not a slug nothing in the vocabulary defines.
 
-    This is the *name-derived* fallback. A numbered reprint (`eas2`, `eh1s`)
-    slugifies identically to its original (`eas`, `eh`) because Congress.gov
-    gives both the same `type` string, so this function cannot recover a
-    reprint's real suffix. Prefer a stated package id when one exists; see
-    `bill_pdf.acquire_bill_pdf`.
+    This is still the *name-derived* fallback, and still cannot recover a
+    numbered reprint's own suffix: "Engrossed Amendment Senate" claims both
+    `eas` and its reprint `eas2`, and whichever was declared first in
+    `VERSION_CODES` wins (the earliest printing). `version_slug_reprints`
+    exposes when that happened, rather than resolving silently. Prefer a
+    stated package id when one exists; see `bill_pdf.acquire_bill_pdf`.
     """
     if not isinstance(version_type, str) or not version_type:
         raise VersionCodeError("version_type must be a nonempty string")
-    return slugify(version_type)
+    key = slugify(version_type)
+    return _SLUG_BY_TYPE_NAME.get(key, key)
+
+
+def version_slug_reprints(version_type: str) -> tuple[str, ...]:
+    """Other sealed slugs naming a *different* document under this exact name.
+
+    Non-empty means the name is ambiguous: Congress.gov gives a numbered
+    reprint the identical `type` string as its original (measured 2026-09-19:
+    `eas`/`eas2`, `eh`/`eh1s`, `rfs`/`rfs2`). `version_slug` still resolves --
+    always to the earliest-declared, i.e. earliest-printed, slug -- but only a
+    stated package id tells the documents apart. Empty when the name is
+    unambiguous, claimed by no sealed slug, or claimed only by another slug
+    for the *same* suffix (a long-slug/short-code pair like
+    `returned-to-the-house-by-unanimous-consent`/`rhuc` names one document
+    twice, which is aliasing, not ambiguity).
+    """
+    key = slugify(version_type)
+    resolved = version_slug(version_type)
+    resolved_suffix = govinfo_suffix(resolved)
+    claimants = tuple(entry.slug for entry in VERSION_CODES if key in {slugify(t) for t in entry.version_types})
+    return tuple(
+        slug for slug in claimants if slug != resolved and VERSION_CODES_BY_SLUG[slug].govinfo_suffix != resolved_suffix
+    )
 
 
 def govinfo_suffix(slug: str) -> str:
@@ -300,13 +426,18 @@ def bill_version_package_id(identity: BillIdentity, slug: str) -> str:
 
 # ---------------------------------------------------------------------------
 # Format choice: congress-api.ts chooseFormat/chooseXmlFormat, sync-govinfo.ts
-# pickVersionUrls (the URL-suffix fallback at sync-govinfo.ts:262).
+# pickVersionUrls (the fallback at sync-govinfo.ts:262).
 # ---------------------------------------------------------------------------
 
-#: Congress.gov `textVersions[].formats[].type` strings this module recognizes,
-#: to the short format name `choose_format` matches against `prefer`. A fourth
-#: format BillTrax never read: USLM, offered on enrolled bills (10 of 240
-#: format entries sampled 2026-09-19); `sources.govinfo.uslm` already reads it.
+#: Congress.gov REST `/bill/.../text` `textVersions[].formats[].type` strings,
+#: to the short format name `choose_format` matches against `prefer`. This
+#: table is for a REST-sourced producer this repository does not build yet --
+#: see `choose_format`'s docstring for why it is dead against today's one
+#: producer. USLM (`United States Legislative Markup`) is recognized by name
+#: here but is **not yet acquirable**: `GovInfoBodyAcquirer`'s
+#: `PACKAGE_BODY_FORMATS` supports only htm/xml/txt/pdf, and
+#: `sources.govinfo.uslm` reads the separate PLAW/COMPS collections, not a
+#: BILLS package's own `uslm/{id}.xml` rendition.
 FORMAT_TYPE_NAMES: dict[str, str] = {
     "Formatted Text": "txt",
     "Formatted XML": "xml",
@@ -314,38 +445,47 @@ FORMAT_TYPE_NAMES: dict[str, str] = {
     "HTML": "html",
     "United States Legislative Markup": "uslm",
 }
-#: The fallback `pickVersionUrls` (`sync-govinfo.ts:255-268`) applies to a
-#: format item whose `type` is absent: name it from its URL's extension.
-#: Measured 2026-09-19: 0 of 240 sampled format entries had no `type`, so
-#: this is a tolerance, not a live path (docs/research/billtrax-raw-data-2026-09-19.md §7).
-_FORMAT_URL_SUFFIXES: tuple[tuple[str, str], ...] = (
-    (".xml", "xml"),
-    (".htm", "html"),
-    (".html", "html"),
-    (".txt", "txt"),
-    (".pdf", "pdf"),
+#: `pickVersionUrls`'s fallback (`sync-govinfo.ts:255-268`), adapted: name a
+#: format item with no stated `type` from the GovInfo rendition *folder* in
+#: its URL path (`sources.govinfo.bodies.PACKAGE_BODY_FORMATS`'s own folder
+#: names), not the file extension -- BILLS states its USLM rendition at
+#: `uslm/{id}.xml`, which no extension check can tell apart from `xml/{id}.xml`.
+#: This is the *only* live path today: `bill_status.py`'s `_text_version`
+#: (the one place a `BillTextFormat` is built on `main`) reads BILLSTATUS
+#: `<formats><item>`, which carries `<url>` only -- never `<type>` -- on
+#: every fixture in `tests/fixtures/govinfo_bills`. The 240-format-entry,
+#: "every one carried a type" measurement (§7,
+#: docs/research/billtrax-raw-data-2026-09-19.md) was of the Congress.gov
+#: REST route, not BILLSTATUS; it says nothing about whether this fallback
+#: fires against the data this repository actually parses today.
+_FORMAT_URL_FOLDERS: tuple[tuple[str, str], ...] = (
+    ("/xml/", "xml"),
+    ("/html/", "html"),
+    ("/text/", "txt"),
+    ("/pdf/", "pdf"),
+    ("/uslm/", "uslm"),
 )
 
 
 def _format_name(item: BillTextFormat) -> str | None:
     if item.type is not None:
         return FORMAT_TYPE_NAMES.get(item.type)
-    for suffix, name in _FORMAT_URL_SUFFIXES:
-        if item.url.endswith(suffix):
+    for folder, name in _FORMAT_URL_FOLDERS:
+        if folder in item.url:
             return name
     return None
 
 
 def choose_format(
-    formats: Sequence[BillTextFormat], prefer: Sequence[str] = ("xml", "html", "txt")
+    formats: Sequence[BillTextFormat], prefer: Sequence[str] = ("xml", "txt", "pdf")
 ) -> BillTextFormat | None:
     """The first offered format matching `prefer` in order, or None.
 
-    Ports `congress-api.ts chooseFormat`/`chooseXmlFormat` (XML then text
-    then PDF preference) and `sync-govinfo.ts pickVersionUrls` (its
-    URL-suffix fallback for a format item with no stated `type`) as one
-    function. `prefer` takes this module's short format names
-    (`FORMAT_TYPE_NAMES`'s values), not Congress.gov's `type` strings.
+    Ports `congress-api.ts chooseFormat`'s own default order (XML, then
+    text, then PDF) and `sync-govinfo.ts pickVersionUrls`'s fallback for a
+    format item with no stated `type`. `prefer` takes this module's short
+    format names (`FORMAT_TYPE_NAMES`'s values plus `uslm`), not
+    Congress.gov's `type` strings.
     """
     if isinstance(prefer, str) or not isinstance(prefer, Sequence):
         raise TypeError("prefer must be a sequence of format names, not one name")
@@ -368,4 +508,5 @@ __all__ = [
     "govinfo_suffix",
     "slugify",
     "version_slug",
+    "version_slug_reprints",
 ]
