@@ -717,6 +717,138 @@ def _report_cases() -> list[ShapedCase]:
     return cases
 
 
+# ---------------------------------------------------------------------------
+# The A8 laws tables and the A9 rosters: real captures, one law per row.
+# ---------------------------------------------------------------------------
+
+
+#: Public Law 119-1 (S. 5) is the same law as the retained BILLSTATUS fixture
+#: and the retained USLM fixture, so the citation join runs between two real
+#: captures of one law.
+_LAW_RECORD = json.loads((FIXTURES / "listings/congress-law-119-1.json").read_text())
+_LAW_USLM_BYTES = (FIXTURES / "uslm/plaw-119publ1.xml").read_bytes()
+
+
+def _law_uslm():
+    from spicy_docs.sources.govinfo.uslm import (
+        PublicLawSelection,
+        public_law_xml_locator,
+        validate_public_law_xml,
+    )
+
+    selection = PublicLawSelection(119, "public", 1)
+    return validate_public_law_xml(_LAW_USLM_BYTES, selection=selection, final_url=public_law_xml_locator(selection))
+
+
+def _laws_cases() -> list[ShapedCase]:
+    """The A8 tables: the laws list, the OLRC per-Congress rows, one act's Table III."""
+    from spicy_docs.schemas.law_tables import shape_law, shape_law_code_section, shape_table3_record
+    from spicy_docs.sources.uscode import parse_table3_page
+    from spicy_docs.sources.uscode.classification import parse_classification_table
+
+    observed = "2026-09-19T00:00:00Z"
+    cases = [
+        _case(
+            "laws",
+            shape_law(
+                _LAW_RECORD,
+                _LAW_RECORD["laws"][0],
+                uslm=_law_uslm(),
+                # The fixture's own digest, computed here so it cannot drift from the file.
+                uslm_sha256=digest(_LAW_USLM_BYTES.decode("utf-8")),
+                uslm_observed_at=observed,
+                uslm_outcome="captured",
+            ),
+            ("119", "public", "1"),
+        )
+    ]
+    table = parse_classification_table(
+        (FIXTURES / "uscode/classification-tbl119pl_2nd-head.htm").read_bytes(), congress=119, session=2
+    )
+    for record in (table.records[0], next(r for r in table.records if r.link_volume is None)):
+        cases.append(
+            _case(
+                "law_code_sections",
+                shape_law_code_section(record, table=table, observed_at=observed),
+                ("119", "2", str(record.seq)),
+            )
+        )
+    page = parse_table3_page((FIXTURES / "uscode/table3-111_226-head.htm").read_bytes(), key="111-226")
+    for seq, record in enumerate(page.records):
+        cases.append(
+            _case(
+                "table3_records",
+                shape_table3_record(record, page=page, seq=seq, observed_at=observed),
+                ("111-226", str(seq)),
+            )
+        )
+    return cases
+
+
+def _roster_cases() -> list[ShapedCase]:
+    """The A9 tables: the committee list and its folded detail, and one seat per file spelling."""
+    from spicy_docs.schemas.roster_tables import shape_committee, shape_house_assignment, shape_senate_assignment
+    from spicy_docs.sources.congress.committee_rosters import (
+        house_system_code,
+        parse_house_member_data,
+        parse_senate_cvc,
+    )
+
+    observed = "2026-09-19T00:00:00Z"
+    cases = [
+        _case(
+            "committees",
+            shape_committee(
+                json.loads((FIXTURES / "listings/congress-committee-list.json").read_text())["committees"][0]
+            ),
+            ("hsbu00",),
+            subcommittees_json=[],
+        )
+    ]
+    list_row = json.loads((FIXTURES / "listings/congress-committee-hsju00-list-row.json").read_text())
+    detail = json.loads((FIXTURES / "listings/congress-committee-detail.json").read_text())["committee"]
+    folded = shape_committee(list_row, detail)
+    cases.append(
+        _case(
+            "committees",
+            folded,
+            (folded["system_code"],),
+            subcommittees_json=[entry["systemCode"] for entry in detail.get("subcommittees", [])],
+            history_json=detail.get("history", []),
+        )
+    )
+    house = parse_house_member_data(
+        (FIXTURES / "congress_rosters/memberdata-119-excerpt.xml").read_bytes(), congress=119, session=2
+    )
+    member = next(m for m in house.members if m.bioguide_id == "B001323")
+    cases.append(
+        _case(
+            "committee_assignments",
+            shape_house_assignment(member, member.assignments[0], roster=house, observed_at=observed),
+            (str(house.congress), house_system_code(member.assignments[0].code), member.bioguide_id),
+        )
+    )
+    sub_member = next(m for m in house.members if any(a.kind == "subcommittee" for a in m.assignments))
+    sub = next(a for a in sub_member.assignments if a.kind == "subcommittee")
+    cases.append(
+        _case(
+            "committee_assignments",
+            shape_house_assignment(sub_member, sub, roster=house, observed_at=observed),
+            (str(house.congress), sub.system_code, sub_member.bioguide_id),
+        )
+    )
+    senate = parse_senate_cvc((FIXTURES / "congress_rosters/cvc-member-data-excerpt.xml").read_bytes())
+    senator = senate.senators[0]
+    cases.append(
+        _case(
+            "committee_assignments",
+            shape_senate_assignment(senator, senator.committees[0], congress=119, roster=senate, observed_at=observed),
+            ("119", senator.committees[0].system_code, senator.bioguide_id),
+        )
+    )
+    return cases
+
+
 def all_cases() -> list[ShapedCase]:
     cases = (
         _billstatus_only_cases()
@@ -726,6 +858,8 @@ def all_cases() -> list[ShapedCase]:
         + _legislator_cases()
         + _report_cases()
         + _congress_index_cases()
+        + _laws_cases()
+        + _roster_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -876,6 +1010,11 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "record_issues": ("schemas/congress_index_tables.py",),
     "treaties": ("schemas/congress_index_tables.py",),
     "nominations": ("schemas/congress_index_tables.py",),
+    "laws": ("schemas/law_tables.py", "sources/govinfo/uslm.py"),
+    "law_code_sections": ("schemas/law_tables.py", "sources/uscode/classification.py"),
+    "table3_records": ("schemas/law_tables.py",),
+    "committees": ("schemas/roster_tables.py",),
+    "committee_assignments": ("schemas/roster_tables.py", "sources/congress/committee_rosters.py"),
 }
 
 #: A value a description names in backticks.  Prose that says a column carries

@@ -607,3 +607,42 @@ shows a region rules cannot place; forty CFR sections showed none.
 question, whether a dash-spelling disagreement between two publisher
 renditions counts as critical, and whether the model seam is ever wired are
 put to the maintainer at the end of [Reconstruction](reconstruction.md).
+## Enacted-law identity is the publisher's number folded onto public/private
+
+Adopted 2026-09-19 with the [A8 contracts](research/table-contracts-2026-09-19.md) (`schemas/law_tables.py`,
+`sources/uscode/classification.py`), documented in [Tables](tables.md) and
+[the classification tables](sources/uscode-classification.md).
+
+**One law has one key across three publishers' spellings.** The Congress.gov list route says `Public Law` /
+`Private Law`, the PLAW bulk folder says `publ` / `pvtl`, and the PLAW USLM `meta` says `public` / `private`;
+`laws` seals `law_type` to the USLM's spelling (`public`/`private`), keeps the list route's own string beside it
+in `publisher_law_type`, and derives the package id (`PLAW-119publ1`) by the bulk-file rule, so the list route,
+the bulk folder and the USLM file join without a crosswalk. The citation is taken only from a USLM `meta` whose
+own congress, kind and number match the row — a `meta` for another law refuses rather than annotating the
+nearest row — and a NULL citation is read through `uslm_outcome` (`captured` / `unavailable` / `not_requested`),
+never as absence: four of the 119th's 108 laws lagged in PLAW bulk on 2026-09-19.
+
+**`congress_bills.statutes_at_large_cite` stays NULL in the family build on purpose.** The family sees one
+BILLSTATUS document and its printings; the citation lives in a different package the laws rollup acquires once
+per law, so filling it inside the family would fetch every PLAW twice or make the family read another table's
+output, which the one-pass rule forbids. The host joins `laws` on `bill_id` at merge time.
+
+## Committee assignments come from the chamber files; the legislators JSON stays the crosswalk
+
+Adopted 2026-09-19 with the [A9 contracts](research/table-contracts-2026-09-19.md)
+(`schemas/roster_tables.py`, `sources/congress/committee_rosters.py`), documented in
+[Tables](tables.md) and [Committee rosters](sources/committee-rosters.md).
+
+**`committees` is keyed on the publisher's `systemCode`** — the identifier every bill, report and communication
+already refers to — with the detail record folded onto the same row only when its own `systemCode` matches.
+**`committee_assignments` is keyed `(congress, system_code, bioguide_id)`**: both chamber files state the
+bioguide on every seated member, so unlike `member_votes` there is no file-stated id to prefer over it, and the
+key's target is `members.bioguide_id`. The chamber files' own committee codes are kept beside the joined
+`system_code`, and the two join rules (House `II00`→`hsii00`, Senate `SPAG00`→`spag00`) are the legislative
+data map's measured edges, not a normalization the reader invented.
+
+**A row says where its Congress came from.** The House file states its Congress and session, and the reader
+refuses a file whose statement differs from the request; the Senate file states no Congress, so its rows carry
+the caller's Congress with `congress_basis = "caller"` — weaker provenance published, not hidden. The Senate
+file's LIS id is published as one seat fact; the LIS crosswalk itself remains the legislators JSON, still the
+only route to a former senator's LIS id, and nothing here duplicates it.

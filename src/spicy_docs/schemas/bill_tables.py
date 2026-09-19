@@ -84,8 +84,11 @@ CONGRESS_BILLS = table_contract(
         "public_law_number": "Public law number from the publisher's laws entry, when the measure was enacted.",
         "law_type": "The publisher's law type for the first laws entry (Public Law or Private Law).",
         "statutes_at_large_cite": (
-            "Preserved NULL: the Statutes at Large citation lives in the PLAW package's GovInfo MODS, "
-            "which this repository does not yet acquire, so the column is published empty rather than guessed."
+            "NULL here on purpose: the citation is published on laws.statutes_at_large_cite, read from the PLAW "
+            "USLM meta, and the host fills this column by joining laws on bill_id at merge time. The family "
+            "build sees one BILLSTATUS document and its printings; the PLAW is a different package the laws "
+            "rollup acquires once per law, so filling it here would fetch every PLAW twice or read another "
+            "table's output, which the one-pass rule forbids."
         ),
         "stage": "Interpreted legislative stage of the latest action any stage rule classified.",
         "stage_rule": "Which stage rule fired, or NULL when no rule fired and the default stood.",
@@ -297,7 +300,7 @@ def shape_bill(
         "version_count": text(len(status.text_versions)),
         "public_law_number": text(signing.public_law_number),
         "law_type": text(laws[0].type if laws else None),
-        # The PLAW package's MODS is not acquired here; see this column's description.
+        # Published on the laws table and joined at merge time; see this column's description.
         "statutes_at_large_cite": None,
         "stage": text(stage.stage),
         "stage_rule": text(stage.rule),

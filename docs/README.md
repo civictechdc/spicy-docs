@@ -33,6 +33,7 @@
 - [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule; `spicy-docs-list` walks any of them from the [command line](cli.md).
 - [Unified Agenda](sources/unified-agenda.md): one reginfo.gov edition file, proved from every record.
 - [U.S. Code](sources/uscode.md): OLRC release-point USLM titles, annual archives, the Popular Name Tool and Table III · [structure](sources/uscode-structure.md) · [references and source credits](sources/uscode-references.md).
+- [OLRC classification tables](sources/uscode-classification.md): the per-Congress table of which Code sections each new public law touched, proving the Congress and session its own caption states.
 - [Supreme Court](sources/supreme-court.md): slip-opinion term index and official opinion PDFs.
 - [CRS report files](sources/crs-files.md): report PDFs by the publisher's stated URL, beside the CRS listing.
 - [GAO report files](sources/gao-files.md): keyless report PDFs and online-report index behind product pages.
@@ -43,12 +44,13 @@
 - [Legislators crosswalk](sources/legislators.md): the community legislators JSON as the bioguide, LIS and FEC identifier crosswalk, pinned by capture.
 - [Appropriations press releases](sources/press-releases.md): the House and Senate Appropriations Committees' RSS feeds at their two live URLs, every channel and item field kept, identity proved from the channel body.
 - [Roll-call votes](sources/congress-votes.md): House Clerk and Senate LIS vote XML by locator, identity proved against the file, tallies and every member's vote with bioguide ids through the legislators crosswalk.
+- [Committee rosters](sources/committee-rosters.md): the Congress.gov committee route beside the House Clerk's and Senate's roster files, whose assignments are proved from each file's own Congress statement.
 - [Agency report blocks](sources/agency-report-blocks.md): the committee-report heading splitter over extracted page text and the two report-section aggregates, measured on real reports · [agency report readers](sources/agency-reports.md): native FOIA XML and Oversight.gov HTML for agency-report inputs.
 - [Bill versions](sources/congress-bill-versions.md): the sealed version-code vocabulary against the publisher's measured codes, format choice by rendition folder, and bill PDFs through the GovInfo body acquirer.
 - [Bill tree and section diff](sources/congress-bill-tree.md): the DeltaTrack engine as a pinned dependency behind the `bill-diff` extra, with thin adapters that gate bytes through this repo's XML entry, keep an inventory of dropped elements, and shape diff records with provenance.
 - [Interpretation](interpretation.md): shared judgment over publisher facts, rules in tables and findings that name the rule: bill stage, money bills, bill signals, vote, release and member matching, section classification and summaries.
 - [Reconstruction](reconstruction.md): deterministic structure from text renditions where retrieval has nothing structured to give -- evidence-linked nodes that name the rule that placed them, serialization to a pinned vocabulary with a source-map sidecar, five validation findings and an acceptance gate; the CFR benchmark measures it.
-- [Tables](tables.md): the twenty-two table contracts spicy-regs hosts, each with grain, identity, version column, supplier and per-column descriptions, and the one-pass bill-family build behind them.
+- [Tables](tables.md): the thirty-two table contracts spicy-regs hosts, each with grain, identity, version column, supplier and per-column descriptions, and the one-pass bill-family build behind them.
 - [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records · [preservation metadata (PREMIS)](sources/govinfo-premis.md): retained GovInfo PREMIS 2 XML and digest comparison.
 - [Captured public comments](sources/public-comments.md)
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.

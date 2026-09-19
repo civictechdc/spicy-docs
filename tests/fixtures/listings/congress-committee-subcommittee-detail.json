@@ -1,0 +1,87 @@
+{
+    "committee": {
+        "bills": {
+            "count": 5272,
+            "url": "https://api.congress.gov/v3/committee/house/hsju01/bills?format=json"
+        },
+        "committeeWebsiteUrl": "https://judiciary.house.gov/",
+        "communications": {
+            "count": 0,
+            "url": "https://api.congress.gov/v3/committee/house/hsju01/house-communication?format=json"
+        },
+        "history": [
+            {
+                "committeeTypeCode": "Subcommittee",
+                "libraryOfCongressName": "Immigration Integrity, Security, and Enforcement",
+                "locLinkedDataId": "no2023076391",
+                "officialName": "House Subcommittee on Immigration Integrity, Security, and Enforcement",
+                "startDate": "2023-01-03T17:00:00Z",
+                "updateDate": "2024-11-27T18:56:59Z"
+            },
+            {
+                "endDate": "2023-01-03T16:59:00Z",
+                "libraryOfCongressName": "Immigration and Citizenship",
+                "officialName": "Subcommittee on Immigration and Citizenship",
+                "startDate": "2019-01-03T05:00:00Z",
+                "updateDate": "2023-03-06T19:54:03Z"
+            },
+            {
+                "endDate": "2019-01-02T05:00:00Z",
+                "libraryOfCongressName": "Immigration and Border Security",
+                "startDate": "2013-01-03T05:00:00Z",
+                "updateDate": "2019-11-15T20:43:53Z"
+            },
+            {
+                "endDate": "2013-01-02T05:00:00Z",
+                "libraryOfCongressName": "Immigration Policy and Enforcement",
+                "startDate": "2011-01-03T05:00:00Z",
+                "updateDate": "2019-11-15T20:43:53Z"
+            },
+            {
+                "endDate": "2011-01-02T05:00:00Z",
+                "libraryOfCongressName": "Immigration, Citizenship, Refugees, Border Security, and International Law",
+                "startDate": "2007-01-03T05:00:00Z",
+                "updateDate": "2019-11-15T20:43:53Z"
+            },
+            {
+                "endDate": "2007-01-02T05:00:00Z",
+                "libraryOfCongressName": "Immigration, Border Security, and Claims",
+                "startDate": "2003-01-01T05:00:00Z",
+                "updateDate": "2019-11-15T20:43:53Z"
+            },
+            {
+                "endDate": "2002-12-31T05:00:00Z",
+                "libraryOfCongressName": "Immigration and Claims",
+                "startDate": "1995-01-01T05:00:00Z",
+                "updateDate": "2019-11-15T20:43:53Z"
+            },
+            {
+                "endDate": "1994-12-31T05:00:00Z",
+                "libraryOfCongressName": "International Law, Immigration, and Refugees",
+                "startDate": "1991-01-01T05:00:00Z",
+                "updateDate": "2019-11-15T20:43:53Z"
+            },
+            {
+                "endDate": "1990-12-31T05:00:00Z",
+                "libraryOfCongressName": "Immigration, Refugees, and International Law",
+                "startDate": "1981-01-01T05:00:00Z",
+                "updateDate": "2019-11-15T20:43:53Z"
+            }
+        ],
+        "isCurrent": true,
+        "parent": {
+            "name": "Judiciary Committee",
+            "systemCode": "hsju00",
+            "url": "https://api.congress.gov/v3/committee/house/hsju00?format=json"
+        },
+        "systemCode": "hsju01",
+        "type": "Subcommittee",
+        "updateDate": "2024-12-04T16:07:05Z"
+    },
+    "request": {
+        "chamber": "house",
+        "contentType": "application/json",
+        "format": "json",
+        "systemCode": "hsju01"
+    }
+}

@@ -1,6 +1,6 @@
 # OLRC U.S. Code fixtures
 
-Publisher files from `uscode.house.gov`, pinned on 2026-09-14 unless stated.
+Publisher files from `uscode.house.gov`, pinned on 2026-09-14 unless stated (the two classification fixtures on 2026-09-19).
 These U.S. government documents are public domain. Offline tests establish
 behavior for these shapes; they do not establish coverage or continuing live
 availability.
@@ -15,6 +15,8 @@ availability.
 | `table3-111_226-head.htm` | reduced: [`111_226.htm`](https://uscode.house.gov/table3/111_226.htm) (53,528 bytes, 32 rows) through its first 4 rows, closed | 6,199 | `943c62a36a58f7f0a94da6276ba073e44cd3af439656be32abbaa9143740a301` |
 | `table3-100_234-truncated.htm` | complete: the publisher's whole answer for [`100_234.htm`](https://uscode.house.gov/table3/100_234.htm), an act Table III does not hold | 15,881 | `dc126dffdbde367d40149b96e5da70ca0d71dd9a3c95535d1d25a095ee66912e` |
 | `table3-fulldump-head.xml` | reduced: the first 3 `<act>` elements of `fulldump@119-73.xml` (126,260,704 bytes) inside [`table3-xml-bulk.zip`](https://uscode.house.gov/table3/table3-xml-bulk.zip) | 4,948 | `158d910a5d76fd9cf954a382061e600ff3121af9651a41d3f4b983a33a9d1c1a` |
+| `classification-tables-index.shtml` | reduced: [`classification/tables.shtml`](https://uscode.house.gov/classification/tables.shtml) (39,140 bytes) minus its 27 KB navigation menu, everything else kept | 13,285 | `6a4fbfe2c5834745dfbaabd4418549e25bf3dca3b2ac25a63e3e7fc241cfcba0` |
+| `classification-tbl119pl_2nd-head.htm` | reduced: [`classification/tbl119pl_2nd.htm`](https://uscode.house.gov/classification/tbl119pl_2nd.htm) (115,140 bytes, 583 rows) through its column header plus 9 of the 583 data lines, closed | 13,941 | `e764ef99a725a3efaa00448b70fa3f03d1f7ad439e1f231b03a3d1725c4d30c8` |
 
 ## Reductions, stated exactly
 
@@ -30,6 +32,11 @@ appended; no byte inside a kept region was rewritten except as noted here.
   fixtures drop the 27 KB navigation menu every page on the site repeats,
   between `<div id="menu">` and the page's own content div, replaced by
   `<!-- site menu removed -->`. Nothing the readers look at lives there.
+- **The classification table head keeps nine of 583 data lines**: the first six in page order, plus three
+  chosen from deeper in the same block and copied verbatim -- a row whose act section quotes a new section
+  (`113(a) "[12]"`), a row printing a page span (`637, 638`) with no statviewer link, and a bare-`nt` row.
+  The menu and session-id reductions are the ones above. The full page and its code-order twin are in the
+  receipt; the two orders were parsed there to the same 583-row multiset.
 - The truncated Table III fixture is **not** reduced beyond the session id: its
   point is that the publisher's answer stops mid-menu, and shortening it would
   remove the evidence.

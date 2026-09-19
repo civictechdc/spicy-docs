@@ -321,3 +321,21 @@ and 17 details, retained as a receipt rather than as fixtures, in
 `corpora/supply-2026-09-02/receipts/house-communications-rin-2026-09-19/`;
 the 18th sampled detail is the sixth round's `congress-house-communication-detail.json`,
 reused after its digest was checked against the row above).
+
+Eighth round, captured 2026-09-19 for the A8/A9 contracts (the laws rollup and
+the committee rosters). The subcommittee detail is one keyed request saved
+whole; the two single-record cuts are byte-exact records copied out of that
+day's retained capture pages, so no extra request was spent on them. None of
+the three carries the key.
+
+| Fixture | Request | Bytes | SHA-256 | Transformation |
+| --- | --- | --- | --- | --- |
+| `congress-committee-subcommittee-detail.json` | GET https://api.congress.gov/v3/committee/house/hsju01 | 3,599 | `4ed1a7f2614a9311a583f4717512923c7d65ab8ff2eef9e70ac33061e189d0c2` | Complete, unchanged response; the Immigration Integrity, Security, and Enforcement subcommittee, with its `parent` and `history` -- the fields the `committees` fold reads. |
+| `congress-law-119-1.json` | (cut, no request) | 433 | `93af96bb6703463bce0f4aeed1013e8621f1a8b127ac1d71e09522634399f377` | One record copied verbatim from the 108-record first page of `law/119`; Public Law 119-1 (S. 5), the same law the retained `plaw-119publ1.xml` USLM fixture states, so the citation join is exercised against two captures of one law. |
+| `congress-committee-hsju00-list-row.json` | (cut, no request) | 1,556 | `332487c27d2e7142711237552b779d17fcb69243e0a2c5cdd04e3afc302b44fd` | One record copied verbatim from the 236-row first page of `committee/119`; the House Judiciary list row the `congress-committee-detail.json` detail folds onto. |
+
+The cut fixtures' source pages are `law-119-p0.json` and
+`committee-119-p0.json` in
+`corpora/supply-2026-09-02/receipts/laws-contract-2026-09-19/` and
+`.../roster-comparison-2026-09-19/`; the cutting script is `cut_fixtures.py`
+beside them.
