@@ -82,14 +82,6 @@ def test_a_single_object_under_the_records_key_reads_as_one_record_page():
     assert result.declared_count is None and result.next_url is None
 
 
-def test_an_empty_object_under_the_records_key_reads_as_one_empty_record():
-    body = b'{"things": {}, "paging": {"count": 1}}'
-    transport = Transport(response(body))
-    with reader(transport) as source:
-        (result,) = list(source.pages(URL, records_key="things"))
-    assert result.records == ({},) and result.declared_count == 1
-
-
 @pytest.mark.parametrize(
     "responses,message",
     [
@@ -108,6 +100,9 @@ def test_an_empty_object_under_the_records_key_reads_as_one_empty_record():
             "HTTPS api.example.gov",
         ),
         ((response(page([{"id": 1}], count=2, next_url="https://api.example.gov/v1/things?api_key=x")),), "credential"),
+        # An empty object still refuses -- empty success is not absence, and a detail route
+        # answering {} carries no record to read (unlike the non-empty-object case above).
+        ((response(b'{"things": {}, "paging": {"count": 1}}'),), "omitted its things list"),
         ((response(b'{"things": [1], "paging": {"count": 1}}'),), "omitted its things list"),
         ((response(b'{"things": "nope", "paging": {"count": 1}}'),), "omitted its things list"),
         ((response(b'{"things": [], "paging": {"count": -1}}'),), "declared count is invalid"),
@@ -465,3 +460,24 @@ def test_tuple_records_key_miss_refuses_with_a_dotted_label():
         pytest.raises(PagedJsonSourceError, match="omitted its wrapper.things list"),
     ):
         source.page(URL, records_key=("wrapper", "things"))
+
+
+def test_a_records_key_naming_one_object_reads_as_a_single_record_page():
+    """A detail route answers one JSON object at records_key, not an array -- Congress.gov's
+    law/{congress}/{law_type}/{number} answers {"bill": {...}}. The object is the whole record;
+    it reads as a one-record page rather than being shaped down to a chosen field."""
+    body = json.dumps({"thing": {"id": 1, "nested": {"more": True}}}).encode()
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        result = source.page(URL, records_key="thing")
+    assert result.records == ({"id": 1, "nested": {"more": True}},)
+    assert result.declared_count is None
+    assert result.next_url is None
+
+
+def test_a_tuple_records_key_naming_one_object_also_reads_as_a_single_record_page():
+    body = json.dumps({"wrapper": {"thing": {"id": 1}}}).encode()
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        result = source.page(URL, records_key=("wrapper", "thing"))
+    assert result.records == ({"id": 1},)

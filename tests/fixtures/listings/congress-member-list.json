@@ -1,0 +1,74 @@
+{
+    "members": [
+        {
+            "bioguideId": "W000832",
+            "depiction": {
+                "attribution": "Image courtesy of the Member",
+                "imageUrl": "https://www.congress.gov/img/member/6a986b632a68122e10181e6b_200.jpg"
+            },
+            "district": 14,
+            "name": "Wahab, Aisha",
+            "partyName": "Democratic",
+            "state": "California",
+            "terms": {
+                "item": [
+                    {
+                        "chamber": "House of Representatives",
+                        "startYear": 2026
+                    }
+                ]
+            },
+            "updateDate": "2026-09-19T07:40:27Z",
+            "url": "https://api.congress.gov/v3/member/W000832?format=json"
+        },
+        {
+            "bioguideId": "B001328",
+            "depiction": {
+                "attribution": "Image courtesy of the Member",
+                "imageUrl": "https://www.congress.gov/img/member/6a9869d92a68122e10181e62_200.jpg"
+            },
+            "district": 13,
+            "name": "Blair, Everton",
+            "partyName": "Democratic",
+            "state": "Georgia",
+            "terms": {
+                "item": [
+                    {
+                        "chamber": "House of Representatives",
+                        "startYear": 2026
+                    }
+                ]
+            },
+            "updateDate": "2026-09-19T07:40:27Z",
+            "url": "https://api.congress.gov/v3/member/B001328?format=json"
+        },
+        {
+            "bioguideId": "G000607",
+            "depiction": {
+                "imageUrl": "https://www.congress.gov/img/member/6a29d4f81c6ce0de6fbae1f7_200.jpg"
+            },
+            "district": 1,
+            "name": "Gallagher, James",
+            "partyName": "Republican",
+            "state": "California",
+            "terms": {
+                "item": [
+                    {
+                        "chamber": "House of Representatives",
+                        "startYear": 2026
+                    }
+                ]
+            },
+            "updateDate": "2026-09-19T07:40:27Z",
+            "url": "https://api.congress.gov/v3/member/G000607?format=json"
+        }
+    ],
+    "pagination": {
+        "count": 2696,
+        "next": "https://api.congress.gov/v3/member?offset=3&limit=3&format=json"
+    },
+    "request": {
+        "contentType": "application/json",
+        "format": "json"
+    }
+}

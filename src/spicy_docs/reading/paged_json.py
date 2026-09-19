@@ -19,9 +19,11 @@ absence.
 a publisher nests inside a wrapper object alongside its own count and url,
 the way Congress.gov's ``committee/{chamber}/{code}/bills`` does. A detail
 route -- one record identified by its full path, not a list -- answers with
-either a single object or a one-element array under its key; both read as a
-one-row page with no declared count and no continuation, the same
-``records()``/``page()`` walk a list route uses.
+either a single, non-empty JSON object or a one-element array under its key;
+both read as a one-row page with no declared count and no continuation, the
+same ``records()``/``page()`` walk a list route uses, rather than being
+shaped down to one field. An *empty* object still refuses: empty success is
+not absence, and a detail route answering ``{}`` carries no record to read.
 """
 
 from __future__ import annotations
@@ -194,7 +196,11 @@ class JsonPage:
     ``records_key`` is a top-level key for most publishers; a tuple reaches
     rows a publisher nests inside a wrapper object, the way Congress.gov's
     ``committee/{chamber}/{code}/bills`` route nests its ``bills`` array
-    under a ``committee-bills`` object rather than at the top level.
+    under a ``committee-bills`` object rather than at the top level. A detail
+    route answers one record as an object rather than an array at
+    ``records_key`` -- Congress.gov's ``law/{congress}/{law_type}/{number}``
+    answers ``{"bill": {...}}``, not ``{"bill": [...]}`` -- and reads as a
+    single-record page rather than shaping that object down to one field.
     """
 
     page_index: int
@@ -343,13 +349,17 @@ class PagedJsonReader(SourceAcquirer):
         if not isinstance(value, Mapping):
             raise PagedJsonSourceError(f"{self.family.label} list response is not a JSON object")
         rows = _lookup(value, records_key) if isinstance(records_key, tuple) else value.get(records_key)
-        if isinstance(rows, Mapping):
-            # A detail route answers one record, not a list -- Congress.gov's house-communication,
-            # daily-congressional-record and house-requirement detail routes all nest a single object
-            # under their records key rather than an array (measured 2026-09-19; its sibling treaty
-            # detail route nests a one-element array instead, which the list branch below already
+        if isinstance(rows, Mapping) and rows:
+            # A detail route answers one record, not a list -- Congress.gov's law, committee,
+            # member, house-communication, daily-congressional-record, senate-communication and
+            # house-requirement detail routes all nest a single, non-empty object under their
+            # records key rather than an array (measured 2026-09-19; its sibling treaty detail
+            # route nests a one-element array instead, which the list branch below already
             # reads). Reading it as a one-row page keeps every field reachable through the same
-            # records()/page() walk a list route uses, with no continuation and no declared count.
+            # records()/page() walk a list route uses, with no continuation and no declared
+            # count, rather than being shaped down to one field. An *empty* object stays a
+            # refusal, unchanged from before this route shape existed: empty success is not
+            # absence, and a detail route answering ``{}`` carries no record to read.
             rows = [rows]
         if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
             raise PagedJsonSourceError(f"{self.family.label} list response omitted its {_key_label(records_key)} list")

@@ -1,0 +1,34 @@
+{
+    "committeePrints": [
+        {
+            "chamber": "House",
+            "congress": 119,
+            "jacketNumber": 63747,
+            "updateDate": "2026-09-19T15:43:23Z",
+            "url": "https://api.congress.gov/v3/committee-print/119/house/63747?format=json"
+        },
+        {
+            "chamber": "House",
+            "congress": 119,
+            "jacketNumber": 63305,
+            "updateDate": "2026-09-15T11:13:26Z",
+            "url": "https://api.congress.gov/v3/committee-print/119/house/63305?format=json"
+        },
+        {
+            "chamber": "House",
+            "congress": 119,
+            "jacketNumber": 63812,
+            "updateDate": "2026-09-12T05:58:19Z",
+            "url": "https://api.congress.gov/v3/committee-print/119/house/63812?format=json"
+        }
+    ],
+    "pagination": {
+        "count": 79,
+        "next": "https://api.congress.gov/v3/committee-print/119?offset=3&limit=3&format=json"
+    },
+    "request": {
+        "congress": "119",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}

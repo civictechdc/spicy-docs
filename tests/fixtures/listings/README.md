@@ -107,7 +107,67 @@ measured `sort ignored` in the legislative data map) until the direct probe
 above replaced the inference with a measurement of the exact route this
 package uses.
 
-Fifth round, captured 2026-09-19 for the A5, A6, A7 and A10 list and detail
+Fifth round, captured 2026-09-19 for the A8/A9/A10 gaps (laws, committees,
+members and committee prints; api.data.gov key as `X-Api-Key`, `limit=3`
+where the route accepts one). Each response was checked byte-for-byte against
+the key with `scrub_credential`, and for `api_key=`, before it was written;
+none of the nine carried either.
+
+| Fixture | Request | Bytes | SHA-256 | Transformation |
+| --- | --- | --- | --- | --- |
+| `congress-law-list.json` | GET https://api.congress.gov/v3/law/119 | 2,411 | `66f548d8a9a9bed4dcf3787e94837d846c8c507fc2a91d32230df580a49085c6` | Complete, unchanged response; 3 of a declared 108. |
+| `congress-law-detail.json` | GET https://api.congress.gov/v3/law/119/pub/21 | 6,800 | `2486f61e5e1ffb33dbfa98a61e36e0f615a134d2f596d90d3397f6520b97ee31` | Complete, unchanged response; Public Law 119-21 (H.R. 1), the same law the legislative data map's `bill→law` edge names. |
+| `congress-committee-list.json` | GET https://api.congress.gov/v3/committee/119 | 1,222 | `7b491b8a77905ca3afeb545258a118dea3e885c5207b099bc4b4e122c4bcebf0` | Complete, unchanged response; 3 of a declared 238. |
+| `congress-committee-detail.json` | GET https://api.congress.gov/v3/committee/house/hsju00 | 4,978 | `90b7b4a9990812daa30ae378a54728999a8b553281920409d3ae013ba8436c30` | Complete, unchanged response; the House Judiciary Committee, with 15 subcommittees and its `history`. |
+| `congress-member-list.json` | GET https://api.congress.gov/v3/member | 2,459 | `6425ba278c28fbe8a57aa9e15ce5c1e5bf75344d9adb915431f429bbfb079f8a` | Complete, unchanged response; 3 of a declared 2,696. |
+| `congress-member-congress-list.json` | GET https://api.congress.gov/v3/member/congress/119 | 2,471 | `b89d36bb9fd738eac8059fe7616306553ea0cb97dbad4989cfd79270dee914b0` | Complete, unchanged response; 3 of a declared 555 -- the same 555 the legislative data map's `member/congress` comparison used. |
+| `congress-member-detail.json` | GET https://api.congress.gov/v3/member/W000832 | 2,030 | `8be00e28e4e2cb5772157985ccea385fffc563ab79c7e5c3a0f80703c5e5bc6b` | Complete, unchanged response; Rep. Aisha Wahab, with `terms` and `partyHistory`. |
+| `congress-committee-print-list.json` | GET https://api.congress.gov/v3/committee-print/119 | 1,075 | `7e2b9650f80cbdd29742799d3f1e5aa416c28fa79665d0c51045601ffd8c77ec` | Complete, unchanged response; 3 of a declared 79. |
+| `congress-committee-print-detail.json` | GET https://api.congress.gov/v3/committee-print/119/house/63747 | 1,022 | `f068c453db1a1380cab247d91909bc69dec3e7ce02061c357afff279bd0648a5` | Complete, unchanged response; jacket 63747, one item, declared count 1. |
+
+`congress-law-detail.json`, `congress-committee-detail.json` and
+`congress-member-detail.json` contradict the flat-array shape every other
+fixture here answers: each nests its one record as a JSON *object* at its
+records key (`{"bill": {...}}`, `{"committee": {...}}`, `{"member": {...}}`),
+not an array, and carries no `pagination` object at all.
+`reading/paged_json.py`'s `PagedJsonReader._read_page` now reads a non-empty
+object at `records_key` as the page's one record, the way it already reads a
+tuple `records_key` into a nested array -- an empty object still refuses,
+unchanged from before this shape existed. `congress-committee-print-detail.json`
+needed no such change: the publisher answers
+`committee-print/{congress}/{chamber}/{jacketNumber}` with a real one-item
+array under `committeePrint` (singular; the list route's key is the plural
+`committeePrints`) and a `pagination.count` of 1.
+
+`law`'s records key is `bills` -- the same spelling `bill` uses, confirmed
+live 2026-09-19 against `law/119`; `LIST_ROUTES["law"]` reuses `BILLS_KEY`
+rather than a second identical constant.
+
+Sort and window support for `law`, `committee`, `member` and `committee-print`
+are carried from the legislative data map's Table A
+(`docs/research/legislative-data-map-2026-09-18.md`), the same way
+`nomination`, `hearing`, `committee-report` and `house-communication` above
+carry theirs: each is the exact route Table A measured (`law/{c}` sort
+ignored, `member` sort ignored, `committee-print` sort ignored, `committee`
+reorders -- already named in this module's docstring alongside `bill`,
+`amendment`, `summaries` and `committee-report`), not a sibling URL standing
+in for it. `member`'s `member/congress/{congress}` shape is a different URL
+than Table A's bare `member` row, so it got the same direct probe
+`house-vote` did rather than inheriting the bare row's measurement:
+
+| Route | Asked | Came back | Date |
+| --- | --- | --- | --- |
+| `member-congress` | `GET member/congress/119?limit=1&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (bioguideId `W000832`, `updateDate` 2026-09-19T07:40:27Z) -- sort ignored | 2026-09-19 |
+
+Every list route in this round keeps `window_honored`'s carried-forward
+default (`True`); none was given the direct `fromDateTime` probe
+`committee-bills`/`bill-actions` got. The four detail routes (`law-detail`,
+`committee-detail`, `member-detail`, `committee-print-detail`) carry
+`sort_honored=False` and `window_honored=False` on structural grounds, not a
+probe: each answers one record, and there is no list to reorder or window
+against.
+
+Sixth round, captured 2026-09-19 for the A5, A6, A7 and A10 list and detail
 routes (`docs/research/closing-the-gaps-2026-09-19.md`; api.data.gov key as
 `X-Api-Key`, list pages at `limit=3` except where the query itself narrows
 to fewer rows). Each response's `request` echo block was checked
