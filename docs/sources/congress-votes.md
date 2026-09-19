@@ -35,8 +35,13 @@ roster no longer lists.
 
 | Publisher | Grammar | Example |
 | --- | --- | --- |
-| House Clerk | `clerk.house.gov/evs/{year}/roll{roll_number}.xml` | `https://clerk.house.gov/evs/2025/roll240.xml` |
-| Senate LIS | `senate.gov/legislative/LIS/roll_call_votes/vote{congress}{session}/vote_{congress}_{session}_{roll_number:05d}.xml` | `https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00001.xml` |
+| House Clerk | `clerk.house.gov/evs/{year}/roll{roll_number:03d}.xml` | `https://clerk.house.gov/evs/2025/roll240.xml`, `https://clerk.house.gov/evs/2025/roll050.xml` |
+| Senate LIS | `senate.gov/legislative/LIS/roll_call_votes/vote{congress:03d}{session}/vote_{congress:03d}_{session}_{roll_number:05d}.xml` | `https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00001.xml` |
+
+The roll number is zero-padded to three digits (`roll050.xml`, `roll096.xml`
+-- measured in `billtrax-raw-data-2026-09-19.json`'s real `recordedVotes`
+urls, `evs/2025/roll050.xml` among them); a roll past 999 still prints in
+full, since `:03d` is a minimum width, not a truncation.
 
 The Senate's URL states congress, session and the roll number directly (both
 in the folder and the filename; `locator_from_recorded_vote_url` refuses a
@@ -45,10 +50,20 @@ the roll number -- no congress or session -- so `VoteLocator`'s Clerk URL
 builder and its reverse parser both go through one fixed rule: session 1 of
 Congress *N* convenes January 3 of the odd calendar year `1789 + 2*(N-1)`;
 session 2 falls in the following (even) year. The 20th Amendment fixed this
-from the 73rd Congress (1935) onward, and the Clerk's EVS archive begins in
+from the 74th Congress (1935) onward, and the Clerk's EVS archive begins in
 1990 (101st Congress, per the data map), well inside that range, so the rule
 is exact everywhere this source reaches; `clerk_url`/`locator_from_recorded_vote_url`
 refuse a congress before the 74th rather than guess at an irregular session.
+
+The Senate congress is also zero-padded to three digits, matching
+`SENATE_URL_RE`. Every real congress this route can serve already is three
+digits: measured 2026-09-19, `senate.gov/.../vote_menu_101_1.xml` serves a
+real 149,123-byte listing while `vote_menu_100_1.xml` and `vote_menu_099_1.xml`
+each redirect to `roll-call-vote-not-available.htm`, so the Senate LIS
+archive's floor is the 101st Congress -- the same floor the Clerk's EVS
+archive measures. `senate_url`/`locator_from_recorded_vote_url` refuse a
+congress below 101 rather than build or accept an unmeasured two-digit-congress
+url.
 
 `VoteLocator(chamber, congress, session, roll_number).url()` dispatches to
 the right grammar; `locator_from_recorded_vote_url(url)` parses either one
@@ -82,10 +97,8 @@ totals blocks, and every `recorded-vote`:
 | legislator element text | display name | `MemberVote.name` |
 | `recorded-vote/vote` | spelled vote | `MemberVote.vote` (raw), `.vote_normalized` (see below) |
 
-**Senate LIS** (`parse_senate_vote`) -- every top-level field except
-`document`/`amendment` (bill and nomination linkage; that is
-`vote_matching`'s job, not this reader's -- see the data map's
-`senate-vote→document` edge), `count`, `tie_breaker`, and every `member`:
+**Senate LIS** (`parse_senate_vote`) -- every top-level field, `count`,
+`tie_breaker`, `document`, `amendment`, and every `member`:
 
 | Field | Source element | Kept as |
 | --- | --- | --- |
@@ -102,10 +115,18 @@ totals blocks, and every `recorded-vote`:
 | `vote_result` | top-level | `RollCallVote.result` |
 | `count/{yeas,nays,present,absent}` | | `RollCallVote.tallies`, the publisher's own count names; a blank count (`<present/>`) is `0` |
 | `tie_breaker/{by_whom,tie_breaker_vote}` | | `RollCallVote.tie_breaker: TieBreaker`, both `None` when the vote was not tied |
+| `document/document_congress`, `document_type`, `document_number`, `document_name`, `document_title`, `document_short_title` | | `RollCallVote.document: VoteDocument`, `None` when the file carries no `<document>` at all |
+| `amendment/amendment_number`, `amendment_purpose`, `amendment_to_amendment_number`, `amendment_to_amendment_to_amendment_number`, `amendment_to_document_number`, `amendment_to_document_short_title` | | `RollCallVote.amendment: VoteAmendment`, every field `None` when the vote carried no amendment (the pinned fixture's own case) |
 | `member/member_full`, `last_name`, `first_name` | | `MemberVote.member_full` (also mirrored onto the shared `.name`), `.last_name`, `.first_name` |
 | `member/party`, `state` | | `MemberVote.party`, `.state` |
 | `member/vote_cast` | spelled vote | `MemberVote.vote` (raw), `.vote_normalized` |
 | `member/lis_member_id` | | `MemberVote.lis_id`, and `.bioguide_id` when a crosswalk resolves it |
+
+`document`/`amendment` are kept verbatim as the publisher's own statement of
+what the vote was on; matching either to a Congress.gov bill or nomination
+record is `vote_matching`'s job (the data map's `senate-vote→document`
+edge), not this reader's -- the Clerk's own bill linkage stays on
+`legis_num`, unchanged.
 
 `RollCallVote.chamber` is always the normalized `"house"`/`"senate"`; a
 Clerk-only field is `None`/`()` on a Senate record and vice versa.
@@ -139,7 +160,7 @@ committee's feed rather than a byte-identical default channel.
 | `VoteUnavailableError` | HTTP 404 or 410 |
 | `VoteRefusedError` | HTTP 401/403 on either keyless host -- no credential exists to reject, so this is recast from `CredentialRefusedError` the way `LegislatorsRefusedError` and `PressReleaseFeedRefusedError` already are |
 | `VoteIdentityError` | The fetched file's own congress/session/roll number does not match the locator |
-| `VoteSourceError` | Any other shape violation (wrong root element, a missing required field, an unrecognized vote value, a non-integer count) |
+| `VoteSourceError` | Any other shape violation (wrong root element, a missing required field, an unrecognized vote value, a non-integer count, or a well-formed file with zero `recorded-vote`/`member` rows -- empty success is not absence) |
 
 Every refusal from `VoteAcquirer.acquire` carries the fetched bytes: `.capture`
 (when a body was received) and `.refused_response` (bounded evidence,
