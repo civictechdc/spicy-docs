@@ -17,9 +17,10 @@ over a space-joined keyword string, then ``LIMIT ?`` with no ``ORDER BY`` at
 all. Outside MySQL that operator does not exist, so what a row matching in
 boolean mode *means* has to be encoded rather than called: a row matches when
 it contains any keyword token that survived the engine's own index. Every
-``docker-compose*.yml`` in BillTrax pins ``mysql:8.4``
-(``docker-compose.yml.example``, ``docker-compose.prod.yml``,
-``docker-compose.staging.yml``) and none of them, nor ``mysql-init.sql``, sets
+``docker-compose*.yml`` in BillTrax that defines a ``mysql`` service pins
+``mysql:8.4`` (``docker-compose.yml.example``, ``docker-compose.prod.yml``,
+``docker-compose.staging.yml``; ``docker-compose.test.yml`` defines no
+``mysql`` service) and none of them, nor ``mysql-init.sql``, sets
 ``innodb_ft_min_token_size``, ``innodb_ft_max_token_size`` or a stopword-table
 override, and ``bill_sections``/``report_sections`` take their FULLTEXT index
 on InnoDB's default engine (``migrations/007_fulltext_indexes.ts``) -- so the
@@ -42,17 +43,21 @@ Reference Manual:
   matched row's relevance is the sum of its matched terms' weights, but --
   the manual states this plainly -- "boolean full-text searches do not
   automatically sort rows in order of decreasing relevance," and BillTrax's
-  own query carries no ``ORDER BY``. So the order 40,260 rows actually came
-  back in was never the engine's relevance ranking; it was whatever InnoDB's
-  query plan happened to produce, which the application never controlled and
-  this module cannot recover. What ``find_matching_sections`` encodes instead
-  is the *documented formula*, applied as an explicit, deterministic
-  ordering this module chooses to keep rather than an ordering BillTrax
-  itself ever guaranteed: relevance is the count of distinct matched
-  keywords (each surviving keyword weighs 1, since true term weighting needs
-  a corpus-wide document frequency this pure, per-call function is not
-  handed), and a section's position in the input sequence breaks ties, so
-  the same input always orders the same way.
+  own query carries no ``ORDER BY``. Boolean mode does not sort by relevance
+  and the query never asked it to, so BillTrax's rows arrived in storage
+  order, not the engine's relevance ranking -- an order the application never
+  controlled and this module cannot recover. This module's relevance
+  ordering is therefore an *adopted rule*, not a reproduction of an order
+  BillTrax's rows ever actually carried: what ``find_matching_sections``
+  encodes is the manual's *documented formula* for relevance, applied as an
+  explicit, deterministic ordering this module chooses to keep. Relevance is
+  the count of distinct matched keywords (each surviving keyword weighs 1,
+  since true term weighting needs a corpus-wide document frequency this
+  pure, per-call function is not handed), and a section's position in the
+  input sequence breaks ties, so the same input always orders the same way.
+  No live comparison of BillTrax's actual result order against this
+  module's has been run; it is still owed
+  (``docs/research/billtrax-value-inventory-2026-09-19.md`` §7 Q5).
 
 The limit is applied twice, per area and again over the whole result, because
 that is what the original did and the two bounds are not the same bound.
@@ -179,8 +184,10 @@ def find_matching_sections(
     an area's matches by relevance needs every one of them evaluated before
     any can be discarded, so, unlike the unfiltered version, a section already
     past the per-area limit is not skipped early; the extra cost is one sort
-    of at most ``len(sections)`` matches per area, O(sections log sections),
-    which does not change the dominant O(areas x sections) term.
+    per area of at most ``len(sections)`` matches, O(sections log sections),
+    which adds a log(sections) factor onto the O(areas x sections) term
+    rather than leaving it unchanged: the per-area sort makes the total cost
+    O(areas x sections log sections).
 
     Within one area, a match's ``relevance`` is the count of distinct matched
     keywords (see the module docstring for the formula this stands in for),

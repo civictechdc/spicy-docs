@@ -349,7 +349,11 @@ def signed_date(status: object) -> SignedDateFinding:
     absent action is not a promise no future one will lack the code, and
     because "measured zero" is a fact about the 118th's ``hr``/``s`` sample,
     not about every bill type or every Congress -- ``hjres`` and ``sjres`` (a
-    joint resolution can become law) were not walked here.
+    joint resolution can become law) were not walked here. Re-measured
+    2026-09-19 against a fresh keyless download of both zips with the same
+    counts; the script, command, the two zips' sha256 digests and the full
+    output are retained outside this repository at
+    ``~/Work/corpora/supply-2026-09-02/receipts/signed-date-fallback-118th-2026-09-19/``.
     """
     number = _public_law_number(_field(status, "laws"))
     if number is None:
