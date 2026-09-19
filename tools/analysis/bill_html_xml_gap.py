@@ -517,9 +517,15 @@ def _is_toc_banner(lines: Sequence[str], index: int) -> bool:
     """
     seen = 0
     # Indexed, not sliced: ``lines[index + 1:]`` copies the tail of the
-    # document at every banner, which makes the scan O(S*L) in the number of
-    # headings and lines. Measured on a doubling series, per-line cost
-    # quadrupled over an 8x document; indexing holds it flat.
+    # document at every banner, making the scan O(S*L) for S headings and L
+    # lines. Measured both ways over a doubling series and over all 70
+    # measured documents (receipt: ``scan_html_scaling.py`` and its output,
+    # beside this measurement's other receipts): identical output, and over a
+    # 64x growth in line count the sliced form's per-line cost rose 12.1x
+    # while the indexed form's stayed flat at 1.0x. At real document sizes the
+    # difference is small -- the largest body measured is 37,319 lines, where
+    # sliced costs 0.62 us/line against indexed 0.52 -- so this is about the
+    # curve, not about today's corpus being slow.
     for probe in range(index + 1, len(lines)):
         line = lines[probe]
         if not line.strip() or TITLE.match(line) or DIVISION.match(line):

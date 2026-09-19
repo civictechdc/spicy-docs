@@ -554,16 +554,32 @@ def test_a_refusal_is_scrubbed_before_it_is_truncated() -> None:
 
 
 def test_a_refusal_scrubs_a_key_the_pattern_alone_would_miss() -> None:
-    """The literal pass: a key echoed outside an `api_key=` query still has to go.
+    """The literal pass: the configured key echoed outside an `api_key=` query still has to go.
 
-    Mutation check for the two passes: with only the pattern pass this message
-    keeps the key, and with only the literal pass the first case above keeps a
-    differently-spelled one. Both cases must fail if either pass is removed.
+    Only the literal pass can catch this one, because there is no `api_key=`
+    for the pattern to anchor on.
     """
     key = "z" * 40
     row = _refusal("BILLS-113hr1ih", ValueError(f"upstream echoed X-Api-Key {key} in its body"), key)
     assert key not in row["reason"]
     assert "<redacted>" in row["reason"]
+
+
+def test_a_refusal_scrubs_a_key_it_was_not_handed() -> None:
+    """The pattern pass, which the literal pass cannot cover.
+
+    Written because mutation said it was needed: every other credential case
+    here passes the configured key as the literal, so deleting the pattern pass
+    left all of them green and the claim that both passes earn their place was
+    unbacked. A refusal can carry a credential this run was never told about --
+    a redirect to another keyed host, or a nested URL quoted inside a publisher
+    message -- and that is the half only the pattern sees.
+    """
+    other = "SOME-OTHER-SECRET"
+    error = ValueError(f"redirected to https://other.example/v3/x?api_key={other}&format=json")
+    row = _refusal("BILLS-113hr1ih", error, "the-configured-key")
+    assert other not in row["reason"]
+    assert "api_key=<redacted>" in row["reason"]
 
 
 def test_a_long_refusal_is_scrubbed_before_it_is_truncated_not_after() -> None:
