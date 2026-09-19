@@ -427,6 +427,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "bill-actions": False,
         "nomination": False,
         "hearing": False,
+        "hearing-detail": True,
         "committee-report": False,
         "house-communication": False,
         "house-vote": False,
