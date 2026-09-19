@@ -374,6 +374,225 @@ matching one of 12 department/office/agency patterns, or any all-caps line of
 two or more words) or with prose word counts, so they were left as noise
 rather than given a rule with a sample size of one.
 
+## Corpus validation
+
+Gap B6 (`docs/research/closing-the-gaps-2026-09-19.md`): the four fixtures
+above and the synthetic below-floor cases establish this normalizer's rules,
+not its coverage across GPO's own real variety of bill print stages,
+Congresses and document families. This section pins a wider run: 42
+documents run through `extraction.body_text`'s PDF branch (PyMuPDF, then
+`normalize_gpo_pages`) — 36 GPO bill PDFs, 5 committee reports, 1
+Congressional Record issue — the way upstream DeltaTrack validated its own
+50-line floor on 60.
+
+**Corpus.** 36 bills spanning every print stage the task named (`ih`, `is`,
+`rh`, `rs`, `eh`, `es`, `enr`, `rfs`, `pcs`, `ats`) plus six more the sealed
+vocabulary in `sources/congress/bill_versions.py` names as measured in the
+119th BILLS census (`rds`, `cps`, `eas`, `eah`, `rfh`, `rhuc`) — 30 from the
+119th Congress, 6 from the 113th; 5 committee reports — 4 House (3 from the
+119th, 1 from the 113th), 1 Senate (113th; `CRPT-113srpt77`, whose `srpt`
+code maps to `senate` in `committee_report_tables.py`); 1 Congressional
+Record issue (`CREC-2026-09-18`). Three bill entries and one report reuse
+the page text already captured in `tests/fixtures/gpo_pdf_text/*.json`
+rather than re-fetching it (marked `reused_fixture` in the pinned JSON
+below); every other row is this run's own live capture.
+
+Forty bills, not the full forty the task named, is a request-budget
+consequence stated up front rather than padded past: CRPT/CREC each cost
+three requests (`GovInfoBodyAcquirer.acquire`'s summary, MODS and body, keyed
+via `read_api_key(Path(".env"), "API_GOV")`, header-only), so five reports
+and one Record issue already spend 18 of the stated 50-request bound; one
+keyless bulk-listing request (`bulkdata/json/BILLS/113/1/hr`) found real
+113th package ids at no further discovery cost, and every 119th bill id was
+already known from `docs/research/billtrax-raw-data-2026-09-19.md`'s own
+measured PDF-sample and version-code-census tables (both keyless-fetched
+there, at that document's own request cost, not this run's) — so this run's
+own count is exactly 50: 2 discovery (one of them a retry after an empty
+first response) + 33 keyless BILLS GETs + 15 keyed CRPT/CREC requests. 36
+bills, not 40, is what that ceiling bought once the reports and the record
+kept their fixed cost.
+
+**Method.** Every fresh capture: `httpx.Client(follow_redirects=True)` at
+`package_body_locator(package, "pdf")` for a bill (one request, checked for
+a `%PDF` signature so a redirected "not offered" error page is never
+mistaken for a body), or `GovInfoBodyAcquirer.acquire(package,
+prefer=("pdf",))` for a report or the Record issue. `content_lines`,
+`line_numbers`, `gpo_footers` and `hyphen_rejoin_count` are
+`GpoCleanupRecord` fields read directly, not re-derived. `gutter_digits_leaked`
+counts a standalone 1-2 digit line surviving in the *normalized* text of a
+document the verdict called numbered. `footers_left` counts a `VerDate` or
+job-code line surviving normalization. `false_rejoin_count` replays
+`_rejoin_hyphens`'s own gate-then-merge steps to recover the word each
+rejoin actually produces (mutating the same working list the real function
+does, so a multi-hyphen chain reports its one final word rather than an
+intermediate fragment), then checks each result against a wordlist built
+from `/usr/share/dict/words` plus every one of the document's own content
+lines *not* corroborated by an adjacent gutter number, with light suffix
+stemming (`-s`, `-es`, `-ies`, `-ing`, `-ed`, doubled-consonant undo) — a
+plain exact match against a 1934-vintage headword list flags most ordinary
+plurals and participles as "unknown," which would make the check meaningless
+noise rather than a signal.
+
+**Results.**
+
+| Document | Stage | Congress | Pages | Verdict | Leaked | Footers left | Rejoins | False rejoins | Time (ms) |
+| --- | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| `BILLS-113hr1033rfs` | rfs | 113 | 5 | `True` | 0 | 0 | 17 | 0 | 19.9 |
+| `BILLS-113hr1095rh` | rh | 113 | 6 | `True` | 0 | 0 | 17 | 0 | 26.8 |
+| `BILLS-113hr1151pcs` | pcs | 113 | 10 | `True` | 0 | 0 | 45 | 0 | 38.0 |
+| `BILLS-113hr1636ih` | ih | 113 | 4 | `True` | 0 | 0 | 15 | 0 | 20.2 |
+| `BILLS-113hr3487enr` | enr | 113 | 2 | `False` | 0 | 0 | 0 | 0 | 9.1 |
+| `BILLS-113hr674eh` | eh | 113 | 6 | `True` | 0 | 0 | 23 | 1 | 17.8 |
+| `BILLS-119hconres11eh` | eh | 119 | 4 | `True` | 0 | 0 | 0 | 0 | 44.0 |
+| `BILLS-119hconres26ih` | ih | 119 | 10 | `True` | 0 | 0 | 11 | 0 | 48.0 |
+| `BILLS-119hjres174ih` | ih | 119 | 2 | `True` | 0 | 0 | 2 | 0 | 9.1 |
+| `BILLS-119hr1009rfs` | rfs | 119 | 2 | `True` | 0 | 0 | 2 | 0 | 0.1 |
+| `BILLS-119hr1834rhuc` | rhuc | 119 | 36 | `True` | 0 | 0 | 166 | 4 | 152.5 |
+| `BILLS-119hr1eas` | eas | 119 | 870 | `True` | 0 | 0 | 4364 | 71 | 3513.2 |
+| `BILLS-119hr4275rfs` | rfs | 119 | 435 | `True` | 0 | 0 | 2331 | 22 | 1911.8 |
+| `BILLS-119hr4323rds` | rds | 119 | 19 | `True` | 0 | 0 | 84 | 0 | 82.5 |
+| `BILLS-119hr4727ih` | ih | 119 | 1 | `True` | 0 | 0 | 2 | 0 | 0.1 |
+| `BILLS-119hr8800eh` | eh | 119 | 2586 | `True` | 0 | 0 | 14244 | 185 | 11209.3 |
+| `BILLS-119hr8800rh` | rh | 119 | 1614 | `True` | 0 | 0 | 8515 | 134 | 8438.4 |
+| `BILLS-119hr8870ih` | ih | 119 | 1005 | `True` | 0 | 0 | 4953 | 74 | 4453.1 |
+| `BILLS-119hr9499rh` | rh | 119 | 4 | `True` | 0 | 0 | 4 | 0 | 14.0 |
+| `BILLS-119hres426rh` | rh | 119 | 4 | `True` | 0 | 0 | 6 | 0 | 22.7 |
+| `BILLS-119s1051rfh` | rfh | 119 | 8 | `True` | 0 | 0 | 36 | 0 | 35.0 |
+| `BILLS-119s1071eah` | eah | 119 | 3022 | `True` | 0 | 0 | 16356 | 177 | 13197.0 |
+| `BILLS-119s1071enr` | enr | 119 | 1259 | `False` | 0 | 0 | 0 | 0 | 10312.0 |
+| `BILLS-119s218is` | is | 119 | 5 | `True` | 0 | 0 | 25 | 1 | 26.0 |
+| `BILLS-119s2296es` | es | 119 | 3100 | `True` | 0 | 0 | 17354 | 228 | 13211.4 |
+| `BILLS-119s3612is` | is | 119 | 24 | `True` | 0 | 0 | 130 | 4 | 105.8 |
+| `BILLS-119s3971cps` | cps | 119 | 40 | `True` | 0 | 0 | 197 | 4 | 167.4 |
+| `BILLS-119s4784rs` | rs | 119 | 1562 | `True` | 0 | 0 | 8810 | 135 | 8114.4 |
+| `BILLS-119s5066is` | is | 119 | 2009 | `True` | 0 | 0 | 11212 | 191 | 9042.1 |
+| `BILLS-119s515is` | is | 119 | 1 | `True` | 0 | 0 | 1 | 0 | 5.9 |
+| `BILLS-119sconres1enr` | enr | 119 | 1 | `False` | 0 | 0 | 0 | 0 | 0.1 |
+| `BILLS-119sconres39pcs` | pcs | 119 | 70 | `True` | 0 | 0 | 139 | 1 | 285.5 |
+| `BILLS-119sjres104is` | is | 119 | 4 | `True` | 0 | 0 | 8 | 0 | 18.2 |
+| `BILLS-119sjres141is` | is | 119 | 2 | `True` | 0 | 0 | 2 | 0 | 8.7 |
+| `BILLS-119sres660ats` | ats | 119 | 3 | `True` | 0 | 0 | 5 | 0 | 14.3 |
+| `BILLS-119sres94rs` | rs | 119 | 54 | `True` | 0 | 0 | 261 | 0 | 256.1 |
+| `CRPT-113hrpt135` | report | 113 | 229 | `False` | 0 | 0 | 0 | 0 | 1444.9 |
+| `CRPT-113srpt77` | report | 113 | 190 | `False` | 0 | 0 | 0 | 0 | 1725.3 |
+| `CRPT-119hrpt1` | report | 119 | 4 | `False` | 0 | 0 | 0 | 0 | 35.9 |
+| `CRPT-119hrpt105` | report | 119 | 3 | `False` | 0 | 0 | 0 | 0 | 0.2 |
+| `CRPT-119hrpt2` | report | 119 | 3 | `False` | 0 | 0 | 0 | 0 | 27.4 |
+| `CREC-2026-09-18` | record | — | 3 | `False` | 0 | 0 | 0 | 0 | 24.5 |
+
+Full per-document detail (URL, sha256, byte size, a sample of the flagged
+false-rejoin words) is pinned in
+[`tests/fixtures/gpo_pdf_text/corpus-2026-09-19.json`](../../tests/fixtures/gpo_pdf_text/corpus-2026-09-19.json),
+asserted against by `tests/extraction/test_gpo_corpus_table.py`. No PDF bytes
+are committed anywhere; the fetched bytes, the four measurement scripts and
+this run's full console output (including the two failed 404-shaped retries
+folded into the request count above) are retained outside the repository as
+the campaign receipt, per `AGENTS.md`, at
+`~/Work/corpora/supply-2026-09-02/receipts/gpo-normalizer-corpus-2026-09-19/`.
+
+**Layout verdict versus expectation.** Every introduced (`ih`/`is`) and
+reported (`rh`/`rs`) bill is `True`; every enrolled bill and every committee
+report is `False` — zero disagreements across all 42 documents, but only
+after two rule defects the corpus surfaced were fixed (see
+`extraction/gpo_normalize.py`, `_layout_verdict`'s own docstring for the
+full derivation):
+
+1. **`BILLS-119sjres141is`** (introduced in the Senate) and
+   **`BILLS-119hconres11eh`** (engrossed) both landed at a numbered/content
+   ratio of *exactly* 0.30 with a genuine per-page consecutive run
+   confirming real GPO numbering on inspection — and both reported
+   `line_numbers=False`, because the ratio gate used a strict `> 0.3`. Fixed
+   to `>= 0.3`.
+2. **`BILLS-119hconres26ih`**, a 10-page House concurrent resolution, has a
+   six-page unnumbered "Whereas" preamble (a print convention this
+   resolution type uses; a plain bill's enacting clause carries no
+   comparable preamble) before its "Resolved" operative text begins. Its
+   whole-document ratio (0.268) is genuinely under 30%, not a boundary tie,
+   despite four pages — 70 of its 261 content lines — each showing an
+   unambiguous consecutive run from 1, one of them 25 long. The per-page
+   run test used to run only *below* the 50-line floor; it now runs at or
+   above it too, as an alternative to the ratio rather than a corroboration
+   of it. Reading the page settled which side was right: pages 7-10 are
+   real, unmistakable GPO gutter numbering.
+
+Both fixes are covered by new tests
+(`test_true_below_the_floor_on_an_exact_thirty_percent_ratio`,
+`test_true_at_or_above_the_floor_when_a_long_unnumbered_preamble_dilutes_the_ratio_but_a_page_shows_a_real_run`)
+alongside a third
+(`test_false_below_the_floor_when_a_real_run_exists_but_the_ratio_is_too_low`)
+that locks in the more conservative half of the fix: below the floor, a
+per-page run still cannot decide the verdict alone, unchanged from the
+original design — only the fix's over-broad first draft (caught in review
+before landing, not in this corpus) would have regressed that.
+
+**Gutter digits leaked and footers left: zero, on every one of the 42
+documents.** No standalone 1-2 digit line survives in a numbered document's
+normalized text, and no `VerDate`/job-code line survives normalization
+anywhere in the corpus — both artifacts the evidence-gated bare-digit rule
+and the footer-truncation rule exist specifically to remove, and both
+continue to work at this corpus's full range of document sizes (1 page to
+3,100 pages) and vintages (113th and 119th Congress print).
+
+**Hyphen rejoin: 89,337 merge operations, 70,054 resulting words checked, 1,232
+flagged as not a known word (1.76%), 659 of them distinct.** Every flagged
+case sampled by reading its page (a representative cross-section, not an
+exhaustive audit of 1,232 instances) falls into one of three shapes, none a
+parsing defect:
+
+- **A genuine compound word's own hyphen coincided with the print-wrap
+  point.** Seen across many fixtures: `communitybased`, `longterm`,
+  `evidencebased`, `spacebased`, `thirdparty`, `chairperson`-style compounds
+  where GPO's line wrap happened to land exactly at the compound's real
+  hyphen, which the rule then strips along with the wrap — the same
+  ambiguity already documented for the non-numbered case
+  (`docs/research/deltatrack-upstream-issues-2026-09-19.md`, claim B4,
+  "President-elect") but now measured, for the first time, on confirmed
+  gutter-numbered text. A handful are three-word compounds
+  (`off-the-shelf`, `case-by-case`) where the coincidence claims only the
+  *first* hyphen, leaving a visibly odd but not corrupted result
+  (`offthe-shelf`) — read on the page (`BILLS-119hr8800eh`, page 94): "...
+  commercially available, off-" / "2" / "the-shelf components ...", a real
+  wrap at a real hyphen, same mechanism, more visible result.
+- **A proper noun or a modern/technical compound the 234,456-word system
+  dictionary does not carry at all.** `/usr/share/dict/words` is macOS's
+  1934-vintage Webster's Second headword list, and it is missing more than
+  a first read suggests: re-checked directly on this machine
+  (`grep -ic '^coordinate$' /usr/share/dict/words` and the same for
+  `^co-ordinate$`), it carries `coordinate` in *neither* spelling, hyphenated
+  or not — both return 0. The flagged instance in `BILLS-119hr8870ih`'s
+  rejoin sample is a correct rejoin of an ordinary word the list simply
+  never had, not a hyphenated headword the rejoin missed. Likewise no
+  `database` (flagged in `BILLS-119s3971cps`) and no `Díaz-Canel` (read on
+  the page, `BILLS-119s218is`, page 2: "...of Raúl Castro and his successor,
+  Miguel Díaz-" / "3" / "Canel;" — a correct rejoin of a real name, flagged
+  only because the check's own regex captured just the ASCII tail "az"
+  before the diacritic).
+- **An ordinary word whose base form the dictionary carries, but whose
+  inflection the analysis script's own stemmer cannot reduce to it.** The
+  largest of the three shapes in the sample read. The script's suffix
+  stripper (strips `-s`, `-es`, `-ies`, `-ing`, `-ed`, and undoes a doubled
+  final consonant — see `_stem_candidates` in the receipt's
+  `analyze_all.py`) has no rule for the `-y` → `-ied` shift a regular verb
+  ending in a consonant plus `y` takes in the past tense: `specified`
+  (flagged in `BILLS-119hr1834rhuc`) never reduces to `specify`, and
+  `identified` (flagged in `BILLS-119hr4275rfs`) never reduces to
+  `identify`. Both base forms are themselves confirmed headwords in
+  `/usr/share/dict/words` on this machine. Not a compound-hyphen ambiguity
+  like the first two shapes: the rejoined word is exactly correct English
+  and the check's own stemmer is what is too narrow to accept it.
+
+No instance read across any of the three shapes produced a result unrelated
+to this known ambiguity (no transposed, truncated or otherwise corrupted
+word) — every flagged instance is a gap in the 234,456-word checking list or
+its narrow stemmer, a wordlist blind spot, not damage the rejoin rule did to
+the text. That makes 1.76% an upper bound on how many rejoins get *flagged*
+by this check, not a defect rate on the rejoin rule itself. The rate is a
+new, previously unstated number for the residual this port's docstring
+already acknowledged qualitatively; it does not change the module's
+documented policy of declining to rejoin at all on a document without
+confirmed GPO layout, which remains the stronger, unconditional protection
+against the same ambiguity in the far more common non-numbered case.
+
 ## Decision
 
 See ["GPO PDF text normalization runs after extraction, gated by
