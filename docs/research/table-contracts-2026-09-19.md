@@ -552,6 +552,12 @@ add `docs/tables.md` and index it; `./scripts/check` green; bump the version,
 `uv lock`, commit both files as `chore: release 0.21.0` with a body naming what
 it carries; `uv build`; tag `v0.21.0`; record the wheel's SHA-256.
 
+spicy-docs 0.21.1 (cut 2026-09-19: commit 6f8d20e, tag v0.21.1 pushed,
+`dist/spicy_docs-0.21.1-py3-none-any.whl` 1,025,308 bytes, sha256
+`c519e231b44a639c342fa857802869eca258bb4a7051a84b983956a2706e68a6`) carries the
+sealed body preference and `body_text`, the bulk listing skip and the
+normalization fixes; its adoption on the fork branch follows the same steps.
+
 spicy-regs adoption (done 2026-09-19 on the fork branch `billtrax-hosting-prep`;
 no push to origin unless the user names the branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
 `[tool.uv.sources] spicy-docs` at it; set both `source-readers` pins to
