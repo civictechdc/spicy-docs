@@ -142,33 +142,30 @@ def test_real_summary_states_the_package_and_no_body_rendition() -> None:
     assert summary.date_issued == "2025-01-21"
     assert summary.last_modified == "2025-05-16T15:44:06Z"
     assert summary.title is not None and summary.title.startswith("PROVIDING FOR CONSIDERATION")
-    # Measured 2026-09-19: the CRPT summary offers only premis, zip and mods,
-    # while the package does serve HTML and PDF. The download block is read,
-    # never taken as the complete set of body renditions.
+    # Measured 2026-09-19: the CRPT summary names only premis, zip and mods,
+    # while the package does serve HTML and PDF. The links are kept as the
+    # publisher spelled them; the offered set comes from the MODS instead.
     assert [name for name, _url in summary.download_links] == ["modsLink", "premisLink", "zipLink"]
-    assert summary.stated_body_formats == ()
 
 
-def test_download_link_format_comes_from_the_route_not_the_link_name() -> None:
-    # Measured on BILLS-119hr1enr: "txtLink" points at the /htm route.
+def test_download_links_are_kept_as_evidence_including_a_repeated_name() -> None:
+    # GPO-J6-REPORT states five jpegLink entries as one list.
     document = {
         "packageId": PACKAGE,
         "collectionCode": "CRPT",
         "download": {
             "txtLink": f"https://api.govinfo.gov/packages/{PACKAGE}/htm",
-            "pdfLink": f"https://api.govinfo.gov/packages/{PACKAGE}/pdf",
-            "uslmLink": f"https://api.govinfo.gov/packages/{PACKAGE}/uslm",
-            "modsLink": f"https://api.govinfo.gov/packages/{PACKAGE}/mods",
-            "otherLink": "https://api.govinfo.gov/packages/CRPT-119hrpt2/xml",
-            # GPO-J6-REPORT states five jpegLink entries under one name.
             "jpegLink": [f"https://api.govinfo.gov/packages/{PACKAGE}/jpeg"] * 2,
         },
     }
     summary = validate_package_summary(
         json.dumps(document).encode(), package=PACKAGE, final_url=SUMMARY_URL, max_bytes=10_000
     )
-    assert summary.stated_body_formats == ("htm", "pdf")
-    assert [name for name, _url in summary.download_links].count("jpegLink") == 2
+    assert summary.download_links == (
+        ("jpegLink", f"https://api.govinfo.gov/packages/{PACKAGE}/jpeg"),
+        ("jpegLink", f"https://api.govinfo.gov/packages/{PACKAGE}/jpeg"),
+        ("txtLink", f"https://api.govinfo.gov/packages/{PACKAGE}/htm"),
+    )
 
 
 @pytest.mark.parametrize(
@@ -211,7 +208,9 @@ def test_real_mods_states_the_access_id_and_the_offered_renditions() -> None:
     assert mods.other_renditions == ()
 
 
-def test_renditions_outside_the_supported_vocabulary_stay_visible() -> None:
+def test_this_packages_rendition_at_another_address_reads_as_disagreement() -> None:
+    # BILLS states a USLM rendition this way: the package's own content
+    # address, a supported file type, a folder this module does not derive.
     uslm = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/uslm/{PACKAGE}.xml"
     body = mods_xml(
         urls=(
@@ -223,15 +222,23 @@ def test_renditions_outside_the_supported_vocabulary_stay_visible() -> None:
     )
     mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
     assert mods.offered_formats == ("htm",)
-    assert mods.other_renditions == (("USLM rendition", uslm),)
+    assert mods.moved_renditions == (("xml", uslm),)
+    assert mods.other_renditions == ()
 
 
-def test_a_rendition_for_another_package_is_not_offered_here() -> None:
+def test_another_packages_rendition_and_an_unsupported_file_type_say_nothing_here() -> None:
     other = "https://www.govinfo.gov/content/pkg/CRPT-119hrpt2/html/CRPT-119hrpt2.htm"
-    body = mods_xml(urls=f'<url displayLabel="HTML rendition" access="raw object">{other}</url>')
+    jpeg = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/jpeg/{PACKAGE}.jpg"
+    body = mods_xml(
+        urls=(
+            f'<url displayLabel="HTML rendition" access="raw object">{other}</url>'
+            f'<url displayLabel="Image" access="raw object">{jpeg}</url>'
+        )
+    )
     mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
     assert mods.offered_formats == ()
-    assert mods.other_renditions == (("HTML rendition", other),)
+    assert mods.moved_renditions == ()
+    assert mods.other_renditions == (("HTML rendition", other), ("Image", jpeg))
 
 
 @pytest.mark.parametrize(
@@ -288,8 +295,8 @@ def test_real_body_is_proved_by_its_locator_and_media_type() -> None:
     ("body", "format", "content_type", "final_url", "message"),
     [
         (b"", "htm", "text/html", BODY_URL, "empty"),
-        (ERROR_PAGE, "htm", "text/html", BODY_URL, "soft-404"),
-        (b"<html>whatever</html>", "htm", "text/html", "https://www.govinfo.gov/error", "soft-404"),
+        (ERROR_PAGE, "htm", "text/html", BODY_URL, "error page"),
+        (b"<html>whatever</html>", "htm", "text/html", "https://www.govinfo.gov/error", "error page"),
         (BODY, "htm", "application/pdf", BODY_URL, "Content-Type"),
         (BODY, "htm", None, BODY_URL, "Content-Type"),
         (BODY, "htm", "text/html", MODS_URL, "final URL"),

@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Self
 
 from spicy_docs.reading.refusals import attach_refused_response
-from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
+from spicy_docs.transport.captured import CapturedBodyResponse, attach_capture, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 
 if TYPE_CHECKING:
@@ -194,7 +194,7 @@ class SourceAcquirer:
             # Do not attach a capture here after a credential refusal: its body
             # may have echoed the key.
             if capture is not None and not isinstance(error, CredentialRefusedError):
-                error.__dict__["capture"] = capture
+                attach_capture(error, capture)
                 attach_refused_response(error, refused_capture(capture, stage="source-validation"))
             error.__dict__[self.context_key] = {**dict(context), "requestCount": self._http.request_count}
             raise

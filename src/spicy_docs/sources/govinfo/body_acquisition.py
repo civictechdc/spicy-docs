@@ -42,7 +42,7 @@ from spicy_docs.sources.govinfo.bodies import (
     validate_package_mods,
     validate_package_summary,
 )
-from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
+from spicy_docs.transport.captured import CapturedBodyResponse, attached_capture, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.source_acquirer import (
     check_byte_bound,
@@ -132,6 +132,19 @@ class GovInfoFormatNotOfferedError(GovInfoBodySourceError):
         )
         self.offered_formats = tuple(offered)
         self.preference = tuple(preference)
+
+
+class GovInfoRenditionAddressError(GovInfoBodySourceError):
+    """The package states a preferred format, at an address this module does not derive.
+
+    Absence and disagreement are different answers. The publisher's own URL is
+    in the message and on the error, so the caller can see what it named.
+    """
+
+    def __init__(self, identity: PackageIdentity, moved: Sequence[tuple[str, str]]) -> None:
+        stated = "; ".join(f"{name} at {url}" for name, url in moved)
+        super().__init__(f"{identity.package_id} states {stated}, which is not where this module fetches it")
+        self.moved_renditions = tuple(moved)
 
 
 def _unavailable(capture: CapturedBodyResponse, label: str) -> GovInfoPackageUnavailableError:
@@ -291,6 +304,9 @@ class GovInfoBodyAcquirer:
             offered = mods.offered_formats
             chosen = next((name for name in preference if name in offered), None)
             if chosen is None:
+                moved = [(name, url) for name, url in mods.moved_renditions if name in preference]
+                if moved:
+                    raise GovInfoRenditionAddressError(identity, moved)
                 raise GovInfoFormatNotOfferedError(identity, preference, offered)
 
             stage = "body"
@@ -341,8 +357,8 @@ class GovInfoBodyAcquirer:
         try:
             capture = self._capture(url, keyed=False, max_bytes=max_bytes)
         except GovInfoBodySourceError as error:
-            refused = error.__dict__.get("capture")
-            if isinstance(refused, CapturedBodyResponse) and refused.status_code in _REDIRECT_STATUSES:
+            refused = attached_capture(error)
+            if refused is not None and refused.status_code in _REDIRECT_STATUSES:
                 raise _unavailable(refused, "body rendition") from error
             raise
         return self._require_present(capture, label="body rendition")
@@ -355,4 +371,5 @@ __all__ = [
     "GovInfoFormatNotOfferedError",
     "GovInfoPackageBody",
     "GovInfoPackageUnavailableError",
+    "GovInfoRenditionAddressError",
 ]

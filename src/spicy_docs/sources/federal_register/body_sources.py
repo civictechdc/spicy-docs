@@ -4,8 +4,9 @@ Source rules:
 - body_html_url paths have sibling XML and text paths.
 - GovInfo granules use publication date and printed document number. Check the
   [FR Doc No: ...] marker because a missing granule can return HTTP 200. The
-  error page that answers it is one publisher rule, so its check lives with the
-  other GovInfo body rules in sources/govinfo/bodies.py.
+  error page that answers it is one publisher rule with one home,
+  sources/govinfo/error_page.py; its two witnesses stay on either side of the
+  locator check here, so the most precise fact wins.
 - A FederalRegister.gov split suffix may differ from the printed marker.
 - Resolve synthetic X numbers through issue MODS start pages while preserving
   the original source identity.
@@ -31,7 +32,7 @@ from typing import Literal
 from urllib.parse import urlsplit
 from xml.parsers import expat
 
-from spicy_docs.sources.govinfo.bodies import check_not_error_page
+from spicy_docs.sources.govinfo.error_page import has_error_page_marker, is_error_page_url
 from spicy_docs.transport.source_acquirer import check_final_url, check_payload
 
 _BODY_HTML_PATH = re.compile(
@@ -210,15 +211,21 @@ def validate_govinfo_granule(
     resolved_id = _validated_source_id(access_id, label="govinfo accessId")
     safe_date = _validated_publication_date(publication_date)
     expected_url = govinfo_granule_locator(resolved_id, safe_date)
-    # The error page is refused before the locator check so a redirected
-    # response reports the page it landed on, not a URL mismatch.
-    check_not_error_page(exact_body, final_url, error_type=FederalRegisterBodySourceError)
+    # The two error-page witnesses stay on either side of the locator check.
+    # A redirected response reports the page it landed on; a marker-bearing
+    # body at the wrong locator reports the locator, which is the more precise
+    # fact and is reachable on the MODS start-page route. This wording is
+    # emitted in command receipts; keep it as it is.
+    if is_error_page_url(final_url):
+        raise FederalRegisterBodySourceError("govinfo returned its HTTP-200 soft-404")
     check_final_url(
         final_url,
         expected_url,
         error_type=FederalRegisterBodySourceError,
         message="govinfo granule final URL differs from the requested locator",
     )
+    if has_error_page_marker(exact_body):
+        raise FederalRegisterBodySourceError("govinfo returned its HTTP-200 soft-404")
 
     if resolved_id != source_id:
         marker = f"[FR Doc No: {resolved_id}]".encode("ascii")

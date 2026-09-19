@@ -24,8 +24,8 @@ Source rules, each measured on 2026-09-19 (receipts in the fixture README):
   directions, with what the keyless routes served for every package measured.
   The summary's ``download`` block does not: it lists no body rendition at all
   for CRPT, CHRG and CDOC, and spells the BILLS HTML rendition ``txtLink``.
-  So the offered set is read from MODS and the summary's own statement is kept
-  beside it as the weaker second opinion.
+  So the offered set is read from MODS, and the summary's links are kept as
+  evidence with nothing derived from them.
 - A body carries no machine-readable package id (the CRPT-119hrpt1 HTML body
   never spells it), unlike a Federal Register granule's ``[FR Doc No: ...]``.
   Identity is therefore the locator the request named, the summary's
@@ -45,28 +45,25 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import date
-from urllib.parse import urlsplit
 
 from spicy_docs.reading.json_input import load_decimal_json
 from spicy_docs.sources.congress.bill_status import BILL_TYPES
 from spicy_docs.sources.govinfo.discovery import API
+from spicy_docs.sources.govinfo.error_page import check_not_error_page
 from spicy_docs.sources.govinfo.mods import MODS_NAMESPACE, GovInfoModsError, parse_govinfo_mods
 from spicy_docs.transport.source_acquirer import check_final_url, check_payload
 
 CONTENT = "https://www.govinfo.gov"
 MAX_PACKAGE_ID = 128
-#: The publisher redirects a missing package or unoffered rendition to this
-#: page, which answers HTTP 200. Both the destination and the marker are
-#: checked because a direct 200 error page would otherwise read as a body.
-ERROR_PAGE_URL = f"{CONTENT}/error"
-_ERROR_PAGE_MARKER = re.compile(rb"govinfo\.gov/error", re.IGNORECASE)
 _RAW_OBJECT = "raw object"
 _MODS_URL = f"{{{MODS_NAMESPACE}}}url"
 _CONGRESS = r"[1-9][0-9]*"
 _NUMBER = r"[1-9][0-9]*"
 # A hearing jacket is an opaque printing number, so leading zeros are kept.
 _JACKET = r"[0-9]+"
-_BILL_TYPE = "|".join(sorted(BILL_TYPES, key=len, reverse=True))
+# Longest first, then alphabetically: hconres must win over hr, whatever order
+# the frozenset iterates in, so the compiled pattern is the same every run.
+_BILL_TYPE = "|".join(sorted(BILL_TYPES, key=lambda name: (-len(name), name)))
 _DATE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}"
 _GRAMMARS: dict[str, tuple[re.Pattern[str], str]] = {
     "CRPT": (re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hrpt|srpt|erpt)(?P<number>{_NUMBER})"), "119hrpt1"),
@@ -79,11 +76,6 @@ _GRAMMARS: dict[str, tuple[re.Pattern[str], str]] = {
         "119hr1enr",
     ),
 }
-_API_DOWNLOAD = re.compile(rf"{re.escape(API)}/packages/(?P<package>[^/]+)/(?P<segment>[a-z]+)$")
-#: The summary names its API content routes; these segments are the ones whose
-#: keyless siblings this module can fetch. ``txtLink`` pointing at ``/htm`` is
-#: why the segment decides the format, not the link name.
-_DOWNLOAD_FORMATS = {"htm": "htm", "xml": "xml", "txt": "txt", "pdf": "pdf"}
 
 
 class GovInfoBodySourceError(ValueError):
@@ -107,6 +99,10 @@ PACKAGE_BODY_FORMATS: dict[str, BodyFormat] = {
     "txt": BodyFormat("txt", "text", "txt", ("text/plain",)),
     "pdf": BodyFormat("pdf", "pdf", "pdf", ("application/pdf",)),
 }
+_FORMAT_BY_EXTENSION = {body_format.extension: name for name, body_format in PACKAGE_BODY_FORMATS.items()}
+_PACKAGE_RENDITION = re.compile(
+    rf"{re.escape(CONTENT)}/content/pkg/(?P<package>[^/]+)/[^/]+/[^/]+\.(?P<extension>[A-Za-z0-9]+)"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,8 +128,9 @@ class PackageSummary:
     date_issued: str | None
     last_modified: str | None
     title: str | None
+    #: Every ``download`` link as the publisher spelled it, ``(name, url)``,
+    #: repeated names included. Evidence, not a statement of what is fetchable.
     download_links: tuple[tuple[str, str], ...]
-    stated_body_formats: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -143,7 +140,13 @@ class PackageModsIdentity:
     identity: PackageIdentity
     access_ids: tuple[str, ...]
     collection_code: str | None
+    #: Formats whose stated rendition URL is exactly this module's locator.
     offered_formats: tuple[str, ...]
+    #: ``(format, url)`` for a rendition of this package in a supported file
+    #: type at an address this module does not derive: the publisher and this
+    #: module disagree about where that format lives.
+    moved_renditions: tuple[tuple[str, str], ...]
+    #: ``(displayLabel, url)`` for every other raw-object rendition, verbatim.
     other_renditions: tuple[tuple[str, str], ...]
 
 
@@ -246,24 +249,6 @@ def package_mods_locator(package: PackageIdentity | str) -> str:
     return f"{API}/packages/{_identity(package).package_id}/mods"
 
 
-def check_not_error_page(body: bytes, final_url: str, *, error_type: type[ValueError]) -> None:
-    """Refuse the GovInfo error page, which answers HTTP 200 for a missing object.
-
-    Both witnesses are checked: a followed redirect lands on ``/error`` whatever
-    query it carries, and the page itself links to that address. Shared with the
-    Federal Register granule route, which met this page before this module
-    existed; its measured 44,165-byte length is that page's size today, not an
-    identity rule.
-    """
-    parsed = urlsplit(final_url)
-    if (parsed.scheme, parsed.netloc, parsed.path) == (
-        "https",
-        "www.govinfo.gov",
-        "/error",
-    ) or _ERROR_PAGE_MARKER.search(body):
-        raise error_type("govinfo returned its HTTP-200 error page (soft-404), not the requested object")
-
-
 def validate_package_summary(
     body: bytes,
     *,
@@ -271,11 +256,12 @@ def validate_package_summary(
     final_url: str,
     max_bytes: int,
 ) -> PackageSummary:
-    """Prove the summary states the requested ``packageId`` and read its download links.
+    """Prove the summary states the requested ``packageId`` and keep its download links.
 
-    The download block is read, never assumed: its body-format links are the
-    API's own content routes, and three collections list none at all while
-    serving HTML and PDF. Callers choose a format from the MODS renditions.
+    The links are kept as the publisher spelled them and nothing is derived
+    from them: they address the API's own content routes, three collections
+    list no body rendition at all while serving HTML and PDF, and BILLS spells
+    its HTML rendition ``txtLink``. The offered set comes from the MODS.
     """
     identity = _identity(package)
     exact = _checked_bytes(body, max_bytes, label="package summary")
@@ -297,25 +283,14 @@ def validate_package_summary(
     if download is not None and not isinstance(download, dict):
         raise GovInfoBodySourceError("GovInfo summary download block is not a JSON object")
     links: list[tuple[str, str]] = []
-    stated: list[str] = []
     for name, value in sorted((download or {}).items()):
         # A link can repeat under one name: GPO-J6-REPORT states five jpegLink
         # entries as a list. Each stays under its own name; anything that is
         # not a URL string is an anomaly this block cannot state.
-        urls = value if isinstance(value, list) else [value]
-        for url in urls:
+        for url in value if isinstance(value, list) else [value]:
             if not isinstance(url, str):
                 raise GovInfoBodySourceError("GovInfo summary download link is not a URL string")
             links.append((name, url))
-            match = _API_DOWNLOAD.fullmatch(url)
-            # The segment decides the format: BILLS spells its HTML rendition txtLink.
-            if match is not None and match["package"] == identity.package_id:
-                format_name = _DOWNLOAD_FORMATS.get(match["segment"])
-                if format_name is not None and format_name not in stated:
-                    stated.append(format_name)
-    # The block states a set; report it in this module's format order so the
-    # result does not depend on how the publisher spells its link names.
-    stated.sort(key=list(PACKAGE_BODY_FORMATS).index)
     return PackageSummary(
         identity=identity,
         collection_code=collection_code,
@@ -323,12 +298,24 @@ def validate_package_summary(
         last_modified=_text(document.get("lastModified")),
         title=_text(document.get("title")),
         download_links=tuple(links),
-        stated_body_formats=tuple(stated),
     )
 
 
 def _text(value: object) -> str | None:
     return value if isinstance(value, str) else None
+
+
+def _package_rendition_format(url: str, identity: PackageIdentity) -> str | None:
+    """Name the format of a rendition of this package that sits somewhere else.
+
+    The file extension names the format, because the folder is exactly what
+    disagrees. ``None`` means the URL is not this package's content address in
+    a supported file type, so it says nothing about where a format lives.
+    """
+    match = _PACKAGE_RENDITION.fullmatch(url)
+    if match is None or match["package"] != identity.package_id:
+        return None
+    return _FORMAT_BY_EXTENSION.get(match["extension"])
 
 
 def validate_package_mods(
@@ -345,6 +332,13 @@ def validate_package_mods(
     accessId names a granule, not this package. A rendition counts as offered
     when its stated URL is exactly this module's locator for a supported
     format, so the publisher's statement and the derived address must agree.
+
+    The renditions that do not match are separated, because they mean
+    different things. One at another address for this package in a supported
+    file type -- BILLS states its USLM rendition at ``uslm/{id}.xml`` -- is a
+    disagreement about where a format lives, and the caller can see the address
+    the publisher gave. Anything else (another package, another file type,
+    another host) is recorded verbatim and means nothing about this fetch.
     """
     identity = _identity(package)
     exact = _checked_bytes(body, max_bytes, label="package MODS")
@@ -365,10 +359,11 @@ def validate_package_mods(
     if any(value != identity.package_id for value in access_ids):
         raise GovInfoBodySourceError("GovInfo MODS accessId differs from the requested package")
     codes = {element.text.strip() for element in root.fields("extension", "collectionCode")}
-    if len(codes) > 1 or (codes and codes != {identity.collection}):
+    if codes and codes != {identity.collection}:
         raise GovInfoBodySourceError("GovInfo MODS collectionCode differs from the requested collection")
     locators = {package_body_locator(identity, name): name for name in PACKAGE_BODY_FORMATS}
     offered: list[str] = []
+    moved: list[tuple[str, str]] = []
     other: list[tuple[str, str]] = []
     for location in root.fields("location"):
         for element in location.findall(_MODS_URL):
@@ -376,15 +371,21 @@ def validate_package_mods(
                 continue
             url = element.text.strip()
             name = locators.get(url)
-            if name is None:
+            if name is not None:
+                if name not in offered:
+                    offered.append(name)
+                continue
+            elsewhere = _package_rendition_format(url, identity)
+            if elsewhere is None:
                 other.append((element.attribute("displayLabel") or "", url))
-            elif name not in offered:
-                offered.append(name)
+            else:
+                moved.append((elsewhere, url))
     return PackageModsIdentity(
         identity=identity,
         access_ids=access_ids,
         collection_code=next(iter(codes), None),
         offered_formats=tuple(offered),
+        moved_renditions=tuple(moved),
         other_renditions=tuple(other),
     )
 
@@ -409,7 +410,12 @@ def validate_package_body(
     exact = _checked_bytes(body, max_bytes, label="package body")
     # The error page is refused first so a response that landed on it says so,
     # rather than reporting a URL mismatch the caller cannot interpret.
-    check_not_error_page(exact, final_url, error_type=GovInfoBodySourceError)
+    check_not_error_page(
+        exact,
+        final_url,
+        error_type=GovInfoBodySourceError,
+        message="govinfo returned its HTTP-200 error page, not the requested package body",
+    )
     check_final_url(
         final_url,
         package_body_locator(identity, format),
@@ -431,7 +437,6 @@ def validate_package_body(
 
 
 __all__ = [
-    "ERROR_PAGE_URL",
     "PACKAGE_BODY_FORMATS",
     "BodyFormat",
     "GovInfoBodySourceError",
@@ -439,7 +444,6 @@ __all__ = [
     "PackageIdentity",
     "PackageModsIdentity",
     "PackageSummary",
-    "check_not_error_page",
     "package_body_locator",
     "package_mods_locator",
     "package_summary_locator",

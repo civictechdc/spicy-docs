@@ -23,6 +23,7 @@ from spicy_docs.sources.govinfo.body_acquisition import (
     GovInfoFormatNotOfferedError,
     GovInfoPackageBody,
     GovInfoPackageUnavailableError,
+    GovInfoRenditionAddressError,
 )
 from spicy_docs.transport import retry
 from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key
@@ -113,8 +114,8 @@ def test_acquires_the_first_offered_preferred_format_with_every_capture() -> Non
     # The publisher offers no XML for a committee report, so the second
     # preference is taken; the summary states no body rendition at all.
     assert result.offered_formats == ("htm", "pdf")
-    assert result.summary.stated_body_formats == ()
     assert result.mods.access_ids == (PACKAGE, PACKAGE)
+    assert result.mods.moved_renditions == ()
     assert result.body.byte_size == len(BODY)
     assert result.body_capture.body == BODY
     assert [capture.status_code for capture in result.captures] == [200, 200, 200]
@@ -167,6 +168,20 @@ def test_a_format_the_package_does_not_offer_refuses_before_any_body_request() -
     assert context["requestCount"] == 2
 
 
+def test_a_preferred_format_stated_elsewhere_refuses_as_disagreement() -> None:
+    uslm = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/uslm/{PACKAGE}.xml"
+    renditions = f'<url displayLabel="USLM rendition" access="raw object">{uslm}</url>'
+    transport = Transport(**{MODS_URL: reply(mods_xml(urls=renditions), content_type="application/xml")})
+    with pytest.raises(GovInfoRenditionAddressError, match="not where this module fetches it") as caught:
+        acquire(transport, prefer=("xml",))
+
+    # The package does state XML; it states it somewhere this module does not
+    # derive, which is a different answer from "no XML rendition exists".
+    assert transport.urls == [SUMMARY_URL, MODS_URL]
+    assert caught.value.moved_renditions == (("xml", uslm),)
+    assert uslm in str(caught.value)
+
+
 def test_a_missing_package_is_unavailable_not_absent() -> None:
     missing = reply(b'{"message":"The requested resource does not exist."}', status=404, content_type="text/plain")
     transport = Transport(**{SUMMARY_URL: missing})
@@ -192,7 +207,7 @@ def test_a_redirected_rendition_is_unavailable_and_never_followed() -> None:
 def test_the_error_page_served_as_a_body_is_refused_with_its_bytes() -> None:
     page = b'<html><a href="https://www.govinfo.gov/error">Page Not Found</a></html>'
     transport = Transport(**{HTM_URL: reply(page, content_type="text/html")})
-    with pytest.raises(GovInfoBodySourceError, match="soft-404") as caught:
+    with pytest.raises(GovInfoBodySourceError, match="error page") as caught:
         acquire(transport)
 
     refusal = caught.value.__dict__["refused_response"]

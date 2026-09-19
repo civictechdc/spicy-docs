@@ -107,14 +107,18 @@ directions, for every package measured: each stated rendition answered 200 and
 every unstated one redirected to the error page. The summary's `download`
 block did not: it names no body rendition at all for CRPT, CHRG and CDOC,
 which do serve HTML and PDF, and it spells the BILLS HTML rendition `txtLink`.
-So the summary is read and kept — its links, its `dateIssued` and its
-`lastModified` are in the result — but the offered set comes from MODS, and a
-link's format is decided by the API route segment it points at, not by its
-name. USLM and xhtml renditions are reported as `other_renditions`; fetching
-USLM is the [USLM route's](uslm-laws.md) job, not this one's.
+So the summary is read and kept — its `download_links` exactly as spelled, its
+`dateIssued` and its `lastModified` are in the result — but nothing is derived
+from those links and the offered set comes from MODS alone.
 
-The result reports both statements: `offered_formats` from MODS and
-`summary.stated_body_formats` from the download block.
+A stated rendition that is not one of these locators is separated by what it
+means. `moved_renditions` holds `(format, url)` for a rendition of this
+package in a supported file type at an address this module does not derive —
+BILLS states its USLM rendition at `uslm/{id}.xml`, so that reads as `xml` in
+a place this module does not fetch from, not as absence; fetching USLM is the
+[USLM route's](uslm-laws.md) job. `other_renditions` holds `(displayLabel,
+url)` verbatim for everything else: another package's address, another file
+type, another host.
 
 ## Identity rules and why each exists
 
@@ -139,9 +143,14 @@ instead four publisher statements about the one URL whose bytes were kept:
 - **It is not the error page.** A missing package or unoffered rendition
   redirects to `https://www.govinfo.gov/error`, which answers 200 with a
   44,165-byte "Page Not Found" page. The final URL and the `govinfo.gov/error`
-  marker are both checked. This is one publisher rule with one home: the
-  Federal Register granule validator calls the same function. Its byte length
-  is that page's size today, not an identity rule.
+  marker are both checked. This is one publisher rule with one home,
+  `sources/govinfo/error_page.py`, which imports nothing from `spicy_docs` so
+  a validator that needs only this rule need not import a source family. The
+  two witnesses stay separable because callers interleave them differently:
+  the Federal Register granule validator refuses an error-page URL, then a
+  mismatched locator, then the marker, so a marker-bearing body at the wrong
+  locator reports the locator. The page's byte length is its size today, not
+  an identity rule.
 - **The media type matches the format, the body is not empty, and a PDF begins
   with `%PDF-`.** A 200 that is not the requested format is a refusal with its
   bytes retained, never data and never absence.
@@ -174,7 +183,8 @@ instead four publisher statements about the one URL whose bytes were kept:
 | `GovInfoPackageUnavailableError` | The exact locator said the object is not there: 404/410 on a keyed route, or a redirect on a body route. It carries that capture. It is not a statement about other formats or other packages. |
 | `GovInfoFormatNotOfferedError` | The package stated its renditions and none was preferred. It carries `offered_formats`; no body request was made. |
 | `GovInfoBodySourceError` | Identity or shape failed: a `packageId`, `collectionCode` or `accessId` that differs, a final URL that differs, a wrong media type, an empty body, a PDF without its magic, or a bound exceeded. |
-| `GovInfoBodySourceError` with `soft-404` | The publisher's error page arrived as a 200. Its bytes are retained; it is a refusal, never absence. |
+| `GovInfoRenditionAddressError` | The package states a preferred format at an address this module does not derive. The publisher's own URL is on the error. Disagreement, not absence; no body request was made. |
+| `GovInfoBodySourceError` naming the error page | The publisher's error page arrived as a 200. Its bytes are retained; it is a refusal, never absence. |
 | `CredentialRefusedError` | HTTP 401/403, or a keyed response echoing the key. Stop the operation; do not continue with another route or package. |
 
 Every refusal attaches `refused_response` (`RefusedResponse`) with the exact
@@ -187,9 +197,11 @@ MODS as the refused one. A refusal returns no partial result.
 ## Result
 
 `GovInfoPackageBody` is frozen and holds the parsed `identity`, the `format`
-chosen, the `preference` asked for, `offered_formats`, the validated `summary`,
-`mods` and `body` identities, the three captures in request order, the consumed
-`request_count` and the effective `budget`. Each capture carries its requested
+chosen, the `preference` asked for, `offered_formats`, the validated `summary`
+(with its `download_links` as evidence), the validated `mods` (with
+`moved_renditions` and `other_renditions`) and `body` identities, the three
+captures in request order, the consumed `request_count` and the effective
+`budget`. Each capture carries its requested
 and final URL, status, content type, observation time, exact bytes, byte size
 and qualified SHA-256. To store one, pass its `sha256`, `byte_size` and
 `[body]` to `SourceNativeBlobStore.put_blob` and keep the source facts beside
@@ -219,3 +231,9 @@ Two departures from that plan, both measured:
 The one rule that did not transfer is the printed-marker check: a GovInfo
 package body prints no package id, so the smaller rule here is locator plus
 MODS rendition agreement plus the shared error-page exclusion.
+
+The error-page rule itself moved to `sources/govinfo/error_page.py`, a module
+that imports nothing from `spicy_docs`, so the Federal Register validator can
+call it without importing this family. That validator's wording and check
+order are unchanged: its refusal text reaches command receipts, and its two
+error-page witnesses must stay on either side of the locator check.
