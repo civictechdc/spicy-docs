@@ -553,3 +553,57 @@ in the family, and it is bounded on purpose — consecutive version pairs
 only, V-1 diffs rather than V², each further bounded by DeltaTrack's own
 retrieval gate — because it is the only place in the pass where letting it
 run unbounded would cost more than the rows it produces justify.
+
+## Reconstruction is a derivative layer behind an extra, proved on CFR before it touches bills
+
+Adopted 2026-09-19, from [the gap-closing proposal](research/closing-the-gaps-2026-09-19.md)
+§3; landed the same day as `src/spicy_docs/reconstruction/` (merge 1580899),
+measured by [the CFR benchmark](research/reconstruction-benchmark-2026-09-19.md)
+and documented in [Reconstruction](reconstruction.md).
+
+**Retrieve, then reconstruct, then interpret.** A body is taken in the
+publisher's most structured rendition first (the sealed body preference).
+Reconstruction runs only where retrieval has nothing structured to give, and
+its output is a derivative: every node carries the evidence spans and the
+named rule that placed it, every serialized element maps back through a
+sidecar, and a hosted row built from it says `derivation = reconstructed`.
+It never rewrites text beyond three named, evidence-gated repairs (small-caps
+case, print-wrap hyphens, GPO quote pairs), and it interprets nothing.
+
+**Why an extra.** Schema validation needs lxml against a bundle pinned by
+digest, resolved from a local catalog with no network. Core stays free of it:
+the package imports without lxml, reports the schema finding as "not
+checked" rather than "valid" when the extra is absent, and the subprocess
+test proves both.
+
+**Why CFR first, bills second.** Every CFR edition GovInfo serves has XML, so
+hiding it gives a paired benchmark that can fail: text precision and recall,
+hierarchy F1, critical discrepancies, coverage and acceptance are scored
+against the publisher's own structure. The corpus that has no XML is bill
+text from the 103rd to the 112th Congress, HTML and PDF only; its profile
+(`bill_dtd`, targeting the DTD DeltaTrack already parses) is the deployment
+target and is written only after the benchmark holds. The HTML rendition,
+not the PDF, is the input wherever it exists: the committee-report
+measurement showed PDF text splitting words and dropping the rows the HTML
+keeps.
+
+**What a measurement must carry.** Rules are frozen before the scored
+corpus is read, and the run records which rules were derived from which
+documents so a contaminated split is labelled rather than presented as
+blind. The critical-discrepancy class must see the corpus's own spellings
+(en and em dashes in citations, `$`, `%`, word suffixes); a check that could
+not fail on the dominant form is not a check. Acceptance reads the review
+flags the parser raised. Every request is logged, the corpus manifest pins
+each body's digest, and the pin names a reachable revision.
+
+**What it does not do.** No byte recovery of lost XML, no GovInfo signature
+on derived files, no legal-effect interpretation or amendment
+consolidation, no forcing reports into a legislative schema, no OCR of
+scans in the pilot, no private documents. The optional model call for
+undecidable regions stays an injected seam with abstention until a corpus
+shows a region rules cannot place; forty CFR sections showed none.
+
+**Open, and whose call.** Whether the CFR benchmark has answered its
+question, whether a dash-spelling disagreement between two publisher
+renditions counts as critical, and whether the model seam is ever wired are
+put to the maintainer at the end of [Reconstruction](reconstruction.md).

@@ -397,7 +397,7 @@ the page text already captured in `tests/fixtures/gpo_pdf_text/*.json`
 rather than re-fetching it (marked `reused_fixture` in the pinned JSON
 below); every other row is this run's own live capture.
 
-Forty bills, not the full forty the task named, is a request-budget
+Thirty-six bills, not the full forty the task named, is a request-budget
 consequence stated up front rather than padded past: CRPT/CREC each cost
 three requests (`GovInfoBodyAcquirer.acquire`'s summary, MODS and body, keyed
 via `read_api_key(Path(".env"), "API_GOV")`, header-only), so five reports
