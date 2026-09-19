@@ -10,6 +10,8 @@ import re
 from dataclasses import dataclass
 from xml.etree.ElementTree import Element
 
+from rulespec_artifacts import canonical_json_bytes
+
 from spicy_docs.reading.xml import parse_xml
 
 BILL_TYPES = frozenset({"hr", "s", "hjres", "sjres", "hconres", "sconres", "hres", "sres"})
@@ -74,6 +76,56 @@ class BillLaw:
 
     number: str | None
     type: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class BillTitle:
+    """One ``<titles>`` entry: an official, short or display title, versioned by chamber and text version.
+
+    The guide's children list is not exhaustive by its own account ("may
+    include"); the corpus shows more than it names. Every field is optional
+    here for the same reason as everywhere else in this module: the guide
+    names none required, and a display title in particular carries only
+    ``titleType`` and ``title``, no chamber or text-version fields at all.
+    ``title`` reads ``<title>`` first and falls back to the guide's
+    ``<latestTitle>`` spelling (``_title_text``, shared with ``RelatedBill``)
+    on the vanishing chance a title item ever uses it; no measured record
+    does.
+    """
+
+    title: str | None
+    title_type: str | None
+    chamber_code: str | None
+    chamber_name: str | None
+    bill_text_version_code: str | None
+    bill_text_version_name: str | None
+    update_date: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class RelatedBill:
+    """One ``<relatedBills>`` entry: another same-Congress measure and how CRS or a chamber linked it.
+
+    The guide (``2. Elements table``) names this item's title child
+    ``latestTitle``; live BILLSTATUS from the 108th, 113th and 119th
+    Congresses (measured 2026-09-19, three independent bills per Congress)
+    states it as ``<title>`` instead, and ``<latestTitle>`` never appears.
+    ``title`` reads ``<title>`` first, matching every measured record, and
+    falls back to ``<latestTitle>`` (``_title_text``) so a record that does
+    use the guide's spelling still yields the title instead of ``None``.
+    ``relationship_details_json`` is the publisher's ``relationshipDetails`` items verbatim -- each one's
+    ``identifiedBy`` and ``type`` -- as canonical JSON, because a related bill
+    can carry more than one (a Senate-identified companion CRS also flags, for
+    example), and flattening to one pair of columns would drop the others.
+    """
+
+    congress: str | None
+    bill_type: str | None
+    number: str | None
+    title: str | None
+    latest_action_date: str | None
+    latest_action_text: str | None
+    relationship_details_json: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,6 +235,8 @@ class BillStatus:
     text_versions: tuple[BillTextVersion, ...]
     laws: tuple[BillLaw, ...] = ()
     committees: tuple[BillCommittee, ...] = ()
+    titles: tuple[BillTitle, ...] = ()
+    related_bills: tuple[RelatedBill, ...] = ()
 
 
 def _validated_identity(identity: BillIdentity) -> BillIdentity:
@@ -316,6 +370,54 @@ def _recorded_vote(element: Element) -> RecordedVote:
     )
 
 
+def _title_text(element: Element) -> str | None:
+    """Read ``<title>``, falling back to ``<latestTitle>``, the guide's own spelling for it.
+
+    Every live BILLSTATUS this module measured (108th, 113th and 119th
+    Congresses) states ``<title>`` and never ``<latestTitle>``, both inside
+    ``<titles>`` items and inside ``<relatedBills>`` items -- see the
+    ``RelatedBill`` docstring. Reading ``<title>`` first keeps that measured
+    shape as the fast path; the fallback exists only so a record that ever
+    does use the guide's documented name yields the title instead of
+    ``None``, on either element.
+    """
+    value = _text(element, "title")
+    return value if value is not None else _text(element, "latestTitle")
+
+
+def _title(element: Element) -> BillTitle:
+    return BillTitle(
+        title=_title_text(element),
+        title_type=_text(element, "titleType"),
+        chamber_code=_text(element, "chamberCode"),
+        chamber_name=_text(element, "chamberName"),
+        bill_text_version_code=_text(element, "billTextVersionCode"),
+        bill_text_version_name=_text(element, "billTextVersionName"),
+        update_date=_text(element, "updateDate"),
+    )
+
+
+def _relationship_details(element: Element | None) -> str:
+    details = [
+        {"identifiedBy": _text(item, "identifiedBy"), "type": _text(item, "type")}
+        for item in _items(element, "relationshipDetails")
+    ]
+    return canonical_json_bytes(details).decode("utf-8")
+
+
+def _related_bill(element: Element) -> RelatedBill:
+    latest_action = _one(element, "latestAction")
+    return RelatedBill(
+        congress=_text(element, "congress"),
+        bill_type=_text(element, "type"),
+        number=_text(element, "number"),
+        title=_title_text(element),
+        latest_action_date=_text(latest_action, "actionDate"),
+        latest_action_text=_text(latest_action, "text"),
+        relationship_details_json=_relationship_details(element),
+    )
+
+
 def _committee(element: Element) -> BillCommittee:
     return BillCommittee(
         system_code=_text(element, "systemCode"),
@@ -400,6 +502,8 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
         text_versions=tuple(_text_version(item, identity) for item in _items(bill, "textVersions")),
         laws=tuple(BillLaw(_text(item, "number"), _text(item, "type")) for item in _items(bill, "laws")),
         committees=tuple(_committee(item) for item in _items(bill, "committees")),
+        titles=tuple(_title(item) for item in _items(bill, "titles")),
+        related_bills=tuple(_related_bill(item) for item in _items(bill, "relatedBills")),
     )
 
 
@@ -415,7 +519,9 @@ __all__ = [
     "BillSummary",
     "BillTextFormat",
     "BillTextVersion",
+    "BillTitle",
     "RecordedVote",
+    "RelatedBill",
     "bill_package_id_from_url",
     "bill_status_locator",
     "bill_xml_locator",

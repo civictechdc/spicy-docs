@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from spicy_docs.interpretation.version_kind import version_kind
+from spicy_docs.interpretation.version_kind import VersionKindFinding, version_kind, version_kind_finding
 from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat, parse_bill_status
 from spicy_docs.sources.congress.bill_versions import (
     VERSION_CODES,
@@ -478,6 +478,29 @@ def test_version_kind_matches_version_kind_ts(
     version_code: str | None, section_count: int | None, body_bytes: int | None, expected: str
 ) -> None:
     assert version_kind(version_code, section_count=section_count, body_bytes=body_bytes) == expected
+
+
+@pytest.mark.parametrize(
+    "version_code,section_count,body_bytes,expected_kind,expected_rule",
+    [
+        ("engrossed-amendment-senate", None, None, "procedural_amendments", "procedural_amendments_slug"),
+        ("statement-of-substance", None, None, "procedural_summary", "procedural_summary_slug"),
+        ("introduced-in-house", None, 50_000, "full_text", "full_text_slug"),
+        ("engrossed-in-house", None, 5_000, "kind_uncertain", "full_text_slug_thin"),
+        ("introduced-in-house", 3, 50_000, "kind_uncertain", "full_text_slug_thin"),
+        ("some-new-amendment-type", None, None, "procedural_amendments", "amendment_substring"),
+        ("some-new-version-type", None, 50_000, "full_text", "size_heuristic"),
+        ("some-new-version-type", None, 2_000, "unknown", "unknown"),
+        (None, None, None, "unknown", "unknown"),
+    ],
+)
+def test_version_kind_finding_names_the_rule_that_fired(
+    version_code: str | None, section_count: int | None, body_bytes: int | None, expected_kind: str, expected_rule: str
+) -> None:
+    finding = version_kind_finding(version_code, section_count=section_count, body_bytes=body_bytes)
+    assert finding == VersionKindFinding(expected_kind, expected_rule, section_count, body_bytes)
+    # version_kind is a thin wrapper: same slug and size evidence, same kind.
+    assert version_kind(version_code, section_count=section_count, body_bytes=body_bytes) == finding.kind
 
 
 # ---------------------------------------------------------------------------

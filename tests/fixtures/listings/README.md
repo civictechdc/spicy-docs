@@ -51,10 +51,12 @@ Headers, the refused 400/403/404 bodies and the rate-limit readings are in
 
 Fourth round, captured 2026-09-19 for the Phase 4 table-driven Congress.gov
 routes (BillTrax port; api.data.gov key as `X-Api-Key`, first page of the
-119th Congress list at `limit=3` except the two routes with their own path
+119th Congress list at `limit=3` except the routes with their own path
 identity). Each response's `request` echo block was checked byte-for-byte
 against the key with `scrub_credential` before it was written; none of the
-seven carried it.
+eight carried it. `congress-house-vote-list.json` was added the same day,
+closing the `house-vote` gap the table-contract design
+(`docs/research/table-contracts-2026-09-19.md` §2.1) named.
 
 | Fixture | Request | Bytes | SHA-256 | Transformation |
 | --- | --- | --- | --- | --- |
@@ -65,6 +67,7 @@ seven carried it.
 | `congress-hearing-list.json` | GET https://api.congress.gov/v3/hearing/119 | 1,001 | `4e601ff5e3854dbcdb482bc5f742e83d974674c8a4a287417c6c9e48a98e767b` | Complete, unchanged response; 3 of a declared 971. |
 | `congress-committee-report-list.json` | GET https://api.congress.gov/v3/committee-report/119 | 1,411 | `8fc218474c4638bc644ed52252f247223f061f6381e51803cea9c953c9a07fd7` | Complete, unchanged response; 3 of a declared 950. |
 | `congress-house-communication-list.json` | GET https://api.congress.gov/v3/house-communication/119 | 1,407 | `307ae75d21d9a01d2eedabcd1c5871966a2a16e0d13b306325e22396891a088f` | Complete, unchanged response; 3 of a declared 4,975. |
+| `congress-house-vote-list.json` | GET https://api.congress.gov/v3/house-vote/119/1?limit=3 | 2,264 | `e27d5fa9fd8ce95926fdb3d4871d87cce629bdd51f97645bcf8c5f984efd9989` | Complete, unchanged response; 3 of a declared 362. |
 
 `congress-committee-bills-list.json` contradicts the naive reading of "records
 key `bills`": the publisher nests the array inside a `committee-bills` wrapper
@@ -72,9 +75,10 @@ object alongside its own `count` and `url`, not at the top level the way
 every other route here answers. `CongressListRoute.records_key` for that
 route is the tuple `("committee-bills", "bills")`; `reading/paged_json.py`
 reads a tuple records key the same way it already reads
-`count_path`/`next_path`. The other six routes matched the brief's flat
-top-level keys exactly (`actions`, `nominations`, `hearings`, `reports`,
-`houseCommunications`).
+`count_path`/`next_path`. The other six of the original seven matched the
+brief's flat top-level keys exactly (`actions`, `nominations`, `hearings`,
+`reports`, `houseCommunications`); `house-vote`'s `houseRollCallVotes` does
+too.
 
 `committee-bills` and `bill-actions` initially carried `sort_honored=False`
 and `window_honored` unset as dataclass defaults rather than measurements.
@@ -87,6 +91,7 @@ not a captured page): four observations, one per route per axis.
 | `committee-bills` | `GET committee/house/hsju00/bills?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 41,822 unfiltered vs 9 with the one-day window — window honored | 2026-09-19 |
 | `bill-actions` | `GET bill/119/hr/1/actions?limit=1&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (`actionCode` E40000, `actionDate` 2025-07-04) — sort ignored | 2026-09-19 |
 | `bill-actions` | `GET bill/119/hr/1/actions?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 59 both times, unchanged — window ignored | 2026-09-19 |
+| `house-vote` | `GET house-vote/119/1?limit=3&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (roll 240, `updateDate` 2025-09-09T18:53:19-04:00) and identical declared count (362) — sort ignored | 2026-09-19 |
 
 `CongressListRoute.sort_honored` and `.window_honored` for both routes are set
 from these four observations: `committee-bills` is `sort_honored=False,
@@ -95,3 +100,9 @@ window_honored=False`. Every other route's `window_honored` stays the
 dataclass default (`True`), which is a carried-forward assumption from
 `bill`/`crsreport`'s original, always-accepted contract, not a measurement —
 see `sources/congress/listing.py`'s module docstring.
+
+`house-vote`'s `sort_honored=False` was carried over from an indirect
+inference (the sibling `house-vote/{c}/{session}/{roll}/members` route,
+measured `sort ignored` in the legislative data map) until the direct probe
+above replaced the inference with a measurement of the exact route this
+package uses.
