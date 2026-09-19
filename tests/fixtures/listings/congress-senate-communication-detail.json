@@ -1,0 +1,30 @@
+{
+    "request": {
+        "communicationNum": "4712",
+        "congress": "119",
+        "contentType": "application/json",
+        "execCommunicationType": "ec",
+        "format": "json"
+    },
+    "senateCommunication": {
+        "abstract": "A communication from the Acting Branch Chief of the Regulatory Management Branch, Environmental Protection Agency, transmitting, pursuant to law, the report of a rule entitled \"Bacillus amyloliquefaciens strain AT-332; Exemption from the Requirement of a Pesticide Tolerance\" (FRL No. 13314-01-OCSPP) received in the Office of the President of the Senate on September 14, 2026; to the Committee on Agriculture, Nutrition, and Forestry.",
+        "chamber": "Senate",
+        "committees": [
+            {
+                "name": "Agriculture, Nutrition, and Forestry Committee",
+                "referralDate": "2026-09-17",
+                "systemCode": "ssaf00",
+                "url": "https://api.congress.gov/v3/committee/senate/ssaf00?format=json"
+            }
+        ],
+        "communicationType": {
+            "code": "EC",
+            "name": "Executive Communication"
+        },
+        "congress": 119,
+        "congressionalRecordDate": "2026-09-17",
+        "number": 4712,
+        "sessionNumber": 2,
+        "updateDate": "2026-09-18T10:15:55Z"
+    }
+}
