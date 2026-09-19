@@ -19,6 +19,7 @@ from spicy_docs.sources.federal_register.body_sources import (
 from spicy_docs.sources.govinfo.bodies import (
     PACKAGE_BODY_FORMATS,
     GovInfoBodySourceError,
+    ModsBill,
     package_body_locator,
     package_mods_locator,
     package_summary_locator,
@@ -221,6 +222,55 @@ def test_real_mods_states_the_access_id_and_the_offered_renditions() -> None:
     assert mods.collection_code == "CRPT"
     assert mods.offered_formats == ("htm", "pdf")
     assert mods.other_renditions == ()
+
+
+def test_real_mods_states_every_bill_and_primary_bill_is_not_the_first_listed() -> None:
+    """Measured on CRPT-119hrpt1: S. 5 (OTHER) is listed before H. Res. 53 (PRIMARY)."""
+    mods = validate_package_mods(MODS, package=PACKAGE, final_url=MODS_URL, max_bytes=200_000)
+    assert mods.bills == (
+        ModsBill(congress=119, bill_type="S", number="5", context="OTHER", normalized_bill_type="s"),
+        ModsBill(congress=119, bill_type="HRES", number="53", context="OTHER", normalized_bill_type="hres"),
+        ModsBill(congress=119, bill_type="HRES", number="53", context="PRIMARY", normalized_bill_type="hres"),
+        ModsBill(congress=119, bill_type="HR", number="471", context="OTHER", normalized_bill_type="hr"),
+    )
+    # First-listed is S. 5, which is not the bill this report is about.
+    assert mods.bills[0].bill_type == "S" and mods.bills[0].context != "PRIMARY"
+    assert mods.primary_bill == ModsBill(
+        congress=119, bill_type="HRES", number="53", context="PRIMARY", normalized_bill_type="hres"
+    )
+
+
+def test_a_mods_with_no_bill_elements_has_no_primary_bill() -> None:
+    mods = validate_package_mods(mods_xml(), package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == ()
+    assert mods.primary_bill is None
+
+
+def test_a_bill_element_missing_a_required_attribute_is_skipped_not_guessed() -> None:
+    body = (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><accessId>{PACKAGE}</accessId>"
+        '<bill congress="119" context="PRIMARY" number="1"></bill>'  # no type
+        '<bill congress="119" context="PRIMARY" number="2" type="HR"></bill>'
+        "</extension></mods>"
+    ).encode()
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == (
+        ModsBill(congress=119, bill_type="HR", number="2", context="PRIMARY", normalized_bill_type="hr"),
+    )
+
+
+def test_an_unrecognized_bill_type_normalizes_to_none() -> None:
+    body = (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><accessId>{PACKAGE}</accessId>"
+        '<bill congress="119" context="PRIMARY" number="1" type="XX"></bill>'
+        "</extension></mods>"
+    ).encode()
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == (
+        ModsBill(congress=119, bill_type="XX", number="1", context="PRIMARY", normalized_bill_type=None),
+    )
 
 
 def test_real_cprt_summary_and_mods_state_the_committee_print() -> None:

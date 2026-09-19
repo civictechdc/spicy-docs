@@ -257,6 +257,63 @@ class GranuleSummary:
 
 
 @dataclass(frozen=True, slots=True)
+class ModsBill:
+    """One ``<bill>`` a package MODS names, in the publisher's own document order.
+
+    ``context`` is the publisher's own priority marker (``PRIMARY``,
+    ``OTHER``, ...). Document order is not priority order -- measured on
+    CRPT-119hrpt1, whose MODS lists S. 5 (``OTHER``), H. Res. 53 (``OTHER``),
+    H. Res. 53 again (``PRIMARY``), then H.R. 471 (``OTHER``) -- so a caller
+    wanting the bill a report is chiefly about reads
+    ``PackageModsIdentity.primary_bill``, never ``bills[0]``.
+
+    ``bill_type`` is the publisher's own spelling (``HRES``, ``S``, ``HR``,
+    ...); ``normalized_bill_type`` lower-cases it to match
+    ``sources.congress.bill_status.BILL_TYPES`` (already imported here for
+    the package-id grammar), so a caller matching against that vocabulary
+    does not normalize twice. It is ``None`` when the lower-cased spelling is
+    not one of that vocabulary's entries.
+    """
+
+    congress: int
+    bill_type: str
+    number: str
+    context: str
+    normalized_bill_type: str | None
+
+
+def _mods_bills(root: ModsRecord) -> tuple[ModsBill, ...]:
+    """Read every root-level ``<bill>`` a package MODS states, in document order.
+
+    Read the same way ``accessId`` and ``collectionCode`` are --
+    ``root.fields("extension", "bill")`` reaches only the root's own
+    ``extension`` children, so a constituent's own ``<bill>``, if any, is not
+    read here, the same boundary ``access_ids`` already draws. A ``<bill>``
+    missing any of the four attributes this reads is skipped rather than
+    guessed at; nothing here claims completeness beyond what was stated.
+    """
+    bills: list[ModsBill] = []
+    for element in root.fields("extension", "bill"):
+        congress = element.attribute("congress")
+        bill_type = element.attribute("type")
+        number = element.attribute("number")
+        context = element.attribute("context")
+        if not (congress and congress.isdigit() and bill_type and number and context):
+            continue
+        normalized = bill_type.lower()
+        bills.append(
+            ModsBill(
+                congress=int(congress),
+                bill_type=bill_type,
+                number=number,
+                context=context,
+                normalized_bill_type=normalized if normalized in BILL_TYPES else None,
+            )
+        )
+    return tuple(bills)
+
+
+@dataclass(frozen=True, slots=True)
 class PackageModsIdentity:
     """The MODS accessIds and the renditions the publisher says it offers."""
 
@@ -271,6 +328,19 @@ class PackageModsIdentity:
     moved_renditions: tuple[tuple[str, str], ...]
     #: ``(displayLabel, url)`` for every other raw-object rendition, verbatim.
     other_renditions: tuple[tuple[str, str], ...]
+    #: Every ``<bill>`` the MODS names, in document order. Empty for a
+    #: package whose MODS states none.
+    bills: tuple[ModsBill, ...]
+
+    @property
+    def primary_bill(self) -> ModsBill | None:
+        """The ``<bill>`` this document is chiefly about, or ``None``.
+
+        Never the first-listed one -- document order is not priority order
+        (measured, CRPT-119hrpt1: S. 5 ``OTHER`` precedes H. Res. 53
+        ``PRIMARY``).
+        """
+        return next((bill for bill in self.bills if bill.context == "PRIMARY"), None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -626,6 +696,7 @@ def validate_package_mods(
         offered_formats=offered,
         moved_renditions=moved,
         other_renditions=other,
+        bills=_mods_bills(root),
     )
 
 
@@ -839,6 +910,7 @@ __all__ = [
     "GranuleIdentity",
     "GranuleModsIdentity",
     "GranuleSummary",
+    "ModsBill",
     "PackageBodyIdentity",
     "PackageIdentity",
     "PackageModsIdentity",

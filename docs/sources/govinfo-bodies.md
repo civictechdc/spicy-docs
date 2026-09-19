@@ -481,9 +481,26 @@ MODS as the refused one. A refusal returns no partial result.
 `GovInfoPackageBody` is frozen and holds the parsed `identity`, the `format`
 chosen, the `preference` asked for, `offered_formats`, the validated `summary`
 (with its `download_links` as evidence), the validated `mods` (with
-`moved_renditions` and `other_renditions`) and `body` identities, the three
-captures in request order, the consumed `request_count` and the effective
-`budget`. `GovInfoGranuleBody` is the same shape for `acquire_granule`, with a
+`moved_renditions`, `other_renditions` and `bills`) and `body` identities, the
+three captures in request order, the consumed `request_count` and the
+effective `budget`.
+
+`PackageModsIdentity.bills` is every `<bill>` the MODS names, in the
+publisher's own document order, read from the same root-level `extension`
+children `accessId` and `collectionCode` already are. Document order is not
+priority order: CRPT-119hrpt1's MODS lists S. 5 (`context="OTHER"`) before H.
+Res. 53 (`context="PRIMARY"`), so `mods.bills[0]` names the wrong bill.
+`mods.primary_bill` returns the one `<bill>` stating `context="PRIMARY"`, or
+`None`, and is the accessor the committee-report transform uses instead of
+re-parsing the MODS bytes itself. Each `ModsBill` keeps the publisher's own
+`bill_type` spelling (`HRES`, `S`, `HR`, ...) alongside
+`normalized_bill_type`, that spelling lower-cased to match
+`sources.congress.bill_status.BILL_TYPES` — `None` when the lower-cased form
+is not one of that vocabulary's entries, so a caller need not normalize
+twice. A `<bill>` missing any of `congress`/`type`/`number`/`context` is
+skipped, not guessed at.
+
+`GovInfoGranuleBody` is the same shape for `acquire_granule`, with a
 `GranuleIdentity` (the package and granule together), a `GranuleSummary` and a
 `GranuleModsIdentity` (which also carries `host_package_ids`, the proof of
 membership) in place of their package counterparts. Each capture carries its
