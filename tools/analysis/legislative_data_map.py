@@ -190,9 +190,10 @@ ROWS = (
         None, ("src/spicy_docs/sources/congress/listing.py",)),
     Row(A, "bills", "Amendment text", "`amendment/.../text` where present", "candidate", KEY,
         "the listing port carries no text; amendment text otherwise lives in the Record and on rules.house.gov", None),
-    Row(A, "laws", "Enacted bills list", "`law/{c}`", "candidate", KEY,
-        "the one cheap enumeration of enacted bills per Congress (108 rows for the 119th, each with the bill and its law number); "
-        "law bodies are PLAW USLM (Table B)", ("congress", "law")),
+    Row(A, "laws", "Enacted bills list", "`law/{c}`", "have", KEY,
+        "listing route landed in `congress/listing.py`: the one cheap enumeration of enacted bills per Congress (108 rows for the "
+        "119th, each with the bill and its law number); law bodies are PLAW USLM (Table B)", ("congress", "law"),
+        ("src/spicy_docs/sources/congress/listing.py",)),
     Row(A, "votes", "Vote references on bill actions (`recordedVotes`)", "`bill/{c}/{type}/{n}/actions`", "have", KEY,
         "route table in `congress/listing.py`; sort and date window both ignored by the publisher (measured 2026-09-19); BillTrax's `sync-roll-call-votes.ts` retires against it",
         None, ("src/spicy_docs/sources/congress/listing.py",)),
@@ -205,35 +206,43 @@ ROWS = (
     Row(A, "committees", "Hearings", "`hearing`", "have", KEY,
         "listing route landed in `congress/listing.py` 2026-09-19; transcript bodies come from the GovInfo body fetch (Table B)", ("congress", "hearing"),
         ("src/spicy_docs/sources/congress/listing.py",)),
-    Row(A, "committees", "Committee meetings (scheduled)", "`committee-meeting`", "candidate", KEY,
-        "overlaps docs.house.gov and the Senate hearings calendar; API-first", ("congress", "committee-meeting")),
-    Row(A, "committees", "Committee prints", "`committee-print`", "candidate", KEY, "low volume; take with reports",
-        ("congress", "committee-print")),
-    Row(A, "committees", "Committee rosters", "`committee`", "candidate", KEY,
-        "API-first over the Clerk and Senate XML rosters", ("congress", "committee")),
-    Row(A, "members", "Members", "`member`", "candidate", KEY,
-        "bioguide-keyed; API-first over Bioguide bulk and the House/Senate XML", ("congress", "member")),
+    Row(A, "committees", "Committee meetings (scheduled)", "`committee-meeting`", "have", KEY,
+        "listing route landed in `congress/listing.py`; overlaps docs.house.gov and the Senate hearings calendar; API-first",
+        ("congress", "committee-meeting"), ("src/spicy_docs/sources/congress/listing.py",)),
+    Row(A, "committees", "Committee prints", "`committee-print`", "have", KEY,
+        "listing route landed in `congress/listing.py`; low volume; take with reports",
+        ("congress", "committee-print"), ("src/spicy_docs/sources/congress/listing.py",)),
+    Row(A, "committees", "Committee rosters", "`committee`", "have", KEY,
+        "listing route landed in `congress/listing.py`; API-first over the Clerk and Senate XML rosters",
+        ("congress", "committee"), ("src/spicy_docs/sources/congress/listing.py",)),
+    Row(A, "members", "Members", "`member`", "have", KEY,
+        "listing route landed in `congress/listing.py`; bioguide-keyed; API-first over Bioguide bulk and the House/Senate XML",
+        ("congress", "member"), ("src/spicy_docs/sources/congress/listing.py",)),
     Row(A, "nominations", "Nominations", "`nomination`", "have", KEY,
         "listing route landed in `congress/listing.py` 2026-09-19; the first coverage of nominations in the repo; the nine Senate LIS feeds stay a cross-check",
         ("congress", "nomination"), ("src/spicy_docs/sources/congress/listing.py",)),
-    Row(A, "treaties", "Treaties", "`treaty`", "candidate", KEY, "not previously mapped", ("congress", "treaty")),
-    Row(A, "record", "Daily Congressional Record", "`daily-congressional-record`", "candidate", KEY,
-        "the primary floor record and the legislative-day calendar: one issue per day either chamber met, pro forma days included, "
-        "with House and Senate sections saying which; the Clerk floor summary is its digest", ("congress", "daily-congressional-record")),
+    Row(A, "treaties", "Treaties", "`treaty`", "have", KEY,
+        "listing route landed in `congress/listing.py`; not previously mapped", ("congress", "treaty"), ("src/spicy_docs/sources/congress/listing.py",)),
+    Row(A, "record", "Daily Congressional Record", "`daily-congressional-record`", "have", KEY,
+        "listing route landed in `congress/listing.py`; the primary floor record and the legislative-day calendar: one issue per "
+        "day either chamber met, pro forma days included, with House and Senate sections saying which; the Clerk floor summary is "
+        "its digest", ("congress", "daily-congressional-record"), ("src/spicy_docs/sources/congress/listing.py",)),
     Row(A, "record", "Bound Congressional Record", "`bound-congressional-record`", "candidate", KEY,
         "historical only; take on a historical-reach need", ("congress", "bound-congressional-record")),
     Row(A, "communications", "House executive communications", "`house-communication` (+ detail)", "have", KEY,
         "listing route landed in `congress/listing.py` 2026-09-19; typed: isRulemaking, CRA authority, committee referral with systemCode and date, matching requirement, "
         "RIN in reportNature (17 of 25 sampled are rulemakings with a RIN); the RIN resolves in the Federal Register API by its structured filter, "
         "so this is the bridge from this repo's regulatory sources to Congress", ("congress", "house-communication"), ("src/spicy_docs/sources/congress/listing.py",)),
-    Row(A, "communications", "Senate executive communications", "`senate-communication`", "candidate", KEY,
-        "abstract, committee referral and Record date only; no rulemaking flag, authority or RIN field (sampled)",
-        ("congress", "senate-communication")),
-    Row(A, "reference", "House reporting requirements", "`house-requirement` (+ `/matching-communications`)", "candidate", KEY,
-        "3,226 requirements, each with legal authority, frequency, agency and its matching communications (92,450 for the CRA one, "
-        "unordered by Congress, and the older rows have no detail record); every record's update date is 2021-11-05, so the list is a "
-        "snapshot; the index of the agency reports to Congress that BillTrax takes as uploads, entered from the communication side",
-        ("congress", "house-requirement")),
+    Row(A, "communications", "Senate executive communications", "`senate-communication`", "have", KEY,
+        "listing route landed in `congress/listing.py`; abstract, committee referral and Record date only; no rulemaking flag, "
+        "authority or RIN field (sampled)", ("congress", "senate-communication"), ("src/spicy_docs/sources/congress/listing.py",)),
+    Row(A, "reference", "House reporting requirements", "`house-requirement` (+ `/matching-communications`)", "have", KEY,
+        "listing route landed in `congress/listing.py`; 3,226 requirements, each with legal authority, frequency, agency and its "
+        "matching communications; requirement 8070's 92,450-row CRA list (A6) walked in full and histogrammed by Congress, detail "
+        "records resolving from the 114th on (28.9% of the walked rows, not a useful share by the proposal's rule); every "
+        "requirement's own update date is 2021-11-05, so the requirement list itself is a snapshot; the index of the agency "
+        "reports to Congress that BillTrax takes as uploads, entered from the communication side",
+        ("congress", "house-requirement"), ("src/spicy_docs/sources/congress/listing.py",)),
     Row(A, "crs", "CRS report metadata and summaries", "`crsreport/{id}`", "have", KEY,
         "`crs_summaries.py`; the port plan names its query-param key (`:54`) as the legacy exception, not the pattern to clone",
         ("congress", "crsreport"),
@@ -286,7 +295,10 @@ ROWS = (
         "`congress/votes.py`: the `house-vote` API names this file as its source; bioguide-keyed", ("sample", "clerk-vote"),
         ("src/spicy_docs/sources/congress/votes.py",)),
     Row(C, "votes", "Senate per-vote XML", "`senate.gov/legislative/LIS/roll_call_votes/vote{c}{s}/vote_{c}_{s}_{n}.xml`",
-        "have", NONE, "`congress/votes.py`: LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source",
+        "have", NONE,
+        "`congress/votes.py`: LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source; `votes.py` also "
+        "gains `list_senate_votes(congress, session)` over the session's vote-menu file, keyless, identity proved from its own "
+        "congress and session",
         ("sample", "senate-vote"), ("src/spicy_docs/sources/congress/votes.py",)),
     Row(C, "members", "House MemberData.xml", "`clerk.house.gov/xml/lists/MemberData.xml`", "candidate", NONE,
         "members plus committee assignments with codes; only for fields the `member` API lacks", ("sample", "house-memberdata")),
