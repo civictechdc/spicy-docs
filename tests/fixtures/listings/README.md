@@ -91,6 +91,7 @@ not a captured page): four observations, one per route per axis.
 | `committee-bills` | `GET committee/house/hsju00/bills?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 41,822 unfiltered vs 9 with the one-day window — window honored | 2026-09-19 |
 | `bill-actions` | `GET bill/119/hr/1/actions?limit=1&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (`actionCode` E40000, `actionDate` 2025-07-04) — sort ignored | 2026-09-19 |
 | `bill-actions` | `GET bill/119/hr/1/actions?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 59 both times, unchanged — window ignored | 2026-09-19 |
+| `house-vote` | `GET house-vote/119/1?limit=3&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (roll 240, `updateDate` 2025-09-09T18:53:19-04:00) and identical declared count (362) — sort ignored | 2026-09-19 |
 
 `CongressListRoute.sort_honored` and `.window_honored` for both routes are set
 from these four observations: `committee-bills` is `sort_honored=False,
@@ -99,3 +100,9 @@ window_honored=False`. Every other route's `window_honored` stays the
 dataclass default (`True`), which is a carried-forward assumption from
 `bill`/`crsreport`'s original, always-accepted contract, not a measurement —
 see `sources/congress/listing.py`'s module docstring.
+
+`house-vote`'s `sort_honored=False` was carried over from an indirect
+inference (the sibling `house-vote/{c}/{session}/{roll}/members` route,
+measured `sort ignored` in the legislative data map) until the direct probe
+above replaced the inference with a measurement of the exact route this
+package uses.

@@ -180,17 +180,19 @@ class CongressListRoute:
 # Path shapes and records keys measured 2026-09-19 against the live API
 # (docs/research/legislative-data-map-2026-09-18.md). sort_honored is
 # measured for every route: only bill, amendment, summaries, committee-report
-# and committee reorder on sort; committee-bills and bill-actions were probed
-# directly the same day (see the module docstring and the fixtures README)
-# and neither does. window_honored is measured only for committee-bills
-# (True) and bill-actions (False); every other route keeps the default,
-# which is a carried-forward assumption, not a measurement -- see the module
-# docstring. "bill" keeps its historical bare-collection/Congress/type
-# narrowing (both congress and type may be omitted, but type only follows
-# congress); "committee-bills", "bill-actions" and "house-vote" have no bare
-# collection at all. "house-vote" sort_honored=False carries over the
-# 2026-09-18 measurement of its sibling `house-vote/{c}/{session}/{roll}/members`
-# route ("sort ignored"), the deepest house-vote path the data map probed.
+# and committee reorder on sort; committee-bills, bill-actions and house-vote
+# were probed directly the same day (see the module docstring and the
+# fixtures README) and none of the three does. window_honored is measured
+# only for committee-bills (True) and bill-actions (False); every other
+# route keeps the default, which is a carried-forward assumption, not a
+# measurement -- see the module docstring. "bill" keeps its historical
+# bare-collection/Congress/type narrowing (both congress and type may be
+# omitted, but type only follows congress); "committee-bills", "bill-actions"
+# and "house-vote" have no bare collection at all. "house-vote"
+# sort_honored=False is a direct probe of house-vote/119/1 (limit=1,
+# sort=updateDate desc vs asc, comparing the first record; see the fixtures
+# README), not only the earlier, indirect inference from its sibling
+# `house-vote/{c}/{session}/{roll}/members` route.
 LIST_ROUTES: dict[str, CongressListRoute] = {
     "bill": CongressListRoute(
         "bill", "bill/{congress}/{type}", BILLS_KEY, optional_params=frozenset({"congress", "type"}), sort_honored=True
