@@ -859,14 +859,16 @@ def render_block(measures: Mapping[str, Any]) -> str:
     contaminating = integrity.get("contaminatingGranules") or []
     lines.append("### Split integrity")
     lines.append("")
-    lines.append(
-        f"Rules frozen before this run: **{'yes' if frozen else 'no'}**. "
-        + (
-            "The blind column is a blind column."
-            if integrity.get("blindIsBlind")
-            else "The blind column is therefore a development column, and every number in it should be read that way."
+    if integrity.get("blindIsBlind"):
+        verdict = "The blind column is a blind column."
+    elif frozen:
+        verdict = (
+            "No rule changed while it read, but the granules below had already shaped the rules, so the blind "
+            "column is a development column, and every number in it should be read that way."
         )
-    )
+    else:
+        verdict = "The blind column is therefore a development column, and every number in it should be read that way."
+    lines.append(f"Rules frozen before this run: **{'yes' if frozen else 'no'}**. {verdict}")
     lines.append("")
     if contaminating:
         lines.append("| Granule whose evidence shaped a rule | Split it landed in |")
