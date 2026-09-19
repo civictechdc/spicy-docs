@@ -191,9 +191,21 @@ class SourceAcquirer:
         method: str = "GET",
         content: bytes | None = None,
         request_headers: Mapping[str, str] | None = None,
+        reset_budget: bool = True,
     ) -> tuple[Result, CapturedBodyResponse]:
-        """One request; 404/410 raise ``unavailable``; any failure carries its capture and context."""
-        self._http.reset_budget()
+        """One request; 404/410 raise ``unavailable``; any failure carries its capture and context.
+
+        ``reset_budget=False`` chains this capture onto the budget a capture
+        already made earlier in the same logical operation consumed, rather
+        than granting it a fresh ``max_requests``: a source whose one
+        operation is more than one HTTP request (a listing read before a
+        conditional download, say) passes it on every call after the first so
+        ``max_requests`` bounds the whole operation once, not each request in
+        it separately, and ``request_count`` after the last call reports the
+        true total.
+        """
+        if reset_budget:
+            self._http.reset_budget()
         capture = None
         try:
             capture = self._http.capture(

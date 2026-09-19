@@ -366,6 +366,54 @@ def test_acquire_downloads_the_zip_when_the_listing_shows_it_changed():
     assert result.capture.body == ZIP
     assert result.listing_capture is not None and result.listing_capture.body == LISTING
     assert result.listing_entry == seen
+    # The listing's own capture must not have reset the request budget: both
+    # requests this call made are counted, not just the zip's.
+    assert result.request_count == 2
+
+
+def test_acquire_downloads_the_zip_when_only_modified_at_changed():
+    """Size alone agreeing must not skip: modified_at changing is enough to mean "changed"."""
+    seen = read_bulk_listing(LISTING, congress=119, bill_type="hres").zip_entry
+    stale = dataclasses.replace(seen, modified_at=seen.modified_at.replace(year=seen.modified_at.year - 1))
+    transport = Transport(listing_response(), response())
+    with BulkStatusAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.acquire(119, "hres", unchanged_since=stale)
+    assert len(transport.calls) == 2
+    assert result.skipped_unchanged is False
+    assert result.archive is not None and result.capture.body == ZIP
+
+
+def test_unchanged_since_naming_a_different_file_refuses_rather_than_risk_a_false_skip():
+    seen = read_bulk_listing(LISTING, congress=119, bill_type="hres").zip_entry
+    other_folder = dataclasses.replace(
+        seen,
+        name="BILLSTATUS-119-hr.zip",
+        link="https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119-hr.zip",
+    )
+    transport = Transport(listing_response())
+    with (
+        BulkStatusAcquirer(budget=BUDGET, transport=transport) as source,
+        pytest.raises(BillSourceError, match="names a different file"),
+    ):
+        source.acquire(119, "hres", unchanged_since=other_folder)
+    # Only the listing was read; the mismatch is caught before any zip request.
+    assert len(transport.calls) == 1
+    assert str(transport.calls[0].url) == LISTING_URL
+
+
+def test_a_listing_that_already_spent_the_request_budget_refuses_the_zip_rather_than_grant_a_second_budget():
+    seen = read_bulk_listing(LISTING, congress=119, bill_type="hres").zip_entry
+    stale = dataclasses.replace(seen, size=seen.size - 1)
+    one_request = BulkStatusBudget(1, 4 * 1024 * 1024, 7, 0)
+    transport = Transport(listing_response())
+    with (
+        BulkStatusAcquirer(budget=one_request, transport=transport) as source,
+        pytest.raises(BillSourceError, match="exhausted its total request budget"),
+    ):
+        source.acquire(119, "hres", unchanged_since=stale)
+    # The listing consumed the whole budget; the zip must never have been requested.
+    assert len(transport.calls) == 1
+    assert str(transport.calls[0].url) == LISTING_URL
 
 
 def test_acquire_without_unchanged_since_never_reads_the_listing():

@@ -100,6 +100,18 @@ DEFAULT_MAX_LISTING_BYTES = 8 * 1024 * 1024
 
 _LABEL = "BILLSTATUS archive"
 _LISTING_LABEL = "BILLSTATUS bulk listing"
+# ``formattedLastModifiedTime`` is always two-digit day/hour/minute and a
+# four-digit year in every one of 18,964 entries measured 2026-09-19; the
+# month is looked up in ``_LISTING_MONTHS`` rather than read by name.
+_LISTING_STAMP = re.compile(
+    r"(?P<day>[0-9]{2})-(?P<month>[A-Za-z]{3})-(?P<year>[0-9]{4}) (?P<hour>[0-9]{2}):(?P<minute>[0-9]{2})"
+)
+_LISTING_MONTHS = {
+    name: number
+    for number, name in enumerate(
+        ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), start=1
+    )
+}
 # Both digit runs are bounded, not just anchored: an unbounded run lets a long
 # enough name reach ``int()``, whose own digit limit raises a plain ValueError
 # that would escape the per-member handler and abort the rest of the archive.
@@ -286,18 +298,29 @@ class BulkListing:
     folder_modified: datetime | None
 
 
-def _parse_listing_instant(value: str, *, field: str) -> datetime:
-    """GovInfo bulkdata listings spell a stamp ``DD-Mon-YYYY HH:MM``, GMT, seconds truncated.
+def _parse_listing_instant(value: object, *, field: str) -> datetime:
+    """GovInfo bulkdata listings spell a stamp ``DD-Mon-YYYY HH:MM``, GMT, seconds truncated, English month names.
 
     Confirmed 2026-09-19 against the H.Res. zip's own HTTP ``Last-Modified``
     header (``Fri, 18 Sep 2026 20:26:06 GMT``): the listing's
     ``formattedLastModifiedTime`` for the same file read ``18-Sep-2026 20:26``,
     the same instant to the minute.
+
+    The month is read from an explicit English name-to-number map rather than
+    ``strptime``'s ``%b``, which reads the process's ``LC_TIME`` locale: a
+    publisher stamp that never changes should not parse on one machine and
+    refuse on another because of a locale setting this module never chose.
     """
+    match = _LISTING_STAMP.fullmatch(value) if isinstance(value, str) else None
+    month = _LISTING_MONTHS.get(match["month"]) if match else None
+    if match is None or month is None:
+        raise BillSourceError(f"{_LISTING_LABEL} {field} is not the publisher's DD-Mon-YYYY HH:MM stamp")
     try:
-        return datetime.strptime(value, "%d-%b-%Y %H:%M").replace(tzinfo=UTC)
-    except (TypeError, ValueError) as error:
-        raise BillSourceError(f"{_LISTING_LABEL} {field} is not the publisher's DD-Mon-YYYY HH:MM stamp") from error
+        return datetime(
+            int(match["year"]), month, int(match["day"]), int(match["hour"]), int(match["minute"]), tzinfo=UTC
+        )
+    except ValueError as error:
+        raise BillSourceError(f"{_LISTING_LABEL} {field} is not a valid calendar date and time") from error
 
 
 def _listing_entry(raw: object) -> BulkListingEntry:
@@ -458,10 +481,13 @@ class BulkStatusAcquirer(SourceAcquirer):
     def list_archives(self, congress: int, bill_type: str) -> BulkListingAcquisition:
         """Capture the folder's own bulkdata listing: every file it holds, with its own stamp and size.
 
-        Keyless like ``acquire``'s zip route; ``named_challenge`` recasts a
-        401/403 bot wall as ``BillSourceError`` rather than
-        ``CredentialRefusedError``, the way the package's other keyless
-        ``www.govinfo.gov`` routes already do (``votes.py``,
+        Bounded by the smaller of the caller's ``max_bytes`` (sized for the
+        zip) and ``DEFAULT_MAX_LISTING_BYTES``: the listing is a fraction of
+        the zip's own bytes, and a caller's zip-sized budget should not also
+        become this route's own cap. Keyless like ``acquire``'s zip route;
+        ``named_challenge`` recasts a 401/403 bot wall as ``BillSourceError``
+        rather than ``CredentialRefusedError``, the way the package's other
+        keyless ``www.govinfo.gov`` routes already do (``votes.py``,
         ``press_releases.py``, ``legislators.py``).
         """
         budget = self.budget
@@ -473,7 +499,7 @@ class BulkStatusAcquirer(SourceAcquirer):
                 parse=lambda response, limit: read_bulk_listing(
                     response.body, congress=congress, bill_type=bill_type, max_bytes=limit
                 ),
-                max_bytes=budget.max_bytes,
+                max_bytes=min(budget.max_bytes, DEFAULT_MAX_LISTING_BYTES),
                 unavailable=BillSourceUnavailableError,
                 context={
                     "operation": "bulk-status-listing",
@@ -492,13 +518,24 @@ class BulkStatusAcquirer(SourceAcquirer):
         ``unchanged_since`` is a zip entry retained from a prior call's
         ``listing_entry`` (or a standalone ``list_archives``). When given,
         the folder's listing is read first -- one small request -- before the
-        zip is ever asked for. If the listing's own zip entry states the same
-        ``modified_at`` and ``size`` as ``unchanged_since``, the zip download
-        is skipped entirely: the returned acquisition carries
-        ``skipped_unchanged=True``, ``archive`` and ``capture`` both ``None``,
-        and the listing's own capture and entry attached. Otherwise the zip
-        downloads exactly as it always has, and the listing entry this call
-        saw travels on the acquisition for the caller's next run.
+        zip is ever asked for, and the two requests share this call's one
+        ``max_requests`` budget rather than each getting a fresh one: the
+        listing's own capture never resets the client's request count, so a
+        listing that already spent the whole budget leaves none for the zip,
+        and the zip's request is refused rather than silently granted extra
+        room. If the listing's own zip entry names the same file
+        (``name``/``link``) as ``unchanged_since`` and states the same
+        ``modified_at`` and ``size``, the zip download is skipped entirely:
+        the returned acquisition carries ``skipped_unchanged=True``,
+        ``archive`` and ``capture`` both ``None``, and the listing's own
+        capture and entry attached. An ``unchanged_since`` whose ``name`` or
+        ``link`` differs from what this folder's listing names for its own
+        zip is refused outright -- it describes a different file, not a stale
+        version of this one, so comparing its ``modified_at``/``size`` would
+        risk a false skip. Otherwise the zip downloads exactly as it always
+        has, and the listing entry this call saw travels on the acquisition
+        for the caller's next run. ``request_count`` on the returned
+        acquisition is always the true total for this call, listing included.
         """
         if unchanged_since is not None and not isinstance(unchanged_since, BulkListingEntry):
             raise TypeError("unchanged_since must be a BulkListingEntry")
@@ -506,6 +543,8 @@ class BulkStatusAcquirer(SourceAcquirer):
         listing_acquisition = self.list_archives(congress, bill_type) if unchanged_since is not None else None
         if listing_acquisition is not None:
             seen = listing_acquisition.listing.zip_entry
+            if (unchanged_since.name, unchanged_since.link) != (seen.name, seen.link):
+                raise BillSourceError("unchanged_since names a different file than this folder's own zip entry")
             if (seen.modified_at, seen.size) == (unchanged_since.modified_at, unchanged_since.size):
                 return BulkStatusAcquisition(
                     archive=None,
@@ -516,26 +555,31 @@ class BulkStatusAcquirer(SourceAcquirer):
                     listing_capture=listing_acquisition.capture,
                     listing_entry=seen,
                 )
-        archive, capture = self.capture_validated(
-            bulk_status_locator(congress, bill_type),
-            media_types=ARCHIVE_MEDIA_TYPES,
-            parse=lambda response, limit: read_bulk_status_archive(
-                response.body,
-                congress=congress,
-                bill_type=bill_type,
-                max_bytes=limit,
-                max_entries=budget.max_entries,
-                max_entry_bytes=budget.max_entry_bytes,
-                max_total_bytes=budget.max_total_bytes,
-            ),
-            max_bytes=budget.max_bytes,
-            unavailable=BillSourceUnavailableError,
-            context={
-                "operation": "bulk-status-archive",
-                "selection": {"congress": congress, "billType": bill_type},
-                "budget": asdict(budget),
-            },
-        )
+        url = bulk_status_locator(congress, bill_type)
+        with named_challenge(url, error_type=BillSourceError, context_key=self.context_key):
+            archive, capture = self.capture_validated(
+                url,
+                media_types=ARCHIVE_MEDIA_TYPES,
+                parse=lambda response, limit: read_bulk_status_archive(
+                    response.body,
+                    congress=congress,
+                    bill_type=bill_type,
+                    max_bytes=limit,
+                    max_entries=budget.max_entries,
+                    max_entry_bytes=budget.max_entry_bytes,
+                    max_total_bytes=budget.max_total_bytes,
+                ),
+                max_bytes=budget.max_bytes,
+                unavailable=BillSourceUnavailableError,
+                context={
+                    "operation": "bulk-status-archive",
+                    "selection": {"congress": congress, "billType": bill_type},
+                    "budget": asdict(budget),
+                },
+                # A listing already read in this call keeps its request count
+                # rather than being granted a second, independent budget.
+                reset_budget=listing_acquisition is None,
+            )
         return BulkStatusAcquisition(
             archive=archive,
             capture=capture,

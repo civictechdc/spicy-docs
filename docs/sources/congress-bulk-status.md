@@ -89,6 +89,10 @@ H.R., the largest folder, listed 10,504 entries in 3,744,366 bytes against a
 31,656,886-byte zip (12%). `bulk_listing_locator(congress, bill_type)`
 names the route and `read_bulk_listing` reads a retained response offline,
 the same way `read_bulk_status_archive` replays a retained zip.
+`list_archives` bounds the request by the smaller of the caller's own
+`max_bytes` (sized for the zip) and `DEFAULT_MAX_LISTING_BYTES`, so a budget
+built for a 64 MiB zip does not also become a 64 MiB cap on an 8 MiB-bounded
+listing.
 
 Every entry proves its own identity: its `link` must rebuild the single-file
 locator `bulk_status_locator` would spell for its `name` in the requested
@@ -130,7 +134,13 @@ beside `files`.
 BulkListingEntry | None`. Pass the zip entry retained from a prior call's
 `listing_entry` (or a standalone `list_archives`), and `acquire` reads the
 folder's listing first — one small request — before ever asking for the zip.
-If the listing's own zip entry states the same `modified_at` and `size` as
+`unchanged_since` must first name the same file the listing's own zip entry
+does (`name` and `link` both equal): an entry retained from a different
+folder or a different call names a different file, not a stale version of
+this one, and comparing its `modified_at`/`size` against this folder's zip
+would risk a false skip, so a mismatch there refuses outright rather than
+silently falling through to "changed." Once identity agrees, if the listing's
+own zip entry also states the same `modified_at` and `size` as
 `unchanged_since`, the zip download is skipped entirely: the returned
 `BulkStatusAcquisition` carries `skipped_unchanged=True`, `archive` and
 `capture` both `None`, and `listing_capture`/`listing_entry` set from the
@@ -138,6 +148,18 @@ listing alone. Otherwise the zip downloads exactly as it always has, and
 `listing_entry` still carries the entry this call saw, for the next run's
 `unchanged_since`. Without `unchanged_since`, `acquire` behaves exactly as
 before: one zip request, no listing read.
+
+The listing and the zip share this call's one `max_requests` budget rather
+than each getting its own: the listing's capture never resets the client's
+request count, so a listing that already spent the whole budget (retries
+included) leaves none for the zip, and the zip request is refused with the
+same "exhausted its total request budget" error a single over-budget request
+would raise — never silently granted a second, independent allowance.
+`request_count` on the returned acquisition is always the true total for the
+call, the listing's request counted in it whenever one was made. The zip
+capture is wrapped in `named_challenge` exactly as the listing's is, so a
+401/403 bot wall on either request raises this family's own `BillSourceError`
+rather than the shared client's generic credential-refusal error.
 
 ```python
 from spicy_docs.sources.congress.bulk_status import BulkStatusAcquirer, BulkStatusBudget
@@ -309,6 +331,15 @@ with each other, the same trust an HTTP `If-Modified-Since` conditional
 request already places in a publisher's own headers — this is not a new kind
 of trust, just one this client has no cheap way to place directly against the
 zip's own URL (see above).
+
+Identity is checked before freshness: `unchanged_since` must name the same
+file (`name` and `link`) the listing's own zip entry does before its
+`modified_at`/`size` are compared at all, so a caller that mixes up which
+retained entry belongs to which folder gets a refusal, never a skip that
+happens to be right by accident. And the listing read never grants the zip a
+second, independent `max_requests` — it spends from the one budget the call
+was given, so `unchanged_since` cannot let one `acquire` call spend twice its
+configured request ceiling merely by first asking a question about it.
 
 ## Source shapes and evidence
 
