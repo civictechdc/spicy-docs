@@ -15,6 +15,7 @@ from .model import (
     PageStrategy,
     Raster,
     Recognition,
+    TableObservation,
     TextBlock,
 )
 from .pages import DefaultReader
@@ -40,6 +41,7 @@ __all__ = [
     "Raster",
     "Recognition",
     "RenditionCleanup",
+    "TableObservation",
     "TextBlock",
     "body_text",
     "rendition_text",

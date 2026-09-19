@@ -63,7 +63,7 @@ Core imports and injected readers/backends require no rendering or model package
 | Component | Caller controls |
 | --- | --- |
 | `DefaultReader` | `dpi`, `max_pixels` |
-| `DocumentExtractor` | strategy, reader, `max_input_bytes`, selected pages, per-page overrides |
+| `DocumentExtractor` | strategy, reader, `max_input_bytes`, `tables`, selected pages, per-page overrides |
 | `RapidOCR` | injected engine or ONNX engine keyword options, including thread counts |
 | `AppleVision` | accurate/fast recognition, languages, injected engine factory |
 | `MLX` | model, revision, prompt, token limit, temperature, seed; `lighton()` and `glm(task=...)` supply saved defaults |
@@ -163,6 +163,42 @@ Source bytes remain caller-owned. SpicyDocs does not publish an extraction as a
 source-native release, choose a source's default processor or establish financial
 correctness. The [saved choices](pdf-extraction-choices.md) record the evidence
 and quality limitations behind each backend.
+
+## Table geometry
+
+`DocumentExtractor(strategy, tables=True)` runs PyMuPDF's `page.find_tables()`
+on each retained PDF page and attaches the result to `PageResult.tables`, a
+tuple of frozen `TableObservation` records (`page`, `bbox`, `row_count`,
+`column_count`, `cells` as a tuple of rows of cell text (`None` where PyMuPDF
+finds no cell region at that position, not just an empty ruled cell),
+per-cell `cell_boxes` in the same normalized displayed-page coordinates as
+`TextBlock.box` (`None` at the same positions as `cells`), and `confidence`,
+always `None` for PyMuPDF's table finder, which states none).
+It is independent of `strategy` and never merged into `PageResult.text` or
+`content.blocks`: B5 of `docs/research/closing-the-gaps-2026-09-19.md`
+measured PyMuPDF's line-by-line native text destroying real appropriations
+account rows (every label, then every amount, in column order), so a table
+observation is the row PyMuPDF's own ruling found, or nothing -- never a
+text-side guess folded back into the line-by-line output. `tables` defaults
+to `False`; no existing caller's output or per-page cost changes.
+
+```python
+extractor = DocumentExtractor(NativeText(), tables=True)
+for page in extractor.extract(pdf_bytes, media_type="application/pdf"):
+    for table in page.tables:
+        print(table.row_count, table.column_count, table.cells[0])
+```
+
+PyMuPDF finds a table only where the PDF carries a ruled grid, and reports
+one row per ruled band, not one row per printed line: a committee report
+often rules only a table's header, its whole account block and its total, so
+one `TableObservation` row can hold many newline-joined account lines in one
+cell rather than one account per row (see the pinned real-page test in
+`tests/extraction/test_api.py` and its fixture's README). [The measured
+row-recovery rate on two real committee reports](../sources/govinfo-bodies.md#table-geometry-recovered-from-the-pdf),
+and the verdict on when reaching for it is worth the cost, are in the GovInfo
+bodies doc. Image input and a PDF page with no ruled table both leave
+`PageResult.tables` empty; that is not an error.
 
 The adapter checks cover known text/geometry, blank controls, raw output retention,
 invalid responses, credential scrubbing and optional-import boundaries. Small live
