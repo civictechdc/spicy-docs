@@ -91,6 +91,7 @@ _TERM_STRING_RULES = (
     # though no term lacks it today (measured 2026-09-19).
     ("end", False, _ISO_DATE, "terms[{i}].end must be an ISO date"),
     ("state", True, None, "terms[{i}] needs a non-empty state"),
+    ("party", False, None, "terms[{i}] has a non-string party"),
 )
 # The regex above proves start/end are spelled ####-##-##; it does not prove
 # the date exists ("2026-13-45" matches it). This proves the calendar date.
@@ -123,18 +124,25 @@ class LegislatorsRefusedError(LegislatorsSourceError):
 
 @dataclass(frozen=True, slots=True)
 class Term:
-    """One publisher term row. ``end`` is ``None`` for an in-progress term. Party is not modeled here.
+    """One publisher term row. ``end`` is ``None`` for an in-progress term.
 
-    The publisher's single ``party`` field per term cannot represent a
-    mid-term party change (Strom Thurmond's 1964 switch, for example,
-    collapses to whichever party the row states), and this crosswalk's job
-    is ids, not party history, so ``party``/``party_affiliations`` stay unread.
+    ``party`` is the publisher's single value per term, not a history: it
+    cannot represent a mid-term party change (Strom Thurmond's 1964 switch,
+    for example, collapses to whichever party the row states), and a caller
+    wanting that history reads ``party_affiliations`` from the raw record,
+    which this crosswalk still leaves unread. ``district`` is absent for a
+    ``sen`` term and, when present, is spelled as the publisher's own decimal
+    string (an at-large ``district: 0`` included) rather than parsed back to
+    an ``int`` -- a table column keys and joins on it, and does neither
+    better as a number.
     """
 
     type: str
     start: str
     end: str | None
     state: str
+    party: str | None = None
+    district: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,6 +196,23 @@ def _optional_int(value: object, index: int, field: str) -> int | None:
     return value
 
 
+def _term_district(term: dict, record_index: int, term_index: int) -> str | None:
+    """``district`` is an int in the file (an at-large ``0`` included); keep it as the spelled string.
+
+    A table column keys and joins on it, and a Senate term never carries one
+    -- neither is better served by parsing it back to ``int``.
+    """
+    value = term.get("district")
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise LegislatorsSourceError(
+            f"community legislators record {record_index} terms[{term_index}].district must be an integer, "
+            f"got {value!r}"
+        )
+    return str(value)
+
+
 def _read_fec(value: object, index: int) -> tuple[str, ...]:
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
         raise LegislatorsSourceError(
@@ -227,7 +252,14 @@ def _read_term(term: object, record_index: int, term_index: int) -> Term:
                     f"community legislators record {record_index} terms[{term_index}].{field} is not a real "
                     f"calendar date: {value!r}"
                 ) from None
-    return Term(type=term_type, start=values["start"], end=values["end"], state=values["state"])
+    return Term(
+        type=term_type,
+        start=values["start"],
+        end=values["end"],
+        state=values["state"],
+        party=values["party"],
+        district=_term_district(term, record_index, term_index),
+    )
 
 
 def _read_record(row: object, index: int) -> Legislator:

@@ -20,11 +20,10 @@ GitHub, not a government publisher. It ships two files relevant here:
 
 Both are one JSON array of records with the same shape: `id` (a bag of
 cross-reference ids), `name`, `bio`, and `terms` (one entry per election won,
-carrying `type`, `start`, `end`, `state`, `party`, and other fields this
-module does not read). `party` is real publisher data, but is deliberately
-not modeled here — see the shape-rule table below. There is no third
-"everyone, ever" file, and no field in either file states when the file
-itself was generated.
+carrying `type`, `start`, `end`, `state`, `party`, `district` and other
+fields this module does not read) — see the shape-rule table below for how
+`party` and `district` are kept. There is no third "everyone, ever" file, and
+no field in either file states when the file itself was generated.
 
 ## Routes, bounds and their measured basis
 
@@ -68,13 +67,15 @@ dropped or half-parsed.
 | `terms` is a non-empty list; each entry's `type` is `rep` or `sen`, `start` is a real ISO calendar date, and `end` is a real ISO calendar date **when present**. | A person with no terms is not a legislator record this crosswalk can place in time. The regex proves a date is spelled `####-##-##`; `datetime.date.fromisoformat` proves it is a real date (`2026-13-45` matches the regex but is not a month). `end` is optional because the publisher omits it elsewhere in these files for an in-progress item; refusing the whole file over that shape would be wrong even though no term lacks it today (measured 2026-09-19). |
 | A bioguide, LIS or FEC id names **at most one** record in the file. | These are the join keys this crosswalk exists to supply; a duplicate would make a lookup ambiguous, which is worse than refusing the file. |
 
-**Party is not modeled.** `terms[].party` is read by nothing here, and there
-is no `Term.party` field. The publisher's one `party` value per term cannot
-represent a mid-term party change — Strom Thurmond's 1964 switch, for
+**`Term.party` is the publisher's one value per term, not a history.** It
+cannot represent a mid-term party change — Strom Thurmond's 1964 switch, for
 example, collapses to whichever party the row states — and this crosswalk's
-job is ids, not party history. Neither this repeated-per-term `party` nor any
-alternate party field a future revision might add (a `party_affiliations`
-key, say) is read.
+job is ids, not party history; a future revision wanting that history reads
+`party_affiliations` from the raw record, which stays unread here.
+**`Term.district`** is the publisher's `terms[].district` (absent on a `sen`
+term), kept as the spelled decimal string rather than parsed to `int` — an
+at-large `"0"` included — because a table column keys and joins on it and
+does neither better as a number.
 
 **FEC ids come in two real shapes, discovered against the live data, not
 assumed.** A House or Senate candidate id embeds the office letter, a decade

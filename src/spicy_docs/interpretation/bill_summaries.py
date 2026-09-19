@@ -15,6 +15,19 @@ the sealed part, the model call is injected, and nothing here reads a database
 or a network. Idempotency is a decision, not a lookup: ``needs_regeneration``
 answers it from a cached hash and prompt version, and the caller does the
 storing.
+
+``summarize_diff`` is a second, unrelated model call ported from BillTrax
+``src/app/api/bills/[id]/summarize/route.ts`` (read-only,
+``/Users/mikewolfd/Work/spicy-stack/BillTrax``): a section-diff summary, not a
+version summary. Its prompt carries no bill identity or framing -- the
+original sends only the diff text -- so ``DIFF_SUMMARY_PROMPT_TEMPLATE`` is
+sealed as measured, not reshaped to match ``SUMMARY_PROMPT_TEMPLATE``'s
+richer one. The route's own two guards (refuse a procedural-document version
+pair; 404 on no diff rows at all) read ``bill_versions.kind`` and
+``section_diffs`` rows this module is never handed, so they stay the caller's
+job; the one condition this module can see for itself -- a diff with nothing
+but ``"unchanged"`` items -- returns ``None``, the same contract
+``summarize_bill`` uses for a version too short to summarize.
 """
 
 from __future__ import annotations
@@ -96,6 +109,30 @@ Lead with what is funded, by whom, for what period. End with the current legisla
 Bill text (may be truncated):
 {body}"""
 
+DIFF_SUMMARY_PROMPT_VERSION = "v1"
+#: Diff items beyond this many (after dropping "unchanged" ones) are not sent (route.ts:104).
+DIFF_ITEM_CAP = 40
+#: Each item's body is excerpted to this many characters (route.ts:107).
+DIFF_EXCERPT_CHARS = 300
+
+# Sealed byte-for-byte against `summarize/route.ts:119-129`'s template literal
+# (verified with a hexdump against the TS source; it carries no non-ASCII
+# bytes, so there are no typographic dashes to preserve here, unlike
+# SUMMARY_PROMPT_TEMPLATE above). Unlike that prompt, this one names no bill
+# identity or framing -- the original sends only the diff text -- so nothing
+# here adds either.
+DIFF_SUMMARY_PROMPT_TEMPLATE = """Summarize the following bill version diff. The diff shows changes between two versions of an appropriations bill.
+
+Provide:
+- headline: one sentence summary of the most important change
+- keyChanges: up to 5 bullet points describing the most significant changes
+- sectionsAdded: list of section headings that were added
+- sectionsRemoved: list of section headings that were removed
+- dollarChanges: list of notable dollar amount changes (e.g. "Section X increased by $2M")
+
+Diff:
+{diff_text}"""
+
 
 @dataclass(frozen=True, slots=True)
 class BillVersionText:
@@ -117,6 +154,43 @@ class BillSummaryResult:
     summary: str
     audience: str
     top_provisions: tuple[str, ...]
+    model: str
+    prompt_version: str
+    content_hash: str
+    input_tokens: int | None
+    output_tokens: int | None
+    requested_at: str
+    completed_at: str
+
+
+@dataclass(frozen=True, slots=True)
+class DiffItemText:
+    """One section-diff row's text-bearing fields -- what the diff-summary prompt reads.
+
+    Mirrors the shape BillTrax's own query selected (``route.ts``'s
+    ``DiffRow``: ``op``, both placements' heading and body); not
+    ``section_diff_items`` from the table-contract's still-unbuilt diff
+    family (``schemas/``), so this module stays source-agnostic and asks
+    only for what its prompt uses.
+    """
+
+    op: str
+    from_heading: str | None
+    to_heading: str | None
+    from_body: str | None
+    to_body: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class DiffSummaryResult:
+    identity: BillIdentity
+    from_version_id: str
+    to_version_id: str
+    headline: str
+    key_changes: tuple[str, ...]
+    sections_added: tuple[str, ...]
+    sections_removed: tuple[str, ...]
+    dollar_changes: tuple[str, ...]
     model: str
     prompt_version: str
     content_hash: str
@@ -224,8 +298,113 @@ def summarize_bill(
     )
 
 
+def _diff_item_line(item: DiffItemText) -> str:
+    """One line of the diff text: ``[OP] heading: excerpt`` (route.ts:105-109).
+
+    A placement's heading or body is read from the newer side first, older
+    side second, exactly like the original's ``??`` chain: only ``None``
+    falls through, so an empty string heading or body is kept as sent, not
+    replaced.
+    """
+    heading = item.to_heading if item.to_heading is not None else item.from_heading
+    if heading is None:
+        heading = "(unnamed)"
+    body = item.to_body if item.to_body is not None else item.from_body
+    excerpt = (body if body is not None else "")[:DIFF_EXCERPT_CHARS]
+    return f"[{item.op.upper()}] {heading}: {excerpt}"
+
+
+def diff_text_from_items(items: Sequence[DiffItemText]) -> str:
+    """The ``${diffText}`` block the diff-summary prompt is built from (route.ts:102-110)."""
+    changed = [item for item in items if item.op != "unchanged"]
+    return "\n\n".join(_diff_item_line(item) for item in changed[:DIFF_ITEM_CAP])
+
+
+def build_diff_prompt(diff_text: str) -> str:
+    return DIFF_SUMMARY_PROMPT_TEMPLATE.format(diff_text=diff_text)
+
+
+def _read_diff_answer(
+    data: object,
+) -> tuple[str, tuple[str, ...], tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
+    if not isinstance(data, Mapping):
+        raise ModelCallError("diff summary answer must be a mapping", details=data)
+    headline = data.get("headline")
+    if not isinstance(headline, str):
+        raise ModelCallError("diff summary must state a headline", details=data)
+
+    def _strings(field: str) -> tuple[str, ...]:
+        value = data.get(field)
+        if isinstance(value, str) or not isinstance(value, Sequence) or any(not isinstance(v, str) for v in value):
+            raise ModelCallError(f"diff summary {field} must be a list of strings", details=data)
+        return tuple(value)
+
+    return (
+        headline,
+        _strings("keyChanges"),
+        _strings("sectionsAdded"),
+        _strings("sectionsRemoved"),
+        _strings("dollarChanges"),
+    )
+
+
+def summarize_diff(
+    identity: BillIdentity,
+    *,
+    from_version_id: str,
+    to_version_id: str,
+    items: Sequence[DiffItemText],
+    call: ModelCall,
+    model: str,
+    clock: Callable[[], datetime] | None = None,
+) -> DiffSummaryResult | None:
+    """Summarize a section diff between two versions, or ``None`` when it carries nothing to summarize.
+
+    Ported from BillTrax ``src/app/api/bills/[id]/summarize/route.ts``
+    (read-only, ``/Users/mikewolfd/Work/spicy-stack/BillTrax``). The route's
+    own two guards -- refuse a procedural-document version pair, and 404 on
+    no diff rows at all -- read ``bill_versions.kind`` and ``section_diffs``
+    rows this function is never handed, so they stay the caller's job. The
+    one condition visible from ``items`` alone -- every row is
+    ``"unchanged"``, so the diff text is empty -- returns ``None`` here, the
+    same contract ``summarize_bill`` uses for a version too short to
+    summarize.
+    """
+    now = clock if clock is not None else _now
+    diff_body = diff_text_from_items(items)
+    if not diff_body:
+        return None
+    digest = content_hash(diff_body)
+    prompt = build_diff_prompt(diff_body)
+    requested_at = now().isoformat()
+    response = call(model=model, prompt=prompt)
+    completed_at = now().isoformat()
+    headline, key_changes, sections_added, sections_removed, dollar_changes = _read_diff_answer(response.data)
+    return DiffSummaryResult(
+        identity=identity,
+        from_version_id=from_version_id,
+        to_version_id=to_version_id,
+        headline=headline,
+        key_changes=key_changes,
+        sections_added=sections_added,
+        sections_removed=sections_removed,
+        dollar_changes=dollar_changes,
+        model=model,
+        prompt_version=DIFF_SUMMARY_PROMPT_VERSION,
+        content_hash=digest,
+        input_tokens=response.input_tokens,
+        output_tokens=response.output_tokens,
+        requested_at=requested_at,
+        completed_at=completed_at,
+    )
+
+
 __all__ = [
     "DEFAULT_FRAME",
+    "DIFF_EXCERPT_CHARS",
+    "DIFF_ITEM_CAP",
+    "DIFF_SUMMARY_PROMPT_TEMPLATE",
+    "DIFF_SUMMARY_PROMPT_VERSION",
     "MAX_PROVISIONS",
     "MIN_TEXT_CHARS",
     "MONEY_BILL_FRAMES",
@@ -235,10 +414,15 @@ __all__ = [
     "TEXT_CHARS",
     "BillSummaryResult",
     "BillVersionText",
+    "DiffItemText",
+    "DiffSummaryResult",
+    "build_diff_prompt",
     "build_prompt",
     "content_hash",
+    "diff_text_from_items",
     "display_number",
     "frame_for_kind",
     "needs_regeneration",
     "summarize_bill",
+    "summarize_diff",
 ]

@@ -22,6 +22,7 @@ exist precisely for slugs a classification list does not name.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Literal
 
 from spicy_docs.sources.congress.bill_versions import slugify
@@ -118,14 +119,34 @@ _MIN_SECTION_COUNT = 20
 _MIN_BODY_BYTES = 10_000
 
 
-def version_kind(
+@dataclass(frozen=True, slots=True)
+class VersionKindFinding:
+    """One classification, naming the rule that fired and the size evidence it was given.
+
+    Matches the rest of ``interpretation/``'s contract: an output is a frozen
+    record carrying the rule that produced it, not a bare label. ``rule`` is
+    one of ``procedural_amendments_slug``, ``procedural_summary_slug``,
+    ``full_text_slug``, ``full_text_slug_thin`` (downgraded to
+    ``kind_uncertain`` by the size heuristic), ``amendment_substring`` (an
+    unlisted slug this repo's own heuristic, not the publisher's vocabulary,
+    caught), ``size_heuristic`` or ``unknown``.
+    """
+
+    kind: VersionKind
+    rule: str
+    section_count: int | None
+    body_bytes: int | None
+
+
+def version_kind_finding(
     version_code: str | None,
     *,
     section_count: int | None = None,
     body_bytes: int | None = None,
-) -> VersionKind:
+) -> VersionKindFinding:
     """Classify one bill version by its `version_code` slug and, for a size
-    heuristic, its extracted section count or body byte length.
+    heuristic, its extracted section count or body byte length, naming the
+    rule that decided it.
 
     `version_code` is re-normalized through `slugify` defensively, matching
     `version-kind.ts:103` -- a caller that passes the display name instead of
@@ -133,10 +154,13 @@ def version_kind(
     """
     slug = slugify(version_code) if version_code else ""
 
+    def _finding(kind: VersionKind, rule: str) -> VersionKindFinding:
+        return VersionKindFinding(kind, rule, section_count, body_bytes)
+
     if slug in PROCEDURAL_AMENDMENTS_SLUGS:
-        return "procedural_amendments"
+        return _finding("procedural_amendments", "procedural_amendments_slug")
     if slug in PROCEDURAL_SUMMARY_SLUGS:
-        return "procedural_summary"
+        return _finding("procedural_summary", "procedural_summary_slug")
 
     if slug in FULL_TEXT_SLUGS:
         # A "full text" code with too few sections or too little body text is
@@ -144,18 +168,28 @@ def version_kind(
         too_few_sections = section_count is not None and section_count < _MIN_SECTION_COUNT
         too_short = body_bytes is not None and body_bytes < _MIN_BODY_BYTES
         if too_few_sections or too_short:
-            return "kind_uncertain"
-        return "full_text"
+            return _finding("kind_uncertain", "full_text_slug_thin")
+        return _finding("full_text", "full_text_slug")
 
     # An unlisted slug containing "amendment" is almost certainly procedural
     # (catches future variant names the vocabulary has not named yet).
     if "amendment" in slug:
-        return "procedural_amendments"
+        return _finding("procedural_amendments", "amendment_substring")
 
     # Unknown slug -- infer from size if available.
     if body_bytes is not None and body_bytes >= _MIN_BODY_BYTES:
-        return "full_text"
-    return "unknown"
+        return _finding("full_text", "size_heuristic")
+    return _finding("unknown", "unknown")
+
+
+def version_kind(
+    version_code: str | None,
+    *,
+    section_count: int | None = None,
+    body_bytes: int | None = None,
+) -> VersionKind:
+    """The kind alone; see `version_kind_finding` for the rule that produced it."""
+    return version_kind_finding(version_code, section_count=section_count, body_bytes=body_bytes).kind
 
 
 __all__ = [
@@ -165,5 +199,7 @@ __all__ = [
     "VERSION_KIND_LABELS",
     "VERSION_KIND_WARNINGS",
     "VersionKind",
+    "VersionKindFinding",
     "version_kind",
+    "version_kind_finding",
 ]

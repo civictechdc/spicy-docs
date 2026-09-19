@@ -187,8 +187,10 @@ class CongressListRoute:
 # which is a carried-forward assumption, not a measurement -- see the module
 # docstring. "bill" keeps its historical bare-collection/Congress/type
 # narrowing (both congress and type may be omitted, but type only follows
-# congress); "committee-bills" and "bill-actions" have no bare collection at
-# all.
+# congress); "committee-bills", "bill-actions" and "house-vote" have no bare
+# collection at all. "house-vote" sort_honored=False carries over the
+# 2026-09-18 measurement of its sibling `house-vote/{c}/{session}/{roll}/members`
+# route ("sort ignored"), the deepest house-vote path the data map probed.
 LIST_ROUTES: dict[str, CongressListRoute] = {
     "bill": CongressListRoute(
         "bill", "bill/{congress}/{type}", BILLS_KEY, optional_params=frozenset({"congress", "type"}), sort_honored=True
@@ -228,6 +230,12 @@ LIST_ROUTES: dict[str, CongressListRoute] = {
         "houseCommunications",
         optional_params=frozenset({"congress"}),
     ),
+    "house-vote": CongressListRoute(
+        "house-vote",
+        "house-vote/{congress}/{session}",
+        "houseRollCallVotes",
+        sort_honored=False,
+    ),
 }
 
 _CHAMBERS = frozenset({"house", "senate", "joint"})
@@ -240,6 +248,7 @@ _KWARG_FOR_PARAM = {
     "code": "committee_code",
     "type": "bill_type",
     "number": "number",
+    "session": "session",
 }
 
 
@@ -273,12 +282,19 @@ def _congress_param(value: int | None) -> str:
     return str(value)
 
 
+def _session_param(value: int | None) -> str:
+    if isinstance(value, bool) or not isinstance(value, int) or value not in (1, 2):
+        raise PagedJsonSourceError("session must be 1 or 2")
+    return str(value)
+
+
 _VALIDATE_PARAM: dict[str, Callable[[object], str]] = {
     "congress": _congress_param,
     "chamber": _chamber_param,
     "code": _committee_code_param,
     "type": _bill_type_param,
     "number": lambda value: _positive_int_param(value, "number"),
+    "session": _session_param,
 }
 
 
@@ -290,6 +306,7 @@ def _route_path(
     committee_code: str | None = None,
     bill_type: str | None = None,
     number: int | None = None,
+    session: int | None = None,
 ) -> str:
     """Fill ``route.path``'s placeholders from explicit, validated parameters.
 
@@ -305,6 +322,7 @@ def _route_path(
         "code": committee_code,
         "type": bill_type,
         "number": number,
+        "session": session,
     }
     params = set(route.path_params)
     for name, value in values.items():
@@ -337,6 +355,7 @@ def list_route_url(
     committee_code: str | None = None,
     bill_type: str | None = None,
     number: int | None = None,
+    session: int | None = None,
     from_datetime: str | None = None,
     to_datetime: str | None = None,
     limit: int = MAX_LIMIT,
@@ -352,7 +371,13 @@ def list_route_url(
             f"{route.name} route: Congress.gov ignores the date window here; omit from_datetime/to_datetime"
         )
     path = _route_path(
-        route, congress=congress, chamber=chamber, committee_code=committee_code, bill_type=bill_type, number=number
+        route,
+        congress=congress,
+        chamber=chamber,
+        committee_code=committee_code,
+        bill_type=bill_type,
+        number=number,
+        session=session,
     )
     query = _query(from_datetime=from_datetime, to_datetime=to_datetime, limit=limit, sort=sort)
     return f"{API}/{path}?{urlencode(query)}"
