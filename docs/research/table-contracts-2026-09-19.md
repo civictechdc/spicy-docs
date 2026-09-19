@@ -552,8 +552,8 @@ add `docs/tables.md` and index it; `./scripts/check` green; bump the version,
 `uv lock`, commit both files as `chore: release 0.21.0` with a body naming what
 it carries; `uv build`; tag `v0.21.0`; record the wheel's SHA-256.
 
-spicy-regs adoption (fork only; no push to origin unless the user names the
-branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
+spicy-regs adoption (done 2026-09-19 on the fork branch `billtrax-hosting-prep`;
+no push to origin unless the user names the branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
 `[tool.uv.sources] spicy-docs` at it; set both `source-readers` pins to
 `spicy-docs[acquisition,pdf-pypdf,bill-diff]==0.21.0`; `vendor/README.md`
 gains the spicy-docs bullet with commit, tag and digest. Blocker: the

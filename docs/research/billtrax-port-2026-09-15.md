@@ -201,12 +201,26 @@ ported as `summarize_diff`), and the vote readers
 tag v0.21.0, wheel digest in the design's §5.4), and `main` and the tag are
 pushed to origin.
 
-- **The spicy-regs hosting side** — on the local fork branch
-  `billtrax-hosting-prep`, never pushed: the groundwork landed (multi-output
-  rollups, `transforms/table_merge.py`, the workflow inputs, the vendored
-  `deltatrack` wheel), and the 0.21.0 adoption with the six transforms,
-  rollups, crons, data-dictionary entries and MCP lines is in flight
-  (table-contracts §5). Pushing needs the user to name the branch.
+- **The spicy-regs hosting side landed** on the fork branch
+  `billtrax-hosting-prep` (mikewolfd/spicy-regs, pushed 2026-09-19, eleven
+  commits, never pushed to the upstream origin): the 0.21.0 wheel adopted with
+  the `bill-diff` extra live, six transforms and rollups with spaced crons,
+  forty-five hosted tables, the data dictionary reading its 407 column
+  sentences from the installed contract, and every rollup incremental where
+  its source allows (the bill family skips bills whose
+  `updateDateIncludingText` is unchanged and printings already held;
+  amendments and committee reports take the watermark pattern; roll-call votes
+  fetch each Clerk or LIS file once). The two writers of `congress_bills`
+  merge column-wise so a null never overwrites a prior value, pinned by a
+  behavioral test. Opening a pull request against the upstream origin needs
+  the user to name the branch.
+- **Follow-ups the hosting side named**: the bulk status archives are still
+  downloaded whole every run because neither `bulk_status.py` nor the listing
+  route surfaces the bulk listing's per-file `formattedLastModifiedTime` (the
+  map measured it); exposing it in spicy-docs would let the family rollup skip
+  unchanged zips, which for one Congress is on the order of 50 MB a night.
+  spicysearch vendors a stale `catalog.json` (24 tables; now 45 and a grown
+  `congress_bills`) and needs a re-vendor.
 - **Fix-ledger item 7** closes when the `amendments` transform lands on that
   branch; item 6 (`/api/feed.xml`) is BillTrax-side and stays open.
 - **The BillTrax-side deletions are out of scope.** The user ruled on
