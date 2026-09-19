@@ -173,7 +173,10 @@ def _stat_cite(citable_as: tuple[str, ...]) -> tuple[str, str, str]:
     """``(cite, volume, page)`` from the first ``NNN Stat. NNN`` in ``citableAs``; none is a refusal.
 
     ``captured`` promises a citation: a validated PLAW whose meta names none
-    would otherwise publish a NULL that reads as the bulk lag.
+    would otherwise publish a NULL that reads as the bulk lag. The pattern is
+    the one the legislative data map proved on one law (119-1); it has not
+    been surveyed across the 104 captured PLAWs of the 119th, so a refusal
+    here in production is an assumption held, not a corruption found.
     """
     for citation in citable_as:
         match = STAT_CITE.fullmatch(citation.strip())
