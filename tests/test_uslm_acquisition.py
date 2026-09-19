@@ -1,7 +1,5 @@
 """USLM source requests preserve exact responses, bounds and refusal evidence."""
 
-import io
-import zipfile
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -18,6 +16,7 @@ from spicy_docs.sources.govinfo.uslm_acquisition import (
 from spicy_docs.transport import retry
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.http import RetryableHTTPStatusError
+from tests.source_fixtures import archive_bytes as archive
 
 FIXTURES = Path(__file__).parent / "fixtures" / "uslm"
 LAW_XML = (FIXTURES / "plaw-119publ1.xml").read_bytes()
@@ -26,14 +25,6 @@ LAW = PublicLawSelection(119, "public", 1)
 COMPILATION = StatuteCompilationSelection(10542)
 BUDGET = UslmAcquisitionBudget(3, 65536, 7, 0)
 NOW = datetime(2026, 9, 14, tzinfo=UTC)
-
-
-def archive(*members):
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-        for name, data in members:
-            zf.writestr(name, data)
-    return buffer.getvalue()
 
 
 LAW_ZIP = archive(("PLAW-119publ1.xml", LAW_XML))
