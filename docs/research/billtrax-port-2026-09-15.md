@@ -198,8 +198,8 @@ sort measured, `version_kind_finding`, and BillTrax's diff-summary generator
 ported as `summarize_diff`), and the vote readers
 (`sources/congress/votes.py`, both publishers, archive floors measured at the
 101st Congress). spicy-docs 0.21.0 was cut from that state (commit ff92406,
-local tag v0.21.0, wheel digest in the design's §5.4); neither the commit nor
-the tag is pushed.
+tag v0.21.0, wheel digest in the design's §5.4), and `main` and the tag are
+pushed to origin.
 
 - **The spicy-regs hosting side** — on the local fork branch
   `billtrax-hosting-prep`, never pushed: the groundwork landed (multi-output
@@ -209,14 +209,12 @@ the tag is pushed.
   (table-contracts §5). Pushing needs the user to name the branch.
 - **Fix-ledger item 7** closes when the `amendments` transform lands on that
   branch; item 6 (`/api/feed.xml`) is BillTrax-side and stays open.
-- **The BillTrax-side deletions** — `submodules/DeltaTrack`, the TS fork
-  (`bill-tree.ts`, `section-diff.ts`'s fallback core, `python-diff.ts`,
-  `scripts/diff_service.py`), `financial.ts`, `diff.ts`, and the rest of the
-  [value inventory's](billtrax-value-inventory-2026-09-19.md) §1 delete
-  column (`mock-data.ts`, `db.ts`, `diff-queue.ts`, `node_backend/`, and
-  `roll-call-votes.ts`'s dead `upsertMemberVote`). None of this has started;
-  it is Phases 1 and 9, BillTrax-side, and destructive in another repo, so it
-  waits for an explicit go-ahead.
+- **The BillTrax-side deletions are out of scope.** The user ruled on
+  2026-09-19 that BillTrax is not touched: it is an external product, and the
+  port duplicates its value on spicy-docs and spicy-regs rather than editing
+  it. The [value inventory's](billtrax-value-inventory-2026-09-19.md) §1
+  delete column stands as a record of what the rebuild makes redundant, not
+  as work here.
 - **To raise upstream in `civictechdc/DeltaTrack`** — the list in
   [`docs/sources/congress-bill-tree.md`](../sources/congress-bill-tree.md)
   (the pairing caps, the word-segment cap, hyphen-tolerant tokens, a
