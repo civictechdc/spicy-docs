@@ -16,7 +16,7 @@ import httpx
 import pytest
 
 from spicy_docs.reading.refusals import RefusedResponse
-from spicy_docs.sources.govinfo.bodies import GovInfoBodySourceError
+from spicy_docs.sources.govinfo.bodies import BODY_PREFERENCE, GovInfoBodySourceError
 from spicy_docs.sources.govinfo.body_acquisition import (
     GovInfoBodyAcquirer,
     GovInfoBodyBudget,
@@ -110,7 +110,7 @@ def test_acquires_the_first_offered_preferred_format_with_every_capture() -> Non
     assert transport.urls == [SUMMARY_URL, MODS_URL, HTM_URL]
     assert result.request_count == 3
     assert result.format == "htm"
-    assert result.preference == ("xml", "htm", "txt")
+    assert result.preference == BODY_PREFERENCE == ("xml", "htm", "txt", "pdf")
     # The publisher offers no XML for a committee report, so the second
     # preference is taken; the summary states no body rendition at all.
     assert result.offered_formats == ("htm", "pdf")
@@ -137,12 +137,41 @@ def test_the_credential_travels_only_to_the_keyed_routes() -> None:
     assert all("authorization" not in call.headers for call in transport.calls)
 
 
-def test_pdf_is_fetched_only_when_the_caller_names_it() -> None:
+def test_pdf_is_reached_when_the_caller_names_it() -> None:
     transport = Transport(**{PDF_URL: reply(b"%PDF-1.4\nbody", content_type="application/pdf")})
     result = acquire(transport, prefer=("pdf",))
 
     assert transport.urls[-1] == PDF_URL
     assert result.format == "pdf" and result.body.media_type == "application/pdf"
+
+
+def test_pdf_is_last_under_the_default_so_an_offered_text_rendition_wins() -> None:
+    """The sealed order ends in PDF, but only reaches it when nothing earlier is offered."""
+    transport = Transport(**{PDF_URL: reply(b"%PDF-1.4\nbody", content_type="application/pdf")})
+    result = acquire(transport)
+
+    assert BODY_PREFERENCE[-1] == "pdf"
+    assert result.offered_formats == ("htm", "pdf")
+    assert result.format == "htm"
+    assert PDF_URL not in transport.urls
+
+
+def test_a_pdf_only_package_yields_a_body_under_the_default() -> None:
+    """The ruling this seals: CREC offers PDF alone, and the old default refused it."""
+    pdf_only = f'<url displayLabel="PDF rendition" access="raw object">{PDF_URL}</url>'
+    transport = Transport(
+        **{
+            MODS_URL: reply(mods_xml(urls=pdf_only), content_type="application/xml"),
+            PDF_URL: reply(b"%PDF-1.4\nbody", content_type="application/pdf"),
+        }
+    )
+    result = acquire(transport)
+
+    assert result.offered_formats == ("pdf",)
+    assert result.format == "pdf"
+    # The previous default stopped at txt, so this exact package refused.
+    with pytest.raises(GovInfoFormatNotOfferedError):
+        acquire(transport, prefer=("xml", "htm", "txt"))
 
 
 def test_a_pdf_without_its_magic_is_refused_with_its_bytes() -> None:

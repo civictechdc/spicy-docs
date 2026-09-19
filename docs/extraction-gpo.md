@@ -17,6 +17,12 @@ pages = tuple(result.text for result in results)
 normalized_pages, cleanup = normalize_gpo_pages(pages)
 ```
 
+This pair is the PDF branch of
+[`extraction/body_text.py`](sources/govinfo-bodies.md#turning-a-body-into-text),
+which runs it for a caller holding a fetched `pdf` rendition and gives the
+other three renditions their own derivation; `normalize_gpo_glyphs`, the line
+ending and quote rule this module opens with, is shared with all of them.
+
 ## Extractor this was derived against
 
 PyMuPDF 1.28.2, through this repo's default PDF reader
@@ -192,7 +198,7 @@ fixtures rather than assumed from theirs:
   GPO's doubled-single-curly-quote convention (`‘‘…’’`) into one straight
   double quote (`pdf_text.py:192`, `text.replace("''", '"')`, after the
   curly-to-straight step). This port adopted the same collapse in
-  `_normalize_encoding`, independently confirmed against
+  `normalize_gpo_glyphs`, independently confirmed against
   `CRPT-119hrpt105`'s own `‘‘Review of Final Rule…’’` — see
   `test_collapses_gpos_doubled_single_quote_into_one_double_quote`.
 
@@ -275,13 +281,15 @@ in `docs/decisions.md`.
 
 `sources/agency_reports/report_blocks.py`'s `parse_agency_blocks` takes
 either a flat string or a `Sequence[PageResult]` directly, not this module's
-`tuple[str, ...]` output, so the two are not yet wired together — a caller
-still has to run `normalize_gpo_pages` over `DocumentExtractor` output and
-hand the result to `parse_agency_blocks` itself (as a joined string, since
-`PageResult` is not this module's to construct). That wiring, and doing the
-same for any future bill-PDF section parser rather than each parser deciding
-independently whether to normalize first, is for the maintainer landing the
-caller to move into place.
+`tuple[str, ...]` output. `extraction/body_text.py` now does that wiring for
+a fetched body: it runs `DocumentExtractor` and `normalize_gpo_pages` for a
+`pdf` rendition and hands back `BodyText.text`, already joined page by page
+with the same `"\n"` `parse_agency_blocks`'s own `_flatten` uses, so a caller
+passes `body_text(result).text` and no longer decides for itself whether to
+normalize first. What it does not restore is page attribution: `PageResult` is
+not this module's to rebuild after normalization, so `AgencyBlock.page_span`
+is `None` on that path. Restoring it — and doing the same for any future
+bill-PDF section parser — is for the maintainer landing the caller.
 
 This document and its rule table are for that maintainer to move into
 wherever the extraction pipeline's own documentation index lives

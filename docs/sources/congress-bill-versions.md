@@ -14,7 +14,7 @@ from spicy_docs.sources.congress.bill_versions import bill_version_package_id, c
 identity = BillIdentity(119, "hconres", 11)
 package_id = bill_version_package_id(identity, "engrossed-in-house")  # "BILLS-119hconres11eh"
 
-chosen = choose_format(status.text_versions[0].formats)  # prefers xml, then txt, then pdf
+chosen = choose_format(status.text_versions[0].formats)  # xml, then html, then txt, then pdf
 ```
 
 ```python
@@ -169,16 +169,22 @@ cares whether a name-derived slug might be wrong should check
 
 ## Format choice
 
-`choose_format(formats, prefer=("xml", "txt", "pdf"))` ports
-`congress-api.ts chooseFormat`'s own default order — XML, then text, then
-PDF — and `sync-govinfo.ts pickVersionUrls`'s fallback for a format item with
-no stated `type`, as one function. `prefer` takes this module's short names
-(`xml`, `txt`, `pdf`, `html`, `uslm`), not Congress.gov's `type` strings.
-Unlike `GovInfoBodyAcquirer`'s own default (text-first, PDF excluded, because
-a hearing or directory PDF can run to tens of megabytes), PDF is the last
-*default* choice here rather than excluded: bill PDFs measured small (median
-246 KB, see "The PDF path" below), so BillTrax's own inclusion of PDF in its
-default is kept.
+`choose_format(formats, prefer=DEFAULT_FORMAT_PREFERENCE)` is one function
+carrying BillTrax's `congress-api.ts chooseFormat` and `sync-govinfo.ts
+pickVersionUrls`'s fallback for a format item with no stated `type`. `prefer`
+takes this module's short names (`xml`, `html`, `txt`, `pdf`, `uslm`), not
+Congress.gov's `type` strings.
+
+`DEFAULT_FORMAT_PREFERENCE` is `("xml", "html", "txt", "pdf")`: the sealed
+[`BODY_PREFERENCE`](govinfo-bodies.md#the-preference-rule) spelled in this
+module's own names, where the GovInfo rendition `htm` is `html`. There is one
+order for both, and a test pins them equal, so a version chosen here is
+fetched there. It keeps BillTrax's own XML-then-text-then-PDF order and adds
+HTML where the sealed order puts it, between XML and text. PDF stays the last
+*default* rather than being left out — bill PDFs measured small (median
+246 KB, see "The PDF path" below), and a version a publisher offers only as
+PDF is chosen rather than refused, which is the point of keeping it last
+instead of dropping it.
 
 **The fallback is folder-based, not extension-based, and it is the only live
 path today.** `BillTextFormat` is built in exactly one place on `main`,
@@ -202,8 +208,9 @@ whether the fallback fires against the data parsed here, and it does, always.
 `United States Legislative Markup` (USLM) on enrolled bills — 10 of the 240
 sampled REST format entries — and BILLS states its own USLM rendition at
 `uslm/{id}.xml` in its MODS. `choose_format` recognizes `"uslm"` by name and
-by folder; it is not in the default preference, matching BillTrax's own
-order. But it is **not yet fetchable**: `GovInfoBodyAcquirer`'s
+by folder; it stays out of `DEFAULT_FORMAT_PREFERENCE`, matching BillTrax's
+own order and the sealed `BODY_PREFERENCE`, neither of which names it. But
+it is **not yet fetchable**: `GovInfoBodyAcquirer`'s
 `PACKAGE_BODY_FORMATS` supports only `htm`/`xml`/`txt`/`pdf`, and
 `sources.govinfo.uslm` reads the separate PLAW and COMPS collections (public
 laws and statute compilations), not a BILLS package's own USLM rendition. A

@@ -20,6 +20,7 @@ import pytest
 from spicy_docs.interpretation.version_kind import VersionKindFinding, version_kind, version_kind_finding
 from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextFormat, parse_bill_status
 from spicy_docs.sources.congress.bill_versions import (
+    DEFAULT_FORMAT_PREFERENCE,
     VERSION_CODES,
     VERSION_CODES_BY_SLUG,
     VersionCodeError,
@@ -30,7 +31,7 @@ from spicy_docs.sources.congress.bill_versions import (
     version_slug,
     version_slug_reprints,
 )
-from spicy_docs.sources.govinfo.bodies import parse_package_id
+from spicy_docs.sources.govinfo.bodies import BODY_PREFERENCE, parse_package_id
 
 FIXTURES = Path(__file__).parent / "fixtures" / "govinfo_bills"
 
@@ -365,8 +366,9 @@ def _fmt(url: str, type_: str | None) -> BillTextFormat:
     return BillTextFormat(url=url, type=type_, package_id=None)
 
 
-def test_choose_format_default_matches_billtraxs_own_order() -> None:
-    """xml, then text, then PDF -- congress-api.ts chooseFormat's own default order."""
+def test_choose_format_default_is_the_sealed_body_preference() -> None:
+    """One order, two spellings: `htm` on the GovInfo side is `html` here."""
+    assert DEFAULT_FORMAT_PREFERENCE == tuple("html" if name == "htm" else name for name in BODY_PREFERENCE)
     formats = [
         _fmt("https://example.invalid/content/pkg/BILLS-119hr1ih/pdf/BILLS-119hr1ih.pdf", "PDF"),
         _fmt("https://example.invalid/content/pkg/BILLS-119hr1ih/xml/BILLS-119hr1ih.xml", "Formatted XML"),
@@ -374,10 +376,17 @@ def test_choose_format_default_matches_billtraxs_own_order() -> None:
     ]
     assert choose_format(formats).url.endswith(".xml")
     assert choose_format(formats, prefer=("txt",)).url.endswith(".txt")
-    # PDF is the last *default* preference here -- unlike GovInfoBodyAcquirer's
-    # own default, which excludes PDF entirely because a hearing/directory PDF
-    # can run to tens of megabytes; bill PDFs measured small (median 246 KB).
+    # A version offered only as PDF is chosen, not refused -- the whole point
+    # of keeping PDF last rather than leaving it out.
     assert choose_format([formats[0]]).url.endswith(".pdf")
+
+
+def test_choose_format_prefers_html_over_formatted_text() -> None:
+    """The sealed order puts htm/html between xml and txt; this is the one pair that moved."""
+    html = _fmt("https://example.invalid/content/pkg/BILLS-119hr1ih/html/BILLS-119hr1ih.htm", "HTML")
+    txt = _fmt("https://example.invalid/content/pkg/BILLS-119hr1ih/text/BILLS-119hr1ih.txt", "Formatted Text")
+    assert choose_format([txt, html]) is html
+    assert choose_format([txt]) is txt
 
 
 def test_choose_format_recognizes_uslm_by_type_but_not_by_default() -> None:

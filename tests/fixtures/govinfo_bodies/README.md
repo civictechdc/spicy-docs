@@ -14,11 +14,67 @@ responses fit well inside the fixture bound.
 | `summary-CRPT-119hrpt1.json` | [`packages/CRPT-119hrpt1/summary`](https://api.govinfo.gov/packages/CRPT-119hrpt1/summary), keyed with `X-Api-Key` | 1,800 | `818d6a4dc8678a6b2972eb2f0e4596be2c576087508bb49caeb5d8be588e5bc1` |
 | `mods-CRPT-119hrpt1.xml` | [`packages/CRPT-119hrpt1/mods`](https://api.govinfo.gov/packages/CRPT-119hrpt1/mods), keyed with `X-Api-Key` | 9,787 | `d73ea7b12140ca7e1ad08649092a9e14a432a9fce8948d8a4975e4f3cd43f9d2` |
 | `body-CRPT-119hrpt1.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt1/html/CRPT-119hrpt1.htm), keyless | 13,953 | `d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9` |
+| `body-CRPT-119hrpt105.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt105/html/CRPT-119hrpt105.htm), keyless | 8,504 | `903f3aadd805b3ed85066bef29fa4d3f236501b6e94cb531168ed189362eca19` |
 
-No fixture was reduced or reformatted. The credential travels only in the
+No fixture above was reduced or reformatted. The credential travels only in the
 request header, and the capture script refused to write any file whose bytes
 contained the key or an `api_key=` parameter; none did. The keyless body route
 takes no credential at all.
+
+`body-CRPT-119hrpt105.htm` is the one package this repository holds in **two**
+renditions: its PyMuPDF page text is `tests/fixtures/gpo_pdf_text/CRPT-119hrpt105.json`
+and its complete PDF-derived text is `tests/fixtures/agency_reports/crpt-119hrpt105.txt`,
+both from the identical PDF (`sourcePdfSha256`
+`0b8f5c52ce09396f40c400ed23d2d52ec8cb638e5b2227d5592656557fce9911`). That is
+what makes the rendition comparison in `tests/test_body_text.py` a comparison
+of one document rather than of two.
+
+## The one measured `txt` rendition
+
+| Fixture | Publisher response | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `body-CDIR-2026-02-20.excerpt.txt` | first 5,981 bytes (cut at a CRLF boundary) of the [text rendition](https://www.govinfo.gov/content/pkg/CDIR-2026-02-20/text/CDIR-2026-02-20.txt), keyless | 5,981 | `fbd6e70a40d657f214ad697b9f325d4d16eaae4a0935dbaffd9d5f440cf76b76` |
+
+This one *is* an excerpt, and it is here because it is the only `txt` rendition
+in reach: of the six collections measured, **only CDIR offers one**, and its
+full response is 1,155,810 bytes (`7757cde4dc6cde3e7dc697bd12d841f6d9a159050769105b650e03f8c777d3e5`,
+27,717 CRLF pairs), well past what belongs in this repository. The excerpt
+carries 111 of those CRLF pairs and 52 trailing-space lines, which is enough
+to measure both rules the `txt` branch of `extraction/body_text.py` applies.
+Re-derive the whole file from the URL above; nothing here depends on more of it.
+
+**There is no `txt` rendition for a committee report.** Measured 2026-09-19
+through `GovInfoBodyAcquirer`: `CRPT-119hrpt1`, `CRPT-119hrpt105` and
+`CRPT-113srpt77` each state `htm, pdf` and nothing else, and
+`acquire(..., prefer=("txt",))` refuses with `GovInfoFormatNotOfferedError`
+before any body request. `text/{id}.txt` and `xml/{id}.xml` for those packages
+answer `200` from `https://www.govinfo.gov/error` with the 44,165-byte "Page
+Not Found" page. So a committee report's text-bearing rendition is its `htm`,
+which is GPO's plain text inside `<html><title>…</title><body><pre>`.
+
+## What each text-bearing rendition carries
+
+Counted on the bytes as the publisher served them (`tests/test_body_text.py`
+asserts the per-rendition numbers `extraction/body_text.py` derives from them):
+
+| Artifact | `htm` (4 CRPT bodies) | `txt` (CDIR) | `xml` (3 BILLS bodies) | PDF page text |
+| --- | --- | --- | --- | --- |
+| CRLF line endings | 0 | 27,717 | 0 | 0 |
+| `\x1a` end-of-text marker | 0, 0, 1, 1 | 0 | 0 | 0 |
+| ` `` `/`''` GPO quote pairs | 6, 2, 54, 119 | 0 | 0 | 0 |
+| Curly quotes | 0 | 0 | 0, 2, 0 | 8, 99, 242 |
+| Trailing-space lines | 96, 53, 6,259, 6,344 | 19,077 | 0, 11, 0 | — |
+| `<title>` wrapper | 4 of 4 | — | — | — |
+| `<all>` / `<graphic(s)>` locator markers | 0, 0, 10, 1 | — | — | — |
+| `[[Page N]]` markers | 0 | 0 | 0 | 0 |
+| Form feeds | 0 | 0 | 0 | 0 |
+| `VerDate` print footers | 0 | 0 | 0 | 229 on CRPT-113hrpt135 |
+
+The four `htm` bodies are CRPT-119hrpt1, -119hrpt105, -113hrpt135 and
+-113srpt77 (in that column order); the three `xml` bodies are the BILLS
+fixtures under `tests/fixtures/govinfo_bills/`. The last four rows are why
+`body_text` writes no rule for page markers, form feeds or `VerDate` footers
+outside the PDF branch: nothing measured carries one.
 
 ## What the same run measured elsewhere
 
@@ -50,6 +106,25 @@ the CDOC-scoped ids and 3 of the CRPT-scoped ones are `ERP-…` or `GPO-…`
 packages, and their own `collectionCode` says so (`ERP-2009` states `ERP`,
 `GPO-J6-REPORT` and `GPO-CRPT-116hrpt562` state `GPO`). They are real packages
 with different addresses, and this module refuses them by name.
+
+## The rendition comparison that ordered `BODY_PREFERENCE`
+
+`sources/govinfo/bodies.py::BODY_PREFERENCE` puts PDF last on a measurement no
+fixture here is large enough to hold. It ran on 2026-09-19 over two
+appropriations reports in both renditions, fetched keyless through
+`GovInfoBodyAcquirer`:
+
+| Package | `htm` bytes | `htm` SHA-256 | PDF bytes | PDF SHA-256 |
+| --- | ---: | --- | ---: | --- |
+| `CRPT-113srpt77` | 677,525 | `60b0d418ca8b80b3db3e27b294d652dcf72e81eba9de2343434a24c15b56c120` | 531,055 | `d533775b53de0ba1fd4d35d9d4345727a87979aa578d18db778e917be4b7f76a` |
+| `CRPT-113hrpt135` | 488,738 | `4c0e2ec9b38d02a9546ed88aa78005ed302b263332935ee95551816b6d107301` | 3,233,438 | `cb6a9d0aa131f60be5c1635cd044ff06dcdb1a7da0db9789c3bd1e3bdd087af7` |
+
+Both PDF digests equal the `sourcePdfSha256` already recorded in
+`tests/fixtures/agency_reports/sources.json`, so the PDFs measured are
+byte-identical to the ones those text fixtures were extracted from — an
+independent re-fetch agreeing with a prior run, not a restatement of it. The
+four bodies themselves are session receipts and are not kept here; the numbers
+they produced are in `docs/sources/govinfo-bodies.md`, "Why PDF is last".
 
 Full probe output and the capture scripts are session receipts; they are not
 kept in this repository. Re-derive them with the routes named above.
