@@ -14,6 +14,7 @@ with no DocSpec, SpicyRegs or sibling checkout dependency.
 | `[pdf,pdf-apple]` | Apple Vision OCR through ocrmac on macOS. |
 | `[pdf,pdf-mlx]` | Configurable MLX-VLM models on Apple Silicon; pinned LightOnOCR and GLM-OCR presets. |
 | `[pdf,pdf-gemini]` | Injected or HTTP-backed Gemini image extraction; live calls require a credential. |
+| `[reconstruct]` | Schema validation of [reconstructed](reconstruction.md) XML against a profile's pinned bundle; adds lxml. Everything else in that package is standard library. |
 
 Live GAO uses the standard-library Zyte transport: no extra, but `ZYTE_TOKEN`
 is required. Injected fetchers need their own dependencies.

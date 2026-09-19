@@ -64,6 +64,25 @@ retries when an issue's requested unmatched-number set changes.
   API ignored the sort. `tests/test_legislative_data_map_tool.py` renders the
   saved output and proves every `have` or `port` row against its evidence file.
 
+- [reconstruction_benchmark](analysis/reconstruction_benchmark.py): build the
+  paired CFR corpus, reconstruct each section from its PDF with the XML
+  hidden, and score text precision and recall, hierarchy F1, critical
+  discrepancies, coverage and wall time against the XML that was hidden; then
+  rewrite the generated block in
+  `docs/research/reconstruction-benchmark-2026-09-19.md`. Supply an explicit
+  credential file (one keyed route, the granule listing; both body routes are
+  keyless), the JSON output path and the report path. `--sections` sets the
+  corpus size and `--max-requests` bounds the run. `--rescore --scratch DIR`
+  re-reads the bodies an earlier run left there, checking each digest against
+  the one that run recorded, so changing a parsing rule costs no request;
+  `--offline` re-renders the report from the saved output; `--receipts DIR`
+  retains the command, the run log, the request log and the corpus manifest
+  outside this repository. Splits are whole editions, so no volume's
+  typography reaches two splits — but a split only pays on a run whose rules
+  were fixed before it read the corpus, which the document states for each
+  run. `tests/test_reconstruction_benchmark_tool.py` renders the committed
+  block from the committed sidecar and fails if they have drifted apart.
+
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,
 count mismatches, or a full 1,000-row page. A full page is indeterminate even when
