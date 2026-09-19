@@ -136,11 +136,13 @@ assertion, not a verification.
 
 The proposal's [§3.3](research/closing-the-gaps-2026-09-19.md) states
 engineering targets, not results. Measured on the first bounded slice — 40
-paired CFR sections from four titles and four editions, 84 requests, the XML
-hidden from reconstruction
+paired CFR sections from four titles and four editions, 84 requests (80
+keyless bodies and 4 keyed granule listings, every one logged in the retained
+receipt), the XML hidden from reconstruction, fetched and scored in one pass
+with every rule frozen before it read
 ([full measurement](research/reconstruction-benchmark-2026-09-19.md)):
 
-| Gate | Target | First run |
+| Gate | Target | Re-scored run |
 | --- | --- | --- |
 | All accepted XML passes its pinned schema | all | 40 of 40 |
 | Text precision on born-digital material | ≥ 99.9% | 99.93% |
@@ -148,8 +150,8 @@ hidden from reconstruction
 | Hierarchy F1 on supported structures | ≥ 0.98 | 1.0000 (23 of 40 sections have a paragraph ladder at all) |
 | No unresolved change to a number, date, negation or provision marker | 0 documents | 2 of 40 |
 | Every region accounted for | all | 40 of 40 |
-| Accepted without review in the declared slice | ≥ 70% | 82% (33 of 40) |
-| Cost per accepted document | reported | No model call was made; 28 ms of reconstruction per document |
+| Accepted without review in the declared slice | ≥ 70% | 78% (31 of 40) |
+| Cost per accepted document | reported | No model call was made; 0.067 s of reconstruction and 2.6 publisher requests per accepted document |
 
 **Read those numbers with the document's own caveats.** Seven parser rules and
 repairs were derived while this corpus was being read, and four of the
@@ -164,12 +166,14 @@ development column until a run on editions this corpus never touched. The
 it to prose. Forty clean documents still permit roughly a 7% error rate at a
 one-sided 95% bound. The audit grows with the claim.
 
-Where it falls short is named rather than averaged away: four of the seven
+Where it falls short is named rather than averaged away: four of the nine
 unaccepted documents are a paragraph designation GPO sets run-in after an
 italic heading, where the print gives the parser nothing to place it by and it
 flags rather than guesses; two are an en dash where the published XML has a
 hyphen, a disagreement between two renditions of one document; one is a
-centred small-capital subject-group heading the parser has no rule for.
+centred small-capital subject-group heading the parser has no rule for; and
+two were "accepted" by the earlier gate, which never read the review flags,
+and are held for review now that it does.
 
 ## What reconstruction does not do
 
@@ -184,24 +188,34 @@ scans in the pilot, and does not take private documents.
 
 The pilot's first gate is met on text, hierarchy, schema and coverage, and is
 short on two of §3.3's conditions: two documents in forty carry a critical
-discrepancy, and acceptance without review is 82% against a 70% target but on
-a corpus whose blind split was spent during development. Three things follow,
+discrepancy, and acceptance without review is 78% against a 70% target on a
+corpus whose blind split was spent during development. Three things follow,
 and a maintainer should rule on each:
 
 1. **Whether the CFR benchmark has answered its question.** It was the
-   controlled experiment, not the deployment corpus. If 99.93%/99.96% on 40
-   paired sections is enough to proceed, the next work is the `bill_dtd`
-   profile on pre-113th HTML, which is what the pilot exists for. If it is
-   not, the next run is 500 sections on editions this one never touched, with
-   no rule changed while it reads them.
+   controlled experiment, not the deployment corpus. The re-scored run
+   fetched and scored in one pass at a reachable revision, with every rule
+   frozen before it read and all 84 requests logged in a retained receipt:
+   99.93%/99.96% text, 1.0000 hierarchy F1, schema and coverage clean on all
+   forty, and every failure named above. If that is enough to proceed, the
+   next work is the `bill_dtd` profile on pre-113th HTML, which is what the
+   pilot exists for. If it is not, the next run is 500 sections on editions
+   this one never touched, with no rule changed while it reads them — the
+   first run whose blind column would be blind.
 2. **Whether an en dash is a critical discrepancy.** The print sets
    `Pub. L. 95–87`; the XML spells it with a hyphen. Both documents are the
-   publisher's. Treating it as critical is defensible and it is what the
+   publisher's, and the re-scored run sees both spellings: the same two
+   documents carry 8 critical tokens where the class this run replaced could
+   see 3, because it counted only whichever rendition used the hyphen.
+   Treating the dash difference as critical is defensible and it is what the
    current gate does; treating it as a stated rendition difference would move
    two documents of forty across the line. The decision belongs to whoever
-   owns what "unresolved change to a number" means.
+   owns what "unresolved change to a number" means — but it is no longer
+   made by a check that could not see the corpus's own spelling.
 3. **Whether `classify_and_attach` should ever be wired.** No model was called
-   in this run and nothing needed one: every unresolved region in forty
-   sections belonged to a neighbouring part, not to the section asked for. The
-   seam is declared and tested with abstention; the case for connecting it has
-   not yet been made by a measurement.
+   in this run and nothing needed one: across forty sections the in-scope
+   unresolved regions number zero, and all 23 flagged in-scope nodes are
+   flags a rule raised on purpose — an out-of-sequence marker, or a section
+   the page range may have cut short. The seam is declared and tested with
+   abstention; the case for connecting it has not yet been made by a
+   measurement.
