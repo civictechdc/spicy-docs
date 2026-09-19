@@ -1,0 +1,67 @@
+{
+    "nominations": [
+        {
+            "citation": "PN730-20",
+            "congress": 119,
+            "description": "Irving Dennis, of Ohio, to be Chief Financial Officer, Department of Housing and Urban Development, vice Vinay Vijay Singh, resigned.",
+            "latestAction": {
+                "actionDate": "2026-09-17",
+                "text": "Placed on Senate Executive Calendar. Calendar No. 920. Subject to nominee's commitment to respond to requests to appear and testify before any duly constituted committee of the Senate."
+            },
+            "nominationType": {
+                "isCivilian": true
+            },
+            "number": 730,
+            "organization": "Department of Housing and Urban Development",
+            "partNumber": "20",
+            "receivedDate": "2026-01-13",
+            "updateDate": "2026-09-18T11:00:36Z",
+            "url": "https://api.congress.gov/v3/nomination/119/730-20?format=json"
+        },
+        {
+            "citation": "PN730-4",
+            "congress": 119,
+            "description": "Jeffrey Anderson, of Georgia, to be Representative of the United States of America on the Council of the International Civil Aviation Organization, with the rank of Ambassador.",
+            "latestAction": {
+                "actionDate": "2026-09-17",
+                "text": "Received message of withdrawal of nomination from the President."
+            },
+            "nominationType": {
+                "isCivilian": true
+            },
+            "number": 730,
+            "organization": "Department of State",
+            "partNumber": "04",
+            "receivedDate": "2026-01-13",
+            "updateDate": "2026-09-18T11:00:36Z",
+            "url": "https://api.congress.gov/v3/nomination/119/730-4?format=json"
+        },
+        {
+            "citation": "PN937-10",
+            "congress": 119,
+            "description": "Abby Warren, of Virginia, to be an Assistant Secretary of Commerce, vice Thea D. Rozman Kendler, resigned.",
+            "latestAction": {
+                "actionDate": "2026-09-17",
+                "text": "Placed on Senate Executive Calendar. Calendar No. 921. Subject to nominee's commitment to respond to requests to appear and testify before any duly constituted committee of the Senate."
+            },
+            "nominationType": {
+                "isCivilian": true
+            },
+            "number": 937,
+            "organization": "Department of Commerce",
+            "partNumber": "10",
+            "receivedDate": "2026-04-27",
+            "updateDate": "2026-09-18T11:00:36Z",
+            "url": "https://api.congress.gov/v3/nomination/119/937-10?format=json"
+        }
+    ],
+    "pagination": {
+        "count": 2208,
+        "next": "https://api.congress.gov/v3/nomination/119?offset=3&limit=3&format=json"
+    },
+    "request": {
+        "congress": "119",
+        "contentType": "application/json",
+        "format": "json"
+    }
+}
