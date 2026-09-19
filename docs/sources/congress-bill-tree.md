@@ -108,50 +108,9 @@ fixtures the names that appear are the Dublin Core block, `sponsor`,
 
 ## Decision: DeltaTrack is a dependency, not a port
 
-**Status: decided here, for a maintainer to move into `docs/decisions.md`.**
-
-SpicyDocs depends on `civictechdc/DeltaTrack`, pinned by commit sha in
-`[tool.uv.sources]`. BillTrax's `submodules/DeltaTrack` and its TypeScript fork
-(`src/lib/bill-tree.ts`, `financial.ts`, `diff.ts`, `section-diff.ts`'s fallback
-core, `python-diff.ts`, `scripts/diff_service.py`) **are to be deleted**.
-
-The reason is the measurement, not a preference.
-[The value inventory](../research/billtrax-value-inventory-2026-09-19.md) §4
-recommended a port because the vendored directory was "not a git submodule",
-carried no pin, and had no upstream remote to pin *to* — its own git history was
-BillTrax's. That was true of the directory and false of the project. The
-canonical repository has since moved to the same Civic Tech DC organisation as
-SpicyDocs and SpicyRegs, and at `c636448` (2026-09-13) it is:
-
-- an installable package (`deltatrack` 0.1.0, hatchling, `src/deltatrack`) whose
-  engine dependency is `pypdfium2` alone — not the `httpx`/`python-dotenv` set
-  the vendored `pyproject.toml` declared for a fetcher it did not contain;
-- 12,479 lines across 25 modules, against the vendored snapshot's 2,846;
-- covered by 120 test files and a corpus. The suite was run once at the pinned
-  revision through its own runner (`uv sync`, then
-  `uv run pytest -q -m "not browser and not network"`): **3,822 passed, 34
-  skipped, 15 xfailed, 0 failed, 67 s**. The 34 skips print their reasons; they
-  are corpus shells, baseline-regeneration modes, and three gitignored local
-  fixtures;
-- already carrying every divergence and bug the inventory told this port to fix
-  by hand, plus the `resolution-body` gap it told this port to close.
-
-So the port's premise was a stale snapshot. Porting 1,439 lines by hand, to
-reach a place 12,479 maintained lines already occupy, preserves effort and
-nothing else.
-
-A git pin rather than a PyPI range because nothing is published to PyPI yet:
-`deltatrack` is an unclaimed name on the index, so a version specifier would
-resolve to nothing at best and to an unrelated package at worst. **Move the pin
-to a release, and drop the `[tool.uv.sources]` entry, as soon as upstream
-publishes one** — a git rev is a worse pin than a version, because it names a
-commit on a branch that can be force-pushed out from under it.
-
-One consequence for the gate: `uv sync --extra bill-diff` clones from GitHub the
-first time, so a cold environment needs network for that one dependency. uv
-caches the checkout, so later syncs and every `--frozen` run are offline, and the
-lock records the resolved commit either way. Without the extra, `./scripts/check`
-still runs; the adapter tests skip and say why.
+See ["DeltaTrack is a pinned dependency, not a
+port"](../decisions.md#deltatrack-is-a-pinned-dependency-not-a-port) in
+`docs/decisions.md`.
 
 ## What upstream already decides, measured at `c636448`
 
