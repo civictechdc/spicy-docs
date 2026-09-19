@@ -11,9 +11,12 @@ produces is a **derivative**: every serialized file travels with a source map
 back to the evidence lines it was built from, every node names the rule or the
 model call that placed it, and a hosted row derived from it says
 `derivation = reconstructed`. [Interpretation](interpretation.md) runs after,
-over facts and findings, and names its own rule; reconstruction rewrites
-nothing either — it assembles and classifies the extractor's own text and
-reports where it could not.
+over facts and findings, and names its own rule; reconstruction rewrites only
+what it names — three rule-derived repairs in `parse` (small-capital case
+restored from the style observation, a print wrap's hyphen dropped, GPO's
+typewriter quote pairs collapsed to the publisher's spelling) — and otherwise
+assembles and classifies the extractor's own text and reports where it could
+not.
 
 Install it with the `reconstruct` extra. Only schema validation needs it
 (`lxml`); the rest of the package is standard library, and the one function
@@ -148,12 +151,18 @@ hidden from reconstruction
 | Accepted without review in the declared slice | ≥ 70% | 82% (33 of 40) |
 | Cost per accepted document | reported | No model call was made; 28 ms of reconstruction per document |
 
-**Read those numbers with the document's own caveats.** Six parser rules were
-derived while this corpus was being read, and three of the documents that
-motivated them are in the blind split — so the blind column is a development
-column until a run whose rules were fixed beforehand. Forty clean documents
-still permit roughly a 7% error rate at a one-sided 95% bound. The audit grows
-with the claim.
+**Read those numbers with the document's own caveats.** Seven parser rules and
+repairs were derived while this corpus was being read, and four of the
+documents that motivated them are in the blind split —
+`CFR-2022-title40-vol1-sec23-2` (`small_caps_restore`, `small_caps_continuation`),
+`CFR-2023-title7-vol1-sec3-52` (`gpo_quote_pair`),
+`CFR-2023-title7-vol1-sec1-313` (`print_shop_footer`, the subject-continuation
+join) and `CFR-2023-title7-vol1-sec15-86` (which motivated the deliberate
+*refusal* to write a subject-group-heading rule) — so the blind column is a
+development column until a run on editions this corpus never touched. The
+`splitIntegrity` field of the sidecar records this per run instead of leaving
+it to prose. Forty clean documents still permit roughly a 7% error rate at a
+one-sided 95% bound. The audit grows with the claim.
 
 Where it falls short is named rather than averaged away: four of the seven
 unaccepted documents are a paragraph designation GPO sets run-in after an
