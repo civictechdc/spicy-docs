@@ -83,4 +83,6 @@ python-version = "3.12"
 [tool.ty.src]
 exclude = [
     ".venv",
+    # Agent worktrees are whole sibling checkouts; the gate must not read them.
+    ".claude/worktrees",
 ]

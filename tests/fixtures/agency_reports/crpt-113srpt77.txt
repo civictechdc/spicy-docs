@@ -1,0 +1,3555 @@
+81–924 PDF 
+Calendar No. 140 
+113TH CONGRESS 
+REPORT 
+" 
+! 
+SENATE 
+1st Session 
+113–77 
+DEPARTMENT OF HOMELAND SECURITY APPROPRIATIONS 
+BILL, 2014 
+JULY 18, 2013.—Ordered to be printed 
+Ms. LANDRIEU, from the Committee on Appropriations, 
+submitted the following 
+R E P O R T 
+[To accompany H.R. 2217] 
+The Committee on Appropriations, to which was referred the bill 
+(H.R. 2217) making appropriations for the Department of Home-
+land Security for the fiscal year ending September 30, 2014, and 
+for other purposes, having considered the same, reports favorably 
+thereon with an amendment and recommends that the bill, as 
+amended, do pass. 
+2 
+Total obligational authority, fiscal year 2014 
+Total of bill as reported to the Senate 1 2 3 7 .......... $46,413,386,000 
+Amount of 2013 appropriations 4 6 8 .......................
+59,742,509,000 
+Amount of 2014 budget estimate 1 2 5 7 ..................
+46,114,108,000 
+Amount of House allowance ....................................
+46,077,222,000 
+Bill as recommended to Senate compared to— 
+2013 appropriations .......................................... ¥13,329,123,000 
+2014 budget estimate ........................................
+∂299,278,000 
+House allowance ................................................
+∂336,164,000 
+1 Committee recommendation includes $240,978,000 in rescissions, compared to 
+$42,000,000 of proposed cancellations. 
+2 Includes a permanent indefinite appropriation of $201,000,000 for the Coast 
+Guard healthcare fund contribution. 
+3 Includes $227,000,000 for the Coast Guard for the costs of overseas contingency 
+operations. 
+4 Includes rescissions totaling $306,999,999 pursuant to Public Law 113–6. In-
+cludes permanent indefinite appropriation of $203,000,000 for the Coast Guard 
+healthcare fund contribution. Includes $254,000,000 for the Coast Guard for the 
+costs of overseas contingency operations. 
+5 Excludes up to $227,033,000 for Coast Guard overseas contingency operations re-
+quested in Department of Defense ‘‘Operation and Maintenance, Navy’’. 
+6 Includes $11,779,000,000 as disaster relief pursuant to Public Law 112–25, and 
+$6,692,908,000 as emergency funding pursuant to Public Law 113–2, of which 
+$6,108,735,000 is for the FEMA Disaster Relief Fund. 
+7 Includes $5,626,386 for the FEMA Disaster Relief Fund designated by Congress 
+as disaster relief pursuant to Public Law 112–25. 
+8 Does not reflect March 1, 2013, sequester of funds under Public Law 112–25. 
+(3) 
+C O N T E N T S 
+Page 
+Overview and Summary of the Bill ........................................................................
+5 
+Title I: 
+Departmental Management and Operations: 
+Office of the Secretary and Executive Management ..............................
+10 
+Office of the Under Secretary for Management ......................................
+15 
+Office of the Chief Financial Officer ........................................................
+18 
+Office of the Chief Information Officer ....................................................
+21 
+Analysis and Operations ...........................................................................
+23 
+Office of Inspector General .......................................................................
+24 
+Title II: 
+Security, Enforcement, and Investigations: 
+U.S. Customs and Border Protection: 
+Salaries and Expenses .......................................................................
+28 
+Automation Modernization ................................................................
+42 
+Border Security Fencing, Infrastructure, and Technology .............
+43 
+Air and Marine Operations ...............................................................
+45 
+Construction and Facilities Management ........................................
+47 
+U.S. Immigration and Customs Enforcement: 
+Salaries and Expenses .......................................................................
+49 
+Automation Modernization ................................................................
+56 
+Construction .......................................................................................
+56 
+Transportation Security Administration: 
+Aviation Security ................................................................................
+57 
+Surface Transportation Security .......................................................
+68 
+Transportation Threat Assessment and Credentialing ...................
+69 
+Transportation Security Support ......................................................
+71 
+Federal Air Marshals .........................................................................
+72 
+United States Coast Guard: 
+Operating Expenses ...........................................................................
+74 
+Environmental Compliance and Restoration ...................................
+82 
+Reserve Training ................................................................................
+82 
+Acquisition, Construction, and Improvements .................................
+83 
+Research, Development, Test, and Evaluation ................................
+90 
+Retired Pay .........................................................................................
+91 
+United States Secret Service: 
+Salaries and Expenses .......................................................................
+91 
+Acquisition, 
+Construction, 
+Improvements, 
+and 
+Related 
+Expenses ..........................................................................................
+95 
+Title III: 
+Protection, Preparedness, Response, and Recovery: 
+National Protection and Programs Directorate: 
+Management and Administration .....................................................
+96 
+Infrastructure Protection and Information Security .......................
+97 
+Federal Protective Service .................................................................
+103 
+Office of Biometric Identity Management ........................................
+105 
+Office of Health Affairs .............................................................................
+106 
+Federal Emergency Management Agency: 
+Salaries and Expenses .......................................................................
+110 
+State and Local Programs .................................................................
+115 
+Firefighter Assistance Grants ...........................................................
+120 
+Emergency Management Performance Grants ................................
+120 
+Radiological Emergency Preparedness Program .............................
+121 
+United States Fire Administration ...................................................
+122 
+Disaster Relief Fund ..........................................................................
+122 
+Page
+4 
+Title III—Continued 
+Protection, Preparedness, Response, and Recovery—Continued 
+Federal Emergency Management Agency—Continued 
+Flood Hazard Mapping and Risk Analysis .......................................
+124 
+National Flood Insurance Fund ........................................................
+125 
+National Predisaster Mitigation Fund .............................................
+126 
+Emergency Food and Shelter ............................................................
+127 
+Title IV: 
+Research and Development, Training, and Services: 
+United States Citizenship and Immigration Services ............................
+128 
+Federal Law Enforcement Training Center: 
+Salaries and Expenses .......................................................................
+131 
+Acquisitions, Construction, Improvements, and Related Ex-
+penses ..............................................................................................
+131 
+Science and Technology: 
+Management and Administration .....................................................
+132 
+Research, Development, Acquisition, and Operations ....................
+132 
+Domestic Nuclear Detection Office: 
+Management and Administration .....................................................
+137 
+Research, Development, and Operations .........................................
+138 
+Systems Acquisition ...........................................................................
+139 
+Title V: General Provisions .....................................................................................
+141 
+Program, Project, and Activity ...............................................................................
+148 
+Compliance With Paragraph 7, Rule XVI of the Standing Rules of the 
+Senate ...................................................................................................................
+149 
+Compliance With Paragraph 7(c), Rule XXVI of the Standing Rules of the 
+Senate ...................................................................................................................
+149 
+Compliance With Paragraph 12, Rule XXVI of the Standing Rules of the 
+Senate ...................................................................................................................
+150 
+Budgetary Impact of Bill .........................................................................................
+168 
+Comparative Statement of New Budget Authority ...............................................
+169 
+(5) 
+OVERVIEW AND SUMMARY OF THE BILL 
+Fiscal year 2014 
+request 1 2 3 5 
+Fiscal year 2014 
+Committee 
+recommendation 1 2 4 5 
+Title I—Departmental Management and Operations .........................................
+$1,239,310,000 
+$1,053,879,000 
+Title II—Security, Enforcement, and Investigations ..........................................
+31,633,338,000 
+31,975,885,000 
+Title III—Protection, Preparedness, Response, and Recovery ...........................
+11,009,402,000 
+11,581,840,000 
+Title IV—Research and Development, Training, and Services ..........................
+2,214,058,000 
+1,885,260,000 
+Title V—General Provisions ................................................................................
+18,000,000 
+¥83,478,000 
+Total, new budget (obligational authority) ...........................................
+46,114,108,000 
+46,413,386,000 
+1 Committee recommendation includes $240,978,000 in rescissions, compared to $42,000,000 of proposed cancellations. 
+2 Includes a permanent indefinite appropriation of $201,000,000 for the Coast Guard healthcare fund contribution. 
+3 Excludes up to $227,033,000 for Coast Guard overseas contingency operations requested in Department of Defense ‘‘Operation and Main-
+tenance, Navy’’. 
+4 Includes $227,000,000 for the Coast Guard for the costs of overseas contingency operations. 
+5 Includes $5,626,386,000 for the FEMA Disaster Relief Fund designated by Congress as disaster relief pursuant to Public Law 112–25. 
+The 
+Committee 
+recommends 
+a 
+total 
+appropriation 
+of 
+$46,413,386,000 for the Department of Homeland Security for fiscal 
+year 2014, $299,278,000 more than the budget request. Of this 
+amount, $44,953,386,000 is discretionary programs, including 
+$227,000,000 for Coast Guard overseas contingency operations and 
+$5,626,386,000 for the FEMA Disaster Relief Fund designated by 
+Congress as disaster relief pursuant to Public Law 112–25. 
+The Committee recommends discretionary appropriations, ex-
+cluding Coast Guard overseas contingency operations and the 
+FEMA Disaster Relief Fund adjustment of $39,100,000,000, 
+$72,278,000 above the request. Even with this modest increase, 
+this is the fourth year in a row that discretionary appropriations 
+for the DHS have decreased. 
+OVERVIEW 
+Within the past year, our Nation has witnessed a substantial rise 
+in attempts and attacks on our country from home-grown terror-
+ists. We face real threats from radicalized individuals here in the 
+United States, as shown most recently by the Boston Marathon 
+bombers and the arrest in Boise, Idaho, of an Uzbekistan national 
+accused of conspiring with a designated terrorist organization in 
+his home country, scheming to use a weapon of mass destruction, 
+and distributing information about explosives and bombs. These 
+events remind us that deranged or alienated individuals—often 
+U.S. citizens or legal residents—can do enormous damage, particu-
+larly when inspired by larger notions of violent jihad. 
+At the same time, individuals and terrorist groups abroad con-
+tinue to focus on doing us harm. Even though Osama bin Laden 
+and most of his top lieutenants are dead, our Nation is still threat-
+ened by al Qaeda affiliates and other international terrorists. From 
+Yemen to Iraq, from Somalia to North Africa, from the Pakistani 
+Taliban to Syria, the threat today is more diffuse, with al Qaeda’s 
+affiliate in the Arabian Peninsula—AQAP—being the most active 
+6 
+in plotting against our homeland. While there have been no suc-
+cessful large-scale attacks on the United States, plots have been 
+thwarted. For example, in April, there was a plot to blow up a rail 
+line between United States and Canada. And the aviation system 
+continues to face repeated threats from international operatives. In 
+addition, cybersecurity threats continue to evolve at an alarming 
+rate with 250,000 probes/attacks on U.S. Government networks an 
+hour and global costs of over $1,000,000,000 in direct financial loss, 
+the cost of remediating cyber attacks, and loss of intellectual prop-
+erty. In an age where ideas and images can travel the globe in a 
+minute, we must continue to be vigilant and strengthen our law en-
+forcement defenses to make American targets harder to strike. This 
+bill does just that. For example: 
+—At U.S. Customs and Border Protection [CBP], the bill rec-
+ommends hiring more than 1,850 new CBP officers at our ports 
+of entry to facilitate the processing of legitimate trade and 
+travelers while preventing entry of those would do us harm. 
+—At U.S. Immigration and Customs Enforcement [ICE], special 
+agents have already seized more than $1,000,000,000 in cur-
+rency seizure and made more than 6,000 criminal arrests. The 
+bill provides nearly $25,000,000 for human trafficking and 
+smuggling investigations as well as investigations in commer-
+cial trade fraud. 
+—At the Transportation Security Administration, the bill in-
+cludes $189,154,000 for explosives detection technologies to 
+screen passengers and their belongings at airports and 
+$105,919,000 for Secure Flight, which matches passenger data 
+against portions of the Terrorist Screening Database. 
+—For cybersecurity, the bill recommends a total of $803,827,000 
+for cybersecurity protection of Federal networks and incident 
+response, $47,997,000 above fiscal year 2013. This amount in-
+cludes $15,824,000 for cybersecurity education to train future 
+cyber warriors. 
+—A total of $404,000,000 is included for construction of the Na-
+tional Bio and Agro Defense Facility, which is being built to 
+prevent the accidental or intentional introduction of deadly 
+animal diseases into the United States. 
+—A total of $98,000,000, $5,000,000 above fiscal year 2013, for 
+first responder weapons of mass destruction training. 
+—A total of $29,868,000 above the fiscal year 2013 level is pro-
+vided to strengthen the Department’s ability to safeguard and 
+share classified information with its Federal, State, and local 
+partners, and to help deter the unauthorized release of such in-
+formation. In the wake of past and recent public disclosures of 
+critical national security information, such safeguards are vital 
+to ensuring effective controls are in place to prevent the illicit 
+removal and dissemination of classified information. 
+—A total of $10,504,000 for the Office of Bombing Prevention to 
+advance training, analysis, and awareness. 
+—A total of $35,180,000 for Urban Search and Rescue Teams for 
+location, rescue, and initial medical care of people in large 
+scale disasters. 
+7 
+—An additional $3,000,000 is included for the ‘‘If You See Some-
+thing, Say Something’’ campaign to raise public awareness on 
+indicators of terrorism. 
+—A total of $1,962,000 for efforts to counter domestic violent ex-
+tremism, $135,000 above fiscal year 2013. Given the terrorist 
+attacks in Boston, the Department should be strengthening 
+and expanding its activities to counter violent extremism in 
+the coming months and year. 
+While threats continue to be a serious concern, we also face un-
+predictable and sometimes dire natural disasters that have a sig-
+nificant impact on our cities and rural communities. Within the 
+last year, for example, New York, New Jersey and Connecticut 
+were devastated by Hurricane Sandy, which was the second most 
+costly hurricane in history. Similarly, the State of Oklahoma was 
+recently hit by severe tornados that wiped out the town of Moore, 
+Oklahoma. In 2011, there were a total of 242 declared disasters in-
+cluding Federal disasters, emergency declarations and fire manage-
+ment declarations, almost 100 more than seen in any other year. 
+For 2012, there were 112, with fire topping the number of Federal 
+declarations. DHS must be prepared for and nimbly able to support 
+such natural disaster response. This bill provides the resources for 
+DHS to do so in fiscal year 2014, including $6,220,908,000 through 
+the Disaster Relief Fund to recover from previous events and re-
+spond to future disasters. 
+At the same time, DHS must also ensure that its other legacy 
+and statutory missions, such as enforcing our immigration laws, fa-
+cilitating legitimate travel and trade, protecting our currency, 
+interdicting drugs and migrants, responding to oil spills, and res-
+cuing those in need are sufficiently provided for. The bill does so 
+by ensuring that these missions have adequate resources in part by 
+refocusing resources on those areas that the Committee believes 
+were underfunded in the fiscal year 2014 request or by 
+supplementing request levels for enhancements to fill technological 
+limitations. For example: 
+—The recommendation for the Coast Guard includes several in-
+creases above the request, including $16,000,000 and 242 posi-
+tions to enhance drug and migrant interdiction efforts, 
+$278,568,000 to acquire new vessels desperately needed to re-
+place an aging fleet, $1,000,000 and six positions to enhance 
+the Coast Guard’s sexual assault response and prevention pro-
+gram, and $13,000,000 above the request to restore 600 reserv-
+ists to active status, which will enable the Coast Guard to re-
+tain the majority of the first responders proposed for reduction. 
+—The bill recommends a total of $1,502,000,000 for first re-
+sponder grants, $37,853,000 above the fiscal year 2013 to pro-
+vide for the protection of infrastructure and the readiness of 
+police, firefighters, public health officials and emergency man-
+agers in States, urban areas, ports, and transit systems. 
+—At CBP, the bill increases traveler targeting and processing 
+systems by more than $10,000,000 above the request, for a 
+total of more than $28,000,000. 
+—The bill funds detention beds at ICE beds at $41,000,000 above 
+the request and increases funds for alternatives to detention by 
+nearly $24,000,000 above the request. 
+8 
+—The bill restores damaging proposed cuts to Secret Service 
+agents who protect the First Family and other individuals 
+while also conducting investigations into counterfeiting the 
+currency and securing financial networks. 
+—And to assist people lawfully present in this country who wish 
+to become U.S. citizens, a total of $10,000,000 is provided for 
+immigrant integration grants. 
+All of this must be done with fiscal restraint in mind. The an-
+swers to our homeland security challenges do not always involve 
+spending more money. DHS can also improve its programs by re-
+focusing its priorities to root out fraud, waste, and abuse, and alter 
+what does not work well in the Department for those actions that 
+truly make a difference. In addition, DHS must make a concerted 
+effort to work with other key Federal, State, local and international 
+partners to ensure our broader national strategy to maintain a se-
+cure and resilient country is achieved as DHS-related programs 
+cannot do this in a vacuum. For fiscal year 2014, the Committee 
+recommends continuing major reforms as well as puts new ones in 
+place to strengthen and streamline the Department. 
+—The bill approves over $1,300,000,000 in requested administra-
+tive cost savings. 
+—The bill allows for the decommissioning of two Coast Guard pa-
+trol boats that have become too expensive to maintain, saving 
+nearly $3,000,000. 
+—The bill includes funding for six critically needed Coast Guard 
+Fast Response Cutters (instead of two requested). Procuring 
+six maximizes the production line and generates cost savings 
+of at least $5,000,000 per hull for a total savings to the tax-
+payers of $30,000,000. 
+—The bill calls for the Department to reduce the number of ex-
+pensive offline travel bookings when online bookings are much 
+cheaper. The report requires the Inspector General to examine 
+travel costs to identify excessive expenditures and identify 
+areas of savings. 
+—A series of energy conservation efforts are included for fiscal 
+year 2014, which will allow the Federal Law Enforcement 
+Training Center to save approximately $2,000,000 and, with 
+the installation of photovoltaic equipment, avoid paying energy 
+costs totaling $2,500,000 at its Cheltenham facility. 
+—The bill rejects the unauthorized National Preparedness Grant 
+proposal, waiting for the appropriate authorizing Committees 
+to act. 
+—The bill includes 16 statutorily mandated expenditure plans for 
+robust congressional oversight. In addition, there are another 
+11 expenditure plans in the report. The Committee encourages 
+DHS to issue these reports in an unclassified format so that 
+they can be available to the public, to the maximum extent 
+practicable. 
+—The bill continues annual and monthly reporting requirements 
+for expenditures from the Disaster Relief Fund and directs 
+FEMA to make these reports available to the public no later 
+than 10 days after the close of each month. 
+—The bill continues a monthly obligation, expenditure, and staff-
+ing reporting requirement. Delivery of these reports is now re-
+9 
+quired within 30 days after the end of the month, to better 
+oversee expenditures. 
+—The bill includes 7 multiyear investment reports so that the 
+Committee can better track when acquisitions and procure-
+ments are required for large capital programs. 
+—The bill rejects the Department’s request to realign the Office 
+of Policy, making three of its offices direct reports to the Sec-
+retary. This is inconsistent with consolidation elsewhere in the 
+Department. 
+In conclusion, the recommendations contained in this bill sustain 
+the Department of Homeland Security’s vital front line security op-
+erations, while providing resources for the Department to nimbly 
+react to the latest threat, either man-made or natural, and assur-
+ing sufficient management and administrative oversight to ensure 
+fiscal responsibility and wise investments of taxpayer money. 
+REFERENCES 
+This report refers to several Public Laws by short title as follows: 
+the Budget Control Act of 2011, Public Law 112–25, is referenced 
+as the BCA; American Recovery and Reinvestment Act of 2009, 
+Public Law 111–5, is referenced as ARRA; Implementing Rec-
+ommendations of the 9/11 Commission Act of 2007, Public Law 
+110–53, is referenced as the 9/11 Act; Robert T. Stafford Disaster 
+Relief and Emergency Assistance Act, Public Law 93–288, is ref-
+erenced as the Stafford Act; and Intelligence Reform and Terrorism 
+Prevention Act of 2004, Public Law 108–458, is referenced as the 
+Intelligence Reform Act. 
+Any reference in this report to the Secretary shall be interpreted 
+to mean the Secretary of Homeland Security. 
+Any reference to the Department or DHS shall be interpreted to 
+mean the Department of Homeland Security. 
+Any reference in this report to a departmental component shall 
+be interpreted to mean directorates, components, offices, or other 
+organizations in the Department of Homeland Security. 
+Any reference to FTE shall mean full-time equivalents. 
+Any reference to PPA shall mean program, project, and activity. 
+Any reference to HSPD shall mean Homeland Security Presi-
+dential Directive. 
+Any reference to GAO shall mean Government Accountability Of-
+fice. 
+Any reference to the OIG shall mean the Office of Inspector Gen-
+eral of the Department of Homeland Security. 
+(10) 
+DEPARTMENT OF HOMELAND SECURITY 
+TITLE I 
+DEPARTMENTAL MANAGEMENT AND OPERATIONS 
+OFFICE OF THE SECRETARY AND EXECUTIVE MANAGEMENT 
+Appropriations, 2013 1 ...........................................................................
+$129,827,000 
+Budget Estimate, 2014 ..........................................................................
+126,554,000 
+House allowance ....................................................................................
+100,408,000 
+Committee recommendation .................................................................
+123,600,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The Office of the Secretary and Executive Management supports 
+the Department by providing direction, management, and policy 
+guidance to operating components. The specific activities funded by 
+this account include: the Immediate Office of the Secretary; the Im-
+mediate Office of the Deputy Secretary; the Office of the Chief of 
+Staff; the Office of the Executive Secretary; the Office of Policy; the 
+Office of Public Affairs; the Office of Legislative Affairs; the Office 
+of the General Counsel; the Office for Civil Rights and Civil Lib-
+erties; the Citizenship and Immigration Services Ombudsman; the 
+Office of Intergovernmental Affairs; and the Privacy Officer. 
+COMMITTEE RECOMMENDATION 
+The Committee recommends $123,600,000 for the Office of the 
+Secretary and Executive Management. This is $2,954,000 below the 
+amount requested and $6,227,000 below the amount provided in 
+fiscal year 2013. Of this amount, the Committee recommends not 
+to exceed $45,000 for official reception and representation ex-
+penses. 
+The Committee includes the requested programmatic increases 
+for the Office for Civil Rights and Civil Liberties [OCRCL], includ-
+ing $1,327,000 for OCRCL to ensure that the Department’s immi-
+gration efforts comply with all applicable civil rights statutes and 
+constitutional requirements. The Committee directs that a briefing 
+on the program be provided no later than 60 days after the date 
+of enactment of this act. The briefing is to be conducted jointly by 
+OCRCL and U.S. Immigration and Customs Enforcement [ICE] of-
+ficials. 
+In the President’s counterterrorism speech on May 23, 2013, he 
+said the Nation ‘‘faces a real threat from radicalized individuals 
+here in the United States’’. The Committee includes the requested 
+program increase of $135,000 and a total of $1,962,000 for OCRCL 
+efforts to counter domestic violent extremism. Given the terrorist 
+attacks in Boston, the Department should be strengthening and ex-
+panding its activities to counter violent extremism in the coming 
+months and year. The Department shall provide a briefing to the 
+11 
+Committee no later than 60 days after the date of enactment of 
+this act, on how the DHS Counter Violent Extremism [CVE] efforts 
+are being expanded, including community engagement, CVE train-
+ing for communities and law enforcement, and increased analytical 
+intelligence support to State and Local law enforcement. 
+The 
+recommendation 
+includes 
+the 
+requested 
+increase 
+of 
+$3,000,000 to expand the ‘‘If You See Something, Say Something’’ 
+public awareness campaign. This campaign has proven to be effec-
+tive in engaging the public in identifying and reporting on indica-
+tors of terrorism and terrorism-related crime. The increase will en-
+able the Department to expand the campaign to focus on preven-
+tion, mitigation, and response to violent incidents like mass shoot-
+ing and mass casualty events. 
+The Committee again denies the budget proposal to create sepa-
+rate budget line items for the Office of International Affairs, the 
+Office of State and Local Law Enforcement, and the Private Sector 
+Office, which are all currently funded within the Office of Policy. 
+The Department has not supplied the Committee with a compelling 
+rationale for why these offices need to be stand alone entities with-
+in the Office of the Secretary and Executive Management, given 
+that these functions have been performed adequately within the 
+Office of Policy. 
+The specific levels recommended by the Committee as compared 
+to the fiscal year 2013 and budget request levels are as follows: 
+OFFICE OF THE SECRETARY AND EXECUTIVE MANAGEMENT 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Immediate Office of the Secretary ......................................................
+4,280 
+4,128 
+4,100 
+Immediate Office of the Deputy Secretary ..........................................
+2,091 
+1,822 
+1,800 
+Office of the Chief of Staff .................................................................
+2,172 
+2,200 
+2,100 
+Executive Secretary ..............................................................................
+7,582 
+7,603 
+7,500 
+Office of Policy .....................................................................................
+43,692 
+27,815 
+2 37,000 
+Office of Public Affairs ........................................................................
+5,468 
+8,661 
+8,600 
+Office of Legislative Affairs .................................................................
+5,792 
+5,498 
+5,400 
+Office of Intergovernmental Affairs .....................................................
+2,377 
+2,518 
+2,300 
+Office of General Counsel ....................................................................
+21,130 
+21,000 
+20,000 
+Office for Civil Rights and Civil Liberties ...........................................
+21,611 
+21,678 
+21,500 
+Citizenship and Immigration Services Ombudsman ...........................
+5,643 
+5,344 
+5,300 
+Privacy Officer ......................................................................................
+7,989 
+8,143 
+8,000 
+Office of International Affairs .............................................................
+( 3 ) 
+7,626 
+( 3 ) 
+Office of State and Local Law Enforcement .......................................
+( 3 ) 
+852 
+( 3 ) 
+Private Sector Office ............................................................................
+( 3 ) 
+1,666 
+( 3 ) 
+Total, Office of the Secretary and Executive Management ...
+129,827 
+126,554 
+123,600 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+2 Includes funds for the Office of International Affairs, Office of State and Local Law Enforcement, and the Private Sector Office. 
+3 Funded under the Office of Policy. 
+EXPENDITURE PLANS 
+The bill includes language directing the Secretary to submit ex-
+penditure plans to the Committee no later than 90 days after the 
+date of enactment of this act for the Offices of Policy, Intergovern-
+mental Affairs, Civil Rights and Civil Liberties, Citizenship and 
+Immigration Services Ombudsman, and Privacy. Each plan shall 
+include details on: staffing by programmatic function area, ex-
+12 
+penses, contracts, obligations, funds by sub-offices (if appropriate), 
+and how resources are aligned to specific activities and initiatives 
+in fiscal year 2014. 
+EVOLVING THREATS 
+The demands on the Department of Homeland Security continue 
+to grow as the threats from terrorism persistently evolve. Whether 
+it is homegrown terrorism; cyber intrusions; biological, chemical, or 
+nuclear attacks; food tampering; surgically implanted explosives; 
+animal diseases; or varying locations and means for crossing our 
+borders (such as tunnels), the Department must be able to respond 
+and adapt swiftly to interdict these threats at the earliest point 
+possible. Further, naturally occurring events put our Nation at 
+risk. Severe storms and wildfires are growing more frequent and 
+larger and earthquakes threaten major population areas, posing a 
+risk to critical infrastructure. DHS is to continue quarterly brief-
+ings to the Committee on how it is addressing these evolving 
+threats. 
+TRAVEL BOOKINGS 
+The Committee is concerned with the excessive costs being in-
+curred by Departmental entities with regard to travel reservations. 
+While the Department’s policy requires the use of online booking 
+systems in all cases, with few exceptions, cost data received by the 
+Committee indicates that travel reservations are heavily skewed 
+towards offline reservations. In fiscal year 2012, the Department 
+spent $5,306,524 on travel reservations, of which $4,446,329 were 
+from reservations made offline. Making reservations through online 
+booking can save millions of dollars as compared to offline booking, 
+specifically 73 percent less for a domestic airline ticket and 75 per-
+cent for an international airline ticket. The Department must con-
+tinue to emphasize frugality by cutting costs and streamlining 
+processes wherever possible. Therefore, the Department is expected 
+to significantly reduce the number of offline reservations in fiscal 
+year 2014. Further, the Committee directs the Inspector General to 
+examine these travel costs to identify excessive expenditures and 
+identify areas of savings. 
+EFFICIENCY REVIEW PROGRAM 
+In March of 2009, the Department began an efficiency review 
+process aimed at cutting overhead and administrative costs, 
+streamlining operations, and creating a culture of efficiency 
+throughout the Department. According to the Department’s fiscal 
+year 2014 budget, more than $4,000,000,000 in cost avoidances and 
+reductions has occurred, with the redeployment of those funds to 
+the Department’s most mission-critical programs. In November of 
+2012, the Department had an independent third party conduct an 
+assessment of the status and effectiveness of the efficiency review 
+program. The review concluded that the program has been initially 
+successful in creating cost avoidances, but found that the program 
+‘‘is limited by the scope of its mission, its organizational model, re-
+source allocation from Headquarters/Components, and its linkages 
+to various management structures with the Department.’’ The re-
+13 
+view made recommendations for common sense improvements to 
+conduct operations more efficiently as a Department, such as link-
+ing the efficiency program to existing departmental governance 
+structures, emphasizing consistency in efficiency review invest-
+ments across all components, expanding metrics reporting, and ex-
+panding the efficiency review to areas beyond the mission support 
+enterprise. DHS is to brief the Committee on the implementation 
+of these recommendations no later than 60 days after the date of 
+enactment of this act. 
+COORDINATION OF FEDERAL CHEMICAL SECURITY EFFORTS 
+Since fiscal year 2010, the Committee has required the Depart-
+ment to report on the coordination of chemical security efforts, both 
+within the Department and across departments and agencies. Spe-
+cifically, this report comes from the Deputy Secretary semiannually 
+and the Committee continues the requirement. While NPPD and 
+Coast Guard have made substantial progress formalizing and be-
+ginning to align their respective programs, these same efforts need 
+to be completed with TSA. Additionally, beyond DHS, the tragic 
+chemical facility incident in West, Texas revealed gaps among Fed-
+eral and State agencies. The Committee notes that while the Presi-
+dent assigned DHS the overarching coordination responsibility re-
+lated to chemical security through Homeland Security Presidential 
+Directive–7, DHS should work in conjunction with the Office of 
+Management and Budget to review and synchronize Federal enti-
+ties involved in chemical security activities. Under the heading Na-
+tional Protection and Programs Directorate, the Committee in-
+cludes a requirement for the Chemical Sector Coordination Council 
+to develop recommendations to improve coordination among Fed-
+eral agencies, streamline reporting requirements, and improve the 
+Chemical Facility Anti-Terrorism Standards Program in an effort 
+to garner stakeholder input. 
+USER FEES 
+The Committee directs the Secretary to continue quarterly up-
+dates on user fees as originally directed in the conference report ac-
+companying Public Law 111–83. 
+DEPARTMENTAL INTEGRITY EFFORTS 
+The Committee is pleased with the work that has been done to 
+solidify the investigative relationship between the OIG and CBP re-
+garding corruption investigations. The Committee directs the Dep-
+uty Secretary, jointly with the OIG, CBP, and ICE, to submit a sta-
+tus update report, not later than 60 days after the date of enact-
+ment of this act, outlining the specific steps being taken to further 
+address the process for investigating cases of corruption of DHS 
+employees, and outline the plan to address, as a unified DHS, the 
+engagement of DHS with the Department of Justice’s Border Cor-
+ruption Task Forces. The Senate-passed immigration reform legis-
+lation envisions the hiring of approximately 25,000 additional Bor-
+der Patrol agents, Customs and Border Protection officers, and im-
+migration enforcement and processing personnel. Such a massive 
+level of hiring would place significant burdens on human resource 
+14 
+personnel and the affected agencies. The Committee directs the De-
+partment to develop a hiring strategy detailing the steps which 
+need to be taken to rigorously perform background investigations 
+on potential new hires, the number of polygraphers to be hired, and 
+other necessary steps to be prepared to begin the hiring process the 
+day after any legislation is signed into law. The DHS Inspector 
+General shall also review the integrity aspect of this hiring strat-
+egy and provide input and suggestions as appropriate. 
+RECEPTION AND REPRESENTATION EXPENSES 
+Within the total amount recommended for the Office of the Sec-
+retary and Executive Management, up to $45,000 is included for re-
+ception and representation expenses. The Department is directed to 
+submit quarterly reports to the Committee listing obligations for all 
+DHS reception and representation expenses by purpose and dollar 
+amount, at a level of detail provided in fiscal year 2013 and 2014, 
+or in greater detail if that is required to explain how funds were 
+used. In recognition of a more constrained budget environment and 
+to limit opportunities for waste and abuse, the Committee main-
+tains the 12 percent reduction implemented over the past two fiscal 
+years for reception and representation expenses. 
+OVERHEAD COSTS 
+The President issued Executive Order 13589 on November 9, 
+2011, directing Federal agencies to plan for reducing the combined 
+costs of certain activities by not less than 20 percent below fiscal 
+year 2010 levels in fiscal year 2013. The Department should con-
+tinue to seek to reduce operating expenses by placing greater scru-
+tiny on overhead costs and looking at creative ways to achieve effi-
+ciencies. For example, field personnel could take advantage of mo-
+bile technology and automation to reduce labor-intensive and 
+paper-based incident reporting. This would also have benefits to op-
+erations, such as facilitating a near real-time picture of operations 
+for field and headquarters leadership. The Committee directs the 
+Department to provide a briefing on the cost reductions achieved 
+by the Department in fiscal year 2013 and its plan to reduce over-
+head costs within 60 days after the date of enactment of this act 
+to include the areas identified in Executive Order 13589 as well as 
+consolidating and reducing administrative and mission support per-
+sonnel, as appropriate; consolidating and reducing contractor sup-
+port, as appropriate; taking advantage of mobile technology and au-
+tomation to reduce certain support personnel needs; and better 
+managing and reducing overtime costs. 
+FEDERALLY FUNDED RESEARCH AND DEVELOPMENT CENTERS 
+The Department is directed to report semi-annually to the Com-
+mittee on the current projects tasked to Federally Funded Research 
+and Development Centers [FFRDCs], the funding obligated by com-
+ponent, including the purposes for the funds, and any projects com-
+pleted in the prior 6-month period, with the first report due Feb-
+ruary 14, 2014. The Committee has yet to receive a report in fiscal 
+year 2013 and reports for prior years were submitted well after the 
+required due dates and failed to fully describe individual projects 
+15 
+and the purpose they served. The Committee expects more robust 
+project descriptions of individual projects and a more timely sub-
+mission. 
+EMERGENCY RESPONSE AND RESCUE LOCATION INFORMATION 
+The United States National Grid [USNG] was developed in co-
+operation with the United States Geological Survey and National 
+Geospatial Intelligence Agency, and it has since been adopted by a 
+number of States. The Committee encourages the Department to 
+continue to support awareness, adoption, implementation, and tac-
+tical use of the USNG for emergency response and rescue scenarios 
+in cooperation with appropriate outside partners, including those in 
+academia. Further, the Committee directs the Department to sub-
+mit a report no later than 180 days after the date of enactment of 
+this act on what training is currently available, what challenges 
+there are in disseminating the USNG, and what partners have col-
+laborated in training. 
+PUBLIC ACCESS TO FEDERALLY FUNDED RESEARCH 
+In February of 2013, the Office of Science and Technology Policy, 
+Executive Office of the President issued guidelines on increasing 
+public access to the results of federally funded scientific research. 
+Given the importance of the research funded by the Office of 
+Health Affairs, the Science and Technology Directorate, and the 
+Domestic Nuclear Detection Office, the Committee encourages the 
+Department to expeditiously comply. 
+OFFICE OF THE UNDER SECRETARY FOR MANAGEMENT 
+Appropriations, 2013 1 ...........................................................................
+$218,223,000 
+Budget estimate, 2014 ...........................................................................
+202,686,000 
+House allowance ....................................................................................
+132,830,000 
+Committee recommendation .................................................................
+198,200,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The Under Secretary for Management oversees management and 
+operations of the Department, including procurement and acquisi-
+tion, human capital, and property management. The specific activi-
+ties funded by this account include the Immediate Office of the 
+Under Secretary for Management, the Office of the Chief Security 
+Officer, the Office of the Chief Procurement Officer, the Office of 
+the Chief Human Capital Officer, and the Office of the Chief Ad-
+ministrative Officer. 
+COMMITTEE RECOMMENDATION 
+The Committee recommends $198,200,000 for the Under Sec-
+retary for Management. This is $4,486,000 below the amount re-
+quested and $20,023,000 below the amount provided in fiscal year 
+2013. Of this amount, the Committee recommends not to exceed 
+$2,250 for official reception and representation expenses. The Com-
+mittee’s recommendation includes funding for oversight of major 
+acquisitions, recruitment and development of a skilled workforce, 
+and security measures to safeguard DHS personnel, property, fa-
+cilities, and information. The Committee supports the one-DHS 
+concept, which can only be executed when such missions are appro-
+16 
+priately funded. Effective government is not accomplished through 
+excessive funding cuts for these essential capabilities. Unless spe-
+cifically addressed in this report, the small reductions taken to in-
+dividual offices below the request are due to a constrained budget 
+environment and to focus limited resources on the Department’s 
+critical operational missions. 
+The specific levels recommended by the Committee, as compared 
+to the fiscal year 2013 and budget request levels, are as follows: 
+OFFICE OF THE UNDER SECRETARY FOR MANAGEMENT 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Immediate Office of the Under Secretary for Management ..........
+3,096 
+2,735 
+2,700 
+Office of the Chief Security Officer ...............................................
+68,909 
+66,025 
+65,000 
+Office of the Chief Procurement Officer ........................................
+71,905 
+66,915 
+66,000 
+Office of the Chief Human Capital Officer: 
+Salaries and Expenses ..........................................................
+24,938 
+22,276 
+22,000 
+Human Resources Information Technology Program ............
+9,667 
+9,213 
+8,000 
+Office of the Chief Administrative Officer: 
+Salaries and expenses ..........................................................
+34,267 
+30,793 
+30,000 
+Nebraska Avenue Complex ....................................................
+5,441 
+4,729 
+4,500 
+Total, Office of the Under Secretary for Management ....
+218,223 
+202,686 
+198,200 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+COMPREHENSIVE AND QUARTERLY ACQUISITION STATUS REPORTS 
+In order to obtain the information necessary for in-depth congres-
+sional oversight, statutory language is included in this act that re-
+quires a Comprehensive Acquisition Status Report to be included 
+as part of the submission of the President’s fiscal year 2015 budget, 
+with quarterly updates to be submitted 45 days after the comple-
+tion of each quarter. The requirements for the reports are ad-
+dressed below. 
+The Comprehensive Acquisition Status Report shall include pro-
+grams identified for Major Acquisition Oversight as defined in the 
+Department memorandum titled ‘‘Department of Homeland Secu-
+rity Major Acquisition Oversight List’’ dated January 25, 2011, and 
+programs that have been classified for major acquisition oversight 
+subsequent to the referenced memorandum. The Comprehensive 
+Acquisition Status Report shall include for each major acquisition: 
+—A narrative description to include current gaps and shortfalls, 
+the capabilities to be fielded, and the number of planned incre-
+ments and/or units; 
+—Acquisition Review Board (or other board designated to review 
+the acquisition) status of each acquisition, including the cur-
+rent acquisition phase, the date of the last review and a listing 
+of the required documents that have been reviewed with the 
+dates reviewed and/or approved; 
+—The most current approved Acquisition Program Baseline (to 
+include project schedules and events); 
+—A comparison of the original Acquisition Program Baseline, the 
+current Acquisition Program Baseline, and the current esti-
+mate; 
+17 
+—Whether or not an Independent Verification and Validation 
+has been implemented, with an explanation for the decision 
+and a summary of any findings; 
+—A rating of cost risk, schedule risk, and technical risk associ-
+ated with the program (including narrative descriptions and 
+mitigation actions); 
+—Contract status (to include earned value management data as 
+applicable); 
+—A life-cycle cost of the acquisition and time basis for the esti-
+mate; 
+—A planned procurement schedule, including the best estimate 
+of the annual cost and increments/units to be procured annu-
+ally until procurement is complete; 
+—A table delineated by appropriation that provides (for prior 
+years; past year; current year; budget year; budget year plus 
+one; budget year plus two; budget year plus three; budget year 
+plus four and beyond; and total cost) the actual or estimated 
+appropriations, obligations, unobligated authority, and planned 
+expenditures; 
+—The reason for any significant changes (from the previous com-
+prehensive report) in acquisition quantity, cost, or schedule; 
+—Key Events/Milestones from the prior fiscal year; and 
+—Key Events/Milestones for the current fiscal year. 
+Quarterly reports shall include: 
+—An updated status report on any major acquisition for which 
+there has been an approved or a new acquisition program base-
+line, a new acquisition decision memorandum, or where there 
+has been significant deviation from the prior report with re-
+spect to acquisition cost, quantity, or schedule (a significant 
+change is any deviation in cost or quantity that exceeds 8 per-
+cent or any change in schedule that exceeds 6 months). 
+—A table depicting the title of the program, quantity and cost 
+based on the original Acquisition Program Baseline, quantity 
+and cost based on the most current acquisition program base-
+line, the quantity and cost of the most current estimate, and 
+the explanation for any change in quantity and cost from prior 
+reports. 
+—If applicable, a copy of the acquisition decision memorandum, 
+together with a copy of the Letter of Assessment signed by the 
+Director of Testing and Evaluation. 
+LESSONS LEARNED REVIEWS 
+A recent GAO report (GAO–13–256) found that ‘‘conducting les-
+sons learned reviews when programs are canceled benefits organi-
+zations by identifying things that worked well and did not work 
+well in order to improve future acquisitions programs.’’ According 
+to GAO’s review, there is no firm requirement within the Depart-
+ment’s acquisition guidance to conduct reviews if an acquisition 
+program is cancelled. GAO recommended that DHS should require 
+the publication of a lessons learned reports to increase the likeli-
+hood that future acquisitions will succeed. Therefore, consistent 
+with GAO’s recommendation, the Department is to revise its acqui-
+sition instruction manual to require a process and mechanism for 
+collecting and distributing lessons learned. 
+18 
+BALANCED WORKFORCE STRATEGY 
+The Committee supports the Department’s efforts to determine 
+the proper balance of Federal and contractor employees for pro-
+grams and functions of the Department. The Committee recognizes 
+that this is an evolving and continuous process, but progress and 
+milestones are necessary to judge the success of these efforts. 
+Based on the Department’s latest report on the Balanced Workforce 
+Strategy, recent attempts to collect updated information on the ef-
+fects of insourcing have been insufficient. As a result, the Depart-
+ment is planning to release more robust reporting guidance in Au-
+gust 2013 to components to provide a more comprehensive sum-
+mary of the Balanced Workforce Strategy. The Department is di-
+rected to submit the results of this effort to the Committee by April 
+1, 2014. 
+HEADQUARTERS CONSOLIDATION 
+A general provision is included providing $43,300,000 for the ‘‘Of-
+fice of the Under Secretary for Management’’ for costs associated 
+with headquarters consolidation and mission support consolidation. 
+In addition, $12,800,000 is recommended in Coast Guard ‘‘Oper-
+ating Expenses’’ to support the Coast Guard at St. Elizabeths. The 
+Under Secretary shall submit an expenditure plan no later than 90 
+days after the date of enactment of this act detailing how these 
+funds will be allocated, including a revised schedule and cost esti-
+mates for headquarters consolidation. Quarterly briefings are re-
+quired on headquarters and mission support consolidation activi-
+ties, including any deviation from the expenditure plan. 
+OFFICE OF THE CHIEF FINANCIAL OFFICER 
+Appropriations, 2013 1 ...........................................................................
+$51,432,000 
+Budget estimate, 2014 ...........................................................................
+48,779,000 
+House allowance ....................................................................................
+31,242,000 
+Committee recommendation .................................................................
+48,000,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The Office of the Chief Financial Officer is responsible for the fis-
+cal management and financial accountability of the Department of 
+Homeland Security. The Office of the Chief Financial Officer pro-
+vides guidance and oversight of the Department’s budget execution 
+while ensuring that funds are allocated and expended in accord-
+ance with relevant laws and policies. This account funds the Budg-
+et Division, Office of Financial Operations, Office of Program Anal-
+ysis and Evaluation, Office of Financial Management, Resource 
+Management Transition Office, and the Office of the Government 
+Accountability Office/Office of Inspector General Audit Liaison. 
+COMMITTEE RECOMMENDATION 
+The Committee recommends $48,000,000 for the Office of the 
+Chief Financial Office [OCFO]. This is $779,000 below the amount 
+requested and $3,432,000 below the amount provided in fiscal year 
+2013. 
+19 
+COST OF LIVING ADJUSTMENT 
+The Committee assumes the cost of living adjustment for civilian 
+employees across the Department will be absorbed within amounts 
+appropriated in this act. 
+FINANCIAL SYSTEMS MODERNIZATION 
+The Committee recognizes the Department’s need to improve the 
+reliability and transparency of its financial data, and directs DHS 
+to maintain frequent communications with the Committee on fi-
+nancial management improvement plans necessary to support the 
+Department’s missions, including total resource requirements by 
+fiscal year and a timeline for implementation with discrete mile-
+stones. The Committee includes $4,000,000 for the OCFO to pro-
+vide governance and oversight of the Component’s migration to a 
+financial systems solution. The bill includes $29,500,000 in the 
+Coast Guard’s ‘‘Operating Expenses’’ appropriation for the migra-
+tion of its financial management system in fiscal year 2014 that 
+will also support TSA and the Domestic Nuclear Detection Office. 
+BUDGET EXECUTION AND STAFFING REPORT 
+The Committee continues and modifies a general provision re-
+quiring the Department to continue to submit to the House and 
+Senate Committees on Appropriations a monthly budget execution 
+report showing the status of obligations and costs for all compo-
+nents of the Department and on-board staffing levels (Federal em-
+ployees and contractors). The report shall include the total 
+obligational authority appropriated (new budget authority plus un-
+obligated carryover), undistributed obligational authority, amount 
+allotted, current year obligations, unobligated authority (the dif-
+ference between total obligational authority and current year obli-
+gations), beginning unexpended obligations, year-to-date costs, and 
+ending unexpended obligations. This budget execution information 
+is to be provided at the level of detail shown in the tables displayed 
+at the end of this report for each departmental component and the 
+Working Capital Fund. The Committee commends the OCFO for its 
+progress in automating the data extraction for this report. In the 
+past, this process has been manual, creating a long lag time for re-
+porting the budget data to the Committee. With an automated 
+process, the Department will be able to submit these reports to the 
+Committee in a more timely manner. Therefore, the requirement in 
+the bill has been modified requiring this report to be submitted no 
+later than 30 days after the close of each month instead of the pre-
+vious requirement of 45 days. 
+EXPENDITURE PLANS 
+The Committee continues requiring expenditure plans for specific 
+DHS programs. These plans are intended to provide Congress with 
+information to effectively oversee a particular program and hold 
+the Department accountable for program results. Expenditure 
+plans required by the Committee shall include, at a minimum: a 
+description of how the plan satisfies any relevant legislative condi-
+tions for the expenditure plan; planned capabilities and benefits; 
+cost and schedule commitments; measures of progress against com-
+20 
+mitments made in previous plans; how the program is being man-
+aged to provide reasonable assurance that the promised program 
+capabilities, benefits, and cost and schedule commitments will be 
+achieved; historical funding for the program, if applicable; and an 
+obligation and outlay schedule. 
+CONFERENCES 
+The Committee includes a general provision directing the Sec-
+retary to submit an annual report to the Inspector General regard-
+ing the purpose, participation, cost, and contracting procedures for 
+each conference held in fiscal year 2014 that exceeds $100,000. A 
+recent audit by the OIG (OIG–13–96) found that while the Depart-
+ment has made improvements to better oversee conference spend-
+ing, it needs to institute stronger oversight from the Chief Finan-
+cial Officer to ensure that components are submitting all con-
+ferences for review and approval, there is better tracking of con-
+ference attendance, that components update guidance on con-
+ference policy requirements, and that an Annual Quality Control 
+Review is conducted for fiscal year 2013 and future fiscal years. 
+The Committee directs DHS to comply with the OIG recommenda-
+tions not later than January 31, 2014. 
+ANNUAL BUDGET JUSTIFICATIONS 
+The Chief Financial Officer is directed to ensure that fiscal year 
+2015 budget justifications for classified and unclassified budgets of 
+all Department components are submitted on February 3, 2014, 
+concurrent with the President’s budget submission to Congress. 
+The justifications shall include: 
+—Detailed data and explanatory descriptions for each appropria-
+tions request, and for each PPA reflected in the table accom-
+panying this statement, including offices that have been identi-
+fied as PPAs. Information regarding actual and planned accom-
+plishments should be in quantifiable terms and demonstrate a 
+direct relationship to funding; 
+—Tables that reflect actual and estimated funding by PPA for 
+fiscal years 2014 and 2015; identify each increase, decrease, 
+transfer, and staffing change proposed in fiscal year 2015; and 
+explain such year-to-year changes in terms that are clear and 
+unambiguous, and exclude nonspecific terms such as ‘‘technical 
+adjustment’’ or ‘‘administrative savings’’ unless accompanied by 
+a detailed explanation. To establish a common baseline ref-
+erence, the fiscal year 2014 discretionary data shall tie to the 
+fiscal year 2014 discretionary total in the table accompanying 
+this statement or have a table identifying each change. Expla-
+nations of adjustments to base funding, whether increases or 
+decreases, should be specific, and programmatic changes and 
+initiatives should be clearly identified and justified; 
+—For each PPA that is comprised of acquisition and procurement 
+activity, the justification should address all proposed spending 
+using a zero-based budget description; 
+—Information by appropriations account and PPA on all reim-
+bursable agreements and significant uses of the Economy Act 
+for each fiscal year; 
+21 
+—An accurate detailed table identifying the last year that au-
+thorizing legislation was enacted into law for each PPA, includ-
+ing the amount of the authorization and the appropriation in 
+the last year of authorization; 
+—The text and citation of all Department appropriations provi-
+sions enacted to date that are permanent law; 
+—Explanations and justifications for all proposed legislative lan-
+guage changes, whether they are new or amend existing law, 
+whether they are substantive or technical in nature, with an 
+annotated comparison of proposed versus existing language; 
+and 
+—A report on the status of overdue Committee reports, plans, 
+and briefings for each of fiscal years 2013 and 2014. 
+FUTURE YEARS HOMELAND SECURITY PROGRAM 
+Consistent with section 874 of Public Law 107–296, the Depart-
+ment shall submit a Future Years Homeland Security Program 
+budget as part of the fiscal year 2015 budget justification. The re-
+port is to display funding by appropriation account and subordinate 
+program, project, or activity. Further the report is to provide a 5- 
+year capital investment plan for all major acquisitions. The report 
+shall be in unclassified form so as to be accessible to the general 
+public. Having a forward-looking budget forecast provides a reason-
+able understanding of future program and acquisition needs and 
+the proportionate resources needed to execute the Department’s 
+mission of protection and defense of the homeland, as well as emer-
+gency planning and response. 
+OFFICE OF THE CHIEF INFORMATION OFFICER 
+Appropriations, 2013 1 ...........................................................................
+$243,410,000 
+Budget estimate, 2014 ...........................................................................
+327,254,000 
+House allowance ....................................................................................
+210,735,000 
+Committee recommendation .................................................................
+263,000,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The Office of the Chief Information Officer is responsible for 
+oversight of information technology [IT] development, oversight of 
+IT acquisition, alignment of IT systems and infrastructure to the 
+enterprise architecture to support the missions and activities of the 
+Department. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $263,000,000, of which $115,000,000 
+is for salaries and expenses, and $148,000,000 is to be available 
+through fiscal year 2016 for Department-wide technology invest-
+ments overseen by the Office of the Chief Information Officer 
+[OCIO]. The recommendation is $64,254,000 below the amount re-
+quested and $19,590,000 above the amount provided in fiscal year 
+2013. In addition, the Committee includes $54,200,000 to complete 
+data center migration in a general provision, consistent with prior 
+Appropriations Acts. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+22 
+OFFICE OF THE CHIEF INFORMATION OFFICER 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Salaries and expenses ...............................................................................
+117,844 
+117,347 
+115,000 
+Information technology services ................................................................
+27,564 
+32,712 
+31,000 
+Infrastructure and security activities ........................................................
+55,926 
+100,063 
+2 45,000 
+Homeland security data network ...............................................................
+42,076 
+77,132 
+72,000 
+Total, Office of the Chief Information Officer .............................
+243,410 
+327,254 
+2 263,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+2 $54,200,000 is included in a general provision for data center migration. 
+MULTIYEAR INVESTMENT PLAN 
+The Committee includes bill language requiring a multiyear in-
+vestment plan be submitted to the Committees on Appropriations 
+with the fiscal year 2015 budget submission to Congress. As the 
+OCIO develops the fiscal year 2014 plan, it shall take proper stock 
+of all IT investments and identify and adopt best practices, such as 
+those identified by GAO in an October 2011 report, GAO–12–7, to 
+encourage proper management of these investments. 
+INFRASTRUCTURE AND SECURITY ACTIVITIES 
+The Committee recommendation includes $45,000,000, for devel-
+opment and acquisition of IT equipment, software, services, and re-
+lated activities. The Committee believes the OCIO leads and man-
+ages efforts vital to the continued modernization of the Depart-
+ment’s IT infrastructure. Additionally, $54,200,000 is provided for 
+data center consolidation in a general provision. 
+The Committee is pleased with the Department’s leadership in 
+data center consolidation. The Committee agrees with the Depart-
+ment’s position that these efforts will lead to operational effi-
+ciencies, reduced geographic footprint, data sharing synergies, re-
+duced energy consumption, and clarity of mission throughout the 
+Department. The Department reports that investment in data cen-
+ter consolidation of the first 10 data centers is already resulting in 
+annual savings of $17,000,000 and could result in savings of 
+$3,000,000,000 by 2030. 
+TRUSTED INTERNET CONNECTIONS/HUMAN RESOURCES INFORMATION 
+TECHNOLOGY 
+The Department is directed to provide semiannual briefings to 
+the Committee on its progress in developing trusted Internet con-
+nections and development of Human Resources Information Tech-
+nology. 
+SHARING AND SAFEGUARDING CLASSIFIED INFORMATION 
+The recommendation includes a $29,868,000 increase to imple-
+ment information sharing and safeguarding measures to protect 
+classified national security information. This is necessary in order 
+to be compliant with measures resulting from Executive Order 
+13587—Structural Reforms to Improve the Security of Classified 
+Networks and the Responsible Sharing and Safeguarding of Classi-
+fied Information. The OCIO is to brief the Committee by April 15, 
+23 
+2014, on the implementation strategy, development schedule, and 
+milestones for improving the protection of national security infor-
+mation held by the Department. The Committee also expects any 
+structural reforms to be consistent with appropriate protections for 
+privacy and civil liberties. 
+ANALYSIS AND OPERATIONS 
+Appropriations, 2013 1 ...........................................................................
+$321,855,000 
+Budget Estimate, 2014 ..........................................................................
+309,228,000 
+House allowance ....................................................................................
+291,623,000 
+Committee recommendation .................................................................
+303,708,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The account supports activities to improve the analysis and shar-
+ing of threat information, including activities of the Office of Intel-
+ligence and Analysis [I&A] and the Office of Operations Coordina-
+tion. 
+COMMITTEE RECOMMENDATION 
+The Committee recommends $303,708,000 for Analysis and Oper-
+ations. This is $5,520,000 below the amount requested and 
+$18,147,000 below the amount provided in fiscal year 2013. The de-
+tails of these recommendations are included in a classified annex 
+accompanying this report. 
+DHS INTELLIGENCE EXPENDITURE PLAN 
+The Committee requires the Department’s Chief Intelligence Of-
+ficer to submit an expenditure plan for fiscal year 2014 no later 
+than 60 days after the date of enactment of this act. The plan shall 
+include the following: 
+—fiscal year 2014 expenditures and staffing allotted for each pro-
+gram as compared to fiscal years 2012 and 2013; 
+—all funded versus on-board positions, including Federal FTE, 
+contractors, and reimbursable and nonreimbursable detailees; 
+—a plan, including dates or timeframes for achieving key mile-
+stones; 
+—allocation of funding within each PPA for individual programs; 
+—funding, by object classification, including a comparison to fis-
+cal years 2013 and 2012; and 
+—the number of I&A-funded employees supporting organizations 
+outside I&A including those within and outside DHS. 
+The expenditure plan shall focus the activities of the Office on 
+areas where the Department can provide unique expertise or serve 
+intelligence customers who are not supported by other components 
+of the Intelligence Community, consistent with current statute and 
+Executive orders, and in a way that does not impair intelligence 
+support to the senior leadership of the Department of Homeland 
+Security. 
+STATE AND LOCAL FUSION CENTERS 
+The Committee directs I&A to continue semi-annual briefings on 
+the State and Local Fusion Centers program. 
+24 
+OFFICE OF INSPECTOR GENERAL 
+Appropriations, 2013 1 2 .........................................................................
+$121,004,000 
+Budget Estimate, 2014 2 ........................................................................
+119,309,000 
+House allowance 2 ..................................................................................
+113,903,000 
+Committee recommendation 2 ...............................................................
+117,371,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+2 Excludes $24,000,000 made available by transfer from the FEMA Disaster Relief Fund. 
+This account finances the Office of Inspector General’s activities, 
+including audits, inspections, investigations, and other reviews of 
+programs and operations of the Department of Homeland Security 
+to promote economy, efficiency, and effectiveness and to prevent 
+and detect fraud, waste, and abuse. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $117,371,000 for the Office of In-
+spector General [OIG], $1,938,000 below the comparable amount 
+requested and $3,633,000 below the amount provided in fiscal year 
+2013. In addition, the Committee includes bill language transfer-
+ring $24,000,000 needed by the OIG for audits and investigations 
+related to natural disasters from the Disaster Relief Fund [DRF]. 
+The total funding level provided maintains OIG at a current serv-
+ices level including the resources requested to complete all 56 man-
+dated 9/11 Act audits of DHS’ State Homeland Security Program 
+and Urban Area Security Initiative grants by the August 20, 2014, 
+deadline. The Committee directs the Inspector General to submit 
+a plan for expenditure for all funds no later than 30 days after the 
+date of enactment of this act. For fiscal year 2015 and thereafter, 
+OIG shall submit a detailed expenditure plan within its annual 
+budget justification documents. This spend plan shall include all 
+DRF transfers (which shall satisfy the requirements for notification 
+of DRF transfers under section 503 of this act). 
+DISASTER RECOVERY EXPENDITURES 
+The Committee supports the critical role OIG has in eliminating 
+waste, fraud, and abuse in disaster assistance programs. Further, 
+the Committee notes that it is imperative for FEMA to make deci-
+sions on recovery assistance in a timely fashion, often with limited 
+information in a chaotic post-disaster environment. However, the 
+Committee is concerned that the OIG execution of their role and 
+a lack of clarity and consistency in FEMA policy and program exe-
+cution are adversely affecting some Public Assistance applicants. In 
+June 2012, OIG recommended that a grantee repay a Federal grant 
+already awarded and obligated when it determined that FEMA in-
+correctly applied its regulations and policies for a disaster that oc-
+curred in June 2008. FEMA argued that deobligation of the project 
+was not warranted since the evidence of substantial damage as a 
+result of the disaster supported Federal assistance for the commu-
+nity’s recovery. The unresolved matter was sent to the DHS Under 
+Secretary for Management for final adjudication. The determina-
+tion was the grantee did not have to repay the Federal grant since 
+disaster damage warranted assistance. The Committee is concerned 
+that the OIG Office of Emergency Management Oversight focus on 
+‘‘after the fact’’ reviews is not efficiently placed to prevent obliga-
+25 
+tion of misused Federal funds and therefore causes unnecessary 
+disruption 
+for 
+recovering 
+communities 
+by 
+recommending 
+deobligation several years afterwards. 
+The Committee is mindful that the OIG review of disaster obliga-
+tions is often several years after a disaster and the impact of the 
+findings can have a severe effect on a community that has already 
+obligated funding to specific projects with FEMA’s approval in an 
+effort to recover. While it is imperative for FEMA policies and rules 
+be transparent; reasonably flexible to accommodate various recov-
+ery scenarios; and consistently applied, where appropriate; the 
+sheer volume of OIG recommendations may challenge FEMA’s ca-
+pacity to execute meaningful and responsive policy changes. FEMA 
+has concurred with a separate OIG finding that the Agency needs 
+a significant review and revision of certain policies and methods of 
+implementing rules and is currently undergoing a process to do so. 
+The Committee expects this process to continue without delay. Fur-
+ther, the Committee expects FEMA and the OIG to partner fully 
+in this process. 
+The Administrator and the Inspector General are directed to pro-
+vide a report to the Committee, no later than 120 days after the 
+date of enactment of this act, outlining improvements that will be 
+made by both OIG and FEMA to better implement disaster recov-
+ery programs and guard against waste, fraud, and abuse. 
+INTEGRITY OVERSIGHT 
+The Committee remains concerned about the potential for in-
+creased corruption due to the rapid hiring in CBP and ICE since 
+fiscal year 2005. Incidents continue to highlight the need for integ-
+rity oversight. To avoid corruption and misconduct, it is imperative 
+that all officers and agents, especially new hires, receive com-
+prehensive training in ethics and public integrity. This will be of 
+particular importance should any final comprehensive immigration 
+reform legislation authorize significant increases in hiring border 
+and immigration personnel. The OIG provides ethics training to all 
+agencies and is in charge of investigating all allegations of criminal 
+misconduct throughout the Department. It is essential that the 
+OIG, CBP, and ICE work jointly and cooperatively to combat cor-
+ruption. The Committee has made a deliberate effort in the past 
+several appropriations acts to provide additional funding specifi-
+cally for integrity investigations. The Committee directs OIG to 
+submit an expenditure plan of integrity oversight funds in coordi-
+nation with CBP and ICE, which shall be submitted along with its 
+annual expenditure plan. As discussed under the Office of the Sec-
+retary and Executive Management, the OIG shall work with the 
+Department on the integrity aspect of the hiring strategy for imple-
+menting immigration reform legislation. 
+CONFERENCES AND SPECIAL EVENTS 
+The Committee continues the requirement for OIG to report to 
+the Committees not later than 30 days after the end of fiscal year 
+2014 on DHS spending on conferences, ceremonies, and similar 
+events, based on quarterly reporting to OIG. The report shall sub-
+stantiate DHS compliance with all applicable laws and regulations 
+and describe in detail the total costs to the Government associated 
+26 
+with events. It shall include the number of conferences held, the 
+amount of funds obligated, and expenses by appropriation or other 
+source of funding, including budget accounts and subaccounts used 
+to pay for events. 
+OIG REVIEWS 
+The Committee recognizes the importance of a competent and ac-
+tive Office of Inspector General to support strong congressional 
+oversight and assist departmental leadership. Given this impera-
+tive, the Committee is concerned about recent charges of improper 
+conduct by individuals within the Office of Inspector General. In 
+addition, the most recent ‘‘External Quality Control Review’’ of the 
+DHS OIG Audit Organization, issued on June 28, 2012, notes 
+issues with DHS OIG policies, procedures, and practices—issues re-
+garding the objectivity, credibility, and reliability of auditors’ eval-
+uation of testimonial evidence; the interference of auditors in inves-
+tigations; and auditors’ failure to obtain management review and 
+sign-off prior to issuing final reports. 
+In the report accompanying the Department of Homeland Secu-
+rity Appropriations Act, 2013, GAO was directed to review the 
+OIG’s functions and operations. The Committee looks forward to 
+GAO’s review and expects the Inspector General, the Secretary, 
+and the Deputy Director of the Office of Management and Budget, 
+as the executive chair of the Council of Inspectors General, to ad-
+dress, as appropriate, these issues expeditiously and refocus the 
+DHS OIG on its important work. 
+287(g) 
+The Department of Homeland Security OIG has conducted an an-
+nual review of the 287(g) program since fiscal year 2009. Since 
+then, the number of OIG recommendations has been reduced from 
+33 in 2009 to two in 2012. Additionally, the nature of the 287(g) 
+program has changed with the elimination of the Task Force 
+model. Therefore, the OIG is directed to complete its final report 
+on the 287(g) program and submit it to Congress. The Committee 
+encourages the OIG to continue to review the implementation of 
+the program as necessary through its annual oversight review proc-
+ess and keep the Committee informed of any significant changes. 
+(27) 
+TITLE II 
+SECURITY, ENFORCEMENT, AND INVESTIGATIONS 
+U.S. CUSTOMS AND BORDER PROTECTION 
+SUMMARY 
+U.S. Customs and Border Protection is responsible for enforcing 
+laws regarding admission of foreign-born persons into the United 
+States, and ensuring that all goods and persons entering and 
+exiting the United States do so legally. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends total resources of $12,423,734,000, 
+including direct appropriations of $10,360,011,000 and estimated 
+fee collections of $2,063,723,000. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+U.S. CUSTOMS AND BORDER PROTECTION—FUNDING SUMMARY 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 2 
+Fiscal year 2014 
+budget request 3 
+Committee 
+recommendations 3 
+Appropriations: 
+Salaries and expenses ..........................................................
+8,284,074 
+9,127,088 
+7,976,142 
+Small airport user fee 4 ........................................................
+............................
+5,000 
+5,000 
+Automation modernization ....................................................
+718,917 
+340,105 
+800,318 
+Border Security Fencing, Infrastructure, and Technology 
+[BSFIT] ..............................................................................
+323,671 
+351,454 
+351,454 
+Air and Marine operations ....................................................
+797,952 
+427,701 
+755,819 
+Construction and facilities management .............................
+233,254 
+471,499 
+471,278 
+Total, Appropriations ........................................................
+10,357,868 
+10,722,847 
+10,360,011 
+Estimated fee collections: 
+Immigration inspection user fee ..........................................
+568,790 
+764,267 
+764,267 
+Immigration enforcement fines ............................................
+1,093 
+773 
+773 
+ESTA ......................................................................................
+46,318 
+55,168 
+55,168 
+Land border inspection fee ...................................................
+35,935 
+42,941 
+42,941 
+COBRA fee .............................................................................
+419,352 
+694,627 
+694,627 
+APHIS inspection fee .............................................................
+329,000 
+355,216 
+355,216 
+Global entry user fee ............................................................
+13,743 
+34,835 
+34,835 
+Virgin Island fee ...................................................................
+............................
+11,302 
+11,302 
+Puerto Rico Trust Fund .........................................................
+96,367 
+98,602 
+98,602 
+Small airport user fee 4 ........................................................
+8,318 
+............................
+............................
+28 
+U.S. CUSTOMS AND BORDER PROTECTION—FUNDING SUMMARY—Continued 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 2 
+Fiscal year 2014 
+budget request 3 
+Committee 
+recommendations 3 
+Customs Unclaimed Goods ...................................................
+............................
+5,992 
+5,992 
+Total, Estimated fee collections .......................................
+1,518,916 
+2,063,723 
+2,063,723 
+Total, U.S. Customs and Border Protection, available 
+funding .........................................................................
+11,876,784 
+12,786,570 
+12,423,734 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25 and includes $3,270,000 for the Harbor Maintenance 
+Trust Fund. 
+2 Includes emergency funding of $1,667,000 in the Disaster Relief Appropriations Act, 2013 (division A of Public Law 113–2). 
+3 Includes $3,274,000 for the Harbor Maintenance Trust Fund. 
+4 Small airport user fee display reflects changes in Congressional Budget Office scoring. 
+SALARIES AND EXPENSES 
+Appropriations, 2013 1 2 .........................................................................
+$8,284,074,000 
+Budget estimate, 2014 ...........................................................................
+9,127,088,000 
+House allowance ....................................................................................
+8,275,983,000 
+Committee recommendation .................................................................
+7,976,142,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+2 Includes emergency funding of $1,667,000 in the Disaster Relief Appropriations Act, 2013 
+(division A of Public Law 113–2). 
+The U.S. Customs and Border Protection [CBP] Salaries and Ex-
+penses appropriation provides funds for border security, immigra-
+tion, customs, agricultural inspections, regulating and facilitating 
+international trade, collecting import duties, and enforcing U.S. 
+trade laws. In addition to directly appropriated resources, fee col-
+lections are available for the operations of CBP from the following 
+sources: 
+Immigration Inspection User Fee.—CBP collects user fees to fund 
+the costs of international inspections activities at airports and sea-
+ports, as authorized by the Immigration and Nationality Act (8 
+U.S.C. 1356). 
+Electronic System for Travel Authorization Fee.—CBP collects 
+fees to cover the cost of operating and implementing a system to 
+pre-screen visitors from countries participating in the Visa Waiver 
+Program prior to their arrival in the United States to avoid secu-
+rity risks, as authorized by section 711(h)(3)(B) of the 9/11 Act 
+(Public Law 110–53). 
+Immigration Enforcement Fine.—CBP collects fines from owners 
+of transportation lines and persons for unauthorized landing of 
+aliens, as authorized by the Immigration and Nationality Act (8 
+U.S.C. 1356). 
+Land Border Inspection Fee.—CBP collects fees for processing ap-
+plications for the Dedicated Commuter Lanes program, the Auto-
+mated Permit Ports program, the Canadian Border Boat Landing 
+program, and both Canadian and Mexican Non-Resident Alien Bor-
+der Crossing Cards, as authorized by the Immigration and Nation-
+ality Act (8 U.S.C. 1356). 
+Consolidated Omnibus Budget Reconciliation Act [COBRA] Fee.— 
+CBP collects fees for inspection services involving customs-related 
+functions. The COBRA user fee statutory authority (19 U.S.C. 58c) 
+29 
+specifies the types of expenses to be reimbursed and the order for 
+the reimbursement of these types of expenses. 
+Animal and Plant Health Inspection Service Inspection Fee.— 
+CBP receives as a transfer a distribution of agriculture inspection 
+fees collected by the United States Department of Agriculture. The 
+user fees, as authorized by the Food, Agriculture, Conservation, 
+and Trade Act of 1990 (21 U.S.C. 136), are charged to offset costs 
+for the services related to the importation, entry, or exportation of 
+animals and animal products. 
+Global Entry User Fee.—CBP collects fees to cover the cost of a 
+registered traveler program to expedite screening and processing of 
+international passengers as authorized under the Consolidated Ap-
+propriations Act of 2008, section 565(3)(B). 
+U.S. Virgin Islands Fee Fund.—The U.S. Virgin Islands [USVI] 
+are an unincorporated territory of the United States and although 
+a U.S. territory, the USVI is expressly excluded from the definition 
+of customs territory of the United States. The importation of goods 
+into the USVI is governed by Virgin Islands law. CBP collects du-
+ties on behalf of the USVI and deposits them into the USVI Fee 
+Fund. The account is now known as the U.S. Virgin Islands Fees 
+Fund, in which duties and taxes collected in the USVI are depos-
+ited. The account in managed annually as a reimbursable account 
+with any remaining funds remitted back to the USVI at the conclu-
+sion of the fiscal year. 
+Puerto Rico Trust Fund.—Customs duties, taxes, and fees col-
+lected in Puerto Rico by CBP are deposited in the Puerto Rico 
+Trust Fund. After providing for the expenses of administering CBP 
+activities in Puerto Rico, the remaining amounts are transferred to 
+the Treasurer of Puerto Rico pursuant to 48 U.S.C. sections 740 
+and 795. 
+Small Airport User Fee.—The User Fee Airports Program author-
+ized under 19 U.S.C. 58b and administered under 19 U.S.C. 
+58c(b)(9)(A)(i), authorizes inspection services to be provided to par-
+ticipating small airports on a fully reimbursable basis. The fees 
+charged under this program are set forth in a memorandum of 
+agreement between the small airport facility and the agency, and 
+may be adjusted annually as costs and requirements change. 
+Unclaimed Goods.—Any goods entered or un-entered merchan-
+dise (except merchandise under section 557 of the Tariff Act of 
+1930, as amended (19 U.S.C. 1557), but including merchandise en-
+tered for transportation in bond or for exportation) which remain 
+in Customs custody for 6 months from the date of importation or 
+a lesser period for special merchandise as provided by section 
+127.28 (c), (d), and (h), and without all estimated duties and stor-
+age or other charges having been paid, shall be considered un-
+claimed and abandoned. This account represents the proceeds from 
+the liquidation of that account. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $7,976,142,000 for Salaries and Ex-
+penses of U.S. Customs and Border Protection for fiscal year 2014, 
+including $3,274,000 from the Harbor Maintenance Trust Fund 
+and, of which $2,237,000,000 is derived from the merchandise proc-
+essing fee. This is $1,150,942,000 below the request and 
+30 
+$302,932,000 below the amount provided in fiscal year 2013. More 
+than two-thirds of the reductions in ‘‘Salaries and Expenses’’ have 
+been moved to other accounts within CBP or other DHS agencies. 
+The Committee includes bill language making available up to 
+$150,000 for payment for rental space for preclearance operations 
+and $1,000,000 for payments to informants. The Committee also in-
+cludes bill language placing a $35,000 annual limit on overtime 
+paid to any employee and capping official reception and representa-
+tion expenses at $34,425. A new general provision is included to 
+allow CBP to access collections associated with the U.S.-Colombia 
+Trade Promotion Agreement Implementation Act, Public Law 112– 
+42. 
+The Committee does not include the proposed reduction of Border 
+Patrol horse patrols, but includes the other proposed reductions in-
+cluding the closing of unnecessary inland Border Patrol stations. 
+These resources are more urgently required on the border. Due to 
+the need for flexibility in contracting and budgeting for information 
+technology and other systems, the Committee has moved all funds 
+for information technology as well as for Automated Targeting Sys-
+tems from ‘‘Salaries and Expenses’’ to ‘‘Automation Modernization’’ 
+so that CBP may take contracting advantage of the longer avail-
+ability of these funds in the new account. Additionally, air and ma-
+rine staffing funds have been moved from this account to ‘‘Air and 
+Marine Operations’’, consistent with fiscal year 2013. 
+The Committee denies the proposed transfer of US–VISIT to 
+CBP for a total of $253,533,000. Instead, the Committee rec-
+ommends continuation of the functional distribution outlined in 
+Public Law 113–6. For that reason, the Committee recommenda-
+tion reflects $12,284,000 from US–VISIT funds within the Office of 
+Field Operation’s Inspections, Trade, and Travel Facilitation at 
+Ports of Entry PPA. This amount represents US–VISIT program 
+management and planning efforts associated with entry-exit policy 
+and operations. Further, the Committee recommendation reflects 
+an additional $16,741,600 to transfer the responsibility for the Ar-
+rival Departure Information System [ADIS] to CBP. CBP is respon-
+sible for policy and operations associated with processing legitimate 
+travelers into and out of the country. The Committee directs the 
+Department to submit its requests for these functions in the format 
+established in Public Law 113–6 in its fiscal year 2015 and future 
+requests. 
+Increases above the request for travel facilitation are discussed 
+later in this report. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+U.S. CUSTOMS AND BORDER PROTECTION—SALARIES AND EXPENSES 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Salaries and expenses: 
+Headquarters, management, and administration: 
+Commissioner ...............................................................
+17,392 
+............................
+25,171 
+Chief Counsel ...............................................................
+43,021 
+............................
+44,726 
+Congressional Affairs ...................................................
+2,595 
+............................
+2,466 
+Internal Affairs .............................................................
+153,905 
+............................
+149,061 
+31 
+U.S. CUSTOMS AND BORDER PROTECTION—SALARIES AND EXPENSES—Continued 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Public Affairs ...............................................................
+12,546 
+............................
+12,830 
+Training and Development ...........................................
+77,618 
+............................
+76,082 
+Technology Innovation, Acquisition ..............................
+25,970 
+............................
+22,788 
+Intelligence/Investigative Liaison ................................
+68,066 
+............................
+60,747 
+Administration ..............................................................
+414,127 
+............................
+413,473 
+Management and administration, border security in-
+spections and trade facilitation .............................
+............................
+620,656 
+............................
+Management and administration, border security, 
+and control between ports of entry ........................
+............................
+592,330 
+............................
+Rent ..............................................................................
+564,126 
+407,898 
+396,398 
+Subtotal, Headquarters, management, and admin-
+istration ...............................................................
+1,379,336 
+1,620,884 
+1,203,742 
+Border security inspections and trade facilitation: 
+Inspections, trade, and travel facilitation at ports of 
+entry .........................................................................
+2,715,066 
+2,727,294 
+2,687,853 
+Harbor maintenance fee collection (Trust Fund) ........
+3,270 
+3,274 
+3,274 
+International cargo screening ......................................
+71,393 
+72,260 
+67,461 
+Other international programs ......................................
+24,766 
+24,740 
+24,596 
+Customs-Trade Partnership Against Terrorism [C– 
+TPAT] ........................................................................
+43,012 
+40,183 
+38,460 
+Trusted Traveler Programs ...........................................
+10,797 
+6,311 
+5,311 
+Inspection and detection technology investments ......
+117,410 
+112,526 
+111,504 
+Automated targeting systems ......................................
+113,676 
+109,944 
+............................
+National Targeting Center ...........................................
+68,037 
+65,474 
+65,106 
+Training ........................................................................
+34,800 
+47,651 
+39,441 
+Subtotal, Border security inspections and trade 
+facilitation ...........................................................
+3,202,227 
+3,209,657 
+3,043,006 
+Border security and control between ports of entry: 
+Border security and control ..................................................
+3,627,003 
+3,700,317 
+3,673,836 
+Training .................................................................................
+73,841 
+55,928 
+55,558 
+Subtotal, Border security and control between ports of 
+entry .............................................................................
+3,700,844 
+3,756,245 
+3,729,394 
+Air and Marine operations .............................................................
+............................
+286,769 
+............................
+US–VISIT .........................................................................................
+............................
+253,533 
+............................
+Emergency Appropriations (Public Law 113–2) ............................
+1,667 
+............................
+............................
+Total, Salaries and expenses ...........................................
+8,284,074 
+9,127,088 
+7,976,142 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+FUNDING PRIORITIES 
+As CBP is a ‘‘personnel heavy’’ agency, it is understandable that 
+difficult choices have to be made when developing the budget re-
+quest in an era of declining resources. However, as these choices 
+are made in the short term, we must take into account their long- 
+term consequences. Funding limitations under the Budget Control 
+Act require this Committee to make difficult choices to maintain 
+critical, targeted staffing decisions to secure the border while facili-
+tating efficient processing of an increasing level of trade and trav-
+elers to this country. The Committee urges the Department and the 
+Office of Management and Budget [OMB] to request sufficient re-
+32 
+sources in the fiscal year 2015 budget to sustain critical operations 
+to avoid long-term negative impacts. 
+COMPREHENSIVE IMMIGRATION REFORM 
+Using the President’s budget as a guide, the Committee rec-
+ommends in this bill many border security related items which will 
+have an impact on activities in fiscal year 2014 and in the years 
+to come. This bill was drafted as a regular appropriations bill. It 
+specifically is not attempting to predict what activities and pro-
+grams would be authorized and appropriated as part of any final 
+immigration reform legislation. This Committee received requests 
+for hiring of additional CBP officers in specific locations, deploy-
+ments of specific technology, and new construction at ports of 
+entry, among many other items. Many of these are envisioned as 
+part of an overall reform bill and were included in S. 744 passed 
+by the Senate on June 27, 2013, but are inappropriate to be added 
+to this bill at this time. Additionally, total funding available to the 
+Committee places certain constraints on the Committee. Where fea-
+sible, the Committee has included recommendations from the 
+President’s budget which may begin to address some of these re-
+quirements until final legislation is enacted. 
+FINANCIAL PLAN 
+To help facilitate congressional oversight, CBP is directed to sub-
+mit to the Committee within 60 days after the date of enactment 
+of this act, a financial plan reflecting a detailed breakout of fund-
+ing by office for each PPA in the ‘‘Salaries and Expenses’’ appro-
+priation. This financial plan shall include a comparison by office to 
+the prior year plan amount and actual expenditures for fiscal year 
+2013 and planned expenditures for fiscal year 2014. 
+PORT OF ENTRY STAFFING AND RELIANCE ON FEES 
+CBP’s Office of Field Operations [OFO] operates 329 ports of 
+entry [POEs] 24 hours a day and seven days a week, welcoming to 
+the U.S. almost 1 million people daily by air, land, and sea. In ad-
+dition to CBP’s primary security mission, CBP is the second-largest 
+government revenue generator for the U.S., after the Internal Rev-
+enue Service. On average, OFO collects $105,000,000 a day in fees, 
+duties, 
+and 
+tariffs. 
+In 
+fiscal 
+year 
+2012, 
+OFO 
+processed 
+$2,300,000,000,000 worth of trade through U.S. POEs. 
+Travel volume is up 12 percent since fiscal year 2009 and is pro-
+jected to increase 4–5 percent each year for the next 5 years. In 
+2012, international travelers from the 10 largest countries visiting 
+the U.S. spent more than $107,000,000,000. 
+While trade and travel volumes are increasing at dramatic rates, 
+OFO funding and staffing have been relatively flat—contributing to 
+challenges in providing adequate CBP officers [CBPO] to meet the 
+demands of increasing workload, expanding requirements, and new 
+facilities. 
+After having directed CBP for more than 3 years to submit a re-
+vised workload staffing model, to justify any increased staffing re-
+quirements, CBP finally submitted to Congress its fiscal year 2013 
+Resource Optimization at Ports of Entry with President’s budget 
+33 
+request. This independently validated report identifies the staffing 
+requirement and alternative funding strategies to increase revenue 
+sources supporting additional staff. The model shows a current 
+need for 1,543 additional CBPOs based on fiscal year 2012 volume 
+levels. Also, in joint testimony before the House Appropriations 
+Subcommittee on Homeland Security on April 17, 2013, CBP offi-
+cials stated that a recent study by the National Center for Risk 
+and Economic Analysis of Terrorism Events at the University of 
+Southern California ‘‘found that an increase or decrease in staffing 
+at ports has an impact on wait times and, therefore, on the U.S. 
+economy’’. Initial estimates indicate that for every 1,000 additional 
+CBPOs, the United States can anticipate a $2,000,000,000 increase 
+in Gross Domestic Product. Based on the continued growth in trade 
+and travel volume, the CBPO need is considerably higher. 
+OFO’s two main user fees—the Immigration User Fee [IUF] and 
+the Consolidated Omnibus Budget Reconciliation Act of 1985 
+[COBRA] user fees—are also the two main user fees associated 
+with CBP inspectional services. These fees do not represent full 
+cost recovery for CBP, meaning the cost to perform the services for 
+which the fees are charged is more than CBP receives in user fee 
+collections. This gap in cost recovery has a significant impact since 
+one-third of OFO’s budget is dependent on user fees. This gap must 
+be filled by increasingly scarce directly appropriated dollars. 
+Due to the Budget Control Act, direct appropriations for most 
+Federal activities are trending downwards. This includes appro-
+priations for maintaining existing CBP officers as well as hiring ad-
+ditional CBPOs. Therefore, this bill funds a total increase of 1,850 
+CBPOs through a combination of $96,000,000 in direct appropria-
+tions for a total of 876 CBP officers and an additional 974 CBP offi-
+cers funded through the IUF proposal included in the budget re-
+quest. The Committee expects that the positions funded by the Im-
+migration User Fee shall be deployed to airports experiencing the 
+greatest level of wait times consistent with the congressional jus-
+tification submitted with the President’s fiscal year 2015 budget re-
+quest. 
+ANIMAL PLANT AND HEALTH INSPECTION SERVICES 
+The Committee notes CBP has been engaged with the Depart-
+ment of Agriculture [USDA] Animal and Plant Health Inspection 
+Service [APHIS] to ensure that the APHIS User Fees cover the full 
+cost of inspection of agricultural products at our ports of entry 
+[POEs]. The Committee strongly encourages the Secretary to de-
+velop and implement procedures to ensure revenue from these fees, 
+transferred to the Department pursuant to section 421 of the 
+Homeland Security Act of 2002, primarily funds the salaries, bene-
+fits, overtime, and associated costs of CBP Agriculture Specialists. 
+According to a recent briefing by CBP, both the House and Senate 
+Agriculture and Appropriations Committees, as well as OMB, sup-
+port the recommendations to adjust these fees to more accurately 
+reflect the level of work conducted by USDA and CBP personnel. 
+The Committee directs CBP to keep it regularly informed as these 
+recommendations are implemented. 
+The Committee urges CBP to continue to work with APHIS in 
+order to facilitate the release of cargo at commercial import facili-
+34 
+ties by ensuring that CBP officials earn Cargo Release Authority 
+certification for those species and groups of organisms listed in the 
+Cargo Release Authority Plan. Such coordination will allow CBP of-
+ficials to release cargo authorized by the Cargo Release Authority 
+Plan while allowing APHIS entomologists, plant pathologists, and 
+botanists to make release decisions upon discovery of those report-
+able organisms that may pose a threat to the Nation’s agricultural 
+security. 
+IMPACT OF FEES ON AIRPORT ACTIVITIES 
+To ensure the maximum level of transparency is provided to jus-
+tify these increases, the Committee directs CBP to provide an an-
+nual electronic report to the general public and interested stake-
+holders, and posted on its Web site, on the amount of fee funded 
+activity that occurred over the preceding fiscal year at airports. 
+This report shall include all fees, such as APHIS, IUF, COBRA, 
+and the Small Airport User Fee. The report will also provide an-
+nual average wait time data for high volume port locations receiv-
+ing additional IUF fee resources, demonstrating a direct connection 
+between service levels and resources. It is important for CBP to de-
+ploy CBPOs at critical international arrivals airports which experi-
+ence the greatest delays and longest processing times. 
+INFORMATION SHARING WITH PORT AUTHORITIES 
+The Committee notes that it has yet to receive the report re-
+quired in Senate Report 112–169 on the specific steps CBP can 
+take to advance its relationship, and specifically its information 
+sharing on things such as staffing models and constraints, with 
+port authorities. This report should include descriptions of high- 
+level stakeholder coordination in the form of working groups, con-
+ference calls, operations, and other interactions. The report shall 
+also address any legal impediment CBP has determined prohibits 
+it from providing this information to airport authorities and other 
+appropriate officials. If there are legal prohibitions, the report shall 
+delineate them and provide alternative language and proposals, as 
+applicable, to amend the relevant laws. The Committee directs 
+CBP to immediately submit this report. 
+LAND BORDER FEE STUDY 
+The President’s budget request included a new general provision 
+authorizing CBP to conduct a study assessing the feasibility and 
+cost relating to establishing and collecting a new land border cross-
+ing fee for both land border pedestrians and passenger vehicles 
+along the northern and southern borders. This proposal is ill-ad-
+vised and would have an immediate negative impact on border 
+communities and frequent border crossers. The Committee has 
+heard strong bipartisan objections to its inclusion. CBP officers at 
+our ports of entry are trained to provide security of our borders 
+while facilitating legitimate travel and trade. They are not toll col-
+lectors. A general provision has been included in the bill prohib-
+iting CBP from conducting any studies for establishing and col-
+lecting any new land border fee. This provision does not affect any 
+35 
+existing trusted traveler program such as FAST, NEXUS, SENTRI, 
+and the like. 
+FACILITATING TRAVEL AND ENHANCING THE ENTRY PROCESS 
+CBP and the Vancouver Airport Authority recently launched a 
+new program, Automated Passport Control, an expedited customs 
+entry process that will allow eligible passengers traveling from 
+Vancouver International Airport to the United States to clear cus-
+toms more efficiently, while still ensuring the same high standard 
+of safety and security. The Committee notes this partnership is the 
+first of its kind and is intended to help travelers move more quickly 
+through the CBP preclearance inspection process by allowing entry 
+of passport information at a self-service kiosk. 
+Acting CBP Commissioner, Thomas S. Winkowski, said, ‘‘Increas-
+ing efficiency and streamlining processes are critical components of 
+CBP’s modernization efforts at ports of entry. This will allow for 
+faster processing and increased focus on the traveler.’’ It is innova-
+tive thinking about how CBP can improve the traveler experience 
+with this and other programs such as Global Entry, that this Com-
+mittee has strongly supported. In order to implement the vision of 
+the President’s January 19, 2012, Executive order to increase the 
+number of international travelers to the United States, programs 
+such as this must be expanded. 
+The Committee fully funds the $10,800,000 request for the CBP 
+mobile program and the $8,000,000 request for integrated traveler 
+processing. Additionally, the Committee recommends $10,000,000 
+above the request for targeted traveler enhancement programs in-
+cluding, but not limited to, additional mobile devices such as En-
+forcement Link Mobile devices, handheld license plate and docu-
+ment readers, additional Global Entry kiosks, expanding the inte-
+grated traveler process, and expanding activities at existing 
+preclearance locations. CBP shall focus its efforts to expedite trav-
+eler processing at the air and land ports of entry with the highest 
+volume of passenger traffic. CBP shall brief the Committee no later 
+than 90 days after the date of enactment of this act on its plan to 
+deploy this additional equipment and activity and the potential im-
+pact it will have on reducing wait times. Additionally, the Com-
+mittee reminds CBP of its April 25, 2012, report to Congress enti-
+tled ‘‘Improving Entry Process for Visitors to the United States’’ 
+which stated that CBPOs are the ‘‘first face of the U.S. Govern-
+ment that travelers see at POEs. As a visible symbol of our Nation, 
+CBP officers have an important responsibility. Training provides 
+new CBP officers an understanding of the expectations and stand-
+ards, in terms of conduct, workplace environment, demeanor, eti-
+quette, respect for cultural diversity, and interpersonal communica-
+tions.’’ The Committee directs CBP to maintain these standards as 
+part of its training regime and to regularly provide refresher train-
+ing to all CBPOs. 
+CROSS-BORDER TUNNELS 
+Tunnels along the United States-Mexico border remain an attrac-
+tive alternative to overland drug smuggling because of increased 
+security measures and aggressive enforcement activity on tradi-
+tional cross-border routes. The Committee supports the ongoing ef-
+36 
+forts of the DHS Tunnel Task Force to detect and respond to new 
+tunnels, directs continued submission of the required tunnel report, 
+and encourages CBP to dedicate sufficient resources to continue de-
+tecting, responding to, and remediating tunnels as they are encoun-
+tered. 
+CONDUCT AND INTEGRITY OVERSIGHT 
+Since Congress initiated the rapid increase in CBP staffing in 
+2005, the Committee has been concerned about the potential for in-
+creased corruption by CBP personnel. The Committee remains com-
+mitted to addressing this problem. The Committee fully funds the 
+request for CBP to continue to expand integrity training for its offi-
+cers, conduct investigations, reduce the backlog of reviews and 
+polygraphs, and meet the requirements of the Anti-Border Corrup-
+tion Act of 2011 (Public Law 111–338). 
+The Committee directs the Deputy Secretary to continue to over-
+see the coordination of the Office of the Inspector General and CBP 
+on program integrity issues. 
+BORDER PATROL AGENTS 
+As Secretary Napolitano noted in April 2013, between fiscal 
+years 2009 and 2012, DHS seized 39 percent more drugs, 71 per-
+cent more currency, and 189 percent more weapons along the 
+Southwest border as compared to fiscal years 2005 through 2008. 
+The number of Border Patrol agents has grown from 9,800 in 2001 
+to 21,370 today; ICE has deployed a quarter of its personnel to the 
+Southwest border since 2009; and CBP has completed 651 miles of 
+fencing in key areas identified by the Border Patrol. CBP has also 
+installed 159 large-scale nonintrusive inspection devices and de-
+ployed 360 canine teams, increasing those numbers from 137 and 
+341 respectively since 2011. 
+While Border Patrol apprehensions slightly increased in fiscal 
+year 2012 to 364,678, apprehensions remain at the lowest levels 
+since 1974. Funds in this bill maintain an appropriate balance of 
+border security which is imperative to maintain as the Congress 
+continues to debate immigration reform and its component parts 
+regarding border security and interior enforcement. 
+Included in the amount recommended by the Committee for Bor-
+der Security and Control is a total of $3,729,394,000 for hiring, 
+paying, equipping, and training Border Patrol agents. Bill language 
+is included mandating a floor of not less than 21,370 Border Patrol 
+agents on-board throughout fiscal year 2014. With the funds in this 
+act, there will continue to be 21,370 Border Patrol agents on duty, 
+more than double the 9,951 agents on board at the end of fiscal 
+year 2002. 
+NORTHERN BORDER PORT STAFFING 
+The Committee remains concerned about CBP officer staffing lev-
+els for Northern Border ports of entry. The Committee believes 
+that many of the concerns about Northern Border staffing could be 
+allayed by more complete reporting to Congress about CBP’s North-
+ern Border staffing plans. The Committee directs CBP to submit an 
+updated resource allocation model with the fiscal year 2015 budget 
+37 
+detailing specific staffing and funding for, and implementation of, 
+planned Northern Border enforcement initiatives by port of entry. 
+The Committee also directs CBP to provide a briefing to the Com-
+mittee not later than December 1, 2013, on the CBP officer staffing 
+requirements on the Northern Border based on increased trade 
+flows and the current threat environment. 
+COORDINATION OF EFFORTS ON INDIAN LANDS 
+The Committee notes that the recent GAO report titled ‘‘Partner-
+ship Agreements and Enhanced Oversight Could Strengthen Co-
+ordination of Efforts on Indian Reservations’’ suggests that CBP 
+personnel can greatly improve efforts to notify tribes of law en-
+forcement activities occurring on reservation lands and cultivate a 
+productive partnership with border-tribal law enforcement officials. 
+The Committee requests a joint briefing from DHS and CBP on the 
+implementation of the GAO recommendations. 
+ENFORCEMENT ACTIONS IN THE FIELD 
+The Committee encourages CBP and ICE to ensure that any ju-
+risdictional disputes with regard to the apprehension of undocu-
+mented individuals in the field do not hamper the Department’s 
+overall mission to secure our borders and enforce our immigration 
+laws. 
+TRADE ENFORCEMENT 
+The Committee fully funds the $3,000,000 budget request to fur-
+ther consolidate single transaction bonds [STBs] in order to im-
+prove duty collection, as recommended by GAO. These funds would 
+improve the collection of revenue owed to the Federal Government 
+by enabling CBP to develop an automated system for STBs. Cur-
+rently, STBs are submitted and maintained on paper at all of the 
+CBP port locations. Automation would allow a centralized office to 
+oversee and administer the STB program and to develop the nec-
+essary expertise to verify the adequacy of the STBs. 
+CBP analysis has found strong evidence to conclude that trade 
+fraud and evasion is widespread in many commodity sectors—par-
+ticularly for goods from China, which account for 46 percent of the 
+anti-dumping and countervailing duties collected. The Committee 
+remains focused on the need for all Federal Government agencies 
+involved in international trade to aggressively enforce existing 
+trade laws. It has become clear that there are specific actions that 
+CBP and ICE, together with the Departments of Commerce, Jus-
+tice, and State and the United States Trade Representative, can 
+take without the need for additional legislation. According to CBP’s 
+own statistics, more than $1,000,000,000 in duties related to anti-
+dumping from 2001 to 2010 have yet to be collected. To help com-
+bat this problem, CBP has created a multi-disciplinary Re-
+engineering Dumping [RED] Team to review the antidumping and 
+countervailing duty [AD/CVD] process and to develop enforcement 
+solutions. To the extent these duties are unable to be collected CBP 
+shall issue a statement as to the reasons why. 
+Additionally, for CBP’s AD/CVD enforcement, the Centers of Ex-
+cellence and Expertise [CEEs] also centralize AD/CVD functions for 
+38 
+the industries and importers covered by the respective CEE. The 
+CEEs help increase uniformity and expertise across CBP for ad-
+ministration of AD/CVD entries and AD/CVD enforcement. The 
+Committee commends CBP for taking these actions and directs it 
+to brief the Committees not less than twice a year on its efforts to 
+improve the enforcement and collection process. 
+ANTIDUMPING AND COUNTERVAILING DUTY ENFORCEMENT REPORTS 
+The Committee has ensured that, within the amounts provided 
+in this account, there will be sufficient funds to administer the on-
+going requirements of section 754 of the Tariff Act of 1930 (19 
+U.S.C. 1675c), referenced in subtitle F of title VII of the Deficit Re-
+duction Act of 2005 (Public Law 109–171; 120 Stat. 154). 
+The Committee directs CBP to continue to work with the Depart-
+ments of Justice and the Treasury (and all other relevant agencies) 
+to increase collections, and provide a public report on an annual 
+basis within 30 days of each year’s distributions under the law. The 
+report should summarize CBP’s efforts to collect past due amounts 
+and increase current collections, particularly with respect to cases 
+involving unfairly traded United States imports from China. The 
+report shall provide the same level of detail as required under this 
+section in Senate Report 112–169. 
+The Committee further directs the Secretary to work with the 
+Secretary of Commerce to identify opportunities for the Depart-
+ment of Commerce to improve the timeliness, accuracy, and clarity 
+of liquidation instructions sent to CBP. Increased attention and 
+interagency coordination in these areas could help ensure that 
+steps in the collection of duties are completed in a more expeditious 
+manner. The Secretary is directed to report within 180 days after 
+the date of enactment of this act on the steps it has taken in con-
+junction with the Department of Commerce to address these issues. 
+Consistent with section 691a of Public Law 103–182, the North 
+American Free Trade Agreement Implementing Act of 1993, the 
+Committee directs the Commissioner of Customs to submit to Con-
+gress before the 60th day of each fiscal year a report regarding the 
+collection of duties imposed under the AD/CVD laws during the 
+preceding fiscal year. 
+Separately, CBP is directed to report to the Committee on collec-
+tion of the outstanding $1,000,000,000 in AD/CVD duties, including 
+the number of claims, the value of each claim, the stage of collec-
+tion for each claim and the date on which the claim was referred 
+for further action to either the CBP Chief Counsel or Department 
+of Justice. This report shall be submitted to the Committee not 
+later than 180 days after the date of enactment of this act. This 
+report will include the steps that have been taken to recover funds 
+and will also include the challenges that prevent collection. CBP 
+shall publish on its Web site a version of this report that provides 
+appropriate privacy and trade sensitivity protections. 
+The Committee further directs CBP to provide the Committee 
+with a separate report that includes information concerning each 
+AD/CVD order for which more than $25,000,000 in assessed AD/ 
+CVD duties secured by single entry bonds accepted by CBP pursu-
+ant to 19 U.S.C. § 1675(a)(2)(B)(iii) remains uncollected more than 
+2 years after the dates of liquidation of the secured entries. This 
+39 
+report shall be submitted to the Committee not later than 180 days 
+after the date of enactment of this act. For each relevant AD/CVD 
+order, the report shall include the bond’s identification number, the 
+date of the entry secured by the bond, and the bond’s face value. 
+It shall also include the liquidation status of each entry, and if ap-
+plicable, the date of liquidation, the amount of bond principal re-
+ceived by CBP, the amount of interest received by CBP, and the 
+amount of any offer in compromise accepted by CBP. Further, the 
+report shall include information about whether CBP has demanded 
+performance on the bond or has withdrawn or abandoned its de-
+mand due to one or more defects in the bond, CBP’s inability to lo-
+cate the bond, or expiration of the applicable statute of limitations. 
+For each relevant AD/CVD order for which CBP has demanded per-
+formance on the bond, the report shall detail whether CBP’s de-
+mand for bond performance was protested, and if applicable, the 
+date on which the protest was filed, whether CBP has issued a de-
+cision on the protest, whether a subsequent appeal has been filed 
+by the protesting party, and if applicable, the status of the appeal 
+including whether a court summons has been issued, the date on 
+which the summons was issued, and the amount of funds being 
+held by CBP pursuant to 28 U.S.C. § 2637(a). The report shall also 
+include a detailed strategy, including a specific series of actions 
+and corresponding deadlines for completing those actions, to collect 
+under the bond the antidumping or countervailing duties that re-
+main uncollected. 
+The Committee directs CBP, in consultation with the Depart-
+ment of Commerce and the Department of Treasury, to report to 
+the Committee on how requiring cash deposits of estimated AD/ 
+CVD during new shipper reviews (in statute) would strengthen the 
+administration of the Nation’s AD and CVD laws. Under current 
+law, the Department of Commerce is required to allow importers 
+to bond for cash deposits of estimated AD/CVD during new shipper 
+reviews. The Committee urges the United States Trade Represent-
+ative to include in the principal negotiating objectives of the United 
+States the objectives of preventing evasion of the trade remedy 
+laws of the United States through information exchanges and site 
+visits for any trade agreements under negotiation as of the date of 
+this report or future trade agreement negotiations. 
+TRADE COMPLIANCE—INFORMATION SHARING 
+The Committee understands that current law may unintention-
+ally prohibit the Department of Commerce from sharing propri-
+etary information with CBP vital to determining violations or 
+claims with respect to any provision of the Tariff Act of 1930. The 
+Committee urges the Department to coordinate jointly with the De-
+partment of Commerce on a legislative proposal to amend the ap-
+propriate section of the United States Code to remove any legal 
+barriers to the sharing of appropriate and necessary information 
+between these prime Federal trade compliance and enforcement 
+agencies. 
+JONES ACT 
+CBP is charged with enforcement of U.S. cabotage laws. The 
+Jones Act provides for the national and economic security of the 
+40 
+United States by supporting a strong U.S. merchant marine. By 
+virtue of the Outer Continental Shelf Lands Act, as amended by 
+Public Law 106–580, the coastwise laws apply to marine transpor-
+tation between points and places in the United States, including 
+the Outer Continental Shelf. U.S. vessels, mariners, and shipyards 
+have been negatively impacted and underutilized as a result of lax 
+enforcement and prior rulings inconsistent with congressional in-
+tent. The Committee urges the Department to levy penalties for 
+previously documented violations, continue working with the Off-
+shore Marine Service Association in order to investigate future po-
+tential violations, and dedicate adequate resources to vigorously en-
+force the Jones Act on the Outer Continental Shelf. The Committee 
+is very concerned that 53 waivers of the Jones Act were issued in 
+fiscal year 2011, enabling foreign-flagged vessels to transport oil re-
+leased from the Strategic Petroleum Reserve in response to ex-
+treme fluctuations in the price of gas. 
+The Committee is also concerned about the lack of transparency 
+in issuing these waivers. A general provision is included prohib-
+iting funds from being used to issue future waivers related to a re-
+lease from the Strategic Petroleum Reserve until the Secretary has 
+consulted with the Departments of Energy and Transportation and 
+representatives of the United States flag maritime industry and 
+taken adequate steps to ensure the use of United States flag ves-
+sels. The Secretary shall notify the Congress within 2 business 
+days of any request for a waiver, not solely waivers requested to 
+transport oil released from the Strategic Petroleum Reserve. 
+The Committee directs CBP to develop a system to track the sta-
+tus of all Jones Act violations, from the time they are reported 
+until assessed penalties have been collected or there is a finding of 
+no violation and the charges are dismissed. The Committee also di-
+rects CBP to make information available to the public and the 
+Committees, on a quarterly basis, about specific Jones Act viola-
+tions, findings of fact, parties determined to be at fault, amount of 
+penalty assessments, and status of collections. 
+NORTHERN BORDER COOPERATION 
+The Committee recognizes the economic importance of facili-
+tating the flow of cross border goods and people between the 
+United States and Canada. To this end, the Joint United States- 
+Canada ‘‘Beyond the Border’’ Action Plan, issued April 4, 2011, in-
+cluded several recommendations to enhance the economic relation-
+ship while increasing cross border security. On June 17, 2013, a 
+cargo truck pre-inspection pilot began at the Pacific Highway cross-
+ing adjacent to Surrey, British Colombia across the border from 
+Blaine, Washington. This project is a collaborative effort by CBP, 
+Canada Border Services Agency [CBSA], and Public Safety Canada 
+under the ‘‘Beyond the Border’’ plan. Phase I of this pilot is de-
+signed as a ‘‘proof of concept’’ to determine the viability of assign-
+ing CBP officers to Canadian border crossings to pre-inspect south-
+bound trucks, drivers, and cargo prior to arrival into the United 
+States. It will also test the viability of developed technologies and 
+joint U.S.-Canada procedures to conduct CBP primary truck proc-
+essing in Canada. CBP will monitor wait times and provide traffic 
+mitigation as needed. This pilot may prove that other innovative 
+41 
+initiatives can be undertaken on our northern and southern bor-
+ders to enhance security and facilitate legitimate trade. 
+Only July 2, 2013, CBP announced it was beginning Phase II of 
+the pilot—implementation of the Entry/Exit information system. 
+Under Phase II, DHS and the CBSA will expand the exchange of 
+biographic entry data collected on third-country nationals (those 
+who are neither citizens of Canada nor of the United States), per-
+manent residents of Canada who are not U.S. citizens, and lawful 
+permanent residents of the United States who are not Canadian 
+citizens, to all automated land ports of entry at the common border, 
+including all major land border crossings. It is expected that a co-
+ordinated Entry/Exit information system will facilitate exchanges 
+of entry information such that an entry into country becomes an 
+exit from the other. If the pilot operates as planned it will help the 
+United States and Canada identify persons who potentially over-
+stay their lawful period of admission; better monitor the departure 
+of persons subject to removal orders; and verify that residency re-
+quirements are being met by applicants for continued eligibility in 
+immigration programs. 
+Additionally, on June 26, 2013, a joint United States-Canadian 
+progress report was released entitled ‘‘Facilitating the Conduct of 
+Cross-Border Business.’’ This report, which is a deliverable of the 
+Beyond the Border Action Plan, describes bilateral efforts to ensure 
+business travelers benefit from more efficient and predictable bor-
+der clearance processes. The Committee directs CBP to provide a 
+briefing on both of the pilots and the cross-border business plan not 
+later than 60 days after the date of enactment of this act. 
+ADVANCED TRAINING CENTER 
+CBP has one of the Nation’s largest cadres of armed Federal law 
+enforcement personnel and having a full-scale advanced training 
+facility focused on the agency’s specialized missions is critical. In-
+cluded in the amount recommended by the Committee is 
+$40,000,000, as proposed in the budget, for programmatic expenses 
+(including salaries and benefits) and the National Training Plan at 
+the Advanced Training Center [ATC]. The ATC is providing ad-
+vanced firearms, tactical, and leadership training to CBP officers 
+and agents across the country, as well as other Federal and law en-
+forcement agencies. With the establishment of the Advanced Train-
+ing Center Revolving Fund [ATCRF], pursuant to the fiscal year 
+2012 Department of Homeland Security Appropriations Act, the 
+Committee directs CBP to continue to utilize ATCRF funds in addi-
+tion to any funds appropriated annually by the Congress. 
+Pursuant to Public Law 106–246, the training to be conducted at 
+the Center shall be configured in a manner so as to not duplicate 
+or displace any Federal law enforcement program of the Federal 
+Law Enforcement Training Center [FLETC]. Training currently 
+being conducted at a FLETC facility shall not be moved to the Cen-
+ter. 
+TRAINING REGARDING HUMAN TRAFFICKING 
+CBP plays a critical role in identifying potential human traf-
+ficking victims as they enter the United States. The Committee en-
+courages CBP to continue to work with appropriate nonprofit orga-
+42 
+nizations and victim service providers to improve the training of 
+CBP officers in the field to assist in the identification of human 
+trafficking victims, especially children, and provide appropriate re-
+ferrals to victim service organizations. Further, the Committee en-
+courages the Commissioner to post the National Human Traf-
+ficking Resource Center hotline, email address, and Web site infor-
+mation in all U.S. ports of entry. 
+FOREIGN MUNICIPAL SOLID WASTE 
+The Committee recognizes that trucks carrying foreign municipal 
+solid waste entering the United States from Canada represent po-
+tential homeland security and environmental threats to our Nation. 
+The Committee is also aware of successful efforts to address this 
+threat, which have resulted in a significant reduction in munici-
+pally managed waste shipments to the United States. However, 
+nearly 350 trash trucks still cross U.S. borders every day. The 
+Committee urges DHS, in conjunction with CBP, to work with the 
+Finance Committee—the appropriate authorizing committee—to 
+consider proposing to raise the current Customs User Fee for 
+trucks carrying foreign municipal solid waste into the United 
+States and include any such proposal in the fiscal year 2015 budget 
+through the appropriate authorizing mechanism. 
+AUTOMATION MODERNIZATION 
+Appropriations, 2013 1 ...........................................................................
+$718,917,000 
+Budget estimate, 2014 ...........................................................................
+340,105,000 
+House allowance ....................................................................................
+700,242,000 
+Committee recommendation .................................................................
+800,318,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The automation modernization account includes funds for major 
+information technology systems and services for U.S. Customs and 
+Border Protection [CBP], including the Automated Commercial En-
+vironment [ACE] and the International Trade and Data System 
+projects, and connectivity of and integration of existing systems. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $800,318,000, to be available until 
+September 30, 2016, for automation modernization. This is 
+$460,213,000 above the amount requested and $81,401,000 above 
+the amount provided in fiscal year 2013. Included in the amount 
+recommended by the Committee is $899,300 for 5 technical FTE in 
+support of the movement of ADIS from US–VISIT/OBIM to CBP. 
+The Committee also has transferred the Automated Targeting 
+Systems funding from ‘‘Salaries and Expenses’’ to ‘‘Automation 
+Modernization’’ in a separate PPA. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+AUTOMATION MODERNIZATION 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Information technology ..................................................................
+393,820 
+............................
+349,450 
+43 
+AUTOMATION MODERNIZATION—Continued 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Automated Targeting Systems .......................................................
+............................
+............................
+109,932 
+Automated Commercial Environment/International Trade Data 
+System [ITDS] ............................................................................
+138,611 
+140,830 
+140,762 
+Current operations protection and processing support [COPPS] ..
+186,486 
+199,275 
+200,174 
+Total, Automation modernization .....................................
+718,917 
+340,105 
+800,318 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+REPORTS AND BRIEFINGS 
+The Committee expects to continue receiving the ACE quarterly 
+reports. CBP is directed to brief the Committees immediately on 
+the plan to decommission the Automated Commercial System 
+[ACS], the updated program plan for ACE, how the ACS decommis-
+sion plan is integrated into the program plan, and the updated 
+master schedule for ACE development. 
+TECS MODERNIZATION 
+The Committee directs CBP and ICE to continue to conduct the 
+semiannual joint briefings for the Committee. 
+BORDER SECURITY FENCING, INFRASTRUCTURE, AND TECHNOLOGY 
+Appropriations, 2013 1 ...........................................................................
+$323,671,000 
+Budget estimate, 2014 ...........................................................................
+351,454,000 
+House allowance ....................................................................................
+361,454,000 
+Committee recommendation .................................................................
+351,454,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The Border Security, Fencing, Infrastructure, and Technology ac-
+count funds the capital procurement and total operations and 
+maintenance costs associated with fencing, infrastructure, sensors, 
+surveillance, and other border security technology. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $351,454,000 for Border Security 
+Fencing, Infrastructure, and Technology, the same as the request, 
+and $27,783,000 above the amount provided in fiscal year 2013. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+BORDER SECURITY FENCING, INFRASTRUCTURE, AND TECHNOLOGY 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Development and deployment ........................................................
+188,567 
+160,435 
+160,435 
+Operations and maintenance ........................................................
+135,104 
+191,019 
+191,019 
+Total, Border security fencing, infrastructure, and tech-
+nology ...........................................................................
+323,671 
+351,454 
+351,454 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+44 
+TECHNOLOGY DEPLOYMENT DELAYS 
+According to the Department, Border Patrol apprehensions have 
+decreased 50 percent since fiscal year 2008. In the Tucson sector 
+apprehensions dropped 44 percent between fiscal years 2010–2012. 
+This is the lowest level of apprehensions in Tucson in 18 years. 
+Since fiscal year 2005, the Committee has been a strong and active 
+supporter of the efforts to secure our Southwest border through a 
+strategic combination of fencing, tactical infrastructure, and tech-
+nology, combined with a doubling of the size of the Border Patrol. 
+In fact, at the initiation of this Committee, Congress has appro-
+priated more than $2,400,000,000 in regular, supplemental, and 
+emergency funding above the amounts requested by this and the 
+previous President for this account. These funds have been used to 
+construct the 651 miles of fencing and border infrastructure man-
+dated by the Secure Fence Act, as amended, and they have been 
+used to bring more technology and security to Border Patrol agents 
+than has ever been available. 
+On April 6, 2012, the Department issued a request for proposals 
+to build and deploy the next set of integrated fixed towers [IFTs] 
+for cameras and radars within Arizona. CBP initially estimated 
+that the contract would be awarded in the first quarter of 2013 and 
+it still intends to initiate the deployments in Douglas and Casa 
+Grande, Arizona. Operational field testing on the numerous bids 
+CBP received is ongoing as of June 2013, but the contract award 
+has slipped yet again—to the first quarter of fiscal year 2014 and 
+deliveries of the IFTs are now anticipated to start by fiscal year 
+2015. While the Committee is encouraged that there appears to be 
+proper oversight of contracts and that contractors are being held to 
+fulfilling their obligations for use of taxpayer dollars, this program 
+has now been delayed for over 2 years. Additionally, the Committee 
+is concerned about concurrent deployment of these systems before 
+it has been proven that they actually work in real-life situations 
+and has included language prohibiting concurrent deployment of 
+IFTs. 
+The 
+Department 
+has 
+indicated 
+that 
+approximately 
+$580,000,000 remains available in unobligated prior year balances 
+for border technology as of June 1, 2013. Given these strong con-
+cerns, the Committee rescinds $61,783,000 in unobligated balances 
+from this account that are not required for fiscal year 2014. 
+NORTHERN BORDER 
+Included in the Committee’s recommendation is $10,000,000, as 
+requested, for enhancing low-flying aircraft surveillance and mari-
+time detection technology along the Northern Border. 
+The Committee recognizes that incidents of drug smuggling along 
+our Northern Border are increasing, and that more efforts need to 
+be undertaken to address this growing problem. In previous years, 
+DHS and the Department of Defense cooperated on Operation Out-
+look, a program that used sophisticated military radar technology 
+along the Northern Border to identify low-flying aircraft that would 
+otherwise not have been caught with the current technology used 
+by DHS. Though that operation was highly successful, it was only 
+temporary in nature and covered only one sector of the Northern 
+Border. To better uncover and combat the smuggling of drugs by 
+45 
+low-flying aircraft in the future, and to assist in developing a com-
+prehensive plan to combat narcotics smuggling along the Northern 
+Border, the Committee urges the Department, through partner-
+ships between CBP and the Department of Defense, to use military 
+radar technologies to the fullest extent possible along the Northern 
+Border. 
+TETHERED AREOSTATS 
+The budget proposes to transfer operation and ownership of 8 ex-
+isting tethered aerostat systems [TARS] from the Department of 
+Defense to DHS and the Committee approved their transfer effec-
+tive on July 1, 2013. These blimp-mounted radars allow DHS to 
+identify low-flying aircraft in the border region, and have proven 
+to be a cost-effective and worthwhile way to monitor the border. 
+The Committee recommends $37,400,000 for this activity, as re-
+quested. The Committee understands CBP is studying whether it 
+needs to restore the Puerto Rico TARS and, if so, at what cost. CBP 
+has also indicated that it is evaluating how to utilize TARS best, 
+which could be a different configuration than is currently deployed. 
+CBP is to brief the Committee on its plans no later than September 
+13, 2013. 
+BORDER ROADS 
+The Committee directs CBP to work with counties along the 
+United States-Mexico border to identify unimproved county roads 
+that the Border Patrol requires the use of and that provide critical 
+access to the border region for the purpose of maintaining border 
+security. The Committee directs CBP to provide a briefing on the 
+extent to which these roads are used, their impact on daily border 
+security operations, and the feasibility of incorporating the mainte-
+nance and repair of any identified high-priority access roads into 
+its Tactical Infrastructure Maintenance and Repair program not 
+later than 90 days after the date of enactment of this act. 
+INVASIVE SPECIES 
+The Committee is pleased with the continued progress CBP has 
+made, in partnership with the U.S. Department of Agriculture, on 
+controlling carrizo cane, an invasive species along the lower Rio 
+Grande. As the carrizo cane program progresses towards eventual 
+sustainment, the Committee directs CBP, with its partners, to pro-
+vide an updated briefing on the efforts, including using biological 
+control projects, on salt cedar. 
+AIR AND MARINE OPERATIONS 
+Appropriations, 2013 1 ...........................................................................
+$797,952,000 
+Budget estimate, 2014 ...........................................................................
+427,701,000 
+House allowance ....................................................................................
+802,741,000 
+Committee recommendation .................................................................
+755,819,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The U.S. Customs and Border Protection [CBP] Air and Marine 
+Operations [AMO] account funds the capital procurement and total 
+operations and maintenance costs of the CBP air and marine pro-
+46 
+gram and provides support to other Federal, State, and local agen-
+cies. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $755,819,000 for Air and Marine 
+Operations, of which $472,501,000 is to remain available until Sep-
+tember 30, 2015. This is an increase of $328,118,000 above the re-
+quest and $42,133,000 below the amount provided in fiscal year 
+2013. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+AIR AND MARINE OPERATIONS 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Salaries and expenses ...................................................................
+283,196 
+............................
+283,318 
+Operations and maintenance ........................................................
+396,875 
+353,751 
+381,251 
+Procurement ...................................................................................
+117,881 
+73,950 
+91,250 
+Total, Air and Marine interdiction, operations, mainte-
+nance, and procurement ..............................................
+797,952 
+427,701 
+755,819 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The Committee strongly supports CBP’s continued efforts to re-
+capitalize its air and marine assets. Working with the Office of Air 
+and Marine, the Committee has provided resources to meet the De-
+partment’s border security requirements in the air, coastal, and 
+riverine environments as delineated by the CBP Air and Marine 
+Recapitalization Plan. Resources to address some of these require-
+ments are provided in this bill. The Committee notes the lengthy 
+period of time it takes to procure certain types of aircraft and other 
+air systems because the bulk of the systems are being acquired by 
+the Department of Defense [DOD] and CBP is fitting into DOD’s 
+production lines. At the same time, these are mobile border secu-
+rity assets, able to be transferred rapidly to respond to actual and 
+emerging threats. 
+AGING AVIATION ASSETS AND STRATEGIC RECAPITALIZATION 
+REQUIREMENTS 
+The President’s budget proposes an unacceptably steep, 37 per-
+cent cut to the aviation procurement budget and an 11 percent re-
+duction to operations and maintenance compared to the fiscal year 
+2013 enacted level. CBP’s fleet of aircraft is increasingly aged. 
+More planes are being retired than are being replaced at a time 
+when there is an increased demand for their use in the 
+counterdrug, alien smuggling, and disaster response missions. 
+More than 50 percent of the aircraft are 35 years old on average. 
+The proposed reduction would result in fewer replacement aircraft 
+being purchased and combined aircraft flight hours being cut to 
+only an estimated 62,386 flight hours for this vital mission—a cut 
+of more than 40 percent from the peak level of 106,600 hours in 
+fiscal year 2010, and a reduction of over 20 percent from flight 
+hour allocations for fiscal year 2012. 
+47 
+The Committee recognizes that since the merger of the legacy 
+U.S. Border Patrol and U.S. Customs Service aviation programs 
+under CBP in 2005, the CBP’s Office of Air and Marine has dra-
+matically increased the efficiency and effectiveness of CBP air oper-
+ations in support of the Department and its international, Federal, 
+State, local, and tribal partners. Many of these efficiencies were 
+captured through the acquisition of technologies that then drove or 
+facilitated changes in CBP air operations including decreased oper-
+ations cycle time, effective asset procurement/modernization, and 
+innovative sensor system integration. These operational develop-
+ments have then resulted in expanded mission functionality, vastly 
+improved detection capability, real-time customer support, de-
+creased mishaps and system downtime, which have consequently 
+provided a significant increase in overall CBP aviation mission ef-
+fectiveness. The Committee understands that the aircraft recapital-
+ization plan is nearly complete, with more than $1,000,000,000 ap-
+propriated by Congress from fiscal year 2006 through fiscal year 
+2013 to accomplish the objectives laid out in the long-range plan 
+to replace/upgrade CBP’s aging fleet of aircraft and marine vessels. 
+The budget request includes funding to continue the P–3 aircraft 
+service life extension effort, to purchase two additional multirole 
+enforcement aircraft [MEAs], a number of marine vessels, and ad-
+ditional sensor upgrades. But at this reduced level of procurement 
+funding, it will take over 13 years to fully recapitalize CBP’s fleet. 
+For instance, the MEA provides border protection, law enforce-
+ment, and rapid response contingency deployment capabilities. 
+Since 2009, DHS has budgeted for eight MEA systems, which does 
+not support the most efficient production line. The Committee en-
+courages the Department to work with industry to develop a pro-
+curement strategy to obtain a more robust production rate and to 
+explore the cost savings of replacing its aging legacy fleet. As these 
+air assets are fully mobile, they are capable of rapidly responding 
+to an emerging threat anywhere in the country. 
+To address the requirement to replace aging aircraft and enhance 
+the capabilities of existing systems, the Committee fully funds the 
+request and recommends the following increases above the request: 
+—$17,300,000 to procure two additional VADER radar systems, 
+and 
+—$27,500,000 above the request to restore total AMO flight 
+hours for all aircraft to approximately 84,000 hours. 
+These increases will provide crucial aerial support and slow the 
+steady decline in flight hours in support of the Border Patrol mis-
+sion over the past 5 years. 
+CONSTRUCTION AND FACILITIES MANAGEMENT 
+Appropriations, 2013 1 ...........................................................................
+$233,254,000 
+Budget estimate, 2014 ...........................................................................
+471,499,000 
+House allowance ....................................................................................
+471,278,000 
+Committee recommendation .................................................................
+471,278,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+This appropriation provides funding to plan, construct, renovate, 
+equip, and maintain buildings and facilities necessary for the ad-
+ministration and enforcement of the laws relating to immigration, 
+customs, and alien registration. 
+48 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $471,278,000, for construction and 
+facilities management activities of U.S. Customs and Border Pro-
+tection [CBP], to remain available until September 30, 2018. This 
+is $221,000 below the amount requested and $238,024,000 above 
+the amount provided in fiscal year 2013. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+CONSTRUCTION AND FACILITIES MANAGEMENT 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Facility construction and sustainment ............................................
+175,981 
+385,398 
+385,398 
+Program oversight and management ..............................................
+57,273 
+86,101 
+85,880 
+Total, Construction and facilities management ................
+233,254 
+471,499 
+471,278 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+ADDITIONAL LAND BORDER PORT REQUIREMENTS 
+The Committee notes that the American Recovery and Reinvest-
+ment Act of 2009, (Public Law 111–5) provided $420,000,000 for 
+construction, repairs, maintenance, and security upgrades to CBP- 
+owned ports of entry [POEs]. Of the 167 land border ports of entry, 
+CBP owns 41. The rest are owned and administered by the General 
+Services Administration [GSA] or are privately owned and leased, 
+and one is owned by the National Park Service. The Committee is 
+pleased that through good stewardship and creative contract man-
+agement, CBP was able to reconstruct or renovate 31 CBP-owned 
+ports of entry, 28 of which were on the Northern Border. 
+Previously, the Committee directed DHS, GSA, and the Office of 
+Management and Budget to develop a multiyear strategy to ad-
+dress the growth of trade and passenger processing at our land 
+POEs with maintaining security. In response, the President’s budg-
+et proposes to transfer from GSA to CBP—via a delegation of au-
+thority—the operation, maintenance, and repair of LPOEs. GSA re-
+tains the authority over major construction (including funding, con-
+tracting, and oversight). The Committee supports this rec-
+ommendation and fully funds the request. Not later than 180 days 
+after the date of enactment of this act, CBP and GSA jointly shall 
+brief the Committee on implementation of the delegation of author-
+ity. 
+Additionally, the Committee notes its continued interest in CBP 
+exploring alternate options for funding POE construction and im-
+provements, including expanded use of public-private partnerships, 
+and was pleased to see such a proposal included in the President’s 
+budget request. The Committee includes a modified version of this 
+proposal as a general provision in Title V. 
+FIVE-YEAR CONSTRUCTION PLAN 
+The Committee reminds CBP that the fiscal year 2012 Depart-
+ment of Homeland Security Act made permanent the requirement 
+that a 5-year plan for all Federal land border ports of entry shall 
+49 
+be submitted annually with the President’s budget request. The 
+Committee directs the Department to continue to work with the 
+GSA on its nationwide strategy to prioritize and address the infra-
+structure needs at land border POEs and to comply with the re-
+quirements of the Public Buildings Act of 1959 (40 U.S.C. 3301) 
+and seek necessary funding. 
+The Committee further directs the Department to encourage the 
+use of small businesses in all phases of the contracting process for 
+construction and renovation of POEs. 
+U.S. IMMIGRATION AND CUSTOMS ENFORCEMENT 
+SUMMARY 
+U.S. Immigration and Customs Enforcement [ICE] is responsible 
+for enforcing immigration and customs laws and detaining and re-
+moving deportable or inadmissible aliens. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends total resources of $5,398,845,000, 
+including direct appropriations of $5,053,845,000, and estimated 
+fee collections of $345,000,000. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+U.S. IMMIGRATION AND CUSTOMS ENFORCEMENT—FUNDING SUMMARY 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Appropriations: 
+Salaries and expenses 1 2 .....................................................
+5,388,138 
+4,956,822 
+5,013,945 
+Automation modernization ....................................................
+33,456 
+34,900 
+34,900 
+Construction ..........................................................................
+4,993 
+5,000 
+5,000 
+Total, Appropriations ........................................................
+5,426,587 
+4,996,722 
+5,053,845 
+Estimated Fee Collections: 
+Immigration inspection user fee ..........................................
+116,869 
+135,000 
+135,000 
+Breached bond/detention fund .............................................
+75,000 
+65,000 
+65,000 
+Student exchange and visitor fee ........................................
+120,000 
+145,000 
+145,000 
+Total, Estimated fee collections .......................................
+311,869 
+345,000 
+345,000 
+Total, Available funding ...................................................
+5,738,456 
+5,341,722 
+5,398,845 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+2 Includes emergency funding of $855,000 in the Disaster Relief Appropriations Act, 2013 (division A of Public Law 113–2). 
+SALARIES AND EXPENSES 
+Appropriations, 2013 1 2 .........................................................................
+$5,388,138,000 
+Budget estimate, 2014 ...........................................................................
+4,956,822,000 
+House allowance ....................................................................................
+5,344,461,000 
+Committee recommendation .................................................................
+5,013,945,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+2 Includes emergency funding of $855,000 in the Disaster Relief Appropriations Act, 2013 (di-
+vision A of Public Law 113–2). 
+The ICE Salaries and Expenses account provides funds for the 
+enforcement of immigration and customs laws, intelligence, and de-
+50 
+tention and removals. In addition to directly appropriated re-
+sources, funding is derived from the following offsetting collections: 
+Immigration Inspection User Fee.—ICE derives funds from user 
+fees to support the costs of detention and removals in connection 
+with international inspections activities at airports and seaports, 
+as authorized by the Immigration and Nationality Act (8 U.S.C. 
+1356). 
+Student Exchange Visitor Program Fee.—ICE collects fees from 
+foreign students, exchange visitors, and schools and universities to 
+certify and monitor participating schools, and to conduct compli-
+ance audits. 
+Immigration Breached Bond/Detention Fund.—ICE derives 
+funds from the recovery of breached cash and surety bonds in ex-
+cess of $8,000,000 as authorized by the Immigration and Nation-
+ality Act (8 U.S.C. 1356); and from a portion of fees charged under 
+section 245(i) of the Immigration and Nationality Act to support 
+the cost of the detention of aliens. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $5,013,945,000, for Salaries and Ex-
+penses of ICE for fiscal year 2014. This is $57,123,000 above the 
+request and $374,193,000 below the amount provided in fiscal year 
+2013. The Committee includes bill language placing a $35,000 limit 
+on overtime paid to any employee; making up to $10,000,000 avail-
+able for special operations; making up to $2,000,000 available for 
+the payment of informants; making up to $11,216,000 available to 
+reimburse other Federal agencies for the costs associated with the 
+care, maintenance, and repatriation of smuggled illegal aliens; 
+making not less than $305,000 available for promotion of public 
+awareness of the child pornography tipline and anti-child exploi-
+tation activities; making not less than $5,400,000 available to fa-
+cilitate agreements consistent with section 287(g) of the Immigra-
+tion and Nationality Act; limiting the use of funds for facilitating 
+agreements consistent with section 287(g) of the Immigration and 
+Nationality Act to the same activities funded in fiscal year 2005; 
+making $15,770,000 available for activities to enforce laws against 
+forced child labor, of which $6,000,000 shall remain available until 
+expended; making up to $11,475 available for official reception and 
+representation expenses; and making $10,300,000 available until 
+September 30, 2015, for the Visa Security Program. 
+The Committee recognizes that ICE has had to make difficult 
+budget savings and downward adjustments to its base funding. 
+While certain targeted increases supported by this legislation are 
+proposed, ICE is on the verge of being forced to cut into the bone 
+of critical operations, especially investigations and technology. This 
+path is not sustainable and the Office of Management and Budget 
+must ensure that sufficient resources are proposed in the Presi-
+dent’s fiscal year 2015 budget address these national security re-
+quirements. 
+As discussed in greater detail below, the Committee recommends 
+increases for domestic investigations, detention beds, alternatives 
+to detention, and the criminal alien program. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+51 
+U.S. IMMIGRATION AND CUSTOMS ENFORCEMENT—SALARIES AND EXPENSES 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Headquarters, management, and administration: 
+Personnel compensation and benefits, services, and other 
+costs ...................................................................................
+219,754 
+192,236 
+189,909 
+Headquarters-managed IT investment ...................................
+160,252 
+141,294 
+140,808 
+Subtotal, Headquarters, management, and administra-
+tion .................................................................................
+380,006 
+333,530 
+330,717 
+Legal proceedings ............................................................................
+206,768 
+204,651 
+202,584 
+Investigations: 
+Domestic investigations ..........................................................
+1,684,633 
+1,599,972 
+1,603,888 
+International operations ..........................................................
+114,970 
+100,544 
+99,741 
+Visa Security Program ............................................................
+34,515 
+31,630 
+31,541 
+Subtotal, Investigations .....................................................
+1,834,118 
+1,732,146 
+1,735,170 
+Intelligence .......................................................................................
+78,348 
+75,448 
+74,908 
+Detention and removal operations: 
+Custody operations .................................................................
+2,022,344 
+1,844,802 
+1,879,239 
+Fugitive operations .................................................................
+145,133 
+125,771 
+124,802 
+Criminal Alien Program ..........................................................
+216,224 
+291,721 
+294,155 
+Alternatives to detention ........................................................
+96,430 
+72,435 
+96,181 
+Transportation and Removal Program ....................................
+269,845 
+255,984 
+255,925 
+Subtotal, Detention and removal operations .....................
+2,749,976 
+2,590,713 
+2,650,302 
+Secure Communities ........................................................................
+138,067 
+20,334 
+20,264 
+Emergency Appropriation (Public Law 113–2) ................................
+855 
+............................
+............................
+Total, Salaries and expenses .............................................
+5,388,138 
+4,956,822 
+5,013,945 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+TRADE COMPLIANCE AND ENFORCEMENT 
+The Committee notes that Intellectual Property Rights [IPR] vio-
+lations is a significant revenue source for transnational criminal or-
+ganizations including Mexican drug cartels. According to officials at 
+the IPR Coordination Center, these violations are a low-risk/high- 
+profit type of crime. The Center sees more organized crime groups 
+engaging in these types of illegal activities because of the high-dol-
+lar value to them. 
+The Committee fully funds the request for trade enforcement ac-
+tivities, including the $5,600,000 increase proposed in the budget 
+to support intellectual property rights and commercial trade fraud 
+investigations, including undercover equipment, translation and 
+transcription of court-ordered wiretaps, commercial fraud training, 
+and outreach at the IPR Center. The Committee urges ICE to 
+prioritize investigations involving illicit trade of dangerous goods 
+that could be harmful to the public, including counterfeit pharma-
+ceuticals and tainted good. 
+INVESTIGATIONS 
+The Committee supports the proposed $8,800,000 increase for 
+human smuggling investigations conducted by ICE through a vari-
+52 
+ety of strike forces and teams both domestically and abroad and 
+recommends an additional $10,000,000 for priority investigations 
+into human smuggling and trafficking, counterproliferation, anti- 
+gang, and drug smuggling investigations. ICE shall submit an ex-
+penditure plan breaking out how it proposes to allocate all re-
+sources provided in this act for domestic investigations not later 
+than 90 days after the date of enactment of this act. This plan 
+shall detail both financial resources as well as the personnel dedi-
+cated to each mission area and shall be at the same level of detail 
+as the quarterly investigations activities report. 
+ICE also is directed to maintain its relationship with the Na-
+tional Center for Missing and Exploited Children in regards to its 
+ongoing support for investigations and other child exploitation ac-
+tivities. 
+Additionally, the Committee supports the work of the National 
+Gang Unit and encourages the Department and ICE to continue 
+these aggressive investigations, specifically of gangs of national sig-
+nificance which are perpetuating much of the violence in our major 
+urban areas while also engaging in a variety of illicit activity in-
+cluding international drug, gun, and human trafficking. 
+LAW ENFORCEMENT SUPPORT CENTER 
+The Committee provides funding of $34,400,000, $5,000,000 
+above the request and $5,000,000 above the amount provided in fis-
+cal year 2013. The Law Enforcement Support Center [LESC] is 
+DHS’ national center which provides information about criminal 
+aliens and absconders to the law enforcement community, respond-
+ing to over 1.3 million Immigration Alien Queries annually, and 
+provides critical support to ICE field offices in connection with sin-
+gle or large scale enforcement efforts. The LESC is also an impor-
+tant component of Secure Communities, which was fully deployed 
+to 3,181 jurisdictions across the United States in fiscal year 2013, 
+with the LESC serving as the single point of contact for Secure 
+Communities-related queries. 
+The Committee notes that the LESC and the Fugitive Operations 
+Support Center [FOSC] play critical roles supporting local law en-
+forcement officials while performing law enforcement actions in the 
+field, as well as conducting analyses about the status and location 
+of fugitive aliens. The Committee understands that both the LESC 
+and the FOSC are playing important and growing roles in analysis 
+of visa overstays. ICE’s Compliance Enforcement Unit is respon-
+sible for the initial review of all overstay records segregating them 
+based on enforcement priorities and those in priority 10 are re-
+ferred to the FOSC for analysis. FOSC analysis includes running 
+the referred individuals against a variety of public and law enforce-
+ment databases. The FOSC is responsible for analyzing the backlog 
+of visa overstays about which little is known, in part through 
+matching biographic information, and if available, biometric. Given 
+the importance of resolving visa overstays, the Committee strongly 
+encourages FOSC to coordinate its activities regarding biometrics 
+with the Office of Biometric Identity Management [OBIM] and the 
+FBI, especially ensuring that records that are passed to FOSC for 
+analysis include either the biometric or the fingerprint identifica-
+tion number from OBIM in order to speed information sharing with 
+53 
+the FBI. The Committee directs ICE to brief the Committee within 
+90 days after the date of enactment of this act on the support the 
+LESC and FOSC provide to ICE in regard to visa overstay anal-
+ysis, including its coordination with other agencies and the re-
+sources and staffing supporting this effort. 
+The Committee recommends $34,400,000, $5,000,000 above the 
+request, so that LESC can adequately support the full deployment 
+of Secure Communities with the necessary full-time law enforce-
+ment personnel and related resources. Within the increased funds 
+provided, ICE is encouraged to evaluate the need for additional re-
+sources such as improved data transfer capabilities for FOSC’s role 
+in visa overstay analysis. Further, in order to promote efficiency, 
+the Committee recommends that ICE take steps to ensure that cur-
+rent operations being carried out at the LESC remain centralized 
+at the LESC facility and are not unnecessarily duplicated in other 
+parts of the country. 
+ENFORCEMENT ACTIONS IN THE FIELD 
+The Committee encourages ICE and CBP to ensure that any ju-
+risdictional disputes with regard to the apprehension of undocu-
+mented individuals in the field do not hamper the Department’s 
+overall mission to secure our borders and enforce our immigration 
+laws. 
+VISA SECURITY PROGRAM 
+The Committee recommends $31,541,000, as requested, to fully 
+fund visa security programs and activities. Of the total amount 
+provided for the Visa Security Program, bill language is included 
+making $10,300,000 available for obligation through September 30, 
+2015. 
+IMMIGRATION ENFORCEMENT 
+The role of the Appropriations Committee is to provide the re-
+sources necessary to enforce enacted laws and Administration pol-
+icy. The Committee takes seriously its role with regard to providing 
+sufficient resources within constrained budgets to effectively and 
+efficiently enforce immigration laws. 
+Maintaining an adequate number of detention beds is critical to 
+ensuring the integrity of our entire immigration enforcement sys-
+tem, including border enforcement, while at the same time pre-
+venting a return to the ill-advised ‘‘catch and release’’ policy. In fis-
+cal year 2012, ICE removed a total of 409,849 aliens, including 
+225,390 convicted criminal aliens, compared with 240,665 removed 
+in fiscal year 2004. At the end of the first quarter of the current 
+fiscal year, ICE had removed 86,861 aliens, including 46,989 con-
+victed criminals. It is imperative that sufficient detention bed space 
+be maintained so that aliens who pose the greatest threat to the 
+community or who are required by current law to be detained can 
+be. The Committee notes that the number of aliens in detention 
+has spiked at certain periods during the fiscal year. Current law 
+requires mandatory detention of individuals entering this country 
+claiming credible fear of persecution in their home countries and 
+the numbers of apprehended aliens making these claims in loca-
+54 
+tions such as the Rio Grande Valley sector have skyrocketed. For 
+instance, during the week ending May 24, 2013, there were 39,088 
+aliens in detention beds nationwide, but this figure has dropped to 
+32,657 as of June 28, 2013. It is incumbent on ICE to manage its 
+detention bed resources to ensure there are sufficient detention 
+beds. The Committee directs ICE to take appropriate measures to 
+reduce the daily bed rate charged to the Federal Government 
+through a competitive process in contracting for or otherwise ob-
+taining detention beds while ensuring that the most recent applica-
+ble detention standards, including health standards, are met. 
+Recognizing the funds requested in the budget are insufficient to 
+support the requested bed level, the Committee recommends 
+$1,879,239,000, $41,000,000 above the amount requested, for a 
+minimum of 31,800 detention beds, as requested. Bill language is 
+also included permitting the Secretary to propose to reprogram 
+funds necessary to ensure the detention of aliens prioritized for re-
+moval, subject to the reprogramming guidelines contained in sec-
+tion 503. 
+DETENTION OF PREGNANT WOMEN 
+The Performance-Based National Detention Standards 2011 Sec-
+tion 2.15 Use of Force, issued by ICE, specifically prohibits the use 
+of restraints on pregnant women or women in post-delivery recu-
+peration when they do not present a flight risk or a danger to their 
+own life or the lives of others absent ‘‘extraordinary circumstances’’ 
+as specified in subsection ‘‘F’’. The Committee expects ICE to make 
+certain that all detention or other contracts and agreements ensure 
+that the Use of Force exception for pregnant women is fully imple-
+mented for all women held under an ICE detainer. 
+ALTERNATIVES TO DETENTION 
+The Committee recommends $96,181,000 for the Alternatives to 
+Detention [ATD] program. This is $23,746,000 above the request 
+and $249,000 below the enacted level. In the past few years, ICE 
+has not effectively maximized the use of the ATD program. The 
+Committee directs ICE to provide greater transparency on its use 
+of the program—including providing quarterly briefings on the re-
+sults of any evaluations of the program by field offices. ICE should 
+post on its Web site any contractor evaluations and OIG reports re-
+lated to the ATD program. 
+SECURE COMMUNITIES 
+The Committee continues its support of the Secure Communities 
+program and notes it has been implemented nationwide. As rec-
+ommended in the budget, the Committee realigns $74,300,000 from 
+Secure 
+Communities 
+to 
+the 
+Criminal 
+Alien 
+Program 
+and 
+$36,369,000 to Custody Operations. 
+The Committee directs ICE to immediately resolve the open 
+items listed in OIG–12–66, publish its response on its Web site, 
+and brief the Committees on the specific steps it has taken to re-
+solve/implement the recommendations. 
+55 
+The Committee has included a provision, as requested, ensuring 
+that all illegal aliens encountered when enforcing our immigration 
+laws are apprehended. 
+287(g) 
+The Committee recommends $24,300,000, as requested, for the 
+287(g) program. 
+EXECUTIVE OFFICE OF IMMIGRATION REVIEW 
+The Assistant Secretary of ICE is directed to brief the Committee 
+not later than 60 days after the date of enactment of this act on 
+how the funds provided in Public Law 113–6 for system improve-
+ments, including permissive authority to transfer from ICE to the 
+Department of Justice’s Executive Office of Immigration Review 
+[EOIR], for reducing the non-detained docket were applied nation-
+wide, and the specific projects which have been undertaken with 
+EOIR to make improvements and expedite action on the non-de-
+tained docket. 
+IMPACTS OF IMMIGRATION ENFORCEMENT ON U.S. CITIZEN CHILDREN 
+OF REMOVED ALIENS 
+As noted in Senate Report 112–169, it is important for ICE to in-
+stitute appropriate policies and measures to ensure that U.S. cit-
+izen children of illegal aliens receive all necessary and appropriate 
+treatment throughout the immigration enforcement process. The 
+Committee is aware that the Urban Institute and others are con-
+ducting a study, funded by the Department of Health and Human 
+Services, focused on all aspects of this issue including the number 
+of children affected by the detention and removal of a parent, the 
+impact of family separation and loss of income on the well-being of 
+children, and the short, intermediate, and long-term economic, 
+health, and social service needs of these children. The final report 
+is due to be released in early 2014. The Committee directs ICE to 
+provide all appropriate assistance to those conducting the study 
+and to implement any recommendations from the report. ICE shall 
+keep the Committee regularly updated on activities affecting U.S. 
+citizen children. 
+The Committee directs ICE to continue to submit the semiannual 
+report on ‘‘Deportation of Parents of U.S.-Born Citizens’’. 
+DETENTION AND REMOVAL REPORTING 
+ICE is directed to continue to provide semiannual detention and 
+removal reports at the same level of detail as directed in Senate 
+Report 112–74. 
+TRAINING REGARDING HUMAN TRAFFICKING 
+ICE plays a critical role in investigating criminal organizations 
+which traffic individuals into the United States. The Committee en-
+courages ICE to work with appropriate nonprofit organizations and 
+victim service providers to improve the training of ICE officers in 
+the field to assist in the identification of human trafficking victims, 
+especially children, and provide appropriate referrals to victim 
+service organizations. 
+56 
+AUTOMATION MODERNIZATION 
+Appropriations, 2013 1 ...........................................................................
+$33,456,000 
+Budget estimate, 2014 ...........................................................................
+34,900,000 
+House allowance ....................................................................................
+34,900,000 
+Committee recommendation .................................................................
+34,900,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The Automation Modernization account provides funds for major 
+information technology [IT] projects for U.S. Immigration and Cus-
+toms Enforcement [ICE], including modernization of TECS (for-
+merly known as the Traveler Enforcement and Compliance Sys-
+tem), modernization of Detention and Removal Operations’ IT sys-
+tems for tracking detainees (DRO Modernization), electronic health 
+records, and other systems. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends a total of $34,900,000, the same as 
+the request and $1,444,000 above the amount provided in fiscal 
+year 2013. These funds are to remain available until September 30, 
+2016. 
+The Committee directs that, of the funds made available to this 
+account, priority shall be given to TECS modernization. ICE shall 
+also brief the Committee on its progress in electronic health 
+records not later than 90 days after the date of enactment of this 
+act. 
+The Committee also continues the requirement for semiannual 
+briefings on this activity. 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Automation modernization: 
+IT investment ........................................................................
+............................
+............................
+8,400 
+TECS modernization ..............................................................
+22,970 
+34,900 
+23,000 
+Detention and removals modernization ................................
+6,991 
+............................
+............................
+Electronic health records ......................................................
+3,495 
+............................
+3,500 
+Subtotal ............................................................................
+33,456 
+34,900 
+34,900 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+CONSTRUCTION 
+Appropriations, 2013 1 ...........................................................................
+$4,993,000 
+Budget estimate, 2014 ...........................................................................
+5,000,000 
+House allowance ....................................................................................
+5,000,000 
+Committee recommendation .................................................................
+5,000,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+This appropriation provides funding to plan, construct, renovate, 
+equip, and maintain buildings and facilities necessary for the ad-
+ministration and enforcement of the laws relating to immigration, 
+detention, and alien registration. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $5,000,000, as requested, to remain 
+available until September 30, 2014. This is $7,000 above the 
+amount provided in fiscal year 2013. The carryover funds within 
+57 
+the Construction account will be used for emergency repairs and al-
+terations, especially those focused on life and safety. 
+TRANSPORTATION SECURITY ADMINISTRATION 
+The Transportation Security Administration [TSA] is charged 
+with ensuring security across U.S. transportation systems, includ-
+ing aviation, railways, highways, pipelines, and waterways, and 
+safeguarding the freedom of movement of people and commerce. 
+Separate appropriations are provided for the following activities 
+within TSA: aviation security; surface transportation security; 
+transportation threat assessment and credentialing; transportation 
+security support; and Federal Air Marshals. 
+COMMITTEE RECOMMENDATIONS 
+The 
+Committee 
+recommends 
+a 
+total 
+program 
+level 
+of 
+$7,343,885,000 and a net of $4,907,885,000 for the activities of TSA 
+for fiscal year 2014. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+TRANSPORTATION SECURITY ADMINISTRATION 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Aviation Security ......................................................................
+5,048,684 
+4,968,036 
+4,939,393 
+Aviation Security Capital Fund (mandatory) ...........................
+250,000 
+250,000 
+250,000 
+Surface Transportation Security ..............................................
+124,254 
+109,331 
+108,618 
+Transportation Threat Assessment and Credentialing (direct 
+appropriations) ....................................................................
+192,170 
+180,617 
+180,206 
+Transportation Threat Assessment and Credentialing (fee- 
+funded programs) ................................................................
+79,720 
+66,000 
+66,000 
+Transportation Security Support ..............................................
+953,017 
+997,789 
+978,561 
+Federal Air Marshals ................................................................
+906,559 
+826,522 
+821,107 
+Total, 
+Transportation 
+Security 
+Administration 
+(gross) ....................................................................
+7,554,404 
+7,398,295 
+7,343,885 
+Offsetting Fee Collections—current law .................................
+¥2,070,000 
+¥2,120,000 
+¥2,120,000 
+Offsetting Fee Collections—proposed increase ......................
+..............................
+¥105,000 
+..............................
+Aviation Security Capital Fund (mandatory) ...........................
+¥250,000 
+¥250,000 
+¥250,000 
+Fee Accounts [TTAC] ................................................................
+¥79,720 
+¥66,000 
+¥66,000 
+Total, Transportation Security Administration (net) ..
+5,154,684 
+4,857,295 
+4,907,885 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+AVIATION SECURITY 
+Appropriations, 2013 1 ...........................................................................
+$5,048,684,000 
+Budget estimate, 2014 ...........................................................................
+4,968,036,000 
+House allowance ....................................................................................
+4,875,739,000 
+Committee recommendation .................................................................
+4,939,393,000 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+The Transportation Security Administration Aviation Security 
+account provides for Federal aviation security, including screening 
+of all passengers and baggage, deployment of on-site law enforce-
+ment, continuation of a uniform set of background requirements for 
+58 
+airport and airline personnel, and deployment of explosives detec-
+tion technology. 
+The aviation security activities include funding for: Federal 
+transportation security officers [TSOs] and private contract screen-
+ers; air cargo security; procurement, installation, and maintenance 
+of explosives detection systems [EDS]; checkpoint technologies and 
+support; and other aviation regulation and enforcement activities. 
+COMMITTEE RECOMMENDATIONS 
+The Committee recommends $4,939,393,000 for aviation security 
+activities. This is $28,643,000 below the amount requested and 
+$109,291,000 below the amount provided in fiscal year 2013. Of 
+this amount, the Committee recommends not to exceed $15,300 for 
+official reception and representation expenses. 
+The following table summarizes the Committee’s recommenda-
+tions as compared to the fiscal year 2013 and budget request levels: 
+AVIATION SECURITY 
+[In thousands of dollars] 
+Fiscal year 2013 
+enacted 1 
+Fiscal year 2014 
+budget request 
+Committee 
+recommendations 
+Screening Operations ...............................................................
+3,972,420 
+3,899,525 
+3,850,557 
+Aviation Security Direction and Enforcement ..........................
+1,076,264 
+1,068,511 
+1,088,836 
+Aviation Security Capital Fund (mandatory) ...........................
+(250,000) 
+(250,000) 
+(250,000) 
+Total, Aviation Security ..............................................
+5,048,684 
+4,968,036 
+4,939,393 
+1 Does not reflect the March 1, 2013, sequester of funds under Public Law 112–25. 
+AVIATION SECURITY FEES 
+The Congressional Budget Office, in its analysis of the Presi-
+dent’s budget, has re-estimated discretionary collections from avia-
+tion security fees to be $2,120,000,000 under existing law. Accord-
+ing to estimates by the Congressional Budget Office, this amount 
+is made up of $1,700,000,000 from passengers and $420,000,000 
+from air carriers. CBO also estimates that an additional 
+$305,000,000 in passenger fees would be collected from the Admin-
+istration’s proposal to modify aviation passenger fees in fiscal year 
+2014 by applying a flat fee of $5 per one-way trip. The Aviation 
+and Transportation Security Act (Public Law 107–71) mandated 
+that TSA impose a flat fee of $2.50 fee for a one-way trip with no 
+stops and a $5 fee for a trip with one or more stops. Under the Ad-
+ministration’s proposal, $105,000,000 of the additional collections is 
+to be dedicated to av
