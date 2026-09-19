@@ -11,6 +11,7 @@
 - [Image headers](image-headers.md): declared dimensions without image decoding.
 - [JSON reading](json-reading.md): source values and exact record positions.
 - [PDF/image extraction API](extraction/pdf-extraction-api.md): injected readers, strategies
+- [GPO text normalization](extraction-gpo.md): the post-extraction step that strips GPO line numbers, footers and page numbers from PyMuPDF page text, by page-level evidence, before any text parser reads it.
   and recognition backends with separate metadata, body and raw observations.
 - [PDF extraction choices](extraction/pdf-extraction-choices.md): saved native, OCR, vision
   and converter candidates by source and page type, with tested settings and limits.
