@@ -7,6 +7,12 @@ touches a vote -- `bill/{c}/{type}/{n}/actions`'s `recordedVotes` references
 and `house-vote/{c}/{session}/{roll}/members` -- carries the tally or, for
 the Senate, any member-level detail at all; see "Decision" below.
 
+Congress.gov's `house-vote` route is a House-only index; it has no Senate
+counterpart. `VoteAcquirer.list_senate_votes` reads the Senate's own session
+index instead -- the LIS vote-menu file -- so a consumer that needs "every
+roll call this session" for the Senate has a route at all. See "Senate vote
+menu" below.
+
 ## What the files are
 
 Two unrelated XML grammars, one per chamber, joined only by the identity
@@ -153,6 +159,58 @@ built correctly -- the same shape as `press_releases.py`'s
 `_check_feed_identity`, which proves a Senate RSS response is the requested
 committee's feed rather than a byte-identical default channel.
 
+## Senate vote menu
+
+The Senate LIS also publishes a session-level index -- the vote menu --
+which `VoteAcquirer.list_senate_votes(congress, session)` reads through
+`parse_senate_vote_menu`. This closes gap A4
+(`docs/research/closing-the-gaps-2026-09-19.md`): Congress.gov's `house-vote`
+route is a House-only index, so before this the Senate had none at all. The
+menu lists every roll call for one session in the publisher's own
+newest-vote-first order (`SenateVoteMenu.votes[0]` is the most recent roll),
+matching the order the gap names for the votes rollup: it "walks it newest
+first with the same held-set skip" the House side already uses, so a rollup
+can stop the walk as soon as it reaches a roll number it already has, rather
+than re-reading a whole session on every run.
+
+**URL grammar.** `senate.gov/legislative/LIS/roll_call_lists/vote_menu_{congress:03d}_{session}.xml`,
+for example `https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_119_1.xml`.
+Same three-digit congress and bare session number as `senate_url`, and the
+same 101st-Congress floor (measured 2026-09-19: `vote_menu_101_1.xml` serves
+a real 149,123-byte listing while `vote_menu_100_1.xml`/`vote_menu_099_1.xml`
+each redirect to `roll-call-vote-not-available.htm`); `senate_vote_menu_url`
+refuses a congress below 101 the same way `senate_url` does.
+
+**Field table** (`parse_senate_vote_menu`) -- every field one `<vote>` row states:
+
+| Field | Source element | Kept as |
+| --- | --- | --- |
+| `congress`, `session` (shared identity) | top-level `<vote_summary>` | checked against the requested congress/session, then `SenateVoteMenu.congress`, `.session` |
+| `congress_year` | top-level | `SenateVoteMenu.congress_year` |
+| `vote_number` | `vote/vote_number` | `SenateVoteMenuEntry.vote_number` (the roll number `locator_from_menu_entry` resolves) |
+| `vote_date` | `vote/vote_date` | `SenateVoteMenuEntry.vote_date` (a bare day-month, e.g. `"18-Dec"`, with no year of its own; `congress_year` is only *presumptively* that vote's year, not a fact this row states -- a session can run into the following January before it adjourns, so a caller building an instant from `vote_date` must account for that boundary itself) |
+| `issue` | `vote/issue` | `SenateVoteMenuEntry.issue`; `None` on an `en_bloc` vote (see below) |
+| `question`, its nested `measure` | `vote/question`, `vote/question/measure` | `SenateVoteMenuEntry.question`, `.question_measure` (`None` when the question carries no `<measure>`; parsing refuses if `<question>` carries any text after `</measure>`, an unmeasured shape); both `None` on an `en_bloc` vote |
+| `result` | `vote/result` | `SenateVoteMenuEntry.result`; `None` on an `en_bloc` vote |
+| `vote_tally/{yeas,nays}` | `vote/vote_tally` | `SenateVoteMenuEntry.tallies`, the publisher's own count names (the menu states no `present`/`absent`, unlike the vote file itself) |
+| `title` | `vote/title` | `SenateVoteMenuEntry.title` |
+| `en_bloc/matter/{issue,question,result}` (repeated) | `vote/en_bloc/matter` | `SenateVoteMenuEntry.matters: tuple[SenateVoteMenuMatter, ...]`, each one item's own `issue`/`question`/`result` inside a batch confirmation vote (measured: 9 of 659 votes in the 119th Congress's 1st session are `en_bloc`) |
+
+**Identity rule.** `parse_senate_vote_menu(body, *, congress, session)` checks
+the file's own stated `<congress>`/`<session>` against the `congress`/
+`session` it was called with before returning anything; a mismatch raises
+`VoteMenuIdentityError` (a `VoteSourceError`), the same proof
+`parse_clerk_vote`/`parse_senate_vote` make against a `VoteLocator`, one
+level up (a session's worth of votes, not one vote's roll number). A
+well-formed menu listing zero `<vote>` rows is also a refusal, not an empty
+success -- the same rule `parse_clerk_vote`/`parse_senate_vote` apply to an
+empty roster.
+
+`locator_from_menu_entry(menu, entry)` builds the `VoteLocator` for one menu
+row (always `"senate"`, since every row on the menu is a Senate vote by
+construction), so a caller can walk the menu and then `VoteAcquirer.acquire`
+each roll's full tally and roster without building the url by hand.
+
 ## Refusals
 
 | Error | When |
@@ -160,11 +218,13 @@ committee's feed rather than a byte-identical default channel.
 | `VoteUnavailableError` | HTTP 404 or 410 |
 | `VoteRefusedError` | HTTP 401/403 on either keyless host -- no credential exists to reject, so this is recast from `CredentialRefusedError` the way `LegislatorsRefusedError` and `PressReleaseFeedRefusedError` already are |
 | `VoteIdentityError` | The fetched file's own congress/session/roll number does not match the locator |
-| `VoteSourceError` | Any other shape violation (wrong root element, a missing required field, an unrecognized vote value, a non-integer count, or a well-formed file with zero `recorded-vote`/`member` rows -- empty success is not absence) |
+| `VoteMenuIdentityError` | The fetched vote menu's own congress/session does not match what `list_senate_votes`/`parse_senate_vote_menu` was called with |
+| `VoteSourceError` | Any other shape violation (wrong root element, a missing required field, an unrecognized vote value, a non-integer count, or a well-formed file with zero `recorded-vote`/`member`/`vote` rows -- empty success is not absence) |
 
-Every refusal from `VoteAcquirer.acquire` carries the fetched bytes: `.capture`
-(when a body was received) and `.refused_response` (bounded evidence,
-credential-safe by construction since neither host takes one).
+Every refusal from `VoteAcquirer.acquire`/`.list_senate_votes` carries the
+fetched bytes: `.capture` (when a body was received) and `.refused_response`
+(bounded evidence, credential-safe by construction since neither host takes
+one).
 
 ## Use the route
 
@@ -197,13 +257,30 @@ from spicy_docs.sources.congress.votes import locator_from_recorded_vote_url
 locator = locator_from_recorded_vote_url("https://clerk.house.gov/evs/2025/roll240.xml")
 ```
 
+Walking a session's Senate votes: read the menu once, then resolve each
+row's full tally and roster from its own locator.
+
+```python
+from spicy_docs.sources.congress.votes import VoteAcquirer, VoteBudget, locator_from_menu_entry
+
+menu_budget = VoteBudget(max_requests=2, max_bytes=2 * 1024**2, timeout_seconds=30, min_request_interval_seconds=1.0)
+with VoteAcquirer(budget=menu_budget) as source:
+    menu = source.list_senate_votes(119, 1).menu
+    newest = source.acquire(locator_from_menu_entry(menu, menu.votes[0]))
+
+print(menu.votes[0].vote_number, menu.votes[0].title)
+print(newest.vote.tallies)
+```
+
 ## Evidence
 
-Real, unmodified fixtures with provenance:
+Real, unmodified vote-body fixtures with provenance, plus the Senate vote
+menu's byte-exact head-and-tail excerpt (over the 200 KB fixture bound; the
+full body's digest is recorded beside it):
 [`tests/fixtures/congress_votes/README.md`](../../tests/fixtures/congress_votes/README.md).
-`tests/test_congress_votes.py` includes two `@pytest.mark.integration` tests,
-one per publisher, excluded by default
-(`-m 'not integration and not httpfs'`).
+`tests/test_congress_votes.py` includes three `@pytest.mark.integration`
+tests, one per publisher route (House vote, Senate vote, Senate vote menu),
+excluded by default (`-m 'not integration and not httpfs'`).
 
 ## Change and check
 
@@ -213,7 +290,7 @@ Owner: [`votes.py`](../../src/spicy_docs/sources/congress/votes.py).
 uv run --frozen pytest -q tests/test_congress_votes.py
 ```
 
-Run the live pair explicitly before trusting a re-pin:
+Run the live routes explicitly before trusting a re-pin:
 
 ```sh
 uv run --frozen pytest -q -m integration tests/test_congress_votes.py
