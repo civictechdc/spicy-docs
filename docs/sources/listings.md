@@ -31,7 +31,8 @@ reader method (`CongressListingReader.records(route, url)`). (Named
 `CongressListRoute`, not `ListRoute`, because `cli/list_pages.py` already
 defines a different `ListRoute`.) A route's `path` names its placeholders
 (`{congress}`, `{chamber}`, `{code}`, `{type}`, `{number}`, `{session}`,
-`{law_type}`, `{system_code}`, `{bioguide_id}`); `optional_params` names the
+`{eventId}`, `{volume}`, `{issue}`, `{commtype}`, `{law_type}`,
+`{system_code}`, `{bioguide_id}`); `optional_params` names the
 trailing ones a caller may omit — `bill` may omit both `congress` and
 `bill_type`, but only in that order, so a bill type without a Congress
 refuses; `law` may likewise omit `law_type`, since a bare `law/{congress}`
@@ -77,16 +78,16 @@ refuses `sort`.
 | `house-communication` | `house-communication/{congress}` | `houseCommunications` | no | yes (default) | `congress-house-communication-list.json` |
 | `house-vote` | `house-vote/{congress}/{session}` | `houseRollCallVotes` | no (measured) | yes (default) | `congress-house-vote-list.json` |
 | `committee-meeting` | `committee-meeting/{congress}/{chamber}` | `committeeMeetings` | no (measured) | yes (measured) | `congress-committee-meeting-list.json` |
-| `committee-meeting-detail` | `committee-meeting/{congress}/{chamber}/{eventId}` | `committeeMeeting` (one record) | no (n/a) | no (n/a) | `congress-committee-meeting-detail.json` |
+| `committee-meeting-detail` | `committee-meeting/{congress}/{chamber}/{eventId}` | `committeeMeeting` (one record) | no (structural) | no (structural) | `congress-committee-meeting-detail.json` |
 | `treaty` | `treaty/{congress}` | `treaties` | no (measured) | yes (measured) | `congress-treaty-list.json` |
-| `treaty-detail` | `treaty/{congress}/{number}` | `treaty` (one record, nested in an array; see below) | no (n/a) | no (n/a) | `congress-treaty-detail.json` |
+| `treaty-detail` | `treaty/{congress}/{number}` | `treaty` (one record, nested in an array; see below) | no (structural) | no (structural) | `congress-treaty-detail.json` |
 | `daily-congressional-record` | `daily-congressional-record/{volume}` | `dailyCongressionalRecord` | no (measured) | no (measured) | `congress-daily-congressional-record-list.json` |
-| `daily-congressional-record-detail` | `daily-congressional-record/{volume}/{issue}` | `issue` (one record) | no (n/a) | no (n/a) | `congress-daily-congressional-record-detail.json` |
-| `house-communication-detail` | `house-communication/{congress}/{commtype}/{number}` | `houseCommunication` (one record) | no (n/a) | no (n/a) | `congress-house-communication-detail.json` |
+| `daily-congressional-record-detail` | `daily-congressional-record/{volume}/{issue}` | `issue` (one record) | no (structural) | no (structural) | `congress-daily-congressional-record-detail.json` |
+| `house-communication-detail` | `house-communication/{congress}/{commtype}/{number}` | `houseCommunication` (one record) | no (structural) | no (structural) | `congress-house-communication-detail.json` |
 | `senate-communication` | `senate-communication/{congress}` | `senateCommunications` | no (measured) | no (measured) | `congress-senate-communication-list.json` |
-| `senate-communication-detail` | `senate-communication/{congress}/{commtype}/{number}` | `senateCommunication` (one record) | no (n/a) | no (n/a) | `congress-senate-communication-detail.json` |
+| `senate-communication-detail` | `senate-communication/{congress}/{commtype}/{number}` | `senateCommunication` (one record) | no (structural) | no (structural) | `congress-senate-communication-detail.json` |
 | `house-requirement` | `house-requirement` | `houseRequirements` | no (measured) | yes (default) | `congress-house-requirement-list.json` |
-| `house-requirement-detail` | `house-requirement/{number}` | `houseRequirement` (one record) | no (n/a) | no (n/a) | `congress-house-requirement-detail.json` |
+| `house-requirement-detail` | `house-requirement/{number}` | `houseRequirement` (one record) | no (structural) | no (structural) | `congress-house-requirement-detail.json` |
 | `house-requirement-communications` | `house-requirement/{number}/matching-communications` | `matchingCommunications` | no (measured) | yes (default) | `congress-house-requirement-communications.json` |
 | `law` | `law/{congress}/{law_type}` | `bills` | no | yes (default) | `congress-law-list.json` |
 | `law-detail` | `law/{congress}/{law_type}/{number}` | `bill` (single record; see below) | no (structural) | no (structural) | `congress-law-detail.json` |
@@ -104,8 +105,12 @@ as one JSON object, not an array (`{"bill": {...}}`, `{"committee": {...}}`,
 object at all. `reading/paged_json.py`'s `PagedJsonReader` reads a non-empty
 object at `records_key` as the page's single record, the same generic path a
 tuple `records_key` already reads through, rather than shaping the object
-down to a chosen field; an empty object still refuses. `committee-print`'s
-detail route needed no such change: the publisher answers
+down to a chosen field -- but only when `CongressListRoute.single_record` is
+`True`, which these three carry; an empty object still refuses either way,
+and a route that leaves `single_record` at its `False` default still refuses
+a wrapper object outright, so a caller's wrong or mismatched `records_key`
+never silently reads as one bogus record. `committee-print`'s
+detail route needed no such opt-in: the publisher answers
 `committee-print/{congress}/{chamber}/{number}` with a real one-item array
 under `committeePrint` and a `pagination.count` of 1. None of the four detail
 routes has a list to reorder or window against, so `sort_honored` and
@@ -164,15 +169,21 @@ list. Congress.gov spells that one record's row two ways, both confirmed
 live 2026-09-19: `house-communication`, `daily-congressional-record`,
 `senate-communication` and `house-requirement` nest a single JSON object
 under their records key; `treaty` nests a one-element array instead.
-`reading/paged_json.py`'s `_read_page` reads either shape as a one-row page
-with no declared count and no continuation -- a Mapping found under the
-records key is wrapped as a one-element list before the existing list
-checks run -- so every field a fixture record carries reaches
-`CongressListingReader.records`/`.page` unchanged, the same way a list
-route's rows do. `sort_honored` and `window_honored` are `False` on all six
-by construction, not by probe: a single record has no order to reorder and
-no window to narrow, so `list_route_url` refuses both the same way it
-refuses them on a route that ignores them.
+`reading/paged_json.py`'s `_read_page` reads a non-empty object under the
+records key as a one-row page, with no declared count and no continuation,
+only when the caller opts in with `single_record` -- `CongressListRoute`'s
+`single_record=True` on the five object-shaped routes here (not `treaty`,
+whose one-element array already reads through the ordinary list path) is
+what `CongressListingReader.records`/`.page` set it from. The opt-in matters
+because the wrapping is not safe as a blanket rule for every family this
+reader serves: without it, a caller's wrong or mismatched `records_key` that
+happens to resolve to a wrapper object -- reading `committee-bills` by its
+own top-level wrapper key instead of the tuple that reaches inside it, for
+example -- would silently read as one bogus record instead of refusing.
+`sort_honored` and `window_honored` are `False` on all six by construction,
+not by probe: a single record has no order to reorder and no window to
+narrow, so `list_route_url` refuses both the same way it refuses them on a
+route that ignores them.
 
 `committee-meeting` closes gap A7 (meetings, hearings and documents): its
 detail record carries `relatedItems.bills`, `hearingTranscript[].jacketNumber`,
