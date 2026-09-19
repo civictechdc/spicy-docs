@@ -20,7 +20,7 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 
 ## The tables
 
-`TABLE_CONTRACTS` holds all twenty-two by name. Each carries its columns in
+`TABLE_CONTRACTS` holds all twenty-seven by name. Each carries its columns in
 publish order, its identity, its version column — the column a merge prefers the
 larger value of when two rows share an identity — a one-sentence grain, and one
 sentence per column for the host's data dictionary.
@@ -49,8 +49,13 @@ sentence per column for the host's data dictionary.
 | `committee_reports` | One row per captured GovInfo committee report package. | `package_id` | `last_modified` | 19 | `sources.govinfo.body_acquisition` |
 | `report_sections` | One row per agency block parsed out of one committee report's text. | `package_id`, `seq` | `last_modified` | 12 | `sources.agency_reports.report_blocks` |
 | `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | 19 | `sources.govinfo.body_acquisition` |
+| `laws` | One row per enacted law the Congress.gov law list route states, with its PLAW USLM citation where captured. | `congress`, `law_type`, `number` | update_date | 27 | `schemas.law_tables` |
+| `law_code_sections` | One row per line of one OLRC per-Congress classification table: a Code place one public law section touched. | `congress`, `session`, `seq` | observed_at | 19 | `schemas.law_tables` |
+| `table3_records` | One row per classification record on one act's OLRC Table III page. | `act_key`, `seq` | observed_at | 14 | `schemas.law_tables` |
+| `committees` | One row per committee or subcommittee the Congress.gov committee list route states, with its detail record where captured. | `system_code` | update_date | 21 | `schemas.roster_tables` |
+| `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | observed_at | 20 | `schemas.roster_tables` |
 
-Four hundred and six columns in all, each with its own sentence.
+Five hundred and eight columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -109,7 +114,7 @@ response, and neither says anything about what the publisher serves:
 
 | Column | Why | What would fill it |
 | --- | --- | --- |
-| `congress_bills.statutes_at_large_cite` | The citation lives in the PLAW package's GovInfo MODS, which this repository does not acquire. | A PLAW MODS reader. |
+| `congress_bills.statutes_at_large_cite` | The family build sees one BILLSTATUS document and its printings; the citation lives in the PLAW package's USLM `meta`, which the laws rollup acquires once per law — filling it here would fetch every PLAW twice or read another table's output. | The merge joins `laws` on `bill_id` (`statutes_at_large_cite` is published there). |
 | `committee_reports.bill_id`, `hearing_transcripts.bill_id` | A package-keyed report is fillable today; the bill linkage is not. | A report-to-bill join. |
 
 ## Decision

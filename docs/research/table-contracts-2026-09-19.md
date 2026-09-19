@@ -349,6 +349,36 @@ registered when the vote readers land.
 header pattern that fired, this table's provenance column), `char_start`,
 `char_end`, `page_start`, `page_end`, `body_chars`.
 
+### 2.3 Landed after the design: the A8 and A9 tables (2026-09-19)
+
+Five contracts beyond §2.2's list landed in two modules, following the same
+shape rules; the authoritative column list is `docs/tables.md`, and
+`tests/test_table_contracts.py` runs both through the same generic loops.
+
+- **`schemas/law_tables.py`** — `laws` (27 columns, identity
+  `(congress, law_type, number)`, version `update_date`),
+  `law_code_sections` (19, `(congress, session, seq)`, `observed_at`),
+  `table3_records` (14, `(act_key, seq)`, `observed_at`). The design's
+  `congress_bills` row 29 changes reason: `statutes_at_large_cite` is no
+  longer a preserved NULL for want of a reader — the citation comes from the
+  PLAW USLM `meta` — but it stays NULL in the family build, because the PLAW
+  is a different package and the one-pass rule forbids reading another
+  table's output; `laws` publishes the citation and the merge joins it on
+  `bill_id`.
+- **`schemas/roster_tables.py`** — `committees` (21 columns, identity
+  `(system_code,)`, version `update_date`) and `committee_assignments` (20,
+  `(congress, system_code, bioguide_id)`, `observed_at`). The list route's
+  record and the detail record fold onto one row; a fold whose `systemCode`
+  disagrees refuses. The assignments come from the two chamber files read by
+  `sources/congress/committee_rosters.py`, and `congress_basis` publishes
+  whether the row's Congress is the file's own statement (`file`) or the
+  caller's (`caller`, the Senate file states none).
+
+Both modules register in `schemas/__init__.py` beside the others and carry
+`FILLED_BY` entries; the shapers are exercised on real captured records
+(`tests/test_law_tables.py`, `tests/test_committee_rosters.py`,
+`tests/test_uscode_classification.py`).
+
 ## 3. The bill-family build
 
 New file `src/spicy_docs/interpretation/bill_family.py`:

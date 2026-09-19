@@ -32,6 +32,7 @@
 - [Publisher list pages](sources/listings.md): Congress.gov, GovInfo, GAO feed, LDA, CourtListener search, SAM.gov, USAspending and FCC ECFS on one traversal rule; `spicy-docs-list` walks any of them from the [command line](cli.md).
 - [Unified Agenda](sources/unified-agenda.md): one reginfo.gov edition file, proved from every record.
 - [U.S. Code](sources/uscode.md): OLRC release-point USLM titles, annual archives, the Popular Name Tool and Table III.
+- [OLRC classification tables](sources/uscode-classification.md): the per-Congress table of which Code sections each new public law touched, proving the Congress and session its own caption states.
 - [Supreme Court](sources/supreme-court.md): slip-opinion term index and official opinion PDFs.
 - [CRS report files](sources/crs-files.md): report PDFs by the publisher's stated URL, beside the CRS listing.
 - [GAO report files](sources/gao-files.md): keyless report PDFs and online-report index behind product pages.
@@ -42,6 +43,7 @@
 - [Legislators crosswalk](sources/legislators.md): the community legislators JSON as the bioguide, LIS and FEC identifier crosswalk, pinned by capture.
 - [Appropriations press releases](sources/press-releases.md): the House and Senate Appropriations Committees' RSS feeds at their two live URLs, every channel and item field kept, identity proved from the channel body.
 - [Roll-call votes](sources/congress-votes.md): House Clerk and Senate LIS vote XML by locator, identity proved against the file, tallies and every member's vote with bioguide ids through the legislators crosswalk.
+- [Committee rosters](sources/committee-rosters.md): the Congress.gov committee route beside the House Clerk's and Senate's roster files, whose assignments are proved from each file's own Congress statement.
 - [Agency report blocks](sources/agency-report-blocks.md): the committee-report heading splitter over extracted page text and the two report-section aggregates, measured on real reports.
 - [Bill versions](sources/congress-bill-versions.md): the sealed version-code vocabulary against the publisher's measured codes, format choice by rendition folder, and bill PDFs through the GovInfo body acquirer.
 - [Bill tree and section diff](sources/congress-bill-tree.md): the DeltaTrack engine as a pinned dependency behind the `bill-diff` extra, with thin adapters that gate bytes through this repo's XML entry, keep an inventory of dropped elements, and shape diff records with provenance.
