@@ -24,6 +24,10 @@ pdf-rapidocr = ["rapidocr-onnxruntime>=1.4.4,<2"]
 pdf-apple = ["ocrmac>=1.0.1,<2; sys_platform == 'darwin'"]
 pdf-mlx = ["mlx-vlm==0.7.0; sys_platform == 'darwin' and platform_machine == 'arm64'"]
 pdf-gemini = ["httpx>=0.28,<1"]
+# Structural bill-XML diffing, by the sibling Civic Tech DC engine rather than a
+# copy of it. `sources/congress/bill_tree.py` and `interpretation/section_diff.py`
+# are adapters over it and import nothing when the extra is absent.
+bill-diff = ["deltatrack==0.1.0"]
 
 [dependency-groups]
 dev = [
@@ -48,6 +52,15 @@ build-backend = "uv_build"
 
 [tool.uv.sources]
 rulespec-artifacts = { path = "vendor/rulespec_artifacts-1.0.13-py3-none-any.whl" }
+# A git pin, not a PyPI range, because DeltaTrack publishes nothing to PyPI yet:
+# the project became installable only recently and `deltatrack` is an unclaimed
+# name on the index, so a version specifier alone would resolve to nothing at
+# best and to somebody else's package at worst. The revision is a full commit
+# sha rather than a branch or tag so the resolved tree is the one that was
+# measured; `docs/sources/congress-bill-tree.md` records what was measured
+# against it and what is still open upstream. Move the pin when upstream
+# publishes a release, and drop this source entirely at that point.
+deltatrack = { git = "https://github.com/civictechdc/DeltaTrack", rev = "c636448ba08d55bba7cb8c884aad0f5ac1ccf2f6" }
 
 [tool.pytest.ini_options]
 # Default checks stay offline. Opt in to live services or httpfs explicitly.
