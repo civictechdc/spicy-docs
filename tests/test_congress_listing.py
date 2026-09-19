@@ -946,6 +946,23 @@ def test_committee_print_detail_reads_the_publishers_one_item_array():
     assert page.records[0]["jacketNumber"] == 63747 and page.records[0]["chamber"] == "House"
 
 
+@pytest.mark.parametrize("route_name", sorted(DETAIL_FIXTURE_BYTES))
+def test_records_walks_every_detail_route_to_a_clean_one_page_end(route_name):
+    """The full traversal (`records`/`pages`, not just one `page()` call) on every detail
+    shape -- the bare-object routes with no pagination at all, and committee-print-detail's
+    real one-item array with pagination.count=1 -- yields exactly one page and ends cleanly,
+    the same as reaching a publisher's terminal page normally would."""
+    route = LIST_ROUTES[route_name]
+    transport = Transport(DETAIL_FIXTURE_BYTES[route_name])
+    url = list_route_url(route, limit=3, **ROUTE_PARAMS[route_name])
+    with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
+        pages = list(source.records(route, url, max_pages=5))
+    assert len(pages) == 1
+    assert len(transport.calls) == 1
+    assert pages[0].next_url is None
+    assert len(pages[0].records) == 1
+
+
 # --- live pagination contract (one request per route, not run by default) ------
 
 ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
