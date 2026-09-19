@@ -256,12 +256,21 @@ Adopted 2026-09-19 with [GovInfo bodies](sources/govinfo-bodies.md)
 **`uslm` is inserted into `BODY_PREFERENCE` right after `xml`, not merely
 appended after `pdf`.** BILLS states a USLM rendition (`uslm/{id}.xml`)
 alongside its own `xml` on the same package — measured 2026-09-19 on
-`BILLS-119hconres11enr`, the raw-data sidecar's one file-name-matched USLM
-package, whose real MODS offers `htm`, `pdf`, `xml` and `uslm` together — so
-an order was needed between two structured renditions of one document, not
-only between structure and prose. `xml` keeps the top slot because every
-BILLS package that offers USLM offers XML too (both are Formatted-XML
-siblings on the same publisher record), so trying XML first costs nothing;
+`BILLS-119hconres11enr` (the raw-data sidecar's one file-name-matched USLM
+package) and then on every other BILLS package in the same sample offering
+USLM: five enrolled packages in all, each MODS offering `htm`, `pdf`, `xml`
+and `uslm` together, pinned per package in
+`tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json`. (The
+sidecar's "10 of 240" USLM aggregate counts each sampled bill once per
+version code that pinned it: `hconres11` is the sample for both `enr` and
+`rds`, so its one USLM entry is counted twice. Of the 9 distinct entries, 4
+are PLAW-collection packages — the `Public Law` version on a bill's `/text`
+endpoint — outside this BILLS grammar, in `sources/govinfo/uslm.py`'s
+territory.) So an order was needed between two structured renditions of one
+document, not only between structure and prose. `xml` keeps the top slot
+because every BILLS package that offers USLM offers XML too (both are
+Formatted-XML siblings on the same publisher record), so trying XML first
+costs nothing;
 `uslm` still outranks `htm` and `txt` for the same structure-first reason
 the original ruling already applied between XML and everything else — it is
 markup over the same structured source, not a plain-text reduction of it.
@@ -271,8 +280,9 @@ Congress.gov's own spelling, still pinned equal to it by test.
 
 USLM's text is read through `extraction/body_text.py`'s existing
 `markup-reader` branch — the same one `xml` uses, not a dedicated USLM
-parser. The fetched body's root varies by bill type (`<resolution>` on the
-measured fixture; `<bill>`, `<jointResolution>` and others by type), where
+parser. The fetched body's root varies by bill type (`<resolution>` on the hconres
+fixture, `<bill>` on the four H.R. packages; `<jointResolution>` and others
+named by type), where
 `sources/govinfo/uslm.py`'s grammar validates identity against one fixed
 root per selection (`PublicLawSelection`, `StatuteCompilationSelection`,
 built for PLAW/COMPS) and has no bill identity to check against, so that

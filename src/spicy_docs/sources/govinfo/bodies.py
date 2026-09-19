@@ -163,9 +163,12 @@ PACKAGE_BODY_FORMATS: dict[str, BodyFormat] = {
 #: structure-first rule, since markup can only add to what plain text states.
 #:
 #: ``uslm`` sits right after ``xml``: it is the second structured rendition
-#: (§B7, measured 2026-09-19 on BILLS-119hconres11enr), and BILLS offers both
-#: on the same package, so an order was needed. XML wins the top slot because
-#: every BILLS package that offers USLM offers XML too (both are Formatted-XML
+#: (§B7, measured 2026-09-19 on every BILLS package in the text-versions
+#: sample that offers one -- five enrolled packages, pinned in
+#: tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json), and BILLS
+#: offers both on the same package, so an order was needed. XML wins the top
+#: slot because every BILLS package measured offering USLM offers XML too
+#: (all five MODS state htm, pdf, xml and uslm together -- Formatted-XML
 #: siblings on the same publisher record), so nothing is lost by trying XML
 #: first; USLM still outranks HTML and text, since it is markup over the same
 #: structured source, not a plain-text reduction of it.

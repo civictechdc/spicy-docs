@@ -438,14 +438,23 @@ congress.gov PDF and the govinfo `content/pkg/…` PDF are **byte-identical**
 already gives; the port can follow the stated URL and delete the reconstruction,
 which removes the `rhuc`/`eas2`/`eh1s` class of error at its root (§1).
 
-**`formats[]` always carried a `type`** — 240 format entries across 24 bills, 0
-without. The URL-suffix fallback at `sync-govinfo.ts:262` is defensive against a
-shape the 119th did not produce; keep it, but do not treat it as a live path.
+**`formats[]` always carried a `type`** — 240 format entries across 24 code
+samples (20 distinct bills: `hconres11`, `hres1274` and `hr3426` are each the
+sample for two or three codes, so a bill's entries are counted once per
+pinning code here), 0 without. The URL-suffix fallback at `sync-govinfo.ts:262`
+is defensive against a shape the 119th did not produce; keep it, but do not
+treat it as a live path.
 
 **A fourth format exists that BillTrax does not read.** Format types observed:
 `Formatted Text` 78, `PDF` 78, `Formatted XML` 74, **`United States Legislative
-Markup` 10** — USLM; on the one version matched by file name it was the
-enrolled bill (`BILLS-119hconres11enr`). spicy-docs already has
+Markup` 10** — USLM; deduplicated across the 20 distinct bills these are 9
+distinct entries (`hconres11` is counted twice, pinned by both `enr` and
+`rds`): 5 BILLS enrolled packages and 4 PLAW-collection packages (the
+`Public Law` version on a bill's `/text` endpoint). On the one version
+matched by file name it was the enrolled bill (`BILLS-119hconres11enr`); all
+five BILLS packages were fetched and parsed 2026-09-19
+(`tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json`, corpus
+receipt `uslm-bill-rendition-2026-09-19`). spicy-docs already has
 `sources/govinfo/uslm.py` and `uslm_acquisition.py`; BillTrax looks only for
 XML/PDF/HTM and drops it. Four versions offer text and PDF but no `Formatted
 XML`, so an XML-only acquisition path has real gaps.

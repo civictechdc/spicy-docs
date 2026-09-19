@@ -77,7 +77,10 @@ returns a body. That is the whole of the ruling this seals. Two additions
 came later, under the same order: `uslm` (§B7) — BILLS states a second
 structured rendition at `uslm/{id}.xml`, which this module now fetches
 directly rather than reporting it as a
-[moved rendition](#formats-and-how-the-offered-set-is-read) — and CPRT
+[moved rendition](#formats-and-how-the-offered-set-is-read); measured on
+every BILLS package in the 2026-09-19 text-versions sample that offers one —
+five enrolled packages, pinned per package in
+`tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json` — and CPRT
 (§A10), which offers `htm`, `pdf` and `xml` and picks `xml`, the same
 structure-first rule the rest of the order already follows.
 
@@ -201,7 +204,9 @@ rendition, named on the result, never guessed from the bytes:
 | `pdf-extraction-gpo-normalized` | `pdf` | `DocumentExtractor(NativeText())`, then [`normalize_gpo_pages`](../extraction-gpo.md) |
 
 `uslm` takes the same branch as `xml`, not a dedicated USLM parser: measured
-2026-09-19 on BILLS-119hconres11enr, its root is `<resolution>` in the same
+2026-09-19 on all five sampled BILLS packages that offer it
+(`tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json`), the root is
+`<resolution>` (hconres) or `<bill>` (the four H.R. bills) in the same
 `schemas.gpo.gov/xml/uslm` namespace GPO's PLAW/COMPS USLM uses, but neither
 of `sources/govinfo/uslm.py`'s two fixed roots (`pLaw`, `statuteCompilation`)
 — and a bill's own root varies by bill type (`bill`, `resolution`,
@@ -221,8 +226,12 @@ hosted row to say how its text was made without holding the bytes.
 
 Measured 2026-09-19 over four keyless `htm` bodies (CRPT-119hrpt1,
 -119hrpt105, -113hrpt135, -113srpt77), one `txt` body (CDIR-2026-02-20 — the
-only collection measured that offers one), three BILLS `xml` bodies and one
-BILLS `uslm` body (BILLS-119hconres11enr). The per-file counts are in
+only collection measured that offers one), three BILLS `xml` bodies and five
+BILLS `uslm` bodies — every package in the 2026-09-19 sample offering one
+(reading facts pinned per package in
+`tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json`; the per-rule
+counts below are measured on the one USLM fixture whose bytes are retained,
+BILLS-119hconres11enr). The per-file counts are in
 `tests/fixtures/govinfo_bodies/README.md` and
 `tests/fixtures/govinfo_bills/README.md`; only what was counted above zero
 has a rule.

@@ -6,7 +6,10 @@ is one derivation per rendition and no second stripper:
 
 - ``xml`` -- ``markup-reader``, over ``reading.markup.read_xml_events``.
 - ``uslm`` -- ``markup-reader``, the same branch as ``xml`` (measured
-  2026-09-19 on BILLS-119hconres11enr's USLM rendition: root ``resolution``,
+  2026-09-19 on every BILLS package in the text-versions sample offering a
+  USLM rendition -- five enrolled packages, pins in
+  ``tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json``: root
+  ``resolution`` (hconres) or ``bill`` (the four H.R. bills),
   not the fixed ``pLaw``/``statuteCompilation`` roots
   ``sources.govinfo.uslm`` validates identity against for PLAW and COMPS, and
   a bill's own root varies by bill type -- ``bill``, ``resolution``,
@@ -34,8 +37,11 @@ than letting one import the other.
 **What the non-PDF renditions actually carry**, measured 2026-09-19 over four
 keyless GovInfo ``htm`` bodies (CRPT-119hrpt1, -119hrpt105, -113hrpt135,
 -113srpt77), one ``txt`` body (CDIR-2026-02-20, the only collection measured
-that offers one), three BILLS ``xml`` bodies and one BILLS ``uslm`` body
-(BILLS-119hconres11enr: 42 elements, 31 element-boundary line breaks, 32
+that offers one), three BILLS ``xml`` bodies and five BILLS ``uslm`` bodies
+(every package in the 2026-09-19 sample offering one; reading facts pinned in
+``tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json``. The per-rule
+numbers are measured on the one USLM fixture whose bytes are retained,
+BILLS-119hconres11enr: 42 elements, 31 element-boundary line breaks, 32
 whitespace-only pretty-print lines; no CRLF, no end-of-text marker, no GPO
 quote pair and no trailing space on this one small fixture). Only what was
 counted above zero has a rule; see ``RENDITION_CLEANUP_RULES`` for the table

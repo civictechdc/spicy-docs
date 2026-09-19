@@ -20,8 +20,15 @@ these shapes; they do not establish coverage or continuing live availability.
 
 `BILLS-119hconres11enr` is the package `docs/research/billtrax-raw-data-2026-09-19.md`
 §7 names as the one version its 240-format-entry sample matched by file name
-to a real package: the enrolled H. Con. Res. 11, one of ten `United States
-Legislative Markup` format entries out of 240 sampled. Its MODS states HTML,
+to a real package: the enrolled H. Con. Res. 11. The sample's "ten `United
+States Legislative Markup` format entries out of 240" counted each sampled
+bill once per version code that pinned it; deduplicated, the sample's 20
+distinct bills carry 188 format entries, 9 of them USLM -- the five BILLS
+enrolled packages measured below plus four PLAW-collection entries
+(`PLAW-119publN_uslm.xml`, the "Public Law" version on a bill's `/text`
+endpoint), which are `sources/govinfo/uslm.py`'s territory, not the BILLS
+grammar's. The recount and the per-package pins live in
+`uslm-renditions-2026-09-19.json` (below). Its MODS states HTML,
 PDF, XML and USLM renditions, all four at the standard
 `content/pkg/{id}/{folder}/{id}.{extension}` addresses; the USLM one adds
 `PACKAGE_BODY_FORMATS["uslm"]` (folder `uslm`, extension `xml`).
@@ -36,9 +43,26 @@ each; a bill has no such selection type to validate against here, and its own
 root varies (`bill`, `resolution`, `jointResolution`, and so on by bill type),
 so `uslm.py`'s grammar does not apply. `extraction/body_text.py` reads it
 through the same generic markup-reader branch as a BILLS `xml` body instead --
-measured on this fixture: 42 elements, 31 element-boundary line breaks, 32
-whitespace-only pretty-print lines, and the document's own text recovered in
-order (see `RENDITION_DERIVATIONS["uslm"]` and `docs/sources/govinfo-bodies.md`).
+measured on all five packages (`uslm-renditions-2026-09-19.json`): this
+fixture yields 42 elements, 31 element-boundary line breaks and 32
+whitespace-only pretty-print lines, the per-rule counts being measured on this
+one retained fixture, and every package's own text is recovered in order (see
+`RENDITION_DERIVATIONS["uslm"]` and `docs/sources/govinfo-bodies.md`).
+
+## The five-package USLM measurement (`uslm-renditions-2026-09-19.json`)
+
+Every BILLS package in the 2026-09-19 text-versions sample that offers a USLM
+rendition, each fetched through `GovInfoBodyAcquirer.acquire(package,
+prefer=("uslm",))` and derived through `body_text` exactly as a caller would
+(2026-09-19; corpus receipt `uslm-bill-rendition-2026-09-19`; 8 keyed + 4
+keyless requests for the four packages not already retained here). The JSON
+carries, per package, the root element, media type, byte count, SHA-256,
+derivation and derived-text line count -- facts only, no bytes.
+`BILLS-119hconres11enr`'s row is re-derived offline from this directory's
+retained fixture (the test re-derives it again on every run); the other four
+packages' bytes were not retained, so their rows are pins, not re-derivable
+inputs. `tests/test_uslm_bill_renditions.py` pins the JSON against the
+retained fixture and against the census file's own aggregate.
 
 `status-119s5.xml` is the only enacted bill here, and it is the one that
 carries `<laws>` and `<recordedVotes>`: the Laken Riley Act, Public Law 119-1.
