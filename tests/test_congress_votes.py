@@ -216,6 +216,30 @@ def test_senate_fixture_tie_breaker_is_present_but_empty_when_the_vote_was_not_t
     assert vote.tie_breaker.by_whom is None and vote.tie_breaker.tie_breaker_vote is None
 
 
+def test_senate_fixture_document_and_amendment_are_kept():
+    vote = parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR)
+    assert vote.document is not None
+    assert vote.document.congress == 119
+    assert vote.document.type == "S."
+    assert vote.document.number == "5"
+    assert vote.document.name == "S. 5"
+    assert vote.document.title.startswith("A bill to require the Secretary")
+    assert vote.document.short_title is None  # <document_short_title/> is present but empty
+
+    assert vote.amendment is not None
+    assert vote.amendment.purpose == "No Statement of Purpose on File."
+    # this vote carried no amendment, so every other amendment field is empty
+    assert vote.amendment.number is None
+    assert vote.amendment.to_amendment_number is None
+    assert vote.amendment.to_amendment_to_amendment_number is None
+    assert vote.amendment.to_document_number is None
+    assert vote.amendment.to_document_short_title is None
+
+    # Clerk records never carry either block
+    clerk = parse_clerk_vote(CLERK_FIXTURE, CLERK_LOCATOR)
+    assert clerk.document is None and clerk.amendment is None
+
+
 def test_senate_fixture_members_carry_every_field_and_the_vote_totals_sum():
     vote = parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR)
     by_lis = {member.lis_id: member for member in vote.member_votes}
@@ -288,6 +312,7 @@ def test_parse_clerk_vote_refuses_a_senate_locator_and_vice_versa():
     [
         "https://clerk.house.gov/evs/2025/roll240.xml",  # this fixture's own url
         "https://clerk.house.gov/evs/2025/roll190.xml",  # data map "bill->clerk-xml" edge, legis-num 'H R 1'
+        "https://clerk.house.gov/evs/2025/roll050.xml",  # a real sub-100 roll (billtrax-raw-data sidecar), zero-padded
     ],
 )
 def test_clerk_locator_round_trips_from_a_measured_recorded_vote_url(url):
@@ -317,6 +342,22 @@ def test_locator_from_url_refuses_an_unrecognized_shape():
 def test_clerk_url_refuses_a_congress_before_the_fixed_session_calendar():
     with pytest.raises(VoteSourceError, match="predates the fixed session calendar"):
         clerk_url(VoteLocator("house", 50, 1, 1))
+
+
+def test_senate_url_refuses_a_congress_before_the_lis_archive_floor():
+    """Measured 2026-09-19: vote_menu_101_1.xml serves real content; 100 and 099 both redirect to
+    roll-call-vote-not-available.htm. Below this floor every real congress is two digits, so a build
+    that reached the interpolation would silently break the 3-digit `SENATE_URL_RE` round trip; refusing
+    first means `senate_url` never has to zero-pad a congress it has no evidence the publisher folds."""
+    with pytest.raises(VoteSourceError, match="predates the Senate LIS archive"):
+        senate_url(VoteLocator("senate", 99, 1, 1))
+
+
+def test_locator_from_url_refuses_a_senate_url_predating_the_archive_floor():
+    with pytest.raises(VoteSourceError, match="predates the LIS archive"):
+        locator_from_recorded_vote_url(
+            "https://www.senate.gov/legislative/LIS/roll_call_votes/vote0991/vote_099_1_00001.xml"
+        )
 
 
 def test_clerk_url_and_senate_url_each_require_their_own_chamber():
@@ -398,6 +439,33 @@ def test_minimal_bodies_parse_cleanly():
     assert clerk.member_votes[0].vote_normalized == "yea"
     senate = parse_senate_vote(SENATE_MINIMAL, MINIMAL_SENATE_LOCATOR)
     assert senate.member_votes[0].vote_normalized == "yea"
+
+
+# --- empty roster: a well-formed file with zero recorded-vote/member children is a refusal, not a success ----
+
+CLERK_EMPTY_ROSTER = CLERK_MINIMAL.replace(
+    b'<recorded-vote><legislator name-id="A000001" sort-field="Test" unaccented-name="Test" party="R" '
+    b'state="TX" role="legislator">Test</legislator><vote>Yea</vote></recorded-vote>',
+    b"",
+)
+SENATE_EMPTY_ROSTER = SENATE_MINIMAL.replace(
+    b"<member><member_full>Test (R-TX)</member_full><last_name>Test</last_name>"
+    b"<first_name>Tex</first_name><party>R</party><state>TX</state><vote_cast>Yea</vote_cast>"
+    b"<lis_member_id>S001</lis_member_id></member>",
+    b"",
+)
+
+
+def test_clerk_vote_with_no_recorded_votes_is_a_refusal_not_an_empty_success():
+    assert b"<recorded-vote>" not in CLERK_EMPTY_ROSTER  # the mutation actually emptied vote-data
+    with pytest.raises(VoteSourceError, match="lists no recorded votes"):
+        parse_clerk_vote(CLERK_EMPTY_ROSTER, MINIMAL_LOCATOR)
+
+
+def test_senate_vote_with_no_members_is_a_refusal_not_an_empty_success():
+    assert b"<member>" not in SENATE_EMPTY_ROSTER  # the mutation actually emptied members
+    with pytest.raises(VoteSourceError, match="lists no members"):
+        parse_senate_vote(SENATE_EMPTY_ROSTER, MINIMAL_SENATE_LOCATOR)
 
 
 # --- acquisition, mocked ----------------------------------------------------------------------------------

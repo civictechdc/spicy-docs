@@ -95,7 +95,7 @@ SENATE_URL_RE = re.compile(
 )
 
 # Session 1 of Congress N convenes January 3 of an odd calendar year; the 20th
-# Amendment fixed this from the 73rd Congress (1935) onward. The Clerk's own
+# Amendment fixed this from the 74th Congress (1935) onward. The Clerk's own
 # EVS URL carries only that calendar year and the roll number -- no congress
 # or session -- so building or parsing one needs this rule; the Clerk's
 # archive begins in 1990 (101st Congress), well inside the fixed range
@@ -103,6 +103,15 @@ SENATE_URL_RE = re.compile(
 # reaches 1990"). Session 2 falls in the following (even) calendar year.
 _FIRST_SESSION_YEAR = 1789
 _EARLIEST_FIXED_CALENDAR_CONGRESS = 74
+
+# Measured 2026-09-19: senate.gov/legislative/LIS/roll_call_lists/vote_menu_101_1.xml
+# serves a real 149,123-byte listing and vote1011/vote_101_1_00001.xml answers
+# 200; vote_menu_100_1.xml and vote_menu_099_1.xml (and 089, 080) each 302 to
+# roll-call-vote-not-available.htm. The Senate LIS archive's floor is the
+# 101st Congress -- the same floor the Clerk's EVS archive measures -- so
+# every real congress this route can serve is already three digits and
+# ``senate_url``'s zero-padding never needs a two-digit case.
+_EARLIEST_SENATE_CONGRESS = 101
 
 _CLERK_COUNT_FIELDS = ("yea-total", "nay-total", "present-total", "not-voting-total")
 _SENATE_COUNT_FIELDS = ("yeas", "nays", "present", "absent")
@@ -202,7 +211,7 @@ class VoteLocator:
 def _clerk_year(congress: int, session: int) -> int:
     if congress < _EARLIEST_FIXED_CALENDAR_CONGRESS:
         raise VoteSourceError(
-            f"congress {congress} predates the fixed session calendar (73rd Congress, 1935); "
+            f"congress {congress} predates the fixed session calendar (74th Congress, 1935); "
             "the Clerk's EVS archive never reaches this far (measured floor: 1990, the 101st Congress)"
         )
     if session not in (1, 2):
@@ -211,20 +220,38 @@ def _clerk_year(congress: int, session: int) -> int:
 
 
 def clerk_url(locator: VoteLocator) -> str:
-    """Build the Clerk EVS url; see the module docstring for the year<->(congress, session) rule."""
+    """Build the Clerk EVS url; see the module docstring for the year<->(congress, session) rule.
+
+    The roll number is zero-padded to three digits (``roll050.xml``,
+    ``roll096.xml`` -- measured in ``billtrax-raw-data-2026-09-19.json``'s
+    real ``recordedVotes`` urls); a roll past 999 still prints in full since
+    ``:03d`` is a minimum width, not a truncation.
+    """
     if locator.chamber != "house":
         raise VoteSourceError("clerk_url requires a 'house' locator")
     year = _clerk_year(locator.congress, locator.session)
-    return f"https://clerk.house.gov/evs/{year}/roll{locator.roll_number}.xml"
+    return f"https://clerk.house.gov/evs/{year}/roll{locator.roll_number:03d}.xml"
 
 
 def senate_url(locator: VoteLocator) -> str:
-    """Build the Senate LIS url; congress, session and roll number all appear in it directly."""
+    """Build the Senate LIS url; congress, session and roll number all appear in it directly.
+
+    The congress is zero-padded to three digits, matching ``SENATE_URL_RE``;
+    every real congress this route can serve is already three digits (the
+    LIS archive's own floor is the 101st Congress -- see
+    ``_EARLIEST_SENATE_CONGRESS`` above), so this raises rather than build an
+    unmeasured two-digit-congress url no fixture or probe has ever confirmed.
+    """
     if locator.chamber != "senate":
         raise VoteSourceError("senate_url requires a 'senate' locator")
+    if locator.congress < _EARLIEST_SENATE_CONGRESS:
+        raise VoteSourceError(
+            f"congress {locator.congress} predates the Senate LIS archive (measured floor: the 101st Congress)"
+        )
+    congress = f"{locator.congress:03d}"
     return (
         "https://www.senate.gov/legislative/LIS/roll_call_votes/"
-        f"vote{locator.congress}{locator.session}/vote_{locator.congress}_{locator.session}_{locator.roll_number:05d}.xml"
+        f"vote{congress}{locator.session}/vote_{congress}_{locator.session}_{locator.roll_number:05d}.xml"
     )
 
 
@@ -243,6 +270,8 @@ def locator_from_recorded_vote_url(url: str) -> VoteLocator:
         congress, session = int(senate_match["congress"]), int(senate_match["session"])
         if (congress, session) != (int(senate_match["congress2"]), int(senate_match["session2"])):
             raise VoteSourceError(f"senate roll-call vote url names inconsistent congress/session: {url!r}")
+        if congress < _EARLIEST_SENATE_CONGRESS:
+            raise VoteSourceError(f"senate roll-call vote url predates the LIS archive: {url!r}")
         return VoteLocator("senate", congress, session, int(senate_match["roll"]))
     clerk_match = CLERK_URL_RE.match(url)
     if clerk_match:
@@ -278,6 +307,36 @@ class TieBreaker:
 
     by_whom: str | None
     tie_breaker_vote: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class VoteDocument:
+    """The Senate's ``document`` block: the bill, resolution or nomination the vote was taken on.
+
+    This is the publisher's own statement of what the vote was on, kept
+    verbatim; matching it to a Congress.gov bill or nomination record is
+    ``vote_matching``'s job (the data map's ``senate-vote->document`` edge),
+    not this reader's.
+    """
+
+    congress: int | None
+    type: str | None
+    number: str | None
+    name: str | None
+    title: str | None
+    short_title: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class VoteAmendment:
+    """The Senate's ``amendment`` block; every field is ``None`` when the vote carried no amendment."""
+
+    number: str | None
+    to_amendment_number: str | None
+    to_amendment_to_amendment_number: str | None
+    to_document_number: str | None
+    to_document_short_title: str | None
+    purpose: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -354,6 +413,8 @@ class RollCallVote:
     vote_title: str | None = None
     majority_requirement: str | None = None
     tie_breaker: TieBreaker | None = None
+    document: VoteDocument | None = None
+    amendment: VoteAmendment | None = None
 
     def vote_key(self) -> VoteKey:
         return _as_vote_key(self.chamber, self.congress, self.session, self.roll_number)
@@ -374,7 +435,9 @@ def _optional_int(value: str | None, label: str, field: str) -> int:
     return int(value)
 
 
-def _parse_ordinal_session(value: str, label: str) -> int:
+def _parse_ordinal_session(value: str | None, label: str) -> int:
+    if value is None:
+        raise VoteSourceError(f"{label} <session> is not an ordinal like '1st': {value!r}")
     match = re.fullmatch(r"(\d+)(st|nd|rd|th)", value.strip())
     if not match:
         raise VoteSourceError(f"{label} <session> is not an ordinal like '1st': {value!r}")
@@ -472,6 +535,12 @@ def parse_clerk_vote(body: bytes, locator: VoteLocator) -> RollCallVote:
         raise VoteSourceError(f"{label} is missing <totals-by-vote>")
     tallies = _read_counts(totals_by_vote, _CLERK_COUNT_FIELDS, label)
 
+    member_votes = tuple(_read_clerk_member(el, label) for el in data.findall("recorded-vote"))
+    if not member_votes:
+        raise VoteSourceError(
+            f"{label} for congress={congress} session={session} roll={roll_number} lists no recorded votes"
+        )
+
     return RollCallVote(
         publisher="clerk",
         chamber="house",
@@ -483,7 +552,7 @@ def parse_clerk_vote(body: bytes, locator: VoteLocator) -> RollCallVote:
         result=meta("vote-result", required=False),
         tallies=tallies,
         source_url=locator.url(),
-        member_votes=tuple(_read_clerk_member(el, label) for el in data.findall("recorded-vote")),
+        member_votes=member_votes,
         majority=meta("majority", required=False),
         legis_num=meta("legis-num", required=False),
         vote_type=meta("vote-type", required=False),
@@ -500,6 +569,43 @@ def _read_tie_breaker(element: Element, label: str) -> TieBreaker:
     return TieBreaker(
         by_whom=child_text(element, "by_whom", error_type=VoteSourceError, label=label),
         tie_breaker_vote=child_text(element, "tie_breaker_vote", error_type=VoteSourceError, label=label),
+    )
+
+
+def _optional_int_or_none(value: str | None, label: str, field: str) -> int | None:
+    """Unlike ``_optional_int`` (counts, where absent means zero), an absent id here just means absent."""
+    if value is None:
+        return None
+    if not value.strip().lstrip("-").isdigit():
+        raise VoteSourceError(f"{label} <{field}> must be an integer: {value!r}")
+    return int(value)
+
+
+def _read_document(element: Element, label: str) -> VoteDocument:
+    def text(tag: str) -> str | None:
+        return child_text(element, tag, error_type=VoteSourceError, label=label)
+
+    return VoteDocument(
+        congress=_optional_int_or_none(text("document_congress"), label, "document_congress"),
+        type=text("document_type"),
+        number=text("document_number"),
+        name=text("document_name"),
+        title=text("document_title"),
+        short_title=text("document_short_title"),
+    )
+
+
+def _read_amendment(element: Element, label: str) -> VoteAmendment:
+    def text(tag: str) -> str | None:
+        return child_text(element, tag, error_type=VoteSourceError, label=label)
+
+    return VoteAmendment(
+        number=text("amendment_number"),
+        to_amendment_number=text("amendment_to_amendment_number"),
+        to_amendment_to_amendment_number=text("amendment_to_amendment_to_amendment_number"),
+        to_document_number=text("amendment_to_document_number"),
+        to_document_short_title=text("amendment_to_document_short_title"),
+        purpose=text("amendment_purpose"),
     )
 
 
@@ -568,9 +674,18 @@ def parse_senate_vote(body: bytes, locator: VoteLocator, crosswalk: LegislatorsF
     tie_element = single_child(root, "tie_breaker", error_type=VoteSourceError, label=label)
     tie_breaker = _read_tie_breaker(tie_element, label) if tie_element is not None else None
 
+    document_element = single_child(root, "document", error_type=VoteSourceError, label=label)
+    document = _read_document(document_element, label) if document_element is not None else None
+
+    amendment_element = single_child(root, "amendment", error_type=VoteSourceError, label=label)
+    amendment = _read_amendment(amendment_element, label) if amendment_element is not None else None
+
     members = single_child(root, "members", error_type=VoteSourceError, label=label)
     if members is None:
         raise VoteSourceError(f"{label} is missing <members>")
+    member_votes = tuple(_read_senate_member(el, label, crosswalk) for el in members.findall("member"))
+    if not member_votes:
+        raise VoteSourceError(f"{label} for congress={congress} session={session} roll={roll_number} lists no members")
 
     return RollCallVote(
         publisher="senate-lis",
@@ -583,7 +698,7 @@ def parse_senate_vote(body: bytes, locator: VoteLocator, crosswalk: LegislatorsF
         result=text("vote_result", required=False),
         tallies=tallies,
         source_url=locator.url(),
-        member_votes=tuple(_read_senate_member(el, label, crosswalk) for el in members.findall("member")),
+        member_votes=member_votes,
         congress_year=_required_int(text("congress_year"), label, "congress_year"),
         modify_date=text("modify_date", required=False),
         vote_question_text=text("vote_question_text", required=False),
@@ -592,6 +707,8 @@ def parse_senate_vote(body: bytes, locator: VoteLocator, crosswalk: LegislatorsF
         vote_title=text("vote_title", required=False),
         majority_requirement=text("majority_requirement", required=False),
         tie_breaker=tie_breaker,
+        document=document,
+        amendment=amendment,
     )
 
 
@@ -690,7 +807,9 @@ __all__ = [
     "TieBreaker",
     "VoteAcquirer",
     "VoteAcquisition",
+    "VoteAmendment",
     "VoteBudget",
+    "VoteDocument",
     "VoteIdentityError",
     "VoteLocator",
     "VoteRefusedError",
