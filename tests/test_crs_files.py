@@ -6,19 +6,27 @@ from pathlib import Path
 import httpx
 import pytest
 
+from spicy_docs.reading.markup import read_html_events
 from spicy_docs.sources.congress.crs_files import (
     CRS_EXTERNAL_PRODUCTS,
     CrsFileAcquirer,
+    CrsFileAcquisition,
     CrsFileBudget,
     CrsFileSelection,
     CrsFileSourceError,
     CrsFileUnavailableError,
+    CrsHtmlAcquisition,
+    CrsHtmlSelection,
     crs_file_locator,
     crs_file_selection,
+    crs_html_locator,
+    crs_html_selection,
     family_from_report_id,
+    read_crs_html,
     read_crs_pdf,
 )
 from spicy_docs.transport import retry
+from spicy_docs.transport.credentials import CredentialRefusedError
 
 #: First 2,048 bytes of IF11830.5.pdf: a real header and a real truncated capture.
 PREFIX = (Path(__file__).parent / "fixtures" / "crs_files" / "IF11830.5.prefix.pdf").read_bytes()
@@ -36,6 +44,24 @@ STATED = (
     (f"{CRS_EXTERNAL_PRODUCTS}/R/PDF/R49346/R49346.1.pdf", "R", "R49346", 1),
     (f"{CRS_EXTERNAL_PRODUCTS}/RA/PDF/RL31312/RL31312.6.pdf", "RA", "RL31312", 6),
     (f"{CRS_EXTERNAL_PRODUCTS}/RS/PDF/98-807/98-807.12.pdf", "RS", "98-807", 12),
+)
+
+#: The complete, unmodified HTML body congress.gov served for IF12853 on 2026-09-19
+#: (tests/fixtures/crs_files/README.md). No synthesis: the whole report.
+HTML_BODY = (Path(__file__).parent / "fixtures" / "crs_files" / "IF12853.html").read_bytes()
+HTML_SELECTION = CrsHtmlSelection("IF", "IF12853")
+HTML_LOCATOR = f"{CRS_EXTERNAL_PRODUCTS}/IF/HTML/IF12853.html"
+#: The version congress.gov paired with this HTML in the same ``formats[]`` response.
+PDF_SELECTION_FOR_HTML_REPORT = CrsFileSelection("IF", "IF12853", 10)
+PDF_LOCATOR_FOR_HTML_REPORT = f"{CRS_EXTERNAL_PRODUCTS}/IF/PDF/IF12853/IF12853.10.pdf"
+#: Publisher-stated HTML URLs, as the CRS detail rows spell them in ``formats``: no per-id
+#: directory and no version segment, unlike the PDF route.
+HTML_STATED = (
+    (f"{CRS_EXTERNAL_PRODUCTS}/IF/HTML/IF12853.html", "IF", "IF12853"),
+    (f"{CRS_EXTERNAL_PRODUCTS}/LSB/HTML/LSB10059.html", "LSB", "LSB10059"),
+    (f"{CRS_EXTERNAL_PRODUCTS}/R/HTML/R49346.html", "R", "R49346"),
+    (f"{CRS_EXTERNAL_PRODUCTS}/RA/HTML/RL31312.html", "RA", "RL31312"),
+    (f"{CRS_EXTERNAL_PRODUCTS}/RS/HTML/98-807.html", "RS", "98-807"),
 )
 
 
@@ -246,3 +272,184 @@ def test_budget_and_client_configuration_are_explicit():
             )
     with pytest.raises(TypeError):
         CrsFileAcquirer(budget=(3, 4096, 7, 0), transport=Transport())
+
+
+# --- HTML: preferred, no version, with fallback to the versioned PDF -------------------------
+
+
+@pytest.mark.parametrize("url,family,report_id", HTML_STATED)
+def test_html_stated_url_round_trips_through_the_selection(url, family, report_id):
+    selection = crs_html_selection(url)
+    assert (selection.family, selection.report_id) == (family, report_id)
+    assert selection.file_name == f"{report_id}.html"
+    assert crs_html_locator(selection) == url
+
+
+@pytest.mark.parametrize(
+    "url,message",
+    [
+        (f"{CRS_EXTERNAL_PRODUCTS}/if/HTML/IF12853.html", "not a congress.gov"),
+        (f"{CRS_EXTERNAL_PRODUCTS}/IF/html/IF12853.html", "not a congress.gov"),
+        (f"{CRS_EXTERNAL_PRODUCTS}/IF/PDF/IF12853.html", "not a congress.gov"),
+        # The PDF route nests a per-id directory; the HTML route does not.
+        (f"{CRS_EXTERNAL_PRODUCTS}/IF/HTML/IF12853/IF12853.html", "not a congress.gov"),
+        (f"{CRS_EXTERNAL_PRODUCTS}/IF/HTML/IF12853.10.html", "not a congress.gov"),
+        (f"{CRS_EXTERNAL_PRODUCTS}/IF/HTML/IF12853.html?download=1", "not a congress.gov"),
+        ("http://www.congress.gov/crs_external_products/IF/HTML/IF12853.html", "not a congress.gov"),
+        (b"bytes", "must be a string"),
+    ],
+)
+def test_html_stated_url_refusals_name_the_failed_check(url, message):
+    with pytest.raises(CrsFileSourceError, match=message):
+        crs_html_selection(url)
+
+
+@pytest.mark.parametrize(
+    "fields,message",
+    [
+        ({"family": "if"}, "uppercase path segment"),
+        ({"family": "IFHTMLX"}, "uppercase path segment"),
+        ({"family": None}, "uppercase path segment"),
+        ({"report_id": "if12853"}, "report_id"),
+        ({"report_id": "IF12853.10"}, "report_id"),
+        ({"report_id": ""}, "report_id"),
+    ],
+)
+def test_html_selection_refusals_name_the_failed_check(fields, message):
+    with pytest.raises(CrsFileSourceError, match=message):
+        CrsHtmlSelection(**{"family": "IF", "report_id": "IF12853", **fields})
+
+
+def test_html_locator_requires_a_selection():
+    with pytest.raises(CrsFileSourceError, match="must be a CrsHtmlSelection"):
+        crs_html_locator(HTML_LOCATOR)
+
+
+def read_html(body, selection=HTML_SELECTION, **kwargs):
+    kwargs.setdefault("final_url", HTML_LOCATOR)
+    return read_crs_html(body, selection, **kwargs)
+
+
+def test_the_real_html_body_states_its_report_id_twice_independently():
+    html = read_html(HTML_BODY)
+    assert html.selection == HTML_SELECTION and html.byte_size == len(HTML_BODY)
+    assert b"(IF12853)" in HTML_BODY
+    assert b'data-prod-type="IF"' in HTML_BODY
+
+
+@pytest.mark.parametrize(
+    "body,message",
+    [
+        (b"<html><body>no report id here</body></html>", "does not state the requested report id"),
+        (b"<html>(IF12853) but no prod-type marker</html>", "does not state the requested report family"),
+        (b"", "does not state the requested report id"),
+        ("(IF12853)", "must be bytes"),
+    ],
+)
+def test_html_body_refusals_name_the_failed_check(body, message):
+    with pytest.raises(CrsFileSourceError, match=message):
+        read_html(body)
+
+
+@pytest.mark.parametrize(
+    "final_url",
+    [
+        HTML_LOCATOR.replace("IF12853", "IF12852"),
+        HTML_LOCATOR.replace("https://", "http://"),
+        HTML_LOCATOR + "?download=1",
+    ],
+)
+def test_html_final_url_other_than_the_locator_is_refused(final_url):
+    with pytest.raises(CrsFileSourceError, match="final URL"):
+        read_html(HTML_BODY, final_url=final_url)
+
+
+def test_html_read_bounds_are_explicit():
+    with pytest.raises(CrsFileSourceError, match="max_bytes"):
+        read_html(HTML_BODY, max_bytes="8192")
+    with pytest.raises(CrsFileSourceError, match="byte bound"):
+        read_html(HTML_BODY, max_bytes=len(HTML_BODY) - 1)
+
+
+def test_html_fixture_parses_as_markup_through_the_shared_reader():
+    """The route's identity proof and the module's own markup reader agree on the same bytes."""
+    result = read_html_events(HTML_BODY)
+    assert result.root_name == "head" and result.element_count == 168
+    report_id_text = [e.text for e in result.events if e.kind == "text" and e.text and "(IF12853)" in e.text]
+    assert report_id_text and "Updated" in report_id_text[0]
+
+
+def html_response(body=HTML_BODY, status=200, *, content_type="text/html"):
+    return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
+
+
+def test_acquirer_captures_exact_html_bytes_keyless():
+    transport = Transport(html_response())
+    with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.acquire_report_html(HTML_SELECTION)
+    assert result.capture.body == HTML_BODY and result.capture.requested_url == HTML_LOCATOR
+    assert result.html.byte_size == len(HTML_BODY) and result.selection == HTML_SELECTION
+    assert result.request_count == 1 and result.budget == BUDGET
+    request = transport.calls[0]
+    assert request.method == "GET" and "x-api-key" not in request.headers
+    assert "api_key" not in str(request.url) and request.headers["accept-encoding"] == "identity"
+    assert str(request.url) == HTML_LOCATOR
+
+
+def test_acquire_report_prefers_html_when_it_is_offered():
+    transport = Transport(html_response())
+    with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.acquire_report(PDF_SELECTION_FOR_HTML_REPORT, html_selection=HTML_SELECTION)
+    assert isinstance(result, CrsHtmlAcquisition)
+    assert result.html.byte_size == len(HTML_BODY) and result.request_count == 1
+    assert len(transport.calls) == 1 and str(transport.calls[0].url) == HTML_LOCATOR
+
+
+def test_acquire_report_without_html_selection_behaves_like_the_pdf_route_alone():
+    transport = Transport(response())
+    with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.acquire_report(SELECTION)
+    assert isinstance(result, CrsFileAcquisition) and result.request_count == 1
+    assert len(transport.calls) == 1 and str(transport.calls[0].url) == LOCATOR
+
+
+@pytest.mark.parametrize(
+    "refusal",
+    [
+        # The keyless bot wall: a 403, kept as evidence, not this module's own error.
+        html_response(b"<html>Request Rejected</html>", status=403),
+        # Served, but not the shape read_crs_html proves: no report-id marker.
+        html_response(b"<html><body>the wrong page</body></html>"),
+        # Served as the wrong media type entirely.
+        html_response(b"<!DOCTYPE html>", content_type="application/octet-stream"),
+    ],
+)
+def test_acquire_report_falls_back_to_pdf_on_any_html_refusal(refusal):
+    # Paired the way a real caller pairs them: both from IF12853's formats[].
+    transport = Transport(refusal, response())
+    with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
+        result = source.acquire_report(PDF_SELECTION_FOR_HTML_REPORT, html_selection=HTML_SELECTION)
+    assert isinstance(result, CrsFileAcquisition)
+    assert result.file.byte_size == IF11830_BYTES and result.request_count == 2
+    assert len(transport.calls) == 2
+    assert str(transport.calls[0].url) == HTML_LOCATOR
+    assert str(transport.calls[1].url) == PDF_LOCATOR_FOR_HTML_REPORT
+
+
+def test_acquire_report_raises_when_the_pdf_fallback_also_fails():
+    transport = Transport(html_response(status=403), response(b"<!DOCTYPE html>404", 404, content_type="text/html"))
+    with (
+        CrsFileAcquirer(budget=BUDGET, transport=transport) as source,
+        pytest.raises(CrsFileUnavailableError, match="HTTP 404"),
+    ):
+        source.acquire_report(PDF_SELECTION_FOR_HTML_REPORT, html_selection=HTML_SELECTION)
+
+
+def test_html_credential_refusal_carries_its_evidence_when_no_fallback_is_offered():
+    transport = Transport(html_response(b"<html>Request Rejected</html>", status=403))
+    with (
+        CrsFileAcquirer(budget=BUDGET, transport=transport) as source,
+        pytest.raises(CredentialRefusedError) as raised,
+    ):
+        source.acquire_report_html(HTML_SELECTION)
+    assert raised.value.refused_response.response_bytes == b"<html>Request Rejected</html>"
