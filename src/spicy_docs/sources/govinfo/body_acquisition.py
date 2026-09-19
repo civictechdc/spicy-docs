@@ -32,6 +32,7 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from typing import TYPE_CHECKING, Self
 
+from spicy_docs.reading.json_input import load_decimal_json
 from spicy_docs.reading.refusals import attach_refused_response
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.govinfo.bodies import (
@@ -195,6 +196,24 @@ def _unavailable(capture: CapturedBodyResponse, label: str) -> GovInfoPackageUna
     error = GovInfoPackageUnavailableError(capture, label=label)
     attach_refused_response(error, refused_capture(capture, stage="source-validation"))
     return error
+
+
+def _is_invalid_granule_body(body: bytes) -> bool:
+    """Whether a granule-route 400 body matches the one documented shape.
+
+    Measured 2026-09-19, two ways (fixture README): GovInfo answers exactly
+    ``{"message":"invalid granuleId"}`` for a granule that does not belong to
+    the requested package. Any other 400 -- a shape this module has not
+    measured, a different publisher message, a transient answer -- is not
+    this, and is left as the generic ``GovInfoBodySourceError`` the capture
+    layer already raises, with its capture, rather than silently relabeled
+    unavailable on the strength of a status code alone.
+    """
+    try:
+        document = load_decimal_json(body, source="GovInfo granule 400 body", error_type=ValueError)
+    except ValueError:
+        return False
+    return isinstance(document, dict) and document.get("message") == "invalid granuleId"
 
 
 def _checked_preference(prefer: Sequence[str]) -> tuple[str, ...]:
@@ -544,13 +563,17 @@ class GovInfoBodyAcquirer:
         requested under CREC-2026-09-17, both ``invalid granuleId``). This
         reads that the same way ``_require_present`` reads a package's own
         404/410: identity proved before bytes, typed the same way either
-        route states it.
+        route states it -- but only when the 400 body matches that measured
+        shape (``_is_invalid_granule_body``). A 400 for any other reason is
+        not this, and is left as the generic ``GovInfoBodySourceError`` the
+        capture layer already raised, with its capture, rather than
+        relabeled on the status code alone.
         """
         try:
             capture = self._capture(url, keyed=True, max_bytes=max_bytes)
         except GovInfoBodySourceError as error:
             refused = attached_capture(error)
-            if refused is not None and refused.status_code == 400:
+            if refused is not None and refused.status_code == 400 and _is_invalid_granule_body(refused.body):
                 raise _unavailable(refused, label) from error
             raise
         return self._require_present(capture, label=label)

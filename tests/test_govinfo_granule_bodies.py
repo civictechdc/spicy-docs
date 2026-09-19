@@ -143,6 +143,23 @@ def test_real_mods_states_its_own_accessid_its_hosts_and_the_offered_renditions(
     assert mods.other_renditions == ()
 
 
+def test_this_granules_rendition_at_another_address_reads_as_disagreement() -> None:
+    # Mirrors test_govinfo_package_bodies.py's package-level version: a
+    # supported file type at this granule's own package address, but a
+    # folder this module does not derive for a granule rendition.
+    moved = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/alt/{GRANULE}.pdf"
+    body = granule_mods_xml(
+        urls=(
+            f'<url displayLabel="HTML rendition" access="raw object">{BODY_URL}</url>'
+            f'<url displayLabel="PDF rendition" access="raw object">{moved}</url>'
+        )
+    )
+    mods = validate_granule_mods(body, package=PACKAGE, granule_id=GRANULE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.offered_formats == ("htm",)
+    assert mods.moved_renditions == (("pdf", moved),)
+    assert mods.other_renditions == ()
+
+
 def test_a_granule_mods_states_no_relatedItem_host_refuses() -> None:
     body = (
         f'<mods xmlns="http://www.loc.gov/mods/v3"><extension><accessId>{GRANULE}</accessId></extension></mods>'

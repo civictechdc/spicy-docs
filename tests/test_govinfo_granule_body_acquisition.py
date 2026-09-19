@@ -174,6 +174,32 @@ def test_the_same_real_granule_requested_under_the_wrong_package_is_unavailable(
     assert transport.urls == [other_url]
 
 
+def test_a_400_with_a_different_body_is_not_relabeled_unavailable() -> None:
+    # Only the documented {"message":"invalid granuleId"} shape is retyped;
+    # any other 400 falls through as the generic source error, with its
+    # capture, rather than being guessed at.
+    other_gid = "CREC-2026-09-17-pt1-PgS4800"
+    other_url = f"https://api.govinfo.gov/packages/{PACKAGE}/granules/{other_gid}/summary"
+    transport = Transport(**{other_url: reply(b'{"message":"rate limited"}', status=400)})
+    with pytest.raises(GovInfoBodySourceError, match="HTTP 400") as caught:
+        acquire_granule(transport, granule_id=other_gid)
+
+    assert not isinstance(caught.value, GovInfoPackageUnavailableError)
+    assert transport.urls == [other_url]
+    refused = caught.value.__dict__["refused_response"]
+    assert refused.response_bytes == b'{"message":"rate limited"}'
+
+
+def test_a_400_with_an_unparseable_body_is_not_relabeled_unavailable() -> None:
+    other_gid = "CREC-2026-09-17-pt1-PgS4800"
+    other_url = f"https://api.govinfo.gov/packages/{PACKAGE}/granules/{other_gid}/summary"
+    transport = Transport(**{other_url: reply(b"not json", status=400)})
+    with pytest.raises(GovInfoBodySourceError, match="HTTP 400") as caught:
+        acquire_granule(transport, granule_id=other_gid)
+
+    assert not isinstance(caught.value, GovInfoPackageUnavailableError)
+
+
 def test_a_format_the_granule_does_not_offer_refuses_before_any_body_request() -> None:
     transport = Transport()
     with pytest.raises(GovInfoFormatNotOfferedError, match="none matches") as caught:

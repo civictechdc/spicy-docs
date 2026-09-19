@@ -260,6 +260,35 @@ def test_a_bill_element_missing_a_required_attribute_is_skipped_not_guessed() ->
     )
 
 
+def test_a_bill_element_with_a_non_numeric_number_is_skipped_not_guessed() -> None:
+    body = (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><accessId>{PACKAGE}</accessId>"
+        '<bill congress="119" context="PRIMARY" number="unknown" type="HR"></bill>'
+        '<bill congress="119" context="PRIMARY" number="2" type="HR"></bill>'
+        "</extension></mods>"
+    ).encode()
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == (
+        ModsBill(congress=119, bill_type="HR", number="2", context="PRIMARY", normalized_bill_type="hr"),
+    )
+
+
+def test_a_bill_element_with_no_context_is_kept_as_an_empty_mention() -> None:
+    # spicy-regs's own MODS reader keeps a context-less <bill> as a mention
+    # rather than dropping it; this module does the same.
+    body = (
+        '<mods xmlns="http://www.loc.gov/mods/v3">'
+        f"<extension><accessId>{PACKAGE}</accessId>"
+        '<bill congress="119" number="1" type="HR"></bill>'  # no context
+        "</extension></mods>"
+    ).encode()
+    mods = validate_package_mods(body, package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
+    assert mods.bills == (ModsBill(congress=119, bill_type="HR", number="1", context="", normalized_bill_type="hr"),)
+    # An empty context is never PRIMARY, so it does not become the primary bill.
+    assert mods.primary_bill is None
+
+
 def test_an_unrecognized_bill_type_normalizes_to_none() -> None:
     body = (
         '<mods xmlns="http://www.loc.gov/mods/v3">'
@@ -293,6 +322,14 @@ def test_real_cprt_summary_and_mods_state_the_committee_print() -> None:
     assert mods.offered_formats == ("htm", "pdf", "xml")
     assert mods.moved_renditions == ()
     assert mods.other_renditions == ()
+    # This print's own <bill> states context="COVER", not "PRIMARY" -- a
+    # third context spelling beyond the two CRPT-119hrpt1 measures, and
+    # proof primary_bill does not mistake a cover-page mention for the
+    # report's own bill.
+    assert mods.bills == (
+        ModsBill(congress=118, bill_type="HR", number="8205", context="COVER", normalized_bill_type="hr"),
+    )
+    assert mods.primary_bill is None
 
 
 def test_real_bills_mods_offers_uslm_directly_not_moved() -> None:

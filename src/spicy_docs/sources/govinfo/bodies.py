@@ -261,11 +261,14 @@ class ModsBill:
     """One ``<bill>`` a package MODS names, in the publisher's own document order.
 
     ``context`` is the publisher's own priority marker (``PRIMARY``,
-    ``OTHER``, ...). Document order is not priority order -- measured on
-    CRPT-119hrpt1, whose MODS lists S. 5 (``OTHER``), H. Res. 53 (``OTHER``),
-    H. Res. 53 again (``PRIMARY``), then H.R. 471 (``OTHER``) -- so a caller
-    wanting the bill a report is chiefly about reads
-    ``PackageModsIdentity.primary_bill``, never ``bills[0]``.
+    ``OTHER``, ...), or the empty string when the publisher's ``<bill>``
+    states none -- kept as a mention rather than dropped, since a ``<bill>``
+    with no stated context is still evidence the MODS named it; dropping
+    data silently is the wrong side of that choice. Document order is not
+    priority order -- measured on CRPT-119hrpt1, whose MODS lists S. 5
+    (``OTHER``), H. Res. 53 (``OTHER``), H. Res. 53 again (``PRIMARY``), then
+    H.R. 471 (``OTHER``) -- so a caller wanting the bill a report is chiefly
+    about reads ``PackageModsIdentity.primary_bill``, never ``bills[0]``.
 
     ``bill_type`` is the publisher's own spelling (``HRES``, ``S``, ``HR``,
     ...); ``normalized_bill_type`` lower-cases it to match
@@ -289,8 +292,10 @@ def _mods_bills(root: ModsRecord) -> tuple[ModsBill, ...]:
     ``root.fields("extension", "bill")`` reaches only the root's own
     ``extension`` children, so a constituent's own ``<bill>``, if any, is not
     read here, the same boundary ``access_ids`` already draws. A ``<bill>``
-    missing any of the four attributes this reads is skipped rather than
-    guessed at; nothing here claims completeness beyond what was stated.
+    missing ``congress``, ``type`` or a numeric ``number`` is skipped rather
+    than guessed at; nothing here claims completeness beyond what was
+    stated. A ``<bill>`` with no ``context`` is kept, with ``context=""``
+    (see ``ModsBill``), not dropped.
     """
     bills: list[ModsBill] = []
     for element in root.fields("extension", "bill"):
@@ -298,7 +303,7 @@ def _mods_bills(root: ModsRecord) -> tuple[ModsBill, ...]:
         bill_type = element.attribute("type")
         number = element.attribute("number")
         context = element.attribute("context")
-        if not (congress and congress.isdigit() and bill_type and number and context):
+        if not (congress and congress.isdigit() and bill_type and number and number.isdigit()):
             continue
         normalized = bill_type.lower()
         bills.append(
@@ -306,7 +311,7 @@ def _mods_bills(root: ModsRecord) -> tuple[ModsBill, ...]:
                 congress=int(congress),
                 bill_type=bill_type,
                 number=number,
-                context=context,
+                context=context or "",
                 normalized_bill_type=normalized if normalized in BILL_TYPES else None,
             )
         )
