@@ -42,6 +42,59 @@ class BillIdentity:
 
 
 @dataclass(frozen=True, slots=True)
+class RecordedVote:
+    """One ``<recordedVote>`` on an action: the publisher's reference to a roll call.
+
+    The user guide (``tests/fixtures/billstatus_codes/guide-2026-08-03.md``)
+    lists seven children and names none required, so every field is optional
+    here. A measurement of the JSON actions route on 2026-09-19 found six of
+    the seven present in all 58 entries and ``fullActionName`` in none of
+    them; it is carried anyway, because the guide documents it and a field the
+    publisher may resume sending is not ours to drop. Numbers stay as the
+    publisher wrote them, like every other field in this module.
+    """
+
+    chamber: str | None
+    congress: str | None
+    date: str | None
+    full_action_name: str | None
+    roll_number: str | None
+    session_number: str | None
+    url: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class BillLaw:
+    """One ``<laws>`` entry. ``type`` is "Public Law" or "Private Law" per the guide.
+
+    The guide notes the element is empty until a measure is enacted and its
+    law number assigned, so an absent ``laws`` is the ordinary case, not a
+    gap.
+    """
+
+    number: str | None
+    type: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class BillCommittee:
+    """One committee or subcommittee the measure reached.
+
+    ``system_code`` is the publisher's own identifier (``hsap00``) and is what
+    a referral rule keys on; a committee's ``name`` is prose and is not.
+    ``chamber`` and ``type`` are absent on a subcommittee, which the guide
+    gives only ``name``, ``systemCode`` and ``activities``. Activities are not
+    read here; the caller retains the XML for fields outside this subset.
+    """
+
+    system_code: str | None
+    name: str | None
+    chamber: str | None
+    type: str | None
+    subcommittees: tuple[BillCommittee, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class BillAction:
     """``text`` is ``None`` when the publisher states the action without one.
 
@@ -66,6 +119,7 @@ class BillAction:
     action_type: str | None
     source_system_code: str | None
     source_system_name: str | None
+    recorded_votes: tuple[RecordedVote, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,6 +181,8 @@ class BillStatus:
     actions: tuple[BillAction, ...]
     sponsors: tuple[BillSponsor, ...]
     text_versions: tuple[BillTextVersion, ...]
+    laws: tuple[BillLaw, ...] = ()
+    committees: tuple[BillCommittee, ...] = ()
 
 
 def _validated_identity(identity: BillIdentity) -> BillIdentity:
@@ -248,6 +304,28 @@ def _summary(element: Element) -> BillSummary:
     )
 
 
+def _recorded_vote(element: Element) -> RecordedVote:
+    return RecordedVote(
+        chamber=_text(element, "chamber"),
+        congress=_text(element, "congress"),
+        date=_text(element, "date"),
+        full_action_name=_text(element, "fullActionName"),
+        roll_number=_text(element, "rollNumber"),
+        session_number=_text(element, "sessionNumber"),
+        url=_text(element, "url"),
+    )
+
+
+def _committee(element: Element) -> BillCommittee:
+    return BillCommittee(
+        system_code=_text(element, "systemCode"),
+        name=_text(element, "name"),
+        chamber=_text(element, "chamber"),
+        type=_text(element, "type"),
+        subcommittees=tuple(_committee(item) for item in _items(element, "subcommittees")),
+    )
+
+
 def _action(element: Element) -> BillAction:
     system = _one(element, "sourceSystem")
     text = _text(element, "text")
@@ -259,6 +337,7 @@ def _action(element: Element) -> BillAction:
         action_type=_text(element, "type"),
         source_system_code=_text(system, "code"),
         source_system_name=_text(system, "name"),
+        recorded_votes=tuple(_recorded_vote(item) for item in _items(element, "recordedVotes", "recordedVote")),
     )
 
 
@@ -319,19 +398,24 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
             BillSponsor(_text(item, "bioguideId"), _text(item, "fullName")) for item in _items(bill, "sponsors")
         ),
         text_versions=tuple(_text_version(item, identity) for item in _items(bill, "textVersions")),
+        laws=tuple(BillLaw(_text(item, "number"), _text(item, "type")) for item in _items(bill, "laws")),
+        committees=tuple(_committee(item) for item in _items(bill, "committees")),
     )
 
 
 __all__ = [
     "BILLSTATUS_BULKDATA",
     "BillAction",
+    "BillCommittee",
     "BillIdentity",
+    "BillLaw",
     "BillSourceError",
     "BillSponsor",
     "BillStatus",
     "BillSummary",
     "BillTextFormat",
     "BillTextVersion",
+    "RecordedVote",
     "bill_package_id_from_url",
     "bill_status_locator",
     "bill_xml_locator",
