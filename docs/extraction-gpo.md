@@ -389,12 +389,13 @@ Congressional Record issue — the way upstream DeltaTrack validated its own
 `rh`, `rs`, `eh`, `es`, `enr`, `rfs`, `pcs`, `ats`) plus six more the sealed
 vocabulary in `sources/congress/bill_versions.py` names as measured in the
 119th BILLS census (`rds`, `cps`, `eas`, `eah`, `rfh`, `rhuc`) — 30 from the
-119th Congress, 6 from the 113th; 5 House committee reports (3 from the
-119th, 2 from the 113th); 1 Congressional Record issue
-(`CREC-2026-09-18`). Three bill entries and one report reuse the page text
-already captured in `tests/fixtures/gpo_pdf_text/*.json` rather than
-re-fetching it (marked `reused_fixture` in the pinned JSON below); every
-other row is this run's own live capture.
+119th Congress, 6 from the 113th; 5 committee reports — 4 House (3 from the
+119th, 1 from the 113th), 1 Senate (113th; `CRPT-113srpt77`, whose `srpt`
+code maps to `senate` in `committee_report_tables.py`); 1 Congressional
+Record issue (`CREC-2026-09-18`). Three bill entries and one report reuse
+the page text already captured in `tests/fixtures/gpo_pdf_text/*.json`
+rather than re-fetching it (marked `reused_fixture` in the pinned JSON
+below); every other row is this run's own live capture.
 
 Forty bills, not the full forty the task named, is a request-budget
 consequence stated up front rather than padded past: CRPT/CREC each cost
@@ -535,11 +536,11 @@ continue to work at this corpus's full range of document sizes (1 page to
 **Hyphen rejoin: 89,337 merge operations, 70,054 resulting words checked, 1,232
 flagged as not a known word (1.76%), 659 of them distinct.** Every flagged
 case sampled by reading its page (a representative cross-section, not an
-exhaustive audit of 1,232 instances) falls into one of two shapes, neither a
+exhaustive audit of 1,232 instances) falls into one of three shapes, none a
 parsing defect:
 
 - **A genuine compound word's own hyphen coincided with the print-wrap
-  point.** The large majority: `communitybased`, `longterm`,
+  point.** Seen across many fixtures: `communitybased`, `longterm`,
   `evidencebased`, `spacebased`, `thirdparty`, `chairperson`-style compounds
   where GPO's line wrap happened to land exactly at the compound's real
   hyphen, which the rule then strips along with the wrap — the same
@@ -553,21 +554,44 @@ parsing defect:
   commercially available, off-" / "2" / "the-shelf components ...", a real
   wrap at a real hyphen, same mechanism, more visible result.
 - **A proper noun or a modern/technical compound the 234,456-word system
-  dictionary does not carry.** `/usr/share/dict/words` is macOS's 1934-vintage
-  Webster's Second headword list: it has `coordinate` only as `co-ordinate`,
-  no `database`, and no `Díaz-Canel` (read on the page,
-  `BILLS-119s218is`, page 2: "...of Raúl Castro and his successor, Miguel
-  Díaz-" / "3" / "Canel;" — a correct rejoin of a real name, flagged only
-  because the check's own regex captured just the ASCII tail "az" before the
-  diacritic).
+  dictionary does not carry at all.** `/usr/share/dict/words` is macOS's
+  1934-vintage Webster's Second headword list, and it is missing more than
+  a first read suggests: re-checked directly on this machine
+  (`grep -ic '^coordinate$' /usr/share/dict/words` and the same for
+  `^co-ordinate$`), it carries `coordinate` in *neither* spelling, hyphenated
+  or not — both return 0. The flagged instance in `BILLS-119hr8870ih`'s
+  rejoin sample is a correct rejoin of an ordinary word the list simply
+  never had, not a hyphenated headword the rejoin missed. Likewise no
+  `database` (flagged in `BILLS-119s3971cps`) and no `Díaz-Canel` (read on
+  the page, `BILLS-119s218is`, page 2: "...of Raúl Castro and his successor,
+  Miguel Díaz-" / "3" / "Canel;" — a correct rejoin of a real name, flagged
+  only because the check's own regex captured just the ASCII tail "az"
+  before the diacritic).
+- **An ordinary word whose base form the dictionary carries, but whose
+  inflection the analysis script's own stemmer cannot reduce to it.** The
+  largest of the three shapes in the sample read. The script's suffix
+  stripper (strips `-s`, `-es`, `-ies`, `-ing`, `-ed`, and undoes a doubled
+  final consonant — see `_stem_candidates` in the receipt's
+  `analyze_all.py`) has no rule for the `-y` → `-ied` shift a regular verb
+  ending in a consonant plus `y` takes in the past tense: `specified`
+  (flagged in `BILLS-119hr1834rhuc`) never reduces to `specify`, and
+  `identified` (flagged in `BILLS-119hr4275rfs`) never reduces to
+  `identify`. Both base forms are themselves confirmed headwords in
+  `/usr/share/dict/words` on this machine. Not a compound-hyphen ambiguity
+  like the first two shapes: the rejoined word is exactly correct English
+  and the check's own stemmer is what is too narrow to accept it.
 
-No instance read produced a result unrelated to this known ambiguity (no
-transposed, truncated or otherwise corrupted word). The rate is a new,
-previously unstated number for the residual this port's docstring already
-acknowledged qualitatively; it does not change the module's documented
-policy of declining to rejoin at all on a document without confirmed GPO
-layout, which remains the stronger, unconditional protection against the
-same ambiguity in the far more common non-numbered case.
+No instance read across any of the three shapes produced a result unrelated
+to this known ambiguity (no transposed, truncated or otherwise corrupted
+word) — every flagged instance is a gap in the 234,456-word checking list or
+its narrow stemmer, a wordlist blind spot, not damage the rejoin rule did to
+the text. That makes 1.76% an upper bound on how many rejoins get *flagged*
+by this check, not a defect rate on the rejoin rule itself. The rate is a
+new, previously unstated number for the residual this port's docstring
+already acknowledged qualitatively; it does not change the module's
+documented policy of declining to rejoin at all on a document without
+confirmed GPO layout, which remains the stronger, unconditional protection
+against the same ambiguity in the far more common non-numbered case.
 
 ## Decision
 

@@ -291,6 +291,76 @@ def test_false_below_the_floor_when_a_real_run_exists_but_the_ratio_is_too_low()
     assert record.line_numbers is False
 
 
+def test_true_at_or_above_the_floor_across_pages_and_the_rejoin_blast_radius_on_an_unrelated_page():
+    """New (gap B6 corpus review): the single-page version above
+    (``test_true_at_or_above_the_floor_when_a_long_unnumbered_preamble_
+    dilutes_the_ratio_but_a_page_shows_a_real_run``) only shows the floor
+    and the run clearing a document whose numbered evidence sits on the
+    same page as most of its content. ``_layout_verdict`` sums
+    ``content_lines`` and ``gutter_adjacent_lines`` across every page in
+    ``page_counts``, and ``has_structural_run`` is checked per page, so
+    nothing in that arithmetic requires the evidence to be anywhere near
+    the bulk of the content -- reproduced here across four separate pages:
+    two plain, unrelated 25-line pages (``unnumbered_filler``, 50 lines, no
+    gutter numbers at all) plus one page carrying only a minimal
+    three-line run (1, 2, 3) -- 56 content lines total, 4 numbered, ratio
+    0.071, far under 0.3, but the run alone clears the verdict once the
+    document is at or above the floor.
+
+    This is also the shape ``_layout_verdict``'s own docstring names as a
+    disclosed, unmeasured residual: a document-wide verdict decided by a
+    minimal per-page run, then applied to every page regardless of that
+    page's own evidence. This test measures that residual's *blast
+    radius* on a fourth, genuinely unrelated page -- one with no gutter
+    run of its own, built only to have a hyphen-ended line
+    ("cross-refer-") followed by a *different* line that is itself
+    gutter-adjacent (immediately followed by a bare "7"). Measured result:
+    the coincidental "7" is stripped from that page as bare-digit metadata
+    (``bare_page_number_evidence`` is ``"gutter_layout"`` there too, the
+    same as every other page -- that gate's reach is genuinely
+    document-wide), but the hyphen-ended line is *not* rejoined --
+    ``_rejoin_hyphens`` only merges a line whose *own* immediately
+    following raw line is the bare number (``cur.gutter_adjacent``), and
+    this line's own next line is the other content line, not the digit, so
+    that gate is not document-wide the same way. The document's total
+    ``hyphen_rejoin_count`` is 0: the blast radius a document-wide
+    False->True verdict has on hyphen-rejoin is bounded by each line's own
+    local corroboration, not by the verdict alone -- narrower than the
+    bare-digit gate it shares a boolean with. See ``gpo_normalize``'s
+    module docstring, ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``'s
+    docstring, for where this pin is now cited.
+    """
+    pages = (
+        page(*unnumbered_filler(25))[0],
+        page(*unnumbered_filler(25))[0],
+        page(
+            "Resolved by the Senate and House of Representatives",
+            "1",
+            "of the United States of America in Congress assembled,",
+            "2",
+            "That the operative text of this resolution concludes today.",
+            "3",
+        )[0],
+        page(
+            "A statutory cross-refer-",
+            "ence continues on this unrelated page,",
+            "7",
+            "and the page ends here without further numbering.",
+        )[0],
+    )
+    assert is_gpo_layout(pages) is True
+
+    normalized, record = normalize_gpo_pages(pages)
+    assert record.line_numbers is True
+    assert record.hyphen_rejoin_count == 0
+    assert record.pages[3].hyphen_rejoin_count == 0
+    assert record.pages[3].bare_page_number_lines == 1
+    assert record.pages[3].bare_page_number_evidence == "gutter_layout"
+    assert "cross-refer-" in normalized[3]
+    assert "cross-reference" not in normalized[3]
+    assert "7" not in normalized[3].split("\n")
+
+
 # ---------------------------------------------------------------------------
 # GPO metadata stripping -- 5 cases
 # ---------------------------------------------------------------------------

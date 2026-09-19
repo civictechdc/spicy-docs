@@ -16,10 +16,11 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
 FIXTURE = Path(__file__).parents[1] / "fixtures/gpo_pdf_text/corpus-2026-09-19.json"
 
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
-_INTRODUCED_OR_REPORTED = {"ih", "is", "rh", "rs"}
 
 
 def _load() -> list[dict]:
@@ -54,20 +55,29 @@ def test_corpus_spans_every_named_print_stage():
 
 
 def test_layout_verdict_matches_every_stage_expectation():
-    """Every introduced (ih/is) or reported (rh/rs) bill is line-numbered;
-    every enrolled bill and every committee report is not. Zero
-    disagreements, pinned -- this is what two rule fixes in
-    ``gpo_normalize._layout_verdict`` (see that function's own docstring)
-    bought: both were false negatives this same corpus caught before the
-    fix."""
+    """Every non-enrolled bill stage (not just ih/is/rh/rs -- the fixture
+    also carries eh/es/rfs/pcs/ats/rds/cps/eas/eah/rfh/rhuc, all measured
+    True the same way) is line-numbered; every enrolled bill, every
+    committee report, and the Congressional Record issue are not. Zero
+    disagreements across all 42 documents, pinned -- this is what two rule
+    fixes in ``gpo_normalize._layout_verdict`` (see that function's own
+    docstring) bought: both were false negatives this same corpus caught
+    before the fix. Each document must match exactly one of the three
+    branches below; a document matching none (an unexpected kind or a bill
+    stage this test has not accounted for) fails the test outright rather
+    than silently skipping both assertions the earlier, narrower version of
+    this loop made possible."""
     documents = _load()
     for doc in documents:
-        if doc["kind"] == "bill" and doc["stage"] in _INTRODUCED_OR_REPORTED:
+        if doc["kind"] in ("record", "report") or (doc["kind"] == "bill" and doc["stage"] == "enr"):
+            assert doc["line_numbers"] is False, doc["package"]
+        elif doc["kind"] == "bill":
             assert doc["line_numbers"] is True, doc["package"]
-        if doc["kind"] == "bill" and doc["stage"] == "enr":
-            assert doc["line_numbers"] is False, doc["package"]
-        if doc["kind"] == "report":
-            assert doc["line_numbers"] is False, doc["package"]
+        else:
+            pytest.fail(
+                f"document matched no branch: kind={doc['kind']!r} "
+                f"stage={doc.get('stage')!r} package={doc.get('package')!r}"
+            )
 
 
 def test_no_gutter_digits_leak_and_no_footer_survives_on_any_document():

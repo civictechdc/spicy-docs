@@ -395,8 +395,18 @@ def _gate_bare_digits(
 #: see ``_layout_verdict``'s docstring. Residual false positive: at or above
 #: the floor, a numbered outline whose own numbers sit on their own lines and
 #: happen to restart at 1 on every page would pass the run test too, now
-#: without a ratio to also require -- unmeasured on this corpus (none of its
-#: documents exercises the case), tracked here rather than assumed safe.
+#: without a ratio to also require -- whether a real document of that shape
+#: exists is still unmeasured on this corpus (none of its 42 documents
+#: exercises the case). What such a verdict's *blast radius* would do to the
+#: rest of the document, once decided, is now pinned by
+#: ``test_gpo_normalize.py``'s
+#: ``test_true_at_or_above_the_floor_across_pages_and_the_rejoin_blast_radius_on_an_unrelated_page``:
+#: a document-wide True from a minimal per-page run reaches every page for
+#: bare-digit stripping regardless of that page's own evidence, but not for
+#: hyphen-rejoin, which still requires the specific line to carry its own
+#: corroborating gutter number -- an unrelated page's hyphen-wrap is left
+#: unrejoined even beside a gutter-adjacent line and a document verdict of
+#: True.
 _MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT = 50
 
 #: How many consecutive gutter numbers, starting at 1, one page must carry
