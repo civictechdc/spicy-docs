@@ -1,0 +1,42 @@
+{
+    "matchingCommunications": [
+        {
+            "chamber": "House",
+            "communicationType": {
+                "code": "EC",
+                "name": "Executive Communication"
+            },
+            "congress": 112,
+            "number": 2,
+            "url": "https://api.congress.gov/v3/house-communication/112/EC/2?format=json"
+        },
+        {
+            "chamber": "House",
+            "communicationType": {
+                "code": "EC",
+                "name": "Executive Communication"
+            },
+            "congress": 112,
+            "number": 3,
+            "url": "https://api.congress.gov/v3/house-communication/112/EC/3?format=json"
+        },
+        {
+            "chamber": "House",
+            "communicationType": {
+                "code": "EC",
+                "name": "Executive Communication"
+            },
+            "congress": 112,
+            "number": 4,
+            "url": "https://api.congress.gov/v3/house-communication/112/EC/4?format=json"
+        }
+    ],
+    "pagination": {
+        "count": 92450,
+        "next": "https://api.congress.gov/v3/house-requirement/8070/matching-communications?offset=3&limit=3&format=json"
+    },
+    "request": {
+        "contentType": "application/json",
+        "format": "json"
+    }
+}
