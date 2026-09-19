@@ -6,7 +6,9 @@ helpers do not generate verifier expectations through the publisher under test.
 
 from __future__ import annotations
 
+import io
 import json
+import zipfile
 from pathlib import Path
 from typing import Any, cast
 
@@ -57,3 +59,12 @@ def counted_subsets(node: object) -> list[dict[str, Any]]:
         for item in node:
             found.extend(counted_subsets(item))
     return found
+
+
+def archive_bytes(*members: tuple[str, bytes], compression: int = zipfile.ZIP_DEFLATED) -> bytes:
+    """One zip in the given member order; the publisher's own order is what archive readers keep."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", compression) as writer:
+        for name, data in members:
+            writer.writestr(name, data)
+    return buffer.getvalue()

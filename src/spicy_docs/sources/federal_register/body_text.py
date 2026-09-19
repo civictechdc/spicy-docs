@@ -5,10 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from spicy_docs.transport.source_acquirer import check_final_url
+
 from .body_sources import (
     FederalRegisterBodySourceError,
     _matching_document_marker,
-    _validated_max_bytes,
+    _validated_bytes,
     _validated_publication_date,
     _validated_source_id,
 )
@@ -42,11 +44,15 @@ def validate_publisher_text(
     The header establishes the document number; the URL binds the requested
     publication date. The footer's filing date and number remain separate facts.
     """
-    exact = _validated_max_bytes(body, max_bytes, label="publisher text")
+    exact = _validated_bytes(body, max_bytes, label="publisher text")
     source_id = _validated_source_id(source_document_number, label="document_number")
     safe_date = _validated_publication_date(publication_date)
-    if final_url != publisher_text_locator(source_id, safe_date):
-        raise FederalRegisterBodySourceError("publisher text final URL differs from the requested locator")
+    check_final_url(
+        final_url,
+        publisher_text_locator(source_id, safe_date),
+        error_type=FederalRegisterBodySourceError,
+        message="publisher text final URL differs from the requested locator",
+    )
     matched = _matching_document_marker(exact, source_id)
     if matched is None:
         raise FederalRegisterBodySourceError("publisher text does not carry the requested document marker")

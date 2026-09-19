@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 import httpx
 
 from spicy_docs.reading.refusals import RefusedResponse, attach_refused_response
-from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
+from spicy_docs.transport.captured import CapturedBodyResponse, attach_capture, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 from spicy_docs.transport.http import RetryableHTTPStatusError
 from spicy_docs.transport.retry import retry_http
@@ -206,7 +206,7 @@ class BoundedHttpCapture:
                         ):
                             raise self.error_type(f"Body source answered HTTP {response.status_code}")
                     except self.error_type as error:
-                        error.__dict__["capture"] = capture
+                        attach_capture(error, capture)
                         attach_refused_response(error, refused_capture(capture, stage="transport"))
                         raise
                     return capture

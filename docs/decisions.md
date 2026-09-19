@@ -117,3 +117,84 @@ of recomputing them for each record.
 Share routine test encoding and inspection. Keep malformed artifacts and semantic
 replay independent of the writer they check. Preserve coupled traversal, selection
 and accounting state in cohesive functions; file length is a review prompt, not a quota.
+
+## Congress.gov and GovInfo collections are each one family
+
+Adopted 2026-09-19 from the
+[legislative data map](research/legislative-data-map-2026-09-18.md).
+
+A new Congress.gov collection route is a URL builder and a records key on the
+existing listing family, landed with a fixture and a live pagination check;
+the map's Table A is the route table, and it records per route whether the
+API honors sorting, since only five routes do. A new GovInfo collection is a
+body fetch on the existing discovery and MODS readers, cloned from the
+Federal Register body acquisition and keyed on the package id. Listing any
+collection the API serves is in scope.
+
+Crawling a whole collection or its bulkdata stays separate scope, as the
+bills source page already says, and each crawl carries its own record naming
+the bound and the byte budget before it is built. The measured costs for the
+119th Congress are 52 MB of status zips, 8 MB of summaries and 3 MB of laws;
+bulk lags the API by days, and a crawl states what an empty result means,
+because a zero count never establishes absence.
+
+The Congress.gov API is the index and GovInfo or the publisher file is the
+body or the crosswalk. Where both hold an item they agree: seven pairs
+measured on 2026-09-18 showed no content disagreement, and twenty-three
+joins followed from twenty items each held wherever the publisher's own data
+did. Prefer the API for listing, key bodies on the GovInfo package id, and
+take a publisher file only for a field the API lacks: committee assignments,
+the Senate LIS crosswalk, and Senate member-level votes. For senators who
+have left, the community legislators JSON is the crosswalk, pinned and
+cadence-checked, because no publisher file carries their LIS ids.
+
+## Community legislators JSON is the identifier crosswalk
+
+Adopted 2026-09-19 with the [legislators source](sources/legislators.md).
+
+This module adds a pinned civil-society crosswalk
+(`unitedstates/congress-legislators`), taken specifically for the two ids no
+publisher route carries: a *former* senator's Senate LIS id, and FEC
+candidate ids generally. It is a capture-and-check source like CBO's
+per-Congress feed, not a listing or release-publishing source: two fixed
+keyless routes, byte-bounded (16 MiB for the historical file, matched to its
+measured 12.86 MiB), shape-checked record by record, with duplicate
+bioguide/LIS/FEC ids refused. Because the source carries no publisher version
+or date, its pin is the observed capture (bytes, SHA-256, time), and its
+only cadence signal is the GitHub repository's own commit history, not the
+JSON. This confirms and implements the crosswalk role already recorded in
+"Congress.gov and GovInfo collections are each one family" in
+`docs/decisions.md`.
+
+## GovInfo package bodies are fetched by package id, never crawled
+
+Adopted 2026-09-19 with the [GovInfo bodies source](sources/govinfo-bodies.md).
+
+**A GovInfo collection is a body fetch on the existing readers, not a new
+source family.** This adds one operation: fetch the body of one package named
+by its package id, over the existing discovery, MODS and transport readers,
+with the Federal Register body module's identity rules reused rather than
+rewritten. It adds no crawling, no release publication and no dataset
+selection; callers choose packages and retain bytes.
+
+Two departures from that plan, both measured:
+
+- **The offered set comes from the package MODS, not the summary's download
+  block.** The summary lists no body rendition for CRPT, CHRG or CDOC while
+  those packages do serve HTML and PDF; the MODS `raw object` renditions
+  matched the served routes exactly in both directions for every package
+  measured. Following the weaker statement would have refused the three
+  collections this work exists to fetch.
+- **MODS is fetched before the body, not after.** Identity is then proved
+  before any body request, a missing or mismatched package costs no body
+  bytes, and the format choice is made from the publisher's own statement.
+
+The one rule that did not transfer is the printed-marker check: a GovInfo
+package body prints no package id, so the smaller rule here is locator plus
+MODS rendition agreement plus the shared error-page exclusion.
+
+The error-page rule itself moved to `sources/govinfo/error_page.py`, a module
+that imports nothing from `spicy_docs`, so the Federal Register validator can
+call it without importing this family. That validator's wording and check
+order are unchanged: its refusal text reaches command receipts, and its two
+error-page witnesses must stay on either side of the locator check.

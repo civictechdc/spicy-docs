@@ -21,6 +21,75 @@ zero never establishes absence.
 | USAspending recipients | POST body: limit, page, sort, order, award type, optional keyword | `results` | none |
 | FCC ECFS proceedings and filings | Explicit date window, both dates included, limit, offset | `proceeding` / `filing` | api.data.gov key |
 
+## Table-driven Congress.gov routes
+
+Every Congress.gov list route, including `bill` and `crsreport`, is one entry
+on a single `CongressListRoute` table in
+[`sources/congress/listing.py`](../../src/spicy_docs/sources/congress/listing.py)
+`LIST_ROUTES`, built by one path builder (`list_route_url`) and walked by one
+reader method (`CongressListingReader.records(route, url)`). (Named
+`CongressListRoute`, not `ListRoute`, because `cli/list_pages.py` already
+defines a different `ListRoute`.) A route's `path` names its placeholders
+(`{congress}`, `{chamber}`, `{code}`, `{type}`, `{number}`); `optional_params`
+names the trailing ones a caller may omit — `bill` may omit both `congress`
+and `bill_type`, but only in that order, so a bill type without a Congress
+refuses. `bill_list_url` and `crs_report_list_url` keep their original names,
+arguments and behavior as thin aliases over the same table and builder, so
+existing callers are unaffected — including refusing a literal `sort=None`,
+which `list_route_url`'s optional `sort` allows but these two named builders
+never have.
+
+Sort support is measured, not assumed, for every route: a 2026-09-19 pass over
+the [legislative data map](../research/legislative-data-map-2026-09-18.md)
+Table A found only `bill`, `amendment`, `summaries`, `committee-report` and
+`committee` reorder on `sort=updateDate`; a direct probe the same day
+(`limit=1`, `sort=updateDate desc` vs `asc`, comparing the first record) found
+`committee-bills` and `bill-actions` both answer the identical first record
+either way. `list_route_url` refuses a `sort` argument on every route that
+ignores it instead of sending one the publisher would silently ignore.
+`crs_report_list_url` is the one deliberate exception: it predates the
+measurement and already sent `sort` unconditionally, so it keeps doing that
+rather than newly refuse a call that has always worked — `list_route_url`
+still refuses `sort` on `LIST_ROUTES["crsreport"]` for callers who want that.
+
+Date-window support (`window_honored`) got the same direct probe applied to
+`fromDateTime`: a one-day-old window cut `committee-bills`' declared count
+from 41,822 to 9 (honored) but left `bill-actions`' declared count at 59
+either way (ignored). Every other route defaults to `window_honored=True` — a
+carried-forward assumption from `bill`/`crsreport`'s original, always-accepted
+contract, not a measurement — and `list_route_url` refuses `from_datetime`/
+`to_datetime` on a route where `window_honored` is `False`, the same way it
+refuses `sort`.
+
+| Route | Path | Records key | Sort honored | Window honored | Fixture |
+| --- | --- | --- | --- | --- | --- |
+| `bill` | `bill/{congress}/{type}` | `bills` | yes | yes (default) | `congress-bill-list.json` |
+| `crsreport` | `crsreport` | `CRSReports` | no (legacy builder still sends it) | yes (default) | `congress-crsreport-list.json` |
+| `amendment` | `amendment/{congress}` | `amendments` | yes | yes (default) | `congress-amendment-list.json` |
+| `committee-bills` | `committee/{chamber}/{code}/bills` | `("committee-bills", "bills")` (nested; see below) | no (measured) | yes (measured) | `congress-committee-bills-list.json` |
+| `bill-actions` | `bill/{congress}/{type}/{number}/actions` | `actions` | no (measured) | no (measured) | `congress-bill-actions-list.json` |
+| `nomination` | `nomination/{congress}` | `nominations` | no | yes (default) | `congress-nomination-list.json` |
+| `hearing` | `hearing/{congress}` | `hearings` | no | yes (default) | `congress-hearing-list.json` |
+| `committee-report` | `committee-report/{congress}` | `reports` | yes | yes (default) | `congress-committee-report-list.json` |
+| `house-communication` | `house-communication/{congress}` | `houseCommunications` | no | yes (default) | `congress-house-communication-list.json` |
+
+`committee-bills` is the one route here whose rows are not a top-level array:
+the publisher nests them inside a `committee-bills` wrapper object alongside
+its own `count` and `url` (confirmed live 2026-09-19; see the [fixtures
+README](../../tests/fixtures/listings/README.md)). `records_key` there is the
+tuple `("committee-bills", "bills")`, and `reading/paged_json.py` reads a
+tuple records key the same way it already reads `count_path`/`next_path`.
+
+```python
+from spicy_docs.sources.congress.listing import LIST_ROUTES, CongressListingReader, list_route_url
+
+route = LIST_ROUTES["amendment"]
+url = list_route_url(route, congress=119, limit=250)
+with CongressListingReader(budget=budget, api_key=key) as congress:
+    for page in congress.records(route, url, max_pages=50):
+        print(page.declared_count, len(page.records))
+```
+
 ## One traversal rule for every JSON list
 
 `reading/paged_json.py` states each publisher's contract as data: the HTTPS

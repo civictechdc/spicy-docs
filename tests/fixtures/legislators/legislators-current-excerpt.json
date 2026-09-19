@@ -1,0 +1,627 @@
+[
+  {
+    "id": {
+      "bioguide": "C000127",
+      "thomas": "00172",
+      "lis": "S275",
+      "govtrack": 300018,
+      "opensecrets": "N00007836",
+      "votesmart": 27122,
+      "fec": [
+        "S8WA00194",
+        "H2WA01054"
+      ],
+      "cspan": 26137,
+      "wikipedia": "Maria Cantwell",
+      "house_history": 10608,
+      "ballotpedia": "Maria Cantwell",
+      "maplight": 544,
+      "icpsr": 39310,
+      "wikidata": "Q22250",
+      "google_entity_id": "kg:/m/01x68t",
+      "pictorial": 13398
+    },
+    "name": {
+      "first": "Maria",
+      "last": "Cantwell",
+      "official_full": "Maria Cantwell"
+    },
+    "bio": {
+      "birthday": "1958-10-13",
+      "gender": "F"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1993-01-05",
+        "end": "1995-01-03",
+        "state": "WA",
+        "district": 1,
+        "party": "Democrat"
+      },
+      {
+        "type": "sen",
+        "start": "2001-01-03",
+        "end": "2007-01-03",
+        "state": "WA",
+        "class": 1,
+        "party": "Democrat",
+        "url": "http://cantwell.senate.gov"
+      },
+      {
+        "type": "sen",
+        "start": "2007-01-04",
+        "end": "2013-01-03",
+        "state": "WA",
+        "class": 1,
+        "party": "Democrat",
+        "url": "http://cantwell.senate.gov",
+        "address": "311 HART SENATE OFFICE BUILDING WASHINGTON DC 20510",
+        "phone": "202-224-3441",
+        "fax": "202-228-0514",
+        "contact_form": "http://www.cantwell.senate.gov/contact/",
+        "office": "311 Hart Senate Office Building"
+      },
+      {
+        "type": "sen",
+        "start": "2013-01-03",
+        "end": "2019-01-03",
+        "state": "WA",
+        "party": "Democrat",
+        "class": 1,
+        "url": "https://www.cantwell.senate.gov",
+        "address": "511 Hart Senate Office Building Washington DC 20510",
+        "phone": "202-224-3441",
+        "fax": "202-228-0514",
+        "contact_form": "http://www.cantwell.senate.gov/public/index.cfm/email-maria",
+        "office": "511 Hart Senate Office Building",
+        "state_rank": "junior",
+        "rss_url": "http://www.cantwell.senate.gov/public/index.cfm/rss/feed"
+      },
+      {
+        "type": "sen",
+        "start": "2019-01-03",
+        "end": "2025-01-03",
+        "state": "WA",
+        "class": 1,
+        "party": "Democrat",
+        "state_rank": "junior",
+        "url": "https://www.cantwell.senate.gov",
+        "rss_url": "http://www.cantwell.senate.gov/public/index.cfm/rss/feed",
+        "contact_form": "https://www.cantwell.senate.gov/public/index.cfm/email-maria",
+        "address": "511 Hart Senate Office Building Washington DC 20510",
+        "office": "511 Hart Senate Office Building",
+        "phone": "202-224-3441"
+      },
+      {
+        "type": "sen",
+        "start": "2025-01-03",
+        "end": "2031-01-03",
+        "state": "WA",
+        "class": 1,
+        "state_rank": "junior",
+        "party": "Democrat",
+        "url": "https://www.cantwell.senate.gov",
+        "rss_url": "http://www.cantwell.senate.gov/public/index.cfm/rss/feed",
+        "contact_form": "https://www.cantwell.senate.gov/public/index.cfm/email-maria",
+        "address": "511 Hart Senate Office Building Washington DC 20510",
+        "office": "511 Hart Senate Office Building",
+        "phone": "202-224-3441"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "S000033",
+      "thomas": "01010",
+      "lis": "S313",
+      "govtrack": 400357,
+      "opensecrets": "N00000528",
+      "votesmart": 27110,
+      "fec": [
+        "H8VT01016",
+        "S4VT00033"
+      ],
+      "cspan": 994,
+      "wikipedia": "Bernie Sanders",
+      "ballotpedia": "Bernie Sanders",
+      "maplight": 450,
+      "icpsr": 29147,
+      "house_history": 21173,
+      "wikidata": "Q359442",
+      "google_entity_id": "kg:/m/01_gbv",
+      "pictorial": 13382
+    },
+    "name": {
+      "first": "Bernard",
+      "last": "Sanders",
+      "nickname": "Bernie",
+      "official_full": "Bernard Sanders"
+    },
+    "bio": {
+      "birthday": "1941-09-08",
+      "gender": "M"
+    },
+    "leadership_roles": [
+      {
+        "title": "Senate Democratic Outreach Chair",
+        "chamber": "senate",
+        "start": "2023-01-03",
+        "end": "2025-01-03"
+      },
+      {
+        "title": "Senate Democratic Outreach Chair",
+        "chamber": "senate",
+        "start": "2025-01-03"
+      }
+    ],
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1991-01-03",
+        "end": "1993-01-03",
+        "state": "VT",
+        "district": 0,
+        "party": "Independent",
+        "caucus": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1993-01-05",
+        "end": "1995-01-03",
+        "state": "VT",
+        "district": 0,
+        "party": "Independent",
+        "caucus": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1995-01-04",
+        "end": "1997-01-03",
+        "state": "VT",
+        "district": 0,
+        "party": "Independent",
+        "caucus": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1997-01-07",
+        "end": "1999-01-03",
+        "state": "VT",
+        "district": 0,
+        "party": "Independent",
+        "caucus": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "1999-01-06",
+        "end": "2001-01-03",
+        "state": "VT",
+        "district": 0,
+        "party": "Independent",
+        "caucus": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "2001-01-03",
+        "end": "2003-01-03",
+        "state": "VT",
+        "district": 0,
+        "party": "Independent",
+        "caucus": "Democrat"
+      },
+      {
+        "type": "rep",
+        "start": "2003-01-07",
+        "end": "2005-01-03",
+        "state": "VT",
+        "district": 0,
+        "party": "Independent",
+        "caucus": "Democrat",
+        "url": "http://bernie.house.gov"
+      },
+      {
+        "type": "rep",
+        "start": "2005-01-04",
+        "end": "2007-01-03",
+        "state": "VT",
+        "district": 0,
+        "party": "Independent",
+        "caucus": "Democrat",
+        "url": "http://bernie.house.gov"
+      },
+      {
+        "type": "sen",
+        "start": "2007-01-04",
+        "end": "2013-01-03",
+        "state": "VT",
+        "class": 1,
+        "party": "Independent",
+        "caucus": "Democrat",
+        "url": "http://sanders.senate.gov/",
+        "address": "332 DIRKSEN SENATE OFFICE BUILDING WASHINGTON DC 20510",
+        "phone": "202-224-5141",
+        "fax": "202-228-0776",
+        "contact_form": "http://www.sanders.senate.gov/contact/",
+        "office": "332 Dirksen Senate Office Building"
+      },
+      {
+        "type": "sen",
+        "start": "2013-01-03",
+        "end": "2019-01-03",
+        "state": "VT",
+        "party": "Independent",
+        "caucus": "Democrat",
+        "class": 1,
+        "url": "https://www.sanders.senate.gov",
+        "address": "332 Dirksen Senate Office Building Washington DC 20510",
+        "phone": "202-224-5141",
+        "fax": "202-228-0776",
+        "contact_form": "http://www.sanders.senate.gov/contact/",
+        "office": "332 Dirksen Senate Office Building",
+        "state_rank": "junior",
+        "rss_url": "http://www.sanders.senate.gov/rss/"
+      },
+      {
+        "type": "sen",
+        "start": "2019-01-03",
+        "end": "2025-01-03",
+        "state": "VT",
+        "class": 1,
+        "party": "Independent",
+        "caucus": "Democrat",
+        "state_rank": "senior",
+        "url": "https://www.sanders.senate.gov",
+        "rss_url": "http://www.sanders.senate.gov/rss/",
+        "contact_form": "https://www.sanders.senate.gov/contact/",
+        "address": "332 Dirksen Senate Office Building Washington DC 20510",
+        "office": "332 Dirksen Senate Office Building",
+        "phone": "202-224-5141"
+      },
+      {
+        "type": "sen",
+        "start": "2025-01-03",
+        "end": "2031-01-03",
+        "state": "VT",
+        "class": 1,
+        "state_rank": "senior",
+        "party": "Independent",
+        "caucus": "Democrat",
+        "url": "https://www.sanders.senate.gov",
+        "rss_url": "http://www.sanders.senate.gov/rss/",
+        "contact_form": "https://www.sanders.senate.gov/contact/",
+        "address": "332 Dirksen Senate Office Building Washington DC 20510",
+        "office": "332 Dirksen Senate Office Building",
+        "phone": "202-224-5141"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "W000805",
+      "thomas": "01897",
+      "lis": "S327",
+      "govtrack": 412321,
+      "opensecrets": "N00002097",
+      "votesmart": 535,
+      "fec": [
+        "S6VA00093",
+        "P80003023"
+      ],
+      "cspan": 7630,
+      "wikipedia": "Mark Warner",
+      "ballotpedia": "Mark Warner",
+      "maplight": 803,
+      "icpsr": 40909,
+      "wikidata": "Q453893",
+      "google_entity_id": "kg:/m/024mm1",
+      "pictorial": 13376
+    },
+    "name": {
+      "first": "Mark",
+      "middle": "R.",
+      "last": "Warner",
+      "official_full": "Mark R. Warner"
+    },
+    "bio": {
+      "gender": "M",
+      "birthday": "1954-12-15"
+    },
+    "leadership_roles": [
+      {
+        "title": "Senate Democratic Conference Vice Chair",
+        "chamber": "senate",
+        "start": "2023-01-03",
+        "end": "2025-01-03"
+      },
+      {
+        "title": "Senate Democratic Conference Vice Chair",
+        "chamber": "senate",
+        "start": "2025-01-03"
+      }
+    ],
+    "terms": [
+      {
+        "type": "sen",
+        "start": "2009-01-06",
+        "end": "2015-01-03",
+        "state": "VA",
+        "class": 2,
+        "party": "Democrat",
+        "url": "http://www.warner.senate.gov",
+        "address": "475 Russell Senate Office Building Washington DC 20510",
+        "phone": "202-224-2023",
+        "fax": "202-224-6295",
+        "contact_form": "http://www.warner.senate.gov/public//index.cfm?p=ContactPage#form_f9db6196-2dc7-4cda-8add-f8435a71318a",
+        "office": "475 Russell Senate Office Building",
+        "state_rank": "senior",
+        "rss_url": "http://www.warner.senate.gov/public/?a=rss.feed"
+      },
+      {
+        "type": "sen",
+        "start": "2015-01-06",
+        "end": "2021-01-03",
+        "state": "VA",
+        "class": 2,
+        "party": "Democrat",
+        "url": "https://www.warner.senate.gov",
+        "address": "703 Hart Senate Office Building Washington DC 20510",
+        "phone": "202-224-2023",
+        "fax": "202-224-6295",
+        "contact_form": "http://www.warner.senate.gov/public/index.cfm?p=Contact",
+        "office": "703 Hart Senate Office Building",
+        "state_rank": "senior",
+        "rss_url": "http://www.warner.senate.gov/public/?a=rss.feed"
+      },
+      {
+        "type": "sen",
+        "start": "2021-01-03",
+        "end": "2027-01-03",
+        "state": "VA",
+        "class": 2,
+        "state_rank": "senior",
+        "party": "Democrat",
+        "url": "https://www.warner.senate.gov",
+        "rss_url": "http://www.warner.senate.gov/public/?a=rss.feed",
+        "contact_form": "https://www.warner.senate.gov/public/index.cfm?p=Contact",
+        "address": "703 Hart Senate Office Building Washington DC 20510",
+        "office": "703 Hart Senate Office Building",
+        "phone": "202-224-2023"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "A000055",
+      "thomas": "01460",
+      "govtrack": 400004,
+      "opensecrets": "N00003028",
+      "votesmart": 441,
+      "fec": [
+        "H6AL04098"
+      ],
+      "cspan": 45516,
+      "wikipedia": "Robert Aderholt",
+      "house_history": 8333,
+      "ballotpedia": "Robert B. Aderholt",
+      "maplight": 127,
+      "icpsr": 29701,
+      "wikidata": "Q672671",
+      "google_entity_id": "kg:/m/024p03",
+      "pictorial": 12897
+    },
+    "name": {
+      "first": "Robert",
+      "last": "Aderholt",
+      "official_full": "Robert B. Aderholt",
+      "middle": "B."
+    },
+    "bio": {
+      "birthday": "1965-07-22",
+      "gender": "M"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "1997-01-07",
+        "end": "1999-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican"
+      },
+      {
+        "type": "rep",
+        "start": "1999-01-06",
+        "end": "2001-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican"
+      },
+      {
+        "type": "rep",
+        "start": "2001-01-03",
+        "end": "2003-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican"
+      },
+      {
+        "type": "rep",
+        "start": "2003-01-07",
+        "end": "2005-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "url": "http://www.house.gov/aderholt"
+      },
+      {
+        "type": "rep",
+        "start": "2005-01-04",
+        "end": "2007-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "url": "http://www.house.gov/aderholt"
+      },
+      {
+        "type": "rep",
+        "start": "2007-01-04",
+        "end": "2009-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "url": "http://aderholt.house.gov"
+      },
+      {
+        "type": "rep",
+        "start": "2009-01-06",
+        "end": "2011-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "url": "http://aderholt.house.gov"
+      },
+      {
+        "type": "rep",
+        "start": "2011-01-05",
+        "end": "2013-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "url": "http://aderholt.house.gov",
+        "address": "2264 Rayburn HOB; Washington DC 20515-0104",
+        "phone": "202-225-4876",
+        "fax": "202-225-5587",
+        "contact_form": "http://aderholt.house.gov/?sectionid=195&amp;sectiontree=195",
+        "office": "2264 Rayburn House Office Building"
+      },
+      {
+        "type": "rep",
+        "start": "2013-01-03",
+        "end": "2015-01-03",
+        "state": "AL",
+        "party": "Republican",
+        "district": 4,
+        "url": "http://aderholt.house.gov",
+        "address": "2369 Rayburn HOB; Washington DC 20515-0104",
+        "phone": "202-225-4876",
+        "fax": "202-225-5587",
+        "contact_form": "http://aderholt.house.gov/email-me2/",
+        "office": "2369 Rayburn House Office Building",
+        "rss_url": "http://aderholt.house.gov/common/rss//index.cfm?rss=20"
+      },
+      {
+        "type": "rep",
+        "start": "2015-01-06",
+        "end": "2017-01-03",
+        "state": "AL",
+        "party": "Republican",
+        "district": 4,
+        "url": "https://aderholt.house.gov",
+        "address": "235 Cannon HOB; Washington DC 20515-0104",
+        "phone": "202-225-4876",
+        "fax": "202-225-5587",
+        "contact_form": "http://aderholt.house.gov/email-me2/",
+        "office": "235 Cannon House Office Building",
+        "rss_url": "http://aderholt.house.gov/common/rss//index.cfm?rss=20"
+      },
+      {
+        "type": "rep",
+        "start": "2017-01-03",
+        "end": "2019-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "phone": "202-225-4876",
+        "url": "https://aderholt.house.gov",
+        "rss_url": "http://aderholt.house.gov/common/rss//index.cfm?rss=20",
+        "address": "235 Cannon House Office Building; Washington DC 20515-0104",
+        "office": "235 Cannon House Office Building",
+        "fax": "202-225-5587"
+      },
+      {
+        "type": "rep",
+        "start": "2019-01-03",
+        "end": "2021-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "phone": "202-225-4876",
+        "address": "1203 Longworth House Office Building Washington DC 20515-0104",
+        "office": "1203 Longworth House Office Building",
+        "url": "https://aderholt.house.gov",
+        "rss_url": "http://aderholt.house.gov/common/rss//index.cfm?rss=20"
+      },
+      {
+        "type": "rep",
+        "start": "2021-01-03",
+        "end": "2023-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "url": "https://aderholt.house.gov",
+        "rss_url": "http://aderholt.house.gov/common/rss//index.cfm?rss=20",
+        "address": "266 Cannon House Office Building Washington DC 20515-0104",
+        "office": "266 Cannon House Office Building",
+        "phone": "202-225-4876"
+      },
+      {
+        "type": "rep",
+        "start": "2023-01-03",
+        "end": "2025-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "url": "https://aderholt.house.gov",
+        "rss_url": "http://aderholt.house.gov/common/rss//index.cfm?rss=20",
+        "address": "266 Cannon House Office Building Washington DC 20515-0104",
+        "office": "266 Cannon House Office Building",
+        "phone": "202-225-4876"
+      },
+      {
+        "type": "rep",
+        "start": "2025-01-03",
+        "end": "2027-01-03",
+        "state": "AL",
+        "district": 4,
+        "party": "Republican",
+        "url": "https://aderholt.house.gov",
+        "rss_url": "http://aderholt.house.gov/common/rss//index.cfm?rss=20",
+        "address": "272 Cannon House Office Building Washington DC 20515-0104",
+        "office": "272 Cannon House Office Building",
+        "phone": "202-225-4876"
+      }
+    ]
+  },
+  {
+    "id": {
+      "bioguide": "G000607",
+      "fec": [
+        "H6CA01285"
+      ],
+      "govtrack": 457043
+    },
+    "name": {
+      "first": "James",
+      "last": "Gallagher",
+      "official_full": "James Gallagher"
+    },
+    "bio": {
+      "gender": "M",
+      "birthday": "1981-03-07"
+    },
+    "terms": [
+      {
+        "type": "rep",
+        "start": "2026-06-10",
+        "end": "2027-01-03",
+        "state": "CA",
+        "district": 1,
+        "party": "Republican",
+        "address": "408 Cannon House Office Building Washington DC 20515-0501",
+        "office": "408 Cannon House Office Building",
+        "phone": "202-225-3076"
+      }
+    ]
+  }
+]

@@ -35,6 +35,17 @@ class CapturedBodyResponse:
         return "sha256:" + hashlib.sha256(self.body).hexdigest()
 
 
+def attach_capture(error: Exception, capture: CapturedBodyResponse) -> None:
+    """Carry the complete response a refusal was decided on, without changing the error."""
+    error.__dict__["capture"] = capture
+
+
+def attached_capture(error: BaseException) -> CapturedBodyResponse | None:
+    """The capture ``attach_capture`` left on a refusal, or ``None`` if it kept none."""
+    capture = error.__dict__.get("capture")
+    return capture if isinstance(capture, CapturedBodyResponse) else None
+
+
 def refused_capture(capture: CapturedBodyResponse, *, stage: str) -> RefusedResponse:
     return RefusedResponse(
         request_key=capture.requested_url,

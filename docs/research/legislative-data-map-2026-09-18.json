@@ -608,7 +608,7 @@
       "https://www.senate.gov/legislative/LIS/nominations/NomCivilianPendingCommittee.xml": 2
     },
     "entries": 119,
-    "observedAt": "2026-09-18T17:21:34.523343Z",
+    "observedAt": "2026-09-18T18:20:02.300598Z",
     "resolvedUrl": "https://usgpo.github.io/innovation/data.json",
     "sha256": "sha256:9190197b0dfe5bddd8839a2967ad2f643cae881a38313e492afa37c9cdd7d86f",
     "statusCode": 200,
@@ -616,12 +616,82 @@
     "withFormatOrTemporal": 0
   },
   "compareRequests": {
-    "congress-gov": 31,
+    "congress-gov": 38,
     "govinfo": 7,
-    "keyless": 16
+    "keyless": 17
   },
-  "comparedAt": "2026-09-18T18:00:22.834262+00:00",
+  "comparedAt": "2026-09-19T07:39:30.026104+00:00",
   "comparisons": {
+    "bulk-status": {
+      "a": "Congress.gov bill list",
+      "aCount": 1566,
+      "apiNewer": 144,
+      "b": "GovInfo BILLSTATUS bulk zip",
+      "bCount": 1453,
+      "both": 1453,
+      "bulkNewer": 0,
+      "detail": "zip 3,934,575 B, 1453 statuses parsed by parse_bill_status, 113 refused (113 \u00d7 bill XML requires one text element); of 1453 shared bills the update day is equal on 1309, the API is newer on 144, bulk is newer on 0; latest action equal on 1449, differing ['45', '1176', '1201', '1202']",
+      "differingLatestAction": [
+        "45",
+        "1176",
+        "1201",
+        "1202"
+      ],
+      "onlyA": [
+        "10",
+        "101",
+        "102",
+        "103",
+        "104",
+        "105",
+        "106",
+        "109",
+        "11",
+        "110",
+        "111",
+        "113",
+        "116",
+        "12",
+        "127",
+        "130",
+        "133",
+        "135",
+        "139",
+        "140",
+        "142",
+        "143",
+        "144",
+        "147",
+        "15",
+        "151",
+        "16",
+        "160",
+        "163",
+        "17",
+        "171",
+        "173",
+        "18",
+        "19",
+        "193",
+        "195",
+        "197",
+        "20",
+        "203",
+        "212"
+      ],
+      "onlyACount": 113,
+      "onlyB": [],
+      "onlyBCount": 0,
+      "parsed": 1453,
+      "refusalReasons": {
+        "bill XML requires one text element": 113
+      },
+      "refused": 113,
+      "sameLatestAction": 1449,
+      "sameUpdateDay": 1309,
+      "scope": "119th H.Res.",
+      "zipBytes": 3934575
+    },
     "committee-reports": {
       "a": "Congress.gov committee-report",
       "aCount": 1316,
@@ -888,6 +958,13 @@
   },
   "congress": {
     "amendment": {
+      "belowFloor": {
+        "90": 0,
+        "91": 0,
+        "92": 0,
+        "93": 0,
+        "94": 0
+      },
       "byKey": {
         "100": 4690,
         "101": 4140,
@@ -919,10 +996,21 @@
       "descentStop": "two-empty",
       "earliest": 97,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "amendment/119",
+      "latestSortHonored": true,
+      "latestUpdate": "2026-09-18T11:08:27Z",
       "recordsKey": "amendments",
       "total": 128800
     },
     "bill": {
+      "belowFloor": {
+        "75": 0,
+        "76": 0,
+        "77": 0,
+        "78": 0,
+        "79": 0
+      },
       "byKey": {
         "100": 11278,
         "101": 11787,
@@ -969,10 +1057,21 @@
       "descentStop": "two-empty",
       "earliest": 82,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "bill/119",
+      "latestSortHonored": true,
+      "latestUpdate": "2026-09-18",
       "recordsKey": "bills",
       "total": 430236
     },
     "bound-congressional-record": {
+      "belowFloor": {
+        "2007": null,
+        "2008": null,
+        "2009": null,
+        "2010": null,
+        "2011": null
+      },
       "byKey": {
         "2014": 490,
         "2015": 190,
@@ -1008,10 +1107,21 @@
           "message": "Body source answered retryable HTTP 500"
         }
       },
+      "floorGap": [],
+      "latestPath": "bound-congressional-record",
+      "latestSortHonored": false,
+      "latestUpdate": "2025-04-18",
       "recordsKey": "boundCongressionalRecord",
       "total": 93290
     },
     "committee": {
+      "belowFloor": {
+        "53": 95,
+        "54": 99,
+        "55": 99,
+        "56": 103,
+        "57": 104
+      },
       "byKey": {
         "100": 308,
         "101": 304,
@@ -1078,10 +1188,27 @@
       "descentStop": "cap",
       "earliest": 60,
       "errors": {},
+      "floorGap": [
+        53,
+        54,
+        55,
+        56,
+        57
+      ],
+      "latestPath": "committee/119",
+      "latestSortHonored": true,
+      "latestUpdate": "2026-09-08T19:24:14Z",
       "recordsKey": "committees",
       "total": 818
     },
     "committee-meeting": {
+      "belowFloor": {
+        "104": 0,
+        "105": 0,
+        "106": 0,
+        "107": 0,
+        "108": 0
+      },
       "byKey": {
         "109": 0,
         "110": 0,
@@ -1099,10 +1226,21 @@
       "descentStop": "two-empty",
       "earliest": 111,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "committee-meeting/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18T19:11:42Z",
       "recordsKey": "committeeMeetings",
       "total": 18133
     },
     "committee-print": {
+      "belowFloor": {
+        "94": 2,
+        "95": 0,
+        "96": 0,
+        "97": 0,
+        "98": 0
+      },
       "byKey": {
         "100": 0,
         "101": 1,
@@ -1130,10 +1268,23 @@
       "descentStop": "two-empty",
       "earliest": 101,
       "errors": {},
+      "floorGap": [
+        94
+      ],
+      "latestPath": "committee-print/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18T19:28:30Z",
       "recordsKey": "committeePrints",
       "total": 1884
     },
     "committee-report": {
+      "belowFloor": {
+        "100": 0,
+        "96": 0,
+        "97": 0,
+        "98": 0,
+        "99": 0
+      },
       "byKey": {
         "101": 0,
         "102": 0,
@@ -1159,14 +1310,28 @@
       "descentStop": "two-empty",
       "earliest": 103,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "committee-report/119",
+      "latestSortHonored": true,
+      "latestUpdate": "2026-09-18T19:26:16Z",
       "recordsKey": "reports",
       "total": 20319
     },
     "crsreport": {
+      "latestPath": "crsreport",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18T15:25:04Z",
       "recordsKey": "CRSReports",
       "total": 14127
     },
     "daily-congressional-record": {
+      "belowFloor": {
+        "134": 0,
+        "135": 0,
+        "136": 0,
+        "137": 0,
+        "138": 0
+      },
       "byKey": {
         "139": 0,
         "140": 0,
@@ -1207,10 +1372,21 @@
       "descentStop": "two-empty",
       "earliest": 141,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "daily-congressional-record/172",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18T12:29:16Z",
       "recordsKey": "dailyCongressionalRecord",
       "total": 5868
     },
     "hearing": {
+      "belowFloor": {
+        "100": 0,
+        "101": 0,
+        "97": 0,
+        "98": 0,
+        "99": 0
+      },
       "byKey": {
         "102": 0,
         "103": 0,
@@ -1235,10 +1411,21 @@
       "descentStop": "two-empty",
       "earliest": 104,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "hearing/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18T19:55:55Z",
       "recordsKey": "hearings",
       "total": 35483
     },
     "house-communication": {
+      "belowFloor": {
+        "107": 0,
+        "108": 0,
+        "109": 0,
+        "110": 0,
+        "111": 0
+      },
       "byKey": {
         "112": 0,
         "113": 0,
@@ -1253,14 +1440,28 @@
       "descentStop": "two-empty",
       "earliest": 114,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "house-communication/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18",
       "recordsKey": "houseCommunications",
       "total": 41709
     },
     "house-requirement": {
+      "latestPath": "house-requirement",
+      "latestSortHonored": false,
+      "latestUpdate": "2021-11-05",
       "recordsKey": "houseRequirements",
       "total": 3226
     },
     "house-vote": {
+      "belowFloor": {
+        "108": 0,
+        "109": 0,
+        "110": 0,
+        "111": 0,
+        "112": 0
+      },
       "byKey": {
         "113": 0,
         "114": 0,
@@ -1274,10 +1475,21 @@
       "descentStop": "two-empty",
       "earliest": 115,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "house-vote/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2025-09-09T18:53:19-04:00",
       "recordsKey": "houseRollCallVotes",
       "total": 5079
     },
     "law": {
+      "belowFloor": {
+        "75": 0,
+        "76": 0,
+        "77": 0,
+        "78": 0,
+        "79": 0
+      },
       "byKey": {
         "100": 761,
         "101": 666,
@@ -1324,6 +1536,10 @@
       "descentStop": "two-empty",
       "earliest": 82,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "law/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18",
       "recordsKey": "bills",
       "totalError": {
         "contentType": "application/json",
@@ -1333,6 +1549,13 @@
       }
     },
     "member": {
+      "belowFloor": {
+        "61": 0,
+        "62": 0,
+        "63": 0,
+        "64": 0,
+        "65": 0
+      },
       "byKey": {
         "100": 549,
         "101": 551,
@@ -1393,10 +1616,21 @@
       "descentStop": "two-empty",
       "earliest": 68,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "member/congress/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18T07:40:27Z",
       "recordsKey": "members",
       "total": 2696
     },
     "nomination": {
+      "belowFloor": {
+        "90": 0,
+        "91": 0,
+        "92": 0,
+        "93": 0,
+        "94": 0
+      },
       "byKey": {
         "100": 1534,
         "101": 1676,
@@ -1428,10 +1662,21 @@
       "descentStop": "two-empty",
       "earliest": 97,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "nomination/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18T11:00:36Z",
       "recordsKey": "nominations",
       "total": 45481
     },
     "senate-communication": {
+      "belowFloor": {
+        "89": 0,
+        "90": 0,
+        "91": 0,
+        "92": 0,
+        "93": 0
+      },
       "byKey": {
         "100": 4866,
         "101": 4528,
@@ -1464,10 +1709,21 @@
       "descentStop": "two-empty",
       "earliest": 96,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "senate-communication/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-18T10:15:55Z",
       "recordsKey": "senateCommunications",
       "total": 175597
     },
     "summaries": {
+      "belowFloor": {
+        "112": 0,
+        "113": 0,
+        "114": 0,
+        "115": 0,
+        "116": 0
+      },
       "byKey": {
         "117": 0,
         "118": 0,
@@ -1477,10 +1733,21 @@
       "descentStop": "two-empty",
       "earliest": 119,
       "errors": {},
+      "floorGap": [],
+      "latestPath": "summaries/119",
+      "latestSortHonored": true,
+      "latestUpdate": "2026-09-18T20:13:12Z",
       "recordsKey": "summaries",
       "total": 6
     },
     "treaty": {
+      "belowFloor": {
+        "79": 0,
+        "80": 0,
+        "81": 2,
+        "82": 0,
+        "83": 0
+      },
       "byKey": {
         "100": 23,
         "101": 22,
@@ -1523,199 +1790,1047 @@
       "descentStop": "two-empty",
       "earliest": 86,
       "errors": {},
+      "floorGap": [
+        81
+      ],
+      "latestPath": "treaty/119",
+      "latestSortHonored": false,
+      "latestUpdate": "2026-09-15T00:33:28Z",
       "recordsKey": "treaties",
       "total": 786
     }
   },
-  "generatedAt": "2026-09-18T17:17:40.457275+00:00",
+  "floorsAt": "2026-09-18T22:27:41.805219+00:00",
+  "floorsRequests": {
+    "congress-gov": 85
+  },
+  "flow": {
+    "bills\u2192related": {
+      "evidence": "BILLS-119hr1enr related collections ['BILLSTATUS', 'BILLS', 'HOB', 'CREC', 'CRPT', 'CHRG', 'CPD', 'PLAW']",
+      "key": "bills\u2192related",
+      "kind": "id",
+      "ok": true,
+      "source": "GovInfo BILLS",
+      "target": "GovInfo related service",
+      "via": "related/BILLS-{c}{type}{n}{version}"
+    },
+    "bill\u2192amendment": {
+      "evidence": "SAMDT 2851 \u2192 amendedBill HR 1",
+      "key": "bill\u2192amendment",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "Congress.gov amendment",
+      "via": "amendments[] \u2192 amendment/{c}/{type}/{n}; amendedBill back"
+    },
+    "bill\u2192cbo": {
+      "evidence": "https://www.cbo.gov/publication/61461 \u2192 refused keyless: Body source answered HTTP 403; stopping acquisition (bot wall)",
+      "key": "bill\u2192cbo",
+      "kind": "url",
+      "ok": false,
+      "source": "Congress.gov bill",
+      "target": "CBO estimate page",
+      "via": "cboCostEstimates[].url"
+    },
+    "bill\u2192clerk-xml": {
+      "evidence": "https://clerk.house.gov/evs/2025/roll190.xml legis-num 'H R 1'",
+      "key": "bill\u2192clerk-xml",
+      "kind": "url",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "Clerk vote XML",
+      "via": "recordedVotes[].url (clerk.house.gov/evs)"
+    },
+    "bill\u2192committee": {
+      "evidence": "hsbu00 \u2192 Committee on the Budget",
+      "key": "bill\u2192committee",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "Congress.gov committee",
+      "via": "committees[].systemCode \u2192 committee/{chamber}/{code}"
+    },
+    "bill\u2192house-vote": {
+      "evidence": "roll 190 \u2192 house-vote \u2192 HR 1",
+      "key": "bill\u2192house-vote",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "Congress.gov house-vote",
+      "via": "actions[].recordedVotes \u2192 house-vote/{c}/{session}/{roll}"
+    },
+    "bill\u2192law": {
+      "evidence": "Public Law 119-21 \u2192 law/119/pub/21 \u2192 HR 1",
+      "key": "bill\u2192law",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "Congress.gov law",
+      "via": "laws[].number \u2192 law/{c}/pub/{n}"
+    },
+    "bill\u2192member": {
+      "evidence": "sponsor A000375 \u2192 Jodey C. Arrington",
+      "key": "bill\u2192member",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "Congress.gov member",
+      "via": "sponsors[].bioguideId \u2192 member/{id}"
+    },
+    "bill\u2192related-bill": {
+      "evidence": "bill/119/hr/10072 \u2192 'Hardworking Seniors Act'",
+      "key": "bill\u2192related-bill",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "Congress.gov bill",
+      "via": "relatedBills[] \u2192 bill/{c}/{type}/{n}"
+    },
+    "bill\u2192report": {
+      "evidence": "bill/119/hres/53 committeeReports ['H. Rept. 119-1'] \u2194 H. Rept. 119-1",
+      "key": "bill\u2192report",
+      "kind": "derived",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "Congress.gov committee-report",
+      "via": "committeeReports[].citation \u2192 committee-report/{c}/{type}/{n}"
+    },
+    "bill\u2192senate-xml": {
+      "evidence": "https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00372.xml document_number '1'",
+      "key": "bill\u2192senate-xml",
+      "kind": "url",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "Senate vote XML",
+      "via": "recordedVotes[].url (senate.gov roll_call_votes)"
+    },
+    "bill\u2192text-package": {
+      "evidence": "www.congress.gov/119/bills/hr1/BILLS-119hr1enr.htm \u2192 GovInfo BILLS-119hr1enr",
+      "key": "bill\u2192text-package",
+      "kind": "derived",
+      "ok": true,
+      "source": "Congress.gov bill",
+      "target": "GovInfo BILLS package",
+      "via": "textVersions[].formats[].url \u2192 package id BILLS-{c}{type}{n}{version}"
+    },
+    "cbo\u2192bill": {
+      "evidence": "item Bill_Number 'S. 2801' \u2192 bill/119/s/2801",
+      "key": "cbo\u2192bill",
+      "kind": "id",
+      "ok": true,
+      "source": "CBO cost-estimate feed",
+      "target": "Congress.gov bill",
+      "via": "item Bill_Number \u2192 bill/{c}/{type}/{n}"
+    },
+    "communication-typing": {
+      "evidence": "of the 25 newest: 17 rulemakings, 17 with a RIN, 25 with a committee referral, 21 naming a requirement, 25 with a Record date",
+      "key": "communication-typing",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov house-communication",
+      "target": "Congress.gov house-communication",
+      "via": "detail fields on the 25 newest: isRulemaking, RIN, committees, matchingRequirements, congressionalRecordDate"
+    },
+    "communication\u2192committee": {
+      "evidence": "EC 4752 referred hsba00 on 2026-09-17 \u2192 Committee on Financial Services",
+      "key": "communication\u2192committee",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov house-communication",
+      "target": "Congress.gov committee",
+      "via": "committees[].systemCode + referralDate \u2192 committee/house/{code}"
+    },
+    "communication\u2192federal-register": {
+      "evidence": "EC 4752 RIN 3133-AF97 \u2192 Federal Register API regulation_id_number filter: 2 documents, each carrying the RIN as a structured field [(None, ['3133-AF97']), (None, ['3133-AF97'])]",
+      "key": "communication\u2192federal-register",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov house-communication",
+      "target": "Federal Register document",
+      "via": "reportNature `RIN: nnnn-XXnn` \u2192 federalregister.gov/api/v1/documents?conditions[regulation_id_number]=RIN"
+    },
+    "communication\u2192requirement": {
+      "evidence": "EC 4752 \u2192 requirement 8070: 'Congressional review of agency rulemaking.'",
+      "key": "communication\u2192requirement",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov house-communication",
+      "target": "Congress.gov house-requirement",
+      "via": "matchingRequirements[].number \u2192 house-requirement/{n}"
+    },
+    "crs\u2192law-or-bill": {
+      "evidence": "IF12853 relatedMaterials type PUB 98-369 \u2192 /v3/law/98/pub/369 \u2192 bill",
+      "key": "crs\u2192law-or-bill",
+      "kind": "url",
+      "ok": true,
+      "source": "Congress.gov crsreport",
+      "target": "Congress.gov law",
+      "via": "relatedMaterials[].URL (laws and bills) \u2192 law/{c}/pub/{n}"
+    },
+    "crs\u2192pdf": {
+      "evidence": "IF12853 \u2192 /crs_external_products/IF/PDF/IF12853/IF12853.10.pdf \u2192 200 application/pdf 409,240 B",
+      "key": "crs\u2192pdf",
+      "kind": "url",
+      "ok": true,
+      "source": "Congress.gov crsreport",
+      "target": "congress.gov CRS PDF",
+      "via": "formats[].url (keyless)"
+    },
+    "cvc\u2192committee": {
+      "evidence": "cvc SPAG00 \u2192 spag00 \u2192 Special Committee on Aging",
+      "key": "cvc\u2192committee",
+      "kind": "derived",
+      "ok": true,
+      "source": "Senate cvc XML",
+      "target": "Congress.gov committee",
+      "via": "committee code \u2192 systemCode `{code}00`"
+    },
+    "cvc\u2192member": {
+      "evidence": "cvc bioguideId A000382 + @lis_member_id S428 \u2192 member",
+      "key": "cvc\u2192member",
+      "kind": "id",
+      "ok": true,
+      "source": "Senate cvc XML",
+      "target": "Congress.gov member",
+      "via": "senator.bioguide_id \u2192 member/{id}; carries lis_member_id"
+    },
+    "feed\u2192committee": {
+      "evidence": "feed code SSBK00 \u2192 ssbk00 \u2192 Committee on Banking, Housing, and Urban Affairs",
+      "key": "feed\u2192committee",
+      "kind": "derived",
+      "ok": true,
+      "source": "Senate nomination feed",
+      "target": "Congress.gov committee",
+      "via": "Senate committee code \u2192 systemCode `{code}00`"
+    },
+    "feed\u2192nomination": {
+      "evidence": "feed PN1255 \u2192 nomination/119/1255",
+      "key": "feed\u2192nomination",
+      "kind": "id",
+      "ok": true,
+      "source": "Senate nomination feed",
+      "target": "Congress.gov nomination",
+      "via": "PN number \u2192 nomination/{c}/{n}"
+    },
+    "floor\u2192bill": {
+      "evidence": "20260914 legis-num 'S. 283' \u2192 bill/119/s/283",
+      "key": "floor\u2192bill",
+      "kind": "derived",
+      "ok": true,
+      "source": "docs.house.gov weekly floor XML",
+      "target": "Congress.gov bill",
+      "via": "floor-item.legis-num \u2192 bill/{c}/{type}/{n}"
+    },
+    "hearing\u2192meeting": {
+      "evidence": "eventId 119003 \u2192 committee-meeting (Hearing)",
+      "key": "hearing\u2192meeting",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov hearing",
+      "target": "Congress.gov committee-meeting",
+      "via": "associatedMeeting.eventId \u2192 committee-meeting/{c}/{chamber}/{eventId}"
+    },
+    "hearing\u2192package": {
+      "evidence": "jacket 64431 \u2192 CHRG-119hhrg64431",
+      "key": "hearing\u2192package",
+      "kind": "derived",
+      "ok": true,
+      "source": "Congress.gov hearing",
+      "target": "GovInfo CHRG package",
+      "via": "formats[].url \u2192 package id CHRG-{c}{chamber}hrg{jacket}"
+    },
+    "house-vote\u2192bill": {
+      "evidence": "roll 240 \u2192 bill/119/hr/3424",
+      "key": "house-vote\u2192bill",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov house-vote",
+      "target": "Congress.gov bill",
+      "via": "legislationType + legislationNumber \u2192 bill"
+    },
+    "house-vote\u2192member": {
+      "evidence": "voter A000055 \u2192 member",
+      "key": "house-vote\u2192member",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov house-vote",
+      "target": "Congress.gov member",
+      "via": "members[].bioguideID \u2192 member/{id}"
+    },
+    "law\u2192classification": {
+      "evidence": "https://uscode.house.gov/classification/tbl119pl_2nd.htm states 119-1: True",
+      "key": "law\u2192classification",
+      "kind": "derived",
+      "ok": true,
+      "source": "Public law number",
+      "target": "OLRC classification tables",
+      "via": "tables.shtml \u2192 per-Congress table \u2192 law number"
+    },
+    "law\u2192table3": {
+      "evidence": "https://uscode.house.gov/table3/117_58.htm \u2192 414,521 B; page states act 117\u201358, Congress 117th Cong., 135 Stat. Stat.",
+      "key": "law\u2192table3",
+      "kind": "derived",
+      "ok": true,
+      "source": "Public law number",
+      "target": "OLRC Table III",
+      "via": "`table3_act_locator` (117-58) \u2192 act page stating the number"
+    },
+    "lda\u2192bill": {
+      "evidence": "0 of 25 filings name a bill in free text []; no structured bill field exists",
+      "key": "lda\u2192bill",
+      "kind": "text",
+      "ok": false,
+      "source": "LDA filings",
+      "target": "Congress.gov bill",
+      "via": "lobbying_activities[].description free text"
+    },
+    "lda\u2192registrant": {
+      "evidence": "filing a934e791 \u2192 registrant 61414 'NEXXUS CONSULTING, LLC'",
+      "key": "lda\u2192registrant",
+      "kind": "id",
+      "ok": true,
+      "source": "LDA filings",
+      "target": "LDA registrants",
+      "via": "registrant.id \u2192 registrants/{id}"
+    },
+    "legislators\u2192fec": {
+      "evidence": "A000355 id.fec S4MI00165 \u2192 FEC API candidate 'ABRAHAM, SPENCER SENATOR'",
+      "key": "legislators\u2192fec",
+      "kind": "id",
+      "ok": true,
+      "source": "Legislators JSON",
+      "target": "FEC candidate",
+      "via": "id.fec[] \u2192 api.open.fec.gov/v1/candidate/{id}"
+    },
+    "legislators\u2192former-senator": {
+      "evidence": "4 of 4 absent LIS ids resolve via the JSON; S293 \u2192 G000359 \u2192 member",
+      "key": "legislators\u2192former-senator",
+      "kind": "id",
+      "ok": true,
+      "source": "Legislators JSON",
+      "target": "Congress.gov member",
+      "via": "id.lis (absent from cvc) \u2192 id.bioguide \u2192 member/{id}"
+    },
+    "meeting\u2192bill": {
+      "evidence": "eventId 119565 relatedItems.bills \u2192 bill/119/hr/1653",
+      "key": "meeting\u2192bill",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov committee-meeting",
+      "target": "Congress.gov bill",
+      "via": "relatedItems.bills[] \u2192 bill"
+    },
+    "meeting\u2192documents": {
+      "evidence": "www.congress.gov \u2192 200 application/pdf 1,036,104 B",
+      "key": "meeting\u2192documents",
+      "kind": "url",
+      "ok": true,
+      "source": "Congress.gov committee-meeting",
+      "target": "docs.house.gov / congress.gov documents",
+      "via": "witnessDocuments[].url, meetingDocuments[].url"
+    },
+    "meeting\u2192hearing": {
+      "evidence": "eventId 119003 hearingTranscript ['63019', '64431'] \u2194 jacket 64431",
+      "key": "meeting\u2192hearing",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov committee-meeting",
+      "target": "Congress.gov hearing",
+      "via": "hearingTranscript[].jacketNumber \u2192 hearing/{c}/{chamber}/{jacket}"
+    },
+    "memberdata\u2192committee": {
+      "evidence": "comcode II00 \u2192 hsii00 \u2192 Committee on Natural Resources",
+      "key": "memberdata\u2192committee",
+      "kind": "derived",
+      "ok": true,
+      "source": "House MemberData.xml",
+      "target": "Congress.gov committee",
+      "via": "committee-assignment@comcode \u2192 systemCode `hs{code}`"
+    },
+    "member\u2192bill": {
+      "evidence": "A000375 sponsored \u2192 bill/119/hr/8781",
+      "key": "member\u2192bill",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov member",
+      "target": "Congress.gov bill",
+      "via": "sponsored-legislation[] \u2192 bill"
+    },
+    "member\u2192house-file": {
+      "evidence": "A000375 in members.xml (441 ids)",
+      "key": "member\u2192house-file",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov member",
+      "target": "House members.xml",
+      "via": "bioguideId \u2194 Member@bioguide_id"
+    },
+    "nomination\u2192committee": {
+      "evidence": "PN1187 \u2192 ssga00 \u2192 Committee on Homeland Security and Governmental Affairs",
+      "key": "nomination\u2192committee",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov nomination",
+      "target": "Congress.gov committee",
+      "via": "nomination/{c}/{n}/committees[].systemCode"
+    },
+    "nomination\u2192hearing": {
+      "evidence": "none of the twelve newest nor five confirmed nominations counts a hearing",
+      "key": "nomination\u2192hearing",
+      "kind": "id",
+      "ok": false,
+      "source": "Congress.gov nomination",
+      "target": "Congress.gov hearing",
+      "via": "nomination/{c}/{n}/hearings[].jacketNumber"
+    },
+    "plaw\u2192related": {
+      "evidence": "related collections ['BILLS', 'HOB', 'CPD']; BILLS \u2192 ['BILLS-119s5pcs', 'BILLS-119s5es', 'BILLS-119s5enr']",
+      "key": "plaw\u2192related",
+      "kind": "id",
+      "ok": true,
+      "source": "GovInfo PLAW",
+      "target": "GovInfo related service",
+      "via": "related/{packageId} \u2192 BILLS, CREC, \u2026 package ids"
+    },
+    "plaw\u2192statute": {
+      "evidence": "rule proved on 117-58 \u2192 STATUTE/135 ['STATUTE-135.xml']; 139 Stat. 3 \u2192 STATUTE/139 not in bulk yet (newest volume 137)",
+      "key": "plaw\u2192statute",
+      "kind": "derived",
+      "ok": true,
+      "source": "GovInfo PLAW USLM",
+      "target": "GovInfo STATUTE volume",
+      "via": "meta citableAs `NNN Stat. NNN` \u2192 bulkdata/STATUTE/{volume}"
+    },
+    "plaw\u2192usc": {
+      "evidence": "PLAW-119publ1: 8 refs to /us/usc/\u2026; citableAs ['Public Law 119\u20131', '139 Stat. 3']",
+      "key": "plaw\u2192usc",
+      "kind": "id",
+      "ok": true,
+      "source": "GovInfo PLAW USLM",
+      "target": "US Code sections",
+      "via": "<ref href=\"/us/usc/t\u2026/s\u2026\"> in the law text"
+    },
+    "record\u2192legislative-day": {
+      "evidence": "chamber sections per issue: 2026-01-02 H+S, 2026-01-03 H, 2025-12-30 H+S, 2025-12-26 H+S, 2025-12-23 H+S",
+      "key": "record\u2192legislative-day",
+      "kind": "derived",
+      "ok": true,
+      "source": "Congress.gov daily-congressional-record",
+      "target": "Legislative day per chamber",
+      "via": "issue fullIssue.sections names (House Section, Senate Section)"
+    },
+    "record\u2192package": {
+      "evidence": "vol 171 issue 219 entireIssue www.congress.gov \u2192 GovInfo CREC-2026-01-02",
+      "key": "record\u2192package",
+      "kind": "derived",
+      "ok": true,
+      "source": "Congress.gov daily-congressional-record",
+      "target": "GovInfo CREC package",
+      "via": "issue links \u2192 package id CREC-{date}"
+    },
+    "report\u2192bill": {
+      "evidence": "associatedBill \u2192 bill/119/hres/53",
+      "key": "report\u2192bill",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov committee-report",
+      "target": "Congress.gov bill",
+      "via": "associatedBill[] \u2192 bill/{c}/{type}/{n}"
+    },
+    "report\u2192package": {
+      "evidence": "/119/crpt/hrpt1/generated/CRPT-119hrpt1.htm \u2192 GovInfo CRPT-119hrpt1",
+      "key": "report\u2192package",
+      "kind": "derived",
+      "ok": true,
+      "source": "Congress.gov committee-report",
+      "target": "GovInfo CRPT package",
+      "via": "text[].formats[].url \u2192 package id CRPT-{c}{type}{n}"
+    },
+    "requirement\u2192communications": {
+      "evidence": "requirement 8070 (CRA) lists 92,450 communications, unordered by Congress; 112th EC 2 detail 404; 105th EC 2353 detail 404",
+      "key": "requirement\u2192communications",
+      "kind": "id",
+      "ok": false,
+      "source": "Congress.gov house-requirement",
+      "target": "Congress.gov house-communication",
+      "via": "house-requirement/{n}/matching-communications[] \u2192 house-communication/{c}/{type}/{n}"
+    },
+    "senate-communication\u2192committee": {
+      "evidence": "EC 4712 \u2192 ssaf00 \u2192 Committee on Agriculture, Nutrition, and Forestry; typed fields ['abstract', 'chamber', 'committees', 'communicationType', 'congress', 'congressionalRecordDate', 'number', 'sessionNumber']",
+      "key": "senate-communication\u2192committee",
+      "kind": "id",
+      "ok": true,
+      "source": "Congress.gov senate-communication",
+      "target": "Congress.gov committee",
+      "via": "committees[].systemCode \u2192 committee/senate/{code}"
+    },
+    "senate-hearings\u2192committee": {
+      "evidence": "cmte_code SSAS00 \u2192 ssas00 \u2192 Committee on Armed Services",
+      "key": "senate-hearings\u2192committee",
+      "kind": "derived",
+      "ok": true,
+      "source": "Senate hearings.xml",
+      "target": "Congress.gov committee",
+      "via": "meeting.cmte_code \u2192 systemCode"
+    },
+    "senate-vote\u2192document": {
+      "evidence": "S. 5 \u2192 bill/119/s/5",
+      "key": "senate-vote\u2192document",
+      "kind": "derived",
+      "ok": true,
+      "source": "Senate vote XML",
+      "target": "Congress.gov bill or nomination",
+      "via": "document_type + document_number \u2192 bill or nomination"
+    },
+    "senate-vote\u2192member": {
+      "evidence": "LIS S428 \u2192 cvc \u2192 A000382 \u2192 member; 4 of 99 voters' LIS ids are absent from today's cvc ['S293', 'S419', 'S350', 'S421']",
+      "key": "senate-vote\u2192member",
+      "kind": "derived",
+      "ok": true,
+      "source": "Senate vote XML",
+      "target": "Congress.gov member",
+      "via": "member.lis_member_id \u2192 cvc bioguide_id \u2192 member/{id}"
+    },
+    "treaty\u2192cdoc": {
+      "evidence": "treaty 2 \u2192 CDOC-119tdoc2 (TAX CONVENTION WITH CROATIA AND PROTOCOL)",
+      "key": "treaty\u2192cdoc",
+      "kind": "derived",
+      "ok": true,
+      "source": "Congress.gov treaty",
+      "target": "GovInfo CDOC package",
+      "via": "treaty number \u2192 package id CDOC-{c}tdoc{n}"
+    }
+  },
+  "flowAt": "2026-09-18T22:37:34.302028+00:00",
+  "flowRequests": {
+    "congress-gov": 548,
+    "govinfo": 90,
+    "keyless": 74
+  },
+  "flowSampleSize": 20,
+  "flowSamples": {
+    "bill\u2192clerk-xml": {
+      "failures": [],
+      "resolved": 5,
+      "tried": 5
+    },
+    "bill\u2192committee": {
+      "failures": [],
+      "resolved": 20,
+      "tried": 20
+    },
+    "bill\u2192house-vote": {
+      "failures": [],
+      "resolved": 5,
+      "tried": 5
+    },
+    "bill\u2192law": {
+      "failures": [],
+      "resolved": 1,
+      "tried": 1
+    },
+    "bill\u2192member": {
+      "failures": [],
+      "resolved": 20,
+      "tried": 20
+    },
+    "bill\u2192report": {
+      "failures": [],
+      "resolved": 1,
+      "tried": 1
+    },
+    "bill\u2192text-package": {
+      "failures": [],
+      "resolved": 20,
+      "tried": 20
+    },
+    "communication\u2192committee": {
+      "failures": [],
+      "resolved": 20,
+      "tried": 20
+    },
+    "crs\u2192law-or-bill": {
+      "failures": [],
+      "resolved": 14,
+      "tried": 14
+    },
+    "hearing\u2192meeting": {
+      "failures": [],
+      "resolved": 4,
+      "tried": 4
+    },
+    "hearing\u2192package": {
+      "failures": [
+        "hearing/119/senate/1: ProbeUnavailableError HTTP 404"
+      ],
+      "resolved": 19,
+      "tried": 20
+    },
+    "house-vote\u2192bill": {
+      "failures": [],
+      "resolved": 20,
+      "tried": 20
+    },
+    "house-vote\u2192source-xml": {
+      "failures": [],
+      "resolved": 20,
+      "tried": 20
+    },
+    "law\u2192plaw-bulk": {
+      "failures": [
+        "119-110 not in bulk yet",
+        "119-109 not in bulk yet",
+        "119-104 not in bulk yet"
+      ],
+      "resolved": 102,
+      "tried": 106
+    },
+    "meeting\u2192bill": {
+      "failures": [],
+      "resolved": 6,
+      "tried": 6
+    },
+    "nomination\u2192committee": {
+      "failures": [],
+      "resolved": 6,
+      "tried": 6
+    },
+    "nomination\u2192hearing": {
+      "failures": [],
+      "resolved": 0,
+      "tried": 0
+    },
+    "record\u2192package": {
+      "failures": [
+        "208: ProbeUnavailableError HTTP 404",
+        "205: ProbeUnavailableError HTTP 404"
+      ],
+      "resolved": 18,
+      "tried": 20
+    },
+    "report\u2192bill": {
+      "failures": [],
+      "resolved": 17,
+      "tried": 17
+    },
+    "report\u2192package": {
+      "failures": [],
+      "resolved": 20,
+      "tried": 20
+    },
+    "senate-vote\u2192document": {
+      "failures": [],
+      "resolved": 19,
+      "tried": 19
+    },
+    "senate-vote\u2192member": {
+      "byVote": [
+        {
+          "absentFromCvc": 4,
+          "date": "January 9, 2025",
+          "vote": 1,
+          "voters": 99
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "February 5, 2025",
+          "vote": 36,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "February 20, 2025",
+          "vote": 71,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "March 5, 2025",
+          "vote": 106,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "March 25, 2025",
+          "vote": 141,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "April 4, 2025",
+          "vote": 176,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "April 11, 2025",
+          "vote": 211,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "May 13, 2025",
+          "vote": 246,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "May 22, 2025",
+          "vote": 281,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "June 17, 2025",
+          "vote": 316,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "June 30, 2025",
+          "vote": 351,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "July 15, 2025",
+          "vote": 386,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "July 22, 2025",
+          "vote": 421,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "July 30, 2025",
+          "vote": 456,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "August 2, 2025",
+          "vote": 491,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "September 18, 2025",
+          "vote": 526,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "October 9, 2025",
+          "vote": 561,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "October 29, 2025",
+          "vote": 596,
+          "voters": 100
+        },
+        {
+          "absentFromCvc": 2,
+          "date": "December 3, 2025",
+          "vote": 631,
+          "voters": 100
+        }
+      ],
+      "failures": [],
+      "resolved": 1859,
+      "resolvedViaLegislatorsJson": 40,
+      "tried": 1899
+    },
+    "treaty\u2192cdoc": {
+      "failures": [],
+      "resolved": 2,
+      "tried": 2
+    }
+  },
+  "freshnessAt": "2026-09-18T20:33:25.768722+00:00",
+  "freshnessRequests": {
+    "congress-gov": 39
+  },
+  "generatedAt": "2026-09-18T18:14:48.599567+00:00",
   "govinfo": {
     "bulkdata": {
       "BILLS": {
-        "byteSize": 1793,
-        "contentType": "application/json",
+        "currentCongress": {
+          "congress": 119,
+          "fileBytes": 0,
+          "files": 0,
+          "types": {
+            "1": {
+              "fileBytes": 0,
+              "files": 0,
+              "zipBytes": 0,
+              "zipModified": null
+            },
+            "2": {
+              "fileBytes": 0,
+              "files": 0,
+              "zipBytes": 0,
+              "zipModified": null
+            }
+          },
+          "zipBytes": 0
+        },
         "folders": 9,
+        "newestFolder": "18-Sep-2026 05:17",
         "numericRange": [
           113,
           119
         ],
-        "observedAt": "2026-09-18T17:21:21.321673Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/BILLS",
-        "sha256": "sha256:cfef672ea66c8289d5491547f6383b06917a9e61f617b991535598d5792adc6c",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "BILLSTATUS": {
-        "byteSize": 2664,
-        "contentType": "application/json",
+        "currentCongress": {
+          "congress": 119,
+          "fileBytes": 239018346,
+          "files": 18956,
+          "types": {
+            "hconres": {
+              "fileBytes": 4511579,
+              "files": 118,
+              "zipBytes": 444137,
+              "zipModified": "18-Sep-2026 08:28"
+            },
+            "hjres": {
+              "fileBytes": 3113232,
+              "files": 217,
+              "zipBytes": 669995,
+              "zipModified": "18-Sep-2026 16:18"
+            },
+            "hr": {
+              "fileBytes": 144844162,
+              "files": 10503,
+              "zipBytes": 31650445,
+              "zipModified": "18-Sep-2026 16:29"
+            },
+            "hres": {
+              "fileBytes": 18440895,
+              "files": 1566,
+              "zipBytes": 3933064,
+              "zipModified": "18-Sep-2026 16:20"
+            },
+            "s": {
+              "fileBytes": 53431179,
+              "files": 5428,
+              "zipBytes": 12841597,
+              "zipModified": "18-Sep-2026 16:28"
+            },
+            "sconres": {
+              "fileBytes": 4388716,
+              "files": 39,
+              "zipBytes": 196978,
+              "zipModified": "15-Sep-2026 12:26"
+            },
+            "sjres": {
+              "fileBytes": 2187832,
+              "files": 216,
+              "zipBytes": 529622,
+              "zipModified": "18-Sep-2026 12:18"
+            },
+            "sres": {
+              "fileBytes": 8100751,
+              "files": 869,
+              "zipBytes": 1956412,
+              "zipModified": "18-Sep-2026 14:38"
+            }
+          },
+          "zipBytes": 52222250
+        },
         "folders": 13,
+        "newestFolder": "18-Sep-2026 16:28",
         "numericRange": [
           108,
           119
         ],
-        "observedAt": "2026-09-18T17:21:21.633013Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/BILLSTATUS",
-        "sha256": "sha256:800a81c68392c273d5c9ca7d504c91ae4ba4b8ac4ff09dca1945330d4c643463",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "BILLSUM": {
-        "byteSize": 1620,
-        "contentType": "application/json",
+        "currentCongress": {
+          "congress": 119,
+          "fileBytes": 15553064,
+          "files": 5662,
+          "types": {
+            "hconres": {
+              "fileBytes": 123899,
+              "files": 51,
+              "zipBytes": 62395,
+              "zipModified": "31-Jul-2026 08:04"
+            },
+            "hjres": {
+              "fileBytes": 277600,
+              "files": 106,
+              "zipBytes": 136196,
+              "zipModified": "15-Sep-2026 08:05"
+            },
+            "hr": {
+              "fileBytes": 9273128,
+              "files": 3200,
+              "zipBytes": 4509642,
+              "zipModified": "18-Sep-2026 08:03"
+            },
+            "hres": {
+              "fileBytes": 980017,
+              "files": 449,
+              "zipBytes": 507507,
+              "zipModified": "16-Sep-2026 08:04"
+            },
+            "s": {
+              "fileBytes": 4132142,
+              "files": 1502,
+              "zipBytes": 2071107,
+              "zipModified": "17-Sep-2026 08:03"
+            },
+            "sconres": {
+              "fileBytes": 34803,
+              "files": 14,
+              "zipBytes": 17461,
+              "zipModified": "26-Aug-2026 08:01"
+            },
+            "sjres": {
+              "fileBytes": 227877,
+              "files": 95,
+              "zipBytes": 116704,
+              "zipModified": "22-Jul-2026 08:03"
+            },
+            "sres": {
+              "fileBytes": 503598,
+              "files": 245,
+              "zipBytes": 269695,
+              "zipModified": "16-Sep-2026 08:04"
+            }
+          },
+          "zipBytes": 7690707
+        },
         "folders": 8,
+        "newestFolder": "18-Sep-2026 08:03",
         "numericRange": [
           113,
           119
         ],
-        "observedAt": "2026-09-18T17:21:22.011910Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/BILLSUM",
-        "sha256": "sha256:8a25f0d537be81ac88b8e93ba50661defa2c815e7c41d681a0829e319ee74d82",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "CFR": {
-        "byteSize": 5727,
-        "contentType": "application/json",
         "folders": 32,
+        "newestFolder": "18-Sep-2026 16:24",
         "numericRange": [
           1996,
           2026
         ],
-        "observedAt": "2026-09-18T17:21:23.513231Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/CFR",
-        "sha256": "sha256:297e8481f6332727da10bbd1e8fe854e87337f8d1c04ea48044ef144c052d438",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "COMPS": {
-        "byteSize": 826842,
-        "contentType": "application/json",
         "folders": 1,
+        "newestFolder": "15-Oct-2021 03:12",
         "numericRange": null,
-        "observedAt": "2026-09-18T17:21:25.291637Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/COMPS",
-        "sha256": "sha256:8871952e81e608f2f319aa49cccf196b45c537956a03d6dc3117edfef8a1d643",
-        "statusCode": 200,
         "topLevelBytes": 718104011,
         "topLevelFiles": 2682
       },
       "ECFR": {
-        "byteSize": 10419,
-        "contentType": "application/json",
         "folders": 50,
+        "newestFolder": "21-Aug-2026 21:35",
         "numericRange": null,
-        "observedAt": "2026-09-18T17:21:27.552539Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/ECFR",
-        "sha256": "sha256:3448460b733c8d6342fe658d328810423ed84f60120300a2602543c1ea684615",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "FR": {
-        "byteSize": 4987,
-        "contentType": "application/json",
         "folders": 28,
+        "newestFolder": "18-Sep-2026 08:49",
         "numericRange": [
           2000,
           2026
         ],
-        "observedAt": "2026-09-18T17:21:28.741831Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/FR",
-        "sha256": "sha256:d5e14adc65fd4f3abf43a8ddcb5bf52a53db589384eadd5fee64654b296db4b4",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "GOVMAN": {
-        "byteSize": 2746,
-        "contentType": "application/json",
         "folders": 15,
+        "newestFolder": "26-Mar-2026 15:27",
         "numericRange": [
           2011,
           2025
         ],
-        "observedAt": "2026-09-18T17:21:29.286268Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/GOVMAN",
-        "sha256": "sha256:711168356d0ece2653c0386f84ef2d708f15a0d0b6b86342a6019857dfd0ab91",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "HMAN": {
-        "byteSize": 1398,
-        "contentType": "application/json",
         "folders": 7,
+        "newestFolder": "03-Jan-2025 18:19",
         "numericRange": [
           112,
           117
         ],
-        "observedAt": "2026-09-18T17:21:30.506007Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/HMAN",
-        "sha256": "sha256:e98bb9d4fa422d3f0218ab8e1f5c0a7158cddf52daf3867746db2eb0ab9c19e5",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "PAI": {
-        "byteSize": 1989,
-        "contentType": "application/json",
         "folders": 11,
+        "newestFolder": "24-Feb-2026 15:25",
         "numericRange": [
           2007,
           2025
         ],
-        "observedAt": "2026-09-18T17:21:31.441331Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/PAI",
-        "sha256": "sha256:a68fef955ce23b64f05bdbd38e7fecf7163bc3e88ad66947dfd53f41722aec98",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "PLAW": {
-        "byteSize": 1596,
-        "contentType": "application/json",
+        "currentCongress": {
+          "congress": 119,
+          "fileBytes": 24089868,
+          "files": 104,
+          "types": {
+            "private": {
+              "fileBytes": 9988,
+              "files": 2,
+              "zipBytes": 4219,
+              "zipModified": "23-Jul-2026 14:14"
+            },
+            "public": {
+              "fileBytes": 24079880,
+              "files": 102,
+              "zipBytes": 3221106,
+              "zipModified": "09-Sep-2026 15:30"
+            }
+          },
+          "zipBytes": 3225325
+        },
         "folders": 8,
+        "newestFolder": "09-Sep-2026 15:30",
         "numericRange": [
           113,
           119
         ],
-        "observedAt": "2026-09-18T17:21:31.789935Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/PLAW",
-        "sha256": "sha256:3ff8657b0ad7685450f2a0bf52e91ede64eafe44ec2355be18c881c26dab1d1f",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "PPP": {
-        "byteSize": 1633,
-        "contentType": "application/json",
         "folders": 9,
+        "newestFolder": "22-Aug-2025 17:51",
         "numericRange": [
           2009,
           2016
         ],
-        "observedAt": "2026-09-18T17:21:32.001347Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/PPP",
-        "sha256": "sha256:09d870acdf7e24d164752eac70c550daccb3c85b24f7e7134f58708320861e0b",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       },
       "STATUTE": {
-        "byteSize": 24167,
-        "contentType": "application/json",
         "folders": 138,
+        "newestFolder": "15-Apr-2026 18:47",
         "numericRange": [
           1,
           137
         ],
-        "observedAt": "2026-09-18T17:21:33.352516Z",
-        "resolvedUrl": "https://www.govinfo.gov/bulkdata/json/STATUTE",
-        "sha256": "sha256:1e4bc30f7e7c1dd1e818020711b6f020e1da73bc02a7e68a04218517df209aff",
-        "statusCode": 200,
         "topLevelBytes": 0,
         "topLevelFiles": 0
       }
@@ -2016,12 +3131,12 @@
     }
   },
   "requests": {
-    "congress-gov": 456,
+    "congress-gov": 474,
     "govinfo": 181,
-    "keyless": 55,
-    "total": 692
+    "keyless": 79,
+    "total": 734
   },
-  "revision": "0b97a8a",
+  "revision": "c9b8579",
   "rows": [
     {
       "credential": "api.data.gov key",
@@ -2581,28 +3696,6 @@
     },
     {
       "credential": "none",
-      "data": "eCFR bulk mirror",
-      "evidence": [],
-      "measure": null,
-      "note": "the catalog itself says \"not an official legal edition\"; the eCFR API is canonical",
-      "route": "`bulkdata/ECFR`",
-      "status": "rejected",
-      "subject": "regulatory",
-      "table": "B"
-    },
-    {
-      "credential": "api.data.gov key",
-      "data": "Pre-1994 Federal Register PDFs",
-      "evidence": [],
-      "measure": null,
-      "note": "the only residual FR gap; revisit on historical-reach need",
-      "route": "FR collection",
-      "status": "rejected",
-      "subject": "regulatory",
-      "table": "B"
-    },
-    {
-      "credential": "none",
       "data": "House per-vote XML",
       "evidence": [],
       "measure": [
@@ -2721,7 +3814,7 @@
         "sample",
         "docs-house-floor-rss"
       ],
-      "note": "documents behind scheduled items; the `committee-meeting` API links here",
+      "note": "documents behind scheduled items; the `committee-meeting` API links here; the RSS measured 38.9 MB on 2026-09-18, so the weekly XML is the route",
       "route": "`docs.house.gov/committee`, `/floor` (weekly XML + RSS)",
       "status": "candidate",
       "subject": "proceedings",
@@ -3128,11 +4221,12 @@
       "table": "D"
     }
   ],
+  "sampledAt": "2026-09-18T20:33:34.212254+00:00",
   "samples": {
     "clerk-vote": {
       "byteSize": 82515,
       "contentType": "text/xml",
-      "observedAt": "2026-09-18T17:21:34.927510Z",
+      "observedAt": "2026-09-18T20:33:26.308334Z",
       "resolvedUrl": "https://clerk.house.gov/evs/2025/roll240.xml",
       "sha256": "sha256:0297b0c76d3c14452a91daf9828943e5669c00dcc408c07bc80870b9d8223542",
       "shape": {
@@ -3141,12 +4235,53 @@
           "vote-data": 1,
           "vote-metadata": 1
         },
+        "datedNames": [
+          "action-date"
+        ],
+        "depth2": [
+          "action-date",
+          "action-time",
+          "chamber",
+          "congress",
+          "legis-num",
+          "majority",
+          "recorded-vote",
+          "rollcall-num",
+          "session",
+          "vote-desc",
+          "vote-question",
+          "vote-result",
+          "vote-totals",
+          "vote-type"
+        ],
+        "depth2Counts": {
+          "chamber": 1,
+          "congress": 1,
+          "legis-num": 1,
+          "majority": 1,
+          "recorded-vote": 430,
+          "rollcall-num": 1,
+          "session": 1,
+          "vote-question": 1
+        },
+        "identityNames": [
+          "congress",
+          "session",
+          "rollcall-num"
+        ],
         "namespace": null,
         "root": "rollcall-vote",
         "rootAttributes": []
       },
       "statusCode": 200,
       "url": "https://clerk.house.gov/evs/2025/roll240.xml"
+    },
+    "crs-appropriations-table": {
+      "contentType": null,
+      "error": "ProbeError",
+      "message": "Body source answered HTTP 301",
+      "statusCode": 301,
+      "url": "https://crsreports.congress.gov/AppropriationsStatusTable"
     },
     "docs-house-floor-rss": {
       "error": "ProbeError",
@@ -3156,7 +4291,7 @@
     "house-memberdata": {
       "byteSize": 556936,
       "contentType": "text/xml",
-      "observedAt": "2026-09-18T17:21:35.789588Z",
+      "observedAt": "2026-09-18T20:33:27.251994Z",
       "resolvedUrl": "https://clerk.house.gov/xml/lists/MemberData.xml",
       "sha256": "sha256:07aec65948e99fd80b5e7c31722f1208d9f5e0717ba00f4b02122f4724cb0c18",
       "shape": {
@@ -3166,6 +4301,35 @@
           "members": 1,
           "title-info": 1
         },
+        "datedNames": [
+          "publish-date"
+        ],
+        "depth2": [
+          "clerk",
+          "committee",
+          "congress-num",
+          "congress-text",
+          "majority",
+          "member",
+          "minority",
+          "session",
+          "weburl"
+        ],
+        "depth2Counts": {
+          "clerk": 1,
+          "committee": 27,
+          "congress-num": 1,
+          "congress-text": 1,
+          "majority": 1,
+          "member": 441,
+          "minority": 1,
+          "session": 1
+        },
+        "identityNames": [
+          "congress-num",
+          "congress-text",
+          "session"
+        ],
         "namespace": null,
         "root": "MemberData",
         "rootAttributes": [
@@ -3178,7 +4342,7 @@
     "house-members-xml": {
       "byteSize": 397944,
       "contentType": "text/xml",
-      "observedAt": "2026-09-18T17:21:36.072523Z",
+      "observedAt": "2026-09-18T20:33:27.471175Z",
       "resolvedUrl": "https://member-info.house.gov/members.xml",
       "sha256": "sha256:b5e3dab3d73ccc89d477f182fb59f4114b1ef754501b4c211899da9e34385fbd",
       "shape": {
@@ -3186,6 +4350,16 @@
         "children": {
           "Member": 441
         },
+        "datedNames": [
+          "last_updated"
+        ],
+        "depth2": [
+          "committee_assignments"
+        ],
+        "depth2Counts": {
+          "committee_assignments": 441
+        },
+        "identityNames": [],
         "namespace": null,
         "root": "Members",
         "rootAttributes": []
@@ -3196,11 +4370,11 @@
     "lda-contributions": {
       "byteSize": 1680,
       "contentType": "application/json",
-      "observedAt": "2026-09-18T17:21:41.793422Z",
+      "observedAt": "2026-09-18T20:33:33.153122Z",
       "resolvedUrl": "https://lda.gov/api/v1/contributions/?page_size=1",
-      "sha256": "sha256:20bf98c797e30eac0bb0d0016dc83440aad091152fc7da3abd05c4d067091c18",
+      "sha256": "sha256:3027d4548b865a1ccb1ed1ba249caa58a27d94fe95fac162e25865370d4adbb0",
       "shape": {
-        "count": 675041,
+        "count": 675045,
         "keys": [
           "count",
           "next",
@@ -3214,11 +4388,11 @@
     "lda-filings": {
       "byteSize": 2521,
       "contentType": "application/json",
-      "observedAt": "2026-09-18T17:21:41.069760Z",
+      "observedAt": "2026-09-18T20:33:32.582871Z",
       "resolvedUrl": "https://lda.gov/api/v1/filings/?page_size=1",
-      "sha256": "sha256:3ff582e5ff0676bea4faaff2ef951e2b4472ce6859ac36142943672195ec3864",
+      "sha256": "sha256:83302e5178b01990ab6137e06f904e5b31c1f40d799cbdf070909fb30122f3ba",
       "shape": {
-        "count": 1977032,
+        "count": 1977043,
         "keys": [
           "count",
           "next",
@@ -3229,10 +4403,82 @@
       "statusCode": 200,
       "url": "https://lda.gov/api/v1/filings/?page_size=1"
     },
+    "legislators-current-json": {
+      "byteSize": 1468926,
+      "contentType": "application/json; charset=utf-8",
+      "observedAt": "2026-09-18T20:33:33.322791Z",
+      "resolvedUrl": "https://unitedstates.github.io/congress-legislators/legislators-current.json",
+      "sha256": "sha256:19b49014bfbfb0defd3bc7b6ba8e279a63931427af9464b0f014a9bfb541ec5d",
+      "shape": {
+        "count": 539,
+        "idKinds": {
+          "ballotpedia": 525,
+          "bioguide": 539,
+          "cspan": 265,
+          "fec": 537,
+          "google_entity_id": 469,
+          "govtrack": 539,
+          "house_history": 163,
+          "icpsr": 319,
+          "lis": 100,
+          "maplight": 262,
+          "opensecrets": 523,
+          "pictorial": 444,
+          "thomas": 224,
+          "votesmart": 519,
+          "wikidata": 538,
+          "wikipedia": 538
+        },
+        "keys": [
+          "bio",
+          "id",
+          "name",
+          "terms"
+        ]
+      },
+      "statusCode": 200,
+      "url": "https://unitedstates.github.io/congress-legislators/legislators-current.json"
+    },
+    "legislators-historical-json": {
+      "byteSize": 13483039,
+      "contentType": "application/json; charset=utf-8",
+      "observedAt": "2026-09-18T20:33:34.063266Z",
+      "resolvedUrl": "https://unitedstates.github.io/congress-legislators/legislators-historical.json",
+      "sha256": "sha256:25187633f3215a096fe9d14d8a40db1fb0841ab1d24c6da52da3a80c93698cbc",
+      "shape": {
+        "count": 12231,
+        "idKinds": {
+          "ballotpedia": 591,
+          "bioguide": 12231,
+          "cspan": 592,
+          "fec": 995,
+          "google_entity_id": 12218,
+          "govtrack": 12231,
+          "house_history": 10866,
+          "icpsr": 11979,
+          "lis": 228,
+          "maplight": 428,
+          "opensecrets": 919,
+          "pictorial": 81,
+          "thomas": 1957,
+          "votesmart": 826,
+          "wikidata": 12231,
+          "wikipedia": 12231
+        },
+        "keys": [
+          "bio",
+          "id",
+          "name",
+          "terms"
+        ]
+      },
+      "statusCode": 200,
+      "url": "https://unitedstates.github.io/congress-legislators/legislators-historical.json"
+    },
     "senate-calendar": {
       "byteSize": 4304,
       "contentType": "text/xml",
-      "observedAt": "2026-09-18T17:21:37.387332Z",
+      "observedAt": "2026-09-18T20:33:28.616448Z",
       "resolvedUrl": "https://www.senate.gov/legislative/2025_schedule.xml",
       "sha256": "sha256:16ec3a332fa4127f08b52278b2161dc5ce7d71f24a25ad0536c095a8302d4170",
       "shape": {
@@ -3249,6 +4495,26 @@
           "type": 1,
           "year": 1
         },
+        "datedNames": [
+          "approvedDate",
+          "date",
+          "dates",
+          "publisher"
+        ],
+        "depth2": [
+          "date",
+          "p",
+          "teaser"
+        ],
+        "depth2Counts": {
+          "date": 15,
+          "p": 2,
+          "teaser": 4
+        },
+        "identityNames": [
+          "congress",
+          "session"
+        ],
         "namespace": null,
         "root": "schedule",
         "rootAttributes": []
@@ -3259,7 +4525,7 @@
     "senate-contact": {
       "byteSize": 52541,
       "contentType": "text/xml",
-      "observedAt": "2026-09-18T17:21:36.762505Z",
+      "observedAt": "2026-09-18T20:33:28.056726Z",
       "resolvedUrl": "https://www.senate.gov/general/contact_information/senators_cfm.xml",
       "sha256": "sha256:984865a4a6e00af68c9617ea45f52b8939f49143780c832cb68c747fa4bfef5e",
       "shape": {
@@ -3268,6 +4534,34 @@
           "last_updated": 1,
           "member": 100
         },
+        "datedNames": [
+          "last_updated"
+        ],
+        "depth2": [
+          "address",
+          "bioguide_id",
+          "class",
+          "email",
+          "first_name",
+          "last_name",
+          "leadership_position",
+          "member_full",
+          "party",
+          "phone",
+          "state",
+          "website"
+        ],
+        "depth2Counts": {
+          "address": 100,
+          "email": 100,
+          "first_name": 100,
+          "last_name": 100,
+          "member_full": 100,
+          "party": 100,
+          "phone": 100,
+          "state": 100
+        },
+        "identityNames": [],
         "namespace": null,
         "root": "contact_information",
         "rootAttributes": []
@@ -3278,7 +4572,7 @@
     "senate-cvc": {
       "byteSize": 67616,
       "contentType": "text/xml",
-      "observedAt": "2026-09-18T17:21:36.490491Z",
+      "observedAt": "2026-09-18T20:33:27.793485Z",
       "resolvedUrl": "https://www.senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml",
       "sha256": "sha256:5180d25632e90d888281c5c7d344c42096829485fb0dc912480a126e3f7af743",
       "shape": {
@@ -3287,6 +4581,34 @@
           "lastUpdate": 1,
           "senator": 100
         },
+        "datedNames": [
+          "date",
+          "lastUpdate"
+        ],
+        "depth2": [
+          "bioguideId",
+          "committees",
+          "date",
+          "homeTown",
+          "leadership_position",
+          "name",
+          "office",
+          "party",
+          "state",
+          "stateRank",
+          "time"
+        ],
+        "depth2Counts": {
+          "bioguideId": 100,
+          "committees": 100,
+          "homeTown": 100,
+          "name": 100,
+          "office": 100,
+          "party": 100,
+          "state": 100,
+          "stateRank": 100
+        },
+        "identityNames": [],
         "namespace": null,
         "root": "senators",
         "rootAttributes": []
@@ -3295,16 +4617,52 @@
       "url": "https://www.senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml"
     },
     "senate-hearings": {
-      "byteSize": 23483,
+      "byteSize": 23853,
       "contentType": "text/xml",
-      "observedAt": "2026-09-18T17:21:36.989840Z",
+      "observedAt": "2026-09-18T20:33:28.355483Z",
       "resolvedUrl": "https://www.senate.gov/general/committee_schedules/hearings.xml",
-      "sha256": "sha256:5c9dedf981dc1bac37548e5cd902eea19f08186fb8e22bf02067018a2df6ae6c",
+      "sha256": "sha256:27ebbc3449678f045879f0896ce57517bd05c2628dbd4e048497ccde9e300d75",
       "shape": {
         "childCount": 19,
         "children": {
           "meeting": 19
         },
+        "datedNames": [
+          "date",
+          "date_iso_8601",
+          "last_update",
+          "last_update_iso_8601"
+        ],
+        "depth2": [
+          "Documents",
+          "cmte_code",
+          "committee",
+          "date",
+          "date_iso_8601",
+          "day_of_week",
+          "identifier",
+          "last_update",
+          "last_update_iso_8601",
+          "matter",
+          "room",
+          "senate_cable_channel",
+          "sub_cmte",
+          "time",
+          "time_iso_8601",
+          "type",
+          "video_url"
+        ],
+        "depth2Counts": {
+          "cmte_code": 19,
+          "committee": 19,
+          "date": 19,
+          "date_iso_8601": 19,
+          "day_of_week": 19,
+          "room": 19,
+          "time": 19,
+          "type": 19
+        },
+        "identityNames": [],
         "namespace": null,
         "root": "css_meetings_scheduled",
         "rootAttributes": []
@@ -3315,7 +4673,7 @@
     "senate-nomination-feed": {
       "byteSize": 48536,
       "contentType": "text/xml",
-      "observedAt": "2026-09-18T17:21:35.655565Z",
+      "observedAt": "2026-09-18T20:33:26.886363Z",
       "resolvedUrl": "https://www.senate.gov/legislative/LIS/nominations/NomWithdrawn.xml",
       "sha256": "sha256:170ef5aec85775581d42ce707f0107fad7fc51634c2e9c695aa0f90f298b9431",
       "shape": {
@@ -3325,6 +4683,31 @@
           "Nomination": 74,
           "SessionNumber": 1
         },
+        "datedNames": [
+          "ReceivedDate",
+          "ReportingStageDate"
+        ],
+        "depth2": [
+          "Committees",
+          "NominationDisplayNumber",
+          "Organization",
+          "ReceivedDate",
+          "ReportingDescription",
+          "ReportingStageDate"
+        ],
+        "depth2Counts": {
+          "Committees": 3,
+          "NominationDisplayNumber": 74,
+          "Organization": 74,
+          "ReceivedDate": 74,
+          "ReportingDescription": 74,
+          "ReportingStageDate": 74
+        },
+        "identityNames": [
+          "Congress",
+          "SessionNumber",
+          "NominationDisplayNumber"
+        ],
         "namespace": null,
         "root": "Nominations",
         "rootAttributes": []
@@ -3335,7 +4718,7 @@
     "senate-vote": {
       "byteSize": 28670,
       "contentType": "text/xml",
-      "observedAt": "2026-09-18T17:21:35.181211Z",
+      "observedAt": "2026-09-18T20:33:26.577910Z",
       "resolvedUrl": "https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00001.xml",
       "sha256": "sha256:9d71d78a54c83522babd743209ca4a1a27baa2df122d6830c50ec2aa512ea17e",
       "shape": {
@@ -3354,6 +4737,51 @@
           "vote_result_text": 1,
           "vote_title": 1
         },
+        "datedNames": [
+          "modify_date",
+          "vote_date"
+        ],
+        "depth2": [
+          "absent",
+          "amendment_number",
+          "amendment_purpose",
+          "amendment_to_amendment_number",
+          "amendment_to_amendment_to_amendment_number",
+          "amendment_to_document_number",
+          "amendment_to_document_short_title",
+          "by_whom",
+          "document_congress",
+          "document_name",
+          "document_number",
+          "document_short_title",
+          "document_title",
+          "document_type",
+          "member",
+          "nays",
+          "present",
+          "tie_breaker_vote",
+          "yeas"
+        ],
+        "depth2Counts": {
+          "amendment_number": 1,
+          "document_congress": 1,
+          "document_name": 1,
+          "document_number": 1,
+          "document_short_title": 1,
+          "document_title": 1,
+          "document_type": 1,
+          "member": 99
+        },
+        "identityNames": [
+          "congress",
+          "congress_year",
+          "document_congress",
+          "session",
+          "vote_number",
+          "amendment_number",
+          "amendment_to_amendment_number",
+          "amendment_to_amendment_to_amendment_number"
+        ],
         "namespace": null,
         "root": "roll_call_vote",
         "rootAttributes": []

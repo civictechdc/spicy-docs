@@ -13,7 +13,7 @@ from xml.etree.ElementTree import Element
 from spicy_docs.reading.xml import parse_xml
 
 BILL_TYPES = frozenset({"hr", "s", "hjres", "sjres", "hconres", "sconres", "hres", "sres"})
-_BILL_TYPES = BILL_TYPES
+BILLSTATUS_BULKDATA = "https://www.govinfo.gov/bulkdata/BILLSTATUS"
 _PACKAGE = re.compile(r"BILLS-([1-9][0-9]*)(hconres|sconres|hjres|sjres|hres|sres|hr|s)([1-9][0-9]*)([a-z][a-z0-9]*)")
 _PACKAGE_URL = re.compile(
     r"https://www\.govinfo\.gov/content/pkg/(?P<package>BILLS-[A-Za-z0-9]+)/"
@@ -37,13 +37,29 @@ class BillIdentity:
             raise BillSourceError("congress must be a positive integer")
         if type(self.number) is not int or self.number <= 0:
             raise BillSourceError("bill number must be a positive integer")
-        if not isinstance(self.bill_type, str) or self.bill_type not in _BILL_TYPES:
+        if not isinstance(self.bill_type, str) or self.bill_type not in BILL_TYPES:
             raise BillSourceError("bill_type must be a supported lowercase bill or resolution type")
 
 
 @dataclass(frozen=True, slots=True)
 class BillAction:
-    text: str
+    """``text`` is ``None`` when the publisher states the action without one.
+
+    The user guide lists every child of ``<actions>`` as one the element "may
+    include" and names none required, and the corpus agrees: 7 of the 12,938
+    files in the 119th H.R., H.Res. and S.Res. status zips carry an action item
+    with an ``actionCode`` and ``sourceSystem`` but no ``<text>`` (2026-09-19;
+    ``docs/sources/congress-bulk-status.md``). Refusing the whole document over
+    an absent optional field lost those bills entirely.
+
+    An action has two states here, not three: an absent ``<text>`` and one
+    present but blank both read as ``None``, because a blank element states no
+    action text any more than a missing one does and no caller should have to
+    tell them apart. Text that is there is kept exactly as written, interior
+    and surrounding whitespace included.
+    """
+
+    text: str | None
     action_date: str | None
     action_time: str | None
     action_code: str | None
@@ -60,6 +76,18 @@ class BillSponsor:
 
 @dataclass(frozen=True, slots=True)
 class BillSummary:
+    """``text`` is the summary as the publisher escaped it, from either placement.
+
+    Most summaries carry ``<text>`` directly; some carry it inside a ``<cdata>``
+    element, whose only child it then is. Both are current -- 984 of the 3,984
+    summaries in the 119th H.R., H.Res. and S.Res. status zips use the wrapper,
+    with last-update dates interleaved with the direct form (2026-09-19) -- and
+    the two placements also escape differently, every direct one in that corpus
+    as a CDATA section and every wrapped one as entity references. Neither
+    difference reaches this field: the XML reader resolves both forms and this
+    module decodes nothing itself, so the value is the same HTML either way.
+    """
+
     text: str
     version_code: str | None
     action_date: str | None
@@ -111,7 +139,7 @@ def bill_status_locator(identity: BillIdentity) -> str:
     """Return a locator, without asserting that the publisher serves it."""
     _validated_identity(identity)
     return (
-        f"https://www.govinfo.gov/bulkdata/BILLSTATUS/{identity.congress}/{identity.bill_type}/"
+        f"{BILLSTATUS_BULKDATA}/{identity.congress}/{identity.bill_type}/"
         f"BILLSTATUS-{identity.congress}{identity.bill_type}{identity.number}.xml"
     )
 
@@ -200,10 +228,31 @@ def _items(parent: Element | None, name: str, item_tag: str = "item") -> tuple[E
     return tuple(container)
 
 
+def _summary(element: Element) -> BillSummary:
+    """Read the summary's text where the publisher put it, directly or in ``<cdata>``.
+
+    A summary that states text in both places is refused: nothing in the
+    publisher's guide says which would win, and none of the 40,260 files
+    measured across the 108th, 113th and 119th Congresses does it.
+    """
+    wrapper = _one(element, "cdata")
+    in_cdata = wrapper is not None and bool(wrapper.findall("text"))
+    if in_cdata and element.findall("text"):
+        raise BillSourceError("bill XML summary states its text twice")
+    return BillSummary(
+        text=_required_text(wrapper if in_cdata else element, "text"),
+        version_code=_text(element, "versionCode"),
+        action_date=_text(element, "actionDate"),
+        action_desc=_text(element, "actionDesc"),
+        update_date=_text(element, "updateDate"),
+    )
+
+
 def _action(element: Element) -> BillAction:
     system = _one(element, "sourceSystem")
+    text = _text(element, "text")
     return BillAction(
-        text=_required_text(element, "text"),
+        text=text if text and text.strip() else None,
         action_date=_text(element, "actionDate"),
         action_time=_text(element, "actionTime"),
         action_code=_text(element, "actionCode"),
@@ -232,6 +281,13 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
     if root.tag != "billStatus":
         raise BillSourceError("BILLSTATUS XML root is unsupported")
     bill = _one(root, "bill", required=True)
+    # One file in the 40,260 measured across the 108th, 113th and 119th
+    # Congresses (BILLSTATUS-113hr4200.xml) is still the 1.0.0 schema the
+    # publisher's user guide documents: <billType>/<billNumber> for the
+    # identity and <version> inside <bill>. Only 3.0.0 is read here, so say
+    # which schema arrived rather than refuse it for a missing <type>.
+    if _one(bill, "billType") is not None or _one(bill, "billNumber") is not None:
+        raise BillSourceError("BILLSTATUS XML uses the superseded 1.0.0 element names")
     if (
         _required_text(bill, "congress") != str(identity.congress)
         or _required_text(bill, "type") != identity.bill_type.upper()
@@ -257,16 +313,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
         latest_action=None if latest is None else _action(latest),
         policy_area=policy_area if policy_area is not None else subject_policy_area,
         subjects=tuple(_required_text(item, "name") for item in _items(subjects, "legislativeSubjects")),
-        summaries=tuple(
-            BillSummary(
-                text=_required_text(item, "text"),
-                version_code=_text(item, "versionCode"),
-                action_date=_text(item, "actionDate"),
-                action_desc=_text(item, "actionDesc"),
-                update_date=_text(item, "updateDate"),
-            )
-            for item in _items(bill, "summaries", "summary")
-        ),
+        summaries=tuple(_summary(item) for item in _items(bill, "summaries", "summary")),
         actions=tuple(_action(item) for item in _items(bill, "actions")),
         sponsors=tuple(
             BillSponsor(_text(item, "bioguideId"), _text(item, "fullName")) for item in _items(bill, "sponsors")
@@ -276,6 +323,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
 
 
 __all__ = [
+    "BILLSTATUS_BULKDATA",
     "BillAction",
     "BillIdentity",
     "BillSourceError",

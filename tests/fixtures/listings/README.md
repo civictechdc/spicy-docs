@@ -48,3 +48,50 @@ the query's size, not what a walk can reach: one query declared 57,383 while
 `totalPages` stayed at 40 for both `page[size]=250` and `page[size]=100`.
 Headers, the refused 400/403/404 bodies and the rate-limit readings are in
 `corpora/supply-2026-09-02/receipts/port-P05-regulations-gov-2026-09-14/`.
+
+Fourth round, captured 2026-09-19 for the Phase 4 table-driven Congress.gov
+routes (BillTrax port; api.data.gov key as `X-Api-Key`, first page of the
+119th Congress list at `limit=3` except the two routes with their own path
+identity). Each response's `request` echo block was checked byte-for-byte
+against the key with `scrub_credential` before it was written; none of the
+seven carried it.
+
+| Fixture | Request | Bytes | SHA-256 | Transformation |
+| --- | --- | --- | --- | --- |
+| `congress-amendment-list.json` | GET https://api.congress.gov/v3/amendment/119 | 1,301 | `5c851d224057f1d9ebb602f52e771f233aa853e73693fdb626d5f752d6e8aafb` | Complete, unchanged response; 3 of a declared 7,066. |
+| `congress-committee-bills-list.json` | GET https://api.congress.gov/v3/committee/house/hsju00/bills | 1,691 | `eb6d81a422ca2b065ad8164b7398137b309900ae4645ee2fb8c78549ce5b6568` | Complete, unchanged response; 3 of a declared 41,822. |
+| `congress-bill-actions-list.json` | GET https://api.congress.gov/v3/bill/119/hr/1/actions | 1,308 | `2696de6d3c8f861f36f130cb92390c2202ec597916e5c3b26dadb98824ddbc1f` | Complete, unchanged response; 3 of a declared 59. |
+| `congress-nomination-list.json` | GET https://api.congress.gov/v3/nomination/119 | 2,960 | `e41a87e3087a7e5291c28d6c7ffec53ca4f9feaa924a4a4112e658d923696f16` | Complete, unchanged response; 3 of a declared 2,208. |
+| `congress-hearing-list.json` | GET https://api.congress.gov/v3/hearing/119 | 1,001 | `4e601ff5e3854dbcdb482bc5f742e83d974674c8a4a287417c6c9e48a98e767b` | Complete, unchanged response; 3 of a declared 971. |
+| `congress-committee-report-list.json` | GET https://api.congress.gov/v3/committee-report/119 | 1,411 | `8fc218474c4638bc644ed52252f247223f061f6381e51803cea9c953c9a07fd7` | Complete, unchanged response; 3 of a declared 950. |
+| `congress-house-communication-list.json` | GET https://api.congress.gov/v3/house-communication/119 | 1,407 | `307ae75d21d9a01d2eedabcd1c5871966a2a16e0d13b306325e22396891a088f` | Complete, unchanged response; 3 of a declared 4,975. |
+
+`congress-committee-bills-list.json` contradicts the naive reading of "records
+key `bills`": the publisher nests the array inside a `committee-bills` wrapper
+object alongside its own `count` and `url`, not at the top level the way
+every other route here answers. `CongressListRoute.records_key` for that
+route is the tuple `("committee-bills", "bills")`; `reading/paged_json.py`
+reads a tuple records key the same way it already reads
+`count_path`/`next_path`. The other six routes matched the brief's flat
+top-level keys exactly (`actions`, `nominations`, `hearings`, `reports`,
+`houseCommunications`).
+
+`committee-bills` and `bill-actions` initially carried `sort_honored=False`
+and `window_honored` unset as dataclass defaults rather than measurements.
+Probed live 2026-09-19, not saved as fixtures (each is a `limit=1` request,
+not a captured page): four observations, one per route per axis.
+
+| Route | Asked | Came back | Date |
+| --- | --- | --- | --- |
+| `committee-bills` | `GET committee/house/hsju00/bills?limit=1&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (`bill 110/hconres/30`, `updateDate` 2015-12-07T16:53:38Z) — sort ignored | 2026-09-19 |
+| `committee-bills` | `GET committee/house/hsju00/bills?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 41,822 unfiltered vs 9 with the one-day window — window honored | 2026-09-19 |
+| `bill-actions` | `GET bill/119/hr/1/actions?limit=1&sort=updateDate+desc` vs `...&sort=updateDate+asc` | Identical first record both times (`actionCode` E40000, `actionDate` 2025-07-04) — sort ignored | 2026-09-19 |
+| `bill-actions` | `GET bill/119/hr/1/actions?limit=1` vs `...&fromDateTime=2026-09-18T00:00:00Z` | Declared count 59 both times, unchanged — window ignored | 2026-09-19 |
+
+`CongressListRoute.sort_honored` and `.window_honored` for both routes are set
+from these four observations: `committee-bills` is `sort_honored=False,
+window_honored=True`; `bill-actions` is `sort_honored=False,
+window_honored=False`. Every other route's `window_honored` stays the
+dataclass default (`True`), which is a carried-forward assumption from
+`bill`/`crsreport`'s original, always-accepted contract, not a measurement —
+see `sources/congress/listing.py`'s module docstring.

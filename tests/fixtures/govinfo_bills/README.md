@@ -22,3 +22,26 @@ text-119hr6028ih 6cf3e83e9ef2788fadfc205ecd081f12f2306742528e4f9d4eac6047c7555ff
 
 Complete response bytes, hashes, and HTTP receipts remain outside the repository
 in the `bill-parser-probe-2026-09-12` corpus receipt directory.
+
+## Bulk archive members
+
+Complete, unchanged members of
+[`BILLSTATUS-119-hres.zip`](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hres/BILLSTATUS-119-hres.zip)
+(3,934,575 bytes, SHA-256
+`fe82a63f30b55086556ba4192eef973eadc91cbb94186f471f84af1f0354506a`,
+`content-type: application/zip`, publisher Last-Modified 2026-09-18 20:26:06
+GMT), retrieved with unauthenticated GET on 2026-09-19. The three carry the
+shapes `read_bulk_status_archive` has to read; the tests build their own small
+zip from them, so the archive under test is exactly these bytes. Each one was
+also fetched from its own single-file locator on the same day and is
+byte-identical there, so the zip member and the published file are one object.
+
+| Fixture | Archive member | Bytes | SHA-256 | Why it is here |
+| --- | --- | --- | --- | --- |
+| `status-119hres1376.xml` | `BILLSTATUS-119hres1376.xml` | 5,230 | `46700c14cde7b16178df2f63373ea0b75b24343c9be6afcfebee5a7166f0999a` | The current common shape: one summary whose `<text>` is a direct child. |
+| `status-119hres10.xml` | `BILLSTATUS-119hres10.xml` | 8,109 | `b820f778ba01657db0f1013ffa0541da4e97365e725a8762b6f053b2267c8175` | Its summary states `<text>` inside a `<cdata>` element; 984 of 12,938 measured files do. |
+| `status-119hres214.xml` | `BILLSTATUS-119hres214.xml` | 6,181 | `d4ffc66661530ca10370fc0893e52c18b0c841cdd3d4667494ba6d12f438c49d` | An action item states `actionCode` and `sourceSystem` with no `<text>`; 7 of 12,938 do. |
+
+Both shapes are [decision 4, measured](../../../docs/sources/congress-bulk-status.md#decision-4-measured).
+The whole-zip measurement, its per-type counts and the H.R. and S.Res. zips it
+also covers stay outside the repository.

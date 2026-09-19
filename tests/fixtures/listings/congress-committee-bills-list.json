@@ -1,0 +1,46 @@
+{
+    "committee-bills": {
+        "bills": [
+            {
+                "actionDate": "2007-01-11T15:03:50Z",
+                "congress": 110,
+                "number": "30",
+                "relationshipType": "Referred To",
+                "type": "HCONRES",
+                "updateDate": "2015-12-07T16:53:38Z",
+                "url": "https://api.congress.gov/v3/bill/110/hconres/30?format=json"
+            },
+            {
+                "actionDate": "2007-03-27T14:31:53Z",
+                "congress": 110,
+                "number": "102",
+                "relationshipType": "Referred To",
+                "type": "HCONRES",
+                "updateDate": "2015-12-07T16:53:41Z",
+                "url": "https://api.congress.gov/v3/bill/110/hconres/102?format=json"
+            },
+            {
+                "actionDate": "2009-02-10T17:31:40Z",
+                "congress": 111,
+                "number": "42",
+                "relationshipType": "Referred To",
+                "type": "HCONRES",
+                "updateDate": "2015-12-07T16:53:12Z",
+                "url": "https://api.congress.gov/v3/bill/111/hconres/42?format=json"
+            }
+        ],
+        "count": 41822,
+        "url": "https://api.congress.gov/v3/committee/house/hsju00/bills?format=json"
+    },
+    "pagination": {
+        "count": 41822,
+        "next": "https://api.congress.gov/v3/committee/house/hsju00/bills?offset=3&limit=3&format=json"
+    },
+    "request": {
+        "chamber": "house",
+        "committeeUrl": "https://api.congress.gov/v3/committee/house/hsju00?format=json",
+        "contentType": "application/json",
+        "format": "json",
+        "systemCode": "hsju00"
+    }
+}

@@ -9,12 +9,13 @@ one capture becomes a validated result with refusal evidence attached.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Self
 
 from spicy_docs.reading.refusals import attach_refused_response
-from spicy_docs.transport.captured import CapturedBodyResponse, refused_capture
+from spicy_docs.transport.captured import CapturedBodyResponse, attach_capture, refused_capture
 from spicy_docs.transport.credentials import CredentialRefusedError
 
 if TYPE_CHECKING:
@@ -47,6 +48,33 @@ def check_timing(timeout_seconds: object, min_request_interval_seconds: object) 
             raise ValueError(f"{name} must be finite and {'positive' if positive else 'nonnegative'}")
 
 
+def check_payload(
+    payload: object,
+    max_bytes: object,
+    *,
+    label: str,
+    error_type: type[ValueError],
+    allow_empty: bool = True,
+) -> bytes:
+    """Return exact captured bytes within a positive caller bound, or refuse.
+
+    One rule for every source validator: evidence is complete ``bytes``, its
+    bound is a positive integer the caller chose, and nothing past that bound
+    becomes evidence. ``allow_empty=False`` refuses an empty response where the
+    source cannot mean one, keeping "the publisher sent nothing" separate from
+    "the publisher sent something this module could not read".
+    """
+    if not isinstance(payload, bytes):
+        raise error_type(f"{label} must be exact bytes")
+    if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes <= 0:
+        raise error_type(f"{label} byte bound must be a positive integer")
+    if not payload and not allow_empty:
+        raise error_type(f"{label} is empty")
+    if len(payload) > max_bytes:
+        raise error_type(f"{label} exceeds its {max_bytes}-byte bound")
+    return payload
+
+
 def narrow_byte_limit(limit: int, max_bytes: int | None) -> int:
     """A call may narrow the client's byte allowance, never raise it."""
     if max_bytes is None:
@@ -64,6 +92,29 @@ def check_final_url(final_url: str, locator: str, *, error_type: type[ValueError
     """The response must have come from exactly the locator the request named."""
     if final_url != locator:
         raise error_type(message)
+
+
+@contextmanager
+def named_challenge(url: str, *, error_type: Callable[[str], Exception], context_key: str) -> Iterator[None]:
+    """Recast a keyless route's 401/403 as the family's own error, not a credential refusal.
+
+    The shared client maps 401/403 to ``CredentialRefusedError`` so a keyed
+    family aborts rather than treating a refusal as a bad row. A keyless
+    family holds no credential, so the same status is a bot wall or an
+    access refusal, not a key being rejected -- and a caller catching the
+    family's own ``error_type`` (typically a subclass of its shared source
+    error) would otherwise miss it, since ``CredentialRefusedError`` is not
+    one. This substitutes ``error_type(url)`` while keeping the acquisition
+    context and refusal record the shared client already attached, so the
+    refusal's bytes still reach the caller on ``refused_response``.
+    """
+    try:
+        yield
+    except CredentialRefusedError as error:
+        challenge = error_type(url)
+        carried = (context_key, "refused_response")
+        challenge.__dict__.update({key: error.__dict__[key] for key in carried if key in error.__dict__})
+        raise challenge from error
 
 
 class SourceAcquirer:
@@ -167,7 +218,7 @@ class SourceAcquirer:
             # Do not attach a capture here after a credential refusal: its body
             # may have echoed the key.
             if capture is not None and not isinstance(error, CredentialRefusedError):
-                error.__dict__["capture"] = capture
+                attach_capture(error, capture)
                 attach_refused_response(error, refused_capture(capture, stage="source-validation"))
             error.__dict__[self.context_key] = {**dict(context), "requestCount": self._http.request_count}
             raise
