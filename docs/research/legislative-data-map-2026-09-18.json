@@ -959,11 +959,14 @@
   "congress": {
     "amendment": {
       "belowFloor": {
+        "89": 0,
         "90": 0,
         "91": 0,
         "92": 0,
         "93": 0,
-        "94": 0
+        "94": 0,
+        "95": 0,
+        "96": 0
       },
       "byKey": {
         "100": 4690,
@@ -996,7 +999,6 @@
       "descentStop": "two-empty",
       "earliest": 97,
       "errors": {},
-      "floorGap": [],
       "latestPath": "amendment/119",
       "latestSortHonored": true,
       "latestUpdate": "2026-09-18T11:08:27Z",
@@ -1005,11 +1007,14 @@
     },
     "bill": {
       "belowFloor": {
+        "74": 0,
         "75": 0,
         "76": 0,
         "77": 0,
         "78": 0,
-        "79": 0
+        "79": 0,
+        "80": 0,
+        "81": 0
       },
       "byKey": {
         "100": 11278,
@@ -1057,7 +1062,6 @@
       "descentStop": "two-empty",
       "earliest": 82,
       "errors": {},
-      "floorGap": [],
       "latestPath": "bill/119",
       "latestSortHonored": true,
       "latestUpdate": "2026-09-18",
@@ -1066,11 +1070,12 @@
     },
     "bound-congressional-record": {
       "belowFloor": {
-        "2007": null,
         "2008": null,
         "2009": null,
         "2010": null,
-        "2011": null
+        "2011": null,
+        "2012": null,
+        "2013": null
       },
       "byKey": {
         "2014": 490,
@@ -1107,7 +1112,6 @@
           "message": "Body source answered retryable HTTP 500"
         }
       },
-      "floorGap": [],
       "latestPath": "bound-congressional-record",
       "latestSortHonored": false,
       "latestUpdate": "2025-04-18",
@@ -1115,13 +1119,7 @@
       "total": 93290
     },
     "committee": {
-      "belowFloor": {
-        "53": 95,
-        "54": 99,
-        "55": 99,
-        "56": 103,
-        "57": 104
-      },
+      "belowFloor": {},
       "byKey": {
         "100": 308,
         "101": 304,
@@ -1185,16 +1183,9 @@
         "99": 306
       },
       "descentPath": "committee/{c}",
-      "descentStop": "cap",
-      "earliest": 60,
+      "descentStop": "floor",
+      "earliest": 1,
       "errors": {},
-      "floorGap": [
-        53,
-        54,
-        55,
-        56,
-        57
-      ],
       "latestPath": "committee/119",
       "latestSortHonored": true,
       "latestUpdate": "2026-09-08T19:24:14Z",
@@ -1203,11 +1194,14 @@
     },
     "committee-meeting": {
       "belowFloor": {
+        "103": 0,
         "104": 0,
         "105": 0,
         "106": 0,
         "107": 0,
-        "108": 0
+        "108": 0,
+        "109": 0,
+        "110": 0
       },
       "byKey": {
         "109": 0,
@@ -1226,7 +1220,6 @@
       "descentStop": "two-empty",
       "earliest": 111,
       "errors": {},
-      "floorGap": [],
       "latestPath": "committee-meeting/119",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-18T19:11:42Z",
@@ -1235,11 +1228,14 @@
     },
     "committee-print": {
       "belowFloor": {
-        "94": 2,
-        "95": 0,
-        "96": 0,
-        "97": 0,
-        "98": 0
+        "86": 0,
+        "87": 0,
+        "88": 0,
+        "89": 0,
+        "90": 0,
+        "91": 0,
+        "92": 0,
+        "93": 0
       },
       "byKey": {
         "100": 0,
@@ -1265,12 +1261,9 @@
         "99": 0
       },
       "descentPath": "committee-print/{c}",
-      "descentStop": "two-empty",
-      "earliest": 101,
+      "descentStop": "empty-run",
+      "earliest": 94,
       "errors": {},
-      "floorGap": [
-        94
-      ],
       "latestPath": "committee-print/119",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-18T19:28:30Z",
@@ -1279,11 +1272,14 @@
     },
     "committee-report": {
       "belowFloor": {
-        "100": 0,
+        "95": 0,
         "96": 0,
         "97": 0,
         "98": 0,
-        "99": 0
+        "99": 0,
+        "100": 0,
+        "101": 0,
+        "102": 0
       },
       "byKey": {
         "101": 0,
@@ -1310,7 +1306,6 @@
       "descentStop": "two-empty",
       "earliest": 103,
       "errors": {},
-      "floorGap": [],
       "latestPath": "committee-report/119",
       "latestSortHonored": true,
       "latestUpdate": "2026-09-18T19:26:16Z",
@@ -1326,11 +1321,14 @@
     },
     "daily-congressional-record": {
       "belowFloor": {
+        "133": 0,
         "134": 0,
         "135": 0,
         "136": 0,
         "137": 0,
-        "138": 0
+        "138": 0,
+        "139": 0,
+        "140": 0
       },
       "byKey": {
         "139": 0,
@@ -1372,7 +1370,6 @@
       "descentStop": "two-empty",
       "earliest": 141,
       "errors": {},
-      "floorGap": [],
       "latestPath": "daily-congressional-record/172",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-18T12:29:16Z",
@@ -1381,11 +1378,14 @@
     },
     "hearing": {
       "belowFloor": {
-        "100": 0,
-        "101": 0,
+        "96": 0,
         "97": 0,
         "98": 0,
-        "99": 0
+        "99": 0,
+        "100": 0,
+        "101": 0,
+        "102": 0,
+        "103": 0
       },
       "byKey": {
         "102": 0,
@@ -1411,7 +1411,6 @@
       "descentStop": "two-empty",
       "earliest": 104,
       "errors": {},
-      "floorGap": [],
       "latestPath": "hearing/119",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-18T19:55:55Z",
@@ -1420,11 +1419,14 @@
     },
     "house-communication": {
       "belowFloor": {
+        "106": 0,
         "107": 0,
         "108": 0,
         "109": 0,
         "110": 0,
-        "111": 0
+        "111": 0,
+        "112": 0,
+        "113": 0
       },
       "byKey": {
         "112": 0,
@@ -1440,7 +1442,6 @@
       "descentStop": "two-empty",
       "earliest": 114,
       "errors": {},
-      "floorGap": [],
       "latestPath": "house-communication/119",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-18",
@@ -1456,11 +1457,14 @@
     },
     "house-vote": {
       "belowFloor": {
+        "107": 0,
         "108": 0,
         "109": 0,
         "110": 0,
         "111": 0,
-        "112": 0
+        "112": 0,
+        "113": 0,
+        "114": 0
       },
       "byKey": {
         "113": 0,
@@ -1475,7 +1479,6 @@
       "descentStop": "two-empty",
       "earliest": 115,
       "errors": {},
-      "floorGap": [],
       "latestPath": "house-vote/119",
       "latestSortHonored": false,
       "latestUpdate": "2025-09-09T18:53:19-04:00",
@@ -1484,11 +1487,14 @@
     },
     "law": {
       "belowFloor": {
+        "74": 0,
         "75": 0,
         "76": 0,
         "77": 0,
         "78": 0,
-        "79": 0
+        "79": 0,
+        "80": 0,
+        "81": 0
       },
       "byKey": {
         "100": 761,
@@ -1536,7 +1542,6 @@
       "descentStop": "two-empty",
       "earliest": 82,
       "errors": {},
-      "floorGap": [],
       "latestPath": "law/119",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-18",
@@ -1550,11 +1555,14 @@
     },
     "member": {
       "belowFloor": {
+        "60": 0,
         "61": 0,
         "62": 0,
         "63": 0,
         "64": 0,
-        "65": 0
+        "65": 0,
+        "66": 0,
+        "67": 0
       },
       "byKey": {
         "100": 549,
@@ -1616,7 +1624,6 @@
       "descentStop": "two-empty",
       "earliest": 68,
       "errors": {},
-      "floorGap": [],
       "latestPath": "member/congress/119",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-18T07:40:27Z",
@@ -1625,11 +1632,14 @@
     },
     "nomination": {
       "belowFloor": {
+        "89": 0,
         "90": 0,
         "91": 0,
         "92": 0,
         "93": 0,
-        "94": 0
+        "94": 0,
+        "95": 0,
+        "96": 0
       },
       "byKey": {
         "100": 1534,
@@ -1662,7 +1672,6 @@
       "descentStop": "two-empty",
       "earliest": 97,
       "errors": {},
-      "floorGap": [],
       "latestPath": "nomination/119",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-18T11:00:36Z",
@@ -1671,11 +1680,14 @@
     },
     "senate-communication": {
       "belowFloor": {
+        "88": 0,
         "89": 0,
         "90": 0,
         "91": 0,
         "92": 0,
-        "93": 0
+        "93": 0,
+        "94": 0,
+        "95": 0
       },
       "byKey": {
         "100": 4866,
@@ -1709,7 +1721,6 @@
       "descentStop": "two-empty",
       "earliest": 96,
       "errors": {},
-      "floorGap": [],
       "latestPath": "senate-communication/119",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-18T10:15:55Z",
@@ -1718,11 +1729,14 @@
     },
     "summaries": {
       "belowFloor": {
+        "111": 0,
         "112": 0,
         "113": 0,
         "114": 0,
         "115": 0,
-        "116": 0
+        "116": 0,
+        "117": 0,
+        "118": 0
       },
       "byKey": {
         "117": 0,
@@ -1733,7 +1747,6 @@
       "descentStop": "two-empty",
       "earliest": 119,
       "errors": {},
-      "floorGap": [],
       "latestPath": "summaries/119",
       "latestSortHonored": true,
       "latestUpdate": "2026-09-18T20:13:12Z",
@@ -1742,11 +1755,14 @@
     },
     "treaty": {
       "belowFloor": {
+        "73": 0,
+        "74": 0,
+        "75": 0,
+        "76": 0,
+        "77": 0,
+        "78": 0,
         "79": 0,
-        "80": 0,
-        "81": 2,
-        "82": 0,
-        "83": 0
+        "80": 0
       },
       "byKey": {
         "100": 23,
@@ -1787,12 +1803,9 @@
         "99": 33
       },
       "descentPath": "treaty/{c}",
-      "descentStop": "two-empty",
-      "earliest": 86,
+      "descentStop": "empty-run",
+      "earliest": 81,
       "errors": {},
-      "floorGap": [
-        81
-      ],
       "latestPath": "treaty/119",
       "latestSortHonored": false,
       "latestUpdate": "2026-09-15T00:33:28Z",
@@ -1800,9 +1813,9 @@
       "total": 786
     }
   },
-  "floorsAt": "2026-09-18T22:27:41.805219+00:00",
+  "floorsAt": "2026-09-19T17:49:51.985479+00:00",
   "floorsRequests": {
-    "congress-gov": 85
+    "congress-gov": 126
   },
   "flow": {
     "bills\u2192related": {
@@ -3135,6 +3148,120 @@
     "govinfo": 181,
     "keyless": 79,
     "total": 734
+  },
+  "requirements": {
+    "coveredByFloor": 26725,
+    "detail": {
+      "105": {
+        "error": "HTTP 404",
+        "label": "105th EC 5725",
+        "resolved": false,
+        "sampled": true
+      },
+      "106": {
+        "error": "HTTP 404",
+        "label": "106th EC 466",
+        "resolved": false,
+        "sampled": true
+      },
+      "107": {
+        "error": "HTTP 404",
+        "label": "107th EC 1891",
+        "resolved": false,
+        "sampled": true
+      },
+      "108": {
+        "error": "HTTP 404",
+        "label": "108th EC 543",
+        "resolved": false,
+        "sampled": true
+      },
+      "109": {
+        "error": "HTTP 404",
+        "label": "109th EC 2270",
+        "resolved": false,
+        "sampled": true
+      },
+      "110": {
+        "error": "HTTP 404",
+        "label": "110th EC 9514",
+        "resolved": false,
+        "sampled": true
+      },
+      "111": {
+        "error": "HTTP 404",
+        "label": "111th EC 2888",
+        "resolved": false,
+        "sampled": true
+      },
+      "112": {
+        "error": "HTTP 404",
+        "label": "112th EC 2",
+        "resolved": false,
+        "sampled": true
+      },
+      "113": {
+        "error": "HTTP 404",
+        "label": "113th EC 3376",
+        "resolved": false,
+        "sampled": true
+      },
+      "114": {
+        "label": "114th EC 4329",
+        "resolved": true,
+        "sampled": true
+      },
+      "115": {
+        "label": "115th EC 5712",
+        "resolved": true,
+        "sampled": true
+      },
+      "116": {
+        "label": "116th EC 2",
+        "resolved": true,
+        "sampled": true
+      },
+      "117": {
+        "label": "117th EC 1220",
+        "resolved": true,
+        "sampled": true
+      },
+      "118": {
+        "label": "118th EC 2764",
+        "resolved": true,
+        "sampled": true
+      },
+      "119": {
+        "label": "119th EC 532",
+        "resolved": true,
+        "sampled": true
+      }
+    },
+    "detailFloor": 114,
+    "histogram": {
+      "104": 2094,
+      "105": 8492,
+      "106": 7978,
+      "107": 6830,
+      "108": 8131,
+      "109": 6890,
+      "110": 6364,
+      "111": 7340,
+      "112": 6056,
+      "113": 5550,
+      "114": 5440,
+      "115": 4807,
+      "116": 4257,
+      "117": 4337,
+      "118": 4784,
+      "119": 3100
+    },
+    "share": 0.28907517577068687,
+    "total": 92450
+  },
+  "requirementsAt": "2026-09-19T17:07:39.562335+00:00",
+  "requirementsRequests": {
+    "congress-gov": 385
   },
   "revision": "c9b8579",
   "rows": [

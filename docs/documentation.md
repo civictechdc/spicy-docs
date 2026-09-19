@@ -25,6 +25,23 @@ Update the guide that owns the changed behavior:
 Read the implementation and tests before promising behavior. Check paths and
 anchors when moving content. Run repository Python examples through `uv run --frozen`.
 
+## Live-publisher checks
+
+Tests marked `@pytest.mark.integration` call the real publisher instead of a
+fixture; `./scripts/check` and the default `Checks` workflow both exclude them
+(`addopts = "-m 'not integration and not httpfs'"`), so a publisher going down
+or changing its answer never blocks a pull request.
+
+- **`.github/workflows/live.yml`** runs them on its own weekly schedule (and on
+  `workflow_dispatch`), writes the `API_GOV` repository secret to a `.env` file
+  for the run, and uploads the junit report (`junit-live.xml`) as a workflow
+  artifact. It is never added to branch protection as a required check --
+  a failing run is a drift report to read and file, not a blocked merge.
+- **Run the same suite locally** with `uv run --frozen pytest -q -m integration`.
+  Most of these tests read their key with `read_api_key` from a `.env` file
+  at the repository root; a few honor `SPICY_DOCS_ENV_FILE` to point at a
+  different one. A test skips outright when no credential file is present.
+
 ## Former generated wiki
 
 The wiki was consolidated into task guides in September 2026. Its generator
