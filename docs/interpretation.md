@@ -55,6 +55,14 @@ old outcome beside the new one.
   became law; the action whose `actionCode` is the publisher's became-public-law
   code supplies the date. Neither of the two disagreeing keyword scans survives,
   and a law without a coded action is reported as such rather than guessed at.
+  Measured 2026-09-19 over the 118th Congress's `hr` and `s` BILLSTATUS bulk
+  zips (16,213 members, none refused): 269 bills carry a `laws` entry, and all
+  269 carry the coded became-law action -- none carries `type == "BecameLaw"`
+  without the code, and none hits the `public_law_without_became_law_action`
+  fallback. The fallback rule stays regardless, both because it is cheaper
+  than assuming every future bill's action will be coded and because the
+  measurement covers two bill types of one Congress, not `hjres`/`sjres` or
+  every Congress.
 - **Vote matching reads structured references.** The regex over vote question
   text could not match any Senate bill. `recordedVotes` on the bill's own action
   is the join, and the House vote route states the legislation in two fields.
