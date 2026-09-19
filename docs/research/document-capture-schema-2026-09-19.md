@@ -204,11 +204,11 @@ requests is `~/Work/corpora/supply-2026-09-02/receipts/document-capture-schema-2
 
 | Document | Family | Rendition | Artifact bytes | Capture bytes | Nodes | Leaves | Empty leaves | Non-contiguous leaves | Spans | Unresolved | Issues | Code points | Partition digest | Independent derivation | Schema, profile, invariants, fragments | Seconds |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | ---: |
-| `plaw-119publ1` | `uslm-law` | xml | 23,379 | 141,485 | 321 | 216 | 0 | 0 | 325 | 0 | 1 | 8,660 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0016 |
-| `bills-119hjres25enr` | `bill-xml` | xml | 2,751 | 18,638 | 26 | 18 | 3 | 0 | 45 | 0 | 6 | 1,335 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0003 |
-| `crpt-119hrpt1` | `committee-report-html` | html | 13,953 | 127,779 | 217 | 170 | 0 | 0 | 625 | 0 | 1 | 13,900 | match | match, html.parser.HTMLParser(convert_charrefs=True) handle_data | all pass | 0.0011 |
+| `plaw-119publ1` | `uslm-law` | xml | 23,379 | 141,485 | 321 | 216 | 0 | 0 | 325 | 0 | 1 | 8,660 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0012 |
+| `bills-119hjres25enr` | `bill-xml` | xml | 2,751 | 18,638 | 26 | 18 | 3 | 0 | 45 | 0 | 6 | 1,335 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0004 |
+| `crpt-119hrpt1` | `committee-report-html` | html | 13,953 | 127,644 | 217 | 170 | 0 | 0 | 625 | 0 | 0 | 13,900 | match | match, html.parser.HTMLParser(convert_charrefs=True) handle_data | all pass | 0.0012 |
 | `fr-2026-19200` | `federal-register-xml` | xml | 10,224 | 62,503 | 76 | 59 | 2 | 0 | 209 | 0 | 5 | 8,758 | match | match, lxml.etree (libxml2) itertext | all pass | 0.0005 |
-| `cfr-2025-title30-vol3-sec716-2` | `cfr-reconstruction` | pdf | 157,908 | 186,831 | 87 | 71 | 0 | 2 | 721 | 0 | 0 | 12,694 | match | match, json: evidence blocks rejoined by page | all pass | 0.0012 |
+| `cfr-2025-title30-vol3-sec716-2` | `cfr-reconstruction` | pdf | 157,908 | 186,831 | 87 | 71 | 0 | 2 | 721 | 0 | 0 | 12,694 | match | match, json: evidence blocks rejoined by page | all pass | 0.001 |
 | `scotus-26a274_l537` | `slip-opinion-pdf` | pdf | 66,165 | 124,689 | 168 | 160 | 0 | 0 | 473 | 0 | 2 | 8,024 | match | match, json: evidence blocks rejoined by page | all pass | 0.0008 |
 
 Reading the table:
@@ -273,7 +273,7 @@ re-serialized with one thing removed, measured by
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `plaw-119publ1` | 141,485 | 48,278 | 8,831 | 16.0x | 10,910 | 10,400 | 11,701 | 49,568 |
 | `bills-119hjres25enr` | 18,638 | 5,866 | 1,339 | 13.9x | 1,485 | 1,404 | 1,549 | 4,372 |
-| `crpt-119hrpt1` | 127,779 | 50,465 | 13,900 | 9.2x | 14,637 | 20,148 | 22,190 | 8,327 |
+| `crpt-119hrpt1` | 127,644 | 50,432 | 13,900 | 9.2x | 14,637 | 20,148 | 22,190 | 8,327 |
 | `fr-2026-19200` | 62,503 | 20,882 | 8,785 | 7.1x | 7,674 | 6,657 | 10,409 | 10,410 |
 | `cfr-2025-title30-vol3-sec716-2` | 186,831 | 74,893 | 12,734 | 14.7x | 13,654 | 23,132 | 45,058 | 3,219 |
 | `scotus-26a274_l537` | 124,689 | 57,887 | 8,124 | 15.3x | 9,395 | 15,002 | 29,306 | 14,295 |
@@ -281,12 +281,13 @@ re-serialized with one thing removed, measured by
 What is left is not waste. A capture is 7 to 16 times its own text because it
 carries, per span, where that text sits in the artifact, and per node, the
 publisher's element path and attributes. Node `source` is the largest single
-item for the markup families (35% of the USLM capture) and span `source` for
-the PDF families (24% of the slip opinion), which is exactly the trade the
-shape makes: coordinates are what makes a leaf citable. Leaf `text` is 7-11%
-and is now optional in the parent, so a corpus-scale consumer can drop it and
-have the validator rebuild it; these six keep it because a committed capture
-is also something a person reads. The remaining structural choice — a span
+item for the markup families (35% of the USLM capture, where every node has an
+element path and its attributes) and span `source` for the PDF families (24%
+of the CFR capture, where every span has a page and a box), which is exactly
+the trade the shape makes: coordinates are what makes a leaf citable. Leaf
+`text` is 7-12% and is now optional in the parent, so a corpus-scale consumer
+can drop it and have the validator rebuild it; these six keep it because a
+committed capture is also something a person reads. The remaining structural choice — a span
 table with no repeated `exact` — is still open and is still a contract
 change, which is the point of the digest pin.
 
@@ -557,6 +558,6 @@ the reviews supply; two remain open, and are open for stated reasons.
    node's `pageSize` in points is what converts one to the other, and that is
    what DocSpec would need alongside any permille adoption.
 6. **Do the committed captures stay?** *Answered: yes, smaller.* The
-   directory is 816 KB now against 1.2 MB, they are the only behavioural evidence the six
+   six captures and their fragments are 712 KB now against 1.2 MB, they are the only behavioural evidence the six
    families have, and every negative control mutates one of them. Moving them
    to the receipt folder would leave the tests with nothing to refuse.

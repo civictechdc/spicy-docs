@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-19T23:38:22+00:00",
+ "generatedAt": "2026-09-19T23:47:41+00:00",
  "parentSchema": {
   "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
   "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
@@ -55,7 +55,7 @@
     "withoutSpanSource": 129784,
     "withoutNodeSource": 91917
    },
-   "seconds": 0.0016,
+   "seconds": 0.0012,
    "errors": []
   },
   {
@@ -95,7 +95,7 @@
     "withoutSpanSource": 17089,
     "withoutNodeSource": 14266
    },
-   "seconds": 0.0003,
+   "seconds": 0.0004,
    "errors": []
   },
   {
@@ -103,14 +103,14 @@
    "family": "committee-report-html",
    "rendition": "html",
    "artifactBytes": 13953,
-   "captureBytes": 127779,
+   "captureBytes": 127644,
    "nodes": 217,
    "leaves": 170,
    "emptyLeaves": 0,
    "nonContiguousLeaves": 0,
    "spans": 625,
    "unresolved": 0,
-   "issues": 1,
+   "issues": 0,
    "codePoints": 13900,
    "textStreamSha256": "46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d",
    "roundTrip": {
@@ -127,15 +127,15 @@
     "n0216"
    ],
    "size": {
-    "bytes": 127779,
-    "indentedBytes": 178244,
+    "bytes": 127644,
+    "indentedBytes": 178076,
     "exactTextBytes": 13900,
-    "withoutLeafText": 113142,
-    "withoutSpanIdAndEnd": 107631,
-    "withoutSpanSource": 105589,
-    "withoutNodeSource": 119452
+    "withoutLeafText": 113007,
+    "withoutSpanIdAndEnd": 107496,
+    "withoutSpanSource": 105454,
+    "withoutNodeSource": 119317
    },
-   "seconds": 0.0011,
+   "seconds": 0.0012,
    "errors": []
   },
   {
@@ -215,7 +215,7 @@
     "withoutSpanSource": 141773,
     "withoutNodeSource": 183612
    },
-   "seconds": 0.0012,
+   "seconds": 0.001,
    "errors": []
   },
   {
