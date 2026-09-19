@@ -467,7 +467,18 @@ _FORMAT_URL_FOLDERS: tuple[tuple[str, str], ...] = (
 )
 
 
-def _format_name(item: BillTextFormat) -> str | None:
+def format_name(item: BillTextFormat) -> str | None:
+    """This module's short name for one offered format link, or None for an unknown one.
+
+    The publisher's own ``type`` string wins where it states one; otherwise the
+    name comes from the GovInfo rendition *folder* in the URL path, never the
+    file extension -- BILLS states its USLM rendition at ``uslm/{id}.xml``,
+    which no extension check can tell apart from ``xml/{id}.xml``.
+
+    Public because ``choose_format`` is not the only caller any more: a
+    published ``bill_versions`` row states which rendition was read, and naming
+    it a second way is how the row and the choice would drift apart.
+    """
     if item.type is not None:
         return FORMAT_TYPE_NAMES.get(item.type)
     for folder, name in _FORMAT_URL_FOLDERS:
@@ -489,7 +500,7 @@ def choose_format(
     """
     if isinstance(prefer, str) or not isinstance(prefer, Sequence):
         raise TypeError("prefer must be a sequence of format names, not one name")
-    named = [(item, _format_name(item)) for item in formats if item.url]
+    named = [(item, format_name(item)) for item in formats if item.url]
     for name in prefer:
         for item, item_name in named:
             if item_name == name:
@@ -505,6 +516,7 @@ __all__ = [
     "VersionCodeError",
     "bill_version_package_id",
     "choose_format",
+    "format_name",
     "govinfo_suffix",
     "slugify",
     "version_slug",

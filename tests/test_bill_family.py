@@ -1,0 +1,648 @@
+"""One bill through the family builder: the rows it produces, and what it refuses.
+
+The helpers here are shared with ``test_table_contracts.py`` and
+``test_activity_events.py``, which both need real shaped rows and should not
+each build a capture of their own.
+
+The three model seams are stubbed rather than mocked at a client:
+``build_bill_family`` takes a section classifier, a version summarizer and a
+diff summarizer, so a hermetic run substitutes three functions and never
+reaches a model. Passing none of them is the keyless CI path, and is asserted
+separately.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from spicy_docs.interpretation.bill_family import (
+    BillFamilyCapture,
+    BillFamilyTables,
+    BillVersionCapture,
+    EngineStamp,
+    build_bill_family,
+    classification_vocabulary_hash,
+    installed_engine_stamp,
+    section_reference,
+)
+from spicy_docs.interpretation.bill_summaries import (
+    BillSummaryResult,
+    BillVersionText,
+    DiffItemText,
+    DiffSummaryResult,
+)
+from spicy_docs.interpretation.section_classification import (
+    PROMPT_VERSION as CLASSIFY_PROMPT_VERSION,
+)
+from spicy_docs.interpretation.section_classification import (
+    ClassifiableSection,
+    SectionClassification,
+)
+from spicy_docs.schemas import BILL_SECTIONS, BILL_VERSIONS, TABLE_CONTRACTS
+from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextVersion, parse_bill_status
+from spicy_docs.sources.congress.bill_tree import engine_available, parse_bill_tree
+from spicy_docs.transport.captured import CapturedBodyResponse
+
+FIXTURES = Path(__file__).parent / "fixtures"
+CAPTURED = FIXTURES / "govinfo_bills"
+CONSTRUCTED = FIXTURES / "congress_bill_tree"
+
+NOW = datetime(2026, 9, 19, tzinfo=UTC)
+OBSERVED_AT = "2026-09-19T00:00:00Z"
+#: A stamp with a literal revision, for the cases that never reach the engine.
+TEST_ENGINE = EngineStamp(name="deltatrack", version="0.1.0", revision="0" * 40)
+
+HR6028 = BillIdentity(119, "hr", 6028)
+
+needs_engine = pytest.mark.skipif(
+    not engine_available(), reason="needs the 'bill-diff' extra: uv sync --extra bill-diff"
+)
+
+
+def clock() -> datetime:
+    return NOW
+
+
+def status_for(name: str, identity: BillIdentity) -> Any:
+    return parse_bill_status((CAPTURED / name).read_bytes(), identity=identity)
+
+
+def capture_of(path: Path, *, content_type: str = "application/xml") -> CapturedBodyResponse:
+    """A capture of exactly these bytes, at a URL that cannot be mistaken for a publisher's."""
+    return CapturedBodyResponse(
+        requested_url=f"https://fixture.invalid/{path.name}",
+        resolved_url=f"https://fixture.invalid/{path.name}",
+        status_code=200,
+        content_type=content_type,
+        observed_at=OBSERVED_AT,
+        body=path.read_bytes(),
+    )
+
+
+def printing(
+    path: Path,
+    *,
+    version: BillTextVersion,
+    version_code: str,
+    source: str = "govinfo",
+    parse: bool = True,
+) -> BillVersionCapture:
+    """One acquired printing of ``version``, whose body is exactly ``path``'s bytes.
+
+    ``chosen_format`` is the version's single offered link, because that link is
+    the XML rendition these fixtures were captured from -- a statement about the
+    fixture, checkable by reading it, not a guess at which format was preferred.
+    """
+    return BillVersionCapture(
+        version=version,
+        version_code=version_code,
+        source=source,
+        package_id=version.package_id,
+        chosen_format=version.formats[0] if version.formats else None,
+        body=capture_of(path),
+        document=parse_bill_tree(path.read_bytes(), version=version_code) if parse else None,
+    )
+
+
+def constructed_version(version_type: str, date: str) -> BillTextVersion:
+    """A version record for a constructed document, which no publisher offers a link for."""
+    return BillTextVersion(type=version_type, date=date, formats=(), package_id=None)
+
+
+def captured_pair_capture() -> BillFamilyCapture:
+    """H.R. 6028 with both of its captured printings: a real consecutive pair."""
+    status = status_for("status-119hr6028.xml", HR6028)
+    by_package = {version.package_id: version for version in status.text_versions}
+    return BillFamilyCapture(
+        status=status,
+        versions=(
+            printing(
+                CAPTURED / "text-119hr6028ih.xml",
+                version=by_package["BILLS-119hr6028ih"],
+                version_code="introduced-in-house",
+            ),
+            printing(
+                CAPTURED / "text-119hr6028eh.xml",
+                version=by_package["BILLS-119hr6028eh"],
+                version_code="engrossed-in-house",
+            ),
+        ),
+        observed_at=OBSERVED_AT,
+    )
+
+
+def three_printing_capture() -> BillFamilyCapture:
+    """One bill with three printings, so "consecutive pairs only" is a testable claim.
+
+    The three documents are the constructed division fixtures, which are the only
+    files in this repository that differ from each other in an amount, an added
+    section and a move. They establish what the builder does with three
+    printings; they establish nothing about what GPO publishes.
+    """
+    return BillFamilyCapture(
+        status=status_for("status-119hr6028.xml", HR6028),
+        versions=(
+            printing(
+                CONSTRUCTED / "constructed-bill-divisions.xml",
+                version=constructed_version("Introduced in House", "2025-11-12T05:00:00Z"),
+                version_code="introduced-in-house",
+            ),
+            printing(
+                CONSTRUCTED / "constructed-bill-divisions-engrossed.xml",
+                version=constructed_version("Engrossed in House", "2026-06-08T04:00:00Z"),
+                version_code="engrossed-in-house",
+            ),
+            printing(
+                CONSTRUCTED / "constructed-bill-divisions-reported.xml",
+                version=constructed_version("Reported in House", "2026-07-01T04:00:00Z"),
+                version_code="reported-in-house",
+            ),
+        ),
+        observed_at=OBSERVED_AT,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class StubClassifier:
+    """Label every section the builder offers, with fixed, checkable provenance."""
+
+    label: str = "directive"
+
+    def __call__(self, sections: list[ClassifiableSection]) -> tuple[SectionClassification, ...]:
+        return tuple(
+            SectionClassification(
+                section_id=section.section_id,
+                label=self.label,
+                confidence=0.9,
+                model="stub-model",
+                prompt_version=CLASSIFY_PROMPT_VERSION,
+                prompt_hash="sha256:" + "0" * 64,
+                batch_index=0,
+                requested_at="2026-09-19T00:00:00+00:00",
+                completed_at="2026-09-19T00:00:01+00:00",
+            )
+            for section in sections
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class StubSummarizer:
+    """Answer every version, or decline the ones whose codes are named."""
+
+    declines: frozenset[str] = frozenset()
+    content_hash: str = "sha256:" + "1" * 64
+
+    def __call__(self, version: BillVersionText) -> BillSummaryResult | None:
+        if version.version_id in self.declines:
+            return None
+        return BillSummaryResult(
+            identity=version.identity,
+            version_id=version.version_id,
+            summary="A plain-language paragraph long enough to satisfy the reader this stub stands in for.",
+            audience="People who read appropriations bills",
+            top_provisions=("First provision", "Second provision"),
+            model="stub-model",
+            prompt_version="v1",
+            content_hash=self.content_hash,
+            input_tokens=100,
+            output_tokens=50,
+            requested_at="2026-09-19T00:00:00+00:00",
+            completed_at="2026-09-19T00:00:02+00:00",
+        )
+
+
+class StubDiffSummarizer:
+    """Answer any pair whose diff carries a changed item, the way the real one does.
+
+    Keeps its own call log, so a test can assert what the generator was handed
+    as well as what came back.
+    """
+
+    content_hash = "sha256:" + "2" * 64
+
+    def __init__(self) -> None:
+        self.seen: list[tuple[str, str, tuple[DiffItemText, ...]]] = []
+
+    def __call__(
+        self,
+        identity: BillIdentity,
+        *,
+        from_version_id: str,
+        to_version_id: str,
+        items: tuple[DiffItemText, ...],
+    ) -> DiffSummaryResult | None:
+        self.seen.append((from_version_id, to_version_id, tuple(items)))
+        if all(item.op == "unchanged" for item in items):
+            return None
+        return DiffSummaryResult(
+            identity=identity,
+            from_version_id=from_version_id,
+            to_version_id=to_version_id,
+            headline="One section's funding changed.",
+            key_changes=("A section's amount rose",),
+            sections_added=("Energy resilience",),
+            sections_removed=("Leases",),
+            dollar_changes=("Authorized construction rose by $750,000",),
+            model="stub-model",
+            prompt_version="v1",
+            content_hash=self.content_hash,
+            input_tokens=200,
+            output_tokens=80,
+            requested_at="2026-09-19T00:00:00+00:00",
+            completed_at="2026-09-19T00:00:03+00:00",
+        )
+
+
+def family(
+    capture: BillFamilyCapture | None = None,
+    *,
+    classify: Any = None,
+    summarize: Any = None,
+    summarize_diff: Any = None,
+    engine: EngineStamp | None = None,
+    **arguments: Any,
+) -> BillFamilyTables:
+    return build_bill_family(
+        capture if capture is not None else captured_pair_capture(),
+        engine=engine if engine is not None else TEST_ENGINE,
+        classify=classify,
+        summarize=summarize,
+        summarize_diff=summarize_diff,
+        clock=clock,
+        **arguments,
+    )
+
+
+def modelled_family() -> BillFamilyTables:
+    """The pair capture with all three seams stubbed; shared with the contract tests."""
+    return family(
+        classify=StubClassifier(),
+        summarize=StubSummarizer(),
+        summarize_diff=StubDiffSummarizer(),
+    )
+
+
+ROW_TABLES = tuple(field for field in BillFamilyTables.__dataclass_fields__ if field != "refusals")
+
+
+@needs_engine
+def test_one_pass_fills_every_family_table_and_every_row_passes_its_contract() -> None:
+    tables = modelled_family()
+    produced = {name: getattr(tables, name) for name in ROW_TABLES}
+    # Two tables are empty here on purpose. financial_changes needs
+    # pair_amounts and a changed figure, and the two captured printings of
+    # H.R. 6028 state no dollar figures at all; diff_summaries needs a changed
+    # section, and the reduced fixtures differ in nothing the engine settles.
+    assert {name for name, rows in produced.items() if rows} == {
+        "bills",
+        "bill_actions",
+        "bill_publisher_summaries",
+        "bill_versions",
+        "bill_sections",
+        "section_diffs",
+        "section_diff_items",
+        "section_classifications",
+        "bill_summaries",
+    }
+    for name, rows in produced.items():
+        contract = TABLE_CONTRACTS["congress_bills" if name == "bills" else name]
+        for row in rows:
+            assert contract.checked(row) is row
+            assert tuple(row) == contract.columns
+            assert contract.key(row)
+
+
+@needs_engine
+def test_a_changed_pair_produces_one_diff_summary_row_per_compared_pair() -> None:
+    generator = StubDiffSummarizer()
+    tables = family(three_printing_capture(), summarize_diff=generator)
+    assert [(row["from_version_code"], row["to_version_code"]) for row in tables.diff_summaries] == [
+        ("introduced-in-house", "engrossed-in-house"),
+        ("engrossed-in-house", "reported-in-house"),
+    ]
+    assert {row["from_source"] for row in tables.diff_summaries} == {"govinfo"}
+    for row in tables.diff_summaries:
+        assert TABLE_CONTRACTS["diff_summaries"].checked(row) is row
+    # The generator reads the engine's own records, not this pass's rows: the
+    # adapter composes one heading, which reaches the later side.
+    assert [pair[:2] for pair in generator.seen] == [
+        ("introduced-in-house", "engrossed-in-house"),
+        ("engrossed-in-house", "reported-in-house"),
+    ]
+    assert all(item.from_heading is None for _, _, items in generator.seen for item in items)
+
+
+@needs_engine
+def test_a_diff_the_generator_declines_is_a_refusal_not_a_gap() -> None:
+    tables = family(summarize_diff=StubDiffSummarizer())
+    assert tables.diff_summaries == ()
+    declined = [refusal for refusal in tables.refusals if refusal.table == "diff_summaries"]
+    assert [refusal.identity for refusal in declined] == [
+        ("119-hr-6028", "introduced-in-house", "govinfo", "engrossed-in-house", "govinfo")
+    ]
+    assert "every settled correspondence is unchanged" in declined[0].reason
+
+
+@needs_engine
+def test_every_section_names_a_version_row_that_exists() -> None:
+    tables = modelled_family()
+    parents = {BILL_VERSIONS.key(row) for row in tables.bill_versions}
+    for row in tables.bill_sections:
+        assert (row["bill_id"], row["version_code"], row["source"]) in parents
+
+
+@needs_engine
+def test_only_consecutive_pairs_are_diffed() -> None:
+    tables = family(three_printing_capture())
+    pairs = [(row["from_version_code"], row["to_version_code"]) for row in tables.section_diffs]
+    assert pairs == [
+        ("introduced-in-house", "engrossed-in-house"),
+        ("engrossed-in-house", "reported-in-house"),
+    ]
+    assert all(row["pair_rule"] == "consecutive_by_date" for row in tables.section_diffs)
+    assert all(row["pair_type"] == "xml-xml" for row in tables.section_diffs)
+
+
+@needs_engine
+def test_financial_rows_appear_only_when_the_caller_asks_for_the_pairing() -> None:
+    capture = replace(three_printing_capture(), versions=three_printing_capture().versions[:2])
+    assert family(capture).financial_changes == ()
+    paired = family(capture, pair_amounts=True).financial_changes
+    assert paired
+    assert {row["pairing_claim"] for row in paired} == {"word_alignment"}
+    # Every pairing sits under a section_diff_items row this same pass produced.
+    items = {
+        (
+            row["bill_id"],
+            row["from_version_code"],
+            row["from_source"],
+            row["to_version_code"],
+            row["to_source"],
+            row["seq"],
+        )
+        for row in family(capture, pair_amounts=True).section_diff_items
+    }
+    for row in paired:
+        key = (
+            row["bill_id"],
+            row["from_version_code"],
+            row["from_source"],
+            row["to_version_code"],
+            row["to_source"],
+            row["seq"],
+        )
+        assert key in items
+
+
+@needs_engine
+def test_no_model_seam_means_no_model_rows_and_no_refusal() -> None:
+    tables = family()
+    assert tables.section_classifications == ()
+    assert tables.bill_summaries == ()
+    assert tables.refusals == ()
+
+
+@needs_engine
+def test_a_printing_with_no_parsed_document_is_a_named_refusal_not_a_gap() -> None:
+    capture = captured_pair_capture()
+    unread = replace(capture.versions[1], document=None)
+    tables = family(replace(capture, versions=(capture.versions[0], unread)))
+
+    # The version row still exists: the bytes were fetched and are described.
+    assert len(tables.bill_versions) == 2
+    assert [row["section_count"] for row in tables.bill_versions] == ["3", None]
+    # Its sections and its diff are refusals naming the table and the identity.
+    refusals = {(refusal.table, refusal.identity) for refusal in tables.refusals}
+    assert ("bill_sections", ("119-hr-6028", "engrossed-in-house", "govinfo")) in refusals
+    assert (
+        "section_diffs",
+        ("119-hr-6028", "introduced-in-house", "govinfo", "engrossed-in-house", "govinfo"),
+    ) in refusals
+    assert tables.section_diffs == ()
+    assert all(refusal.reason for refusal in tables.refusals)
+
+
+@needs_engine
+def test_a_declined_summary_is_a_refusal_rather_than_a_silently_missing_row() -> None:
+    tables = family(
+        classify=None,
+        summarize=StubSummarizer(declines=frozenset({"introduced-in-house"})),
+    )
+    assert [row["version_code"] for row in tables.bill_summaries] == ["engrossed-in-house"]
+    declined = [refusal for refusal in tables.refusals if refusal.table == "bill_summaries"]
+    assert [refusal.identity for refusal in declined] == [("119-hr-6028", "introduced-in-house", "govinfo")]
+
+
+@needs_engine
+def test_classifications_resolve_through_the_section_row_not_the_model_answer() -> None:
+    tables = modelled_family()
+    sections = {BILL_SECTIONS.key(row) for row in tables.bill_sections}
+    for row in tables.section_classifications:
+        key = (row["bill_id"], row["version_code"], row["source"], row["match_path"], row["body_index"])
+        assert key in sections
+        assert row["vocabulary_hash"] == classification_vocabulary_hash()
+
+
+@needs_engine
+def test_a_model_answer_naming_an_unpublished_section_is_refused() -> None:
+    def stray(sections: list[ClassifiableSection]) -> tuple[SectionClassification, ...]:
+        answers = StubClassifier()(sections)
+        return (*answers, replace(answers[0], section_id="not-a-section"))
+
+    tables = family(classify=stray)
+    refusals = [r for r in tables.refusals if r.table == "section_classifications"]
+    assert len(refusals) == len(tables.bill_versions)
+    assert all("did not publish a row" in refusal.reason for refusal in refusals)
+
+
+def test_section_reference_is_unique_per_printing_and_position() -> None:
+    assert section_reference("ih", "govinfo", 3) != section_reference("ih", "govinfo-pdf", 3)
+    assert section_reference("ih", "govinfo", 3) != section_reference("ih", "govinfo", 4)
+
+
+def test_merged_concatenates_every_table_and_keeps_every_refusal() -> None:
+    left = BillFamilyTables(bills=({"a": None},), refusals=())
+    right = BillFamilyTables(bills=({"b": None},), bill_actions=({"c": None},))
+    merged = left.merged(right)
+    assert merged.bills == ({"a": None}, {"b": None})
+    assert merged.bill_actions == ({"c": None},)
+    assert BillFamilyTables().merged(BillFamilyTables()) == BillFamilyTables()
+
+
+def test_merged_refuses_anything_that_is_not_a_family() -> None:
+    with pytest.raises(TypeError):
+        BillFamilyTables().merged({"bills": ()})
+
+
+def test_the_vocabulary_hash_moves_when_a_definition_is_reworded(monkeypatch: pytest.MonkeyPatch) -> None:
+    from spicy_docs.interpretation import bill_family, section_classification
+
+    before = classification_vocabulary_hash()
+    reworded = (
+        replace(section_classification.CLASSIFICATION_LABELS[0], definition="something else entirely"),
+        *section_classification.CLASSIFICATION_LABELS[1:],
+    )
+    monkeypatch.setattr(bill_family, "CLASSIFICATION_LABELS", reworded)
+    assert classification_vocabulary_hash() != before
+
+
+@needs_engine
+def test_the_engine_stamp_is_read_from_the_installed_distribution() -> None:
+    stamp = installed_engine_stamp()
+    assert stamp.name == "deltatrack"
+    assert stamp.version
+    # A git install records its resolved commit; a wheel install states none,
+    # and the stamp says so rather than reporting a revision it does not know.
+    assert stamp.revision == "" or len(stamp.revision) == 40
+
+
+def test_a_missing_engine_distribution_refuses_by_name() -> None:
+    from spicy_docs.interpretation.bill_family import BillFamilyError
+
+    with pytest.raises(BillFamilyError, match="bill-diff"):
+        installed_engine_stamp("not-an-installed-distribution")
+
+
+def test_the_family_builds_without_the_diff_and_names_every_pair_it_skipped() -> None:
+    """``diff=False`` is the documented fallback for an environment that cannot vendor the engine."""
+    capture = BillFamilyCapture(
+        status=status_for("status-119hr6028.xml", HR6028),
+        versions=(
+            printing(
+                CAPTURED / "text-119hr6028ih.xml",
+                version=constructed_version("Introduced in House", "2025-11-12T05:00:00Z"),
+                version_code="introduced-in-house",
+                parse=False,
+            ),
+        ),
+        observed_at=OBSERVED_AT,
+    )
+    tables = family(capture, diff=False)
+    assert tables.section_diffs == ()
+    assert len(tables.bills) == 1
+    assert [refusal.table for refusal in tables.refusals] == ["bill_sections"]
+
+
+def test_a_referral_signal_reaches_both_the_committee_row_and_the_bills_row() -> None:
+    """The six full-committee codes live in ``money_bills``; the wiring to the rows is here.
+
+    No captured status in this repository is referred to one of the six, so the
+    one committee H.Res. 10 does carry is given an appropriations system code.
+    That establishes the wiring; ``tests/test_interpretation_money_bills.py``
+    establishes the vocabulary.
+    """
+    status = status_for("status-119hres10.xml", BillIdentity(119, "hres", 10))
+    referred = replace(status, committees=(replace(status.committees[0], system_code="hsap00"),))
+    tables = family(BillFamilyCapture(status=referred, observed_at=OBSERVED_AT), diff=False)
+
+    assert [row["referral_signal"] for row in tables.bill_committees] == ["appropriations"]
+    assert [row["referral_rule"] for row in tables.bill_committees] == ["committee_system_code"]
+    assert tables.bills[0]["referral_signals"] == "appropriations"
+    # Outside the six the rule still ran and still says so; only the answer is NULL.
+    unreferred = family(BillFamilyCapture(status=status, observed_at=OBSERVED_AT), diff=False)
+    assert unreferred.bill_committees[0]["referral_signal"] is None
+    assert unreferred.bill_committees[0]["referral_rule"] == "committee_system_code"
+    assert unreferred.bills[0]["referral_signals"] is None
+
+
+@pytest.mark.parametrize(
+    ("name", "identity", "code", "source_name"),
+    [
+        # H.R. 6028's latest action is a Senate receipt: the publisher states a
+        # source system for it and no code at all, which is a real absence.
+        ("status-119hr6028.xml", HR6028, None, "Senate"),
+        ("status-119s5.xml", BillIdentity(119, "s", 5), "36000", "Library of Congress"),
+        ("status-119hres10.xml", BillIdentity(119, "hres", 10), "H11100", "House floor actions"),
+        ("status-119hres214.xml", BillIdentity(119, "hres", 214), "H38310", "House floor actions"),
+    ],
+)
+def test_exactly_one_action_is_flagged_latest_and_carries_the_coded_fields(
+    name: str, identity: BillIdentity, code: str | None, source_name: str
+) -> None:
+    """``<latestAction>`` is a separate element, and it states no code at all.
+
+    Comparing whole action records can never match it -- the actions[] entry
+    carries an actionCode, a type and a sourceSystem that latestAction does not
+    -- so the link is made on date and text, and the coded columns are then read
+    from the action rather than published NULL.  The expected values are read
+    from the fixtures, not from the row under test.
+    """
+    status = status_for(name, identity)
+    tables = family(BillFamilyCapture(status=status, observed_at=OBSERVED_AT), diff=False)
+
+    flagged = [row for row in tables.bill_actions if row["is_latest_action"] == "true"]
+    assert len(flagged) == 1
+    assert flagged[0]["action_text"] == status.latest_action.text
+    assert flagged[0]["action_date"] == status.latest_action.action_date
+
+    bill = tables.bills[0]
+    assert bill["latest_action_code"] == code
+    assert bill["latest_action_source_system_name"] == source_name
+    assert bill["latest_action_source_system_code"] == flagged[0]["source_system_code"]
+
+
+def test_a_bill_whose_latest_action_is_not_in_its_list_flags_nothing() -> None:
+    """A reduced or truncated action list is a NULL code, not a wrong one."""
+    status = status_for("status-119hr6028.xml", HR6028)
+    trimmed = replace(status, actions=status.actions[1:])
+    tables = family(BillFamilyCapture(status=trimmed, observed_at=OBSERVED_AT), diff=False)
+    assert all(row["is_latest_action"] == "false" for row in tables.bill_actions)
+    assert tables.bills[0]["latest_action_code"] is None
+    # The uncoded fields latestAction does state are still published.
+    assert tables.bills[0]["latest_action_text"] == status.latest_action.text
+
+
+def test_committee_count_equals_the_committee_rows_at_any_nesting_depth() -> None:
+    """The column's description promises the row count, so the two walks must agree."""
+    status = status_for("status-119hres10.xml", BillIdentity(119, "hres", 10))
+    parent = status.committees[0]
+    nested = replace(
+        parent,
+        subcommittees=(replace(parent, system_code="hsru01", subcommittees=(replace(parent, system_code="hsru02"),)),),
+    )
+    tables = family(
+        BillFamilyCapture(status=replace(status, committees=(nested,)), observed_at=OBSERVED_AT),
+        diff=False,
+    )
+    assert tables.bills[0]["committee_count"] == str(len(tables.bill_committees)) == "3"
+    assert [row["parent_system_code"] for row in tables.bill_committees] == [None, "hsru00", "hsru01"]
+
+
+def test_a_money_bill_publishes_its_kind_beside_every_input_the_rule_read() -> None:
+    """No captured status here is a money bill, so one is given an appropriations title.
+
+    The rule itself is covered by ``tests/test_interpretation_money_bills.py``;
+    what this establishes is that the finding's kind, rule, reason codes, fiscal
+    year and subcommittee all reach their own columns, beside the referral
+    signals the classifier was given -- so a row can be re-derived from itself.
+    """
+    status = status_for("status-119hres10.xml", BillIdentity(119, "hres", 10))
+    appropriation = replace(
+        status,
+        title="Making appropriations for the Department of Defense for fiscal year 2027.",
+        committees=(replace(status.committees[0], system_code="hsap00"),),
+    )
+    row = family(BillFamilyCapture(status=appropriation, observed_at=OBSERVED_AT), diff=False).bills[0]
+    assert row["money_bill_kind"] == "regular_appropriations"
+    assert row["money_bill_rule"]
+    assert row["money_bill_reason_codes"]
+    assert row["fiscal_year"] == "FY2027"
+    assert row["appropriations_subcommittee"] == "Defense"
+    assert row["referral_signals"] == "appropriations"
+
+
+def test_an_enacted_bill_carries_its_law_number_and_its_signing_provenance() -> None:
+    """S. 5 is the one enacted measure here: Public Law 119-1, with a coded became-law action."""
+    status = status_for("status-119s5.xml", BillIdentity(119, "s", 5))
+    row = family(BillFamilyCapture(status=status, observed_at=OBSERVED_AT), diff=False).bills[0]
+    assert row["public_law_number"] == "119-1"
+    assert row["law_type"] == "Public Law"
+    assert row["signed_date"] == "2025-01-29"
+    assert row["signed_date_rule"] == "public_law_and_became_law_action"
+    assert row["signed_date_action_code"] == "36000"
+    assert row["stage"] == "law"

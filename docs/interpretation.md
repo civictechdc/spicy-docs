@@ -27,6 +27,7 @@ rather than buried in control flow.
 | `section_classification` | parsed bill sections and an injected `ModelCall` | `SectionClassification` with model, prompt version, prompt hash, batch and timestamps |
 | `bill_summaries` | one bill version's text, title, status and money-bill kind, and an injected `ModelCall`; or, for `summarize_diff`, a section diff's changed items (`op`, both placements' heading and body) and an injected `ModelCall` | `BillSummaryResult` with model, prompt version, content hash, token counts and timestamps; `summarize_diff` produces `DiffSummaryResult` (headline, key changes, sections added/removed, dollar changes) with the same provenance columns |
 | `model_call` | — | the one injected model seam (`ModelCall`, `ModelResponse`, `ModelCallError`) the two model-backed modules share |
+| `bill_family` | one `BillFamilyCapture` (a `BillStatus` and every acquired printing), plus three injected model seams | twelve tables' worth of rows from `spicy_docs.schemas`, each one already proved against its own contract, and a `FamilyRefusal` for every row it could have produced and did not — see [`tables.md`](tables.md) |
 
 `normalize_for_comparison` and `token_jaccard` live in `bill_signals`, where
 their contract is stated, and are imported by `member_matching` and
