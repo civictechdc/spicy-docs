@@ -206,7 +206,8 @@ and a maintainer should rule on each:
    `Pub. L. 95–87`; the XML spells it with a hyphen. Both documents are the
    publisher's, and the re-scored run sees both spellings: the same two
    documents carry 8 critical tokens where the class this run replaced could
-   see 3, because it counted only whichever rendition used the hyphen.
+   see 4 (one spelling only), because it counted only whichever rendition
+   used the hyphen.
    Treating the dash difference as critical is defensible and it is what the
    current gate does; treating it as a stated rendition difference would move
    two documents of forty across the line. The decision belongs to whoever

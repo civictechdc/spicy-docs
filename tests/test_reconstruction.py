@@ -394,6 +394,18 @@ def test_the_classify_seam_can_attach_a_run_and_the_node_says_a_model_placed_it(
     assert not document.unresolved
 
 
+def test_the_seams_second_alternative_places_a_flush_paragraph_that_serializes_as_fp() -> None:
+    document = parse_cfr(load("21.1"), classify=lambda **_: Classification(1, "a flush run"))
+    placed = [node for node in document.nodes if node.decision.method == "model"]
+    assert placed and placed[0].kind == "flush_paragraph" and placed[0].decision.detail == "a flush run"
+    assert not document.unresolved
+    # The invariant the CFR_KINDS comment states: the seam's second
+    # alternative serializes as what its rule names, not as an ordinary P.
+    from spicy_docs.reconstruction.parse import CFR_KINDS
+
+    assert CFR_KINDS["flush_paragraph"] == "FP"
+
+
 def test_parse_cfr_refuses_another_family_s_profile() -> None:
     other = Profile(
         "uslm",

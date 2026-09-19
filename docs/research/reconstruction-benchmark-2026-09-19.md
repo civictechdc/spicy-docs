@@ -174,7 +174,7 @@ lost text:
    XML spells them with a hyphen. The comparison keeps em and en dashes
    deliberately, and the critical class this run re-scored with sees both
    spellings: 8 critical tokens on these two documents, where the class it
-   replaced could see only whichever rendition held the hyphen — 3. The same
+   replaced could see only whichever rendition held the hyphen — 4 critical tokens in one spelling (one document had three, the other one). The same
    two documents either way; what changed is that the count is no longer a
    lower bound built from one spelling. This is a disagreement between two
    renditions of one document, not a reconstruction error, and it is
