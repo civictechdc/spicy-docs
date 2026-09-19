@@ -71,6 +71,29 @@ why the gate checks both, not the layout verdict alone. See
 Normalization runs per page and keeps page boundaries: a hyphen-wrapped word
 split across a page break is not rejoined, since doing so would move
 characters onto the wrong page's text.
+
+**Two rules ported from DeltaTrack, not from BillTrax.** Validated upstream
+gap-analysis (``docs/research/deltatrack-upstream-issues-2026-09-19.md``,
+claims B2/B3) found these are upstream features this port lacked, not
+upstream gaps -- so they are ported here rather than raised there:
+
+3. **The unbulleted running bill-stage footer.** ``_RUNNING_FOOTER_RE``,
+   ported verbatim from DeltaTrack's ``_RUNNING_FOOTER``
+   (``parsers/pdf_text.py:68-71``, built for its own #140), strips a line
+   like "HR 5895 PCS" -- a print-stage tag GPO does not bullet, so neither
+   BillTrax's original rule nor this port's ``_BULLET_BILL_RE`` catches it.
+   None of this port's first three fixtures carried one; the fourth,
+   ``BILLS-119hr1009rfs`` (an RFS-stage bill, fetched keyless through
+   ``sources.govinfo.bodies.package_body_locator``), does.
+4. **The layout verdict's minimum-size floor.** Below
+   ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` content lines, a numbered/total
+   ratio is not evidence -- ported from DeltaTrack's own derivation
+   (``compare/pdf.py:85``, table at ``:62-78``). Both real one-page fixtures
+   here (``BILLS-119hr4727ih``, ``BILLS-119hr1009rfs``) sit under the floor:
+   each is genuinely gutter-numbered, and each now reports
+   ``line_numbers=False`` and leaves its real hyphen-wraps split, the same
+   trade-off DeltaTrack's own derivation accepts for documents this short
+   (see ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``'s docstring).
 """
 
 from __future__ import annotations
@@ -94,6 +117,15 @@ _VERDATE_RE = re.compile(r"^VerDate\s")
 _DSK_USER_RE = re.compile(r"^\w+ on \w*PROD\w* with \S+$")
 _PAGE_NUM_RE = re.compile(r"^\d{1,4}\s*$")
 _BULLET_BILL_RE = re.compile(r"^[•·]\s*[A-Z]")
+# Ported verbatim from DeltaTrack's ``_RUNNING_FOOTER`` (civictechdc/DeltaTrack
+# c636448, ``parsers/pdf_text.py:68-71``), built for its own #140: an
+# unbulleted running bill-stage line (e.g. "HR 5895 PCS", for print stages GPO
+# does not prefix with a bullet -- PCS/RDS/RFS unbulleted, EAH/RH/EH/RS/IH
+# bulleted, all 2-4 caps, per that rule's own corpus-derived comment) that
+# neither BillTrax's ``BULLET_BILL_RE`` nor this port's own ``_BULLET_BILL_RE``
+# matches, since it carries no bullet character. Matched as a WHOLE line, like
+# upstream, so prose mentioning a bill mid-sentence is never stripped.
+_RUNNING_FOOTER_RE = re.compile(r"^(?:H|S|HR|HRES|SRES|HJRES|SJRES|HCONRES|SCONRES)\s+\d+\s+[A-Z]{2,4}$")
 
 #: BillTrax's own bound: a GPO gutter number is 1-2 digits (its comment: "up
 #: to 25 -- page line range"). A bare page-footer number can run to 4 digits
@@ -124,6 +156,7 @@ METADATA_RULES: tuple[MetadataRule, ...] = (
     MetadataRule("dsk_user", "Document-processing user/job-code line", _DSK_USER_RE),
     MetadataRule("bare_page_number", "Bare page number or per-line gutter number", _PAGE_NUM_RE),
     MetadataRule("bullet_bill_id", "Bullet-prefixed bill identifier", _BULLET_BILL_RE),
+    MetadataRule("running_footer", "Unbulleted running bill-stage line (e.g. HR 5895 PCS)", _RUNNING_FOOTER_RE),
 )
 
 
@@ -146,9 +179,14 @@ class GpoPageCleanup:
     verdate_footer_lines: int
     footer_continuation_lines: int
     dsk_user_lines: int
+    running_footer_lines: int
     bare_page_number_lines: int
     bare_page_number_evidence: BareNumberEvidence
     bullet_bill_lines: int
+    #: This page's own share of the ``line_numbers`` verdict's evidence: real
+    #: prose lines, excluding every stripped-chrome and bare-digit line (see
+    #: ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``).
+    content_lines: int
     small_caps_merges: int
     hyphen_rejoin_count: int
 
@@ -168,6 +206,7 @@ class GpoCleanupRecord:
     line_numbers: bool
     gpo_footers: bool
     spacing_normalized: bool
+    running_footer_lines: int
     small_caps_merges: int
     hyphen_rejoin_count: int
     pages: tuple[GpoPageCleanup, ...]
@@ -193,6 +232,7 @@ class _PageMetadataCounts:
     verdate_footer_lines: int
     footer_continuation_lines: int
     dsk_user_lines: int
+    running_footer_lines: int
     bare_page_number_lines: int
     bullet_bill_lines: int
     content_lines: int
@@ -215,7 +255,7 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
     detect layout and hyphen-wraps from.
     """
     kept: list[_Line] = []
-    verdate = footer_continuation = dsk = page_num = bullet = 0
+    verdate = footer_continuation = dsk = running_footer = page_num = bullet = 0
     content = gutter_adjacent = 0
     i, n = 0, len(lines)
     while i < n:
@@ -228,7 +268,7 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
             # Nothing meaningful follows a VerDate line on its page (see
             # module docstring, artifact 2): drop it and the rest of the
             # page in one step, tallying what kind of line each was.
-            # Proven on the three fixtures in tests/fixtures/gpo_pdf_text/
+            # Proven on the four fixtures in tests/fixtures/gpo_pdf_text/
             # only; a page where real content genuinely follows a VerDate
             # line would lose that content here, silently.
             verdate += 1
@@ -240,6 +280,10 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
             continue
         if _DSK_USER_RE.match(t):
             dsk += 1
+            i += 1
+            continue
+        if _RUNNING_FOOTER_RE.match(t):
+            running_footer += 1
             i += 1
             continue
         if _PAGE_NUM_RE.match(t):
@@ -258,7 +302,9 @@ def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCou
             gutter_adjacent += 1
         kept.append(_Line(t, adjacent))
         i += 1
-    counts = _PageMetadataCounts(verdate, footer_continuation, dsk, page_num, bullet, content, gutter_adjacent)
+    counts = _PageMetadataCounts(
+        verdate, footer_continuation, dsk, running_footer, page_num, bullet, content, gutter_adjacent
+    )
     return kept, counts
 
 
@@ -286,12 +332,29 @@ def _gate_bare_digits(
     return [line for line in kept if not line.is_bare_digit], evidence
 
 
+#: Ported from DeltaTrack's ``_MIN_LINES_FOR_GUARD`` (civictechdc/DeltaTrack
+#: c636448, ``compare/pdf.py:85``). Its own floor-selection table
+#: (``compare/pdf.py:62-78``), swept over 60 real GPO PDFs, found a hard cliff
+#: between 28 and 29 judged lines (minimum accepted ratio 0.4286 -> 0.5517)
+#: and picked 50 for a comfortable margin past it while declining the same 14
+#: documents 29 would. Below the floor a ratio is not evidence: a short
+#: excerpt can clear 30% numbered by chance (a two-page memo should not be
+#: declared GPO-numbered on three lines), so the verdict is withheld -- kept
+#: as a positive gate here (unlike upstream's decline-guard, which defaults a
+#: short document to "not unnumbered" so it is not blocked outright), because
+#: withholding is what keeps ``_rejoin_hyphens`` from trusting an
+#: under-evidenced hyphen the way DeltaTrack's own unconditional rule does
+#: (see ``docs/extraction-gpo.md``, "Where this port did not adopt a
+#: DeltaTrack design").
+_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT = 50
+
+
 def _layout_verdict(page_counts: Sequence[_PageMetadataCounts]) -> bool:
     """Shared by ``is_gpo_layout`` and ``normalize_gpo_pages`` so a document's
     layout is one ``_strip_metadata`` pass per page, not two."""
     content = sum(c.content_lines for c in page_counts)
     numbered = sum(c.gutter_adjacent_lines for c in page_counts)
-    return content >= 3 and numbered / content > 0.3
+    return content >= _MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT and numbered / content > 0.3
 
 
 def is_gpo_layout(pages: Sequence[str]) -> bool:
@@ -301,7 +364,9 @@ def is_gpo_layout(pages: Sequence[str]) -> bool:
     "numbered" when the next physical line, before stripping, is a bare 1-2
     digit gutter number -- not, as under pdf-parse, when the content line's
     own text ends in a trailing digit suffix, which this extractor never
-    produces. Threshold kept: at least 3 content lines and over 30% numbered.
+    produces. Threshold: at least ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``
+    content lines (below that, the ratio below is not trusted either way) and
+    over 30% numbered.
     """
     return _layout_verdict([_strip_metadata(_normalize_encoding(page).split("\n"))[1] for page in pages])
 
@@ -377,10 +442,16 @@ def normalize_gpo_pages(pages: Sequence[str]) -> tuple[tuple[str, ...], GpoClean
     normalized: list[str] = []
     page_records: list[GpoPageCleanup] = []
     gpo_footers = False
-    total_small_caps = total_hyphen = 0
+    total_small_caps = total_hyphen = total_running_footer = 0
 
     for number, (kept, counts) in enumerate(per_page, start=1):
-        page_has_footer = counts.verdate_footer_lines > 0 or counts.dsk_user_lines > 0
+        # A running bill-stage line (e.g. "HR 5895 PCS") is as self-evidencing
+        # as the VerDate/job-code footer it usually accompanies (see module
+        # docstring on ``_RUNNING_FOOTER_RE``), so it counts toward the same
+        # page-level GPO evidence that gates bare-digit stripping.
+        page_has_footer = (
+            counts.verdate_footer_lines > 0 or counts.dsk_user_lines > 0 or counts.running_footer_lines > 0
+        )
         gated, evidence = _gate_bare_digits(kept, page_has_footer=page_has_footer, document_gpo_layout=gpo_layout)
         merged, small_caps = _merge_small_caps(gated)
         rejoined, hyphen_count = _rejoin_hyphens(merged, gpo_layout)
@@ -390,15 +461,18 @@ def normalize_gpo_pages(pages: Sequence[str]) -> tuple[tuple[str, ...], GpoClean
         gpo_footers = gpo_footers or page_has_footer
         total_small_caps += small_caps
         total_hyphen += hyphen_count
+        total_running_footer += counts.running_footer_lines
         page_records.append(
             GpoPageCleanup(
                 page=number,
                 verdate_footer_lines=counts.verdate_footer_lines,
                 footer_continuation_lines=counts.footer_continuation_lines,
                 dsk_user_lines=counts.dsk_user_lines,
+                running_footer_lines=counts.running_footer_lines,
                 bare_page_number_lines=counts.bare_page_number_lines,
                 bare_page_number_evidence=evidence,
                 bullet_bill_lines=counts.bullet_bill_lines,
+                content_lines=counts.content_lines,
                 small_caps_merges=small_caps,
                 hyphen_rejoin_count=hyphen_count,
             )
@@ -408,6 +482,7 @@ def normalize_gpo_pages(pages: Sequence[str]) -> tuple[tuple[str, ...], GpoClean
         line_numbers=gpo_layout,
         gpo_footers=gpo_footers,
         spacing_normalized=True,
+        running_footer_lines=total_running_footer,
         small_caps_merges=total_small_caps,
         hyphen_rejoin_count=total_hyphen,
         pages=tuple(page_records),

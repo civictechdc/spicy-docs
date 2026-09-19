@@ -1,14 +1,14 @@
 # GPO PDF text fixtures
 
-Extracted text (not the PDF) of three real GPO legislative documents, captured
+Extracted text (not the PDF) of four real GPO legislative documents, captured
 to re-derive `extraction/gpo_normalize.py` against this repo's own PDF
 extraction instead of BillTrax's pdf-parse. Each file is a JSON array of
 per-page strings: `extraction.DocumentExtractor(extraction.NativeText())`'s
 `PageResult.text`, one entry per page, in reading order. No page's text is
 truncated or reformatted.
 
-Package identity, PDF byte size and PDF sha256 for two of the three come
-straight from `docs/research/billtrax-raw-data-2026-09-19.json`
+Package identity, PDF byte size and PDF sha256 for the first two of the four
+come straight from `docs/research/billtrax-raw-data-2026-09-19.json`
 (`sources.billPdfTextArtifacts`), which recorded them from the same keyless
 GovInfo URLs on 2026-09-19; refetching each reproduced the identical byte
 size and sha256 stated there. The committee report was not itself captured in
@@ -18,14 +18,25 @@ fetched keyless from the address `spicy_docs.sources.govinfo.bodies.
 package_body_locator("CRPT-119hrpt105", "pdf")` derives, the same GovInfo
 package-body address family `docs/sources/govinfo-bodies.md` documents and
 `docs/research/billtrax-raw-data-2026-09-19.md` §6 used for this exact
-package. All three PDFs are public-domain U.S. government documents, under
+package. All four PDFs are public-domain U.S. government documents, under
 the 24 MiB evidence bound documented in that same section, and well under it.
+
+The fourth fixture, `BILLS-119hr1009rfs.json`, was added on 2026-09-19 to
+exercise the running-footer rule ported from DeltaTrack (see
+`docs/research/deltatrack-upstream-issues-2026-09-19.md`, claim B2): none of
+the first three fixtures is a PCS/RDS/RFS print stage, so none carries the
+unbulleted running bill-stage line (e.g. "HR 5895 PCS") that rule strips.
+H.R. 1009 (119th Congress), a short postal-facility-naming act received in
+the Senate, was located the same keyless way, via `package_body_locator
+("BILLS-119hr1009rfs", "pdf")`, and its PDF byte size and sha256 below were
+measured directly from that fetch (there is no sidecar entry for it).
 
 | Fixture | Version | Publisher URL | PDF bytes | PDF sha256 | Pages | Extracted chars |
 | --- | --- | --- | ---: | --- | ---: | ---: |
 | `BILLS-119hr4727ih.json` | Introduced in House (IH) | <https://www.govinfo.gov/content/pkg/BILLS-119hr4727ih/pdf/BILLS-119hr4727ih.pdf> | 223,439 | `3f3620d2c4f597a0a04a930e79977f5fec6a37a3ecc9e0765c40aa994a209a3d` | 1 | 854 |
 | `BILLS-119sconres1enr.json` | Enrolled (ENR) | <https://www.govinfo.gov/content/pkg/BILLS-119sconres1enr/pdf/BILLS-119sconres1enr.pdf> | 196,785 | `bed258a4cdbf876b099d49554cadfe3a641c9d785e61662f4076bf74ba635924` | 1 | 1,291 |
 | `CRPT-119hrpt105.json` | Committee report (House Rules) | <https://www.govinfo.gov/content/pkg/CRPT-119hrpt105/pdf/CRPT-119hrpt105.pdf> | 199,803 | `0b8f5c52ce09396f40c400ed23d2d52ec8cb638e5b2227d5592656557fce9911` | 3 | 7,111 |
+| `BILLS-119hr1009rfs.json` | Referred in Senate (RFS) | <https://www.govinfo.gov/content/pkg/BILLS-119hr1009rfs/pdf/BILLS-119hr1009rfs.pdf> | 206,513 | `c739986bb02d59ca7825a9eaa77fb4be66ced9fcaded0a664e79ed8d2474c70c` | 2 | 1,412 |
 
 Extracted 2026-09-19 with PyMuPDF 1.28.2 via
 `extraction.DocumentExtractor(extraction.NativeText()).extract(source,
@@ -35,5 +46,5 @@ this file as a JSON list. No normalization has been applied to these files;
 asserts the measured `GpoCleanupRecord` counts (`docs/extraction-gpo.md` has
 the same table with the after-normalization reduction).
 
-These fixtures establish behavior for these three documents' shapes; they do
+These fixtures establish behavior for these four documents' shapes; they do
 not establish coverage of every GPO PDF layout GovInfo has ever produced.
