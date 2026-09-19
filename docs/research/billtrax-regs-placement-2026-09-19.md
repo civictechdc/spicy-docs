@@ -547,10 +547,10 @@ table set in §3:
   code that `SR01` may delete out from under it. Sequencing a BillTrax port
   after `SR01`/`SR03` land avoids building on a reader spicy-regs itself
   plans to delete.
-- **DeltaTrack's absorption: settled 2026-09-19** (port plan decision 3):
-  absorbed into spicy-docs, both copies deleted; the inventory §4 measured
-  the vendored directory as a committed copy with no pin, so there is no
-  library to depend on. The original question, for the record:
+- **DeltaTrack: settled 2026-09-19 as a dependency** (port plan decision 3):
+  the canonical repo moved to `civictechdc/DeltaTrack` and is an installable
+  package far ahead of BillTrax's copy, so spicy-docs pins it by git commit
+  and adapts over it; BillTrax's two copies are deleted. The original question, for the record:
   `interpretation/section_diff.py`
   (§4) is described as merging with DeltaTrack's `diff_bill.py`
   (`billtrax-value-inventory-2026-09-19.md:112`), but DeltaTrack is a
