@@ -332,6 +332,40 @@ class _Hierarchy:
         self.open.append((designation, identifier))
 
 
+#: The marker a top-level paragraph hangs from, in a pair set.
+SECTION_ROOT = "§"
+
+
+def marker_pairs(markers: Sequence[str | None]) -> set[tuple[str, str]]:
+    """``(parent marker, child marker)`` for paragraph markers in reading order, under ``marker_hierarchy``.
+
+    The reference side of the benchmark reads its markers from the
+    publisher's own ``<P>`` elements and the candidate side from the print,
+    and both hang them on this one ladder, so the comparison measures whether
+    the same markers were found in the same nesting rather than comparing two
+    different rules.
+    """
+    hierarchy = _Hierarchy()
+    pairs: set[tuple[str, str]] = set()
+    for marker in markers:
+        if not marker:
+            continue
+        parent: str | None = None
+        for position, designation in enumerate(_DESIGNATION.findall(marker)):
+            level, _ok = hierarchy.place(designation)
+            if position == 0:
+                parent = hierarchy.parent_of(level)
+            hierarchy.opened(designation, level, marker)
+        pairs.add((parent or SECTION_ROOT, marker))
+    return pairs
+
+
+def paragraph_marker(text: str) -> str | None:
+    """The parenthesized designations a paragraph opens with, or ``None`` (``paragraph_marker``)."""
+    match = _MARKER.match(text.lstrip())
+    return match["marker"] if match else None
+
+
 # --- joins -------------------------------------------------------------------------
 
 
@@ -691,6 +725,7 @@ __all__ = [
     "CFR_KINDS",
     "HEADING_GAP",
     "INDENT",
+    "SECTION_ROOT",
     "SMALL_FACE_ALTERNATIVES",
     "TOP_BAND",
     "Alternative",
@@ -699,5 +734,7 @@ __all__ = [
     "ParseError",
     "ReconstructedDocument",
     "join_lines",
+    "marker_pairs",
+    "paragraph_marker",
     "parse_cfr",
 ]
