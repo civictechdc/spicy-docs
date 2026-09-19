@@ -579,6 +579,71 @@ cross-reference.**
 
 ---
 
+## B5. The unnumbered-uppercase soft-hyphen catch-all — `DEPART-MENT` — **real gap**, new
+
+**Claim as stated.** New here, raised by
+`docs/research/gpo-normalizer-vs-upstream-2026-09-19.md` §"Upstream gaps" and confirmed while
+building `extraction/pdfium_pages.py`. `normalize_raw` (`pdf_text.py:128-146`) has three branches
+for the U+FFFE soft-hyphen glyph PDFium emits at a print wrap: reconstruct `-\n<number> ` when a
+margin number follows (`:141`); join with no hyphen when unnumbered and the continuation is
+lowercase (`:143`, claim B4's branch); and everything else falls to
+`text.replace("￾", "-")` (`:144`), which swaps the glyph for a literal hyphen and reinserts **no
+newline**. That third branch is the one an unnumbered, uppercase-continued wrap takes — a heading
+or a title, which is exactly where unnumbered text lives.
+
+**Upstream at the pin.** `pdf_text.py:144`, inside `normalize_raw`, reached from
+`extract_clean_pages` at `:526`.
+
+**Measured.** On a synthetic minimal case, run with the clone's own `uv run`:
+
+```
+$ uv run python -c "
+from deltatrack.parsers.pdf_text import normalize_raw
+print(normalize_raw('OF THE DEPART￾MENT OF THE TREASURY RELATING TO\n'))
+"
+OF THE DEPART-MENT OF THE TREASURY RELATING TO
+```
+
+And on real GovInfo text: `CRPT-119hrpt105`'s title heading carries `DEPART￾MENT` and
+`RE￾PORTED` (verified by a direct `pypdfium2.PdfDocument` read of the captured PDF, sha256
+`0b8f5c52…fce9911`), both unnumbered and both uppercase-continued, and both leave
+`extract_clean_pages` as `DEPART-MENT` and `RE-PORTED` — one run, a bogus embedded hyphen, no
+line break, two printed lines silently welded into one. PyMuPDF prints the same wrap as
+`DEPART-` / `MENT`, and `spicy-docs`'s own `tests/extraction/test_gpo_normalize.py` asserts that
+shape on this fixture.
+
+**Verdict: real gap, distinct from both B4 and #650.** Same root cause, three different
+dispositions of one discarded signal: #650 is unnumbered-or-numbered + uppercase inside
+`_merge_print_lines`, leaving a visible two-line split; B4 is lowercase, wrongly *joined*; B5 is
+unnumbered + uppercase inside `normalize_raw`, wrongly *hyphenated in place*. B5 has the least
+visible signature of the three — no split, no line break, and a result that reads as a plausible
+hyphenated word.
+
+**Existing issue:** **#650 (open)** covers the uppercase continuation in `_merge_print_lines`, one
+function later and after the glyph is already gone. **Not covered; file as a sibling to B4 and
+cross-reference both.**
+
+**Suggested title:** `An unnumbered word that wraps across a printed line is welded into one line with a hyphen that was never printed`
+
+**Body:**
+> `normalize_raw`'s catch-all for the U+FFFE soft-hyphen glyph (`pdf_text.py:144`,
+> `text.replace("￾", "-")`) substitutes a literal hyphen without reinserting the line break the
+> glyph stood for, so a wrap with no margin number and an uppercase continuation — a heading, a
+> title, an enrolled bill, anywhere GPO prints no gutter numbers — comes out as one run with a
+> hyphen that appears nowhere on the page: `normalize_raw('OF THE DEPART￾MENT OF THE TREASURY
+> RELATING TO\n')` returns `OF THE DEPART-MENT OF THE TREASURY RELATING TO`, and
+> `CRPT-119hrpt105`'s own title heading reproduces it through `extract_clean_pages`, yielding
+> `DEPART-MENT` and `RE-PORTED` where the print shows `DEPART-` / `MENT` and `RE-` / `PORTED`.
+> This is the third disposition of the signal #650 already calls "not decidable from the PDF
+> alone" — #650 leaves an uppercase continuation visibly split, the sibling report on
+> `President-elect` wrongly joins a lowercase one, and this one welds an uppercase one in place —
+> except that here the glyph that *would* decide it is discarded one branch earlier, before
+> `_merge_print_lines` is ever reached. Because the result reads as an ordinary hyphenated word
+> rather than as an obvious two-line artifact, it is the hardest of the three to notice in an
+> exported `full_text` or a diff hunk, and it changes what the document says.
+
+---
+
 # Verdict table
 
 | # | Claim | Upstream `file:line` at pin (= `origin/develop`) | Verdict | Existing issue |
@@ -595,6 +660,7 @@ cross-reference.**
 | B2 | Unbulleted running footer | `pdf_text.py:68-71`, applied `:163` | **Misdescribed** — upstream has it; gap is in spicy-docs's port | **#140 CLOSED** (built it) |
 | B3 | 50-line floor | `compare/pdf.py:85`, derivation `:62-84` | **Misdescribed** — upstream has it, residual tracked | **#261 open**, #679 open |
 | B4 | Ungated hyphen rejoin, "President-elect" | `pdf_text.py:231-236`; also `:32`, `amounts.py:68` | **Real gap**; mechanism misdescribed (needs `normalize_raw` first) | #650 open (opposite direction) |
+| B5 | Unnumbered-uppercase soft-hyphen catch-all, `DEPART-MENT` | `pdf_text.py:144`, reached `:526` | **Real gap**, new; distinct from B4 and #650 | #650 open (one function later) |
 
 # Worth filing, in priority order by measured impact
 
@@ -603,6 +669,11 @@ cross-reference.**
    line shape, affecting both the diff path and the exported `full_text`. Three code sites share
    the guard. Sibling to open #650, which gives it a maintainer already holding the context.
    **File with the corrected mechanism** — the literal reproduction fails.
+1. **B5 — soft-hyphen catch-all welds two printed lines.** *Correctness, and the least visible of
+   the three.* Same root cause as B4 and #650, one branch earlier: `DEPART-MENT` and `RE-PORTED`
+   reproduce on real GovInfo text (`CRPT-119hrpt105`) and on a one-line synthetic case, and the
+   result reads as a plausible hyphenated word rather than as an obvious artifact. **File together
+   with B4** — one maintainer, one function, two dispositions of one discarded signal.
 2. **A1 — collision-group cap.** Measured 8.74 s for a single 300-section `match_path` group, flat
    ~95 µs/pair, clean O(N²) with no ceiling. The one claim here with a complete measurement of its
    own and no existing issue.
