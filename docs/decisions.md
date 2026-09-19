@@ -117,3 +117,33 @@ of recomputing them for each record.
 Share routine test encoding and inspection. Keep malformed artifacts and semantic
 replay independent of the writer they check. Preserve coupled traversal, selection
 and accounting state in cohesive functions; file length is a review prompt, not a quota.
+
+## Congress.gov and GovInfo collections are each one family
+
+Adopted 2026-09-19 from the
+[legislative data map](research/legislative-data-map-2026-09-18.md).
+
+A new Congress.gov collection route is a URL builder and a records key on the
+existing listing family, landed with a fixture and a live pagination check;
+the map's Table A is the route table, and it records per route whether the
+API honors sorting, since only five routes do. A new GovInfo collection is a
+body fetch on the existing discovery and MODS readers, cloned from the
+Federal Register body acquisition and keyed on the package id. Listing any
+collection the API serves is in scope.
+
+Crawling a whole collection or its bulkdata stays separate scope, as the
+bills source page already says, and each crawl carries its own record naming
+the bound and the byte budget before it is built. The measured costs for the
+119th Congress are 52 MB of status zips, 8 MB of summaries and 3 MB of laws;
+bulk lags the API by days, and a crawl states what an empty result means,
+because a zero count never establishes absence.
+
+The Congress.gov API is the index and GovInfo or the publisher file is the
+body or the crosswalk. Where both hold an item they agree: seven pairs
+measured on 2026-09-18 showed no content disagreement, and twenty-three
+joins followed from twenty items each held wherever the publisher's own data
+did. Prefer the API for listing, key bodies on the GovInfo package id, and
+take a publisher file only for a field the API lacks: committee assignments,
+the Senate LIS crosswalk, and Senate member-level votes. For senators who
+have left, the community legislators JSON is the crosswalk, pinned and
+cadence-checked, because no publisher file carries their LIS ids.

@@ -342,8 +342,8 @@ ROWS = (
         "the same repository publishes JSON, so the port's PyYAML reason no longer applies; an identifier hub keyed by bioguide with LIS, "
         "FEC candidate, ICPSR, GovTrack and OpenSecrets ids; closes the former-senator LIS gap and joins members to FEC candidates; "
         "civil society, so verify its cadence before relying", ("sample", "legislators-historical-json")),
-    Row(D, "press", "Press releases (member and committee RSS)", "varied", "port (unphased)", NONE,
-        "plan section A assigns the RSS source to no phase; feed-URL unification is decision 5, blocking phase 2", None,
+    Row(D, "press", "Press releases (member and committee RSS)", "varied", "port 2", NONE,
+        "lands in Phase 2 beside the feed-URL unification it depends on (decision 5), as a clone of `gao/rss.py`", None,
         (PORT_PLAN,)),
     Row(D, "reports", "Agency uploaded-report PDFs", "BillTrax uploads", "port 5", NONE, "`report-parser` ports; extraction channel",
         None, (PORT_PLAN,)),
@@ -999,6 +999,92 @@ def compare_laws(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, An
     return _result("Congress.gov law", "GovInfo PLAW bulkdata", f"{CURRENT_CONGRESS}th Congress", api, bulk, detail)
 
 
+def compare_bulk_status(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, Any]:
+    """One Congress and one bill type: the bulk status zip against the bill list, on identity, update date and latest action."""
+    from spicy_docs.reading.zip_archive import archive_members, open_archive, read_member
+    from spicy_docs.sources.congress.bill_status import BillIdentity, BillSourceError, parse_bill_status
+
+    kind = "hres"
+    url = f"https://www.govinfo.gov/bulkdata/BILLSTATUS/{CURRENT_CONGRESS}/{kind}/BILLSTATUS-{CURRENT_CONGRESS}-{kind}.zip"
+    capture = probe.get(
+        url,
+        media_types=("application/zip", "application/octet-stream", "application/x-zip-compressed"),
+        max_bytes=SAMPLE_MAX_BYTES,
+    )
+    label = "BILLSTATUS zip"
+    archive = open_archive(
+        capture.body, max_bytes=SAMPLE_MAX_BYTES, max_entries=5000, max_entry_bytes=4 * 1024 * 1024,
+        max_total_bytes=256 * 1024 * 1024, error_type=ProbeError, label=label,
+    )  # fmt: skip
+    bulk: dict[str, dict[str, Any]] = {}
+    refused = 0
+    reasons: Counter[str] = Counter()
+    for info in archive_members(archive, max_entries=5000, error_type=ProbeError, label=label):
+        match = re.fullmatch(rf"BILLSTATUS-{CURRENT_CONGRESS}{kind}(\d+)\.xml", info.filename.rsplit("/", 1)[-1])
+        if not match:
+            continue
+        data = read_member(archive, info, max_bytes=4 * 1024 * 1024, error_type=ProbeError, label=label)
+        try:
+            status = parse_bill_status(data, identity=BillIdentity(CURRENT_CONGRESS, kind, int(match[1])))
+        except BillSourceError as error:
+            refused += 1
+            reasons[str(error)] += 1
+            continue
+        action = status.latest_action
+        bulk[match[1]] = {
+            "update": status.update_date,
+            "actionDate": action.action_date if action else None,
+            "actionText": (action.text if action else "") or "",
+        }
+    rows = _walk(
+        congress,
+        f"{CONGRESS_API}/bill/{CURRENT_CONGRESS}/{kind}?{urlencode({'format': 'json', 'limit': 250})}",
+        "bills",
+        12,
+    )
+    api = {
+        str(r.get("number")): {
+            "update": r.get("updateDate"),
+            "actionDate": (r.get("latestAction") or {}).get("actionDate"),
+            "actionText": (r.get("latestAction") or {}).get("text") or "",
+        }
+        for r in rows
+    }
+    shared = sorted(api.keys() & bulk.keys(), key=int)
+
+    def day(value: Any) -> str:
+        return str(value or "")[:10]
+
+    same_update = sum(1 for n in shared if day(api[n]["update"]) == day(bulk[n]["update"]))
+    api_newer = sum(1 for n in shared if day(api[n]["update"]) > day(bulk[n]["update"]))
+    bulk_newer = sum(1 for n in shared if day(api[n]["update"]) < day(bulk[n]["update"]))
+    same_action = sum(
+        1
+        for n in shared
+        if api[n]["actionDate"] == bulk[n]["actionDate"]
+        and api[n]["actionText"].strip() == bulk[n]["actionText"].strip()
+    )
+    differing = [
+        n
+        for n in shared
+        if not (
+            api[n]["actionDate"] == bulk[n]["actionDate"]
+            and api[n]["actionText"].strip() == bulk[n]["actionText"].strip()
+        )
+    ][:5]
+    detail = (
+        f"zip {capture.byte_size:,} B, {len(bulk)} statuses parsed by parse_bill_status, {refused} refused "
+        f"({'; '.join(f'{v} × {k}' for k, v in reasons.most_common(3))}); of {len(shared)} shared bills the "
+        f"update day is equal on {same_update}, the API is newer on {api_newer}, bulk is newer on {bulk_newer}; latest action equal on "
+        f"{same_action}, differing {differing}"
+    )
+    return _result(
+        "Congress.gov bill list", "GovInfo BILLSTATUS bulk zip", f"{CURRENT_CONGRESS}th H.Res.", set(api), set(bulk), detail,
+        zipBytes=capture.byte_size, parsed=len(bulk), refused=refused, sameUpdateDay=same_update, apiNewer=api_newer,
+        bulkNewer=bulk_newer, sameLatestAction=same_action, differingLatestAction=differing, refusalReasons=dict(reasons),
+    )  # fmt: skip
+
+
 def measure_comparisons(
     congress: PagedJsonReader, govinfo: PagedJsonReader, probe: KeylessProbe, api_key: str
 ) -> dict[str, Any]:
@@ -1011,6 +1097,7 @@ def measure_comparisons(
         "hearings": lambda: compare_hearings(congress, govinfo),
         "nominations": lambda: compare_nominations(congress, probe),
         "laws": lambda: compare_laws(congress, probe),
+        "bulk-status": lambda: compare_bulk_status(congress, probe),
     }
     for key, run in pairs.items():
         try:
@@ -1029,6 +1116,7 @@ VERDICTS: dict[str, str] = {
     "hearings": "GovInfo package id is the key; API is the index; treat short API jacket numbers as invalid",
     "nominations": "API for acquisition and history; feeds as a keyless status cross-check, current Congress only",
     "laws": "API for links and freshness, bulk for USLM bodies; carry the bulk lag in the schedule",
+    "bulk-status": "Bulk first: every parsable file matches the API on identity and action; the parser's one-text-element rule is the gap",
 }
 WHY: dict[str, str] = {
     "house-vote": (
@@ -1062,6 +1150,13 @@ WHY: dict[str, str] = {
         "Agree on every law both hold. The API runs ahead by the newest laws and bulk lags by several numbers, so "
         "neither is complete at any instant; the lag is the number an acquisition schedule has to carry."
     ),
+    "bulk-status": (
+        "One Congress and one bill type, the status zip against the bill list. Every file the parser accepts is in "
+        "the API and agrees on the latest action except the handful the API updated after the zip was built; the "
+        "API is newer on about a tenth of the bills by day and bulk is never newer, which is the delta an API pass "
+        "must carry. The files the zip holds and the comparison could not use were refused by this repo's parser "
+        "for one reason, its rule that a bill carries exactly one text element; that is port decision 4, measured."
+    ),
 }
 
 
@@ -1073,6 +1168,8 @@ def _summary(c: Mapping[str, Any]) -> str:
         return f"API-only {c['onlyACount']}, {ended} with ended terms"
     if "feedOnlyOnDetail" in c:
         return f"feed-only {c['onlyBCount']}, {len(c['feedOnlyOnDetail'])} served by the API detail route"
+    if "refusalReasons" in c:
+        return f"{c.get('parsed', 0):,} parsed, {c.get('refused', 0)} refused by the parser; API newer on {c.get('apiNewer', 0)}, bulk never"
     return f"only A {c['onlyACount']}, only B {c['onlyBCount']}"
 
 

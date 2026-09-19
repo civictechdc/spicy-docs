@@ -3,6 +3,11 @@
 Status: planned, not started. Written 2026-09-15 against BillTrax `a6b685f`
 and spicy-docs `2cc2f4e` (v0.19.0). Every claim below was validated against
 those trees (file:line cites); re-verify line numbers before acting on them.
+Revised 2026-09-19 after the
+[legislative data map](legislative-data-map-2026-09-18.md) and the families
+record in `docs/decisions.md`: bulk status backfill runs ahead of the listing
+routes for bills, Phase 4 is table-driven, the press-release source lands in
+Phase 2, and the zip reader lives at `src/spicy_docs/reading/zip_archive.py`.
 
 ## Goal and boundary
 
@@ -30,7 +35,7 @@ The port is two movements, not one:
 | `congress-api.ts` fetchAmendments (:335-374) | new listing endpoint | `src/spicy_docs/sources/congress/listing.py` on `CONGRESS_GOV` family |
 | `congress-api.ts` fetchCommitteeBills (:387-434) | new listing endpoint | same |
 | `sync-roll-call-votes.ts` actions fetch (:36-59) | new listing endpoint | same |
-| `sync-govinfo.ts` bulk BILLSTATUS ZIP (:32-86) | bulk ZIP reader | `src/spicy_docs/sources/zip_archive.py` + `parse_bill_status` |
+| `sync-govinfo.ts` bulk BILLSTATUS ZIP (:32-86) | bulk ZIP reader | `src/spicy_docs/reading/zip_archive.py` + `parse_bill_status` |
 | `press-releases.ts` / `sync-press-releases.ts` RSS | RSS source | clone `src/spicy_docs/sources/gao/rss.py` discipline |
 | `govinfo-pdf-fetch.ts` fetch half (:64-74, :169-197) | PDF capture mode | extends bill acquisition (decision record first) |
 | `reports/route.ts:29-48` uploaded-report PDF parse | extraction channel | extraction module + report parser |
@@ -130,16 +135,16 @@ port as-is.
 - Checks via `./scripts/check` (`uv run --frozen` only — never bare python).
 - BillTrax-side phases use its docker gate:
   `docker compose run --rm web sh -c "npm run typecheck && npm run lint && npm test && npm run build"`.
-- Pin ≥ 0.19.0 (needs `src/spicy_docs/sources/zip_archive.py`).
+- Pin ≥ 0.20.0 (needs `src/spicy_docs/reading/zip_archive.py`, moved from `sources/` in 0.20.0).
 
 ## Open decisions (ruling needed before the named phase)
 
 | # | Question | Blocks |
 |---|---|---|
 | 1 | PDF capture success semantics: no structural identity proof exists for PDFs. Byte bounds + package URL + content-type + magic-prefix (FEC `download.py` precedent), or stronger? | Phase 5 |
-| 2 | Bulk ZIP crosses the "collection crawling … separate scope" line (`docs/sources/congress-bills.md:86`). Decision record language? | Phase 6 |
+| 2 | Settled 2026-09-19 by the families record in `docs/decisions.md`: each crawl states its bound and byte budget (one Congress and one bill type; 52 MB of status zips for the 119th). | Phase 6 |
 | 3 | DeltaTrack relationship: spicy-docs vendors/imports it, absorbs reconciled implementations, or it stays BillTrax-side? | Phase 7 |
-| 4 | `acquire_text` is stricter than BillTrax (exactly-once XML link, DC-title grammar, congress-in-words ≤ 199): relax, or accept that some currently-stored versions refuse on re-fetch? | Phase 4/8 |
+| 4 | `acquire_text` is stricter than BillTrax (exactly-once XML link, DC-title grammar, congress-in-words ≤ 199): relax, or accept that some currently-stored versions refuse on re-fetch? Measured 2026-09-19 on the status side: `parse_bill_status` refuses 113 of the 1,566 files in the 119th H.Res. status zip, all for its one-text-element rule (the map's bulk-status comparison). | Phase 4/8 |
 | 5 | Canonical press-release feed URLs (lib vs script divergence). | Phase 2 |
 | 6 | The 5 request-time routes (`congress/versions`, `bills` POST, `catalog/import`, `upload/commit`, `press-releases`): migrate to capture-backed cache or keep live fetch? | Phase 8 |
 | 7 | `resolution-body` in bill-tree: support it, or keep the current throw→text-fallback behavior deliberately? | Phase 3 |
@@ -156,27 +161,35 @@ Each phase ends green on the gate named above (per repo).
   free; update compose files for node_backend removal.
 - **Phase 2 — In-repo dedup.** One `slugify`, one `stripMarkup`, one slug
   map + `buildGovinfoPdfUrl`, upload wrapper calls a shared
-  `extractNormalizedPdfText`, press-release feed unification (decision 5).
+  `extractNormalizedPdfText`, press-release feed unification (decision 5);
+  the press-release RSS source then lands here in spicy-docs as a clone of
+  `gao/rss.py` discipline.
 - **Phase 3 — bill-tree extractor here** (`src/spicy_docs/sources/congress/`,
   beside `bill_text.py`; **not** `extraction/` — PDF/image charter,
   `docs/decisions.md:89-93`). Bytes via `sources/xml.py::parse_xml`
   (`allow_external_doctype=True`). Preserve DOM quirks: CDATA exclusion,
   `\ufeff` whitespace-class difference, `" "` vs `""` join asymmetries,
   collapse-then-marker order. New fixtures; parity against Phase-0 goldens.
-- **Phase 4 — Typed fields + listing endpoints.** `bill_status.py` gains
-  committees/titles/laws; `listing.py` gains amendments/committee-bills/
-  actions (URL builders + `records_key` on `CONGRESS_GOV`; verify each
-  route's pagination contract live; continuation re-encode rule).
+- **Phase 4 — Typed fields + table-driven listing routes** (after Phase 6
+  for bills). `bill_status.py` gains committees/titles/laws for the API
+  delta path; `listing.py` becomes a route table (URL builder + `records_key`
+  + fixture + live pagination check; the map's Table A records which routes
+  honor sorting) and gains amendments/committee-bills/actions as planned,
+  then nominations, hearings, committee reports and House executive
+  communications in that order. Routes the status zip already supplies serve
+  the delta path only.
 - **Phase 5 — PDF pipeline.** Decision 1, then PDF capture mode; port
   `normalizePdfText` as post-extraction step; revalidate heuristics against
   pymupdf line layout (BillTrax `validate-pdf-pdf-concordance.ts` is the
   gate; expect hyphen-embedded line-number detector to need re-derivation).
   Port `report-parser`. BillTrax keeps `cleanup_applied` persist,
   upload-cache, twin-row semantics.
-- **Phase 6 — Bulk ZIP.** Decision 2, then build on `zip_archive.py`
+- **Phase 6 — Bulk ZIP, ahead of Phase 4 for bills.** Decision 2 is settled
+  by the families record; each run states its bound (one Congress, one bill
+  type). Build on `reading/zip_archive.py`
   (`open_archive`/`read_member`/`inspect_archive_stream`), filename →
-  `BillIdentity`, validate → `parse_bill_status`. Parity run vs one
-  congress/type of current sync output.
+  `BillIdentity`, validate → `parse_bill_status`; then API deltas by update
+  date. The map's bulk-status comparison is the parity run.
 - **Phase 7 — Parsing family reunification.** Decision 3, then: delete
   BillTrax `financial.ts` (call the Python one), merge/retire
   `section-diff.ts` core + `diff.ts`, port `extractSignals` (+ audit

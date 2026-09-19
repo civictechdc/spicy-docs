@@ -44,7 +44,6 @@ Table C alternative needs a measured reason.
 |---|---|
 | `have` | Integrated in spicy-docs today; the note names the module |
 | `port N` | Arrives with BillTrax port phase N |
-| `port (unphased)` | In the port plan's inventory but assigned to no phase |
 | `candidate` | Genuine gap; proposal only |
 | `rejected` | Deliberate no, reason retained; `(here)` means it stays BillTrax-side |
 
@@ -166,34 +165,36 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 |---|---|---|---|---|---|---|---|
 | crs | EveryCRSReport bulk | `everycrsreport.com` (AmericaLabs) | `candidate` | none |  | CDTF #4, continuous | versioned and broader than congress.gov; verify maintenance cadence first |
 | members | Community legislators JSON (current + historical) | `unitedstates.github.io/congress-legislators/legislators-*.json` | `candidate` | none |  | sample 13,483,039 B, 12,231 records; ids bioguide 12,231, fec 995, govtrack 12,231, icpsr 11,979, lis 228, opensecrets 919 | the same repository publishes JSON, so the port's PyYAML reason no longer applies; an identifier hub keyed by bioguide with LIS, FEC candidate, ICPSR, GovTrack and OpenSecrets ids; closes the former-senator LIS gap and joins members to FEC candidates; civil society, so verify its cadence before relying |
-| press | Press releases (member and committee RSS) | varied | `port (unphased)` | none |  |  | plan section A assigns the RSS source to no phase; feed-URL unification is decision 5, blocking phase 2 |
+| press | Press releases (member and committee RSS) | varied | `port 2` | none |  |  | lands in Phase 2 beside the feed-URL unification it depends on (decision 5), as a clone of `gao/rss.py` |
 | reports | Agency uploaded-report PDFs | BillTrax uploads | `port 5` | none |  |  | `report-parser` ports; extraction channel |
 | votes | Bill⇄vote matching | BillTrax | `rejected (here)` | n/a |  |  | interpretation; stays BillTrax-side |
 | members | Member matching | BillTrax | `rejected (here)` | n/a |  |  | interpretation |
 
 ### Comparisons: overlapping routes on one bounded scope
 
-Measured 2026-09-18 in 54 requests; the differing identifiers and the per-pair detail are in the JSON.
+Measured 2026-09-19 in 62 requests; the differing identifiers and the per-pair detail are in the JSON.
 
 | Pair | Scope | A | B | Both | Only A | Only B | Result | Verdict |
 |---|---|---|---|---|---|---|---|---|
-| Congress.gov committee-report vs GovInfo CRPT | 118th Congress | 1,316 | 1,316 | 1,316 | 0 | 0 | only A 0, only B 0 | API index, GovInfo bodies; identical, so either checks the other |
-| Congress.gov daily-congressional-record vs GovInfo CREC | volume 171 within 2025 | 216 | 217 | 216 | 0 | 1 | only A 0, only B 1 | API for the index (volume, issue); GovInfo for bodies; never key the Record on a date |
-| Congress.gov hearing vs GovInfo CHRG | 118th Congress | 2,234 | 2,229 | 2,224 | 10 | 5 | only A 10, only B 5 | GovInfo package id is the key; API is the index; treat short API jacket numbers as invalid |
 | Congress.gov house-vote members vs Clerk roll XML | roll 240, session 1, 119th | 430 | 430 | 430 | 0 | 0 | 0 position disagreements; totals equal | API for the index from the 115th Congress; Clerk XML for history and as the stated source file |
-| Congress.gov law vs GovInfo PLAW bulkdata | 119th Congress | 108 | 104 | 104 | 4 | 0 | only A 4, only B 0 | API for links and freshness, bulk for USLM bodies; carry the bulk lag in the schedule |
 | Congress.gov member/congress vs House members.xml + MemberData + Senate cvc XML | 119th Congress | 555 | 541 | 541 | 14 | 0 | API-only 14, 14 with ended terms | API is the roster of record; the chamber files only for committee assignments and the LIS crosswalk |
+| Congress.gov daily-congressional-record vs GovInfo CREC | volume 171 within 2025 | 216 | 217 | 216 | 0 | 1 | only A 0, only B 1 | API for the index (volume, issue); GovInfo for bodies; never key the Record on a date |
+| Congress.gov committee-report vs GovInfo CRPT | 118th Congress | 1,316 | 1,316 | 1,316 | 0 | 0 | only A 0, only B 0 | API index, GovInfo bodies; identical, so either checks the other |
+| Congress.gov hearing vs GovInfo CHRG | 118th Congress | 2,234 | 2,229 | 2,224 | 10 | 5 | only A 10, only B 5 | GovInfo package id is the key; API is the index; treat short API jacket numbers as invalid |
 | Congress.gov nomination vs Senate LIS nomination feeds (union of 9) | 119th Congress | 1,315 | 1,316 | 1,315 | 0 | 1 | feed-only 1, 1 served by the API detail route | API for acquisition and history; feeds as a keyless status cross-check, current Congress only |
+| Congress.gov law vs GovInfo PLAW bulkdata | 119th Congress | 108 | 104 | 104 | 4 | 0 | only A 4, only B 0 | API for links and freshness, bulk for USLM bodies; carry the bulk lag in the schedule |
+| Congress.gov bill list vs GovInfo BILLSTATUS bulk zip | 119th H.Res. | 1,566 | 1,453 | 1,453 | 113 | 0 | 1,453 parsed, 113 refused by the parser; API newer on 144, bulk never | Bulk first: every parsable file matches the API on identity and action; the parser's one-text-element rule is the gap |
 
 Why each verdict:
 
-- **Congress.gov committee-report vs GovInfo CRPT.** Identical sets for the 118th Congress. The API is the cheaper index and carries typed fields and text links; GovInfo holds the bodies and reaches 1817.
-- **Congress.gov daily-congressional-record vs GovInfo CREC.** Issue for issue the same once scoped alike; the leftovers are a volume running past the calendar year and days with two issues. The API's identity is volume and issue, GovInfo's is date and part.
-- **Congress.gov hearing vs GovInfo CHRG.** Near-identical, but the API carries jacket numbers that cannot be real (1, 2, 3, an eight-digit value) and GovInfo holds a few jackets the API lacks.
 - **Congress.gov house-vote members vs Clerk roll XML.** Every member, every position and the totals agree. The API is tier-1 and indexes votes with bill links but reaches only the 115th Congress; the Clerk XML is keyless, one document per vote, reaches 1990, and the API names it as its source.
-- **Congress.gov law vs GovInfo PLAW bulkdata.** Agree on every law both hold. The API runs ahead by the newest laws and bulk lags by several numbers, so neither is complete at any instant; the lag is the number an acquisition schedule has to carry.
 - **Congress.gov member/congress vs House members.xml + MemberData + Senate cvc XML.** The API lists everyone who served in the Congress; the chamber files list only the seats filled today, which is why the API-only members all have ended terms. The files add committee assignments and the Senate LIS id, and the LIS id is what joins Senate votes to members.
+- **Congress.gov daily-congressional-record vs GovInfo CREC.** Issue for issue the same once scoped alike; the leftovers are a volume running past the calendar year and days with two issues. The API's identity is volume and issue, GovInfo's is date and part.
+- **Congress.gov committee-report vs GovInfo CRPT.** Identical sets for the 118th Congress. The API is the cheaper index and carries typed fields and text links; GovInfo holds the bodies and reaches 1817.
+- **Congress.gov hearing vs GovInfo CHRG.** Near-identical, but the API carries jacket numbers that cannot be real (1, 2, 3, an eight-digit value) and GovInfo holds a few jackets the API lacks.
 - **Congress.gov nomination vs Senate LIS nomination feeds (union of 9).** Equal for the current Congress except one nomination the feeds list and the API list omits while the API detail route serves it, so the list lags its own detail. The feeds partition by status and overlap: their counts sum past the union, so a nomination can sit in two feeds.
+- **Congress.gov law vs GovInfo PLAW bulkdata.** Agree on every law both hold. The API runs ahead by the newest laws and bulk lags by several numbers, so neither is complete at any instant; the lag is the number an acquisition schedule has to carry.
+- **Congress.gov bill list vs GovInfo BILLSTATUS bulk zip.** One Congress and one bill type, the status zip against the bill list. Every file the parser accepts is in the API and agrees on the latest action except the handful the API updated after the zip was built; the API is newer on about a tenth of the bills by day and bulk is never newer, which is the delta an API pass must carry. The files the zip holds and the comparison could not use were refused by this repo's parser for one reason, its rule that a bill carries exactly one text element; that is port decision 4, measured.
 
 ### Data flow: what references what, validated on one real item per edge
 
@@ -201,107 +202,107 @@ Measured 2026-09-18 in 712 requests: 51 of 55 edges resolved. Solid arrows resol
 
 ```mermaid
 graph LR
+    GIbills["GovInfo BILLS"]
+    GIrelated["GovInfo related service"]
     CGbill["Congress.gov bill"]
-    CGmember["Congress.gov member"]
-    CGcommittee["Congress.gov committee"]
-    CGreport["Congress.gov committee-report"]
-    CGlaw["Congress.gov law"]
-    CGvote["Congress.gov house-vote"]
-    ClerkVote["Clerk vote XML"]
-    SenVote["Senate vote XML"]
     CGamendment["Congress.gov amendment"]
-    GIbills["GovInfo BILLS package"]
     CBOpage["CBO estimate page"]
-    GIcrpt["GovInfo CRPT package"]
-    CGhearing["Congress.gov hearing"]
-    GIchrg["GovInfo CHRG package"]
-    CGmeeting["Congress.gov committee-meeting"]
-    Docs["docs.house.gov / congress.gov documents"]
-    CGnomination["Congress.gov nomination"]
-    NomFeed["Senate nomination feed"]
-    HouseMembers["House members.xml"]
-    MemberData["House MemberData.xml"]
+    ClerkVote["Clerk vote XML"]
+    CGcommittee["Congress.gov committee"]
+    CGvote["Congress.gov house-vote"]
+    CGlaw["Congress.gov law"]
+    CGmember["Congress.gov member"]
+    CGreport["Congress.gov committee-report"]
+    SenVote["Senate vote XML"]
+    CBOfeed["CBO cost-estimate feed"]
+    CGhcomm["Congress.gov house-communication"]
+    FR["Federal Register document"]
+    CGreq["Congress.gov house-requirement"]
+    CGcrs["Congress.gov crsreport"]
+    CRSpdf["congress.gov CRS PDF"]
     CVC["Senate cvc XML"]
+    NomFeed["Senate nomination feed"]
+    CGnomination["Congress.gov nomination"]
+    Floor["docs.house.gov weekly floor XML"]
+    CGhearing["Congress.gov hearing"]
+    CGmeeting["Congress.gov committee-meeting"]
+    GIchrg["GovInfo CHRG package"]
+    PL["Public law number"]
+    OLRCclass["OLRC classification tables"]
+    OLRCt3["OLRC Table III"]
+    LDAfilings["LDA filings"]
+    LDAregistrants["LDA registrants"]
+    LegJSON["Legislators JSON"]
+    FEC["FEC candidate"]
+    Docs["docs.house.gov / congress.gov documents"]
+    MemberData["House MemberData.xml"]
+    HouseMembers["House members.xml"]
+    GIplaw["GovInfo PLAW"]
+    GIstatute["GovInfo STATUTE volume"]
+    USC["US Code section"]
+    CGrecord["Congress.gov daily-congressional-record"]
+    LegDay["Legislative day per chamber"]
+    GIcrec["GovInfo CREC package"]
+    GIcrpt["GovInfo CRPT package"]
+    CGscomm["Congress.gov senate-communication"]
     SenHearings["Senate hearings.xml"]
     CGtreaty["Congress.gov treaty"]
     GIcdoc["GovInfo CDOC package"]
-    CGrecord["Congress.gov daily-congressional-record"]
-    GIcrec["GovInfo CREC package"]
-    CGcrs["Congress.gov crsreport"]
-    CRSpdf["congress.gov CRS PDF"]
-    GIplaw["GovInfo PLAW USLM"]
-    USC["US Code section"]
-    GIstatute["GovInfo STATUTE volume"]
-    GIrelated["GovInfo related service"]
-    PL["Public law number"]
-    OLRCt3["OLRC Table III"]
-    OLRCclass["OLRC classification tables"]
-    Floor["docs.house.gov weekly floor XML"]
-    CBOfeed["CBO cost-estimate feed"]
-    LDAfilings["LDA filings"]
-    LDAregistrants["LDA registrants"]
-    CGhcomm["Congress.gov house-communication"]
-    CGreq["Congress.gov house-requirement"]
-    FR["Federal Register document"]
-    CGscomm["Congress.gov senate-communication"]
-    LegJSON["Legislators JSON"]
-    FEC["FEC candidate"]
-    LegDay["Legislative day per chamber"]
-    CGbill -->|member| CGmember
-    CGbill -->|committee| CGcommittee
-    CGbill -->|report| CGreport
-    CGbill -->|law| CGlaw
-    CGbill -->|house-vote| CGvote
-    CGbill -->|clerk-xml| ClerkVote
-    CGbill -->|senate-xml| SenVote
+    GIbills -->|related| GIrelated
     CGbill -->|amendment| CGamendment
-    CGbill -->|related-bill| CGbill
-    CGbill -->|text-package| GIbills
     CGbill -.->|cbo| CBOpage
-    CGreport -->|bill| CGbill
-    CGreport -->|package| GIcrpt
-    CGhearing -->|package| GIchrg
+    CGbill -->|clerk-xml| ClerkVote
+    CGbill -->|committee| CGcommittee
+    CGbill -->|house-vote| CGvote
+    CGbill -->|law| CGlaw
+    CGbill -->|member| CGmember
+    CGbill -->|related-bill| CGbill
+    CGbill -->|report| CGreport
+    CGbill -->|senate-xml| SenVote
+    CGbill -->|text-package| GIbills
+    CBOfeed -->|bill| CGbill
+    CGhcomm -->|communication-typing| CGhcomm
+    CGhcomm -->|committee| CGcommittee
+    CGhcomm -->|federal-register| FR
+    CGhcomm -->|requirement| CGreq
+    CGcrs -->|law-or-bill| CGlaw
+    CGcrs -->|pdf| CRSpdf
+    CVC -->|committee| CGcommittee
+    CVC -->|member| CGmember
+    NomFeed -->|committee| CGcommittee
+    NomFeed -->|nomination| CGnomination
+    Floor -->|bill| CGbill
     CGhearing -->|meeting| CGmeeting
+    CGhearing -->|package| GIchrg
+    CGvote -->|bill| CGbill
+    CGvote -->|member| CGmember
+    PL -->|classification| OLRCclass
+    PL -->|table3| OLRCt3
+    LDAfilings -.->|bill| CGbill
+    LDAfilings -->|registrant| LDAregistrants
+    LegJSON -->|fec| FEC
+    LegJSON -->|former-senator| CGmember
     CGmeeting -->|bill| CGbill
     CGmeeting -->|documents| Docs
     CGmeeting -->|hearing| CGhearing
-    CGnomination -->|committee| CGcommittee
-    CGnomination -.->|hearing| CGhearing
-    NomFeed -->|nomination| CGnomination
-    NomFeed -->|committee| CGcommittee
-    CGvote -->|bill| CGbill
-    CGvote -->|member| CGmember
+    MemberData -->|committee| CGcommittee
     CGmember -->|bill| CGbill
     CGmember -->|house-file| HouseMembers
-    MemberData -->|committee| CGcommittee
-    CVC -->|member| CGmember
-    CVC -->|committee| CGcommittee
-    SenVote -->|member| CGmember
-    SenVote -->|document| CGbill
-    SenHearings -->|committee| CGcommittee
-    CGtreaty -->|cdoc| GIcdoc
-    CGrecord -->|package| GIcrec
-    CGcrs -->|law-or-bill| CGlaw
-    CGcrs -->|pdf| CRSpdf
-    GIplaw -->|usc| USC
-    GIplaw -->|statute| GIstatute
+    CGnomination -->|committee| CGcommittee
+    CGnomination -.->|hearing| CGhearing
     GIplaw -->|related| GIrelated
-    GIbills -->|related| GIrelated
-    PL -->|table3| OLRCt3
-    PL -->|classification| OLRCclass
-    Floor -->|bill| CGbill
-    CBOfeed -->|bill| CGbill
-    LDAfilings -->|registrant| LDAregistrants
-    LDAfilings -.->|bill| CGbill
-    CGhcomm -->|communication-typing| CGhcomm
-    CGhcomm -->|committee| CGcommittee
-    CGhcomm -->|requirement| CGreq
-    CGhcomm -->|federal-register| FR
+    GIplaw -->|statute| GIstatute
+    GIplaw -->|usc| USC
+    CGrecord -->|legislative-day| LegDay
+    CGrecord -->|package| GIcrec
+    CGreport -->|bill| CGbill
+    CGreport -->|package| GIcrpt
     CGreq -.->|communications| CGhcomm
     CGscomm -->|committee| CGcommittee
-    LegJSON -->|former-senator| CGmember
-    LegJSON -->|fec| FEC
-    CGrecord -->|legislative-day| LegDay
+    SenHearings -->|committee| CGcommittee
+    SenVote -->|document| CGbill
+    SenVote -->|member| CGmember
+    CGtreaty -->|cdoc| GIcdoc
     subgraph unjoined ["In the tables, no probed edge yet"]
         U0["BILLSTATUS, BILLS, BILLSUM bulk zips: file name BILLSTATUS-119hr1.xml is the bill key (derived); unprobed"]
         U1["Statutes at Large volume: each volume states the public laws it holds; reached only as a target"]
@@ -323,61 +324,61 @@ graph LR
 
 | Edge | From | To | How | Kind | Resolved | Evidence |
 |---|---|---|---|---|---|---|
-| bill→member | Congress.gov bill | Congress.gov member | sponsors[].bioguideId → member/{id} | id | yes · 20/20 | sponsor A000375 → Jodey C. Arrington |
-| bill→committee | Congress.gov bill | Congress.gov committee | committees[].systemCode → committee/{chamber}/{code} | id | yes · 20/20 | hsbu00 → Committee on the Budget |
-| bill→report | Congress.gov bill | Congress.gov committee-report | committeeReports[].citation → committee-report/{c}/{type}/{n} | derived | yes · 1/1 | bill/119/hres/53 committeeReports ['H. Rept. 119-1'] ↔ H. Rept. 119-1 |
-| bill→law | Congress.gov bill | Congress.gov law | laws[].number → law/{c}/pub/{n} | id | yes · 1/1 | Public Law 119-21 → law/119/pub/21 → HR 1 |
-| bill→house-vote | Congress.gov bill | Congress.gov house-vote | actions[].recordedVotes → house-vote/{c}/{session}/{roll} | id | yes · 5/5 | roll 190 → house-vote → HR 1 |
-| bill→clerk-xml | Congress.gov bill | Clerk vote XML | recordedVotes[].url (clerk.house.gov/evs) | url | yes · 5/5 | https://clerk.house.gov/evs/2025/roll190.xml legis-num 'H R 1' |
-| bill→senate-xml | Congress.gov bill | Senate vote XML | recordedVotes[].url (senate.gov roll_call_votes) | url | yes | https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00372.xml document_number '1' |
+| bills→related | GovInfo BILLS | GovInfo related service | related/BILLS-{c}{type}{n}{version} | id | yes | BILLS-119hr1enr related collections ['BILLSTATUS', 'BILLS', 'HOB', 'CREC', 'CRPT', 'CHRG', 'CPD', 'PLAW'] |
 | bill→amendment | Congress.gov bill | Congress.gov amendment | amendments[] → amendment/{c}/{type}/{n}; amendedBill back | id | yes | SAMDT 2851 → amendedBill HR 1 |
-| bill→related-bill | Congress.gov bill | Congress.gov bill | relatedBills[] → bill/{c}/{type}/{n} | id | yes | bill/119/hr/10072 → 'Hardworking Seniors Act' |
-| bill→text-package | Congress.gov bill | GovInfo BILLS package | textVersions[].formats[].url → package id BILLS-{c}{type}{n}{version} | derived | yes · 20/20 | www.congress.gov/119/bills/hr1/BILLS-119hr1enr.htm → GovInfo BILLS-119hr1enr |
 | bill→cbo | Congress.gov bill | CBO estimate page | cboCostEstimates[].url | url | no | https://www.cbo.gov/publication/61461 → refused keyless: Body source answered HTTP 403; stopping acquisition (bot wall) |
-| report→bill | Congress.gov committee-report | Congress.gov bill | associatedBill[] → bill/{c}/{type}/{n} | id | yes · 17/17 | associatedBill → bill/119/hres/53 |
-| report→package | Congress.gov committee-report | GovInfo CRPT package | text[].formats[].url → package id CRPT-{c}{type}{n} | derived | yes · 20/20 | /119/crpt/hrpt1/generated/CRPT-119hrpt1.htm → GovInfo CRPT-119hrpt1 |
-| hearing→package | Congress.gov hearing | GovInfo CHRG package | formats[].url → package id CHRG-{c}{chamber}hrg{jacket} | derived | yes · 19/20 | jacket 64431 → CHRG-119hhrg64431; sampled failures: hearing/119/senate/1: ProbeUnavailableError HTTP 404 |
+| bill→clerk-xml | Congress.gov bill | Clerk vote XML | recordedVotes[].url (clerk.house.gov/evs) | url | yes · 5/5 | https://clerk.house.gov/evs/2025/roll190.xml legis-num 'H R 1' |
+| bill→committee | Congress.gov bill | Congress.gov committee | committees[].systemCode → committee/{chamber}/{code} | id | yes · 20/20 | hsbu00 → Committee on the Budget |
+| bill→house-vote | Congress.gov bill | Congress.gov house-vote | actions[].recordedVotes → house-vote/{c}/{session}/{roll} | id | yes · 5/5 | roll 190 → house-vote → HR 1 |
+| bill→law | Congress.gov bill | Congress.gov law | laws[].number → law/{c}/pub/{n} | id | yes · 1/1 | Public Law 119-21 → law/119/pub/21 → HR 1 |
+| bill→member | Congress.gov bill | Congress.gov member | sponsors[].bioguideId → member/{id} | id | yes · 20/20 | sponsor A000375 → Jodey C. Arrington |
+| bill→related-bill | Congress.gov bill | Congress.gov bill | relatedBills[] → bill/{c}/{type}/{n} | id | yes | bill/119/hr/10072 → 'Hardworking Seniors Act' |
+| bill→report | Congress.gov bill | Congress.gov committee-report | committeeReports[].citation → committee-report/{c}/{type}/{n} | derived | yes · 1/1 | bill/119/hres/53 committeeReports ['H. Rept. 119-1'] ↔ H. Rept. 119-1 |
+| bill→senate-xml | Congress.gov bill | Senate vote XML | recordedVotes[].url (senate.gov roll_call_votes) | url | yes | https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00372.xml document_number '1' |
+| bill→text-package | Congress.gov bill | GovInfo BILLS package | textVersions[].formats[].url → package id BILLS-{c}{type}{n}{version} | derived | yes · 20/20 | www.congress.gov/119/bills/hr1/BILLS-119hr1enr.htm → GovInfo BILLS-119hr1enr |
+| cbo→bill | CBO cost-estimate feed | Congress.gov bill | item Bill_Number → bill/{c}/{type}/{n} | id | yes | item Bill_Number 'S. 2801' → bill/119/s/2801 |
+| communication-typing | Congress.gov house-communication | Congress.gov house-communication | detail fields on the 25 newest: isRulemaking, RIN, committees, matchingRequirements, congressionalRecordDate | id | yes | of the 25 newest: 17 rulemakings, 17 with a RIN, 25 with a committee referral, 21 naming a requirement, 25 with a Record date |
+| communication→committee | Congress.gov house-communication | Congress.gov committee | committees[].systemCode + referralDate → committee/house/{code} | id | yes · 20/20 | EC 4752 referred hsba00 on 2026-09-17 → Committee on Financial Services |
+| communication→federal-register | Congress.gov house-communication | Federal Register document | reportNature `RIN: nnnn-XXnn` → federalregister.gov/api/v1/documents?conditions[regulation_id_number]=RIN | id | yes | EC 4752 RIN 3133-AF97 → Federal Register API regulation_id_number filter: 2 documents, each carrying the RIN as a structured field [(None, ['3133-AF97']), (None |
+| communication→requirement | Congress.gov house-communication | Congress.gov house-requirement | matchingRequirements[].number → house-requirement/{n} | id | yes | EC 4752 → requirement 8070: 'Congressional review of agency rulemaking.' |
+| crs→law-or-bill | Congress.gov crsreport | Congress.gov law | relatedMaterials[].URL (laws and bills) → law/{c}/pub/{n} | url | yes · 14/14 | IF12853 relatedMaterials type PUB 98-369 → /v3/law/98/pub/369 → bill |
+| crs→pdf | Congress.gov crsreport | congress.gov CRS PDF | formats[].url (keyless) | url | yes | IF12853 → /crs_external_products/IF/PDF/IF12853/IF12853.10.pdf → 200 application/pdf 409,240 B |
+| cvc→committee | Senate cvc XML | Congress.gov committee | committee code → systemCode `{code}00` | derived | yes | cvc SPAG00 → spag00 → Special Committee on Aging |
+| cvc→member | Senate cvc XML | Congress.gov member | senator.bioguide_id → member/{id}; carries lis_member_id | id | yes | cvc bioguideId A000382 + @lis_member_id S428 → member |
+| feed→committee | Senate nomination feed | Congress.gov committee | Senate committee code → systemCode `{code}00` | derived | yes | feed code SSBK00 → ssbk00 → Committee on Banking, Housing, and Urban Affairs |
+| feed→nomination | Senate nomination feed | Congress.gov nomination | PN number → nomination/{c}/{n} | id | yes | feed PN1255 → nomination/119/1255 |
+| floor→bill | docs.house.gov weekly floor XML | Congress.gov bill | floor-item.legis-num → bill/{c}/{type}/{n} | derived | yes | 20260914 legis-num 'S. 283' → bill/119/s/283 |
 | hearing→meeting | Congress.gov hearing | Congress.gov committee-meeting | associatedMeeting.eventId → committee-meeting/{c}/{chamber}/{eventId} | id | yes · 4/4 | eventId 119003 → committee-meeting (Hearing) |
+| hearing→package | Congress.gov hearing | GovInfo CHRG package | formats[].url → package id CHRG-{c}{chamber}hrg{jacket} | derived | yes · 19/20 | jacket 64431 → CHRG-119hhrg64431; sampled failures: hearing/119/senate/1: ProbeUnavailableError HTTP 404 |
+| house-vote→bill | Congress.gov house-vote | Congress.gov bill | legislationType + legislationNumber → bill | id | yes · 20/20 | roll 240 → bill/119/hr/3424 |
+| house-vote→member | Congress.gov house-vote | Congress.gov member | members[].bioguideID → member/{id} | id | yes | voter A000055 → member |
+| law→classification | Public law number | OLRC classification tables | tables.shtml → per-Congress table → law number | derived | yes | https://uscode.house.gov/classification/tbl119pl_2nd.htm states 119-1: True |
+| law→table3 | Public law number | OLRC Table III | `table3_act_locator` (117-58) → act page stating the number | derived | yes | https://uscode.house.gov/table3/117_58.htm → 414,521 B; page states act 117–58, Congress 117th Cong., 135 Stat. Stat. |
+| lda→bill | LDA filings | Congress.gov bill | lobbying_activities[].description free text | text | no | 0 of 25 filings name a bill in free text []; no structured bill field exists |
+| lda→registrant | LDA filings | LDA registrants | registrant.id → registrants/{id} | id | yes | filing a934e791 → registrant 61414 'NEXXUS CONSULTING, LLC' |
+| legislators→fec | Legislators JSON | FEC candidate | id.fec[] → api.open.fec.gov/v1/candidate/{id} | id | yes | A000355 id.fec S4MI00165 → FEC API candidate 'ABRAHAM, SPENCER SENATOR' |
+| legislators→former-senator | Legislators JSON | Congress.gov member | id.lis (absent from cvc) → id.bioguide → member/{id} | id | yes | 4 of 4 absent LIS ids resolve via the JSON; S293 → G000359 → member |
 | meeting→bill | Congress.gov committee-meeting | Congress.gov bill | relatedItems.bills[] → bill | id | yes · 6/6 | eventId 119565 relatedItems.bills → bill/119/hr/1653 |
 | meeting→documents | Congress.gov committee-meeting | docs.house.gov / congress.gov documents | witnessDocuments[].url, meetingDocuments[].url | url | yes | www.congress.gov → 200 application/pdf 1,036,104 B |
 | meeting→hearing | Congress.gov committee-meeting | Congress.gov hearing | hearingTranscript[].jacketNumber → hearing/{c}/{chamber}/{jacket} | id | yes | eventId 119003 hearingTranscript ['63019', '64431'] ↔ jacket 64431 |
-| nomination→committee | Congress.gov nomination | Congress.gov committee | nomination/{c}/{n}/committees[].systemCode | id | yes · 6/6 | PN1187 → ssga00 → Committee on Homeland Security and Governmental Affairs |
-| nomination→hearing | Congress.gov nomination | Congress.gov hearing | nomination/{c}/{n}/hearings[].jacketNumber | id | no | none of the twelve newest nor five confirmed nominations counts a hearing |
-| feed→nomination | Senate nomination feed | Congress.gov nomination | PN number → nomination/{c}/{n} | id | yes | feed PN1255 → nomination/119/1255 |
-| feed→committee | Senate nomination feed | Congress.gov committee | Senate committee code → systemCode `{code}00` | derived | yes | feed code SSBK00 → ssbk00 → Committee on Banking, Housing, and Urban Affairs |
-| house-vote→bill | Congress.gov house-vote | Congress.gov bill | legislationType + legislationNumber → bill | id | yes · 20/20 | roll 240 → bill/119/hr/3424 |
-| house-vote→member | Congress.gov house-vote | Congress.gov member | members[].bioguideID → member/{id} | id | yes | voter A000055 → member |
+| memberdata→committee | House MemberData.xml | Congress.gov committee | committee-assignment@comcode → systemCode `hs{code}` | derived | yes | comcode II00 → hsii00 → Committee on Natural Resources |
 | member→bill | Congress.gov member | Congress.gov bill | sponsored-legislation[] → bill | id | yes | A000375 sponsored → bill/119/hr/8781 |
 | member→house-file | Congress.gov member | House members.xml | bioguideId ↔ Member@bioguide_id | id | yes | A000375 in members.xml (441 ids) |
-| memberdata→committee | House MemberData.xml | Congress.gov committee | committee-assignment@comcode → systemCode `hs{code}` | derived | yes | comcode II00 → hsii00 → Committee on Natural Resources |
-| cvc→member | Senate cvc XML | Congress.gov member | senator.bioguide_id → member/{id}; carries lis_member_id | id | yes | cvc bioguideId A000382 + @lis_member_id S428 → member |
-| cvc→committee | Senate cvc XML | Congress.gov committee | committee code → systemCode `{code}00` | derived | yes | cvc SPAG00 → spag00 → Special Committee on Aging |
-| senate-vote→member | Senate vote XML | Congress.gov member | member.lis_member_id → cvc bioguide_id → member/{id} | derived | yes · 1859/1899 | LIS S428 → cvc → A000382 → member; 4 of 99 voters' LIS ids are absent from today's cvc ['S293', 'S419', 'S350', 'S421'] |
-| senate-vote→document | Senate vote XML | Congress.gov bill or nomination | document_type + document_number → bill or nomination | derived | yes · 19/19 | S. 5 → bill/119/s/5 |
-| senate-hearings→committee | Senate hearings.xml | Congress.gov committee | meeting.cmte_code → systemCode | derived | yes | cmte_code SSAS00 → ssas00 → Committee on Armed Services |
-| treaty→cdoc | Congress.gov treaty | GovInfo CDOC package | treaty number → package id CDOC-{c}tdoc{n} | derived | yes · 2/2 | treaty 2 → CDOC-119tdoc2 (TAX CONVENTION WITH CROATIA AND PROTOCOL) |
-| record→package | Congress.gov daily-congressional-record | GovInfo CREC package | issue links → package id CREC-{date} | derived | yes · 18/20 | vol 171 issue 219 entireIssue www.congress.gov → GovInfo CREC-2026-01-02; sampled failures: 208: ProbeUnavailableError HTTP 404; 205: ProbeUnavailableError HTTP 404 |
-| crs→law-or-bill | Congress.gov crsreport | Congress.gov law | relatedMaterials[].URL (laws and bills) → law/{c}/pub/{n} | url | yes · 14/14 | IF12853 relatedMaterials type PUB 98-369 → /v3/law/98/pub/369 → bill |
-| crs→pdf | Congress.gov crsreport | congress.gov CRS PDF | formats[].url (keyless) | url | yes | IF12853 → /crs_external_products/IF/PDF/IF12853/IF12853.10.pdf → 200 application/pdf 409,240 B |
-| plaw→usc | GovInfo PLAW USLM | US Code sections | <ref href="/us/usc/t…/s…"> in the law text | id | yes | PLAW-119publ1: 8 refs to /us/usc/…; citableAs ['Public Law 119–1', '139 Stat. 3'] |
-| plaw→statute | GovInfo PLAW USLM | GovInfo STATUTE volume | meta citableAs `NNN Stat. NNN` → bulkdata/STATUTE/{volume} | derived | yes | rule proved on 117-58 → STATUTE/135 ['STATUTE-135.xml']; 139 Stat. 3 → STATUTE/139 not in bulk yet (newest volume 137) |
+| nomination→committee | Congress.gov nomination | Congress.gov committee | nomination/{c}/{n}/committees[].systemCode | id | yes · 6/6 | PN1187 → ssga00 → Committee on Homeland Security and Governmental Affairs |
+| nomination→hearing | Congress.gov nomination | Congress.gov hearing | nomination/{c}/{n}/hearings[].jacketNumber | id | no | none of the twelve newest nor five confirmed nominations counts a hearing |
 | plaw→related | GovInfo PLAW | GovInfo related service | related/{packageId} → BILLS, CREC, … package ids | id | yes | related collections ['BILLS', 'HOB', 'CPD']; BILLS → ['BILLS-119s5pcs', 'BILLS-119s5es', 'BILLS-119s5enr'] |
-| bills→related | GovInfo BILLS | GovInfo related service | related/BILLS-{c}{type}{n}{version} | id | yes | BILLS-119hr1enr related collections ['BILLSTATUS', 'BILLS', 'HOB', 'CREC', 'CRPT', 'CHRG', 'CPD', 'PLAW'] |
-| law→table3 | Public law number | OLRC Table III | `table3_act_locator` (117-58) → act page stating the number | derived | yes | https://uscode.house.gov/table3/117_58.htm → 414,521 B; page states act 117–58, Congress 117th Cong., 135 Stat. Stat. |
-| law→classification | Public law number | OLRC classification tables | tables.shtml → per-Congress table → law number | derived | yes | https://uscode.house.gov/classification/tbl119pl_2nd.htm states 119-1: True |
-| floor→bill | docs.house.gov weekly floor XML | Congress.gov bill | floor-item.legis-num → bill/{c}/{type}/{n} | derived | yes | 20260914 legis-num 'S. 283' → bill/119/s/283 |
-| cbo→bill | CBO cost-estimate feed | Congress.gov bill | item Bill_Number → bill/{c}/{type}/{n} | id | yes | item Bill_Number 'S. 2801' → bill/119/s/2801 |
-| lda→registrant | LDA filings | LDA registrants | registrant.id → registrants/{id} | id | yes | filing a934e791 → registrant 61414 'NEXXUS CONSULTING, LLC' |
-| lda→bill | LDA filings | Congress.gov bill | lobbying_activities[].description free text | text | no | 0 of 25 filings name a bill in free text []; no structured bill field exists |
-| communication-typing | Congress.gov house-communication | Congress.gov house-communication | detail fields on the 25 newest: isRulemaking, RIN, committees, matchingRequirements, congressionalRecordDate | id | yes | of the 25 newest: 17 rulemakings, 17 with a RIN, 25 with a committee referral, 21 naming a requirement, 25 with a Record date |
-| communication→committee | Congress.gov house-communication | Congress.gov committee | committees[].systemCode + referralDate → committee/house/{code} | id | yes · 20/20 | EC 4752 referred hsba00 on 2026-09-17 → Committee on Financial Services |
-| communication→requirement | Congress.gov house-communication | Congress.gov house-requirement | matchingRequirements[].number → house-requirement/{n} | id | yes | EC 4752 → requirement 8070: 'Congressional review of agency rulemaking.' |
-| communication→federal-register | Congress.gov house-communication | Federal Register document | reportNature `RIN: nnnn-XXnn` → federalregister.gov/api/v1/documents?conditions[regulation_id_number]=RIN | id | yes | EC 4752 RIN 3133-AF97 → Federal Register API regulation_id_number filter: 2 documents, each carrying the RIN as a structured field [(None, ['3133-AF97']), (None |
+| plaw→statute | GovInfo PLAW USLM | GovInfo STATUTE volume | meta citableAs `NNN Stat. NNN` → bulkdata/STATUTE/{volume} | derived | yes | rule proved on 117-58 → STATUTE/135 ['STATUTE-135.xml']; 139 Stat. 3 → STATUTE/139 not in bulk yet (newest volume 137) |
+| plaw→usc | GovInfo PLAW USLM | US Code sections | <ref href="/us/usc/t…/s…"> in the law text | id | yes | PLAW-119publ1: 8 refs to /us/usc/…; citableAs ['Public Law 119–1', '139 Stat. 3'] |
+| record→legislative-day | Congress.gov daily-congressional-record | Legislative day per chamber | issue fullIssue.sections names (House Section, Senate Section) | derived | yes | chamber sections per issue: 2026-01-02 H+S, 2026-01-03 H, 2025-12-30 H+S, 2025-12-26 H+S, 2025-12-23 H+S |
+| record→package | Congress.gov daily-congressional-record | GovInfo CREC package | issue links → package id CREC-{date} | derived | yes · 18/20 | vol 171 issue 219 entireIssue www.congress.gov → GovInfo CREC-2026-01-02; sampled failures: 208: ProbeUnavailableError HTTP 404; 205: ProbeUnavailableError HTTP 404 |
+| report→bill | Congress.gov committee-report | Congress.gov bill | associatedBill[] → bill/{c}/{type}/{n} | id | yes · 17/17 | associatedBill → bill/119/hres/53 |
+| report→package | Congress.gov committee-report | GovInfo CRPT package | text[].formats[].url → package id CRPT-{c}{type}{n} | derived | yes · 20/20 | /119/crpt/hrpt1/generated/CRPT-119hrpt1.htm → GovInfo CRPT-119hrpt1 |
 | requirement→communications | Congress.gov house-requirement | Congress.gov house-communication | house-requirement/{n}/matching-communications[] → house-communication/{c}/{type}/{n} | id | no | requirement 8070 (CRA) lists 92,450 communications, unordered by Congress; 112th EC 2 detail 404; 105th EC 2353 detail 404 |
 | senate-communication→committee | Congress.gov senate-communication | Congress.gov committee | committees[].systemCode → committee/senate/{code} | id | yes | EC 4712 → ssaf00 → Committee on Agriculture, Nutrition, and Forestry; typed fields ['abstract', 'chamber', 'committees', 'communicationType', 'congress', 'congr |
-| legislators→former-senator | Legislators JSON | Congress.gov member | id.lis (absent from cvc) → id.bioguide → member/{id} | id | yes | 4 of 4 absent LIS ids resolve via the JSON; S293 → G000359 → member |
-| legislators→fec | Legislators JSON | FEC candidate | id.fec[] → api.open.fec.gov/v1/candidate/{id} | id | yes | A000355 id.fec S4MI00165 → FEC API candidate 'ABRAHAM, SPENCER SENATOR' |
-| record→legislative-day | Congress.gov daily-congressional-record | Legislative day per chamber | issue fullIssue.sections names (House Section, Senate Section) | derived | yes | chamber sections per issue: 2026-01-02 H+S, 2026-01-03 H, 2025-12-30 H+S, 2025-12-26 H+S, 2025-12-23 H+S |
+| senate-hearings→committee | Senate hearings.xml | Congress.gov committee | meeting.cmte_code → systemCode | derived | yes | cmte_code SSAS00 → ssas00 → Committee on Armed Services |
+| senate-vote→document | Senate vote XML | Congress.gov bill or nomination | document_type + document_number → bill or nomination | derived | yes · 19/19 | S. 5 → bill/119/s/5 |
+| senate-vote→member | Senate vote XML | Congress.gov member | member.lis_member_id → cvc bioguide_id → member/{id} | derived | yes · 1859/1899 | LIS S428 → cvc → A000382 → member; 4 of 99 voters' LIS ids are absent from today's cvc ['S293', 'S419', 'S350', 'S421'] |
+| treaty→cdoc | Congress.gov treaty | GovInfo CDOC package | treaty number → package id CDOC-{c}tdoc{n} | derived | yes · 2/2 | treaty 2 → CDOC-119tdoc2 (TAX CONVENTION WITH CROATIA AND PROTOCOL) |
 | law→plaw-bulk | Congress.gov law | GovInfo PLAW bulkdata | law number → PLAW-{c}publ{n}.xml present in the bulk folder | derived | 102/106 | 119-110 not in bulk yet; 119-109 not in bulk yet |
 | house-vote→source-xml | Congress.gov house-vote | Clerk vote XML | sourceDataURL answers and names the same roll | url | 20/20 |  |
 
@@ -493,9 +494,12 @@ establishes:
   then take deltas from the API list route by update date. Same identity on
   both sides; the newer update date is the current observation, both
   captures are kept. This is what BillTrax's bulk status sync already does,
-  so it ports rather than invents. The one unmeasured overlap, status bulk
-  against the bill API for one Congress and type, is the check to run
-  before this is built.
+  so it ports rather than invents. The bulk-status comparison above is the
+  parity run: for the 119th House resolutions every file the parser accepts
+  is in the API and agrees on the latest action, the API is newer by day on
+  about a tenth and bulk never, and the files the comparison could not use
+  were refused by this repo's own parser for one rule, which is port
+  decision 4 measured rather than a bulk defect.
 - **Everything without bulk: API index, GovInfo body.** Nominations,
   hearings, committee reports, meetings, treaties, the Record, House votes
   and members have no bulkdata. Each is a row in the Congress.gov listing
@@ -519,12 +523,14 @@ establishes:
   legislative afterthought: they are two more rows in the Congress.gov
   family, and the RIN they carry is the key the Federal Register,
   regulations.gov and Unified Agenda sources in this repo already use.
-- **One decision record, not one per candidate**, stating the two families
-  and the per-crawl bound rule; the draft is in the session notes and the
-  port plan's phase order changes with it (Phase 6 ahead of Phase 4 for
-  bills; Phase 4 shrinks to the routes bulk cannot supply; the press-release
-  source gets a phase). Port conventions apply to every candidate: tier-1
-  first, credentials header-only, one `docs/sources/*.md` page per family.
+- **One decision record, not one per candidate.** Adopted 2026-09-19 as
+  "Congress.gov and GovInfo collections are each one family" in
+  `docs/decisions.md`, with the per-crawl bound rule. The port plan changed
+  with it the same day: Phase 6 runs ahead of Phase 4 for bills, Phase 4 is
+  table-driven and shrinks to the routes bulk cannot supply, the
+  press-release source lands in Phase 2. Port conventions apply to every
+  candidate: tier-1 first, credentials header-only, one `docs/sources/*.md`
+  page per family.
 
 ## Catalog caveats (when citing the CDTF map)
 
