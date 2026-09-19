@@ -103,11 +103,6 @@ a consumer can weigh a title match differently from a body one.
 
 ## Decision
 
-**Interpretation lives in spicy-docs; the tables it produces are hosted
-elsewhere.** spicy-docs is the one home for code: acquisition, publisher-format
-parsing and shared interpretation alike. A metadata host receives tables and
-their documentation, never logic, and an application keeps only auth, email,
-per-user rows and pages. This package is the interpretation half of that split,
-and the columns each rule populates -- stage, money-bill kind and reason codes,
-identification confidence, vote and release bill links, classification and
-summary provenance -- are what the host publishes.
+See ["Interpretation lives in spicy-docs; hosted tables carry its
+outputs"](decisions.md#interpretation-lives-in-spicy-docs-hosted-tables-carry-its-outputs)
+in `docs/decisions.md`.
