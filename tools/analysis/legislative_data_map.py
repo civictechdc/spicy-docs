@@ -2721,12 +2721,14 @@ def render_requirements(measures: Mapping[str, Any]) -> list[str]:
     share = data.get("share", 0.0)
     lines = ["### House reporting requirements: the 8070 histogram (A6)", ""]
     if histogram:
-        span = f"the {_ordinal(int(min(histogram, key=int)))} through the {_ordinal(int(max(histogram, key=int)))}"
+        span = (
+            f"the {_ordinal(int(min(histogram, key=int)))} through {_ordinal(int(max(histogram, key=int)))} Congresses"
+        )
     else:
         span = "no Congress"
     lines.append(
         f"Requirement 8070's `matching-communications` list walked in full, keyed, once: {total:,} rows "
-        f"across {span} Congress. Probing one communication's detail record per Congress from the 105th "
+        f"across {span}. Probing one communication's detail record per Congress from the 105th "
         f"through the {_ordinal(CURRENT_CONGRESS)} finds the detail route answering from "
         + (f"the {_ordinal(floor)} Congress on" if floor is not None else "no Congress in that range")
         + f", so {covered:,} of the {total:,} walked rows ({share:.1%}) fall in the detail era."

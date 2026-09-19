@@ -387,7 +387,7 @@ Senate roster gap across the session: 1,859 of 1,899 voter ids on 19 sampled vot
 
 ### House reporting requirements: the 8070 histogram (A6)
 
-Requirement 8070's `matching-communications` list walked in full, keyed, once: 92,450 rows across the 104th through the 119th Congress. Probing one communication's detail record per Congress from the 105th through the 119th finds the detail route answering from the 114th Congress on, so 26,725 of the 92,450 walked rows (28.9%) fall in the detail era.
+Requirement 8070's `matching-communications` list walked in full, keyed, once: 92,450 rows across the 104th through 119th Congresses. Probing one communication's detail record per Congress from the 105th through the 119th finds the detail route answering from the 114th Congress on, so 26,725 of the 92,450 walked rows (28.9%) fall in the detail era.
 By the proposal's rule -- host only if the detail era covers a useful share -- 28.9% is not a useful share, so `house_requirements` stays a candidate rather than a hosted table.
 
 ### Catalog measurements
