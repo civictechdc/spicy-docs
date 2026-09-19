@@ -2,11 +2,13 @@
 
 `extraction/gpo_normalize.py` is a post-extraction step: given the page texts
 `extraction.DocumentExtractor` already produced, it strips the seven GPO
-print artifacts BillTrax's `pdf-normalize.ts` named and rejoins the words
-GPO's line-wrap hyphenates, keeping one output string per input page. It
-takes no PDF, opens no file and makes no network request; it is a pure
-function over `PageResult.text` values plus the `GpoCleanupRecord` accounting
-of what it removed.
+print artifacts BillTrax's `pdf-normalize.ts` named, an eighth ported later
+from DeltaTrack (the unbulleted running bill-stage footer — see "Where this
+port now matches a DeltaTrack rule" below), and rejoins the words GPO's
+line-wrap hyphenates, keeping one output string per input page. It takes no
+PDF, opens no file and makes no network request; it is a pure function over
+`PageResult.text` values plus the `GpoCleanupRecord` accounting of what it
+removed.
 
 ```python
 from spicy_docs.extraction import DocumentExtractor, NativeText
@@ -65,7 +67,7 @@ The other five artifacts — the VerDate/DSK-line detectors that start the
 rules above, bare page numbers, bullet bill identifiers, small-caps
 single-letter splits, and doubled internal spaces from kerning — are kept
 verbatim. Doubled internal spaces and non-breaking spaces were measured at
-zero occurrences across all three real fixtures below; PyMuPDF's span
+zero occurrences across all four real fixtures below; PyMuPDF's span
 reconstruction does not reproduce pdf-parse's kerning artifact. Both rules
 stay in place for compatibility (the same precedent BillTrax set for its own
 always-`true` `spacingNormalized` field) and are marked unmeasured here
@@ -78,11 +80,12 @@ rather than removed.
 | `verdate_footer` | GPO print metadata footer, starting `VerDate …` | Re-derived: now also consumes the multi-line continuation (see artifact 2 above) |
 | `dsk_user` | Document-processing user/job-code line | Re-derived: generalized machine-id and job-code shape (see artifact 2 above) |
 | `bare_page_number` | Bare page number or per-line gutter number, 1-4 digits | Kept verbatim |
-| `bullet_bill_id` | Bullet-prefixed bill identifier (`•HR 7148 IH`) | Kept verbatim; unmeasured on the three fixtures below (none contains one), confirmed still present under this extractor by the sidecar's other sampled bills (`BILLS-119hr9499rh`: 2, `BILLS-119s218is`: 4 — see `docs/research/billtrax-raw-data-2026-09-19.json`, `sources.billPdfTextArtifacts`) |
-| gutter-number adjacency (`is_gpo_layout`) | Line-numbered IH-style layout | Re-derived: adjacency instead of trailing-suffix (see artifact 1 above) |
-| small-caps merge | A lone uppercase letter split from the word it starts | Kept verbatim; unmeasured on the three fixtures below (none exercises it) |
-| hyphen rejoin | Mid-word line-wrap break | Re-derived trigger (gutter adjacency instead of trailing-digit suffix); scope kept identical to BillTrax (gutter-numbered documents only) |
-| space collapse | Multiple internal spaces from PDF kerning | Kept verbatim; measured at zero occurrences on all three fixtures under this extractor |
+| `bullet_bill_id` | Bullet-prefixed bill identifier (`•HR 7148 IH`) | Kept verbatim; unmeasured on the first three fixtures below (none contains one), confirmed still present under this extractor by the sidecar's other sampled bills (`BILLS-119hr9499rh`: 2, `BILLS-119s218is`: 4 — see `docs/research/billtrax-raw-data-2026-09-19.json`, `sources.billPdfTextArtifacts`) |
+| `running_footer` | Unbulleted running bill-stage line (e.g. `HR 5895 PCS`) | Ported from DeltaTrack's `_RUNNING_FOOTER` (`pdf_text.py:68-71`, built for its own #140) — see ["Where this port now matches a DeltaTrack rule"](#where-this-port-now-matches-a-deltatrack-rule-not-imported-ported) below |
+| gutter-number adjacency (`is_gpo_layout`) | Line-numbered IH-style layout | Re-derived: adjacency instead of trailing-suffix (see artifact 1 above); withheld below a minimum content-line floor ported from DeltaTrack's `_MIN_LINES_FOR_GUARD` (`compare/pdf.py:85`) — same section below |
+| small-caps merge | A lone uppercase letter split from the word it starts | Kept verbatim; unmeasured on the four fixtures below (none exercises it) |
+| hyphen rejoin | Mid-word line-wrap break | Re-derived trigger (gutter adjacency instead of trailing-digit suffix); scope kept identical to BillTrax (gutter-numbered documents only), now also gated by the minimum content-line floor above |
+| space collapse | Multiple internal spaces from PDF kerning | Kept verbatim; measured at zero occurrences on all four fixtures under this extractor |
 
 ## Measured counts per fixture
 
@@ -90,20 +93,27 @@ Fixtures are `tests/fixtures/gpo_pdf_text/*.json` (extracted text, not the
 PDF; provenance and sha256 in that directory's README). Full field-by-field
 assertions are in `tests/extraction/test_gpo_normalize.py`.
 
-| Fixture | Version | Pages | `line_numbers` | `gpo_footers` | `small_caps_merges` | `hyphen_rejoin_count` | Chars before → after |
-| --- | --- | ---: | --- | --- | ---: | ---: | --- |
-| `BILLS-119hr4727ih` | Introduced (IH) | 1 | `True` | `True` | 0 | 2 | 854 → 671 (21.4%) |
-| `BILLS-119sconres1enr` | Enrolled (ENR) | 1 | `False` | `False` | 0 | 0 | 1,291 → 1,263 (2.2%) |
-| `CRPT-119hrpt105` | Committee report | 3 | `False` | `True` | 0 | 0 | 7,111 → 6,537 (8.1%) |
+| Fixture | Version | Pages | Content lines | `line_numbers` | `gpo_footers` | `running_footer_lines` | `small_caps_merges` | `hyphen_rejoin_count` | Chars before → after |
+| --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | --- |
+| `BILLS-119hr4727ih` | Introduced (IH) | 1 | 19 | `False` | `True` | 0 | 0 | 0 | 854 → 675 (21.0%) |
+| `BILLS-119sconres1enr` | Enrolled (ENR) | 1 | 30 | `False` | `False` | 0 | 0 | 0 | 1,291 → 1,263 (2.2%) |
+| `CRPT-119hrpt105` | Committee report | 3 | 146 | `False` | `True` | 0 | 0 | 0 | 7,111 → 6,537 (8.1%) |
+| `BILLS-119hr1009rfs` | Referred in Senate (RFS) | 2 | 28 | `False` | `True` | 1 | 0 | 0 | 1,412 → 1,034 (26.8%) |
 
-`BILLS-119hr4727ih` is genuinely gutter-numbered (its six content lines are
-each followed by their own line-number line, 1-6) and both of its real
-hyphen wraps ("Representa-/tives", "relat-/ing") are correctly rejoined.
+`BILLS-119hr4727ih` is genuinely gutter-numbered (6 of its 19 content lines
+are each followed by their own line-number line, 1-6), but 19 sits under the
+minimum-content-line floor described below, so `line_numbers` reports `False`
+and both of its real hyphen wraps ("Representa-/tives", "relat-/ing") are
+conservatively left split rather than trusted on a ratio this thin. Its
+page-number lines still strip: the page's own VerDate/DSK footer is
+independent evidence, checked before the floor (see
+`GpoPageCleanup.bare_page_number_evidence`).
 
 `BILLS-119sconres1enr` is not gutter-numbered, has no GPO footer on its one
 page, and its own genuine hyphen wraps ("concur-/ring),", "President-/elect")
 are left split — this is BillTrax's original scope, not a gap this port
-introduced: see artifact 1 above.
+introduced: see artifact 1 above. (Its 30 content lines are also under the
+floor, but the ratio alone — 0 numbered — already declines it either way.)
 
 `CRPT-119hrpt105` is a 3-page House Rules Committee report — not itself a
 bill, so it is never gutter-numbered by GPO — with a full VerDate footer
@@ -116,6 +126,52 @@ normalizer here is "safe" because `detectLineNumbered` is false on all three
 reports it sampled, so the hyphen-rejoin branch stays off, while the
 VerDate filter removes real per-page footer lines (229 of them, on the
 largest of the three).
+
+`BILLS-119hr1009rfs` is the fourth fixture, added to exercise the
+`running_footer` rule: none of the first three is a PCS/RDS/RFS print stage,
+so none carries the unbulleted running bill-stage line the rule strips. It is
+a short Senate-received postal-facility-naming act (H.R. 1009, 119th
+Congress); page 2 opens with `HR 1009 RFS`, stripped once. Genuinely
+gutter-numbered (12 of its 28 content lines are each followed by their own
+line number) but, like `BILLS-119hr4727ih`, under the minimum-content-line
+floor, so `line_numbers` is `False` and its one real hyphen wrap
+("Representa-/tives") stays split — the same trade-off.
+
+## Where this port now matches a DeltaTrack rule (not imported, ported)
+
+Validated against upstream DeltaTrack at commit `c636448`
+(`docs/research/deltatrack-upstream-issues-2026-09-19.md`, claims B2 and B3):
+these two rules were previously listed below as gaps to raise upstream, on
+the mistaken premise that upstream lacked them. Both are upstream features
+this port lacked, not upstream gaps, so both are now ported into
+`gpo_normalize.py` instead:
+
+- **The unbulleted running bill-stage footer.** DeltaTrack's `_RUNNING_FOOTER`
+  (`pdf_text.py:68-71`) strips a line like `HR 5895 PCS` — a print-stage tag
+  GPO does not bullet, which neither BillTrax's `BULLET_BILL_RE` nor this
+  port's own `_BULLET_BILL_RE` catches. Upstream built it for its own #140
+  (closed), with corpus evidence there (`diff_pdfs` on two real versions of
+  the same bill reported `{'modified': 125}` against an XML-diff truth of
+  `{'modified': 1}`; 80 of 125 hunks were footer-only; the footer appeared on
+  181 of 184 pages). None of this port's first three fixtures is a
+  PCS/RDS/RFS print stage, so a fourth, `BILLS-119hr1009rfs`, was added
+  specifically to exercise it — see the measured counts above.
+- **The minimum-size floor on the numbered-ratio layout verdict.** DeltaTrack
+  derived, over 60 real corpus PDFs, that a numbered/unnumbered ratio is not
+  evidence below `_MIN_LINES_FOR_GUARD = 50` content lines
+  (`compare/pdf.py:85`, derivation table at `:62-78`): a hard cliff between
+  28 and 29 judged lines (minimum accepted ratio 0.4286 → 0.5517), with 50
+  chosen for a comfortable margin past it. This port kept BillTrax's original
+  3-content-line floor until now, which both real one-page fixtures above
+  clear easily (ratio > 0.3) despite being far too short to trust — exactly
+  the false-positive the floor exists to prevent (a two-page memo should not
+  be declared GPO-numbered on three lines). Upstream's own residual — a
+  genuinely unnumbered document under 50 lines is still exempt from its
+  decline-guard — is tracked in its **#261** (open, following closed #141)
+  and its active research spike **#679** (open); this port's floor instead
+  withholds the *positive* layout verdict below the same size, which is the
+  safer default for hyphen-rejoin specifically (see "Where this port did not
+  adopt a DeltaTrack design" below).
 
 ## Concordance checks
 
@@ -130,17 +186,19 @@ measure (`validate-pdf-pdf-concordance.ts`'s `concordance()`):
   after_independent_extraction`) does the same comparison against a second,
   independently fetched-and-extracted copy of `BILLS-119hr4727ih` — two real
   extractions of the same document, agreeing after normalization.
-- **PDF-vs-XML.** Parametrized over the two bill fixtures, each checks for a
-  matching bill-text XML sample and asserts token concordance at or above
-  BillTrax's own retroactive criterion (`validate-pdf-xml-concordance.ts`:
-  "β.5 ≥95%" mean heading concordance). Neither `BILLS-119hr4727ih` nor
-  `BILLS-119sconres1enr` has a matching XML sample in this repo or in
+- **PDF-vs-XML.** Parametrized over the three bill fixtures (the committee
+  report has no bill-text XML counterpart to compare against, so it is not
+  included), each checks for a matching bill-text XML sample and asserts
+  token concordance at or above BillTrax's own retroactive criterion
+  (`validate-pdf-xml-concordance.ts`: "β.5 ≥95%" mean heading concordance).
+  None of `BILLS-119hr4727ih`, `BILLS-119sconres1enr` or
+  `BILLS-119hr1009rfs` has a matching XML sample in this repo or in
   `docs/research/billtrax-raw-data-2026-09-19.json` (which recorded only
-  line-count statistics for them, not XML text) — the sidecar's XML text
-  fixtures under `tests/fixtures/govinfo_bills/` are for other bills
-  (`119hr6028ih/eh`, `119hjres25enr`, `119s5enr`). Both cases are marked
-  `pytest.skip` with that reason, per this port's own rule for an absent
-  sample, rather than silently passed.
+  line-count statistics for the first two, and predates the third) — the
+  sidecar's XML text fixtures under `tests/fixtures/govinfo_bills/` are for
+  other bills (`119hr6028ih/eh`, `119hjres25enr`, `119s5enr`). All three
+  cases are marked `pytest.skip` with that reason, per this port's own rule
+  for an absent sample, rather than silently passed.
 
 ## Compared against upstream DeltaTrack
 
@@ -206,16 +264,39 @@ leaves split), but it is measurably unsafe: `BILLS-119sconres1enr.json`
 (real, captured GovInfo text) contains `"...inauguration of the
 President-\nelect and the Vice President-elect..."`, where `President-elect`
 is a genuine hyphenated compound, not a print-wrap, and happens to wrap at
-its own hyphen. DeltaTrack's rule as written (`current.text.endswith("-")
-and current.text[-2].isalnum() and parsed[next_i].text[:1].islower()`)
-matches this exactly and would delete the hyphen, producing `Presidentelect`.
-This port's gutter-adjacency gate (module docstring, artifact 1) correctly
-leaves it split. Kept as this port's own, narrower rule rather than adopted
-broader — see `test_cleans_enr_format_and_leaves_hyphen_wraps_unrejoined_
-without_gutter_numbers`.
+its own hyphen. Run through DeltaTrack's **real** page pipeline
+(`normalize_raw` → `strip_page_chrome` → `_parse_print_lines` →
+`_merge_print_lines`, as `extract_clean_pages` composes them at
+`pdf_text.py:526-528`) that becomes `Presidentelect` — a word that appears
+nowhere in the bill — and the same sentence reshaped into DeltaTrack's own
+numbered GPO layout corrupts identically, while a true print-wrap control
+("Representa-"/"tives") rejoins correctly. The rule *as printed*
+(`current.text.endswith("-") and current.text[-2].isalnum() and
+parsed[next_i].text[:1].islower()`) does **not** match this fixture if fed
+literally: the captured line ends `"President- "`, with a trailing space, so
+`.endswith("-")` is `False` and the rule declines. It only fires once
+`normalize_raw` (`pdf_text.py:128-146`) strips that trailing space at `:145`
+— which is exactly what the real pipeline does first, at `:526`. This port's
+gutter-adjacency gate (module docstring, artifact 1) correctly leaves it
+split regardless of feed order. Kept as this port's own, narrower rule rather
+than adopted broader — see `test_cleans_enr_format_and_leaves_hyphen_wraps_
+unrejoined_without_gutter_numbers`.
+
+This is a real gap worth raising upstream — DeltaTrack's own pipeline
+corrupts a genuine compound word, not just an artificial feed order — and it
+is the mirror image of DeltaTrack's own open **#650** ("Words split across a
+printed line stay broken in the exported bill text when the continuation is
+uppercase"): #650 is the false *negative* (an uppercase continuation left
+split), this is the false *positive* (a lowercase continuation wrongly
+joined), and both follow from the same test #650 already calls "not
+decidable from the PDF alone." See
+`docs/research/deltatrack-upstream-issues-2026-09-19.md` (claim B4) for the
+full suggested issue text, written as a sibling to #650 with the corrected
+mechanism above — a maintainer who tries the literal reproduction first will
+see it decline and may close a report that skips this correction.
 
 **Gaps found, to raise upstream, not fixed here** (out of this port's scope
-— they are DeltaTrack's rules, not BillTrax's, and none is exercised by a
+— it is DeltaTrack's rule, not BillTrax's, and it is not exercised by a
 fixture in this repo):
 
 - `_WATERMARK_AND_BELOW` (`pdf_text.py:73`) still requires a literal `DSK`
@@ -224,27 +305,16 @@ fixture in this repo):
   `BILLS-119hr4727ih`) would not match it either. Likely masked in practice
   by `_VERDATE_AND_BELOW` running first on the same page (VerDate precedes
   the watermark in every sample either project has), but a latent gap if the
-  watermark ever appears without a preceding VerDate match.
-- `_RUNNING_FOOTER` (`pdf_text.py:68-71`) strips an **unbulleted** running
-  bill-stage line (e.g. `HR 5895 PCS`, for print stages GPO does not prefix
-  with a bullet) — an artifact neither BillTrax's `BULLET_BILL_RE` (requires
-  a bullet character) nor this port's kept-verbatim `_BULLET_BILL_RE`
-  handles. None of this port's three fixtures is a PCS/RDS/RFS print stage,
-  so there is nothing here to re-derive the rule against; flagged, not
-  built, per this port's own "unmeasured, not invented" rule.
-- `compare/pdf.py:60` measured, over 60 real documents under PDFium, that
-  numbered and unnumbered line-share populations are ~50x apart with an
-  empty gap between them (unnumbered 0.16%-1.76%, numbered 90%-99.9%),
-  independently corroborating that BillTrax's original 30% `is_gpo_layout`
-  threshold (kept here) sits safely inside that gap. The same file
-  (`compare/pdf.py:61-78`) also derives a 50-line floor before trusting the
-  ratio at all, because short real documents can read an artificially low
-  share even when genuinely numbered (21-28 lines at 18%-43%). This port
-  keeps BillTrax's original 3-content-line floor unchanged: none of the
-  fixtures here is that short, so there is no measurement of this repo's own
-  numbers to justify moving it, but the concern is real and evidence-backed
-  on a much larger corpus, worth a maintainer's look before `is_gpo_layout`
-  is trusted on a very short document.
+  watermark ever appears without a preceding VerDate match. See
+  `docs/research/deltatrack-upstream-issues-2026-09-19.md` (claim B1) for
+  the suggested issue text.
+
+The unbulleted running-footer rule and the numbered-ratio floor that used to
+be listed here were both misdescribed as upstream gaps — DeltaTrack already
+has both, shipped for its own #140 and #261 respectively — and are now
+ported into this module instead; see ["Where this port now matches a
+DeltaTrack rule"](#where-this-port-now-matches-a-deltatrack-rule-not-imported-ported)
+above.
 
 ## Found but out of scope
 
