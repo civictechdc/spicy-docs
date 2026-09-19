@@ -16,6 +16,7 @@ from spicy_docs.sources.congress.listing import (
     MAX_LIMIT,
     CongressListingReader,
     CongressListRoute,
+    _route_path,
     bill_list_url,
     crs_report_list_url,
     list_route_url,
@@ -37,6 +38,7 @@ ROUTE_PARAMS: dict[str, dict[str, object]] = {
     "bill-actions": {"congress": 119, "bill_type": "hr", "number": 1},
     "nomination": {"congress": 119},
     "hearing": {"congress": 119},
+    "hearing-detail": {"congress": 119, "chamber": "house", "number": 64431},
     "committee-report": {"congress": 119},
     "house-communication": {"congress": 119},
     "house-vote": {"congress": 119, "session": 1},
@@ -101,6 +103,7 @@ DETAIL_FIXTURE_BYTES: dict[str, bytes] = {
     "treaty-detail": (FIXTURES / "congress-treaty-detail.json").read_bytes(),
     "daily-congressional-record-detail": (FIXTURES / "congress-daily-congressional-record-detail.json").read_bytes(),
     "house-communication-detail": (FIXTURES / "congress-house-communication-detail.json").read_bytes(),
+    "hearing-detail": (FIXTURES / "congress-hearing-detail.json").read_bytes(),
     "senate-communication-detail": (FIXTURES / "congress-senate-communication-detail.json").read_bytes(),
     "house-requirement-detail": (FIXTURES / "congress-house-requirement-detail.json").read_bytes(),
 }
@@ -207,6 +210,7 @@ DETAIL_ROUTE_EXPECTATIONS: dict[str, tuple[str, object]] = {
     "treaty-detail": ("topic", "Taxation"),
     "daily-congressional-record-detail": ("issueNumber", "148"),
     "house-communication-detail": ("isRulemaking", "True"),
+    "hearing-detail": ("jacketNumber", 64431),
     "senate-communication-detail": ("congressionalRecordDate", "2026-09-17"),
     "house-requirement-detail": ("nature", "Congressional review of agency rulemaking."),
 }
@@ -327,6 +331,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "bill-actions": False,
         "nomination": False,
         "hearing": False,
+        "hearing-detail": False,
         "committee-report": True,
         "house-communication": False,
         "house-vote": False,
@@ -375,6 +380,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "bill-actions": False,
         "nomination": True,
         "hearing": True,
+        "hearing-detail": False,
         "committee-report": True,
         "house-communication": True,
         "house-vote": True,
@@ -405,6 +411,47 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         "member-congress": True,
         "member-detail": False,
         "committee-print": True,
+        "committee-print-detail": False,
+    }
+    # Exhaustive, not spot-checked, so a flip on a route with no dedicated single_record test
+    # (daily-congressional-record and senate-communication, for instance, whose *-detail
+    # siblings carry the flag but whose own list routes must not) cannot pass silently.
+    # single_record states a JSON-shape fact ("records_key holds an object, not an array"), not
+    # "this is a detail route": treaty-detail and committee-print-detail are detail routes that
+    # answer one record with the flag False, because their one record already arrives inside a
+    # one-element array (see the class docstring).
+    assert {name: route.single_record for name, route in LIST_ROUTES.items()} == {
+        "bill": False,
+        "crsreport": False,
+        "amendment": False,
+        "committee-bills": False,
+        "bill-actions": False,
+        "nomination": False,
+        "hearing": False,
+        "hearing-detail": True,
+        "committee-report": False,
+        "house-communication": False,
+        "house-vote": False,
+        "committee-meeting": False,
+        "committee-meeting-detail": True,
+        "treaty": False,
+        "treaty-detail": False,
+        "daily-congressional-record": False,
+        "daily-congressional-record-detail": True,
+        "house-communication-detail": True,
+        "senate-communication": False,
+        "senate-communication-detail": True,
+        "house-requirement": False,
+        "house-requirement-detail": True,
+        "house-requirement-communications": False,
+        "law": False,
+        "law-detail": True,
+        "committee": False,
+        "committee-detail": True,
+        "member": False,
+        "member-congress": False,
+        "member-detail": True,
+        "committee-print": False,
         "committee-print-detail": False,
     }
     assert LIST_ROUTES["bill"].records_key == BILLS_KEY
@@ -453,6 +500,7 @@ def test_route_table_states_records_keys_and_measured_sort_support():
         ("bill-actions", "https://api.congress.gov/v3/bill/119/hr/1/actions?format=json&limit=3"),
         ("nomination", "https://api.congress.gov/v3/nomination/119?format=json&limit=3"),
         ("hearing", "https://api.congress.gov/v3/hearing/119?format=json&limit=3"),
+        ("hearing-detail", "https://api.congress.gov/v3/hearing/119/house/64431?format=json&limit=3"),
         ("committee-report", "https://api.congress.gov/v3/committee-report/119?format=json&limit=3"),
         ("house-communication", "https://api.congress.gov/v3/house-communication/119?format=json&limit=3"),
         ("house-vote", "https://api.congress.gov/v3/house-vote/119/1?format=json&limit=3"),
@@ -594,9 +642,14 @@ def test_new_list_routes_omit_their_optional_trailing_segments():
         ("house-communication-detail", {"congress": 119, "communication_type": "EC", "number": 4752}),
         ("house-communication-detail", {"congress": 119, "communication_type": "e", "number": 4752}),
         ("house-communication-detail", {"congress": 119, "communication_type": "1c", "number": 4752}),
+        # Per-chamber, not a shared union: "pom" is Senate-only, so House refuses it even though
+        # it is a real, valid code on the sibling route -- the old union would have accepted it.
+        ("house-communication-detail", {"congress": 119, "communication_type": "pom", "number": 4752}),
         ("senate-communication-detail", {"congress": 119, "communication_type": "ec"}),
         ("senate-communication-detail", {"congress": 119, "number": 4712}),
         ("senate-communication-detail", {"communication_type": "ec", "number": 4712}),
+        # "pt" is House-only; the old union would have accepted it on Senate too.
+        ("senate-communication-detail", {"congress": 119, "communication_type": "pt", "number": 4712}),
         ("house-requirement", {"number": 8070}),
         ("house-requirement-detail", {}),
         ("house-requirement-detail", {"number": 0}),
@@ -637,6 +690,38 @@ def test_new_list_routes_omit_their_optional_trailing_segments():
 def test_list_route_url_refuses_invalid_or_missing_path_params(route_name, kwargs):
     with pytest.raises(PagedJsonSourceError):
         list_route_url(LIST_ROUTES[route_name], limit=3, **kwargs)
+
+
+def test_communication_type_accepts_a_code_the_other_chamber_lacks():
+    """Per-chamber, not a shared union: "pt" (House: Petition) is not in the Senate's
+    enumeration, and "pom" (Senate: Petition or Memorial) is not in the House's -- each still
+    builds on its own route, which the old shared closed set would not have distinguished from
+    the refusal cases above."""
+    assert (
+        list_route_url(LIST_ROUTES["house-communication-detail"], congress=119, communication_type="pt", number=1)
+        == "https://api.congress.gov/v3/house-communication/119/pt/1?format=json&limit=250"
+    )
+    assert (
+        list_route_url(LIST_ROUTES["senate-communication-detail"], congress=119, communication_type="pom", number=1)
+        == "https://api.congress.gov/v3/senate-communication/119/pom/1?format=json&limit=250"
+    )
+
+
+def test_a_hypothetical_commtype_route_missing_from_the_enumeration_refuses_by_name():
+    """A route that names "commtype" but is not in _COMMUNICATION_TYPES_BY_ROUTE (a future
+    route the map was never extended for) refuses naming itself, not a bare KeyError."""
+    route = CongressListRoute("new-communication-detail", "new-communication/{congress}/{commtype}", "x")
+    with pytest.raises(PagedJsonSourceError, match="new-communication-detail has no known communication_type"):
+        list_route_url(route, congress=119, communication_type="ec")
+
+
+def test_route_path_refuses_a_values_mapping_missing_one_of_the_routes_own_tokens():
+    """_route_path itself, called directly with an incomplete mapping (a key absent entirely,
+    not present and None): the route's own path names "type" among its tokens, and a caller
+    that forgot the key -- not one that explicitly passed type=None -- gets a refusal naming
+    the missing token, not values.get() silently treating the omission as None."""
+    with pytest.raises(PagedJsonSourceError, match=r"bill values mapping is missing \['type'\]"):
+        _route_path(LIST_ROUTES["bill"], {"congress": 119})
 
 
 @pytest.mark.parametrize("route_name", sorted(name for name, route in LIST_ROUTES.items() if not route.sort_honored))
@@ -734,13 +819,18 @@ def test_list_route_url_refuses_a_date_window_on_every_detail_route(route_name):
         {"name": "x", "path": "x", "records_key": ""},
         {"name": "x", "path": "x", "records_key": ()},
         {"name": "x", "path": "x/{congress}", "records_key": "rows", "optional_params": frozenset({"chamber"})},
+        # A single_record route has no list to reorder or window against; both must be False.
+        {"name": "x", "path": "x/{congress}", "records_key": "rows", "single_record": True, "sort_honored": True},
+        {"name": "x", "path": "x/{congress}", "records_key": "rows", "single_record": True, "window_honored": True},
     ],
 )
 def test_congress_list_route_refuses_invalid_construction(kwargs):
     """A route whose ``optional_params`` makes an interior parameter optional while a later one stays
     required (``congress`` optional but ``type`` is not), an empty path, an empty name or an empty
     records key all refuse at construction, the same as an ``optional_params`` entry the path never
-    declares as a parameter at all."""
+    declares as a parameter at all; so does a ``single_record`` route that also claims
+    ``sort_honored`` or ``window_honored`` (listing.py's ``__post_init__``), since a single record
+    has nothing to reorder or window."""
     with pytest.raises(ValueError):
         CongressListRoute(**kwargs)
 
@@ -979,6 +1069,7 @@ LIVE_BUDGET = PagedJsonBudget(2, 4 * 1024 * 1024, 30, 0.5)
 # wrapper, since the publisher answers it with a one-item array and a real pagination.count of 1.
 NO_PAGINATION_ROUTES = frozenset(
     {
+        "hearing-detail",
         "law-detail",
         "committee-detail",
         "member-detail",

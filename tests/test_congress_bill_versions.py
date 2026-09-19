@@ -389,7 +389,8 @@ def test_choose_format_prefers_html_over_formatted_text() -> None:
     assert choose_format([txt]) is txt
 
 
-def test_choose_format_recognizes_uslm_by_type_but_not_by_default() -> None:
+def test_choose_format_recognizes_uslm_by_type_and_by_default() -> None:
+    """USLM is a second structured rendition (§B7): it is in the default preference, right after XML."""
     formats = [
         _fmt(
             "https://example.invalid/content/pkg/BILLS-119s1071enr/uslm/BILLS-119s1071enr.xml",
@@ -397,7 +398,17 @@ def test_choose_format_recognizes_uslm_by_type_but_not_by_default() -> None:
         )
     ]
     assert choose_format(formats, prefer=("uslm",)) is formats[0]
-    assert choose_format(formats) is None  # not in the default preference, matching BillTrax's own order
+    assert choose_format(formats) is formats[0]
+
+
+def test_choose_format_prefers_xml_over_uslm() -> None:
+    xml = _fmt("https://example.invalid/content/pkg/BILLS-119s1071enr/xml/BILLS-119s1071enr.xml", "Formatted XML")
+    uslm = _fmt(
+        "https://example.invalid/content/pkg/BILLS-119s1071enr/uslm/BILLS-119s1071enr.xml",
+        "United States Legislative Markup",
+    )
+    assert choose_format([uslm, xml]) is xml
+    assert choose_format([uslm]) is uslm
 
 
 def test_choose_format_falls_back_to_the_url_folder_when_type_is_missing() -> None:

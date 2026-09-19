@@ -45,6 +45,13 @@ from spicy_docs.schemas.congress_activity_tables import (
     PRESS_RELEASES,
     ROLL_CALL_VOTES,
 )
+from spicy_docs.schemas.congress_index_tables import (
+    COMMITTEE_MEETINGS,
+    HOUSE_COMMUNICATIONS,
+    NOMINATIONS,
+    RECORD_ISSUES,
+    TREATIES,
+)
 from spicy_docs.schemas.law_tables import LAW_CODE_SECTIONS, LAWS, TABLE3_RECORDS
 from spicy_docs.schemas.legislator_tables import MEMBER_TERMS, MEMBERS
 from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT, RECORD_TYPES
@@ -74,6 +81,12 @@ _REGISTERED: tuple[TableContract, ...] = (
     COMMITTEE_REPORTS,
     REPORT_SECTIONS,
     HEARING_TRANSCRIPTS,
+    # Wave 2, gaps A5, A7 and A10: the Congress.gov index tables.
+    HOUSE_COMMUNICATIONS,
+    COMMITTEE_MEETINGS,
+    RECORD_ISSUES,
+    TREATIES,
+    NOMINATIONS,
     # --- A8 laws and A9 rosters (law_tables, roster_tables) ---
     LAWS,
     LAW_CODE_SECTIONS,
@@ -101,6 +114,7 @@ __all__ = [
     "COMMENT",
     "COMMITTEES",
     "COMMITTEE_ASSIGNMENTS",
+    "COMMITTEE_MEETINGS",
     "COMMITTEE_REPORTS",
     "CONGRESS_BILLS",
     "DIFF_SUMMARIES",
@@ -108,13 +122,16 @@ __all__ = [
     "DOCUMENT",
     "FINANCIAL_CHANGES",
     "HEARING_TRANSCRIPTS",
+    "HOUSE_COMMUNICATIONS",
     "LAWS",
     "LAW_CODE_SECTIONS",
     "MEMBERS",
     "MEMBER_TERMS",
     "MEMBER_VOTES",
+    "NOMINATIONS",
     "PRESS_RELEASES",
     "PUBLIC_ACTIVITY_EVENTS",
+    "RECORD_ISSUES",
     "RECORD_TYPES",
     "REPORT_SECTIONS",
     "ROLL_CALL_VOTES",
@@ -123,6 +140,7 @@ __all__ = [
     "SECTION_DIFF_ITEMS",
     "TABLE3_RECORDS",
     "TABLE_CONTRACTS",
+    "TREATIES",
     "RecordType",
     "Row",
     "TableContract",

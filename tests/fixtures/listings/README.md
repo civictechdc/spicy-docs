@@ -261,7 +261,68 @@ verifiable wire bytes rather than reconstructing the file from a
 fixture, sort probe and window probe above cost exactly the one request its
 row states.
 
-Seventh round, captured 2026-09-19 for the A8/A9 contracts (the laws rollup and
+## `communication_type`'s closed set: sourced from the publisher's docs, not sampled
+
+The shipped fixtures above carry only two communication type codes --
+`EC` (ten times, across every house/senate communication fixture) and one
+`ML` (`congress-house-communication-list.json`) -- nowhere near enough to
+infer a closed set from by sampling. `PM`, `PT` and `POM` have no receipt
+anywhere in this repository. Review caught a closed set
+(`{"ec","pm","pt","ml","pom"}`, shared by both communication detail routes)
+that cited a "sampled live 2026-09-19" fixtures README entry which did not
+exist. Fixed by sourcing the enumeration from the publisher's own endpoint
+documentation instead of the fixtures, fetched keyless 2026-09-19:
+
+Pinned to the exact commit fetched, not `.../blob/main/...`'s moving ref, so
+the byte count and digest below can be re-derived from the row itself:
+
+| Document | URL (pinned to the fetched commit) | Retrieved at commit | Bytes | SHA-256 | Enumerated codes |
+| --- | --- | --- | --- | --- | --- |
+| House communication endpoint | <https://raw.githubusercontent.com/LibraryOfCongress/api.congress.gov/7874d1e668e62f9994c1c337aa091ab4a7ac846d/Documentation/HouseCommunicationEndpoint.md> | `7874d1e668e62f9994c1c337aa091ab4a7ac846d` (2025-01-28T14:42:58Z) | 6,462 | `d3e31febab446f0e1b57a04d129d008f007d16c2e17d574843e23cdb28738224` | `EC`, `PM`, `PT`, `ML` |
+| Senate communication endpoint | <https://raw.githubusercontent.com/LibraryOfCongress/api.congress.gov/94ad1a783b6b9cb5af79d53ce5c4846d70f40eaf/Documentation/SenateCommunicationEndpoint.md> | `94ad1a783b6b9cb5af79d53ce5c4846d70f40eaf` (2025-01-28T14:42:16Z) | 5,062 | `69a2455c6b676f113e7ed04a5a000df8b7d5a50f39b40820bb3f4c40a26f15fa` | `EC`, `POM`, `PM` |
+
+Both documents are retained unmodified in
+`~/Work/corpora/supply-2026-09-02/receipts/congress-communication-types-2026-09-19/`
+(with its own README), outside this repository per the campaign-receipts
+convention; the digests there match the row above, confirmed by fetching
+each document a second time at its pinned commit and comparing bytes.
+
+Both documents state the enumeration under "Elements and Descriptions" ->
+`<communicationType>` -> `<code>`: "Possible values are ...". The two
+chambers' sets differ -- the House has no `POM`, the Senate has no `PT` or
+`ML` -- so `_HOUSE_COMMUNICATION_TYPES`/`_SENATE_COMMUNICATION_TYPES` in
+`sources/congress/listing.py` validate `house-communication-detail` and
+`senate-communication-detail` each against its own set, not a shared union;
+`_route_path` dispatches `commtype` to `_communication_type_param` with the
+route's name rather than through `_VALIDATE_PARAM`'s single-argument table,
+since this is the one path token whose valid values depend on which route
+asks for it. `EC`, the only code either fixture set carries, is valid in
+both sets, so no existing fixture or test needed to change.
+
+Seventh round, captured 2026-09-19 for the wave-2 table contracts
+(`docs/research/table-contracts-2026-09-19.md` §7; api.data.gov key as
+`X-Api-Key`). Both are the two ends of the legislative data map's
+`hearing->meeting` / `meeting->hearing` edges, chosen because the map's own
+evidence names them (jacket 64431, event 119003). Each response was checked
+for the key before it was saved (`scrub_credential`); neither carried it.
+
+| Fixture | Request | Bytes | SHA-256 | Transformation |
+| --- | --- | --- | --- | --- |
+| `congress-hearing-detail.json` | GET https://api.congress.gov/v3/hearing/119/house/64431 | 1,396 | `90187189e5e3d73ad8089eedace2aa5b31dd121f0f857309ad884f17c4c0e614` | Complete, unchanged response; one record, a bare object under `hearing`, carrying `associatedMeeting.eventId` 119003 and `formats[]` whose stem is `CHRG-119hhrg64431`. |
+| `congress-committee-meeting-detail-119003.json` | GET https://api.congress.gov/v3/committee-meeting/119/house/119003 | 36,297 | `a43cb372471870d0926748f542eafcb24756c206b6e013621d1cc31c1cc9a69f` | Complete, unchanged response; a Hearing (not a Markup like 119565) with `hearingTranscript` naming jackets 63019 and 64431, 3 witnesses, 9 witness documents, 70 meeting documents and no related bills. |
+
+`hearing-detail` is the route these two established: `hearing/{congress}/{chamber}/{number}`
+answers a bare object under `hearing` (`single_record=True`), with no
+`pagination` key; sort and window are `False` by construction.
+
+This round used 20 keyed requests in all, the day's whole budget: these 2,
+plus 18 for the House-communication sample (one list page at `limit=25`
+and 17 details, retained as a receipt rather than as fixtures, in
+`corpora/supply-2026-09-02/receipts/house-communications-rin-2026-09-19/`;
+the 18th sampled detail is the sixth round's `congress-house-communication-detail.json`,
+reused after its digest was checked against the row above).
+
+Eighth round, captured 2026-09-19 for the A8/A9 contracts (the laws rollup and
 the committee rosters). The subcommittee detail is one keyed request saved
 whole; the two single-record cuts are byte-exact records copied out of that
 day's retained capture pages, so no extra request was spent on them. None of

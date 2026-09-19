@@ -433,11 +433,10 @@ def bill_version_package_id(identity: BillIdentity, slug: str) -> str:
 #: to the short format name `choose_format` matches against `prefer`. This
 #: table is for a REST-sourced producer this repository does not build yet --
 #: see `choose_format`'s docstring for why it is dead against today's one
-#: producer. USLM (`United States Legislative Markup`) is recognized by name
-#: here but is **not yet acquirable**: `GovInfoBodyAcquirer`'s
-#: `PACKAGE_BODY_FORMATS` supports only htm/xml/txt/pdf, and
-#: `sources.govinfo.uslm` reads the separate PLAW/COMPS collections, not a
-#: BILLS package's own `uslm/{id}.xml` rendition.
+#: producer. USLM (`United States Legislative Markup`) is acquirable:
+#: `GovInfoBodyAcquirer`'s `PACKAGE_BODY_FORMATS` reads a BILLS package's own
+#: `uslm/{id}.xml` rendition directly (§B7); `sources.govinfo.uslm` is a
+#: separate module for the PLAW/COMPS collections and is not involved.
 FORMAT_TYPE_NAMES: dict[str, str] = {
     "Formatted Text": "txt",
     "Formatted XML": "xml",
@@ -492,10 +491,8 @@ def format_name(item: BillTextFormat) -> str | None:
 #: what Congress.gov's `type` string ("HTML") and this module's folder
 #: fallback already call it. The two orders are the same order and must stay
 #: so -- a version chosen in one spelling is fetched in the other, and
-#: `tests/test_congress_bill_versions.py` pins them equal. USLM stays out of
-#: the default: it is recognized by name and by folder but is not acquirable
-#: (see `FORMAT_TYPE_NAMES`).
-DEFAULT_FORMAT_PREFERENCE: tuple[str, ...] = ("xml", "html", "txt", "pdf")
+#: `tests/test_congress_bill_versions.py` pins them equal.
+DEFAULT_FORMAT_PREFERENCE: tuple[str, ...] = ("xml", "uslm", "html", "txt", "pdf")
 
 
 def choose_format(
@@ -506,15 +503,15 @@ def choose_format(
     The default is the sealed body preference (`DEFAULT_FORMAT_PREFERENCE`),
     which keeps BillTrax's `congress-api.ts chooseFormat` order -- XML, then
     text, then PDF -- and adds HTML between XML and text, where the sealed
-    order puts it. PDF stays the last default rather than being excluded:
-    bill PDFs measured small (median 246 KB; see "The PDF path" in
+    order puts it. USLM sits right after XML (§B7: a second structured
+    rendition), PDF stays the last default rather than being excluded: bill
+    PDFs measured small (median 246 KB; see "The PDF path" in
     `docs/sources/congress-bill-versions.md`), so a version a publisher
     offers only as PDF is chosen here rather than refused.
 
     Also ports `sync-govinfo.ts pickVersionUrls`'s fallback for a format item
     with no stated `type`. `prefer` takes this module's short format names
-    (`FORMAT_TYPE_NAMES`'s values plus `uslm`), not Congress.gov's `type`
-    strings.
+    (`FORMAT_TYPE_NAMES`'s values), not Congress.gov's `type` strings.
     """
     if isinstance(prefer, str) or not isinstance(prefer, Sequence):
         raise TypeError("prefer must be a sequence of format names, not one name")

@@ -28,6 +28,10 @@ pdf-gemini = ["httpx>=0.28,<1"]
 # copy of it. `sources/congress/bill_tree.py` and `interpretation/section_diff.py`
 # are adapters over it and import nothing when the extra is absent.
 bill-diff = ["deltatrack==0.1.0"]
+# Schema validation of reconstructed XML against a profile's pinned DTD or XSD
+# bundle. `reconstruction/validate.py` is the only importer and imports it at
+# call time; the rest of `reconstruction/` is stdlib and needs no extra.
+reconstruct = ["lxml>=6,<7"]
 
 [dependency-groups]
 dev = [

@@ -74,6 +74,7 @@ refuses `sort`.
 | `bill-actions` | `bill/{congress}/{type}/{number}/actions` | `actions` | no (measured) | no (measured) | `congress-bill-actions-list.json` |
 | `nomination` | `nomination/{congress}` | `nominations` | no | yes (default) | `congress-nomination-list.json` |
 | `hearing` | `hearing/{congress}` | `hearings` | no | yes (default) | `congress-hearing-list.json` |
+| `hearing-detail` | `hearing/{congress}/{chamber}/{number}` | `hearing` (one record, a bare object) | no (n/a) | no (n/a) | `congress-hearing-detail.json` |
 | `committee-report` | `committee-report/{congress}` | `reports` | yes | yes (default) | `congress-committee-report-list.json` |
 | `house-communication` | `house-communication/{congress}` | `houseCommunications` | no | yes (default) | `congress-house-communication-list.json` |
 | `house-vote` | `house-vote/{congress}/{session}` | `houseRollCallVotes` | no (measured) | yes (default) | `congress-house-vote-list.json` |
@@ -109,7 +110,12 @@ down to a chosen field -- but only when `CongressListRoute.single_record` is
 `True`, which these three carry; an empty object still refuses either way,
 and a route that leaves `single_record` at its `False` default still refuses
 a wrapper object outright, so a caller's wrong or mismatched `records_key`
-never silently reads as one bogus record. `committee-print`'s
+never silently reads as one bogus record. `single_record` states a fact
+about the JSON shape at `records_key` -- "this route's records key holds an
+object, not an array" -- not a fact about how many records the route yields:
+`committee-print-detail` is a detail route that answers exactly one record
+too, with `single_record` left `False`, because the publisher answers it
+with a real one-item array. `committee-print`'s
 detail route needed no such opt-in: the publisher answers
 `committee-print/{congress}/{chamber}/{number}` with a real one-item array
 under `committeePrint` and a `pagination.count` of 1. None of the four detail
@@ -174,7 +180,12 @@ records key as a one-row page, with no declared count and no continuation,
 only when the caller opts in with `single_record` -- `CongressListRoute`'s
 `single_record=True` on the five object-shaped routes here (not `treaty`,
 whose one-element array already reads through the ordinary list path) is
-what `CongressListingReader.records`/`.page` set it from. The opt-in matters
+what `CongressListingReader.records`/`.page` set it from. `single_record`
+states a fact about the JSON shape at `records_key` -- "this route's
+records key holds an object, not an array" -- not a fact about how many
+records the route yields: `treaty-detail` is a detail route that answers
+exactly one record too, with `single_record` left `False`, because its one
+record already arrives inside a one-element array. The opt-in matters
 because the wrapping is not safe as a blanket rule for every family this
 reader serves: without it, a caller's wrong or mismatched `records_key` that
 happens to resolve to a wrapper object -- reading `committee-bills` by its
@@ -184,6 +195,14 @@ example -- would silently read as one bogus record instead of refusing.
 not by probe: a single record has no order to reorder and no window to
 narrow, so `list_route_url` refuses both the same way it refuses them on a
 route that ignores them.
+
+`hearing-detail` (added 2026-09-19 for the `hearing_transcripts.event_id`
+column) answers one hearing by jacket number as a bare object under
+`hearing`, so it carries `single_record=True` like the other bare-object
+detail routes; its record states `associatedMeeting.eventId`, the key the
+data map's `hearing→meeting` edge resolved, and `formats[].url`, whose file
+stem is the CHRG package id. Measured once, `hearing/119/house/64431`
+(receipt `corpora/supply-2026-09-02/receipts/committee-meetings-edges-2026-09-19/`).
 
 `committee-meeting` closes gap A7 (meetings, hearings and documents): its
 detail record carries `relatedItems.bills`, `hearingTranscript[].jacketNumber`,

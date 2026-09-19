@@ -64,6 +64,51 @@ retries when an issue's requested unmatched-number set changes.
   API ignored the sort. `tests/test_legislative_data_map_tool.py` renders the
   saved output and proves every `have` or `port` row against its evidence file.
 
+- [reconstruction_benchmark](analysis/reconstruction_benchmark.py): build the
+  paired CFR corpus, reconstruct each section from its PDF with the XML
+  hidden, and score text precision and recall, hierarchy F1, critical
+  discrepancies, coverage and wall time against the XML that was hidden; then
+  rewrite the generated block in
+  `docs/research/reconstruction-benchmark-2026-09-19.md`. Supply an explicit
+  credential file (one keyed route, the granule listing; both body routes are
+  keyless), the JSON output path and the report path. `--sections` sets the
+  corpus size and `--max-requests` bounds the run. `--rescore --scratch DIR`
+  re-reads the bodies an earlier run left there, checking each digest against
+  the one that run recorded, so changing a parsing rule costs no request;
+  `--offline` re-renders the report from the saved output; `--receipts DIR`
+  retains the command, the run log, the request log and the corpus manifest
+  outside this repository. Splits are whole editions, so no volume's
+  typography reaches two splits — but a split only pays on a run whose rules
+  were fixed before it read the corpus, which the document states for each
+  run. `tests/test_reconstruction_benchmark_tool.py` renders the committed
+  block from the committed sidecar and fails if they have drifted apart.
+- [bill_html_xml_gap](analysis/bill_html_xml_gap.py): measure how far a bill's
+  HTML rendition is from its XML, to size the reconstruction profile gap B1 and
+  §3.1 of the closing-the-gaps proposal name. Fetches a paired corpus of 113th
+  and 114th bill versions that offer both renditions, parses the XML through
+  `parse_bill_tree` as the reference, derives text from the HTML through
+  `extraction.body_text`, and reports text fidelity, per-kind structure
+  precision and recall, the element inventory, and the same rules run on
+  pre-113th HTML with no XML to score against. Supply an explicit credential
+  file, a cache directory for the fetched bytes, the JSON output path and the
+  document path. At most 90 requests **per process**; the cache is reused, so a
+  rerun against a full cache makes none.
+  **Two corpora.** The rules were revised against the default `tuning` draw, so
+  its score is an in-sample upper bound. `--selection held-out` draws the same
+  listings at disjoint quantiles, excludes every tuning package id, refuses on
+  any overlap, and merges an untuned score into the sidecar's `heldOut` block;
+  that is the figure the document leads with. `--quantiles` and `--listings`
+  override either draw. `--offline` rewrites
+  `docs/research/bill-html-xml-gap-2026-09-19.md`'s generated block from the
+  saved measurement. Precision and recall are measured against one engine's
+  reading of the XML, never against the publisher's intent; the bill DTD is
+  pinned by digest and cited, **not validated against**; and the title-level
+  contents-list form is unscored in both draws.
+  `tests/test_bill_html_xml_gap_tool.py` renders the block from the committed
+  sidecar, pins each rule against a constructed print sample and against the
+  real GPO bytes in `tests/fixtures/govinfo_bill_html/`, and proves the two
+  corpora disjoint.
+
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,
 count mismatches, or a full 1,000-row page. A full page is indeterminate even when

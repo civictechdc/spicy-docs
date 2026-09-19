@@ -401,9 +401,13 @@ class PagedJsonReader(SourceAcquirer):
     ) -> JsonPage:
         """Capture one list page and read its rows, declared count and continuation.
 
-        ``single_record`` opts a caller into reading a non-empty JSON object found at
-        ``records_key`` as the page's one record, for the routes that genuinely answer one --
-        a detail route identified by its full path, not a list. It defaults to ``False`` so a
+        ``single_record`` states a fact about the JSON at ``records_key`` -- that it holds a
+        non-empty *object* there, not an array -- and opts the caller into reading that object
+        as the page's one row instead of refusing it as a malformed list. It is not a statement
+        about how many records the query answers: a route whose records key already holds a
+        one-element array (Congress.gov's ``treaty`` detail route, for one) answers exactly one
+        record too, with ``single_record`` left at its ``False`` default, because the ordinary
+        list path already reads a one-element array correctly. It defaults to ``False`` so a
         caller's wrong or mismatched ``records_key`` that happens to resolve to a wrapper object
         still refuses instead of silently reading that wrapper as a bogus record.
         """
@@ -477,6 +481,7 @@ class PagedJsonReader(SourceAcquirer):
                 "requestBody": dict(body) if body is not None else None,
                 "pageIndex": index,
                 "recordsKey": records_key,
+                "singleRecord": single_record,
                 "observedCount": observed,
                 "declaredCount": declared,
             }

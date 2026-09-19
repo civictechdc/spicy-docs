@@ -221,6 +221,16 @@ def table_contract(
     )
 
 
+def natural_key(congress: object, kind: object, number: object) -> str:
+    """``{congress}-{kind}-{number}`` with the kind lowercased: one spelling for every Congress.gov key.
+
+    A bill, an amendment and a communication are all addressed this way by the
+    publisher, and a foreign-key column pointing at any of them has to spell
+    the key exactly as the target table does.
+    """
+    return f"{congress}-{str(kind).lower()}-{number}"
+
+
 def bill_id(identity: object) -> str:
     """``{congress}-{bill_type}-{number}``, the natural key every bill table shares.
 
@@ -228,7 +238,7 @@ def bill_id(identity: object) -> str:
     ``number`` -- ``sources.congress.bill_status.BillIdentity`` is the one this
     layer is given, read by attribute so this module stays a leaf.
     """
-    return f"{identity.congress}-{identity.bill_type}-{identity.number}"
+    return natural_key(identity.congress, identity.bill_type, identity.number)
 
 
 __all__ = [
@@ -241,6 +251,7 @@ __all__ = [
     "flag",
     "joined",
     "json_column",
+    "natural_key",
     "read_json_column",
     "table_contract",
     "text",
