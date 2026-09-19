@@ -443,9 +443,10 @@ BillTrax's classification table did not hold.
 ## Row shaping lives in spicy-docs; spicy-regs converts and publishes
 
 Adopted 2026-09-19, design from
-[the table-contract layer](research/table-contracts-2026-09-19.md), still
-being built on a sibling branch — recorded here so the split it commits to
-does not drift once the layer lands.
+[the table-contract layer](research/table-contracts-2026-09-19.md); landed
+the same day as `src/spicy_docs/schemas/` (twenty-two contracts, 407
+columns) and `src/spicy_docs/interpretation/bill_family.py`, documented in
+[Tables](tables.md).
 
 **Row shaping lives in spicy-docs; spicy-regs converts and publishes.** One
 module per table family under `src/spicy_docs/schemas/`, stdlib-only

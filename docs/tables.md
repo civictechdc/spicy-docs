@@ -114,24 +114,8 @@ response, and neither says anything about what the publisher serves:
 
 ## Decision
 
-*For the maintainer to move into [`decisions.md`](decisions.md).*
-
-**Row shaping lives in spicy-docs, beside the logic that produced the values.**
-A column's meaning is decided by the rule that fills it, so the column list, the
-identity, the version column and the one sentence that describes each column
-live next to that rule and move with it. The consuming repository converts,
-merges and publishes: it turns a column tuple into an all-VARCHAR Arrow schema,
-deduplicates on the stated identity preferring the larger version value, and
-uploads one object per table. It does not decide what a column means, and it
-does not re-assert the rule cases — that coverage belongs where the logic lives.
-The data dictionary reads its per-column prose from `TableContract.descriptions`
-for the same reason, while the coverage statement stays hand-written on the
-publishing side, because coverage is a measurement of what was published, not a
-property of the contract.
-
-**The bill family is one pass, so no rollup reads another's output.** Twelve
-tables come from one expensive traversal of one bill: the acquisition, the
-parse and the model calls are paid once. Splitting them into twelve rollups
-would multiply that cost by twelve and would make each table's freshness depend
-on another table's published state. The pass returns every table together and
-the host uploads each through the same guard.
+Recorded in [decisions.md](decisions.md#row-shaping-lives-in-spicy-docs-spicy-regs-converts-and-publishes):
+row shaping lives in spicy-docs beside the logic that fills each column, the
+consuming repository converts, merges and publishes without re-deriving any
+rule, and the bill family is one pass so no hosted rollup reads another's
+output.
