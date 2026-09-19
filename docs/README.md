@@ -41,6 +41,7 @@
 - [GovInfo package bodies](sources/govinfo-bodies.md): a report, hearing, Record, document or directory body by package id, identity proved from the summary and MODS before any body byte.
 - [Legislators crosswalk](sources/legislators.md): the community legislators JSON as the bioguide, LIS and FEC identifier crosswalk, pinned by capture.
 - [Appropriations press releases](sources/press-releases.md): the House and Senate Appropriations Committees' RSS feeds at their two live URLs, every channel and item field kept, identity proved from the channel body.
+- [Roll-call votes](sources/congress-votes.md): House Clerk and Senate LIS vote XML by locator, identity proved against the file, tallies and every member's vote with bioguide ids through the legislators crosswalk.
 - [Agency report blocks](sources/agency-report-blocks.md): the committee-report heading splitter over extracted page text and the two report-section aggregates, measured on real reports.
 - [Bill versions](sources/congress-bill-versions.md): the sealed version-code vocabulary against the publisher's measured codes, format choice by rendition folder, and bill PDFs through the GovInfo body acquirer.
 - [Bill tree and section diff](sources/congress-bill-tree.md): the DeltaTrack engine as a pinned dependency behind the `bill-diff` extra, with thin adapters that gate bytes through this repo's XML entry, keep an inventory of dropped elements, and shape diff records with provenance.
