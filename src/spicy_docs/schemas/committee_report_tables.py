@@ -84,12 +84,20 @@ HEARING_TRANSCRIPTS = table_contract(
     grain="One row per captured GovInfo hearing transcript package.",
     identity=("package_id",),
     version_column="last_modified",
-    columns=_package_columns(
-        type_column="hearing_type",
-        type_description="The hearing's document-type code (hhrg, shrg, jhrg).",
-        number_column="jacket_number",
-        number_description="The hearing's printing jacket number, leading zeros kept because it is opaque.",
-    ),
+    columns={
+        **_package_columns(
+            type_column="hearing_type",
+            type_description="The hearing's document-type code (hhrg, shrg, jhrg).",
+            number_column="jacket_number",
+            number_description="The hearing's printing jacket number, leading zeros kept because it is opaque.",
+        ),
+        # Appended last, the way a hosted table takes a new column (docs/tables.md):
+        # the nineteen columns before it keep their order for anyone pinning it.
+        "event_id": (
+            "The committee-meeting event id the Congress.gov hearing record names as its associatedMeeting, "
+            "which committee_meetings.event_id joins on; NULL where the hearing names none or was not looked up."
+        ),
+    },
 )
 
 REPORT_SECTIONS = table_contract(
@@ -189,9 +197,15 @@ def shape_hearing_transcript(
     bill_id: str | None = None,
     page_count: int | None = None,
     text_sha256: str | None = None,
+    event_id: str | None = None,
 ) -> Row:
-    """One ``hearing_transcripts`` row from one acquired CHRG package."""
-    return _package_row(
+    """One ``hearing_transcripts`` row from one acquired CHRG package.
+
+    ``event_id`` is the ``associatedMeeting.eventId`` the Congress.gov hearing
+    detail record states for this jacket, which the caller that read that
+    record supplies; the package itself does not carry it.
+    """
+    row = _package_row(
         body,
         type_column="hearing_type",
         number_column="jacket_number",
@@ -199,6 +213,8 @@ def shape_hearing_transcript(
         page_count=page_count,
         text_sha256=text_sha256,
     )
+    row["event_id"] = text(event_id)
+    return row
 
 
 def shape_report_section(

@@ -81,22 +81,22 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 | bills | Amendments listing | `amendment` | `have` | api.data.gov key | 97th Congress+; latest 2026-09-18 | 128,800 | route table in `congress/listing.py` (landed 2026-09-19); BillTrax's `fetchAmendments` retires against it, carrying the real `amendment.status` (ledger #7) |
 | bills | Committee-referred bills | `committee/{chamber}/{code}/bills` | `have` | api.data.gov key |  |  | route table in `congress/listing.py`; the list nests its array under a wrapper, which the shared reader now reads by path; sort ignored, date window honored (measured 2026-09-19) |
 | bills | Amendment text | `amendment/.../text` where present | `candidate` | api.data.gov key |  |  | the listing port carries no text; amendment text otherwise lives in the Record and on rules.house.gov |
-| laws | Enacted bills list | `law/{c}` | `candidate` | api.data.gov key | 82nd Congress+; updated ≥ 2026-09-18 (sort ignored) |  | the one cheap enumeration of enacted bills per Congress (108 rows for the 119th, each with the bill and its law number); law bodies are PLAW USLM (Table B) |
+| laws | Enacted bills list | `law/{c}` | `have` | api.data.gov key | 82nd Congress+; updated ≥ 2026-09-18 (sort ignored) |  | listing route landed in `congress/listing.py`: the one cheap enumeration of enacted bills per Congress (108 rows for the 119th, each with the bill and its law number); law bodies are PLAW USLM (Table B) |
 | votes | Vote references on bill actions (`recordedVotes`) | `bill/{c}/{type}/{n}/actions` | `have` | api.data.gov key |  |  | route table in `congress/listing.py`; sort and date window both ignored by the publisher (measured 2026-09-19); BillTrax's `sync-roll-call-votes.ts` retires against it |
 | votes | House member-level votes | `house-vote/{c}/{session}/{roll}/members` | `candidate` | api.data.gov key | 115th Congress+; updated ≥ 2025-09-09 (sort ignored) | 5,079 | not in the port plan; bioguide-keyed; names the Clerk XML as `sourceDataURL`; the list ignores sort and its default order is not by update date, so freshness is a floor |
 | committees | Committee reports | `committee-report` (+ `/text`) | `have` | api.data.gov key | 103rd Congress+; latest 2026-09-18 | 20,319 | listing route landed in `congress/listing.py` 2026-09-19; report bodies come from the GovInfo body fetch (Table B) |
 | committees | Hearings | `hearing` | `have` | api.data.gov key | 104th Congress+; updated ≥ 2026-09-18 (sort ignored) | 35,483 | listing route landed in `congress/listing.py` 2026-09-19; transcript bodies come from the GovInfo body fetch (Table B) |
-| committees | Committee meetings (scheduled) | `committee-meeting` | `candidate` | api.data.gov key | 111th Congress+; updated ≥ 2026-09-18 (sort ignored) | 18,133 | overlaps docs.house.gov and the Senate hearings calendar; API-first |
-| committees | Committee prints | `committee-print` | `candidate` | api.data.gov key | 101st Congress+ (populated again at 94: a gap wider than the walk's stop); updated ≥ 2026-09-18 (sort ignored) | 1,884 | low volume; take with reports |
-| committees | Committee rosters | `committee` | `candidate` | api.data.gov key | ≥ 60th Congress (cap) (continues below the cap: 53, 54, 55, 56, 57 populated); latest 2026-09-08 | 818 | API-first over the Clerk and Senate XML rosters |
-| members | Members | `member` | `candidate` | api.data.gov key | 68th Congress+; updated ≥ 2026-09-18 (sort ignored) | 2,696 | bioguide-keyed; API-first over Bioguide bulk and the House/Senate XML |
+| committees | Committee meetings (scheduled) | `committee-meeting` | `have` | api.data.gov key | 111th Congress+; updated ≥ 2026-09-18 (sort ignored) | 18,133 | listing route landed in `congress/listing.py`; overlaps docs.house.gov and the Senate hearings calendar; API-first |
+| committees | Committee prints | `committee-print` | `have` | api.data.gov key | 94th Congress+; updated ≥ 2026-09-18 (sort ignored) | 1,884 | listing route landed in `congress/listing.py`; low volume; take with reports |
+| committees | Committee rosters | `committee` | `have` | api.data.gov key | 1st Congress+; latest 2026-09-08 | 818 | listing route landed in `congress/listing.py`; API-first over the Clerk and Senate XML rosters |
+| members | Members | `member` | `have` | api.data.gov key | 68th Congress+; updated ≥ 2026-09-18 (sort ignored) | 2,696 | listing route landed in `congress/listing.py`; bioguide-keyed; API-first over Bioguide bulk and the House/Senate XML |
 | nominations | Nominations | `nomination` | `have` | api.data.gov key | 97th Congress+; updated ≥ 2026-09-18 (sort ignored) | 45,481 | listing route landed in `congress/listing.py` 2026-09-19; the first coverage of nominations in the repo; the nine Senate LIS feeds stay a cross-check |
-| treaties | Treaties | `treaty` | `candidate` | api.data.gov key | 86th Congress+ (populated again at 81: a gap wider than the walk's stop); updated ≥ 2026-09-15 (sort ignored) | 786 | not previously mapped |
-| record | Daily Congressional Record | `daily-congressional-record` | `candidate` | api.data.gov key | vol. 141+; updated ≥ 2026-09-18 (sort ignored) | 5,868 | the primary floor record and the legislative-day calendar: one issue per day either chamber met, pro forma days included, with House and Senate sections saying which; the Clerk floor summary is its digest |
+| treaties | Treaties | `treaty` | `have` | api.data.gov key | 81st Congress+; updated ≥ 2026-09-15 (sort ignored) | 786 | listing route landed in `congress/listing.py`; not previously mapped |
+| record | Daily Congressional Record | `daily-congressional-record` | `have` | api.data.gov key | vol. 141+; updated ≥ 2026-09-18 (sort ignored) | 5,868 | listing route landed in `congress/listing.py`; the primary floor record and the legislative-day calendar: one issue per day either chamber met, pro forma days included, with House and Senate sections saying which; the Clerk floor summary is its digest |
 | record | Bound Congressional Record | `bound-congressional-record` | `candidate` | api.data.gov key | ≥ 2014 (error); updated ≥ 2025-04-18 (sort ignored) | 93,290 | historical only; take on a historical-reach need |
 | communications | House executive communications | `house-communication` (+ detail) | `have` | api.data.gov key | 114th Congress+; updated ≥ 2026-09-18 (sort ignored) | 41,709 | listing route landed in `congress/listing.py` 2026-09-19; typed: isRulemaking, CRA authority, committee referral with systemCode and date, matching requirement, RIN in reportNature (17 of 25 sampled are rulemakings with a RIN); the RIN resolves in the Federal Register API by its structured filter, so this is the bridge from this repo's regulatory sources to Congress |
-| communications | Senate executive communications | `senate-communication` | `candidate` | api.data.gov key | 96th Congress+; updated ≥ 2026-09-18 (sort ignored) | 175,597 | abstract, committee referral and Record date only; no rulemaking flag, authority or RIN field (sampled) |
-| reference | House reporting requirements | `house-requirement` (+ `/matching-communications`) | `candidate` | api.data.gov key | updated ≥ 2021-11-05 (sort ignored) | 3,226 | 3,226 requirements, each with legal authority, frequency, agency and its matching communications (92,450 for the CRA one, unordered by Congress, and the older rows have no detail record); every record's update date is 2021-11-05, so the list is a snapshot; the index of the agency reports to Congress that BillTrax takes as uploads, entered from the communication side |
+| communications | Senate executive communications | `senate-communication` | `have` | api.data.gov key | 96th Congress+; updated ≥ 2026-09-18 (sort ignored) | 175,597 | listing route landed in `congress/listing.py`; abstract, committee referral and Record date only; no rulemaking flag, authority or RIN field (sampled) |
+| reference | House reporting requirements | `house-requirement` (+ `/matching-communications`) | `have` | api.data.gov key | updated ≥ 2021-11-05 (sort ignored) | 3,226 | listing route landed in `congress/listing.py`; 3,226 requirements, each with legal authority, frequency, agency and its matching communications; requirement 8070's 92,450-row CRA list (A6) walked in full and histogrammed by Congress, detail records resolving from the 114th on (28.9% of the walked rows, not a useful share by the proposal's rule); every requirement's own update date is 2021-11-05, so the requirement list itself is a snapshot; the index of the agency reports to Congress that BillTrax takes as uploads, entered from the communication side |
 | crs | CRS report metadata and summaries | `crsreport/{id}` | `have` | api.data.gov key | updated ≥ 2026-09-18 (sort ignored) | 14,127 | `crs_summaries.py`; the port plan names its query-param key (`:54`) as the legacy exception, not the pattern to clone |
 
 ### Table B: GovInfo API and bulkdata. Discovery and MODS already reach any collection; what differs per collection is the body fetch.
@@ -106,7 +106,7 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 | bills | BILLSTATUS bulk ZIP | `bulkdata/BILLSTATUS` | `have` | none | API 2021+; bulk 108–119 | 172,703 pkgs; 119th zips 52 MB, 18,956 files, zip modified 18-Sep-2026 08:28 | `congress/bulk_status.py` (landed 2026-09-19): one Congress and one bill type per call, per-member outcomes with digests, bounds from the measured sizes; the parser now reads both publisher summary placements and 0 of 1,566 H.Res. files refuse |
 | bills | Bill text bulk ZIP | `bulkdata/BILLS` | `rejected` | none | API 1993+; bulk 113–119 | 290,720 pkgs; 119th bulk nested one level deeper (1, 2); unsized | derived re-export of the routes in use; revisit only as a resync optimization |
 | bills | Bill summaries bulk | `bulkdata/BILLSUM` | `rejected` | none | API 2019+; bulk 113–119 | 9,343 pkgs; 119th zips 8 MB, 5,662 files, zip modified 31-Jul-2026 08:04 | CRS bill summaries already arrive as a typed bill field (Table A) |
-| bills | Bill PDFs | `content/pkg/BILLS-…/pdf` | `port 5` | none |  |  | decision 1 (PDF identity semantics) first; the slug map is a sealed vocabulary (port contract) |
+| bills | Bill PDFs | `content/pkg/BILLS-…/pdf` | `have` | none |  |  | `congress/bill_pdf.py`: ported from BillTrax's `govinfo-pdf-fetch.ts` fetch half; the slug map is a sealed vocabulary |
 | laws | Public and private laws (PLAW) | `bulkdata/PLAW` USLM | `have` | none | API 1995+; bulk 113–119 | 5,999 pkgs; 119th zips 3 MB, 104 files, zip modified 23-Jul-2026 14:14 | `govinfo/uslm.py` |
 | laws | Statute compilations (COMPS) | `bulkdata/COMPS` USLM | `have` | none | API 1862+; bulk, flat | 2,685 pkgs; bulk 2,682 files, 718 MB | `govinfo/uslm_acquisition.py` |
 | laws | Statutes at Large | `bulkdata/STATUTE` | `candidate` | none | API 1845+; bulk 1–137 | 137 pkgs | one XML per volume; the only XML route for every law before PLAW bulk begins |
@@ -127,11 +127,11 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 
 | Subject | Data | Route | Status | Credential | Coverage | Count / sample | Note |
 |---|---|---|---|---|---|---|---|
-| votes | House per-vote XML | `clerk.house.gov/evs/{year}/roll{N}.xml` | `candidate` | none |  | sample 82,515 B, root `rollcall-vote`, 2 children; names congress, session, rollcall-num | the `house-vote` API names this file as its source; bioguide-keyed |
-| votes | Senate per-vote XML | `senate.gov/legislative/LIS/roll_call_votes/vote{c}{s}/vote_{c}_{s}_{n}.xml` | `candidate` | none |  | sample 28,670 B, root `roll_call_vote`, 18 children; names congress, congress_year, document_congress, session | LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source |
+| votes | House per-vote XML | `clerk.house.gov/evs/{year}/roll{N}.xml` | `have` | none |  | sample 82,515 B, root `rollcall-vote`, 2 children; names congress, session, rollcall-num | `congress/votes.py`: the `house-vote` API names this file as its source; bioguide-keyed |
+| votes | Senate per-vote XML | `senate.gov/legislative/LIS/roll_call_votes/vote{c}{s}/vote_{c}_{s}_{n}.xml` | `have` | none |  | sample 28,670 B, root `roll_call_vote`, 18 children; names congress, congress_year, document_congress, session | `congress/votes.py`: LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source; `votes.py` also gains the session's vote-menu index -- `parse_senate_vote_menu` reads the file into a `SenateVoteMenu`, identity proved from its own congress and session; `VoteAcquirer`'s `list_senate_votes` fetches and parses one keylessly into a `SenateVoteMenuAcquisition`; `locator_from_menu_entry` builds the `VoteLocator` for one entry |
 | members | House MemberData.xml | `clerk.house.gov/xml/lists/MemberData.xml` | `candidate` | none |  | sample 556,936 B, root `MemberData`, 3 children; names congress-num, congress-text, session | members plus committee assignments with codes; only for fields the `member` API lacks |
 | members | House members.xml extras | `member-info.house.gov/members.xml` | `candidate` | none |  | sample 397,944 B, root `Members`, 441 children; dated only (last_updated) | photos and social; only if the API lacks a needed field |
-| members | Senate committee XML | `senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml` | `candidate` | none |  | sample 67,616 B, root `senators`, 101 children; dated only (date, lastUpdate) | bioguide⇄LIS crosswalk, needed to join Senate votes to members |
+| members | Senate committee XML | `senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml` | `candidate` | none |  | sample 67,616 B, root `senators`, 101 children; dated only (date, lastUpdate) | bioguide⇄LIS crosswalk; the community legislators JSON (Table D) is the crosswalk `congress/votes.py` actually uses, since it also covers Senate voters who have already left the roster |
 | members | Senate contact XML | `senate.gov/general/contact_information/senators_cfm.xml` | `rejected` | none |  | sample 52,541 B, root `contact_information`, 101 children; dated only (last_updated) | cvc covers it |
 | members | Bioguide bulk JSON | `bioguide.congress.gov` | `rejected` | none |  | CDTF #67, irregular | the `member` route is bioguide-keyed and tier-1 but its floor measured at the 68th Congress; Bioguide holds the earlier members, so take it only for them or for biography text |
 | nominations | Senate LIS nomination feeds (9) | `senate.gov/legislative/LIS/nominations/Nom{Category}.xml` | `candidate` | none |  | sample 48,536 B, root `Nominations`, 76 children; names Congress, SessionNumber, NominationDisplayNumber | alternative to the `nomination` API; take only for fields the API lacks |
@@ -166,10 +166,10 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 |---|---|---|---|---|---|---|---|
 | crs | EveryCRSReport bulk | `everycrsreport.com` (AmericaLabs) | `candidate` | none |  | CDTF #4, continuous | versioned and broader than congress.gov; verify maintenance cadence first |
 | members | Community legislators JSON (current + historical) | `unitedstates.github.io/congress-legislators/legislators-*.json` | `have` | none |  | sample 13,483,039 B, 12,231 records; ids bioguide 12,231, fec 995, govtrack 12,231, icpsr 11,979, lis 228, opensecrets 919 | `sources/legislators.py` (landed 2026-09-19): keyless, byte-bounded, shape-checked, pinned by capture digest; an identifier hub keyed by bioguide with LIS, FEC candidate, ICPSR, GovTrack and OpenSecrets ids; presidential FEC ids carry no state letters, which the shape rule accepts |
-| press | Press releases (member and committee RSS) | varied | `port 2` | none |  |  | lands in Phase 2 beside the feed-URL unification it depends on (decision 5), as a clone of `gao/rss.py` |
-| reports | Agency uploaded-report PDFs | BillTrax uploads | `port 5` | none |  |  | `report-parser` ports; extraction channel |
-| votes | Bill⇄vote matching | BillTrax | `rejected (here)` | n/a |  |  | interpretation; stays BillTrax-side |
-| members | Member matching | BillTrax | `rejected (here)` | n/a |  |  | interpretation |
+| press | Press releases (member and committee RSS) | varied | `have` | none |  |  | `congress/press_releases.py`: the House and Senate Appropriations Committees' feeds, a clone of `gao/rss.py`'s shape |
+| reports | Agency uploaded-report PDFs | BillTrax uploads | `have` | none |  |  | `agency_reports/report_blocks.py` ports `report-parser.ts`'s header split; `extraction/gpo_normalize.py` strips GPO print artifacts first |
+| votes | Bill⇄vote matching | BillTrax | `have` | n/a |  |  | `interpretation/vote_matching.py`: joins a roll call to its bill from `recordedVotes` references only, replacing BillTrax's Senate-unreachable regex |
+| members | Member matching | BillTrax | `have` | n/a |  |  | `interpretation/member_matching.py`: bioguide, then the LIS crosswalk, then name, replacing BillTrax's name-only path |
 
 ### Comparisons: overlapping routes on one bounded scope
 
@@ -385,6 +385,11 @@ graph LR
 
 Senate roster gap across the session: 1,859 of 1,899 voter ids on 19 sampled votes resolve through today's cvc, and 40 more through the legislators JSON. Absent from cvc per vote: vote 1 (January 9, 2025) 4, vote 36 (February 5, 2025) 2, vote 71 (February 20, 2025) 2, vote 106 (March 5, 2025) 2, vote 141 (March 25, 2025) 2, vote 176 (April 4, 2025) 2, vote 211 (April 11, 2025) 2, vote 246 (May 13, 2025) 2, vote 281 (May 22, 2025) 2, vote 316 (June 17, 2025) 2, vote 351 (June 30, 2025) 2, vote 386 (July 15, 2025) 2, vote 421 (July 22, 2025) 2, vote 456 (July 30, 2025) 2, vote 491 (August 2, 2025) 2, vote 526 (September 18, 2025) 2, vote 561 (October 9, 2025) 2, vote 596 (October 29, 2025) 2, vote 631 (December 3, 2025) 2.
 
+### House reporting requirements: the 8070 histogram (A6)
+
+Requirement 8070's `matching-communications` list walked in full, keyed, once: 92,450 rows across the 104th through 119th Congresses. Probing one communication's detail record per Congress from the 105th through the 119th finds the detail route answering from the 114th Congress on, so 26,725 of the 92,450 walked rows (28.9%) fall in the detail era.
+By the proposal's rule -- host only if the detail era covers a useful share -- 28.9% is not a useful share, so `house_requirements` stays a candidate rather than a hosted table (this measurement's own stated threshold: 50%, a majority; no decisions.md record sets one).
+
 ### Catalog measurements
 
 - CDTF entries: 119; with `accrualPeriodicity`: 119; with any format or temporal field: 0.
@@ -476,10 +481,16 @@ establishes:
   ways: a bill, an amendment number carried in its own element, or a
   nomination that may be an en bloc range, so a joiner has to read all
   three.
-- **Below the floors.** Probing five Congresses under each measured floor
-  found committee prints again at the 94th and treaties at the 81st, so
-  those floors are gaps in the walk, not the publisher's start; committees
-  simply continue below the walk's cap. Every other floor held.
+- **Below the floors.** `--floors` continues each route's descent past its
+  recorded floor -- resetting the empty run on every non-zero count and
+  concluding real absence only after eight consecutive empty Congresses, 65
+  steps, or the 1st Congress -- instead of a fixed five-key guess that would
+  re-hit the same false two-empty stop. Committee prints resolved to the
+  94th Congress (six empty Congresses past its old, false 101st), treaties
+  to the 81st (four past its old 86th), and committee rosters all the way
+  to the 1st, still populated: the original 60th-Congress floor was the
+  walk's request cap, not a publisher gap. No route now reports a floor
+  with more data sitting below it.
 
 ## Sequencing against the port
 

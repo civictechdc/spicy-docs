@@ -1,0 +1,422 @@
+{
+    "committeeMeeting": {
+        "chamber": "House",
+        "committees": [
+            {
+                "name": "House Financial Services",
+                "systemCode": "hsba00",
+                "url": "https://api.congress.gov/v3/committee/house/hsba00?format=json"
+            }
+        ],
+        "congress": 119,
+        "date": "2026-09-16T14:00:00Z",
+        "eventId": "119565",
+        "location": {
+            "building": "Rayburn House Office Building",
+            "room": "2128"
+        },
+        "meetingDocuments": [
+            {
+                "description": "H.R. 5889, the Eviction Helpline Act  (as amended), was ordered to be reported favorably by a recorded vote of 47 YEAS and 2 NAYS. (Record Vote No. FC-318)",
+                "documentType": "Bills and Resolutions",
+                "format": "PDF",
+                "name": "H.R. 5889, the Eviction Helpline Act  (as amended), was ordered to be reported favorably by a recorded vote of 47 YEAS and 2 NAYS. (Record Vote No. FC-318)",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119HR5889ih.pdf"
+            },
+            {
+                "description": "H.R. 7030, the Securing Facilities for Mental Health Services Act (as amended), was ordered to be reported favorably by a recorded vote of 49 YEAS and 0 NAYS. (Record Vote No. FC-304)",
+                "documentType": "Bills and Resolutions",
+                "format": "PDF",
+                "name": "H.R. 7030, the Securing Facilities for Mental Health Services Act (as amended), was ordered to be reported favorably by a recorded vote of 49 YEAS and 0 NAYS. (Record Vote No. FC-304)",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119HR7030ih.pdf"
+            },
+            {
+                "description": "H.R.7866, the American Lending Fairness Act of 2026 (as amended), was ordered to be reported favorably by a recorded vote of 31 YEAS and 18 NAYS. (Record Vote No. FC-308)",
+                "documentType": "Bills and Resolutions",
+                "format": "PDF",
+                "name": "H.R.7866, the American Lending Fairness Act of 2026 (as amended), was ordered to be reported favorably by a recorded vote of 31 YEAS and 18 NAYS. (Record Vote No. FC-308)",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119HR7866ih.pdf"
+            },
+            {
+                "description": "H.R. 10234, the Consumer-Led Enhancement of Annuity and Insurance Registration (CLEAR) Forms Act  (as amended), was ordered to be reported favorably by a recorded vote of 42 YEAS and 7 NAYS. (Record Vote No. FC-307)",
+                "documentType": "Bills and Resolutions",
+                "format": "PDF",
+                "name": "H.R. 10234, the Consumer-Led Enhancement of Annuity and Insurance Registration (CLEAR) Forms Act  (as amended), was ordered to be reported favorably by a recorded vote of 42 YEAS and 7 NAYS. (Record Vote No. FC-307)",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119HR10234ih.pdf"
+            },
+            {
+                "description": "H.R. 1653, the Civil Investigative Demand Reform Act of 2025 (as amended), was ordered to be reported favorably by a recorded vote of 29 YEAS and 20 NAYS. (Record Vote No. FC-309)",
+                "documentType": "Bills and Resolutions",
+                "format": "PDF",
+                "name": "H.R. 1653, the Civil Investigative Demand Reform Act of 2025 (as amended), was ordered to be reported favorably by a recorded vote of 29 YEAS and 20 NAYS. (Record Vote No. FC-309)",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119HR1653ih.pdf"
+            },
+            {
+                "description": "Notice",
+                "documentType": "Support Document",
+                "format": "PDF",
+                "name": "Notice",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/HMKP-119-BA00-20260916-SD001.pdf"
+            },
+            {
+                "description": "H.R. 4936, the Taskforce for Recognizing and Averting Payment Scams (TRAPS) Act (as amended), was ordered to be reported favorably by a recorded vote of 49 YEAS and 0 NAYS. (Record Vote No. FC-305",
+                "documentType": "Bills and Resolutions",
+                "format": "PDF",
+                "name": "H.R. 4936, the Taskforce for Recognizing and Averting Payment Scams (TRAPS) Act (as amended), was ordered to be reported favorably by a recorded vote of 49 YEAS and 0 NAYS. (Record Vote No. FC-305",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119HR4936ih.pdf"
+            },
+            {
+                "description": "H.R. 10325, a bill to increase the mandatory contribution amount of Federal Home Loan Banks to the Affordable Housing Program, and for other purposes (as amended), failed by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-319)",
+                "documentType": "Bills and Resolutions",
+                "format": "PDF",
+                "name": "H.R. 10325, a bill to increase the mandatory contribution amount of Federal Home Loan Banks to the Affordable Housing Program, and for other purposes (as amended), failed by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-319)",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119HR10325ih.pdf"
+            },
+            {
+                "description": "Memorandum",
+                "documentType": "Support Document",
+                "format": "PDF",
+                "name": "Memorandum",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/HMKP-119-BA00-20260916-SD002.pdf"
+            },
+            {
+                "description": "ANS to H.R. 1653, offered by Rep. Barr of Kentucky, designated as BARR_153 was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "ANS to H.R. 1653, offered by Rep. Barr of Kentucky, designated as BARR_153 was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR1653-B001282-Amdt-1.pdf"
+            },
+            {
+                "description": "ANS to H.R. 4936, offered by Rep. Nunn of Iowa, designated as NUNN_173 was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "ANS to H.R. 4936, offered by Rep. Nunn of Iowa, designated as NUNN_173 was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR4936-N000193-Amdt-2.pdf"
+            },
+            {
+                "description": "ANS to H.R. 7030, offered by Rep. Emmer of Minnesota, designated as ANS_H7030 was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "ANS to H.R. 7030, offered by Rep. Emmer of Minnesota, designated as ANS_H7030 was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR7030-E000294-Amdt-4.pdf"
+            },
+            {
+                "description": "ANS to H.R. 7866, offered by Rep. Davidson of Ohio, designated as DAVIDSONOH_169 was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "ANS to H.R. 7866, offered by Rep. Davidson of Ohio, designated as DAVIDSONOH_169 was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR7866-D000626-Amdt-5.pdf"
+            },
+            {
+                "description": "ANS to H.R. 8957, offered by Rep. Steil of Wisconsin, designated as ANS_HR8957 was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "ANS to H.R. 8957, offered by Rep. Steil of Wisconsin, designated as ANS_HR8957 was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR8957-S001213-Amdt-6.pdf"
+            },
+            {
+                "description": "ANS to H.R. 10184, offered by Rep. Barr of Kentucky, designated as BARR_154 was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "ANS to H.R. 10184, offered by Rep. Barr of Kentucky, designated as BARR_154 was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR10184-B001282-Amdt-7.pdf"
+            },
+            {
+                "description": "ANS to H.R. 10234, offered by Rep. Nunn of Iowa, designated as NUNN_175 was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "ANS to H.R. 10234, offered by Rep. Nunn of Iowa, designated as NUNN_175 was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR10234-N000193-Amdt-8.pdf"
+            },
+            {
+                "description": "ANS to H.R. 5889, offered by Rep. Pressley, designated as PRESSLEYMA_090 was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "ANS to H.R. 5889, offered by Rep. Pressley, designated as PRESSLEYMA_090 was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR5889-P000617-Amdt-3.pdf"
+            },
+            {
+                "description": "ANS to H.R. 10325, offered by Rep. Waters of California, designated as HR10325_ANS was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "ANS to H.R. 10325, offered by Rep. Waters of California, designated as HR10325_ANS was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR10325-A000370-Amdt-9.pdf"
+            },
+            {
+                "description": "H.R. 8957, the American Reserve Modernization Act of 2026  (as amended), was ordered to be reported favorably by a recorded vote of 28 YEAS and 21 NAYS. (Record Vote No. FC-317)",
+                "documentType": "Bills and Resolutions",
+                "format": "PDF",
+                "name": "H.R. 8957, the American Reserve Modernization Act of 2026  (as amended), was ordered to be reported favorably by a recorded vote of 28 YEAS and 21 NAYS. (Record Vote No. FC-317)",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119HR8957ih.pdf"
+            },
+            {
+                "description": "H.R. 10184, the Consumer Financial Protection Accountability and Reform Act of 2026  (as amended), was ordered to be reported favorably by a recorded vote of 28 YEAS and 21 NAYS. (Record Vote No. FC-315)",
+                "documentType": "Bills and Resolutions",
+                "format": "PDF",
+                "name": "H.R. 10184, the Consumer Financial Protection Accountability and Reform Act of 2026  (as amended), was ordered to be reported favorably by a recorded vote of 28 YEAS and 21 NAYS. (Record Vote No. FC-315)",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119HR10184ih.pdf"
+            },
+            {
+                "description": "Amdt. No. 1 (Lynch 1) to ANS to H.R. 4936, designated Lynch_075, offered by Mr. Lynch of Massachusetts, was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "Amdt. No. 1 (Lynch 1) to ANS to H.R. 4936, designated Lynch_075, offered by Mr. Lynch of Massachusetts, was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR4936-A000370-Amdt-10.pdf"
+            },
+            {
+                "description": "Amdt. No. 4 (Lynch 2) to ANS to H.R. 10184, designated Lynch_078, offered by Mr. Lynch of Massachusetts, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-310)",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "Amdt. No. 4 (Lynch 2) to ANS to H.R. 10184, designated Lynch_078, offered by Mr. Lynch of Massachusetts, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-310)",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR10184-L000562-Amdt-12.pdf"
+            },
+            {
+                "description": "Amdt. No. 5 (Lynch 3) to ANS to H.R. 10184, designated Lynch_077, offered by Mr. Lynch of Massachusetts, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-311).",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "Amdt. No. 5 (Lynch 3) to ANS to H.R. 10184, designated Lynch_077, offered by Mr. Lynch of Massachusetts, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-311).",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR10184-L000562-Amdt-13.pdf"
+            },
+            {
+                "description": "Amdt. No. 6 (Foster 1) to ANS to H.R. 10184, designated Foster _104, offered by Mr. Foster of Illinois, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-312).",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "Amdt. No. 6 (Foster 1) to ANS to H.R. 10184, designated Foster _104, offered by Mr. Foster of Illinois, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-312).",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR10184-F000454-Amdt-14.pdf"
+            },
+            {
+                "description": "Amdt. No. 7 (Foster 2) to ANS to H.R. 10184, designated Foster_105, offered by Mr. Foster of Illinois, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-313).",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "Amdt. No. 7 (Foster 2) to ANS to H.R. 10184, designated Foster_105, offered by Mr. Foster of Illinois, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-313).",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR10184-F000454-Amdt-15.pdf"
+            },
+            {
+                "description": "Amdt. No. 8 (Foster 3) to ANS to H.R. 10184, designated Foster_106, offered by Mr. Foster of Illinois, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-314).",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "Amdt. No. 8 (Foster 3) to ANS to H.R. 10184, designated Foster_106, offered by Mr. Foster of Illinois, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-314).",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR10184-F000454-Amdt-16.pdf"
+            },
+            {
+                "description": "Amdt. No. 9 (Waters 2) to ANS to H.R. 8957, designated HR8957AMND1, offered by Ms. Waters of California, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-316).",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "Amdt. No. 9 (Waters 2) to ANS to H.R. 8957, designated HR8957AMND1, offered by Ms. Waters of California, was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS. (Record Vote No. FC-316).",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR8957-W000187-Amdt-17.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-304, a motion to report favorably H.R. 7030 (as amended), was AGREED TO by a recorded vote of 49 YEAS and 0 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-304, a motion to report favorably H.R. 7030 (as amended), was AGREED TO by a recorded vote of 49 YEAS and 0 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote304-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-305, a motion to report favorably H.R. 4936 (as amended), was AGREED TO by a recorded vote of 49 YEAS and 0 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-305, a motion to report favorably H.R. 4936 (as amended), was AGREED TO by a recorded vote of 49 YEAS and 0 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote305-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-306, a motion to adopt the amendment designated CLEAR_ANS to ANS to H.R. 10234, offered by Ms. Waters of California (Waters 1), was NOT AGREED TO by a recorded vote of 20 YEAS and 28 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-306, a motion to adopt the amendment designated CLEAR_ANS to ANS to H.R. 10234, offered by Ms. Waters of California (Waters 1), was NOT AGREED TO by a recorded vote of 20 YEAS and 28 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote306-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-307, a motion to report favorably H.R. 10234 (as amended), was AGREED TO by a recorded vote of 42 YEAS and 7 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-307, a motion to report favorably H.R. 10234 (as amended), was AGREED TO by a recorded vote of 42 YEAS and 7 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote307-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-308, a motion to report favorably H.R. 7866 (as amended), was AGREED TO by a recorded vote of 31 YEAS and 18 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-308, a motion to report favorably H.R. 7866 (as amended), was AGREED TO by a recorded vote of 31 YEAS and 18 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote308-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-309, a motion to report favorably H.R. 1653 (as amended), was AGREED TO by a recorded vote of 29 YEAS and 20 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-309, a motion to report favorably H.R. 1653 (as amended), was AGREED TO by a recorded vote of 29 YEAS and 20 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote309-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-310, a motion to adopt the amendment designated Lynch_078 to ANS to H.R. 10184, offered by Mr. Lynch of Massachusetts (Lynch 2), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-310, a motion to adopt the amendment designated Lynch_078 to ANS to H.R. 10184, offered by Mr. Lynch of Massachusetts (Lynch 2), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote310-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-311, a motion to adopt the amendment designated Lynch_077 to ANS to H.R. 10184, offered by Mr. Lynch of Massachusetts (Lynch 3), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-311, a motion to adopt the amendment designated Lynch_077 to ANS to H.R. 10184, offered by Mr. Lynch of Massachusetts (Lynch 3), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote311-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-312, a motion to adopt the amendment designated Foster _104 to ANS to H.R. 10184, offered by Mr. Foster of Illinois (Foster 1), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-312, a motion to adopt the amendment designated Foster _104 to ANS to H.R. 10184, offered by Mr. Foster of Illinois (Foster 1), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote312-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-313, a motion to adopt the amendment designated Foster_105 to ANS to H.R. 10184, offered by Mr. Foster of Illinois (Foster 2), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-313, a motion to adopt the amendment designated Foster_105 to ANS to H.R. 10184, offered by Mr. Foster of Illinois (Foster 2), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote313-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-314, a motion to adopt the amendment designated Foster_106 to ANS to H.R. 10184, offered by Mr. Foster of Illinois (Foster 3), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-314, a motion to adopt the amendment designated Foster_106 to ANS to H.R. 10184, offered by Mr. Foster of Illinois (Foster 3), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote314-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-315, a motion to report favorably H.R. 10184 (as amended), was AGREED TO by a recorded vote of 28 YEAS and 21 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-315, a motion to report favorably H.R. 10184 (as amended), was AGREED TO by a recorded vote of 28 YEAS and 21 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote315-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-316, a motion to adopt the amendment designated HR8957AMND1 to ANS to H.R. 8957, offered by Ms. Waters of California (Waters 2), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-316, a motion to adopt the amendment designated HR8957AMND1 to ANS to H.R. 8957, offered by Ms. Waters of California (Waters 2), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote316-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-317, a motion to report favorably H.R. 8957 (as amended), was AGREED TO by a recorded vote of 28 YEAS and 21 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-317, a motion to report favorably H.R. 8957 (as amended), was AGREED TO by a recorded vote of 28 YEAS and 21 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote317-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-318, a motion to report favorably H.R. 5889 (as amended), was AGREED TO by a recorded vote of 47 YEAS and 2 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-318, a motion to report favorably H.R. 5889 (as amended), was AGREED TO by a recorded vote of 47 YEAS and 2 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote318-20260916.pdf"
+            },
+            {
+                "description": "Roll Call Vote FC-319, a motion to report favorably H.R. 10325 (as amended), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "documentType": "Committee Recorded Vote",
+                "format": "PDF",
+                "name": "Roll Call Vote FC-319, a motion to report favorably H.R. 10325 (as amended), was NOT AGREED TO by a recorded vote of 21 YEAS and 28 NAYS.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/CRPT-119-BA00-Vote319-20260916.pdf"
+            },
+            {
+                "description": "E-Voting Pitcures",
+                "documentType": "Support Document",
+                "format": "PDF",
+                "name": "E-Voting Pitcures",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/HMKP-119-BA00-20260916-SD003.pdf"
+            },
+            {
+                "description": "Amdt. No. 3 (Waters 1) to ANS to H.R. 10234, designated CLEAR_ANS, offered by Ms. Waters of California, was NOT AGREED TO by a recorded vote of 20 YEAS and 28 NAYS. (Record Vote No. FC-306).",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "Amdt. No. 3 (Waters 1) to ANS to H.R. 10234, designated CLEAR_ANS, offered by Ms. Waters of California, was NOT AGREED TO by a recorded vote of 20 YEAS and 28 NAYS. (Record Vote No. FC-306).",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR10234-W000187-Amdt-11.pdf"
+            },
+            {
+                "description": "Amdt. No. 2 (Nunn 1) to ANS to H.R. 10234, designated Nunn_180, offered by Mr. Nunn of Iowa, was AGREED TO by voice vote.",
+                "documentType": "Committee Amendment",
+                "format": "PDF",
+                "name": "Amdt. No. 2 (Nunn 1) to ANS to H.R. 10234, designated Nunn_180, offered by Mr. Nunn of Iowa, was AGREED TO by voice vote.",
+                "url": "https://www.congress.gov/119/meeting/house/119565/documents/BILLS-119-HR4936-N000193-Amdt-11.pdf"
+            }
+        ],
+        "meetingStatus": "Scheduled",
+        "relatedItems": {
+            "bills": [
+                {
+                    "congress": 119,
+                    "number": "1653",
+                    "type": "HR",
+                    "url": "https://api.congress.gov/v3/bill/119/hr/1653?format=json"
+                },
+                {
+                    "congress": 119,
+                    "number": "10325",
+                    "type": "HR",
+                    "url": "https://api.congress.gov/v3/bill/119/hr/10325?format=json"
+                },
+                {
+                    "congress": 119,
+                    "number": "7030",
+                    "type": "HR",
+                    "url": "https://api.congress.gov/v3/bill/119/hr/7030?format=json"
+                },
+                {
+                    "congress": 119,
+                    "number": "7866",
+                    "type": "HR",
+                    "url": "https://api.congress.gov/v3/bill/119/hr/7866?format=json"
+                },
+                {
+                    "congress": 119,
+                    "number": "10234",
+                    "type": "HR",
+                    "url": "https://api.congress.gov/v3/bill/119/hr/10234?format=json"
+                },
+                {
+                    "congress": 119,
+                    "number": "4936",
+                    "type": "HR",
+                    "url": "https://api.congress.gov/v3/bill/119/hr/4936?format=json"
+                },
+                {
+                    "congress": 119,
+                    "number": "8957",
+                    "type": "HR",
+                    "url": "https://api.congress.gov/v3/bill/119/hr/8957?format=json"
+                },
+                {
+                    "congress": 119,
+                    "number": "5889",
+                    "type": "HR",
+                    "url": "https://api.congress.gov/v3/bill/119/hr/5889?format=json"
+                },
+                {
+                    "congress": 119,
+                    "number": "10184",
+                    "type": "HR",
+                    "url": "https://api.congress.gov/v3/bill/119/hr/10184?format=json"
+                }
+            ]
+        },
+        "title": "Various Measures",
+        "type": "Markup",
+        "updateDate": "2026-09-18T19:11:42Z",
+        "videos": [
+            {
+                "name": "Markup of Various Measures",
+                "url": "https://www.congress.gov/event/119th-Congress/house-event/119565"
+            },
+            {
+                "name": "Markup of Various Measures",
+                "url": "https://www.youtube.com/watch?v=P2bmqWjeyMs"
+            }
+        ]
+    },
+    "request": {
+        "chamber": "house",
+        "congress": "119",
+        "contentType": "application/json",
+        "eventId": "119565",
+        "format": "json"
+    }
+}

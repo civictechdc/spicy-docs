@@ -31,6 +31,7 @@ import pytest
 
 from spicy_docs.extraction.gpo_normalize import GpoPageCleanup, normalize_gpo_pages
 from spicy_docs.interpretation.bill_family import BillFamilyCapture
+from spicy_docs.interpretation.communication_rin import rin_from_report_nature
 from spicy_docs.interpretation.release_matching import compile_bill_patterns, match_releases
 from spicy_docs.interpretation.section_diff import diff_sections
 from spicy_docs.interpretation.vote_matching import (
@@ -53,6 +54,13 @@ from spicy_docs.schemas.congress_activity_tables import (
     shape_press_release,
     shape_roll_call_vote,
     vote_id,
+)
+from spicy_docs.schemas.congress_index_tables import (
+    shape_committee_meeting,
+    shape_house_communication,
+    shape_nomination,
+    shape_record_issue,
+    shape_treaty,
 )
 from spicy_docs.schemas.legislator_tables import shape_member, shape_member_term
 from spicy_docs.schemas.tables import bill_id, digest, joined
@@ -319,6 +327,125 @@ def _family_cases() -> list[ShapedCase]:
 # ---------------------------------------------------------------------------
 
 
+def _listing(name: str) -> dict[str, Any]:
+    return json.loads((FIXTURES / "listings" / name).read_text())
+
+
+def _congress_index_cases() -> list[ShapedCase]:
+    """The five Congress.gov index tables, each from a captured list page and, where one exists, a captured detail.
+
+    Every list page here was captured at ``limit=3`` on 2026-09-19 and each detail is the
+    publisher's answer for one of those rows, so where a row and a detail share an identity
+    the shaper is given both -- the real pair a rollup hands it -- and the other rows shape
+    list-only, with the detail's columns NULL rather than empty.  Meeting 119003 has a detail
+    (the hearing's meeting, fetched for the hearing-to-meeting edge) and no list row, so it is
+    shaped from its detail alone.
+    """
+    cases: list[ShapedCase] = []
+
+    detail = _listing("congress-house-communication-detail.json")["houseCommunication"]
+    detail_key = (detail["congress"], str(detail["communicationType"]["code"]).lower(), detail["number"])
+    for row in _listing("congress-house-communication-list.json")["houseCommunications"]:
+        code = str(row["communicationType"]["code"]).lower()
+        paired = detail if (row["congress"], code, row["number"]) == detail_key else None
+        rin = None if paired is None else rin_from_report_nature(paired.get("reportNature"))
+        json_columns = (
+            {}
+            if paired is None
+            else {
+                "committees_json": paired["committees"],
+                "matching_requirements_json": [entry["number"] for entry in paired["matchingRequirements"]],
+            }
+        )
+        cases.append(
+            _case(
+                "house_communications",
+                shape_house_communication(row, paired, rin=rin),
+                (str(row["congress"]), code, str(row["number"])),
+                **json_columns,
+            )
+        )
+
+    meetings = {
+        record["eventId"]: record
+        for record in (
+            _listing(name)["committeeMeeting"]
+            for name in ("congress-committee-meeting-detail.json", "congress-committee-meeting-detail-119003.json")
+        )
+    }
+    for row in _listing("congress-committee-meeting-list.json")["committeeMeetings"]:
+        paired = meetings.pop(row["eventId"], None)
+        json_columns = (
+            {}
+            if paired is None
+            else {"bill_ids_json": [f"119-hr-{bill['number']}" for bill in paired["relatedItems"]["bills"]]}
+        )
+        cases.append(
+            _case(
+                "committee_meetings",
+                shape_committee_meeting(row, paired),
+                (str(row["congress"]), str(row["chamber"]).lower(), row["eventId"]),
+                **json_columns,
+            )
+        )
+    for event_id, record in meetings.items():
+        cases.append(
+            _case(
+                "committee_meetings",
+                shape_committee_meeting(record, record),
+                (str(record["congress"]), str(record["chamber"]).lower(), event_id),
+                hearing_jackets_json=[str(entry["jacketNumber"]) for entry in record["hearingTranscript"]],
+                document_urls_json=[entry["url"] for entry in record["witnessDocuments"]]
+                + [entry["url"] for entry in record["meetingDocuments"]],
+            )
+        )
+
+    issue = _listing("congress-daily-congressional-record-detail.json")["issue"]
+    for row in _listing("congress-daily-congressional-record-list.json")["dailyCongressionalRecord"]:
+        paired = (
+            issue
+            if (row["volumeNumber"], row["issueNumber"]) == (issue["volumeNumber"], issue["issueNumber"])
+            else None
+        )
+        json_columns = {} if paired is None else {"sections_json": paired["fullIssue"]["sections"]}
+        cases.append(
+            _case(
+                "record_issues",
+                shape_record_issue(row, paired),
+                (str(row["volumeNumber"]), row["issueNumber"]),
+                **json_columns,
+            )
+        )
+
+    treaty = _listing("congress-treaty-detail.json")["treaty"][0]
+    for row in _listing("congress-treaty-list.json")["treaties"]:
+        paired = (
+            treaty
+            if (row["congressReceived"], row["number"]) == (treaty["congressReceived"], treaty["number"])
+            else None
+        )
+        json_columns = {} if paired is None else {"titles_json": paired["titles"], "countries_json": ["Croatia"]}
+        cases.append(
+            _case(
+                "treaties",
+                shape_treaty(row, paired),
+                (str(row["congressReceived"]), str(row["number"]), row["suffix"]),
+                **json_columns,
+            )
+        )
+
+    for record in _listing("congress-nomination-list.json")["nominations"]:
+        cases.append(
+            _case(
+                "nominations",
+                shape_nomination(record),
+                (str(record["congress"]), record["citation"]),
+                nomination_type_json=record["nominationType"],
+            )
+        )
+    return cases
+
+
 def _amendment_cases() -> list[ShapedCase]:
     records = json.loads((FIXTURES / "listings/congress-amendment-list.json").read_text())["amendments"]
     return [
@@ -490,8 +617,12 @@ CRPT = "CRPT-119hrpt1"
 #: No CHRG body has been captured into this repository yet, so the hearing case
 #: reuses the captured CRPT response under a CHRG identity.  It establishes the
 #: two columns that differ and the chamber lookup; it establishes nothing about
-#: what GovInfo serves for a hearing package.
-CHRG = "CHRG-119hhrg64242"
+#: what GovInfo serves for a hearing package.  The identity is the package the
+#: captured hearing detail (jacket 64431) names in its own ``formats[].url``
+#: stem, so the ``event_id`` that detail states is a real linkage on a
+#: synthetic body.
+CHRG = "CHRG-119hhrg64431"
+HEARING_DETAIL = "congress-hearing-detail.json"
 
 
 def _package_body(package_id: str) -> GovInfoPackageBody:
@@ -566,7 +697,12 @@ def _report_cases() -> list[ShapedCase]:
         ),
         _case(
             "hearing_transcripts",
-            shape_hearing_transcript(_package_body(CHRG), page_count=12, text_sha256=extracted),
+            shape_hearing_transcript(
+                _package_body(CHRG),
+                page_count=12,
+                text_sha256=extracted,
+                event_id=_listing(HEARING_DETAIL)["hearing"]["associatedMeeting"]["eventId"],
+            ),
             (CHRG,),
         ),
     ]
@@ -589,6 +725,7 @@ def all_cases() -> list[ShapedCase]:
         + _vote_cases()
         + _legislator_cases()
         + _report_cases()
+        + _congress_index_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -728,7 +865,17 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "member_terms": ("schemas/legislator_tables.py", "sources/legislators.py"),
     "committee_reports": ("schemas/committee_report_tables.py", "sources/govinfo/bodies.py"),
     "report_sections": ("schemas/committee_report_tables.py", "sources/agency_reports/report_blocks.py"),
-    "hearing_transcripts": ("schemas/committee_report_tables.py", "sources/govinfo/bodies.py"),
+    "hearing_transcripts": (
+        "schemas/committee_report_tables.py",
+        "sources/govinfo/bodies.py",
+        "sources/congress/listing.py",
+    ),
+    # Wave 2, gaps A5, A7 and A10: the Congress.gov index tables.
+    "house_communications": ("schemas/congress_index_tables.py", "interpretation/communication_rin.py"),
+    "committee_meetings": ("schemas/congress_index_tables.py",),
+    "record_issues": ("schemas/congress_index_tables.py",),
+    "treaties": ("schemas/congress_index_tables.py",),
+    "nominations": ("schemas/congress_index_tables.py",),
 }
 
 #: A value a description names in backticks.  Prose that says a column carries
