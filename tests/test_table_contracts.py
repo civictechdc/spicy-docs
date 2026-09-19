@@ -865,7 +865,11 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "member_terms": ("schemas/legislator_tables.py", "sources/legislators.py"),
     "committee_reports": ("schemas/committee_report_tables.py", "sources/govinfo/bodies.py"),
     "report_sections": ("schemas/committee_report_tables.py", "sources/agency_reports/report_blocks.py"),
-    "hearing_transcripts": ("schemas/committee_report_tables.py", "sources/govinfo/bodies.py"),
+    "hearing_transcripts": (
+        "schemas/committee_report_tables.py",
+        "sources/govinfo/bodies.py",
+        "sources/congress/listing.py",
+    ),
     # Wave 2, gaps A5, A7 and A10: the Congress.gov index tables.
     "house_communications": ("schemas/congress_index_tables.py", "interpretation/communication_rin.py"),
     "committee_meetings": ("schemas/congress_index_tables.py",),
