@@ -1475,7 +1475,7 @@ def group_slip_opinions(pages: Mapping[int, Node], builder: Builder) -> list[dic
         for number in numbers:
             pages[number].parent = opinion
             opinion.children.append(pages[number])
-        records.append({"kind": kind, "pages": numbers, **opinion.ext})
+        records.append({"kind": kind, "pages": numbers, **(opinion.ext or {})})
     return records
 
 
@@ -2226,7 +2226,7 @@ def size_decomposition(capture: Mapping[str, Any], text: str) -> dict[str, Any]:
     so the numbers add up against the same encoder that wrote the file.
     """
 
-    def without(mutate: Callable[[dict[str, Any]], None]) -> int:
+    def without(mutate: Callable[[dict[str, Any]], object]) -> int:
         doc = json.loads(json.dumps(capture))
         mutate(doc)
         return len(json.dumps(doc, ensure_ascii=False, separators=(",", ":")).encode("utf-8")) + 1
