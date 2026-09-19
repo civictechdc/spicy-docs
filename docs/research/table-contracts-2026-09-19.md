@@ -613,3 +613,32 @@ spicy-regs side, thin: the Arrow schema equals the column tuple as VARCHAR, the
 merge prefers the fresh row on a repeated identity, `spicy-regs-dict check`
 passes. The rule cases are not re-asserted there; that coverage belongs where
 the logic lives.
+
+## 7. Landed 2026-09-19, wave 2: the Congress.gov index tables (A5, A7, A10)
+
+Five contracts in one new module, `schemas/congress_index_tables.py`, each one
+row per record of a Congress.gov route, the way `amendments` is; the
+[register](closing-the-gaps-2026-09-19.md) rows A5, A7 and A10 name what
+landed and what stays open (the spicy-regs rollups). Conventions this wave
+added, with reasons:
+
+| Convention | Reason |
+|---|---|
+| A shaper takes the list row and the detail record, reads the detail's fields over the list row's, and fills a list-valued column from the detail alone: NULL when no detail was read, `[]` when the detail states none. | The list row is the only place the publisher states `url`; the detail is the only place it states the lists, and it omits `matchingRequirements` rather than sending an empty array. "Not read" and "stated none" must not look alike (§1's own rule on `json_column`). |
+| `house_communications` carries the RIN as `rin`, `rin_rule`, `rin_matched_text` from `interpretation/communication_rin.py`, the map's measured `RIN:?\s*(\d{4}-[A-Z]{2}\d{2})`, injected as a finding like `press_releases`' match. | Fact 1 of §0: the contract layer flattens findings; the rule stays in `interpretation/`, and `schemas/` stays a leaf. Re-measured on 18 of the 25 newest: the measured rule and a relaxed FR-shaped rule agree on all 18, so the narrower measured form is the one rule. |
+| `is_rulemaking` folds the publisher's `"True"`/`"False"` strings and refuses any other spelling. | Those two spellings and no other on 18 of 18; a NULL for an unknown spelling would read as "not stated". |
+| `committee_meetings` is keyed `(congress, chamber, event_id)`; `hearing_jacket` is the first jacket and `hearing_jackets_json` every one. | The publisher's own address; the captured hearing's meeting names two jackets, so one column is not the whole fact. |
+| `hearing_transcripts.event_id` is appended last, filled by the caller from the new `hearing-detail` route's `associatedMeeting.eventId`. | The hosted-table rule in `docs/tables.md`: every new column is appended so a pinned prefix holds. The package does not carry the id; the hearing record does. |
+| `record_issues` is keyed `(volume, issue)`; `chambers` is derived from the section names (`House Section`, `Senate Section`) with `chambers_rule`; `package_id` from the whole-issue link's stem with `package_id_rule`. | The map's comparison verdict (never key the Record on a date) and its `record→legislative-day` and `record→package` edges, each carried as a named rule beside its value. |
+| `treaties.package_id` is `CDOC-{c}tdoc{n}` on an unpartitioned treaty only. | The map's `treaty→cdoc` edge (2 of 2); the suffixed form was never measured, so the rule declines it. |
+| No `senate_communications`. | The Senate detail carries the abstract, referral and Record date and none of the bridge's fields; the same columns could not be filled without invention. |
+| The Federal Register side is unchanged. | `sources/federal_register/native.py` already keeps `regulation_id_numbers` and `schemas/federal_register.py` publishes `regulation_id_numbers_json`; the `rin` join is host-side rollup work, not an acquisition-policy change. |
+
+Tests: `tests/test_table_contracts.py` runs every new table through the
+generic loop from captured list pages (`limit=3`) and their captured details;
+`tests/test_congress_index_tables.py` re-runs the map's edges on those
+fixtures and pins the RIN rule to the map tool's pattern. Receipts:
+`corpora/supply-2026-09-02/receipts/house-communications-rin-2026-09-19/`
+(18 keyed requests) and
+`corpora/supply-2026-09-02/receipts/committee-meetings-edges-2026-09-19/`
+(2 keyed requests).
