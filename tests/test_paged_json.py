@@ -447,3 +447,24 @@ def test_tuple_records_key_miss_refuses_with_a_dotted_label():
         pytest.raises(PagedJsonSourceError, match="omitted its wrapper.things list"),
     ):
         source.page(URL, records_key=("wrapper", "things"))
+
+
+def test_a_records_key_naming_one_object_reads_as_a_single_record_page():
+    """A detail route answers one JSON object at records_key, not an array -- Congress.gov's
+    law/{congress}/{law_type}/{number} answers {"bill": {...}}. The object is the whole record;
+    it reads as a one-record page rather than being shaped down to a chosen field."""
+    body = json.dumps({"thing": {"id": 1, "nested": {"more": True}}}).encode()
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        result = source.page(URL, records_key="thing")
+    assert result.records == ({"id": 1, "nested": {"more": True}},)
+    assert result.declared_count is None
+    assert result.next_url is None
+
+
+def test_a_tuple_records_key_naming_one_object_also_reads_as_a_single_record_page():
+    body = json.dumps({"wrapper": {"thing": {"id": 1}}}).encode()
+    transport = Transport(response(body))
+    with reader(transport) as source:
+        result = source.page(URL, records_key=("wrapper", "thing"))
+    assert result.records == ({"id": 1},)

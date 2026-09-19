@@ -73,6 +73,45 @@ refuses `sort`.
 | `committee-report` | `committee-report/{congress}` | `reports` | yes | yes (default) | `congress-committee-report-list.json` |
 | `house-communication` | `house-communication/{congress}` | `houseCommunications` | no | yes (default) | `congress-house-communication-list.json` |
 | `house-vote` | `house-vote/{congress}/{session}` | `houseRollCallVotes` | no (measured) | yes (default) | `congress-house-vote-list.json` |
+| `law` | `law/{congress}/{law_type}` | `bills` | no | yes (default) | `congress-law-list.json` |
+| `law-detail` | `law/{congress}/{law_type}/{number}` | `bill` (single record; see below) | no (structural) | no (structural) | `congress-law-detail.json` |
+| `committee` | `committee/{congress}` | `committees` | yes | yes (default) | `congress-committee-list.json` |
+| `committee-detail` | `committee/{chamber}/{system_code}` | `committee` (single record; see below) | no (structural) | no (structural) | `congress-committee-detail.json` |
+| `member` | `member` | `members` | no | yes (default) | `congress-member-list.json` |
+| `member-congress` | `member/congress/{congress}` | `members` | no (measured) | yes (default) | `congress-member-congress-list.json` |
+| `member-detail` | `member/{bioguide_id}` | `member` (single record; see below) | no (structural) | no (structural) | `congress-member-detail.json` |
+| `committee-print` | `committee-print/{congress}` | `committeePrints` | no | yes (default) | `congress-committee-print-list.json` |
+| `committee-print-detail` | `committee-print/{congress}/{chamber}/{number}` | `committeePrint` (singular; a one-item array) | no (structural) | no (structural) | `congress-committee-print-detail.json` |
+
+`law-detail`, `committee-detail` and `member-detail` answer their records key
+as one JSON object, not an array (`{"bill": {...}}`, `{"committee": {...}}`,
+`{"member": {...}}`, confirmed live 2026-09-19), and carry no `pagination`
+object at all. `reading/paged_json.py`'s `PagedJsonReader` reads a non-empty
+object at `records_key` as the page's single record, the same generic path a
+tuple `records_key` already reads through, rather than shaping the object
+down to a chosen field; an empty object still refuses. `committee-print`'s
+detail route needed no such change: the publisher answers
+`committee-print/{congress}/{chamber}/{number}` with a real one-item array
+under `committeePrint` and a `pagination.count` of 1. None of the four detail
+routes has a list to reorder or window against, so `sort_honored` and
+`window_honored` are both `False` on that structural ground, not a
+measurement. `law`'s records key `bills` is the same spelling `bill` uses;
+`LIST_ROUTES["law"]` reuses `BILLS_KEY` rather than a second identical
+constant. `member`'s Congress filter lives at a different URL,
+`member/congress/{congress}`, not `member/{congress}` the way `committee`'s
+does, so it is a second table entry (`member-congress`) rather than an
+optional trailing parameter on `member`; a bare `member/congress` 404s
+(the API reads it as `member/{bioguideId}` with `bioguideId="congress"`).
+`sort_honored`/`window_honored` for `law`, `committee`, `member` and
+`committee-print` are carried from the legislative data map's Table A
+(`docs/research/legislative-data-map-2026-09-18.md`), the same way
+`nomination`, `hearing`, `committee-report` and `house-communication` carry
+theirs — each is the exact route Table A measured, not a sibling.
+`member-congress` answers a different URL than Table A's bare `member` row,
+so it got the same direct probe `house-vote` did: `member/congress/119`,
+`limit=1`, `sort=updateDate desc` versus `asc` answered the identical first
+record both times (bioguideId `W000832`) — sort ignored, measured 2026-09-19
+(see the fixtures README).
 
 `committee-bills` is the one route here whose rows are not a top-level array:
 the publisher nests them inside a `committee-bills` wrapper object alongside

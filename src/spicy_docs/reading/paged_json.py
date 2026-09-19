@@ -17,7 +17,9 @@ absence.
 
 ``records_key`` is a top-level key for most routes; a tuple path reaches rows
 a publisher nests inside a wrapper object alongside its own count and url,
-the way Congress.gov's ``committee/{chamber}/{code}/bills`` does.
+the way Congress.gov's ``committee/{chamber}/{code}/bills`` does. A detail
+route's ``records_key`` may answer one JSON object instead of an array; it
+reads as a single-record page rather than being shaped down to one field.
 """
 
 from __future__ import annotations
@@ -190,7 +192,11 @@ class JsonPage:
     ``records_key`` is a top-level key for most publishers; a tuple reaches
     rows a publisher nests inside a wrapper object, the way Congress.gov's
     ``committee/{chamber}/{code}/bills`` route nests its ``bills`` array
-    under a ``committee-bills`` object rather than at the top level.
+    under a ``committee-bills`` object rather than at the top level. A detail
+    route answers one record as an object rather than an array at
+    ``records_key`` -- Congress.gov's ``law/{congress}/{law_type}/{number}``
+    answers ``{"bill": {...}}``, not ``{"bill": [...]}`` -- and reads as a
+    single-record page rather than shaping that object down to one field.
     """
 
     page_index: int
@@ -339,6 +345,12 @@ class PagedJsonReader(SourceAcquirer):
         if not isinstance(value, Mapping):
             raise PagedJsonSourceError(f"{self.family.label} list response is not a JSON object")
         rows = _lookup(value, records_key) if isinstance(records_key, tuple) else value.get(records_key)
+        if isinstance(rows, Mapping) and rows:
+            # A detail route's records_key names one object, not an array -- the object is
+            # the whole record, so it reads as a single-record page rather than a shaped
+            # field. An *empty* object stays a refusal, the same as before this route shape
+            # existed: it carries no record to read.
+            rows = [rows]
         if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
             raise PagedJsonSourceError(f"{self.family.label} list response omitted its {_key_label(records_key)} list")
         count = _lookup(value, self.family.count_path) if self.family.count_path else None
