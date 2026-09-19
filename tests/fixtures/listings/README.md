@@ -130,11 +130,15 @@ none of the nine carried either.
 fixture here answers: each nests its one record as a JSON *object* at its
 records key (`{"bill": {...}}`, `{"committee": {...}}`, `{"member": {...}}`),
 not an array, and carries no `pagination` object at all.
-`reading/paged_json.py`'s `PagedJsonReader._read_page` now reads a non-empty
+`reading/paged_json.py`'s `PagedJsonReader._read_page` reads a non-empty
 object at `records_key` as the page's one record, the way it already reads a
-tuple `records_key` into a nested array -- an empty object still refuses,
+tuple `records_key` into a nested array, when the route opts in with
+`CongressListRoute.single_record=True` (which `law-detail`, `committee-detail`
+and `member-detail` carry); an empty object still refuses either way, and a
+route that leaves `single_record` at its `False` default -- every route that
+is not a bare-object detail route -- still refuses a wrapper object outright,
 unchanged from before this shape existed. `congress-committee-print-detail.json`
-needed no such change: the publisher answers
+needed no such opt-in: the publisher answers
 `committee-print/{congress}/{chamber}/{jacketNumber}` with a real one-item
 array under `committeePrint` (singular; the list route's key is the plural
 `committeePrints`) and a `pagination.count` of 1.
@@ -194,12 +198,18 @@ confirmed live 2026-09-19: `house-communication`, `daily-congressional-record`,
 `senate-communication` and `house-requirement` detail nest a single JSON
 object under their records key (`{"houseCommunication": {...}}`), while
 `treaty` detail nests a one-element array instead
-(`{"treaty": [{...}]}`). `reading/paged_json.py`'s `_read_page` now reads
-either shape as a one-row page with no declared count and no continuation
-(a single Mapping under the records key is wrapped as a one-element list
-before the existing list checks run), so every field a fixture record
-carries reaches `CongressListingReader.records`/`.page` unchanged, the same
-way a list route's rows do.
+(`{"treaty": [{...}]}`). `reading/paged_json.py`'s `_read_page` reads a
+non-empty object under the records key as a one-row page with no declared
+count and no continuation only when the caller opts in with `single_record`
+-- `CongressListRoute.single_record=True` on the object-shaped routes above
+(not `treaty`, whose one-element array already reads through the ordinary
+list path) -- so every field a fixture record carries reaches
+`CongressListingReader.records`/`.page` unchanged, the same way a list
+route's rows do. Left off, a wrapper object at `records_key` still refuses
+instead of reading as one bogus record: review found the wrap applied
+unconditionally in an earlier revision, which read `committee-bills`' own
+wrapper as a false single record when asked for it by its plain string key;
+`single_record` is now opt-in for exactly that reason.
 
 Sort and date-window support for every new list route was measured the same
 way as the fourth round's `committee-bills`/`bill-actions`/`house-vote`

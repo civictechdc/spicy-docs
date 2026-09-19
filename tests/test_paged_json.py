@@ -73,13 +73,27 @@ def test_credential_travels_only_as_a_header_and_pages_carry_exact_bytes():
 
 
 def test_a_single_object_under_the_records_key_reads_as_one_record_page():
-    """A detail route answers one record, not a list; the reader wraps it rather than refusing."""
+    """A detail route answers one record, not a list; the reader wraps it when the caller opts
+    in with single_record, rather than refusing."""
     body = json.dumps({"things": {"id": 1, "name": "widget"}}).encode()
     transport = Transport(response(body))
     with reader(transport) as source:
-        (result,) = list(source.pages(URL, records_key="things"))
+        (result,) = list(source.pages(URL, records_key="things", single_record=True))
     assert result.records == ({"id": 1, "name": "widget"},)
     assert result.declared_count is None and result.next_url is None
+
+
+def test_a_wrapper_object_without_single_record_still_refuses():
+    """single_record is opt-in, not a blanket rule: a caller that does not ask for it still gets
+    the pre-existing refusal when records_key resolves to an object instead of a list -- the
+    same shape a caller's own wrong or mismatched records_key could produce by accident."""
+    body = json.dumps({"things": {"id": 1, "name": "widget"}}).encode()
+    transport = Transport(response(body))
+    with (
+        reader(transport) as source,
+        pytest.raises(PagedJsonSourceError, match="omitted its things list"),
+    ):
+        source.page(URL, records_key="things")
 
 
 @pytest.mark.parametrize(
@@ -465,11 +479,12 @@ def test_tuple_records_key_miss_refuses_with_a_dotted_label():
 def test_a_records_key_naming_one_object_reads_as_a_single_record_page():
     """A detail route answers one JSON object at records_key, not an array -- Congress.gov's
     law/{congress}/{law_type}/{number} answers {"bill": {...}}. The object is the whole record;
-    it reads as a one-record page rather than being shaped down to a chosen field."""
+    with single_record, it reads as a one-record page rather than being shaped down to a chosen
+    field or refused."""
     body = json.dumps({"thing": {"id": 1, "nested": {"more": True}}}).encode()
     transport = Transport(response(body))
     with reader(transport) as source:
-        result = source.page(URL, records_key="thing")
+        result = source.page(URL, records_key="thing", single_record=True)
     assert result.records == ({"id": 1, "nested": {"more": True}},)
     assert result.declared_count is None
     assert result.next_url is None
@@ -479,5 +494,21 @@ def test_a_tuple_records_key_naming_one_object_also_reads_as_a_single_record_pag
     body = json.dumps({"wrapper": {"thing": {"id": 1}}}).encode()
     transport = Transport(response(body))
     with reader(transport) as source:
-        result = source.page(URL, records_key=("wrapper", "thing"))
+        result = source.page(URL, records_key=("wrapper", "thing"), single_record=True)
     assert result.records == ({"id": 1},)
+
+
+def test_the_committee_bills_wrapper_key_refuses_without_single_record():
+    """Reproduces the review finding: reading committee-bills' own records_key ("committee-bills")
+    as a plain string, instead of the tuple that reaches inside it, resolves to the wrapper
+    object {"bills": [...], "count": N, "url": "..."}. Without single_record this still refuses
+    -- it does not silently read the wrapper itself as one bogus record."""
+    body = json.dumps(
+        {"committee-bills": {"bills": [{"congress": 110}], "count": 1, "url": "https://api.example.gov/x"}}
+    ).encode()
+    transport = Transport(response(body))
+    with (
+        reader(transport) as source,
+        pytest.raises(PagedJsonSourceError, match="omitted its committee-bills list"),
+    ):
+        source.page(URL, records_key="committee-bills")
