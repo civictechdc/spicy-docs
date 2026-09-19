@@ -556,7 +556,7 @@ through `acquire(package_id)`.
 
 | Refusal | Meaning |
 | --- | --- |
-| `GovInfoPackageUnavailableError` | The exact locator said the object is not there: 404/410 on a keyed route, or a redirect on a body route. On a granule's summary or MODS route this is HTTP 400 instead, typed the same way -- GovInfo answers that way for a granule that does not belong to the requested package. It carries that capture. It is not a statement about other formats, packages or granules. |
+| `GovInfoPackageUnavailableError` | The exact locator said the object is not there: 404/410 on a keyed route, or a redirect on a body route. On a granule's summary or MODS route this is HTTP 400 instead, typed the same way when the 400's body is the documented `invalid granuleId` message -- GovInfo answers that way for a granule that does not belong to the requested package; any other 400 stays a generic refusal. It carries that capture. It is not a statement about other formats, packages or granules. |
 | `GovInfoFormatNotOfferedError` | The package or granule stated its renditions and none was preferred. It carries `offered_formats`; no body request was made. |
 | `GovInfoBodySourceError` | Identity or shape failed: a `packageId`, `granuleId`, `collectionCode` or `accessId` that differs, a final URL that differs, a wrong media type, an empty body, a PDF without its magic, or a bound exceeded. |
 | `GovInfoRenditionAddressError` | The package or granule states a preferred format at an address this module does not derive. The publisher's own URL is on the error. Disagreement, not absence; no body request was made. |

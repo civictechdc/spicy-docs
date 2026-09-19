@@ -303,8 +303,10 @@ before bytes the same way, plus one departure the granule route itself
 forces: a granule that does not belong to the requested package answers
 HTTP 400, not 404 — confirmed both directions (a wrong-day granule id under
 the right package, and the fixture's own real granule id under the wrong
-day) — so it is typed `GovInfoPackageUnavailableError` the same way a
-package's own 404/410 is, never left as a generic refusal.
+day) — so a 400 whose body is exactly the documented
+`{"message": "invalid granuleId"}` is typed `GovInfoPackageUnavailableError`
+the same way a package's own 404/410 is, and any other 400 is left as a
+generic refusal with its capture.
 `GRANULE_BODY_PREFERENCE` (`("htm", "pdf")`) is a separate, granule-scoped
 constant, not a second reading of `BODY_PREFERENCE`: the whole-issue
 package PDF stays reachable unchanged through `acquire(package_id)`.

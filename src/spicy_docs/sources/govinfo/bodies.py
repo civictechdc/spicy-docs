@@ -306,7 +306,7 @@ def _mods_bills(root: ModsRecord) -> tuple[ModsBill, ...]:
         bill_type = element.attribute("type")
         number = element.attribute("number")
         context = element.attribute("context")
-        if not (congress and congress.isdigit() and bill_type and number and number.isdigit()):
+        if not (congress and congress.isdecimal() and bill_type and number and number.isdecimal()):
             continue
         normalized = bill_type.lower()
         bills.append(
