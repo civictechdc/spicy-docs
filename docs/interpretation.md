@@ -16,12 +16,12 @@ rather than buried in control flow.
 
 | Module | Consumes | Produces |
 | --- | --- | --- |
-| `bill_stage` | `BillAction` records, action-text strings, a bill's `laws` entries | `StageFinding` (stage, rule, matcher, action index and date) and `SignedDateFinding` (date, public law number, rule, action code) |
-| `money_bills` | a bill title, its identity, and referral signals from the six committee system codes | `MoneyBillFinding` (kind, subcommittee, fiscal year, rule, reason codes) |
+| `bill_stage` | `BillStatus.actions` (or action-text strings) and `BillStatus.laws` | `StageFinding` (stage, rule, matcher, action index and date) and `SignedDateFinding` (date, public law number, rule, action code) |
+| `money_bills` | a bill title, its identity, and referral signals from `BillStatus.committees` system codes | `MoneyBillFinding` (kind, subcommittee, fiscal year, rule, reason codes) |
 | `bill_signals` | normalized document text and candidate catalog rows | `ExtractedSignals` (with `title_source`) and ranked `BillMatch` records, each signal reported with its weight and score |
-| `vote_matching` | `recordedVotes` on bill actions, and House vote `legislationType`/`legislationNumber` | `VoteReference`, a `VoteIndex` with conflicts, and one `VoteMatch` per vote |
+| `vote_matching` | `BillAction.recorded_votes`, and House vote `legislationType`/`legislationNumber` | `RecordedVoteReferences` (references plus per-entry refusals), a `VoteIndex` with conflicts, and one `VoteMatch` per vote |
 | `release_matching` | committee RSS items (title, and description where a feed sends one) and bill identities | one compiled `BillPattern` per bill, and `ReleaseMatch` naming the field the mention was found in |
-| `member_matching` | a bioguide id, a Senate LIS id or a sponsor display string, the legislators crosswalk, published member rows | `MemberMatch` (bioguide, rule, score) |
+| `member_matching` | a bioguide id, a Senate LIS id or a sponsor display string, the legislators crosswalk, and a `MemberIndex` built once from published member rows | `MemberMatch` (bioguide, rule, score) |
 | `interest_areas` | a reader's keyword list and parsed bill sections | `SectionMatch` (excerpt, area, matched keywords, rule) |
 | `section_classification` | parsed bill sections and an injected `ModelCall` | `SectionClassification` with model, prompt version, prompt hash, batch and timestamps |
 | `bill_summaries` | one bill version's text, title, status and money-bill kind, and an injected `ModelCall` | `BillSummaryResult` with model, prompt version, content hash, token counts and timestamps |
@@ -36,6 +36,11 @@ their contract is stated, and are imported by `member_matching` and
 prints the per-type extraction tally, including the title-source breakdown and
 the bills whose title extraction failed although the catalog holds a short
 title.
+
+`bill_stage`, `money_bills` and `vote_matching` read `BillStatus` directly:
+`laws`, `committees` and each action's `recorded_votes` were added to
+`sources/congress/bill_status.py` in this change, from the publisher's own
+guide, so no rule here needs an input the parser cannot produce.
 
 ## Corrections carried in the port
 
@@ -62,9 +67,20 @@ old outcome beside the new one.
   party/state/district block and reads the surname before the comma, and always
   exposes its score.
 - **Committee referrals come from system codes**, not from substring matching on
-  committee names.
+  committee names. This narrows the signal on purpose: an appropriations
+  *sub*committee raised it before and does not now.
 - **Classifications carry provenance.** Model and prompt version are recorded,
   which the source's classification table did not hold.
+- **The stage fold takes the latest classified action**, not the furthest rung,
+  because `STAGES` is a display order that disagrees with rule precedence.
+  Enactment is the one terminal rung.
+- **One bad recorded vote costs that entry, not the bill.** Refusals are
+  returned beside the references rather than raised over the whole action list.
+
+The prompts and their `PROMPT_VERSION` are sealed together, down to the
+typography: the em and en dashes the source wrote are pinned by a `sha256`
+test, because a prompt that changes silently makes every stored row
+unattributable.
 
 ## What these rules cannot see
 
@@ -74,9 +90,16 @@ neither the engine's minimum token length, its stopword list nor its relevance
 order. Comparing the two on real data is a measurement still owed, not an
 assumption made here.
 
-`bill_stage.signed_date` reads `laws` from a mapping because `BillStatus` does
-not yet parse the BILLSTATUS `<laws>` element. Nothing changes here when it
-does.
+`STAGES` is display order, not progress order, and `stage_index` and
+`stage_progress` answer only "where does this rung get drawn". They cannot say
+which of two stages is further along: `referred` maps to `other_chamber`,
+which is drawn after `committee` and `passed_chamber` although every bill's
+introduction is a referral. `infer_stage` therefore folds by recency, not by
+rung.
+
+`release_matching` cannot tell a bill mentioned in passing from the bill a
+release is about; it reports the first bill named and which field named it, so
+a consumer can weigh a title match differently from a body one.
 
 ## Decision
 

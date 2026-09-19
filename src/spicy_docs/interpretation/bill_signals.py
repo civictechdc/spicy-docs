@@ -266,7 +266,12 @@ def extract_signals(text: str) -> ExtractedSignals:
 
 
 def sponsor_last_name_of(sponsor: str) -> str:
-    """The first all-caps run in a stored sponsor string, which is how the catalog spells a surname."""
+    """The first all-caps run in a stored sponsor string, which is how the catalog spells a surname.
+
+    Sealed: this is one half of the sponsor score, so changing it moves stored
+    confidences. ``member_matching.last_name_of`` is the other surname parser,
+    reads the publisher's structured display name, and is free to improve.
+    """
     for token in _SPONSOR_SPLIT.split(sponsor.upper()):
         if _DB_LAST_NAME.fullmatch(token):
             return token

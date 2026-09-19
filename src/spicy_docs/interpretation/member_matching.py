@@ -22,6 +22,12 @@ The name path is also corrected. Taking the last whitespace token of a real
 Congress.gov sponsor string yields ``[R-VA-9]``, not a surname. The bracketed
 party/state/district block is removed first, and a surname before a comma is
 preferred over the last token, which is how the publisher writes the string.
+
+``last_name_of`` here and ``bill_signals.sponsor_last_name_of`` read two
+different strings and are deliberately not one function: this one parses the
+publisher's structured display name and is free to improve, while that one
+takes the first all-caps run out of scanned document text and is **sealed**,
+because it is half of a stored identification score.
 """
 
 from __future__ import annotations
@@ -79,11 +85,45 @@ def last_name_of(name: str) -> str:
     return tokens[-1] if tokens else ""
 
 
-def match_member(query: MemberQuery, *, crosswalk: object = None, members: Iterable[MemberRow] = ()) -> MemberMatch:
+@dataclass(frozen=True, slots=True)
+class MemberIndex:
+    """Members normalized once, keyed both ways the name rules look them up.
+
+    Built by ``index_members`` for the same reason ``compile_bill_patterns``
+    exists next door: normalizing every member row inside the per-query loop
+    would cost O(queries x members) normalizations of strings that never
+    change. Built once, a query costs two dictionary lookups.
+    """
+
+    by_name: Mapping[str, MemberRow]
+    by_surname: Mapping[str, MemberRow]
+    normalized: Mapping[str, str]
+
+
+def index_members(members: Iterable[MemberRow]) -> MemberIndex:
+    """Normalize each member row once. The only place this module normalizes a row.
+
+    First row wins on a collision, so a stable input gives a stable answer.
+    ``by_surname`` holds only serving members -- a row with an ``end_date``
+    was excluded from the last-name rule in the original's SQL and still is.
+    """
+    by_name: dict[str, MemberRow] = {}
+    by_surname: dict[str, MemberRow] = {}
+    normalized: dict[str, str] = {}
+    for row in members:
+        name = normalize_for_comparison(row.name)
+        normalized.setdefault(row.bioguide, name)
+        by_name.setdefault(name, row)
+        if row.end_date is None:
+            by_surname.setdefault(normalize_for_comparison(last_name_of(row.name)), row)
+    return MemberIndex(by_name, by_surname, normalized)
+
+
+def match_member(query: MemberQuery, *, crosswalk: object = None, members: MemberIndex | None = None) -> MemberMatch:
     """Take the identifier rules first; fall back to the name only when neither id resolves.
 
     ``crosswalk`` is a ``LegislatorsFile`` (anything carrying ``by_bioguide``
-    and ``by_lis``). ``members`` are the published rows the name rules search.
+    and ``by_lis``). ``members`` is an index built once by ``index_members``.
     """
     by_bioguide = getattr(crosswalk, "by_bioguide", None)
     by_lis = getattr(crosswalk, "by_lis", None)
@@ -98,30 +138,26 @@ def match_member(query: MemberQuery, *, crosswalk: object = None, members: Itera
         if legislator is not None:
             return MemberMatch(getattr(legislator, "bioguide", None), "lis", 1.0, query)
 
-    if not query.name:
+    if not query.name or members is None:
         return MemberMatch(None, "unmatched", 0.0, query)
 
-    rows = tuple(members)
     wanted = normalize_for_comparison(query.name)
-    for row in rows:
-        if normalize_for_comparison(row.name) == wanted:
-            return MemberMatch(row.bioguide, "name_exact", 1.0, query, row.name)
+    exact = members.by_name.get(wanted)
+    if exact is not None:
+        return MemberMatch(exact.bioguide, "name_exact", 1.0, query, exact.name)
 
     surname = last_name_of(query.name)
     if len(surname) < MIN_LAST_NAME_CHARS:
         return MemberMatch(None, "unmatched", 0.0, query)
-    normalized_surname = normalize_for_comparison(surname)
-    for row in rows:
-        if row.end_date is not None:
-            continue
-        if normalize_for_comparison(last_name_of(row.name)) == normalized_surname:
-            return MemberMatch(
-                row.bioguide,
-                "name_last",
-                token_jaccard(wanted, normalize_for_comparison(row.name)),
-                query,
-                row.name,
-            )
+    row = members.by_surname.get(normalize_for_comparison(surname))
+    if row is not None:
+        return MemberMatch(
+            row.bioguide,
+            "name_last",
+            token_jaccard(wanted, members.normalized[row.bioguide]),
+            query,
+            row.name,
+        )
 
     return MemberMatch(None, "unmatched", 0.0, query)
 
@@ -129,9 +165,11 @@ def match_member(query: MemberQuery, *, crosswalk: object = None, members: Itera
 __all__ = [
     "MEMBER_MATCH_RULES",
     "MIN_LAST_NAME_CHARS",
+    "MemberIndex",
     "MemberMatch",
     "MemberQuery",
     "MemberRow",
+    "index_members",
     "last_name_of",
     "match_member",
 ]

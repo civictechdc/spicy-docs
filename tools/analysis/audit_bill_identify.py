@@ -14,7 +14,10 @@ is the version text, and the harness reads the first ``--head-bytes``
 characters of it (8192 by default, as the original's ``LEFT(bv.text, 8192)``
 did). Extra columns are ignored.
 
-The printed tally is the original's: per bill type, how many extracted bill
+The printed tally is the original's, with one widening: it reports **every**
+bill type present in the input, where the TS harness hard-coded ``HR`` and
+``S`` and so silently omitted every joint and concurrent resolution it had
+measured. Per bill type it reports how many extracted bill
 numbers agree with the catalog, how many titles were extracted at all, how
 many sponsors agree, and a breakdown by ``title_source`` with the mean token
 Jaccard against the catalog's short title for each source. Then the list the
@@ -34,7 +37,7 @@ import argparse
 import csv
 import sys
 from collections import Counter
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -108,7 +111,7 @@ def _percent(part: int, whole: int) -> str:
     return "0" if whole == 0 else f"{part / whole * 100:.0f}"
 
 
-def report(rows: Sequence[AuditRow], write=print) -> None:
+def report(rows: Sequence[AuditRow], write: Callable[[str], object] = print) -> None:
     """Print the per-type tally and the unexpected-failure list."""
     write(f"\nLoaded {len(rows)} bill+version rows.\n")
     write("=== AUDIT SUMMARY ===\n")
@@ -152,13 +155,30 @@ def write_rows(rows: Sequence[AuditRow], path: Path) -> None:
             writer.writerow({field: getattr(row, field) for field in fields})
 
 
-def read_candidates(path: Path) -> list[dict[str, str]]:
-    with path.open(newline="", encoding="utf-8") as handle:
-        reader = csv.DictReader(handle)
-        missing = [column for column in REQUIRED_COLUMNS if column not in (reader.fieldnames or ())]
-        if missing:
-            raise SystemExit(f"{path}: missing required column(s): {', '.join(missing)}")
-        return [{key: (value or "") for key, value in row.items() if key} for row in reader]
+def _candidate_rows(handle, reader: csv.DictReader, head_bytes: int) -> Iterator[dict[str, str]]:
+    with handle:
+        for row in reader:
+            kept = {key: (value or "") for key, value in row.items() if key}
+            kept["text"] = kept.get("text", "")[:head_bytes]
+            yield kept
+
+
+def read_candidates(path: Path, *, head_bytes: int = HEAD_BYTES) -> Iterator[dict[str, str]]:
+    """Check the header now, stream the rows later, truncating each ``text`` on read.
+
+    The original's SQL truncated with ``LEFT(bv.text, 8192)``; a CSV has no
+    such projection, so the cut happens here, once per row, rather than after
+    the whole file has been materialized. The header check stays eager so a
+    misnamed column is refused when the file is opened, not part-way through
+    a long run.
+    """
+    handle = path.open(newline="", encoding="utf-8")
+    reader = csv.DictReader(handle)
+    missing = [column for column in REQUIRED_COLUMNS if column not in (reader.fieldnames or ())]
+    if missing:
+        handle.close()
+        raise SystemExit(f"{path}: missing required column(s): {', '.join(missing)}")
+    return _candidate_rows(handle, reader, head_bytes)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -172,7 +192,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.head_bytes < 1:
         raise SystemExit("--head-bytes must be a positive integer")
 
-    rows = audit(read_candidates(args.input), head_bytes=args.head_bytes)
+    rows = audit(read_candidates(args.input, head_bytes=args.head_bytes), head_bytes=args.head_bytes)
     report(rows)
     if args.output is not None:
         write_rows(rows, args.output)

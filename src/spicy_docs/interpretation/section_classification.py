@@ -25,10 +25,9 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from spicy_docs.interpretation.model_call import ModelCall, ModelCallError, ModelResponse
-from spicy_docs.transport.source_acquirer import utc_now
 
 PROMPT_VERSION = "v1"
 BATCH_SIZE = 30
@@ -55,7 +54,7 @@ LABEL_NAMES: tuple[str, ...] = tuple(label.name for label in CLASSIFICATION_LABE
 CLASSIFY_PROMPT_TEMPLATE = """Classify each of the following bill sections. For each section, assign one label:
 {labels}
 
-Return a JSON array with sectionId, label, and confidence (0-1).
+Return a JSON array with sectionId, label, and confidence (0–1).
 
 Sections:
 {sections}"""
@@ -81,6 +80,10 @@ class SectionClassification:
     batch_index: int
     requested_at: str
     completed_at: str
+
+
+def _now() -> datetime:
+    return datetime.now(UTC)
 
 
 def label_block() -> str:
@@ -134,7 +137,7 @@ def classify_sections(
     *,
     model: str,
     batch_size: int = BATCH_SIZE,
-    clock: Callable[[], datetime] = utc_now,
+    clock: Callable[[], datetime] | None = None,
 ) -> tuple[SectionClassification, ...]:
     """Classify sections in batches, returning one labelled row per answered section.
 
@@ -145,6 +148,7 @@ def classify_sections(
     """
     if batch_size < 1:
         raise ValueError("batch_size must be a positive integer")
+    now = clock if clock is not None else _now
     ordered = tuple(sections)
     results: list[SectionClassification] = []
     for batch_index, start in enumerate(range(0, len(ordered), batch_size)):
@@ -152,9 +156,9 @@ def classify_sections(
         allowed = frozenset(section.section_id for section in batch)
         prompt = build_prompt(batch)
         digest = prompt_hash(prompt)
-        requested_at = clock().isoformat()
+        requested_at = now().isoformat()
         response = call(model=model, prompt=prompt)
-        completed_at = clock().isoformat()
+        completed_at = now().isoformat()
         for row in _rows(response):
             section_id, label, confidence = _read_row(row, allowed)
             results.append(

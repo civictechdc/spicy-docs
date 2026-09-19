@@ -77,11 +77,14 @@ def keyword_tokens(keyword: str) -> frozenset[str]:
 def find_matching_sections(
     areas: Iterable[InterestArea], sections: Sequence[Section], *, limit: int = DEFAULT_LIMIT
 ) -> tuple[SectionMatch, ...]:
-    """Match every area against every section in one normalization pass over the bodies.
+    """Match every area against every section, normalizing each input exactly once.
 
-    Each body is normalized once, not once per area, so the cost is O(total
-    body bytes) plus O(areas x sections) set intersections, against the
-    original's one full-text scan per area.
+    Each section body is normalized once and each keyword is tokenized once,
+    both outside the pairwise loop, so the cost is O(total body characters +
+    total keyword characters) of normalization plus O(areas x sections)
+    set intersections. Tokenizing a keyword inside the loop would have made
+    that second term O(areas x sections x keywords) normalizations of strings
+    that never change.
     """
     if limit < 0:
         raise ValueError("limit must be non-negative")
@@ -91,11 +94,12 @@ def find_matching_sections(
     for area in areas:
         if not area.keywords:
             continue
+        area_tokens = [(keyword, keyword_tokens(keyword)) for keyword in area.keywords]
         per_area = 0
         for section, tokens in zip(sections, body_tokens, strict=True):
             if per_area >= limit:
                 break
-            matched = tuple(keyword for keyword in area.keywords if keyword_tokens(keyword) & tokens)
+            matched = tuple(keyword for keyword, wanted in area_tokens if wanted & tokens)
             if not matched:
                 continue
             per_area += 1

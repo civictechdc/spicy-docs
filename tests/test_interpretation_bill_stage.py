@@ -129,7 +129,39 @@ def test_infer_stage_reads_actions_whole_and_names_the_action() -> None:
     assert finding.source_text == LONG_ACTION
 
 
-def test_a_later_procedural_action_does_not_demote_a_law() -> None:
+# The fold is the stage of the latest classified action. Display order must
+# never stand in for progress: "referred" is a matcher of other_chamber, whose
+# display index (3) is above committee (1) and passed_chamber (2), and every
+# bill's introduction is a referral.
+REFERRAL = "Referred to the House Committee on Ways and Means."
+FOLD_CASES = [
+    (("Introduced in House", REFERRAL, "Reported by the Committee on Ways and Means. H. Rept. 119-101."), "committee"),
+    (("Introduced in House", REFERRAL, "Passed House by recorded vote: 217-212."), "passed_chamber"),
+    (("Introduced in House", REFERRAL), "other_chamber"),
+]
+
+
+@pytest.mark.parametrize(("actions", "expected"), FOLD_CASES)
+def test_the_fold_takes_the_latest_classified_action(actions: tuple[str, ...], expected: str) -> None:
+    assert infer_stage(actions).stage == expected
+
+
+def test_display_order_is_not_progress_order() -> None:
+    # The disagreement the fold must not read as a ladder.
+    assert stage_index("other_chamber") > stage_index("committee")
+    assert stage_index("other_chamber") > stage_index("passed_chamber")
+    assert infer_stage_from_text(REFERRAL).stage == "other_chamber"
+
+
+def test_an_unclassified_action_leaves_the_stage_alone() -> None:
+    actions = ("Introduced in House", REFERRAL, "Sponsor's remarks inserted in the Record.")
+    assert infer_stage(actions).stage == "other_chamber"
+
+
+def test_enactment_is_terminal_and_a_later_star_print_does_not_demote_it() -> None:
+    # A star print is not an unclassified action: "star print" is a matcher of
+    # other_chamber, so only the terminal-law rule protects the bill here.
+    assert infer_stage_from_text("Star Print ordered on the bill.").stage == "other_chamber"
     actions = (
         {"text": "Introduced in House", "actionDate": "2025-01-03"},
         {"text": "Became Public Law No: 119-21.", "actionDate": "2025-07-04"},
@@ -137,6 +169,24 @@ def test_a_later_procedural_action_does_not_demote_a_law() -> None:
     )
     finding = infer_stage(actions)
     assert (finding.stage, finding.action_index, finding.action_date) == ("law", 1, "2025-07-04")
+
+
+def test_a_newest_first_list_reads_the_same_as_a_chronological_one() -> None:
+    chronological = (
+        {"text": "Introduced in House", "actionDate": "2025-01-03"},
+        {"text": REFERRAL, "actionDate": "2025-01-04"},
+        {"text": "Reported by the Committee on Ways and Means.", "actionDate": "2025-03-01"},
+    )
+    assert infer_stage(chronological).stage == "committee"
+    assert infer_stage(tuple(reversed(chronological))).stage == "committee"
+
+
+def test_an_undated_action_never_outranks_a_dated_one() -> None:
+    actions = (
+        {"text": "Reported by the Committee on Ways and Means.", "actionDate": "2025-03-01"},
+        {"text": REFERRAL},
+    )
+    assert infer_stage(actions).stage == "committee"
 
 
 def test_bare_strings_and_an_action_without_text_are_both_accepted() -> None:

@@ -9,6 +9,7 @@ import pytest
 from spicy_docs.sources.congress.bill_status import (
     BillIdentity,
     BillSourceError,
+    BillStatus,
     bill_package_id_from_url,
     bill_status_locator,
     bill_xml_locator,
@@ -297,3 +298,64 @@ def test_public_entry_points_refuse_objects_without_validated_identity() -> None
     ]:
         with pytest.raises(BillSourceError, match="BillIdentity"):
             operation()
+
+
+# --- laws, committees and recorded votes: the three elements the interpretation
+# rules key on, read end to end from real publisher bytes.
+
+ENACTED_IDENTITY = BillIdentity(119, "s", 5)
+
+
+def enacted_status() -> BillStatus:
+    return parse_bill_status((FIXTURES / "status-119s5.xml").read_bytes(), identity=ENACTED_IDENTITY)
+
+
+def test_enacted_status_reads_its_laws_entry() -> None:
+    status = enacted_status()
+    assert status.title == "Laken Riley Act"
+    assert [(law.type, law.number) for law in status.laws] == [("Public Law", "119-1")]
+
+
+def test_recorded_votes_are_read_on_the_actions_that_carry_them() -> None:
+    votes = [vote for action in enacted_status().actions for vote in action.recorded_votes]
+    assert [(vote.chamber, vote.roll_number, vote.session_number) for vote in votes] == [
+        ("House", "23", "1"),
+        ("Senate", "7", "1"),
+    ]
+    assert votes[0].url == "https://clerk.house.gov/evs/2025/roll023.xml"
+    assert votes[0].date == "2025-01-22T22:04:55Z"
+    assert votes[0].congress == "119"
+    # Documented by the guide, absent from every entry measured; carried, not dropped.
+    assert all(vote.full_action_name is None for vote in votes)
+
+
+def test_a_bill_without_the_optional_elements_reads_them_as_empty() -> None:
+    status = parse_bill_status(status_body(), identity=IDENTITY)
+    assert status.laws == ()
+    assert all(action.recorded_votes == () for action in status.actions)
+
+
+def test_committees_are_read_with_their_system_codes() -> None:
+    status = parse_bill_status((FIXTURES / "status-119hres10.xml").read_bytes(), identity=BillIdentity(119, "hres", 10))
+    assert [(c.system_code, c.chamber, c.type) for c in status.committees] == [("hsru00", "House", "Standing")]
+    assert status.committees[0].name == "Rules Committee"
+    assert status.committees[0].subcommittees == ()
+
+
+def test_a_subcommittee_is_read_as_a_committee_without_chamber_or_type() -> None:
+    body = (
+        (FIXTURES / "status-119hres10.xml")
+        .read_bytes()
+        .replace(
+            b"</activities>\n      </item>\n    </committees>",
+            b"</activities>"
+            b"<subcommittees><item><systemCode>hsru13</systemCode><name>Legislative and Budget Process</name>"
+            b"</item></subcommittees>"
+            b"</item>\n    </committees>",
+            1,
+        )
+    )
+    status = parse_bill_status(body, identity=BillIdentity(119, "hres", 10))
+    subcommittee = status.committees[0].subcommittees[0]
+    assert (subcommittee.system_code, subcommittee.name) == ("hsru13", "Legislative and Budget Process")
+    assert (subcommittee.chamber, subcommittee.type) == (None, None)

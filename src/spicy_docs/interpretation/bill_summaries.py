@@ -22,12 +22,11 @@ from __future__ import annotations
 import hashlib
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from types import MappingProxyType
 
 from spicy_docs.interpretation.model_call import ModelCall, ModelCallError
 from spicy_docs.sources.congress.bill_status import BillIdentity
-from spicy_docs.transport.source_acquirer import utc_now
 
 PROMPT_VERSION = "v1"
 # ~25K characters is roughly 6K tokens of body; the cap controls cost.
@@ -52,11 +51,11 @@ MONEY_BILL_FRAMES: Mapping[str, str] = MappingProxyType(
             "prior-year levels through a specific date, and mention any anomalies."
         ),
         "omnibus": (
-            "This is a consolidated / omnibus appropriations package - a single bill bundling multiple "
+            "This is a consolidated / omnibus appropriations package — a single bill bundling multiple "
             "annual appropriations bills."
         ),
         "supplemental": (
-            "This is a supplemental appropriations bill - emergency or one-time funding outside the regular "
+            "This is a supplemental appropriations bill — emergency or one-time funding outside the regular "
             "annual cycle. Lead with what it's responding to (disaster, conflict, pandemic, etc.)."
         ),
         "rescission": (
@@ -69,7 +68,7 @@ MONEY_BILL_FRAMES: Mapping[str, str] = MappingProxyType(
         ),
         "ndaa": (
             "This is the National Defense Authorization Act (NDAA). Important: this AUTHORIZES defense "
-            "spending levels - it does NOT appropriate the money. Actual money flows from a separate Defense "
+            "spending levels — it does NOT appropriate the money. Actual money flows from a separate Defense "
             "Appropriations bill. Make this distinction clear."
         ),
         "other_money": (
@@ -80,16 +79,16 @@ MONEY_BILL_FRAMES: Mapping[str, str] = MappingProxyType(
 )
 
 SUMMARY_PROMPT_TEMPLATE = """You are summarizing a U.S. congressional bill for an ordinary citizen \
-- someone who does not work in government and does not have a policy background.
+— someone who does not work in government and does not have a policy background.
 
-Bill: {display_number} - {title}
+Bill: {display_number} — {title}
 Version: {version_label}
 Current legislative status: {status}
 
 Framing: {frame}
 
 Write:
-1. A single paragraph (4-6 sentences) explaining what this bill does, in plain English. Avoid jargon. \
+1. A single paragraph (4–6 sentences) explaining what this bill does, in plain English. Avoid jargon. \
 Lead with what is funded, by whom, for what period. End with the current legislative status.
 2. A short phrase describing the most-affected audience.
 3. Up to three notable provisions in plain language.
@@ -116,7 +115,7 @@ class BillSummaryResult:
     identity: BillIdentity
     version_id: str
     summary: str
-    audience: str | None
+    audience: str
     top_provisions: tuple[str, ...]
     model: str
     prompt_version: str
@@ -125,6 +124,10 @@ class BillSummaryResult:
     output_tokens: int | None
     requested_at: str
     completed_at: str
+
+
+def _now() -> datetime:
+    return datetime.now(UTC)
 
 
 def frame_for_kind(kind: str | None) -> str:
@@ -157,7 +160,7 @@ def needs_regeneration(*, cached_content_hash: str | None, cached_prompt_version
     return cached_content_hash != digest or cached_prompt_version != PROMPT_VERSION
 
 
-def _read_answer(data: object) -> tuple[str, str | None, tuple[str, ...]]:
+def _read_answer(data: object) -> tuple[str, str, tuple[str, ...]]:
     if not isinstance(data, Mapping):
         raise ModelCallError("summary answer must be a mapping", details=data)
     summary = data.get("summary")
@@ -166,14 +169,21 @@ def _read_answer(data: object) -> tuple[str, str | None, tuple[str, ...]]:
             f"summary must be a string of {SUMMARY_CHARS[0]}-{SUMMARY_CHARS[1]} characters", details=data
         )
     audience = data.get("audience")
-    provisions = data.get("topThreeProvisions", data.get("top_provisions", ()))
+    if not isinstance(audience, str) or not audience.strip():
+        raise ModelCallError("summary must name the most-affected audience", details=data)
+    if "topThreeProvisions" in data:
+        provisions = data["topThreeProvisions"]
+    elif "top_provisions" in data:
+        provisions = data["top_provisions"]
+    else:
+        raise ModelCallError("summary must state its notable provisions", details=data)
     if isinstance(provisions, str) or not isinstance(provisions, Sequence):
         raise ModelCallError("summary provisions must be a list", details=data)
     if len(provisions) > MAX_PROVISIONS:
         raise ModelCallError(f"summary may name at most {MAX_PROVISIONS} provisions", details=data)
     if any(not isinstance(entry, str) for entry in provisions):
         raise ModelCallError("each summary provision must be a string", details=data)
-    return summary, audience if isinstance(audience, str) else None, tuple(str(entry) for entry in provisions)
+    return summary, audience, tuple(str(entry) for entry in provisions)
 
 
 def summarize_bill(
@@ -181,7 +191,7 @@ def summarize_bill(
     call: ModelCall,
     *,
     model: str,
-    clock: Callable[[], datetime] = utc_now,
+    clock: Callable[[], datetime] | None = None,
 ) -> BillSummaryResult | None:
     """Summarize one version, or return ``None`` when its text is too short to summarize.
 
@@ -189,13 +199,14 @@ def summarize_bill(
     words of boilerplate produces a confident summary of nothing, which is
     worse than no row at all.
     """
+    now = clock if clock is not None else _now
     if len(version.text.strip()) < MIN_TEXT_CHARS:
         return None
     digest = content_hash(version.text)
     prompt = build_prompt(version)
-    requested_at = clock().isoformat()
+    requested_at = now().isoformat()
     response = call(model=model, prompt=prompt)
-    completed_at = clock().isoformat()
+    completed_at = now().isoformat()
     summary, audience, provisions = _read_answer(response.data)
     return BillSummaryResult(
         identity=version.identity,

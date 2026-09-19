@@ -31,10 +31,36 @@ Two corrections to the behaviour this was ported from
   occasionally absent, while ``actionCode`` is the publisher's identifier for
   the event.
 
-``infer_stage`` takes the whole action list rather than only the latest
-action, and returns the furthest rung reached, because the ladder is ordered
-and a procedural action filed after a signing must not demote a law back to
-``other_chamber``. Feeding a single action or a version-type string is
+**``STAGES`` is display order; ``STAGE_RULES`` is precedence.** They are two
+different orders and they disagree, so neither may be read as the other.
+``STAGES`` is the ladder ``stages.ts`` draws left to right for a reader.
+``STAGE_RULES`` is the order the matchers are tried in for one action text.
+The disagreement is not hypothetical: ``referred`` is a matcher of
+``other_chamber``, which sits at display index 3, above ``committee`` (1) and
+``passed_chamber`` (2) -- and every bill's introduction is a referral. A fold
+that took the maximum display index over a bill's actions would therefore
+report ``other_chamber`` for a bill that has been reported out of committee,
+or that has passed its chamber. Nothing here treats display order as
+progress.
+
+``infer_stage`` takes the whole action list and returns **the stage of the
+latest action any rule classifies**. "Latest" is the action's ``actionDate``,
+then its position, so the same list reads the same whether the publisher
+serves it newest-first (BILLSTATUS and the actions route both do) or a caller
+hands it over in chronological order; an action with no date cannot be shown
+to be later than one that has one. An action no rule classifies leaves the
+stage alone.
+
+One exception, and only one: **enactment is terminal.** Once any action is
+classified ``law``, that is the bill's stage. Every other rung can be
+revisited -- a measure is re-referred, re-reported, re-passed -- while
+becoming law happens once, and the publisher keeps filing actions on enacted
+bills. Note that "Star Print ordered on the bill." does *not* fall through as
+an unclassified action: ``star print`` is a matcher of ``other_chamber``, so
+without this exception the latest-action rule would demote a public law to
+``other_chamber``, which is what BillTrax's ``latestAction`` rule in fact did.
+
+Feeding a single action or a version-type string is
 ``infer_stage_from_text``, which is the rule set BillTrax exposed twice, once
 per caller.
 """
@@ -160,12 +186,21 @@ class StageFinding:
 
 
 def stage_index(stage: str) -> int:
-    """Position on the ladder; -1 for a stage outside the vocabulary."""
+    """Position in **display** order; -1 for a stage outside the vocabulary.
+
+    This is where ``stages.ts`` draws the rung, not how far the bill has got.
+    Do not compare two stages with it -- see the module docstring.
+    """
     return STAGE_KEYS.index(stage) if stage in STAGE_KEYS else -1
 
 
 def stage_progress(stage: str) -> float:
-    """Fraction of the ladder travelled, 0.0 at ``introduced`` and 1.0 at ``law``."""
+    """Fraction of the **display** ladder drawn, 0.0 at ``introduced`` and 1.0 at ``law``.
+
+    A declared change from ``stages.ts``: ``stageProgress`` there returned
+    ``-1 / 6`` for an unknown stage, because ``findIndex`` returns -1 and the
+    division went ahead. A stage outside the vocabulary raises here.
+    """
     index = stage_index(stage)
     if index < 0:
         raise ValueError(f"unknown stage {stage!r}")
@@ -212,24 +247,37 @@ def infer_stage_from_text(text: str | None) -> StageFinding:
     return StageFinding(DEFAULT_STAGE, None, None, text, None, None)
 
 
+LAW_STAGE = "law"
+
+
 def infer_stage(actions: Iterable[object]) -> StageFinding:
-    """Return the furthest rung any action reaches, naming the action that reached it.
+    """Return the stage of the latest action any rule classifies.
 
     ``actions`` holds ``BillAction`` records, mappings shaped like published
     action rows, or bare action-text strings. Text is read whole: an action is
     never shortened before matching.
+
+    "Latest" is ``(actionDate, position)``, so a newest-first publisher list
+    and a chronological caller list give the same answer, and an undated
+    action never outranks a dated one. An action no rule classifies leaves the
+    stage where it was. Enactment is the one terminal rung: see the module
+    docstring for why, and for why a star print does not fall through.
     """
-    best = StageFinding(DEFAULT_STAGE, None, None, None, None, None)
-    best_index = -1
+    latest: tuple[tuple[str, int], StageFinding] | None = None
+    enacted: tuple[tuple[str, int], StageFinding] | None = None
     for position, action in enumerate(actions):
         finding = infer_stage_from_text(_action_text(action))
         if finding.rule is None:
             continue
-        index = stage_index(finding.stage)
-        if index > best_index:
-            best_index = index
-            best = replace(finding, action_index=position, action_date=_action_date(action))
-    return best
+        date = _action_date(action)
+        located = replace(finding, action_index=position, action_date=date)
+        key = (date or "", position)
+        if located.stage == LAW_STAGE and (enacted is None or key > enacted[0]):
+            enacted = (key, located)
+        if latest is None or key > latest[0]:
+            latest = (key, located)
+    chosen = enacted or latest
+    return chosen[1] if chosen else StageFinding(DEFAULT_STAGE, None, None, None, None, None)
 
 
 # The publisher's own identifiers for "became public law": ``36000`` is the
@@ -280,10 +328,9 @@ def _is_became_law(action: object) -> bool:
 def signed_date(status: object) -> SignedDateFinding:
     """Derive the signing date from the ``laws`` entry and the coded became-law action.
 
-    ``status`` is a ``BillStatus``, or a mapping shaped like a published bill
-    row, carrying ``actions`` and ``laws``. ``BillStatus`` does not yet read
-    ``<laws>``; a caller holding that element passes a mapping until it does,
-    and this function needs no change when it lands.
+    ``status`` is a ``BillStatus`` -- which reads ``<laws>`` and each action's
+    code -- or a mapping shaped like a published bill row carrying ``actions``
+    and ``laws``.
 
     A public law entry without a coded action keeps the law number and reports
     ``public_law_without_became_law_action`` rather than falling back to a
@@ -315,6 +362,7 @@ __all__ = [
     "BECAME_PUBLIC_LAW_ACTION_CODES",
     "BECAME_PUBLIC_LAW_ACTION_TYPE",
     "DEFAULT_STAGE",
+    "LAW_STAGE",
     "SIGNED_DATE_RULES",
     "STAGES",
     "STAGE_KEYS",

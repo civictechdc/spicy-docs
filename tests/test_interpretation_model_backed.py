@@ -1,5 +1,6 @@
 """Section classification and bill summaries: sealed prompts, injected model, kept provenance."""
 
+import hashlib
 from datetime import UTC, datetime
 
 import pytest
@@ -145,7 +146,7 @@ def test_the_ndaa_frame_keeps_the_authorize_versus_appropriate_distinction() -> 
 
 def test_the_prompt_carries_the_identity_status_and_capped_body() -> None:
     prompt = build_prompt(VERSION)
-    assert "Bill: HR 4366 - Department of Defense Appropriations Act, 2026" in prompt
+    assert "Bill: HR 4366 — Department of Defense Appropriations Act, 2026" in prompt
     assert "Version: Engrossed in House" in prompt
     assert "Passed House by recorded vote: 217-212." in prompt
     long_version = BillVersionText(
@@ -183,7 +184,7 @@ def test_regeneration_is_decided_by_content_hash_and_prompt_version() -> None:
 
 def test_a_summary_outside_the_declared_length_is_refused() -> None:
     def call(*, model: str, prompt: str) -> ModelResponse:
-        return ModelResponse({"summary": "Too short.", "topThreeProvisions": []})
+        return ModelResponse({"summary": "Too short.", "audience": "Readers", "topThreeProvisions": []})
 
     with pytest.raises(ModelCallError, match="characters"):
         summarize_bill(VERSION, call, model="m", clock=clock())
@@ -194,6 +195,7 @@ def test_more_than_three_provisions_is_refused() -> None:
         return ModelResponse(
             {
                 "summary": "A sufficiently long plain-language summary of the bill. " * 3,
+                "audience": "Readers",
                 "topThreeProvisions": list("abcd"),
             }
         )
@@ -204,3 +206,44 @@ def test_more_than_three_provisions_is_refused() -> None:
 
 def test_both_model_backed_modules_share_one_prompt_version_constant_shape() -> None:
     assert bill_summaries.PROMPT_VERSION == section_classification.PROMPT_VERSION == "v1"
+
+
+# --- the prompts are sealed bytes, pinned ---
+
+PINNED_SECTIONS = (
+    ClassifiableSection("sec-0", "body 0", "Heading 0"),
+    ClassifiableSection("sec-1", "body 1", None),
+)
+
+
+def digest(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def test_the_summary_prompt_is_the_pinned_bytes() -> None:
+    # A prompt is sealed under PROMPT_VERSION: changing one character changes
+    # what every stored summary was generated from, so it changes with the
+    # version or not at all. Typography counts -- the em and en dashes here are
+    # the source's own, not ASCII hyphens.
+    assert digest(build_prompt(VERSION)) == "b16cf2b16fdf32ddca72facd2db5d87cff0b12d3e0e69b28cf3ab65550173655"
+
+
+def test_the_classification_prompt_is_the_pinned_bytes() -> None:
+    assert digest(section_classification.build_prompt(PINNED_SECTIONS)) == (
+        "7fdb2f0aca587e55f62cece1fbdc7455fa27f583665f5d38f9f64950bf4c3bc7"
+    )
+
+
+def test_the_prompts_carry_the_source_s_own_typography() -> None:
+    assert "— someone who does not work in government" in bill_summaries.SUMMARY_PROMPT_TEMPLATE
+    assert "Bill: {display_number} — {title}" in bill_summaries.SUMMARY_PROMPT_TEMPLATE
+    assert "A single paragraph (4–6 sentences)" in bill_summaries.SUMMARY_PROMPT_TEMPLATE
+    assert "package — a single bill" in MONEY_BILL_FRAMES["omnibus"]
+    assert "bill — emergency or one-time" in MONEY_BILL_FRAMES["supplemental"]
+    assert "levels — it does NOT appropriate" in MONEY_BILL_FRAMES["ndaa"]
+    assert "confidence (0–1)" in section_classification.CLASSIFY_PROMPT_TEMPLATE
+    # The TS sources carry exactly these two non-ASCII codepoints inside the
+    # prompt-bearing literals; anything else means a character drifted.
+    sealed = bill_summaries.SUMMARY_PROMPT_TEMPLATE + section_classification.CLASSIFY_PROMPT_TEMPLATE
+    sealed += "".join(MONEY_BILL_FRAMES.values())
+    assert {character for character in sealed if ord(character) > 127} == {"–", "—"}

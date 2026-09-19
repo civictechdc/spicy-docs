@@ -21,19 +21,37 @@ pass over 20 bills found 58 ``recordedVotes`` entries on 58 voted actions,
 exactly one per action, and all six fields present on all 58 -- ``chamber``,
 ``congress``, ``date``, ``rollNumber``, ``sessionNumber``, ``url`` -- across
 two hosts (clerk.house.gov 49, www.senate.gov 9). So all six are required
-here. BillTrax's declared type also carried ``fullActionName``, which the API
-emitted 0 times in 58; it is not carried, and ``date`` and ``url`` are not
-optional, because the measurement says they are not.
+here, and ``date`` and ``url`` are not optional, because the measurement says
+they are not. A seventh, ``fullActionName``, was absent in 58/58 entries of
+the JSON actions route on 2026-09-19; the BILLSTATUS guide documents it, so
+``bill_status.RecordedVote`` carries it and it is optional here. A field the
+publisher documents and may resume sending is not ours to delete.
+
+A malformed entry costs that entry, not the bill: ``recorded_vote_references``
+returns what it could read alongside a ``refusals`` tuple naming what it could
+not, so one bad row in a run does not lose every vote on the bill it sat on.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 
 from spicy_docs.sources.congress.bill_status import BILL_TYPES, BillIdentity
 
 RECORDED_VOTE_FIELDS: tuple[str, ...] = ("chamber", "congress", "date", "rollNumber", "sessionNumber", "url")
+# The parser's field name for each, so one table drives both spellings.
+_SNAKE: Mapping[str, str] = MappingProxyType(
+    {
+        "chamber": "chamber",
+        "congress": "congress",
+        "date": "date",
+        "rollNumber": "roll_number",
+        "sessionNumber": "session_number",
+        "url": "url",
+    }
+)
 VOTE_CHAMBERS = frozenset({"house", "senate"})
 
 VOTE_MATCH_RULES: tuple[str, ...] = ("bill_action_recorded_vote", "house_vote_legislation", "unmatched")
@@ -132,40 +150,76 @@ def bill_type_of(legislation_type: object) -> str:
 
 def read_vote_key(entry: object) -> VoteKey:
     """Read the four identity fields of a ``recordedVotes`` entry; all are required."""
-    chamber = _required_str(_get(entry, "chamber"), "chamber").strip().lower()
+    values = {field: _get(entry, field, _SNAKE[field]) for field in RECORDED_VOTE_FIELDS}
     return VoteKey(
-        congress=_required_int(_get(entry, "congress"), "congress"),
-        chamber=chamber,
-        session=_required_int(_get(entry, "sessionNumber", "session_number", "session"), "sessionNumber"),
-        roll_number=_required_int(_get(entry, "rollNumber", "roll_number"), "rollNumber"),
+        congress=_required_int(values["congress"], "congress"),
+        chamber=_required_str(values["chamber"], "chamber").strip().lower(),
+        session=_required_int(values["sessionNumber"], "sessionNumber"),
+        roll_number=_required_int(values["rollNumber"], "rollNumber"),
     )
 
 
-def recorded_vote_references(identity: BillIdentity, actions: Iterable[object]) -> tuple[VoteReference, ...]:
+def read_recorded_vote(entry: object) -> tuple[VoteKey, str, str]:
+    """Read all six sealed fields, refusing the entry if any is absent."""
+    key = read_vote_key(entry)
+    url = _required_str(_get(entry, "url"), "url")
+    date = _required_str(_get(entry, "date"), "date")
+    return key, url, date
+
+
+@dataclass(frozen=True, slots=True)
+class VoteRefusal:
+    """One entry that could not be read, with where it sat and why."""
+
+    action_index: int
+    entry_index: int
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
+class RecordedVoteReferences:
+    """What could be read, and what could not. Neither hides the other."""
+
+    references: tuple[VoteReference, ...]
+    refusals: tuple[VoteRefusal, ...] = ()
+
+
+def recorded_vote_references(identity: BillIdentity, actions: Iterable[object]) -> RecordedVoteReferences:
     """Every recorded vote a bill's own actions carry, in publisher order.
 
     The bill is the enclosing document, so the reference needs no matching at
     all: reading it *is* the join.
+
+    An entry missing one of the six sealed fields is refused on its own and
+    named in ``refusals``; the rest of the bill's votes are still returned. A
+    ``recordedVotes`` that is not a list at all is a shape error, not one
+    entry's problem, and still raises.
     """
     references: list[VoteReference] = []
+    refusals: list[VoteRefusal] = []
     for position, action in enumerate(actions):
         entries = _get(action, "recordedVotes", "recorded_votes")
         if entries is None:
             continue
         if isinstance(entries, str | Mapping) or not isinstance(entries, Iterable):
             raise VoteMatchError("recordedVotes must be a list of entries")
-        for entry in entries:
+        for entry_index, entry in enumerate(entries):
+            try:
+                key, url, date = read_recorded_vote(entry)
+            except VoteMatchError as refusal:
+                refusals.append(VoteRefusal(position, entry_index, str(refusal)))
+                continue
             references.append(
                 VoteReference(
-                    vote=read_vote_key(entry),
+                    vote=key,
                     bill=identity,
                     rule="bill_action_recorded_vote",
-                    url=_required_str(_get(entry, "url"), "url"),
-                    date=_required_str(_get(entry, "date"), "date"),
+                    url=url,
+                    date=date,
                     action_index=position,
                 )
             )
-    return tuple(references)
+    return RecordedVoteReferences(tuple(references), tuple(refusals))
 
 
 def house_vote_references(votes: Iterable[object]) -> tuple[VoteReference, ...]:
@@ -236,15 +290,18 @@ __all__ = [
     "RECORDED_VOTE_FIELDS",
     "VOTE_CHAMBERS",
     "VOTE_MATCH_RULES",
+    "RecordedVoteReferences",
     "VoteIndex",
     "VoteKey",
     "VoteMatch",
     "VoteMatchError",
     "VoteReference",
+    "VoteRefusal",
     "bill_type_of",
     "house_vote_references",
     "index_vote_references",
     "match_votes",
+    "read_recorded_vote",
     "read_vote_key",
     "recorded_vote_references",
 ]

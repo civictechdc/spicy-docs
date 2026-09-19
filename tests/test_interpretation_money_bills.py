@@ -117,9 +117,20 @@ def test_the_twelve_statutory_subcommittees_are_all_present() -> None:
 def test_referrals_come_from_the_six_committee_system_codes() -> None:
     assert len(COMMITTEE_CODES) == 6
     assert referrals_from_committee_codes(("hsap00", "ssbu00")) == frozenset({"appropriations", "budget"})
-    # A committee whose *name* contains "appropriations" but whose code is not
-    # one of the six raises no signal: the code derivation is the one kept.
+
+
+def test_the_code_rule_is_narrower_than_the_name_rule_it_replaces() -> None:
+    # sync-govinfo.ts:292 raised the appropriations signal for any committee
+    # whose *name* contained the word. hsap12 is the Appropriations
+    # Subcommittee on Transportation and HUD: its name matches, its code is
+    # outside the six, and it now raises nothing -- so a bill referred only to
+    # a subcommittee classifies as no money bill rather than other_money.
+    subcommittee_name = "Transportation, Housing and Urban Development Appropriations Subcommittee"
+    assert "appropriations" in subcommittee_name.lower()
     assert referrals_from_committee_codes(("hsap12",)) == frozenset()
+    title = "To transfer certain funds"
+    assert classify_money_bill(title=title, referrals=("appropriations",)).kind == "other_money"
+    assert classify_money_bill(title=title, referrals=referrals_from_committee_codes(("hsap12",))).kind is None
 
 
 def test_an_unknown_referral_signal_is_refused_rather_than_ignored() -> None:

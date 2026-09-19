@@ -11,6 +11,20 @@ these shapes; they do not establish coverage or continuing live availability.
 | `text-119hr6028ih.xml` | [119 HR 6028 IH XML](https://www.govinfo.gov/content/pkg/BILLS-119hr6028ih/xml/BILLS-119hr6028ih.xml) | Same reduction; preserves the introduced version and its root stage. |
 | `text-119s5enr.xml` | [119 S 5 ENR XML](https://www.govinfo.gov/content/pkg/BILLS-119s5enr/xml/BILLS-119s5enr.xml) | Same reduction; preserves spelled-out Congress and title without Congress number. |
 | `text-119hjres25enr.xml` | [119 HJRES 25 ENR XML](https://www.govinfo.gov/content/pkg/BILLS-119hjres25enr/xml/BILLS-119hjres25enr.xml) | Complete, unchanged 2,751-byte response. |
+| `status-119s5.xml` | [119 S 5 BILLSTATUS](https://www.govinfo.gov/bulkdata/BILLSTATUS/119/s/BILLSTATUS-119s5.xml) | Retrieved with unauthenticated GET on 2026-09-19: `200`, `content-type: text/xml`, 269,519 bytes, SHA-256 `060213ff9909c0d5683d586fc7b9b4150c1c5a1d46b5bdb99ada5c49c89dc5eb`, publisher Last-Modified 2026-07-30 18:58:58 GMT. Reduced: kept 5 of 39 actions in publisher order and dropped `relatedBills`, `cosponsors`, `subjects`, `summaries`, `titles`, `amendments` and `textVersions`; reformatted XML. Retained elements are unchanged publisher bytes. |
+
+`status-119s5.xml` is the only enacted bill here, and it is the one that
+carries `<laws>` and `<recordedVotes>`: the Laken Riley Act, Public Law 119-1.
+The five retained actions are the two that became law (`36000` `BecameLaw` and
+`E30000` `President`, both 2025-01-29), the House passage action carrying a
+`clerk.house.gov` recorded vote, the Senate passage action carrying a
+`senate.gov` one, and the introduction. It has **no** `<committees>` element,
+which is the publisher's ordinary answer for a measure that took no committee
+action — the guide says so at the `<committees>` entry — so committee parsing
+is covered by `status-119hres10.xml` and `status-119hres1376.xml`, which carry
+real ones. No `<recordedVote>` in this file states `fullActionName`, matching
+the actions-route measurement in
+[the raw-data study](../../../docs/research/billtrax-raw-data-2026-09-19.md).
 
 Full response SHA-256 values, before reduction:
 

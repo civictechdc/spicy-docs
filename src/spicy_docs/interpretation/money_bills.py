@@ -22,6 +22,15 @@ name one: a system code is the publisher's identifier for the committee and
 cannot drift, while "appropriations" as a substring of a committee name also
 matches subcommittees, select committees and any renaming.
 
+**The change is a narrowing, and that direction is deliberate.** A committee
+whose name contains the word but whose code is outside the six -- an
+Appropriations *sub*committee such as ``hsap12``, a select committee, a
+renamed panel -- raised a referral signal before and raises none now. So some
+bills that were classified ``other_money`` on a subcommittee referral now
+classify as nothing. That is the point: rule 10 exists because a bare
+appropriations referral is already noisy, and a substring match widened
+exactly the signal the rule was trying to keep narrow.
+
 ``reason_codes`` were computed and thrown away in BillTrax -- no column held
 them, so no classification could be audited. They are part of the finding
 here, and so is ``rule``.
