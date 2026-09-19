@@ -442,7 +442,7 @@ def is_gpo_layout(pages: Sequence[str]) -> bool:
     a consecutive run starting at 1 (see ``_layout_verdict`` and
     ``_starts_consecutive_run_from_one``).
     """
-    return _layout_verdict([_strip_metadata(_normalize_encoding(page).split("\n"))[1] for page in pages])
+    return _layout_verdict([_strip_metadata(normalize_gpo_glyphs(page).split("\n"))[1] for page in pages])
 
 
 def _merge_small_caps(lines: list[_Line]) -> tuple[list[_Line], int]:
@@ -485,20 +485,37 @@ def _rejoin_hyphens(lines: list[_Line], gpo_layout: bool) -> tuple[list[str], in
     return [line.text for line in working if line.text != "\x00"], count
 
 
-def _normalize_encoding(raw: str) -> str:
+def normalize_gpo_glyphs(raw: str) -> str:
+    """Line endings and GPO's quote conventions, shared by every rendition.
+
+    Public and extractor-agnostic because GPO spells the same document the
+    same way in every rendition but one glyph set apart, and a caller that
+    normalizes only one of them makes two texts of one document. Measured
+    2026-09-19 across six PDF-derived fixtures and four keyless ``htm``
+    bodies: the PDF text carries curly quotes (8, 99 and 242 on
+    CRPT-119hrpt105, -113hrpt135 and -113srpt77) and no backtick at all,
+    while the ``htm`` rendition of those same reports carries no curly quote
+    and 2, 54 and 119 typewriter pairs (two backticks opening, two
+    apostrophes closing). Both spellings are handled here, so the two
+    renditions agree afterwards; ``extraction.body_text`` is the other
+    caller.
+    """
     text = raw.replace("\r\n", "\n").replace("\r", "\n")
     text = _CURLY_SINGLE_RE.sub("'", text)
     text = _CURLY_DOUBLE_RE.sub('"', text)
     text = text.replace("\u00a0", " ")
     # GPO renders a real double quote as two adjacent single curly quotes
-    # ("\u2018\u2018...\u2019\u2019", seen in CRPT-119hrpt105); after the
-    # replacements above those are two straight single quotes, not one
-    # double quote. Collapse them -- independently confirmed against
-    # DeltaTrack's own extractor-agnostic ``normalize_glyphs``
+    # ("\u2018\u2018...\u2019\u2019", seen in CRPT-119hrpt105) in its PDF, and
+    # as a backtick/apostrophe typewriter pair in its htm; after the
+    # replacements above the first is two straight single quotes, not one
+    # double quote. Collapse both -- the apostrophe half independently confirmed
+    # against DeltaTrack's own extractor-agnostic ``normalize_glyphs``
     # (parsers/pdf_text.py:179, doubled-quote collapse at line 192:
     # ``text.replace("''", '"')``), not adopting its em/en-dash rewrite
-    # alongside it, since no fixture here measures one.
-    return text.replace("''", '"')
+    # alongside it, since no fixture here measures one. The backtick half is
+    # a no-op on every PDF-derived fixture here (zero backticks in all six),
+    # so adding it changes no measured PDF count.
+    return text.replace("``", '"').replace("''", '"')
 
 
 def normalize_gpo_pages(pages: Sequence[str]) -> tuple[tuple[str, ...], GpoCleanupRecord]:
@@ -511,7 +528,7 @@ def normalize_gpo_pages(pages: Sequence[str]) -> tuple[tuple[str, ...], GpoClean
     """
     if not pages:
         raise ValueError("pages must be a nonempty sequence")
-    per_page = [_strip_metadata(_normalize_encoding(raw_page).split("\n")) for raw_page in pages]
+    per_page = [_strip_metadata(normalize_gpo_glyphs(raw_page).split("\n")) for raw_page in pages]
     gpo_layout = _layout_verdict([counts for _, counts in per_page])
     normalized: list[str] = []
     page_records: list[GpoPageCleanup] = []
@@ -571,5 +588,6 @@ __all__ = [
     "GpoPageCleanup",
     "MetadataRule",
     "is_gpo_layout",
+    "normalize_gpo_glyphs",
     "normalize_gpo_pages",
 ]

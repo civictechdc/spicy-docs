@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Self
 from spicy_docs.reading.refusals import attach_refused_response
 from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 from spicy_docs.sources.govinfo.bodies import (
+    BODY_PREFERENCE,
     PACKAGE_BODY_FORMATS,
     GovInfoBodySourceError,
     PackageBodyIdentity,
@@ -55,10 +56,6 @@ from spicy_docs.transport.source_acquirer import (
 if TYPE_CHECKING:
     import httpx
 
-#: Text formats first: a hearing or directory PDF runs to tens of megabytes
-#: (CHRG-119hhrg64242 is 46.6 MB, above the evidence bound), so PDF is only
-#: fetched when the caller names it.
-DEFAULT_PREFERENCE: tuple[str, ...] = ("xml", "htm", "txt")
 _USER_AGENT = "spicy-docs-govinfo-bodies/1.0"
 _REDIRECT_STATUSES = (301, 302, 303, 307, 308)
 
@@ -254,15 +251,23 @@ class GovInfoBodyAcquirer:
         self,
         package_id: str,
         *,
-        prefer: Sequence[str] = DEFAULT_PREFERENCE,
+        prefer: Sequence[str] = BODY_PREFERENCE,
         max_bytes: int | None = None,
     ) -> GovInfoPackageBody:
         """Capture the first preferred rendition the package actually offers.
 
         ``prefer`` is matched in order against the renditions the package MODS
-        states; PDF is fetched only when the caller names it. ``max_bytes`` may
-        narrow the body allowance for this call, never raise it. Every refusal
-        carries its capture, the stage it failed at and this context.
+        states. It defaults to the sealed ``bodies.BODY_PREFERENCE`` -- XML
+        first, PDF last -- so a package offered only as PDF still yields a
+        body; the previous default, ``("xml", "htm", "txt")``, refused one
+        with ``GovInfoFormatNotOfferedError``. A PDF can be large (the
+        CHRG-119hhrg64242 PDF is 46.6 MB, above the evidence bound), so it is
+        reached only after every text-bearing rendition and it is the one
+        format a narrow ``max_bytes`` is most likely to refuse.
+
+        ``max_bytes`` may narrow the body allowance for this call, never raise
+        it. Every refusal carries its capture, the stage it failed at and this
+        context.
         """
         if self._closed:
             raise ValueError("GovInfo body acquirer is closed")
@@ -365,7 +370,6 @@ class GovInfoBodyAcquirer:
 
 
 __all__ = [
-    "DEFAULT_PREFERENCE",
     "GovInfoBodyAcquirer",
     "GovInfoBodyBudget",
     "GovInfoFormatNotOfferedError",
