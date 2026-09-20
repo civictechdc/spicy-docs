@@ -40,14 +40,16 @@ import hashlib
 import json
 import re
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import cache
 from pathlib import Path
 from typing import Any
 
 from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key, scrub_credential
 
+ROOT = Path(__file__).resolve().parents[2]
 REFSPEC_ENV = Path("/Users/mikewolfd/Work/spicy-stack/RefSpec/.env")
 #: The checkout's own credential file; an isolated checkout copy does not carry it.
 CHECKOUT_ENV = Path("/Users/mikewolfd/Work/spicy-stack/spicy-docs/.env")
@@ -77,6 +79,7 @@ class RequestLog:
     receipt: Path
     secrets: tuple[str, ...] = ()
     rows: list[dict[str, Any]] = field(default_factory=list)
+    _succeeded: dict[str, str] | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         (self.receipt / "blobs").mkdir(parents=True, exist_ok=True)
@@ -90,12 +93,16 @@ class RequestLog:
         return text
 
     def succeeded(self, url: str) -> str | None:
-        """The digest of a retained successful body for this URL, if one exists."""
-        key = self.scrub(url)
-        for row in self.rows:
-            if row["url"] == key and row.get("sha256") and row.get("status") == 200:
-                return row["sha256"]
-        return None
+        """The digest of a retained successful body for this URL, if one exists.
+
+        Indexed rather than scanned: this is asked once per document and the log
+        grows with every request, so a scan makes resuming quadratic in the run.
+        """
+        if self._succeeded is None:
+            self._succeeded = {
+                row["url"]: row["sha256"] for row in self.rows if row.get("sha256") and row.get("status") == 200
+            }
+        return self._succeeded.get(self.scrub(url))
 
     def body(self, digest: str) -> bytes:
         return (self.receipt / "blobs" / digest).read_bytes()
@@ -137,6 +144,8 @@ class RequestLog:
             else {k: (self.scrub(v) if isinstance(v, str) else v) for k, v in zyte.items()},
         }
         self.rows.append(row)
+        if self._succeeded is not None and digest and status == 200:
+            self._succeeded[row["url"]] = digest
         with (self.receipt / "requests.jsonl").open("a") as handle:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
         return digest
@@ -225,8 +234,13 @@ class Fetchers:
         client.reset_budget()
         try:
             capture = client.capture(url, max_bytes=max_bytes)
-        except BaseException as error:  # noqa: BLE001 - every outcome is a measurement
+        except Exception as error:
+            # Every outcome is a measurement -- except a credential refusal,
+            # which fetcher rule 1 says must abort rather than be skipped as a
+            # bad row. It is logged first so the receipt holds it either way.
             self._record_refusal(error, url, family=family, purpose=purpose, request_class=request_class)
+            if isinstance(error, CredentialRefusedError):
+                raise
             return None
         self.log.record(
             family=family,
@@ -245,7 +259,7 @@ class Fetchers:
         client.reset_budget()
         try:
             capture = client.capture(url, max_bytes=max_bytes)
-        except BaseException as error:  # noqa: BLE001
+        except Exception as error:
             self._record_refusal(
                 error,
                 url,
@@ -254,6 +268,8 @@ class Fetchers:
                 request_class="zyte",
                 zyte=_zyte_record(transport, mode),
             )
+            if isinstance(error, CredentialRefusedError):
+                raise
             return None
         finally:
             client.close()
@@ -315,14 +331,27 @@ class Fetchers:
 
 
 def _zyte_record(transport: Any, mode: str) -> dict[str, Any]:
+    """One row's proxy provenance, including how many provider calls it took.
+
+    ``provider_calls`` is what makes a run's total derivable: the shared client
+    may retry, so a logged row is not necessarily one call, and a receipt that
+    records only rows cannot be added up.
+    """
     records = list(transport.records)
     if not records:
-        return {"mode": mode, "request_id": None, "proxied_client": "zyte", "note": "no provider response"}
+        return {
+            "mode": mode,
+            "request_id": None,
+            "proxied_client": "zyte",
+            "provider_calls": 0,
+            "note": "no provider response",
+        }
     record = records[-1]
     return {
         "mode": record.mode,
         "request_id": record.zyte_request_id,
         "proxied_client": record.proxied_client,
+        "provider_calls": len(records),
         "target_status": record.status_code,
         "body_is_publisher_bytes": record.body_is_publisher_bytes,
     }
@@ -359,6 +388,95 @@ def _canonical_law_number(value: str) -> str:
     """``P.L. 98-369``, ``Public Law 98–369`` and the index's ``PUB 98-369`` are one key."""
     digits = re.search(r"(\d{1,3})[-–](\d{1,4})", value)
     return f"{digits.group(1)}-{digits.group(2)}" if digits else _canonical_alnum(value)
+
+
+MONTHS: tuple[str, ...] = (
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+)
+
+#: The chamber rosters this repository already pins, read through this
+#: repository's own readers. They are the vocabulary a printed committee name
+#: has to resolve against before it counts as a committee; the House file is
+#: the complete ``<committees>`` block, the Senate excerpt states only the
+#: committees its sampled senators sit on, so the Senate side is a floor.
+HOUSE_ROSTER = ROOT / "tests" / "fixtures" / "congress_rosters" / "memberdata-119-excerpt.xml"
+SENATE_ROSTER = ROOT / "tests" / "fixtures" / "congress_rosters" / "cvc-member-data-excerpt.xml"
+
+
+@cache
+def committee_vocabulary() -> tuple[tuple[str, str], ...]:
+    """``(canonical name, system_code)`` for every committee the pinned rosters state."""
+    from spicy_docs.sources.congress.committee_rosters import parse_house_member_data, parse_senate_cvc
+
+    house = parse_house_member_data(HOUSE_ROSTER.read_bytes(), congress=119)
+    senate = parse_senate_cvc(SENATE_ROSTER.read_bytes())
+    entries = {
+        _canonical_alnum(committee.name): house_code
+        for committee in house.committees
+        if (house_code := "hs" + committee.code.lower())
+    }
+    for senator in senate.senators:
+        for assignment in senator.committees:
+            entries.setdefault(_canonical_alnum(assignment.name), assignment.system_code)
+    return tuple(sorted(entries.items()))
+
+
+def resolve_committee_names(values: Iterable[str]) -> dict[str, str | None]:
+    """Settle each printed candidate against the rosters, or leave it unresolved.
+
+    Four ways, in order, and each is a statement about the print rather than a
+    guess: the candidate *is* a roster name; the candidate is a line-wrapped
+    **prefix** of exactly one roster name (``Committee on Natural Re``); a
+    roster name is a prefix of the candidate, which is the name running into
+    following prose (``Committee on Ways and Means Repub``); or the candidate is
+    a prefix of other candidates **in the same document** that all resolved to
+    one committee, which is how ``Committee on Agri`` settles where the roster
+    alone cannot -- it prefixes the House's Agriculture and the Senate's
+    Agriculture, Nutrition, and Forestry, but the report that wrapped it also
+    prints the full House name.
+
+    A candidate that stays ambiguous, and every committee no pinned roster
+    names, is reported unresolved rather than counted.
+
+    O(V * (R + V)) over one document's candidates and the roster, with R fixed
+    at a few dozen and V at about a hundred.
+    """
+    vocabulary = committee_vocabulary()
+    candidates = list(values)
+    resolved: dict[str, str | None] = {}
+    for value in candidates:
+        exact = [code for name, code in vocabulary if name == value]
+        if exact:
+            resolved[value] = exact[0]
+            continue
+        prefixed = {code for name, code in vocabulary if name.startswith(value)}
+        if len(prefixed) == 1:
+            resolved[value] = prefixed.pop()
+            continue
+        contains = sorted(
+            ((name, code) for name, code in vocabulary if value.startswith(name)), key=lambda p: -len(p[0])
+        )
+        resolved[value] = contains[0][1] if contains else None
+    for value, code in list(resolved.items()):
+        if code is not None:
+            continue
+        siblings = {
+            other_code for other, other_code in resolved.items() if other_code is not None and other.startswith(value)
+        }
+        if len(siblings) == 1:
+            resolved[value] = siblings.pop()
+    return resolved
 
 
 @dataclass(frozen=True)
@@ -413,12 +531,17 @@ JOIN_KEY_RULES: tuple[JoinKeyRule, ...] = (
     ),
     JoinKeyRule(
         name="public_law",
-        pattern=r"\bP(?:ublic\s+Law|\.\s?L\.)\s?(?:No\.\s?)?\d{1,3}[-–]\d{1,4}\b",
-        index_pattern=r"\b(?:P(?:ublic\s+Law|\.\s?L\.)\s?(?:No\.\s?)?|PUB\s+|PRIV\s+)\d{1,3}[-–]\d{1,4}\b",
+        # One rule for all four spellings in the sample: ``Public Law 98-369``,
+        # ``P.L. 98-369``, ``PL 98-369`` and the Bluebook ``Pub. L. No. 89-136``.
+        # The first rule could not read the Bluebook form and so missed 35
+        # occurrences -- 18 in the activity reports, 11 in GAO -- which is the
+        # shape a court or an auditor writes in.
+        pattern=r"\bP(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?\d{1,3}[-–]\d{1,4}\b",
+        index_pattern=(r"\b(?:P(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?|PUB\s+|PRIV\s+)\d{1,3}[-–]\d{1,4}\b"),
         canonical=_canonical_law_number,
         target_table="laws",
         target_key="(congress, law_type, number)",
-        spot=("Public Lands", "P.L. Smith", "Pub L"),
+        spot=("Public Lands", "P.L. Smith", "Pub L", "Republic Law 5", "Pub. L. Rev."),
     ),
     JoinKeyRule(
         name="statutes_at_large",
@@ -486,10 +609,12 @@ JOIN_KEY_RULES: tuple[JoinKeyRule, ...] = (
     ),
     JoinKeyRule(
         name="case_docket_number",
-        pattern=r"\bNo\.\s?\d{2}[-–]\d{1,4}\b",
+        # Not preceded by ``L.``: ``Pub. L. No. 89-136`` is a public law, and the
+        # first rule read it as a circuit docket in the GAO sample.
+        pattern=r"(?<!L\.)(?<!L\. )\bNo\.\s?\d{2}[-–]\d{1,4}\b",
         target_table="courtlistener clusters (not hosted)",
         target_key="docket_number",
-        spot=("No. 25", "Number 24-1001"),
+        spot=("No. 25", "Number 24-1001", "Pub. L. No. 89-136", "P.L. No. 89-136"),
         note=(
             "any federal case number printed in this shape, not only a Supreme Court docket: "
             "a GAO report cites circuit and district dockets the same way"
@@ -504,10 +629,23 @@ JOIN_KEY_RULES: tuple[JoinKeyRule, ...] = (
     ),
     JoinKeyRule(
         name="committee_name",
-        pattern=r"\bCommittee on (?:the )?[A-Z][A-Za-z]+(?:[, ]{1,2}(?:and )?[A-Z][A-Za-z]+){0,5}",
+        # A *candidate* finder, not a committee. A committee report wraps the
+        # name across lines and runs it into the following prose, so this rule
+        # alone yielded 90 distinct values over the eight activity reports --
+        # five of them dates (``Committee on June``), 46 line-wrap prefixes of
+        # each other (``Committee on Agri`` / ``Committee on Agriculture``) and
+        # several running into a chairman's name. A month is rejected here; the
+        # rest is settled by ``resolve_committee_names`` against the chamber
+        # rosters, and only a resolved ``system_code`` is reported as a
+        # committee.
+        pattern=(
+            r"\bCommittee on (?:the )?(?!"
+            + "|".join(MONTHS)
+            + r")[A-Z][A-Za-z']+(?:[, ]{1,2}(?:and )?[A-Z][A-Za-z']+){0,5}"
+        ),
         target_table="committees",
-        target_key="name (system_code by lookup)",
-        spot=("committee on the matter", "Committee of the Whole"),
+        target_key="system_code, through the chamber rosters",
+        spot=("committee on the matter", "Committee of the Whole", "Committee on June 5"),
     ),
     JoinKeyRule(
         name="dollar_amount",
@@ -1131,11 +1269,22 @@ def acquire(receipt: Path, families: Sequence[str], zyte_max: int) -> None:
                 _probe_crs_html(fetchers, discovered)
     finally:
         fetchers.close()
-    print(json.dumps({"requests": log.counts(), "receipt": str(receipt)}, indent=2))
+    spent = fetchers.zyte_budget.spent if fetchers.zyte_budget is not None else 0
+    summary = {
+        "requests": log.counts(),
+        "zyte_provider_calls": spent,
+        "zyte_budget": None if fetchers.zyte_budget is None else fetchers.zyte_budget.max_requests,
+        "receipt": str(receipt),
+    }
+    (receipt / "acquire-summary.jsonl").open("a").write(json.dumps(summary, sort_keys=True) + "\n")
+    print(json.dumps(summary, indent=2))
 
 
 #: A CBO publication page names its own estimate PDF here, and nowhere else.
 _CBO_PDF_LINK = re.compile(r'href="(/(?:system|sites/default)/files/[^"]+\.pdf)"')
+#: The publisher's own statement that this is its page. Checked before a missing
+#: PDF link is read as a fact about the publication.
+_CBO_PAGE_MARKER = re.compile(r"(?i)congressional budget office|cbo\.gov/publication")
 
 
 def _acquire_cbo_documents(fetchers: Fetchers, discovered: dict[str, Any], index_path: Path) -> None:
@@ -1156,7 +1305,25 @@ def _acquire_cbo_documents(fetchers: Fetchers, discovered: dict[str, Any], index
         )
         if page is None:
             continue
-        links = _CBO_PDF_LINK.findall(page.decode("utf-8", "replace"))
+        rendered = page.decode("utf-8", "replace")
+        if not _CBO_PAGE_MARKER.search(rendered):
+            # A 200 that is not a CBO publication page cannot establish that the
+            # page names no PDF: a challenge or an error page states no link
+            # either, and recording that as "no document" would be the census's
+            # own empty-success mistake.
+            fetchers.log.record(
+                family="cbo",
+                purpose="document-page-unexpected-shape",
+                url=document["url"],
+                method="GET",
+                request_class="zyte",
+                status=200,
+                media_type=None,
+                body=None,
+                note="200 lacks the publisher's own page marker; no absence established",
+            )
+            continue
+        links = _CBO_PDF_LINK.findall(rendered)
         document["pdf_url"] = "https://www.cbo.gov" + links[0] if links else None
         if not document["pdf_url"]:
             continue
@@ -1228,16 +1395,23 @@ def extract_document(body: bytes) -> dict[str, Any]:
     results = extractor.extract(body, media_type="application/pdf")
     page_count: int | None = None
     try:
-        for result in results:
-            page_count = result.metadata.get("page_count", page_count)
+        while True:
+            # ``next`` is where the page is rendered and ``find_tables`` runs, so
+            # that is what is timed. The first version started the timer after
+            # the yield and published a column of zeros.
             page_started = time.perf_counter()
+            result = next(results, None)
+            page_seconds = time.perf_counter() - page_started
+            if result is None:
+                break
+            page_count = result.metadata.get("page_count", page_count)
             texts.append(result.text)
             pages.append(
                 {
                     "page": result.metadata.get("page_number") or result.metadata.get("page"),
                     "characters": len(result.text),
                     "blocks": len(result.content.blocks),
-                    "seconds": round(time.perf_counter() - page_started, 4),
+                    "seconds": round(page_seconds, 4),
                     "tables": [
                         {
                             "page": t.page,
@@ -1311,13 +1485,20 @@ def capture_probe(body: bytes, digest: str) -> dict[str, Any]:
         results.close()
     evidence = evidence_from_pages(pages, source_sha256=digest)
     joined = "\n".join(block.text for block in evidence.blocks)
+    raw = "\n".join(page.text for page in pages)
+    # The witness has to compare two things. ``evidence_from_pages`` stores the
+    # digest it was handed, so checking it against that same digest is a
+    # tautology; what a capture must establish is that concatenating the blocks
+    # reproduces the page text. Whitespace is normalized on both sides because
+    # line assembly is allowed to rejoin a wrapped line, which is the one thing
+    # it is for.
     return {
         "pages": len(pages),
         "evidence_blocks": len(evidence.blocks),
         "rendition": evidence.rendition,
         "derivation": evidence.derivation,
-        "source_sha256_matches": evidence.source_sha256 == digest,
         "round_trip_sha256": hashlib.sha256(joined.encode()).hexdigest(),
+        "round_trip_matches": re.sub(r"\s+", " ", joined).strip() == re.sub(r"\s+", " ", raw).strip(),
         "characters": len(joined),
     }
 
@@ -1369,11 +1550,23 @@ def measure_keys(text: str, index_row: Any) -> dict[str, Any]:
         found[rule.name] = {
             "count": len(flat),
             "distinct_count": len(distinct),
-            "distinct": distinct[:12],
+            # The full sets, so the family's union can be taken across
+            # documents; ``compact`` truncates them for the committed sidecar
+            # and the receipt keeps them whole.
+            "distinct": distinct,
             "stated_by_index_count": len(stated & set(distinct)),
             "not_in_index_count": len(new_values),
-            "not_in_index": new_values[:12],
+            "not_in_index": new_values,
         }
+    # A printed committee name is a candidate until a roster settles it.
+    resolution = resolve_committee_names(found["committee_name"]["distinct"])
+    found["committee_name"]["resolved"] = {
+        value: code for value, code in sorted(resolution.items()) if code is not None
+    }
+    found["committee_name"]["unresolved"] = sorted(v for v, code in resolution.items() if code is None)
+    found["committee_name"]["resolved_system_codes"] = sorted(
+        {code for code in resolution.values() if code is not None}
+    )
     structure = {}
     for name, pattern in STRUCTURE_RULES:
         structure[name] = len(re.findall(pattern, text))
@@ -1487,7 +1680,11 @@ def compact(report: Mapping[str, Any]) -> dict[str, Any]:
             extraction["slowest_page_seconds"] = max((page["seconds"] for page in pages), default=None)
             # A rule that matched nothing in this document is already reported
             # by its absence; carrying sixteen zero rows per document is bulk.
-            document["join_keys"] = {name: found for name, found in document["join_keys"].items() if found["count"]}
+            document["join_keys"] = {
+                name: found | {"distinct": found["distinct"][:12], "not_in_index": found["not_in_index"][:12]}
+                for name, found in document["join_keys"].items()
+                if found["count"]
+            }
             document["structure"] = {name: n for name, n in document["structure"].items() if n}
     return result
 
@@ -1504,14 +1701,27 @@ def _presence(documents: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     for rule in JOIN_KEY_RULES:
         hits = sum(1 for d in read if d["join_keys"][rule.name]["count"] > 0)
         beyond = sum(1 for d in read if d["join_keys"][rule.name]["not_in_index_count"] > 0)
+        # Two different numbers, and conflating them overstates the yield: the
+        # per-document sum is how many rows a link table would hold, because one
+        # document citing a law is one row; the union is how many distinct keys
+        # the family reaches. The Detroit Timber boilerplate cite appears in
+        # eight of eight slip opinions -- eight rows, one key.
         presence[rule.name] = {
             "documents": hits,
             "rate": round(hits / len(read), 3),
             "documents_beyond_index": beyond,
             "rate_beyond_index": round(beyond / len(read), 3),
-            "distinct_values": sum(d["join_keys"][rule.name]["distinct_count"] for d in read),
-            "distinct_values_beyond_index": sum(d["join_keys"][rule.name]["not_in_index_count"] for d in read),
+            "link_rows": sum(d["join_keys"][rule.name]["distinct_count"] for d in read),
+            "link_rows_beyond_index": sum(d["join_keys"][rule.name]["not_in_index_count"] for d in read),
+            "distinct_values": len({v for d in read for v in d["join_keys"][rule.name]["distinct"]}),
+            "distinct_values_beyond_index": len({v for d in read for v in d["join_keys"][rule.name]["not_in_index"]}),
         }
+    presence["committee_system_codes"] = sorted(
+        {code for d in read for code in d["join_keys"]["committee_name"]["resolved_system_codes"]}
+    )
+    presence["committee_candidates_unresolved"] = len(
+        {v for d in read for v in d["join_keys"]["committee_name"]["unresolved"]}
+    )
     structure = {}
     for name, _ in STRUCTURE_RULES:
         hits = sum(1 for d in read if d["structure"][name] > 0)

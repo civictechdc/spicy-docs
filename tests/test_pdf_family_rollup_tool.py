@@ -1,10 +1,14 @@
 """The PDF-family rollup's rules, and the sidecar the report is written from.
 
-The measurement's numbers are only as good as its rules, and two of those rules
-were wrong until the sample corrected them: ``bill_number`` read the U.S.
-Reports cite ``600 U. S. 183`` as Senate bill ``S. 183`` and the GPO running
-head ``HR974`` as a House bill. Both corrections are pinned here, because a
-rule that widens again would raise a presence rate rather than fail anything.
+The measurement's numbers are only as good as its rules, and four of those rules
+were wrong until the sample and the review corrected them: ``bill_number`` read
+the U.S. Reports cite ``600 U. S. 183`` as Senate bill ``S. 183`` and the GPO
+running head ``HR974`` as a House bill; ``public_law`` could not read the
+Bluebook ``Pub. L. No. 89-136`` at all; ``case_docket_number`` read the ``No.``
+inside that same cite as a circuit docket; and ``committee_name`` reported 90
+line-wrapped fragments as 90 committees. Every correction is pinned here,
+because a rule that widens again raises a presence rate rather than failing
+anything.
 """
 
 from __future__ import annotations
@@ -18,9 +22,11 @@ import pytest
 from tools.analysis.pdf_family_rollup import (
     JOIN_KEY_RULES,
     STRUCTURE_RULES,
+    committee_vocabulary,
     compact,
     index_text,
     measure_keys,
+    resolve_committee_names,
     spot_check,
 )
 
@@ -101,6 +107,60 @@ def test_the_public_law_rule_reads_the_two_publishers_spellings_as_one_key() -> 
     assert stated == {"98-369"}
 
 
+@pytest.mark.parametrize(
+    "text",
+    ["Public Law 98-369", "P.L. 98-369", "PL 98-369", "Pub. L. No. 89-136", "Pub. L. 119-21"],
+)
+def test_the_public_law_rule_reads_the_bluebook_spelling_too(text: str) -> None:
+    """The first rule could not, and so missed 35 occurrences across the sample."""
+    assert rule("public_law").compiled().search(text) is not None
+
+
+def test_a_bluebook_law_cite_is_not_read_as_a_case_docket() -> None:
+    """``Pub. L. No. 89-136`` put a circuit docket in the GAO row until this rule moved."""
+    assert rule("case_docket_number").compiled().search("Pub. L. No. 89-136") is None
+    assert rule("case_docket_number").compiled().search("No. 24-1260") is not None
+
+
+def test_a_month_is_not_a_committee() -> None:
+    assert rule("committee_name").compiled().search("Committee on June 5, 2024") is None
+    assert rule("committee_name").compiled().search("Committee on Agriculture") is not None
+
+
+def test_the_committee_vocabulary_comes_from_the_pinned_chamber_rosters() -> None:
+    vocabulary = dict(committee_vocabulary())
+    assert vocabulary["COMMITTEEONAGRICULTURE"] == "hsag00"
+    assert vocabulary["COMMITTEEONWAYSANDMEANS"] == "hswm00"
+    assert any(code.startswith("ss") for code in vocabulary.values()), "the Senate roster should contribute too"
+
+
+def test_a_wrapped_or_run_on_committee_name_resolves_to_one_system_code() -> None:
+    """The failure this fixes: 90 candidates reported as 90 committees."""
+    resolved = resolve_committee_names(
+        [
+            "COMMITTEEONAGRICULTURE",
+            "COMMITTEEONAGRI",  # a line wrap; ambiguous against the roster alone
+            "COMMITTEEONAG",
+            "COMMITTEEONWAYSANDMEANSREPUB",  # runs into following prose
+            "COMMITTEEONNATURALRE",
+            "COMMITTEEONTHEPRESENTDANGER",  # not a congressional committee
+        ]
+    )
+
+    assert resolved["COMMITTEEONAGRICULTURE"] == "hsag00"
+    assert resolved["COMMITTEEONAGRI"] == "hsag00"
+    assert resolved["COMMITTEEONAG"] == "hsag00"
+    assert resolved["COMMITTEEONWAYSANDMEANSREPUB"] == "hswm00"
+    assert resolved["COMMITTEEONNATURALRE"] == "hsii00"
+    assert resolved["COMMITTEEONTHEPRESENTDANGER"] is None
+    assert len({code for code in resolved.values() if code}) == 3
+
+
+def test_an_ambiguous_fragment_alone_stays_unresolved() -> None:
+    """Without a sibling in the same document, ``Committee on Agri`` names two chambers' committees."""
+    assert resolve_committee_names(["COMMITTEEONAGRI"])["COMMITTEEONAGRI"] is None
+
+
 def test_the_recommendation_marker_reads_the_publishers_heading_not_a_verb() -> None:
     """``We recommend that`` alone found GAO recommendations in 1 report of 8."""
     marker = dict(STRUCTURE_RULES)["recommendation_list"]
@@ -125,8 +185,13 @@ def test_the_committed_sidecar_states_the_numbers_the_report_leads_with() -> Non
     assert families["cbo"]["presence"]["documents_read"] == 0
     # CRS: every bill the prints discuss is already in the index.
     assert families["crs"]["presence"]["bill_number"]["distinct_values_beyond_index"] == 0
-    # The activity reports are the densest join surface measured.
-    assert families["house_activity"]["presence"]["bill_number"]["distinct_values_beyond_index"] > 900
+    # The activity reports are the densest join surface measured, and the row
+    # count and the distinct-key count are different numbers.
+    activity = families["house_activity"]["presence"]["bill_number"]
+    assert activity["distinct_values_beyond_index"] == 883
+    assert activity["link_rows_beyond_index"] == 940
+    # Committee names are reported as resolved system codes, never as candidates.
+    assert len(families["house_activity"]["presence"]["committee_system_codes"]) == 20
     # No print in any family states a bioguide id.
     assert all(family["presence"].get("bioguide_id", {}).get("documents", 0) == 0 for family in families.values())
 
@@ -144,6 +209,23 @@ def test_the_committed_sidecar_carries_no_per_page_detail() -> None:
     assert read, "the sidecar states no document it read"
     assert all("page_detail" not in document["extraction"] for document in read)
     assert all("pages_read" in document["extraction"] for document in read)
+    # The timer measures the work, so no page can cost exactly nothing.
+    assert all(document["extraction"]["slowest_page_seconds"] > 0 for document in read)
+
+
+def test_the_capture_witness_compares_the_blocks_against_the_page_text() -> None:
+    """``source_sha256_matches`` compared a digest to itself and would pass on anything."""
+    sidecar = json.loads(SIDECAR.read_text())
+    captures = [
+        document["capture"]
+        for family in sidecar["families"].values()
+        for document in family["documents"]
+        if document.get("capture")
+    ]
+
+    assert len(captures) == 9
+    assert all(capture["round_trip_matches"] for capture in captures)
+    assert all("source_sha256_matches" not in capture for capture in captures)
 
 
 def test_compact_keeps_the_summary_and_drops_the_pages() -> None:
@@ -152,7 +234,10 @@ def test_compact_keeps_the_summary_and_drops_the_pages() -> None:
             "x": {
                 "documents": [
                     {
-                        "join_keys": {"bill_number": {"count": 1}, "rin": {"count": 0}},
+                        "join_keys": {
+                            "bill_number": {"count": 1, "distinct": ["HR1"] * 20, "not_in_index": ["HR1"] * 20},
+                            "rin": {"count": 0, "distinct": [], "not_in_index": []},
+                        },
                         "structure": {"recommendation_list": 2, "cost_table_marker": 0},
                         "extraction": {
                             "pages_read": 2,
@@ -174,4 +259,6 @@ def test_compact_keeps_the_summary_and_drops_the_pages() -> None:
     assert document["extraction"]["table_shapes"] == [[3, 4]]
     assert document["extraction"]["slowest_page_seconds"] == 0.2
     assert list(document["join_keys"]) == ["bill_number"]
+    # The full sets feed the family's union; the committed sidecar keeps a sample.
+    assert len(document["join_keys"]["bill_number"]["distinct"]) == 12
     assert list(document["structure"]) == ["recommendation_list"]

@@ -10,8 +10,8 @@
             "evidence_blocks": 679,
             "pages": 21,
             "rendition": "pdf",
-            "round_trip_sha256": "b78c665ac9a2bf1f4bc571b9b6fdf5e47f10c1fdf94185f5e7e83922ae0a7b91",
-            "source_sha256_matches": true
+            "round_trip_matches": true,
+            "round_trip_sha256": "b78c665ac9a2bf1f4bc571b9b6fdf5e47f10c1fdf94185f5e7e83922ae0a7b91"
           },
           "extraction": {
             "blocks": 725,
@@ -25,8 +25,8 @@
             },
             "page_count": 21,
             "pages_read": 21,
-            "seconds": 0.66,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.642,
+            "slowest_page_seconds": 0.059,
             "table_shapes": [
               [
                 3,
@@ -129,8 +129,8 @@
             },
             "page_count": 16,
             "pages_read": 16,
-            "seconds": 0.506,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.489,
+            "slowest_page_seconds": 0.0854,
             "table_shapes": [
               [
                 5,
@@ -251,8 +251,8 @@
             },
             "page_count": 30,
             "pages_read": 30,
-            "seconds": 1.258,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.247,
+            "slowest_page_seconds": 0.0846,
             "table_shapes": [
               [
                 3,
@@ -374,8 +374,8 @@
             },
             "page_count": 46,
             "pages_read": 46,
-            "seconds": 1.901,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.861,
+            "slowest_page_seconds": 0.0783,
             "table_shapes": [
               [
                 2,
@@ -540,8 +540,8 @@
             },
             "page_count": 17,
             "pages_read": 17,
-            "seconds": 0.405,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.399,
+            "slowest_page_seconds": 0.05,
             "table_shapes": [
               [
                 4,
@@ -646,8 +646,8 @@
             },
             "page_count": 53,
             "pages_read": 53,
-            "seconds": 0.55,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.535,
+            "slowest_page_seconds": 0.0627,
             "table_shapes": [
               [
                 1,
@@ -739,8 +739,8 @@
             },
             "page_count": 8,
             "pages_read": 8,
-            "seconds": 0.264,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.257,
+            "slowest_page_seconds": 0.0586,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "c59a4b65877b3f29347f7419577087b63525dc5b8355f028b417361d2263fc8b",
@@ -817,8 +817,8 @@
             },
             "page_count": 28,
             "pages_read": 28,
-            "seconds": 0.959,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.943,
+            "slowest_page_seconds": 0.062,
             "table_shapes": [
               [
                 1,
@@ -969,6 +969,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -977,6 +979,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -985,30 +989,40 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "cfr_section": {
-          "distinct_values": 6,
-          "distinct_values_beyond_index": 6,
+          "distinct_values": 4,
+          "distinct_values_beyond_index": 4,
           "documents": 5,
           "documents_beyond_index": 5,
+          "link_rows": 6,
+          "link_rows_beyond_index": 6,
           "rate": 0.625,
           "rate_beyond_index": 0.625
         },
+        "committee_candidates_unresolved": 0,
         "committee_name": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
+        "committee_system_codes": [],
         "crs_report_id": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -1017,16 +1031,20 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "documents_read": 8,
         "documents_with_a_table": 7,
         "dollar_amount": {
-          "distinct_values": 60,
-          "distinct_values_beyond_index": 57,
+          "distinct_values": 58,
+          "distinct_values_beyond_index": 55,
           "documents": 4,
           "documents_beyond_index": 4,
+          "link_rows": 60,
+          "link_rows_beyond_index": 57,
           "rate": 0.5,
           "rate_beyond_index": 0.5
         },
@@ -1035,14 +1053,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "fiscal_year": {
-          "distinct_values": 17,
-          "distinct_values_beyond_index": 17,
+          "distinct_values": 11,
+          "distinct_values_beyond_index": 11,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 17,
+          "link_rows_beyond_index": 17,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         },
@@ -1051,6 +1073,8 @@
           "distinct_values_beyond_index": 4,
           "documents": 2,
           "documents_beyond_index": 2,
+          "link_rows": 4,
+          "link_rows_beyond_index": 4,
           "rate": 0.25,
           "rate_beyond_index": 0.25
         },
@@ -1059,6 +1083,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -1067,6 +1093,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -1075,6 +1103,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -1110,14 +1140,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "usc_section": {
-          "distinct_values": 5,
-          "distinct_values_beyond_index": 5,
+          "distinct_values": 4,
+          "distinct_values_beyond_index": 4,
           "documents": 4,
           "documents_beyond_index": 4,
+          "link_rows": 5,
+          "link_rows_beyond_index": 5,
           "rate": 0.5,
           "rate_beyond_index": 0.5
         }
@@ -1135,8 +1169,8 @@
             "evidence_blocks": 161,
             "pages": 12,
             "rendition": "pdf",
-            "round_trip_sha256": "8afdd1db55320bb98d006b8c50a1359a636a00a4f144942898bd5f68b9d2cc9d",
-            "source_sha256_matches": true
+            "round_trip_matches": true,
+            "round_trip_sha256": "8afdd1db55320bb98d006b8c50a1359a636a00a4f144942898bd5f68b9d2cc9d"
           },
           "extraction": {
             "blocks": 346,
@@ -1150,8 +1184,8 @@
             },
             "page_count": 12,
             "pages_read": 12,
-            "seconds": 0.304,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.305,
+            "slowest_page_seconds": 0.1842,
             "table_shapes": [
               [
                 10,
@@ -1223,8 +1257,8 @@
             },
             "page_count": 16,
             "pages_read": 16,
-            "seconds": 0.452,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.442,
+            "slowest_page_seconds": 0.077,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "c5cb60c3e33ea5a2893abaaed48b6b5e8a9a844242182beeeb200f469e43dca4",
@@ -1334,8 +1368,8 @@
             },
             "page_count": 25,
             "pages_read": 25,
-            "seconds": 0.559,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.543,
+            "slowest_page_seconds": 0.0395,
             "table_shapes": [
               [
                 1,
@@ -1425,8 +1459,8 @@
             },
             "page_count": 22,
             "pages_read": 22,
-            "seconds": 0.333,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.324,
+            "slowest_page_seconds": 0.0383,
             "table_shapes": [
               [
                 1,
@@ -1482,8 +1516,8 @@
             },
             "page_count": 1340,
             "pages_read": 60,
-            "seconds": 10.052,
-            "slowest_page_seconds": 0.0001,
+            "seconds": 9.887,
+            "slowest_page_seconds": 0.2542,
             "table_shapes": [
               [
                 3,
@@ -1573,7 +1607,36 @@
                 "COMMITTEEONTAXATION"
               ],
               "not_in_index_count": 13,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONAPPROPRIATIONS": "hsap00",
+                "COMMITTEEONBANKINGHOUSING": "ssbk00",
+                "COMMITTEEONENVIRONMENTANDPUBLICWORKS": "ssev00",
+                "COMMITTEEONETHICS": "hsso00",
+                "COMMITTEEONFINANCIAL": "hsba00",
+                "COMMITTEEONHOMELANDSECURITYANDGOVERNMENTAL": "hshm00",
+                "COMMITTEEONHOUSEADMIN": "hsha00",
+                "COMMITTEEONHOUSEADMINISTRATION": "hsha00",
+                "COMMITTEEONOVERSIGHTANDGOVERNMENTREFORM": "hsgo00",
+                "COMMITTEEONRULES": "hsru00",
+                "COMMITTEEONRULESANDADMINISTRATION": "ssra00"
+              },
+              "resolved_system_codes": [
+                "hsap00",
+                "hsba00",
+                "hsgo00",
+                "hsha00",
+                "hshm00",
+                "hsru00",
+                "hsso00",
+                "ssbk00",
+                "ssev00",
+                "ssra00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONTAXATION",
+                "COMMITTEEONTHELIBRARY"
+              ]
             },
             "dollar_amount": {
               "count": 346,
@@ -1642,7 +1705,7 @@
               "stated_by_index_count": 0
             },
             "public_law": {
-              "count": 60,
+              "count": 61,
               "distinct": [
                 "100-480",
                 "104-1",
@@ -1754,8 +1817,8 @@
             },
             "page_count": 92,
             "pages_read": 60,
-            "seconds": 2.26,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.236,
+            "slowest_page_seconds": 0.0756,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "2072661006b4d48d7151d5005bc194b4eb2320e34e90debffb4a822f51711c3d",
@@ -1842,8 +1905,8 @@
             },
             "page_count": 158,
             "pages_read": 60,
-            "seconds": 5.243,
-            "slowest_page_seconds": 0.0,
+            "seconds": 5.115,
+            "slowest_page_seconds": 0.2602,
             "table_shapes": [
               [
                 2,
@@ -1947,7 +2010,12 @@
                 "COMMITTEEONDEFICITREDUCTION"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {},
+              "resolved_system_codes": [],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONDEFICITREDUCTION"
+              ]
             },
             "crs_report_id": {
               "count": 1,
@@ -2026,7 +2094,7 @@
               "stated_by_index_count": 0
             },
             "public_law": {
-              "count": 53,
+              "count": 54,
               "distinct": [
                 "100-233",
                 "101-508",
@@ -2102,8 +2170,8 @@
             },
             "page_count": 120,
             "pages_read": 60,
-            "seconds": 7.729,
-            "slowest_page_seconds": 0.0001,
+            "seconds": 7.618,
+            "slowest_page_seconds": 0.2188,
             "table_shapes": [
               [
                 3,
@@ -2204,6 +2272,8 @@
           "distinct_values_beyond_index": 4,
           "documents": 2,
           "documents_beyond_index": 2,
+          "link_rows": 4,
+          "link_rows_beyond_index": 4,
           "rate": 0.25,
           "rate_beyond_index": 0.25
         },
@@ -2212,6 +2282,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -2220,6 +2292,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -2228,22 +2302,41 @@
           "distinct_values_beyond_index": 3,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 3,
+          "link_rows_beyond_index": 3,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
+        "committee_candidates_unresolved": 3,
         "committee_name": {
           "distinct_values": 14,
           "distinct_values_beyond_index": 14,
           "documents": 2,
           "documents_beyond_index": 2,
+          "link_rows": 14,
+          "link_rows_beyond_index": 14,
           "rate": 0.25,
           "rate_beyond_index": 0.25
         },
+        "committee_system_codes": [
+          "hsap00",
+          "hsba00",
+          "hsgo00",
+          "hsha00",
+          "hshm00",
+          "hsru00",
+          "hsso00",
+          "ssbk00",
+          "ssev00",
+          "ssra00"
+        ],
         "crs_report_id": {
           "distinct_values": 1,
           "distinct_values_beyond_index": 1,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 1,
+          "link_rows_beyond_index": 1,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
@@ -2252,16 +2345,20 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "documents_read": 8,
         "documents_with_a_table": 6,
         "dollar_amount": {
-          "distinct_values": 727,
-          "distinct_values_beyond_index": 727,
+          "distinct_values": 658,
+          "distinct_values_beyond_index": 658,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 727,
+          "link_rows_beyond_index": 727,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         },
@@ -2270,14 +2367,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "fiscal_year": {
-          "distinct_values": 58,
-          "distinct_values_beyond_index": 58,
+          "distinct_values": 49,
+          "distinct_values_beyond_index": 49,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 58,
+          "link_rows_beyond_index": 58,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         },
@@ -2286,14 +2387,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "public_law": {
-          "distinct_values": 77,
-          "distinct_values_beyond_index": 77,
+          "distinct_values": 69,
+          "distinct_values_beyond_index": 69,
           "documents": 4,
           "documents_beyond_index": 4,
+          "link_rows": 77,
+          "link_rows_beyond_index": 77,
           "rate": 0.5,
           "rate_beyond_index": 0.5
         },
@@ -2302,6 +2407,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -2310,6 +2417,8 @@
           "distinct_values_beyond_index": 6,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 6,
+          "link_rows_beyond_index": 6,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
@@ -2345,14 +2454,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "usc_section": {
-          "distinct_values": 91,
-          "distinct_values_beyond_index": 91,
+          "distinct_values": 90,
+          "distinct_values_beyond_index": 90,
           "documents": 4,
           "documents_beyond_index": 4,
+          "link_rows": 91,
+          "link_rows_beyond_index": 91,
           "rate": 0.5,
           "rate_beyond_index": 0.5
         }
@@ -2643,8 +2756,8 @@
             "evidence_blocks": 237,
             "pages": 5,
             "rendition": "pdf",
-            "round_trip_sha256": "263503cedfebad40e417cba30758b9d47695d1a83ea90975060a10b5ce8f7afd",
-            "source_sha256_matches": true
+            "round_trip_matches": true,
+            "round_trip_sha256": "263503cedfebad40e417cba30758b9d47695d1a83ea90975060a10b5ce8f7afd"
           },
           "extraction": {
             "blocks": 255,
@@ -2658,8 +2771,8 @@
             },
             "page_count": 5,
             "pages_read": 5,
-            "seconds": 0.091,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.088,
+            "slowest_page_seconds": 0.0235,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "cc51ba0279803624d854969796f77629ab1106d184ac86772df03827eb5244ca",
@@ -2744,8 +2857,8 @@
             },
             "page_count": 14,
             "pages_read": 14,
-            "seconds": 0.313,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.304,
+            "slowest_page_seconds": 0.0244,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "5ac0985b155b6fea01a6b128c27ca53eb123ee747db5f49ae3c3c25beb0d06c3",
@@ -2774,6 +2887,18 @@
               "distinct_count": 1,
               "not_in_index": [
                 "2475000"
+              ],
+              "not_in_index_count": 1,
+              "stated_by_index_count": 0
+            },
+            "public_law": {
+              "count": 1,
+              "distinct": [
+                "119-75"
+              ],
+              "distinct_count": 1,
+              "not_in_index": [
+                "119-75"
               ],
               "not_in_index_count": 1,
               "stated_by_index_count": 0
@@ -2862,8 +2987,8 @@
             },
             "page_count": 37,
             "pages_read": 37,
-            "seconds": 0.901,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.877,
+            "slowest_page_seconds": 0.0338,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "a2122db234f0db992bfe9f26d654f5309d67839ef4e0c85c079e04c8bd119ae8",
@@ -2956,8 +3081,8 @@
             },
             "page_count": 194,
             "pages_read": 60,
-            "seconds": 1.516,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.487,
+            "slowest_page_seconds": 0.0427,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "d662efb550546bfde5525201b1253fb654f6a89d822fa67ba2ce18863ae19b61",
@@ -3104,8 +3229,8 @@
             },
             "page_count": 51,
             "pages_read": 51,
-            "seconds": 1.247,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.238,
+            "slowest_page_seconds": 0.0389,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "55465ab39f0b1a828b67b86b0a84e123a1a21b51d8229e0a5b7144c08dbd52df",
@@ -3286,8 +3411,8 @@
             },
             "page_count": 194,
             "pages_read": 60,
-            "seconds": 1.544,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.505,
+            "slowest_page_seconds": 0.0464,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "d662efb550546bfde5525201b1253fb654f6a89d822fa67ba2ce18863ae19b61",
@@ -3434,8 +3559,8 @@
             },
             "page_count": 77,
             "pages_read": 60,
-            "seconds": 1.443,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.389,
+            "slowest_page_seconds": 0.038,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "a1a87879e751f55137aaed2f5bee3d4bd8339278fb84f0f0b064f80d3fa9151b",
@@ -3492,6 +3617,18 @@
               "distinct_count": 1,
               "not_in_index": [
                 "40FEDREG24128"
+              ],
+              "not_in_index_count": 1,
+              "stated_by_index_count": 0
+            },
+            "public_law": {
+              "count": 1,
+              "distinct": [
+                "93-380"
+              ],
+              "distinct_count": 1,
+              "not_in_index": [
+                "93-380"
               ],
               "not_in_index_count": 1,
               "stated_by_index_count": 0
@@ -3578,8 +3715,8 @@
             },
             "page_count": 72,
             "pages_read": 60,
-            "seconds": 1.453,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.436,
+            "slowest_page_seconds": 0.0399,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "734a6dea90c8593977211562f617dfa88468beaebdbfc93943a5b709ee003f37",
@@ -3709,10 +3846,12 @@
       "index_route": "courtlistener.com/api/rest/v4/search",
       "presence": {
         "bill_number": {
-          "distinct_values": 4,
-          "distinct_values_beyond_index": 4,
+          "distinct_values": 2,
+          "distinct_values_beyond_index": 2,
           "documents": 2,
           "documents_beyond_index": 2,
+          "link_rows": 4,
+          "link_rows_beyond_index": 4,
           "rate": 0.25,
           "rate_beyond_index": 0.25
         },
@@ -3721,14 +3860,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "case_docket_number": {
-          "distinct_values": 8,
-          "distinct_values_beyond_index": 8,
+          "distinct_values": 7,
+          "distinct_values_beyond_index": 7,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 8,
+          "link_rows_beyond_index": 8,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         },
@@ -3737,22 +3880,30 @@
           "distinct_values_beyond_index": 4,
           "documents": 2,
           "documents_beyond_index": 2,
+          "link_rows": 4,
+          "link_rows_beyond_index": 4,
           "rate": 0.25,
           "rate_beyond_index": 0.25
         },
+        "committee_candidates_unresolved": 0,
         "committee_name": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
+        "committee_system_codes": [],
         "crs_report_id": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -3761,6 +3912,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -3771,14 +3924,18 @@
           "distinct_values_beyond_index": 25,
           "documents": 3,
           "documents_beyond_index": 3,
+          "link_rows": 25,
+          "link_rows_beyond_index": 25,
           "rate": 0.375,
           "rate_beyond_index": 0.375
         },
         "federal_register_cite": {
-          "distinct_values": 8,
-          "distinct_values_beyond_index": 8,
+          "distinct_values": 7,
+          "distinct_values_beyond_index": 7,
           "documents": 5,
           "documents_beyond_index": 5,
+          "link_rows": 8,
+          "link_rows_beyond_index": 8,
           "rate": 0.625,
           "rate_beyond_index": 0.625
         },
@@ -3787,6 +3944,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -3795,30 +3954,38 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "public_law": {
-          "distinct_values": 0,
-          "distinct_values_beyond_index": 0,
-          "documents": 0,
-          "documents_beyond_index": 0,
-          "rate": 0.0,
-          "rate_beyond_index": 0.0
+          "distinct_values": 2,
+          "distinct_values_beyond_index": 2,
+          "documents": 2,
+          "documents_beyond_index": 2,
+          "link_rows": 2,
+          "link_rows_beyond_index": 2,
+          "rate": 0.25,
+          "rate_beyond_index": 0.25
         },
         "rin": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "statutes_at_large": {
-          "distinct_values": 13,
-          "distinct_values_beyond_index": 13,
+          "distinct_values": 8,
+          "distinct_values_beyond_index": 8,
           "documents": 5,
           "documents_beyond_index": 5,
+          "link_rows": 13,
+          "link_rows_beyond_index": 13,
           "rate": 0.625,
           "rate_beyond_index": 0.625
         },
@@ -3850,18 +4017,22 @@
         },
         "tables_observed": 0,
         "us_reports_cite": {
-          "distinct_values": 222,
-          "distinct_values_beyond_index": 222,
+          "distinct_values": 178,
+          "distinct_values_beyond_index": 178,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 222,
+          "link_rows_beyond_index": 222,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
         "usc_section": {
-          "distinct_values": 14,
-          "distinct_values_beyond_index": 14,
+          "distinct_values": 13,
+          "distinct_values_beyond_index": 13,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 14,
+          "link_rows_beyond_index": 14,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         }
@@ -3879,8 +4050,8 @@
             "evidence_blocks": 131,
             "pages": 4,
             "rendition": "pdf",
-            "round_trip_sha256": "af39755fb09d9121488df2f2fa746c4ace2cd3a396232346b3888bebd30b2ac5",
-            "source_sha256_matches": true
+            "round_trip_matches": true,
+            "round_trip_sha256": "af39755fb09d9121488df2f2fa746c4ace2cd3a396232346b3888bebd30b2ac5"
           },
           "extraction": {
             "blocks": 145,
@@ -3894,8 +4065,8 @@
             },
             "page_count": 4,
             "pages_read": 4,
-            "seconds": 0.143,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.139,
+            "slowest_page_seconds": 0.0588,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "21825947aced4d279c2dde6dd27ea3b56c76165f5417bbb4889876c9149fa6c7",
@@ -3990,8 +4161,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.174,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.17,
+            "slowest_page_seconds": 0.081,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "b233e39344d1562112bbb16286349aa8625197e4ed94974cef80e6332151f3a8",
@@ -4214,8 +4385,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.216,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.195,
+            "slowest_page_seconds": 0.0964,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "ea9256376a85d77db4b51c46e3785106322a96354e15ae1dad2a89811c4a616a",
@@ -4364,8 +4535,8 @@
             },
             "page_count": 64,
             "pages_read": 60,
-            "seconds": 3.572,
-            "slowest_page_seconds": 0.0,
+            "seconds": 3.56,
+            "slowest_page_seconds": 0.1871,
             "table_shapes": [
               [
                 2,
@@ -4541,7 +4712,23 @@
                 "COMMITTEEONTHEJUDICIARY"
               ],
               "not_in_index_count": 7,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONBANKINGHOUSING": "ssbk00",
+                "COMMITTEEONBANKINGHOUSINGANDURBAN": "ssbk00",
+                "COMMITTEEONBANKINGHOUSINGANDURBANAFFAIRS": "ssbk00",
+                "COMMITTEEONBANKINGHOUSINGANDURBANAFFAIRSMAY": "ssbk00",
+                "COMMITTEEONFINANCIALSERVICES": "hsba00",
+                "COMMITTEEONTHEJUDICIARY": "hsju00"
+              },
+              "resolved_system_codes": [
+                "hsba00",
+                "hsju00",
+                "ssbk00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONBANKSUPERVISION"
+              ]
             },
             "crs_report_id": {
               "count": 31,
@@ -4678,8 +4865,8 @@
             },
             "page_count": 5,
             "pages_read": 5,
-            "seconds": 0.203,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.181,
+            "slowest_page_seconds": 0.0484,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "014167cbf1dcab2166cc3bea4a05a39404f0abc4735e0fa429f8ad3185386694",
@@ -4824,7 +5011,7 @@
             "page_count": 5,
             "pages_read": 5,
             "seconds": 0.182,
-            "slowest_page_seconds": 0.0,
+            "slowest_page_seconds": 0.0588,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "0cf26852aca474f934197a3e86aa9d84201cf377b280b6c80e795c1e43e85287",
@@ -5006,8 +5193,8 @@
             },
             "page_count": 41,
             "pages_read": 41,
-            "seconds": 2.544,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.55,
+            "slowest_page_seconds": 0.1466,
             "table_shapes": [
               [
                 2,
@@ -5441,7 +5628,14 @@
                 "COMMITTEEONNATURALRESOURCES"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONNATURALRESOURCES": "hsii00"
+              },
+              "resolved_system_codes": [
+                "hsii00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "crs_report_id": {
               "count": 15,
@@ -5617,8 +5811,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.222,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.216,
+            "slowest_page_seconds": 0.1058,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "503ca6f24a55b1d32e85ec4e2fd7a157e82cd8ef4c23973b05630a8435da5cf8",
@@ -5754,6 +5948,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 6,
           "documents_beyond_index": 0,
+          "link_rows": 36,
+          "link_rows_beyond_index": 0,
           "rate": 0.75,
           "rate_beyond_index": 0.0
         },
@@ -5762,6 +5958,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -5770,6 +5968,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -5778,22 +5978,35 @@
           "distinct_values_beyond_index": 17,
           "documents": 3,
           "documents_beyond_index": 3,
+          "link_rows": 17,
+          "link_rows_beyond_index": 17,
           "rate": 0.375,
           "rate_beyond_index": 0.375
         },
+        "committee_candidates_unresolved": 1,
         "committee_name": {
           "distinct_values": 8,
           "distinct_values_beyond_index": 8,
           "documents": 2,
           "documents_beyond_index": 2,
+          "link_rows": 8,
+          "link_rows_beyond_index": 8,
           "rate": 0.25,
           "rate_beyond_index": 0.25
         },
+        "committee_system_codes": [
+          "hsba00",
+          "hsii00",
+          "hsju00",
+          "ssbk00"
+        ],
         "crs_report_id": {
           "distinct_values": 52,
           "distinct_values_beyond_index": 44,
           "documents": 8,
           "documents_beyond_index": 5,
+          "link_rows": 52,
+          "link_rows_beyond_index": 44,
           "rate": 1.0,
           "rate_beyond_index": 0.625
         },
@@ -5802,16 +6015,20 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "documents_read": 8,
         "documents_with_a_table": 2,
         "dollar_amount": {
-          "distinct_values": 183,
-          "distinct_values_beyond_index": 183,
+          "distinct_values": 177,
+          "distinct_values_beyond_index": 177,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 183,
+          "link_rows_beyond_index": 183,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
@@ -5820,14 +6037,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "fiscal_year": {
-          "distinct_values": 16,
-          "distinct_values_beyond_index": 14,
+          "distinct_values": 10,
+          "distinct_values_beyond_index": 10,
           "documents": 7,
           "documents_beyond_index": 7,
+          "link_rows": 16,
+          "link_rows_beyond_index": 14,
           "rate": 0.875,
           "rate_beyond_index": 0.875
         },
@@ -5836,14 +6057,18 @@
           "distinct_values_beyond_index": 3,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 3,
+          "link_rows_beyond_index": 3,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
         "public_law": {
-          "distinct_values": 34,
+          "distinct_values": 33,
           "distinct_values_beyond_index": 1,
           "documents": 7,
           "documents_beyond_index": 1,
+          "link_rows": 34,
+          "link_rows_beyond_index": 1,
           "rate": 0.875,
           "rate_beyond_index": 0.125
         },
@@ -5852,6 +6077,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -5860,6 +6087,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -5895,6 +6124,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -5903,6 +6134,8 @@
           "distinct_values_beyond_index": 22,
           "documents": 3,
           "documents_beyond_index": 3,
+          "link_rows": 22,
+          "link_rows_beyond_index": 22,
           "rate": 0.375,
           "rate_beyond_index": 0.375
         }
@@ -5920,8 +6153,8 @@
             "evidence_blocks": 158,
             "pages": 2,
             "rendition": "pdf",
-            "round_trip_sha256": "15f9d7e4842c5fb6fc1ffa3f83a2f15259b03d76b6f8eb43c42f87f50c87dc2a",
-            "source_sha256_matches": true
+            "round_trip_matches": true,
+            "round_trip_sha256": "15f9d7e4842c5fb6fc1ffa3f83a2f15259b03d76b6f8eb43c42f87f50c87dc2a"
           },
           "extraction": {
             "blocks": 158,
@@ -5935,8 +6168,8 @@
             },
             "page_count": 2,
             "pages_read": 2,
-            "seconds": 0.143,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.14,
+            "slowest_page_seconds": 0.0894,
             "table_shapes": [
               [
                 9,
@@ -5973,6 +6206,16 @@
               ],
               "not_in_index_count": 1,
               "stated_by_index_count": 0
+            },
+            "public_law": {
+              "count": 1,
+              "distinct": [
+                "119-60"
+              ],
+              "distinct_count": 1,
+              "not_in_index": [],
+              "not_in_index_count": 0,
+              "stated_by_index_count": 1
             },
             "statutes_at_large": {
               "count": 1,
@@ -6014,8 +6257,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.195,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.185,
+            "slowest_page_seconds": 0.1064,
             "table_shapes": [
               [
                 9,
@@ -6069,6 +6312,18 @@
               "not_in_index_count": 9,
               "stated_by_index_count": 0
             },
+            "public_law": {
+              "count": 1,
+              "distinct": [
+                "119-60"
+              ],
+              "distinct_count": 1,
+              "not_in_index": [
+                "119-60"
+              ],
+              "not_in_index_count": 1,
+              "stated_by_index_count": 0
+            },
             "statutes_at_large": {
               "count": 1,
               "distinct": [
@@ -6101,8 +6356,8 @@
             },
             "page_count": 49,
             "pages_read": 49,
-            "seconds": 1.514,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.511,
+            "slowest_page_seconds": 0.0895,
             "table_shapes": [
               [
                 1,
@@ -6162,7 +6417,14 @@
                 "COMMITTEEONAPPROPRIATIONS"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONAPPROPRIATIONS": "hsap00"
+              },
+              "resolved_system_codes": [
+                "hsap00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 135,
@@ -6249,6 +6511,20 @@
               "not_in_index_count": 15,
               "stated_by_index_count": 0
             },
+            "public_law": {
+              "count": 2,
+              "distinct": [
+                "118-272",
+                "89-136"
+              ],
+              "distinct_count": 2,
+              "not_in_index": [
+                "118-272",
+                "89-136"
+              ],
+              "not_in_index_count": 2,
+              "stated_by_index_count": 0
+            },
             "statutes_at_large": {
               "count": 2,
               "distinct": [
@@ -6299,8 +6575,8 @@
             },
             "page_count": 30,
             "pages_read": 30,
-            "seconds": 1.218,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.176,
+            "slowest_page_seconds": 0.064,
             "table_shapes": [
               [
                 14,
@@ -6370,7 +6646,14 @@
                 "COMMITTEEONHOMELANDSECURITY"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONHOMELANDSECURITY": "hshm00"
+              },
+              "resolved_system_codes": [
+                "hshm00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 28,
@@ -6462,6 +6745,20 @@
               "not_in_index_count": 3,
               "stated_by_index_count": 1
             },
+            "public_law": {
+              "count": 4,
+              "distinct": [
+                "117-328",
+                "118-47"
+              ],
+              "distinct_count": 2,
+              "not_in_index": [
+                "117-328",
+                "118-47"
+              ],
+              "not_in_index_count": 2,
+              "stated_by_index_count": 0
+            },
             "statutes_at_large": {
               "count": 5,
               "distinct": [
@@ -6516,8 +6813,8 @@
             },
             "page_count": 43,
             "pages_read": 43,
-            "seconds": 1.051,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.022,
+            "slowest_page_seconds": 0.0657,
             "table_shapes": [
               [
                 1,
@@ -6583,7 +6880,16 @@
                 "COMMITTEEONHEALTHEDUCATIONLABORANDPENSIONS"
               ],
               "not_in_index_count": 2,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONENERGYANDCOMMERCE": "hsif00",
+                "COMMITTEEONHEALTHEDUCATIONLABORANDPENSIONS": "sshr00"
+              },
+              "resolved_system_codes": [
+                "hsif00",
+                "sshr00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 2,
@@ -6663,8 +6969,8 @@
             },
             "page_count": 59,
             "pages_read": 59,
-            "seconds": 1.994,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.973,
+            "slowest_page_seconds": 0.0891,
             "table_shapes": [
               [
                 1,
@@ -6716,7 +7022,12 @@
                 "COMMITTEEONAGING"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {},
+              "resolved_system_codes": [],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONAGING"
+              ]
             },
             "dollar_amount": {
               "count": 264,
@@ -6790,8 +7101,8 @@
             },
             "page_count": 70,
             "pages_read": 60,
-            "seconds": 1.65,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.597,
+            "slowest_page_seconds": 0.0783,
             "table_shapes": [
               [
                 1,
@@ -6861,7 +7172,15 @@
                 "COMMITTEEONHOMELANDSECURITYANDGOVERNMENTALAFFAIRS"
               ],
               "not_in_index_count": 2,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONHOMELANDSECURITY": "hshm00",
+                "COMMITTEEONHOMELANDSECURITYANDGOVERNMENTALAFFAIRS": "hshm00"
+              },
+              "resolved_system_codes": [
+                "hshm00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 1,
@@ -6909,6 +7228,20 @@
                 "GAO26108106"
               ],
               "not_in_index_count": 4,
+              "stated_by_index_count": 0
+            },
+            "public_law": {
+              "count": 3,
+              "distinct": [
+                "115-192",
+                "119-21"
+              ],
+              "distinct_count": 2,
+              "not_in_index": [
+                "115-192",
+                "119-21"
+              ],
+              "not_in_index_count": 2,
               "stated_by_index_count": 0
             },
             "statutes_at_large": {
@@ -6981,8 +7314,8 @@
             },
             "page_count": 45,
             "pages_read": 45,
-            "seconds": 1.221,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.191,
+            "slowest_page_seconds": 0.0901,
             "table_shapes": [
               [
                 1,
@@ -7022,7 +7355,14 @@
                 "COMMITTEEONOVERSIGHTANDGOVERNMENTREFORM"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONOVERSIGHTANDGOVERNMENTREFORM": "hsgo00"
+              },
+              "resolved_system_codes": [
+                "hsgo00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 11,
@@ -7180,6 +7520,8 @@
           "distinct_values_beyond_index": 1,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 1,
+          "link_rows_beyond_index": 1,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
@@ -7188,6 +7530,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -7196,6 +7540,8 @@
           "distinct_values_beyond_index": 7,
           "documents": 3,
           "documents_beyond_index": 3,
+          "link_rows": 7,
+          "link_rows_beyond_index": 7,
           "rate": 0.375,
           "rate_beyond_index": 0.375
         },
@@ -7204,22 +7550,36 @@
           "distinct_values_beyond_index": 9,
           "documents": 4,
           "documents_beyond_index": 4,
+          "link_rows": 9,
+          "link_rows_beyond_index": 9,
           "rate": 0.5,
           "rate_beyond_index": 0.5
         },
+        "committee_candidates_unresolved": 1,
         "committee_name": {
-          "distinct_values": 8,
-          "distinct_values_beyond_index": 8,
+          "distinct_values": 7,
+          "distinct_values_beyond_index": 7,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 8,
+          "link_rows_beyond_index": 8,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         },
+        "committee_system_codes": [
+          "hsap00",
+          "hsgo00",
+          "hshm00",
+          "hsif00",
+          "sshr00"
+        ],
         "crs_report_id": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -7228,16 +7588,20 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "documents_read": 8,
         "documents_with_a_table": 8,
         "dollar_amount": {
-          "distinct_values": 273,
-          "distinct_values_beyond_index": 265,
+          "distinct_values": 271,
+          "distinct_values_beyond_index": 264,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 273,
+          "link_rows_beyond_index": 265,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         },
@@ -7246,14 +7610,18 @@
           "distinct_values_beyond_index": 7,
           "documents": 2,
           "documents_beyond_index": 2,
+          "link_rows": 7,
+          "link_rows_beyond_index": 7,
           "rate": 0.25,
           "rate_beyond_index": 0.25
         },
         "fiscal_year": {
-          "distinct_values": 26,
-          "distinct_values_beyond_index": 23,
+          "distinct_values": 15,
+          "distinct_values_beyond_index": 15,
           "documents": 5,
           "documents_beyond_index": 5,
+          "link_rows": 26,
+          "link_rows_beyond_index": 23,
           "rate": 0.625,
           "rate_beyond_index": 0.625
         },
@@ -7262,30 +7630,38 @@
           "distinct_values_beyond_index": 44,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 45,
+          "link_rows_beyond_index": 44,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
         "public_law": {
-          "distinct_values": 0,
-          "distinct_values_beyond_index": 0,
-          "documents": 0,
-          "documents_beyond_index": 0,
-          "rate": 0.0,
-          "rate_beyond_index": 0.0
+          "distinct_values": 7,
+          "distinct_values_beyond_index": 7,
+          "documents": 5,
+          "documents_beyond_index": 4,
+          "link_rows": 8,
+          "link_rows_beyond_index": 7,
+          "rate": 0.625,
+          "rate_beyond_index": 0.5
         },
         "rin": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "statutes_at_large": {
-          "distinct_values": 12,
+          "distinct_values": 11,
           "distinct_values_beyond_index": 11,
           "documents": 7,
           "documents_beyond_index": 6,
+          "link_rows": 12,
+          "link_rows_beyond_index": 11,
           "rate": 0.875,
           "rate_beyond_index": 0.75
         },
@@ -7321,6 +7697,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -7329,6 +7707,8 @@
           "distinct_values_beyond_index": 27,
           "documents": 5,
           "documents_beyond_index": 4,
+          "link_rows": 28,
+          "link_rows_beyond_index": 27,
           "rate": 0.625,
           "rate_beyond_index": 0.5
         }
@@ -7346,8 +7726,8 @@
             "evidence_blocks": 3008,
             "pages": 56,
             "rendition": "pdf",
-            "round_trip_sha256": "848ea38742e7d97986b15cb1a5ca211871c1bb17537fa800a6f07e85867e8d7c",
-            "source_sha256_matches": true
+            "round_trip_matches": true,
+            "round_trip_sha256": "848ea38742e7d97986b15cb1a5ca211871c1bb17537fa800a6f07e85867e8d7c"
           },
           "extraction": {
             "blocks": 3490,
@@ -7361,8 +7741,8 @@
             },
             "page_count": 56,
             "pages_read": 56,
-            "seconds": 2.042,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.013,
+            "slowest_page_seconds": 0.0504,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "f2c52f60c527c27c0ef6389cf4f2fbb94c5cedd7ba5cfe3632d459dd7ad915f7",
@@ -7415,30 +7795,38 @@
               "stated_by_index_count": 0
             },
             "committee_name": {
-              "count": 15,
+              "count": 9,
               "distinct": [
                 "COMMITTEEONAPPROPRIATIONS",
                 "COMMITTEEONFOREIGN",
                 "COMMITTEEONFOREIGNAFFAIRS",
                 "COMMITTEEONHOUSEADMINISTRATION",
-                "COMMITTEEONJUNE",
-                "COMMITTEEONMARCH",
-                "COMMITTEEONNOVEMBER",
                 "COMMITTEEONOVERSIGHTANDACCOUNTABILITY"
               ],
-              "distinct_count": 8,
+              "distinct_count": 5,
               "not_in_index": [
                 "COMMITTEEONAPPROPRIATIONS",
                 "COMMITTEEONFOREIGN",
                 "COMMITTEEONFOREIGNAFFAIRS",
                 "COMMITTEEONHOUSEADMINISTRATION",
-                "COMMITTEEONJUNE",
-                "COMMITTEEONMARCH",
-                "COMMITTEEONNOVEMBER",
                 "COMMITTEEONOVERSIGHTANDACCOUNTABILITY"
               ],
-              "not_in_index_count": 8,
-              "stated_by_index_count": 0
+              "not_in_index_count": 5,
+              "resolved": {
+                "COMMITTEEONAPPROPRIATIONS": "hsap00",
+                "COMMITTEEONFOREIGN": "hsfa00",
+                "COMMITTEEONFOREIGNAFFAIRS": "hsfa00",
+                "COMMITTEEONHOUSEADMINISTRATION": "hsha00"
+              },
+              "resolved_system_codes": [
+                "hsap00",
+                "hsfa00",
+                "hsha00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITY"
+              ]
             },
             "fiscal_year": {
               "count": 3,
@@ -7502,8 +7890,8 @@
             },
             "page_count": 296,
             "pages_read": 60,
-            "seconds": 2.044,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.0,
+            "slowest_page_seconds": 0.0853,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "0ab5ba64e5dcfb5d9fe9f6699f9031d8e0ba13373e339ccd0b95aebee076846d",
@@ -7587,7 +7975,34 @@
                 "COMMITTEEONTRANSPORTATIONANDIN"
               ],
               "not_in_index_count": 14,
-              "stated_by_index_count": 1
+              "resolved": {
+                "COMMITTEEONCOMMERCE": "sscm00",
+                "COMMITTEEONHOUSEADMINISTRA": "hsha00",
+                "COMMITTEEONHOUSEADMINISTRATION": "hsha00",
+                "COMMITTEEONOVER": "hsgo00",
+                "COMMITTEEONRULES": "hsru00",
+                "COMMITTEEONRULESHON": "hsru00",
+                "COMMITTEEONTHEBUDGET": "hsbu00",
+                "COMMITTEEONTRANS": "hspw00",
+                "COMMITTEEONTRANSPORTATION": "hspw00",
+                "COMMITTEEONTRANSPORTATIONANDIN": "hspw00",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTURE": "hspw00",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTUREMEM": "hspw00",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTUREMEMBERDAY": "hspw00"
+              },
+              "resolved_system_codes": [
+                "hsbu00",
+                "hsgo00",
+                "hsha00",
+                "hspw00",
+                "hsru00",
+                "sscm00"
+              ],
+              "stated_by_index_count": 1,
+              "unresolved": [
+                "COMMITTEEONOVERSIGHTANDACCOUNT",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITY"
+              ]
             },
             "dollar_amount": {
               "count": 1,
@@ -7614,15 +8029,37 @@
               "stated_by_index_count": 0
             },
             "public_law": {
-              "count": 2,
+              "count": 20,
               "distinct": [
-                "117-58"
+                "117-58",
+                "118-123",
+                "118-141",
+                "118-152",
+                "118-153",
+                "118-154",
+                "118-155",
+                "118-156",
+                "118-157",
+                "118-205",
+                "118-3",
+                "118-34"
               ],
-              "distinct_count": 1,
+              "distinct_count": 19,
               "not_in_index": [
-                "117-58"
+                "117-58",
+                "118-123",
+                "118-141",
+                "118-152",
+                "118-153",
+                "118-154",
+                "118-155",
+                "118-156",
+                "118-157",
+                "118-205",
+                "118-3",
+                "118-34"
               ],
-              "not_in_index_count": 1,
+              "not_in_index_count": 19,
               "stated_by_index_count": 0
             },
             "usc_section": {
@@ -7659,8 +8096,8 @@
             },
             "page_count": 119,
             "pages_read": 60,
-            "seconds": 2.334,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.279,
+            "slowest_page_seconds": 0.0533,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "eea0708b2add9b42f1c5b478fdbd69142f11093f1834846acda22a60e9d50c04",
@@ -7740,7 +8177,27 @@
                 "COMMITTEEONWAYS"
               ],
               "not_in_index_count": 10,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONHOUSEADMINISTRATION": "hsha00",
+                "COMMITTEEONOVER": "hsgo00",
+                "COMMITTEEONTHEJUDICI": "hsju00",
+                "COMMITTEEONTHEJUDICIARY": "hsju00",
+                "COMMITTEEONTHEJUDICIARYANDCOMMITTEE": "hsju00",
+                "COMMITTEEONWAYS": "hswm00"
+              },
+              "resolved_system_codes": [
+                "hsgo00",
+                "hsha00",
+                "hsju00",
+                "hswm00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONOVERSIGHTANDAC",
+                "COMMITTEEONOVERSIGHTANDACCOUNT",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITY",
+                "COMMITTEEONTHEPRESENTDANGER"
+              ]
             },
             "dollar_amount": {
               "count": 13,
@@ -7874,8 +8331,8 @@
             },
             "page_count": 127,
             "pages_read": 60,
-            "seconds": 2.233,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.136,
+            "slowest_page_seconds": 0.0485,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "66a98b6613817dfa3aa748766648e557f5fe35332f212665b07efcb9589ef3ea",
@@ -7928,7 +8385,7 @@
               "stated_by_index_count": 0
             },
             "committee_name": {
-              "count": 22,
+              "count": 20,
               "distinct": [
                 "COMMITTEEONAGRICULTURECHAIRMANGLENN",
                 "COMMITTEEONAGRICULTURESUBCOMMITTEE",
@@ -7938,12 +8395,12 @@
                 "COMMITTEEONHEALTHEDU",
                 "COMMITTEEONHEALTHEDUCATION",
                 "COMMITTEEONHEALTHEDUCATIONLABORANDPENSIONS",
-                "COMMITTEEONJUNE",
-                "COMMITTEEONMAY",
                 "COMMITTEEONMEDICALEDUCATIONAMERICANMEDICALASSOCIA",
-                "COMMITTEEONOVERSIGHT"
+                "COMMITTEEONOVERSIGHT",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITY",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITYCHAIRMAN"
               ],
-              "distinct_count": 18,
+              "distinct_count": 16,
               "not_in_index": [
                 "COMMITTEEONAGRICULTURECHAIRMANGLENN",
                 "COMMITTEEONAGRICULTURESUBCOMMITTEE",
@@ -7953,13 +8410,40 @@
                 "COMMITTEEONHEALTHEDU",
                 "COMMITTEEONHEALTHEDUCATION",
                 "COMMITTEEONHEALTHEDUCATIONLABORANDPENSIONS",
-                "COMMITTEEONJUNE",
-                "COMMITTEEONMAY",
                 "COMMITTEEONMEDICALEDUCATIONAMERICANMEDICALASSOCIA",
-                "COMMITTEEONOVERSIGHT"
+                "COMMITTEEONOVERSIGHT",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITY",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITYCHAIRMAN"
               ],
-              "not_in_index_count": 18,
-              "stated_by_index_count": 0
+              "not_in_index_count": 16,
+              "resolved": {
+                "COMMITTEEONAGRICULTURECHAIRMANGLENN": "hsag00",
+                "COMMITTEEONAGRICULTURESUBCOMMITTEE": "hsag00",
+                "COMMITTEEONEDUCATION": "hsed00",
+                "COMMITTEEONEDUCATIONANDWORKFORCE": "hsed00",
+                "COMMITTEEONHEALTHEDU": "sshr00",
+                "COMMITTEEONHEALTHEDUCATION": "sshr00",
+                "COMMITTEEONHEALTHEDUCATIONLABORANDPENSIONS": "sshr00",
+                "COMMITTEEONOVERSIGHT": "hsgo00",
+                "COMMITTEEONWAYS": "hswm00"
+              },
+              "resolved_system_codes": [
+                "hsag00",
+                "hsed00",
+                "hsgo00",
+                "hswm00",
+                "sshr00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONDE",
+                "COMMITTEEONMEDICALEDUCATIONAMERICANMEDICALASSOCIA",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITY",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITYCHAIRMAN",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITYCHAIRMANJAMES",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITYSUBCOMMITTEE",
+                "COMMITTEEONTHECHINESECOMMUNISTPARTYCHAIR"
+              ]
             },
             "dollar_amount": {
               "count": 11,
@@ -8041,8 +8525,8 @@
             },
             "page_count": 99,
             "pages_read": 60,
-            "seconds": 2.186,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.127,
+            "slowest_page_seconds": 0.0596,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "0a287930da4c7f80e54355ecc115fb5e2630feea8b9e048d4b9cef591085d321",
@@ -8103,14 +8587,14 @@
                 "COMMITTEEONAGRICULTUREBUTNOTCONSID",
                 "COMMITTEEONAGRICULTURECHAIRMANGLENN",
                 "COMMITTEEONAGRICULTUREMEMBERSREP",
+                "COMMITTEEONAGRICULTURES",
+                "COMMITTEEONAGRICULTURESJURISDICTION",
                 "COMMITTEEONAP",
                 "COMMITTEEONAPPRO",
                 "COMMITTEEONAPPROPRIA",
-                "COMMITTEEONAPPROPRIATIONS",
-                "COMMITTEEONEDUCATION",
-                "COMMITTEEONENERGY"
+                "COMMITTEEONAPPROPRIATIONS"
               ],
-              "distinct_count": 39,
+              "distinct_count": 41,
               "not_in_index": [
                 "COMMITTEEONAG",
                 "COMMITTEEONAGRI",
@@ -8118,15 +8602,77 @@
                 "COMMITTEEONAGRICULTUREBUTNOTCONSID",
                 "COMMITTEEONAGRICULTURECHAIRMANGLENN",
                 "COMMITTEEONAGRICULTUREMEMBERSREP",
+                "COMMITTEEONAGRICULTURES",
+                "COMMITTEEONAGRICULTURESJURISDICTION",
                 "COMMITTEEONAP",
                 "COMMITTEEONAPPRO",
                 "COMMITTEEONAPPROPRIA",
-                "COMMITTEEONAPPROPRIATIONS",
-                "COMMITTEEONEDUCATION",
-                "COMMITTEEONENERGY"
+                "COMMITTEEONAPPROPRIATIONS"
               ],
-              "not_in_index_count": 39,
-              "stated_by_index_count": 0
+              "not_in_index_count": 41,
+              "resolved": {
+                "COMMITTEEONAG": "hsag00",
+                "COMMITTEEONAGRI": "hsag00",
+                "COMMITTEEONAGRICULTURE": "hsag00",
+                "COMMITTEEONAGRICULTUREBUTNOTCONSID": "hsag00",
+                "COMMITTEEONAGRICULTURECHAIRMANGLENN": "hsag00",
+                "COMMITTEEONAGRICULTUREMEMBERSREP": "hsag00",
+                "COMMITTEEONAGRICULTURES": "hsag00",
+                "COMMITTEEONAGRICULTURESJURISDICTION": "hsag00",
+                "COMMITTEEONAP": "hsap00",
+                "COMMITTEEONAPPRO": "hsap00",
+                "COMMITTEEONAPPROPRIA": "hsap00",
+                "COMMITTEEONAPPROPRIATIONS": "hsap00",
+                "COMMITTEEONEDUCATION": "hsed00",
+                "COMMITTEEONENERGY": "hsif00",
+                "COMMITTEEONENERGYANDCOM": "hsif00",
+                "COMMITTEEONENERGYANDCOMMERCE": "hsif00",
+                "COMMITTEEONFI": "hsba00",
+                "COMMITTEEONFINANCIALSERV": "hsba00",
+                "COMMITTEEONFINANCIALSERVICES": "hsba00",
+                "COMMITTEEONFINANCIALSERVICESANDCOMMODITYMARKETSDIGITALASSETS": "hsba00",
+                "COMMITTEEONHOUSEADMINIS": "hsha00",
+                "COMMITTEEONNAT": "hsii00",
+                "COMMITTEEONNATURAL": "hsii00",
+                "COMMITTEEONNATURALRE": "hsii00",
+                "COMMITTEEONNATURALRESOURCES": "hsii00",
+                "COMMITTEEONOVERSIGHT": "hsgo00",
+                "COMMITTEEONRULES": "hsru00",
+                "COMMITTEEONSCIENCE": "hssy00",
+                "COMMITTEEONSCIENCESPACE": "hssy00",
+                "COMMITTEEONSCIENCESPACEANDTECHNOLOGY": "hssy00",
+                "COMMITTEEONTHEBUDGET": "hsbu00",
+                "COMMITTEEONTHEJU": "hsju00",
+                "COMMITTEEONTRANSPORTATION": "hspw00",
+                "COMMITTEEONTRANSPORTATIONANDIN": "hspw00",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTURE": "hspw00",
+                "COMMITTEEONVETERANSAFFAIRS": "hsvr00",
+                "COMMITTEEONWAYS": "hswm00"
+              },
+              "resolved_system_codes": [
+                "hsag00",
+                "hsap00",
+                "hsba00",
+                "hsbu00",
+                "hsed00",
+                "hsgo00",
+                "hsha00",
+                "hsif00",
+                "hsii00",
+                "hsju00",
+                "hspw00",
+                "hsru00",
+                "hssy00",
+                "hsvr00",
+                "hswm00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONINTERNATIONALRELATIONS",
+                "COMMITTEEONOVERSIGHTANDACCOUNTABILITY",
+                "COMMITTEEONOVERSIGHTANDREFORMANDHOUSEADMINISTRA",
+                "COMMITTEEONWHICH"
+              ]
             },
             "docket_number": {
               "count": 1,
@@ -8260,8 +8806,8 @@
             },
             "page_count": 282,
             "pages_read": 60,
-            "seconds": 1.7,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.651,
+            "slowest_page_seconds": 0.0432,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "3878beee22ee5e2a84a728c4fd2ccc401649fd11852e62659a4143ea066dd723",
@@ -8345,7 +8891,35 @@
                 "COMMITTEEONHOUSEADMINISTRATION"
               ],
               "not_in_index_count": 15,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONAGRICULTURE": "hsag00",
+                "COMMITTEEONCOMMERCESCIENCE": "sscm00",
+                "COMMITTEEONCOMMERCESCIENCEANDTRANS": "sscm00",
+                "COMMITTEEONCOMMERCESCIENCEANDTRANSPOR": "sscm00",
+                "COMMITTEEONEN": "hsif00",
+                "COMMITTEEONENERGY": "hsif00",
+                "COMMITTEEONENERGYANDCOM": "hsif00",
+                "COMMITTEEONENERGYANDCOMMERCE": "hsif00",
+                "COMMITTEEONFOREIGNAFFAIRS": "hsfa00",
+                "COMMITTEEONHOUSEADMINISTRATION": "hsha00",
+                "COMMITTEEONNATURALRESOURCES": "hsii00",
+                "COMMITTEEONTRANSPORTATIONANDIN": "hspw00",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTURE": "hspw00"
+              },
+              "resolved_system_codes": [
+                "hsag00",
+                "hsfa00",
+                "hsha00",
+                "hsif00",
+                "hsii00",
+                "hspw00",
+                "sscm00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONCHINA",
+                "COMMITTEEONFOREIGNINVESTMENTS"
+              ]
             },
             "dollar_amount": {
               "count": 1,
@@ -8403,8 +8977,8 @@
             },
             "page_count": 103,
             "pages_read": 60,
-            "seconds": 2.342,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.303,
+            "slowest_page_seconds": 0.0721,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "3bf3d097845cd32838da634ff18ee09521befb95589e484b059c8ef8bf9144b6",
@@ -8457,10 +9031,9 @@
               "stated_by_index_count": 0
             },
             "committee_name": {
-              "count": 103,
+              "count": 102,
               "distinct": [
                 "COMMITTEEONBANKINGHOUSINGANDURBANAFFAIRSUNITED",
-                "COMMITTEEONFEBRUARY",
                 "COMMITTEEONFINANCE",
                 "COMMITTEEONFINANCECHAIRMANWYDEN",
                 "COMMITTEEONFINANCERANKING",
@@ -8469,13 +9042,13 @@
                 "COMMITTEEONSEP",
                 "COMMITTEEONTAX",
                 "COMMITTEEONTHEADMINISTRA",
-                "COMMITTEEONTHEADMINISTRATION",
-                "COMMITTEEONWAYS"
+                "COMMITTEEONTHEADMINISTRATIONS",
+                "COMMITTEEONWAYS",
+                "COMMITTEEONWAYSANDMEANS"
               ],
-              "distinct_count": 15,
+              "distinct_count": 14,
               "not_in_index": [
                 "COMMITTEEONBANKINGHOUSINGANDURBANAFFAIRSUNITED",
-                "COMMITTEEONFEBRUARY",
                 "COMMITTEEONFINANCE",
                 "COMMITTEEONFINANCECHAIRMANWYDEN",
                 "COMMITTEEONFINANCERANKING",
@@ -8484,11 +9057,35 @@
                 "COMMITTEEONSEP",
                 "COMMITTEEONTAX",
                 "COMMITTEEONTHEADMINISTRA",
-                "COMMITTEEONTHEADMINISTRATION",
-                "COMMITTEEONWAYS"
+                "COMMITTEEONTHEADMINISTRATIONS",
+                "COMMITTEEONWAYS",
+                "COMMITTEEONWAYSANDMEANS"
               ],
-              "not_in_index_count": 15,
-              "stated_by_index_count": 0
+              "not_in_index_count": 14,
+              "resolved": {
+                "COMMITTEEONBANKINGHOUSINGANDURBANAFFAIRSUNITED": "ssbk00",
+                "COMMITTEEONFINANCE": "ssfi00",
+                "COMMITTEEONFINANCECHAIRMANWYDEN": "ssfi00",
+                "COMMITTEEONFINANCERANKING": "ssfi00",
+                "COMMITTEEONFINANCERANKINGMEMBERMIKE": "ssfi00",
+                "COMMITTEEONWAYS": "hswm00",
+                "COMMITTEEONWAYSANDMEANS": "hswm00",
+                "COMMITTEEONWAYSANDMEANSANDMEMBER": "hswm00",
+                "COMMITTEEONWAYSANDMEANSREPUB": "hswm00"
+              },
+              "resolved_system_codes": [
+                "hswm00",
+                "ssbk00",
+                "ssfi00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": [
+                "COMMITTEEONMONI",
+                "COMMITTEEONSEP",
+                "COMMITTEEONTAX",
+                "COMMITTEEONTHEADMINISTRA",
+                "COMMITTEEONTHEADMINISTRATIONS"
+              ]
             },
             "dollar_amount": {
               "count": 39,
@@ -8628,8 +9225,8 @@
             },
             "page_count": 167,
             "pages_read": 60,
-            "seconds": 2.301,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.251,
+            "slowest_page_seconds": 0.0538,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "75d9fa63fa1a6f0e0fa3b3ddaef2f34918405a4af50178e8fb455da4bfba11b0",
@@ -8699,7 +9296,20 @@
                 "COMMITTEEONRULES"
               ],
               "not_in_index_count": 5,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONHOUSEADMINISTRATION": "hsha00",
+                "COMMITTEEONNATURAL": "hsii00",
+                "COMMITTEEONNATURALRE": "hsii00",
+                "COMMITTEEONNATURALRESOURCES": "hsii00",
+                "COMMITTEEONRULES": "hsru00"
+              },
+              "resolved_system_codes": [
+                "hsha00",
+                "hsii00",
+                "hsru00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "fiscal_year": {
               "count": 13,
@@ -8764,10 +9374,12 @@
       "index_route": "api.govinfo.gov/published CRPT",
       "presence": {
         "bill_number": {
-          "distinct_values": 940,
-          "distinct_values_beyond_index": 940,
+          "distinct_values": 883,
+          "distinct_values_beyond_index": 883,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 940,
+          "link_rows_beyond_index": 940,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
@@ -8776,6 +9388,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -8784,6 +9398,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -8792,22 +9408,51 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
+        "committee_candidates_unresolved": 20,
         "committee_name": {
-          "distinct_values": 125,
-          "distinct_values_beyond_index": 124,
+          "distinct_values": 87,
+          "distinct_values_beyond_index": 87,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 121,
+          "link_rows_beyond_index": 120,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
+        "committee_system_codes": [
+          "hsag00",
+          "hsap00",
+          "hsba00",
+          "hsbu00",
+          "hsed00",
+          "hsfa00",
+          "hsgo00",
+          "hsha00",
+          "hsif00",
+          "hsii00",
+          "hsju00",
+          "hspw00",
+          "hsru00",
+          "hssy00",
+          "hsvr00",
+          "hswm00",
+          "ssbk00",
+          "sscm00",
+          "ssfi00",
+          "sshr00"
+        ],
         "crs_report_id": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -8816,6 +9461,8 @@
           "distinct_values_beyond_index": 1,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 1,
+          "link_rows_beyond_index": 1,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
@@ -8826,6 +9473,8 @@
           "distinct_values_beyond_index": 46,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 46,
+          "link_rows_beyond_index": 46,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         },
@@ -8834,14 +9483,18 @@
           "distinct_values_beyond_index": 1,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 1,
+          "link_rows_beyond_index": 1,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
         "fiscal_year": {
-          "distinct_values": 15,
-          "distinct_values_beyond_index": 15,
+          "distinct_values": 7,
+          "distinct_values_beyond_index": 7,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 15,
+          "link_rows_beyond_index": 15,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
@@ -8850,14 +9503,18 @@
           "distinct_values_beyond_index": 2,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 2,
+          "link_rows_beyond_index": 2,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
         "public_law": {
-          "distinct_values": 67,
-          "distinct_values_beyond_index": 67,
+          "distinct_values": 75,
+          "distinct_values_beyond_index": 75,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 85,
+          "link_rows_beyond_index": 85,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
@@ -8866,6 +9523,8 @@
           "distinct_values_beyond_index": 1,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 1,
+          "link_rows_beyond_index": 1,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
@@ -8874,6 +9533,8 @@
           "distinct_values_beyond_index": 2,
           "documents": 1,
           "documents_beyond_index": 1,
+          "link_rows": 2,
+          "link_rows_beyond_index": 2,
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
@@ -8909,6 +9570,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -8917,6 +9580,8 @@
           "distinct_values_beyond_index": 15,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 15,
+          "link_rows_beyond_index": 15,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         }
@@ -8934,8 +9599,8 @@
             "evidence_blocks": 55,
             "pages": 2,
             "rendition": "pdf",
-            "round_trip_sha256": "6a1b5b04428160ca4ab5f8f93a191a3b4b0f5564ce9dbfc43e63e0c290336105",
-            "source_sha256_matches": true
+            "round_trip_matches": true,
+            "round_trip_sha256": "6a1b5b04428160ca4ab5f8f93a191a3b4b0f5564ce9dbfc43e63e0c290336105"
           },
           "extraction": {
             "blocks": 83,
@@ -8949,8 +9614,8 @@
             },
             "page_count": 2,
             "pages_read": 2,
-            "seconds": 0.043,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.044,
+            "slowest_page_seconds": 0.0237,
             "table_shapes": [
               [
                 2,
@@ -8992,7 +9657,14 @@
                 "COMMITTEEONETHICS"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_system_codes": [
+                "hsso00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 7,
@@ -9038,8 +9710,8 @@
             },
             "page_count": 22,
             "pages_read": 22,
-            "seconds": 0.824,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.807,
+            "slowest_page_seconds": 0.0403,
             "table_shapes": [
               [
                 3,
@@ -9117,7 +9789,14 @@
                 "COMMITTEEONETHICS"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_system_codes": [
+                "hsso00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 707,
@@ -9202,8 +9881,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.065,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.066,
+            "slowest_page_seconds": 0.0263,
             "table_shapes": [
               [
                 3,
@@ -9249,7 +9928,14 @@
                 "COMMITTEEONETHICS"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_system_codes": [
+                "hsso00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 23,
@@ -9305,8 +9991,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.061,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.059,
+            "slowest_page_seconds": 0.0253,
             "table_shapes": [
               [
                 3,
@@ -9352,7 +10038,14 @@
                 "COMMITTEEONETHICS"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_system_codes": [
+                "hsso00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 23,
@@ -9408,8 +10101,8 @@
             },
             "page_count": 4,
             "pages_read": 4,
-            "seconds": 0.084,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.082,
+            "slowest_page_seconds": 0.0282,
             "table_shapes": [
               [
                 2,
@@ -9459,7 +10152,14 @@
                 "COMMITTEEONETHICS"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_system_codes": [
+                "hsso00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 36,
@@ -9509,8 +10209,8 @@
             },
             "page_count": 8,
             "pages_read": 8,
-            "seconds": 0.266,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.251,
+            "slowest_page_seconds": 0.043,
             "table_shapes": [
               [
                 2,
@@ -9576,7 +10276,14 @@
                 "COMMITTEEONETHICS"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_system_codes": [
+                "hsso00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 149,
@@ -9622,8 +10329,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.055,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.057,
+            "slowest_page_seconds": 0.0267,
             "table_shapes": [
               [
                 3,
@@ -9668,7 +10375,14 @@
                 "COMMITTEEONETHICS"
               ],
               "not_in_index_count": 1,
-              "stated_by_index_count": 0
+              "resolved": {
+                "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_system_codes": [
+                "hsso00"
+              ],
+              "stated_by_index_count": 0,
+              "unresolved": []
             },
             "dollar_amount": {
               "count": 24,
@@ -9729,6 +10443,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9737,6 +10453,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9745,6 +10463,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9753,22 +10473,32 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
+        "committee_candidates_unresolved": 0,
         "committee_name": {
-          "distinct_values": 7,
-          "distinct_values_beyond_index": 7,
+          "distinct_values": 1,
+          "distinct_values_beyond_index": 1,
           "documents": 7,
           "documents_beyond_index": 7,
+          "link_rows": 7,
+          "link_rows_beyond_index": 7,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
+        "committee_system_codes": [
+          "hsso00"
+        ],
         "crs_report_id": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9777,16 +10507,20 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "documents_read": 7,
         "documents_with_a_table": 7,
         "dollar_amount": {
-          "distinct_values": 102,
-          "distinct_values_beyond_index": 102,
+          "distinct_values": 44,
+          "distinct_values_beyond_index": 44,
           "documents": 7,
           "documents_beyond_index": 7,
+          "link_rows": 102,
+          "link_rows_beyond_index": 102,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
@@ -9795,6 +10529,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9803,6 +10539,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9811,6 +10549,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9819,6 +10559,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9827,6 +10569,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9835,6 +10579,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9870,6 +10616,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -9878,6 +10626,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         }
@@ -9895,8 +10645,8 @@
             "evidence_blocks": 237,
             "pages": 5,
             "rendition": "pdf",
-            "round_trip_sha256": "263503cedfebad40e417cba30758b9d47695d1a83ea90975060a10b5ce8f7afd",
-            "source_sha256_matches": true
+            "round_trip_matches": true,
+            "round_trip_sha256": "263503cedfebad40e417cba30758b9d47695d1a83ea90975060a10b5ce8f7afd"
           },
           "extraction": {
             "blocks": 255,
@@ -9910,8 +10660,8 @@
             },
             "page_count": 5,
             "pages_read": 5,
-            "seconds": 0.095,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.092,
+            "slowest_page_seconds": 0.0275,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "cc51ba0279803624d854969796f77629ab1106d184ac86772df03827eb5244ca",
@@ -9994,8 +10744,8 @@
             },
             "page_count": 14,
             "pages_read": 14,
-            "seconds": 0.313,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.303,
+            "slowest_page_seconds": 0.0247,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "5ac0985b155b6fea01a6b128c27ca53eb123ee747db5f49ae3c3c25beb0d06c3",
@@ -10022,6 +10772,18 @@
               "distinct_count": 1,
               "not_in_index": [
                 "2475000"
+              ],
+              "not_in_index_count": 1,
+              "stated_by_index_count": 0
+            },
+            "public_law": {
+              "count": 1,
+              "distinct": [
+                "119-75"
+              ],
+              "distinct_count": 1,
+              "not_in_index": [
+                "119-75"
               ],
               "not_in_index_count": 1,
               "stated_by_index_count": 0
@@ -10110,8 +10872,8 @@
             },
             "page_count": 37,
             "pages_read": 37,
-            "seconds": 0.901,
-            "slowest_page_seconds": 0.0,
+            "seconds": 0.88,
+            "slowest_page_seconds": 0.0318,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "a2122db234f0db992bfe9f26d654f5309d67839ef4e0c85c079e04c8bd119ae8",
@@ -10202,8 +10964,8 @@
             },
             "page_count": 77,
             "pages_read": 60,
-            "seconds": 1.409,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.428,
+            "slowest_page_seconds": 0.038,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "a1a87879e751f55137aaed2f5bee3d4bd8339278fb84f0f0b064f80d3fa9151b",
@@ -10258,6 +11020,18 @@
               "distinct_count": 1,
               "not_in_index": [
                 "40FEDREG24128"
+              ],
+              "not_in_index_count": 1,
+              "stated_by_index_count": 0
+            },
+            "public_law": {
+              "count": 1,
+              "distinct": [
+                "93-380"
+              ],
+              "distinct_count": 1,
+              "not_in_index": [
+                "93-380"
               ],
               "not_in_index_count": 1,
               "stated_by_index_count": 0
@@ -10344,8 +11118,8 @@
             },
             "page_count": 51,
             "pages_read": 51,
-            "seconds": 1.255,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.198,
+            "slowest_page_seconds": 0.0398,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "55465ab39f0b1a828b67b86b0a84e123a1a21b51d8229e0a5b7144c08dbd52df",
@@ -10523,8 +11297,8 @@
             },
             "page_count": 194,
             "pages_read": 60,
-            "seconds": 1.531,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.476,
+            "slowest_page_seconds": 0.039,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "d662efb550546bfde5525201b1253fb654f6a89d822fa67ba2ce18863ae19b61",
@@ -10671,8 +11445,8 @@
             },
             "page_count": 48,
             "pages_read": 48,
-            "seconds": 1.19,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.155,
+            "slowest_page_seconds": 0.0374,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "8bc60bed003e31f619472e78d38b3140f3afdcd1610502196d946e8accab5bec",
@@ -10823,8 +11597,8 @@
             },
             "page_count": 72,
             "pages_read": 60,
-            "seconds": 1.467,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.449,
+            "slowest_page_seconds": 0.0399,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "734a6dea90c8593977211562f617dfa88468beaebdbfc93943a5b709ee003f37",
@@ -10932,6 +11706,8 @@
           "distinct_values_beyond_index": 4,
           "documents": 2,
           "documents_beyond_index": 2,
+          "link_rows": 4,
+          "link_rows_beyond_index": 4,
           "rate": 0.25,
           "rate_beyond_index": 0.25
         },
@@ -10940,6 +11716,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -10948,6 +11726,8 @@
           "distinct_values_beyond_index": 9,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 9,
+          "link_rows_beyond_index": 9,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         },
@@ -10956,22 +11736,30 @@
           "distinct_values_beyond_index": 4,
           "documents": 2,
           "documents_beyond_index": 2,
+          "link_rows": 4,
+          "link_rows_beyond_index": 4,
           "rate": 0.25,
           "rate_beyond_index": 0.25
         },
+        "committee_candidates_unresolved": 0,
         "committee_name": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
+        "committee_system_codes": [],
         "crs_report_id": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -10980,6 +11768,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -10990,6 +11780,8 @@
           "distinct_values_beyond_index": 25,
           "documents": 3,
           "documents_beyond_index": 3,
+          "link_rows": 25,
+          "link_rows_beyond_index": 25,
           "rate": 0.375,
           "rate_beyond_index": 0.375
         },
@@ -10998,6 +11790,8 @@
           "distinct_values_beyond_index": 7,
           "documents": 4,
           "documents_beyond_index": 4,
+          "link_rows": 7,
+          "link_rows_beyond_index": 7,
           "rate": 0.5,
           "rate_beyond_index": 0.5
         },
@@ -11006,6 +11800,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -11014,22 +11810,28 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "public_law": {
-          "distinct_values": 0,
-          "distinct_values_beyond_index": 0,
-          "documents": 0,
-          "documents_beyond_index": 0,
-          "rate": 0.0,
-          "rate_beyond_index": 0.0
+          "distinct_values": 2,
+          "distinct_values_beyond_index": 2,
+          "documents": 2,
+          "documents_beyond_index": 2,
+          "link_rows": 2,
+          "link_rows_beyond_index": 2,
+          "rate": 0.25,
+          "rate_beyond_index": 0.25
         },
         "rin": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -11038,6 +11840,8 @@
           "distinct_values_beyond_index": 14,
           "documents": 5,
           "documents_beyond_index": 5,
+          "link_rows": 14,
+          "link_rows_beyond_index": 14,
           "rate": 0.625,
           "rate_beyond_index": 0.625
         },
@@ -11069,10 +11873,12 @@
         },
         "tables_observed": 0,
         "us_reports_cite": {
-          "distinct_values": 209,
-          "distinct_values_beyond_index": 209,
+          "distinct_values": 192,
+          "distinct_values_beyond_index": 192,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 209,
+          "link_rows_beyond_index": 209,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
@@ -11081,6 +11887,8 @@
           "distinct_values_beyond_index": 19,
           "documents": 6,
           "documents_beyond_index": 6,
+          "link_rows": 22,
+          "link_rows_beyond_index": 19,
           "rate": 0.75,
           "rate_beyond_index": 0.75
         }
@@ -11098,8 +11906,8 @@
             "evidence_blocks": 2805,
             "pages": 60,
             "rendition": "pdf",
-            "round_trip_sha256": "805644867ae448a5fd456b1921bcbbad43032f061a172226a99e888884c6fe79",
-            "source_sha256_matches": true
+            "round_trip_matches": true,
+            "round_trip_sha256": "805644867ae448a5fd456b1921bcbbad43032f061a172226a99e888884c6fe79"
           },
           "extraction": {
             "blocks": 3885,
@@ -11113,8 +11921,8 @@
             },
             "page_count": 2506,
             "pages_read": 60,
-            "seconds": 1.367,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.339,
+            "slowest_page_seconds": 0.0983,
             "table_shapes": [
               [
                 5,
@@ -11258,8 +12066,8 @@
             },
             "page_count": 1259,
             "pages_read": 60,
-            "seconds": 1.361,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.339,
+            "slowest_page_seconds": 0.0991,
             "table_shapes": [
               [
                 5,
@@ -11403,8 +12211,8 @@
             },
             "page_count": 1264,
             "pages_read": 60,
-            "seconds": 2.264,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.212,
+            "slowest_page_seconds": 0.099,
             "table_shapes": [
               [
                 3,
@@ -11564,8 +12372,8 @@
             },
             "page_count": 3018,
             "pages_read": 60,
-            "seconds": 1.353,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.325,
+            "slowest_page_seconds": 0.0829,
             "table_shapes": [
               [
                 3,
@@ -11715,8 +12523,8 @@
             },
             "page_count": 1476,
             "pages_read": 60,
-            "seconds": 1.353,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.311,
+            "slowest_page_seconds": 0.083,
             "table_shapes": [
               [
                 3,
@@ -11866,8 +12674,8 @@
             },
             "page_count": 1542,
             "pages_read": 60,
-            "seconds": 2.415,
-            "slowest_page_seconds": 0.0,
+            "seconds": 2.363,
+            "slowest_page_seconds": 0.0818,
             "table_shapes": [
               [
                 3,
@@ -12033,8 +12841,8 @@
             },
             "page_count": 2685,
             "pages_read": 60,
-            "seconds": 1.334,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.315,
+            "slowest_page_seconds": 0.085,
             "table_shapes": [
               [
                 3,
@@ -12178,8 +12986,8 @@
             },
             "page_count": 1335,
             "pages_read": 60,
-            "seconds": 1.324,
-            "slowest_page_seconds": 0.0,
+            "seconds": 1.296,
+            "slowest_page_seconds": 0.0906,
             "table_shapes": [
               [
                 3,
@@ -12321,6 +13129,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -12329,6 +13139,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -12337,6 +13149,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -12345,22 +13159,30 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
+        "committee_candidates_unresolved": 0,
         "committee_name": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
+        "committee_system_codes": [],
         "crs_report_id": {
           "distinct_values": 0,
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -12369,16 +13191,20 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "documents_read": 8,
         "documents_with_a_table": 8,
         "dollar_amount": {
-          "distinct_values": 2004,
-          "distinct_values_beyond_index": 2004,
+          "distinct_values": 1687,
+          "distinct_values_beyond_index": 1687,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 2004,
+          "link_rows_beyond_index": 2004,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
@@ -12387,14 +13213,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "fiscal_year": {
-          "distinct_values": 35,
-          "distinct_values_beyond_index": 35,
+          "distinct_values": 5,
+          "distinct_values_beyond_index": 5,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 35,
+          "link_rows_beyond_index": 35,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
@@ -12403,14 +13233,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "public_law": {
-          "distinct_values": 30,
-          "distinct_values_beyond_index": 30,
+          "distinct_values": 5,
+          "distinct_values_beyond_index": 5,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 30,
+          "link_rows_beyond_index": 30,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         },
@@ -12419,6 +13253,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -12427,6 +13263,8 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
@@ -12462,14 +13300,18 @@
           "distinct_values_beyond_index": 0,
           "documents": 0,
           "documents_beyond_index": 0,
+          "link_rows": 0,
+          "link_rows_beyond_index": 0,
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
         "usc_section": {
-          "distinct_values": 16,
-          "distinct_values_beyond_index": 16,
+          "distinct_values": 2,
+          "distinct_values_beyond_index": 2,
           "documents": 8,
           "documents_beyond_index": 8,
+          "link_rows": 16,
+          "link_rows_beyond_index": 16,
           "rate": 1.0,
           "rate_beyond_index": 1.0
         }
@@ -12500,11 +13342,13 @@
     {
       "name": "public_law",
       "note": "",
-      "pattern": "\\bP(?:ublic\\s+Law|\\.\\s?L\\.)\\s?(?:No\\.\\s?)?\\d{1,3}[-\u2013]\\d{1,4}\\b",
+      "pattern": "\\bP(?:ub(?:lic)?)?\\.?\\s*L(?:aw)?\\.?\\s?(?:No\\.\\s?)?\\d{1,3}[-\u2013]\\d{1,4}\\b",
       "rejects": [
         "Public Lands",
         "P.L. Smith",
-        "Pub L"
+        "Pub L",
+        "Republic Law 5",
+        "Pub. L. Rev."
       ],
       "target_key": "(congress, law_type, number)",
       "target_table": "laws"
@@ -12611,10 +13455,12 @@
     {
       "name": "case_docket_number",
       "note": "any federal case number printed in this shape, not only a Supreme Court docket: a GAO report cites circuit and district dockets the same way",
-      "pattern": "\\bNo\\.\\s?\\d{2}[-\u2013]\\d{1,4}\\b",
+      "pattern": "(?<!L\\.)(?<!L\\. )\\bNo\\.\\s?\\d{2}[-\u2013]\\d{1,4}\\b",
       "rejects": [
         "No. 25",
-        "Number 24-1001"
+        "Number 24-1001",
+        "Pub. L. No. 89-136",
+        "P.L. No. 89-136"
       ],
       "target_key": "docket_number",
       "target_table": "courtlistener clusters (not hosted)"
@@ -12633,12 +13479,13 @@
     {
       "name": "committee_name",
       "note": "",
-      "pattern": "\\bCommittee on (?:the )?[A-Z][A-Za-z]+(?:[, ]{1,2}(?:and )?[A-Z][A-Za-z]+){0,5}",
+      "pattern": "\\bCommittee on (?:the )?(?!January|February|March|April|May|June|July|August|September|October|November|December)[A-Z][A-Za-z']+(?:[, ]{1,2}(?:and )?[A-Z][A-Za-z']+){0,5}",
       "rejects": [
         "committee on the matter",
-        "Committee of the Whole"
+        "Committee of the Whole",
+        "Committee on June 5"
       ],
-      "target_key": "name (system_code by lookup)",
+      "target_key": "system_code, through the chamber rosters",
       "target_table": "committees"
     },
     {

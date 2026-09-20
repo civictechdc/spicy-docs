@@ -25,15 +25,15 @@ the two rules the owner set:
 
 | Family | Documents read | Verdict | What only the PDF supplies | What the index already supplies |
 | --- | --- | --- | --- | --- |
-| **House committee activity reports** (GovInfo `CRPT`) | 8/8 | **Host as a contract** — the highest-yield family in the corpus | 940 distinct bill numbers, 67 public laws and 124 of 125 committee names, **none of them stated by the index** | `packageId`, `title`, `dateIssued`, `lastModified`, `congress` — and nothing else |
-| **Report of the Secretary of the Senate** (GovInfo `CDOC`) | 8/8 | **Host as a contract** — a cost/expenditure table, not prose | 396 ruled tables in 480 sampled pages (median 5 rows × 10 columns), 2,004 distinct dollar figures, 30 public laws | The senate.gov page states a link and a label (`Full Report`, `Part I`, `Part II`) — two fields |
-| **GAO reports** | 8/8 | **Host as a contract** — recommendations and cross-product citations | Recommendation sections in 5/8, *Matters for Congressional Consideration* in 1/8, 44 of the 45 distinct GAO product ids it cites are other products, 25 ruled tables | `product_id`, `title`, `link`, `guid`, `pub_date`, and a `description` that is the "What GAO Found" abstract |
-| **Agency uploaded-report PDFs** (measured on Oversight.gov) | 8/8 | **Host as a contract**, but a narrow one | Recommendation sections in 6/8, 57 ruled tables, 17 fiscal years, 6 CFR cites | An unusually rich record: agency reviewed, components, report number, report type, date issued, external entity, **number of recommendations**, questioned costs, funds for better use |
-| **Budget justifications** (GovInfo `BUDGET`) | 8/8 | **Host as a contract** — account tables, with a caveat | 727 distinct dollar figures, 91 U.S. Code cites, 77 public laws, 71 ruled tables, appropriation-account headings in 4/8 | `packageId`, `title` (`Appendix`, `Analytical Perspectives`, …), `dateIssued` — nothing below volume level |
-| **House Clerk disclosures** | 7/8 | **Host as a contract** — but a form-extraction one, not a citation one | 56 ruled tables in 45 pages (asset/transaction grids), 102 distinct dollar figures | The yearly index states `DocID`, `Year`, `FilingType`, `FilingDate`, `Prefix`, `First`, `Last`, `Suffix`, `StateDst` — the filer and the filing, none of the content |
-| **Supreme Court slip opinions** | 8/8 | **Evidence-only for citations; host the body** | 209 distinct U.S. Reports cites, 22 U.S. Code cites, 14 Statutes at Large cites, syllabus/held markers in 8/8 | The term index already states release number, date, docket, case name, **holding**, authoring Justice and citation |
-| **CourtListener opinions** | 8/8 | **Evidence-only** | Nothing of its own. Every one of its 8 `download_url`s is a supremecourt.gov slip PDF, and 7 of the 8 are the same files the row above sampled (the two differ only by which revision token each route named) | 33 fields including `citation`, `docketNumber`, `dateFiled`, `judge`, `panel_names`, `syllabus`, `posture`, `procedural_history`, `scdb_id`, `lexisCite`, `neutralCite` |
-| **CRS report files** | 8/8 | **Evidence-only for join keys; host the body** | 44 of 52 cited CRS report ids (report→report, which the index never states); 183 dollar figures; 22 U.S. Code cites | **Every bill the print discusses.** 0 of 36 distinct bills and 1 of 34 distinct public laws across the eight reports are absent from `relatedMaterials` |
+| **House committee activity reports** (GovInfo `CRPT`) | 8/8 | **Host as a contract** — the highest-yield family in the corpus | **883 distinct bill numbers**, 75 public laws and **20 committees resolved to a `system_code`**, none of them stated by the index (940, 85 and 120 link rows) | `packageId`, `title`, `dateIssued`, `lastModified`, `congress` — and nothing else |
+| **Report of the Secretary of the Senate** (GovInfo `CDOC`) | 8/8 | **Host as a contract** — a cost/expenditure table, not prose | 396 ruled tables in 480 sampled pages (median 5 rows × 10 columns); 1,687 distinct dollar figures over 2,004 link rows; 5 distinct public laws | The senate.gov page states a link and a label (`Full Report`, `Part I`, `Part II`) — two fields |
+| **GAO reports** | 8/8 | **Host as a contract** — recommendations and cross-product citations | Recommendation sections in 5/8, *Matters for Congressional Consideration* in 1/8, 44 of the 45 distinct GAO product ids cited are other products, 25 ruled tables | `product_id`, `title`, `link`, `guid`, `pub_date`, and a `description` that is the "What GAO Found" abstract |
+| **Agency uploaded-report PDFs** (measured on Oversight.gov) | 8/8 | **Host as a contract**, but a narrow one | Recommendation sections in 6/8, 57 ruled tables, 11 distinct fiscal years, 4 distinct CFR cites | An unusually rich record: agency reviewed, components, report number, report type, date issued, external entity, **number of recommendations**, questioned costs, funds for better use |
+| **Budget justifications** (GovInfo `BUDGET`) | 8/8 | **Host as a contract** — account tables, with a caveat | 658 distinct dollar figures (727 link rows), 90 distinct U.S. Code cites, 69 distinct public laws, 71 ruled tables, appropriation-account headings in 4/8 | `packageId`, `title` (`Appendix`, `Analytical Perspectives`, …), `dateIssued` — nothing below volume level |
+| **House Clerk disclosures** | 7/8 | **Host as a contract** — but a form-extraction one, not a citation one | 56 ruled tables in 45 pages (asset/transaction grids), 44 distinct dollar figures over 102 link rows | The yearly index states `DocID`, `Year`, `FilingType`, `FilingDate`, `Prefix`, `First`, `Last`, `Suffix`, `StateDst` — the filer and the filing, none of the content |
+| **Supreme Court slip opinions** | 8/8 | **Evidence-only for citations; host the body** | 192 distinct U.S. Reports cites over 209 link rows, 22 U.S. Code cites, 14 Statutes at Large cites, syllabus/held markers in 8/8 | The term index already states release number, date, docket, case name, **holding**, authoring Justice and citation |
+| **CourtListener opinions** | 8/8 | **Evidence-only** | Nothing of its own. Every one of its 8 `download_url`s is a supremecourt.gov slip PDF, and 7 of the 8 are the same files the row above sampled; the two that differ are not the same case — CourtListener's extra is a second revision of 25-365, the Court's index's extra is a different case, 24-1260 | 33 fields including `citation`, `docketNumber`, `dateFiled`, `judge`, `panel_names`, `syllabus`, `posture`, `procedural_history`, `scdb_id`, `lexisCite`, `neutralCite` |
+| **CRS report files** | 8/8 | **Evidence-only for join keys; host the body** | 44 of the 52 distinct CRS report ids cited (report→report, which the index never states); 177 distinct dollar figures; 22 U.S. Code cites | **Every bill the print discusses.** 0 of 36 distinct bills and 1 of 33 distinct public laws across the eight reports are absent from `relatedMaterials` |
 | **CBO cost estimates** | **0/8** | **Blocked** — not obtainable, even through a paid proxy | Unknown, and it stays unknown | `Title`, `Date`, `Link` (a publication *page*), `Description`, `Bill_Number` |
 
 ## The three the owner named
@@ -42,15 +42,26 @@ the two rules the owner set:
 
 The census recorded CBO's documents as DataDome-walled with no keyless route.
 Measured again today with a `ZYTE_TOKEN`: **nine walled URLs, eleven attempts,
-two modes, all refused** with Zyte's own `/download/temporary-error`. Eight of
-those nine were `/publication/{id}` pages the feed itself stated; the ninth was
-a `/system/files/*.pdf` the earlier probe had named.
+two modes, and not one document obtained.** Eight of those nine were
+`/publication/{id}` pages the feed itself stated; the ninth was a
+`/system/files/*.pdf` the earlier probe had named.
+
+**What those eleven refusals are, exactly**, because the distinction matters
+under this repository's own rule that a transport failure is not a record: 3 of
+the 11 carry Zyte's `/download/temporary-error` slug, which is the provider
+saying it could not download the target; the other 8 are a bare HTTP 520 from
+the provider with no slug at all. A 520 is Zyte's own transport failing. **So
+none of the eleven is CBO refusing Zyte** — what is established is that *this
+proxy could not fetch these paths*, which is a weaker and different statement
+than the census's direct 403s, and those direct 403s remain the evidence that
+CBO itself refuses. Neither says the wall is permanent.
 
 The control is what makes that a finding rather than a broken run: the same
 proxy, the same session, fetched CBO's *unwalled* `/rss/119congress-cost-estimates.xml`
 and returned 432,572 bytes with digest `910aab10…` — byte-identical to the
-keyless capture taken minutes earlier. The transport works; the wall is
-path-scoped and Zyte's own downloader is inside it.
+keyless capture taken minutes earlier. The transport works and the wiring is
+right, so the eleven failures are about those paths and not about this client —
+but they are the provider's failure to fetch, not the publisher's answer.
 
 So the highest-value candidate in the corpus cannot be built at all. What
 survives is what the feed already gives, and that is not nothing: today's
@@ -66,8 +77,8 @@ route.
 This is the clearest application of rule 1 in the corpus, and it goes the other
 way from what the census implied. Across the eight sampled reports the prints
 name 36 distinct bills; `api.congress.gov/v3/crsreport/{id}`'s
-`relatedMaterials[]` already states **every one of them**. Public laws: 34
-distinct in the prints, 33 already stated, 1 new.
+`relatedMaterials[]` already states **every one of them**. Public laws: 33
+distinct in the prints, 32 already stated, 1 new.
 
 | Report | Bills in the PDF | Stated by the index | New | Laws in the PDF | New |
 | --- | --- | --- | --- | --- | --- |
@@ -114,9 +125,9 @@ disagreed about 24 of 72 rows' links, and a link's trailing token is a revision
 id. Capturing the PDF in that window is worth doing for the bytes, not for
 fields.
 
-**The body text**, and the citations inside it — 209 distinct U.S. Reports
-cites, 22 U.S. Code cites, 14 Statutes at Large cites across eight opinions,
-none of them in either index. CourtListener's `citation` field names how this
+**The body text**, and the citations inside it — 192 distinct U.S. Reports
+cites over 209 link rows, 22 U.S. Code cites and 14 Statutes at Large cites
+across eight opinions, none of them in either index. CourtListener's `citation` field names how this
 opinion is cited; it never names what this opinion cites. That opinion-to-
 opinion edge is real yield, and it belongs in the shared
 `document_citations` table rather than in an opinion-specific contract.
@@ -130,43 +141,79 @@ reads.
 
 ## Join-key yield
 
-Each cell is `documents stating the key / documents read` and then
-**`distinct values the index does not state`**`/distinct values found`. Blank
-means zero. The bolded number is the yield: what hosting the PDF would add that
-the publisher's own record does not already give.
+Each cell is `documents stating the key / documents read` · **distinct
+values the index does not state** · link rows the index does not state. Blank
+means zero.
+
+The last two are different numbers and conflating them overstates the yield.
+**Link rows** is what a `document_citations` table would hold — one document
+citing one key is one row, and eight opinions citing *Detroit Timber* is eight
+rows. **Distinct values** is how many separate keys the family reaches — that
+same boilerplate cite is one key. Where the two differ, the gap is repetition
+across documents: the slip opinions cite 209 rows against 192 distinct U.S.
+Reports cites, and the activity reports 940 rows against 883 distinct bills.
+The bolded number is the yield over the publisher's own record.
 
 | Key | Join target | CRS | GAO | SCOTUS | CourtL. | Activity | SecSen | Clerk | Budget | Upload |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `bill_number` | `congress_bills.bill_id` | 6/8 · **0**/36 | 1/8 · **1**/1 | 2/8 · **4**/4 | 2/8 · **4**/4 | 8/8 · **940**/940 | | | 2/8 · **4**/4 | |
-| `public_law` | `laws (congress, law_type, number)` | 7/8 · **1**/34 | | | | 8/8 · **67**/67 | 8/8 · **30**/30 | | 4/8 · **77**/77 | |
-| `statutes_at_large` | `laws.statutes_at_large_cite` | | 7/8 · **11**/12 | 5/8 · **14**/14 | 5/8 · **13**/13 | 1/8 · **2**/2 | | | 1/8 · **6**/6 | |
-| `usc_section` | `law_code_sections` | 3/8 · **22**/22 | 5/8 · **27**/28 | 6/8 · **19**/22 | 6/8 · **14**/14 | 6/8 · **15**/15 | 8/8 · **16**/16 | | 4/8 · **91**/91 | 4/8 · **5**/5 |
-| `cfr_section` | CFR sections (host-side) | 3/8 · **17**/17 | 4/8 · **9**/9 | 2/8 · **4**/4 | 2/8 · **4**/4 | | | | 1/8 · **3**/3 | 5/8 · **6**/6 |
-| `federal_register_cite` | `federal_register.document_number` | | 2/8 · **7**/7 | 4/8 · **7**/7 | 5/8 · **8**/8 | 1/8 · **1**/1 | | | | |
-| `rin` | `federal_register.regulation_id_numbers_json` | | | | | 1/8 · **1**/1 | | | | |
-| `gao_product_id` | GAO product id (`gao/files.py` key) | 1/8 · **3**/3 | 8/8 · **44**/45 | | | 1/8 · **2**/2 | | | | 2/8 · **4**/4 |
-| `crs_report_id` | Congress.gov `crsreport` id | 8/8 · **44**/52 | | | | | | | 1/8 · **1**/1 | |
-| `bioguide_id` | `members.bioguide_id` | | | | | | | | | |
-| `docket_number` | `dockets.docket_id` | | | | | 1/8 · **1**/1 | | | | |
-| `case_docket_number` | CourtListener docket | | 3/8 · **7**/7 | 6/8 · **9**/9 | 6/8 · **8**/8 | | | | | |
-| `us_reports_cite` | CourtListener opinion citation | | | 8/8 · **209**/209 | 8/8 · **222**/222 | | | | | |
-| `committee_name` | `committees.system_code` (by lookup) | 2/8 · **8**/8 | 6/8 · **8**/8 | | | 8/8 · **124**/125 | | 7/7 · **7**/7 | 2/8 · **14**/14 | |
-| `dollar_amount` | no hosted target yet | 8/8 · **183**/183 | 6/8 · **265**/273 | 3/8 · **25**/25 | 3/8 · **25**/25 | 6/8 · **46**/46 | 8/8 · **2004**/2004 | 7/7 · **102**/102 | 6/8 · **727**/727 | 4/8 · **57**/60 |
-| `fiscal_year` | no hosted target yet | 7/8 · **14**/16 | 5/8 · **23**/26 | | | 8/8 · **15**/15 | 8/8 · **35**/35 | | 6/8 · **58**/58 | 6/8 · **17**/17 |
+| `bill_number` | `congress_bills.bill_id` | 6/8 · **0** · 0 | 1/8 · **1** · 1 | 2/8 · **4** · 4 | 2/8 · **2** · 4 | 8/8 · **883** · 940 |  |  | 2/8 · **4** · 4 |  |
+| `public_law` | `laws (congress, law_type, number)` | 7/8 · **1** · 1 | 5/8 · **7** · 7 | 2/8 · **2** · 2 | 2/8 · **2** · 2 | 8/8 · **75** · 85 | 8/8 · **5** · 30 |  | 4/8 · **69** · 77 |  |
+| `statutes_at_large` | `laws.statutes_at_large_cite` |  | 7/8 · **11** · 11 | 5/8 · **14** · 14 | 5/8 · **8** · 13 | 1/8 · **2** · 2 |  |  | 1/8 · **6** · 6 |  |
+| `usc_section` | `law_code_sections` | 3/8 · **22** · 22 | 5/8 · **27** · 27 | 6/8 · **19** · 19 | 6/8 · **13** · 14 | 6/8 · **15** · 15 | 8/8 · **2** · 16 |  | 4/8 · **90** · 91 | 4/8 · **4** · 5 |
+| `cfr_section` | CFR sections (host-side) | 3/8 · **17** · 17 | 4/8 · **9** · 9 | 2/8 · **4** · 4 | 2/8 · **4** · 4 |  |  |  | 1/8 · **3** · 3 | 5/8 · **4** · 6 |
+| `federal_register_cite` | `federal_register.document_number` |  | 2/8 · **7** · 7 | 4/8 · **7** · 7 | 5/8 · **7** · 8 | 1/8 · **1** · 1 |  |  |  |  |
+| `rin` | `federal_register.regulation_id_numbers_json` |  |  |  |  | 1/8 · **1** · 1 |  |  |  |  |
+| `gao_product_id` | GAO product id (`gao/files.py` key) | 1/8 · **3** · 3 | 8/8 · **44** · 44 |  |  | 1/8 · **2** · 2 |  |  |  | 2/8 · **4** · 4 |
+| `crs_report_id` | Congress.gov `crsreport` id | 8/8 · **44** · 44 |  |  |  |  |  |  | 1/8 · **1** · 1 |  |
+| `bioguide_id` | `members.bioguide_id` |  |  |  |  |  |  |  |  |  |
+| `docket_number` | `dockets.docket_id` |  |  |  |  | 1/8 · **1** · 1 |  |  |  |  |
+| `case_docket_number` | CourtListener docket |  | 3/8 · **7** · 7 | 6/8 · **9** · 9 | 6/8 · **7** · 8 |  |  |  |  |  |
+| `us_reports_cite` | CourtListener opinion citation |  |  | 8/8 · **192** · 209 | 8/8 · **178** · 222 |  |  |  |  |  |
+| `committee_name` | `committees.system_code`, resolved | 2/8 · **8** · 8 | 6/8 · **7** · 8 |  |  | 8/8 · **87** · 120 |  | 7/7 · **1** · 7 | 2/8 · **14** · 14 |  |
+| `dollar_amount` | no hosted target yet | 8/8 · **177** · 183 | 6/8 · **264** · 265 | 3/8 · **25** · 25 | 3/8 · **25** · 25 | 6/8 · **46** · 46 | 8/8 · **1687** · 2004 | 7/7 · **44** · 102 | 6/8 · **658** · 727 | 4/8 · **55** · 57 |
+| `fiscal_year` | no hosted target yet | 7/8 · **10** · 14 | 5/8 · **15** · 23 |  |  | 8/8 · **7** · 15 | 8/8 · **5** · 35 |  | 6/8 · **49** · 58 | 6/8 · **11** · 17 |
 
 Two results stand out and neither is where the census pointed.
 
-**`bioguide_id` is zero everywhere.** No print in any family states a bioguide
-id; every member reference is a printed name. A member join from any of these
-families has to go through the `members` crosswalk by name, which is
-interpretation, not acquisition — so no `document → member` contract should be
-proposed on this evidence.
+**`bioguide_id` is zero everywhere, and that was a foregone conclusion.** A
+bioguide id is an identifier the publishers assign and do not print; no
+congressional document was ever going to contain one, so this row measures
+nothing and is kept only to say plainly that it does. What these prints *do*
+carry is names — an honorific-plus-name rule run over the activity reports finds
+3 to 347 distinct hits per report — and turning those into bioguide ids is a
+name-to-member crosswalk that **this measurement did not attempt**. So nothing
+here says whether a `document → member` contract is feasible; it says only that
+it cannot be built from a printed identifier, and that the crosswalk it would
+need has not been measured.
 
 **The House committee activity reports are the corpus's densest join surface**:
-940 distinct bill numbers, 67 public laws and 124 new committee names across eight
-prints, with a publisher index that states seven fields and none of that. One
-report is a whole Congress of one committee's legislative activity, and the
-only place it exists in structured form is this PDF.
+883 distinct bill numbers and 75 public laws across eight prints — 940 and 85
+link rows — against a publisher index that states seven fields and none of
+that. One report is a whole Congress of one committee's legislative activity,
+and the only place it exists in structured form is this PDF.
+
+**Committee names are a resolution problem, not a count.** The rule that finds
+them is a *candidate* finder: a committee report wraps the name across lines and
+runs it into the following prose, so an early version of this measurement
+reported 125 "committee names" for the activity reports when the eight prints
+name about twenty committees. Of the 90 distinct candidates that rule produced,
+five were dates (`Committee on June`), 46 were line-wrap prefixes of each other
+(`Committee on Ag` / `Committee on Agri` / `Committee on Agriculture`) and
+several ran into a chairman's name. The rule now rejects a month, and every
+candidate is settled against the chamber rosters this repository already pins —
+27 House committees from the Clerk's `MemberData.xml` and 12 more Senate
+committees from the `cvc` file, read through
+`sources/congress/committee_rosters.py`, with `comcode AG00 → hsag00` by the
+data map's own measured rule. **20 distinct `system_code`s resolve across the
+eight activity reports** (16 House, 4 Senate), from 87 candidates, leaving 20
+unresolved. Only a resolved code is reported as a committee anywhere in this
+document; an unresolved candidate is counted as a candidate.
+
+The unresolved 20 are mostly Senate committees the pinned `cvc` excerpt does not
+reach and fragments too short to settle (`Committee on E`), so 20 is a floor on
+what a full roster would resolve — which is the shape the contract should take
+anyway: extract the candidate, resolve against the hosted `committees` table at
+build time, and store the `system_code`, never the printed string.
 
 ## Structured content
 
@@ -206,7 +253,7 @@ patterns are in the sidecar's `join_key_rules`.
 | Key | Rule, in words | Rejects (checked) |
 | --- | --- | --- |
 | `bill_number` | chamber designator, a `.` or space, then 1–5 digits, not preceded by `U.` or a letter | `HR974` (a GPO running head), `S4601` (a Record locator), `600 U. S. 183`, `ANALYSIS. 12` |
-| `public_law` | `Public Law` or `P.L.`, optional `No.`, then `congress-number` | `Public Lands`, `P.L. Smith`, `Pub L` |
+| `public_law` | `Public Law`, `P.L.`, `PL` or the Bluebook `Pub. L. No.`, then `congress-number` | `Public Lands`, `P.L. Smith`, `Pub L`, `Republic Law 5`, `Pub. L. Rev.` |
 | `statutes_at_large` | `N Stat. N` | `Stat. of the Union`, `12 State 45` |
 | `usc_section` | title, `U.S.C.`, optional `§`, then a section | `U.S. Code of conduct`, `42 USC for` |
 | `cfr_section` | title, `C.F.R.`, optional `part`/`§`, then a part | `CFR is the`, `40 CRF 60` |
@@ -216,14 +263,14 @@ patterns are in the sidecar's `join_key_rules`.
 | `crs_report_id` | a CRS series prefix and 4–6 digits, no separator | `R 1234`, `RL-31312` |
 | `bioguide_id` | letter and six digits | `A 000375`, `AB000375` |
 | `docket_number` | agency acronym, year, sequence | `FAA 2016 6907`, `ABC-16-0001` |
-| `case_docket_number` | `No. YY-NNNN` — any federal case, not only a Supreme Court one | `No. 25`, `Number 24-1001` |
+| `case_docket_number` | `No. YY-NNNN` not preceded by `L.` — any federal case, not only a Supreme Court one | `No. 25`, `Number 24-1001`, `Pub. L. No. 89-136` |
 | `us_reports_cite` | volume, `U. S.`, page | `U.S. Government`, `600 US 1` |
-| `committee_name` | `Committee on [the] <Title Case>` | `committee on the matter`, `Committee of the Whole` |
+| `committee_name` | `Committee on [the] <Title Case>`, no month; then resolved against the pinned chamber rosters | `committee on the matter`, `Committee of the Whole`, `Committee on June 5` |
 
-**Two of these rules were wrong until the sample corrected them, and that is the
-argument for measuring before building.** The first `bill_number` rule scored
-the slip-opinion sample at a 100% bill rate — because `600 U. S. 183` contains
-`S. 183`. The same rule read the GPO running head `HR974` as a bill, which is
+**Four of these rules were wrong until the sample corrected them, and that is
+the argument for measuring before building.** The first `bill_number` rule
+scored the slip-opinion sample at a 100% bill rate — because `600 U. S. 183`
+contains `S. 183`. The same rule read the GPO running head `HR974` as a bill, which is
 why GPO print artifacts now come off through
 [`extraction/gpo_normalize.py`](../extraction-gpo.md) before any text rule runs.
 Its own evidence gate is worth reporting: it stripped GPO footers from 8 of the
@@ -234,6 +281,14 @@ not the host. A `recommendation_list` marker built
 from `We recommend that` alone found GAO recommendations in 1 of 8 reports; the
 publisher's actual heading is *Recommendations for Executive Action*, and with
 it the rate is 5 of 8.
+
+The other two were found in review. The `public_law` rule could read
+`Public Law 98-369` and `P.L. 98-369` but not the Bluebook `Pub. L. No. 89-136`,
+which is the spelling a court or an auditor writes in: adding it recovered 35
+occurrences the first pass missed, 18 in the activity reports and 11 in GAO, and
+moved GAO's public-law row from **no documents** to 5 of 8. And
+`case_docket_number` was reading the `No. 89-136` inside those same Bluebook
+cites as a circuit docket; it now refuses a `No.` preceded by `L.`
 
 ## The contract shape this points at
 
@@ -252,8 +307,12 @@ key), sorted by target so a `WHERE target_key = ?` prunes row groups:
 
 Every document in every family partitions cleanly into those evidence blocks:
 the line assembly `reconstruction.evidence.evidence_from_pages` — the half that
-every PDF capture profile shares — ran over one document per family and
-round-tripped in all nine, 55 to 750 blocks each.
+every PDF capture profile shares — ran over one document per family, producing
+55 to 3,008 blocks, and in all nine the concatenated blocks reproduce the page
+text under whitespace normalization. That comparison is the witness; an earlier
+version of this measurement instead checked the evidence document's
+`source_sha256` against the digest it had just been handed, which is a
+tautology and would have passed on any input at all.
 
 **No seventh capture profile was written.** What a family-specific profile adds
 over the shared line assembly is a *grammar* — which lines are a heading, a
@@ -268,13 +327,16 @@ profile remains the PDF-text worked example, and today's independent capture of
 | Route | Census said | Direct, today | Through Zyte, today |
 | --- | --- | --- | --- |
 | CRS HTML (`congress.gov/crs_external_products/*/HTML/*.html`) | 403 to a plain client, corrected 2026-09-19 to flaky | `200 text/html`, 2 of 2 reports | `200 text/html`, 2 of 2, **byte-identical to the direct capture** (`5e20a65f…`, `154a5492…`) |
-| CBO `/publication/{id}` | 403 DataDome | not attempted (the census established it twice) | **refused**, 8 URLs + 2 repeats in `browserHtml`, `/download/temporary-error` |
-| CBO `/system/files/*.pdf` | 403 DataDome | not attempted | **refused**, `/download/temporary-error` |
+| CBO `/publication/{id}` | 403 DataDome | not attempted (the census established it twice) | **no document**, 8 URLs + 2 repeats in `browserHtml`; 2 answered with the provider's `/download/temporary-error`, 8 with a bare 520 |
+| CBO `/system/files/*.pdf` | 403 DataDome | not attempted | **no document**, 1 attempt, the provider's `/download/temporary-error` |
 | CBO `/rss/{c}congress-cost-estimates.xml` (control) | 200 keyless | `200`, 432,572 B | `200`, 432,572 B, **same digest** `910aab10…` |
 
 The controls are the point. Two byte-identical pairs, on two publishers, say the
-proxy returns the publisher's own bytes rather than a rendering — so the CBO
-refusals are the wall answering, not the transport failing. The CRS "wall" did
+proxy returns the publisher's own bytes rather than a rendering, so the CBO
+failures are about those paths and not about this client. They do **not** say
+CBO refused the proxy: 8 of the 11 are a bare provider 520, which is Zyte's
+transport failing, and a transport failure establishes nothing about a
+publisher. The CRS "wall" did
 not reproduce on either route; two successes do not establish a reliable route
 any more than one does, and `crs_files.py`'s existing HTML-then-PDF fallback
 stays the right shape.
@@ -294,7 +356,7 @@ request id, the mode and the proxy — are recorded in
 | --- | --- | --- | --- |
 | Keyless | 91 | none set | Ten hosts: `files.gao.gov`, `www.gao.gov`, `www.congress.gov`, `www.govinfo.gov`, `www.supremecourt.gov`, `www.courtlistener.com`, `www.senate.gov`, `disclosures-clerk.house.gov`, `www.oversight.gov`, `www.cbo.gov` |
 | Keyed (`API_GOV`, header only) | 13 | 20 | Two hosts: 9 `api.congress.gov` `crsreport`, 4 `api.govinfo.gov` `published` |
-| Zyte | 14 logged, 17 made | 30 | 3 provider calls predate the probe's failure logging and were re-run identically; every row the report cites is in `requests.jsonl` |
+| Zyte | 14 logged rows; **at least 17** provider calls | 30 | Three provider calls predate the probe's failure logging and were re-run identically, so every row the report cites is in `requests.jsonl`. The exact total is *not* derivable from this receipt: the shared client may retry within one logged row, and the run recorded no per-row call count. The transport now reports `provider_calls` on every row and `acquire` writes the budget's spend to `acquire-summary.jsonl`, so the next run states it exactly. |
 | **Total** | **118 logged** | | |
 
 ## Complexity
@@ -302,10 +364,13 @@ request id, the mode and the proxy — are recorded in
 Linear per document in its pages. Extraction yields one page at a time and each
 rule scans each page's text once, so a family of `D` documents with `P` pages
 costs `O(D·P·C·K)` for `K` fixed rules. Measured with `tables=True` on all 71
-documents: **10 to 166 ms per page**, and the spread is content, not size — the
-Budget Appendix's dense ruled pages cost 166 ms/page against 22 ms/page for the
-Senate volumes at the same 60-page depth. `find_tables()` is the only
-superlinear step and it is per page and bounded there; nothing in this
+documents, per family as whole-document seconds divided by pages read: **24 to
+84 ms per page**, and the spread is content, not size — the budget volumes cost
+84 ms/page against 24 ms/page for the slip opinions. The slowest *single* page
+in the corpus is timed around the generator's own `next()` and is 275 ms, in the
+Budget Appendix; the first version of this tool started that timer after the
+page was already produced and published a column of zeros. `find_tables()` is
+the only superlinear step and it is per page and bounded there; nothing in this
 measurement is superlinear in the corpus.
 
 The one quadratic step is in the measurement's own index rendering, not in any
@@ -333,24 +398,30 @@ one record's field count — a handful, bounded by the publisher's schema.
 ## Recommended build order
 
 1. **`document_citations`, the one shared link contract, built first on the
-   House committee activity reports.** Densest yield in the corpus (940 bills,
-   67 laws, 124 committees across eight prints), a publisher index that states
-   none of it, keyless GovInfo documents, one keyed request per 100 packages to
-   discover them, and no table extraction needed — it is a citation contract
-   over prose. It also exercises `bill_number`, `public_law`, `committee_name`
-   and the GPO normalizer together on the family where all four matter.
+   House committee activity reports.** Densest yield in the corpus — 883
+   distinct bills and 75 distinct laws over 940 and 85 link rows, plus 20
+   committees resolved to a `system_code`, across eight prints — against a
+   publisher index that states none of it; keyless GovInfo documents, one keyed
+   request per 100 packages to discover them, and no table extraction needed,
+   because it is a citation contract over prose. It also exercises
+   `bill_number`, `public_law`, the committee resolution and the GPO normalizer
+   together on the family where all four matter.
 2. **Extend `document_citations` to GAO and the slip opinions**, which add the
    `gao_product_id` report→report edge (44 of 45 cites are other products) and
-   the `us_reports_cite` opinion→opinion edge (209 distinct cites, and
-   CourtListener's `citation` field covers the *cited* opinion, never the
-   citing one's references).
+   the `us_reports_cite` opinion→opinion edge (192 distinct cites over 209
+   rows, and CourtListener's `citation` field covers the *cited* opinion, never
+   the citing one's references).
 3. **`crs_report_citations`, and nothing else from CRS.** The bills and laws are
    already in `relatedMaterials`; the report→report graph is not, and has no
    other source.
 4. **`senate_expenditures`, a real table contract**, off the Secretary of the
    Senate volumes: 396 ruled tables in 480 sampled pages, a consistent 5–6 × 9–10
    geometry, and a two-field index record that states nothing about the content.
-   This is the best ruled-table target in the corpus and it is keyless.
+   This is the best ruled-table target in the corpus and it is keyless. Note
+   what the join-key table says about it: 1,687 distinct dollar figures but only
+   5 distinct public laws and 2 U.S. Code cites — this family is a *table*
+   contract, not a citation one, and `document_citations` would add almost
+   nothing here.
 5. **`gao_recommendations`** — a list contract, not a citation one, over the
    *Recommendations for Executive Action* and *Matters for Congressional
    Consideration* sections. Worth doing after (2) because it needs a section
@@ -360,9 +431,13 @@ one record's field count — a handful, bounded by the publisher's schema.
    rows mean anything, and the Clerk's grids are a form-extraction problem
    rather than a citation one.
 7. **CBO: build the feed-only `bill ↔ cost_estimate` link table now, and stop
-   there.** The document has no route. Re-probe when CBO changes hosts or when
-   a route other than `www.cbo.gov` appears; do not spend on the proxy again
-   without new evidence, because the one measurement that would have justified
-   it has been made and it came back negative.
-8. **Do not build**: a `document → member` contract from any of these families
-   (no print states a bioguide id), or a CRS bills-discussed extractor (rule 1).
+   there.** The document has no route this measurement could reach. Re-probe
+   when CBO changes hosts or when a route other than `www.cbo.gov` appears. Do
+   not spend on the proxy again without new evidence — but record why: 8 of the
+   11 attempts were the provider's own transport failing, so what was measured
+   is that *this proxy could not fetch these paths*, not that CBO refused it.
+   The feed control is what makes even that worth acting on.
+8. **Do not build**: a CRS bills-discussed extractor (rule 1). A
+   `document → member` contract is **not** ruled out here — it is unmeasured:
+   no print states a bioguide id, which was always going to be true, and the
+   name-to-member crosswalk that would be needed instead was not attempted.

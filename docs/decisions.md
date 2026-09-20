@@ -925,9 +925,13 @@ measurement](research/pdf-family-rollup-yield-2026-09-20.md) ran both walled
 routes through it on 2026-09-20. Congress.gov's CRS HTML answered `200`
 directly and through the proxy, byte-identical both ways. CBO answered
 `200` through the proxy on its *unwalled* feed — byte-identical to the keyless
-capture, which is the control that says the wiring works — and refused nine
-walled URLs over eleven attempts, in both modes, with Zyte's own
-`/download/temporary-error`. A paid
+capture, which is the control that says the wiring works — and yielded no
+document at all on nine walled URLs over eleven attempts in both modes. Read
+those failures carefully: 3 carry Zyte's own `/download/temporary-error` slug
+and the other 8 are a bare provider HTTP 520, which is the proxy's transport
+failing. Under this repository's rule that a transport failure is not a record,
+**none of the eleven establishes that CBO refused the proxy** — only that this
+proxy could not fetch those paths. A paid
 proxy is therefore not a way past that wall, and `ZyteBudget` exists so the
 next attempt cannot find that out expensively: it is one ceiling shared by
 every transport drawing on it, since a per-acquirer request budget cannot bound
