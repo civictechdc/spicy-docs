@@ -157,3 +157,11 @@ refusal and the family and id measurements over the retained stated URLs are in
 `corpora/supply-2026-09-02/receipts/port-P03-crs-files-2026-09-14/`. Two
 captures of `IF11830.5.pdf` three weeks apart are byte-identical, which pins the
 route but does not promise the publisher keeps any version forever.
+
+Re-probed 2026-09-20 while measuring the
+[PDF-family yield](../research/pdf-family-rollup-yield-2026-09-20.md): the HTML
+route answered `200 text/html` directly on both reports tried, and the same two
+URLs fetched through a Zyte transport returned **byte-identical** bodies
+(`5e20a65f…`, 20,008 B; `154a5492…`, 19,971 B). So the bot wall did not
+reproduce, and a proxy is not what makes this route answer. Two successes
+establish no more than one does; the HTML-then-PDF fallback above stays.

@@ -54,11 +54,28 @@ publication *page*, never a PDF locator. The only unwalled paths observed are
 
 **So the estimate documents have no keyless route, and a browser-backed
 transport is the only path.** `CboAcquirer` already takes one: inject a
-`transport` (see [`sources/zyte.py`](../../src/spicy_docs/sources/zyte.py)) and
-the locator grammar, the byte bounds and the three identity proofs below apply
-unchanged. No `ZYTE_TOKEN` was available for this measurement, so *that* route
-is untested here; what is established is that the default transport cannot reach
-a document, on four paths, on two days, with and without browser headers.
+`transport` — [`transport/zyte.py`](../../src/spicy_docs/transport/zyte.py) is
+that shape over the [`sources/zyte.py`](../../src/spicy_docs/sources/zyte.py)
+adapter — and the locator grammar, the byte bounds and the three identity
+proofs below apply unchanged.
+
+**Measured 2026-09-20: the proxy did not get past this wall either.** With a
+`ZYTE_TOKEN`, nine walled URLs — eight `/publication/{id}` pages the feed
+itself stated, and one `/system/files/*.pdf` — were requested through Zyte,
+eleven attempts in all, two of them repeated in `browserHtml` mode. **No
+estimate document was obtained.** What those eleven failures are matters: 3
+carry Zyte's own `/download/temporary-error` slug, and the other 8 are a bare
+provider HTTP 520 — the proxy's transport failing, which by this repository's
+own rule cannot establish a publisher's answer. So the measurement says this
+proxy could not fetch these paths; it does **not** say CBO refused the proxy.
+The direct `403`s above remain the evidence that CBO itself refuses. The control matters as much as the refusals: the *unwalled*
+`/rss/119congress-cost-estimates.xml` fetched through the same proxy, in the
+same session, returned 432,572 bytes with digest `910aab10…`, byte-identical to
+the keyless capture — so the transport works and the wall is path-scoped, not a
+wiring fault. The receipt is
+`corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20/`; the
+earlier finding stands unchanged, that the default transport cannot reach a
+document, on four paths, on two days, with and without browser headers.
 
 ## Read the document shape correctly
 

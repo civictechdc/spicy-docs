@@ -89,7 +89,9 @@ publisher persists it and supplies failed-run references.
 
 Owners: [`native.py`](../../src/spicy_docs/sources/gao/native.py) for capture/parsing,
 [`profile.py`](../../src/spicy_docs/sources/gao/profile.py) for composition,
-and [`zyte.py`](../../src/spicy_docs/sources/zyte.py) for transport.
+and [`zyte.py`](../../src/spicy_docs/sources/zyte.py) for transport, with
+[`transport/zyte.py`](../../src/spicy_docs/transport/zyte.py) wrapping the same
+adapter for any acquirer that takes an injected `httpx` transport.
 
 ```sh
 uv run --frozen pytest -q tests/test_gao_product_pages_source_native.py tests/test_gao_source_native_cli.py tests/test_gao_refused_responses.py tests/test_zyte_transport.py
