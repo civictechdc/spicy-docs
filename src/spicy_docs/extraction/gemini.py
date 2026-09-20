@@ -6,6 +6,7 @@ import base64
 import copy
 import json
 import re
+from collections.abc import Mapping
 from itertools import pairwise
 from typing import Any, Protocol
 
@@ -77,6 +78,28 @@ class GeminiClient:
 
     def __exit__(self, *args):
         self.close()
+
+
+def json_generation_config(
+    generation: Mapping[str, Any] | None = None,
+    *,
+    schema: Mapping[str, Any] | None = None,
+    response_mime_type: str = "application/json",
+) -> dict[str, Any]:
+    """``generationConfig`` asking for JSON, constrained by ``schema`` when one is given.
+
+    One home for the two keys, because they belong together: a
+    ``responseJsonSchema`` sent without ``responseMimeType`` is not a JSON
+    request at all. Page recognition below and the interpretation package's
+    ``ModelCall`` adapter (``interpretation/gemini_call.py``) both build their
+    request through here, so there is one spelling of both keys and one place
+    to change if the publisher renames either.
+    """
+    config = dict(generation or {})
+    config["responseMimeType"] = response_mime_type
+    if schema is not None:
+        config["responseJsonSchema"] = schema
+    return config
 
 
 def _message(image, text):
@@ -154,7 +177,7 @@ class Gemini:
         def call(stage, history, schema=None):
             config = copy.deepcopy(self.generation)
             if schema:
-                config |= {"responseMimeType": "application/json", "responseJsonSchema": schema}
+                config = json_generation_config(config, schema=schema)
             body = {"contents": copy.deepcopy(history), "generationConfig": config}
             record = {"stage": stage, "request": copy.deepcopy(body)}
             calls.append(record)

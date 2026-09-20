@@ -1,15 +1,22 @@
 """Section classification and bill summaries: sealed prompts, injected model, kept provenance."""
 
 import hashlib
+import json
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
+from jsonschema import Draft202012Validator
 
 from spicy_docs.interpretation import bill_summaries, section_classification
 from spicy_docs.interpretation.bill_summaries import (
+    DIFF_SUMMARY_ANSWER_SCHEMA,
     DIFF_SUMMARY_FIELDS,
     DIFF_SUMMARY_PROMPT_VERSION,
+    MAX_PROVISIONS,
     MONEY_BILL_FRAMES,
+    SUMMARY_ANSWER_SCHEMA,
+    SUMMARY_CHARS,
     SUMMARY_FIELDS,
     BillVersionText,
     DiffItemText,
@@ -21,11 +28,19 @@ from spicy_docs.interpretation.bill_summaries import (
     summarize_bill,
     summarize_diff,
 )
-from spicy_docs.interpretation.model_call import AnswerField, ModelCallError, ModelResponse, answer_shape_block
+from spicy_docs.interpretation.model_call import (
+    AnswerField,
+    ModelCallError,
+    ModelResponse,
+    answer_schema,
+    answer_shape_block,
+)
 from spicy_docs.interpretation.money_bills import MONEY_BILL_KINDS
 from spicy_docs.interpretation.section_classification import (
+    CLASSIFICATION_ANSWER_SCHEMA,
     CLASSIFICATION_FIELDS,
     CLASSIFICATION_LABELS,
+    CLASSIFICATIONS_WRAPPER_KEY,
     LABEL_NAMES,
     ClassifiableSection,
     classify_sections,
@@ -45,7 +60,7 @@ def sections(count: int) -> tuple[ClassifiableSection, ...]:
 
 
 def answering(labels: dict[str, str]):
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         rows = [
             {"sectionId": section_id, "label": label, "confidence": 0.9}
             for section_id, label in labels.items()
@@ -103,7 +118,7 @@ def test_a_label_outside_the_vocabulary_is_refused() -> None:
 
 
 def test_a_section_the_batch_never_named_is_refused() -> None:
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse({"classifications": [{"sectionId": "sec-99", "label": "other", "confidence": 1}]})
 
     with pytest.raises(ModelCallError, match="outside its batch"):
@@ -111,7 +126,7 @@ def test_a_section_the_batch_never_named_is_refused() -> None:
 
 
 def test_a_confidence_outside_zero_to_one_is_refused() -> None:
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse({"classifications": [{"sectionId": "sec-0", "label": "other", "confidence": 4}]})
 
     with pytest.raises(ModelCallError, match="0 to 1"):
@@ -131,7 +146,7 @@ VERSION = BillVersionText(
 )
 
 
-def summary_call(*, model: str, prompt: str) -> ModelResponse:
+def summary_call(*, model: str, prompt: str, **_: object) -> ModelResponse:
     return ModelResponse(
         {
             "summary": "This bill authorizes defense programs for the coming fiscal year. " * 3,
@@ -193,7 +208,7 @@ def test_regeneration_is_decided_by_content_hash_and_prompt_version() -> None:
 
 
 def test_a_summary_outside_the_declared_length_is_refused() -> None:
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse({"summary": "Too short.", "audience": "Readers", "topThreeProvisions": []})
 
     with pytest.raises(ModelCallError, match="characters"):
@@ -201,7 +216,7 @@ def test_a_summary_outside_the_declared_length_is_refused() -> None:
 
 
 def test_more_than_three_provisions_is_refused() -> None:
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse(
             {
                 "summary": "A sufficiently long plain-language summary of the bill. " * 3,
@@ -228,7 +243,7 @@ DIFF_ITEMS = (
 )
 
 
-def diff_call(*, model: str, prompt: str) -> ModelResponse:
+def diff_call(*, model: str, prompt: str, **_: object) -> ModelResponse:
     return ModelResponse(
         {
             "headline": "Adds widget research funding, drops gadget program.",
@@ -324,7 +339,7 @@ def test_the_diff_summary_keeps_the_exact_provenance_columns() -> None:
     ],
 )
 def test_a_malformed_diff_summary_answer_is_refused(answer, match) -> None:
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse(answer)
 
     with pytest.raises(ModelCallError, match=match):
@@ -446,7 +461,7 @@ def test_the_wrapper_the_reader_unwraps_is_not_offered_by_the_prompt() -> None:
     row = {"sectionId": "sec-0", "label": "other", "confidence": 0.5}
     for answer in (row_list := [row], {"classifications": row_list}):
         results = classify_sections(
-            sections(1), lambda *, model, prompt, a=answer: ModelResponse(a), model="m", clock=clock()
+            sections(1), lambda *, model, prompt, a=answer, **_: ModelResponse(a), model="m", clock=clock()
         )
         assert [result.section_id for result in results] == ["sec-0"]
 
@@ -461,13 +476,13 @@ def test_the_wrapper_the_reader_unwraps_is_not_offered_by_the_prompt() -> None:
 )
 def test_the_reader_accepts_the_alias_the_prompt_does_not_offer(answer, reads) -> None:
     answer = {**answer, "summary": C1_LIVE_ANSWER["summary"]}
-    result = summarize_bill(VERSION, lambda *, model, prompt: ModelResponse(answer), model="m", clock=clock())
+    result = summarize_bill(VERSION, lambda *, model, prompt, **_: ModelResponse(answer), model="m", clock=clock())
     assert result is not None
     assert result.top_provisions == reads
 
 
 def test_a_classification_row_keyed_by_the_snake_cased_alias_is_read() -> None:
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse([{"section_id": "sec-0", "label": "deadline", "confidence": 0.7}])
 
     results = classify_sections(sections(1), call, model="m", clock=clock())
@@ -480,7 +495,7 @@ def test_the_answer_the_first_live_call_returned_names_the_keys_it_is_missing() 
     # answer: 204 tokens in, 206 out, zero rows (receipt
     # ~/Work/corpora/supply-2026-09-02/receipts/d1-measured-run-2026-09-19).
     # A refusal must name every key that is missing, not just the first.
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse(dict(C1_LIVE_ANSWER), input_tokens=204, output_tokens=206)
 
     with pytest.raises(ModelCallError) as refusal:
@@ -499,7 +514,7 @@ def test_the_other_invocations_spelling_refuses_identically() -> None:
         "notable_provisions": C1_LIVE_ANSWER["notable_provisions"],
     }
     with pytest.raises(ModelCallError, match="^summary answer is missing audience, topThreeProvisions$"):
-        summarize_bill(VERSION, lambda *, model, prompt: ModelResponse(answer), model="m", clock=clock())
+        summarize_bill(VERSION, lambda *, model, prompt, **_: ModelResponse(answer), model="m", clock=clock())
 
 
 def test_the_v2_prompt_asks_for_the_keys_that_answer_lacked() -> None:
@@ -510,7 +525,7 @@ def test_the_v2_prompt_asks_for_the_keys_that_answer_lacked() -> None:
         "audience": C1_LIVE_ANSWER["most_affected_audience"],
         "topThreeProvisions": C1_LIVE_ANSWER["notable_provisions"],
     }
-    result = summarize_bill(VERSION, lambda *, model, prompt: ModelResponse(corrected), model="m", clock=clock())
+    result = summarize_bill(VERSION, lambda *, model, prompt, **_: ModelResponse(corrected), model="m", clock=clock())
     assert result is not None
     assert result.audience == "Service members and defense contractors"
     assert result.top_provisions == ("Sets troop pay", "Authorizes shipbuilding")
@@ -519,7 +534,7 @@ def test_the_v2_prompt_asks_for_the_keys_that_answer_lacked() -> None:
 def test_a_diff_answer_that_leaves_its_lists_out_names_them() -> None:
     # The same defect class next door: v1 named the five keys but not their
     # types, so a list with nothing in it could arrive absent or as null.
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse({"headline": "H", "keyChanges": []})
 
     with pytest.raises(ModelCallError, match="missing sectionsAdded, sectionsRemoved, dollarChanges"):
@@ -529,8 +544,230 @@ def test_a_diff_answer_that_leaves_its_lists_out_names_them() -> None:
 
 
 def test_a_classification_row_missing_a_key_names_it() -> None:
-    def call(*, model: str, prompt: str) -> ModelResponse:
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse({"classifications": [{"sectionId": "sec-0", "label": "other"}]})
 
     with pytest.raises(ModelCallError, match="classification row is missing confidence"):
         classify_sections(sections(1), call, model="m", clock=clock())
+
+
+# --- the shape is a constraint on the request, not only words in the prompt
+#     (2026-09-20; the follow-up the C1 decision named) ---
+
+#: The answers the `v2` prompts actually came back with, live, on 2026-09-19,
+#: rebuilt from the rows in
+#: `~/Work/corpora/supply-2026-09-02/receipts/c1-prompt-fix-2026-09-19/`
+#: (`gemini-3.8-flash`, 250/197 and 309/243 tokens). Unlike `C1_LIVE_ANSWER`
+#: above, these are the model's own bytes, because here the values are the
+#: evidence: a schema that admits a hand-written answer of the right shape has
+#: only checked itself.
+LIVE_ANSWERS = json.loads((Path(__file__).parent / "fixtures/interpretation/c1-v2-live-answers.json").read_text())
+
+#: Each declaration beside the schema its module actually sends. Both come from
+#: the module; the keys are never restated here, so a field added to a tuple
+#: fails this file only by reaching the schema.
+SCHEMAS: tuple[tuple[str, tuple[AnswerField, ...], dict], ...] = (
+    ("summary", SUMMARY_FIELDS, SUMMARY_ANSWER_SCHEMA),
+    ("classification row", CLASSIFICATION_FIELDS, CLASSIFICATION_ANSWER_SCHEMA["items"]),
+    ("diff summary", DIFF_SUMMARY_FIELDS, DIFF_SUMMARY_ANSWER_SCHEMA),
+)
+SCHEMA_IDS = [row[0] for row in SCHEMAS]
+
+
+@pytest.mark.parametrize("name,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
+def test_the_schema_requires_exactly_the_keys_its_declaration_names(name, fields, schema) -> None:
+    declared = [field.key for field in fields]
+    assert schema == answer_schema(fields), f"the {name} schema is not the one its declaration derives"
+    assert schema["required"] == declared
+    assert list(schema["properties"]) == declared
+    assert schema["additionalProperties"] is False
+    for field in fields:
+        for alias in field.aliases:
+            # Tolerated by the reader, never offered by the request -- in the
+            # schema for the same reason it is not in the prompt.
+            assert alias not in schema["properties"]
+            assert alias not in schema["required"]
+
+
+@pytest.mark.parametrize("name,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
+def test_the_derived_schema_is_a_draft_2020_12_schema(name, fields, schema) -> None:
+    Draft202012Validator.check_schema(schema)
+
+
+@pytest.mark.parametrize("name,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
+def test_every_bound_the_schema_enforces_is_stated_in_the_prompt_s_own_words(name, fields, schema) -> None:
+    # The two halves of one declaration, checked against each other: a number
+    # the request enforces that the prompt never says would be exactly the v1
+    # defect running the other way.
+    bounds = {"minLength", "maxLength", "minItems", "maxItems", "minimum", "maximum"}
+    for field in fields:
+        for key, value in field.schema.items():
+            if key in bounds:
+                assert str(value) in field.kind, f"{field.key}: the prompt does not state {key}"
+            if key == "enum":
+                assert all(choice in section_classification.label_block() for choice in value)
+
+
+def test_a_key_added_to_a_declaration_reaches_the_schema() -> None:
+    widened = (*SUMMARY_FIELDS, AnswerField("sponsorTake", "string", "what the sponsor says it does"))
+    schema = answer_schema(widened)
+    assert schema["required"][-1] == "sponsorTake"
+    assert schema["properties"]["sponsorTake"] == {"type": "string"}
+
+
+def test_the_schema_states_the_bounds_and_the_vocabulary_its_reader_enforces() -> None:
+    summary_properties = SUMMARY_ANSWER_SCHEMA["properties"]
+    assert summary_properties["summary"] == {
+        "type": "string",
+        "minLength": SUMMARY_CHARS[0],
+        "maxLength": SUMMARY_CHARS[1],
+    }
+    assert summary_properties["audience"] == {"type": "string"}
+    assert summary_properties["topThreeProvisions"] == {
+        "type": "array",
+        "items": {"type": "string"},
+        "maxItems": MAX_PROVISIONS,
+    }
+    row = CLASSIFICATION_ANSWER_SCHEMA["items"]["properties"]
+    assert row["confidence"] == {"type": "number", "minimum": 0, "maximum": 1}
+    assert row["label"] == {"type": "string", "enum": list(LABEL_NAMES)}
+    # `keyChanges` names five bullets in its prose and `_read_diff_answer`
+    # enforces no count, so the schema states none. A request may not enforce
+    # more than its reader does, or a refusal stops being attributable.
+    assert DIFF_SUMMARY_ANSWER_SCHEMA["properties"]["keyChanges"] == {"type": "array", "items": {"type": "string"}}
+
+
+def test_the_classification_request_asks_for_the_bare_array_the_prompt_asks_for() -> None:
+    assert CLASSIFICATION_ANSWER_SCHEMA["type"] == "array"
+    # The wrapper stays derivable from the same declaration and unsent, like
+    # the prompt's own silence about it (BillTrax's ClassifySchema shape).
+    wrapped = answer_schema(CLASSIFICATION_FIELDS, wrapper=CLASSIFICATIONS_WRAPPER_KEY)
+    assert wrapped["required"] == [CLASSIFICATIONS_WRAPPER_KEY]
+    assert wrapped["properties"][CLASSIFICATIONS_WRAPPER_KEY]["items"] == CLASSIFICATION_ANSWER_SCHEMA["items"]
+    assert CLASSIFICATIONS_WRAPPER_KEY not in json.dumps(CLASSIFICATION_ANSWER_SCHEMA)
+
+
+@pytest.mark.parametrize(
+    "kind,schema",
+    [("summary", SUMMARY_ANSWER_SCHEMA), ("diffSummary", DIFF_SUMMARY_ANSWER_SCHEMA)],
+)
+def test_the_schema_accepts_the_answers_the_v2_prompts_actually_returned(kind, schema) -> None:
+    Draft202012Validator(schema).validate(LIVE_ANSWERS[kind])
+
+
+def test_the_schema_refuses_both_spellings_the_v1_prompt_provoked() -> None:
+    # The same two answers the reader refuses, refused one step earlier -- on
+    # the request, where BillTrax refused them. Every key is wrong in the same
+    # two ways: two required keys absent, two properties the schema does not
+    # allow.
+    validator = Draft202012Validator(SUMMARY_ANSWER_SCHEMA)
+    other = {
+        "summary": C1_LIVE_ANSWER["summary"],
+        C1_OTHER_SPELLING: C1_LIVE_ANSWER["most_affected_audience"],
+        "notable_provisions": C1_LIVE_ANSWER["notable_provisions"],
+    }
+    for answer in (C1_LIVE_ANSWER, other):
+        missing = {
+            error.message.split("'")[1] for error in validator.iter_errors(answer) if error.validator == "required"
+        }
+        assert missing == {"audience", "topThreeProvisions"}
+    assert validator.is_valid(
+        {
+            "summary": C1_LIVE_ANSWER["summary"],
+            "audience": C1_LIVE_ANSWER["most_affected_audience"],
+            "topThreeProvisions": C1_LIVE_ANSWER["notable_provisions"],
+        }
+    )
+
+
+def test_the_schema_does_not_offer_the_alias_the_reader_still_reads() -> None:
+    aliased = {
+        "summary": C1_LIVE_ANSWER["summary"],
+        "audience": "Readers",
+        "top_provisions": ["a"],
+    }
+    assert not Draft202012Validator(SUMMARY_ANSWER_SCHEMA).is_valid(aliased)
+    # ...and the reader reads it anyway; see
+    # test_the_reader_accepts_the_alias_the_prompt_does_not_offer above. One
+    # direction, on purpose.
+
+
+def test_each_reader_sends_the_schema_its_own_declaration_derives() -> None:
+    sent: list[object] = []
+
+    def recording(answer):
+        def call(*, model: str, prompt: str, response_schema=None) -> ModelResponse:
+            sent.append(response_schema)
+            return ModelResponse(answer)
+
+        return call
+
+    summarize_bill(VERSION, recording(LIVE_ANSWERS["summary"]), model="m", clock=clock())
+    summarize_diff(
+        VERSION.identity,
+        from_version_id="v1",
+        to_version_id="v2",
+        items=DIFF_ITEMS,
+        call=recording(LIVE_ANSWERS["diffSummary"]),
+        model="m",
+        clock=clock(),
+    )
+    classify_sections(
+        sections(1),
+        recording([{"sectionId": "sec-0", "label": "other", "confidence": 0.5}]),
+        model="m",
+        clock=clock(),
+    )
+    assert sent == [SUMMARY_ANSWER_SCHEMA, DIFF_SUMMARY_ANSWER_SCHEMA, CLASSIFICATION_ANSWER_SCHEMA]
+
+
+#: The three section ids the 2026-09-20 batch actually sent, from the receipt
+#: `~/Work/corpora/supply-2026-09-02/receipts/c1-classification-2026-09-20/`.
+#: The prompt shows each one inside brackets (`section_block`), and the live
+#: answer copied the brackets too.
+LIVE_SECTION_IDS = tuple(f"introduced-in-house|govinfo|{index}" for index in range(3))
+
+
+def test_the_schema_accepts_the_classification_answer_that_the_reader_refused() -> None:
+    # The whole point of keeping the reader as the contract. This answer is
+    # schema-valid in every respect the schema constrains -- a bare array,
+    # three rows, the three required keys, a label from the sealed enum, a
+    # confidence in range -- and it is still an answer no row may be stored
+    # from, because every `sectionId` names a section the batch never sent.
+    Draft202012Validator(CLASSIFICATION_ANSWER_SCHEMA).validate(LIVE_ANSWERS["classification"])
+
+
+def test_the_live_classification_answer_copied_the_prompt_s_own_brackets() -> None:
+    # Measured 2026-09-20, `gemini-3.8-flash`, 263 in / 80 out, one keyed call.
+    # `section_block` writes `[<id>] <heading>` and the `sectionId` field asks
+    # for "the section's bracketed id, copied exactly as given below", so the
+    # model returned `[introduced-in-house|govinfo|0]` -- the id as shown,
+    # brackets and all -- while `_read_row` requires the bare id. This is the
+    # same defect family as the `v1` key spellings: the prompt describes the
+    # value it wants ambiguously and the reader enforces something else. It is
+    # pinned here rather than fixed, because fixing it moves the sealed prompt
+    # bytes and so `PROMPT_VERSION`; see `docs/decisions.md`.
+    returned = [row["sectionId"] for row in LIVE_ANSWERS["classification"]]
+    assert returned == [f"[{section_id}]" for section_id in LIVE_SECTION_IDS]
+    for section_id in LIVE_SECTION_IDS:
+        assert f"[{section_id}]" in section_classification.section_block(
+            [ClassifiableSection(section_id, "body", "Heading")]
+        )
+
+    def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
+        return ModelResponse(LIVE_ANSWERS["classification"], input_tokens=263, output_tokens=80)
+
+    batch = tuple(ClassifiableSection(section_id, f"body {index}") for index, section_id in enumerate(LIVE_SECTION_IDS))
+    with pytest.raises(ModelCallError, match="outside its batch"):
+        classify_sections(batch, call, model="gemini-3.8-flash", clock=clock())
+
+
+def test_the_schema_travels_beside_the_prompt_and_not_inside_it() -> None:
+    # The prompts' pinned digests above are the real assertion that adding a
+    # response schema changed no prompt byte and so no PROMPT_VERSION. This
+    # states the reason they still hold: nothing about the schema is rendered
+    # into a prompt.
+    assert bill_summaries.PROMPT_VERSION == DIFF_SUMMARY_PROMPT_VERSION == section_classification.PROMPT_VERSION == "v2"
+    for _, prompt, _fields in PROMPTS:
+        for token in ("responseJsonSchema", "additionalProperties", "minLength", "maxItems", "required"):
+            assert token not in prompt

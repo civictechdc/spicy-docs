@@ -1,0 +1,47 @@
+{
+  "classification": [
+    {
+      "sectionId": "[introduced-in-house|govinfo|0]",
+      "label": "other",
+      "confidence": 1.0
+    },
+    {
+      "sectionId": "[introduced-in-house|govinfo|1]",
+      "label": "other",
+      "confidence": 1.0
+    },
+    {
+      "sectionId": "[introduced-in-house|govinfo|2]",
+      "label": "other",
+      "confidence": 1.0
+    }
+  ],
+  "summary": {
+    "summary": "The Legislative Branch Agencies Clarification Act clarifies operational authorities and legal standards governing support entities that assist Congress, rather than establishing new federal funding allocations. The measure updates federal statutes to resolve ambiguities regarding how administrative rules and oversight requirements apply to legislative support offices. By establishing clear statutory definitions, the proposal aims to protect congressional autonomy while ensuring consistent management across legislative entities. It also helps support organizations carry out their research, auditing, and administrative functions with greater operational certainty. The bill has advanced out of the House of Representatives and is currently under consideration in the Senate.",
+    "audience": "Staff and leadership at congressional support agencies and legislative offices",
+    "topThreeProvisions": [
+      "Clarifies legal rules and operational authorities governing legislative branch support agencies.",
+      "Resolves ambiguities regarding the application of federal administrative standards to congressional entities.",
+      "Strengthens institutional independence and operational consistency across offices that support Congress."
+    ]
+  },
+  "diffSummary": {
+    "headline": "The bill authorizes $1,400,000 for energy resilience projects, updates military construction funding to $5,250,000, and eliminates $650,000 in annual VA medical facility leases.",
+    "keyChanges": [
+      "Added authorization of $1,400,000 for energy resilience projects at designated installations.",
+      "Removed authority for the Secretary of Veterans Affairs to enter into medical facility leases totaling $650,000 per year.",
+      "Updated military construction project authorization to a total amount of $5,250,000."
+    ],
+    "sectionsAdded": [
+      "Energy resilience"
+    ],
+    "sectionsRemoved": [
+      "Leases"
+    ],
+    "dollarChanges": [
+      "Energy resilience funded at $1,400,000",
+      "Leases of $650,000 per year removed",
+      "Authorized construction set at $5,250,000"
+    ]
+  }
+}

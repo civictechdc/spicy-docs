@@ -39,6 +39,13 @@ schema's constraints into ``_read_row``, and left the schema itself behind;
 is no longer byte-identical to ``classifications.ts:86`` either -- the same
 deliberate break as the diff prompt next door, recorded in
 ``docs/decisions.md``, not an accident to undo.
+
+**The schema is back on the request** (2026-09-20):
+``CLASSIFICATION_ANSWER_SCHEMA`` is derived from ``CLASSIFICATION_FIELDS`` and
+the label table by ``model_call.answer_schema`` and travels as ``ModelCall``'s
+``response_schema``. The prompt bytes are untouched -- it rides in the
+generation config -- so ``PROMPT_VERSION`` stays ``v2``, and ``_read_row``
+still refuses, because a provider may accept a schema and answer around it.
 """
 
 from __future__ import annotations
@@ -53,6 +60,7 @@ from spicy_docs.interpretation.model_call import (
     ModelCall,
     ModelCallError,
     ModelResponse,
+    answer_schema,
     answer_shape_block,
     require_fields,
 )
@@ -95,8 +103,12 @@ CLASSIFICATION_FIELDS: tuple[AnswerField, ...] = (
         "the section's bracketed id, copied exactly as given below",
         aliases=("section_id",),
     ),
-    AnswerField("label", "string", "one of the labels above, spelled exactly"),
-    AnswerField("confidence", "number from 0 to 1", "how certain the label is"),
+    # The vocabulary reaches the prompt through the label block above and the
+    # request through the schema's `enum`, both from `CLASSIFICATION_LABELS`.
+    # `classifications.ts:21-29` enforced it as `z.enum([...the five...])` on
+    # the request; `_read_row` has always enforced it on the way back.
+    AnswerField("label", "string", "one of the labels above, spelled exactly", choices=LABEL_NAMES),
+    AnswerField("confidence", "number", "how certain the label is", bounds=(0, 1)),
 )
 
 CLASSIFY_PROMPT_TEMPLATE = """Classify each of the following bill sections. For each section, assign one label:
@@ -169,6 +181,20 @@ def prompt_hash(prompt: str) -> str:
 #: ``AnswerField.aliases``.
 CLASSIFICATIONS_WRAPPER_KEY = "classifications"
 
+#: What the prompt asks for, as a constraint on the request: a bare array of
+#: row objects. The wrapper is *not* offered here either --
+#: ``answer_schema(CLASSIFICATION_FIELDS, wrapper=CLASSIFICATIONS_WRAPPER_KEY)``
+#: derives the tolerated shape from the same declaration for anyone who needs
+#: to name it, and nothing sends it.
+#:
+#: The row's ``sectionId`` is **not** narrowed to the batch's own ids, although
+#: ``_read_row`` refuses one outside them. BillTrax enforced only
+#: ``z.string()`` there, and the 2026-09-19 run's one open finding is a model
+#: that named an id it was never sent: constraining the request to the batch
+#: would hide that behaviour rather than measure it. See
+#: ``docs/decisions.md``; it is an open option, not an oversight.
+CLASSIFICATION_ANSWER_SCHEMA = {"type": "array", "items": answer_schema(CLASSIFICATION_FIELDS)}
+
 
 def _rows(response: ModelResponse) -> Sequence[object]:
     data = response.data
@@ -222,7 +248,7 @@ def classify_sections(
         prompt = build_prompt(batch)
         digest = prompt_hash(prompt)
         requested_at = now().isoformat()
-        response = call(model=model, prompt=prompt)
+        response = call(model=model, prompt=prompt, response_schema=CLASSIFICATION_ANSWER_SCHEMA)
         completed_at = now().isoformat()
         for row in _rows(response):
             section_id, label, confidence = _read_row(row, allowed)
@@ -246,6 +272,7 @@ __all__ = [
     "BATCH_SIZE",
     "BODY_CHARS",
     "CLASSIFICATIONS_WRAPPER_KEY",
+    "CLASSIFICATION_ANSWER_SCHEMA",
     "CLASSIFICATION_FIELDS",
     "CLASSIFICATION_LABELS",
     "CLASSIFY_PROMPT_TEMPLATE",

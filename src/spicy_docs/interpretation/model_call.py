@@ -22,12 +22,24 @@ declares its answer's keys, types and counts once as ``AnswerField`` records,
 ``answer_shape_block`` turns that declaration into the lines the prompt sends,
 and the reader looks its values up through the same records. Neither side can
 name a key the other does not.
+
+Since 2026-09-20 that one declaration also states the shape **on the request**:
+:func:`answer_schema` derives a draft 2020-12 JSON Schema from the same tuple,
+``ModelCall`` carries it, and an adapter that can send it does (Gemini's
+``responseJsonSchema``). That is where BillTrax's zod schemas sat --
+``bill-summaries.ts:41-45``, ``summarize/route.ts:13-19``,
+``classifications.ts:21-29``, each passed on the request -- and dropping them
+is what left the ``v1`` prompts asking in prose alone. The schema is a request
+and not the contract: a provider may accept it and answer around it, so
+:func:`require_fields` and each module's reader still refuse, unchanged.
 """
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any, Protocol
 
 
@@ -49,25 +61,108 @@ class ModelResponse:
 
 
 class ModelCall(Protocol):
-    def __call__(self, *, model: str, prompt: str) -> ModelResponse: ...
+    """``response_schema`` is the answer's shape stated on the request.
+
+    It comes from the same ``AnswerField`` tuple the prompt and the reader do,
+    by :func:`answer_schema`. An adapter whose provider has no equivalent may
+    ignore it: it is a request, not the contract. The contract stays the
+    reader's refusal -- a schema the provider accepts is still a shape the
+    answer may arrive outside of, and only :func:`require_fields` and the
+    module's own checks keep a wrong-shaped answer out of a stored row.
+    """
+
+    def __call__(
+        self, *, model: str, prompt: str, response_schema: Mapping[str, Any] | None = None
+    ) -> ModelResponse: ...
+
+
+#: Each value type a declaration can state: the draft 2020-12 schema it
+#: derives, and the two schema keys a reader-enforced bound goes under. A shape
+#: is addable here only with both, which is what keeps the request's words and
+#: the request's schema one statement rather than two that agree today.
+_SHAPES: Mapping[str, tuple[Mapping[str, Any], tuple[str, str]]] = MappingProxyType(
+    {
+        "string": ({"type": "string"}, ("minLength", "maxLength")),
+        "array of strings": ({"type": "array", "items": {"type": "string"}}, ("minItems", "maxItems")),
+        "number": ({"type": "number"}, ("minimum", "maximum")),
+    }
+)
+
+#: Which end of ``bounds`` each shape's phrase below actually states. A bound
+#: the prompt cannot put into words is refused at declaration time, so the
+#: request never enforces more than it says -- the ``v1`` defect turned around.
+_BOUNDS_STATED: Mapping[str, tuple[bool, bool]] = MappingProxyType(
+    {"string": (True, True), "array of strings": (False, True), "number": (True, True)}
+)
+
+
+def _bounded_phrase(shape: str, lower: float | None, upper: float | None) -> str:
+    """The prompt's words for a bounded value of ``shape``."""
+    if shape == "string":
+        return f"string, {lower}–{upper} characters"
+    if shape == "array of strings":
+        return f"array of at most {upper} strings"
+    return f"number from {lower} to {upper}"
 
 
 @dataclass(frozen=True, slots=True)
 class AnswerField:
     """One key the prompt asks for and the reader requires, declared once.
 
-    ``kind`` states the type and any count the reader actually enforces, in
-    the words the prompt sends, so the request cannot promise a shape the
-    reader refuses. ``aliases`` are spellings the reader also accepts but the
-    prompt does not offer: a one-directional tolerance for a model that
-    snake-cases a camelCase key, never a second name the answer may choose
-    between.
+    ``shape`` and ``bounds`` are the type and the range **the reader actually
+    enforces**. Everything else is derived from them: ``kind`` is the words the
+    prompt sends, ``schema`` is the subschema the request carries. So the
+    request cannot promise a shape the reader refuses, and its words and its
+    schema cannot drift apart, because there is one declaration and not three.
+
+    ``choices`` is a sealed vocabulary the reader refuses a value outside of,
+    so the schema states it as an ``enum``; the prompt states it in its own
+    words elsewhere (the classification prompt's label block), so ``kind`` does
+    not repeat it and the prompt bytes do not depend on it.
+
+    ``aliases`` are spellings the reader also accepts but the prompt does not
+    offer and the schema does not allow: a one-directional tolerance for a
+    model that snake-cases a camelCase key, never a second name the answer may
+    choose between.
     """
 
     key: str
-    kind: str
+    shape: str
     describes: str
+    bounds: tuple[float | None, float | None] | None = None
+    choices: tuple[str, ...] = ()
     aliases: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.shape not in _SHAPES:
+            raise ValueError(f"{self.key}: unknown answer shape {self.shape!r}")
+        if self.choices and self.shape != "string":
+            raise ValueError(f"{self.key}: only a string is drawn from a fixed vocabulary")
+        if self.bounds is None:
+            return
+        if len(self.bounds) != 2:
+            raise ValueError(f"{self.key}: bounds is a (lower, upper) pair")
+        stated = _BOUNDS_STATED[self.shape]
+        if tuple(value is not None for value in self.bounds) != stated:
+            raise ValueError(f"{self.key}: a {self.shape!r} bound the prompt cannot state would go unsaid")
+
+    @property
+    def kind(self) -> str:
+        """The prompt's words for this value's type and the range the reader enforces."""
+        return self.shape if self.bounds is None else _bounded_phrase(self.shape, *self.bounds)
+
+    @property
+    def schema(self) -> dict[str, Any]:
+        """This value's draft 2020-12 subschema: its type, the reader's bounds, its vocabulary."""
+        base, bound_keys = _SHAPES[self.shape]
+        schema = copy.deepcopy(dict(base))
+        if self.bounds is not None:
+            for value, bound_key in zip(self.bounds, bound_keys, strict=True):
+                if value is not None:
+                    schema[bound_key] = value
+        if self.choices:
+            schema["enum"] = list(self.choices)
+        return schema
 
     @property
     def names(self) -> tuple[str, ...]:
@@ -90,12 +185,52 @@ def answer_shape_block(fields: Sequence[AnswerField]) -> str:
     return "\n".join(f'- "{field.key}" ({field.kind}): {field.describes}' for field in fields)
 
 
+def answer_schema(fields: Sequence[AnswerField], *, wrapper: str | None = None) -> dict[str, Any]:
+    """The draft 2020-12 schema for the answer object ``fields`` declares.
+
+    What :func:`answer_shape_block` puts into the prompt's words, this puts
+    into the request's own constraint: every declared key required, nothing
+    else allowed, each value's type and the reader's own bounds. It is sent as
+    Gemini's ``responseJsonSchema`` by ``interpretation/gemini_call.py``, which
+    is where BillTrax passed its zod schemas and where this port left them
+    behind.
+
+    **No alias appears here**, exactly as none appears in the prompt: an alias
+    is what the reader tolerates on the way in, and offering it on the request
+    would make it a second name the answer may choose between -- the ``v1``
+    defect with extra steps.
+
+    ``wrapper`` nests an array of these objects under one key: BillTrax's own
+    ``ClassifySchema`` shape (``classifications.ts:21-29``), which
+    ``section_classification._rows`` still unwraps. Nothing requests that form.
+    It is derived here from the same declaration so the shape the reader
+    tolerates is never restated by hand.
+    """
+    answer: dict[str, Any] = {
+        "type": "object",
+        "properties": {field.key: field.schema for field in fields},
+        "required": [field.key for field in fields],
+        "additionalProperties": False,
+    }
+    if wrapper is None:
+        return answer
+    return {
+        "type": "object",
+        "properties": {wrapper: {"type": "array", "items": answer}},
+        "required": [wrapper],
+        "additionalProperties": False,
+    }
+
+
 def require_fields(data: Mapping[str, Any], fields: Sequence[AnswerField], *, what: str) -> None:
     """Refuse an answer missing any declared key, naming **every** one it left out.
 
     Named together rather than one per call: the measured failure was missing
     two keys, and a reader that reports only the first makes the second look
     like a new defect after the first is fixed.
+
+    This stays the contract now that the request carries a schema too: the
+    schema is what was asked for, this is what is accepted.
     """
     missing = [field.key for field in fields if not field.present_in(data)]
     if missing:
@@ -107,6 +242,7 @@ __all__ = [
     "ModelCall",
     "ModelCallError",
     "ModelResponse",
+    "answer_schema",
     "answer_shape_block",
     "require_fields",
 ]
