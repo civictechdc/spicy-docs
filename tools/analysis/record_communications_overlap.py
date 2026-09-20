@@ -584,6 +584,9 @@ FIELD_NAMES: tuple[str, ...] = (
     "legal_authority",
     "submitting_official",
     "submitting_agency",
+    "submitting_split",
+    "submitting_official_where_both_stated",
+    "submitting_agency_where_both_stated",
     "from_clause_concatenation",
     "referral_count",
     "referral_names",
@@ -611,9 +614,11 @@ def score(receipt: Path) -> dict[str, Any]:
     between a measurement and a formatting assertion.
     """
     log_rows = [json.loads(line) for line in (receipt / "requests.jsonl").read_text().splitlines() if line.strip()]
+    # Read once: parsing every retained section is the expensive half of this
+    # command, and the witness and the scoring both want the same entries.
+    printed = list(retained_entries(receipt))
     entries = {
-        f"{congress}-ec-{entry.number}": (congress, granule_id, entry)
-        for congress, granule_id, entry in retained_entries(receipt)
+        f"{congress}-ec-{entry.number}": (congress, granule_id, entry) for congress, granule_id, entry in printed
     }
     rows: list[tuple[int, str, RecordCommunicationEntry, Mapping[str, Any]]] = []
     for path in sorted((receipt / "details").glob("*.json")):
@@ -640,7 +645,7 @@ def score(receipt: Path) -> dict[str, Any]:
             "congressGov": sum(row.get("requests", 1) for row in log_rows if row["publisher"] == "congress-gov"),
         },
         "publisherAnswers": answers,
-        "issues": _witnesses(receipt),
+        "issues": _witnesses(printed),
         "entriesPrinted": len(entries),
         "tuningCongresses": sorted(TUNING_CONGRESSES),
         "tuning": _score_rows(
@@ -682,19 +687,50 @@ def _score_row(
         example={"key": key, "printed": (entry.legal_authority or "")[:300], "published": str(authority)[:300]},
     )
 
-    official, agency = detail.get("submittingOfficial"), detail.get("submittingAgency")
-    # Scored only where the rule fired: a NULL is the rule declining, and
-    # counting it as a miss would read "refused to guess" as "guessed wrong".
+    official = detail.get("submittingOfficial") or None
+    agency = detail.get("submittingAgency") or None
+    # THE DECLARED DENOMINATOR for the split: every row where the rule fired
+    # and the publisher decomposed at all. Not "where the publisher states this
+    # side", which is a different denominator per side and made the pair look
+    # like one passing field and one failing one. On the 2026-09-20 sample the
+    # two denominators differ by 8 held-out rows -- `118-ec-4522..4530`, one
+    # granule, where the publisher put the whole printed from-clause in
+    # `submittingAgency` and stated no official -- and which side "fails"
+    # flips with the choice. The pair is one boundary decision, so it is
+    # scored on one denominator; the narrower view is reported beside it
+    # rather than instead of it.
+    #
+    # A row where the rule *declined* is still excluded: a NULL is the rule
+    # refusing, and counting it as a miss would read "refused to guess" as
+    # "guessed wrong". How often it declines is reported as coverage.
+    decomposed = entry.split_resolved and (official is not None or agency is not None)
+    official_agrees = entry.submitting_official == official
+    agency_agrees = entry.submitting_agency == agency
     fields["submitting_official"].observe(
-        stated=isinstance(official, str) and bool(official) and entry.split_resolved,
-        agreed=entry.submitting_official == official,
+        stated=decomposed,
+        agreed=official_agrees,
         example={"key": key, "printed": str(entry.submitting_official), "published": str(official)},
     )
     fields["submitting_agency"].observe(
-        stated=isinstance(agency, str) and bool(agency) and entry.split_resolved,
-        agreed=entry.submitting_agency == agency,
+        stated=decomposed,
+        agreed=agency_agrees,
         example={"key": key, "printed": str(entry.submitting_agency), "published": str(agency)},
     )
+    fields["submitting_split"].observe(
+        stated=decomposed,
+        agreed=official_agrees and agency_agrees,
+        example={
+            "key": key,
+            "printed": f"{entry.submitting_official} | {entry.submitting_agency}",
+            "published": f"{official} | {agency}",
+        },
+    )
+    # The narrower view, reported so the denominator artifact is legible: the
+    # same two comparisons over only the rows the publisher decomposed into
+    # both sides.
+    both_stated = decomposed and official is not None and agency is not None
+    fields["submitting_official_where_both_stated"].observe(stated=both_stated, agreed=official_agrees)
+    fields["submitting_agency_where_both_stated"].observe(stated=both_stated, agreed=agency_agrees)
     # The fallback fact, on every row the publisher states both: the from-clause
     # this rule keeps whole is the publisher's two fields concatenated, whether
     # or not the split itself resolved.
@@ -743,12 +779,12 @@ def _referral_names_agree(printed: Sequence[str], published: Sequence[str]) -> b
     return all(all(word in haystack.split() for word in _normalized_committee(name).split()) for name in published)
 
 
-def _witnesses(receipt: Path) -> list[dict[str, Any]]:
-    """The per-issue contiguity witness over the retained sections."""
+def _witnesses(printed: Sequence[tuple[int, str, RecordCommunicationEntry]]) -> list[dict[str, Any]]:
+    """The per-issue contiguity witness over entries already read off the retained sections."""
     rows: list[dict[str, Any]] = []
     by_granule: dict[str, list[RecordCommunicationEntry]] = {}
     congresses: dict[str, int] = {}
-    for congress, granule_id, entry in retained_entries(receipt):
+    for congress, granule_id, entry in printed:
         by_granule.setdefault(granule_id, []).append(entry)
         congresses[granule_id] = congress
     for granule_id in sorted(by_granule):
@@ -817,6 +853,15 @@ def generated_block(measurement: Mapping[str, Any]) -> str:
         "| | agreed/stated | precision | agreed/stated | precision | agreed/stated | precision |",
     ]
     lines += [_row(name, whole, tuning["fields"], held["fields"]) for name in sorted(whole)]
+    lines += [
+        "",
+        (
+            "`submitting_official`, `submitting_agency` and `submitting_split` share one denominator: the rows "
+            "the split rule answered and the publisher decomposed at all. The two `_where_both_stated` rows are "
+            "the narrower view, over the rows the publisher decomposed into both sides. Which side of the pair "
+            "looks like the failure depends on that choice, so both are printed."
+        ),
+    ]
     lines += [
         "",
         "Per-issue completeness witness:",

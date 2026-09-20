@@ -34,10 +34,18 @@ The plan's contract change lands **only if**:
 
 Denominators are per field and are the rows the publisher states that field on,
 never the whole sample: a field the publisher leaves empty is not a row the rule
-got wrong. The official/agency split is scored only on rows where the split rule
-fired, because a deliberate NULL is the rule declining and counting it as a miss
-would read "refused to guess" as "guessed wrong"; how often it declines is
-reported separately, as coverage.
+got wrong.
+
+**The official/agency pair gets one denominator, declared here**: the rows where
+the split rule fired *and* the publisher decomposed the from-clause at all. Two
+reasons. A row where the rule declined is excluded, because a deliberate NULL is
+the rule refusing and counting it as a miss would read "refused to guess" as
+"guessed wrong" — how often it declines is reported separately, as coverage. And
+the two sides share that one denominator rather than each getting its own,
+because the split is one boundary decision: scoring each side only on the rows
+the publisher happened to state *that* side on lets the pair look like one
+passing field and one failing one, which is a fact about the denominators and
+not about the rule. The narrower per-side view is reported beside it.
 
 If a field misses its threshold, that field does not publish, and this note
 records what was measured and what would reverse it.
@@ -110,7 +118,7 @@ not.
 
 <!-- generated: record-communications-overlap -->
 
-Measured 2026-09-20 against rule `record-communication-dceeb0d93d03`. 40 GovInfo requests of 40 and 256 keyed Congress.gov requests of 600.
+Measured 2026-09-20 against rule `record-communication-effcf9cdf71c`. 40 GovInfo requests of 40 and 256 keyed Congress.gov requests of 600.
 
 256 entries printed across 10 retained sections; 256 have a publisher decomposition to score against. The official/agency split rule fired on 234 of them.
 
@@ -127,7 +135,12 @@ Measured 2026-09-20 against rule `record-communication-dceeb0d93d03`. 40 GovInfo
 | `report_nature` | 138/144 | 95.8% | 89/99 | 89.9% | 227/243 | 93.4% |
 | `rin` | 34/34 | 100.0% | 54/54 | 100.0% | 88/88 | 100.0% |
 | `submitting_agency` | 114/129 | 88.4% | 86/94 | 91.5% | 200/223 | 89.7% |
-| `submitting_official` | 110/121 | 90.9% | 87/94 | 92.5% | 197/215 | 91.6% |
+| `submitting_agency_where_both_stated` | 114/121 | 94.2% | 86/94 | 91.5% | 200/215 | 93.0% |
+| `submitting_official` | 110/129 | 85.3% | 87/94 | 92.5% | 197/223 | 88.3% |
+| `submitting_official_where_both_stated` | 110/121 | 90.9% | 87/94 | 92.5% | 197/215 | 91.6% |
+| `submitting_split` | 110/129 | 85.3% | 86/94 | 91.5% | 196/223 | 87.9% |
+
+`submitting_official`, `submitting_agency` and `submitting_split` share one denominator: the rows the split rule answered and the publisher decomposed at all. The two `_where_both_stated` rows are the narrower view, over the rows the publisher decomposed into both sides. Which side of the pair looks like the failure depends on that choice, so both are printed.
 
 Per-issue completeness witness:
 
@@ -154,30 +167,60 @@ Against the held-out column and the threshold declared above:
 
 | Field | Held out | Threshold | |
 | --- | ---: | ---: | --- |
-| `abstract` | 97.9% | 95% | **passes** |
-| `legal_authority` | 99.1% | 90% | **passes** |
-| `rin` | 100% | 90% | **passes** |
-| `report_nature` | 95.8% | 90% | **passes** |
-| `referral_count` | 95.1% | 90% | **passes** |
-| `submitting_official` | 90.9% | 90% | passes, by one row |
-| `submitting_agency` | 88.4% | 90% | **misses** |
-| `referral_names` | 71.5% | — | not a published field; see below |
+| `abstract` | 141/144 · 97.9% | 95% | **passes** |
+| `legal_authority` | 112/113 · 99.1% | 90% | **passes** |
+| `rin` | 34/34 · 100% | 90% | **passes** |
+| `report_nature` | 138/144 · 95.8% | 90% | **passes** |
+| `referral_count` | 137/144 · 95.1% | 90% | **passes** |
+| `submitting_agency` | 114/129 · 88.4% | 90% | **misses** |
+| `submitting_official` | 110/129 · 85.3% | 90% | **misses** |
+| `submitting_split` (the pair) | 110/129 · 85.3% | 90% | **misses** |
+| `referral_names` | 103/144 · 71.5% | — | published, not joinable; see below |
 
 So: the contract change lands, and `submitting_official` / `submitting_agency`
-stay NULL on a reconstructed row. Publishing the official without the agency is
-not an option — they are one boundary decision, and half of a decision that is
-wrong 11.6% of the time is still an invented fact. §5 rule 3 already said a row
-whose split is unresolved carries NULLs beside the retained sentence; what this
+stay NULL on a reconstructed row. **On the one declared denominator the pair
+fails on both sides**, which is the reason. §5 rule 3 already said a row whose
+split is unresolved carries NULLs beside the retained sentence; what this
 measurement establishes is that the split rule is unresolved *at publishable
 precision*, not that it fails to fire. It fires on 129 of 144 held-out rows.
 
-`referral_names` is not scored against the threshold because it is not a field
-a reconstructed row publishes. It measures whether two publishers spell the same
-committee the same way, and they do not: the 116th Record prints *Oversight and
-Reform* where Congress.gov states *Oversight and Government Reform Committee*
-for the same referral. That is the naming drift §3.3 already routed around by
-resolving against `committees.system_code`; the number is reported so the drift
-is visible, not as a rule's score.
+### The denominator is load-bearing, so both views are reported
+
+| View | n | `submitting_agency` | `submitting_official` |
+| --- | ---: | ---: | ---: |
+| Rule fired and the publisher decomposed (**declared**) | 129 | 88.4% | 85.3% |
+| The publisher decomposed into **both** sides | 121 | 94.2% | 90.9% |
+
+The 8-row gap is one publisher artifact, and it is the whole difference:
+`118-ec-4522` through `4530` in `CREC-2024-06-12-pt1-PgH3973`, where
+Congress.gov put the **entire** printed from-clause — *Director, Mission
+Statement, Office of Legislative Affairs, Department of Homeland Security* —
+into `submittingAgency` and stated no `submittingOfficial` at all. The Record
+printed an ordinary from-clause; the publisher's own decomposition is what
+collapsed. All 8 are held out, all 8 count as agency disagreements (8 of the
+15), and none of them can count as an official disagreement under a
+per-side denominator, because the publisher states no official to disagree
+with.
+
+Read per side, that artifact alone moves `submitting_agency` from 94.2% to
+88.4% and `submitting_official` from 90.9% to 85.3% — so which side of the pair
+looks like the failure is a choice of denominator, not a property of the rule.
+Under **either** view at least one side misses 90%, so the landed decision does
+not turn on the choice; its stated reason does, and the reason is that the pair
+is one boundary decision and the declared view fails on both sides.
+
+### `referral_names` is a naming drift, not a rule's score
+
+The Record's committee names **are** published on a reconstructed row, in
+`referral_committee_name` and `committees_json`: they are the committee's name
+on the day the entry was printed, and `referral_count` — whether the referral
+tail was read correctly at all — agrees with the publisher on 95.1% of held-out
+rows. What 71.5% measures is whether the two publishers spell the same committee
+the same way, and they do not: the 116th Record prints *Oversight and Reform*
+where Congress.gov states *Oversight and Government Reform Committee* for the
+same referral. So the name is published and nothing joins on it;
+`referral_system_code` is the key, it is NULL on a reconstructed row, and the
+resolver that would fill it is **not built** (see "still open").
 
 ## The failure shapes, with examples
 
@@ -201,10 +244,13 @@ is visible, not as a rule's score.
   second. 6 of 144 on `report_nature`, 1 of 113 on `legal_authority`.
 - **Three held-out abstracts still differ**, each on a residual GPO spacing
   artifact inside a bracketed identifier that no rule here folds.
-- **One publisher-side artifact**: `114-ec-5712`'s `submittingAgency` is
-  ` Department of Health and Human Services`, with a leading space. It is
-  counted as a disagreement. The comparison was not relaxed after the held-out
-  read, on purpose.
+- **Two publisher-side artifacts**, both counted as disagreements because the
+  comparison was not relaxed after the held-out read:
+  `114-ec-5712`'s `submittingAgency` is ` Department of Health and Human
+  Services`, with a leading space; and the eight rows `118-ec-4522`..`4530` of
+  `CREC-2024-06-12-pt1-PgH3973` carry the whole printed from-clause in
+  `submittingAgency` with no `submittingOfficial`, which is the entire gap
+  between this note's two split denominators.
 
 ## What this sample cannot see
 
@@ -232,15 +278,23 @@ is visible, not as a rule's score.
   It declines on 15 of 144 held-out rows and is right on 114 of the 129 it
   answers; whether the rows it declines are the rows it would have got wrong is
   not established.
-- **`submitting_official` passes by a single row** (110 of 121). A sample this
-  size cannot separate 90.9% from 89.9%, which is one of the reasons the pair is
-  published as NULL rather than the official alone.
+- **It cannot separate 88.4% from 90%.** 144 held-out rows put a wide interval
+  on every figure here, and the split's two views sit either side of the
+  threshold. What the sample does establish is that one publisher artifact from
+  one granule moves either side by six points, which is the reason the pair is
+  scored and published as a pair.
+- **The committee-name resolver does not exist**, so `referral_system_code` is
+  NULL on every reconstructed row and nothing in this measurement exercises the
+  join the table is for. Building it against `committees.system_code` — with the
+  name drift this note measured as the thing it has to absorb — is the next
+  piece of work `house_communications` needs.
 
 ## What would reverse the split-column decision
 
-A `submitting_agency` score at or above 90% on a **fresh held-out draw**, under
-a newly declared request cap, with the agency vocabulary widened by the
-sub-agency units the publisher places on the agency side. The units this run
+`submitting_split` — both sides, on the declared denominator — at or above 90%
+on a **fresh held-out draw**, under a newly declared request cap, with the
+agency vocabulary widened by the sub-agency units the publisher places on the
+agency side. The units this run
 names — *Postsecondary Education*, *Personnel and Readiness*, *Acquisition,
 Technology, and Logistics*, *FDA* — are not a rule; they are four
 disagreements, and fitting to them and re-scoring the same rows would be the

@@ -28,6 +28,14 @@ tail on ``and``/``,`` shatters *Education and the Workforce* and *Ways and
 Means*, so a system code must be resolved against the committee roster this
 repository already hosts, never parsed out of the sentence.
 
+**Still open**: that resolver. Nothing here maps a printed committee name to a
+``committees.system_code``, so ``house_communications.referral_system_code`` is
+NULL on every reconstructed row. It has to absorb the publishers' own naming
+drift, which the overlap run measured at 71.5% agreement -- the 116th Record
+prints *Oversight and Reform* where Congress.gov states *Oversight and
+Government Reform Committee* for the same referral -- so matching on the
+current spelling alone would miss a renamed committee.
+
 Four measured failure modes shape the rules here, each with its reason beside
 the code: GPO's inline ``[[Page Hnnnn]]`` marker (:data:`_PAGE_MARKER`), an
 issue that prints the section twice (:func:`executive_communication_granules`
@@ -115,6 +123,14 @@ _TRAILER = re.compile(r"\s*_{4,}\s*$")
 #: publisher's own abstract has no space there. See :func:`rejoin_print_wraps`.
 _HYPHEN_WRAP = re.compile(r"(?<=[A-Za-z0-9])-\n(?=[A-Za-z0-9])")
 
+#: The three substitutions the publisher's own abstract makes to the print.
+#: Named constants rather than inline literals so :func:`_rule_version` can
+#: digest them: a published ``abstract`` column is their output, so editing one
+#: changes what every reconstructed row states.
+_PRINT_DASH = re.compile(r"\s*-{2,}\s*")
+_SECTION_ABBREVIATION = re.compile(r"\bSec\.\s*")
+_PUBLIC_LAW_ABBREVIATION = re.compile(r"\bPub\.\s*L\.\s*")
+
 #: The comma-group head nouns that begin the agency side of a from-clause.
 #:
 #: Closed and evidence-backed, not a guess at English. A group is agency-side
@@ -181,6 +197,9 @@ def _rule_version() -> str:
         f"page-marker|{_PAGE_MARKER.pattern}",
         f"trailer|{_TRAILER.pattern}",
         f"hyphen-wrap|{_HYPHEN_WRAP.pattern}",
+        f"print-dash|{_PRINT_DASH.pattern}",
+        f"section-abbreviation|{_SECTION_ABBREVIATION.pattern}",
+        f"public-law-abbreviation|{_PUBLIC_LAW_ABBREVIATION.pattern}",
         f"communication-type|{SECTION_COMMUNICATION_TYPE}",
         f"split-policy|{SPLIT_POLICY_VERSION}",
         "agency-head-words|" + ",".join(sorted(AGENCY_HEAD_WORDS)),
@@ -220,12 +239,12 @@ def fold_print_dash(value: str) -> str:
     where the publisher's abstract has one dash, and the narrower rule left the
     remainder standing as a second dash.
     """
-    return re.sub(r"\s*-{2,}\s*", " - ", value)
+    return _PRINT_DASH.sub(" - ", value)
 
 
 def expand_section_abbreviation(value: str) -> str:
     """The Record's ``Sec.`` expanded to the publisher's ``section``."""
-    return re.sub(r"\bSec\.\s*", "section ", value)
+    return _SECTION_ABBREVIATION.sub("section ", value)
 
 
 def expand_public_law_abbreviation(value: str) -> str:
@@ -235,7 +254,7 @@ def expand_public_law_abbreviation(value: str) -> str:
     measurement, on rows citing the Inspector General Act and the Arms Export
     Control Act, where the two publishers' strings differ in nothing else.
     """
-    return re.sub(r"\bPub\.\s*L\.\s*", "Public Law ", value)
+    return _PUBLIC_LAW_ABBREVIATION.sub("Public Law ", value)
 
 
 def fold_en_dash(value: str) -> str:
@@ -324,6 +343,19 @@ class RecordCommunicationEntry:
     def split_resolved(self) -> bool:
         """Whether :func:`split_from_clause` found the official/agency boundary."""
         return self.submitting_official is not None and self.submitting_agency is not None
+
+    @property
+    def publisher_abstract(self) -> str:
+        """The printed sentence under the publisher's own four normalizations.
+
+        This, not :attr:`entry_text`, is what Congress.gov's ``abstract``
+        states for the same communication -- equal on 97.9% of held-out rows.
+        The two are kept apart on purpose: a published ``abstract`` column
+        should carry the value the publisher would have carried, while
+        ``record_entry_text`` stays the print exactly as GPO set it, so a
+        disagreement is diagnosable from the row rather than from a re-fetch.
+        """
+        return publisher_normalized(self.entry_text)
 
 
 def split_from_clause(from_clause: str) -> tuple[str | None, str | None]:
@@ -448,18 +480,21 @@ def parse_record_communications(
 def parse_granule_body(body: object) -> tuple[RecordCommunicationEntry, ...]:
     """The entries one acquired CREC granule body printed.
 
-    Takes whatever ``GovInfoBodyAcquirer.acquire_granule`` returns and reads
-    the rendition through ``extraction.body_text``, so the derivation is the
-    repository's own and the bytes are the ones the acquirer proved.
+    Takes what ``GovInfoBodyAcquirer.acquire_granule`` returns -- a
+    ``GovInfoGranuleBody``, whose ``identity`` is a ``GranuleIdentity`` -- and
+    reads the rendition through ``extraction.body_text``, so the derivation is
+    the repository's own and the bytes are the ones the acquirer proved.
     """
     from spicy_docs.extraction.body_text import body_text
 
-    identity = getattr(body, "identity", None)
-    package = getattr(identity, "package", None)
+    # Read directly, never through `getattr(..., None)`: the provenance columns
+    # are the row's only locator, and a silent NULL from an upstream rename is
+    # worse than an AttributeError naming the attribute that moved.
+    identity = body.identity
     return parse_record_communications(
         body_text(body).text,
-        package_id=getattr(package, "package_id", None),
-        granule_id=getattr(identity, "granule_id", None),
+        package_id=identity.package.package_id,
+        granule_id=identity.granule_id,
     )
 
 

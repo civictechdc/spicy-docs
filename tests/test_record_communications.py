@@ -38,6 +38,7 @@ from spicy_docs.sources.congress.record_communications import (
     rejoin_print_wraps,
     split_from_clause,
 )
+from spicy_docs.sources.govinfo.bodies import GranuleIdentity, parse_granule_identity
 from spicy_docs.transport.captured import CapturedBodyResponse
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -359,10 +360,21 @@ def test_the_rule_version_is_pinned_and_moves_when_a_pattern_moves(monkeypatch: 
     """Derived, not written: the digest has to follow the patterns it digests."""
     from spicy_docs.sources.congress import record_communications as module
 
-    assert RECORD_COMMUNICATION_RULE_VERSION == "record-communication-dceeb0d93d03"
+    assert RECORD_COMMUNICATION_RULE_VERSION == "record-communication-effcf9cdf71c"
 
     monkeypatch.setattr(module, "_PURSUANT", re.compile(r",?\s+in\s+accordance\s+with\s+", re.IGNORECASE))
     assert module._rule_version() != RECORD_COMMUNICATION_RULE_VERSION.removeprefix("record-communication-")
+
+
+def test_the_rule_version_moves_when_a_publisher_normalization_moves(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`abstract` is now these rules' output, so the version has to follow them."""
+    from spicy_docs.sources.congress import record_communications as module
+
+    pinned = RECORD_COMMUNICATION_RULE_VERSION.removeprefix("record-communication-")
+    for name in ("_PRINT_DASH", "_SECTION_ABBREVIATION", "_PUBLIC_LAW_ABBREVIATION"):
+        monkeypatch.setattr(module, name, re.compile(r"\bnothing\b"))
+        assert module._rule_version() != pinned, name
+        monkeypatch.undo()
 
 
 def test_the_rule_version_moves_when_the_vocabulary_or_the_split_policy_moves(
@@ -388,16 +400,13 @@ def test_text_that_is_not_text_refuses() -> None:
 
 
 def test_an_acquired_granule_body_carries_its_own_locator_onto_every_row() -> None:
-    """The production seam: `acquire_granule`'s result read through `extraction.body_text`."""
+    """The production seam, over the repository's own `GranuleIdentity`.
 
-    @dataclass(frozen=True)
-    class _Package:
-        package_id: str
-
-    @dataclass(frozen=True)
-    class _Identity:
-        package: _Package
-        granule_id: str
+    The identity is the real dataclass, not a stub with the right attribute
+    names: the provenance columns are a reconstructed row's only locator, and
+    reading them through `getattr(..., None)` would turn an upstream rename
+    into silent NULLs instead of an error naming the attribute that moved.
+    """
 
     @dataclass(frozen=True)
     class _Rendition:
@@ -409,23 +418,48 @@ def test_an_acquired_granule_body_carries_its_own_locator_onto_every_row() -> No
         format: str
         body: _Rendition
         body_capture: CapturedBodyResponse
-        identity: _Identity
+        identity: GranuleIdentity
 
+    locator = "https://www.govinfo.gov/content/pkg/CREC-2016-02-12/html/CREC-2016-02-12-pt1-PgH815-4.htm"
     capture = CapturedBodyResponse(
-        requested_url="https://www.govinfo.gov/content/pkg/CREC-2016-02-12/html/CREC-2016-02-12-pt1-PgH815-4.htm",
-        resolved_url="https://www.govinfo.gov/content/pkg/CREC-2016-02-12/html/CREC-2016-02-12-pt1-PgH815-4.htm",
+        requested_url=locator,
+        resolved_url=locator,
         status_code=200,
         content_type="text/html",
         body=(SECTIONS / "CREC-2016-02-12-pt1-PgH815-4.excerpt.htm").read_bytes(),
         observed_at="2026-09-20T00:00:00Z",
     )
+    identity = parse_granule_identity("CREC-2016-02-12", "CREC-2016-02-12-pt1-PgH815-4")
+    assert isinstance(identity, GranuleIdentity)
     body = _Body(
         format="htm",
         body=_Rendition(media_type="text/html", byte_size=capture.byte_size),
         body_capture=capture,
-        identity=_Identity(package=_Package("CREC-2016-02-12"), granule_id="CREC-2016-02-12-pt1-PgH815-4"),
+        identity=identity,
     )
     entries = parse_granule_body(body)
     assert [entry.number for entry in entries] == [4329, 4335, 4340, 4350]
     assert {entry.record_package_id for entry in entries} == {"CREC-2016-02-12"}
     assert {entry.record_granule_id for entry in entries} == {"CREC-2016-02-12-pt1-PgH815-4"}
+
+
+def test_a_body_whose_identity_moved_refuses_rather_than_nulling_the_provenance() -> None:
+    """The failure the direct attribute read exists to make loud."""
+
+    @dataclass(frozen=True)
+    class _Renamed:
+        format: str
+        body: object
+        body_capture: object
+        granule: object  # not `identity`
+
+    with pytest.raises(AttributeError, match="identity"):
+        parse_granule_body(_Renamed(format="htm", body=object(), body_capture=object(), granule=object()))
+
+
+def test_the_publisher_abstract_is_the_print_under_the_four_normalizations() -> None:
+    entry = numbered("CREC-2016-02-12-pt1-PgH815-4")[4329]
+    assert entry.publisher_abstract == publisher_normalized(entry.entry_text)
+    assert entry.publisher_abstract != entry.entry_text
+    assert "final rule -- Maine" in entry.entry_text
+    assert "final rule - Maine" in entry.publisher_abstract

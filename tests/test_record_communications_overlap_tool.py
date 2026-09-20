@@ -154,6 +154,51 @@ def test_a_row_the_split_rule_declined_is_not_counted_against_it(tmp_path: Path)
     assert (concatenation["stated"], concatenation["agreed"]) == (1, 1)
 
 
+def test_the_split_pair_is_scored_on_one_denominator_and_both_views_are_reported(tmp_path: Path) -> None:
+    """The 8-row publisher artifact in miniature: agency stated, no official.
+
+    `118-ec-4522`..`4530` are one granule where Congress.gov put the whole
+    printed from-clause in `submittingAgency` and stated no official. Scored per
+    side, those rows can only ever count against the agency, which is what made
+    the pair look like one passing field and one failing one.
+    """
+    collapsed = publisher_detail(4329) | {
+        "submittingOfficial": None,
+        "submittingAgency": (
+            "Deputy Director, Directorate of Cooperative and State Programs, "
+            "Occupational Safety and Health Administration, Department of Labor"
+        ),
+    }
+    receipt = build_receipt(
+        tmp_path / "receipt",
+        sections={"CREC-2016-02-12-pt1-PgH815-4": ("CREC-2016-02-12-pt1-PgH815-4.excerpt.htm", 114)},
+        details={"114-ec-4329": collapsed, "114-ec-4350": publisher_detail(4350)},
+    )
+    fields = score(receipt)["fields"]
+
+    # The declared denominator counts the collapsed row against both sides.
+    assert (fields["submitting_agency"]["agreed"], fields["submitting_agency"]["stated"]) == (1, 2)
+    assert (fields["submitting_official"]["agreed"], fields["submitting_official"]["stated"]) == (1, 2)
+    assert (fields["submitting_split"]["agreed"], fields["submitting_split"]["stated"]) == (1, 2)
+
+    # The narrow view drops it entirely, and both sides then read 100%.
+    for name in ("submitting_agency_where_both_stated", "submitting_official_where_both_stated"):
+        assert (fields[name]["agreed"], fields[name]["stated"]) == (1, 1), name
+
+
+def test_a_row_the_publisher_never_decomposed_is_outside_both_split_denominators(tmp_path: Path) -> None:
+    """Nothing to compare against is not a miss; it is not a row."""
+    receipt = build_receipt(
+        tmp_path / "receipt",
+        sections={"CREC-2016-02-12-pt1-PgH815-4": ("CREC-2016-02-12-pt1-PgH815-4.excerpt.htm", 114)},
+        details={"114-ec-4329": publisher_detail(4329) | {"submittingOfficial": None, "submittingAgency": None}},
+    )
+    fields = score(receipt)["fields"]
+    assert fields["submitting_split"]["stated"] == 0
+    assert fields["submitting_agency"]["stated"] == 0
+    assert fields["from_clause_concatenation"]["stated"] == 0
+
+
 def test_the_committee_comparison_survives_the_publishers_own_renaming() -> None:
     """*Education and the Workforce* and *Education and Workforce Committee* are one committee."""
     assert referral_names_agree(("Education and the Workforce",), ["Education and Workforce Committee"])

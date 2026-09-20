@@ -211,6 +211,12 @@
    "precision": 0.8969,
    "stated": 223
   },
+  "submitting_agency_where_both_stated": {
+   "agreed": 200,
+   "disagreements": [],
+   "precision": 0.9302,
+   "stated": 215
+  },
   "submitting_official": {
    "agreed": 197,
    "disagreements": [
@@ -240,8 +246,46 @@
      "published": "Director, Regulations Policy and Management Staff"
     }
    ],
+   "precision": 0.8834,
+   "stated": 223
+  },
+  "submitting_official_where_both_stated": {
+   "agreed": 197,
+   "disagreements": [],
    "precision": 0.9163,
    "stated": 215
+  },
+  "submitting_split": {
+   "agreed": 196,
+   "disagreements": [
+    {
+     "key": "114-ec-1773",
+     "printed": "Acting Assistant General Counsel for Regulatory Services, Office of the General Counsel, Postsecondary Education | Department of Education",
+     "published": "Acting Assistant General Counsel for Regulatory Services, Office of the General Counsel | Postsecondary Education, Department of Education"
+    },
+    {
+     "key": "114-ec-5687",
+     "printed": "Under Secretary, Acquisition, Technology, and Logistics | Department of Defense",
+     "published": "Under Secretary | Acquisition, Technology, and Logistics, Department of Defense"
+    },
+    {
+     "key": "114-ec-5690",
+     "printed": "Acting Under Secretary, Personnel and Readiness | Department of Defense",
+     "published": "Acting Under Secretary | Personnel and Readiness, Department of Defense"
+    },
+    {
+     "key": "114-ec-5712",
+     "printed": "Secretary | Department of Health and Human Services",
+     "published": "Secretary |  Department of Health and Human Services"
+    },
+    {
+     "key": "115-ec-1664",
+     "printed": "Under Secretary, Personnel and Readiness | Department of Defense",
+     "published": "Under Secretary | Personnel and Readiness, Department of Defense"
+    }
+   ],
+   "precision": 0.8789,
+   "stated": 223
   }
  },
  "heldOut": {
@@ -437,6 +481,12 @@
     "precision": 0.8837,
     "stated": 129
    },
+   "submitting_agency_where_both_stated": {
+    "agreed": 114,
+    "disagreements": [],
+    "precision": 0.9421,
+    "stated": 121
+   },
    "submitting_official": {
     "agreed": 110,
     "disagreements": [
@@ -466,8 +516,46 @@
       "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services"
      }
     ],
+    "precision": 0.8527,
+    "stated": 129
+   },
+   "submitting_official_where_both_stated": {
+    "agreed": 110,
+    "disagreements": [],
     "precision": 0.9091,
     "stated": 121
+   },
+   "submitting_split": {
+    "agreed": 110,
+    "disagreements": [
+     {
+      "key": "116-ec-1277",
+      "printed": "Chief of Staff | Media Bureau, Federal Communications Commission",
+      "published": "Chief of Staff, Media Bureau | Federal Communications Commission"
+     },
+     {
+      "key": "116-ec-1291",
+      "printed": "Attorney -- Advisor, U.S. Coast Guard | Department of Homeland Security",
+      "published": "Attorney - Advisor, U.S. Coast Guard | Department of Homeland Security"
+     },
+     {
+      "key": "116-ec-5284",
+      "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services | Department of Education",
+      "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services | Department of Education"
+     },
+     {
+      "key": "116-ec-5285",
+      "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services | Department of Education",
+      "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services | Department of Education"
+     },
+     {
+      "key": "116-ec-5286",
+      "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services | Department of Education",
+      "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services | Department of Education"
+     }
+    ],
+    "precision": 0.8527,
+    "stated": 129
    }
   },
   "splitRuleFired": 129
@@ -582,7 +670,7 @@
   "congressGov": 256,
   "govinfo": 40
  },
- "ruleVersion": "record-communication-dceeb0d93d03",
+ "ruleVersion": "record-communication-effcf9cdf71c",
  "splitRuleFired": 234,
  "tuning": {
   "entriesCompared": 112,
@@ -710,6 +798,12 @@
     "precision": 0.9149,
     "stated": 94
    },
+   "submitting_agency_where_both_stated": {
+    "agreed": 86,
+    "disagreements": [],
+    "precision": 0.9149,
+    "stated": 94
+   },
    "submitting_official": {
     "agreed": 87,
     "disagreements": [
@@ -740,6 +834,44 @@
      }
     ],
     "precision": 0.9255,
+    "stated": 94
+   },
+   "submitting_official_where_both_stated": {
+    "agreed": 87,
+    "disagreements": [],
+    "precision": 0.9255,
+    "stated": 94
+   },
+   "submitting_split": {
+    "agreed": 86,
+    "disagreements": [
+     {
+      "key": "114-ec-1773",
+      "printed": "Acting Assistant General Counsel for Regulatory Services, Office of the General Counsel, Postsecondary Education | Department of Education",
+      "published": "Acting Assistant General Counsel for Regulatory Services, Office of the General Counsel | Postsecondary Education, Department of Education"
+     },
+     {
+      "key": "114-ec-5687",
+      "printed": "Under Secretary, Acquisition, Technology, and Logistics | Department of Defense",
+      "published": "Under Secretary | Acquisition, Technology, and Logistics, Department of Defense"
+     },
+     {
+      "key": "114-ec-5690",
+      "printed": "Acting Under Secretary, Personnel and Readiness | Department of Defense",
+      "published": "Acting Under Secretary | Personnel and Readiness, Department of Defense"
+     },
+     {
+      "key": "114-ec-5712",
+      "printed": "Secretary | Department of Health and Human Services",
+      "published": "Secretary |  Department of Health and Human Services"
+     },
+     {
+      "key": "115-ec-1664",
+      "printed": "Under Secretary, Personnel and Readiness | Department of Defense",
+      "published": "Under Secretary | Personnel and Readiness, Department of Defense"
+     }
+    ],
+    "precision": 0.9149,
     "stated": 94
    }
   },
