@@ -7,6 +7,15 @@ than the table waiting on a join nothing can make yet.  That is the correction
 the placement study asked for on ``hearing_transcripts``, whose defect was a
 contract nothing filled.
 
+**``hearing_transcripts.bill_id`` is NULL for a different reason than
+``committee_reports.bill_id`` is**, and the reason changed on 2026-09-20.  It
+was "no source states it"; four publishers do state it
+([the measurement](../../../docs/research/hearing-bill-linkage-2026-09-20.md)).
+It is now "a scalar column is the wrong shape": a legislative hearing is held
+on a *list* -- twelve bills on ``CHRG-118hhrg56198`` -- so the relationship is
+one-to-many and ``hearing_bill_links`` hosts it, one row per (hearing, bill,
+source).  A report is filed against one bill and keeps its scalar.
+
 ``report_sections.pattern`` is this table's provenance column: it names the
 header pattern that fired to produce the block, so a mis-split report is
 readable from the row rather than only from re-running the parser.
@@ -90,6 +99,16 @@ HEARING_TRANSCRIPTS = table_contract(
             type_description="The hearing's document-type code (hhrg, shrg, jhrg).",
             number_column="jacket_number",
             number_description="The hearing's printing jacket number, leading zeros kept because it is opaque.",
+        ),
+        # Overridden in place, so the column keeps its position for anyone
+        # pinning the order; only the sentence changes.
+        "bill_id": (
+            "Always NULL here, and NULL for a stated reason: a legislative hearing is held on a *list* of "
+            "bills -- twelve of them on CHRG-118hhrg56198 -- so a scalar column would have to pick one of "
+            "twelve.  The relationship is one-to-many and `hearing_bill_links` hosts it, one row per "
+            "hearing, bill and source, the way `event_id` names `committee_meetings`.  The column stays "
+            "because this table shares its shape with `committee_reports`, where a report *is* filed "
+            "against one bill."
         ),
         # Appended last, the way a hosted table takes a new column (docs/tables.md):
         # the nineteen columns before it keep their order for anyone pinning it.
@@ -194,7 +213,6 @@ def shape_committee_report(
 def shape_hearing_transcript(
     body: object,
     *,
-    bill_id: str | None = None,
     page_count: int | None = None,
     text_sha256: str | None = None,
     event_id: str | None = None,
@@ -204,12 +222,17 @@ def shape_hearing_transcript(
     ``event_id`` is the ``associatedMeeting.eventId`` the Congress.gov hearing
     detail record states for this jacket, which the caller that read that
     record supplies; the package itself does not carry it.
+
+    There is deliberately no ``bill_id`` argument, unlike
+    :func:`shape_committee_report`: the hearing-to-bill relationship is
+    one-to-many and ``hearing_bill_links`` hosts it, so this shaper cannot
+    fill a scalar the contract says is always NULL.
     """
     row = _package_row(
         body,
         type_column="hearing_type",
         number_column="jacket_number",
-        bill_id=bill_id,
+        bill_id=None,
         page_count=page_count,
         text_sha256=text_sha256,
     )

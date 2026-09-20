@@ -1,0 +1,300 @@
+<?xml-stylesheet type='text/xsl' href='/xslt/cr-public.xslt'?>
+<committee-meeting congress-num="118" session-num="1" meeting-id="HHRG115955" meeting-type="HHRG" create-date="2023-05-10T16:25:30.270" orig-publish-date="2023-05-16T17:40:01.293" update-date="2024-10-08T12:14:32.360">
+  <current-status>S</current-status>
+  <language>en-us</language>
+  <copyright>Pursuant to Title 17 Section 105 of the United States Code, this file is not subject to copyright protection and is in the public domain.</copyright>
+  <publish-dates>
+    <publish-date date="2023-05-16T17:40:01.293" />
+    <publish-date date="2023-05-22T12:31:32.470" />
+    <publish-date date="2023-05-23T16:15:31.940" />
+    <publish-date date="2023-09-21T17:29:01.603" />
+    <publish-date date="2024-04-25T10:08:33.350" />
+    <publish-date date="2024-10-08T12:14:32.360" />
+  </publish-dates>
+  <meeting-details>
+    <updates>
+      <update-date date="2023-05-16T17:39:24.793" publish-date="2023-05-16T17:40:01.293">
+        <explanatory-notes doc-modified="False" />
+      </update-date>
+      <update-date date="2023-06-15T16:43:21.127" publish-date="2023-09-21T17:29:01.603">
+        <explanatory-notes doc-modified="False" />
+      </update-date>
+      <update-date date="2023-06-15T17:07:44.100" publish-date="2023-09-21T17:29:01.603">
+        <explanatory-notes doc-modified="False" />
+      </update-date>
+      <update-date date="2023-06-15T17:10:00.113" publish-date="2023-09-21T17:29:01.603">
+        <explanatory-notes doc-modified="False" />
+      </update-date>
+    </updates>
+    <subcommittees>
+      <committee-name id="II10" parent-id="II00" parent-name="Committee on Natural Resources">Subcommittee on Federal Lands</committee-name>
+    </subcommittees>
+    <meeting-date>
+      <calendar-date>2023-05-23</calendar-date>
+      <start-time>14:00:00</start-time>
+      <end-time>16:30:00</end-time>
+    </meeting-date>
+    <rescheduled-dates>
+      <meeting-dates>
+        <calendar-date>2023-05-23</calendar-date>
+        <start-time>14:00:00</start-time>
+        <end-time>16:30:00</end-time>
+      </meeting-dates>
+    </rescheduled-dates>
+    <meeting-location>
+      <capitol-complex>
+        <room>1324</room>
+        <building>LHOB</building>
+      </capitol-complex>
+    </meeting-location>
+    <meeting-title>Legislative hearing on: • H.R. 188 (Rep. McClintock), “Proven Forest Management Act of 2022”; • H.R. 934 (Rep. McClintock), To require the Secretary of Agriculture to carry out activities to suppress wildfires, and for other purposes; • H.R. 1450 (Rep. Fulcher), “Treating Tribes and Counties as Good Neighbors Act”; • H.R. 1726 (Rep. Tokuda), “Continued Rapid Ohia Death Response Act of 2023”; • H.R. _____ (Rep. Moore of Utah), “FIRESHEDS Act”; • H.R. _____ (Rep. Issa), “Direct Hire to Fight Fires”; • H.R. _____ (Rep. Valadao), “Emergency Wildfire Fighting Technology Act of 2023”; • H.R. _____ (Rep. Harder), “Fire Department Repayment Act of 2023”; • H.R. _____ (Rep. Neguse), “Forest Service Flexible Housing Partnerships Act of 2023”</meeting-title>
+  </meeting-details>
+  <meeting-documents>
+    <meeting-document type="BR" add-date="2023-05-10T16:26:15.840" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>H.R. 188 (Rep. McClintock), “Proven Forest Management Act of 2022”</description>
+      <legis-num>HR 188</legis-num>
+      <updates>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:08:47.620" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-num>HR 188</legis-num>
+        <legis-stage>ih</legis-stage>
+        <doc-type>BR</doc-type>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/BILLS-118HR188ih.pdf" doc-type="PDF" add-date="2024-10-08T12:08:47.653" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="BR" add-date="2023-05-10T16:26:37.893" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>H.R. 934 (Rep. McClintock), To require the Secretary of Agriculture to carry out activities to suppress wildfires, and for other purposes</description>
+      <legis-num>HR 934</legis-num>
+      <updates>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:12:09.513" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-num>HR 934</legis-num>
+        <legis-stage>ih</legis-stage>
+        <doc-type>BR</doc-type>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/BILLS-118HR934ih.pdf" doc-type="PDF" add-date="2024-10-08T12:12:09.543" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="BR" add-date="2023-05-10T16:26:55.713" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>H.R. 2997 (Rep. Boebert), “Clifton Opportunities Now for Vibrant Economic Yields (CONVEY) Act”</description>
+      <legis-num>HR 2997</legis-num>
+      <updates>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2023-06-15T16:49:00.010" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:10:52.673" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-num>HR 2997</legis-num>
+        <legis-stage>ih</legis-stage>
+        <doc-type>BR</doc-type>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/BILLS-118HR2997ih.pdf" doc-type="PDF" add-date="2024-10-08T12:10:52.690" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="BR" add-date="2023-05-10T16:27:12.373" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>H.R. 1726 (Rep. Tokuda), “Continued Rapid Ohia Death Response Act of 2023”</description>
+      <legis-num>HR 1726</legis-num>
+      <updates>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:09:24.967" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-num>HR 1726</legis-num>
+        <legis-stage>ih</legis-stage>
+        <doc-type>BR</doc-type>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/BILLS-118HR1726ih.pdf" doc-type="PDF" add-date="2024-10-08T12:09:25" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="BR" add-date="2023-05-10T16:27:32.720" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>H.R. 3522 (Rep. Moore of Utah), “FIRESHEDS Act”</description>
+      <legis-num>HR 3522</legis-num>
+      <updates>
+        <update-date date="2023-05-22T12:29:24.187" publish-date="2023-05-22T12:31:32.470">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:11:51.347" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-num>HR 3522</legis-num>
+        <legis-stage>ih</legis-stage>
+        <doc-type>BR</doc-type>
+        <short-desc>“FIRESHEDS Act”</short-desc>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/BILLS-118HR3522ih-FIRESHEDSAct.pdf" doc-type="PDF" add-date="2024-10-08T12:11:51.360" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="BR" add-date="2023-05-10T16:27:52.103" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>H.R. 3499 (Rep. Issa), “Direct Hire to Fight Fires”</description>
+      <legis-num>HR 3499</legis-num>
+      <updates>
+        <update-date date="2023-05-22T12:29:05.937" publish-date="2023-05-22T12:31:32.470">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:13:51.900" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-num>HR 3499</legis-num>
+        <legis-stage>ih</legis-stage>
+        <doc-type>BR</doc-type>
+        <short-desc>“Direct Hire to Fight Fires”</short-desc>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/BILLS-118HR3499ih-DirectHiretoFightFires.pdf" doc-type="PDF" add-date="2024-10-08T12:13:51.930" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="BR" add-date="2023-05-10T16:28:21.133" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>H.R. 3389 (Rep. Valadao), “Emergency Wildfire Fighting Technology Act of 2023”</description>
+      <legis-num>HR 3389</legis-num>
+      <updates>
+        <update-date date="2023-05-22T12:29:47.593" publish-date="2023-05-22T12:31:32.470">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:11:17.700" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-num>HR 3389</legis-num>
+        <legis-stage>ih</legis-stage>
+        <doc-type>BR</doc-type>
+        <short-desc>“Emergency Wildfire Fighting T</short-desc>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/BILLS-118HR3389ih-EmergencyWildfireFightingT.pdf" doc-type="PDF" add-date="2024-10-08T12:11:17.733" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="BR" add-date="2023-05-10T16:28:45.453" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>H.R. 3396 (Rep. Harder), “Fire Department Repayment Act of 2023”</description>
+      <legis-num>HR 3396</legis-num>
+      <updates>
+        <update-date date="2023-05-22T12:28:45.610" publish-date="2023-05-22T12:31:32.470">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:11:36.077" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-num>HR 3396</legis-num>
+        <legis-stage>ih</legis-stage>
+        <doc-type>BR</doc-type>
+        <short-desc>“Fire Department Repayment Act</short-desc>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/BILLS-118HR3396ih-FireDepartmentRepaymentAct.pdf" doc-type="PDF" add-date="2024-10-08T12:11:36.090" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="BR" add-date="2023-05-10T16:29:03.290" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>H.R. _____ (Rep. Neguse), “Forest Service Flexible Housing Partnerships Act of 2023”</description>
+      <updates>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:09:10.717" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-stage>pih</legis-stage>
+        <doc-type>BR</doc-type>
+        <short-desc>“Forest Service Flexible Housi</short-desc>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/BILLS-118pih-ForestServiceFlexibleHousi.pdf" doc-type="PDF" add-date="2024-10-08T12:09:10.730" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="SD" add-date="2023-05-16T17:39:50.357" remove-date="" publish-date="2023-05-16T17:40:01.293">
+      <description>Hearing Notice</description>
+      <updates>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:12:37.763" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-stage>ih</legis-stage>
+        <doc-type>SD</doc-type>
+        <version-num>1</version-num>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/HHRG-118-II10-20230523-SD001.pdf" doc-type="PDF" add-date="2024-10-08T12:12:37.780" publish-date="2023-05-16T17:40:01.293" />
+      </files>
+    </meeting-document>
+    <meeting-document type="SD" add-date="2023-05-22T12:30:03.640" remove-date="" publish-date="2023-05-22T12:31:32.470">
+      <description>Hearing Memo</description>
+      <updates>
+        <update-date date="2023-06-15T00:00:00" publish-date="2023-09-21T17:29:01.603">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+        <update-date date="2024-10-08T12:12:47.983" publish-date="2024-10-08T12:14:32.360">
+          <explanatory-notes doc-modified="False" />
+        </update-date>
+      </updates>
+      <filename-metadata>
+        <legis-stage>ih</legis-stage>
+        <doc-type>SD</doc-type>
+        <version-num>2</version-num>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/HHRG-118-II10-20230523-SD002.pdf" doc-type="PDF" add-date="2024-10-08T12:12:48.013" publish-date="2023-05-22T12:31:32.470" />
+      </files>
+    </meeting-document>
+    <meeting-document type="HT" add-date="2024-04-25T10:07:42.600" remove-date="" publish-date="2024-04-25T10:08:33.350">
+      <description>Official Transcript 118-30</description>
+      <filename-metadata>
+        <legis-stage>ih</legis-stage>
+        <doc-type>HT</doc-type>
+      </filename-metadata>
+      <files>
+        <file doc-url="http://docs.house.gov/meetings/II/II10/20230523/115955/HHRG-118-II10-Transcript-20230523.pdf" doc-type="PDF" add-date="2024-04-25T10:07:42.617" publish-date="2024-04-25T10:08:33.350" />
+      </files>
+    </meeting-document>
+  </meeting-documents>
+</committee-meeting>

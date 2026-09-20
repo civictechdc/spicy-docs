@@ -58,6 +58,7 @@ from spicy_docs.schemas.document_citation_tables import (
     DOCUMENT_CITATIONS,
     HOUSE_ACTIVITY_REPORTS,
 )
+from spicy_docs.schemas.hearing_bill_link_tables import HEARING_BILL_LINKS
 from spicy_docs.schemas.law_tables import LAW_CODE_SECTIONS, LAWS, TABLE3_RECORDS
 from spicy_docs.schemas.legislator_tables import MEMBER_TERMS, MEMBERS
 from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT, RECORD_TYPES
@@ -113,6 +114,9 @@ _REGISTERED: tuple[TableContract, ...] = (
     # What the print states that no index does: the bill-action relationship,
     # hosted with its measured attachment reliability per row.
     BILL_COMMITTEE_ACTIONS,
+    # A2 reopened: a hearing is held on a list, so the linkage is a table and
+    # not a column, keyed on the source that stated each pair.
+    HEARING_BILL_LINKS,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -144,6 +148,7 @@ __all__ = [
     "DOCUMENT",
     "DOCUMENT_CITATIONS",
     "FINANCIAL_CHANGES",
+    "HEARING_BILL_LINKS",
     "HEARING_TRANSCRIPTS",
     "HOUSE_ACTIVITY_REPORTS",
     "HOUSE_COMMUNICATIONS",

@@ -20,7 +20,7 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 
 ## The tables
 
-`TABLE_CONTRACTS` holds all thirty-seven by name. Each carries its columns in
+`TABLE_CONTRACTS` holds all thirty-eight by name. Each carries its columns in
 publish order, its identity, its version column — the column a merge prefers the
 larger value of when two rows share an identity — a one-sentence grain, and one
 sentence per column for the host's data dictionary.
@@ -64,8 +64,9 @@ sentence per column for the host's data dictionary.
 | `budget_volumes` | One row per published volume of the President's budget, with what its print adds to its own index. | `package_id` | `last_modified` | 34 | `schemas.budget_volume_tables`, `sources.govinfo.bodies` |
 | `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | 35 | `schemas.senate_expenditure_tables` |
 | `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | 27 | `schemas.bill_action_tables`, `interpretation.bill_actions` |
+| `hearing_bill_links` | One row per bill one source states a hearing was held on or noticed for: the pair, the source that stated it, and the committee-and-date key the statement was checked against. | `package_id`, `bill_id`, `link_source` | `link_rule_version` | 12 | `schemas.hearing_bill_link_tables`, `interpretation.hearing_bill_links`, `sources.congress.house_committee_repository` |
 
-Seven hundred and sixty-six columns in all, each with its own sentence.
+Seven hundred and seventy-eight columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -74,7 +75,7 @@ appended.
 
 ## The bill family is one pass
 
-Twelve of the thirty-seven tables come out of a single call to
+Twelve of the thirty-eight tables come out of a single call to
 `build_bill_family`, in an order where no step reads a table an earlier step
 published:
 
@@ -293,6 +294,87 @@ rollup estimated.
 root extension. A chapter-only `<USCode>` block contributes nothing: a chapter
 is not a section and has no hosted key.
 
+## A hearing is held on a list, so the linkage is a table and not a column
+
+`schemas/hearing_bill_link_tables.py` hosts what the
+[hearing-to-bill measurement](research/hearing-bill-linkage-2026-09-20.md)
+found (198 requests, receipt `hearing-bill-linkage-2026-09-20/`). It reopened
+gap [A2](research/closing-the-gaps-2026-09-19.md) without contradicting it: no
+hearing states a `PRIMARY` bill, and a `BODY` mention is confirmed by nothing —
+both re-measured and both still true. What was wrong was the conclusion. Those
+two findings answer the question a committee *report* answers; a hearing is not
+filed against one bill, it is convened on a **list**, and four publishers state
+that list. **`hearing_transcripts.bill_id` stays NULL for a new reason**: not
+"no source states it" but "a scalar column is the wrong shape", with twelve
+bills on `CHRG-118hhrg56198`.
+
+- **`hearing_bill_links`** is keyed `(package_id, bill_id, link_source)`, and
+  the **source is in the identity on purpose**. Two publishers naming the same
+  pair is the strongest evidence in the measurement — where the MODS cover and
+  the House agenda agree the bill's own action list confirms **18 of 18** — so
+  one row per pair would delete exactly the agreement worth keeping. On the one
+  hearing this repository holds both records for, 8 cover bills and 8 agenda
+  bills are **16 rows over 9 distinct bills**.
+  `committee_system_code` and `held_date` are the MODS's own
+  `congCommittee` authority id and `heldDate`, which are the join key a
+  bill-side confirmation needs and the pair an agenda row had to match before
+  it was written. `event_id` is the `associatedMeeting.eventId` the row was
+  reached through, NULL on a cover row whose caller read no hearing detail.
+  `evidence_rule` and `evidence_text` are the statement the rule actually read,
+  so a wrong row is readable without the record in hand.
+- **`link_source` is sealed and additions-only**, and names all five measured
+  sources from the start so taking one later is an addition rather than a
+  rename: `mods_cover` and `docs_house_br` are implemented;
+  `daily_digest_entry`, `congress_related_items` and `front_matter_designator`
+  are measured, ranked and not yet filled.
+- **`relation` separates what happened from what was scheduled.** A
+  `mods_cover` row is `held_on`: the bill's own *Hearings Held* action by that
+  committee on that date confirms **19 of 20** pairs, the one exception being a
+  bill with three actions in total, and six set-comparisons against an
+  independently produced list are **6 of 6 set-equal over 55 bills**. A
+  `docs_house_br` row is `noticed`, because the agenda states intent: an
+  agenda-only bill is confirmed 1 of 18, **contradicted 1** (`118-hr-2997`,
+  noticed for 2023-05-23 and heard 2023-06-22) and unverifiable 16. Publishing
+  both as `held_on` would publish a calendar as a record of events.
+- **Precision is not recall, and recall is unmeasured.** 2 of 20 sampled House
+  hearings of the 118th carry a `COVER` bill at all, and no probe classified
+  hearing type, so that is a floor over all hearings and not a rate over
+  legislative ones. **0 of 3 sampled Senate hearings** carry one — those MODS
+  state no bill in any context while Congress.gov states one to two for each —
+  so a missing row for a Senate hearing is indistinguishable from a correct
+  silence on an oversight hearing. The per-chamber, per-Congress census is the
+  open measurement; `daily_digest_entry` is the route that would close it.
+
+**The two readers cost one request between them.**
+`interpretation/hearing_bill_links.py` holds both rules and the derived
+`link_rule_version` digest.
+
+- `mods_cover` costs **nothing**: `GovInfoBodyAcquirer` already fetches the
+  package MODS for every body it reads, and `PackageModsIdentity` gained
+  `held_date` so the join key comes off the same record.
+- `docs_house_br` costs **one keyless GET per event**, at the static address
+  `sources/congress/house_committee_repository.py` builds:
+  `docs.house.gov/meetings/{CMTE}/{SUBCMTE}/{yyyymmdd}/{EventID}/{TYPE}-{congress}-{SUBCMTE}-{yyyymmdd}.xml`.
+  The event page offers the same XML only as an ASP.NET `__doPostBack`, and the
+  two are **byte-identical, 2 of 2 by SHA-256** — checked by digest rather than
+  by status, because this publisher serves its own pages at 200. The
+  `EventID`/`eventId` equality that makes the address reachable from
+  `hearing_transcripts.event_id` is a measured regularity neither publisher
+  documents, so the **committee-and-date identity check runs per row** and
+  refuses rather than linking.
+- **A type-less `<legis-num>` is refused, not guessed.** Some committees post
+  `226` beside `BILLS-118226ih.pdf`, neither of which states whether the
+  measure is a House or a Senate one; the long-standing community scraper
+  defaults that to `hr`. Here the rule falls through to the `<description>`,
+  which usually spells the designator in full, and refuses with a stated reason
+  when nothing does. **36 of 46** retained `BR` documents resolve; the 10 that
+  do not are the `BILLS-118Xih.pdf` discussion drafts, which name a measure
+  with no number at all.
+
+Both figures are reproduced from the receipt's retained bytes through this
+product code by `tools/analysis/hearing_bill_links_recompute.py`, which makes
+no request.
+
 ## The budget volumes are the family whose print outruns its index
 
 `schemas/budget_volume_tables.py` is what the
@@ -471,6 +553,25 @@ that bounds what they establish:
   not this branch's. The request budget for this build was four keyed records
   and all four were spent on these two packages.
 
+`hearing_bill_links` is built from **four retained publisher records**, three
+reduced MODS and one whole meeting XML, and what they establish is bounded the
+same way:
+
+- **Two hearings and one agenda.** The 12-bill and 8-bill cover lists and the
+  9-document agenda are those records' numbers, not a family rate. The
+  18-of-18, 19-of-20 and 1-of-18 confirmation figures are the receipt's, from
+  60 bill-action requests this repository holds no fixture for; nothing offline
+  can re-derive them.
+- **The identity check is exercised both ways** — a passing pair, a wrong date
+  and a wrong committee — but on one pair. That it held 9 of 9 is the receipt's
+  measurement.
+- **`36 of 46` is not asserted from the fixtures.** The one retained agenda
+  gives 8 of 9; the family figure is reproduced from the receipt's bytes by
+  `tools/analysis/hearing_bill_links_recompute.py`, which is not part of the
+  offline suite because those bytes are not in this repository.
+- **No Senate row exists anywhere.** The Senate fixture is here to prove the
+  rule yields nothing, which is the honest answer and not a filled column.
+
 `senate_expenditures` is built from **two bounded page ranges of two of the
 eight** retained volumes — 19 pages of 2,599 — cut from the rollup's own bytes
 and never re-fetched. All 114 ruled rows run through the generic loop, not a
@@ -506,7 +607,8 @@ volumes carrying the same printed grid. What that does and does not establish:
 | Column | Why | What would fill it |
 | --- | --- | --- |
 | `congress_bills.statutes_at_large_cite` | The family build sees one BILLSTATUS document and its printings; the citation lives in the PLAW package's USLM `meta`, which the laws rollup acquires once per law — filling it here would fetch every PLAW twice or read another table's output. | The merge joins `laws` on `bill_id` (`statutes_at_large_cite` is published there). |
-| `committee_reports.bill_id`, `hearing_transcripts.bill_id` | A package-keyed report is fillable today; the bill linkage is not. | A report-to-bill join. |
+| `committee_reports.bill_id` | A package-keyed report is fillable today; the report-to-bill linkage is not. | A report-to-bill join. |
+| `hearing_transcripts.bill_id` | Not for want of a source: four publishers state a hearing's bills. The relationship is one-to-many — twelve bills on `CHRG-118hhrg56198` — so a scalar column would pick one of twelve. | Nothing. `hearing_bill_links` is the answer, and this column stays NULL by design. |
 
 ## Decision
 

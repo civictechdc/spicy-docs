@@ -185,6 +185,20 @@ These operations ship with `spicy_docs` and accept caller-selected paths. Use
   beside its output; makes no request. Supply `--output`; the design record is
   [`docs/research/document-capture-schema-2026-09-19.md`](../docs/research/document-capture-schema-2026-09-19.md).
 
+## Reproduce a measurement through the product rules
+
+- [hearing_bill_links_recompute](analysis/hearing_bill_links_recompute.py): run
+  `interpretation/hearing_bill_links.py` and
+  `sources/congress/house_committee_repository.py` over the retained responses
+  of the [hearing-to-bill linkage receipt](../docs/research/hearing-bill-linkage-2026-09-20.md)
+  and compare what they produce against that receipt's own offline recomputes:
+  every hearing's `COVER` bill set, every event's resolved `BR` keys and parent
+  committee codes, and the 46/36 totals. Supply `--receipt` and optionally
+  `--output`; makes no request and reads no credential. Exit status 1 on any
+  disagreement, which is what a product rule drifting from what was measured
+  looks like. It cannot reproduce the bill-side confirmations: the receipt
+  retains those as a scored summary, not as action lists.
+
 [Repository checks and artifact maintenance](../scripts/README.md) live in
 `scripts/`.
 

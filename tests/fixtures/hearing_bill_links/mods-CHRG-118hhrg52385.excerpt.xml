@@ -1,0 +1,207 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:exslt="http://exslt.org/common" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1c188b079">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CHRG</collectionCode>
+         <category>Congressional Committee Materials</category>
+         <waisDatabaseName>118_house_hearings</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2023-10-19</dateIngested>
+    </extension>
+    <titleInfo>
+         <title>H.R. 188; H.R. 934; H.R. 1450; H.R. 1726; H.R. 3389; H.R. 3396; H.R. 3499; H.R. 3522; AND H.R.____, ‘‘FOREST SERVICE FLEXIBLE HOUSING PARTNERSHIPS ACT OF 2023’’</title>
+    </titleInfo>
+    <titleInfo type="alternative"></titleInfo>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CHRG-118hhrg52385</url>
+         <url displayLabel="HTML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CHRG-118hhrg52385/html/CHRG-118hhrg52385.htm</url>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CHRG-118hhrg52385/pdf/CHRG-118hhrg52385.pdf</url>
+    </location>
+    <originInfo>
+         <publisher>U.S. Government Publishing Office</publisher>
+         <dateIssued encoding="w3cdtf">2023-05-23</dateIssued>
+         <issuance>monographic</issuance>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>72 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">Y 4.R 31/3:118-30</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CHRG-118hhrg52385</identifier>
+    <identifier type="local">P0b002ee1c188b079</identifier>
+    <identifier type="ILS system id">001249575</identifier>
+    <identifier type="former package identifier">f:52385.txt</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2023-10-19</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2023-10-19</recordChangeDate>
+         <recordIdentifier source="DGPO">CHRG-118hhrg52385</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <docClass>HHRG</docClass>
+         <accessId>CHRG-118hhrg52385</accessId>
+         <type>G</type>
+         <chamber>HOUSE</chamber>
+         <congress>118</congress>
+         <session>1</session>
+         <heldDate>2023-05-23</heldDate>
+         <preferredCitation>Serial No. 118-30</preferredCitation>
+    </extension>
+    <extension>
+         <searchTitle>H.R. 188; H.R. 934; H.R. 1450; H.R. 1726; H.R. 3389; H.R. 3396; H.R. 3499; H.R. 3522; AND H.R.____, ‘‘FOREST SERVICE FLEXIBLE HOUSING PARTNERSHIPS ACT OF 2023’’</searchTitle>
+         <granuleClass>OTHERPART</granuleClass>
+         <accessId>CHRG-118hhrg52385</accessId>
+         <graphicsInPDF>true</graphicsInPDF>
+         <witness>Panel II: Heithecker, Troy, Associate Deputy Chief, U.S. Forest Service, Washington, DC</witness>
+         <witness>Dugan, Robert, Chairman, Placer County Water Agency, Auburn, California</witness>
+         <witness>Desautel, Cody, President, Intertribal Timber Council, Portland, Oregon</witness>
+         <witness>Johansson, Jamie, President, California Farm Bureau, Sacramento, California</witness>
+         <witness>Panel III: Duncan, Riva, Fire Chief, Umpqua National Forest, U.S. Forest Service (Retired); Vice President, Grassroots Wildland Firefighters, Asheville, North Carolina</witness>
+         <witness>Goddard, Rick, Managing Director, Caylym Technologies International, Fresno, California</witness>
+         <witness>Godes, Jonathan, President, Colorado Association of Ski Towns (CAST); Glenwood Springs City Councilor, Glenwood Springs, Colorado</witness>
+         <witness>Crabtree, Laurence, U.S. Forest Service (Retired), Bieber, California</witness>
+         <isAppropriation>false</isAppropriation>
+         <congSerial chamber="H" congress="118" number="30"></congSerial>
+         <jacketId>52-385</jacketId>
+         <congCommittee authorityId="hsii00" chamber="H" congress="118" type="S">
+                                    
+              <name type="authority-standard">Committee on Natural Resources</name>
+                                    
+              <name type="authority-short">Natural Resources</name>
+                                    
+              <subCommittee>
+                                            
+                   <name type="parsed">Subcommittee on Federal Lands</name>
+                                        
+            </subCommittee>
+                                
+        </congCommittee>
+         <eventId>115955</eventId>
+         <law congress="114" isPrivate="false" number="47"></law>
+         <law congress="114" isPrivate="false" number="322"></law>
+         <bill congress="118" context="BODY" number="11" type="S"></bill>
+         <bill congress="118" context="COVER" number="188" type="HR"></bill>
+         <bill congress="118" context="BODY" number="188" type="HR"></bill>
+         <bill congress="118" context="COVER" number="934" type="HR"></bill>
+         <bill congress="118" context="BODY" number="934" type="HR"></bill>
+         <bill congress="118" context="COVER" number="1450" type="HR"></bill>
+         <bill congress="118" context="BODY" number="1450" type="HR"></bill>
+         <bill congress="118" context="COVER" number="1726" type="HR"></bill>
+         <bill congress="118" context="BODY" number="1726" type="HR"></bill>
+         <bill congress="118" context="COVER" number="3389" type="HR"></bill>
+         <bill congress="118" context="BODY" number="3389" type="HR"></bill>
+         <bill congress="118" context="COVER" number="3396" type="HR"></bill>
+         <bill congress="118" context="BODY" number="3396" type="HR"></bill>
+         <bill congress="118" context="COVER" number="3499" type="HR"></bill>
+         <bill congress="118" context="BODY" number="3499" type="HR"></bill>
+         <bill congress="118" context="COVER" number="3522" type="HR"></bill>
+         <bill congress="118" context="BODY" number="3522" type="HR"></bill>
+         <isNomination>false</isNomination>
+         <isErrata>false</isErrata>
+    </extension>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <namePart>Committee on Natural Resources</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">associated name</roleTerm>
+              <roleTerm authority="marcrelator" type="code">asn</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <name type="personal">
+         <namePart>Panel II: Heithecker, Troy, Associate Deputy Chief, U.S. Forest Service, Washington, DC</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Dugan, Robert, Chairman, Placer County Water Agency, Auburn, California</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Desautel, Cody, President, Intertribal Timber Council, Portland, Oregon</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Johansson, Jamie, President, California Farm Bureau, Sacramento, California</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Panel III: Duncan, Riva, Fire Chief, Umpqua National Forest, U.S. Forest Service (Retired); Vice President, Grassroots Wildland Firefighters, Asheville, North Carolina</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Goddard, Rick, Managing Director, Caylym Technologies International, Fresno, California</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Godes, Jonathan, President, Colorado Association of Ski Towns (CAST); Glenwood Springs City Councilor, Glenwood Springs, Colorado</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Crabtree, Laurence, U.S. Forest Service (Retired), Bieber, California</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+</mods>
