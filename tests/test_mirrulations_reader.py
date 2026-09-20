@@ -1114,6 +1114,27 @@ def test_an_empty_or_mis_shaped_success_is_requested_empty_not_a_record(body: by
     assert named in outcome.reason  # the shape mismatch is named, not just counted
 
 
+@pytest.mark.parametrize(
+    "body",
+    [b'{"data":{}}', b'{"errors":[{"detail":"upstream failed"}]}'],
+    ids=["empty-data", "publisher-error"],
+)
+def test_a_populated_object_without_record_identity_is_requested_empty(body: bytes) -> None:
+    """Reproduce the host's null-id rows before asserting the required behavior."""
+    key = _docket_key("EPA-2024-0001")
+    reader = MirrulationsReader(_FakeS3Resource({key: body}), BUCKET, PREFIX, AGENCY, DOCKET)
+
+    records = list(reader.iter_records())
+
+    # Baseline evidence: both bodies become records with no identity and are
+    # eligible for the processed-key manifest. Remove these assertions with the fix.
+    assert len(records) == 1
+    assert DOCKET.extract(records[0])[DOCKET.dedup_key] is None
+    assert reader.last_keys == [key]
+    assert reader.unresolved == []
+    assert records == []  # required behavior: this fails on the original reader
+
+
 def test_a_server_error_then_success_recovers_across_two_runs() -> None:
     """Run one leaves the key unresolved; run two asks again and manifests it.
 
