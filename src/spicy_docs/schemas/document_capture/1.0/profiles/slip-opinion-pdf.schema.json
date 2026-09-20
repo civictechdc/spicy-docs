@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:slip-opinion-pdf",
+  "title": "DocumentCapture profile: slip-opinion-pdf v1",
+  "description": "A Supreme Court slip opinion PDF through extraction's native text and line assembly. Pages and lines are the extractor's; the opinion division is read from the two signals the print states on every page -- the opinion designator in the running-head band and the opening formula -- and each opinion is a container over the pages it covers.",
+  "x-parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
+  },
+  "allOf": [
+    {
+      "$ref": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json"
+    },
+    {
+      "properties": {
+        "profile": {
+          "properties": {
+            "name": {
+              "const": "slip-opinion-pdf"
+            },
+            "version": {
+              "const": "1"
+            },
+            "ext": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "classification",
+                "extractor",
+                "lineAssembly",
+                "opinions",
+                "pageCount",
+                "pdfBytes",
+                "pdfSha256"
+              ],
+              "properties": {
+                "pdfSha256": {
+                  "type": "string"
+                },
+                "pdfBytes": {
+                  "type": "integer"
+                },
+                "pageCount": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "extractor": {
+                  "type": "string"
+                },
+                "lineAssembly": {
+                  "type": "string"
+                },
+                "classification": {
+                  "type": "string"
+                },
+                "opinions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "kind",
+                      "pages"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "type": "string"
+                      },
+                      "pages": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer"
+                        }
+                      },
+                      "author": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "joinedBy": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "nodes": {
+          "items": {
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^slip-opinion-pdf:"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "slip-opinion-pdf:concurrence",
+                        "slip-opinion-pdf:dissent",
+                        "slip-opinion-pdf:opinion",
+                        "slip-opinion-pdf:perCuriam",
+                        "slip-opinion-pdf:syllabus"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "not": {
+                      "pattern": "^(?!slip-opinion-pdf:)[a-z][a-z0-9-]*:"
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "ext": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "opinionType": {
+                        "type": "string"
+                      },
+                      "author": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "joinedBy": {
+                        "type": "string"
+                      },
+                      "pdfOrdinal": {
+                        "type": "integer"
+                      },
+                      "pageRange": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "firstPdfPage",
+                          "lastPdfPage"
+                        ],
+                        "properties": {
+                          "firstPrinted": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "lastPrinted": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "firstPdfPage": {
+                            "type": "integer"
+                          },
+                          "lastPdfPage": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

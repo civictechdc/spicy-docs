@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:federal-register-xml",
+  "title": "DocumentCapture profile: federal-register-xml v1",
+  "description": "A Federal Register document XML (RULE, PRORULE, NOTICE, PRESDOCU). Preamble blocks are sections with a HED heading; GPOTABLE rows and cells carry cell geometry; FTNT is a footnote; PRTPAGE is a page number.",
+  "x-parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
+  },
+  "allOf": [
+    {
+      "$ref": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json"
+    },
+    {
+      "properties": {
+        "profile": {
+          "properties": {
+            "name": {
+              "const": "federal-register-xml"
+            },
+            "version": {
+              "const": "1"
+            },
+            "ext": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "agencies",
+                "citation",
+                "documentJsonSha256",
+                "documentNumber",
+                "endPage",
+                "publicationDate",
+                "startPage",
+                "type"
+              ],
+              "properties": {
+                "documentNumber": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "publicationDate": {
+                  "type": "string"
+                },
+                "citation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "startPage": {
+                  "type": "integer"
+                },
+                "endPage": {
+                  "type": "integer"
+                },
+                "agencies": {
+                  "type": "array",
+                  "items": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "documentJsonSha256": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "nodes": {
+          "items": {
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^federal-register-xml:"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "federal-register-xml:listOfSubjects",
+                        "federal-register-xml:regText"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "not": {
+                      "pattern": "^(?!federal-register-xml:)[a-z][a-z0-9-]*:"
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "ext": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "headLevel": {
+                        "type": "string"
+                      },
+                      "indent": {
+                        "type": "string"
+                      },
+                      "cols": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "cdef": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -129,6 +129,19 @@ These operations ship with `spicy_docs` and accept caller-selected paths. Use
   fetch resumable summary JSONL from a Parquet list of report ids. Requires an
   explicit credential file and PyArrow (`public-table` extra).
 
+## Prove a document shape
+
+- [document_capture](analysis/document_capture.py): convert six real federal
+  documents (a USLM law, a bill XML through DeltaTrack, a committee-report HTML
+  body, a Federal Register notice XML, a reconstructed CFR section, a slip
+  opinion's extracted lines) into the `DocumentCapture v1` shape, validate each
+  against Rulespec's parent schema and its family profile, check the invariants
+  with Rulespec's own validator, prove the text round trip with a second
+  parser, render two leaves per document as rulespec `SourceFragment`s and
+  measure where the bytes go. Reads committed fixtures and the retained inputs
+  beside its output; makes no request. Supply `--output`; the design record is
+  [`docs/research/document-capture-schema-2026-09-19.md`](../docs/research/document-capture-schema-2026-09-19.md).
+
 [Repository checks and artifact maintenance](../scripts/README.md) live in
 `scripts/`.
 

@@ -1,0 +1,126 @@
+[
+ {
+  "node": "n0010",
+  "kind": "paragraph",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:1ca5f8cab7088a52db34d8940d1273b23f2d194a526aeb799c72b9caabfe3196",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 327,
+     "oa:end": 364,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "Federal Energy Regulatory Commission."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:1ca5f8cab7088a52db34d8940d1273b23f2d194a526aeb799c72b9caabfe3196",
+   "rkaf:fragmentContentDigest": "sha256:3333e7a892440cd6a55f94d517333de0ce5ed36223bd7a0872735b96cb971f6b"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A1ca5f8cab7088a52db34d8940d1273b23f2d194a526aeb799c72b9caabfe3196:327:364:sha256-3333e7a892440cd6a55f94d517333de0ce5ed36223bd7a0872735b96cb971f6b",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:0f0653b6ea1063944e444893cb385f24a3cfe635088683465d6a9ce3e903c3e2",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:XPathSelector",
+     "rdf:value": "/*[local-name()='NOTICE'][1]/*[local-name()='PREAMB'][1]/*[local-name()='AGY'][1]/*[local-name()='P'][1]"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 472,
+     "oa:end": 509,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "Federal Energy Regulatory Commission."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:XPathSelector",
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:0f0653b6ea1063944e444893cb385f24a3cfe635088683465d6a9ce3e903c3e2",
+   "rkaf:fragmentContentDigest": "sha256:3333e7a892440cd6a55f94d517333de0ce5ed36223bd7a0872735b96cb971f6b"
+  }
+ },
+ {
+  "node": "n0069",
+  "kind": "paragraph",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:1ca5f8cab7088a52db34d8940d1273b23f2d194a526aeb799c72b9caabfe3196",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 7777,
+     "oa:end": 8491,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "\n                    Comments:\n                     Comments are invited on: (1) whether the collection of information is necessary for the proper performance of the functions of the Commission, including whether the information will have practical utility; (2) the accuracy of the agency's estimate of the burden and cost of the collection of information, including the validity of the methodology and assumptions used; (3) ways to enhance the quality, utility and clarity of the information collection; and (4) ways to minimize the burden of the collection of information on those who are to respond, including the use of automated collection techniques or other forms of information technology.\n                "
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:1ca5f8cab7088a52db34d8940d1273b23f2d194a526aeb799c72b9caabfe3196",
+   "rkaf:fragmentContentDigest": "sha256:b88d4ecefcbe835a1ae4bc86c0382630db626a8682c07ef1bac050e9def7e7a5"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A1ca5f8cab7088a52db34d8940d1273b23f2d194a526aeb799c72b9caabfe3196:7777:8491:sha256-b88d4ecefcbe835a1ae4bc86c0382630db626a8682c07ef1bac050e9def7e7a5",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:0f0653b6ea1063944e444893cb385f24a3cfe635088683465d6a9ce3e903c3e2",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:XPathSelector",
+     "rdf:value": "/*[local-name()='NOTICE'][1]/*[local-name()='SUPLINF'][1]/*[local-name()='P'][8]"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 9120,
+     "oa:end": 9141,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 9151,
+     "oa:end": 9160,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 9164,
+     "oa:end": 9848,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "\n                    Comments:\n                     Comments are invited on: (1) whether the collection of information is necessary for the proper performance of the functions of the Commission, including whether the information will have practical utility; (2) the accuracy of the agency's estimate of the burden and cost of the collection of information, including the validity of the methodology and assumptions used; (3) ways to enhance the quality, utility and clarity of the information collection; and (4) ways to minimize the burden of the collection of information on those who are to respond, including the use of automated collection techniques or other forms of information technology.\n                "
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:XPathSelector",
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:0f0653b6ea1063944e444893cb385f24a3cfe635088683465d6a9ce3e903c3e2",
+   "rkaf:fragmentContentDigest": "sha256:b88d4ecefcbe835a1ae4bc86c0382630db626a8682c07ef1bac050e9def7e7a5"
+  }
+ }
+]

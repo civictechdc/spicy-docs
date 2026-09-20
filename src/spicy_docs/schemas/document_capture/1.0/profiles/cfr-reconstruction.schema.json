@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:cfr-reconstruction",
+  "title": "DocumentCapture profile: cfr-reconstruction v1",
+  "description": "An annual CFR section reconstructed from a GovInfo PDF's extracted lines by spicy_docs.reconstruction. Every node carries the parser's decision and review status; derived.text is the profile's assembled text; xmlPath joins the serialized granule's source map.",
+  "x-parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
+  },
+  "allOf": [
+    {
+      "$ref": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json"
+    },
+    {
+      "properties": {
+        "profile": {
+          "properties": {
+            "name": {
+              "const": "cfr-reconstruction"
+            },
+            "version": {
+              "const": "1"
+            },
+            "ext": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "granuleId",
+                "outOfScopeBlocks",
+                "pageSizes",
+                "pages",
+                "pdfBytes",
+                "pdfSha256",
+                "reconstructionProfile",
+                "selectedSection",
+                "serializedXmlSha256",
+                "serializer",
+                "unresolvedRegions"
+              ],
+              "properties": {
+                "reconstructionProfile": {
+                  "type": "string"
+                },
+                "selectedSection": {
+                  "type": "string"
+                },
+                "granuleId": {
+                  "type": "string"
+                },
+                "pdfSha256": {
+                  "type": "string"
+                },
+                "pdfBytes": {
+                  "type": "integer"
+                },
+                "pages": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                "serializedXmlSha256": {
+                  "type": "string"
+                },
+                "serializer": {
+                  "type": "string"
+                },
+                "outOfScopeBlocks": {
+                  "type": "integer"
+                },
+                "unresolvedRegions": {
+                  "type": "integer"
+                },
+                "pageSizes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "page",
+                      "width",
+                      "height",
+                      "unit"
+                    ],
+                    "properties": {
+                      "page": {
+                        "type": "integer"
+                      },
+                      "width": {
+                        "type": "number"
+                      },
+                      "height": {
+                        "type": "number"
+                      },
+                      "unit": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "nodes": {
+          "items": {
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^cfr-reconstruction:"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "cfr-reconstruction:authority",
+                        "cfr-reconstruction:blank",
+                        "cfr-reconstruction:cita",
+                        "cfr-reconstruction:contents",
+                        "cfr-reconstruction:flushParagraph",
+                        "cfr-reconstruction:partHeading",
+                        "cfr-reconstruction:sourceNote"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "not": {
+                      "pattern": "^(?!cfr-reconstruction:)[a-z][a-z0-9-]*:"
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "ext": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "reconstructionNode",
+                      "reconstructionKind"
+                    ],
+                    "properties": {
+                      "reconstructionNode": {
+                        "type": "string"
+                      },
+                      "reconstructionKind": {
+                        "type": "string"
+                      },
+                      "xmlPath": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

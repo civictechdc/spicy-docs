@@ -1,0 +1,102 @@
+[
+ {
+  "node": "n0007",
+  "kind": "runningHead",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:6a056037e026b8740387d967845a243d28e7cad4b682f5dadd2cb7272cac5464",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 76,
+     "oa:end": 108,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": " Cite as: 609 U. S. ____ (2026) "
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:6a056037e026b8740387d967845a243d28e7cad4b682f5dadd2cb7272cac5464",
+   "rkaf:fragmentContentDigest": "sha256:5719a3abe0e9721d077913e423bfde45b515f78664d7ecd36d31da820aa7f2d9"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A6a056037e026b8740387d967845a243d28e7cad4b682f5dadd2cb7272cac5464:76:108:sha256-5719a3abe0e9721d077913e423bfde45b515f78664d7ecd36d31da820aa7f2d9",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:7c14a9d1e945641c23b82a8838f94d4af5113ef51424d21bd1d623bffbdf2e60",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=1&viewrect=156.06,114.05,214.2,10.29"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": " Cite as: 609 U. S. ____ (2026) "
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:FragmentSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:7c14a9d1e945641c23b82a8838f94d4af5113ef51424d21bd1d623bffbdf2e60",
+   "rkaf:fragmentContentDigest": "sha256:5719a3abe0e9721d077913e423bfde45b515f78664d7ecd36d31da820aa7f2d9"
+  }
+ },
+ {
+  "node": "n0168",
+  "kind": "line",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:6a056037e026b8740387d967845a243d28e7cad4b682f5dadd2cb7272cac5464",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 7971,
+     "oa:end": 8024,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "jurisdictional” (internal quotation marks omitted)). "
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:6a056037e026b8740387d967845a243d28e7cad4b682f5dadd2cb7272cac5464",
+   "rkaf:fragmentContentDigest": "sha256:3ce59652479667cb973fb31d6005c9dd28f338ca8d6d8474138b219f1fd843d5"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A6a056037e026b8740387d967845a243d28e7cad4b682f5dadd2cb7272cac5464:7971:8024:sha256-3ce59652479667cb973fb31d6005c9dd28f338ca8d6d8474138b219f1fd843d5",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:7c14a9d1e945641c23b82a8838f94d4af5113ef51424d21bd1d623bffbdf2e60",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:FragmentSelector",
+     "dcterms:conformsTo": "https://www.rfc-editor.org/rfc/rfc8118",
+     "rdf:value": "page=5&viewrect=156.06,474.41,262.55,12.67"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "jurisdictional” (internal quotation marks omitted)). "
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:FragmentSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:7c14a9d1e945641c23b82a8838f94d4af5113ef51424d21bd1d623bffbdf2e60",
+   "rkaf:fragmentContentDigest": "sha256:3ce59652479667cb973fb31d6005c9dd28f338ca8d6d8474138b219f1fd843d5"
+  }
+ }
+]

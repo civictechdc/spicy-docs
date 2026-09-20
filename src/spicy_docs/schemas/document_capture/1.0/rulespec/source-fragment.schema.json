@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rulespec.org/jsonschema/source-fragment.json",
+  "title": "source-fragment",
+  "$defs": {
+    "SelectorKind": {
+      "type": "string",
+      "enum": [
+        "oa:FragmentSelector",
+        "oa:TextQuoteSelector",
+        "oa:TextPositionSelector",
+        "oa:RangeSelector",
+        "oa:XPathSelector",
+        "oa:CssSelector",
+        "rkaf:aknt-eId",
+        "rkaf:uslm-section",
+        "rkaf:eli-fragment",
+        "rkaf:jsonpath",
+        "rkaf:doi-fragment",
+        "rkaf:partner-defined"
+      ]
+    },
+    "CoordinateSystem": {
+      "type": "string",
+      "enum": [
+        "rkaf:unicode-codepoint",
+        "rkaf:utf8-byte",
+        "rkaf:utf16-code-unit",
+        "rkaf:xml-node-path",
+        "rkaf:page-region",
+        "rkaf:partner-defined"
+      ]
+    },
+    "FragmentIdentityScheme": {
+      "type": "string",
+      "enum": [
+        "rkaf:published-fragment",
+        "rkaf:carrier-local-fragment"
+      ]
+    },
+    "TextQuoteSelector": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "const": "oa:TextQuoteSelector"
+        },
+        "oa:exact": {
+          "type": "string"
+        },
+        "oa:prefix": {
+          "type": "string"
+        },
+        "oa:suffix": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type",
+        "oa:exact"
+      ]
+    },
+    "XPathSelector": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "const": "oa:XPathSelector"
+        },
+        "rdf:value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type",
+        "rdf:value"
+      ]
+    },
+    "TextPositionSelector": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "const": "oa:TextPositionSelector"
+        },
+        "oa:start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "oa:end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rkaf:coordinateSystem": {
+          "$ref": "#/$defs/CoordinateSystem"
+        }
+      },
+      "required": [
+        "@type",
+        "oa:start",
+        "oa:end",
+        "rkaf:coordinateSystem"
+      ],
+      "x-rkaf-order": [
+        {
+          "lower": "oa:start",
+          "upper": "oa:end"
+        }
+      ]
+    },
+    "SourceFragment": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "const": "rkaf:SourceFragment"
+        },
+        "oa:hasSource": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$"
+        },
+        "oa:hasSelector": {
+          "anyOf": [
+            {},
+            {
+              "type": "array",
+              "items": {},
+              "minItems": 1
+            }
+          ]
+        },
+        "rkaf:selectorKind": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SelectorKind"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SelectorKind"
+              },
+              "minItems": 1
+            }
+          ]
+        },
+        "rkaf:fragmentIdentityScheme": {
+          "$ref": "#/$defs/FragmentIdentityScheme"
+        },
+        "rkaf:sourceArtifactDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "rkaf:fragmentContentDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "rkaf:hasAccessScope": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$"
+        },
+        "rkaf:hasRetentionPolicy": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]*:[^\\s]+$"
+        },
+        "rkaf:lastVerifiedAt": {
+          "type": "string"
+        },
+        "rkaf:verifiedBy": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "@type",
+        "oa:hasSource",
+        "oa:hasSelector",
+        "rkaf:selectorKind"
+      ]
+    }
+  }
+}

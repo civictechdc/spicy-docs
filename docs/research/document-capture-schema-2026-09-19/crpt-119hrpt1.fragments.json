@@ -1,0 +1,104 @@
+[
+ {
+  "node": "n0007",
+  "kind": "paragraph",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 662,
+     "oa:end": 852,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "119th Congress   }                                      {       Report\n                        HOUSE OF REPRESENTATIVES\n 1st Session     }                                      {        119-1"
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d",
+   "rkaf:fragmentContentDigest": "sha256:defbdcdd62f72746a02db422e7bd031f4445f5fcaaa5ba07121ad0060cd61f3c"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d:662:852:sha256-defbdcdd62f72746a02db422e7bd031f4445f5fcaaa5ba07121ad0060cd61f3c",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 694,
+     "oa:end": 884,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "119th Congress   }                                      {       Report\n                        HOUSE OF REPRESENTATIVES\n 1st Session     }                                      {        119-1"
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9",
+   "rkaf:fragmentContentDigest": "sha256:defbdcdd62f72746a02db422e7bd031f4445f5fcaaa5ba07121ad0060cd61f3c"
+  }
+ },
+ {
+  "node": "n0216",
+  "kind": "paragraph",
+  "streamFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:text-stream:sha256:46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 12587,
+     "oa:end": 13788,
+     "rkaf:coordinateSystem": "rkaf:unicode-codepoint"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "  (a) In General.--In any special use permit or easement on \nNational Forest System land provided to an electrical utility, \nthe Secretary may provide permission to cut and remove trees or \nother vegetation from within the vicinity of distribution lines \nor transmission lines without requiring a separate timber sale, \nif that cutting and removal is consistent with--\n          (1) the applicable land and resource management plan; \n        and\n          (2) other applicable environmental laws (including \n        regulations).\n  (b) Use of Proceeds.--A special use permit or easement that \nincludes permission for cutting and removal described in \nsubsection (a) shall include a requirement that, if the \napplicable electrical utility sells any portion of the material \nremoved under the permit or easement, the electrical utility \nshall provide to the Secretary, acting through the Chief of the \nForest Service, any proceeds received from the sale, less any \ntransportation costs incurred in the sale.\n  (c) Effect.--Nothing in subsection (b) shall require the sale \nof any material removed under a permit or easement that \nincludes permission for cutting and removal described in \nsubsection (a)."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d",
+   "rkaf:fragmentContentDigest": "sha256:766da4997faa60e9ae555ef5bd9c31aa0cfddcef6fb10a9c934e60cea5807754"
+  },
+  "carrierLocalFragmentUrn": "urn:rkaf:fragment:urn%3Adocument-capture%3Atext-stream%3Asha256%3A46becbfe4e2477d8cdde7b7fd9468cd788200d959dbbfec353c0050c8904f15d:12587:13788:sha256-766da4997faa60e9ae555ef5bd9c31aa0cfddcef6fb10a9c934e60cea5807754",
+  "renditionFragment": {
+   "@type": "rkaf:SourceFragment",
+   "oa:hasSource": "urn:document-capture:artifact:sha256:d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9",
+   "oa:hasSelector": [
+    {
+     "@type": "oa:TextPositionSelector",
+     "oa:start": 12619,
+     "oa:end": 13820,
+     "rkaf:coordinateSystem": "rkaf:utf8-byte"
+    },
+    {
+     "@type": "oa:TextQuoteSelector",
+     "oa:exact": "  (a) In General.--In any special use permit or easement on \nNational Forest System land provided to an electrical utility, \nthe Secretary may provide permission to cut and remove trees or \nother vegetation from within the vicinity of distribution lines \nor transmission lines without requiring a separate timber sale, \nif that cutting and removal is consistent with--\n          (1) the applicable land and resource management plan; \n        and\n          (2) other applicable environmental laws (including \n        regulations).\n  (b) Use of Proceeds.--A special use permit or easement that \nincludes permission for cutting and removal described in \nsubsection (a) shall include a requirement that, if the \napplicable electrical utility sells any portion of the material \nremoved under the permit or easement, the electrical utility \nshall provide to the Secretary, acting through the Chief of the \nForest Service, any proceeds received from the sale, less any \ntransportation costs incurred in the sale.\n  (c) Effect.--Nothing in subsection (b) shall require the sale \nof any material removed under a permit or easement that \nincludes permission for cutting and removal described in \nsubsection (a)."
+    }
+   ],
+   "rkaf:selectorKind": [
+    "oa:TextPositionSelector",
+    "oa:TextQuoteSelector"
+   ],
+   "rkaf:fragmentIdentityScheme": "rkaf:published-fragment",
+   "rkaf:sourceArtifactDigest": "sha256:d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9",
+   "rkaf:fragmentContentDigest": "sha256:766da4997faa60e9ae555ef5bd9c31aa0cfddcef6fb10a9c934e60cea5807754"
+  }
+ }
+]

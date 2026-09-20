@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:bill-xml",
+  "title": "DocumentCapture profile: bill-xml v1",
+  "description": "A GovInfo bill, resolution or amendment XML (bill DTDs). Structure is the publisher's; each element DeltaTrack flattened into a BillNode carries the engine's match and display paths in ext, joined on the element id.",
+  "x-parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
+  },
+  "allOf": [
+    {
+      "$ref": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json"
+    },
+    {
+      "properties": {
+        "profile": {
+          "properties": {
+            "name": {
+              "const": "bill-xml"
+            },
+            "version": {
+              "const": "1"
+            },
+            "ext": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "billNumber",
+                "billType",
+                "bodyTags",
+                "congress",
+                "deltatrack",
+                "discardedElements",
+                "keptElements",
+                "rootTag",
+                "stage",
+                "version"
+              ],
+              "properties": {
+                "rootTag": {
+                  "type": "string"
+                },
+                "bodyTags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "stage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "congress": {
+                  "type": "integer"
+                },
+                "billType": {
+                  "type": "string"
+                },
+                "billNumber": {
+                  "type": "integer"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "deltatrack": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "joined",
+                    "nodes",
+                    "unjoined",
+                    "version"
+                  ],
+                  "properties": {
+                    "version": {
+                      "type": "string"
+                    },
+                    "nodes": {
+                      "type": "integer"
+                    },
+                    "joined": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "unjoined": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "elementId",
+                          "matchPath",
+                          "tag"
+                        ],
+                        "properties": {
+                          "tag": {
+                            "type": "string"
+                          },
+                          "elementId": {
+                            "type": "string"
+                          },
+                          "matchPath": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "discardedElements": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  }
+                },
+                "keptElements": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "nodes": {
+          "items": {
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^bill-xml:"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "bill-xml:attestationGroup",
+                        "bill-xml:toc"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "not": {
+                      "pattern": "^(?!bill-xml:)[a-z][a-z0-9-]*:"
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "ext": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "bodyIndex",
+                      "displayPath",
+                      "elementId",
+                      "matchPath",
+                      "sectionNumber",
+                      "tag"
+                    ],
+                    "properties": {
+                      "matchPath": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "displayPath": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "tag": {
+                        "type": "string"
+                      },
+                      "elementId": {
+                        "type": "string"
+                      },
+                      "sectionNumber": {
+                        "type": "string"
+                      },
+                      "bodyIndex": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
