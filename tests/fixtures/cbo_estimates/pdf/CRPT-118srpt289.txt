@@ -1,0 +1,453 @@
+U.S. GOVERNMENT PUBLISHING OFFICE
+WASHINGTON :
+59–010
+SENATE
+"
+!
+118TH CONGRESS
+2d Session
+REPORT
+118–289
+Calendar No. 695
+PREVENTING CHILD LABOR
+EXPLOITATION ACT
+R E P O R T
+OF THE
+COMMITTEE ON HOMELAND SECURITY AND
+GOVERNMENTAL AFFAIRS
+UNITED STATES SENATE
+TO ACCOMPANY
+S. 3139
+TO ENSURE THAT FEDERAL CONTRACTORS COMPLY WITH
+CHILD LABOR LAWS, AND FOR OTHER PURPOSES
+DECEMBER 12, 2024.—Ordered to be printed
+(II)
+COMMITTEE ON HOMELAND SECURITY AND GOVERNMENTAL AFFAIRS
+GARY C. PETERS, Michigan, Chairman
+THOMAS R. CARPER, Delaware
+MAGGIE HASSAN, New Hampshire
+KYRSTEN SINEMA, Arizona
+JACKY ROSEN, Nevada
+JON OSSOFF, Georgia
+RICHARD BLUMENTHAL, Connecticut
+ADAM SCHIFF, California
+RAND PAUL, Kentucky
+RON JOHNSON, Wisconsin
+JAMES LANKFORD, Oklahoma
+MITT ROMNEY, Utah
+RICK SCOTT, Florida
+JOSH HAWLEY, Missouri
+ROGER MARSHALL, Kansas
+DAVID M. WEINBERG, Staff Director
+ALAN S. KAHN, Chief Counsel
+MICHELLE M. BENECKE, Senior Counsel
+TIFFANY ANN SHUJATH, U.S. Department of Homeland Security Detailee
+WILLIAM E. HENDERSON III, Minority Staff Director
+CHRISTINA N. SALAZAR, Minority Chief Counsel
+ANDREW J. HOPKINS, Minority Counsel
+KENDAL B. TIGNER, Minority Professional Staff Member
+LAURA W. KILBRIDE, Chief Clerk
+Calendar No. 695
+118TH CONGRESS
+REPORT
+"
+!
+SENATE
+2d Session
+118–289
+PREVENTING CHILD LABOR EXPLOITATION ACT
+DECEMBER 12, 2024.—Ordered to be printed
+Mr. PETERS, from the Committee on Homeland Security and
+Governmental Affairs, submitted the following
+R E P O R T
+[To accompany S. 3139]
+[Including cost estimate of the Congressional Budget Office]
+The Committee on Homeland Security and Governmental Affairs,
+to which was referred the bill (S. 3139) to ensure that Federal con-
+tractors comply with child labor laws and for other purposes, hav-
+ing considered the same, reports favorably thereon with an amend-
+ment, in the nature of a substitute, and recommends that the bill,
+as amended, do pass.
+CONTENTS
+Page
+I. Purpose and Summary ..................................................................................
+II. Background and Need for the Legislation ...................................................
+III. Legislative History .........................................................................................
+IV. Section-by-Section Analysis of the Bill, as Reported ..................................
+V. Evaluation of Regulatory Impact ..................................................................
+VI. Congressional Budget Office Cost Estimate ................................................
+VII. Changes in Existing Law Made by the Bill, as Reported ...........................
+I. PURPOSE AND SUMMARY
+S. 3139, the Preventing Child Labor Exploitation in Federal Con-
+tracting Act, would prohibit executive agencies from entering into
+contracts with companies that have committed child labor law vio-
+lations, as well as prohibit contracting with vendors that have in-
+curred, and failed to rectify, child worker or labor infractions.
+The bill requires any entity that enters into a contract with an
+executive agency to disclose child labor and worker safety infrac-
+tions incurred by the entity itself—as well as by any of its sub-
+contractors or service providers—in the preceding three years, with
+stiff penalties for failure to report. The bill empowers the Secretary
+1 Department of Labor, Department of Labor, Interagency Task Force Announce Recent Actions
+to Combat Exploitative Child Labor with New Partnerships, Innovative Tactics, Ramped Up En-
+forcement (July 27. 2023) (https://www.dol.gov/newsroom/releases/osec/osec20230727).
+2 Alone and Exploited, Migrant Children Work Brutal Jobs Across the U.S., New York Times
+(Feb. 28, 2023) (https://www.nytimes.com/2023/02/25/us/unaccompanied-migrant-child-workers-
+exploitation.html).
+3 Department of Labor, More than 100 Children Illegally Employed in Hazardous Jobs, Fed-
+eral Investigation Finds; Food Sanitation Contractor Pays $1.5M in Penalties (Feb. 17, 2023)
+(https://www.dol.gov/newsroom/releases/whd/whd20230217-1).
+4 The Kids on the Night Shift, New York Times (Sept. 18, 2023) (https://www.nytimes.com/
+2023/09/18/magazine/child-labor-dangerous-jobs.html).
+of Labor to determine corrective measures for a contractor to re-
+main eligible for contracts with executive agencies. The bill re-
+quires the Secretary of Labor to prepare a list of companies that
+are ineligible for federal contracts for that year, based on violations
+of child labor laws, and permits suspension and debarment pro-
+ceedings for entities that have failed to complete corrective meas-
+ures. The bill establishes transparency measures to ensure compli-
+ance by executive agencies and the Department of Labor. Finally,
+the bill creates a federal study on the prevalence and nature of
+child labor law violations among federal contractors.
+II. BACKGROUND AND NEED FOR THE LEGISLATION
+Between 2018 and 2022, the U.S. Department of Labor found a
+69% increase in children being employed illegally by companies in
+the United States.1 Following the revelation of the use of illegal
+child labor in processing plants, the New York Times published a
+report exposing the extent to which employers in the food industry
+have relied on child labor for the production of well-known brands,
+often in unsafe conditions and in violation of federal labor laws.2
+Multinational meatpackers contracted out dangerous work with
+one of the nation's largest food safety sanitation services providers,
+who has since paid $1.5 million in civil money penalties after the
+Department of Labor's Wage and Hour Division found the company
+illegally employed at least 102 children, as young as 13, in haz-
+ardous occupations and working overnight shifts at 13 meat proc-
+essing facilities in 8 states.3
+Reporting from the New York Times has continued to expose
+child labor exploitation by major corporations. Reported examples
+include an eighth grader who was killed on the cleaning shift, a 14-
+year-old who was hospitalized in Alabama after being overworked
+at a chicken operation, a 17-year-old in Ohio who had his leg torn
+off at the knee, a child who lost a hand in a meat grinder at a
+Michigan operation, and a 14-year-old who was maimed while
+working an overnight shift.4
+The Preventing Child Labor Exploitation in Federal Contracting
+Act aims to hold corporations accountable for child labor violations
+by ensuring they do not have access to federal contract opportuni-
+ties. The bill would prohibit executive agencies from contracting
+with companies that have violated federal child labor laws or that
+utilize subcontractors who have failed to address child labor infrac-
+tions.
+III. LEGISLATIVE HISTORY
+Senator Cory Booker (D–NJ) introduced S. 3139, the Preventing
+Child Labor Exploitation Act, on October 26, 2023, with original co-
+sponsor Senator Josh Hawley (R–MO). The bill was referred to the
+Committee on Homeland Security and Governmental Affairs.
+The Committee considered S. 3139 at a business meeting on
+March 6, 2024. At the business meeting, Senator Peters offered a
+substitute amendment, as well as a modification to the substitute
+amendment. The Peters substitute amendment, as twice modified,
+amends the bill's short title (from the "Preventing Child Labor Ex-
+ploitation Act" to the "Preventing Child Labor Exploitation in Fed-
+eral Contracting Act"); clarifies the process for how contractors,
+subcontractors, or service providers with violations are referred to
+the Secretary of Labor and are allowed a chance to take corrective
+measures; clarifies that the Secretary of Labor would lead the re-
+view of violations, negotiating corrective measures, and conducting
+suspension and debarment proceedings to exclude vendors who do
+not make corrections; and clarifies that there is due process and a
+chance for a contractor, subcontractor, or service provider with vio-
+lations to take corrective measures before being ineligible to work
+on federal contracts. The Committee adopted the modification, and
+the Peters substitute amendment as twice modified, by unanimous
+consent, with Senators Peters, Hassan, Rosen, Ossoff, Blumenthal,
+Butler, Paul, Johnson, Scott, Hawley, and Marshall present.
+The bill, as amended by the Peters substitute amendment as
+twice modified, was ordered reported favorably by a roll call vote
+of 9 yeas to 2 nays, with Senators Peters, Hassan, Rosen, Ossoff,
+Blumenthal, Butler, Scott, Hawley, and Marshal voting in the af-
+firmative, and Senators Paul and Johnson voting in the negative.
+Senators Carper, Sinema, Lankford, and Romney voted yea by
+proxy, for the record only.
+IV. SECTION-BY-SECTION ANALYSIS OF THE BILL, AS REPORTED
+Section 1. Short title
+Section 1 establishes the short title of the bill as the "Preventing
+Child Labor Exploitation in Federal Contracting Act."
+Section 2. Definitions
+Section 2 defines "appropriate committees of Congress" and "ex-
+ecutive agency."
+Section 3. Promotion of workplace accountability
+Subsection (a) requires the Federal Acquisition Regulatory Coun-
+cil (FARC) to amend the Federal Acquisition Regulation within 18
+months of enactment to comply with this subsection. Subsection
+(a)(1) requires any entity which enters into a federal contract to an-
+nually represent whether, within the preceding three-year period,
+any final administrative merits determination, arbitral award or
+decision, or civil judgment, has been issued against the entity for
+violating section 12 of the Fair Labor Standards Act of 1938
+(FLSA), relating to child labor.
+Subsection (a)(2) requires an entity to certify when bidding on a
+federal contract whether, within the preceding three-year period,
+any final administrative merits determination, arbitral award or
+decision, or civil judgment, has been issued against the entity for
+a violation described in (a)(1). It also requires the entity to provide
+such certification for any subcontractor or service provider intended
+to be used in performing the contract.
+Subsection (a)(3) prohibits executive agencies from awarding a
+contract to an entity that provides an affirmative response to the
+annual representation in (a)(1) and has failed to complete correc-
+tive measures under subsection (b). It also prohibits executive
+agencies from awarding a contract to an entity that provides an af-
+firmative response to a certification in (a)(2) or intends to use a
+subcontractor or service provider identified as having violations in
+an affirmative response, if those entities have also failed to com-
+plete corrective measures.
+Subsection (a)(4) requires the name and address of each entity
+that provides an affirmative response in (a)(1) or (a)(2) to be re-
+ferred to the Secretary of Labor for the purposes of negotiating cor-
+rective measures under subsection (b) and preparing the list and
+conducting suspension and debarment proceedings under sub-
+section (c).
+Subsection (a)(5) provides procedures for entities to consult with
+the Secretary of Labor to assist entities with compliance regarding
+section 12 of the FLSA, relating to child labor. Subsection (a)(6) al-
+lows the FARC to make any other necessary changes to implement
+the Act's requirements.
+Subsection (b) requires an entity that provides an affirmative re-
+sponse under subsection (a) to update its representation or certifi-
+cation, based on steps taken to correct violations of or improve com-
+pliance with section 12 of the FLSA, relating to child labor. It also
+allows entities to negotiate with the Secretary of Labor regarding
+corrective measures they may take to avoid being placed on the list
+and referred for suspension and debarment proceedings under sub-
+section (c).
+Subsection (c) requires the Secretary of Labor, within two years
+of enactment, to annually prepare a list and conduct suspension
+and debarment proceedings for each entity that has provided an af-
+firmative response under subsection (a) and that has failed to com-
+plete any corrective measures negotiated under subsection (b) for
+the year of the list. Executive agencies are prohibited from solic-
+iting offers from, awarding contracts to, or consenting to sub-
+contracts with, any entity that appears on the list and is listed as
+an active exclusion in the System for Award Management (SAM).
+This prohibition applies for a minimum period of 4 years after the
+entity is listed as an exclusion in SAM.
+Subsection (d) makes it unlawful for a person to knowingly fail
+to make a representation or certification in (a)(1) or (a)(2), respec-
+tively. Violations of this subsection are subject to referral for sus-
+pension and debarment and False Claims Act damages.
+Subsection (e) requires the Secretary of Labor to, within two
+years of enactment, annually submit a report to the appropriate
+committees of Congress and make publicly available a report on
+the number of entities appearing on the Secretary's list, the num-
+ber of entities that agreed to take corrective measures, the amount
+of the applicable contracts for the relevant entities, and the effec-
+tiveness of the implementation of this Act.
+Section 4. GAO study
+Section 4 requires the Comptroller General to report on the prev-
+alence of violations of section 12 of the FLSA (relating to child
+labor) among federal contractors and submit the report to appro-
+priate committees of Congress within two years of enactment.
+Section 5. Use of civil penalties collected for child labor law viola-
+tions
+Section 5 amends the FLSA to allow the Department of Labor to
+use civil penalties collected for violations of section 12 of the FLSA
+(relating to child labor), to support the Department's work deter-
+mining, and collecting penalties for, child labor law violations.
+Section 6. No additional funds
+Section 6 states that no additional funds are authorized to be ap-
+propriated for the purpose of carrying out the Act.
+V. EVALUATION OF REGULATORY IMPACT
+Pursuant to the requirements of paragraph 11(b) of rule XXVI of
+the Standing Rules of the Senate, the Committee has considered
+the regulatory impact of this bill and determined that the bill will
+have no regulatory impact within the meaning of the rules. The
+Committee agrees with the Congressional Budget Office's state-
+ment that the bill contains no intergovernmental or private-sector
+mandates as defined in the Unfunded Mandates Reform Act
+(UMRA) and would impose no costs on state, local, or tribal govern-
+ments.
+VI. CONGRESSIONAL BUDGET OFFICE COST ESTIMATE
+The bill would:
+to spend certain civil monetary penalties without further ap-
+propriation
+that have violated the child labor provisions of the FairLabor
+Standards Act (FLSA) and failed to take corrective action
+report on child labor violations
+Estimated budgetary effects would mainly stem from:
+the FSLA's child labor provisions
+officers
+federal agencies
+Bill Summary: S. 3139 would prohibit federal agencies from con-
+tracting with entities that have violated the child labor provisions
+of the Fair Labor Standards Act (FLSA) and have failed to take
+corrective action. The bill also would allow the Department of
+Labor (DOL) to spend, without further appropriation, civil mone-
+tary penalties collected for such violations. Finally, the bill would
+require DOL and the Government Accountability Office to report
+on federal contractors' violations of child labor laws.
+Estimated Federal cost: The estimated budgetary effect of S.
+3139 is shown in Table 1. The costs of the legislation fall within
+all budget functions except function 900 (net interest) and 950 (un-
+distributed offsetting receipts).
+TABLE 1.—ESTIMATED BUDGETARY EFFECTS OF S. 3139
+By fiscal year, millions of dollars—
+2024–
+2024–
+INCREASES IN DIRECT SPENDING
+Estimated Budget:
+Authority .................................
+Estimated Outlays ..................
+INCREASES IN REVENUES
+Estimated Revenues ..............
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*
+NET INCREASE IN THE DEFICIT FROM CHANGES IN DIRECT SPENDING AND REVENUES
+Effect on the Deficit ..............
+INCREASES IN SPENDING SUBJECT TO APPROPRIATION
+Estimated Authorization ........
+*
+*
+*
+*
+n.e.
+n.e.
+n.e.
+n.e.
+n.e.
+n.e.
+Estimated Outlays ..................
+*
+*
+n.e.
+n.e.
+n.e.
+n.e.
+n.e.
+n.e.
+n.e. = not estimated; * = between zero and $500,000.
+Basis of estimate: For this estimate, CBO assumes that S. 3139
+will be enacted near the end of fiscal year 2024. Estimates of out-
+lays are based on historical spending patterns for existing or simi-
+lar programs.
+Direct spending: Other than for child labor provisions, current
+law provides DOL with the authority to retain any penalties col-
+lected for violations of the FLSA and to spend them, without fur-
+ther appropriation, on enforcement activities. S.3139 would extend
+that authority to include violations of child labor provisions. CBO
+estimates that over the 2024–2034 period, DOL would collect $48
+million in civil monetary penalties for those violations and, based
+on historical spending patterns, that the department would spend
+$42 million of those collections over the same period.
+Revenues: S. 3139 would require any entity that enters into a
+contract with an executive agency to disclose recent child labor vio-
+lations. Violations of that new disclosure requirement would be
+subject to penalties under the False Claims Act. CBO expects that
+most entities would comply with the new requirements and esti-
+mates that any additional penalties collected over the 2024–2034
+period would not be significant.
+Spending subject to appropriation: S. 3139 would require federal
+contracting officers to consider entities' outstanding or corrected
+child labor violations before awarding contracts. CBO expects that
+those officers would need additional information from DOL on out-
+standing or corrected child labor violations, and training on compli-
+ance with the bill's provisions. In addition, the bill would require
+DOL to make annual reports to the Congress and would require
+the Government Accountability Office to conduct a study on the
+prevalence of child labor violations. Using information from DOL
+and the Federal Acquisition Regulatory Council, CBO estimates
+that complying with the bill's contracting and reporting require-
+ments would cost federal agencies $5 million over the 2024–2029
+period. Any spending on those activities would be subject to the
+availability of appropriated funds.
+Pay-As-You-Go considerations: The Statutory Pay-As-You-Go Act
+of 2010 establishes budget-reporting and enforcement procedures
+for legislation affecting direct spending or revenues. The net
+changes in outlays and revenues that are subject to those pay-as-
+you-go procedures are shown in Table 2.
+Increase in long-term net direct spending and deficits: CBO esti-
+mates that enacting S. 3139 would not increase net direct spending
+by more than $2.5 billion in any of the four consecutive 10-year pe-
+riods beginning in 2035.
+TABLE 2.—CBO's ESTIMATE OF THE STATUTORY PAY-AS-YOU-GO EFFECTS OF S. 3139, THE PRE-
+VENTING CHILD LABOR EXPLOITATION ACT, AS ORDERED REPORTED BY THE SENATE COM-
+MITTEE ON HOMELAND SECURITY AND GOVERNMENTAL AFFAIRS ON MARCH 6, 2024
+By fiscal year, millions of dollars—
+2024–
+2024–
+NET INCREASE IN THE DEFICIT
+Pay-As-You-Go Effect ......................
+Mandates: The bill contains no intergovernmental or private-sec-
+tor mandates as defined in the Unfunded Mandates Reform Act.
+Estimate prepared by: Federal Costs: Meredith Decker, Man-
+dates: Andrew Laughlin.
+Estimate reviewed by: Elizabeth Cove Delisle, Chief, Income Se-
+curity Cost Estimates Unit; Joshua Shakin Chief, Revenue Projec-
+tions Unit; Kathleen FitzGerald, Chief, Public and Private Man-
+dates Unit; Christina Hawley Anthony, Deputy Director of Budget
+Analysis.
+Estimate approved by: Phillip L. Swagel, Director, Congressional
+Budget Office.
+VII. CHANGES IN EXISTING LAW MADE BY THE BILL, AS REPORTED
+In compliance with paragraph 12 of rule XXVI of the Standing
+Rules of the Senate, changes in existing law made by the bill, as
+reported, are shown as follows (existing law proposed to be omitted
+is enclosed in brackets, new matter is printed in italic, and existing
+law in which no change is proposed is shown in roman):CBO Cost
+Estimate Page 2
+S. 3139, as ordered reported by the Senate Committee on Home-
+land Security and Governmental Affairs
+UNITED STATES CODE
+*
+*
+*
+*
+*
+*
+*
+TITLE 29—LABOR
+*
+*
+*
+*
+*
+*
+*
+CHAPTER 8—FAIR LABOR STANDARDS
+*
+*
+*
+*
+*
+*
+*
+SEC. 216. PENALTIES.
+(a) * * *
+(b) * * *
+(c) * * *
+(d) * * *
+(e) CIVIL PENALTIES FOR CERTAIN VIOLATIONS.—
+(1) * * *
+(2) * * *
+(3) * * *
+(4) * * *
+(5) øExcept for civil penalties collected for violations of section
+212 of this title, sums¿ Sums collected as penalties pursuant
+to this section shall be applied toward reimbursement of the
+costs of determining the violations and assessing and collecting
+such penalties, in accordance with the provisions of section 9a
+of this title. øCivil penalties collected for violations of section
+212 of this title shall be deposited in the general fund of the
+Treasury.¿
+Æ

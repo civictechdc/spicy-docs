@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from spicy_docs.interpretation import cbo_estimates as rules
 from spicy_docs.interpretation.cbo_estimates import (
     ABSENCE_REASONS,
     ACCOMPANIES,
@@ -245,8 +246,113 @@ def test_the_rule_version_moves_when_a_reject_is_deleted() -> None:
 
 def test_the_rule_version_is_pinned() -> None:
     """Moves deliberately with the patterns; a surprise here is an unrecorded rule change."""
-    assert CBO_ESTIMATE_RULE_VERSION == _rule_version(LETTER_PATTERNS)
-    assert len(CBO_ESTIMATE_RULE_VERSION) == 12
+    assert CBO_ESTIMATE_RULE_VERSION == "cf790f0f814a"
+    assert _rule_version() == "cf790f0f814a"
+
+
+@pytest.mark.parametrize(
+    ("name", "index"),
+    [(name, None) for name in ("COVER_RECITAL", "ACCOMPANIES", "DIRECTOR_ATTRIBUTION", "SIGNATORY")]
+    + [("HEADINGS", index) for index in range(len(HEADINGS))]
+    + [("ABSENCE_REASONS", index) for index in range(len(ABSENCE_REASONS))],
+)
+@pytest.mark.parametrize("field", ["pattern", "flags", "rejects"])
+def test_every_letter_rule_input_moves_the_version(monkeypatch, name, index, field) -> None:
+    current = getattr(rules, name)
+    pattern = current if index is None else current[index]
+    value = {
+        "pattern": pattern.pattern + "(?:)",
+        "flags": pattern.flags ^ re.IGNORECASE,
+        "rejects": (*pattern.rejects, "another lookalike"),
+    }[field]
+    changed = replace(pattern, **{field: value})
+    monkeypatch.setattr(rules, name, changed if index is None else (*current[:index], changed, *current[index + 1 :]))
+    assert rules._rule_version() != CBO_ESTIMATE_RULE_VERSION
+
+
+@pytest.mark.parametrize("name", ["_REASON_REQUIRES", "_NUMBERING", "_DOT_LEADER", "_WHITESPACE", "_PARAGRAPH_BREAK"])
+@pytest.mark.parametrize("change_flags", [False, True])
+def test_every_auxiliary_pattern_and_flags_move_the_version(monkeypatch, name, change_flags) -> None:
+    pattern = getattr(rules, name)
+    changed = re.compile(
+        pattern.pattern if change_flags else pattern.pattern + "(?:)",
+        pattern.flags ^ re.IGNORECASE if change_flags else pattern.flags,
+    )
+    monkeypatch.setattr(rules, name, changed)
+    assert rules._rule_version() != CBO_ESTIMATE_RULE_VERSION
+
+
+@pytest.mark.parametrize("name", ["_MIN_HEADING_INDENT", "_MAX_HEADING_LINES", "_MAX_HEADING_CHARS", "_RULE_REVISION"])
+def test_every_threshold_and_revision_moves_the_version(monkeypatch, name) -> None:
+    monkeypatch.setattr(rules, name, getattr(rules, name) + 1)
+    assert rules._rule_version() != CBO_ESTIMATE_RULE_VERSION
+
+
+def test_heading_punctuation_moves_the_version(monkeypatch) -> None:
+    monkeypatch.setattr(rules, "_HEADING_TRAILING_CHARS", ".:")
+    assert rules._rule_version() != CBO_ESTIMATE_RULE_VERSION
+
+
+def test_the_reason_guard_changes_the_finding_and_version_together(monkeypatch) -> None:
+    text = body("CRPT-118hrpt18")
+    assert rules.read_cbo_estimate(text).absence_rule == "not_available"
+    monkeypatch.setattr(rules, "_REASON_REQUIRES", re.compile("this text never appears"))
+    assert rules.read_cbo_estimate(text).absence_reason is None
+    assert rules._rule_version() != CBO_ESTIMATE_RULE_VERSION
+
+
+def test_absence_scan_keeps_rule_priority_and_exact_paragraph_boundaries() -> None:
+    first = "Congressional Budget Office: requested but not received."
+    second = "  Congressional Budget Office: was not available.  "
+    text = first + "\n\n\n" + second
+    finding = read_cbo_estimate(text)
+    assert finding.absence_rule == "not_available"
+    assert finding.absence_reason == second.strip()
+    assert finding.absence_span == (len(first) + 3, len(text))
+
+
+@pytest.mark.parametrize(
+    ("package", "span", "signatory"),
+    [
+        ("CRPT-118hrpt53", (5333, 8974), "PHILLIP L. SWAGEL"),
+        ("CRPT-118hrpt276", (6922, 8651), "PHILLIP L. SWAGEL"),
+        ("CRPT-118hrpt930", (10896, 22673), "Phillip L. Swagel"),
+        ("CRPT-118srpt289", (14332, 19670), "Phillip L. Swagel"),
+    ],
+)
+def test_four_retained_pdf_texts_locate_the_declared_letter(package, span, signatory) -> None:
+    text = (FIXTURES / "pdf" / f"{package}.txt").read_text()
+    pins = json.loads((FIXTURES / "pdf" / "sources.json").read_text())[package]
+    assert digest(text) == pins["textSha256"]
+    assert len(text) == pins["textChars"]
+    finding = read_cbo_estimate(text)
+    assert finding.report_states_estimate is True
+    assert finding.letter_span == span
+    assert finding.letter_sha256 == pins["letterSha256"]
+    assert finding.letter_end_rule == "director_attribution"
+    assert finding.signatory == signatory
+    assert text[span[0] : span[1]].startswith(finding.heading) or text[span[0] :].startswith("VI. ")
+    assert text[span[0] : span[1]].endswith("Budget Office.")
+
+
+@pytest.mark.parametrize(
+    "lookalike",
+    [
+        "CONGRESSIONAL BUDGET OFFICE COST ESTIMATE.............. 4",
+        "THE CONGRESSIONAL BUDGET OFFICE COST ESTIMATE WAS NOT AVAILABLE.",
+        "Congressional Budget Office Cost Estimate",
+    ],
+)
+def test_flush_heading_rule_refuses_contents_prose_and_mixed_case(lookalike) -> None:
+    text = "[Including cost estimate of the Congressional Budget Office]\n" + lookalike
+    assert read_cbo_estimate(text).heading is None
+
+
+def test_a_flush_uppercase_heading_and_signature_cannot_replace_the_recital() -> None:
+    text = "CONGRESSIONAL BUDGET OFFICE COST ESTIMATE\nDirector, Congressional Budget Office."
+    finding = read_cbo_estimate(text)
+    assert finding.report_states_estimate is False
+    assert finding.letter_span is None
 
 
 def test_the_heading_vocabulary_is_a_floor_and_says_so() -> None:

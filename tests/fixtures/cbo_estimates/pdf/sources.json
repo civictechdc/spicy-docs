@@ -1,0 +1,46 @@
+{
+  "CRPT-118hrpt276": {
+    "letterSha256": "sha256:0e78c4e73cfb4897638209e313114b877ef931a43bed1a84e119ab29739c7db9",
+    "letterSpan": [
+      6922,
+      8651
+    ],
+    "sourceSha256": "e9ee7b211ed9fa7f6e1026307b09db930b2e3c24af05bc778d89e1735d0e5823",
+    "textChars": 11384,
+    "textSha256": "sha256:61c97f8ed4434182260f90785e9e00011c0871a3b8b3222f71440f34f400843e",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118hrpt276/pdf/CRPT-118hrpt276.pdf"
+  },
+  "CRPT-118hrpt53": {
+    "letterSha256": "sha256:0ddbf23e23a8fba829ab4948d258342f103a114e7d9238f6af6527d959a08820",
+    "letterSpan": [
+      5333,
+      8974
+    ],
+    "sourceSha256": "174e597eaf061283fbff2957e6c4a261ac411b3ddaecc4a68d3c5f5d3162f42c",
+    "textChars": 18866,
+    "textSha256": "sha256:10927cbfae7aa0a43e1ef9bc34f96d39c377a35e4a868e487a8a339ac26aa474",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118hrpt53/pdf/CRPT-118hrpt53.pdf"
+  },
+  "CRPT-118hrpt930": {
+    "letterSha256": "sha256:5f8ad8f72a5bf577c081b4205802ecdb785f83e1d4b77bb6a50615ea993f075c",
+    "letterSpan": [
+      10896,
+      22673
+    ],
+    "sourceSha256": "000ba688aeabbaed6b87bbd031c456d83653e4e3422d2db0c23f9ed9882fb654",
+    "textChars": 45970,
+    "textSha256": "sha256:8b7e1ba07a6c6362d476738c46a3946cd845b63783ea40a9bec42eaa83235631",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118hrpt930/pdf/CRPT-118hrpt930.pdf"
+  },
+  "CRPT-118srpt289": {
+    "letterSha256": "sha256:4ca6cae6e175df8f55859a67e298144913ef9348d754db56247a3f9198d86fbd",
+    "letterSpan": [
+      14332,
+      19670
+    ],
+    "sourceSha256": "5036ab625ffacfe4606f4ac94202e6695c8bcca3b4d12ad9205ce630fa6e995c",
+    "textChars": 20893,
+    "textSha256": "sha256:335614088d648ce55c77b86f58590ff426a74878ca69f4acffb3d242b3aab88b",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118srpt289/pdf/CRPT-118srpt289.pdf"
+  }
+}

@@ -184,6 +184,31 @@ character length. Without that check, every pinned number in
 `tests/test_cbo_estimates.py` would be a statement about the cut rather than
 about the publisher.
 
+## The four retained PDFs now yield letter spans
+
+The first implementation kept all four cover recitals but located **0 of 4**
+letters through `rendition_text(..., rendition="pdf")`: normalization removed
+the indentation required by the heading rule. The bounded correction accepts
+whole uppercase heading lines and wrapped Director attributions. Dot leaders,
+prose and a missing recital still fail. This chooses PDF support, fulfilling
+the routes plan's PDF preference without changing any of the 17 retained HTM
+findings except their rule version. `htm-rule-comparison.json` compares every
+finding field against revision `7145eb8`; `measurement.json` replays all four
+source PDFs and checks the committed normalized texts and letter digests.
+
+| PDF package | Letter span `[start, end)` | Characters |
+| --- | --- | ---: |
+| `CRPT-118hrpt53` | `[5333, 8974)` | 3,641 |
+| `CRPT-118hrpt276` | `[6922, 8651)` | 1,729 |
+| `CRPT-118hrpt930` | `[10896, 22673)` | 11,777 |
+| `CRPT-118srpt289` | `[14332, 19670)` | 5,338 |
+
+All four end at the Director's attribution. Offsets address each rendition's
+own normalized text, not its HTM twin. No raster cost figures were read.
+The rule version is now `cf790f0f814a`, pinned literally and mutation-tested
+across every pattern, flag and threshold, including the reason guard that
+previously changed CRPT-118hrpt18 without moving the version.
+
 ## What landed
 
 | | |
@@ -196,10 +221,10 @@ about the publisher.
 
 ## What this does not establish
 
-- **No count here is a CBO production rate.** The element is never emitted
-  empty, so a bill without it is *either* never scored *or* not yet linked, and
-  nothing in this route tells the two apart. Every row is requested-empty
-  evidence about one bill.
+- **No count here is a CBO production rate.** No empty element was observed in
+  these captures, so a bill without it is *either* never scored *or* not yet linked, and
+  nothing in this route tells the two apart. The bill-level outcome records the observed shape;
+  estimate rows record populated items.
 - **One Congress, one capture.** 16,213 bills of the 118th's House and Senate,
   read from two zips downloaded on one day. Nothing here speaks to another
   Congress, to resolutions, or to whether the zips still say this.

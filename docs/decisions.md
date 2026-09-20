@@ -1330,6 +1330,25 @@ the seventeen bodies say why in their own words, and the rule returns that
 paragraph whole with its span rather than a NULL. The reason is **not** gated
 on a heading, because one of the four sits under a heading no pattern matched.
 
+**Support PDF with a bounded heading rule.** The routes plan prefers PDF.
+The first implementation located zero letters in the four retained PDFs after
+`rendition_text` removed indentation. CRPT-118hrpt53, -118hrpt276, -118hrpt930
+and -118srpt289 all print whole uppercase section headings. Accept that form
+alongside the existing indented HTM blocks, reject dot leaders, and still
+require an exact heading-vocabulary match and the cover recital. The two newer
+PDF attributions also wrap between `Congressional` and `Budget Office`.
+This locates all four letters; all 17 HTM findings, including exact spans and
+digests, stay unchanged except for the rule version. The caller can select the
+preferred PDF rendition; no HTM-only deviation remains. Raster figures remain
+outside this capability.
+
+**Version every input that controls the letter rule.** The digest now includes
+reason guards, numbering, dot leaders, whitespace and paragraph boundaries,
+regex flags, heading thresholds, trailing punctuation and the control-flow
+revision, as well as the named patterns and their rejects. Tests pin
+`cf790f0f814a` literally and mutate each input. Paragraphs are scanned once,
+heading blocks are reused, and letter digests use `schemas.tables.digest`.
+
 **No letter date is read, and that is a measurement.** Zero of the seventeen
 bodies states a CBO letterhead dateline. Writing a pattern against a form
 nothing retained has shown is the guess this repository refuses elsewhere, and

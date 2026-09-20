@@ -37,6 +37,13 @@ So the relation is a join on the bill, which both sides state:
 ``bill_id`` left as whatever index record the caller read.  Two columns for
 one fact on purpose: what the print says and what an index says are different
 claims, and the two agreeing is the check.
+
+The same letter rule supports normalized HTM and PDF text. All four retained
+PDFs (CRPT-118hrpt53, -118hrpt276, -118hrpt930, -118srpt289) now yield pinned
+spans despite lost indentation; the 17 retained HTM findings are unchanged
+apart from the version. The caller chooses the rendition; PDF is preferred
+as the research plan recommends. ``format`` and ``text_sha256`` identify the
+text the offsets address. No raster cost figures are extracted.
 """
 
 from __future__ import annotations
@@ -115,7 +122,7 @@ COMMITTEE_REPORTS = table_contract(
             "would have to say which one produced the span."
         ),
         "estimate_rule_version": (
-            "That rule's version, a digest over every pattern and every lookalike it rejects, so a re-read "
+            "That rule's version, a digest over all patterns, flags, rejects, heading thresholds and rule revision, so a re-read "
             "under a corrected rule is attributable."
         ),
         "report_states_estimate": (

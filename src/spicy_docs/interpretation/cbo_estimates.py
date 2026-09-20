@@ -56,6 +56,16 @@ CBO's own ``pubDate``, already published on ``cbo_cost_estimates.pub_date``,
 and joining to it beats re-deriving it from prose.  One retained body whose
 reprint carries the letterhead would add the rule.
 
+**HTM and PDF text are supported.** The retained PDFs for CRPT-118hrpt53,
+-118hrpt276, -118hrpt930 and -118srpt289 lose indentation during text
+normalization. Their section titles are whole uppercase lines, so the reader
+also accepts that bounded heading form; contents entries with dot leaders and
+prose still fail. Two PDF attributions wrap between Congressional and Budget
+Office, which the attribution pattern permits. All four now yield pinned
+letter spans through ``rendition_text``; all 17 retained HTM findings remain
+identical except for the rule version. The caller selects the rendition,
+with PDF preferred as the routes plan recommends. Raster figures remain unread.
+
 **Complexity.** For text of ``C`` characters this is a constant number of
 single passes -- ``O(C)`` -- plus one linear walk of the heading blocks.
 Nothing fetches, reads a clock or touches a file.
@@ -63,13 +73,13 @@ Nothing fetches, reads a clock or touches a file.
 
 from __future__ import annotations
 
-import hashlib
+import json
 import re
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 
 from spicy_docs.interpretation.citations import bill_type_and_number
-from spicy_docs.schemas.tables import natural_key
+from spicy_docs.schemas.tables import digest, natural_key
 
 #: This rule's name, published on every row it fills.
 CBO_ESTIMATE_RULE = "cbo_cost_estimate_letter"
@@ -95,9 +105,10 @@ class LetterPattern:
     pattern: str
     reason: str
     rejects: tuple[str, ...] = ()
+    flags: int = 0
 
     def compiled(self, flags: int = 0) -> re.Pattern[str]:
-        return re.compile(self.pattern, flags)
+        return re.compile(self.pattern, self.flags | flags)
 
 
 #: The statutory cover recital, matched as a whole printed line.  Structural
@@ -113,6 +124,7 @@ COVER_RECITAL = LetterPattern(
         "  the cost estimate of the Congressional Budget Office was not available",
         "  [Including cost estimate of the Joint Committee on Taxation]",
     ),
+    flags=re.MULTILINE,
 )
 
 #: The cover's own statement of which measure the report accompanies, printed
@@ -124,6 +136,7 @@ ACCOMPANIES = LetterPattern(
     "Rule XIII cl. 3(a)(1)(A): the measure the report accompanies, which is what joins a report row to "
     "cbo_cost_estimates.bill_id.",
     rejects=("The report [To accompany H.R. 801] is on the calendar.",),
+    flags=re.MULTILINE,
 )
 
 #: Where a declared letter *starts*.  A floor by construction and used only
@@ -180,11 +193,14 @@ HEADINGS: tuple[LetterPattern, ...] = (
 #: one of these reports also prints.
 DIRECTOR_ATTRIBUTION = LetterPattern(
     "director_attribution",
-    r"Director,[ \t]*\n?[ \t]*Congressional Budget Office\)?\.?",
-    "the letter's own close, in all three measured styles; 6 of the 7 recital-declared bodies end here",
+    r"Director,[ \t]*\n?[ \t]*Congressional(?:[ \t]+|[ \t]*\n[ \t]*)Budget Office\)?\.?",
+    "the letter's own close; PDF CRPT-118hrpt930 and -118srpt289 wrap after Congressional; "
+    "6 of the 7 recital-declared HTM bodies end here",
     rejects=(
         "the estimate prepared by the Director of the Congressional Budget Office",
         "an estimate and comparison prepared by the Director of the Congressional\nBudget Office",
+        "Director, CongressionalBudget Office.",
+        "Director, Congressional\n\nBudget Office.",
     ),
 )
 
@@ -211,11 +227,13 @@ ABSENCE_REASONS: tuple[LetterPattern, ...] = (
         r"was not available",
         "CRPT-118hrpt18 and -118hrpt21: the estimate had not arrived when the report was filed",
         rejects=("[GRAPHIC(S) NOT AVAILABLE IN TIFF FORMAT]",),
+        flags=re.IGNORECASE,
     ),
     LetterPattern(
         "not_received",
         r"requested but not received",
         "CRPT-118hrpt58 and -118hrpt111: the committee asked and CBO had not answered",
+        flags=re.IGNORECASE,
     ),
 )
 
@@ -239,6 +257,11 @@ _MIN_HEADING_INDENT = 4
 _MAX_HEADING_LINES = 3
 _MAX_HEADING_CHARS = 120
 _DOT_LEADER = re.compile(r"\.{4,}")
+_WHITESPACE = re.compile(r"\s+")
+_PARAGRAPH_BREAK = re.compile(r"\n{2,}")
+_HEADING_TRAILING_CHARS = "."
+# Bump for control-flow changes not represented by the patterns/thresholds.
+_RULE_REVISION = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -251,7 +274,7 @@ class HeadingBlock:
 
 
 def heading_blocks(text: str) -> Iterator[HeadingBlock]:
-    """Every centered heading in one report's normalized text, in document order."""
+    """Indented heading blocks and flush uppercase lines, in document order."""
     start = 0
     block: list[str] = []
     block_start = 0
@@ -266,6 +289,11 @@ def heading_blocks(text: str) -> Iterator[HeadingBlock]:
             if block:
                 yield from _heading(block, block_start, start - 1)
             block = []
+            # Native PDF text loses indentation and blank paragraph lines.
+            # Its four retained section titles are whole uppercase lines;
+            # prose and contents entries must still fail the exact vocabulary.
+            if line == line.lstrip() and line.isupper() and not _DOT_LEADER.search(line):
+                yield from _heading([line], start, end)
         start = end + 1
     if block:
         yield from _heading(block, block_start, len(text))
@@ -313,62 +341,74 @@ class CboEstimateFinding:
     absence_rule: str | None
 
 
-def _rule_version(patterns: Sequence[LetterPattern]) -> str:
-    """A digest over every pattern's name, pattern text **and** rejects.
+def _rule_version(patterns: Sequence[LetterPattern] | None = None) -> str:
+    """Digest all pattern text, flags, rejects, heading thresholds and rule revision.
 
     Derived, not written, for the reason ``citations._rule_set_version`` is:
     editing a pattern moves this even when nobody remembers to, and the pinned
     test then names it.  The rejects are in the input because a reject that is
     no longer asserted cannot fail, so deleting one changes the rule.
     """
-    joined = "\n".join(f"{p.name}|{p.pattern}|{'|'.join(p.rejects)}" for p in patterns)
-    return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:12]
+    rules = _letter_patterns() if patterns is None else patterns
+    payload = {
+        "patterns": [(p.name, p.pattern, p.flags, p.rejects) for p in rules],
+        "guards": [
+            (p.pattern, p.flags) for p in (_REASON_REQUIRES, _NUMBERING, _DOT_LEADER, _WHITESPACE, _PARAGRAPH_BREAK)
+        ],
+        "heading_limits": (_MIN_HEADING_INDENT, _MAX_HEADING_LINES, _MAX_HEADING_CHARS),
+        "heading_trailing_chars": _HEADING_TRAILING_CHARS,
+        "revision": _RULE_REVISION,
+    }
+    return digest(json.dumps(payload, sort_keys=True))[7:19]
+
+
+def _letter_patterns() -> tuple[LetterPattern, ...]:
+    return (COVER_RECITAL, ACCOMPANIES, *HEADINGS, DIRECTOR_ATTRIBUTION, SIGNATORY, *ABSENCE_REASONS)
 
 
 #: Every pattern this rule runs, in the order it runs them.
-LETTER_PATTERNS: tuple[LetterPattern, ...] = (
-    COVER_RECITAL,
-    ACCOMPANIES,
-    *HEADINGS,
-    DIRECTOR_ATTRIBUTION,
-    SIGNATORY,
-    *ABSENCE_REASONS,
-)
+LETTER_PATTERNS: tuple[LetterPattern, ...] = _letter_patterns()
 
 #: The identity of the whole rule, published beside every span it produced.
 CBO_ESTIMATE_RULE_VERSION = _rule_version(LETTER_PATTERNS)
 
-_HEADING_TEXTS: dict[str, str] = {pattern.name: pattern.pattern for pattern in HEADINGS}
-
 
 def _match_heading(block: HeadingBlock) -> str | None:
-    folded = block.text.casefold().rstrip(".")
-    return next((name for name, spelling in _HEADING_TEXTS.items() if re.fullmatch(spelling, folded)), None)
+    folded = block.text.casefold().rstrip(_HEADING_TRAILING_CHARS)
+    return next((p.name for p in HEADINGS if p.compiled().fullmatch(folded)), None)
 
 
-def _paragraph(text: str, position: int) -> tuple[int, int]:
-    """The blank-line-bounded paragraph containing ``position``.
+def _paragraphs(text: str) -> Iterator[tuple[int, int]]:
+    """Scan blank-line-bounded paragraphs once, preserving their exact spans.
 
     The publisher's own unit.  A sentence splitter over GPO's fixed-width text
     would have to guess where a line break ends a sentence, and these reasons
     run to four printed lines.
     """
-    start = text.rfind("\n\n", 0, position)
-    start = 0 if start < 0 else start + 2
-    end = text.find("\n\n", position)
-    return start, len(text) if end < 0 else end
+    start = 0
+    for boundary in _PARAGRAPH_BREAK.finditer(text):
+        yield start, boundary.start()
+        start = boundary.end()
+    yield start, len(text)
 
 
 def _absence(text: str) -> tuple[str | None, tuple[int, int] | None, str | None]:
-    for pattern in ABSENCE_REASONS:
-        for match in pattern.compiled(re.IGNORECASE).finditer(text):
-            start, end = _paragraph(text, match.start())
-            if _REASON_REQUIRES.search(text[start:end]):
-                return text[start:end].strip(), (start, end), pattern.name
+    patterns = [p.compiled() for p in ABSENCE_REASONS]
+    found: dict[int, tuple[str, tuple[int, int], str]] = {}
+    for start, end in _paragraphs(text):
+        paragraph = text[start:end]
+        if not _REASON_REQUIRES.search(paragraph):
+            continue
+        for index, pattern in enumerate(patterns):
+            if index not in found and pattern.search(paragraph):
+                found[index] = (paragraph.strip(), (start, end), ABSENCE_REASONS[index].name)
+    if found:
+        # Rule priority precedes document order, as in the original reader.
+        return found[min(found)]
     return None, None, None
 
 
-def _letter_end(text: str, heading: HeadingBlock) -> tuple[int, str] | None:
+def _letter_end(text: str, heading: HeadingBlock, blocks: Sequence[HeadingBlock]) -> tuple[int, str] | None:
     """Where the reprinted letter ends: its attribution, or the next heading in the same series.
 
     The attribution is the measured end on 6 of 7 recital-declared bodies.
@@ -383,7 +423,7 @@ def _letter_end(text: str, heading: HeadingBlock) -> tuple[int, str] | None:
         return attribution.end(), DIRECTOR_ATTRIBUTION.name
     if heading.series is None:
         return None
-    for block in heading_blocks(text):
+    for block in blocks:
         if block.span[0] > heading.span[1] and block.series == heading.series:
             return block.span[0], "next_heading_in_series"
     return None
@@ -398,11 +438,12 @@ def read_cbo_estimate(text: str) -> CboEstimateFinding:
     """
     if not isinstance(text, str):
         raise CboEstimateError(f"text must be a string, not {type(text).__name__}")
-    recital = COVER_RECITAL.compiled(re.MULTILINE).search(text)
-    accompanies = ACCOMPANIES.compiled(re.MULTILINE).search(text)
+    recital = COVER_RECITAL.compiled().search(text)
+    accompanies = ACCOMPANIES.compiled().search(text)
     heading: HeadingBlock | None = None
     heading_rule: str | None = None
-    for block in heading_blocks(text):
+    blocks = tuple(heading_blocks(text))
+    for block in blocks:
         matched = _match_heading(block)
         if matched is not None:
             heading, heading_rule = block, matched
@@ -411,11 +452,11 @@ def read_cbo_estimate(text: str) -> CboEstimateFinding:
     end_rule: str | None = None
     signatory: str | None = None
     if recital is not None and heading is not None:
-        located = _letter_end(text, heading)
+        located = _letter_end(text, heading, blocks)
         if located is not None:
             end, end_rule = located
             span = (heading.span[0], end)
-            found = SIGNATORY.compiled().search(re.sub(r"\s+", " ", text[span[0] : span[1]]))
+            found = SIGNATORY.compiled().search(_WHITESPACE.sub(" ", text[span[0] : span[1]]))
             signatory = None if found is None else found["name"]
     reason, reason_span, reason_rule = (None, None, None) if recital is not None else _absence(text)
     return CboEstimateFinding(
@@ -427,9 +468,7 @@ def read_cbo_estimate(text: str) -> CboEstimateFinding:
         heading=None if heading is None else heading.text,
         heading_rule=heading_rule,
         letter_span=span,
-        letter_sha256=None
-        if span is None
-        else "sha256:" + hashlib.sha256(text[span[0] : span[1]].encode("utf-8")).hexdigest(),
+        letter_sha256=None if span is None else digest(text[span[0] : span[1]]),
         letter_end_rule=end_rule,
         signatory=signatory,
         absence_reason=reason,

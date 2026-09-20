@@ -567,6 +567,15 @@ publisher's own reason where there is no letter.
 - **The heading vocabulary is a floor** and is used only to locate a span the
   recital has already declared. A declared letter the vocabulary misses
   publishes a NULL span, which reads as a shortfall rather than as an absence.
+- **HTM and PDF text are supported.** Four retained PDFs now yield exact
+  pinned spans after `rendition_text`; uppercase whole-line headings handle
+  lost indentation, while dot leaders, prose and missing recitals still fail.
+  All 17 retained HTM findings stay unchanged except for the rule version.
+  The caller selects the rendition; PDF is preferred by the research plan.
+  `format` and `text_sha256` identify the text these spans address.
+- **`estimate_rule_version` digests every rule input.** Named and auxiliary
+  patterns, flags, rejects, heading thresholds, punctuation and a control-flow
+  revision are pinned together; mutation tests prove each moves the version.
 - **No letter date is published.** No retained body states a CBO letterhead
   dateline; the estimate's date is CBO's own `pubDate` on the index row, and
   re-deriving it from prose would recreate what the index states.
