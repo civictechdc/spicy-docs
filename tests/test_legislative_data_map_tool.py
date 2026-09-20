@@ -147,12 +147,14 @@ class _FakeRequirementsReader:
     def __init__(self, list_pages: list[list[dict]], detail_responses: list[object]) -> None:
         self._list_pages = list(list_pages)
         self._detail_responses = iter(detail_responses)
+        self.asked: list[str] = []
 
     def pages(self, url: str, *, records_key: str, max_pages: int) -> object:
         for records in self._list_pages:
             yield SimpleNamespace(records=records)
 
     def capture_validated(self, url: str, **_kwargs: object) -> tuple[object, None]:
+        self.asked.append(url)
         value = next(self._detail_responses)
         if isinstance(value, BaseException):
             raise value
@@ -160,11 +162,15 @@ class _FakeRequirementsReader:
 
 
 def test_measure_requirements_histograms_rows_and_pins_the_detail_floor() -> None:
-    def row(congress: int, number: int) -> dict:
-        return {"congress": congress, "communicationType": {"code": "EC"}, "number": number}
+    def row(congress: int, number: int, *, stated: bool = False) -> dict:
+        entry = {"congress": congress, "communicationType": {"code": "EC"}, "number": number}
+        if stated:
+            # The publisher spells its own locator upper-case; the probe must ask it verbatim.
+            entry["url"] = f"https://api.congress.gov/v3/house-communication/{congress}/EC/{number}?format=json"
+        return entry
 
     list_pages = [
-        [row(105, 1), row(105, 2)],
+        [row(105, 1, stated=True), row(105, 2)],
         [row(106, 3), row(106, 4), row(106, 5)],
         [row(107, 6)],
     ]
@@ -180,8 +186,21 @@ def test_measure_requirements_histograms_rows_and_pins_the_detail_floor() -> Non
     assert result["detailFloor"] == 106
     assert result["coveredByFloor"] == 4
     assert result["share"] == pytest.approx(4 / 6)
-    assert result["detail"]["105"] == {"sampled": True, "resolved": False, "label": "105th EC 1", "error": "HTTP 404"}
-    assert result["detail"]["106"]["resolved"] is True
+    assert result["detail"]["105"] == {
+        "sampled": True,
+        "resolved": False,
+        "label": "105th EC 1",
+        "locator": "publisher",
+        "error": "HTTP 404",
+    }
+    assert reader.asked[0] == "https://api.congress.gov/v3/house-communication/105/EC/1?format=json"
+    assert result["detail"]["106"] == {
+        "sampled": True,
+        "resolved": True,
+        "label": "106th EC 3",
+        "locator": "constructed",
+    }
+    assert reader.asked[1] == "https://api.congress.gov/v3/house-communication/106/ec/3?format=json"
     assert result["detail"]["108"] == {"sampled": False}
 
 

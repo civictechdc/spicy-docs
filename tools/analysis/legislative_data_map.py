@@ -1271,6 +1271,20 @@ HTML_TYPES = ("text/html", "application/xhtml+xml")
 COMMITTEE_CHAMBER = {"House": "house", "Senate": "senate", "Joint": "joint"}
 
 
+def _stated_congress_path(url: object) -> str | None:
+    """A list row's own ``url`` as a path under ``CONGRESS_API``, or None when the row states none.
+
+    A probe built from a path this tool spells can only test its own spelling: the requirement
+    probe once asked ``house-communication/112/ec/2`` while the publisher's list row states
+    ``.../112/EC/2``, so a route answering only the upper-case form would have read as a missing
+    detail record. The 2026-09-20 executive-communications re-derivation asked the stated locator
+    and the floor held, but the construction is kept only as the fallback for a row stating none.
+    """
+    if not isinstance(url, str) or not url.startswith(f"{CONGRESS_API}/"):
+        return None
+    return url[len(CONGRESS_API) + 1 :].split("?", 1)[0]
+
+
 def _cg(reader: PagedJsonReader, path: str) -> Mapping[str, Any]:
     return _keyed_json(reader, f"{CONGRESS_API}/{path}{'&' if '?' in path else '?'}format=json")
 
@@ -2856,11 +2870,14 @@ def measure_requirements(reader: PagedJsonReader, api_key: str) -> dict[str, Any
         if sample is None:
             detail[str(congress_num)] = {"sampled": False}
             continue
-        code = str(sample.get("communicationType", {}).get("code", "")).lower()
+        code = str(sample.get("communicationType", {}).get("code", ""))
         number = sample.get("number")
         label = f"{congress_num}th {code.upper()} {number}"
+        stated = _stated_congress_path(sample.get("url"))
+        path = stated or f"house-communication/{congress_num}/{code.lower()}/{number}"
+        locator = "publisher" if stated else "constructed"
         try:
-            record = _cg(reader, f"house-communication/{congress_num}/{code}/{number}").get("houseCommunication", {})
+            record = _cg(reader, path).get("houseCommunication", {})
         except (PagedJsonSourceError, ProbeError, httpx.HTTPError) as error:
             # A 404 here is expected, not exceptional: it is exactly how a Congress outside the
             # detail era answers (`ProbeUnavailableError`, a `ProbeError`), so it is recorded as
@@ -2869,11 +2886,12 @@ def measure_requirements(reader: PagedJsonReader, api_key: str) -> dict[str, Any
                 "sampled": True,
                 "resolved": False,
                 "label": label,
+                "locator": locator,
                 "error": scrub_credential(str(error), api_key)[:80],
             }
             continue
         resolved = str(record.get("number")) == str(number)
-        detail[str(congress_num)] = {"sampled": True, "resolved": resolved, "label": label}
+        detail[str(congress_num)] = {"sampled": True, "resolved": resolved, "label": label, "locator": locator}
         if resolved and floor is None:
             floor = congress_num
 
