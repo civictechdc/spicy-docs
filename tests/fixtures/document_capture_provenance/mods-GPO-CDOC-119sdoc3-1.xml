@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?><mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="id-new_child1309872035506">
+    <name type="corporate">
+        <namePart>United States Government Publishing Office</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+            <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+        <role>
+            <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+            <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+        <namePart>United States</namePart>
+        <namePart>Congress</namePart>
+        <namePart>Senate</namePart>
+        <namePart>Office of the Secretary</namePart>
+        <role>
+            <roleTerm authority="marcrelator" type="text">author</roleTerm>
+            <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+        <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+        <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+        <collectionCode>GPO</collectionCode>
+        <category>Congressional Committee Materials</category>
+        <branch>legislative</branch>
+        <dateIngested>2025-05-28</dateIngested>
+    </extension>
+    <titleInfo>
+        <title>Report of the Secretary of the Senate: October 1, 2024 to March 31, 2025 - Part I</title>
+    </titleInfo>
+    <relatedItem type="otherFormat" xlink:href="https://www.govinfo.gov/content/pkg/GPO-CDOC-119sdoc3/pdf/GPO-CDOC-119sdoc3-1.pdf">
+        <identifier type="FDsys Unique ID">D09002ee1d3887b66</identifier>
+    </relatedItem>
+    <identifier type="uri">https://www.govinfo.gov/app/details/GPO-CDOC-119sdoc3/GPO-CDOC-119sdoc3-1</identifier>
+    <location>
+        <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/GPO-CDOC-119sdoc3/GPO-CDOC-119sdoc3-1</url>
+        <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/GPO-CDOC-119sdoc3/pdf/GPO-CDOC-119sdoc3-1.pdf</url>
+    </location>
+    <extension>
+        <searchTitle>S. Doc. 119-3;Report of the Secretary of the Senate: October 1, 2024 to March 31, 2025;
+              Report of the Secretary of the Senate: October 1, 2024 to March 31, 2025 - Part I;
+              </searchTitle>
+        <granuleClass>CONTENT</granuleClass>
+        <accessId>GPO-CDOC-119sdoc3-1</accessId>
+        <sequenceNumber>1</sequenceNumber>
+        <field name="Jacket">59-917</field>
+        <law congress="102" isPrivate="false" number="90"/>
+        <law congress="104" isPrivate="false" number="197"/>
+        <law congress="108" isPrivate="false" number="83"/>
+        <law congress="109" isPrivate="false" number="13"/>
+        <law congress="116" isPrivate="false" number="136"/>
+        <law congress="117" isPrivate="false" number="81"/>
+        <USCode title="2">
+                                    
+            <section number="4108"/>
+                                    
+            <section detail="note" number="4575"/>
+                                
+        </USCode>
+    </extension>
+    <relatedItem type="isReferencedBy">
+        <titleInfo>
+            <title>United States Code</title>
+            <partNumber>Title 2 Section 4108</partNumber>
+            <partNumber>Title 2 Section 4575note</partNumber>
+        </titleInfo>
+        <identifier type="USC citation">2 U.S.C. 4108</identifier>
+        <identifier type="USC citation">2 U.S.C. 4575note</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+        <titleInfo>
+            <title>United States Public Law 90 (102nd Congress)</title>
+        </titleInfo>
+        <identifier type="public law citation">Public Law 102-90</identifier>
+        <identifier type="public law citation">Public Law No 102-90</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+        <titleInfo>
+            <title>United States Public Law 197 (104th Congress)</title>
+        </titleInfo>
+        <identifier type="public law citation">Public Law 104-197</identifier>
+        <identifier type="public law citation">Public Law No 104-197</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+        <titleInfo>
+            <title>United States Public Law 83 (108th Congress)</title>
+        </titleInfo>
+        <identifier type="public law citation">Public Law 108-83</identifier>
+        <identifier type="public law citation">Public Law No 108-83</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+        <titleInfo>
+            <title>United States Public Law 13 (109th Congress)</title>
+        </titleInfo>
+        <identifier type="public law citation">Public Law 109-13</identifier>
+        <identifier type="public law citation">Public Law No 109-13</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+        <titleInfo>
+            <title>United States Public Law 136 (116th Congress)</title>
+        </titleInfo>
+        <identifier type="public law citation">Public Law 116-136</identifier>
+        <identifier type="public law citation">Public Law No 116-136</identifier>
+    </relatedItem>
+    <relatedItem type="isReferencedBy">
+        <titleInfo>
+            <title>United States Public Law 81 (117th Congress)</title>
+        </titleInfo>
+        <identifier type="public law citation">Public Law 117-81</identifier>
+        <identifier type="public law citation">Public Law No 117-81</identifier>
+    </relatedItem>
+    <relatedItem type="host" ID="P0b002ee1d37c4826">
+        <originInfo>
+            <publisher>U.S. Government Publishing Office</publisher>
+            <dateIssued encoding="w3cdtf">2025-05-29</dateIssued>
+            <issuance>continuing</issuance>
+            <frequency authority="marcfrequency">Semiannual</frequency>
+        </originInfo>
+        <physicalDescription>
+            <note type="source content type">Deposited</note>
+            <digitalOrigin>born digital</digitalOrigin>
+            <extent>2685 digital object pages</extent>
+        </physicalDescription>
+        <identifier type="uri">https://www.govinfo.gov/app/details/GPO-CDOC-119sdoc3</identifier>
+        <identifier type="local">P0b002ee1d37c4826</identifier>
+        <recordInfo>
+            <recordContentSource authority="marcorg">DGPO</recordContentSource>
+            <recordCreationDate encoding="w3cdtf">2025-05-28</recordCreationDate>
+            <recordChangeDate encoding="w3cdtf">2025-05-28</recordChangeDate>
+            <recordIdentifier source="DGPO">GPO-CDOC-119sdoc3</recordIdentifier>
+            <recordOrigin>machine generated</recordOrigin>
+            <languageOfCataloging>
+                <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+            </languageOfCataloging>
+        </recordInfo>
+        <accessCondition type="GPO scope determination">fdlp</accessCondition>
+        <extension>
+            <docClass>SDOC</docClass>
+            <accessId>GPO-CDOC-119sdoc3</accessId>
+            <chamber>SENATE</chamber>
+            <ACCode>GPO;CDOC</ACCode>
+            <fedPubName>Featured Senate Publications</fedPubName>
+            <docCitation descriptiveType="Senate Documents (S. Doc.)" text="S. Doc. 119-3"/>
+            <congress>119</congress>
+            <session>1</session>
+            <number>3</number>
+            <genericNav1Value>119th Congress</genericNav1Value>
+            <packageSort>G</packageSort>
+            <law congress="102" isPrivate="false" number="90"/>
+            <law congress="104" isPrivate="false" number="197"/>
+            <law congress="108" isPrivate="false" number="83"/>
+            <law congress="109" isPrivate="false" number="13"/>
+            <law congress="116" isPrivate="false" number="136"/>
+            <law congress="117" isPrivate="false" number="81"/>
+            <USCode title="2">
+                                    
+                <section number="4108"/>
+                                    
+                <section detail="note" number="4575"/>
+                                
+            </USCode>
+        </extension>
+        <titleInfo>
+            <title>Report of the Secretary of the Senate: October 1, 2024 to March 31, 2025</title>
+        </titleInfo>
+        <location>
+            <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/GPO-CDOC-119sdoc3</url>
+            <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/GPO-CDOC-119sdoc3/pdf/GPO-CDOC-119sdoc3.pdf</url>
+        </location>
+        <identifier type="preferred citation">S. Doc. 119-3</identifier>
+        <extension>
+            <searchTitle>S. Doc. 119-3;Report of the Secretary of the Senate: October 1, 2024 to March 31, 2025;
+            </searchTitle>
+        </extension>
+        <relatedItem type="isReferencedBy">
+            <titleInfo>
+                <title>United States Code</title>
+                <partNumber>Title 2 Section 4108</partNumber>
+                <partNumber>Title 2 Section 4575note</partNumber>
+            </titleInfo>
+            <identifier type="USC citation">2 U.S.C. 4108</identifier>
+            <identifier type="USC citation">2 U.S.C. 4575note</identifier>
+        </relatedItem>
+        <relatedItem type="isReferencedBy">
+            <titleInfo>
+                <title>United States Public Law 90 (102nd Congress)</title>
+            </titleInfo>
+            <identifier type="public law citation">Public Law 102-90</identifier>
+            <identifier type="public law citation">Public Law No 102-90</identifier>
+        </relatedItem>
+        <relatedItem type="isReferencedBy">
+            <titleInfo>
+                <title>United States Public Law 197 (104th Congress)</title>
+            </titleInfo>
+            <identifier type="public law citation">Public Law 104-197</identifier>
+            <identifier type="public law citation">Public Law No 104-197</identifier>
+        </relatedItem>
+        <relatedItem type="isReferencedBy">
+            <titleInfo>
+                <title>United States Public Law 83 (108th Congress)</title>
+            </titleInfo>
+            <identifier type="public law citation">Public Law 108-83</identifier>
+            <identifier type="public law citation">Public Law No 108-83</identifier>
+        </relatedItem>
+        <relatedItem type="isReferencedBy">
+            <titleInfo>
+                <title>United States Public Law 13 (109th Congress)</title>
+            </titleInfo>
+            <identifier type="public law citation">Public Law 109-13</identifier>
+            <identifier type="public law citation">Public Law No 109-13</identifier>
+        </relatedItem>
+        <relatedItem type="isReferencedBy">
+            <titleInfo>
+                <title>United States Public Law 136 (116th Congress)</title>
+            </titleInfo>
+            <identifier type="public law citation">Public Law 116-136</identifier>
+            <identifier type="public law citation">Public Law No 116-136</identifier>
+        </relatedItem>
+        <relatedItem type="isReferencedBy">
+            <titleInfo>
+                <title>United States Public Law 81 (117th Congress)</title>
+            </titleInfo>
+            <identifier type="public law citation">Public Law 117-81</identifier>
+            <identifier type="public law citation">Public Law No 117-81</identifier>
+        </relatedItem>
+    </relatedItem>
+</mods>

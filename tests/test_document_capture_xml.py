@@ -68,6 +68,7 @@ def test_fresh_senate_adapter_capture_round_trips(senate, tmp_path):
         pdf=pdf,
         pdf_path=path,
         package_id=source["package_id"],
+        derived_from=source,
         file_name=source["source_file"],
         intermediate_path=tmp_path / "evidence.json",
     ).capture()

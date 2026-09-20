@@ -34,6 +34,7 @@ def build(page, tmp_path):
         pdf=path.read_bytes(),
         pdf_path=path,
         package_id=source["package_id"],
+        derived_from=source,
         file_name=source["source_file"],
         intermediate_path=tmp_path / "evidence.json",
     ).capture()

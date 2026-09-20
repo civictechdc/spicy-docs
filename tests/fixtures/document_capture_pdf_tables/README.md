@@ -46,7 +46,7 @@ path = fixture / source["fixture"]
 pdf = path.read_bytes()
 pages = list(DocumentExtractor(NativeText(), tables=True).extract(pdf, media_type="application/pdf"))
 capture = convert_senate_pages(
-    pages, pdf=pdf, pdf_path=path, package_id=source["package_id"],
+    pages, pdf=pdf, pdf_path=path, package_id=source["package_id"], derived_from=source,
     file_name=source["source_file"], intermediate_path=fixture / "senate-page17.evidence.json",
 ).capture()
 (fixture / "senate-page17.capture.json").write_bytes(json_bytes(capture))

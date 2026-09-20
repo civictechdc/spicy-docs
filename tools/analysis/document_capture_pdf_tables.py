@@ -11,7 +11,7 @@ import importlib.metadata
 import json
 from bisect import bisect_right
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, replace
 from functools import reduce
 from itertools import pairwise
@@ -241,7 +241,9 @@ def pdf_pages_to_nodes(pages: Sequence[PageResult], builder: dc.Builder) -> dict
                 designation=str(number),
                 source=source_box(number, None),
                 page_size=sizes[number],
+                decision={"method": "generated", "rule": "extractor-empty-page-container-v1"},
             )
+            nodes[number].source["box"] = [0, 0, 1000, 1000]
         nodes[number].ext = {"pageTextSha256": dc.sha256(page.text)}
         original = spans_by_page[number]
         page_claims = tables_to_nodes(page, nodes[number], original)
@@ -269,27 +271,60 @@ def convert_senate_pages(
     package_id: str,
     file_name: str,
     intermediate_path: Path,
+    derived_from: Mapping[str, Any] | None = None,
 ) -> dc.Conversion:
     """A bounded Senate capture; callers select and extract pages with tables=True."""
     digest = dc.sha256(pdf)
     if not pages or any(p.metadata.get("source_sha256") != digest for p in pages):
         raise ValueError("pages must name this PDF's digest")
-    builder = dc.Builder(dc.Node("document", None, "pdf-text", container=True))
+    builder = dc.Builder(
+        dc.Node(
+            "document",
+            None,
+            "pdf-text",
+            container=True,
+            decision={"method": "generated", "rule": "extractor-document-root-v1"},
+        )
+    )
     retained = pdf_pages_to_nodes(pages, builder)
     data = (json.dumps(retained, ensure_ascii=False, indent=1) + "\n").encode()
     intermediate_path.write_bytes(data)
     converter = dc.converter_record("senate-expenditures-pdf", [("pymupdf", importlib.metadata.version("pymupdf"))])
     converter["id"] = "spicy-docs/tools/analysis/document_capture_pdf_tables.py#senate-expenditures-pdf"
     converter["implementation"]["fileSha256"] = dc.sha256(Path(__file__).read_bytes())
+    ext = {}
+    if derived_from is not None:
+        from tools.analysis.document_capture_sources import source_records
+
+        if derived_from["sha256"] != digest or derived_from["package_id"] != package_id:
+            raise ValueError("derived fixture provenance differs from the selected PDF")
+        records = source_records(derived_from["source_sha256"])
+        if len(records) != 1:
+            raise ValueError("derived PDF needs exactly one retained publisher acquisition")
+        record = records[0]
+        ext["derivedFrom"] = {k: record[k] for k in ("url", "sha256", "byteSize", "mediaType", "retrievedAt")}
+        ext["derivedFrom"].update(
+            {
+                "path": derived_from["source_path"],
+                "sourcePage": derived_from["source_page"],
+                "method": derived_from["cut_method"],
+            }
+        )
     return dc.Conversion(
         file_name.removesuffix(".pdf"),
         "senate-expenditures-pdf",
         "pdf",
         dc.artifact_record(
-            digest, len(pdf), "application/pdf", {"path": str(pdf_path), "publisherId": package_id}, [], None
+            digest,
+            len(pdf),
+            "application/pdf",
+            {"path": str(pdf_path), "publisherId": package_id, "publisher": "GovInfo"},
+            [],
+            None,
         ),
         converter,
         {
+            **ext,
             "packageId": package_id,
             "fileName": file_name,
             "pagesRead": [p.metadata["page"] for p in pages],

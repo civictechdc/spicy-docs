@@ -31,7 +31,9 @@
                 "opinions",
                 "pageCount",
                 "pdfBytes",
-                "pdfSha256"
+                "pdfSha256",
+                "sourceRecords",
+                "renditionReason"
               ],
               "properties": {
                 "pdfSha256": {
@@ -85,6 +87,85 @@
                       }
                     }
                   }
+                },
+                "sourceRecords": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "role",
+                      "sha256",
+                      "byteSize",
+                      "mediaType"
+                    ],
+                    "properties": {
+                      "role": {
+                        "enum": [
+                          "acquisition",
+                          "mods"
+                        ]
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "byteSize": {
+                        "type": "integer"
+                      },
+                      "mediaType": {
+                        "type": "string"
+                      },
+                      "retrievedAt": {
+                        "type": "string"
+                      },
+                      "receipt": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "path",
+                          "sha256",
+                          "selector"
+                        ],
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "selector": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "packageId": {
+                        "type": "string"
+                      },
+                      "granuleId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "identityPaths": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "renditionReason": {
+                  "type": "string"
                 }
               }
             }

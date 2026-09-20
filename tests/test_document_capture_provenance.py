@@ -9,7 +9,12 @@ from pathlib import Path
 
 import pytest
 
-from spicy_docs.schemas.document_capture.provenance import check_archive_member, check_artifact_binding
+from spicy_docs.schemas.document_capture.provenance import (
+    FAMILY_REQUIREMENTS,
+    check_archive_member,
+    check_artifact_binding,
+    check_provenance,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests/fixtures/document_capture_provenance"
@@ -90,3 +95,87 @@ def test_generic_binding_check_does_not_trust_a_matching_local_file():
         "artifact-url-bytes-mismatch"
     ]
     assert check_artifact_binding(artifact, read_bytes=lambda _: data, observations={}) == ["artifact-url-unverified"]
+
+
+@pytest.mark.parametrize("path", CAPTURES, ids=lambda p: p.stem)
+def test_committed_provenance_has_only_the_documented_evidence_gaps(path):
+    from collections import Counter
+
+    capture = json.loads(path.read_bytes())
+    expected = {
+        "uslm-law": {"mods-record": 1},
+        "bill-xml": {"mods-record": 1},
+        "committee-report-html": {"retrieval-timestamp": 1},
+        "cfr-reconstruction": {"retrieval-timestamp": 1, "mods-record": 1},
+        "federal-register-xml": {},
+        "slip-opinion-pdf": {},
+        "senate-expenditures-pdf": {"coordinate-fields": 6},
+    }
+    assert Counter(f["code"] for f in check_provenance(capture)) == expected[capture["profile"]["name"]]
+
+
+@pytest.mark.parametrize("path", CAPTURES, ids=lambda p: p.stem)
+def test_required_family_provenance_omissions_are_findings(path):
+    capture = json.loads(path.read_bytes())
+    family = capture["profile"]["name"]
+    ext = capture["profile"]["ext"]
+    source = ext.get("archiveMember", {}).get("archive") or ext.get("derivedFrom") or capture["artifact"]
+    source.pop("retrievedAt", None)
+    source.pop("url", None)
+    source.get("locator", {}).pop("url", None)
+    ext.pop("sourceRecords", None)
+    ext.pop("govinfoIdentity", None)
+    ext.pop("renditionReason", None)
+    ext.pop("pageSizes", None)
+    capture["rendition"].pop("intermediate", None)
+    capture["nodes"][0]["derivation"] = "reconstructed"
+    for span in capture["evidence"]:
+        for key in ("box", "start", "path"):
+            span.get("source", {}).pop(key, None)
+    for n in capture["nodes"]:
+        n.pop("decision", None)
+        n.pop("pageSize", None)
+        for key in ("box", "start", "path"):
+            n.get("source", {}).pop(key, None)
+    found = {f["code"] for f in check_provenance(capture)}
+    expected = set(FAMILY_REQUIREMENTS[family])
+    assert expected <= found
+
+
+@pytest.mark.parametrize("path", CAPTURES, ids=lambda p: p.stem)
+def test_full_precision_and_mods_values_are_bound_to_independent_records(path):
+    from tools.analysis.document_capture_sources import mods_record
+
+    capture = json.loads(path.read_bytes())
+    ext = capture["profile"]["ext"]
+    source = ext.get("archiveMember", {}).get("archive") or ext.get("derivedFrom") or capture["artifact"]
+    source_url = source.get("url") or source.get("locator", {}).get("url")
+    assert source["retrievedAt"] == OBSERVATIONS[source_url]["retrievedAt"]
+    for r in ext["sourceRecords"]:
+        if r["role"] == "mods":
+            assert r == mods_record(ROOT / r["path"], r["packageId"], r["granuleId"])
+    if "derivedFrom" in ext:
+        assert capture["artifact"].get("retrievedAt") is None
+        assert "url" not in capture["artifact"]["locator"]
+        assert source["sha256"] != capture["artifact"]["sha256"]
+
+
+def test_date_only_invalid_dates_and_geometry_are_findings():
+    from spicy_docs.schemas.document_capture.provenance import coordinate_fields_present, full_timestamp
+
+    assert full_timestamp("2026-09-20T12:34:56.123456Z")
+    for invalid in ("2026-09-20", "2026-02-30T12:34:56Z", "2026-09-20T12:34:56", "2026-09-20T12:34Z"):
+        assert not full_timestamp(invalid)
+    assert coordinate_fields_present({"coordinateSystem": "page-region", "page": 1, "box": [0, 0, 1000, 1000]})
+    for broken in ({"page": 1}, {"box": [0, 0, 1, 1]}, {"page": 1, "box": [2, 2, 1, 1]}):
+        assert not coordinate_fields_present({"coordinateSystem": "page-region", **broken})
+
+
+def test_fresh_converters_populate_precise_receipts_mods_and_decisions():
+    from tools.analysis import document_capture as dc
+
+    bill = dc.convert_bill(dc.FIXTURES / "govinfo_bills/text-119hjres25enr.xml").capture()
+    assert bill["artifact"]["retrievedAt"] == "2026-09-12T12:29:18.332855+00:00"
+    report = dc.convert_committee_report(dc.FIXTURES / "govinfo_bodies/body-CRPT-119hrpt1.htm").capture()
+    assert [f["code"] for f in check_provenance(report)] == ["retrieval-timestamp"]
+    assert report["profile"]["ext"]["govinfoIdentity"]["granuleId"] is None

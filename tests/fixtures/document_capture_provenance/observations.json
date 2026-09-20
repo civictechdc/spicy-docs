@@ -96,5 +96,19 @@
       "mediaType": "application/pdf",
       "retrievedAt": "2026-09-20T09:44:05.871706Z"
     }
+  },
+  {
+    "receipt": {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-yield-mods-recheck-2026-09-20/requests.jsonl",
+      "sha256": "f55021eef8763f5690049ea754b0b0deb688eb9c5a0ac130efbd2a725e38b939",
+      "selector": "line:24"
+    },
+    "observation": {
+      "url": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc3/granules/GPO-CDOC-119sdoc3-1/mods",
+      "sha256": "2bdc75916a2fda4de274b1c492830bcd82c6070810d1856d9635779d601fa16c",
+      "byteSize": 11898,
+      "mediaType": "application/xml",
+      "retrievedAt": "2026-09-20T11:57:50.750938Z"
+    }
   }
 ]

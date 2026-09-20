@@ -95,3 +95,21 @@ raise `CaptureXmlError`. The [format and measurement record](../../../../../docs
 defines exact escaping, numeric types and refusal rules. The full-value tests
 in `tests/test_document_capture_xml.py` include every tracked `*.capture.json`
 and a fresh Senate table adapter result.
+
+## Family provenance findings
+
+`spicy_docs.schemas.document_capture.provenance.check_provenance(capture)`
+checks the family requirements in addition to parent/profile validation.
+It reports missing acquisition evidence, full retrieval time, publisher URL,
+paired GovInfo identity and MODS reference where applicable, PDF intermediates,
+page dimensions, coordinate fields and decisions for derived nodes. It makes
+no request. `check_artifact_binding` checks each stated locator against supplied
+retained bytes/observations; `check_archive_member` verifies both byte objects.
+See the [required fields, retained gaps and Rulespec handoff](../../../../../docs/research/document-capture-provenance-2026-09-20.md).
+
+The profiles use permitted extension fields for pinned source records,
+GovInfo pairs, rendition reasons and source-artifact relationships while the
+shared parent work remains with Rulespec. Package-level pairs state a null
+granule explicitly. Reduced or derived files never borrow the publisher URL
+of their original as a direct locator. The Senate cut's `derivedFrom` and the
+USLM member's `archiveMember` preserve the original's separate byte facts.

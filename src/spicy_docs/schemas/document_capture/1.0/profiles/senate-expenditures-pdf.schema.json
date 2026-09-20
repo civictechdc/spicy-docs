@@ -29,7 +29,10 @@
                 "fileName",
                 "pagesRead",
                 "pageCount",
-                "lineConverterSha256"
+                "lineConverterSha256",
+                "sourceRecords",
+                "renditionReason",
+                "govinfoIdentity"
               ],
               "properties": {
                 "packageId": {
@@ -49,6 +52,149 @@
                 },
                 "lineConverterSha256": {
                   "type": "string"
+                },
+                "sourceRecords": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "role",
+                      "sha256",
+                      "byteSize",
+                      "mediaType"
+                    ],
+                    "properties": {
+                      "role": {
+                        "enum": [
+                          "acquisition",
+                          "mods"
+                        ]
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "byteSize": {
+                        "type": "integer"
+                      },
+                      "mediaType": {
+                        "type": "string"
+                      },
+                      "retrievedAt": {
+                        "type": "string"
+                      },
+                      "receipt": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "path",
+                          "sha256",
+                          "selector"
+                        ],
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "selector": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "packageId": {
+                        "type": "string"
+                      },
+                      "granuleId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "identityPaths": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "renditionReason": {
+                  "type": "string"
+                },
+                "govinfoIdentity": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "packageId",
+                    "granuleId",
+                    "basis"
+                  ],
+                  "properties": {
+                    "packageId": {
+                      "type": "string"
+                    },
+                    "granuleId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "basis": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "derivedFrom": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "url",
+                    "path",
+                    "sha256",
+                    "byteSize",
+                    "mediaType",
+                    "retrievedAt",
+                    "sourcePage",
+                    "method"
+                  ],
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "byteSize": {
+                      "type": "integer"
+                    },
+                    "mediaType": {
+                      "const": "application/pdf"
+                    },
+                    "retrievedAt": {
+                      "type": "string"
+                    },
+                    "sourcePage": {
+                      "type": "integer"
+                    },
+                    "method": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }

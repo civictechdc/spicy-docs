@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-20T21:22:50+00:00",
+ "generatedAt": "2026-09-20T21:31:18+00:00",
  "parentSchema": {
   "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
   "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
@@ -17,14 +17,14 @@
   "slip-opinion-pdf": [],
   "uslm-law": []
  },
- "receipts": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-schema-2026-09-19",
+ "receipts": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-provenance-2026-09-20",
  "documents": [
   {
    "name": "plaw-119publ1",
    "family": "uslm-law",
    "rendition": "xml",
    "artifactBytes": 23379,
-   "captureBytes": 142002,
+   "captureBytes": 152439,
    "nodes": 321,
    "leaves": 216,
    "emptyLeaves": 0,
@@ -48,15 +48,15 @@
     "n0320"
    ],
    "size": {
-    "bytes": 142002,
-    "indentedBytes": 190361,
+    "bytes": 152439,
+    "indentedBytes": 203657,
     "exactTextBytes": 8831,
-    "withoutLeafText": 131092,
-    "withoutSpanIdAndEnd": 131602,
-    "withoutSpanSource": 130301,
-    "withoutNodeSource": 92434
+    "withoutLeafText": 141529,
+    "withoutSpanIdAndEnd": 142039,
+    "withoutSpanSource": 140738,
+    "withoutNodeSource": 102871
    },
-   "seconds": 0.0011,
+   "seconds": 0.0015,
    "errors": []
   },
   {
@@ -64,7 +64,7 @@
    "family": "bill-xml",
    "rendition": "xml",
    "artifactBytes": 2751,
-   "captureBytes": 18638,
+   "captureBytes": 19554,
    "nodes": 26,
    "leaves": 18,
    "emptyLeaves": 3,
@@ -88,15 +88,15 @@
     "n0026"
    ],
    "size": {
-    "bytes": 18638,
-    "indentedBytes": 24504,
+    "bytes": 19554,
+    "indentedBytes": 25570,
     "exactTextBytes": 1339,
-    "withoutLeafText": 17153,
-    "withoutSpanIdAndEnd": 17234,
-    "withoutSpanSource": 17089,
-    "withoutNodeSource": 14266
+    "withoutLeafText": 18069,
+    "withoutSpanIdAndEnd": 18150,
+    "withoutSpanSource": 18005,
+    "withoutNodeSource": 15182
    },
-   "seconds": 0.0015,
+   "seconds": 0.0004,
    "errors": []
   },
   {
@@ -104,7 +104,7 @@
    "family": "committee-report-html",
    "rendition": "html",
    "artifactBytes": 13953,
-   "captureBytes": 127644,
+   "captureBytes": 141633,
    "nodes": 217,
    "leaves": 170,
    "emptyLeaves": 0,
@@ -128,15 +128,15 @@
     "n0216"
    ],
    "size": {
-    "bytes": 127644,
-    "indentedBytes": 178076,
+    "bytes": 141633,
+    "indentedBytes": 196452,
     "exactTextBytes": 13900,
-    "withoutLeafText": 113007,
-    "withoutSpanIdAndEnd": 107496,
-    "withoutSpanSource": 105454,
-    "withoutNodeSource": 119317
+    "withoutLeafText": 126996,
+    "withoutSpanIdAndEnd": 121485,
+    "withoutSpanSource": 119443,
+    "withoutNodeSource": 133306
    },
-   "seconds": 0.0023,
+   "seconds": 0.0016,
    "errors": []
   },
   {
@@ -144,7 +144,7 @@
    "family": "federal-register-xml",
    "rendition": "xml",
    "artifactBytes": 10224,
-   "captureBytes": 62503,
+   "captureBytes": 63284,
    "nodes": 76,
    "leaves": 59,
    "emptyLeaves": 2,
@@ -168,13 +168,13 @@
     "n0069"
    ],
    "size": {
-    "bytes": 62503,
-    "indentedBytes": 83385,
+    "bytes": 63284,
+    "indentedBytes": 84310,
     "exactTextBytes": 8785,
-    "withoutLeafText": 54829,
-    "withoutSpanIdAndEnd": 55846,
-    "withoutSpanSource": 52094,
-    "withoutNodeSource": 52093
+    "withoutLeafText": 55610,
+    "withoutSpanIdAndEnd": 56627,
+    "withoutSpanSource": 52875,
+    "withoutNodeSource": 52874
    },
    "seconds": 0.0005,
    "errors": []
@@ -184,7 +184,7 @@
    "family": "cfr-reconstruction",
    "rendition": "pdf",
    "artifactBytes": 157908,
-   "captureBytes": 186831,
+   "captureBytes": 188639,
    "nodes": 87,
    "leaves": 71,
    "emptyLeaves": 0,
@@ -208,13 +208,13 @@
     "n0087"
    ],
    "size": {
-    "bytes": 186831,
-    "indentedBytes": 261724,
+    "bytes": 188639,
+    "indentedBytes": 263934,
     "exactTextBytes": 12734,
-    "withoutLeafText": 173177,
-    "withoutSpanIdAndEnd": 163699,
-    "withoutSpanSource": 141773,
-    "withoutNodeSource": 183612
+    "withoutLeafText": 174985,
+    "withoutSpanIdAndEnd": 165507,
+    "withoutSpanSource": 143581,
+    "withoutNodeSource": 185420
    },
    "seconds": 0.0011,
    "errors": []
@@ -224,7 +224,7 @@
    "family": "slip-opinion-pdf",
    "rendition": "pdf",
    "artifactBytes": 66165,
-   "captureBytes": 124689,
+   "captureBytes": 136525,
    "nodes": 168,
    "leaves": 160,
    "emptyLeaves": 0,
@@ -248,15 +248,15 @@
     "n0168"
    ],
    "size": {
-    "bytes": 124689,
-    "indentedBytes": 182576,
+    "bytes": 136525,
+    "indentedBytes": 197881,
     "exactTextBytes": 8124,
-    "withoutLeafText": 115294,
-    "withoutSpanIdAndEnd": 109687,
-    "withoutSpanSource": 95383,
-    "withoutNodeSource": 110394
+    "withoutLeafText": 127130,
+    "withoutSpanIdAndEnd": 121523,
+    "withoutSpanSource": 107219,
+    "withoutNodeSource": 122120
    },
-   "seconds": 0.0008,
+   "seconds": 0.0009,
    "errors": []
   }
  ]
