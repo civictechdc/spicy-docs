@@ -71,9 +71,6 @@ MEETING_XML = (
     "{meeting_type}-{congress}-{subcommittee}-{date}.xml"
 )
 
-#: The media types the static route answered with (``text/xml``, 3 of 3).
-MEDIA_TYPES = ("text/xml", "application/xml")
-
 #: The root element of a meeting record.
 MEETING_ROOT = "committee-meeting"
 
@@ -255,12 +252,20 @@ def locator_from_meeting(meeting: HouseCommitteeMeeting) -> HouseMeetingLocator:
     Refuses rather than guesses when the record states no date or no committee
     code: an address built from a missing part is a guessed URL, and a probe
     built on a guessed URL proves nothing about the publisher.
+
+    A ``<subcommittees>`` entry wins over a ``<committees>`` one, because the
+    publisher files a subcommittee meeting's XML under the *subcommittee's*
+    path segment (``/VR/VR10/``) and a record stating both would otherwise
+    build the parent's address, which is a different document. None of the 10
+    retained records states both, so this is a rule chosen from the path
+    grammar rather than one measured against a record that exercises it.
     """
     if not isinstance(meeting, HouseCommitteeMeeting):
         raise TypeError("meeting must be a HouseCommitteeMeeting")
     if meeting.calendar_date is None:
         raise HouseCommitteeRepositoryError(f"meeting {meeting.event_id} states no calendar-date to address it by")
-    code = next((committee.id for committee in meeting.committees), None)
+    by_container = {committee.container: committee.id for committee in reversed(meeting.committees)}
+    code = by_container.get("subcommittees") or by_container.get("committees")
     if code is None:
         raise HouseCommitteeRepositoryError(f"meeting {meeting.event_id} names no committee to address it by")
     return HouseMeetingLocator(
@@ -459,7 +464,6 @@ def parse_house_committee_meeting(body: bytes, *, max_bytes: int = DEFAULT_MAX_B
 __all__ = [
     "AGENDA_DOCUMENT_TYPE",
     "COMMITTEE_CONTAINERS",
-    "MEDIA_TYPES",
     "MEETING_ROOT",
     "MEETING_XML",
     "HouseCommitteeMeeting",

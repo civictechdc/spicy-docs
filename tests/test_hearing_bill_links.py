@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from spicy_docs.interpretation.hearing_bill_links import (
+    EVIDENCE_RULES,
     HEARING_BILL_LINK_RULE_VERSION,
     HEARING_BILL_LINK_RULES,
     HEARING_BILL_LINK_RULES_BY_NAME,
@@ -237,6 +238,26 @@ def test_the_locator_rebuilt_from_the_record_is_the_address_the_receipt_fetched(
     assert digest == "928a1497cefa978a75a929473d23a445e34322e3402f1fbe871e92755ea10320"
 
 
+def test_a_record_naming_both_a_committee_and_a_subcommittee_addresses_the_subcommittee() -> None:
+    """The publisher files a subcommittee meeting under the subcommittee's own segment.
+
+    **0 of the 10 retained records state both**, so this is a rule read off the
+    path grammar rather than one a captured record exercises; the record here
+    is built by hand for exactly that reason.  Taking the parent instead would
+    build a different document's address and fetch it at HTTP 200.
+    """
+    both = TYPELESS_MEETING.replace(
+        b"<subcommittees>",
+        b'<committees><committee-name id="VR00">Committee on Veterans\' Affairs</committee-name></committees>'
+        b"<subcommittees>",
+        1,
+    )
+    meeting = parse_house_committee_meeting(both)
+    assert [committee.id for committee in meeting.committees] == ["VR00", "VR10"]
+    assert locator_from_meeting(meeting).subcommittee == "VR10"
+    assert "/VR/VR10/" in house_meeting_xml_locator(locator_from_meeting(meeting))
+
+
 def test_an_address_part_the_publisher_did_not_state_refuses_rather_than_guessing(meeting) -> None:
     with pytest.raises(HouseCommitteeRepositoryError, match="calendar-date"):
         locator_from_meeting(replace(meeting, calendar_date=None))
@@ -252,6 +273,63 @@ def test_a_record_whose_meeting_id_is_not_its_type_plus_its_event_refuses() -> N
     broken = TYPELESS_MEETING.replace(b'meeting-id="HHRG117409"', b'meeting-id="MARKUP117409"')
     with pytest.raises(HouseCommitteeRepositoryError, match="meeting-type"):
         parse_house_committee_meeting(broken)
+
+
+# --- one bill stated twice by one source ---------------------------------------------
+
+
+#: The publisher's own spelling of the first COVER bill on ``BOTH``'s MODS, and
+#: of the first BR document on the retained agenda.  Both fixtures are
+#: duplicate-free, so the dedupe in ``_links`` is otherwise unexercised: these
+#: two constants are what a duplicate is built from, in place, without keeping
+#: a fifth fixture whose only difference is a repeated element.
+FIRST_COVER = b'<bill congress="118" context="COVER" number="188" type="HR">'
+FIRST_BR_KEY = "118-hr-188"
+
+
+def _with_duplicated_cover() -> bytes:
+    """``BOTH``'s MODS with its first COVER ``<bill>`` element stated twice."""
+    body = (FIXTURES / f"mods-{BOTH}.excerpt.xml").read_bytes()
+    assert body.count(FIRST_COVER) == 1
+    return body.replace(FIRST_COVER, FIRST_COVER + b"</bill>" + FIRST_COVER, 1)
+
+
+def _with_duplicated_br() -> bytes:
+    """The retained agenda with its first ``BR`` ``<meeting-document>`` stated twice."""
+    body = (FIXTURES / "meeting-115955.xml").read_bytes()
+    start = body.index(b'<meeting-document type="BR"')
+    end = body.index(b"</meeting-document>", start) + len(b"</meeting-document>")
+    block = body[start:end]
+    assert FIRST_BR_KEY.rsplit("-", 1)[-1].encode() in block
+    return body[:start] + block + b"\n" + body[start:]
+
+
+def test_one_bill_stated_twice_by_one_source_is_one_row_and_the_first_wins() -> None:
+    """The identity is ``(package, bill, source)``, so a repeated element cannot key twice.
+
+    Neither retained fixture repeats a bill, so without this the dedupe in
+    ``_links`` is code no test reaches.  ``first statement wins`` matters
+    because the two statements of one bill need not carry the same evidence.
+    """
+    mods = validate_package_mods(
+        _with_duplicated_cover(),
+        package=BOTH,
+        final_url=package_mods_locator(BOTH),
+        max_bytes=1_000_000,
+    )
+    assert [bill.context for bill in mods.bills].count("COVER") == 9
+    links = cover_links(mods)
+    assert len(links) == 8
+    assert len({link.bill_id for link in links}) == 8
+    assert links[0].bill_id == FIRST_BR_KEY
+
+    duplicated = parse_house_committee_meeting(_with_duplicated_br())
+    assert len(duplicated.agenda_documents) == 10
+    agenda = agenda_links(mods_for(BOTH), duplicated)
+    assert len(agenda) == 8
+    assert len({link.bill_id for link in agenda}) == 8
+    first = next(link for link in agenda if link.bill_id == FIRST_BR_KEY)
+    assert first.evidence_text == "BILLS-118HR188ih.pdf"
 
 
 # --- the two sources together --------------------------------------------------------
@@ -307,6 +385,12 @@ def test_the_sealed_vocabularies_name_every_measured_source_and_two_relations() 
         "front_matter_designator",
     )
     assert RELATIONS == ("held_on", "noticed")
+    assert EVIDENCE_RULES == (
+        "mods_bill_context",
+        "docs_house_bills_filename",
+        "docs_house_legis_num",
+        "docs_house_description",
+    )
     assert [rule.name for rule in HEARING_BILL_LINK_RULES if rule.implemented] == ["mods_cover", "docs_house_br"]
     assert HEARING_BILL_LINK_RULES_BY_NAME["docs_house_br"].relation == "noticed"
 
@@ -321,6 +405,24 @@ def test_the_rule_set_version_is_pinned_and_moves_when_a_rule_changes() -> None:
     assert _rule_set_version(edited) != HEARING_BILL_LINK_RULE_VERSION
     promoted = (replace(HEARING_BILL_LINK_RULES[2], implemented=True), *HEARING_BILL_LINK_RULES[3:])
     assert _rule_set_version(promoted) != _rule_set_version(HEARING_BILL_LINK_RULES[2:])
+
+
+def test_an_agenda_document_naming_an_undocumented_evidence_rule_refuses(meeting) -> None:
+    """The reader sets the key and the rule together; a row may not invent a third state.
+
+    Unreachable through the reader, which is the point: the alternative was a
+    fallback that would have published the *source* name into `evidence_rule`,
+    outside the four values the column documents, with nothing downstream to
+    notice.
+    """
+    from spicy_docs.interpretation.hearing_bill_links import _evidence_rule
+
+    resolved = next(document for document in meeting.agenda_documents if document.bill_id)
+    assert _evidence_rule(resolved) == "docs_house_bills_filename"
+    with pytest.raises(HearingBillLinkError, match="evidence rule"):
+        _evidence_rule(replace(resolved, bill_id_rule="docs_house_br"))
+    with pytest.raises(HearingBillLinkError, match="evidence rule"):
+        _evidence_rule(replace(resolved, bill_id_rule=None))
 
 
 def test_a_rule_asserting_a_relation_outside_the_sealed_pair_refuses() -> None:
@@ -381,7 +483,7 @@ def test_the_recompute_tool_agrees_with_a_receipt_that_states_what_the_rules_pro
     checks, report = compare(receipt)
     assert report["disagreements"] == []
     assert report["requests"] == 0
-    assert len(checks) == 7
+    assert len(checks) == 8
     assert all(check.agrees for check in checks)
     rows = shaped_rows(receipt, BOTH, EVENT)
     assert len(rows) == 16
@@ -402,3 +504,25 @@ def test_the_recompute_tool_fires_when_the_receipt_and_the_rules_disagree(tmp_pa
     assert any("COVER set" in claim for claim in claims)
     assert any("BR documents in all" in claim for claim in claims)
     assert report["agreeing"] < len(checks)
+
+
+def test_a_scored_package_with_no_retained_mods_is_not_read_as_agreement(tmp_path) -> None:
+    """An absent file would otherwise be an empty COVER set agreeing with an empty one.
+
+    The failure this closes has no error in it: the hearing the receipt scored
+    as stating no COVER bill is exactly the hearing whose missing MODS produces
+    the same empty set, so the run reports agreement and nothing looks wrong.
+    """
+    from tools.analysis.hearing_bill_links_recompute import compare
+
+    receipt = _miniature_receipt(tmp_path / "receipt")
+    stated = json.loads((receipt / "probe1-recomputed.json").read_text())
+    stated["rows"].append(
+        {"package_id": SENATE, "event_id": None, "mods_cover": [], "docs_BR_keys": [], "docs_parent_codes": []}
+    )
+    (receipt / "probe1-recomputed.json").write_text(json.dumps(stated))
+    _, report = compare(receipt)
+    missing = [entry for entry in report["disagreements"] if "retained MODS" in entry["claim"]]
+    assert missing == [{"claim": "every scored package has a retained MODS", "receipt": [], "product": [SENATE]}]
+    # Its own COVER comparison agrees, which is the point: nothing else fires.
+    assert not [entry for entry in report["disagreements"] if "COVER set" in entry["claim"]]

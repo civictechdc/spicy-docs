@@ -74,6 +74,16 @@ COVER_CONTEXT = "COVER"
 #: confirmation, so collapsing them would publish an agenda as an event.
 RELATIONS: tuple[str, ...] = ("held_on", "noticed")
 
+#: Every value ``hearing_bill_links.evidence_rule`` can carry: which statement
+#: inside a source settled the key. The MODS states a key one way; the House
+#: agenda states it three, in descending strength.
+EVIDENCE_RULES: tuple[str, ...] = (
+    "mods_bill_context",
+    "docs_house_bills_filename",
+    "docs_house_legis_num",
+    "docs_house_description",
+)
+
 
 class HearingBillLinkError(ValueError):
     """Two records cannot be held to name the same hearing."""
@@ -345,6 +355,23 @@ def check_meeting_identity(mods: object, meeting: HouseCommitteeMeeting) -> None
         )
 
 
+def _evidence_rule(document: object) -> str:
+    """The reader that settled this document's key, held to the published vocabulary.
+
+    The reader sets ``bill_id`` and ``bill_id_rule`` together, so a document
+    with a key always names the statement that produced it. Stating that as a
+    refusal rather than as a fallback is deliberate: a fallback would publish
+    the *source* name into ``evidence_rule``, which is not one of the values
+    the column documents, and nothing downstream would notice.
+    """
+    name = document.bill_id_rule
+    if name not in EVIDENCE_RULES:
+        raise HearingBillLinkError(
+            f"a resolved agenda document names evidence rule {name!r}, which is not one of {EVIDENCE_RULES}"
+        )
+    return name
+
+
 def agenda_links(mods: object, meeting: HouseCommitteeMeeting) -> tuple[HearingBillLink, ...]:
     """Every ``docs_house_br`` link one meeting's agenda states, after the identity check.
 
@@ -356,8 +383,8 @@ def agenda_links(mods: object, meeting: HouseCommitteeMeeting) -> tuple[HearingB
     """
     check_meeting_identity(mods, meeting)
     rule = HEARING_BILL_LINK_RULES_BY_NAME["docs_house_br"]
-    found = (
-        (document.bill_id, document.bill_id_rule or rule.name, document.evidence_text)
+    found = tuple(
+        (document.bill_id, _evidence_rule(document), document.evidence_text)
         for document in meeting.agenda_documents
         if document.bill_id is not None
     )
@@ -366,6 +393,7 @@ def agenda_links(mods: object, meeting: HouseCommitteeMeeting) -> tuple[HearingB
 
 __all__ = [
     "COVER_CONTEXT",
+    "EVIDENCE_RULES",
     "HEARING_BILL_LINK_RULES",
     "HEARING_BILL_LINK_RULES_BY_NAME",
     "HEARING_BILL_LINK_RULE_VERSION",

@@ -137,6 +137,13 @@ def compare(receipt: Path) -> tuple[list[Comparison], dict[str, object]]:
     events, documents, resolved = agenda_sets(receipt)
     checks: list[Comparison] = []
 
+    # Every package the receipt scored has to be a package this run actually
+    # read.  Without it a missing MODS file is an empty COVER set, which agrees
+    # with every hearing the receipt scored as stating none -- a file that is
+    # not there reading as a measurement that matched.
+    scored = {row["package_id"] for row in recomputed["rows"]} | {row["package_id"] for row in agreement["rows"]}
+    checks.append(Comparison("every scored package has a retained MODS", [], sorted(scored - set(covers))))
+
     # 1. The six set-comparisons, by the count each row states.  A count, not a
     #    set: cover-agreement.json holds sizes and the cover_only/other_only
     #    lists that are empty, not the bills themselves.
