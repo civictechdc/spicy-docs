@@ -2,6 +2,22 @@
 
 An outside static review of this design and its use, retained verbatim: [document-capture-review-codex-2026-09-20.md](document-capture-review-codex-2026-09-20.md) (2026-09-20).
 
+**Provenance, measured 2026-09-20:** G4 is fixed in SpicyDocs: the public-law
+artifact names the XML member's bytes, while `profile.ext.archiveMember`
+separately pins the ZIP URL/digest, member path and acquisition time. Generic
+locator tests detect the original mismatch. G3 now has a package check for
+required family provenance, populated receipt/MODS references, paired GovInfo
+identities, source-native metadata fields, precise timestamps where retained,
+page geometry and decisions for generated structure. The
+[committed-input measurement](document-capture-provenance-2026-09-20.md)
+improves complete inventory fields from 117/199 to 164/199 across seven captures.
+Eleven findings remain: two date-only retrieval records, three missing MODS
+records and six unobserved Senate cell boxes. The pinned parent/meta-schema
+are unchanged. Rulespec must still add shared source records, archive/member
+and derived-artifact relationships, conditional provenance requirements and
+rule-version bindings before G3 can close at the schema level; the linked
+note supplies the exact handoff. The offline gate passed 7,231 tests.
+
 **PDF tables, measured 2026-09-20:** the reusable
 `tools/analysis/document_capture_pdf_tables.py` adapter now carries
 `PageResult.tables` beside the existing line stream. On 160 retained Senate
