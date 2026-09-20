@@ -36,6 +36,7 @@ from spicy_docs.schemas.congress_index_tables import (
     treaty_package_id,
 )
 from spicy_docs.schemas.tables import UNIT_SEPARATOR, TableContractError, read_json_column
+from spicy_docs.sources.congress.record_communications import normalized_entry_text
 
 LISTINGS = Path(__file__).parent / "fixtures" / "listings"
 NATURAL_KEY = re.compile(r"^\d+-[a-z]+-\d+$")
@@ -192,10 +193,59 @@ def test_contract_rule_three_an_unresolved_split_is_null_beside_the_retained_sen
     assert row["session"] is None
 
 
-def test_a_reconstructed_rows_abstract_is_the_sentence_the_record_printed() -> None:
+def test_a_reconstructed_rows_abstract_is_the_value_the_publisher_would_have_carried() -> None:
+    """`abstract` is the print under the four normalizations; `record_entry_text` is the print.
+
+    They are two different strings on this row, and the difference is exactly
+    what the publisher's own abstract does to the same sentence -- which is why
+    the column carrying "the publisher's abstract" cannot be the raw print.
+    """
+    from spicy_docs.sources.congress.record_communications import (
+        expand_public_law_abbreviation,
+        expand_section_abbreviation,
+        fold_en_dash,
+        fold_print_dash,
+        publisher_normalized,
+    )
+
     entry, row = _reconstructed()
-    assert row["abstract"] == row["record_entry_text"] == entry.entry_text
-    assert row["abstract"].startswith("A letter from the Deputy Director")
+    assert row["record_entry_text"] == entry.entry_text
+    assert row["abstract"] == publisher_normalized(entry.entry_text)
+    assert row["abstract"] != row["record_entry_text"]
+
+    # The whole difference, rule by rule, with nothing else moving.
+    assert "final rule -- Maine" in row["record_entry_text"]
+    assert "final rule - Maine" in row["abstract"]
+    assert "Public Law 104-121, Sec. 251" in row["record_entry_text"]
+    assert "Public Law 104-121, section 251" in row["abstract"]
+    assert row["abstract"] == fold_print_dash(
+        expand_public_law_abbreviation(expand_section_abbreviation(fold_en_dash(row["record_entry_text"])))
+    )
+
+    # And it is the publisher's own captured string for the same communication.
+    published = _listing("congress-house-communication-detail-114-ec-4329.json")["houseCommunication"]["abstract"]
+    assert row["abstract"] == publisher_normalized(normalized_entry_text(published))
+
+
+def test_the_referral_publishes_the_records_own_words_and_no_system_code() -> None:
+    """The names are a fact the print states; the identity is not, until a resolver exists.
+
+    They are published because the Record's name is the committee's name on the
+    day, and the referral count agrees with the publisher on 95.1% of held-out
+    rows. They are not the publisher's spelling of the same committee -- 71.5%
+    -- so nothing joins on them.
+    """
+    _, row = _reconstructed()
+    assert row["referral_committee_name"] == "Education and the Workforce"
+    assert row["referral_count"] == "1"
+    assert read_json_column(row["committees_json"]) == [{"name": "Education and the Workforce"}]
+    assert row["referral_system_code"] is None
+
+    # The publisher's own row for the same communication spells it differently
+    # and carries the code; that is the drift, and it is why the code is the key.
+    published = _listing("congress-house-communication-detail-114-ec-4329.json")["houseCommunication"]
+    assert published["committees"][0]["name"] == "Education and Workforce Committee"
+    assert published["committees"][0]["systemCode"] == "hsed00"
 
 
 def test_a_joint_referral_reconstructs_with_every_committee_in_committees_json() -> None:

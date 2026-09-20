@@ -156,12 +156,22 @@ invented for either.
      `update_date` still wins;
   3. an **unresolved field is NULL beside the retained sentence**, never a
      guess. `submitting_official` and `submitting_agency` are the measured
-     case: the official/agency split scored 88.4% against the publisher on
-     held-out rows, under the 90% threshold declared before that run, so a
-     reconstructed row publishes neither and keeps the whole from-clause inside
-     `record_entry_text`. `is_rulemaking`, `matching_requirement_number`,
-     `referral_system_code` and `session` are NULL for the same reason: the
-     Record states none of them.
+     case. They are one boundary decision, scored on one declared denominator —
+     the rows the split rule answered and the publisher decomposed — and on it
+     the pair fails on **both** sides (agency 88.4%, official 85.3% held out,
+     against a 90% threshold declared before the run). Neither publishes, and
+     the whole from-clause survives inside `record_entry_text`.
+     `is_rulemaking`, `matching_requirement_number` and `session` are NULL for
+     the plainer reason that the Record states none of them.
+     `referral_system_code` is NULL because the resolver from a printed
+     committee name to a `committees.system_code` is **not built**.
+
+  The referral's *names* are published: `referral_committee_name` and
+  `committees_json` carry the Record's own words, which are the committee's
+  name on the day. They are not the publisher's spelling of the same committee
+  — 71.5% agreement under a normalized comparison, because the 116th Record
+  prints *Oversight and Reform* where Congress.gov states *Oversight and
+  Government Reform Committee* — so nothing joins on them.
 
   Scored against the publisher on 256 rows of the overlap era, 144 of them
   held out: `abstract` 97.9%, `legal_authority` 99.1%, `rin` 100%,

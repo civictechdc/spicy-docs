@@ -1270,20 +1270,53 @@ means nothing on its own.
 
 It was therefore scored against the publisher on the overlap era, where both
 records exist ([the score](research/record-communications-overlap-2026-09-20.md),
-296 requests under caps declared first). **On 144 held-out rows it agreed 88.4%
-of the time, under the 90% threshold declared before the run.** So it does not
-publish. The rule stays in
-`sources/congress/record_communications.py` — it is a capability with a
-measured limit, not a dead end — and the whole from-clause survives on every
-row inside `record_entry_text`, where it matches the publisher's two fields
-concatenated on 97.8% of held-out rows. `submitting_official` scored 90.9%, but
-the two are one boundary decision, and half of a decision that is wrong more
-than one row in ten is still an invented fact.
+296 requests under caps declared first). **The pair is one boundary decision,
+so it is scored on one declared denominator — the rows where the rule answered
+and the publisher decomposed the from-clause at all — and on that denominator
+it fails on both sides: agency 88.4%, official 85.3% on 129 held-out rows,
+against a 90% threshold declared before the run.** Neither publishes.
 
-**What would reverse it**: 90% or better on a fresh held-out draw under a newly
-declared cap, from a resolver against a published organization roster — the way
-committee names already resolve against `committees.system_code` — and not from
+The denominator had to be declared because it decides the story. Scored per
+side instead — each field only over the rows the publisher states *that* side
+on — the same run reads agency 94.2% and official 90.9% over 121 rows, and the
+pair looks like one passing field and one failing one. The whole difference is
+eight rows from one granule, `118-ec-4522`..`4530` of
+`CREC-2024-06-12-pt1-PgH3973`, where Congress.gov put the entire printed
+from-clause in `submittingAgency` and stated no official at all. They can only
+ever count against the agency. Under either view at least one side misses 90%,
+so the decision does not turn on the choice; its *reason* does, and the reason
+is that the pair is one decision and the declared view fails on both sides.
+
+The rule stays in `sources/congress/record_communications.py` — it is a
+capability with a measured limit, not a dead end — and the whole from-clause
+survives on every row inside `record_entry_text`, where it matches the
+publisher's two fields concatenated on 97.8% of held-out rows.
+
+**What would reverse it**: `submitting_split` — both sides, on the declared
+denominator — at 90% or better on a fresh held-out draw under a newly declared
+cap, from a resolver against a published organization roster, and not from
 fitting the four sub-agency units this run's disagreements happened to name.
+
+### The referral's names publish; its identity does not
+
+`referral_committee_name` and `committees_json` carry the Record's own words on
+a reconstructed row. They are a fact the print states — the committee's name on
+the day — and the referral tail is read correctly: `referral_count` agrees with
+the publisher on 95.1% of held-out rows. Dropping them would throw away the
+only referral information the pre-114th era has.
+
+They are **not** the publisher's spelling of the same committee, and the column
+prose says so: 71.5% agreement under a normalized comparison, because the 116th
+Record prints *Oversight and Reform* where Congress.gov states *Oversight and
+Government Reform Committee*. That drift is why identity belongs to
+`referral_system_code` and why nothing joins on the name.
+
+`referral_system_code` is NULL on every reconstructed row, because **the
+resolver from a printed committee name to a `committees.system_code` does not
+exist yet**. It is the next piece of work this table needs, and the name drift
+this run measured is the thing it has to absorb: a resolver matching on the
+current spelling alone would miss a renamed committee, which is exactly the
+116th case.
 
 ### What the measurement was worth
 

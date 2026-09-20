@@ -40,10 +40,24 @@ Decisions, each with its reason:
   3. **An unresolved field is NULL beside the retained sentence, never a
      guess.** ``record_entry_text`` keeps the printed entry whole, so every
      NULL a reconstructed row carries is readable and recoverable. The
-     official/agency split is the measured case: it scored 88.4% against the
-     publisher, under the 90% threshold declared before that run
-     (``docs/research/record-communications-overlap-2026-09-20.md``), so it
-     does not publish at all.
+     official/agency split is the measured case: **the pair is one boundary
+     decision, and on the one declared denominator -- the rows the rule
+     answered and the publisher decomposed -- it fails on both sides**
+     (``submitting_agency`` 88.4%, ``submitting_official`` 85.3% held out,
+     against a 90% threshold declared before the run;
+     ``docs/research/record-communications-overlap-2026-09-20.md``). Neither
+     publishes. ``referral_system_code`` is NULL for a plainer reason: the
+     resolver from a printed committee name to a ``committees.system_code`` is
+     **not built**, and is the next piece of work this table needs.
+
+  What a reconstructed row *does* publish from the referral is the Record's own
+  words: ``referral_committee_name`` and ``committees_json`` carry the names as
+  printed. They are a fact the print states, not a guess -- the count agrees
+  with the publisher on 95.1% of held-out rows -- but they are **not** the
+  publisher's spelling of the same committee, which they match on 71.5%: the
+  116th Record prints *Oversight and Reform* where Congress.gov states
+  *Oversight and Government Reform Committee*. Join on
+  ``referral_system_code`` once the resolver exists, never on the name.
 * ``is_rulemaking`` folds the publisher's ``"True"`` / ``"False"`` strings
   (those two spellings and no other on 18 of 18 sampled 2026-09-19) onto the
   one published truth spelling; any other spelling refuses rather than
@@ -122,7 +136,11 @@ HOUSE_COMMUNICATIONS = table_contract(
         "number": "The communication's number within its Congress and type.",
         "chamber": "The chamber, as the publisher spells it.",
         "session": "The session of Congress the communication was received in.",
-        "abstract": "The publisher's abstract: the Record's own description of the communication.",
+        "abstract": (
+            "The publisher's abstract: the Record's own description of the communication. On a "
+            "`congressional-record-granule` row it is the printed entry under the four normalizations the "
+            "publisher's own abstract applies, which `record_entry_text` keeps unapplied."
+        ),
         "report_nature": "The nature of the report transmitted, where the detail states one; where the RIN is read from.",
         "legal_authority": (
             "The statutory authority the communication cites, where the detail states one; a Congressional "
@@ -135,11 +153,24 @@ HOUSE_COMMUNICATIONS = table_contract(
             "Whether the publisher flags the communication as a rulemaking: the publisher's `True`/`False` strings "
             "folded onto the one published truth spelling; any other spelling refuses."
         ),
-        "referral_system_code": "System code of the first committee the communication was referred to.",
-        "referral_committee_name": "That committee's name as the publisher spells it.",
+        "referral_system_code": (
+            "System code of the first committee the communication was referred to. NULL on a "
+            "`congressional-record-granule` row: the Record prints a name, and the resolver from a name to a "
+            "`committees.system_code` is not built."
+        ),
+        "referral_committee_name": (
+            "That committee's name as the publisher spells it; on a `congressional-record-granule` row, as the "
+            "Record printed it, which is the committee's name on the day and agrees with Congress.gov's "
+            "current spelling on 71.5% of held-out rows. Resolve identity through `referral_system_code`, "
+            "never through this."
+        ),
         "referral_date": "The date of that referral.",
         "referral_count": "How many committees the detail lists; every one is in committees_json.",
-        "committees_json": "Every committee referral the detail lists, as a JSON array of the publisher's objects. NULL where no detail was read.",
+        "committees_json": (
+            "Every committee referral the detail lists, as a JSON array of the publisher's objects. NULL where "
+            "no detail was read. On a `congressional-record-granule` row, one `{name}` object per committee the "
+            "printed referral tail names, in printed order."
+        ),
         "matching_requirement_number": "Number of the first House reporting requirement the communication matches.",
         "matching_requirement_count": "How many requirements the detail lists; every one is in matching_requirements_json.",
         "matching_requirements_json": "Every matching requirement the detail lists, as a JSON array of numbers. NULL where no detail was read.",
@@ -167,8 +198,9 @@ HOUSE_COMMUNICATIONS = table_contract(
             "way `committee_reports` replays from `package_id`; NULL on a publisher-decomposed row."
         ),
         "record_entry_text": (
-            "The exact sentence the Record printed, kept beside the derived fields the way `rin_matched_text` "
-            "is kept beside `rin`, so a bad parse is readable from the row; NULL on a publisher-decomposed row."
+            "The sentence the Record printed, GPO's own wording with none of the publisher's normalizations "
+            "applied, kept beside the derived fields the way `rin_matched_text` is kept beside `rin`, so a bad "
+            "parse is readable from the row; NULL on a publisher-decomposed row."
         ),
         "reconstruction_rule_version": (
             "The `record-communication-` rule identity that produced the derived fields "
@@ -468,8 +500,11 @@ def shape_record_communication(
         "chamber": _RECORD_CHAMBER,
         "session": None,
         # The measured finding: the publisher's abstract *is* this sentence,
-        # under four named normalizations (97.9% on held-out rows).
-        "abstract": text(entry.entry_text),
+        # under four named normalizations (97.9% on held-out rows). The column
+        # carries the normalized form -- the value the publisher would have
+        # carried -- and `record_entry_text` keeps the print exactly as GPO set
+        # it, so the two differ on a row wherever a normalization fired.
+        "abstract": text(entry.publisher_abstract),
         "report_nature": text(entry.report_nature),
         "legal_authority": text(entry.legal_authority),
         "submitting_agency": None,
