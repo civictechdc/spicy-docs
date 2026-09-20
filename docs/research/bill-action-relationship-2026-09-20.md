@@ -1,15 +1,20 @@
-# The print states what happened to the bill. It is not extractable well enough to host
+# The print states what happened to the bill, and for a hearing it is the only source
 
-Status: measured 2026-09-20. **Offline: zero requests.** Everything this needed
-was already retained — the eight activity-report PDFs in the rollup receipt's
-`blobs/`, their package MODS in the MODS re-check's `mods/`, the publisher's
-own BILLSTATUS guide as a committed fixture, and the hosted `congress_bills`
-export as a local Parquet file.
+Status: measured 2026-09-20. **Every figure but one comes from retained
+bytes** — the eight activity-report PDFs in the rollup receipt's `blobs/`,
+their package MODS in the MODS re-check's `mods/`, the publisher's BILLSTATUS
+guide as a committed fixture, and the hosted `congress_bills` export as a local
+Parquet file. The exception is the row-for-row overlap: **20 keyed requests**,
+bounded in the tool, for the whole action list of 20 sampled bills, because the
+claim it settles must rest on rows and not on a code table.
 
 Sidecar: [`bill-action-relationship-2026-09-20.json`](bill-action-relationship-2026-09-20.json).
 Receipt: `~/Work/corpora/supply-2026-09-02/receipts/bill-action-relationship-2026-09-20/`.
+Rules: [`src/spicy_docs/interpretation/bill_actions.py`](../../src/spicy_docs/interpretation/bill_actions.py).
+Contract: [`src/spicy_docs/schemas/bill_action_tables.py`](../../src/spicy_docs/schemas/bill_action_tables.py).
 Tool: [`tools/analysis/bill_action_relationship.py`](../../tools/analysis/bill_action_relationship.py),
-five phases, all through `uv run --frozen`. The numbers block below is rendered
+six phases, all through `uv run --frozen`; it imports the rules rather than
+restating them, so the measurement and the contract cannot disagree. The numbers block below is rendered
 from the sidecar by `render`, and a test byte-compares the two.
 
 This answers build-order item 8 and the caveat of
@@ -20,64 +25,68 @@ relationship — but that measurement compared keys, never relationships.*
 
 ## The verdict
 
-**Evidence only. Do not host a `bill_committee_actions` relationship contract.**
+**Host the single-bill subset with its precision stated; keep the rest as
+evidence in the same table.** `bill_committee_actions`
+(`schemas/bill_action_tables.py`), keyed
+`(document_key, text_sha256, bill_id, print_phrasing, span_start)`, 27 columns,
+shaped from `interpretation/bill_actions.py`.
 
-Three numbers decide it, and the third is the one that settles it.
+The figures a consumer acts on, all hand-checked on 60 mentions:
 
-1. **A published row would be right 80% of the time.** On 60 hand-checked
-   mentions: the action *kind* is read correctly 90.0% of the time (36 of 40),
-   and given a correct reading the row names the right bill 88.9% of the time
-   (32 of 36). Multiplied, 32 of 40 rows a contract would publish are both the
-   right kind and the right bill — **one published row in five is wrong**. In a
-   one-bill sentence attachment is 93.8%; in a multi-bill sentence it is 50.0%.
-2. **It would miss 40% of what a reader plainly sees.** Re-weighted recall
-   against the actions a reader reads in the entry is **59.6%** — 71.3% where
-   the rule fires at all, 42.5% where it does not. And 2,952 further phrase
-   occurrences sit in a sentence that names no bill, against 4,456 that reach
-   one.
-3. **Almost none of it is a fact BILLSTATUS lacks.** Of the 25 measured
-   phrasings, 20 have an action code in the publisher's own BILLSTATUS guide —
-   including `72` *Hearing held in House* and `74` *Markup in House*, the two
-   the print's "committee narrative" was supposed to be the only source for.
-   Five do not, and they carry **280 of 4,456 rows (6.3%)**. The hosted
-   `bill_actions` contract already holds every action a BILLSTATUS document
-   states, with its code and its date.
+| | Rows | Published rows that are right kind **and** right bill |
+| --- | ---: | ---: |
+| `attachment_confidence = 'single'` | **4,089 of 4,456 (91.8%)** | **83.3%** (30 of 36) |
+| `attachment_confidence = 'multi'` | 367 (8.2%) | 50.0% (2 of 4) |
 
-So the print's bill-action relationship is real, and it is a worse copy of a
-record this repository already ingests. The 6.3% that is genuinely the
-committee's own voice — `favorably_forwarded`, `declined_markup`,
-`not_considered`, `included_in` and `vetoed` — is 280 rows over eight prints,
-at 80% row-level precision, and three of those five are *negative* statements
-("Committee Republicans declined to mark up H.R. 4440") that no extraction rule
-should be trusted to publish at that precision.
+So the trusted view costs 8% of the volume and publishes rows that are right
+five times in six. The `multi` rows stay in the table rather than being
+dropped: a coin-flip row a reader can open at `sentence_start` and check beats
+a fact nobody can see.
 
-**What to do instead**, in order:
+**Recall is a separate axis and it is 59.6%.** 83.3% says *what is published is
+right*; it does not say *what the document contains is captured*. A consumer
+counting hearings off these rows is counting a floor. The five measurements
+that would raise it are listed below, and every one of them is request-free.
 
-- **Ingest the CRPT MODS**, as the re-check's build-order item 2 already says.
-  It costs no request and no rule.
-- **Keep the print's action language as evidence, not as a relationship.** The
-  `document_citations` contract already stores every `bill_number` occurrence
-  with its span, its page and the text digest. A consumer that wants the
-  narrative reads the span. Nothing new is needed, and nothing is lost: the
-  spans this measurement classified are the spans that contract already
-  publishes.
-- **Do not widen `bill_stage`'s sealed matchers to the print register.** It
-  would make the ladder read two different publishers' prose with one rule set,
-  and only 2,786 of 4,456 rows map to a rung at all today. `bill_stage` reads
-  BILLSTATUS action text; that is its contract and it should keep it.
+### What this is the only source for
 
-### What would change this verdict
+The first version of this measurement concluded the opposite, and the
+correction is the reason the table exists. It read codes `72` *Hearing held in
+House* and `74` *Markup in House* out of the publisher's guide and concluded
+BILLSTATUS already states a House committee's hearings and markups. **Those are
+section 5 values** — the mapping of LOC *summaries* version codes to
+`<actionDesc>` text, the `<versionCode>` child of `<summaries>` — and not
+`<actionCode>` values at all. The self-check that should have caught it scanned
+the whole guide, so it validated against a 123-code superset drawn from three
+tables and could not fail. `guide_action_codes` is now scoped to section 3 and
+a test asserts the section-5 codes stay out of it.
 
-One thing, and it is not measurable on this sample. **Before the 108th Congress
-there is no BILLSTATUS bulk at all** (gap row A11; the API's bill list reaches
-the 82nd, and its pre-108th detail records carry only sub-route *counts* for
-actions, so the action list is simply absent). For those Congresses a committee
-activity report may be the only statement of a bill's committee history that
-exists. **Every bill in this sample is 118th** — 978 of 978 — so this
-measurement says nothing about it. If a pre-108th activity report is acquired
-and its MODS compared against the API's pre-108th record, ask this question
-again; the extraction quality measured here would still apply, but the
-duplication argument that decides the verdict would not.
+Scoped correctly, **section 3 has no House hearing code and no House markup
+code.** Its only entries for either event are `13100` and `13200`, both Senate.
+And asked for the whole action list of 20 of these bills — 20 keyed requests,
+197 published actions — the publisher states:
+
+- **0 of 15** of the print's subcommittee hearings by any action code, and
+  **10 of 15 not at all**, by code or by wording;
+- **8 of 8** markups, as free text filed by the `House committee actions`
+  source system (48 of the 197 actions), carrying no action code.
+
+So for a House committee hearing on a bill the print is the **only** structured
+statement that exists, and for a markup it is a second one that the publisher
+files without a code. That is 639 of 4,456 rows, and it is what this table is
+worth.
+
+Five more phrasings have no code in either chamber — `favorably_forwarded`
+(the subcommittee-to-full-committee step), `declined_markup`, `not_considered`,
+`included_in`, `vetoed` — 280 rows, three of them *negative* statements no
+index can carry at all.
+
+### What it duplicates, and that is fine
+
+Of the 47 single-attachment rows whose phrasing the guide does code, the
+publisher states the same code on **44**. Those rows are not the reason to
+build; they are what makes the table joinable, and `billstatus_action_code`
+carries the code so a consumer can drop them with one predicate.
 
 ## How the relationship was read
 
@@ -124,39 +133,39 @@ Measured 2026-09-20 from retained bytes, **0 requests**: 1,249 pages of the eigh
 `Orphan` counts the same phrasing in a sentence that names no bill at all — what no
 sentence-scoped rule can ever attach.
 
-| Print phrasing | Rows | Orphan | Bills | `bill_stage` rung | Sealed matcher | BILLSTATUS code |
-| --- | ---: | ---: | ---: | --- | --- | --- |
-| `introduced` | 753 | 238 | 699 | `introduced` | `introduced` | `1000`, `10000` |
-| `referred` | 744 | 105 | 501 | `other_chamber` | `referred` | `H11100`, `2000`, `11000` |
-| `held_hearing` | 420 | 1,590 | 333 | **none** | — | `72`, `73`, `13100` |
-| `ordered_reported` | 270 | 124 | 175 | `committee` | `reported` | `H12200`, `5000` |
-| `became_public_law` | 263 | 230 | 126 | `law` | `public law` | `36000`, `E40000`, `49` |
-| `considered` | 245 | 109 | 146 | **none** | — | `H30000` |
-| `favorably_reported` | 228 | 31 | 215 | `committee` | `reported` | `H12200`, `5000`, `79` |
-| `held_markup` | 219 | 57 | 155 | `committee` | `markup` | `74`, `75`, `13200` |
-| `discharged` | 206 | 17 | 104 | **none** | — | `H12300`, `77`, `78` |
-| `reported` | 162 | 54 | 145 | `committee` | `reported` | `H12200`, `5000`, `79` |
-| `suspension` | 146 | 38 | 134 | **none** | — | `H37300` |
-| `favorably_forwarded` | 139 | 1 | 136 | **none** | — | **none** |
-| `report_filed` | 138 | 92 | 138 | **none** | — | `H12100`, `14900` |
-| `passed_house` | 132 | 186 | 112 | **none** | — | `8000`, `81` |
-| `received_in_chamber` | 118 | 4 | 116 | `other_chamber` | `received in the senate` | `H14000` |
-| `included_in` | 83 | 6 | 73 | **none** | — | **none** |
-| `passed_senate` | 55 | 26 | 43 | **none** | — | `17000`, `82` |
-| `presented_to_president` | 30 | 0 | 29 | **none** | — | `E20000`, `28000` |
-| `placed_on_calendar` | 27 | 1 | 22 | `other_chamber` | `placed on the union calendar` | `H12410` |
-| `declined_markup` | 25 | 1 | 25 | **none** | — | **none** |
-| `not_considered` | 25 | 3 | 25 | **none** | — | **none** |
-| `agreed_to` | 9 | 11 | 6 | **none** | — | `8000`, `17000` |
-| `rule_for_consideration` | 9 | 0 | 7 | **none** | — | `H1L210` |
-| `vetoed` | 8 | 13 | 4 | **none** | — | **none** |
-| `conference` | 2 | 15 | 1 | `conference` | `conference report` | `H25200`, `47`, `48` |
+| Print phrasing | Rows | Orphan | Bills | `bill_stage` rung | BILLSTATUS action code, House |
+| --- | ---: | ---: | ---: | --- | --- |
+| `introduced` | 753 | 238 | 699 | `introduced` | `1000` |
+| `referred` | 744 | 105 | 501 | `other_chamber` | `H11100`, `2000` |
+| `held_hearing` | 420 | 1,590 | 333 | **none** | **none — Senate-only** |
+| `ordered_reported` | 270 | 124 | 175 | `committee` | `H12200`, `5000` |
+| `became_public_law` | 263 | 230 | 126 | `law` | `36000`, `E40000`, `E30000` |
+| `considered` | 245 | 109 | 146 | **none** | `H30000` |
+| `favorably_reported` | 228 | 31 | 215 | `committee` | `H12200`, `5000` |
+| `held_markup` | 219 | 57 | 155 | `committee` | **none — Senate-only** |
+| `discharged` | 206 | 17 | 104 | **none** | `H12300` |
+| `reported` | 162 | 54 | 145 | `committee` | `H12200`, `5000` |
+| `suspension` | 146 | 38 | 134 | **none** | `H37300` |
+| `favorably_forwarded` | 139 | 1 | 136 | **none** | **none** |
+| `report_filed` | 138 | 92 | 138 | **none** | `H12100` |
+| `passed_house` | 132 | 186 | 112 | **none** | `8000` |
+| `received_in_chamber` | 118 | 4 | 116 | `other_chamber` | `H14000` |
+| `included_in` | 83 | 6 | 73 | **none** | **none** |
+| `passed_senate` | 55 | 26 | 43 | **none** | **none** |
+| `presented_to_president` | 30 | 0 | 29 | **none** | `E20000`, `28000` |
+| `placed_on_calendar` | 27 | 1 | 22 | `other_chamber` | `H12410` |
+| `declined_markup` | 25 | 1 | 25 | **none** | **none** |
+| `not_considered` | 25 | 3 | 25 | **none** | **none** |
+| `agreed_to` | 9 | 11 | 6 | **none** | `8000` |
+| `rule_for_consideration` | 9 | 0 | 7 | **none** | `H1L210` |
+| `vetoed` | 8 | 13 | 4 | **none** | **none** |
+| `conference` | 2 | 15 | 1 | `conference` | `H25200` |
 
 **2,786 of 4,456** action rows carry a phrasing one of `bill_stage`'s sealed matchers reads; **1,670** carry one it does not — `passed_house`, `suspension`, `held_hearing`, `discharged` and `report_filed` among them, so the print's own spelling of passage and of every committee step falls outside the sealed ladder.
 
 **2,952 further phrase occurrences** sit in a sentence that names no bill, against 4,456 that reach one.
 
-Only 5 of the 25 phrasings — `vetoed`, `not_considered`, `declined_markup`, `favorably_forwarded`, `included_in`, **280 rows** — name an event the publisher's own BILLSTATUS guide states no action code for. Everything else the print says about a bill, BILLSTATUS has a code for.
+**5 phrasings have no action code in either chamber** — `vetoed`, `not_considered`, `declined_markup`, `favorably_forwarded`, `included_in`, 280 rows — and **2 more have one only for the Senate**: `held_markup`, `held_hearing`, **639 rows**. Section 3 of the publisher's guide has no House hearing code and no House markup code at all, so for those two events in a House committee's print the sentence is the only structured statement there is.
 
 ### Per print
 
@@ -180,14 +189,27 @@ Only 5 of the 25 phrasings — `vetoed`, `not_considered`, `declined_markup`, `f
 | --- | ---: | ---: | ---: |
 | Action classification | 40 | 36 | **90.0%** |
 | Bill-to-action attachment, given a correct reading | 36 | 32 | **88.9%** |
-| — one-bill sentence | 32 | 30 | 93.8% |
-| — multi-bill sentence | 4 | 2 | 50.0% |
-| **A published row is right kind and right bill** | 40 | 32 | **80.0%** |
+| **A published row is right kind and right bill — `single`** | 36 | 30 | **83.3%** |
+| **— `multi`** | 4 | 2 | **50.0%** |
 | Recall, re-weighted by stratum | 148 | 94 | **59.6%** |
 | — where the tool found an action | 108 | 77 | 71.3% |
 | — where it found none | 40 | 17 | 42.5% |
 
-### Against what BILLSTATUS already states
+**4,089 of 4,456 rows (91.8%) are `single`**, so a consumer filtering to the trusted class keeps 91.8% of the volume at 83.3% precision. Recall is a separate axis and is 59.6%: this is a statement about what is published, never about what a reader sees captured.
+
+### The row-for-row BILLSTATUS overlap, 20 keyed requests
+
+The retained `congress_bills` export carries one action per bill, so it can only floor the duplication. This asked the publisher for the **whole action list** of 20 of the bills these prints act on — 197 published actions — and compared 76 single-attachment print rows against them.
+
+| | Print rows | Publisher states the same code | Same date | States the event at all |
+| --- | ---: | ---: | ---: | ---: |
+| `held_hearing` | 15 | **0** (no code exists) | 3 | **5** |
+| `held_markup` | 8 | **0** (no code exists) | 7 | **8** |
+| every coded phrasing | 47 | 44 | 38 | — |
+
+**10 of 15 subcommittee hearings the print states are absent from BILLSTATUS altogether** — no code, no wording, nothing. Markups are different and the difference is the finding's own limit: all 8 markup rows appear in the publisher's list as free text filed by the `House committee actions` source system (48 of 197 published actions), carrying no action code. So the print is the sole source for hearings, and a second, uncoded source for markups.
+
+### Against the hosted `congress_bills` export
 
 The retained `congress_bills` export holds 418,657 bills, Congresses 6 to 119. **958 of the 978** bills these prints attach an action to have a hosted row; 20 do not. Every bill the prints act on is from Congress 118 — **this sample contains no pre-108th bill at all**, so what the print would add before the 108th is not measured here. Of the 4,390 action rows whose bill is hosted, **849** state a rung the hosted row's *latest action alone* already states.
 
@@ -195,88 +217,148 @@ The retained `congress_bills` export holds 418,657 bills, Congresses 6 to 119. *
 
 ## What the print says that BILLSTATUS does not
 
-The comparison is against a **floor**, stated before the number: the retained
-export is `congress_bills`, which carries `latest_action_date` and
-`latest_action_text` — *one* action per bill. The hosted `bill_actions`
-contract holds every action with its code and date, and no such export is
-retained locally. So "the hosted row's latest action alone already states this
-rung" is a lower bound on the duplication, and the full action list can only
-duplicate more. That is the safe direction for a verdict that argues against
-building and the unsafe one for a verdict that argues for it.
+Two records were compared, and they answer different questions.
 
-Even against that floor, 849 of 4,390 rows (19.3%) state a rung the *single*
-latest action already states.
+**The hosted `congress_bills` export, offline.** It carries
+`latest_action_date` and `latest_action_text` — *one* action per bill — so it
+can only floor the duplication: a rung the single latest action already states
+is certainly duplicated, and one it does not may still sit in the full list.
+849 of 4,390 rows (19.3%) are duplicated even against that floor. That is the
+safe direction for an argument *against* building and the unsafe one for an
+argument for it, which is why it is not the argument this document rests on.
 
-The stronger evidence is the publisher's own vocabulary, read from the
-committed fixture `tests/fixtures/billstatus_codes/guide-2026-08-03.md` rather
-than assumed. Its action-code tables list `72` *Hearing held in House*, `74`
-*Markup in House*, `77` *Discharged from House committee*, `H12200` *Committee
-reported*, `H12300` *Committee discharged*, `H12100` *Committee report of an
-original measure*, `H1L210` *Rule provides for consideration of* and
-`H37300` *Final Passage Under Suspension of the Rules Results*. The guide also
-names `House committee actions` as one of four `sourceSystem` values. Every
-common thing these prints say about a bill has a code there.
+**The publisher's whole action list, 20 keyed requests.** Twenty of the 978
+bills, weighted by construction towards hearings and markups because those are
+the events the code table says have no House entry. 197 published actions, 76
+single-attachment print rows compared. The result is in the generated block
+above; the three numbers that matter:
 
-**What this cannot see**, and it matters: whether those codes are *populated*
-for these 978 bills. The six BILLSTATUS fixtures this repository holds are
-119th-Congress measures with two to five actions each, none of them
-committee-sourced, so nothing retained here shows a real House committee action
-list. The duplication argument therefore rests on the publisher's stated
-vocabulary plus the latest-action floor, not on a row-for-row comparison
-against `bill_actions`. Running that comparison needs one BILLSTATUS document
-per sampled bill, which is a keyed acquisition this measurement did not make.
+- **0 of 23** hearing and markup rows carry a code the publisher also states,
+  because no House code for either event exists to carry.
+- **10 of 15** subcommittee hearings the print states are absent from
+  BILLSTATUS altogether — no code, no wording.
+- **8 of 8** markups *are* stated, as free text from the `House committee
+  actions` source system, which files 48 of the 197 actions and attaches no
+  action code to any of them.
 
-## Why the extraction is worse than it looks
+So the print is the sole source for a House committee hearing on a bill, and a
+second source for a markup. Saying both is what makes the first credible.
 
-The hand check's 60 contexts are in the receipt with every verdict. Five
-failure shapes account for almost all of it, and none is a tuning problem.
+**What this still cannot see.** Twenty bills is 2% of the sample and the draw
+is deliberately not uniform, so these are statements about hearings and markups
+and not a corpus-wide duplication rate. Closing that needs one BILLSTATUS
+document per sampled bill.
+
+## What is missing, and the measurement that closes each
+
+Five request-free measurements against the same eight retained prints, in the
+order their expected yield puts them. Every one re-scores against the 60
+hand-checked mentions already in the receipt, so none of them needs new hand
+work except where it says so.
+
+1. **Anaphora — the largest single gap.** *"H.R. 1713 was introduced by
+   Representative Frank Lucas on March 22, 2023. The bill was referred to the
+   Committee on Science, Space, and Technology... which reported the bill, as
+   amended, on May 11, 2023."* One row is produced, for the introduction. Bind
+   "the bill" / "the measure" / "the resolution" to the nearest preceding
+   mention inside the entry window and re-score; the window scaffolding is
+   already in `sample` (`ENTRY_WINDOW`). Four of the sample's 60 contexts lose
+   three or more actions exactly this way.
+2. **List headings.** *"May 17, 2023—Markup held on:"* followed by six bill
+   entries: the heading's colon keeps it inside the first entry's sentence, so
+   the first bill gets `held_markup` and the other five get nothing. Propagate
+   a heading-scoped action to every bill until the next heading.
+   `CRPT-118hrpt977:64495` and `:300897` in the receipt's contexts file are the
+   two documented failures.
+3. **The entry is not a sentence, per committee.** `CRPT-118hrpt968` writes a
+   bill's long title as its own sentence and the disposition as the fragment
+   after it, which is why it yields 23 rows over 179 MODS-stated bills while
+   `CRPT-118hrpt974` yields 1,441. Fall back to the `ENTRY_WINDOW` unit where
+   the sentence carries no bill, and re-score on the same 60.
+4. **The en-bloc disposition.** *"The measures considered en bloc were ordered
+   favorably reported to the House by voice vote."* names no bill; the six are
+   listed above it. **This one must be scored on a held-out slice**, not on the
+   eight prints its rule would be tuned on — a rule fitted to `CRPT-118hrpt968`'s
+   house style and scored on it is a formatting assertion.
+5. **Ruled-table column headers.** `CRPT-118hrpt974`'s "Bill No. | Date of
+   Committee Consideration | Title" grid states a consideration date for every
+   bill in it and no sentence rule can see a column header. Re-run `text` with
+   `tables=True` and read the grid. Costs seconds, not requests — the re-check
+   measured table detection at 15.0–164.6 ms/page against 9.8 without.
+
+Two gaps are acquisition-gated and stay named as such.
+
+- **The row-for-row `bill_actions` overlap is now partly closed**: 20 keyed
+  requests, 20 bills, reported above. It is 20 of 978 bills and weighted
+  towards hearings and markups by construction, so it settles the hearing claim
+  and does not establish a corpus-wide duplication rate. Closing that needs one
+  BILLSTATUS document per sampled bill.
+- **The pre-108th case is untestable on anything retained.** Before the 108th
+  Congress there is no BILLSTATUS bulk at all (gap A11), so a committee
+  activity report may be the only statement of a bill's committee history that
+  exists — which would make this table's value much larger than measured here.
+  **No CRPT artifact outside the 118th and 119th Congresses is retained
+  anywhere in this corpus.** What would establish it: one `published` walk of
+  GovInfo's `CRPT` collection with an early `dateIssued` window, which states
+  whether the collection reaches earlier Congresses at all and returns package
+  ids if it does. That is one keyed request, and it is the cheapest unanswered
+  question in this document.
+
+## The five failure shapes, in the print's own words
+
+The hand check's 60 contexts are in the receipt with every verdict. Five shapes
+account for almost all of the loss. None is a tuning problem, and each is
+sized by one of the measurements above.
 
 **The entry is not a sentence, and every committee sets it differently.** In
-`CRPT-118hrpt968` the markup item's long title ends in a period and the
+`CRPT-118hrpt968` a markup item's long title ends in a period and the
 disposition follows as a fragment — *"...and for other purposes. (Green)
 (ordered favorably reported to the House, as amended, 26Y–23N)"* — so the bill
 and its disposition are two sentences and the second names no bill. **116 of
 that print's 125 "ordered favorably reported" occurrences sit in a sentence
-naming no bill at all**, which is why it yields 27 rows over 179 MODS-stated
-bills. In `CRPT-118hrpt974` the same committee action is one clean sentence and
-the same rules reach 1,443 rows.
+naming no bill at all**, which is why it yields 23 rows over 179 MODS-stated
+bills while `CRPT-118hrpt974`, writing the same event as one clean sentence,
+yields 1,441.
 
 **The en-bloc disposition names no bill by design.** *"The measures considered
 en bloc were ordered favorably reported to the House by voice vote."* is a
-sentence about "the measures". Six bills were just listed above it as numbered
-items. No sentence-scoped rule can attach it, and an entry-scoped rule has to
-decide how far up the list "en bloc" reaches.
+sentence about "the measures", with six bills listed above it as numbered
+items.
 
 **The print writes "the bill".** *"H.R. 1713 was introduced by Representative
 Frank Lucas on March 22, 2023. The bill was referred to the Committee on
 Science, Space, and Technology... which reported the bill, as amended, on May
 11, 2023. On December 4, 2023, the bill was considered under suspension of the
-rules and agreed to by voice vote."* One row is produced, for the introduction,
-because only the first sentence names the bill. Four of the sample's 60
-contexts lose three or more actions exactly this way.
+rules and agreed to by voice vote."* One row, for the introduction.
 
 **A list heading covers many bills and reaches the first.** *"May 17,
-2023—Markup held on:"* followed by six bill entries: the heading's colon keeps
-it in the first entry's sentence, so the first bill gets `held_markup` and the
-other five get nothing.
+2023—Markup held on:"* then six entries: the colon keeps the heading in the
+first entry's sentence, so one bill gets `held_markup` and five get nothing.
 
 **A ruled table states the action in a column header.** `CRPT-118hrpt974`'s
 "Bill No. | Date of Committee Consideration | Title" grid states a committee
-consideration date for every bill in it. No sentence rule can see a column
-header, and the re-check turned table detection off deliberately because a
-citation contract does not need it.
+consideration date for every bill in it, and no sentence rule can see a column
+header.
 
-The two classification false positives that are not structural are worth naming
-because they would publish confidently wrong facts: a `Pub. L.` cite inside a
-bill's *description* (*"H.R. 6972 amends the Federal Vacancies Reform Act of
-1998 (P.L. 105–277)"*) read as the bill becoming that law, and
-*"reported to Congress for review"* inside a bill's subject matter read as a
-committee reporting it.
+The two classification failures that are not structural are worth naming
+because they publish confidently wrong facts: a `Pub. L.` cite inside a bill's
+*description* (*"H.R. 6972 amends the Federal Vacancies Reform Act of 1998
+(P.L. 105–277)"*) read as the bill becoming that law, and *"reported to
+Congress for review"* inside a bill's subject matter read as a committee
+reporting it. Both are visible in `matched_text` on the row itself, which is
+why that column is published.
+
+**The 1,590 orphan `held_hearing` occurrences are mostly not misses.** A
+sample of 25 of them reads as general oversight hearings — hearings on a
+subject, not on a measure — and index or table-of-contents lines. The orphan
+count is the ceiling on what an entry rule could recover, not an estimate of
+what it would.
 
 ## Complexity
 
-Zero requests. `text` is linear in retained pages: 1,249 pages of eight PDFs in
-about 7 s with table detection off. `measure` is one pass per rule over each
+**20 keyed requests**, all in the `billstatus` phase and bounded there; every
+other phase is offline. `text` is linear in retained pages: 1,249 pages of
+eight PDFs in about 7 s with table detection off. `measure` is one pass per rule over each
 document, `O(K·C)` for `K` = 25 rules and `C` = 3.3 M characters, plus a binary
 search per mention into the sentence offsets — about 1 s for the whole corpus.
 The overlap is one hash join in DuckDB over a 418,657-row Parquet export.
@@ -287,8 +369,9 @@ Nothing here is superlinear in the corpus.
 - **One Congress.** All 978 bills the prints act on are 118th, so the pre-108th
   question the verdict turns on is untested — see "What would change this
   verdict".
-- **`bill_actions` itself was never compared row for row**, only the
-  `congress_bills` latest action and the publisher's stated code vocabulary.
+- **The row-for-row comparison covers 20 of 978 bills**, drawn towards
+  hearings and markups on purpose. It settles what the print is the only
+  source for; it does not establish a corpus-wide duplication rate.
 - **Eight prints, eight committees.** The per-print spread is the finding, not
   noise: 27 rows from one 56-page print and 1,443 from one 296-page print. A
   ninth committee's house style is unmeasured, and the two extremes here are
@@ -298,9 +381,12 @@ Nothing here is superlinear in the corpus.
   multi-bill mentions and the 2,952 orphan phrases are corpus-wide counts and
   carry no such uncertainty; they, not the hand-check rates, are what the
   verdict leans on.
-- **Dates were extracted but never scored.** `print_dates` reads the ISO date
-  off each sentence and the rows carry it; whether the date belongs to the
-  action rather than to a neighbouring clause was not hand-checked.
+- **Dates are extracted, published and never scored.** `print_dates` reads the
+  ISO date off each sentence and `bill_committee_actions.stated_date` carries
+  the first of them; whether it belongs to *this* action rather than to a
+  neighbouring clause was not hand-checked. `stated_date_count` flags the
+  sentences where the attribution is least safe. Scoring it is the sixth
+  request-free measurement and runs on the same 60 mentions.
 - **The phrasing vocabulary is a floor.** A phrasing no rule spells is invisible
   here and makes the print look thinner: *"voted to advance all four pieces of
   legislation"* and *"was not agreed to in the full House vote"* both appear in

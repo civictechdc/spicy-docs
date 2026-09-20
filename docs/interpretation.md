@@ -29,6 +29,7 @@ rather than buried in control flow.
 | `model_call` | — | the one injected model seam (`ModelCall`, `ModelResponse`, `ModelCallError`) the two model-backed modules share, and the `AnswerField` declaration each prompt, each reader and each request schema (`answer_schema`) is derived from |
 | `gemini_call` | a `GenerationClient` (`extraction/gemini`'s `GeminiClient`, or a stub) | that client as a `ModelCall`: it builds the request, sends the caller's `response_schema` as `responseJsonSchema`, parses the answer and carries the publisher's token counts |
 | `citations` | one document's normalized text, its per-page split where the rendition has one, the Congress its own index record states, and the chamber-roster vocabulary the caller already parsed | one `CitationFinding` per occurrence (kind, rule version, canonical target key, whether the key is the hosted target's own spelling, **which route reached it**, the matched text, the character span, and the printed page) |
+| `bill_actions` | one document's normalized text and the `bill_number` `CitationFinding`s already read out of it | one `BillActionFinding` per (action phrase, bill) pair: the print's own sealed phrasing, the `bill_stage` rung it maps to or NULL, the publisher's BILLSTATUS action code for that phrasing **in that row's chamber** or none, the dates the sentence states, both spans, how many bills the sentence names and the attachment class that follows from it; plus every phrase that reached no bill |
 | `bill_family` | one `BillFamilyCapture` (a `BillStatus` and every acquired printing), plus three injected model seams | twelve tables' worth of rows from `spicy_docs.schemas`, each one already proved against its own contract, and a `FamilyRefusal` for every row it could have produced and did not — see [`tables.md`](tables.md) |
 
 `normalize_for_comparison` and `token_jaccard` live in `bill_signals`, where
@@ -202,6 +203,22 @@ re-check: 87 RINs and 38 agency dockets across the eight activity reports, and
 no CRPT MODS states either, where the bills and laws the first measurement led
 with are all already stated. Finally, a span is only meaningful against the exact text it
 was measured in, which is why every row carries that text's digest.
+
+`bill_actions` reads what a print says *happened to* a bill, and its rows
+carry their own measured error rate because they have to: a published row is
+both the right kind and the right bill **83.3%** of the time where the sentence
+names one bill and **50%** where it names several, so `attachment_confidence`
+is the column a consumer filters on and `bills_in_sentence` is the raw
+predicate behind it. It cannot see an action stated in a sentence that does not
+name the bill — 2,952 phrase occurrences across the eight measured prints — so
+recall against what a reader sees is 59.6% and the two figures must never be
+read as one. It never widens `bill_stage`'s sealed matchers to the print's
+register: `passed the House` is one word from the sealed `passed house` and is
+recorded with a NULL rung instead. And it attributes the publisher's action
+codes per row rather than per document, because a House committee's report
+states Senate actions on Senate bills — the two events it finds **no** code for
+in either chamber are a House committee hearing and a House markup, which is
+the measured reason `bill_committee_actions` exists.
 
 ## Decision
 

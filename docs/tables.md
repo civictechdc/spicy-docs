@@ -61,6 +61,7 @@ sentence per column for the host's data dictionary.
 | `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | 20 | `schemas.roster_tables` |
 | `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | 17 | `schemas.document_citation_tables`, `interpretation.citations` |
 | `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 36 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
+| `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | 27 | `schemas.bill_action_tables`, `interpretation.bill_actions` |
 
 Six hundred and seventy columns in all, each with its own sentence.
 
@@ -225,6 +226,35 @@ rollup estimated.
   row per (document, key) is `GROUP BY document_key, cite_kind, target_key`
   with `COUNT(*)` and `MIN(span_start)`. Storing that instead would make the
   table a lossy copy of the MODS, which is exactly what it must not be.
+- **`bill_committee_actions`** is the one table here whose rows carry their
+  own measured error rate, and **a consumer must filter on it**:
+  `WHERE attachment_confidence = 'single'` is the hosted-quality subset.
+  Measured on 60 hand-checked mentions
+  (`docs/research/bill-action-relationship-2026-09-20.md`): a `single` row is
+  both the right kind and the right bill **83.3%** of the time (30 of 36), a
+  `multi` row **50%** (2 of 4). **4,089 of 4,456 rows (91.8%) are `single`**,
+  so the restriction costs 8% of the volume. `multi` rows are kept in the
+  table as evidence to verify rather than dropped, because a coin-flip row a
+  reader can check beats a fact nobody can. `bills_in_sentence` is the raw
+  predicate behind the label, published so a consumer can set its own
+  threshold.
+  **Precision is not recall.** 83.3% is a statement about *what is published*.
+  Against what a reader sees stated in the entry, these rules capture
+  **59.6%**: the print writes "the bill" after naming it once, sets an en-bloc
+  disposition as a sentence about "the measures", and states a committee
+  consideration date in a ruled table's column header. A consumer counting
+  hearings from these rows is counting a floor, and
+  `document_citations.span_start` on the same document and digest is where the
+  rest of the evidence is.
+  **`billstatus_action_code` is NULL for a House hearing or markup because the
+  publisher has no code**, not because the print is unmapped: section 3 of the
+  BILLSTATUS user guide has no House-side hearing or markup code at all — its
+  only entries are `13100` and `13200`, both Senate. Asked for 20 sampled
+  bills' whole action lists, the publisher states **none** of the print's 15
+  subcommittee hearings by code and 10 of them not at all, while all 8 markups
+  appear as free text from the `House committee actions` source system. So for
+  hearings the print is the only structured source, and for markups it is a
+  second, coded one.
 - **`house_activity_reports`** takes every descriptive field from the keyed
   GovInfo records and none from the print: the summary's title, Congress,
   session, issue date and **page count**, and the MODS's authoring committee

@@ -1,9 +1,197 @@
 {
+  "billstatus_overlap": {
+    "absent_from_billstatus": [
+      {
+        "bill_id": "118-hr-4814",
+        "matched_text": "held a hearing",
+        "phrasing": "held_hearing",
+        "stated_date": "2023-09-27"
+      },
+      {
+        "bill_id": "118-hr-5556",
+        "matched_text": "held a hearing",
+        "phrasing": "held_hearing",
+        "stated_date": "2023-09-27"
+      },
+      {
+        "bill_id": "118-hr-2365",
+        "matched_text": "held a hearing",
+        "phrasing": "held_hearing",
+        "stated_date": "2023-06-14"
+      },
+      {
+        "bill_id": "118-hr-2377",
+        "matched_text": "held a hearing",
+        "phrasing": "held_hearing",
+        "stated_date": "2023-10-19"
+      },
+      {
+        "bill_id": "118-hr-3631",
+        "matched_text": "held a hearing",
+        "phrasing": "held_hearing",
+        "stated_date": "2023-06-13"
+      },
+      {
+        "bill_id": "118-hr-3842",
+        "matched_text": "held a hearing",
+        "phrasing": "held_hearing",
+        "stated_date": "2023-09-19"
+      },
+      {
+        "bill_id": "118-hr-3892",
+        "matched_text": "held a hearing",
+        "phrasing": "held_hearing",
+        "stated_date": "2023-06-21"
+      },
+      {
+        "bill_id": "118-hr-4104",
+        "matched_text": "held a hearing",
+        "phrasing": "held_hearing",
+        "stated_date": "2023-10-19"
+      }
+    ],
+    "bills_requested": 20,
+    "code_matched": 44,
+    "date_matched": 52,
+    "hearing_or_markup_rows": 23,
+    "hearing_or_markup_stated_by_billstatus": 13,
+    "no_code_in_vocabulary": 29,
+    "per_phrasing": {
+      "became_public_law": {
+        "code_matched": 2,
+        "coded": true,
+        "date_matched": 1,
+        "rows": 2
+      },
+      "declined_markup": {
+        "code_matched": 0,
+        "coded": false,
+        "date_matched": 0,
+        "rows": 1
+      },
+      "discharged": {
+        "code_matched": 0,
+        "coded": true,
+        "date_matched": 1,
+        "rows": 1
+      },
+      "favorably_forwarded": {
+        "code_matched": 0,
+        "coded": false,
+        "date_matched": 2,
+        "rows": 2
+      },
+      "favorably_reported": {
+        "code_matched": 4,
+        "coded": true,
+        "date_matched": 3,
+        "rows": 5
+      },
+      "held_hearing": {
+        "code_matched": 0,
+        "coded": false,
+        "date_matched": 3,
+        "rows": 15,
+        "stated_by_any_wording": 5
+      },
+      "held_markup": {
+        "code_matched": 0,
+        "coded": false,
+        "date_matched": 7,
+        "rows": 8,
+        "stated_by_any_wording": 8
+      },
+      "introduced": {
+        "code_matched": 16,
+        "coded": true,
+        "date_matched": 15,
+        "rows": 16
+      },
+      "not_considered": {
+        "code_matched": 0,
+        "coded": false,
+        "date_matched": 0,
+        "rows": 1
+      },
+      "ordered_reported": {
+        "code_matched": 3,
+        "coded": true,
+        "date_matched": 0,
+        "rows": 3
+      },
+      "passed_house": {
+        "code_matched": 1,
+        "coded": true,
+        "date_matched": 1,
+        "rows": 1
+      },
+      "passed_senate": {
+        "code_matched": 1,
+        "coded": true,
+        "date_matched": 0,
+        "rows": 1
+      },
+      "placed_on_calendar": {
+        "code_matched": 1,
+        "coded": true,
+        "date_matched": 1,
+        "rows": 1
+      },
+      "presented_to_president": {
+        "code_matched": 1,
+        "coded": true,
+        "date_matched": 1,
+        "rows": 1
+      },
+      "received_in_chamber": {
+        "code_matched": 0,
+        "coded": false,
+        "date_matched": 2,
+        "rows": 2
+      },
+      "referred": {
+        "code_matched": 12,
+        "coded": true,
+        "date_matched": 12,
+        "rows": 12
+      },
+      "report_filed": {
+        "code_matched": 0,
+        "coded": true,
+        "date_matched": 0,
+        "rows": 1
+      },
+      "reported": {
+        "code_matched": 1,
+        "coded": true,
+        "date_matched": 1,
+        "rows": 1
+      },
+      "suspension": {
+        "code_matched": 2,
+        "coded": true,
+        "date_matched": 2,
+        "rows": 2
+      }
+    },
+    "publisher_action_rows": 197,
+    "publisher_source_systems": {
+      "House committee actions": 48,
+      "House floor actions": 69,
+      "Library of Congress": 65,
+      "Senate": 15
+    },
+    "rows_compared": 76
+  },
   "citation_rule_version": "001",
   "documents": [
     {
       "action_bills_not_in_mods": [],
       "action_rows": 1764,
+      "attachment": {
+        "multi": 104,
+        "single": 1660
+      },
       "distinct_bills": 379,
       "mentions": 2071,
       "mentions_in_multi_bill_sentence": 282,
@@ -34,11 +222,15 @@
       "pages": 282,
       "sentence_scoped_rows": 1868,
       "text_characters": 622860,
-      "text_sha256": "0aaf75b711afcfbb852abd507e6b53c008f7da27b01d2c5c3bc2c9f105fbd217"
+      "text_sha256": "0aaf75b711afcfbb852abd507e6b53c008f7da27b01d2c5c3bc2c9f105fbd217",
+      "trusted_rows": 1660
     },
     {
       "action_bills_not_in_mods": [],
       "action_rows": 23,
+      "attachment": {
+        "single": 23
+      },
       "distinct_bills": 179,
       "mentions": 267,
       "mentions_in_multi_bill_sentence": 3,
@@ -59,11 +251,16 @@
       "pages": 56,
       "sentence_scoped_rows": 23,
       "text_characters": 140317,
-      "text_sha256": "f2c52f60c527c27c0ef6389cf4f2fbb94c5cedd7ba5cfe3632d459dd7ad915f7"
+      "text_sha256": "f2c52f60c527c27c0ef6389cf4f2fbb94c5cedd7ba5cfe3632d459dd7ad915f7",
+      "trusted_rows": 23
     },
     {
       "action_bills_not_in_mods": [],
       "action_rows": 315,
+      "attachment": {
+        "multi": 14,
+        "single": 301
+      },
       "distinct_bills": 110,
       "mentions": 347,
       "mentions_in_multi_bill_sentence": 31,
@@ -96,11 +293,16 @@
       "pages": 127,
       "sentence_scoped_rows": 331,
       "text_characters": 358949,
-      "text_sha256": "2028842d7ec88ffa756526a5ddc76a77a55c1048c9cb31f538071e472e370ad2"
+      "text_sha256": "2028842d7ec88ffa756526a5ddc76a77a55c1048c9cb31f538071e472e370ad2",
+      "trusted_rows": 301
     },
     {
       "action_bills_not_in_mods": [],
       "action_rows": 186,
+      "attachment": {
+        "multi": 84,
+        "single": 102
+      },
       "distinct_bills": 217,
       "mentions": 427,
       "mentions_in_multi_bill_sentence": 183,
@@ -125,11 +327,16 @@
       "pages": 119,
       "sentence_scoped_rows": 448,
       "text_characters": 340074,
-      "text_sha256": "3f7d6c61a7c0e4b1cd1bbd6cc4cd58a0fae16c71a74c1a1c2679867b685717a3"
+      "text_sha256": "3f7d6c61a7c0e4b1cd1bbd6cc4cd58a0fae16c71a74c1a1c2679867b685717a3",
+      "trusted_rows": 102
     },
     {
       "action_bills_not_in_mods": [],
       "action_rows": 1441,
+      "attachment": {
+        "multi": 136,
+        "single": 1305
+      },
       "distinct_bills": 193,
       "mentions": 1697,
       "mentions_in_multi_bill_sentence": 296,
@@ -159,11 +366,16 @@
       "pages": 296,
       "sentence_scoped_rows": 1650,
       "text_characters": 742687,
-      "text_sha256": "b68ec22ca635d83418938b62ce9d671ce61969fb390411f9b3e53714c5fc8f59"
+      "text_sha256": "b68ec22ca635d83418938b62ce9d671ce61969fb390411f9b3e53714c5fc8f59",
+      "trusted_rows": 1305
     },
     {
       "action_bills_not_in_mods": [],
       "action_rows": 316,
+      "attachment": {
+        "multi": 17,
+        "single": 299
+      },
       "distinct_bills": 89,
       "mentions": 479,
       "mentions_in_multi_bill_sentence": 71,
@@ -191,11 +403,16 @@
       "pages": 103,
       "sentence_scoped_rows": 368,
       "text_characters": 386727,
-      "text_sha256": "8d63474f87d460affd4d4029087fa16cc1d27fd0a1c74e4ba45171f9de10c6a3"
+      "text_sha256": "8d63474f87d460affd4d4029087fa16cc1d27fd0a1c74e4ba45171f9de10c6a3",
+      "trusted_rows": 299
     },
     {
       "action_bills_not_in_mods": [],
       "action_rows": 71,
+      "attachment": {
+        "multi": 11,
+        "single": 60
+      },
       "distinct_bills": 46,
       "mentions": 126,
       "mentions_in_multi_bill_sentence": 20,
@@ -227,11 +444,16 @@
       "pages": 99,
       "sentence_scoped_rows": 109,
       "text_characters": 247571,
-      "text_sha256": "d282e29e109da997b5e85176ea308b1af5de4b96b4d0de4009bc0272967df77a"
+      "text_sha256": "d282e29e109da997b5e85176ea308b1af5de4b96b4d0de4009bc0272967df77a",
+      "trusted_rows": 60
     },
     {
       "action_bills_not_in_mods": [],
       "action_rows": 340,
+      "attachment": {
+        "multi": 1,
+        "single": 339
+      },
       "distinct_bills": 281,
       "mentions": 951,
       "mentions_in_multi_bill_sentence": 6,
@@ -258,23 +480,43 @@
       "pages": 167,
       "sentence_scoped_rows": 341,
       "text_characters": 471056,
-      "text_sha256": "c13d6db4ab9a8928185965281256779dc77fb6e0a1f669ee62783459e49c78cb"
+      "text_sha256": "c13d6db4ab9a8928185965281256779dc77fb6e0a1f669ee62783459e49c78cb",
+      "trusted_rows": 339
     }
   ],
+  "fixtures": {
+    "CRPT-118hrpt965": {
+      "action_rows": 182,
+      "attachment": {
+        "multi": 1,
+        "single": 181
+      },
+      "distinct_bills_with_an_action": 39,
+      "mentions": 208,
+      "orphan_phrases": 98,
+      "pages": 60,
+      "text_sha256": "3878beee22ee5e2a84a728c4fd2ccc401649fd11852e62659a4143ea066dd723",
+      "trusted_rows": 181
+    },
+    "CRPT-118hrpt968": {
+      "action_rows": 23,
+      "attachment": {
+        "single": 23
+      },
+      "distinct_bills_with_an_action": 19,
+      "mentions": 267,
+      "orphan_phrases": 159,
+      "pages": 56,
+      "text_sha256": "f2c52f60c527c27c0ef6389cf4f2fbb94c5cedd7ba5cfe3632d459dd7ad915f7",
+      "trusted_rows": 23
+    }
+  },
   "guide_codes_not_in_the_retained_guide": {},
   "hand_check": {
     "attachment": {
       "correct": 32,
       "judged": 36,
-      "multi_bill_sentence": {
-        "correct": 2,
-        "judged": 4
-      },
-      "precision": 0.8889,
-      "sole_bill_sentence": {
-        "correct": 30,
-        "judged": 32
-      }
+      "precision": 0.8889
     },
     "classification": {
       "correct": 36,
@@ -284,6 +526,18 @@
     "mentions_checked": 60,
     "mentions_with_a_tool_action": 40,
     "mentions_without_a_tool_action": 20,
+    "published_row_precision": {
+      "multi": {
+        "correct": 2,
+        "judged": 4,
+        "precision": 0.5
+      },
+      "single": {
+        "correct": 30,
+        "judged": 36,
+        "precision": 0.8333
+      }
+    },
     "recall": {
       "captured": 94,
       "per_stratum": {
@@ -351,10 +605,16 @@
       "billstatus_codes": [
         "36000",
         "E40000",
-        "49"
+        "E30000"
+      ],
+      "billstatus_codes_any_chamber": [
+        "36000",
+        "E40000",
+        "E30000"
       ],
       "distinct_bills": 126,
-      "note": "the only phrasing a sealed matcher reaches through the law rung",
+      "house_code_absent": false,
+      "note": "the one phrasing whose sealed rung is `law`; also the one whose commonest false positive is a `Pub. L.` cite naming the law a bill AMENDS",
       "occurrences": 263,
       "orphan_occurrences": 230,
       "phrasing": "became_public_law",
@@ -363,8 +623,10 @@
     },
     {
       "billstatus_codes": [],
+      "billstatus_codes_any_chamber": [],
       "distinct_bills": 4,
-      "note": "no sealed matcher; the veto is not a rung of the ladder",
+      "house_code_absent": false,
+      "note": "no sealed rung and no section-3 code: a veto is neither",
       "occurrences": 8,
       "orphan_occurrences": 13,
       "phrasing": "vetoed",
@@ -376,7 +638,12 @@
         "E20000",
         "28000"
       ],
+      "billstatus_codes_any_chamber": [
+        "E20000",
+        "28000"
+      ],
       "distinct_bills": 29,
+      "house_code_absent": false,
       "note": "here so the sealed `presented` rung is reachable from a print phrasing at all",
       "occurrences": 30,
       "orphan_occurrences": 0,
@@ -386,12 +653,14 @@
     },
     {
       "billstatus_codes": [
-        "H25200",
-        "47",
-        "48"
+        "H25200"
+      ],
+      "billstatus_codes_any_chamber": [
+        "H25200"
       ],
       "distinct_bills": 1,
-      "note": "here so the sealed `conference` rung is reachable; measured near zero in this family",
+      "house_code_absent": false,
+      "note": "here so the sealed `conference` rung is reachable; measured at 2 rows in this family",
       "occurrences": 2,
       "orphan_occurrences": 15,
       "phrasing": "conference",
@@ -400,8 +669,10 @@
     },
     {
       "billstatus_codes": [],
+      "billstatus_codes_any_chamber": [],
       "distinct_bills": 25,
-      "note": "a negative statement: the print says an action did not happen, which no index states",
+      "house_code_absent": false,
+      "note": "a negative statement: the print says an action did NOT happen, which no index states and no action code can",
       "occurrences": 25,
       "orphan_occurrences": 3,
       "phrasing": "not_considered",
@@ -410,8 +681,10 @@
     },
     {
       "billstatus_codes": [],
+      "billstatus_codes_any_chamber": [],
       "distinct_bills": 25,
-      "note": "before held_markup, which its text contains",
+      "house_code_absent": false,
+      "note": "before held_markup, whose text it contains",
       "occurrences": 25,
       "orphan_occurrences": 1,
       "phrasing": "declined_markup",
@@ -419,11 +692,12 @@
       "sealed_stage": null
     },
     {
-      "billstatus_codes": [
-        "17000",
-        "82"
+      "billstatus_codes": [],
+      "billstatus_codes_any_chamber": [
+        "17000"
       ],
       "distinct_bills": 43,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 55,
       "orphan_occurrences": 26,
@@ -433,11 +707,14 @@
     },
     {
       "billstatus_codes": [
-        "8000",
-        "81"
+        "8000"
+      ],
+      "billstatus_codes_any_chamber": [
+        "8000"
       ],
       "distinct_bills": 112,
-      "note": "the sealed matcher is 'passed house'; the print writes 'passed the House', one word apart",
+      "house_code_absent": false,
+      "note": "the sealed matcher is `passed house`; the print writes `passed the House`, one word apart. Recorded as print register rather than patched into STAGE_RULES",
       "occurrences": 132,
       "orphan_occurrences": 186,
       "phrasing": "passed_house",
@@ -448,7 +725,11 @@
       "billstatus_codes": [
         "H37300"
       ],
+      "billstatus_codes_any_chamber": [
+        "H37300"
+      ],
       "distinct_bills": 134,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 146,
       "orphan_occurrences": 38,
@@ -458,10 +739,14 @@
     },
     {
       "billstatus_codes": [
+        "8000"
+      ],
+      "billstatus_codes_any_chamber": [
         "8000",
         "17000"
       ],
       "distinct_bills": 6,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 9,
       "orphan_occurrences": 11,
@@ -473,7 +758,11 @@
       "billstatus_codes": [
         "H12410"
       ],
+      "billstatus_codes_any_chamber": [
+        "H12410"
+      ],
       "distinct_bills": 22,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 27,
       "orphan_occurrences": 1,
@@ -485,7 +774,11 @@
       "billstatus_codes": [
         "H1L210"
       ],
+      "billstatus_codes_any_chamber": [
+        "H1L210"
+      ],
       "distinct_bills": 7,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 9,
       "orphan_occurrences": 0,
@@ -498,7 +791,13 @@
         "H12200",
         "5000"
       ],
+      "billstatus_codes_any_chamber": [
+        "H12200",
+        "5000",
+        "14000"
+      ],
       "distinct_bills": 175,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 270,
       "orphan_occurrences": 124,
@@ -509,10 +808,15 @@
     {
       "billstatus_codes": [
         "H12200",
+        "5000"
+      ],
+      "billstatus_codes_any_chamber": [
+        "H12200",
         "5000",
-        "79"
+        "14000"
       ],
       "distinct_bills": 215,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 228,
       "orphan_occurrences": 31,
@@ -522,8 +826,10 @@
     },
     {
       "billstatus_codes": [],
+      "billstatus_codes_any_chamber": [],
       "distinct_bills": 136,
-      "note": "a subcommittee-to-full-committee step; no sealed matcher and no BILLSTATUS action text for it",
+      "house_code_absent": false,
+      "note": "the subcommittee-to-full-committee step: no sealed rung and no section-3 code at all",
       "occurrences": 139,
       "orphan_occurrences": 1,
       "phrasing": "favorably_forwarded",
@@ -534,7 +840,11 @@
       "billstatus_codes": [
         "H14000"
       ],
+      "billstatus_codes_any_chamber": [
+        "H14000"
+      ],
       "distinct_bills": 116,
+      "house_code_absent": false,
       "note": "before referred, which the same sentence usually also states of the receiving committee",
       "occurrences": 118,
       "orphan_occurrences": 4,
@@ -544,12 +854,15 @@
     },
     {
       "billstatus_codes": [
+        "H12300"
+      ],
+      "billstatus_codes_any_chamber": [
         "H12300",
-        "77",
-        "78"
+        "14500"
       ],
       "distinct_bills": 104,
-      "note": "the bare verb: the print writes both 'was discharged from further consideration of' and 'the Committee ... discharged H.R. 2365', and a rule that reads only the first misses the second",
+      "house_code_absent": false,
+      "note": "the bare verb: the print writes both `was discharged from further consideration of` and `the Committee ... discharged H.R. 2365`, and a rule reading only the first missed the second",
       "occurrences": 206,
       "orphan_occurrences": 17,
       "phrasing": "discharged",
@@ -558,10 +871,14 @@
     },
     {
       "billstatus_codes": [
+        "H12100"
+      ],
+      "billstatus_codes_any_chamber": [
         "H12100",
         "14900"
       ],
       "distinct_bills": 138,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 138,
       "orphan_occurrences": 92,
@@ -572,11 +889,16 @@
     {
       "billstatus_codes": [
         "H12200",
+        "5000"
+      ],
+      "billstatus_codes_any_chamber": [
+        "H12200",
         "5000",
-        "79"
+        "14000"
       ],
       "distinct_bills": 145,
-      "note": "past tense only: the plural noun in a bill's own title (`to require periodic reviews and updated reports`) is not a committee reporting it, and reading it as one produced 23 false rows against 162 real ones",
+      "house_code_absent": false,
+      "note": "past tense only: the plural noun in a bill's own title (`updated reports relating to`) is not a committee reporting it, and reading it as one produced 23 false rows against 162 real ones",
       "occurrences": 162,
       "orphan_occurrences": 54,
       "phrasing": "reported",
@@ -584,13 +906,13 @@
       "sealed_stage": "committee"
     },
     {
-      "billstatus_codes": [
-        "74",
-        "75",
+      "billstatus_codes": [],
+      "billstatus_codes_any_chamber": [
         "13200"
       ],
       "distinct_bills": 155,
-      "note": "",
+      "house_code_absent": true,
+      "note": "219 rows. Section 3 has NO House markup code: 13200 says Senate. For these House prints the sentence is the only structured statement of the event",
       "occurrences": 219,
       "orphan_occurrences": 57,
       "phrasing": "held_markup",
@@ -598,13 +920,13 @@
       "sealed_stage": "committee"
     },
     {
-      "billstatus_codes": [
-        "72",
-        "73",
+      "billstatus_codes": [],
+      "billstatus_codes_any_chamber": [
         "13100"
       ],
       "distinct_bills": 333,
-      "note": "",
+      "house_code_absent": true,
+      "note": "420 rows. Section 3 has NO House hearing code: 13100 says Senate. Its 1,590 orphans are general oversight hearings and index lines, not bill hearings (reviewer sample of 25)",
       "occurrences": 420,
       "orphan_occurrences": 1590,
       "phrasing": "held_hearing",
@@ -614,10 +936,15 @@
     {
       "billstatus_codes": [
         "H11100",
+        "2000"
+      ],
+      "billstatus_codes_any_chamber": [
+        "H11100",
         "2000",
         "11000"
       ],
       "distinct_bills": 501,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 744,
       "orphan_occurrences": 105,
@@ -627,10 +954,14 @@
     },
     {
       "billstatus_codes": [
+        "1000"
+      ],
+      "billstatus_codes_any_chamber": [
         "1000",
         "10000"
       ],
       "distinct_bills": 699,
+      "house_code_absent": false,
       "note": "",
       "occurrences": 753,
       "orphan_occurrences": 238,
@@ -640,7 +971,9 @@
     },
     {
       "billstatus_codes": [],
+      "billstatus_codes_any_chamber": [],
       "distinct_bills": 73,
+      "house_code_absent": false,
       "note": "a bill-to-bill relationship, not a bill action; the commonest multi-bill sentence in the corpus",
       "occurrences": 83,
       "orphan_occurrences": 6,
@@ -652,8 +985,12 @@
       "billstatus_codes": [
         "H30000"
       ],
+      "billstatus_codes_any_chamber": [
+        "H30000"
+      ],
       "distinct_bills": 146,
-      "note": "the lookbehind keeps 'further consideration' with the discharge that states it",
+      "house_code_absent": false,
+      "note": "the lookbehind keeps `further consideration` with the discharge that states it",
       "occurrences": 245,
       "orphan_occurrences": 109,
       "phrasing": "considered",
@@ -674,6 +1011,7 @@
     "orphan_phrases": 2952,
     "pages": 1249,
     "rows_whose_phrasing_billstatus_has_no_code_for": 280,
-    "sentence_scoped_rows": 5138
+    "sentence_scoped_rows": 5138,
+    "trusted_rows": 4089
   }
 }

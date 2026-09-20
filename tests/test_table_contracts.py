@@ -796,6 +796,41 @@ def _document_citation_cases() -> list[ShapedCase]:
                     (package, _text_digest(package), finding.kind, finding.target_key, str(finding.span_start)),
                 )
             )
+        cases.extend(_bill_committee_action_cases(package, findings))
+    return cases
+
+
+#: One action row per (phrasing, attachment class) per package: every column
+#: path including the NULL ones a House hearing produces, without turning the
+#: generic loop into four thousand near-identical cases.
+#: ``test_bill_actions.py`` covers the rest, and
+#: ``test_every_action_row_of_both_reports_keys_uniquely`` below covers identity
+#: over the whole set.
+def _bill_committee_action_cases(package: str, findings) -> list[ShapedCase]:
+    from spicy_docs.interpretation.bill_actions import find_bill_actions
+    from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME
+    from spicy_docs.schemas.bill_action_tables import shape_bill_committee_action
+    from spicy_docs.schemas.document_citation_tables import GOVINFO_PACKAGE, document_provenance
+    from tests.test_citations import body_for
+
+    body = body_for(package)
+    provenance = document_provenance(body, document_key=package, document_kind=GOVINFO_PACKAGE)
+    version = CITATION_RULES_BY_NAME["bill_number"].version
+    reading = find_bill_actions(body.text, findings)
+    chosen: dict[str, object] = {}
+    for action in reading.findings:
+        chosen.setdefault(f"{action.phrasing}:{action.attachment}:{bool(action.billstatus_action_codes)}", action)
+    cases: list[ShapedCase] = []
+    for action in chosen.values():
+        cases.append(
+            _case(
+                "bill_committee_actions",
+                shape_bill_committee_action(action, provenance, citation_rule_version=version),
+                # Rebuilt from the finding and the fixture's own text, never
+                # read back out of the row the case is checking.
+                (package, _text_digest(package), action.bill_id, action.phrasing, str(action.span_start)),
+            )
+        )
     return cases
 
 
@@ -1116,6 +1151,7 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "committee_assignments": ("schemas/roster_tables.py", "sources/congress/committee_rosters.py"),
     # The rollup's build order, step 1: the shared link table over the densest
     # PDF-only family.
+    "bill_committee_actions": ("schemas/bill_action_tables.py", "interpretation/bill_actions.py"),
     "document_citations": ("schemas/document_citation_tables.py", "interpretation/citations.py"),
     "house_activity_reports": (
         "schemas/document_citation_tables.py",

@@ -72,18 +72,29 @@ environment variable. The receipt it writes carries retained public text only.
 from __future__ import annotations
 
 import argparse
-import bisect
 import hashlib
 import json
 import re
 from collections import Counter
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from spicy_docs.interpretation.bill_stage import infer_stage_from_text
+from spicy_docs.interpretation.bill_actions import (
+    ATTACHMENT_MULTI,
+    ATTACHMENT_SINGLE,
+    BILLSTATUS_ACTION_CODES,
+    HOUSE,
+    HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE,
+    PRINT_ACTION_RULE_SET_VERSION,
+    PRINT_ACTION_RULES,
+    find_bill_actions,
+    guide_codes_for,
+    sealed_stage,
+)
 from spicy_docs.interpretation.citations import CITATION_RULES_BY_NAME, find_citations
+from spicy_docs.sources.congress.listing import API as CONGRESS_API
 
 #: The family name the rollup receipt files these eight prints under.
 FAMILY = "house_activity"
@@ -100,424 +111,39 @@ class RelationshipError(RuntimeError):
     """This measurement could not read something it was pointed at."""
 
 
-# --- the flattened matching text -----------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class FlatText:
-    """The retained text with line-wrap hyphens closed, and the offsets back to it.
-
-    ``flat[i]`` was read from ``retained[origin[i]]``; ``flat_index[j]`` is
-    where ``retained[j]`` landed in ``flat`` (the character before it, for a
-    character the flattening dropped). Both directions are needed: the citation
-    rule matched in the retained text and the phrase rules match in the flat
-    one.
-    """
-
-    retained: str
-    flat: str
-    origin: tuple[int, ...]
-    flat_index: tuple[int, ...]
-
-    def to_flat(self, offset: int) -> int:
-        return self.flat_index[min(offset, len(self.flat_index) - 1)]
-
-    def to_retained(self, offset: int) -> int:
-        return self.origin[min(offset, len(self.origin) - 1)] if self.origin else 0
-
-
-#: A hyphen at end of line is a print wrap in these documents; the character it
-#: joins to is on the next line.  ``‐`` is the Unicode hyphen GPO's own
-#: typesetting occasionally sets instead of the ASCII one.
-_WRAP_HYPHENS = "-‐"
-
-
-def flatten(text: str) -> FlatText:
-    """Close line-wrap hyphens, space the newlines, and keep both offset maps."""
-    out: list[str] = []
-    origin: list[int] = []
-    index = 0
-    size = len(text)
-    while index < size:
-        character = text[index]
-        if character in _WRAP_HYPHENS and index + 1 < size and text[index + 1] == "\n":
-            index += 2
-            continue
-        out.append(" " if character == "\n" else character)
-        origin.append(index)
-        index += 1
-    flat_index = [0] * (size + 1)
-    for position, source in enumerate(origin):
-        flat_index[source] = position
-    for position in range(1, size + 1):
-        if flat_index[position] == 0:
-            flat_index[position] = flat_index[position - 1]
-    return FlatText(text, "".join(out), tuple(origin), tuple(flat_index))
-
-
-# --- sentences -----------------------------------------------------------------------
-
-#: A sentence may close inside its own quotation marks or parentheses -- this
-#: family sets a bill's short title as ``the "PHE Congressional Review Act of
-#: 2023."`` and a disposition as ``(ordered favorably reported ... voice
-#: vote.)``. A break rule that requires whitespace immediately after the stop
-#: reads the whole of the next sentence as part of that title, which is how a
-#: hearing held on a *discussion draft* came to be attached to the bill named
-#: in the sentence after it.
-_SENTENCE_BREAK = re.compile(r"(?<=[.!?])[\"'”’)\]]*\s+")
-
-#: Tokens that end in a period without ending a sentence. Measured, not
-#: guessed: every one of these appears immediately before a would-be break in
-#: these eight prints, and ``H.J.`` alone mis-split 20 mentions before it was
-#: added -- a bill designator is the one abbreviation this corpus cannot afford
-#: to split on, since the split would separate the bill from its own action.
-ABBREVIATIONS: frozenset[str] = frozenset(
-    {
-        "h.r", "h.j", "s.j", "h.con", "s.con", "h.res", "s.res", "hr", "h", "s", "j", "con", "res", "conres",
-        "jres", "no", "nos", "mr", "mrs", "ms", "dr", "jr", "sr", "rept", "repts", "rep", "sen", "u.s", "u.s.c",
-        "p.l", "pub", "l", "cong", "st", "inc", "co", "corp", "ct", "stat", "doc", "ex", "fed", "reg", "c.f.r",
-        "sec", "secs", "art", "vs", "v", "hon", "adm", "gen", "gov", "lt", "col", "maj", "capt", "ph", "d",
-        "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sept", "sep", "oct", "nov", "dec", "cal", "dist",
-    }
-)  # fmt: skip
-
-_LAST_TOKEN = re.compile(r"[\s(\[“‘]")
-
-
-#: A list number (``1.``), a lettered item (``c.``) or a roman numeral
-#: (``II.``) only stands for an entry heading when it *opens* the sentence.
-#: Measured, because the obvious version of this rule was wrong: reading any
-#: short number as a list marker merged "the House passed H.R. 1121 by a vote
-#: of 229 to 118." into the sentence after it, and a merged sentence is exactly
-#: how an action gets attached to the wrong bill. Five characters is enough for
-#: ``23. `` and ``iii. ``.
-_LIST_MARKER = re.compile(r"\d{1,3}|[a-z]|[ivxl]+")
-_LIST_MARKER_COLUMN = 5
-
-
-def sentence_starts(flat: str) -> tuple[int, ...]:
-    """Where each sentence begins in the flattened text.
-
-    A break after an abbreviation is never a break -- ``H.J.`` and ``H. Rept.``
-    are how this family spells a bill and a report -- and a break after an
-    entry marker at the head of its own sentence is not one either.
-    """
-    starts = [0]
-    for match in _SENTENCE_BREAK.finditer(flat):
-        left = flat[max(0, match.start() - 14) : match.start() - 1]
-        token = _LAST_TOKEN.split(left)[-1].lower() if left else ""
-        opening = match.start() - len(token) - 1 - starts[-1] <= _LIST_MARKER_COLUMN
-        if token in ABBREVIATIONS or (opening and _LIST_MARKER.fullmatch(token)):
-            continue
-        starts.append(match.end())
-    return tuple(starts)
-
-
-def sentence_at(starts: Sequence[int], flat: str, offset: int) -> tuple[int, int]:
-    """``(begin, end)`` of the sentence that contains ``offset``."""
-    index = bisect.bisect_right(starts, offset) - 1
-    return starts[index], starts[index + 1] if index + 1 < len(starts) else len(flat)
-
-
-# --- the print's own action phrasings ------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class PrintAction:
-    """One measured print phrasing, and why it is spelled the way it is.
-
-    ``key`` names the phrasing, never the legislative event: this vocabulary
-    describes *what the print wrote*, and the event it means is read off
-    ``bill_stage`` by :func:`sealed_stage` or reported as unmapped. Inventing a
-    parallel event vocabulary here is exactly what the interpretation package
-    forbids.
-    """
-
-    key: str
-    pattern: str
-    note: str = ""
-
-    def compiled(self) -> re.Pattern[str]:
-        return re.compile(self.pattern, re.IGNORECASE)
-
-
-#: The public-law spelling, imported rather than re-written: the citation rule
-#: already reads all four forms these prints set, including the Bluebook one.
-_PUBLIC_LAW = CITATION_RULES_BY_NAME["public_law"].pattern
-
-#: Ordered by precedence, the way ``STAGE_RULES`` is, and for the same reason:
-#: the first rule whose match covers a span owns it, so ``discharged from
-#: further consideration`` is a discharge and not also a consideration, and
-#: ``declined to mark up`` is a refusal and not a markup. Every pattern was
-#: derived from the recurring phrasings in these eight prints; the count each
-#: one reaches is published, including zero.
-PRINT_ACTION_RULES: tuple[PrintAction, ...] = (
-    PrintAction(
-        "became_public_law",
-        rf"became (?:a )?public law|signed into law|{_PUBLIC_LAW}|president \w+ signed|signed by the president",
-        "the only phrasing a sealed matcher reaches through the law rung",
-    ),
-    PrintAction("vetoed", r"veto(?:ed|es)?\b", "no sealed matcher; the veto is not a rung of the ladder"),
-    PrintAction(
-        "presented_to_president",
-        r"presented to the president|transmitted to the president",
-        "here so the sealed `presented` rung is reachable from a print phrasing at all",
-    ),
-    PrintAction(
-        "conference",
-        r"conference report|appointed conferees|conferees|resolving differences",
-        "here so the sealed `conference` rung is reachable; measured near zero in this family",
-    ),
-    PrintAction(
-        "not_considered",
-        r"was not considered|was not taken up|declined consideration|declined to (?:consider|take up)",
-        "a negative statement: the print says an action did not happen, which no index states",
-    ),
-    PrintAction("declined_markup", r"declined to mark ?up", "before held_markup, which its text contains"),
-    PrintAction("passed_senate", r"passed the senate|senate passed|senate agreed to"),
-    PrintAction(
-        "passed_house",
-        r"passed the house|house passed|passed by the house|house agreed to",
-        "the sealed matcher is 'passed house'; the print writes 'passed the House', one word apart",
-    ),
-    PrintAction("suspension", r"suspend the rules and pass\w*|under suspension of the rules|suspension of the rules"),
-    PrintAction("agreed_to", r"was agreed to|agreed to the (?:motion|resolution|amendment)"),
-    PrintAction("placed_on_calendar", r"placed on the (?:union|house|senate) calendar"),
-    PrintAction("rule_for_consideration", r"providing for consideration of|rule provid\w+ for consideration"),
-    PrintAction(
-        "ordered_reported", r"ordered (?:to be )?(?:favorably )?reported|ordered [^.;]{0,80}?favorably reported"
-    ),
-    PrintAction("favorably_reported", r"favorably reported|reported favorably"),
-    PrintAction(
-        "favorably_forwarded",
-        r"favorably forwarded|forwarded [^.;]{0,60}?to the full committee",
-        "a subcommittee-to-full-committee step; no sealed matcher and no BILLSTATUS action text for it",
-    ),
-    PrintAction(
-        "received_in_chamber",
-        r"received in the (?:senate|house)",
-        "before referred, which the same sentence usually also states of the receiving committee",
-    ),
-    PrintAction(
-        "discharged",
-        r"\bdischarged\b",
-        "the bare verb: the print writes both 'was discharged from further consideration of' "
-        "and 'the Committee ... discharged H.R. 2365', and a rule that reads only the first misses the second",
-    ),
-    PrintAction("report_filed", r"h(?:ouse)? ?rept?\.? ?\d{2,3}[-–]\d{1,4}|house report \d{2,3}[-–]\d{1,4}"),
-    PrintAction(
-        "reported",
-        r"\breported\b",
-        "past tense only: the plural noun in a bill's own title "
-        "(`to require periodic reviews and updated reports`) is not a committee reporting it, "
-        "and reading it as one produced 23 false rows against 162 real ones",
-    ),
-    PrintAction("held_markup", r"held a mark ?up|met in open mark ?up session|marked up|mark ?up of|\bmark ?up\b"),
-    PrintAction("held_hearing", r"held a hearing|hearing on|hearing (?:entitled|titled)|\bhearing\b"),
-    PrintAction("referred", r"\breferred\b"),
-    PrintAction("introduced", r"\bintroduced\b"),
-    PrintAction(
-        "included_in",
-        r"(?:were|was) included in|provisions of [^.;]{0,60}?included|incorporated into",
-        "a bill-to-bill relationship, not a bill action; the commonest multi-bill sentence in the corpus",
-    ),
-    PrintAction(
-        "considered",
-        r"(?<!further )\bconsider(?:ed|s)\b|business meeting to consider",
-        "the lookbehind keeps 'further consideration' with the discharge that states it",
-    ),
-)
-
-
-def _rule_set_version(rules: Sequence[PrintAction]) -> str:
-    """A digest over every phrasing's name and pattern, derived rather than written.
-
-    The same device ``citations.CITATION_RULE_SET_VERSION`` uses: editing a
-    pattern moves this, so a sidecar pinned against it cannot silently describe
-    a different vocabulary from the one that produced it.
-    """
-    joined = "\n".join(f"{rule.key}|{rule.pattern}" for rule in rules)
-    return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:12]
-
-
-PRINT_ACTION_RULE_SET_VERSION = _rule_set_version(PRINT_ACTION_RULES)
-
-_COMPILED_ACTIONS: tuple[tuple[str, re.Pattern[str]], ...] = tuple(
-    (rule.key, rule.compiled()) for rule in PRINT_ACTION_RULES
-)
-
-
-def sealed_stage(phrase: str) -> tuple[str | None, str | None]:
-    """``(stage, matcher)`` if ``bill_stage``'s sealed rules read this phrase, else ``(None, None)``.
-
-    Derived, not declared. ``infer_stage_from_text`` returns the default rung
-    with ``rule is None`` when nothing matched, and that -- not a rung of this
-    module's choosing -- is what "the sealed vocabulary does not reach this
-    phrasing" means here.
-    """
-    finding = infer_stage_from_text(phrase)
-    return (None, None) if finding.rule is None else (finding.stage, finding.matcher)
-
-
-# --- dates the print states ----------------------------------------------------------
-
-_MONTHS: Mapping[str, str] = {
-    name: f"{number:02d}"
-    for number, name in enumerate(
-        ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"),
-        start=1,
-    )
-}  # fmt: skip
-_PRINT_DATE = re.compile(
-    r"\b(" + "|".join(_MONTHS) + r")\.?\s+(\d{1,2}),?\s+(\d{4})\b|\b(\d{1,2})/(\d{1,2})/(\d{2,4})\b",
-    re.IGNORECASE,
-)
-
-
-def print_dates(sentence: str) -> tuple[str, ...]:
-    """Every date the sentence states, in ISO form, in the order printed.
-
-    Both spellings this family sets: ``On June 13, 2023,`` in prose and
-    ``3/24/23`` in a markup-summary heading. A two-digit year is read as
-    20xx, which is safe for a 118th-Congress print and stated rather than
-    silently assumed.
-    """
-    found: list[str] = []
-    for match in _PRINT_DATE.finditer(sentence):
-        if match.group(1):
-            found.append(f"{match.group(3)}-{_MONTHS[match.group(1).lower()]}-{int(match.group(2)):02d}")
-        else:
-            year = int(match.group(6))
-            found.append(f"{2000 + year if year < 100 else year}-{int(match.group(4)):02d}-{int(match.group(5)):02d}")
-    return tuple(found)
-
-
 # --- one document's mentions and action rows -----------------------------------------
 
 
-@dataclass(frozen=True, slots=True)
-class ActionRow:
-    """One action occurrence, attached to one bill mention.
-
-    ``attachment`` is how the bill was chosen: ``sole`` when the sentence names
-    one bill, ``nearest`` when it names several and this mention is the closest
-    to the phrase. The two are kept apart because the multi-bill sentence is
-    the failure mode this measurement exists to size.
-    """
-
-    package_id: str
-    bill_id: str
-    phrasing: str
-    stage: str | None
-    matcher: str | None
-    attachment: str
-    matched_text: str
-    bills_in_sentence: int
-    page: int | None
-    sentence_start: int
-    sentence_end: int
-    mention_start: int
-    mention_end: int
-    dates: tuple[str, ...]
-
-
-def _phrase_matches(sentence: str) -> list[tuple[str, int, int, str]]:
-    """``(phrasing, start, end, matched)`` for each phrase this sentence states, precedence first."""
-    taken: list[tuple[int, int]] = []
-    found: list[tuple[str, int, int, str]] = []
-    for key, pattern in _COMPILED_ACTIONS:
-        for match in pattern.finditer(sentence):
-            if any(match.start() < end and start < match.end() for start, end in taken):
-                continue
-            taken.append((match.start(), match.end()))
-            found.append((key, match.start(), match.end(), match.group(0)))
-    found.sort(key=lambda entry: entry[1])
-    return found
-
-
 def measure_document(package_id: str, pages: Sequence[str]) -> dict[str, Any]:
-    """Every bill mention in one print, the sentence it sits in, and the actions attached.
+    """Every bill mention in one print, the actions attached, and what reached no bill.
 
-    The attachment rule is **nearest mention in the same sentence**: an action
-    phrase belongs to the bill whose printed designator is closest to it, ties
-    going to the designator that follows the phrase, because the print's own
-    grammar puts the measure after the verb (``ordered H.R. 1432 favorably
-    reported``, ``held a hearing on H.R. 2691``). The alternative a reader
-    might expect -- every bill in the sentence gets the action -- is measured
-    beside it as ``sentence_scoped_rows``, because the difference between the
-    two *is* the multi-bill exposure.
+    The rules are not here: :func:`interpretation.bill_actions.find_bill_actions`
+    owns the sentence split, the phrasing vocabulary, the attachment rule and
+    the chamber derivation, and the hosted ``bill_committee_actions`` contract
+    is shaped from the same findings. A measurement that restated them would be
+    measuring a second implementation.
+
+    What this adds is the per-document bookkeeping a measurement needs and a
+    contract does not: how many mentions reached an action at all, how many sat
+    in a multi-bill sentence, and what the *sentence-scoped* alternative would
+    have published -- giving every bill in the sentence the action -- because
+    the difference between the two row counts is the multi-bill exposure.
     """
     text = "\n".join(pages)
-    flat = flatten(text)
-    starts = sentence_starts(flat.flat)
     findings = find_citations(text, pages=pages, kinds=("bill_number",), congress=PACKAGE_CONGRESS)
-    located = [(finding, flat.to_flat(finding.span_start)) for finding in findings]
+    reading = find_bill_actions(text, findings)
 
-    by_sentence: dict[tuple[int, int], list[tuple[Any, int]]] = {}
-    for finding, position in located:
-        by_sentence.setdefault(sentence_at(starts, flat.flat, position), []).append((finding, position))
-
-    rows: list[ActionRow] = []
     phrasing_counts: Counter[str] = Counter()
     phrasing_bills: dict[str, set[str]] = {}
-    orphan_phrasings: Counter[str] = Counter()
+    attachment_counts: Counter[str] = Counter()
+    mentions_with_action: set[int] = set()
     sentence_scoped_rows = 0
-    mentions_with_action = 0
-    multi_bill_mentions = 0
-
-    # Every phrase the print states in a sentence that names no bill at all.
-    # This is the ceiling on what a sentence-scoped rule can never reach, and
-    # it is not small: this family writes a bill's long title as its own
-    # sentence and the disposition as the fragment after it ("...from January
-    # 20, 2021 to February 24, 2023. (Ms. Greene) The measure was ordered
-    # favorably reported to the House by a vote of 26Y to 20N."), and it writes
-    # an en-bloc disposition as a sentence about "the measures". Reaching
-    # either needs an *entry* grammar, and the entry is set differently by
-    # every committee in the sample.
-    for index, begin in enumerate(starts):
-        end = starts[index + 1] if index + 1 < len(starts) else len(flat.flat)
-        if (begin, end) in by_sentence:
-            continue
-        for key, _start, _end, _matched in _phrase_matches(flat.flat[begin:end]):
-            orphan_phrasings[key] += 1
-    for (begin, end), mentions in by_sentence.items():
-        sentence = flat.flat[begin:end]
-        phrases = _phrase_matches(sentence)
-        bills = {finding.target_key for finding, _ in mentions}
-        dates = print_dates(sentence)
-        if len(bills) > 1:
-            multi_bill_mentions += len(mentions)
-        sentence_scoped_rows += len(phrases) * len(bills)
-        attached: set[int] = set()
-        for key, phrase_start, _phrase_end, matched in phrases:
-            absolute = begin + phrase_start
-            finding, position = min(
-                mentions,
-                key=lambda entry, anchor=absolute: (abs(entry[1] - anchor), 0 if entry[1] >= anchor else 1),
-            )
-            stage, matcher = sealed_stage(matched)
-            attached.add(id(finding))
-            phrasing_counts[key] += 1
-            phrasing_bills.setdefault(key, set()).add(finding.target_key)
-            rows.append(
-                ActionRow(
-                    package_id=package_id,
-                    bill_id=finding.target_key,
-                    phrasing=key,
-                    stage=stage,
-                    matcher=matcher,
-                    attachment="sole" if len(bills) == 1 else "nearest",
-                    matched_text=matched,
-                    bills_in_sentence=len(bills),
-                    page=finding.page,
-                    sentence_start=flat.to_retained(begin),
-                    sentence_end=flat.to_retained(max(begin, end - 1)) + 1,
-                    mention_start=finding.span_start,
-                    mention_end=finding.span_end,
-                    dates=dates,
-                )
-            )
-        mentions_with_action += len(attached)
+    for action in reading.findings:
+        phrasing_counts[action.phrasing] += 1
+        phrasing_bills.setdefault(action.phrasing, set()).add(action.bill_id)
+        attachment_counts[action.attachment] += 1
+        mentions_with_action.add(action.mention_span_start)
+        sentence_scoped_rows += action.bills_in_sentence
     return {
         "package_id": package_id,
         "pages": len(pages),
@@ -525,15 +151,17 @@ def measure_document(package_id: str, pages: Sequence[str]) -> dict[str, Any]:
         "text_characters": len(text),
         "mentions": len(findings),
         "distinct_bills": len({finding.target_key for finding in findings}),
-        "mentions_with_action": mentions_with_action,
-        "mentions_in_multi_bill_sentence": multi_bill_mentions,
-        "action_rows": len(rows),
+        "mentions_with_action": len(mentions_with_action),
+        "mentions_in_multi_bill_sentence": reading.mentions_in_multi_bill_sentence,
+        "action_rows": len(reading.findings),
         "sentence_scoped_rows": sentence_scoped_rows,
-        "orphan_phrases": sum(orphan_phrasings.values()),
-        "orphan_phrasings": dict(orphan_phrasings),
+        "trusted_rows": attachment_counts[ATTACHMENT_SINGLE],
+        "attachment": dict(attachment_counts),
+        "orphan_phrases": sum(reading.orphan_phrasings.values()),
+        "orphan_phrasings": dict(reading.orphan_phrasings),
         "phrasings": dict(phrasing_counts),
         "phrasing_bills": {key: len(values) for key, values in phrasing_bills.items()},
-        "rows": [asdict(row) for row in rows],
+        "rows": [asdict(action) for action in reading.findings],
     }
 
 
@@ -606,44 +234,40 @@ def mods_bill_keys(mods_receipt: Path, package_id: str) -> tuple[str, ...]:
 
 # --- what BILLSTATUS already states --------------------------------------------------
 
-#: Every action-code row the publisher's own BILLSTATUS guide states for an
-#: event one of these prints writes about, read from the retained fixture
-#: ``tests/fixtures/billstatus_codes/guide-2026-08-03.md`` rather than asserted
-#: here.  The mapping is from this module's phrasing key to the code the guide
-#: lists; a phrasing with no entry is one the guide's tables do not name.
-GUIDE_CODES: Mapping[str, tuple[str, ...]] = {
-    "became_public_law": ("36000", "E40000", "49"),
-    "passed_house": ("8000", "81"),
-    "passed_senate": ("17000", "82"),
-    "suspension": ("H37300",),
-    "placed_on_calendar": ("H12410",),
-    "rule_for_consideration": ("H1L210",),
-    "ordered_reported": ("H12200", "5000"),
-    "favorably_reported": ("H12200", "5000", "79"),
-    "reported": ("H12200", "5000", "79"),
-    "report_filed": ("H12100", "14900"),
-    "discharged": ("H12300", "77", "78"),
-    "received_in_chamber": ("H14000",),
-    "presented_to_president": ("E20000", "28000"),
-    "conference": ("H25200", "47", "48"),
-    "agreed_to": ("8000", "17000"),
-    "held_markup": ("74", "75", "13200"),
-    "held_hearing": ("72", "73", "13100"),
-    "referred": ("H11100", "2000", "11000"),
-    "introduced": ("1000", "10000"),
-    "considered": ("H30000",),
-}
+#: The heading that opens the guide's ``<actionCode>`` table, and the one that
+#: closes it. Scoping matters and the first version of this tool did not scope
+#: at all: it scanned the whole document, so its self-check validated against a
+#: 123-code superset drawn from three different tables -- section 3's action
+#: codes, section 4's type names and **section 5's LOC summaries version
+#: codes** -- and could not fail. Codes 72 *Hearing held in House* and 74
+#: *Markup in House* are section 5 values, the ``<versionCode>`` child of
+#: ``<summaries>``, and reading them as action codes is what produced the claim
+#: that BILLSTATUS already states a House committee's hearings and markups. It
+#: does not: see :data:`interpretation.bill_actions.BILLSTATUS_ACTION_CODES`.
+GUIDE_ACTION_CODE_SECTION = "# 3. Action Code Element Possible Values"
+GUIDE_NEXT_SECTION = "# 4. Actions Type Element Possible Values"
+
+#: A section-5 code whose presence in a "section 3" reading proves the scoping
+#: is broken. Used by the tool's own cross-check and by the test.
+GUIDE_SUMMARIES_VERSION_CODES: frozenset[str] = frozenset({"72", "73", "74", "75", "77", "79", "81", "82", "49"})
 
 
 def guide_action_codes(guide: Path) -> frozenset[str]:
-    """Every code the retained BILLSTATUS guide's two code tables list.
+    """Every ``<actionCode>`` value the retained guide's **section 3** table lists.
 
-    Read from the fixture so :data:`GUIDE_CODES` is checkable against the
-    publisher's own text rather than trusted.
+    Scoped to that one table, so the mapping in
+    ``interpretation.bill_actions`` is checkable against the publisher's own
+    action-code vocabulary and against nothing else.
     """
     if not guide.exists():
         raise RelationshipError(f"no retained BILLSTATUS guide at {guide}")
-    return frozenset(re.findall(r"^\|\s*\*\*([A-Z0-9]{2,6})\*\*\s*\|", guide.read_text(), re.MULTILINE))
+    text = guide.read_text()
+    try:
+        start = text.index(GUIDE_ACTION_CODE_SECTION)
+        finish = text.index(GUIDE_NEXT_SECTION, start)
+    except ValueError as error:
+        raise RelationshipError("the retained guide does not carry the action-code section") from error
+    return frozenset(re.findall(r"^\|\s*\*\*([A-Z0-9]{2,6})\*\*\s*\|", text[start:finish], re.MULTILINE))
 
 
 def overlap_with_hosted(export: Path, bill_ids: Sequence[str]) -> dict[str, Any]:
@@ -692,6 +316,218 @@ def overlap_with_hosted(export: Path, bill_ids: Sequence[str]) -> dict[str, Any]
     }
 
 
+# --- the row-for-row BILLSTATUS overlap ----------------------------------------------
+
+#: The bound. Twenty bills is what answers the question the retained
+#: ``congress_bills`` export cannot: that export carries one action per bill
+#: (``latestAction``), so it can only give a floor on duplication. This asks
+#: the publisher for the **whole action list** of a sample of the bills these
+#: prints act on, which is the only way the claim "BILLSTATUS already holds
+#: this" can rest on rows rather than on a code table.
+MAX_BILLSTATUS_REQUESTS = 20
+BILLSTATUS_USER_AGENT = "spicy-docs-bill-action-relationship/1.0 (https://github.com/civictechdc/spicy-docs)"
+
+
+def _actions_url(bill_id: str) -> str:
+    congress, bill_type, number = bill_id.split("-", 2)
+    return f"{CONGRESS_API}/bill/{congress}/{bill_type}/{number}/actions?limit=250"
+
+
+def billstatus(receipt: Path, env_file: Path, max_requests: int) -> None:
+    """Fetch the full action list for a bounded sample of the bills these prints act on.
+
+    **Why this is worth a keyed request when nothing else here is.** Every
+    other phase reads retained bytes. This one cannot: no full ``bill_actions``
+    export is retained locally and the six committed BILLSTATUS fixtures are
+    thin 119th-Congress measures with no committee-sourced action at all, so
+    the duplication argument would otherwise rest on the publisher's *code
+    table* and not on what the publisher actually files. The corrected reading
+    of that table says section 3 has no House hearing or markup code; this
+    checks whether the action lists agree.
+
+    Resumable and bounded the way every fetcher here is: a bill with a retained
+    body is not re-requested, the run aborts on a credential refusal rather
+    than skipping it as a bad row, and every request is logged scrubbed.
+    """
+    from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key, scrub_credential
+    from spicy_docs.transport.source_acquirer import SourceAcquirer
+
+    measured = json.loads((receipt / "measure.json").read_text())
+    key = read_api_key(env_file, "API_GOV")
+    bodies = receipt / "billstatus"
+    bodies.mkdir(parents=True, exist_ok=True)
+    log_path = receipt / "billstatus-requests.jsonl"
+    rows = [json.loads(line) for line in log_path.read_text().splitlines() if line.strip()] if log_path.exists() else []
+
+    wanted = _billstatus_sample(measured, max_requests)
+    outstanding = [bill for bill in wanted if not (bodies / f"{bill}.json").exists()]
+    if len(outstanding) > max_requests:
+        raise RelationshipError(f"{len(outstanding)} bills to fetch exceeds the {max_requests}-request bound")
+    print(f"{len(wanted)} bills sampled, {len(outstanding)} to fetch")
+
+    acquirer = SourceAcquirer(
+        max_requests=max_requests,
+        timeout_seconds=60,
+        min_request_interval_seconds=0.5,
+        user_agent=BILLSTATUS_USER_AGENT,
+        label="BILLSTATUS action overlap",
+        error_type=RelationshipError,
+        context_key="bill_action_relationship",
+        headers={"X-Api-Key": key},
+        credential=key,
+    )
+    try:
+        for bill in outstanding:
+            url = _actions_url(bill)
+            try:
+                capture = acquirer.capture_validated(
+                    url,
+                    media_types=("application/json",),
+                    parse=lambda capture, _max_bytes: capture,
+                    max_bytes=4_000_000,
+                    unavailable=lambda capture: RelationshipError(f"actions unavailable: {capture.status_code}"),
+                    context={"billId": bill},
+                    reset_budget=False,
+                )[0]
+            except CredentialRefusedError:
+                rows.append({"bill_id": bill, "status": None, "note": "credential refused"})
+                raise
+            except Exception as error:  # noqa: BLE001 - recorded, then the run continues
+                rows.append(
+                    {"bill_id": bill, "status": None, "note": scrub_credential(f"{type(error).__name__}: {error}", key)}
+                )
+                print(f"refused {bill}: {scrub_credential(str(error), key)}")
+                continue
+            (bodies / f"{bill}.json").write_bytes(capture.body)
+            rows.append(
+                {
+                    "bill_id": bill,
+                    "url": scrub_credential(url, key),
+                    "status": capture.status_code,
+                    "media_type": capture.content_type,
+                    "bytes": len(capture.body),
+                    "sha256": hashlib.sha256(capture.body).hexdigest(),
+                }
+            )
+    finally:
+        log_path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows))
+    print(f"logged {len(rows)} requests to {log_path}")
+
+
+def _billstatus_sample(measured: Mapping[str, Any], size: int) -> list[str]:
+    """The bills to ask about: deterministic, and weighted to the claim under test.
+
+    Every bill carrying a ``held_hearing`` or ``held_markup`` row comes first,
+    because those are the two events the corrected code table says BILLSTATUS
+    has no House code for and they are what this request budget exists to
+    settle. The remainder fills from the other trusted rows, so the sample also
+    covers phrasings the guide *does* code.
+    """
+    import random
+
+    hearings: set[str] = set()
+    others: set[str] = set()
+    for document in measured["documents"]:
+        for row in document["rows"]:
+            if row["attachment"] != ATTACHMENT_SINGLE:
+                continue
+            target = hearings if row["phrasing"] in {"held_hearing", "held_markup"} else others
+            target.add(row["bill_id"])
+    rng = random.Random(SAMPLE_SEED)
+    chosen = rng.sample(sorted(hearings), min(size - size // 4, len(hearings)))
+    rest = rng.sample(sorted(others - set(chosen)), min(size - len(chosen), len(others - set(chosen))))
+    return sorted(chosen + rest)
+
+
+def billstatus_overlap(receipt: Path) -> dict[str, Any]:
+    """Compare the print's rows against the retained action lists, row for row.
+
+    Offline: reads what :func:`billstatus` retained. For each sampled bill,
+    every action the publisher states is reduced to ``(actionCode, actionDate,
+    text)``, and each of the print's single-attachment rows is asked two
+    questions: does the publisher state an action carrying one of the codes
+    this phrasing maps to, and does it state one on the date the print states?
+    A phrasing with no code in the publisher's vocabulary can only be asked the
+    second, and ``held_hearing``/``held_markup`` are asked a third: does the
+    publisher's list state the event *at all*, by any code or wording?
+    """
+    bodies = receipt / "billstatus"
+    if not bodies.exists():
+        raise RelationshipError("no retained BILLSTATUS bodies; run the `billstatus` phase first")
+    measured = json.loads((receipt / "measure.json").read_text())
+    published: dict[str, list[dict[str, Any]]] = {}
+    for path in sorted(bodies.glob("*.json")):
+        payload = json.loads(path.read_text())
+        published[path.stem] = [
+            {
+                "code": (item.get("actionCode") or "").strip(),
+                "date": (item.get("actionDate") or "").strip(),
+                "text": (item.get("text") or "").strip(),
+                "type": (item.get("type") or "").strip(),
+                "source": ((item.get("sourceSystem") or {}).get("name") or "").strip(),
+            }
+            for item in payload.get("actions", [])
+        ]
+    sources: Counter[str] = Counter()
+    for actions in published.values():
+        for action in actions:
+            sources[action["source"]] += 1
+    hearing_words = ("hearing", "hearings held")
+    markup_words = ("markup", "mark-up", "consideration and mark-up")
+    result = {
+        "bills_requested": len(published),
+        "rows_compared": 0,
+        "code_matched": 0,
+        "date_matched": 0,
+        "no_code_in_vocabulary": 0,
+        "hearing_or_markup_rows": 0,
+        "hearing_or_markup_stated_by_billstatus": 0,
+        "publisher_action_rows": sum(len(actions) for actions in published.values()),
+        "publisher_source_systems": {},
+        "absent_from_billstatus": [],
+        "per_phrasing": {},
+    }
+    for document in measured["documents"]:
+        for row in document["rows"]:
+            actions = published.get(row["bill_id"])
+            if actions is None or row["attachment"] != ATTACHMENT_SINGLE:
+                continue
+            result["rows_compared"] += 1
+            cell = result["per_phrasing"].setdefault(
+                row["phrasing"],
+                {"rows": 0, "code_matched": 0, "date_matched": 0, "coded": bool(row["billstatus_action_codes"])},
+            )
+            cell["rows"] += 1
+            codes = set(row["billstatus_action_codes"])
+            if not codes:
+                result["no_code_in_vocabulary"] += 1
+            elif any(action["code"] in codes for action in actions):
+                result["code_matched"] += 1
+                cell["code_matched"] += 1
+            dates = set(row["stated_dates"] or ())
+            if dates and any(action["date"] in dates for action in actions):
+                result["date_matched"] += 1
+                cell["date_matched"] += 1
+            if row["phrasing"] in {"held_hearing", "held_markup"}:
+                result["hearing_or_markup_rows"] += 1
+                words = hearing_words if row["phrasing"] == "held_hearing" else markup_words
+                stated = any(any(word in action["text"].lower() for word in words) for action in actions)
+                cell["stated_by_any_wording"] = cell.get("stated_by_any_wording", 0) + int(stated)
+                if stated:
+                    result["hearing_or_markup_stated_by_billstatus"] += 1
+                elif len(result["absent_from_billstatus"]) < 8:
+                    result["absent_from_billstatus"].append(
+                        {
+                            "bill_id": row["bill_id"],
+                            "phrasing": row["phrasing"],
+                            "stated_date": (row["stated_dates"] or [None])[0],
+                            "matched_text": " ".join(row["matched_text"].split()),
+                        }
+                    )
+    result["publisher_source_systems"] = dict(sources.most_common())
+    return result
+
+
 # --- the phases ----------------------------------------------------------------------
 
 
@@ -714,7 +550,13 @@ def measure(receipt: Path, mods_receipt: Path, export: Path, guide: Path) -> Non
     all_bills = sorted({row["bill_id"] for document in documents for row in document["rows"]})
     overlap = overlap_with_hosted(export, all_bills)
     codes = guide_action_codes(guide)
-    unknown = {key: sorted(set(values) - codes) for key, values in GUIDE_CODES.items()}
+    unknown = {key: sorted({entry.code for entry in values} - codes) for key, values in BILLSTATUS_ACTION_CODES.items()}
+    # A section-5 code inside a "section 3" reading means the scoping broke
+    # again, which is the defect that produced the first version's inverted
+    # conclusion. Fail the phase rather than publish it.
+    leaked = sorted(codes & GUIDE_SUMMARIES_VERSION_CODES)
+    if leaked:
+        raise RelationshipError(f"the action-code scan reached section 5 codes: {leaked}")
     payload = {
         "rule_set_version": PRINT_ACTION_RULE_SET_VERSION,
         "citation_rule_version": CITATION_RULES_BY_NAME["bill_number"].version,
@@ -728,20 +570,25 @@ def measure(receipt: Path, mods_receipt: Path, export: Path, guide: Path) -> Non
 
 
 def _write_actions_tsv(receipt: Path, documents: Sequence[Mapping[str, Any]]) -> None:
-    lines = ["package_id\tbill_id\tphrasing\tstage\tmatcher\tattachment\tbills_in_sentence\tpage\tmatched_text"]
+    header = (
+        "package_id\tbill_id\tphrasing\tsealed_stage\tbillstatus_codes\tattachment"
+        "\tbills_in_sentence\tpage\tstated_date\tmatched_text"
+    )
+    lines = [header]
     for document in documents:
         for row in document["rows"]:
             lines.append(
                 "\t".join(
                     (
-                        row["package_id"],
+                        document["package_id"],
                         row["bill_id"],
                         row["phrasing"],
                         row["stage"] or "",
-                        row["matcher"] or "",
+                        ",".join(row["billstatus_action_codes"]),
                         row["attachment"],
                         str(row["bills_in_sentence"]),
                         str(row["page"] or ""),
+                        (row["stated_dates"] or [""])[0],
                         " ".join(row["matched_text"].split()),
                     )
                 )
@@ -823,7 +670,7 @@ def sample(receipt: Path) -> None:
         document = documents[package_id]
         by_mention: dict[tuple[int, int], list[Mapping[str, Any]]] = {}
         for row in document["rows"]:
-            by_mention.setdefault((row["mention_start"], row["mention_end"]), []).append(row)
+            by_mention.setdefault((row["mention_span_start"], row["mention_span_end"]), []).append(row)
         findings = find_citations(text, pages=pages[package_id], kinds=("bill_number",), congress=PACKAGE_CONGRESS)
         strata = {
             "with_action": [f for f in findings if (f.span_start, f.span_end) in by_mention],
@@ -840,7 +687,7 @@ def sample(receipt: Path) -> None:
                 entry_rows = [
                     row
                     for row in document["rows"]
-                    if row["bill_id"] == finding.target_key and begin <= row["mention_start"] < finish
+                    if row["bill_id"] == finding.target_key and begin <= row["mention_span_start"] < finish
                 ]
                 rows.append(
                     {
@@ -930,8 +777,20 @@ def score(rows: Sequence[Mapping[str, str]], strata: Mapping[str, int]) -> dict[
     """
     judged = [row for row in rows if row["phrase_correct"] in {"yes", "no"}]
     attached = [row for row in rows if row["bill_correct"] in {"yes", "no"}]
-    multi = [row for row in attached if row["bills_in_sentence"] and int(row["bills_in_sentence"]) > 1]
-    sole = [row for row in attached if row["bills_in_sentence"] and int(row["bills_in_sentence"]) == 1]
+    # The figure a consumer acts on is neither of the two above: it is the
+    # share of *published rows* that are both the right kind and the right
+    # bill, per attachment class, because that is what filtering on
+    # `attachment_confidence` selects. A row whose phrase was misread is a
+    # wrong published row whatever its attachment, so it counts against its
+    # own class rather than dropping out of the denominator.
+    published: dict[str, dict[str, int]] = {}
+    for row in judged:
+        count = int(row["bills_in_sentence"]) if row["bills_in_sentence"] else 1
+        cell = published.setdefault(ATTACHMENT_SINGLE if count == 1 else ATTACHMENT_MULTI, {"judged": 0, "correct": 0})
+        cell["judged"] += 1
+        cell["correct"] += int(row["phrase_correct"] == "yes" and row["bill_correct"] == "yes")
+    for cell in published.values():
+        cell["precision"] = round(cell["correct"] / cell["judged"], 4) if cell["judged"] else None
     per_stratum: dict[str, dict[str, Any]] = {}
     for name, size in strata.items():
         drawn = [row for row in rows if row["stratum"] == name]
@@ -964,15 +823,9 @@ def score(rows: Sequence[Mapping[str, str]], strata: Mapping[str, int]) -> dict[
             "precision": round(sum(1 for row in attached if row["bill_correct"] == "yes") / len(attached), 4)
             if attached
             else None,
-            "sole_bill_sentence": {
-                "judged": len(sole),
-                "correct": sum(1 for row in sole if row["bill_correct"] == "yes"),
-            },
-            "multi_bill_sentence": {
-                "judged": len(multi),
-                "correct": sum(1 for row in multi if row["bill_correct"] == "yes"),
-            },
         },
+        # The headline: what share of published rows is right, per class.
+        "published_row_precision": published,
         "recall": {
             "per_stratum": per_stratum,
             "reader_actions": sum(int(row["reader_actions"]) for row in rows),
@@ -982,7 +835,47 @@ def score(rows: Sequence[Mapping[str, str]], strata: Mapping[str, int]) -> dict[
     }
 
 
-def report(receipt: Path, output: Path) -> None:
+#: The two retained activity reports this repository keeps as committed
+#: fixtures. ``CRPT-118hrpt968`` is a complete 56-page read, so its rows are
+#: the sidecar's own per-document numbers; ``CRPT-118hrpt965`` is 60 pages of a
+#: 282-page print, so its rows must be a strict *prefix subset* of the full
+#: read -- same text, same offsets, fewer pages -- which is a stronger check
+#: than a count.
+FIXTURE_PACKAGES: tuple[str, ...] = ("CRPT-118hrpt965", "CRPT-118hrpt968")
+
+
+def fixture_counts(fixtures: Path) -> dict[str, Any]:
+    """What the committed fixture texts produce, so a test can pin the loader to it.
+
+    Read from ``tests/fixtures/document_citations`` rather than from the
+    receipt: the receipt is outside the repository and a test may not reach it,
+    so the numbers a test asserts have to be derivable from committed bytes.
+    """
+    counted: dict[str, Any] = {}
+    for package in FIXTURE_PACKAGES:
+        text = (fixtures / f"{package}.txt").read_text()
+        lengths = json.loads((fixtures / f"{package}.json").read_text())["page_lengths"]
+        pages, cursor = [], 0
+        for length in lengths:
+            pages.append(text[cursor : cursor + length])
+            cursor += length + 1
+        citations = find_citations(text, pages=tuple(pages), kinds=("bill_number",), congress=PACKAGE_CONGRESS)
+        reading = find_bill_actions(text, citations)
+        attachment = Counter(action.attachment for action in reading.findings)
+        counted[package] = {
+            "pages": len(pages),
+            "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            "mentions": len(citations),
+            "action_rows": len(reading.findings),
+            "trusted_rows": attachment[ATTACHMENT_SINGLE],
+            "attachment": dict(sorted(attachment.items())),
+            "orphan_phrases": sum(reading.orphan_phrasings.values()),
+            "distinct_bills_with_an_action": len({action.bill_id for action in reading.findings}),
+        }
+    return counted
+
+
+def report(receipt: Path, output: Path, fixtures: Path) -> None:
     """Fold the measurement and the filled hand-check sheet into the committed sidecar."""
     measured = json.loads((receipt / "measure.json").read_text())
     documents = measured["documents"]
@@ -1006,7 +899,9 @@ def report(receipt: Path, output: Path) -> None:
                 "distinct_bills": len(phrasing_bills.get(rule.key, ())),
                 "sealed_stage": stage,
                 "sealed_matcher": matcher,
-                "billstatus_codes": list(GUIDE_CODES.get(rule.key, ())),
+                "billstatus_codes": list(guide_codes_for(rule.key, HOUSE)),
+                "billstatus_codes_any_chamber": [entry.code for entry in BILLSTATUS_ACTION_CODES.get(rule.key, ())],
+                "house_code_absent": rule.key in HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE,
                 "note": rule.note,
             }
         )
@@ -1039,6 +934,7 @@ def report(receipt: Path, output: Path) -> None:
                 document["mentions_in_multi_bill_sentence"] for document in documents
             ),
             "action_rows": sum(document["action_rows"] for document in documents),
+            "trusted_rows": sum(document["trusted_rows"] for document in documents),
             "sentence_scoped_rows": sum(document["sentence_scoped_rows"] for document in documents),
             "orphan_phrases": sum(document["orphan_phrases"] for document in documents),
             "mods_bills": sum(document["mods_bills"] for document in documents),
@@ -1049,10 +945,12 @@ def report(receipt: Path, output: Path) -> None:
             # bill up, the bill folded into another, the measure the other
             # chamber never took up.
             "rows_whose_phrasing_billstatus_has_no_code_for": sum(
-                count for key, count in phrasings.items() if key not in GUIDE_CODES
+                count for key, count in phrasings.items() if key not in BILLSTATUS_ACTION_CODES
             ),
         },
         "phrasings": table,
+        "fixtures": fixture_counts(fixtures),
+        "billstatus_overlap": billstatus_overlap(receipt),
         "hand_check": score(
             read_hand_check(receipt),
             {
@@ -1111,19 +1009,21 @@ def render_block(sidecar: Mapping[str, Any]) -> str:
     lines.append("`Orphan` counts the same phrasing in a sentence that names no bill at all — what no")
     lines.append("sentence-scoped rule can ever attach.")
     lines.append("")
-    lines.append("| Print phrasing | Rows | Orphan | Bills | `bill_stage` rung | Sealed matcher | BILLSTATUS code |")
-    lines.append("| --- | ---: | ---: | ---: | --- | --- | --- |")
+    lines.append("| Print phrasing | Rows | Orphan | Bills | `bill_stage` rung | BILLSTATUS action code, House |")
+    lines.append("| --- | ---: | ---: | ---: | --- | --- |")
     for row in sorted(sidecar["phrasings"], key=lambda entry: (-entry["occurrences"], entry["phrasing"])):
         stage = f"`{row['sealed_stage']}`" if row["sealed_stage"] else "**none**"
-        matcher = f"`{row['sealed_matcher']}`" if row["sealed_matcher"] else "—"
-        codes = ", ".join(f"`{code}`" for code in row["billstatus_codes"]) or "**none**"
+        codes = ", ".join(f"`{code}`" for code in row["billstatus_codes"])
+        if not codes:
+            codes = "**none — Senate-only**" if row["house_code_absent"] else "**none**"
         lines.append(
             f"| `{row['phrasing']}` | {row['occurrences']:,} | {row['orphan_occurrences']:,} | "
-            f"{row['distinct_bills']:,} | {stage} | {matcher} | {codes} |"
+            f"{row['distinct_bills']:,} | {stage} | {codes} |"
         )
     mapped = sum(row["occurrences"] for row in sidecar["phrasings"] if row["sealed_stage"])
     total = sum(row["occurrences"] for row in sidecar["phrasings"])
-    uncoded = [row["phrasing"] for row in sidecar["phrasings"] if not row["billstatus_codes"]]
+    uncoded = [row["phrasing"] for row in sidecar["phrasings"] if not row["billstatus_codes_any_chamber"]]
+    uncoded_rows = sum(row["occurrences"] for row in sidecar["phrasings"] if not row["billstatus_codes_any_chamber"])
     lines.append("")
     lines.append(
         f"**{mapped:,} of {total:,}** action rows carry a phrasing one of `bill_stage`'s sealed "
@@ -1136,13 +1036,18 @@ def render_block(sidecar: Mapping[str, Any]) -> str:
         f"**{totals['orphan_phrases']:,} further phrase occurrences** sit in a sentence that names "
         f"no bill, against {total:,} that reach one."
     )
+    senate_only = [row["phrasing"] for row in sidecar["phrasings"] if row["house_code_absent"]]
+    senate_only_rows = sum(row["occurrences"] for row in sidecar["phrasings"] if row["house_code_absent"])
     lines.append("")
     lines.append(
-        f"Only {len(uncoded)} of the {len(sidecar['phrasings'])} phrasings — "
+        f"**{len(uncoded)} phrasings have no action code in either chamber** — "
         f"{', '.join(f'`{name}`' for name in uncoded)}, "
-        f"**{totals['rows_whose_phrasing_billstatus_has_no_code_for']:,} rows** — name an event the "
-        f"publisher's own BILLSTATUS guide states no action code for. Everything else the print says "
-        f"about a bill, BILLSTATUS has a code for."
+        f"{uncoded_rows:,} rows — and "
+        f"**{len(senate_only)} more have one only for the Senate**: "
+        f"{', '.join(f'`{name}`' for name in senate_only)}, **{senate_only_rows:,} rows**. "
+        f"Section 3 of the publisher's guide has no House hearing code and no House markup code at all, "
+        f"so for those two events in a House committee's print the sentence is the only structured "
+        f"statement there is."
     )
     lines.append("")
     lines.append("### Per print")
@@ -1186,18 +1091,13 @@ def render_block(sidecar: Mapping[str, Any]) -> str:
         f"| Bill-to-action attachment, given a correct reading | {attachment['judged']} | "
         f"{attachment['correct']} | **{_percent(attachment['precision'])}** |"
     )
+    single = check["published_row_precision"][ATTACHMENT_SINGLE]
+    multi = check["published_row_precision"][ATTACHMENT_MULTI]
     lines.append(
-        f"| — one-bill sentence | {attachment['sole_bill_sentence']['judged']} | "
-        f"{attachment['sole_bill_sentence']['correct']} | {_rate(attachment['sole_bill_sentence'])} |"
+        f"| **A published row is right kind and right bill — `single`** | {single['judged']} | "
+        f"{single['correct']} | **{_percent(single['precision'])}** |"
     )
-    lines.append(
-        f"| — multi-bill sentence | {attachment['multi_bill_sentence']['judged']} | "
-        f"{attachment['multi_bill_sentence']['correct']} | {_rate(attachment['multi_bill_sentence'])} |"
-    )
-    lines.append(
-        f"| **A published row is right kind and right bill** | {classification['judged']} | "
-        f"{attachment['correct']} | **{_percent(attachment['correct'] / classification['judged'])}** |"
-    )
+    lines.append(f"| **— `multi`** | {multi['judged']} | {multi['correct']} | **{_percent(multi['precision'])}** |")
     lines.append(
         f"| Recall, re-weighted by stratum | {recall['reader_actions']} | {recall['captured']} | "
         f"**{_percent(recall['recall'])}** |"
@@ -1210,8 +1110,57 @@ def render_block(sidecar: Mapping[str, Any]) -> str:
         f"| — where it found none | {without_action['reader_actions']} | "
         f"{without_action['captured']} | {_percent(without_action['recall'])} |"
     )
+    trusted = totals["trusted_rows"]
     lines.append("")
-    lines.append("### Against what BILLSTATUS already states")
+    lines.append(
+        f"**{trusted:,} of {totals['action_rows']:,} rows ({trusted / totals['action_rows']:.1%}) are "
+        f"`single`**, so a consumer filtering to the trusted class keeps "
+        f"{trusted / totals['action_rows']:.1%} of the volume at "
+        f"{_percent(single['precision'])} precision. Recall is a separate axis and is "
+        f"{_percent(check['recall']['recall'])}: this is a statement about what is published, never "
+        f"about what a reader sees captured."
+    )
+    lines.append("")
+    lines.append("### The row-for-row BILLSTATUS overlap, 20 keyed requests")
+    overlap_rows = sidecar["billstatus_overlap"]
+    per = overlap_rows["per_phrasing"]
+    lines.append("")
+    lines.append(
+        f"The retained `congress_bills` export carries one action per bill, so it can only floor the "
+        f"duplication. This asked the publisher for the **whole action list** of "
+        f"{overlap_rows['bills_requested']} of the bills these prints act on — "
+        f"{overlap_rows['publisher_action_rows']} published actions — and compared "
+        f"{overlap_rows['rows_compared']} single-attachment print rows against them."
+    )
+    lines.append("")
+    lines.append("| | Print rows | Publisher states the same code | Same date | States the event at all |")
+    lines.append("| --- | ---: | ---: | ---: | ---: |")
+    for name in ("held_hearing", "held_markup"):
+        cell = per.get(name, {})
+        lines.append(
+            f"| `{name}` | {cell.get('rows', 0)} | **{cell.get('code_matched', 0)}** (no code exists) | "
+            f"{cell.get('date_matched', 0)} | **{cell.get('stated_by_any_wording', 0)}** |"
+        )
+    coded = {name: cell for name, cell in per.items() if cell.get("coded")}
+    lines.append(
+        f"| every coded phrasing | {sum(c['rows'] for c in coded.values())} | "
+        f"{sum(c['code_matched'] for c in coded.values())} | "
+        f"{sum(c['date_matched'] for c in coded.values())} | — |"
+    )
+    hearing = per.get("held_hearing", {})
+    lines.append("")
+    lines.append(
+        f"**{hearing.get('rows', 0) - hearing.get('stated_by_any_wording', 0)} of "
+        f"{hearing.get('rows', 0)} subcommittee hearings the print states are absent from BILLSTATUS "
+        f"altogether** — no code, no wording, nothing. Markups are different and the difference is the "
+        f"finding's own limit: all {per.get('held_markup', {}).get('rows', 0)} markup rows appear in the "
+        f"publisher's list as free text filed by the `House committee actions` source system "
+        f"({overlap_rows['publisher_source_systems'].get('House committee actions', 0)} of "
+        f"{overlap_rows['publisher_action_rows']} published actions), carrying no action code. So the "
+        f"print is the sole source for hearings, and a second, uncoded source for markups."
+    )
+    lines.append("")
+    lines.append("### Against the hosted `congress_bills` export")
     lines.append("")
     lines.append(
         f"The retained `congress_bills` export holds {overlap['export_rows']:,} bills, Congresses "
@@ -1261,7 +1210,7 @@ DEFAULT_GUIDE = Path("tests/fixtures/billstatus_codes/guide-2026-08-03.md")
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__ and __doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="phase", required=True)
-    for name in ("text", "measure", "sample", "report", "render"):
+    for name in ("text", "measure", "sample", "billstatus", "report", "render"):
         phase = sub.add_parser(name)
         phase.add_argument("--receipt", type=Path, default=DEFAULT_RECEIPT)
         if name == "text":
@@ -1270,8 +1219,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             phase.add_argument("--mods-receipt", type=Path, default=DEFAULT_MODS)
             phase.add_argument("--export", type=Path, default=DEFAULT_EXPORT)
             phase.add_argument("--guide", type=Path, default=DEFAULT_GUIDE)
+        if name == "billstatus":
+            phase.add_argument("--env", type=Path, default=Path(".env"))
+            phase.add_argument("--max-requests", type=int, default=MAX_BILLSTATUS_REQUESTS)
         if name == "report":
             phase.add_argument("--output", type=Path, required=True)
+            phase.add_argument("--fixtures", type=Path, default=Path("tests/fixtures/document_citations"))
         if name == "render":
             phase.add_argument("--sidecar", type=Path, required=True)
             phase.add_argument("--report", type=Path, required=True)
@@ -1283,8 +1236,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         measure(receipt, args.mods_receipt.expanduser(), args.export.expanduser(), args.guide.expanduser())
     elif args.phase == "sample":
         sample(receipt)
+    elif args.phase == "billstatus":
+        billstatus(receipt, args.env.expanduser(), args.max_requests)
     elif args.phase == "report":
-        report(receipt, args.output)
+        report(receipt, args.output, args.fixtures)
     elif args.phase == "render":
         render(args.sidecar, args.report)
     return 0
