@@ -39,6 +39,10 @@
     "uslm-law": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:uslm-law",
       "sha256": "0fa3e7f6547da5ad5e80b36b2df8aaaf9a70804c8fcfdce32250df4abf6d2652"
+    },
+    "senate-expenditures-pdf": {
+      "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:senate-expenditures-pdf",
+      "sha256": "36a19615b7beffb3f28eec5dad6ef3f4fa7de01affd9ca7d19c115a36db5b1e9"
     }
   }
 }

@@ -157,7 +157,9 @@ def test_a_profile_refuses_another_familys_kind(validators) -> None:
 
 def test_every_family_has_a_worked_conversion() -> None:
     families = {load(p)["profile"]["name"] for p in CAPTURES}
-    assert families == set(PINS["profiles"])
+    # The seventh family is generated from a bounded real PDF in
+    # test_document_capture_pdf_tables.py and validated there.
+    assert families | {"senate-expenditures-pdf"} == set(PINS["profiles"])
 
 
 @pytest.mark.parametrize("path", CAPTURES, ids=[p.name for p in CAPTURES])
