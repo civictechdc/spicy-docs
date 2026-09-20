@@ -241,16 +241,26 @@ def _committee_system_codes(mods: object) -> frozenset[str]:
     return frozenset(str(committee.authority_id).lower() for committee in getattr(mods, "committees", ()))
 
 
-def _hearing_facts(mods: object) -> dict[str, object]:
-    """The columns every link row of one hearing repeats, read off the MODS once."""
+@dataclass(frozen=True, slots=True)
+class _HearingFacts:
+    """The five columns every link row of one hearing repeats, read off the MODS once."""
+
+    package_id: str
+    congress: int | None
+    chamber: str | None
+    committee_system_code: str | None
+    held_date: str | None
+
+
+def _hearing_facts(mods: object) -> _HearingFacts:
     identity = mods.identity
-    return {
-        "package_id": identity.package_id,
-        "congress": identity.congress,
-        "chamber": CHAMBER_BY_DOCUMENT_TYPE.get(identity.document_type or ""),
-        "committee_system_code": _committee_system_code(mods),
-        "held_date": getattr(mods, "held_date", None),
-    }
+    return _HearingFacts(
+        package_id=identity.package_id,
+        congress=identity.congress,
+        chamber=CHAMBER_BY_DOCUMENT_TYPE.get(identity.document_type or ""),
+        committee_system_code=_committee_system_code(mods),
+        held_date=getattr(mods, "held_date", None),
+    )
 
 
 def _links(
@@ -267,7 +277,11 @@ def _links(
         rows.setdefault(
             key,
             HearingBillLink(
-                **facts,  # type: ignore[arg-type]
+                package_id=facts.package_id,
+                congress=facts.congress,
+                chamber=facts.chamber,
+                committee_system_code=facts.committee_system_code,
+                held_date=facts.held_date,
                 event_id=event_id,
                 bill_id=key,
                 link_source=rule.name,
