@@ -443,9 +443,7 @@ class _Admitter:
     def refuse(self, table: str, identity: tuple[str, ...], reason: str) -> None:
         # Pattern scrubbing also removes keys the caller never received. Do it
         # before bounding free text so a truncated key prefix cannot survive.
-        self.refusals.append(
-            FamilyRefusal(table=table, identity=identity, reason=scrub_credential(reason, "")[:2000])
-        )
+        self.refusals.append(FamilyRefusal(table=table, identity=identity, reason=scrub_credential(reason, "")[:2000]))
 
 
 def _cost_estimate_refusal(url: object) -> str:
