@@ -600,6 +600,15 @@ gap measurement, the hardened data map, the live workflow and the docs-index
 test. spicy-regs adopts it by vendoring this wheel and deleting its interim
 `_mods_bills` copy for `PackageModsIdentity.primary_bill`.
 
+spicy-docs 0.21.3 (cut 2026-09-20: commit 083b536, tag v0.21.3 pushed,
+`dist/spicy_docs-0.21.3-py3-none-any.whl` 1,181,012 bytes, sha256
+`1f91bb70bc28a035fbeb7ca921dd3bb2b58fdc7e2fb353747dad2e365978f84b`): the
+prompt-shape fix (every model prompt states the JSON its reader parses,
+PROMPT_VERSION v2 on all three, proved live), the document capture profiles
+and converter over Rulespec's DocumentCapture v1, and the register's measured
+state. spicy-regs adopts it by vendoring this wheel; its production summaries
+publish only from this version on.
+
 spicy-regs adoption (done 2026-09-19 on the fork branch `billtrax-hosting-prep`;
 no push to origin unless the user names the branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
 `[tool.uv.sources] spicy-docs` at it; set both `source-readers` pins to
