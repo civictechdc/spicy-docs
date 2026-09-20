@@ -1061,6 +1061,61 @@ and by how much. The committed sidecar was deliberately **not** regenerated —
 it is the measurement as run, and a re-run's timings would contradict the
 prose the report quotes from it.
 
+## A Mirrulations key that produced no record is unresolved, never processed
+
+**2026-09-20**, closing candidate F2 of the
+[gap register](research/closing-the-gaps-2026-09-19.md#26-candidates-from-the-2026-09-20-validation-filed-unmeasured),
+filed by [the outside validation](research/register-validation-codex-2026-09-20.md).
+The reader wrapped *every* download failure into a key it skipped and carried
+on. Two consequences, both of which the fetcher rules in `AGENTS.md` forbid: a
+401/403 from the mirror became a skipped key rather than an abort, so a refusal
+over a whole prefix would have read downstream as those objects being absent;
+and a malformed object was recorded as **processed**, so a repair — upstream,
+or to this package's own parsing — could never come back. A test required the
+second one, which is how it survived.
+
+What changed, and what a later change must preserve:
+
+- **A refusal ends the run.** `download_object_bytes` turns a 401/403 into
+  `MirrulationsAccessRefusedError`, a `CredentialRefusedError`, at the single
+  point every path fetches through. The mirror is read anonymously, so this is
+  the bucket refusing access rather than a key being rejected — but the
+  subclass keeps every caller that already aborts on a refusal aborting, the
+  way `RegulationsGovAttachmentRefusedError` does for that keyless host. No key
+  is written for it, and `fail_fast` does not reach it: that switch governs
+  transport answers only.
+- **Nothing is marked processed on a failure.** `last_keys` now means "produced
+  a record" and is empty until a pass completes; every other key is on
+  `failed_keys` with a `KeyOutcome(key, status, reason, attempted_at)` on
+  `unresolved`. `status` is `transport`, `unreadable`, or `requested-empty`.
+  The in-run retry still covers `transport` alone — the other two cannot change
+  without a new request — but all three are retried on the next run, and
+  `unresolved_keys=` puts them ahead of newly listed work so a capped or
+  interrupted run cannot keep postponing them.
+- **An empty 2xx is an answer, not an absence.** A body of zero bytes, `{}`,
+  `null`, `[]` or a bare scalar used to be yielded as a record and manifested:
+  an empty answer became apparent coverage. It is now `requested-empty`, with
+  the shape named in the reason. The only shape this reader asserts is that a
+  record arrived at all; reading its fields stays the caller's job.
+
+**What callers relied on that is gone.** `DownloadFailures` is replaced by the
+`list[KeyOutcome]` that `download_keys(outcomes=...)` fills; `parse_failed_keys`
+survives as the non-`transport` subset of `unresolved`, but those keys are no
+longer manifested, so a caller that treated it as "done, do not ask again" now
+asks again. `iter_source_objects` raises the typed refusal where it used to let
+botocore's `ClientError` escape. `last_keys` is no longer populated eagerly with
+the whole listing: a partial pass reports nothing, because a partial pass
+establishes nothing.
+
+Removing either half is mutation-checked. Dropping the abort fails the four
+`test_an_access_refusal_aborts_the_run_and_writes_no_key` cases and both
+enumeration cases; putting the non-transport keys back into `last_keys` fails
+`test_iter_records_keeps_parse_failures_out_of_last_keys`, the five
+`requested-empty` cases and the two-run repair test. `scrub_credential` grew the
+three AWS presigning parameters alongside `api_key`, because an injected signed
+resource renders a presigned URL into botocore's message; both of its passes
+stay separately mutation-checked.
+
 ## BUDGET and the GPO-prefixed CDOC reprints join the package-id grammar
 
 Adopted 2026-09-20 with [GovInfo bodies](sources/govinfo-bodies.md) (updated)
