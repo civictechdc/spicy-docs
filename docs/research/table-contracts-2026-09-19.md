@@ -646,6 +646,16 @@ the fetcher rules. spicy-regs adopts it the same way as 0.23.0, deletes its
 own Mirrulations reader and its restated title rule and print preference
 for the package's, and gains rollups for the two new tables.
 
+spicy-docs 0.24.1 (cut 2026-09-20: commit fc8171d, tag v0.24.1 pushed,
+`dist/spicy_docs-0.24.1-py3-none-any.whl` 1,321,932 bytes, sha256
+`ce25270b5328ccd4da4f51d2e241141531b4fb058313da38628c647f63531fa6`): a patch, no contract
+moves. The Mirrulations reader accepts a body only when it carries the
+identity its record type is defined by; a well-formed empty envelope and the
+publisher's own error document both passed the previous populated-object
+check and became coverage with null identity fields, and are now
+requested-empty observations naming what was missing. The host's temporary
+guard is deleted on this adoption.
+
 spicy-regs adoption (done 2026-09-19 on the fork branch `billtrax-hosting-prep`;
 no push to origin unless the user names the branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
 `[tool.uv.sources] spicy-docs` at it; set both `source-readers` pins to
