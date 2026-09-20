@@ -137,14 +137,20 @@ retries when an issue's requested unmatched-number set changes.
   reads one MODS per sampled package or granule (keyed, `API_GOV` header only,
   24 requests bounded at 40, identity proved by `validate_package_mods` where
   `bodies.py`'s grammar reaches and by the MODS's own `accessId` where it does
-  not). `analyze` and `uncapped` make no request: the first restates the
-  rollup's own figures against the MODS, the second removes the 60-page cap and
-  re-reads all 18,119 pages of the retained PDFs, which is the check the
-  headline result turns on. Rules and committee resolution are imported from
-  `pdf_family_rollup`, never restated. The report is
+  not). `analyze`, `uncapped` and `render` make no request: the first
+  restates the rollup's own figures against the MODS, the second removes the
+  60-page cap and re-reads all 18,119 pages of the retained PDFs -- the check
+  the headline result turns on -- and also runs the **false-positive pass** the
+  rollup never ran, testing each surviving key against the publisher's real
+  ranges (it is what found `Public Law 188-11`, `S 08` read out of a
+  name-and-date column, and a docket dated 2029). `render` rewrites the
+  report's generated block from the committed sidecar, and a test byte-compares
+  the two so a report cannot drift from its own measurement. Rules and
+  committee resolution are imported from `pdf_family_rollup`, never restated.
+  The report is
   [`docs/research/pdf-yield-mods-recheck-2026-09-20.md`](../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
-  and `tests/test_pdf_yield_mods_recheck_tool.py` pins the MODS shapes and the
-  committed sidecar.
+  and `tests/test_pdf_yield_mods_recheck_tool.py` pins the MODS shapes, the
+  credential scrub, the identity proof and the committed sidecar.
 
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,
