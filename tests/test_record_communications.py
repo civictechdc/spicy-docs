@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,7 @@ from spicy_docs.sources.congress.record_communications import (
     AGENCY_HEAD_WORDS,
     RECORD_COMMUNICATION_RULE_VERSION,
     SECTION_COMMUNICATION_TYPE,
+    SECTION_TITLE,
     RecordCommunicationEntry,
     RecordCommunicationError,
     contiguity_witness,
@@ -30,11 +32,13 @@ from spicy_docs.sources.congress.record_communications import (
     fold_en_dash,
     fold_print_dash,
     normalized_entry_text,
+    parse_granule_body,
     parse_record_communications,
     publisher_normalized,
     rejoin_print_wraps,
     split_from_clause,
 )
+from spicy_docs.transport.captured import CapturedBodyResponse
 
 FIXTURES = Path(__file__).parent / "fixtures"
 SECTIONS = FIXTURES / "record_communications"
@@ -284,6 +288,8 @@ def test_the_excluded_head_words_are_excluded_on_purpose() -> None:
 
 def test_a_day_that_prints_the_section_twice_yields_both_granules() -> None:
     page = json.loads((SECTIONS / "CREC-2004-06-16-granules.excerpt.json").read_text())
+    # The publisher's own title, so the constant cannot drift from the bytes.
+    assert {record["title"] for record in page["granules"] if record["granuleClass"] == "HOUSE"} == {SECTION_TITLE}
     assert executive_communication_granules(page["granules"]) == (
         "CREC-2004-06-16-pt1-PgH4278",
         "CREC-2004-06-16-pt2-PgH4285",
@@ -379,3 +385,47 @@ def test_the_rule_version_moves_when_the_vocabulary_or_the_split_policy_moves(
 def test_text_that_is_not_text_refuses() -> None:
     with pytest.raises(RecordCommunicationError):
         parse_record_communications(b"<pre>4329. A letter from the X</pre>")  # type: ignore[arg-type]
+
+
+def test_an_acquired_granule_body_carries_its_own_locator_onto_every_row() -> None:
+    """The production seam: `acquire_granule`'s result read through `extraction.body_text`."""
+
+    @dataclass(frozen=True)
+    class _Package:
+        package_id: str
+
+    @dataclass(frozen=True)
+    class _Identity:
+        package: _Package
+        granule_id: str
+
+    @dataclass(frozen=True)
+    class _Rendition:
+        media_type: str
+        byte_size: int
+
+    @dataclass(frozen=True)
+    class _Body:
+        format: str
+        body: _Rendition
+        body_capture: CapturedBodyResponse
+        identity: _Identity
+
+    capture = CapturedBodyResponse(
+        requested_url="https://www.govinfo.gov/content/pkg/CREC-2016-02-12/html/CREC-2016-02-12-pt1-PgH815-4.htm",
+        resolved_url="https://www.govinfo.gov/content/pkg/CREC-2016-02-12/html/CREC-2016-02-12-pt1-PgH815-4.htm",
+        status_code=200,
+        content_type="text/html",
+        body=(SECTIONS / "CREC-2016-02-12-pt1-PgH815-4.excerpt.htm").read_bytes(),
+        observed_at="2026-09-20T00:00:00Z",
+    )
+    body = _Body(
+        format="htm",
+        body=_Rendition(media_type="text/html", byte_size=capture.byte_size),
+        body_capture=capture,
+        identity=_Identity(package=_Package("CREC-2016-02-12"), granule_id="CREC-2016-02-12-pt1-PgH815-4"),
+    )
+    entries = parse_granule_body(body)
+    assert [entry.number for entry in entries] == [4329, 4335, 4340, 4350]
+    assert {entry.record_package_id for entry in entries} == {"CREC-2016-02-12"}
+    assert {entry.record_granule_id for entry in entries} == {"CREC-2016-02-12-pt1-PgH815-4"}
