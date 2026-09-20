@@ -609,6 +609,15 @@ and converter over Rulespec's DocumentCapture v1, and the register's measured
 state. spicy-regs adopts it by vendoring this wheel; its production summaries
 publish only from this version on.
 
+spicy-docs 0.22.0 (cut 2026-09-20, tag v0.22.0 pushed,
+`dist/spicy_docs-0.22.0-py3-none-any.whl` 1,188,118 bytes, sha256
+`782735d857b7ebe8cfa9e6fca1ad2dd265e0ab2e07c8dae9c7b1fe26474bafa1`): a minor bump because
+ModelCall widened with an optional response_schema and the Gemini adapter
+moved here as interpretation/gemini_call.py, so a host adopts by importing
+it (an adapter taking only model and prompt raises); the family pass files a
+refused model answer instead of aborting; the v3 classification prompt is
+proved live with two calls that stored every row.
+
 spicy-regs adoption (done 2026-09-19 on the fork branch `billtrax-hosting-prep`;
 no push to origin unless the user names the branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
 `[tool.uv.sources] spicy-docs` at it; set both `source-readers` pins to
