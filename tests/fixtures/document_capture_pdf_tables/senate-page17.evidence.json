@@ -1,0 +1,645 @@
+{
+ "derivation": "pdf-extraction-lines",
+ "idOrigin": "generated",
+ "pageCount": 1,
+ "rendition": "pdf",
+ "sourceSha256": "20d77a2462a333f8d05bc9ef80feff8493dd5d5cb8c7146245cf76174e67798b",
+ "blocks": [
+  {
+   "id": "b0001",
+   "text": "APPROPRIATION TITLE NO. FUNDS AVAILABLE AS OF",
+   "runs": [
+    {
+     "text": "APPROPRIATION TITLE",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "NO.",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "FUNDS AVAILABLE AS OF",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 1,
+   "box": [
+    0.23549695427729847,
+    0.1695495492573162,
+    0.4504493701408685,
+    0.1798221285607807
+   ],
+   "fragments": 3
+  },
+  {
+   "id": "b0002",
+   "text": "October 1, 2024",
+   "runs": [
+    {
+     "text": "October 1, 2024",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 2,
+   "box": [
+    0.38352392428505877,
+    0.18289280858898005,
+    0.43279865361656705,
+    0.19316538789244456
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0003",
+   "text": "FUNDING ADJUSTMENTS",
+   "runs": [
+    {
+     "text": "FUNDING ADJUSTMENTS",
+     "font": "Times-Bold",
+     "size": 5.95,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 3,
+   "box": [
+    0.4974204252368529,
+    0.1438376454119109,
+    0.6092477882926071,
+    0.15788478921850604
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0004",
+   "text": "NET ",
+   "runs": [
+    {
+     "text": "NET ",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 4,
+   "box": [
+    0.704994695541934,
+    0.16955192803687252,
+    0.7200656051808204,
+    0.17982450734033703
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0005",
+   "text": "EXPENDITURES",
+   "runs": [
+    {
+     "text": "EXPENDITURES",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 5,
+   "box": [
+    0.6867976560479085,
+    0.18181336528106362,
+    0.7382624589770316,
+    0.19208594458452813
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0006",
+   "text": "REVOLVING ",
+   "runs": [
+    {
+     "text": "REVOLVING ",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 6,
+   "box": [
+    0.7642544427737831,
+    0.16955192803687252,
+    0.8050611196501156,
+    0.17982450734033703
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0007",
+   "text": "FUND ",
+   "runs": [
+    {
+     "text": "FUND ",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 7,
+   "box": [
+    0.7745547291383825,
+    0.18181336528106362,
+    0.794766032824317,
+    0.19208594458452813
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0008",
+   "text": "RECEIPTS",
+   "runs": [
+    {
+     "text": "RECEIPTS",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 8,
+   "box": [
+    0.7681153324557255,
+    0.19408896707624926,
+    0.8012012048816984,
+    0.20436154637971377
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0009",
+   "text": "UNEXPENDED ",
+   "runs": [
+    {
+     "text": "UNEXPENDED ",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 9,
+   "box": [
+    0.8325336256959722,
+    0.16955192803687252,
+    0.8803196156500919,
+    0.17982450734033703
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0010",
+   "text": "BALANCE AS OF",
+   "runs": [
+    {
+     "text": "BALANCE AS OF",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 10,
+   "box": [
+    0.8292204052929076,
+    0.18181336528106362,
+    0.8836157518542391,
+    0.19208594458452813
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0011",
+   "text": "March 31, 2025",
+   "runs": [
+    {
+     "text": "March 31, 2025",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 11,
+   "box": [
+    0.8328759596166677,
+    0.19517078916372202,
+    0.8799477557769197,
+    0.20544336846718653
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0012",
+   "text": "SUPPLEMENTALS TRANSFERS RESCISSIONS/ ",
+   "runs": [
+    {
+     "text": "SUPPLEMENTALS",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "TRANSFERS",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "RESCISSIONS/ ",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 12,
+   "box": [
+    0.4606369843566304,
+    0.17171321145331897,
+    0.6622558793320746,
+    0.18198579075678348
+   ],
+   "fragments": 3
+  },
+  {
+   "id": "b0013",
+   "text": "WITHDRAWALS",
+   "runs": [
+    {
+     "text": "WITHDRAWALS",
+     "font": "Helvetica-Bold",
+     "size": 4.35,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 13,
+   "box": [
+    0.6124685311841411,
+    0.18397464869751007,
+    0.663179122440411,
+    0.19424722800097458
+   ],
+   "fragments": 1
+  },
+  {
+   "id": "b0014",
+   "text": "Totals 1,771,557,289.86 0.00 0.00 0.00 -649,330,011.60 1,944,352.28 1,124,171,630.54",
+   "runs": [
+    {
+     "text": "Totals",
+     "font": "Helvetica-Bold",
+     "size": 5.03,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "1,771,557,289.86",
+     "font": "Helvetica-Bold",
+     "size": 5.03,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "0.00",
+     "font": "Helvetica-Bold",
+     "size": 5.03,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "0.00",
+     "font": "Helvetica-Bold",
+     "size": 5.03,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "0.00",
+     "font": "Helvetica-Bold",
+     "size": 5.03,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "-649,330,011.60",
+     "font": "Helvetica-Bold",
+     "size": 5.03,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "1,944,352.28",
+     "font": "Helvetica-Bold",
+     "size": 5.03,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "1,124,171,630.54",
+     "font": "Helvetica-Bold",
+     "size": 5.03,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 14,
+   "box": [
+    0.2618691543488664,
+    0.23142553410809463,
+    0.8861530339401752,
+    0.2433137552567424
+   ],
+   "fragments": 8
+  },
+  {
+   "id": "b0015",
+   "text": "SUMMARY OF TRANSACTIONS BY APPROPRIATIONS ($)",
+   "runs": [
+    {
+     "text": "SUMMARY OF TRANSACTIONS BY APPROPRIATIONS",
+     "font": "Times-Bold",
+     "size": 6.41,
+     "bold": true
+    },
+    {
+     "text": " "
+    },
+    {
+     "text": "($)",
+     "font": "Times-Bold",
+     "size": 6.41,
+     "bold": true
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 15,
+   "box": [
+    0.42963417716277136,
+    0.09412724380183757,
+    0.7378944987579602,
+    0.10925620969590547
+   ],
+   "fragments": 2
+  },
+  {
+   "id": "b0016",
+   "text": "A-7",
+   "runs": [
+    {
+     "text": "A-7",
+     "font": "Century",
+     "size": 10.0
+    }
+   ],
+   "rendition": "pdf",
+   "page": 1,
+   "line": 16,
+   "box": [
+    0.9292893363215826,
+    0.4809689706227933,
+    0.9522296086622831,
+    0.5190216944695538
+   ],
+   "fragments": 1
+  }
+ ],
+ "tablePages": [
+  {
+   "page": 1,
+   "geometry": {
+    "kind": "pdf",
+    "rotation": 90,
+    "cropbox": [
+     0.0,
+     0.0,
+     423.3599853515625,
+     657.3599853515625
+    ],
+    "mediabox": [
+     0.0,
+     0.0,
+     423.3599853515625,
+     657.3599853515625
+    ],
+    "display_rect": [
+     0.0,
+     0.0,
+     657.3599853515625,
+     423.3599853515625
+    ],
+    "dpi": 200
+   },
+   "tables": [
+    {
+     "page": 1,
+     "bbox": {
+      "x0": 0.8389195878325593,
+      "y0": 0.3287034353901847,
+      "x1": 0.9148448318348448,
+      "y1": 1.0
+     },
+     "row_count": 3,
+     "column_count": 9,
+     "cells": [
+      [
+       "APPROPRIATION TITLE",
+       "NO.",
+       "FUNDS AVAILABLE AS OF\nOctober 1, 2024",
+       "FUNDING ADJUSTMENTS",
+       null,
+       null,
+       "NET\nEXPENDITURES",
+       "REVOLVING\nFUND\nRECEIPTS",
+       "UNEXPENDED\nBALANCE AS OF\nMarch 31, 2025"
+      ],
+      [
+       null,
+       null,
+       null,
+       "SUPPLEMENTALS",
+       "TRANSFERS",
+       "RESCISSIONS/\nWITHDRAWALS",
+       null,
+       null,
+       null
+      ],
+      [
+       "Totals",
+       "",
+       "1,771,557,289.86",
+       "0.00",
+       "0.00",
+       "0.00",
+       "-649,330,011.60",
+       "1,944,352.28",
+       "1,124,171,630.54"
+      ]
+     ],
+     "cell_boxes": [
+      [
+       {
+        "x0": 0.8600377003702628,
+        "y0": 0.3287034353901847,
+        "x1": 0.9148448318348448,
+        "y1": 0.5195877719197328
+       },
+       {
+        "x0": 0.8600377003702628,
+        "y0": 0.5195877719197328,
+        "x1": 0.9148448318348448,
+        "y1": 0.564440994012684
+       },
+       {
+        "x0": 0.8600377003702628,
+        "y0": 0.564440994012684,
+        "x1": 0.9148448318348448,
+        "y1": 0.7032036393885527
+       },
+       {
+        "x0": 0.8950097983451725,
+        "y0": 0.7032036393885527,
+        "x1": 0.9148448318348448,
+        "y1": 1.0
+       },
+       null,
+       null,
+       null,
+       null,
+       null
+      ],
+      [
+       null,
+       null,
+       null,
+       {
+        "x0": 0.8600377003702628,
+        "y0": 0.7032036393885527,
+        "x1": 0.8950097983451725,
+        "y1": 0.8180751204167045
+       },
+       {
+        "x0": 0.8600377003702628,
+        "y0": 0.8180751204167045,
+        "x1": 0.8950097983451725,
+        "y1": 0.9383438360054956
+       },
+       {
+        "x0": 0.8600377003702628,
+        "y0": 0.9383438360054956,
+        "x1": 0.8950097983451725,
+        "y1": 1.0
+       },
+       null,
+       null,
+       null
+      ],
+      [
+       {
+        "x0": 0.8389195878325593,
+        "y0": 0.3287034353901847,
+        "x1": 0.8600377003702628,
+        "y1": 0.5195877719197328
+       },
+       {
+        "x0": 0.8389195878325593,
+        "y0": 0.5195877719197328,
+        "x1": 0.8600377003702628,
+        "y1": 0.564440994012684
+       },
+       {
+        "x0": 0.8389195878325593,
+        "y0": 0.564440994012684,
+        "x1": 0.8600377003702628,
+        "y1": 0.7032036393885527
+       },
+       {
+        "x0": 0.8389195878325593,
+        "y0": 0.7032036393885527,
+        "x1": 0.8600377003702628,
+        "y1": 0.8180751204167045
+       },
+       {
+        "x0": 0.8389195878325593,
+        "y0": 0.8180751204167045,
+        "x1": 0.8600377003702628,
+        "y1": 0.9383438360054956
+       },
+       {
+        "x0": 0.8389195878325593,
+        "y0": 0.9383438360054956,
+        "x1": 0.8600377003702628,
+        "y1": 1.0
+       },
+       null,
+       null,
+       null
+      ]
+     ],
+     "confidence": null
+    }
+   ]
+  }
+ ]
+}

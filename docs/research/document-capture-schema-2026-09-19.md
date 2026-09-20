@@ -13,9 +13,22 @@ from 3,905 missing positions. The new bounded `senate-expenditures-pdf` profile
 declares observation fields and composes the unchanged parent. This closes
 G2's loss of an available structural input for this sample, not table detection
 or all-family coverage. The [measurement](document-capture-pdf-tables-2026-09-20.md)
-states the reconciliation rule and missing-geometry limits. Reversible XML
-(G1) and required shared provenance (G3) remain separate open gaps in the
+states the reconciliation rule and missing-geometry limits. Required shared
+provenance (G3) remains open in the
 [register's §2.7](closing-the-gaps-2026-09-19.md#27-candidates-from-the-capture-schema-review-filed-unbuilt).
+
+**Reversible XML, measured 2026-09-20:**
+`spicy_docs.schemas.document_capture.xml` now encodes and decodes every
+capture field in `urn:spicy-docs:document-capture:xml:1`. The six committed
+family captures and the Senate table capture pass full structural equality,
+including scalar types, exact text/offsets, geometry, extensions and
+provenance; a fresh Senate adapter result passes too. This closes G1's
+capture-composition gap. XML costs 2.10–2.64 times the JSON bytes, with no
+value normalization; XML-forbidden form feeds are escaped and restored.
+Nineteen XML mutations and four injected encoder faults demonstrate that
+the proof detects loss. The [format and measurement](document-capture-xml-roundtrip-2026-09-20.md)
+records every input path/digest and the limits. This capture-shaped form is
+separate from the unchanged CFR publisher vocabulary and its JSON source map.
 
 *2026-09-19. Design record for the `DocumentCapture v1` shape. Reviewed the
 same day by an architecture review of both branches and a visual review of the

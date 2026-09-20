@@ -47,6 +47,26 @@ The design record, the six worked conversions and the two reviews behind this
 shape are in
 [`docs/research/document-capture-schema-2026-09-19.md`](research/document-capture-schema-2026-09-19.md).
 
+## Reversible capture XML names the capture's structures
+
+**2026-09-20, G1:** use a generic, capture-shaped XML vocabulary in
+`urn:spicy-docs:document-capture:xml:1`. It represents every JSON property and
+value, including ordered nodes and spans, extension values, geometry,
+unresolved reasons, artifacts, and profile and converter provenance. The
+[format and measurement record](research/document-capture-xml-roundtrip-2026-09-20.md)
+defines the mapping. This is a SpicyDocs serialization of the pinned Rulespec
+shape; it changes neither the parent nor the profiles.
+
+A publisher vocabulary is a separate, lossy projection of a capture: it has
+no general place for capture decisions, coordinates, or converter provenance.
+The existing example is [`reconstruction/serialize.py`](../src/spicy_docs/reconstruction/serialize.py):
+`serialize_cfr` consumes `ReconstructedDocument`, emits `CFRGRANULE` under
+`CFRMergedXML.xsd`, flattens paragraph nesting, and keeps evidence and rules
+in a separate JSON source map. That output remains unchanged. Its XML alone
+cannot reconstruct a capture, and concatenated span text cannot prove that
+capture structure survived. G1 requires full JSON value equality after XML
+encoding and decoding.
+
 ## Community supply precedes origin acquisition
 
 Prefer spicy-regs public tables where they carry the required data; origin

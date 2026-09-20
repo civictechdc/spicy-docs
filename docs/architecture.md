@@ -88,11 +88,14 @@ checks integrity with bounded memory; full verification also replays source mean
   the invariant validator (`rulespec/document_capture.py`) and the
   `SourceFragment` schema. The three new ones are copies only until the
   `rulespec-artifacts` pin moves; nothing here re-implements them. Package
-  data plus one vendored module: the converter that produces captures is the
+  data plus the vendored validator: the converter that produces captures is the
   diagnostic `tools/analysis/document_capture.py`, and
   `tests/test_document_capture.py` re-validates the committed captures
   offline, resolves their fragments against the inputs and refuses a mutated
-  capture. See the [design record](research/document-capture-schema-2026-09-19.md).
+  capture. `schemas/document_capture/xml.py` is the stdlib-only reversible
+  encoder/decoder for capture JSON values; it imports no research converter
+  and changes no publisher-vocabulary output. See the
+  [design record](research/document-capture-schema-2026-09-19.md).
 - **Tables:** `public_tables/profiles.py` declares columns and ordering through
   `PublicTableProfile`; `publish.py`, `verify.py` and `reader.py` implement the
   operations exported by `public_tables/api.py`.
