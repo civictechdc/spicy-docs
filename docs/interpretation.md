@@ -28,6 +28,7 @@ rather than buried in control flow.
 | `bill_summaries` | one bill version's text, title, status and money-bill kind, and an injected `ModelCall`; or, for `summarize_diff`, a section diff's changed items (`op`, both placements' heading and body) and an injected `ModelCall` | `BillSummaryResult` with model, prompt version, content hash, token counts and timestamps; `summarize_diff` produces `DiffSummaryResult` (headline, key changes, sections added/removed, dollar changes) with the same provenance columns |
 | `model_call` | — | the one injected model seam (`ModelCall`, `ModelResponse`, `ModelCallError`) the two model-backed modules share, and the `AnswerField` declaration each prompt, each reader and each request schema (`answer_schema`) is derived from |
 | `gemini_call` | a `GenerationClient` (`extraction/gemini`'s `GeminiClient`, or a stub) | that client as a `ModelCall`: it builds the request, sends the caller's `response_schema` as `responseJsonSchema`, parses the answer and carries the publisher's token counts |
+| `citations` | one document's normalized text, its per-page split where the rendition has one, the Congress its own index record states, and the chamber-roster vocabulary the caller already parsed | one `CitationFinding` per occurrence (kind, rule version, canonical target key, whether the key is the hosted target's own spelling, **which route reached it**, the matched text, the character span, and the printed page) |
 | `bill_family` | one `BillFamilyCapture` (a `BillStatus` and every acquired printing), plus three injected model seams | twelve tables' worth of rows from `spicy_docs.schemas`, each one already proved against its own contract, and a `FamilyRefusal` for every row it could have produced and did not — see [`tables.md`](tables.md) |
 
 `normalize_for_comparison` and `token_jaccard` live in `bill_signals`, where
@@ -178,6 +179,29 @@ rung.
 `release_matching` cannot tell a bill mentioned in passing from the bill a
 release is about; it reports the first bill named and which field named it, so
 a consumer can weigh a title match differently from a body one.
+
+`citations` reads what a document *prints*, which is a narrower thing than
+what it cites. It cannot see a cite the print spells in a form no measured
+rule covers, it attributes a match straddling a page break to the page it
+began on, and its `committee_name` rule is a **candidate** finder: the target
+key is a `system_code` only where the roster vocabulary the caller supplied
+settles the printed name, and an unsettled candidate is reported unsettled
+rather than guessed at. Two of its four routes are roster lookups and two are
+inferences from the one document's own printed text, so every finding names
+its route and a consumer can decline the inferences; both inference routes
+carry a guard against a measured wrong answer (a Senate committee whose name
+begins with a House committee's, and a fragment too short to mean anything). A bill key needs a Congress the print never writes, so
+the caller supplies its index record's; with none, the finding keeps the
+printed form and says the key is not the catalog's. Sixteen rules exist and
+thirteen are stored — every one that reaches a key something addresses.
+`bioguide_id` is not, because no print states one (the *index* does: the CRPT
+MODS names the submitting member's, on seven of eight sampled reports), and
+`dollar_amount` and `fiscal_year` are not, because they are quantities rather
+than links. `rin` and `docket_number` are stored on the strength of the MODS
+re-check: 87 RINs and 38 agency dockets across the eight activity reports, and
+no CRPT MODS states either, where the bills and laws the first measurement led
+with are all already stated. Finally, a span is only meaningful against the exact text it
+was measured in, which is why every row carries that text's digest.
 
 ## Decision
 

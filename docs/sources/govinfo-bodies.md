@@ -595,6 +595,44 @@ is not one of that vocabulary's entries, so a caller need not normalize
 twice. A `<bill>` missing any of `congress`/`type`/`number`/`context` is
 skipped, not guessed at.
 
+### What else the root extension states, and why a contract reads it
+
+Nine more root-level facts are read, each because a hosted row would otherwise
+re-derive from the print something the publisher already stated (measured
+2026-09-20 on CRPT-118hrpt968 and -118hrpt965, receipt
+`document-citations-2026-09-20/`):
+
+| Field | Where | What it settles |
+| --- | --- | --- |
+| `PackageSummary.session` / `PackageModsIdentity.session` | summary `session`, MODS root `extension/session` | The session of Congress, which no other record here carries. Both state `2` for both packages. |
+| `PackageSummary.pages` | summary `pages` | The document's own extent: `56` and `282`, against a 60-page capped read. A capped reader reports how far it got beside this, never in place of it. |
+| `PackageModsIdentity.committees` | MODS root `extension/congCommittee` | The authoring committee's `authorityId`, which is the `systemCode` `committees` and the Congress.gov committee routes already key on (`hsfa00`, `hsif00`). A report's committee is therefore a join, not a name match. Its `@congress` is the authority record's, not the report's: both packages are 118th-Congress reports carrying `congress="119"`. An element with no `authorityId` is skipped, because the id is the whole point of reading it. |
+| `PackageModsIdentity.laws` | MODS root `extension/law` | Every public law the package names, folded onto the sealed `public`/`private` vocabulary by the publisher's own `isPrivate` flag. |
+| `PackageModsIdentity.usc_sections` | MODS root `extension/USCode/section` | Every U.S. Code **section**, with the publisher's own subsection `detail`. A `<chapter>` child is not read: a chapter is not a section, has no hosted key, and publishing `5-8` for `<USCode title="5"><chapter number="8"/>` would claim a cite the document never made. Both packages carry exactly that chapter-only block. |
+| `PackageModsIdentity.cfr_parts` | MODS root `extension/cfr/part` | Every CFR part. No sampled `CRPT` record states one — two of eight budget volumes do — and it is read anyway, so a contract can say "compared, and the index does not state it" rather than "not compared". |
+| `PackageModsIdentity.statutes` | MODS root `extension/statuteAtLarge/page` | Every Statutes at Large page, as `{volume}-{pages}`. One of the eight activity reports states one. |
+| `PackageModsIdentity.rins` | MODS root `extension/rin/@number` | Every RIN. Zero across all eight sampled `CRPT` records, which is what makes the prints' 87 distinct RINs real yield. |
+| `PackageModsIdentity.reports` | MODS root `extension/congReport` | The sibling reports this one names, as CRPT package ids (11 and 15): the report-to-report edge, stated rather than read off the print. |
+| `PackageModsIdentity.members` | MODS root `extension/congMember` | Who the publisher names in a role, with `submitted_by` for `role="SUBMITTEDBY"`. **The one bioguide id these documents state** — the citation rules measured zero *printed* ones across ten families — and it can be absent: -118hrpt968 states `M001157`, -118hrpt965 states the member with chamber, congress, role and state and no id at all. An element with no id is kept, because the absent id is the fact a caller needs. |
+
+**What the CRPT body adds that these do not.** The eight House committee
+activity reports the [PDF-family rollup](../research/pdf-family-rollup-yield-2026-09-20.md)
+read are what `document_citations` was first built on, and the
+[MODS re-check](../research/pdf-yield-mods-recheck-2026-09-20.md) then measured
+that family properly — all eight reports, every page, 1,249 of them. Against
+each package's own MODS, the print names **0 of 1,406 bills, 1 of 174 public
+laws, 0 of 37 U.S. Code sections and 0 of 7 Statutes pages** that the MODS
+does not already state. For those four kinds the MODS is the authoritative
+source and what a print read adds is the *evidence span*.
+
+What the print adds outright: the committees beyond the one that submitted the
+report (27 resolved `system_code`s), **87 RINs**, **38 agency dockets**, 5 GAO
+product ids, and a handful of CFR, Federal Register and U.S. Reports cites. No
+sampled MODS in any collection states a Federal Register cite, a GAO product
+id, a CRS report id, an agency docket, a case docket, a U.S. Reports cite or a
+dollar figure. See
+[Table contracts](../tables.md#the-citation-link-table-stores-the-span-not-the-key).
+
 `GovInfoGranuleBody` is the same shape for `acquire_granule`, with a
 `GranuleIdentity` (the package and granule together), a `GranuleSummary` and a
 `GranuleModsIdentity` (which also carries `host_package_ids`, the proof of

@@ -1,0 +1,2675 @@
+U.S. GOVERNMENT PUBLISHING OFFICE
+WASHINGTON :
+57–862
+HOUSE OF REPRESENTATIVES
+"
+!
+118TH CONGRESS
+2d Session
+REPORT
+118–968
+Union Calendar No. 815
+LEGISLATIVE REVIEW AND OVERSIGHT
+ACTIVITIES
+OF THE
+COMMITTEE ON FOREIGN AFFAIRS
+ONE HUNDRED EIGHTEENTH CONGRESS
+A REPORT
+FILED PURSUANT TO RULE XI OF THE RULES OF THE HOUSE
+OF REPRESENTATIVES AND SECTION 136 OF THE LEGISLATIVE
+REORGANIZATION ACT OF 1946 (2 U.S.C. 190(d), AS AMENDED BY
+SECTION 118 OF THE LEGISLATIVE REORGANIZATION ACT OF
+1970 (PUBLIC LAW 91–510), AS AMENDED BY PUBLIC LAW 92–
+JANUARY 2, 2025.—Committed to the Committee of the Whole House on
+the State of the Union and ordered to be printed
+(II)
+LETTER OF TRANSMITTAL
+HOUSE OF REPRESENTATIVES,
+COMMITTEE ON FOREIGN AFFAIRS,
+Washington, DC, January 2, 2025.
+Hon. KEVIN MCCUMBER,
+Clerk of the House of Representatives,
+Washington, DC.
+DEAR MR. MCCUMBER: I enclose herewith a report of the Legisla-
+tive Review and Oversight Activities of the Committee on Foreign
+Affairs for the 118th Congress in accordance rule XI, clause 1(d) of
+the Rules of the U.S. House of Representatives. This report covers
+committee activities during the 118th Congress.
+Sincerely,
+MICHAEL T. MCCAUL,
+Chairman.
+(III)
+C O N T E N T S
+Page
+I. Summary of Legislative Activity ..................................................................
+A. Full Committee Markup Summaries ...............................................
+B. Committee Reports Filed ..................................................................
+C. Foreign Affairs Legislation Considered by the House ...................
+II. Meetings of the Full Committee and Subcommittees .................................
+A. Full Committee .................................................................................
+B. Subcommittee on Africa ...................................................................
+C. Subcommittee on Europe ..................................................................
+D. Subcommittee on Global Health, Global Human Rights, and
+International Organizations ..........................................................
+E. Subcommittee on the Indo-Pacific ...................................................
+F. Subcommittee on the Middle East, North Africa, and Central
+Asia ..................................................................................................
+G. Subcommittee on Oversight and Accountability ............................
+H. Subcommittee on the Western Hemisphere ...................................
+I. Waste, Fraud, Abuse, Mismanagement, and Oversight Hearings .
+J. Committee-Hosted Dignitary Meetings ...........................................
+III. Committee Oversight Plan for the 118th Congress ....................................
+IV. Executive Branch Reports and Congressional Notifications ......................
+
+Union Calendar No. 815
+118TH CONGRESS
+REPORT
+"
+!
+HOUSE OF REPRESENTATIVES
+2d Session
+118–968
+LEGISLATIVE REVIEW AND OVERSIGHT ACTIVITIES
+JANUARY 2, 2025.—Committed to the Committee of the Whole House on the State
+of the Union and ordered to be printed
+Mr. MCCAUL, from the Committee on Foreign Affairs,
+submitted the following
+R E P O R T
+U.S. HOUSE OF REPRESENTATIVES
+COMMITTEE ON FOREIGN AFFAIRS
+COMMITTEE MEMBERSHIP
+118TH CONGRESS
+MICHAEL T. MCCAUL, Texas, Chairman
+(28,25)
+CHRISTOPHER SMITH, New Jersey
+JOE WILSON, South Carolina
+SCOTT PERRY, Pennsylvania
+DARRELL ISSA, California
+ANN WAGNER, Missouri
+BRIAN MAST, Florida
+KEN BUCK, Colorado***
+TIM BURCHETT, Tennessee
+MARK GREEN, Tennessee
+ANDY BARR, Kentucky
+RONNY JACKSON, Texas
+YOUNG KIM, California
+MARIA SALAZAR, Florida
+BILL HUIZENGA, Michigan
+AMATA RADEWAGEN, American Samoa
+FRENCH HILL, Arkansas
+WARREN DAVIDSON, Ohio
+JIM BAIRD, Indiana
+MIKE WALTZ, Florida
+THOMAS KEAN, New Jersey
+MICHAEL LAWLER, New York
+CORY MILLS, Florida
+RICH MCCORMICK, Georgia
+NATHANIEL MORAN, Texas
+JOHN JAMES, Michigan
+KEITH SELF, Texas
+RYAN C. ZINKE, Montana****
+JAMES MOYLAN, Guam*****
+GREGORY MEEKS, New York
+BRAD SHERMAN, California
+GERALD CONNOLLY, Virginia
+WILLIAM KEATING, Massachusetts
+DAVID CICILLINE, Rhode Island*
+AMI BERA, California
+JOAQUIN CASTRO, Texas
+DINA TITUS, Nevada
+TED LIEU, California
+SUSAN WILD, Pennsylvania
+DEAN PHILLIPS, Minnesota
+COLIN ALLRED, Texas
+ANDY KIM, New Jersey
+SARA JACOBS, California
+KATHY MANNING, North Carolina
+SHEILA CHERFILUS-MCCORMICK, Florida
+GREG STANTON, Arizona
+MADELEINE DEAN, Pennsylvania
+JARED MOSKOWITZ, Florida
+JONATHAN JACKSON, Illinois
+SYDNEY KAMLAGER-DOVE, California
+JIM COSTA, California
+JASON CROW, Colorado
+GABRIEL AMO, Rhode Island**
+BRAD SCHNEIDER, Illinois
+KWEISI MFUME, Maryland******
+BRENDAN SHIELDS, Majority Staff Director
+SOPHIA A. LAFARGUE, Minority Staff Director
+SAJIT GANDHI, Minority Staff Director
+————————
+* Rep. Cicilline resigned from the Committee on June 1, 2023.
+** Rep. Amo appointed to the Committee on November 15, 2023.
+*** Rep. Buck resigned from the Committee on March 22, 2024.
+**** Rep. Zinke appointed to the Committee on June 4, 2024.
+***** Rep. Moylan appointed to the Committee on June 4, 2024.
+****** Rep. Mfume appointed to the Committee on June 4, 2024.7
+MEMBERSHIP OF THE SUBCOMMITTEES OF THE COMMITTEE ON
+FOREIGN AFFAIRS
+Subcommittee on Africa
+John James, MI, Chairman
+Christopher Smith, NJ
+Young Kim, CA
+Jim Baird, IN
+Thomas Kean, NJ
+Cory Mills
+Sara Jacobs, CA, Ranking Member
+Sheila Cherfilus-McCormick, FL
+Colin Allred, TX
+Jonathan Jackson, IL
+Subcommittee on Europe
+Thomas Kean, NJ, Chairman
+Joe Wilson, SC
+Darrell Issa, CA
+Ann Wagner, MO
+Bill Huizenga, MI
+Michael Lawler, NY
+Nathaniel Moran, TX
+Keith Self, TX
+William Keating, MA, Ranking Member
+Dina Titus, NV
+Madeleine Dean, PA
+Jim Costa, CA
+David Cicilline, RI***
+Susan Wild, PA
+Gabriel Amo, RI****
+Subcommittee on Global Health, Global Human Rights and
+International Organizations
+Christopher Smith, NJ, Chairman
+Maria Salazar, FL
+Amata Radewagen, AS-AL
+French Hill, AR
+Rich McCormick, GA
+John James, MI
+Susan Wild, PA, Ranking Member
+Ami Bera, CA
+Sara Jacobs, CA
+Kathy Manning, NC
+Subcommittee on the Indo-Pacific
+Young Kim, CA, Chairwoman
+Ann Wagner, MO
+Ken Buck, CO*****
+Mark Green, TN
+Andy Barr, KY
+Amata Radewagen, AS-AL
+Mike Waltz, FL
+Warren Davidson, OH
+James Moylan, GU*******
+Ami Bera, CA, Ranking Member
+Andy Kim, NJ
+Brad Sherman, CA
+Gerald Connolly, VA
+William Keating, MA
+Joaquin Castro, TX
+Subcommittee on the Middle East, North Africa, and Central Asia
+Joe Wilson, SC, Chairman
+Brian Mast, FL
+Tim Burchett, TN
+Ronny Jackson, TX
+Jim Baird, IN
+Michael Lawler, NY
+Rich McCormick, GA
+Ryan C. Zinke, MT******
+Dean Phillips, MN, Ranking Member
+Brad Sherman, CA
+Gerald Connolly, VA
+David Cicilline, RI***
+Kathy Manning, NC
+Gabriel Amo, RI****
+Kweisi Mfume, MD********
+Subcommittee on Oversight and Accountability
+Brian Mast, FL, Chairman
+Scott Perry, PA
+Darrell Issa, CA
+Tim Burchett, TN
+French Hill, AR
+Mike Waltz, FL
+Cory Mills, FL
+Nathaniel Moran, TX
+Jason Crow, CO, Ranking Member
+Dina Titus, NV
+Colin Allred, TX
+Andy Kim, NJ
+Sheila Cherfilus-McCormick, FL
+Madeleine Dean, PA
+Subcommittee on the Western Hemisphere
+Maria Salazar, FL, Chairwoman
+Ken Buck, CO*
+Mark Green, TN
+Bill Huizenga, MI
+Warren Davidson, OH
+Keith Self, TX
+John James, MI**
+Joaquin Castro, Ranking Member
+Greg Stanton, AZ
+Jared Moskowitz, FL
+Sydney Kamlager-Dove, CA
+————————
+* Rep. Buck resigned from the Subcommittee on Western Hemisphere on April 17, 2023.
+** Rep. James appointed to the Subcommittee on Western Hemisphere on April 17, 2023.
+*** Rep. Cicilline resigned from the Subcommittee on Europe and the Middle East, North Africa, and
+Central Asia on June 1, 2023.
+**** Rep. Amo appointed to the Subcommittee on Europe and the Middle East, North Africa, and
+Central Asia on November 15, 2023.
+***** Rep. Buck resigned from the Subcommittee on the Indo-Pacific on March 22, 2024.
+****** Rep. Zinke appointed to the Subcommittee on the Middle East, North Africa, and Central Asia
+on June 4, 2024.
+******* Rep. Moylan appointed to the Subcommittee on the Indo-Pacific on June 4, 2024.
+******** Rep. Mfume appointed to the Subcommittee on the Middle East, North Africa, and Central
+Asia on June 25, 2024.
+I. SUMMARY OF LEGISLATIVE ACTIVITY
+A. Full Committee Markup Summaries
+2/28/23–3/1/23 FOREIGN AFFAIRS MARKUP SUMMARY
+By unanimous consent, the Chair called up the following meas-
+ures, previously provided to Members, to be considered en bloc:
+1. H.R. 1093, To direct the Secretary of State to submit to Con-
+gress a report on implementation of the advanced capabilities
+pillar of the trilateral security partnership between Australia,
+the United Kingdom, and the United States (McCaul)
+2. H.R. 1159, To amend the Taiwan Assurance Act of 2020 to re-
+quire periodic reviews and updated reports relating to the De-
+partment of State's Taiwan Guidelines (Wagner)
+3. H.R. 1189, Undersea Cable Control Act (Mast)
+4. H. Res. 90, Demanding that the Government of the People's
+Republic of China and the Communist Party of China imme-
+diately release Mark Swidan (Cloud)
+5. H.R. 406, Providing Appropriate Recognition and Treatment
+Needed to Enhance Relations with ASEAN Act (Castro)
+6. H.R. 1149, Countering Untrusted Telecommunications Abroad
+Act (Wild)
+The measures considered en bloc were ordered favorably reported
+to the House by voice vote.
+The Chair called up the following measures separately:
+7. H.R. 1157, Countering the PRC Malign Influence Fund Au-
+thorization Act of (Barr) (ordered favorably reported to the
+House, voice vote)
+8. H.R. 1107, PRC is Not a Developing Country Act (Kim) (or-
+dered favorably reported to the House, as amended, voice
+vote)
+9. H.R. 1154, Stop Forced Organ Harvesting Act of 2023 (Smith)
+(ordered favorably reported to the House, voice vote)
+10. H.R. 115, Deterring America's Technological Adversaries Act
+(McCaul) (ordered favorably reported to the House, 24Y–
+16N)
+(not adopted, 16Y–23N)
+ed, 16Y–25N)
+11. H.R. 1151, Upholding Sovereignty of Airspace Act (Meeks)
+(ordered favorably reported to the House, as amended, voice
+vote)
+3/24/23 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measure, previously provided
+to Members:
+1. H. Res. 158, Resolution of Inquiry requesting the President
+and directing the Secretary of Defense and Secretary of State
+to transmit, respectively, certain documents to the House of
+Representatives relating to congressionally appropriated funds
+to the nation of Ukraine from January 20, 2021 to February
+24, 2023. (Ms. Greene) The measure was ordered favorably re-
+ported to the House by a vote of 26Y to 20N.
+3/28/2023 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 314, To prohibit the removal of Cuba from the list of
+state sponsors of terrorism until Cuba satisfies certain condi-
+tions, and for other purposes (Salazar) (ordered favorably re-
+ported to the House, 25Y–20N)
+25N)
+2. H.R. 1684, To require the Secretary of State to submit an an-
+nual report to Congress regarding the ties between criminal
+gangs and political and economic elites in Haiti and impose
+sanctions on political and economic elites involved in such
+criminal activities (Meeks) (ordered favorably reported to the
+House, as amended, voice vote)
+4/26/23–4/28/23 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 589, To impose sanctions on the Supreme Leader of Iran
+and the President of Iran and their respective offices for
+human rights abuses and support for terrorism (Banks) (or-
+dered favorably reported to the House, voice vote)
+vote)
+2. H. Res. 300, Requesting the President and directing the Sec-
+retary of Defense to transmit, respectively, to the House of
+Representatives copies of all documents indicating any plans
+for current or future military assistance to Ukraine and docu-
+ments indicating whether any United States Armed Forces,
+including special operations forces, are currently deployed in
+Ukraine. (Gaetz) (ordered favorably reported to the House, 22
+Y–20 N)
+3. H.R. 1690, To authorize the Secretary of State to negotiate re-
+gional immigration agreements, and for other purposes.
+(McCaul) (ordered favorably reported to the House, 25Y–22N)
+N)
+N)
+23 Y to 24 N)
+4. H.R. 2789, To direct the Secretary of State to develop a strat-
+egy on efforts to strengthen subnational cooperation between
+the United States and Mexico, and for other purposes. (Stan-
+ton) (ordered favorably reported to the House, voice vote)
+5/16/2023 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 3205, To disrupt the international fentanyl supply chain,
+and for other purposes. (McCaul) (ordered favorably reported
+to the House as amended, voice vote)
+vote)
+vote)
+vote)
+vote)
+2. H.R. 3203, To impose sanctions with respect to Chinese pro-
+ducers of synthetic opioids and opioid precursors, to hold Chi-
+nese officials accountable for the spread of illicit fentanyl, and
+for other purposes. (Barr) (ordered favorably reported to the
+House as amended, voice vote)
+3. H.R. 3202, To prohibit any official action to recognize or nor-
+malize relations with any Government of Syria that is led by
+Bashar al-Assad, and for other purposes. (Wilson) (ordered fa-
+vorably reported to the House as amended, voice vote)
+4. H.R. 3099, To establish in the Department of State the posi-
+tion of Special Envoy for the Abraham Accords, and for other
+purposes. (Lawler) (ordered favorably reported to the House,
+voice vote)
+5. H. Res. 81, Calling on the President to support the creation
+of a Special Tribunal for the Punishment of the Crime of Ag-
+gression against Ukraine. (Keating) (ordered favorably re-
+ported to the House as amended, voice vote)
+6. H. Res. 377, Calling for the immediate release of Evan
+Gershkovich, a United States citizen and journalist, who was
+wrongfully detained by the Government of the Russian Fed-
+eration in March 2023. (McCaul) (ordered favorably reported
+to the House, voice vote)
+7. H. Res 272, Calling on the Government of the Russian Fed-
+eration to immediately release United States citizen Paul
+Whelan. (Stevens) (ordered favorably reported to the House,
+voice vote)
+8. H.R. 1176, To amend the Taiwan Allies International Protec-
+tion and Enhancement Initiative (TAIPEI) Act of 2019 to pro-
+vide that the United States, as a member of any international
+organizations, should oppose any attempts by the People's Re-
+public of China to resolve Taiwan's status by distorting the
+decisions, language, policies, or procedures of the organization,
+and for other purposes. (Connolly) (ordered favorably reported
+to the House, voice vote)
+6/21/2023 FOREIGN AFFAIRS MARKUP SUMMARY
+By unanimous consent, the Chair called up the following meas-
+ures, previously provided to Members, to be considered en bloc:
+1. H.R. 3033, To repeal the sunset provision of the Iran Sanc-
+tions Act of 1996, and for other purposes. (Steel)
+2. H. Res. 492, Condemning the Government of Iran's state-
+sponsored persecution of the Baha'i minority and its continued
+violation of the International Covenants on Human Rights.
+(Schakowsky)
+3. H.R. 4039, To prohibit the use of funds supporting any activi-
+ties within Xinjiang Uyghur Autonomous Region of the Peo-
+ple's Republic of China. (Moran)
+stitute to H.R. 4039
+4. H.R. 4132, To provide for the imposition of sanctions with re-
+spect to forced organ harvesting within the People's Republic
+of China, and for other purposes. (Perry)
+stitute to H.R. 4132
+5. H.R. 1150, To establish the John Lewis Civil Rights Fellow-
+ship to fund international internships and research place-
+ments for early- to mid-career professionals to study non-
+violent movements to establish and protect civil rights around
+the world. (Williams)
+The measures considered en bloc were agreed to and ordered fa-
+vorably reported, as amended, if amended, to the House by a 33 to
+0 vote.
+The Chair called up the following measures separately:
+6. H. Res. 488, Calling on the Biden administration to imme-
+diately provide Army Tactical Missile Systems to Ukraine.
+(Kean) (ordered favorably reported to the House by a voice
+vote)
+07/26/2023 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 4619, To authorize the sale of Virginia Class submarines
+to Australia in support of the trilateral security partnership
+between Australia, the United Kingdom, and the United
+States, and for other purposes. (Huizenga) (ordered favorably
+reported to the House, as amended, voice vote)
+2. H.R. 4716, To amend the Arms Export Control Act in support
+of Australia and the AUKUS partnership. (Kim) (ordered favorably
+reported to the House, as amended, 25Y–22N)
+3. H.R. 4715, To amend the Arms Export Control Act in support
+of the United Kingdom and the AUKUS partnership. (Kean)
+(ordered favorably reported to the House, as amended, 26Y–
+23N)
+4. H.R. 1456, To limit the use of funds for the production of films
+using assets of the Department of State under certain cir-
+cumstances, and for other purposes. (Green) (ordered favor-
+ably reported to the House, as amended, 26Y–23N)
+26N)
+vote)
+5. H.R. 4725, To conduct oversight and accountability of the
+State Department's implementation of AUKUS, and for other
+purposes. (McCaul) (ordered favorably reported to the House,
+as amended, 49Y–0N)
+6. H.R. 1776, To prevent, treat, and cure tuberculosis globally.
+(Bera) (ordered favorably reported to the House, voice vote)
+7. H.R. 4517, To require the Secretary of State to submit a plan
+for the reimbursement of personal funds expended to evacuate
+American citizens, American lawful permanent residents, and
+Afghan allies from Afghanistan, and for other purposes. (Da-
+vidson) (ordered favorably reported to the House, as amended,
+47Y–0N–1Present)
+8. H.R. 4741, To require the development of a strategy to pro-
+mote the use of secure telecommunications infrastructure
+worldwide, and for other purposes. (Manning) (ordered favor-
+ably reported to the House, voice vote)
+9. H.R. 4691, To provide for congressional review of actions to
+terminate or waive sanctions imposed with respect to Iran.
+(Self) (ordered favorably reported to the House, 34Y–16N)
+10. H.R. 3152, To impose sanctions with respect to countries, in-
+dividuals, and entities that engage in any effort to acquire,
+possess, develop, transport, transfer, or deploy Iranian mis-
+siles and related goods and technology, including materials
+and equipment, and for other purposes. (McCaul) (ordered fa-
+vorably reported to the House, 50Y–0N)
+11. H. Res. 578, Calling for the immediate release of Eyvin Her-
+nandez, a United States citizen and Los Angeles County pub-
+lic defender, who was wrongfully detained by the Venezuelan
+regime in March 2022. (Kamlager-Dove) (ordered favorably
+reported to the House, as amended, voice vote)
+12. H.R. 4825, To require the imposition of sanctions and other
+measures relating to the Russian oil price cap policy, and for
+other purposes. (Dean) (ordered favorably reported to the
+House, voice vote)
+10/19/2023 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H. Res. 559, Declaring it is the policy of the United States
+that a nuclear Islamic Republic of Iran is not acceptable.
+(McCaul) (ordered favorably reported to the House, 37Y–3N)
+2. H.R. 2973, To require the Secretary of Defense to develop, in
+cooperation with allies and partners in the Middle East, an in-
+tegrated maritime domain awareness and interdiction capa-
+bility, and for other purposes. (McMorris Rodgers) (ordered fa-
+vorably reported to the House, as amended, 42Y–0N–1P)
+(considered as base text by UC)
+3. H.R. 5826, To require a report on sanctions under the Robert
+Levinson Hostage Recovery and Hostage-Taking Account-
+ability Act, and for other purposes. (Wilson) (ordered favorably
+reported to the House, as amended, 40Y–5N)
+(considered as base text by UC)
+4. H.R. 340, To impose sanctions with respect to foreign support
+for terrorist organizations, including Hamas and the Pales-
+tinian Islamic Jihad. (Mast) (ordered favorably reported to the
+House, as amended, 44Y–2N)
+(considered as base text by UC)
+Revised (adopted, voice vote)
+Nature of a Substitute #117 Revised (not adopted,
+18Y–27N)
+5. H.R. 3266, To require the Secretary of State to submit annual
+reports reviewing the curriculum used by the Palestinian Au-
+thority, and for other purposes. (Sherman) (ordered favorably
+reported to the House, 46Y–0N)
+6. H.R. 3774, To impose additional sanctions with respect to the
+importation or facilitation of the importation of petroleum
+products from Iran, and for other purposes. (Lawler) (ordered
+favorably reported to the House, as amended, 40Y–7N)
+(considered as base text by UC)
+7. H. Res. 599, Urging the European Union to designate
+Hizballah in its entirety as a terrorist organization. (Schnei-
+der) (ordered favorably reported to the House, 47Y–0N)
+8. H.R. 1809, To require the development of strategies and op-
+tions to prevent the export to Iran of certain technologies re-
+lated to unmanned aircraft systems, and for other purposes.
+(Keating) (ordered favorably reported to the House, as amend-
+ed, 47Y–0N)
+(considered as base text by UC)
+11/07/2023 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+9. H.R. 4175, To authorize the Secretary of State to provide addi-
+tional assistance to Ukraine using assets confiscated from the
+Central Bank of the Russian Federation and other sovereign
+assets of the Russian Federation, and for other purposes.
+(McCaul) (ordered favorably reported to the House, as amend-
+ed, 40Y–2N)
+2. H.R. 4723, To provide for the imposition of sanctions with re-
+spect to foreign persons undermining the Dayton Peace Agree-
+ment or threatening the security of Bosnia and Herzegovina,
+and for other purposes. (Wagner) (ordered favorably reported
+to the House, 44Y–0N)
+sidered as base text)
+3. H. Res. 149, Condemning the illegal abduction of children
+from Ukraine to the Russian Federation. (Wild) (ordered fa-
+vorably reported to the House, 44Y–0N)
+ered as base text)
+4. H.R. 5856, To reauthorize the Trafficking Victims Protection
+Act of 2000, and for other purposes. (Smith) (ordered favor-
+ably reported to the House, as amended, 44Y–0N
+5. H.R. 4681, To provide for the imposition of sanctions with re-
+spect to illicit captagon trafficking. (Hill) (ordered favorably
+reported to the House, as amended, 44Y–0N)
+6. H.R. 5961, To freeze certain Iranian funds involved in the
+2023 hostage deal between the United States and Iran, and
+for other purposes. (McCaul) (ordered favorably reported to
+the House, as amended, 29Y–15N)
+19Y–25N)
+vote)
+(not adopted, 20Y–24N)
+25N)
+adopted, 15Y–29N)
+adopted, 13Y–31N)
+7. H. Res. 793, Calling on Hamas to immediately release hos-
+tages taken during October 2023 attack on Israel. (Stevens)
+(ordered favorably reported to the House, voice vote)
+8. H. Res. 683, Expressing support for the diplomatic relations
+required to encourage the Government of Mexico to fulfill its
+water deliveries on an annual basis to the United States
+under the treaty between the United States and Mexico re-
+garding the utilization of the Colorado and Tijuana Rivers and
+of the Rio Grande. (De La Cruz) (ordered favorably reported
+to the House, voice vote)
+9. H.R. 6119, To require the Secretary of State to notify Con-
+gress when the security clearances of certain senior members
+of the Department of State are suspended or revoked, and for
+other purposes. (Mast) (ordered favorably reported to the
+House, 24Y–20N)
+10. H.R. 6087, To establish a comprehensive United States Gov-
+ernment initiative to build the capacity of young leaders and
+entrepreneurs in Africa, and for other purposes. (Kamlager-
+Dove) (ordered favorably reported to the House, voice vote)
+11/29/2023 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 6349, To prohibit or require notification with respect to
+certain activities of United States persons involving countries
+of concern, and for other purposes. (McCaul) (ordered favor-
+ably reported to the House, voice vote)
+2. H.R. 533, To amend the Tibetan Policy Act of 2002 to modify
+certain provisions of that Act. (McGovern) (ordered favorably
+reported to the House, as amended, voice vote)
+sidered as base text by UC)
+3. H.R. 2766, To support the human rights of Uyghurs and mem-
+bers of other minority groups residing primarily in the
+Xinjiang Uyghur Autonomous Region and safeguard their dis-
+tinct identity, and for other purposes. (Kim) (ordered favor-
+ably reported to the House, as amended, 40Y–0N)
+sidered as base text by UC)
+4. H.R. 5375, To require a strategy for bolstering engagement
+and cooperation between the United States, Australia, India,
+and Japan and to seek to establish a Quad Intra-Parliamen-
+tary Working Group to facilitate closer cooperation on shared
+interests and values. (Meeks) (ordered favorably reported to
+the House, as amended, 39Y–0N)
+sidered as base text by UC)
+5. H.R. 1103, To require the President to remove the extension
+of certain privileges, exemptions, and immunities to the Hong
+Kong Economic and Trade Offices if Hong Kong no longer en-
+joys a high degree of autonomy from the People's Republic of
+China, and for other purposes. (Smith) (ordered favorably re-
+ported to the House, as amended, 39Y–0N)
+(adopted, voice vote)
+6. H.R. 5532, To provide for the imposition of sanctions with re-
+spect to North Korea's support for Russia's illegal war in
+Ukraine. (Connolly) (ordered favorably reported to the House,
+as amended, 40Y–0N)
+#82 (adopted, voice vote)
+12/13/2023 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 6602, To amend the Export Control Reform Act of 2018
+relating to the review of the interagency dispute resolution
+process. (McCormick) (ordered favorably reported to the
+House, as amended, 43Y–0N)
+(adopted, voice vote)
+2. H.R. 6606, To amend the Export Control Reform Act of 2018
+relating to the statement of policy. (Radewagen) (ordered fa-
+vorably reported to the House, 43Y–0N)
+3. H.R. 5613, To require a review of whether individuals or enti-
+ties subject to the imposition of certain sanctions through in-
+clusion on certain sanctions lists should also be subject to the
+imposition of other sanctions and included on other sanctions
+lists. (Waltz) (ordered favorably reported to the House, as
+amended, 43Y–0N)
+(adopted, voice vote)
+4. H.R. 6614, To amend the Export Control Reform Act of 2018
+relating to licensing transparency. (Jackson) (ordered favor-
+ably reported to the House, as amended, 43Y–0N)
+(adopted, voice vote)
+5. H.R. 1135, To grant certain authorities to the President to
+combat economic coercion by foreign adversaries, and for other
+purposes. (Meeks) (ordered favorably reported to the House,
+as amended, 35Y–8N)
+sidered as base text by UC)
+6. H.R. 5917, To amend the Sanctioning the Use of Civilians as
+Defenseless Shields Act to modify and extend that Act, and for
+other purposes. (Gallagher) (ordered favorably reported to the
+House, 43Y–0N)
+7. H.R. 3016, To amend the Anti-Boycott Act of 2018 to apply
+the provisions of that Act to international governmental orga-
+nizations. (Lawler) (ordered favorably reported to the House,
+as amended, 42Y–3N)
+8. H.R. 3569, To provide for the expansion of the Starr-Camargo
+Bridge near Rio Grande City, Texas, and for other purposes.
+(Cuellar) (ordered favorably reported to the House, 46Y–0N)
+9. H.R.6586, To require a strategy to oppose financial or mate-
+rial support by foreign countries to the Taliban, and for other
+purposes. (Burchett) (ordered favorably reported to the House,
+as amended, 46Y–0N)
+(adopted, voice vote)
+10. H.R. 6306, To amend the State Department Basic Authori-
+ties Act of 1956 to prohibit the acquisition or lease of a con-
+sular or diplomatic post built or owned by an entity bene-
+ficially owned by the People's Republic of China, and for
+other purposes. (Mills) (ordered favorably reported to the
+House, as amended, 46Y–0N)
+sidered as base text by UC)
+11. H.R. 6610, To provide for the modernization of the passport
+issuance process, and for other purposes. (Issa) (ordered fa-
+vorably reported to the House, as amended, 46Y–0N)
+ed, voice vote)
+ture of a Substitute (adopted, voice vote)
+12. H.R. 6416, To amend the Internal Revenue Code of 1986 to
+impose certain tax penalties in connection with the invasion
+of Ukraine. (Doggett) (ordered favorably reported to the
+House, as amended, 41Y–5N)
+sidered as base text by UC)
+02/06/2024 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 6609, To amend the Arms Export Control Act to increase
+the dollar amount thresholds under sections 3 and 36 of that
+Act relating to proposed transfers or sales of defense articles
+or services under that Act, and for other purposes. (Waltz) (or-
+dered favorably reported to the House, as amended, 26Y–20N)
+sidered as base text)
+2. H.R. 7089, To authorize the Diplomatic Security Services of
+the Department of State to investigate allegations of viola-
+tions of conduct constituting offenses under chapter 77 of title
+18, United States Code, and for other purposes. (James) (or-
+dered favorably reported to the House, as amended, 46Y–0N)
+sidered as base text)
+3. H. Con. Res. 27, Condemning Russia's unjust and arbitrary
+detention of Russian opposition leader Vladimir Kara-Murza
+who has stood up in defense of democracy, the rule of law, and
+free and fair elections in Russia. (Keating) (ordered favorably
+reported to the House, as amended, 47Y–0N)
+(considered as base text)
+4. H.R. 6603, To apply foreign-direct product rules to Iran.
+(Moran) (ordered favorably reported to the House, as amend-
+ed, 45Y–2N)
+(adopted, voice vote)
+5. H. Res. 82, Expressing the sense of Congress regarding the
+need to designate Nigeria a Country of Particular Concern for
+engaging in and tolerating systematic, ongoing, and egregious
+violations of religious freedom, the need to appoint a Special
+Envoy for Nigeria and the Lake Chad region, and for other
+purposes. (Smith) (ordered favorably reported to the House, as
+amended, 26Y–21N)
+(adopted, as amended, voice vote)
+82 (adopted, 25Y–22N)
+6. H.R. 7159, To bolster United States engagement with the Pa-
+cific Islands region, and for other purposes. (Case) (ordered fa-
+vorably reported to the House, voice vote)
+7. H. Res. 965, Calling for the immediate release of Ryan
+Corbett, a United States citizen, who was wrongfully detained
+by the Taliban on August 10, 2022, and condemning the
+wrongful detention of Americans by the Taliban. (Tenney) (or-
+dered favorably reported to the House, voice vote)
+8. H.R. 6046, To designate Ansarallah as a foreign terrorist orga-
+nization and impose certain sanctions on Ansarallah, and for
+other purposes. (Clyde) (ordered favorably reported to the
+House, as amended, 34Y–13N)
+(considered as base text)
+9. H.R. 7122, To prohibit aid that will benefit Hamas, and for
+other purposes. (Smith) (ordered favorably reported to the
+House, as amended, 30Y–19N)
+sidered as base text)
+ture of a Substitute #60 (withdrawn)
+10. H.R. 7152, To direct the Secretary of State to establish a na-
+tional registry of Korean American divided families, and for
+other purposes. (Wexton) (ordered favorably reported to the
+House, as amended, 49Y–0N)
+(adopted, voice vote)
+03/20/2024 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 6727, To establish the United States Foundation for
+International Conservation to promote long-term management
+of protected and conserved areas, and for other purposes.
+(McCaul) (ordered favorably reported to the House, 42Y–7N)
+2. H.R. 7256, To require a full review of the bilateral relation-
+ship between the United States and South Africa. (James) (or-
+dered favorably reported to the House, as amended, 36Y–13N)
+(adopted, voice vote)
+ture of Substitute (not adopted, voice vote)
+3. H.R. 3334, To provide for the imposition of sanctions on mem-
+bers of the National Communist Party Congress of the Peo-
+ple's Republic of China, and for other purposes. (McClain) (or-
+dered favorably reported to the House, as amended, 28Y–22N)
+ed, voice vote)
+4. H.R. 5245, To amend the State Department Basic Authorities
+Act of 1956 to require certain congressional notification prior
+to entering into, renewing, or extending a science and tech-
+nology agreement with the People's Republic of China, and for
+other purposes. (Barr) (ordered favorably reported to the
+House, as amended, 50Y–0N)
+sidered as base text)
+5. H.R. 7701, To require the imposition of sanctions with respect
+to any foreign person that knowingly participates in the con-
+struction, maintenance, or repair of a tunnel or bridge that
+connects the Russian mainland with the Crimean Peninsula.
+(Meeks) (ordered favorably reported to the House, 49Y–1N)
+6. H. Res. 1084, Condemning the killing of Alexei Navalny and
+calling for the release of all political prisoners in the Russian
+Federation. (Wild) (ordered favorably reported to the House,
+as amended, 50Y–0N)
+7. H. Res. 901, Expressing support for democracy and human
+rights in Pakistan. (McCormick) (ordered favorably reported to
+the House, as amended, 50Y–0N)
+(considered as base text)
+8. H.R. 6831, To reauthorize the Venezuela Emergency Relief,
+Democracy Assistance, and Development Act of 2019, and for
+other purposes. (Salazar) (ordered favorably reported to the
+House, 41Y–9N)
+9. H.R. 7710, To authorize and encourage the United States
+Agency for International Development to pursue a model of lo-
+cally led development and humanitarian response and expand
+engagement with local partners and increase its local partner
+base. (Jacobs) (ordered favorably reported to the House, voice
+vote)
+05/16/2024 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 3012, To reauthorize the North Korean Human Rights
+Act of 2004, and for other purposes. (Kim) (ordered favorably
+reported to the House, as amended, voice vote)
+ered as base text by UC)
+2. H. Res. 1063, Reaffirming the United States full and unwav-
+ering commitment to the North Atlantic Treaty Organization
+in its 75th anniversary year and its goals of achieving collec-
+tive security through transatlantic partnerships. (Keating) (or-
+dered favorably reported to the House, as amended, voice
+vote)
+Huizenga Amendment (adopted, voice vote)
+3. H.R. 8310, To require strategies on United States policy to-
+wards the Democratic Republic of the Congo, and for other
+purposes. (James) (ordered favorably reported to the House, as
+amended, voice vote)
+sidered as base text by UC)
+By unanimous consent, the Chair called up the following meas-
+ures, previously provided to Members, to be considered en bloc:
+1. H.R. 8361, To impose sanctions with respect to economic or in-
+dustrial espionage by foreign adversarial companies, and for
+other purposes. (McCormick)
+2. H.R. 8152, To amend the Export Control Reform Act of 2018
+to provide for control of remote access of items, and for other
+purposes. (Lawler)
+3. H. Res. 1056, Recognizing the importance of trilateral co-
+operation among the United States, Japan, and South Korea.
+(Connolly)
+4. H.R. 8001, To impose sanctions on the Houthis for attacks on
+international shipping, and for other purposes. (Green)
+5. H.R. 8046, To impose sanctions with respect to Rosatom, and
+for other purposes. (Kean)
+6. H.R. 3246, To authorize the imposition of sanctions with re-
+spect to any foreign person endangering the integrity or safety
+of the Zaporzhzhia nuclear power plant. (Meeks)
+7. H.R. 681, To reauthorize the READ Act. (Smith)
+8. H.R. 8362, To direct the Secretary of State to host regular
+U.S.-Africa Leaders Summits, and for other purposes. (Meeks)
+9. H.R. 7586, To establish a Department of State Domestic Pro-
+tection Mission relating to unmanned aircraft system and un-
+manned aircraft. (Mills)
+10. H.R. 8234, To authorize the Secretary of State to designate
+additional persons eligible to serve as passport acceptance
+agents, and for other purposes. (Mast)
+ered as base text)
+11. H.R. 8368, To establish a Coordinator for Afghan Relocation
+Efforts in the Department of State, and for other purposes.
+(Titus)
+The measures considered en bloc were ordered favorably reported
+to the House, as amended, if amended, 37Y–2N.
+05/22/2024 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 8437, To provide for congressional oversight of proposed
+changes to arms sales to Israel. (McCaul) (ordered favorably
+reported to the House, as amended, 33Y–13N)
+(considered as base text by UC)
+son #128) (adopted, voice vote)
+Sherman #102) (adopted, voice vote)
+2. H.R. 8315, To amend the Export Control Reform Act of 2018
+to prevent foreign adversaries from exploiting United States
+artificial intelligence and other enabling technologies, and for
+other purposes. (McCaul) (ordered favorably reported to the
+House, as amended, 43Y–3N)
+(adopted, voice vote)
+3. H. Res. 616, Expressing support for the people of Afghanistan,
+condemning the Taliban's assault on human rights and the
+specific targeting of women, girls, and members of religious
+and ethnic minorities, and expressing support for any Afghans
+who assisted in the United States mission in Afghanistan.
+(Crow) (ordered favorably reported to the House, as amended,
+46Y–0N)
+sidered as base text by UC)
+07/10/2024–7/11/2024 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. H.R. 8926, To modify and reauthorize the Better Utilization
+of Investments Leading to Development Act of 2018. (McCaul)
+(ordered favorably reported to the House, as amended, 43Y–
+2N)
+2. H.R. 8345, To limit funds to the United Nations and other or-
+ganizations that provide any status, rights, or privileges be-
+yond observer status to the Palestine Liberation Organization,
+and for other purposes. (Baird) (ordered favorably reported to
+the House, 28Y–18N)
+3. H. Res. 1323, Rejecting the United Nations decision to place
+the Israel Defense Force on a list of child's rights abusers.
+(Burchett) (ordered favorably reported to the House, voice
+vote)
+4. H.R. 8232, To authorize the Secretary of State to withdraw
+from the United Nations Relief and Works Agency for Pal-
+estine Refugees in the Near East Federal funds previously
+made available to such organization. (Mast) (ordered favorably
+reported to the House, as amended, 24Y–22N)
+5. H.R. 8924, To require the Secretary of Commerce to identify
+and report on foreign adversary entities using intellectual
+property related to emerging technology without a license, and
+for other purposes. (Kim) (ordered favorably reported to the
+House, as amended, 24Y–22N)
+(adopted, voice vote)
+6. H.R. 8892, To modify certain provisions relating to bilateral
+agreements and AUKUS defense trade cooperation under the
+Arms Export Control Act, and for other purposes. (Huizenga)
+(ordered favorably reported to the House, as amended, 24Y–
+23N)
+#101 (adopted, voice vote)
+7. H.R. 8936, To provide protection, support, and humanitarian
+assistance to Rohingya refugees and internally displaced peo-
+ple as well as promote accountability and a path out of geno-
+cide and crimes against humanity for Rohingya. (Meeks) (or-
+dered favorably reported to the House, as amended, 44Y–3N)
+8. H.R. 7151, To amend the Export Control Reform Act of 2018
+to provide for expedited consideration of proposals for addi-
+tions to, removals from, or other modifications with respect to
+entities on the Entity List, and for other purposes. (Wagner)
+(ordered favorably reported to the House, as amended, voice
+vote)
+(considered as base text by UC)
+9. H.R. 8566, To require reports and certain actions with respect
+to the Republic of Georgia. (Wilson) (ordered favorably re-
+ported to the House, as amended, 41Y–6N)
+sidered as base text by UC)
+10. H. Res. 837, Reaffirming the ties between the United States
+and the Philippines. (Moylan) (ordered favorably reported to
+the House, as amended, voice vote)
+11. H. Res. 554, Affirming the nature and importance of the sup-
+port of the United States for the religious and ethnic minor-
+ity survivors of genocide in Iraq. (Slotkin) (ordered favorably
+reported to the House, as amended, voice vote)
+sidered as base text by UC)
+12. H. Res. 1328, Recognizing the actions of the Rapid Support
+Forces and allied militias in the Darfur region of Sudan
+against non-Arab ethnic communities as acts of genocide.
+(James) (ordered favorably reported to the House, voice vote)
+13. H.J. Res. 164, Providing for congressional disapproval under
+chapter 8 of title 5, United States Code, of the rule sub-
+mitted by the Department of Commerce relating to "Revision
+of Firearms License Requirements". (Green) (ordered favor-
+ably reported to the House, 24Y–23N)
+14. H.R. 1425, To require any convention, agreement, or other
+international instrument on pandemic prevention, prepared-
+ness, and response reached by the World Health Assembly to
+be subject to Senate ratification. (Tiffany) (ordered favorably
+reported to the House, 24Y–23N)
+15. H.R. 7025, To extend and authorize annual appropriations
+for the United States Commission on International Religious
+Freedom through fiscal year 2026. (Smith) (ordered favorably
+reported to the House, voice vote)
+16. H.R. 7914, To require the imposition of sanctions on the Pop-
+ular Resistance Committees and other associated entities,
+and for other purposes. (Sherman) (ordered favorably re-
+ported to the House, as amended, voice vote)
+17. H.R. 8934, To require the imposition of sanctions with re-
+spect to foreign persons engaged in piracy, and for other pur-
+poses. (Jackson) (ordered favorably reported to the House,
+voice vote)
+18. H.R. 3042, To modify the requirements for candidate coun-
+tries under the Millennium Challenge Act of 2003, and for
+other purposes. (Castro) (ordered favorably reported to the
+House, as amended, voice vote)
+(adopted, voice vote)
+09/24/2024 FOREIGN AFFAIRS MARKUP SUMMARY
+The Chair called up the following measures separately:
+1. Committee Report, Recommending that the House of Rep-
+resentatives find Antony Blinken, Secretary, U.S. Department
+of State, in contempt of Congress for refusal to comply with
+a subpoena duly issued by the Committee on Foreign Affairs.
+(McCaul) (ordered favorably reported to the House, 26Y–25N)
+2. H.R. 8683, To require the Secretary of Defense and the Sec-
+retary of State to monitor efforts by the People's Republic of
+China to build or buy strategic foreign ports, and for other
+purposes. (ordered favorably reported to the House, as amend-
+ed, voice vote)
+ture of a Substitute #111 (adopted, voice vote)
+3. H.R. 9564, To authorize the imposition of sanctions with re-
+spect to the Houthis, and for other purposes. (Issa) (ordered
+favorably reported to the House, as amended, voice vote)
+4. H.R. 9719, To amend the Foreign Assistance Act of 1961 to
+modify requirements regarding management of the United
+States Agency for International Development, and for other
+purposes. (Meeks) (ordered favorably reported to the House,
+as amended, voice vote)
+5. H. Res. 1348, Urging the Government of Nigeria to imme-
+diately release Tigran Gambaryan from imprisonment.
+(McCormick) (ordered favorably reported to the House, as
+amended, voice vote)
+(considered as base text by UC)
+6. H.R. 9718, To provide for the approval of the Amendment to
+the Agreement Between the Government of the United States
+of America and the Government of the United Kingdom of
+Great Britain and Northern Ireland for Cooperation on the
+Uses of Atomic Energy for Mutual Defense Purposes. (Zinke)
+(ordered favorably reported to the House, voice vote)
+7. H. Res. 1449, Condemning the global rise of antisemitism and
+calling upon countries and international bodies to counter.
+(Manning) (ordered favorably reported to the House, 50Y–0N)
+8. H.R. 9172, To establish the Precursor Chemical Destruction
+Initiative to promote bilateral counterdrug interdiction efforts
+with the governments of specified countries, and for other pur-
+poses. (Salazar) (ordered favorably reported to the House,
+voice vote)
+9. H. Res. 1435, Raising concern about the proposed constitu-
+tional reforms in Mexico. (Stanton) (ordered favorably re-
+ported to the House, as amended, voice vote)
+(considered as base text by UC)
+10. H.R. 9082, To direct the Secretary of State to host regular
+Summits
+of
+the
+Americas,
+and
+for
+other
+purposes.
+(Kamlager-Dove) (ordered favorably reported to the House,
+as amended, voice vote)
+stitute (considered as base text by UC)
+B. Committee Reports Filed
+House Report 118–29: Resolution of inquiry requesting the Presi-
+dent and directing the Secretary of Defense and Secretary of State
+to transmit, respectively, certain documents to the House of Rep-
+resentatives relating to congressionally appropriated funds to the
+nation of Ukraine from January 20, 2021, to February 24, 2023.
+(Accompanies: H. Res. 158)
+House Report 118–44: Requesting the President and directing
+the Secretary of Defense to transmit, respectively, to the House of
+Representatives copies of all documents indicating any plans for
+current or future military assistance to Ukraine and documents in-
+dicating whether any United States Armed Forces, including Spe-
+cial Operations Forces, are currently deployed in Ukraine. (Accom-
+panies: H. Res. 300)
+House Report 118–46: Orderly requirements designed to enforce
+and regulate Latin American Migration Act. (Accompanies: H.R.
+1690)
+House Report 118–63: Deterring America's Technological Adver-
+saries Act. (Accompanies: H.R. 1153)
+House Report 118–118: Masha Amini Human Rights and Secu-
+rity Accountability Act. (Accompanies: H.R. 589)
+House Report 118–270: No Funds for Iranian Terrorism Act. (Ac-
+companies: H.R. 5961)
+House Report 118–404: Standing Against Houthi Aggression Act.
+(Accompanies: H.R. 6046)
+House Report 118–406: Stop Support for United Nations Relief
+and Works Agency Act of 2024. (Accompanies: H.R. 7122)
+House Report 118–643: No WHO Pandemic Preparedness Treaty
+Without Senate Approval Act. (Accompanies: H.R. 1425)
+House Report 118–664: Sanctioning Tyrannical and Oppressive
+People Within the Chinese Communist Party Act. (Accompanies:
+H.R. 3334)
+House Report 118–708: Resolution recommending that the House
+of Representatives find Secretary of State Antony J. Blinken in
+contempt of Congress for refusal to comply with a subpoena duly
+issued by the Committee on Foreign Affairs.
+C. Foreign Affairs Legislation Considered by the House
+H. Con. Res. 7 (Tenney)—Condemning the Iranian regime's
+human rights abuses against the brave women and men of Iran
+peacefully demonstrating in more than 133 cities.
+H. Res. 104 (McCaul)—Condemning the Chinese Communist Par-
+ty's use of a high-altitude surveillance balloon over United States
+territory as a brazen violation of United States sovereignty.
+H. Res. 132 (Wilson)—Responding to the earthquakes in Tu¨rkiye
+and Syria on February 6, 2023.
+H. Con. Res. 21 (Gaetz)—Directing the President, pursuant to
+section 5(c) of the War Powers Resolution, to remove the United
+States Armed Forces from Syria.
+H.R. 1093 (McCaul)—To direct the Secretary of State to submit
+to Congress a report on implementation of the advanced capabili-
+ties pillars of the trilateral security partnership between Australia,
+the United Kingdom, and the United States.
+H.R. 1159 (Wagner)—To amend the Taiwan Assurance Act of
+2020 to require periodic reviews and updated reports relating to
+the Department of State's Taiwan Guidelines.
+H.R. 406 (Castro)—Providing Appropriate Recognition and Treat-
+ment Needed to Enhance Relations with ASEAN Act.
+H.R. 1107 (Kim)—PRC Is Not a Developing Country Act.
+H.R. 1154 (Smith)—Stop Forced Organ Harvesting Act of 2023.
+H.R. 1189 (Mast)—Undersea Cable Control Act.
+H. Res. 240 (Williams)—Condemning recent actions taken by the
+Russian military to down a United States Air Force drone.
+H.R. 1151 (Meeks)—USA Act.
+H.R. 1149 (Wild)—Countering Untrusted Telecommunications
+Abroad Act.
+H. Res. 90 (Cloud)—Demanding that the Government of the Peo-
+ple's Republic of China and the Chinese Communist Party imme-
+diately release Mark Swidan.
+H. Res. 311 (Wagner)—Encouraging the expansion and strength-
+ening of the Abraham Accords to urge other nations to normalize
+relations with Israel and ensure that existing agreements reap tan-
+gible security and economic benefits for the citizens of those coun-
+tries and all peoples in the region.
+H. Con. Res. 30 (Gaetz)—Directing the President, pursuant to
+section 5(c) of the War Powers Resolution, to remove all United
+States Armed Forces, other than United States Armed Forces as-
+signed to protect the United States Embassy, from Somalia.
+H.R. 2 (Diaz-Balart)—To secure the borders of the United States,
+and for other purposes.
+H. Res. 377 (McCaul)—Calling for the immediate release of Evan
+Gershkovich, a United States citizen and journalist, who was
+wrongfully detained by the Government of the Russian Federation
+in March 2023.
+H.R. 3099 (Lawler)—Special Envoy for the Abraham Accords Act.
+H. Res. 272 (Stevens)—Calling on the Government of the Rus-
+sian Federation to immediately release United States citizen Paul
+Whelan.
+H.J. Res. 68 (Boebert)—Relating to a national emergency de-
+clared by the President on October 27, 2006.
+H.J. Res. 70 (Gosar)—Relating to a national emergency declared
+by the President on February 25, 2011.
+H.J. Res. 71 (Crane)—Relating to a national emergency declared
+by the President on May 22, 2003.
+H.J. Res. 74 (Gosar)—Relating to a national emergency declared
+by the President on May 16, 2012.
+H.J. Res. 79 (Gaetz)—Relating to a national emergency declared
+by the President on May 11, 2004.
+H.R. 1176 (Connolly)—Taiwan International Solidarity Act.
+H.R. 1684 (Meeks)—Haiti Criminal Collusion Transparency Act
+of 2023.
+H.R. 3203 (Barr)—Stop Chinese Fentanyl Act of 2023.
+H. Con. Res. 57 (Pfluger)—Expressing the sense of Congress sup-
+porting the State of Israel.
+H.R. 589 (Banks)—MAHSA Act.
+H. Res. 492 (Schakowsky)—Condemning the Government of
+Iran's state-sponsored persecution of the Baha'i minority and its
+continued violation of the International Covenants on Human
+Rights.
+H.R. 3152 (McCaul)—Fight CRIME Act.
+H. Res. 771 (McCaul)—Standing with Israel as it defends itself
+against the barbaric war launched by Hamas and other terrorists.
+H. Res. 559 (McCaul)—Declaring it is the policy of the United
+States that a nuclear Islamic Republic of Iran is not acceptable.
+H. Res. 599 (Schneider)—Urging the European Union to des-
+ignate Hizballah in its entirety as a terrorist organization.
+H.R. 3266 (Sherman)—Peace and Tolerance in Palestinian Edu-
+cation Act.
+H.R. 340 (Mast)—Hamas International Financing Prevention
+Act.
+H.R. 3774 (Lawler)—SHIP Act.
+H. Res. 683 (De La Cruz)—Expressing support for the diplomatic
+relations required to encourage the Government of Mexico to fulfill
+its water deliveries on an annual basis to the United States under
+the treaty between the United States and Mexico regarding the uti-
+lization of the Colorado and Tijuana Rivers and of the Rio Grande.
+H. Res. 793 (Stevens)—Calling on Hamas to immediately release
+hostages taken during October 2023 attack on Israel.
+H. Res. 888 (Lawler)—Reaffirming the State of Israel's right to
+exist.
+H.R. 5961 (McCaul)—No Funds for Iranian Terrorism Act.
+H. Res. 894 (Kustoff)—Strongly condemning and denouncing the
+drastic rise of antisemitism in the United States and around the
+world.
+H.R. 803 (Lucas)—PROTECT Taiwan Act
+H.R. 6370 (Beatty)—OFAC Licensure for Investigators Act
+H. Res. 966 (Frankel)—Condemning rape and sexual violence
+committed by Hamas in its war against Israel.
+H.R. 533 (McGovern)—Promoting a Resolution to the Tibet-
+China Conflict Act.
+H.R. 2766 (Young)—Uyghur Policy Act of 2023.
+H.R. 3016 (Lawler)—IGO Anti-Boycott Act.
+H.R. 3202 (Wilson)—Assad Regime Anti-Normalization Act of
+2023.
+H.R. 4039 (Moran)—No Dollars To Uyghur Forced Labor.
+H.R. 5375 (Meeks)—Strengthening the Quad Act.
+H.R. 5856 (Smith)—Frederick Douglass Trafficking Victims Pre-
+vention and Protection Reauthorization Act of 2023.
+H.R. 6544 (Duncan)—Atomic Energy Advancement Act.
+H.R. 7122 (Smith)—Stop Support for UNRWA Act of 2024.
+H. Res. 149 (Wild—Condemning the illegal abduction and forc-
+ible transfer of children from Ukraine to the Russian Federation.
+H.R. 4723 (Wagner)—Upholding the Dayton Peace Agreement
+Through Sanctions Act.
+H.R. 6306 (Mills)—To direct the Secretary of State to avoid or
+minimize the acquisition or lease of a consular or diplomatic post
+built or owned by an entity owned or controlled by the Government
+of the People's Republic of China, and for other purposes.
+H.R. 6602 (McCormick)—To amend the Export Control Reform
+Act of 2018 relating to the review of the interagency dispute resolu-
+tion process.
+H.R. 6610 (Issa)—Passport System Reform and Backlog Preven-
+tion Act.
+H. Res. 1117 (Salazar)—Opposing efforts to place one-sided pres-
+sure on Israel with respect to Gaza.
+H. Res. 288 (Tenney)—Encouraging the EU to DESIGNATE Res-
+olution.
+H. Res. 883 (D'Esposito)—Expressing the sense of the House of
+Representatives that the slogan, "from the river to the sea, Pal-
+estine will be free" is antisemitic and its use must be condemned.
+H.R. 3033 (Steel)—Solidify Iran Sanctions Act of 2023.
+H.R. 4681 (Hill)—Illicit Captagon Trafficking Suppression Act of
+2023.
+H.R. 4691 (Self)—Iran Sanctions Relief Review Act of 2023.
+H.R. 5826 (Wilson)—No Paydays for Hostage-Takers Act.
+H.R. 5917 (Gallagher)—Strengthening Tools to Counter the Use
+of Human Shields Act.
+H.R. 5947 (Pfluger)—To provide for the rescission of certain
+waivers and licenses relating to Iran, and for other purposes.
+H.R. 6015 (Luetkemeyer)—Iran Sanctions Accountability Act of
+2023.
+H.R. 6046 (Clyde)—Standing Against Houthi Aggression Act.
+H.R. 6603 (Moran)—No Technology for Terror Act.
+H.R. 6323 (Kim)—Iran Counterterrorism Act of 2023.
+H. Res. 1143 (Kean)—Condemning Iran's unprecedented drone
+and missile attack on Israel.
+H.R. 8038 (McCaul)—21st Century Peace through Strength Act.
+H.R. 8369 (Calvert)—Israel Security Assistance Support Act.
+H.R. 8282 (Roy)—Illegitimate Court Counteraction Act.
+H. Res. 965 (Tenney)—Calling for the immediate release of Ryan
+Corbett, a United States citizen, who was wrongfully detained by
+the Taliban on August 10, 2022, and condemning the wrongful de-
+tention of Americans by the Taliban.
+H. Con. Res. 27 (Keating)—Condemning Russia's unjust and ar-
+bitrary detention of Russian opposition leader Vladimir Kara-
+Murza who has stood up in defense of democracy, the rule of law,
+and free and fair elections in Russia.
+H. Res. 901 (McCormick)—Expressing support for democracy and
+human rights in Pakistan.
+H.R. 2789 (Stanton)—American Cooperation with Our Neighbors
+Act.
+H.R. 4132 (Perry)—Falun Gong Protection Act.
+H.R. 6586 (Burchett)—To require a strategy to oppose financial
+or material support by foreign countries to the Taliban, and for
+other purposes.
+H.R. 7152 (Wexton)—Korean American Divided Families Na-
+tional Registry Act.
+H.R. 8361 (McCormick)—Economic Espionage Prevention Act.
+H. Res. 1056 (Connolly)—Recognizing the importance of trilateral
+cooperation among the United States, Japan, and South Korea.
+H.R. 1157 (Barr)—Countering the PRC Malign Influence Fund
+Authorization Act of 2023.
+H.R. 4741 (Manning)—Securing Global Telecommunications Act.
+H.R. 5245 (Barr)—Science and Technology Agreement Enhanced
+Congressional Notification Act of 2024.
+H.R. 6606 (Radewagen)—To amend the Export Control Reform
+Act of 2018 relating to the statement of policy.
+H.R. 6614 (Jackson of TX)—Maintaining American Superiority
+by Improving Export Control Transparency Act.
+H.R. 7089 (James)—Global Anti-Human Trafficking Enhance-
+ment Act.
+H.R. 7151 (Wagner)—Export Control Enforcement and Enhance-
+ment Act.
+H.R. 7159 (Case)—Pacific Partnership Act.
+H.R. 7701 (Meeks)—No Russian Tunnel to Crimea Act.
+H.R. 8152 (Lawler)—Remote Access Security Act.
+H.R. 8282 (Roy)—Illegitimate Court Counteraction Act.
+H.R. 9456 (Newhouse)—Protecting American Agriculture from
+Foreign Adversaries Act of 2024.
+H.R. 1425 (Tiffany)—No WHO Pandemic Preparedness Treaty
+Without Senate Approval Act.
+H.R. 5613 (Waltz)—Sanctions Lists Harmonization Act.
+H.R. 1103 (Smith)—Hong Kong Economic and Trade Office
+(HKETO) Certification Act.
+H. Res. 1469 (McCaul)—Ensuring accountability for key officials
+in the Biden-Harris administration responsible for decisionmaking
+and execution failures throughout the withdrawal from Afghani-
+stan.
+H.R. 3334 (McClain)—STOP CCP Act.
+H. Res. 554 (Slotkin)—Affirming the nature and importance of
+the support of the United States for the religious and ethnic minor-
+ity survivors of genocide in Iraq.
+H. Res. 837 (Moylan)—Reaffirming the ties between the United
+States and the Philippines.
+H. Res. 1328 (James)—Recognizing the actions of the Rapid Sup-
+port Forces and allied militias in the Darfur region of Sudan
+against non-Arab ethnic communities as acts of genocide.
+H. Res. 1449 (Manning)—Condemning the global rise of anti-
+semitism and calling upon countries and international bodies to
+counter antisemitism.
+H. Res. 915 (Smith)—Urging the Government of Ukraine to re-
+view and modify its decision to suspend adoption by foreign nation-
+als with a view to resuming such adoptions, particularly in cases
+where the mutual concerns of the Governments of Ukraine and of
+the United States can be substantially addressed.
+H.R. 3012 (Kim)—North Korean Human Rights Reauthorization
+Act of 2023.
+H.R. 8234 (Mast)—To authorize the Secretary of State to des-
+ignate additional persons eligible to serve as passport acceptance
+agents, and for other purposes.
+H.R. 8368 (Titus)—Coordinator for Afghan Relocation Efforts Au-
+thorization Act of 2024.
+H.R. 9668 (Strong)—SHIELD Against CCP Act.
+II. MEETINGS OF THE FULL COMMITTEE AND
+SUBCOMMITTEES
+A. Full Committee
+February 28, 2023—Combatting the Generational Challenge
+of CCP Aggression. The Honorable Daniel J. Kritenbrink, Assist-
+ant Secretary, Bureau of East Asian and Pacific Affairs, U.S. De-
+partment of State; The Honorable Alan F. Estevez, Undersecretary
+of Commerce for Industry and Security, U.S. Department of Com-
+merce; The Honorable Scott Nathan, Chief Executive Officer, U.S.
+International Development Finance Corporation; The Honorable
+Michael Schiffer, Assistant Administrator, U.S. Agency for Inter-
+national Development.
+March 8, 2023—During and After the Fall of Kabul: Exam-
+ining the Administration's Emergency Evacuation from Af-
+ghanistan. Francis Q. Hoang, Executive Chairman Allied Airlift
+21; Aidan Gunderson, Specialist, U.S. Army (End of Active Service
+July 2022); Peter Lucier, Team America Relief; Camille Mackler,
+Esq., Executive Director Immigrant ARC; Lt. Col. (Ret.) David
+Scott Mann, Founder, Task Force Pineapple; Tyler Vargas-Andrews
+Sergeant, U.S. Marine Corps (Sgt. Vargas-Andrews is appeared in
+his personal capacity and his testimony does not represent the
+views or opinions of the Department of Defense or U.S. Marine
+Corps).
+March 23, 2023—The State of American Diplomacy in 2023:
+Growing Conflicts, Budget Challenges, and Great Power
+Competition. The Honorable Antony Blinken, Secretary of State,
+U.S. Department of State.
+March 29, 2023—Oversight, Transparency, and Account-
+ability of Ukraine Assistance. Ms. Diana R. Shaw, Deputy In-
+spector General performing the duties of the Inspector General,
+U.S. Department of State, Office of Inspector General; Ms. Nicole
+L. Angarella, Acting Deputy Inspector General, performing the du-
+ties of the Inspector General, U.S. Agency for International Devel-
+opment Office of Inspector General; The Honorable Robert P.
+Storch Inspector General, U.S. Department of Defense Office of In-
+spector General.
+April 19, 2023—Exposing Putin's Crimes: Evidence of Rus-
+sian War Crimes and Other Atrocities in Ukraine. Andriy
+Kostin, Prosecutor General of Ukraine, Office of the Prosecutor
+General.
+May 17, 2023—The State Of American Influence In 2023:
+Great Power Competition And Persistent Crises In An Era
+Of Budget Constraints. The Honorable, Samantha Power, Ad-
+ministrator, U.S. Agency for International Development.
+May 24, 2023—Modernizing U.S. Arms Exports and a
+Stronger AUKUS. The Honorable Jessica Lewis, Assistant Sec-
+retary, U.S. Department of State, Bureau of Political-Military Af-
+fairs; The Honorable Mara Karlin, Assistant Secretary of Defense
+for Strategies, Plans, and Capabilities, U.S. Department of De-
+fense.
+June 14, 2023—Assessing U.S. Efforts to Counter China's
+Coercive Belt and Road Diplomacy. The Honorable Geoffrey
+Pyatt, Assistant Secretary, Bureau of Energy Resources, U.S. De-
+partment of State; The Honorable Arun Venkataraman, Assistant
+Secretary of Commerce for Global Markets, and Director General,
+U.S. and Foreign Commercial Service; Mr. Andrew Herscowitz,
+Chief Development Officer, U.S. International Development Fi-
+nance Corporation.
+September 28, 2023—Reclaiming Congress's Article I Pow-
+ers: Counterterrorism AUMF Reform. The Honorable Victoria
+Nuland, Undersecretary of State for Political Affairs, United States
+Department of State; The Honorable Christopher P. Maier, Assist-
+ant Secretary of Defense for Special Operations and Low Intensity
+Conflict, United States Department of Defense; The Honorable
+Caroline Krass, General Counsel, United States Department of De-
+fense; Richard C. Visek, Acting Legal Adviser, United States De-
+partment of State.
+November 3, 2023—Member Day.
+November 7, 2023—Friend and Ally: U.S. support for Israel
+after Hamas' Barbaric Attack. The Honorable Barbara A. Leaf,
+Assistant Secretary, Bureau of Near Eastern Affairs U.S., Depart-
+ment of State; Ms. Dana Stroul, Deputy Assistant Secretary of De-
+fense for the Middle East, U.S. Department of Defense.
+November 14, 2023—Examining the Biden Administration's
+Afghanistan Policy Since the U.S. Withdrawal. The Honorable
+John Sopko, Inspector General, Special Inspector General for Af-
+ghanistan Reconstruction (SIGAR).
+November 30, 2023—The U.S. Border Crisis and the Amer-
+ican Solution to an International Problem. Mr. Chad Wolf, Ex-
+ecutive Director, Chief Strategy Officer, and Chair, America First
+Policy Institute; Mr. Gene Hamilton, Vice-President and General
+Counsel, America First Legal; Mr. Adam Isacson, Director for De-
+fense Oversight, Washington Office on Latin America.
+January 17, 2024—Examining the Flow of U.S. Money into
+China's Military Might. The Honorable Matthew Pottinger,
+Chairman of FDD China Program, Foundation for Defense of De-
+mocracies; Mr. Peter Harrell, Non-Resident Fellow, Carnegie En-
+dowment for International Peace.
+February 14, 2024—AUKUS Implementation and Challenges
+to International Security and Arms Control in the 21st Cen-
+tury. The Honorable Bonnie D. Jenkins, Under Secretary for Arms
+Control and International Security, U.S. Department of State.
+February 15, 2024—Behind the Scenes: How the Biden Ad-
+ministration Failed to Enforce the Doha Agreement. The
+Honorable Zalmay Khalilzad, Former Special Representative for
+Afghanistan Reconciliation at the U.S. Department of State.
+March 19, 2024—An Assessment of the Biden Administra-
+tion's Withdrawal from Afghanistan by America's Generals.
+General Mark A. Milley (Retired), Fmr. Chairman of the Joint
+Chiefs of Staff at the U.S. Department of Defense; General Ken-
+neth F. McKenzie Jr. (Retired), Fmr. Commander of United States
+Central Command at the U.S. Department of Defense.
+March 21, 2024—Countering China on the World Stage: Em-
+powering American Businesses and Denying Chinese Mili-
+tary Our Technology. The Honorable Jose W. Fernandez, Under
+Secretary for Economic Growth, Energy, and the Environment,
+U.S. Department of State; The Honorable Alan Estevez, Under Sec-
+retary of the Bureau of Industry and Security U.S., Department of
+Commerce.
+April 10, 2024—USAID's Foreign Policy and International
+Development Priorities in the Era of Great Power Competi-
+tion. The Honorable Samantha Power, Administrator, U.S. Agency
+for International Development.
+May 7, 2024—Reviewing DFC's Efforts to Out Compete Chi-
+na's BRI. The Honorable Scott Nathan, Chief Executive Officer,
+U.S. International Development Finance Corporation.
+May 22, 2024—The State of American Diplomacy in 2024:
+Global Instability, Budget Challenges, and Great Power
+Competition. The Honorable Antony Blinken, Secretary of State,
+U.S. Department of State.
+June 12, 2024—Great Power Competition in the Western
+Hemisphere. The Honorable Brian Nichols, Assistant Secretary of
+State for Western Hemisphere Affairs, Bureau of Western Hemi-
+sphere Affairs U.S. Department of State; The Honorable Todd Rob-
+inson, Assistant Secretary, Bureau of International Narcotics and
+Law Enforcement Affairs, U.S. Department of State; Mr. Michael
+Camilleri, Acting Assistant Administrator, Bureau for Latin Amer-
+ica and the Caribbean, U.S. Agency for International Development.
+September 11, 2024—Great Power Competition in Africa.
+The Honorable John Bass, Acting Under Secretary for Political Af-
+fairs, U.S. Department of State.
+September 18, 2024—Great Power Competition in the Indo-
+Pacific. The Honorable Kurt Campbell, Deputy Secretary of State,
+U.S. Department of State.
+September 24, 2024—An Assessment of the State Depart-
+ment's Withdrawal from Afghanistan by America's Top Dip-
+lomat. The Honorable Antony Blinken, Secretary of State, U.S. De-
+partment of State.
+December 11, 2024—An Assessment of the State Depart-
+ment's Withdrawal from Afghanistan by America's Top Dip-
+lomat. The Honorable Antony Blinken, Secretary of State, U.S. De-
+partment of State.
+B. Subcommittee on Africa
+April 18, 2023—Great Power Competition in Africa: The
+Chinese Communist Party. Rick Waters, China Coordinator and
+Deputy Assistant Secretary of State for China and Taiwan, U.S.
+Department of State; Amy Holman, Deputy Assistant Secretary of
+State, Bureau of African Affairs, U.S. Department of State; Janean
+Davis, Deputy Assistant Administrator, Bureau for Africa, U.S.
+Agency for International Development.
+June 22, 2023—Examining the Fiscal Year 2024 State and
+Foreign Operations Budget Request for Africa. The Honorable
+Molly Phee, Assistant Secretary of State, Bureau of African Affairs,
+U.S. Department of State; The Honorable Monde Muyangwa As-
+sistant Administrator, Bureau for Africa, U.S. Agency for Inter-
+national Development.
+July 18, 2023—Great Power Competition Implications in
+Africa: The Russian Federation and its proxies. Joseph Sany,
+Vice President, Africa Center, United States Institute of Peace;
+Cameron Hudson, Senior Associate, Africa Program, Center for
+Strategic & International Studies; Pauline Bax, Deputy Program
+Director for Africa, International Crisis Group.
+September 27, 2023—Examining the Current U.S.-South Af-
+rica Bilateral Relationship. Anthony Carroll, Adjunct Professor,
+Johns Hopkins University, School of Advanced International Stud-
+ies; Redi Tlhabi, Journalist, Broadcaster and Moderator; Chris
+Maroleng, International Chief Executive Officer Good Governance
+Africa.
+November 30, 2023—Ethiopia: Promise or Perils, The State
+of U.S. Policy. The Honorable Mike Hammer, Special Envoy to
+the Horn of Africa, Bureau of African Affairs, U.S. Department of
+State; Mr. Tyler Beckelman, Deputy Assistant Administrator, Bu-
+reau for Africa, U.S. Agency for International Development.
+December 5, 2023—The Sahel in Crisis: Examining U.S. Pol-
+icy Options. The Honorable Molly Phee, Assistant Secretary, Bu-
+reau of African Affairs, U.S. Department of State; The Honorable
+Celeste Wallander, Assistant Secretary of Defense for International
+Security Affairs, Office of the Secretary of Defense for Policy; Mr.
+Robert Jenkins, Assistant to the Administrator, Bureau for Conflict
+Prevention and Stabilization, U.S. Agency for International Devel-
+opment.
+January 31, 2024—The Future of Peacekeeping and the In-
+creasing Role of Private Military Companies in Africa. The
+Honorable Mike Hammer, Special Envoy to the Horn of Africa, Bu-
+reau of African Affairs, U.S. Department of State; Mr. Tyler
+Beckelman, Deputy Assistant Administrator, Bureau for Africa,
+U.S. Agency for International Development.
+February 14, 2024—The Future of Freedom in Nigeria. The
+Honorable Frank Wolf, Commissioner, United States Commission
+on International Religious Freedom; Bishop Wilfred Anagbe,
+Bishop of the Diocese of Makurdi, Nigeria Roman Catholic Church;
+Mr. Ebenezer Obadare, Douglas Dillon Senior Fellow for Africa
+Studies, Council on Foreign Relations.
+May 15, 2024—Examining the Fiscal Year 2025 State and
+Foreign Operations Budget Request for Africa. The Honorable
+Molly Phee, Assistant Secretary, Bureau of African Affairs, Depart-
+ment of State; The Honorable Monde Muyangwa, Assistant Admin-
+istrator, Bureau of Africa, U.S. Agency for International Develop-
+ment.
+C. Subcommittee on Europe
+May 23, 2023—Examining the Fiscal Year 24 State and For-
+eign Operations Budget Request for Europe. The Honorable
+Michele Sison, Assistant Secretary, Bureau of International Orga-
+nization Affairs, U.S. Department of State; Mr. Jonathan Pratt,
+Principal Deputy Assistant Secretary, Bureau of African Affairs,
+U.S. Department of State.
+June 22, 2023—The Vilnius Summit and War in Ukraine:
+Assessing U.S. Policy towards Europe and NATO. Douglas D.
+Jones, Deputy Assistant Secretary, Bureau of European and Eur-
+asian Affairs, U.S. Department of State; Laura K. Cooper, Deputy
+Assistant Secretary of Defense for Russia, Ukraine, and Eurasia,
+U.S. Department of Defense.
+July 18, 2023—Stability and Security in the Western Bal-
+kans: Assessing U.S. Policy. Mr. Gabriel Escobar, Deputy Assist-
+ant Secretary, Bureau of European and Eurasian Affairs, U.S. De-
+partment of State.
+November 15, 2023—The Future of Nagorno-Karabakh. The
+Honorable James O'Brien, Assistant Secretary, Bureau of Euro-
+pean and Eurasian Affairs, U.S. Department of State; Dr. Alex-
+ander Sokolowski, Deputy Assistant Administrator, Bureau for Eu-
+rope and Eurasia, U.S. Agency for International Development.
+December 5, 2023—The Future of Freedom and Democracy
+in Belarus. Sviatlana Tsikhanouskaya, National Leader of Belarus
+and Head of the United Transitional Cabinet.
+December 12, 2023—Addressing the Scourge of Anti-Semi-
+tism in Europe. Mr. Elan Carr, Chief Executive Officer, Israeli-
+American Council; Rabbi Abraham Cooper, Associate Dean and Di-
+rector of Global Social Action; Simon Wiesenthal, Center Chair,
+U.S. Commission on International Religious Freedom; Dr. Matthew
+Levitt, Fromer-Wexler Fellow, The Washington Institute for Near
+East Policy; Ms. Simone Rodan-Benzaquen, Managing Director,
+American Jewish Committee Europe.
+March 12, 2024—Going Nuclear on Rosatom: Ending Global
+Dependence on Putin's Nuclear Energy Sector. Mr. David
+Albright, President, Institute for Science and International Secu-
+rity; Mr. Anthony Ruggiero, Adjunct Senior Fellow, Foundation for
+Defense of Democracies; Dr. Theresa Sabonis-Helf, Concentration
+Chair for Science, Technology and International Affairs, George-
+town University, School of Foreign Service.
+June 26, 2024—Analyzing the Fiscal Year 25 State and For-
+eign Operations Budget Request for Europe. The Honorable
+Erin Elizabeth McKee, Assistant Administrator, Bureau for Europe
+and Eurasia, U.S. Agency for International Development; The Hon-
+orable James O'Brien, Assistant Secretary, Bureau of European
+and Eurasian Affairs, U.S. Department of State.
+July 23, 2024—A Look at U.S. Policy in Georgia and
+Moldova Ahead of Their 2024 Elections. Mr. Joshua Huck,
+Deputy Assistant Secretary, Bureau of European and Eurasian Af-
+fairs, U.S. Department of State; Mr. Christopher Smith, Deputy
+Assistant Secretary, Bureau of European and Eurasian Affairs,
+U.S. Department of State; Dr. Alexander Sokolowski, Deputy As-
+sistant Administrator, Bureau for Europe and Eurasia, U. S. Agen-
+cy for International Development.
+September 11, 2024—A Look at U.S. Policy in Georgia and
+Moldova Ahead of Their 2024 Elections. Dr. Dalibor Rohac,
+Senior Fellow, American Enterprise Institute; Mr. Peter Rough,
+Senior Fellow and Director Center on Europe and Eurasia Hudson
+Institute; Dr. Ivana Karaskova, China Analyst & China Team
+Lead, Association for International Affairs (AMO).
+D. Subcommittee on Global Health, Global Human Rights and
+International Organizations
+March 22, 2023—The Ortega-Murillo Regime's War Against
+the Catholic Church and Civil Society in Nicaragua: Bishop
+Alvarez, Political Prisoners, and Prisoners of Conscience.
+(Jointly held with the Subcommittee on the Western Hemisphere.)
+Felix Maradiaga, J.D., President and Founder, Fundacio´n para la
+Libertad de Nicaragua; Dr. Juan Sebastia´n Chamorro, Executive
+Director, Civic Alliance for Justice and Democracy; Deborah
+Ullmer, Regional Director for Latin America and the Caribbean
+Programs, National Democratic Institute; Bianca Jagger, Founder,
+President, and Chief Executive, Bianca Jagger Human Rights
+Foundation.
+April 20, 2023—China's Political Prisoners: Where's Gao
+Zhisheng? Ambassador Andrew Bremberg, President, Victims of
+Communism Memorial Foundation; Mr. Bob Fu, President, China
+Aid Association; Mrs. Geng He, Wife of Mr. Gao Zhisheng; Mrs.
+Sophie Luo, Wife of Mr. Ding Jiaxi; Ms. Yaqiu Wang, Senior China
+Researcher, Human Rights Watch; Mr. Thomas Kellogg, Executive
+Director, Georgetown University Center for Asian Law.
+May 15, 2023—Implementation of the Trafficking Victims
+Protection Act. Ms. Bella Hounakey, Trafficking survivor; Panel
+1: Ms. Gina Cavallo, Trafficking survivor; Mr. Robert Lung, Traf-
+ficking survivor; Ms. Becky Murray, Founder and CEO, One By
+One; Ms. Martina E. Vandenberg, President, The Human Traf-
+ficking Legal Center. Panel 2: The Honorable Cindy Dyer, Ambas-
+sador-At-Large to Monitor and Combat Trafficking in Persons, U.S.
+Department of State; Mr. Johnny Walsh, Deputy Assistant Admin-
+istrator, U.S. Agency for International Development.
+May 23, 2023—Bring Abducted Children Home. Panel 1: Ms.
+Michelle Bernier-Toth, Special Advisor for Children's Issues, U.S.
+Department of State. Panel 2: Mr. Jeffery Morehouse, Executive
+Director, Bring Abducted Children Home; Dr. Noelle Hunter, Direc-
+tor, International Child Abduction Prevention and Research Office;
+Ms. Patricia Apy, Legal Expert on International Parental Child Ab-
+duction.
+June 22, 2023—Responding to Anti-Semitism and Anti-
+Israel Bias in the UN, Palestinian Authority, and NGO Com-
+munity. Natan Sharansky, Chair, Institute for the Study of Global
+Antisemitism and Policy; Yona Schiffmille, Director of Research,
+NGO Monitor; Itamar Marcus, Founder and Director, Palestinian
+Media Watch; Eugene Kontorovich, Director of International Law
+Department, Kohelet Policy Forum; Hillel Neuer, Executive Direc-
+tor, United Nations Watch; Sharon Nazarian, Director, Anti-Defa-
+mation League National Board of Directors; Mr. Yair Rosenberg,
+Staff Writer, The Atlantic.
+July 18, 2023—The Dire State of Religious Freedom Around
+the World. Panel I: Rabbi Abraham Cooper, Chair, U.S. Commis-
+sion on International Religious Freedom; His Excellency Wilfred
+Chikpa Anagbe, CMF Bishop, Diocese of Makurdi, Nigeria; Eric
+Patterson, Ph.D. President, Religious Freedom Institute; Reverend
+Susan Hayward, Associate Director, Harvard Divinity School's Reli-
+gion and Public Life Program; Panel II: The Honorable Rashad
+Hussain, Ambassador-at-Large for International Religious Free-
+dom, U.S. Department of State.
+September 14, 2023—Children are not for Sale—Global Ef-
+forts to Address Child Trafficking. Tim Ballard, Senior Adviser,
+The SPEAR Fund; Jeanne Celestine, Lakin Survivor-Expert; Jen-
+nifer Podkul, Vice President of Policy and Advocacy, Kids in Need
+of Defense.
+September 19, 2023—Efforts to Address Ritual Abuse and
+Sacrifice in Africa. Obed Byamugisha, Program Advisor,
+Kyampisi Childcare Ministries; Miriam Fullah, Trafficking in Per-
+sons Protection Manager, World Hope International; Dr. Alan
+White, Co-Executive Director, Advocacy Foundation for Human
+Rights; Josephine Aparo, Founding Member, Global Survivor Net-
+work and International Justice Mission.
+November 8, 2023—United Nations' Bigotry Towards Israel
+UNRWA Anti-semitism Poisons Palestinian Youth. Hillel
+Neuer, Executive Director, UN Watch; Dr. Jonathan Schanzer,
+Senior Vice President for Research, Foundation for the Defense of
+Democracies; Jonathan Lincoln, Interim Director, Center for Jew-
+ish Civilization at Georgetown University.
+November 30, 2023—An Urgent Appeal to Let Bishop Alva-
+rez Go. Exiled Prisoner of Conscience #1; Exiled Prisoner of Con-
+science #2; Parent of Prisoner of Conscience; Deborah Ullmer, Re-
+gional Director for Latin America and the Caribbean, National
+Democratic Institute.
+April 10, 2024—The Chinese Communist Party's Malign In-
+fluence at the United Nations—It's Getting Worse. The Honor-
+able Andrew Bremberg, President Emeritus, Victims of Com-
+munism Memorial Foundation; The Honorable Kelley Currie,
+Former U.S. Representative to the United Nations Economic and
+Social Council, Department of State; Ms. Suzanne Nossel, Former
+Deputy Assistant Secretary for International Organization Affairs,
+Department of State.
+May 7, 2024—Brazil: A Crisis of Democracy, Freedom, &
+Rule of Law. Christopher Pavlovski, Founder and CEO, Rumble;
+Michael Shellenberger, Investigative Journalist; Paulo Figueiredo,
+Investigative Journalist; Fabio de Sa e Silva, Professor of Brazilian
+Studies, University of Oklahoma.
+May 17, 2024—Eliminating U.S. Aid to Terrorists—New
+Policies for the U.S. Gov't & Its Partners. Hillel Neuer, Execu-
+tive Director, United Nations Watch; Yona Schiffmiller, Director of
+Research, NGO Monitor; James G. Lindsay, Former General Coun-
+sel, UNRWA.
+July 9, 2024—Examining the 2024 Annual Trafficking in
+Persons Report: Progress over Politics. The Honorable Cindy
+Dyer, Ambassador-at-Large to Monitor and Combat Trafficking in
+Persons, U.S. Department of State; Mr. Jason Tower, Country Di-
+rector, Burma, United States Institute of Peace.
+September 10, 2024—The Goldman Act Turns 10: Holding
+Hague Convention Violators Accountable and Bringing Ab-
+ducted American Children Home. Panel 1: Robert T. Koepcke,
+Deputy Assistant Secretary for Japan, Korea, and Mongolia, Bu-
+reau of East Asian and Pacific Affairs, U.S. Department of State;
+Michelle Bernier-Toth, Special Advisor for Children's Issues, Bu-
+reau of Consular Affairs, U.S. Department of State. Panel II: Jeff-
+ery Morehouse, Executive Director, Bring Abducted Children
+Home; Nafeesa Ismail Ali, Youth Ambassador, iStand Survivor
+Network; Melissa A. Kucinski, Esquire, Attorney and Mediator,
+MKFL.
+November 20, 2024—Meeting the Challenges of Global Brain
+Health: Diagnosis and Treatment for the 21st Century. Glad-
+ys E. Maestre, M.D., Ph.D., Director, Alzheimer's Disease Resource
+Center for Minority Aging Research, University of Texas; Benjamin
+C. Warf, M.D., Chairman, NeuroKids; Andy Shih, Ph.D., Chief
+Science Officer, Autism Speaks; Yashodhara Rana, Ph.D., Associate
+Director of Research, Eleanor Crook Foundation.
+December 11, 2024—The Communist Cuban Regime's Dis-
+regard for Human Rights. Ileana Ros-Lehtinen, Former Chair,
+U.S. House Foreign Affairs Committee; Maria C. Werlau, Co-
+Founder and Executive Director, Free Society Project/Cuba Ar-
+chive; Joseph F. Connor, Author and Advocate; Juan Pappier, Dep-
+uty Director, Americas, Human Rights Watch.
+E. Subcommittee on the Indo-Pacific
+March 23, 2023—Renewed U.S. Engagement in the Pacific:
+Assessing the importance of the Pacific Islands. Ms. Jane
+Bocklage, Deputy And Senior Advisor to the Special Presidential
+Envoy for Compact Negotiations, U.S. Department of State, Bureau
+of East Asian and Pacific Affairs; Mr. Taylor Ruggles, Office Direc-
+tor, Australia, New Zealand, and Pacific Affairs, U.S. Department
+of State; Ms. Holly A. Haverstick, Director, International Affairs
+and Foreign Policy Advisor, U.S. Coast Guard; Mr. Craig Hart,
+Deputy Assistant Administrator, Asia Bureau USAID; Mr. Keone
+Nakoa, Deputy Assistant Secretary for Insular and International
+Affairs, U.S. Department of the Interior.
+April 18, 2023—Surrounding the Ocean: PRC Influence in
+the Indian Ocean. Ms. Darshana Baruah, Fellow, Carnegie En-
+dowment for International Peace; Mr. Jeffrey S. Payne, Research
+Fellow, National Defense University; Ms. Nilanthi Samaranayake,
+Research Program Director, The Center for Naval Analyses.
+May 18, 2023—Standing United Against the People's Re-
+public of China's Economic Aggression and Predatory Prac-
+tices. Mr. David Feith, Adjunct Senior Fellow, Center for New
+American Security; Mr. Alon Raphael, CEO, FemtoMetrix; Mr.
+Matthew Reynolds, Fellow, Economics Program, Center for Stra-
+tegic and International Studies; Dr. Derek Scissors, Senior Fellow,
+American Enterprise Institute.
+July 18, 2023—Examining the Fiscal Year 24 Bureau of
+Consular Affairs Budget. The Honorable Daniel J. Kritenbrink,
+Assistant Secretary, Bureau of East Asian and Pacific Affairs, U.S.
+Department of State; Mr. Michael Ronning, Acting Deputy Assist-
+ant Administrator, Asia Bureau, U.S. Agency for International De-
+velopment.
+July 27, 2023—Illicit IT: Bankrolling Kim Jong Un. Mr.
+Bruce Klingner, Senior Research Fellow, Asian Studies Center, The
+Heritage Foundation; Ms. Jean H. Lee, Journalist and former
+Pyongyang Bureau Chief, Associated Press; Ms. Suzanne Scholte
+President, Defense Forum Foundation; Ms. Jenny Jun, Research
+Fellow, Center for Security and Emerging Technology.
+September 28, 2023—Lasers and Water Cannons: Exposing
+the Chinese Communist Party's Harassment in the South
+China Sea. Dr. Jung H. Pak, Deputy Assistant Secretary for Mul-
+tilateral Affairs, Department of State; Lindsey W. Ford, Deputy As-
+sistant Secretary of Defense for South and Southeast Asia, Depart-
+ment of Defense; Vice Admiral Andrew J. Tiongson, Commander,
+Pacific Area, U.S. Coast Guard.
+January 17, 2024—Protecting Emerging Technologies for
+Peace and Stability in the Indo-Pacific. The Honorable Na-
+thaniel Fick, Ambassador at Large, Bureau of Cyberspace and Dig-
+ital Policy, U.S. State Department; The Honorable C.S. Eliot Kang,
+Assistant Secretary, Bureau of International Security and Non-
+proliferation, U.S. State Department; The Honorable Thea D.
+Rozman Kendler, Assistant Secretary, Bureau of International Se-
+curity and Nonproliferation, U.S. Department of Commerce.
+March
+21,
+2024—Commerce
+as
+Statecraft:
+Better
+Leveraging U.S. Business to Advance our Economic and Na-
+tional Security Goals in the Indo-Pacific. Mr. Kin Moy, Prin-
+cipal Deputy Assistant Secretary, U.S. State Department, Bureau
+of East Asian and Pacific Affairs; The Honorable Matt Murray,
+U.S. Senior Official for the Asia-Pacific Economic Cooperation, U.S.
+State Department; Ms. Pamela Phan, Deputy Assistant Secretary
+for Asia, U.S. Department of Commerce, International Trade Ad-
+ministration.
+May 1, 2024—From 1979 to 2024: Evaluating the Taiwan Re-
+lations Act and Assessing the Future of U.S.-Taiwan Rela-
+tions. The Honorable Daniel J. Kritenbrink, Assistant Secretary,
+Bureau of East Asian and Pacific Affairs, U.S. Department of
+State.
+June 27, 2024—Properly Resourcing the Indo-Pacific in an
+Era of Great Power Competition. The Honorable Daniel J.
+Kritenbrink, Assistant Secretary, Bureau of East Asian and Pacific
+Affairs, U.S. Department of State; The Honorable Michael Schiffer,
+Assistant Administrator, Bureau for Asia, U.S. Agency for Inter-
+national Development.
+July 23, 2024—Fiscal Year 2025 Budget Request for South
+and Central Asian Affairs. (Jointly held with the Subcommittee
+on the the Middle East, North Africa, and Central Asia.) Ms. A¨ njali
+Kaur, Deputy Assistant Administrator, U.S. Agency for Inter-
+national Development, Bureau for Asia; The Honorable Donald Lu,
+Assistant Secretary, U.S. Department of State, Bureau of South
+and Central Asian Affairs.
+F. Subcommittee on the Middle East, North Africa, and
+Central Asia
+March 9, 2023—Expanding the Abraham Accords. The Hon-
+orable Robert Greenway, President and Executive Director, Abra-
+ham Accords Peace Institute, Adjunct Fellow, Hudson Institute
+(Former Deputy Assistant to the President and Senior Director of
+Middle East North Africa, National Security Council); General Jo-
+seph L. Votel, U.S. Army (Retired), Distinguished Fellow, Middle
+East Institute (Former Commander, U.S. Central Command); The
+Honorable Daniel B. Shapiro, Distinguished Fellow, Atlantic Coun-
+cil (Former United States Ambassador to Israel)
+April 18, 2023—12 Years of Terror: Assad's War Crimes and
+U.S. Policy for Seeking Accountability in Syria. The Grave-
+digger, Witness to Mass Graves in Syria; Mr. Joel Rayburn, Former
+Special Envoy for Syria, U.S. Department of State; Mr. Jonathan
+Lord, Senior Fellow and Director, Middle East Security Program,
+Center for a New American Security.
+June 13, 2023—Fiscal Year 2024 Budget Request for Near
+Eastern Affairs. The Honorable Barbara A. Leaf, Assistant Sec-
+retary, Bureau of Near Eastern Affairs, U.S. Department of State;
+Ms. Jeanne Pryor, Deputy Assistant Administrator, Middle East
+Bureau, United States Agency for International Development.
+September 14, 2023—Iran's Escalating Threats: Assessing
+U.S. Policy Toward Iran's Malign Activities. Mr. Norman
+Roule, Former National Intelligence Manager for Iran; Mr. Behnam
+Ben Taleblu, Senior Fellow, Foundation for Defense of Democ-
+racies; Ms. Masih Alinejad, Author and Activist; Ms. Suzanne
+Maloney, Vice President and Director of Foreign Policy Brookings
+Institution.
+September 27, 2023—No Incentives for Terrorism: U.S. Im-
+plementation of the Taylor Force Act and Efforts to Stop
+'Pay to Slay'. The Honorable Elliott Abrams, Former Deputy As-
+sistant to the President and Deputy National Security Advisor; Dr.
+Jonathan Schanzer, Senior Vice President for Research, Founda-
+tion for Defense of Democracies; Dr. Michael Koplow, Chief Policy
+Officer Israel Policy Forum.
+January 11, 2024—Examining the Biden Administration's
+Afghanistan Policy Since the U.S. Withdrawal: Part II. Thom-
+as West, Special Representative for Afghanistan and Deputy As-
+sistant Secretary, U.S. State Department, Bureau of South and
+Central Asian Affairs; Rina Amiri, U.S. Special Envoy for Afghan
+Women, Girls, and Human Rights, U.S. State Department, Office
+of Global Women's Issues; The Honorable Michael Schiffer, Assist-
+ant Administrator, U.S. Agency for International Development, Bu-
+reau for Asia.
+February 14, 2024—Iran's Proxy in Yemen: the Houthi
+Threat to Middle East Stability, Global Shipping, and U.S.
+Interests. Ms. Simone Ledeen, Former Deputy Assistant Secretary
+of Defense for the Middle East, U.S. Department of Defense; Dr.
+Kenneth Pollack, Former CIA Analyst and NSC Director for the
+Persian Gulf; Dr. Jon Alterman, Senior Vice President, Center for
+Strategic and International Studies.
+March 20, 2024—Pakistan After the Elections: Examining
+the Future of Democracy in Pakistan and the US-Pakistan
+Relationship. The Honorable Donald Lu, Assistant Secretary of
+State, Bureau for South and Central Asian Affairs, U.S. Depart-
+ment of State.
+April 17, 2024—The Despotic Duo: Russo-Iranian Coopera-
+tion and Threats to U.S. Interests. Behnam Ben Taleblu, Senior
+Fellow, Foundation for Defense of Democracies; Gabriel Noronha,
+Fellow, Jewish Institute for National Security of America; Dana L.
+Stroul, Research Director, The Washington Institute for Near East
+Policy.
+May 23, 2024—The Fiscal Year 2025 Budget Request for
+Near Eastern Affairs. The Honorable Barbara A. Leaf, Assistant
+Secretary Bureau of Near Eastern Affairs, Department of State;
+Ms. Jeanne Pryor, Deputy Assistant Administrator Bureau for the
+Middle East, United States Agency for International Development.
+July 23, 2024—Fiscal Year 2025 Budget Request for South
+and Central Asian Affairs. (Jointly held with the Subcommittee
+on the Indo-Pacific.) Ms. A¨ njali Kaur, Deputy Assistant Adminis-
+trator, U.S. Agency for International Development, Bureau for
+Asia; The Honorable Donald Lu, Assistant Secretary, U.S. Depart-
+ment of State, Bureau of South and Central Asian Affairs.
+September 19, 2024—Israel and the Middle East at a Cross-
+roads: How Tehran's Terror Campaign Threatens the U.S.
+and our Allies. The Honorable Elliott Abrams, Former Deputy As-
+sistant to the President and National Security Adviser; Ms. Kirsten
+Fontenrose, Former Senior Director for the Gulf, National Security
+Council; Ms. Carrie Filipetti, Executive Director, The Vandenberg
+Coalition; Mr. Jonathan Lord, Senior Fellow and Director, Middle
+East Security, Center for a New American Security.
+G. Subcommittee on Oversight and Accountability
+March 29, 2023—Examining U.S. Sanctions Policy, Imple-
+mentation, and Enforcement. David Peyman, Counsel, DLA
+Piper; David Asher, Ph.D, Senior Fellow, Hudson Institute; An-
+thony Ruggiero, Senior Director and Fellow, Foundation for De-
+fense of Democracies.
+May 11, 2023—Reviewing the Bureau of Industry and Secu-
+rity, Part I: U.S. Export Controls in an Era of Strategic Com-
+petition. Ms. Giovanna M. Cinelli, National Security Fellow, Na-
+tional Security Institute, Antonin Scalia Law School; Mr. Steve
+Coonen, Former Senior Foreign Affairs Advisor, Defense Tech-
+nology Security Administration; The Honorable Nazak Nikakhtar,
+Chair, National Security Practice, Wiley Rein, LLP; The Honorable
+Kevin Wolf, Partner, International Trade, Akin Gump Strauss
+Hauer & Feld LLP.
+June 7, 2023—Examining the Fiscal Year 24 Bureau of Con-
+sular Affairs Budget. The Honorable Rena Bitter, Assistant Sec-
+retary, Bureau of Consular Affairs, U.S. Department of State.
+June 13, 2023—Examining the Fiscal Year 24 State Depart-
+ment Diversity Equity Inclusion and Accessibility Budget.
+The Honorable Gina Abercrombie-Winstanley, Chief Diversity and
+Inclusion Officer, Office of Diversity and Inclusion, U.S. Depart-
+ment of State.
+July 13, 2023—The State Department's Climate Agenda: A
+Budget Overview by the Special Presidential Envoy for Cli-
+mate. The Honorable John Kerry, Special Presidential Envoy for
+Climate, U.S. Department of State.
+July 27, 2023—A Failure to Plan: Examining the Biden Ad-
+ministration's Preparation for the Afghanistan Withdrawal.
+Colonel (Ret.) Seth Krummrich, Vice President, Global Guardian,
+(Former Chief of Staff, Special Operations Command Central);
+Command Sergeant Major Jacob Smith, 4–31 Infantry, 2nd BCT,
+10th Mountain Division; Colonel (Ret.) Christopher D. Kolenda,
+Saber Six Foundation.
+October 25, 2023—The Global Engagement Center: Helping
+or Hurting U.S. Foreign Policy. Daniel Kimmage, Principal
+Deputy Coordinator, Global Engagement Center.
+November 14, 2023—Go-to-Zero: Joe Biden's Withdrawal
+Order and the Taliban Takeover of Afghanistan. Lt. General
+(Ret.) Sami Sadat, Chairman, Afghanistan United Front, Fmr Com-
+manding General, Afghan National Special Operations Corps; Bill
+Roggio, Senior Fellow and Editor of the Long War Journal, Founda-
+tion for Defense of Democracies; Dr. Dipali Mukhopadhyay, Asso-
+ciate Professor, University of Minnesota.
+December 12, 2023—Reviewing the Bureau of Industry and
+Security, Part II: U.S. Export Controls in an Era of Strategic
+Competition. Matthew S. Axelrod, Assistant Secretary for Export
+Enforcement, U.S. Department of Commerce; Thea D. Rozman
+Kendler, Assistant Secretary for Export Administration, U.S. De-
+partment of Commerce.
+January 11, 2024—UNRWA Exposed: Examining the Agen-
+cy's Mission and Failures. Mr. Richard Goldberg, Senior Advisor,
+Foundation for Defense of Democracies; Mr. Marcus Sheff, Chief
+Executive Officer, IMPACT-se; Mr. Hillel Neuer, Executive Direc-
+tor, UN Watch; Ms. Mara Rudman, Schlesinger Professor, Univer-
+sity of Virginia Miller Center.
+March 21, 2024—Assessing State Department Compliance
+with Oversight. The Honorable Richard R. Verma, Deputy Sec-
+retary for Management and Resources, U.S. Deparment of State;
+The Honorable Naz Durakog˘lu, Assistant Secretary, Bureau of Leg-
+islative Affairs, U.S. Department of State.
+June 4, 2024—Money is Policy: Assessing Shortcomings in
+the State Department's Foreign Assistance Grants Process.
+Mr. Robert A. Destro, Former Assistant Secretary, U.S. Depart-
+ment of State, Bureau of Democracy, Human Rights, and Labor;
+Mr. Tom Malinowski, Former Assistant Secretary, Bureau of De-
+mocracy, Human Rights, and Labor, U.S. Department of State; Mr.
+James L. Richardson, Former Director of the Office of Foreign As-
+sistance, U.S. Department of State.
+June 13, 2024—The Plight of Americans Detained Abroad.
+The Honorable Rena Bitter, Assistant Secretary, U.S. Department
+of State, Bureau of Consular Affairs; The Honorable Roger D.
+Carstens, Special Presidential Envoy for Hostage Affairs, U.S. De-
+partment of State; Mr. Raj Maan, Director, Federal Bureau of In-
+vestigation, Hostage Recovery Fusion Cell.
+July 9, 2024—"Management Successes and Failures: Assess-
+ing the U.S. Agency for Global Media". The Honorable Amanda
+Bennett, Chief Executive Officer, U.S. Agency for Global Media;
+Mr. Michael Abramowitz, Director, Voice of America; Mr. Steve
+Capus, President, Radio Free Europe/Radio Liberty.
+September 19, 2024—"Money is Policy, Part II: Analyzing
+Select State Department Grant Awards". The Honorable
+Julieta Valls Noyes, Assistant Secretary, Bureau of Population,
+Refugees, and Migration, U.S. Department of State; The Honorable
+Cindy Dyer, Ambassador-at-Large, Office to Monitor and Combat
+Trafficking in Persons, U.S. Department of State; The Honorable
+Rashad Hussain, Ambassador-at-Large, Office of International Re-
+ligious Freedom, U.S. Department of State.
+H. Subcommittee on the Western Hemisphere
+March 22, 2023—The Ortega-Murillo Regime's War Against
+the Catholic Church and Civil Society in Nicaragua: Bishop
+Alvarez, Political Prisoners, and Prisoners of Conscience.
+(Jointly held with the Subcommittee on Global Health, Global
+Human Rights and International Organizations.) Felix Maradiaga,
+J.D., President and Founder, Fundacio´n para la Libertad de Nica-
+ragua; Dr. Juan Sebastia´n Chamorro, Executive Director, Civic Al-
+liance for Justice and Democracy; Deborah Ullmer, Regional Direc-
+tor for Latin America and the Caribbean Programs, National
+Democratic Institute; Bianca Jagger, Founder, President, and Chief
+Executive, Bianca Jagger Human Rights Foundation.
+June 7, 2023—Ignoring Our Allies in the Western Hemi-
+sphere: Reviewing President Biden's FY24 Budget Request.
+The Honorable Brian Nichols, Assistant Secretary, Bureau of West-
+ern Hemisphere Affairs, U.S. Department of State; The Honorable
+Todd Robinson, Assistant Secretary, Bureau of International Nar-
+cotics and Law Enforcement, U.S. Department of State; The Honor-
+able Julieta Valls Noyes, Assistant Secretary, Bureau of Popu-
+lation, Refugees, and Migration, U.S. Department of State; The
+Honorable Marcela Escobari, Assistant Administrator, Bureau for
+Latin America and the Caribbean, U.S. Agency for International
+Development.
+July 27, 2023—Colombia's Descent to Socialism: Assessing
+Gustavo Petro's Presidency. Mr. Mark Wells, Deputy Assistant
+Secretary, Bureau of Western Hemisphere Affairs, U.S. Depart-
+ment of State; Mr. Peter Natiello, Senior Deputy Assistant Admin-
+istrator, Bureau for Latin America and the Caribbean, U.S. Agency
+for International Development.
+September 28, 2023—Communism on Our Doorstep: The
+Threat of China's Malign Influence in Latin America. Ms.
+Kerri Hannan, Deputy Assistant Secretary, Bureau of Western
+Hemisphere Affairs, U.S. Department of State; Ms. Mileydi
+Guilarte, Deputy Assistant Administrator, Bureau for Latin Amer-
+ica and the Caribbean, U.S. Agency for International Development.
+October 25, 2023—The U.S.-Honduras Bilateral Relation-
+ship: Analyzing the Socialist Government of President
+Xiomara Castro de Zelaya. Mr. Eric Jacobstein, Deputy Assist-
+ant Secretary, Bureau of Western Hemisphere Affairs, U.S. Depart-
+ment of State; Ms. Mileydi Guilarte, Deputy Assistant Adminis-
+trator, Bureau for Latin America and the Caribbean, U.S. Agency
+for International Development.
+January 11, 2024—The Myth of the New Cuban Entre-
+preneurs: An Analysis of the Biden Administration's Cuba
+Policy. Mr. Eric Jacobstein, Deputy Assistant Secretary, U.S. De-
+partment of State, Bureau of Western Hemisphere Affairs; Mr.
+Enrique Roig, Deputy Assistant Secretary, U.S. Department of
+State, Bureau of Democracy, Human Rights and Labor.
+March 7, 2024—The Agents of Antisemitism in Latin Amer-
+ica. The Honorable Deborah Lipstadt, Special Envoy to Monitor
+and Combat Antisemitism, U.S. Department of State, Office of the
+Special Envoy to Monitor and Combat Antisemitism.
+June 27, 2024—The Curse of Socialism in Central America
+and the Caribbean. Mr. Eric Jacobstein, Deputy Assistant Sec-
+retary, U.S. Department of State, Bureau of Western Hemisphere
+Affairs; Mr. Greg Howell, Senior Deputy Assistant Administrator,
+U.S. Agency for International Development, Bureau for Latin
+America and the Carribean.
+July 24, 2024—Latin America Forgotten: A Look at Presi-
+dent Biden's FY 2025 Budget Priorities. The Honorable Brian
+Nichols, Assistant Secretary of State for Western Hemisphere Af-
+fairs, Bureau of Western Hemisphere Affairs, U.S. Department of
+State; The Honorable Julieta Valls Noyes, Assistant Secretary, Bu-
+reau of Population, Refugees, and Migration, U.S. Department of
+State; Mr. Michael Camilleri, Acting Assistant Administrator, Bu-
+reau for Latin America and the Caribbean, U.S. Agency for Inter-
+national Development.
+September 20, 2024—Maduro Stole the Elections Again: The
+Response to Fraud in Venezuela. The Honorable Kevin Sul-
+livan, Deputy Assistant Secretary for Brazil Southern, Cone and
+Andean Affairs, Bureau of Western Hemisphere Affairs, U.S. De-
+partment of State; Mr. Enrique Roig, Deputy Assistant Secretary,
+Bureau of Democracy, Human Rights, and Labor, U.S. Department
+of State; Mr. Greg Howell, Senior Deputy Assistant Administrator,
+Bureau for Latin America and the Caribbean, U.S. Agency for
+International Development.
+I. Waste, Fraud, Abuse, Mismanagement, and Oversight Hearings
+Full Committee Hearings
+March 23, 2023—The State of American Diplomacy in 2023:
+Growing Conflicts, Budget Challenges, and Great Power
+Competition.
+March 29, 2023—Oversight, Transparency, and Account-
+ability of Ukraine Assistance.
+May 17, 2023—The State Of American Influence In 2023:
+Great Power Competition And Persistent Crises In An Era
+Of Budget Constraints.
+June 14, 2023—Assessing U.S. Efforts to Counter China's
+Coercive Belt and Road Diplomacy.
+September 28, 2023—Reclaiming Congress's Article I Pow-
+ers: Counterterrorism AUMF Reform.
+November 14, 2023—Examining the Biden Administration's
+Afghanistan Policy Since the U.S. Withdrawal.
+April 10, 2024—USAID's Foreign Policy and International
+Development Priorities in the Era of Great Power Competi-
+tion.
+May 22, 2024—The State of American Diplomacy in 2024:
+Global Instability, Budget Challenges, and Great Power
+Competition.
+June 12, 2024—Great Power Competition in the Western
+Hemisphere.
+September 11, 2024—Great Power Competition in Africa.
+September 18, 2024—Great Power Competition in the Indo-
+Pacific.
+December 11, 2024—An Assessment of the State Depart-
+ment's Withdrawal from Afghanistan by America's Top Dip-
+lomat.
+Subcommittee Hearings
+May 23, 2023—Examining the Fiscal Year 24 State and For-
+eign Operations Budget Request for Europe.
+June 7, 2023—Examining the Fiscal Year 24 Bureau of Con-
+sular Affairs Budget.
+June 7, 2023—Ignoring Our Allies in the Western Hemi-
+sphere: Reviewing President Biden's FY24 Budget Request.
+June 13, 2023—Fiscal Year 2024 Budget Request for Near
+Eastern Affairs.
+June 13, 2023—Examining the Fiscal Year 24 State Depart-
+ment Diversity Equity Inclusion and Accessibility Budget.
+June 14, 2023—Examining the Fiscal Year 24 Bureau of
+Consular Affairs Budget.
+June 22, 2023—Examining the Fiscal Year 2024 State and
+Foreign Operations Budget Request for Africa.
+July 13, 2023—The State Department's Climate Agenda: A
+Budget Overview by the Special Presidential Envoy for Cli-
+mate.
+July 18, 2023—Examining the Fiscal Year 24 Bureau of
+Consular Affairs Budget.
+July 18, 2023—Stability and Security in the Western Bal-
+kans: Assessing U.S. Policy.
+September 28, 2023—Communism on Our Doorstep: The
+Threat of China's Malign Influence in Latin America.
+November 14, 2023—Go-to-Zero: Joe Biden's Withdrawal
+Order and the Taliban Takeover of Afghanistan.
+December 12, 2023—Reviewing the Bureau of Industry and
+Security, Part II: U.S. Export Controls in an Era of Strategic
+Competition.
+January 11, 2024—Examining the Biden Administration's
+Afghanistan Policy Since the U.S. Withdrawal: Part II.
+January 11, 2024—UNRWA Exposed: Examining the Agen-
+cy's Mission and Failures.
+January 11, 2024—The Myth of the New Cuban Entre-
+preneurs: An Analysis of the Biden Administration's Cuba
+Policy.
+March 21, 2024—Assessing State Department Compliance
+with Oversight.
+May 15, 2024—Examining the Fiscal Year 2025 State and
+Foreign Operations Budget Request for Africa.
+May 23, 2024—The Fiscal Year 2025 Budget Request for
+Near Eastern Affairs.
+June 4, 2024—Money is Policy: Assessing Shortcomings in
+the State Department's Foreign Assistance Grants Process.
+June 26, 2024—Analyzing the Fiscal Year 25 State and For-
+eign Operations Budget Request for Europe.
+July 9, 2024—"Management Successes and Failures: Assess-
+ing the U.S. Agency for Global Media".
+July 23, 2024—Fiscal Year 2025 Budget Request for South
+and Central Asian Affairs.
+July 24, 2024—Latin America Forgotten: A Look at Presi-
+dent Biden's FY 2025 Budget Priorities.
+September 19, 2024—"Money is Policy, Part II: Analyzing
+Select State Department Grant Awards".
+J. Committee-Hosted Dignitary Meetings
+Member Meeting with AUKUS Delegation including the Honor-
+able Ben Lobban Wallace MP, British Secretary of State for
+Defence, Dame Karen Pierce DCMG, His Majesty's Ambassador to
+the United States, and the Honorable Dr Kevin Rudd AC, Aus-
+tralia's Ambassador to the United States (April 18, 2023).
+Member Meeting with His Excellency, Dr Mohamed Irfaan Ali,
+President of Guyana (September 13, 2023).
+Member Meeting with His Excellency Guillermo Lasso, President
+of Ecuador (September 26, 2023).
+Member Meeting with His Excellency Santiago Pen˜a, President
+of Paraguay (October 24, 2023). Member Meeting with His Majesty
+King Abdullah II ibn Al Hussein of the Hashemite Kingdom of Jor-
+dan (February 14, 2024).
+Member Meeting with President Surangel Whipps Jr., Republic
+of Palau (Palau), President Wesley Simina, Federated States of Mi-
+cronesia (FSM), President David Kabua, Republic of the Marshall
+Islands (RMI), Prime Minister James Marape, Papua New Guinea
+(PNG), Prime Minister Sitiveni Rabuka, Fiji, Prime Minister and
+Foreign Minister of Foreign Affairs Mark Brown, Cook Islands,
+Special Envoy for the Pacific and Regional Affairs, Australia, For-
+eign Minister Jeremiah Manele, Solomon Islands, Foreign Minister
+Nanaia Mahuta, New Zealand, Prime Minister Fiame Naomi
+Mata'afa, Samoa, Prime Minister Hu'akavameiliku Sovaleni,
+Tonga, Prime Minister Kausea Natano, Tuvalu, President Taneti
+Maamau, Kiribati, President Moetai Brotherson, French Polynesia,
+President Louis Mapou, New Caledonia, President Russ Koon,
+Nauru, Ambassador Odo Tevi, Vanuatu, Premier Dalton Tagelagi,
+Niue, Secretary General Henry Puna, PIF Secretary General.
+Member Meeting with UK Foreign Secretary David Lammy (July
+10, 2024).
+III. COMMITTEE OVERSIGHT PLAN FOR THE 118TH
+CONGRESS
+1. Introduction
+Pursuant to the requirements of clause 2(d) of House Rule X, the
+Committee on Foreign Affairs ("the Committee") has adopted this
+authorization and oversight plan for the 118th Congress, which will
+be shared with the Committee on Oversight and Accountability and
+the Committee on House Administration. This plan summarizes
+the Committee's authorization and oversight priorities for the next
+two years, subject to the understanding that new developments will
+undoubtedly affect priorities and work assignments in the months
+ahead.
+Authorization and agency oversight remain key responsibilities of
+the legislative branch and of the Foreign Affairs Committee. This
+Congress, the Committee is adding a Subcommittee on Oversight
+and Accountability to undertake more complex oversight and inves-
+tigative activities, in addition to the policy and programmatic over-
+sight to be conducted by the full Committee and its regional and
+functional subcommittees. Committee Rule 15 requires each Sub-
+committee to hold regular oversight hearings that, according to
+usual practice, include an annual hearing on the portions of the
+Administration's budget request within that Subcommittee's juris-
+diction. Oversight activities will thus be coordinated between the
+Committee and the Subcommittees in order to carry out com-
+prehensive and strategic review of the programs and agencies with-
+in the Committee's jurisdiction.
+Committee activities will include hearings, briefings (including
+classified briefings), investigations, continuous monitoring of Con-
+gressional Notifications and executive branch reporting require-
+ments, Member and staff-level meetings, correspondence, fact-find-
+ing travel, reports, and public statements. They also will include ef-
+fective use and review of reports by the Government Accountability
+Office and by statutory Inspectors General. The Committee also
+will consult, as appropriate, with other committees of the House
+that may share jurisdiction over relevant issues and activities.
+The Committee's authorization and oversight activities will em-
+phasize:
+• effectiveness of U.S. foreign policy;
+• effective implementation of U.S. law;
+• the review of agencies and programs operating under
+permanent statutory authority;
+• the elimination of programs and expenditures that are
+inefficient, duplicative, or outdated; and
+• institutional reform, efficiency, and fiscal discipline.
+2. General Review of U.S. Foreign Policy
+The Committee intends to exercise its oversight jurisdiction con-
+cerning the relations of the United States with foreign nations to
+the fullest extent allowed by House Rule X(1)(i). This means taking
+cognizance of events and circumstances in every region of the world
+outside of U.S. national borders, as well as U.S. foreign policy re-
+sponses, as developments warrant. According to Committee Rules,
+those responsibilities are divided among the Full Committee, its
+two functional subcommittees, and its five regional subcommittees,
+as follows:
+Full Committee. The full Committee is responsible for oversight
+and legislation relating to: the management, operations, and pro-
+grams of the Department of State, the U.S. Agency for Inter-
+national Development, the U.S. International Development Finance
+Corporation, the Millennium Challenge Corporation, the U.S. Agen-
+cy for Global Media, the U.S. Trade and Development Agency, the
+Peace Corps, and other U.S. government entities within the Com-
+mittee's jurisdiction; foreign assistance (including development as-
+sistance, the Millennium Challenge Account, HIV/AIDS in foreign
+countries, security assistance, and Public Law 480 programs
+abroad); national security developments affecting foreign policy;
+strategic planning and agreements; war powers, treaties, executive
+agreements, and the deployment and use of United States Armed
+Forces; peacekeeping, peace enforcement, and enforcement of
+United Nations or other international sanctions; nonproliferation,
+arms control and disarmament issues; activities and policies of the
+State, Commerce, and Defense Departments and other agencies re-
+lated to the Arms Export Control Act, the Export Administration
+Act, and the Foreign Assistance Act, including export and licensing
+policy for munitions items and technology and dual-use equipment
+and technology; international law; global energy, environmental,
+cyberspace, and technology policy issues; promotion of democracy;
+international law enforcement issues, including narcotics control
+programs and activities; embassy security; international broad-
+casting; public diplomacy, including international communication
+and information policy, and international education and exchange
+programs; international economic policy and U.S. export promotion;
+and all other matters not specifically assigned to a subcommittee.
+The full Committee has jurisdiction over legislation regarding
+the United Nations, its affiliated agencies, and other international
+organizations, including assessed and voluntary contributions to
+such organizations.
+The full Committee may conduct oversight and investigations
+with respect to any matter within the jurisdiction of the Com-
+mittee, including the special oversight functions listed in House
+Rule X(3)(f) relating to customs administration, intelligence activi-
+ties relating to foreign policy, international financial and monetary
+organizations, and international fishing agreements.
+Subcommittee on Global Health, Global Human Rights, and
+International Organizations. Oversight of: international health
+issues, including transboundary infectious diseases, maternal
+health and child survival, and programs related to the global abil-
+ity to address health issues; population issues; the United Nations
+and its affiliated agencies (excluding peacekeeping and enforcement
+of United Nations or other international sanctions); the American
+Red Cross; and the Peace Corps. In addition, legislation and over-
+sight pertaining to: Implementation of the Universal Declaration of
+Human Rights; other matters relating to internationally recognized
+human rights, including legislation aimed at the promotion of
+human rights and democracy generally; the Hague Convention on
+the Civil Aspects of International Child Abduction, and related
+issues; and such other matters as the Chairman of the full Com-
+mittee may determine.
+Subcommittee on Oversight and Accountability. This new sub-
+committee will conduct oversight and investigation of matters with-
+in the jurisdiction of the Committee as directed or agreed to by the
+Chairman of the full Committee.
+Regional Subcommittees. The five subcommittees with regional
+jurisdiction are:
+and Central Asia
+Each of the regional subcommittees has jurisdiction over the fol-
+lowing within their respective regions:
+(1) Matters affecting the political relations between the United
+States and other countries and regions, including resolutions or
+other legislative measures directed to such relations.
+(2) Legislation with respect to disaster assistance outside the
+Foreign Assistance Act, boundary issues, and international claims.
+(3) Legislation with respect to region-or country-specific loans or
+other financial relations outside the Foreign Assistance Act.
+(4) Legislation and oversight regarding human rights practices in
+particular countries.
+(5) Oversight of regional lending institutions.
+(6) Oversight of matters related to the regional activities of the
+United Nations, of its affiliated agencies, and of other multilateral
+institutions.
+(7) Identification and development of options for meeting future
+problems and issues relating to U.S. interests in the region.
+(8) Oversight of base rights and other facilities access agree-
+ments and regional security pacts.
+(9) Concurrent oversight jurisdiction with respect to matters as-
+signed to the functional subcommittees insofar as they may affect
+the region.
+(10) Oversight of foreign assistance activities affecting the region,
+with the concurrence of the Chairman of the full Committee.
+(11) Such other matters as the Chairman of the full Committee
+may determine.
+3. Priority Oversight Matters
+a. Afghanistan Withdrawal: The Committee will comprehensively
+review policy, decision-making, planning, and execution related to
+the August 2021 withdrawal from Afghanistan. Particular atten-
+tion will be paid to the decision to withdraw, the State Depart-
+ment's planning and coordination with other departments, coun-
+tries and organizations leading up to the withdrawal, the chaotic
+and deadly evacuation, the U.S. government's reaction and actions
+during the unprecedented evacuation, and the aftermath of the
+withdrawal.
+b. Afghanistan Policy: In addition to oversight of the 2021 with-
+drawal, the Committee will examine U.S. policy toward Afghani-
+stan, including the continuing efforts to evacuate American citizens
+and legal permanent residents from Afghanistan, as well as ongo-
+ing Afghan SIV/P1/P2 and refugee resettlement efforts. In addition,
+the Committee will scrutinize the movement of U.S.-supported hu-
+manitarian assistance funds flowing into Afghanistan, including
+those provided through international organizations, to examine the
+sufficiency of safeguards against U.S. tax dollars providing benefit
+to the Taliban and terror affiliates in Afghanistan. The Committee
+will work to support the rights of Afghan women and girls in in
+the face of inhumane Taliban treatment and, absent a manifest
+and fundamental change in Taliban behavior, will oppose any ef-
+forts for official recognition of the Taliban as the legal government
+of Afghanistan.
+c. Russia and its war against Ukraine: The Committee will ad-
+dress the impact of Russia's unprovoked war of aggression against
+Ukraine and the U.S. response, in light of the longstanding U.S. re-
+fusal to recognize changes in international borders effected by force
+alone. This will include active oversight of the full spectrum of U.S.
+assistance to Ukraine, working with Ukraine to strengthen anti-
+corruption institutions and good governance, and engaging with al-
+lies and partners to advocate for burden sharing. The Committee
+also will review the imposition and enforcement of U.S. sanctions,
+and efforts to ensure accountability for Russian war crimes and
+atrocities. Beyond Ukraine, the Committee will address the impact
+of Russia's foreign policy on U.S. security, political, and economic
+interests, given its aggression and malign influence in Georgia,
+Moldova, and across Europe. It will examine Kremlin tools of ma-
+lign influence and how to shore up vulnerabilities across Europe.
+The Committee will examine the range of options available to the
+U.S. to respond to these actions, including legislation to impose ad-
+ditional sanctions, improvement of U.S. export controls, and the au-
+thorization of targeted assistance. The Committee also will review
+the deteriorating domestic situation in Russia regarding democ-
+racy, civil society, the rule of law, and human rights. It also will
+examine ways to continue to restrict Russia's ability to use energy
+exports to fund its war against Ukraine. The Committee will also
+examine the Wagner Group and their malign activities around the
+globe and will consult widely on the appropriate response by the
+U.S. government and other partners.
+d. China: The Committee will comprehensively examine U.S. pol-
+icy towards the People's Republic of China (PRC) and the Chinese
+Communist Party (CCP). This will include attention to the CCP's
+global malign influence, the Belt and Road Initiative, and global in-
+telligence activities, including the theft of intellectual property. The
+Committee will review the multitude of international agreements
+and treaties the People's Republic of China has signed, and its vio-
+lations of such treaties or the inconsistent behavior of the Chinese
+government to the obligations in said treaties. This will encompass
+the various human rights agreements the PRC has signed onto and
+violated through its genocide of the Uyghurs and persistent abuse
+of human rights, the violations of its obligations to Hong Kong
+under the Basic Law, actions inconsistent with its WTO and other
+trade and investment obligations, non-proliferation regimes, cyber
+agreements, and other bilateral and international agreements.
+e. Taiwan: The Committee will regularly review all U.S. relations
+with Taiwan to ensure the United States is fulfilling all obligations
+it has made under the Taiwan Relations Act and Taiwan Enhanced
+Resilience Act, including ensuring State Department contact guide-
+lines regarding Taiwan are appropriately updated, U.S. official en-
+gagement with the Taiwan government is sustained and appro-
+priate, and any movement on economic, investment, and tax ties
+with Taiwan reinforces our joint economic strength. The Committee
+will conduct rigorous oversight over the U.S.-Taiwan defense rela-
+tionship, focusing on U.S. arms sales to Taiwan, barriers or delays
+to delivery, interim solutions, and the robustness of any defense
+training with the Republic of China (Taiwan) security forces.
+f. Indo-Pacific Region: The Committee will review the U.S.'s sig-
+nificant political, economic, and security interests in the Indo-Pa-
+cific, including East and Southeast Asia, South Asia, and the Pa-
+cific Islands. The Committee will conduct oversight of U.S. rela-
+tions with the Indo-Pacific nations, including foreign policy, foreign
+assistance, security cooperation, territorial disputes, and trade rela-
+tions. The Committee will examine the State Department's partici-
+pation in multilateral forums such as the Indo-Pacific Economic
+Framework and Quadrilateral Security Dialogue and closely mon-
+itor any discussion of future trade agreements, as well as U.S.
+International Development Finance Corporation (DFC) activity, in
+the Indo-Pacific region. The Committee will also conduct regular
+review and oversight over State Department resourcing in the
+Indo-Pacific, including personnel and budget requests.
+g. Europe: The Committee will review transatlantic relations, as
+well as important regional organizations like the NATO alliance
+and the European Union. The Committee will focus on Chinese and
+Russian malign influence across Europe and the Arctic. Other key
+issues will include the continued support for our NATO allies, par-
+ticularly in Central and Eastern Europe, and aspirant countries;
+the diversification of energy sources to reduce reliance on Russian
+energy; continued support for the democratic aspirations and
+human rights of the Belarusian people; and rule of law, democratic
+institutions, and European integration issues in the Western Bal-
+kans. The Committee will also examine Turkey's evolving foreign
+policy orientation and domestic political trends.
+h. Africa: The Committee will review political, economic and se-
+curity developments on the African continent, including the intensi-
+fied geopolitical competition with China and Russia. Key issues will
+include efforts to expand U.S. access to critical mineral supply
+chains, eliminate safe havens for violent extremism, safeguard
+human rights, and stimulate investment and economic growth—in-
+cluding through oversight of Prosper Africa, the Development Fi-
+nance Corporation and implementation of the African Growth and
+Opportunity Act and the Electrify Africa Act. Additionally, the
+Committee will focus on the effective use of aid and human rights
+and democracy promotion. Particular attention is to be paid to the
+developments in the Sahel, South Africa, Mozambique, Coastal
+West Africa, the Great Lakes Region, and the Horn of Africa.
+i. Export Controls: The Committee will oversee the ongoing and
+incomplete implementation of the Export Control Reform Act of
+2018, including the identification of emerging and foundational
+technologies. In particular, the Committee will ensure the Bureau
+of Industry and Security adheres to statutorily mandated trans-
+parency requirements, including Congressional requests for licens-
+ing information, and vigorously enforces the law against export
+control violations. The Committee will also oversee diplomatic ef-
+forts to align exports controls and licensing policies with partners
+and allies around critical technologies.
+j. Countering International Terrorism and Violent Extremism:
+The Committee will examine the current status of al-Qaeda and its
+affiliates, with a specific focus on recruitment efforts, evolving save
+havens, and efforts to obtain WMDs. The Committee will also scru-
+tinize the Administration's efforts to defeat ISIS in the Middle East
+and around the world, including authorizations for such efforts,
+leveraging other countries' commitments, evaluating U.S. leader-
+ship in the Coalition to Defeat ISIS, and determining the success
+of U.S. policies that seek to address the socio-economic challenges
+that led to the initial establishment and growth of ISIS. The Com-
+mittee will conduct oversight of the State Department's various
+counterterrorism programs, including those designed to counter
+violent extremism (CVE), as well as agreements with foreign gov-
+ernments relating to the transfer of detainees from Guantanamo
+Bay.
+k. War Powers and Authorizations for the Use of Military Force:
+The Committee will actively monitor the use of constitutional war
+powers, statutory authorizations for the use of military force
+(AUMFs), and compliance with the War Powers Resolution. These
+activities will include a review and assessment of the continued use
+of the 2001 post–9/11 AUMF (P.L. 107–40), and possible legislative
+repeal and replacement of that law.
+l. India: The Committee will review U.S. policy towards India
+and the continued expansion of bilateral cooperation. Particular at-
+tention will be paid to the U.S.-India defense relationship, includ-
+ing security and technology cooperation, opportunities for expanded
+roles, missions, and capabilities, and counterterrorism efforts. The
+Committee will also focus on efforts to enhance U.S.-India economic
+relations, including discussions surrounding bilateral efforts in the
+technology, telecommunications, and pharmaceutical industries.
+The committee will also focus on efforts to bolster India's participa-
+tion in the Quadrilateral Security Dialogue efforts and review the
+implications of India's rapidly growing energy demands.
+m. Southern Border: The Committee will comprehensively review
+U.S. policy towards our shared border with Mexico. Particular at-
+tention will be paid to the continuing threats from transnational
+criminal organizations. Special emphasis will be placed on the flow
+of fentanyl and other drugs into the U.S., the flow of synthetic
+opioid precursors from the PRC and other nations to the cartels,
+and the Mexican government's cooperation on these issues. In addi-
+tion, the Committee will examine the steps that have been taken
+to address the root causes of migration, as well as opportunities to
+cooperate with the private sector to promote economic growth and
+opportunity in the region.
+n. Western Hemisphere: The Committee will comprehensively re-
+view U.S. policy toward the Western Hemisphere. Particular atten-
+tion will be paid toward U.S.-Mexico relations, U.S policy toward
+Cuba and Venezuela, and the advancement of U.S. interests
+throughout the region. The Committee will review foreign assist-
+ance sent to the region by State Department Bureaus of Popu-
+lation, Refugees, and Migration; Democracy, Human Rights, and
+Labor; and International Narcotics and Law Enforcement. The
+Committee will also focus on wrongfully detained Americans in
+countries like Venezuela.
+o. Coronavirus origins: The Committee will examine the role of
+the CCP in the SARS–CoV–2 outbreak and CCP efforts to conceal
+and withhold the truth. Particular attention will be paid to the sti-
+fling of life saving information, the silencing of doctors and medical
+professionals, expulsion of journalists, and the state-sanctioned
+spread of disinformation about the origins of Covid–19. In addition,
+the Committee will examine the CCP's blatant disregard for the
+International Health Regulations (IHR) and the serious deficiencies
+in the World Health Organization's (WHO) handling of Covid–19,
+including its relationship with the CCP.
+p. Middle East and North Africa: The Committee will carefully
+review U.S. policy toward the Middle East and North Africa, to in-
+clude: ensuring the enduring defeat of ISIS; expanding and
+strengthening the Abraham Accords and regional security coopera-
+tion; reaffirming relationships with U.S. partners and allies; enforc-
+ing sanctions against the Assad regime and holding the Assad re-
+gime, and its Russian and Iranian backers, accountable for their
+war crimes; bolstering stability in Yemen; curbing Iranian malign
+influence in the region; competing with our near peer adversaries;
+addressing human rights, democratic backsliding and challenges to
+the rule of law including corruption and lack of financial trans-
+parency; and United States policies, programs, authorities and
+funding to address these challenges.
+q. Iran: The Committee will continue to closely review U.S. pol-
+icy to counter and defend against Iran's malign activities, including
+Iran's provocative nuclear program, ballistic missile arsenal, UAV
+capabilities, global terrorism, hostage-taking, assassination plots,
+and human rights abuses. The Committee will also examine Iran's
+relationships with Russia, the People's Republic of China (PRC),
+and North Korea, and how these four entities mutually enable each
+other's dangerous activities.
+r. Energy Policy: The Committee will closely review all aspects
+of U.S. energy policy and its impact on international development
+goals and national security, including: assessing the role and effec-
+tiveness of the Office of the Special Presidential Envoy for Climate
+and how it relates to ongoing efforts by other executive branch en-
+tities; impediments to U.S. energy cooperation with allies and part-
+ners, the potential inroads for adversarial nations to fill growing
+global energy demands, and areas of vulnerability in our energy
+supply chains, particularly in respect to strategic competition with
+the People's Republic of China.
+s. Cyberspace and Emerging Technologies: The Committee will
+oversee the newly created Bureau of Cyberspace and Digital Policy
+as well as the Office of the Special Envoy for Critical and Emerging
+Technology. In particular, the committee will focus on the recruit-
+ing and retention of cybersecurity personnel at the State Depart-
+ment, efforts to set norms for cyberspace and emerging tech-
+nologies, and other efforts related to cybersecurity and emerging
+technologies and the inputs necessary for those technologies such
+as critical minerals. The Committee will examine the CCP's malign
+use of technologies and the sufficiency of U.S. policy responses.
+t. Security Assistance and Arms Transfer Policy: The Committee
+will assess the effectiveness of security assistance programs author-
+ized under the Foreign Assistance Act and the Arms Export Con-
+trol Act in advancing U.S. national interests. In addition, the Com-
+mittee will review those security cooperation programs funded by
+the Department of Defense, but which require concurrence of the
+Secretary of State, or otherwise give rise to the Committee's juris-
+diction. The Committee will also review law, policies, and regula-
+tions guiding U.S. arms transfers and related end-use monitoring,
+as well as various counterterrorism tools that impact foreign policy.
+The Committee will also continue to carefully review proposed
+arms sales to ensure they comport with U.S. foreign and national
+security policies, promote economic security and transparency to
+U.S. businesses, and benefit the legitimate defense needs of the re-
+cipient countries, to include oversight of the process by which the
+Administration consults with the Committee and the Congress.
+u. Modernizing Arms Export Controls: The Committee will as-
+sess current arms export laws and regulations, including the Inter-
+national Traffic in Arms Regulations, to streamline review proce-
+dures for transfers of weapons and defense systems to allies and
+partners. Additionally, the Committee will seek to promote re-
+search cooperation and transfers of innovative solutions and tech-
+nologies among key allies, the United Kingdom and Australia,
+while also ensuring protection against diversion or misuse of U.S.
+defense articles and services.
+v. Foreign Assistance: The Committee will review the underlying
+authorities for U.S. foreign assistance and examine ways in which
+to increase transparency and accountability, and eliminate waste,
+fraud, and abuse. The Committee will conduct oversight and review
+issues related to the implementation of U.S. foreign assistance pro-
+grams and projects, including through international organizations
+and the role of U.S. missions and embassies in overseeing grants,
+contracts, and cooperative agreements. The Committee will review
+issues related to coordination between the U.S. Agency for Inter-
+national Development (USAID), U.S. Department of State, other
+U.S. Government agencies and departments involved in carrying
+out U.S. foreign assistance, and the private sector. Among a broad
+range of issues, the Committee will review U.S. foreign assistance
+initiatives aimed at catalyzing economic growth, reducing aid de-
+pendence, and addressing food security and global health chal-
+lenges, including food aid reform, maternal and child health, family
+planning, and infectious disease surveillance and control. For
+PEPFAR's twentieth anniversary, the Committee will closely re-
+view program implementation pursuant to the PEPFAR Steward-
+ship and Oversight Act of 2013 and PEPFAR Extension Act of
+2018, as well as pursue reauthorization. The Committee will also
+closely scrutinize investments made by the International Develop-
+ment Finance Corporation (DFC) and assistance provided by the
+Millennium Challenge Corporation (MCC).
+w. Human Rights, Democracy, and Governance: The Committee
+will examine U.S. funding and efforts to promote democracy, rule
+of law, and human rights around the world, including to protect re-
+ligious freedom, fair elections, prevent genocide and other atroc-
+ities, and combat human trafficking. The Committee will assess
+U.S. involvement with multilateral human rights organizations to
+ensure that U.S. diplomacy serves to promote fundamental human
+rights and freedoms.
+x. United Nations and International Organizations: The Com-
+mittee will closely review all aspects of U.S. funding of, and partici-
+pation in, international organizations. Close attention will be paid
+to the extent to which such funding and participation advances
+U.S. interests and values, protects the integrity of U.S. taxpayer
+dollars, counters unwarranted bias against Israel, and leads to in-
+creased transparency, accountability, and reform of those organiza-
+tions. The Committee will closely monitor the work of international
+organizations including the World Health Organization, United Na-
+tions Relief and Works Agency for Palestine Refugees in the Near
+East, United Nations Human Rights Council, United Nations Office
+for Project Services, United Nations International Children's Emer-
+gency Fund, United Nations Population Fund, United Nations De-
+partment of Peacekeeping Operations and Department of Field
+Support, and particularly efforts to improve performance, enhance
+accountability, and combat waste, fraud and abuse in United Na-
+tions Peacekeeping Missions, and in general.
+y. Inspector General Access and Independence: The Committee
+will closely monitor compliance of entities in its jurisdiction with
+relevant statutory Inspectors General and ensure full compliance
+with the law.
+z. State Department Oversight, Authorization, and Reform: The
+Committee will seek to advance far-reaching reforms, building on
+the 2021 and 2022 enactment of State Department authorization
+bills. In particular, the Committee will focus on reforming how the
+Department uses foreign and security sector assistance, ensuring
+that projects and programs are strategically planned and coordi-
+nated. Emphasis also will be placed on reforming the Department's
+personnel systems, modernizing recruitment and retention proc-
+esses, reducing passport and visa processing backlogs, and return-
+ing to normal operations after the recent waning of the COVID–19
+pandemic. The Committee will continue to monitor and examine
+the operational, budgetary, programmatic, human resources, phys-
+ical infrastructure, and diplomatic security policies of the Depart-
+ment of State, with an eye toward potential legislation for Fiscal
+Years 2023 and 2024. In addition to hearings with the Secretary
+of State and other Administration officials regarding their budget
+proposals for the upcoming year, such efforts may include: revisions
+to the Foreign Service Act; pay and promotion issues, as well as
+lateral entry programs; consideration of reforms to Executive
+Branch reporting requirements; monitoring and evaluation of the
+State Department's growing use of special envoys and new diver-
+sity, equity, and inclusion officers; and assessment and identifica-
+tion of offices with duplicative mandates and overlapping respon-
+sibilities. In the wake of increasing threats to U.S. personnel serv-
+ing overseas, the Committee will also continue to evaluate the se-
+curity of our embassies and consulates, along with proposed re-
+forms to the State Department's diplomatic security service.
+aa. U.S. Agency for Global Media: The Committee will continue
+to actively monitor and review the operations and organization of
+U.S. government-supported, civilian international broadcasting to
+respond more effectively to the challenges presented by state and
+non-state actors using modern communication platforms. The Com-
+mittee will closely correspond with and monitor the USAGM Board
+of Advisers, which was mandated during the 116th Congress, and
+seek further improvements in USAGM personnel policies, including
+those governing the issuance of security clearances, the receipt and
+spending of U.S. taxpayer funds for employee travel, contracting
+and procurement, and verification of employee credentials.
+bb. Sanctions Policy: The Committee will carefully review U.S.
+and international bodies' application, licensing, and enforcement of
+sanctions and how those sanctions are applied and leveraged to ad-
+vance U.S. national security and foreign policy objectives. Further,
+the Committee will provide oversight and accountability to ensure
+the administration is fully implementing Congressionally mandated
+sanctions.
+cc. U.S. Nonproliferation Policy: The Committee will examine the
+effectiveness of U.S. nonproliferation policy and the international
+nonproliferation regime in preventing the spread of weapons of
+mass destruction. The Committee will address opportunities to
+strengthen existing nonproliferation organizations, increase co-
+operation with other countries, and enhance international non-
+proliferation agreements and mechanisms. Prominent issues for
+oversight will include the continued modernization of Russia and
+China's nuclear arsenal, how new technology affects global non-pro-
+liferation efforts, and credible ways to address nations violating
+nonproliferation agreements. The Committee will closely examine
+proposed and existing bilateral and multilateral nuclear coopera-
+tion agreements with other countries, including their potential to
+promote U.S. nonproliferation objectives and commercial interests.
+4. Authorization Matters
+The Committee will work to continue and expand the Commit-
+tee's recent successes in enacting substantial bipartisan authoriza-
+tion and reform legislation, such as the Department of State Au-
+thorization Act of 2022 (Division I of P.L. 117–263) and the Depart-
+ment of State Authorization Act of 2021 (Division E of P.L. 117–
+81).
+The agencies and programs within the jurisdiction of the Foreign
+Affairs Committee are funded by discretionary appropriations, sub-
+ject to the annual appropriations process. The key agencies within
+the Committee's jurisdiction (including the Department of State
+and USAID) have permanent, non-expiring statutory authority and
+are the subject of extensive and ongoing review by the Committee.
+However, comprehensive top-line funding levels for those agencies
+have not been enacted outside of the appropriations process for dec-
+ades: The last enacted Foreign Relations Authorization Act with
+comprehensive State Department funding numbers (P.L. 107–228)
+was enacted in 2002.
+This longstanding dynamic is not due to a lack of action by the
+Committee or the House of Representatives. In no fewer than five
+subsequent Congresses, under both Republican and Democratic
+control, the Committee produced and the House passed Foreign Re-
+lations Authorization bills that included top-line funding authoriza-
+tion numbers, typically with overwhelming bipartisan support. Un-
+fortunately, the Senate did not act on any of those bills. Senate au-
+thorizing committees possess leverage with agencies even without
+enacting funding authorizations, because of their required advice
+and consent for key nominees, a constitutional prerogative not
+shared by the House.
+Nearly all of the agencies and entities within the Committee's
+legislative jurisdiction are operating pursuant to annual appropria-
+tions, but without current annual funding authorizations, includ-
+ing:
+sions
+logue
+In this context, the Committee will continue its regular coordina-
+tion with the Committee on Appropriations to ensure that the Com-
+mittee's robust oversight informs annual funding decisions. We also
+will continue our extensive legislative efforts to update, refine, and
+reform agency authorities. While the Committee lacks the ability to
+unilaterally force a return to a bifurcated "authorization before ap-
+propriation" annual funding process (as described above), we will
+work toward including funding authorization numbers in future
+agency authorizing legislation wherever possible.
+In addition to top-line agency funding issues, the Committee will
+work to continue its longstanding track record of reviewing, reform-
+ing, and responsibly reauthorizing prior Congressional foreign pol-
+icy initiatives (such as the Countering American Adversaries
+Through Sanctions Act, the Trafficking Victims Protection Act, the
+U.S. Commission on International Religious Freedom, the North
+Korean Human Rights Act, among many others) as well as author-
+izing necessary activities identified by the Committee's oversight
+described in sections 2 and 3, above.
+IV. EXECUTIVE BRANCH REPORTS AND CONGRESSIONAL
+NOTIFICATIONS
+Statutory reporting requirements, and the reports submitted in
+response to them, constitute one of the oldest information systems
+used by Congress. On every subject Congress covers, required re-
+ports offer a way to oversee and review the implementation of leg-
+islation by the executive branch.
+In the foreign policy field, it is particularly important to ensure
+that reporting requirements and the resultant reports submitted by
+the executive branch are an efficient mechanism for supplying Con-
+gress with information. Information on domestic problems is often
+easier to obtain from sources outside the executive branch than in-
+formation on problems from abroad. Moreover, the executive
+branch has sometimes attempted to shield its activities in the for-
+eign policy field from public view and treat it as its exclusive do-
+main. The lack of information on foreign policy problems and exec-
+utive branch activities has been one of the major reasons it has
+been more difficult for Congress to play its legitimate role in the
+making of foreign policy, although the Constitution expressly
+shares such powers between Congress and the President.
+For the Committee on Foreign Affairs, the improvement of the
+system of required reports offers more than tidier housekeeping. It
+offers another step toward a better supply of information that Con-
+gress needs to make foreign policy decisions. Through the careful
+placing of reporting requirements in legislation, the patient moni-
+toring of the reports submitted by the executive branch in response
+to the requirements and utilization of the data supplied in them,
+Congress can improve its capacity for an effective foreign policy
+role.
+Committee staff also conducts a regular and robust review of con-
+gressional notifications and reports regarding the proposed obliga-
+tion or reprogramming of funding for various program activities by
+our agencies of jurisdiction. During the reporting period, the com-
+mittee has received 1,358 notifications and reports from the De-
+partment of State, 339 from the United States Agency for Inter-
+national Development, 133 from the Defense Security Cooperation
+Agency, 31 from the Securities and Exchange Commission, 110
+from the Department of Defense, 4 from the Millennium Challenge
+Corporation, 23 from the United States Trade and Development
+Agency, and 2 from the United States African Development Foun-
+dation.
+Æ

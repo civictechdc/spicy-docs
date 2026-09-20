@@ -718,6 +718,88 @@ def _report_cases() -> list[ShapedCase]:
 
 
 # ---------------------------------------------------------------------------
+# The first PDF-only family: two retained activity reports and what they cite.
+# ---------------------------------------------------------------------------
+
+
+def _activity_rows(package: str):
+    """The shaped rows for one retained activity report, and the record behind them.
+
+    ``tests/test_citations.py`` owns the fixture loading and the rules; this
+    reuses it so the generic loop and the rule pins read one set of bytes.
+    """
+    from spicy_docs.interpretation.citations import CITATION_RULE_SET_VERSION
+    from spicy_docs.schemas.document_citation_tables import (
+        GOVINFO_PACKAGE,
+        document_provenance,
+        index_stated_keys,
+        shape_activity_report,
+        shape_document_citation,
+    )
+    from tests.test_citations import body_for, citations_for, mods_for, summary_for
+
+    body, summary, mods = body_for(package), summary_for(package), mods_for(package)
+    findings = citations_for(package)
+    stated = index_stated_keys(mods)
+    provenance = document_provenance(body, document_key=package, document_kind=GOVINFO_PACKAGE)
+    document = shape_activity_report(summary, mods, body, findings, rule_set_version=CITATION_RULE_SET_VERSION)
+    rows = [shape_document_citation(finding, provenance, stated_by_index=stated) for finding in findings]
+    return document, rows, findings, mods
+
+
+def _text_digest(package: str) -> str:
+    """The fixture text's digest, computed here so the identity is not read off the row."""
+    from tests.test_citations import body_for
+
+    return digest(body_for(package).text)
+
+
+#: One citation row per kind per package, plus the two committee rows that
+#: differ in ``target_resolved``: every column path, without turning the
+#: generic loop into five hundred near-identical cases.
+#: ``test_every_citation_row_of_both_reports_keys_uniquely`` covers the rest.
+def _document_citation_cases() -> list[ShapedCase]:
+    from tests.test_citations import DENSE, TRUNCATED
+
+    cases: list[ShapedCase] = []
+    for package in (DENSE, TRUNCATED):
+        document, rows, findings, mods = _activity_rows(package)
+        cases.append(
+            _case(
+                "house_activity_reports",
+                document,
+                # Rebuilt from the MODS and the package id, not read back out
+                # of the row the case is checking.
+                (package,),
+                associated_laws_json=[f"{law.congress}-{law.law_type}-{law.number}" for law in mods.laws],
+                committees_json=[
+                    {
+                        "system_code": committee.authority_id,
+                        "name": committee.name,
+                        "chamber": committee.chamber,
+                        "congress": committee.congress,
+                    }
+                    for committee in mods.committees
+                ],
+            )
+        )
+        chosen: dict[str, tuple[dict[str, str | None], object]] = {}
+        for row, finding in zip(rows, findings, strict=True):
+            chosen.setdefault(f"{finding.kind}:{finding.target_resolved}", (row, finding))
+        for row, finding in chosen.values():
+            cases.append(
+                _case(
+                    "document_citations",
+                    row,
+                    # Rebuilt from the finding and the fixture's own text,
+                    # never read back out of the row.
+                    (package, _text_digest(package), finding.kind, finding.target_key, str(finding.span_start)),
+                )
+            )
+    return cases
+
+
+# ---------------------------------------------------------------------------
 # The A8 laws tables and the A9 rosters: real captures, one law per row.
 # ---------------------------------------------------------------------------
 
@@ -860,6 +942,7 @@ def all_cases() -> list[ShapedCase]:
         + _congress_index_cases()
         + _laws_cases()
         + _roster_cases()
+        + _document_citation_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -947,6 +1030,22 @@ def test_identity_is_unique_over_the_fixtures(name: str) -> None:
     assert len(set(keys)) == len(keys)
 
 
+def test_every_citation_row_of_both_reports_keys_uniquely() -> None:
+    """The loops above carry a bounded selection; identity has to hold over all of them.
+
+    Both prints name the same bill many times -- CRPT-118hrpt968 names 179
+    distinct bills in 267 mentions -- so this is what proves the span belongs
+    in the identity rather than beside it.
+    """
+    from tests.test_citations import DENSE, TRUNCATED
+
+    contract = TABLE_CONTRACTS["document_citations"]
+    for package in (DENSE, TRUNCATED):
+        _, rows, _, _ = _activity_rows(package)
+        keys = [contract.key(contract.checked(row)) for row in rows]
+        assert len(set(keys)) == len(keys) > 250
+
+
 # ---------------------------------------------------------------------------
 # Loop 4: every column has a description.
 # ---------------------------------------------------------------------------
@@ -1015,6 +1114,14 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "table3_records": ("schemas/law_tables.py",),
     "committees": ("schemas/roster_tables.py",),
     "committee_assignments": ("schemas/roster_tables.py", "sources/congress/committee_rosters.py"),
+    # The rollup's build order, step 1: the shared link table over the densest
+    # PDF-only family.
+    "document_citations": ("schemas/document_citation_tables.py", "interpretation/citations.py"),
+    "house_activity_reports": (
+        "schemas/document_citation_tables.py",
+        "interpretation/citations.py",
+        "sources/govinfo/bodies.py",
+    ),
 }
 
 #: A value a description names in backticks.  Prose that says a column carries

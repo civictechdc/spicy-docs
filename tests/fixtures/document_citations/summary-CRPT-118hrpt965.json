@@ -1,0 +1,33 @@
+{
+    "dateIssued": "2025-01-02",
+    "documentType": "HRPT",
+    "congress": "118",
+    "session": "2",
+    "documentNumber": "965",
+    "packageId": "CRPT-118hrpt965",
+    "collectionCode": "CRPT",
+    "detailsLink": "https://www.govinfo.gov/app/details/CRPT-118hrpt965",
+    "title": "ACTIVITY REPORT of the COMMITTEE ON ENERGY AND COMMERCE of the HOUSE OF REPRESENTATIVES for the ONE HUNDRED EIGHTEENTH CONGRESS",
+    "branch": "legislative",
+    "collectionName": "Congressional Reports",
+    "download": {
+        "premisLink": "https://api.govinfo.gov/packages/CRPT-118hrpt965/premis",
+        "zipLink": "https://api.govinfo.gov/packages/CRPT-118hrpt965/zip",
+        "modsLink": "https://api.govinfo.gov/packages/CRPT-118hrpt965/mods"
+    },
+    "pages": "282",
+    "governmentAuthor2": "House of Representatives",
+    "chamber": "HOUSE",
+    "subtitle": "Report Jurisdiction",
+    "governmentAuthor1": "Congress",
+    "publisher": "U.S. Government Publishing Office",
+    "suDocClassNumber": "Y 1.1/8:",
+    "docClass": "HRPT",
+    "lastModified": "2025-05-16T15:53:24Z",
+    "category": "Congressional Committee Materials",
+    "otherIdentifier": {
+        "migrated-doc-id": "f:hr965.118.txt",
+        "ils-system-id": "000854875"
+    },
+    "granulesLink": "https://api.govinfo.gov/packages/CRPT-118hrpt965/granules?offsetMark=*&pageSize=100"
+}

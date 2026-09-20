@@ -40,13 +40,20 @@ import hashlib
 import json
 import re
 import time
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 from typing import Any
 
+from spicy_docs.interpretation.citations import (
+    CITATION_RULES,
+    CitationRule,
+    rejected_lookalikes,
+    resolve_committee_names,
+)
+from spicy_docs.interpretation.citations import committee_vocabulary as build_committee_vocabulary
 from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key, scrub_credential
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -359,51 +366,16 @@ def _zyte_record(transport: Any, mode: str) -> dict[str, Any]:
 
 # --- join-key patterns ---------------------------------------------------------------
 #
-# Each pattern is measured on the sample, and each names the hosted table it
-# would join to. `spot` holds the strings a false-positive check must reject:
-# the measurement asserts the pattern does not match them, so a pattern that
-# widened into prose is visible as a failing check rather than as a high
-# presence rate.
-
-#: A bill designator, then a separator, then the number. Both halves were
-#: re-derived from measured false positives on 2026-09-20: without the
-#: ``[.\s]`` separator the rule read the GPO running head ``HR974`` and the
-#: Congressional Record locator ``S4601`` as bills, and without the ``U.``
-#: lookbehinds it read every U.S. Reports page cite (``600 U. S. 183``) as
-#: Senate bill ``S. 183`` -- which is why the slip-opinion sample scored a
-#: 100% "bill" rate before the fix.
-CONGRESS_CHAMBER = (
-    r"(?<!U\.)(?<!U\.\s)(?<![A-Za-z])"
-    r"(?:H\.?\s?R|H\.?\s?J\.?\s?Res|H\.?\s?Con\.?\s?Res|H\.?\s?Res"
-    r"|S\.?\s?J\.?\s?Res|S\.?\s?Con\.?\s?Res|S\.?\s?Res|S)"
-)
-
-
-def _canonical_alnum(value: str) -> str:
-    """``H.R. 7806``, ``HR 7806`` and a wrapped ``H.R.\n7806`` are one key."""
-    return re.sub(r"[^A-Z0-9]", "", value.upper())
-
-
-def _canonical_law_number(value: str) -> str:
-    """``P.L. 98-369``, ``Public Law 98–369`` and the index's ``PUB 98-369`` are one key."""
-    digits = re.search(r"(\d{1,3})[-–](\d{1,4})", value)
-    return f"{digits.group(1)}-{digits.group(2)}" if digits else _canonical_alnum(value)
-
-
-MONTHS: tuple[str, ...] = (
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-)
+# The patterns themselves are not here. Every rule this measurement runs lives
+# in ``spicy_docs.interpretation.citations``, which the ``document_citations``
+# contract also runs, so the measurement and the product cannot drift apart:
+# a rule corrected here is corrected there, and a rule widened there shows up
+# in this tool's own spot check. Each rule names the hosted table it joins to
+# and carries the lookalikes it must reject.
+#
+# This module keeps only what is *not* a rule: which roster files the committee
+# vocabulary is pinned to here, and the acquisition that reads them. The
+# resolver itself is pure and takes that vocabulary as an argument.
 
 #: The chamber rosters this repository already pins, read through this
 #: repository's own readers. They are the vocabulary a printed committee name
@@ -413,6 +385,8 @@ MONTHS: tuple[str, ...] = (
 HOUSE_ROSTER = ROOT / "tests" / "fixtures" / "congress_rosters" / "memberdata-119-excerpt.xml"
 SENATE_ROSTER = ROOT / "tests" / "fixtures" / "congress_rosters" / "cvc-member-data-excerpt.xml"
 
+JOIN_KEY_RULES: tuple[CitationRule, ...] = CITATION_RULES
+
 
 @cache
 def committee_vocabulary() -> tuple[tuple[str, str], ...]:
@@ -421,247 +395,8 @@ def committee_vocabulary() -> tuple[tuple[str, str], ...]:
 
     house = parse_house_member_data(HOUSE_ROSTER.read_bytes(), congress=119)
     senate = parse_senate_cvc(SENATE_ROSTER.read_bytes())
-    entries = {
-        _canonical_alnum(committee.name): house_code
-        for committee in house.committees
-        if (house_code := "hs" + committee.code.lower())
-    }
-    for senator in senate.senators:
-        for assignment in senator.committees:
-            entries.setdefault(_canonical_alnum(assignment.name), assignment.system_code)
-    return tuple(sorted(entries.items()))
+    return build_committee_vocabulary(house=(house,), senate=(senate,))
 
-
-def resolve_committee_names(values: Iterable[str]) -> dict[str, str | None]:
-    """Settle each printed candidate against the rosters, or leave it unresolved.
-
-    Four ways, in order, and each is a statement about the print rather than a
-    guess: the candidate *is* a roster name; the candidate is a line-wrapped
-    **prefix** of exactly one roster name (``Committee on Natural Re``); a
-    roster name is a prefix of the candidate, which is the name running into
-    following prose (``Committee on Ways and Means Repub``); or the candidate is
-    a prefix of other candidates **in the same document** that all resolved to
-    one committee, which is how ``Committee on Agri`` settles where the roster
-    alone cannot -- it prefixes the House's Agriculture and the Senate's
-    Agriculture, Nutrition, and Forestry, but the report that wrapped it also
-    prints the full House name.
-
-    A candidate that stays ambiguous, and every committee no pinned roster
-    names, is reported unresolved rather than counted.
-
-    O(V * (R + V)) over one document's candidates and the roster, with R fixed
-    at a few dozen and V at about a hundred.
-    """
-    vocabulary = committee_vocabulary()
-    candidates = list(values)
-    resolved: dict[str, str | None] = {}
-    for value in candidates:
-        exact = [code for name, code in vocabulary if name == value]
-        if exact:
-            resolved[value] = exact[0]
-            continue
-        prefixed = {code for name, code in vocabulary if name.startswith(value)}
-        if len(prefixed) == 1:
-            resolved[value] = prefixed.pop()
-            continue
-        contains = sorted(
-            ((name, code) for name, code in vocabulary if value.startswith(name)), key=lambda p: -len(p[0])
-        )
-        resolved[value] = contains[0][1] if contains else None
-    for value, code in list(resolved.items()):
-        if code is not None:
-            continue
-        siblings = {
-            other_code for other, other_code in resolved.items() if other_code is not None and other.startswith(value)
-        }
-        if len(siblings) == 1:
-            resolved[value] = siblings.pop()
-    return resolved
-
-
-@dataclass(frozen=True)
-class JoinKeyRule:
-    """One extraction rule, the table it joins to, and how to tell it from a lookalike.
-
-    ``index_pattern`` and ``canonical`` exist because the two sides spell the
-    same fact differently: Congress.gov states a related bill as
-    ``{"type": "HR", "number": 7806}`` and a related law as ``PUB 98-369``,
-    while the print says ``H.R. 7806`` and ``P.L. 98-369``. Comparing the raw
-    strings counted both as yield the PDF alone supplies, which is exactly the
-    error the owner's first rule forbids, so each side is reduced to the same
-    canonical key before the comparison.
-    """
-
-    name: str
-    pattern: str
-    target_table: str
-    target_key: str
-    spot: tuple[str, ...] = ()
-    note: str = ""
-    #: How the *index* spells this key, when that differs from the print.
-    index_pattern: str | None = None
-    #: Both sides are reduced to this form before being compared.
-    canonical: Callable[[str], str] = _canonical_alnum
-
-    def compiled(self) -> re.Pattern[str]:
-        return re.compile(self.pattern)
-
-    def compiled_index(self) -> re.Pattern[str]:
-        return re.compile(self.index_pattern or self.pattern)
-
-
-JOIN_KEY_RULES: tuple[JoinKeyRule, ...] = (
-    JoinKeyRule(
-        name="bill_number",
-        pattern=rf"{CONGRESS_CHAMBER}[.\s]\s?\d{{1,5}}\b",
-        target_table="congress_bills",
-        target_key="bill_id",
-        spot=(
-            "HR department",
-            "S. Smith",
-            "H. R.",
-            "Res. 2024 budget",
-            "600 U. S. 183",
-            "603 U.S. 25",
-            "HR974",
-            "S4601",
-            "ANALYSIS. 12",
-        ),
-        note="chamber designator plus number; the Congress must come from the document's own date or index row",
-    ),
-    JoinKeyRule(
-        name="public_law",
-        # One rule for all four spellings in the sample: ``Public Law 98-369``,
-        # ``P.L. 98-369``, ``PL 98-369`` and the Bluebook ``Pub. L. No. 89-136``.
-        # The first rule could not read the Bluebook form and so missed 35
-        # occurrences -- 18 in the activity reports, 11 in GAO -- which is the
-        # shape a court or an auditor writes in.
-        pattern=r"\bP(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?\d{1,3}[-–]\d{1,4}\b",
-        index_pattern=(r"\b(?:P(?:ub(?:lic)?)?\.?\s*L(?:aw)?\.?\s?(?:No\.\s?)?|PUB\s+|PRIV\s+)\d{1,3}[-–]\d{1,4}\b"),
-        canonical=_canonical_law_number,
-        target_table="laws",
-        target_key="(congress, law_type, number)",
-        spot=("Public Lands", "P.L. Smith", "Pub L", "Republic Law 5", "Pub. L. Rev."),
-    ),
-    JoinKeyRule(
-        name="statutes_at_large",
-        pattern=r"\b\d{1,3}\s+Stat\.\s+\d{1,4}\b",
-        canonical=lambda value: re.sub(r"[^0-9]+", "-", value.strip()),
-        target_table="laws",
-        target_key="statutes_at_large_cite",
-        spot=("Stat. of the Union", "12 State 45"),
-    ),
-    JoinKeyRule(
-        name="usc_section",
-        pattern=r"\b\d{1,2}\s+U\.?\s?S\.?\s?C\.?\s+(?:§{1,2}\s?)?\d[\w.–-]*",
-        target_table="law_code_sections",
-        target_key="(title, section)",
-        spot=("U.S. Code of conduct", "42 USC for"),
-    ),
-    JoinKeyRule(
-        name="cfr_section",
-        pattern=r"\b\d{1,2}\s+C\.?\s?F\.?\s?R\.?\s+(?:part\s+|§\s?)?\d[\w.–-]*",
-        target_table="cfr sections (host-side)",
-        target_key="(title, part)",
-        spot=("CFR is the", "40 CRF 60"),
-    ),
-    JoinKeyRule(
-        name="federal_register_cite",
-        pattern=r"\b\d{1,3}\s+Fed\.?\s?Reg\.?\s+[\d,]{3,9}\b",
-        target_table="federal_register",
-        target_key="document_number (via volume/page lookup)",
-        spot=("Fed. Reg. of the", "88 Federal agencies"),
-    ),
-    JoinKeyRule(
-        name="rin",
-        pattern=r"\bRIN[: ]\s?\d{4}[-–][A-Z]{2}\d{2}\b",
-        target_table="federal_register",
-        target_key="regulation_id_numbers_json",
-        spot=("RIN of the", "RIN 1234"),
-    ),
-    JoinKeyRule(
-        name="gao_product_id",
-        pattern=r"\bGAO[-–]\d{2}[-–]\d{3,6}(?:[A-Z]{1,3})?\b",
-        target_table="gao products (not hosted; gao/files.py selection key)",
-        target_key="product_id",
-        spot=("GAO reported", "GAO-2026"),
-    ),
-    JoinKeyRule(
-        name="crs_report_id",
-        pattern=r"\b(?:R|RL|RS|IF|IN|LSB|IG|MM)\d{4,6}\b",
-        target_table="crs reports (Congress.gov crsreport)",
-        target_key="report_id",
-        spot=("R 1234", "RL-31312"),
-    ),
-    JoinKeyRule(
-        name="bioguide_id",
-        pattern=r"\b[A-Z]\d{6}\b",
-        target_table="members",
-        target_key="bioguide_id",
-        spot=("A 000375", "AB000375"),
-    ),
-    JoinKeyRule(
-        name="docket_number",
-        pattern=r"\b[A-Z]{2,7}[-–]\d{4}[-–]\d{4}\b",
-        target_table="dockets",
-        target_key="docket_id",
-        spot=("FAA 2016 6907", "ABC-16-0001"),
-    ),
-    JoinKeyRule(
-        name="case_docket_number",
-        # Not preceded by ``L.``: ``Pub. L. No. 89-136`` is a public law, and the
-        # first rule read it as a circuit docket in the GAO sample.
-        pattern=r"(?<!L\.)(?<!L\. )\bNo\.\s?\d{2}[-–]\d{1,4}\b",
-        target_table="courtlistener clusters (not hosted)",
-        target_key="docket_number",
-        spot=("No. 25", "Number 24-1001", "Pub. L. No. 89-136", "P.L. No. 89-136"),
-        note=(
-            "any federal case number printed in this shape, not only a Supreme Court docket: "
-            "a GAO report cites circuit and district dockets the same way"
-        ),
-    ),
-    JoinKeyRule(
-        name="us_reports_cite",
-        pattern=r"\b\d{1,3}\s+U\.\s?S\.\s+\d{1,4}\b",
-        target_table="courtlistener opinions (not hosted)",
-        target_key="citation",
-        spot=("U.S. Government", "600 US 1"),
-    ),
-    JoinKeyRule(
-        name="committee_name",
-        # A *candidate* finder, not a committee. A committee report wraps the
-        # name across lines and runs it into the following prose, so this rule
-        # alone yielded 90 distinct values over the eight activity reports --
-        # five of them dates (``Committee on June``), 46 line-wrap prefixes of
-        # each other (``Committee on Agri`` / ``Committee on Agriculture``) and
-        # several running into a chairman's name. A month is rejected here; the
-        # rest is settled by ``resolve_committee_names`` against the chamber
-        # rosters, and only a resolved ``system_code`` is reported as a
-        # committee.
-        pattern=(
-            r"\bCommittee on (?:the )?(?!"
-            + "|".join(MONTHS)
-            + r")[A-Z][A-Za-z']+(?:[, ]{1,2}(?:and )?[A-Z][A-Za-z']+){0,5}"
-        ),
-        target_table="committees",
-        target_key="system_code, through the chamber rosters",
-        spot=("committee on the matter", "Committee of the Whole", "Committee on June 5"),
-    ),
-    JoinKeyRule(
-        name="dollar_amount",
-        pattern=r"\$[\d,]+(?:\.\d+)?(?:\s?(?:million|billion|trillion))?",
-        target_table="financial_changes (shape); no hosted target yet",
-        target_key="amount",
-        spot=("$ per", "USD 400"),
-    ),
-    JoinKeyRule(
-        name="fiscal_year",
-        pattern=r"\b(?:FY|fiscal year)\s?\d{4}(?:[-–]\d{2,4})?\b",
-        target_table="no hosted target yet",
-        target_key="fiscal_year",
-        spot=("FY of", "fiscal years"),
-    ),
-)
 
 #: Structured content a consumer would otherwise have to re-read the PDF for.
 #: Each marker is a *heading* the publisher prints, not a word: the first pass
@@ -1558,14 +1293,20 @@ def measure_keys(text: str, index_row: Any) -> dict[str, Any]:
             "not_in_index_count": len(new_values),
             "not_in_index": new_values,
         }
-    # A printed committee name is a candidate until a roster settles it.
-    resolution = resolve_committee_names(found["committee_name"]["distinct"])
+    # A printed committee name is a candidate until a roster settles it. The
+    # route each one settled by is reported too: two of the four are roster
+    # lookups and two are inferences from the print, and a reader of this
+    # report should be able to tell which produced a given code.
+    resolution = resolve_committee_names(found["committee_name"]["distinct"], committee_vocabulary())
     found["committee_name"]["resolved"] = {
-        value: code for value, code in sorted(resolution.items()) if code is not None
+        value: outcome.system_code for value, outcome in sorted(resolution.items()) if outcome.system_code is not None
     }
-    found["committee_name"]["unresolved"] = sorted(v for v, code in resolution.items() if code is None)
+    found["committee_name"]["resolved_by_route"] = {
+        value: outcome.route for value, outcome in sorted(resolution.items()) if outcome.system_code is not None
+    }
+    found["committee_name"]["unresolved"] = sorted(v for v, o in resolution.items() if o.system_code is None)
     found["committee_name"]["resolved_system_codes"] = sorted(
-        {code for code in resolution.values() if code is not None}
+        {outcome.system_code for outcome in resolution.values() if outcome.system_code is not None}
     )
     structure = {}
     for name, pattern in STRUCTURE_RULES:
@@ -1583,13 +1324,9 @@ def spot_check() -> dict[str, list[str]]:
     """
     for _, pattern in STRUCTURE_RULES:
         re.compile(pattern)
-    failures: dict[str, list[str]] = {}
-    for rule in JOIN_KEY_RULES:
-        compiled = rule.compiled()
-        bad = [candidate for candidate in rule.spot if compiled.search(candidate)]
-        if bad:
-            failures[rule.name] = bad
-    return failures
+    # The join-key half is the library's own check, run here so this report and
+    # `tests/test_citations.py` assert the same thing about the same patterns.
+    return rejected_lookalikes()
 
 
 def analyze(receipt: Path, output: Path) -> None:
@@ -1604,8 +1341,8 @@ def analyze(receipt: Path, output: Path) -> None:
                 "name": rule.name,
                 "pattern": rule.pattern,
                 "target_table": rule.target_table,
-                "target_key": rule.target_key,
-                "rejects": list(rule.spot),
+                "target_key": rule.target_key_shape,
+                "rejects": list(rule.rejects),
                 "note": rule.note,
             }
             for rule in JOIN_KEY_RULES

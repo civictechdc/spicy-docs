@@ -1,0 +1,544 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1d0e85e3f">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CRPT</collectionCode>
+         <category>Congressional Committee Materials</category>
+         <waisDatabaseName>118_cong_reports</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2025-03-21</dateIngested>
+    </extension>
+    <titleInfo>
+         <title>ACTIVITY REPORT of the COMMITTEE ON ENERGY AND COMMERCE of the HOUSE OF REPRESENTATIVES for the ONE HUNDRED EIGHTEENTH CONGRESS</title>
+    </titleInfo>
+    <originInfo>
+         <publisher>U.S. Government Publishing Office</publisher>
+         <dateIssued encoding="w3cdtf">2025-01-02</dateIssued>
+         <issuance>monographic</issuance>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>282 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">Y 1.1/8:</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CRPT-118hrpt965</identifier>
+    <identifier type="local">P0b002ee1d0e85e3f</identifier>
+    <identifier type="ILS system id">000854875</identifier>
+    <identifier type="former package identifier">f:hr965.118.txt</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2025-03-21</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2025-03-21</recordChangeDate>
+         <recordIdentifier source="DGPO">CRPT-118hrpt965</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <subtitle>Report Jurisdiction</subtitle>
+         <docClass>HRPT</docClass>
+         <accessId>CRPT-118hrpt965</accessId>
+         <chamber>HOUSE</chamber>
+         <congress years="2023-2024">118</congress>
+         <number>965</number>
+         <session>2</session>
+         <isConferenceReport>false</isConferenceReport>
+         <congCalendar congress="118" number="812" type="UNION"></congCalendar>
+         <isSerialSet>true</isSerialSet>
+    </extension>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CRPT-118hrpt965</url>
+         <url displayLabel="HTML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CRPT-118hrpt965/html/CRPT-118hrpt965.htm</url>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CRPT-118hrpt965/pdf/CRPT-118hrpt965.pdf</url>
+    </location>
+    <identifier type="preferred citation">H. Rept. 118-965</identifier>
+    <extension>
+         <searchTitle>ACTIVITY REPORT of the COMMITTEE ON ENERGY AND COMMERCE of the HOUSE OF REPRESENTATIVES for the ONE HUNDRED EIGHTEENTH CONGRESS;H. Rept. 118-965</searchTitle>
+         <legislativeHistory>Committed to the Committee of the Whole House on the State of the Union and ordered to be printed</legislativeHistory>
+         <granuleClass>FIRSTPART</granuleClass>
+         <accessId>CRPT-118hrpt965</accessId>
+         <action date="2025-01-02">Committed to the Committee of the Whole House on the State of the Union and ordered to be printed</action>
+         <session>2</session>
+         <submittedStatement>Mrs. Rodgers of Washington, from the Committee on Energy and Commerce, submitted the following</submittedStatement>
+         <bill congress="118" context="OTHER" number="1" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="14" type="HCONRES"></bill>
+         <bill congress="118" context="OTHER" number="17" type="HCONRES"></bill>
+         <bill congress="118" context="OTHER" number="75" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="97" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="124" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="133" type="S"></bill>
+         <bill congress="118" context="OTHER" number="133" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="134" type="S"></bill>
+         <bill congress="118" context="OTHER" number="134" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="139" type="HJRES"></bill>
+         <bill congress="118" context="OTHER" number="150" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="167" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="171" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="185" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="223" type="S"></bill>
+         <bill congress="118" context="OTHER" number="260" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="265" type="S"></bill>
+         <bill congress="118" context="OTHER" number="382" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="455" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="463" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="465" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="467" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="468" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="484" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="485" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="495" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="497" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="498" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="501" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="538" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="548" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="619" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="620" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="670" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="675" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="680" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="682" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="699" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="712" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="742" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="750" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="751" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="752" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="784" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="801" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="813" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="815" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="820" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="824" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="906" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="906" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="977" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="995" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="996" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1023" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1042" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1058" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1059" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1068" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1070" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1085" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1085" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1092" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1108" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1110" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1115" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1121" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1123" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1130" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1131" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1140" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1141" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1155" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1160" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1160" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1194" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1199" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1241" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1338" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1340" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1341" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1341" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1343" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1345" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1351" type="S"></bill>
+         <bill congress="118" context="OTHER" number="1352" type="S"></bill>
+         <bill congress="118" context="OTHER" number="1352" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1353" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1354" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1360" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1370" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1377" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1406" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1418" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1435" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1458" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1462" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1502" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1513" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1603" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1612" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1613" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1615" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1640" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1683" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1691" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1750" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1797" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1803" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1839" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2365" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2377" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2400" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2407" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2408" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2411" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2416" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2544" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2547" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2550" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2552" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2559" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2569" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2583" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2665" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2666" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2679" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2691" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2706" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2864" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2880" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2901" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2964" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3008" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3074" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3226" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3227" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3237" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3248" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3262" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3280" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3281" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3282" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3284" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3285" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3288" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3290" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3293" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3309" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3330" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3337" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3369" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3391" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3430" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3432" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3433" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3557" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3561" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3577" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3613" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3631" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3674" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3703" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3736" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3742" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3791" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3793" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3794" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3795" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3810" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3813" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3820" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3821" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3832" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3836" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3837" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3838" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3840" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3842" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3843" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3875" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3884" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3887" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3892" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3916" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3950" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4007" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4045" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4053" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4054" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4056" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4057" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4063" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4079" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4080" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4088" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4089" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4091" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4092" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4093" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4095" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4096" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4097" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4098" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4099" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4100" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4101" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4104" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4106" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4167" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4189" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4310" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4311" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4351" type="S"></bill>
+         <bill congress="118" context="OTHER" number="4381" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4402" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4419" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4420" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4421" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4458" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4459" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4468" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4469" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4506" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4510" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4516" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4528" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4529" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4530" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4531" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4534" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4547" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4568" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4581" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4646" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4658" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4758" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4764" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4814" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4818" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4878" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4881" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5012" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5074" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5146" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5202" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5371" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5372" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5376" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5378" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5380" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5385" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5386" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5388" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5389" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5390" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5392" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5393" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5394" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5395" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5396" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5397" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5398" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5526" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5534" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5539" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5541" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5547" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5555" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5556" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5611" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5628" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5663" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5677" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5718" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5778" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5860" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5978" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6020" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6033" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6094" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6125" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6132" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6149" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6160" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6185" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6192" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6236" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6252" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6253" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6265" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6268" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6303" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6326" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6346" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6364" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6366" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6369" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6371" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6421" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6429" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6464" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6465" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6512" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6526" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6543" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6544" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6545" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6568" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6571" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6572" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6664" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6705" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6770" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6829" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6960" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7149" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7153" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7155" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7188" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7189" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7208" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7213" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7218" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7224" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7248" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7251" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7300" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7383" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7384" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7406" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7432" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7436" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7512" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7513" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7520" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7521" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7563" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7573" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7589" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7623" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7626" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7637" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7645" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7650" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7655" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7673" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7700" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7711" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7856" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7858" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7863" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7890" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7891" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8038" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8084" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8089" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8094" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8106" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8107" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8108" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8109" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8110" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8111" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8112" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8113" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8114" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8115" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8449" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8702" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8818" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9001" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9067" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9184" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9425" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9443" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="10545" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="14106" type="HR"></bill>
+         <congCommittee authorityId="hsif00" chamber="H" congress="119" type="S">
+                                    
+              <name type="authority-standard">Committee on Energy and Commerce</name>
+                                    
+              <name type="authority-short">Energy and Commerce</name>
+                                
+        </congCommittee>
+         <congMember chamber="H" congress="119" role="SUBMITTEDBY" state="WA">
+                                    
+              <name type="parsed">Mrs. Rodgers of Washington</name>
+                                
+        </congMember>
+         <law congress="109" isPrivate="false" number="295"></law>
+         <law congress="116" isPrivate="false" number="260"></law>
+         <law congress="117" isPrivate="false" number="169"></law>
+         <law congress="118" isPrivate="false" number="14"></law>
+         <law congress="118" isPrivate="false" number="15"></law>
+         <law congress="118" isPrivate="false" number="50"></law>
+         <law congress="118" isPrivate="false" number="62"></law>
+         <law congress="118" isPrivate="false" number="66"></law>
+         <law congress="118" isPrivate="false" number="69"></law>
+         <law congress="118" isPrivate="false" number="84"></law>
+         <law congress="118" isPrivate="false" number="86"></law>
+         <law congress="118" isPrivate="false" number="92"></law>
+         <law congress="118" isPrivate="false" number="93"></law>
+         <law congress="118" isPrivate="false" number="107"></law>
+         <law congress="118" isPrivate="false" number="142"></law>
+         <law congress="118" isPrivate="false" number="147"></law>
+         <USCode title="5">
+                                    
+              <chapter number="8"></chapter>
+                                
+        </USCode>
+         <USCode title="15">
+                                    
+              <section detail="(a)(1)(B)" number="57a"></section>
+                                
+        </USCode>
+         <congReport congress="118" number="52" type="H"></congReport>
+         <congReport congress="118" number="53" type="H"></congReport>
+         <congReport congress="118" number="65" type="H"></congReport>
+         <congReport congress="118" number="66" type="H"></congReport>
+         <congReport congress="118" number="67" type="H"></congReport>
+         <congReport congress="118" number="140" type="H"></congReport>
+         <congReport congress="118" number="313" type="H"></congReport>
+         <congReport congress="118" number="490" type="H"></congReport>
+         <congReport congress="118" number="507" type="H"></congReport>
+         <congReport congress="118" number="512" type="H"></congReport>
+         <congReport congress="118" number="526" type="H"></congReport>
+         <congReport congress="118" number="531" type="H"></congReport>
+         <congReport congress="118" number="532" type="H"></congReport>
+         <congReport congress="118" number="681" type="H"></congReport>
+         <congReport congress="118" number="965" type="H"></congReport>
+    </extension>
+    <name type="personal">
+         <namePart>Mrs. Rodgers of Washington</namePart>
+         <affiliation>United States House of Representatives</affiliation>
+         <role>
+              <roleTerm authority="marcrelator" type="text">sponsor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">spn</roleTerm>
+        </role>
+         <description>United States Congress Member</description>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <namePart>Committee on Energy and Commerce</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">associated name</roleTerm>
+              <roleTerm authority="marcrelator" type="code">asn</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    </mods>

@@ -67,6 +67,14 @@ CONTENT = "https://www.govinfo.gov"
 MAX_PACKAGE_ID = 128
 _RAW_OBJECT = "raw object"
 _MODS_URL = f"{{{MODS_NAMESPACE}}}url"
+# GPO writes ``<congCommittee>`` inside the GPO extension but its ``<name>``
+# children in the MODS namespace, so the child name is expanded and the
+# extension's own children are not.
+_MODS_NAME = f"{{{MODS_NAMESPACE}}}name"
+# ``<section>`` inside ``<USCode>`` inherits the MODS default namespace the
+# root declares, the same way ``<congCommittee>``'s ``<name>`` does, so the
+# child name is expanded rather than written bare.
+_MODS_SECTION = f"{{{MODS_NAMESPACE}}}section"
 _CONGRESS = r"[1-9][0-9]*"
 _NUMBER = r"[1-9][0-9]*"
 # A hearing jacket is an opaque printing number, so leading zeros are kept.
@@ -238,6 +246,16 @@ class PackageSummary:
     #: Every ``download`` link as the publisher spelled it, ``(name, url)``,
     #: repeated names included. Evidence, not a statement of what is fetchable.
     download_links: tuple[tuple[str, str], ...]
+    #: The session of Congress the summary states, as the publisher spells it.
+    #: Kept as a string: it is an identifier in the publisher's own grammar,
+    #: not an arithmetic quantity.
+    session: str | None = None
+    #: How many pages the publisher says the document has, verbatim. This is
+    #: the document's own extent, not how far any reader got, so a caller that
+    #: reads a capped window reports both and never re-derives this from the
+    #: bytes (measured 2026-09-20: CRPT-118hrpt968 states 56 and PyMuPDF counts
+    #: 56; CRPT-118hrpt965 states 282 and a 60-page read saw 60).
+    pages: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,6 +340,112 @@ def _mods_bills(root: ModsRecord) -> tuple[ModsBill, ...]:
 
 
 @dataclass(frozen=True, slots=True)
+class ModsCommittee:
+    """One ``<congCommittee>`` a package MODS names, with its own authority id.
+
+    ``authority_id`` is the ``systemCode`` the Congress.gov committee routes
+    and this repository's ``committees`` table already key on (``hsfa00``), so
+    a report's authoring committee is a join and not a name match.  It is the
+    publisher's statement about the document, which is why a contract reads it
+    here rather than resolving the committee name a print happens to set.
+    """
+
+    authority_id: str
+    chamber: str | None
+    congress: int | None
+    type: str | None
+    #: The ``type="authority-standard"`` name, the roster's own spelling.
+    name: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ModsUsCodeSection:
+    """One ``<USCode title="N"><section number="S"/></USCode>`` the MODS names.
+
+    A ``<USCode>`` block states a title and then one or more places inside it.
+    Only a ``<section>`` is read: the other child measured is ``<chapter>``
+    (``<USCode title="5"><chapter number="8"/></USCode>`` in both sampled
+    activity reports), and a chapter is not a section -- there is no hosted
+    key for it and inventing one would publish ``5-8`` as if the document
+    cited 5 U.S.C. 8.  A chapter-only block therefore contributes nothing
+    here, and the block's title is still visible through any sibling section.
+
+    ``detail`` is the publisher's own subsection pointer (``(a)(1)(B)``),
+    carried because it is evidence the publisher stated and dropping it would
+    lose the only place the MODS is more precise than a section number.
+    """
+
+    title: str
+    number: str
+    detail: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ModsCfrPart:
+    """One ``<cfr title="N"><part number="M"/></cfr>`` the MODS names."""
+
+    title: str
+    part: str
+
+
+@dataclass(frozen=True, slots=True)
+class ModsStatute:
+    """One ``<statuteAtLarge volume="N"><page pages="M"/></statuteAtLarge>``."""
+
+    volume: str
+    pages: str
+
+
+@dataclass(frozen=True, slots=True)
+class ModsReport:
+    """One ``<congReport>`` a package MODS names: a sibling report, by its package id."""
+
+    congress: int
+    report_type: str
+    number: str
+
+    @property
+    def package_id(self) -> str:
+        """``congress=118 type=H number=29`` is ``CRPT-118hrpt29``."""
+        return f"CRPT-{self.congress}{self.report_type.lower()}rpt{self.number}"
+
+
+@dataclass(frozen=True, slots=True)
+class ModsMember:
+    """One ``<congMember>`` a package MODS names, and the role it names them in.
+
+    ``bioguide_id`` is ``None`` where the publisher states the element without
+    one -- measured on CRPT-118hrpt965, whose ``role="SUBMITTEDBY"`` member
+    carries chamber, congress, role and state and no ``bioGuideId`` at all, so
+    a caller must treat the id as absent rather than assume the role implies
+    one.  This is the only bioguide id any of these documents states: the
+    citation rules measured zero printed ones across ten families, because a
+    publisher assigns the identifier and does not print it.
+    """
+
+    bioguide_id: str | None
+    role: str | None
+    chamber: str | None
+    congress: int | None
+    state: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ModsLaw:
+    """One ``<law>`` a package MODS names, in the publisher's own document order.
+
+    ``is_private`` is the publisher's own ``isPrivate`` flag folded onto the
+    ``public``/``private`` vocabulary ``laws.law_type`` seals; a ``<law>`` that
+    states neither a numeric congress nor a numeric number is skipped rather
+    than guessed at, the same boundary :func:`_mods_bills` draws.
+    """
+
+    congress: int
+    number: str
+    law_type: str
+
+
+@dataclass(frozen=True, slots=True)
 class PackageModsIdentity:
     """The MODS accessIds and the renditions the publisher says it offers."""
 
@@ -339,6 +463,31 @@ class PackageModsIdentity:
     #: Every ``<bill>`` the MODS names, in document order. Empty for a
     #: package whose MODS states none.
     bills: tuple[ModsBill, ...]
+    #: Every ``<congCommittee>`` the root extension names, in document order.
+    committees: tuple[ModsCommittee, ...] = ()
+    #: Every ``<law>`` the root extension names, in document order.
+    laws: tuple[ModsLaw, ...] = ()
+    #: Every ``<USCode>`` *section* the root extension names, in document
+    #: order; a chapter-only block contributes nothing (see
+    #: :class:`ModsUsCodeSection`).
+    usc_sections: tuple[ModsUsCodeSection, ...] = ()
+    #: Every ``<cfr>`` part the root extension names, in document order.
+    cfr_parts: tuple[ModsCfrPart, ...] = ()
+    #: Every ``<statuteAtLarge>`` page the root extension names, in document order.
+    statutes: tuple[ModsStatute, ...] = ()
+    #: Every ``<rin>``'s number, in document order.
+    rins: tuple[str, ...] = ()
+    #: Every ``<congReport>`` the root extension names, in document order.
+    reports: tuple[ModsReport, ...] = ()
+    #: Every ``<congMember>`` the root extension names, in document order.
+    members: tuple[ModsMember, ...] = ()
+    #: The session of Congress the root extension states.
+    session: str | None = None
+
+    @property
+    def submitted_by(self) -> ModsMember | None:
+        """The member the MODS names as having submitted the document, if any."""
+        return next((member for member in self.members if member.role == "SUBMITTEDBY"), None)
 
     @property
     def primary_bill(self) -> ModsBill | None:
@@ -349,6 +498,150 @@ class PackageModsIdentity:
         ``PRIMARY``).
         """
         return next((bill for bill in self.bills if bill.context == "PRIMARY"), None)
+
+
+def _mods_committees(root: ModsRecord) -> tuple[ModsCommittee, ...]:
+    """Every root-level ``<congCommittee>``, read the way ``_mods_bills`` reads bills.
+
+    Root-level only, so a constituent granule's own committee is not read here.
+    A ``<congCommittee>`` with no ``authorityId`` is skipped: the id is the
+    whole point of reading this element, and a committee with only a printed
+    name is what the ``committee_name`` citation rule is for.
+    """
+    committees: list[ModsCommittee] = []
+    for element in root.fields("extension", "congCommittee"):
+        authority = element.attribute("authorityId")
+        if not authority:
+            continue
+        congress = element.attribute("congress")
+        names = {name.attribute("type"): name.text.strip() for name in element.findall(_MODS_NAME)}
+        committees.append(
+            ModsCommittee(
+                authority_id=authority,
+                chamber=element.attribute("chamber"),
+                congress=int(congress) if congress and congress.isdecimal() else None,
+                type=element.attribute("type"),
+                name=names.get("authority-standard") or next(iter(names.values()), None),
+            )
+        )
+    return tuple(committees)
+
+
+def _mods_laws(root: ModsRecord) -> tuple[ModsLaw, ...]:
+    """Every root-level ``<law>``, folded onto the sealed ``public``/``private`` vocabulary.
+
+    The publisher states ``isPrivate="false"`` on every ``<law>`` measured
+    2026-09-20 (22 across two CRPT packages); anything but the literal
+    ``"true"`` reads as public, because that is the flag's own spelling and a
+    missing flag on a congressional report is the ordinary public case.
+    """
+    laws: list[ModsLaw] = []
+    for element in root.fields("extension", "law"):
+        congress = element.attribute("congress")
+        number = element.attribute("number")
+        if not (congress and congress.isdecimal() and number and number.isdecimal()):
+            continue
+        private = (element.attribute("isPrivate") or "").strip().lower() == "true"
+        laws.append(ModsLaw(congress=int(congress), number=number, law_type="private" if private else "public"))
+    return tuple(laws)
+
+
+def _mods_usc_sections(root: ModsRecord) -> tuple[ModsUsCodeSection, ...]:
+    """Every root-level ``<USCode>``'s ``<section>`` children, title carried down.
+
+    This is the element the first build of the citation contract missed, and
+    missing it made a false claim: CRPT-118hrpt968's whole printed U.S. Code
+    yield is ``2 U.S.C. 190``, which this states, and CRPT-118hrpt965's MODS
+    states ``15 U.S.C. 57a`` that a 60-page read never reached.  A
+    ``<chapter>`` child is deliberately not read (see
+    :class:`ModsUsCodeSection`).
+    """
+    sections: list[ModsUsCodeSection] = []
+    for element in root.fields("extension", "USCode"):
+        title = element.attribute("title")
+        if not title:
+            continue
+        for section in element.findall(_MODS_SECTION):
+            number = section.attribute("number")
+            if not number:
+                continue
+            sections.append(ModsUsCodeSection(title=title, number=number, detail=section.attribute("detail")))
+    return tuple(sections)
+
+
+def _mods_cfr_parts(root: ModsRecord) -> tuple[ModsCfrPart, ...]:
+    """Every ``<cfr>`` title with its ``<part>`` children.
+
+    Read even though no sampled CRPT record states one: an *empty* answer and
+    *no element of this shape in the vocabulary* are different facts, and a
+    contract's ``stated_by_index`` must be able to say "compared, and the
+    index does not state it" rather than "not compared".
+    """
+    parts: list[ModsCfrPart] = []
+    for element in root.fields("extension", "cfr"):
+        title = element.attribute("title")
+        if not title:
+            continue
+        for child in element.children:
+            number = child.attribute("number")
+            if number:
+                parts.append(ModsCfrPart(title=title, part=number))
+    return tuple(parts)
+
+
+def _mods_statutes(root: ModsRecord) -> tuple[ModsStatute, ...]:
+    """Every ``<statuteAtLarge>`` volume with its ``<page>`` children."""
+    statutes: list[ModsStatute] = []
+    for element in root.fields("extension", "statuteAtLarge"):
+        volume = element.attribute("volume")
+        if not volume:
+            continue
+        for child in element.children:
+            pages = child.attribute("pages")
+            if pages:
+                statutes.append(ModsStatute(volume=volume, pages=pages))
+    return tuple(statutes)
+
+
+def _mods_rins(root: ModsRecord) -> tuple[str, ...]:
+    """Every ``<rin number="nnnn-XXnn"/>`` the root extension states."""
+    return tuple(number for element in root.fields("extension", "rin") if (number := element.attribute("number")))
+
+
+def _mods_reports(root: ModsRecord) -> tuple[ModsReport, ...]:
+    """Every root-level ``<congReport>``: the sibling reports this one names."""
+    reports: list[ModsReport] = []
+    for element in root.fields("extension", "congReport"):
+        congress = element.attribute("congress")
+        number = element.attribute("number")
+        report_type = element.attribute("type")
+        if not (congress and congress.isdecimal() and number and number.isdecimal() and report_type):
+            continue
+        reports.append(ModsReport(congress=int(congress), report_type=report_type, number=number))
+    return tuple(reports)
+
+
+def _mods_members(root: ModsRecord) -> tuple[ModsMember, ...]:
+    """Every root-level ``<congMember>``, bioguide id included where stated.
+
+    Unlike the other readers here, an element missing its identifier is
+    **kept**: the role and chamber are still the publisher's statement about
+    the document, and the absent id is the fact a caller needs to see
+    (CRPT-118hrpt965 states exactly that).
+    """
+    members: list[ModsMember] = []
+    for element in root.fields("extension", "congMember"):
+        congress = element.attribute("congress")
+        members.append(
+            ModsMember(
+                bioguide_id=element.attribute("bioGuideId") or None,
+                role=element.attribute("role"),
+                chamber=element.attribute("chamber"),
+                congress=int(congress) if congress and congress.isdecimal() else None,
+                state=element.attribute("state"),
+            )
+        )
+    return tuple(members)
 
 
 @dataclass(frozen=True, slots=True)
@@ -567,6 +860,8 @@ def validate_package_summary(
         last_modified=_text(document.get("lastModified")),
         title=_text(document.get("title")),
         download_links=_download_links(document.get("download"), label="summary"),
+        session=_text(document.get("session")),
+        pages=_text(document.get("pages")),
     )
 
 
@@ -705,6 +1000,15 @@ def validate_package_mods(
         moved_renditions=moved,
         other_renditions=other,
         bills=_mods_bills(root),
+        committees=_mods_committees(root),
+        laws=_mods_laws(root),
+        usc_sections=_mods_usc_sections(root),
+        cfr_parts=_mods_cfr_parts(root),
+        statutes=_mods_statutes(root),
+        rins=_mods_rins(root),
+        reports=_mods_reports(root),
+        members=_mods_members(root),
+        session=next((element.text.strip() for element in root.fields("extension", "session")), None),
     )
 
 
@@ -919,6 +1223,13 @@ __all__ = [
     "GranuleModsIdentity",
     "GranuleSummary",
     "ModsBill",
+    "ModsCfrPart",
+    "ModsCommittee",
+    "ModsLaw",
+    "ModsMember",
+    "ModsReport",
+    "ModsStatute",
+    "ModsUsCodeSection",
     "PackageBodyIdentity",
     "PackageIdentity",
     "PackageModsIdentity",

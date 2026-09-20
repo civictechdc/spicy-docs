@@ -20,7 +20,7 @@ the two rules the owner set:
    are reduced to one canonical key before comparison, so Congress.gov's
    `{"type": "HR", "number": 7806}` and the print's `H.R. 7806` are one fact.
 2. **Nothing of value that only the PDF holds may be left uncaptured**, where
-   value means join keys to the [32 hosted tables](../tables.md) and structured
+   value means join keys to the [hosted tables](../tables.md) and structured
    content a consumer would otherwise re-read the PDF for.
 
 ## Corrections
