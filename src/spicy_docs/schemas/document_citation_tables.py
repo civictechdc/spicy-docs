@@ -17,26 +17,54 @@ got.
 document holds may be left uncaptured.**  One row per occurrence of one cite,
 carrying the exact text that matched and the character span it was read at, so
 a consumer can re-read the print at that offset and see what the rule saw.
-That span is the yield here, and it is worth stating why plainly, because the
-bill and law keys themselves are not:
 
-**Measured 2026-09-20 on both fixture packages: the package MODS already
-states every bill and every law the print names.**  179 of 179 bills for
-CRPT-118hrpt968 and 39 of 39 for CRPT-118hrpt965; 3 of 3 and 1 of 1 laws.  The
-[rollup measurement](../../../docs/research/pdf-family-rollup-yield-2026-09-20.md)
-reported 883 bills "beyond the index" because the index it compared against
-was the ``published`` listing row -- seven fields, no bill -- and not the MODS
-the body acquirer already fetches for every package it reads.  So a bill row
-here is not a new join key; it is *where in a 282-page print that bill is
-discussed*, which the MODS cannot say and which is why ``span_start`` is part
-of this table's identity.  ``stated_by_index`` carries that per row rather
-than leaving it to a research note.
+**What the print actually adds, measured.** The
+[MODS re-check](../../../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
+read all eight sampled activity reports at full page depth -- 1,249 pages, not
+the rollup's capped 476 -- and compared every key against each package's own
+MODS:
 
-What the print genuinely reaches that no GovInfo record states is the rest:
-the committees other than the authoring one (16 House and 4 Senate
-``system_code``s across the eight sampled prints, from 87 printed candidates),
-the U.S. Code and CFR sections, the Federal Register cites, the GAO product
-ids and the CRS report ids.
+===========================  ==========================================
+Kind                         Print-only, eight reports, every page
+===========================  ==========================================
+``bill_number``              **0 of 1,406**
+``public_law``               **1 of 174**
+``usc_section``              **0 of 37**
+``statutes_at_large``        **0 of 7**
+``committee_name``           **27 resolved codes**, 71 of 79 rows
+``rin``                      **87**
+``docket_number``            **38**
+``gao_product_id``           5
+``cfr_section``              1 of 1
+``federal_register_cite``    1
+``us_reports_cite``          2
+===========================  ==========================================
+
+So for bills, laws, Code sections and Statutes pages the MODS is the
+**authoritative** source and the print is a floor bounded by how far the read
+got; what the print adds for those kinds is the *evidence span* -- where in a
+282-page print a measure is discussed -- which no GovInfo record states.  What
+the print adds outright is the committees beyond the one that submitted the
+report, the RINs, the agency dockets and the GAO ids: **no sampled MODS in any
+collection states a Federal Register cite, a GAO product id, a CRS report id,
+an agency docket, a case docket, a U.S. Reports cite or a dollar figure.**
+
+``stated_by_index`` carries that per row, and
+``WHERE stated_by_index IS NOT TRUE`` is the consumer's predicate for the kinds
+that are genuinely new.  It is NULL rather than ``false`` for a kind the MODS
+vocabulary has no element for at all, because "compared and absent" and "no
+comparison was possible" are different answers.
+
+The rollup measured "beyond the index" against the ``published`` listing row --
+seven fields, no citation among them -- and so reported 883 bills of yield for
+this family.  That was the wrong index record: ``GovInfoBodyAcquirer`` fetches
+the package MODS for every body it reads.
+
+**The aggregate shape is derivable from this one; the reverse is not.**  A
+consumer wanting one row per (document, key) takes ``GROUP BY document_key,
+cite_kind, target_key`` with ``COUNT(*)`` and ``MIN(span_start)``.  Storing
+that aggregate instead would make the table a lossy copy of the MODS, which is
+exactly what it must not be.
 
 The rules are ``interpretation/citations.py``'s, which
 ``tools/analysis/pdf_family_rollup.py`` runs too, so the measurement and this
@@ -71,7 +99,7 @@ DOCUMENT_CITATIONS = table_contract(
         "One row per occurrence of one cited key in one document's text: the key, the exact text that named it, "
         "and the character span it was read at."
     ),
-    identity=("document_key", "cite_kind", "target_key", "span_start"),
+    identity=("document_key", "text_sha256", "cite_kind", "target_key", "span_start"),
     version_column="rule_version",
     columns={
         "document_key": (
@@ -110,11 +138,18 @@ DOCUMENT_CITATIONS = table_contract(
             "but nothing settled the key: a bill with no stated Congress, or a committee name no supplied "
             "roster reaches."
         ),
+        "target_rule": (
+            "How the key was reached.  The rule's own name for every kind but `committee_name`, where it is "
+            "the resolution route: `exact` and `roster_prefix` are lookups in the roster vocabulary, while "
+            "`name_prefix` and `sibling_prefix` are inferences from the printed text of this one document.  A "
+            "consumer wanting only roster lookups filters on this column rather than on `target_resolved`."
+        ),
         "stated_by_index": (
             "Whether a keyed index record for this document already states this target key -- the package "
-            "MODS's own `<bill>` and `<law>` elements and its authoring committee.  NULL where no index "
-            "record was supplied.  This is the owner's do-not-recreate rule, carried per row: where it is "
-            "`true` the row's value is the evidence span, not the key."
+            "MODS's own `<bill>`, `<law>` and `<USCode>` section elements and its authoring committee.  NULL "
+            "where no index record was supplied.  This is the owner's do-not-recreate rule, carried per row: "
+            "where it is `true` the row's value is the evidence span, not the key, and "
+            "`WHERE stated_by_index IS NOT TRUE` selects the kinds that are genuinely new."
         ),
         "rule_name": (
             "Which rule in `interpretation/citations.py` fired.  Equal to `cite_kind` today, and a separate "
@@ -132,9 +167,12 @@ DOCUMENT_CITATIONS = table_contract(
             "offsets are offsets into."
         ),
         "text_sha256": (
-            "Digest of that normalized text.  The span is meaningless without it: a re-extraction that moved "
-            "one character moves every offset after it, and this column is what says whether two rows' offsets "
-            "are comparable."
+            "Digest of the normalized text the offsets index into, and part of the identity.  A span means "
+            "nothing without it -- a re-extraction that moved one character moves every offset after it -- and "
+            "keying on it is what stops two extractions of the same document from colliding on one identity "
+            "and silently merging.  The table is append-only per digest: a superseded extraction's rows are "
+            "not retired, and a consumer filters to the digest `house_activity_reports.text_sha256` states for "
+            "that document."
         ),
     },
 )
@@ -157,6 +195,12 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
             "which the citation rules read for a different purpose."
         ),
         "committee_name": "That committee's `authority-standard` name, as the MODS spells it.",
+        "submitted_by_bioguide_id": (
+            'The `bioGuideId` of the member the MODS names with `role="SUBMITTEDBY"`.  The one bioguide id '
+            "any of these documents states -- the citation rules measured zero *printed* ones across ten "
+            "families -- and NULL where the publisher states the member without an id, which CRPT-118hrpt965 "
+            "does."
+        ),
         "committee_count": "How many committees the MODS names; every one is in committees_json.",
         "committees_json": (
             "Every `congCommittee` the MODS names, as a JSON array of objects carrying the authority id, "
@@ -174,13 +218,48 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
             "Every root-level `<law>` the MODS names, as a JSON array of joined `laws` identities, in document "
             "order.  Carried because it is what the beyond-index bill and law counts are measured against."
         ),
-        "distinct_bills": "How many distinct bill keys the print names, by the shared citation rules.",
-        "distinct_bills_beyond_index": (
-            "How many of those the MODS does not already state.  Measured zero on both fixture packages: the "
-            "MODS states every bill the print names, so a bill row's value is its evidence span."
+        "associated_usc_section_count": (
+            "How many U.S. Code sections the MODS names; every one is in associated_usc_sections_json."
         ),
-        "distinct_laws": "How many distinct public laws the print names.",
-        "distinct_laws_beyond_index": "How many of those the MODS does not already state.",
+        "associated_usc_sections_json": (
+            "Every `<USCode>` *section* the MODS names, as a JSON array of objects carrying the `{title}-{section}` "
+            "key and the publisher's own subsection detail, in document order.  A chapter-only `<USCode>` block "
+            "contributes nothing: a chapter is not a section and has no hosted key."
+        ),
+        "related_report_count": "How many sibling reports the MODS names; every one is in related_reports_json.",
+        "related_reports_json": (
+            "Every `<congReport>` the MODS names, as a JSON array of CRPT package ids, in document order: the "
+            "report-to-report edge, stated by the publisher rather than read off the print."
+        ),
+        "distinct_bills": (
+            "How many distinct bill keys the print names, by the shared citation rules.  A floor, not a total: "
+            "it counts what pages_read reached, and the MODS is the authoritative list.  Every key carries the "
+            "Congress the summary states for this document, because a print writes `H.R. 7806` and never a "
+            "Congress; bills_congress_mismatch is what makes that assumption checkable."
+        ),
+        "distinct_bills_beyond_index": (
+            "How many of those the MODS does not already state, which is a measured floor and not a discovery "
+            "rate: 0 of 1,406 across all eight sampled reports at full page depth.  The per-row "
+            "`document_citations.stated_by_index` carries the same comparison exactly; this column is its "
+            "summary for one document."
+        ),
+        "bills_congress_mismatch": (
+            "How many printed bills the MODS states under a *different* Congress than the one stamped on them: "
+            "the same comparison run a second time on `(bill_type, number)` alone.  Nonzero means the document "
+            "names a measure from another Congress and its published `bill_id` is wrong for that row, which no "
+            "amount of reading the print can settle.  Measured zero on both fixture packages."
+        ),
+        "distinct_laws": "How many distinct public laws the print names; a floor bounded by pages_read.",
+        "distinct_laws_beyond_index": (
+            "How many of those the MODS does not already state: 1 of 174 across all eight sampled reports at "
+            "full page depth.  A floor with `stated_by_index` semantics, not a yield estimate."
+        ),
+        "distinct_usc_sections": "How many distinct U.S. Code sections the print names; a floor bounded by pages_read.",
+        "distinct_usc_sections_beyond_index": (
+            "How many of those the MODS does not already state: 0 of 37 across all eight sampled reports at "
+            "full page depth.  This is the correction that removed U.S. Code sections from the family's claimed "
+            "new yield; the kinds that survive are committees, RINs, agency dockets and GAO ids."
+        ),
         "committees_resolved": (
             "How many distinct committee `system_code`s the printed committee names settled to against the "
             "rosters the caller supplied."
@@ -194,17 +273,19 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
         "pages_read": (
             "How many pages the extraction actually read, which a capped read makes smaller than page_count."
         ),
-        "page_count": (
+        "stated_page_count": (
             "How many pages the document has, as the keyed summary's own `pages` field states it -- not "
-            "re-derived from the bytes."
+            "re-derived from the bytes.  Named apart from `committee_reports.page_count`, which is a package-"
+            "keyed column holding how many pages *that* extraction read: the two would otherwise collide on "
+            "one `package_id` with opposite meanings (282 against 60 on CRPT-118hrpt965)."
         ),
         "pages_capped": "Whether the read stopped short of the document, so every count above is a floor.",
         "body_rendition": "Which rendition the text was derived from; `pdf` for this family.",
         "body_derivation": "How that rendition became text.",
         "text_sha256": "Digest of the normalized text the citation spans index into.",
         "rule_set_version": (
-            "Digest over every citation rule's name, version and pattern, so these counts name the rules that "
-            "produced them."
+            "Digest over every citation rule's name, version, pattern and rejects, so these counts name the "
+            "rules that produced them."
         ),
     },
 )
@@ -246,26 +327,58 @@ def document_provenance(body: object, *, document_key: str, document_kind: str) 
     )
 
 
+def _bill_key(bill: object) -> str:
+    return natural_key(bill.congress, bill.normalized_bill_type or str(bill.bill_type).lower(), bill.number)
+
+
 def index_stated_keys(mods: object) -> dict[str, frozenset[str]]:
     """The target keys a package MODS already states, in the citation rules' own spelling.
 
     This is what makes the owner's first rule checkable rather than assumed:
     both sides are reduced to one key before the comparison, so the print's
     ``H.R. 7806`` and the MODS's ``type="HR" number="7806"`` are one fact.
-    ``mods`` is read structurally (``bills``, ``laws``, ``committees``), the
-    shape ``sources.govinfo.bodies.PackageModsIdentity`` has.
+    ``mods`` is read structurally, the shape
+    ``sources.govinfo.bodies.PackageModsIdentity`` has.
+
+    **A kind is in the returned mapping when the MODS vocabulary can state it
+    at all**, with an empty set where this record states none.  The
+    distinction is the point: ``frozenset()`` means "compared, and the index
+    does not state this" and a missing kind means "this index has no element
+    of that shape", which lands as NULL rather than ``false``.  No sampled
+    MODS in any collection states a Federal Register cite, a GAO product id, a
+    CRS report id, an agency docket, a case docket, a U.S. Reports cite or a
+    dollar figure, so those kinds are absent here by measurement, not by
+    oversight (the
+    [MODS re-check](../../../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
+    censuses every root-level ``extension`` child of 24 records).
     """
-    bills = {
-        natural_key(bill.congress, bill.normalized_bill_type or str(bill.bill_type).lower(), bill.number)
-        for bill in getattr(mods, "bills", ())
-    }
     laws = {natural_key(law.congress, law.law_type, law.number) for law in getattr(mods, "laws", ())}
-    committees = {committee.authority_id for committee in getattr(mods, "committees", ())}
     return {
-        "bill_number": frozenset(bills),
+        "bill_number": frozenset(_bill_key(bill) for bill in getattr(mods, "bills", ())),
         "public_law": frozenset(laws),
-        "committee_name": frozenset(committees),
+        "statutes_at_large": frozenset(
+            f"{statute.volume}-{statute.pages}" for statute in getattr(mods, "statutes", ())
+        ),
+        "usc_section": frozenset(f"{section.title}-{section.number}" for section in getattr(mods, "usc_sections", ())),
+        "cfr_section": frozenset(f"{part.title}-{part.part}" for part in getattr(mods, "cfr_parts", ())),
+        "rin": frozenset(getattr(mods, "rins", ())),
+        "committee_name": frozenset(committee.authority_id for committee in getattr(mods, "committees", ())),
     }
+
+
+def index_stated_bill_pairs(mods: object) -> frozenset[str]:
+    """The MODS's bills as ``{type}-{number}``, with the Congress dropped.
+
+    The secondary comparison behind ``bills_congress_mismatch``: the citation
+    rules stamp the document's own Congress on every bare designator, so a
+    printed measure from an earlier Congress produces a ``bill_id`` the
+    publisher disagrees with.  Comparing without the Congress is the only way
+    to see that, since the print states nothing that would settle it.
+    """
+    return frozenset(
+        f"{bill.normalized_bill_type or str(bill.bill_type).lower()}-{bill.number}"
+        for bill in getattr(mods, "bills", ())
+    )
 
 
 def shape_document_citation(
@@ -283,8 +396,12 @@ def shape_document_citation(
     difference.
     """
     stated: bool | None = None
-    if stated_by_index is not None:
-        stated = finding.target_key in stated_by_index.get(finding.kind, frozenset())
+    # A kind the index vocabulary cannot state at all stays NULL: "compared,
+    # and absent" and "no element of this shape exists" are different answers,
+    # and reporting the second as `false` would claim a comparison that never
+    # happened.
+    if stated_by_index is not None and finding.kind in stated_by_index:
+        stated = finding.target_key in stated_by_index[finding.kind]
     return {
         "document_key": text(provenance.document_key),
         "document_kind": text(provenance.document_kind),
@@ -296,6 +413,7 @@ def shape_document_citation(
         "matched_text": text(finding.matched_text),
         "target_table": text(finding.target_table),
         "target_resolved": flag(finding.target_resolved),
+        "target_rule": text(finding.target_rule),
         "stated_by_index": flag(stated),
         "rule_name": text(finding.kind),
         "rule_version": text(finding.rule_version),
@@ -324,19 +442,36 @@ def shape_activity_report(
     ``CitationFinding``s ``interpretation.citations.find_citations`` produced
     over ``body.text``.  All four are read structurally and nothing is fetched.
 
-    Every descriptive field is the publisher's, including ``page_count``: the
-    summary states the document's extent, so a capped read reports how far it
-    got beside that rather than publishing its own count as the document's.
+    Every descriptive field is the publisher's, including
+    ``stated_page_count``: the summary states the document's extent, so a
+    capped read reports how far it got beside that rather than publishing its
+    own count as the document's.
+
+    **The Congress on every printed bill key is this document's**, from the
+    summary, because no print states one.  ``bills_congress_mismatch`` runs
+    the index comparison a second time with the Congress dropped, so a measure
+    the document discusses from another Congress shows up as a discrepancy
+    rather than as a confidently wrong ``bill_id``.
     """
     identity = summary.identity
+    provenance = document_provenance(body, document_key=identity.package_id, document_kind=GOVINFO_PACKAGE)
     stated = index_stated_keys(mods)
     bills = _distinct(citations, "bill_number")
     laws = _distinct(citations, "public_law")
+    sections = _distinct(citations, "usc_section")
     committees = [finding for finding in citations if finding.kind == "committee_name"]
+    # A bill the index states only under another Congress: it misses the
+    # strict key and matches the Congress-free one.
+    loose = index_stated_bill_pairs(mods)
+    mismatched = {key for key in bills - stated["bill_number"] if "-".join(key.split("-")[1:]) in loose}
     pages = getattr(body, "pages", None)
     pages_read = None if pages is None else len(pages)
     page_count = summary.pages
-    capped = None if pages_read is None or page_count is None else pages_read < int(page_count)
+    # A publisher that ever states a non-numeric extent must not crash the row
+    # or, worse, have it silently read as uncapped.
+    numeric_pages = page_count is not None and str(page_count).isdecimal()
+    capped = None if pages_read is None or not numeric_pages else pages_read < int(page_count)
+    submitter = getattr(mods, "submitted_by", None)
     return {
         "package_id": text(identity.package_id),
         "congress": text(identity.congress),
@@ -346,6 +481,7 @@ def shape_activity_report(
         "last_modified": text(summary.last_modified),
         "committee_system_code": text(next((c.authority_id for c in mods.committees), None)),
         "committee_name": text(next((c.name for c in mods.committees), None)),
+        "submitted_by_bioguide_id": text(None if submitter is None else submitter.bioguide_id),
         "committee_count": text(len(mods.committees)),
         "committees_json": json_column(
             [
@@ -360,31 +496,35 @@ def shape_activity_report(
         ),
         "associated_bill_count": text(len(mods.bills)),
         "associated_bills_json": json_column(
-            [
-                {
-                    "bill_id": natural_key(
-                        bill.congress, bill.normalized_bill_type or str(bill.bill_type).lower(), bill.number
-                    ),
-                    "context": bill.context,
-                }
-                for bill in mods.bills
-            ]
+            [{"bill_id": _bill_key(bill), "context": bill.context} for bill in mods.bills]
         ),
         "associated_law_count": text(len(mods.laws)),
         "associated_laws_json": json_column([natural_key(law.congress, law.law_type, law.number) for law in mods.laws]),
+        "associated_usc_section_count": text(len(mods.usc_sections)),
+        "associated_usc_sections_json": json_column(
+            [
+                {"usc_key": f"{section.title}-{section.number}", "detail": section.detail}
+                for section in mods.usc_sections
+            ]
+        ),
+        "related_report_count": text(len(mods.reports)),
+        "related_reports_json": json_column([report.package_id for report in mods.reports]),
         "distinct_bills": text(len(bills)),
         "distinct_bills_beyond_index": text(len(bills - stated["bill_number"])),
+        "bills_congress_mismatch": text(len(mismatched)),
         "distinct_laws": text(len(laws)),
         "distinct_laws_beyond_index": text(len(laws - stated["public_law"])),
+        "distinct_usc_sections": text(len(sections)),
+        "distinct_usc_sections_beyond_index": text(len(sections - stated["usc_section"])),
         "committees_resolved": text(len({f.target_key for f in committees if f.target_resolved})),
         "committees_unresolved": text(len({f.target_key for f in committees if not f.target_resolved})),
         "citation_rows": text(len(citations)),
         "pages_read": text(pages_read),
-        "page_count": text(page_count),
+        "stated_page_count": text(page_count),
         "pages_capped": flag(capped),
-        "body_rendition": text(body.rendition),
-        "body_derivation": text(body.derivation),
-        "text_sha256": digest(body.text),
+        "body_rendition": text(provenance.body_rendition),
+        "body_derivation": text(provenance.body_derivation),
+        "text_sha256": text(provenance.text_sha256),
         "rule_set_version": text(rule_set_version),
     }
 
@@ -395,6 +535,7 @@ __all__ = [
     "HOUSE_ACTIVITY_REPORTS",
     "DocumentProvenance",
     "document_provenance",
+    "index_stated_bill_pairs",
     "index_stated_keys",
     "shape_activity_report",
     "shape_document_citation",

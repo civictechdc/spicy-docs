@@ -747,6 +747,13 @@ def _activity_rows(package: str):
     return document, rows, findings, mods
 
 
+def _text_digest(package: str) -> str:
+    """The fixture text's digest, computed here so the identity is not read off the row."""
+    from tests.test_citations import body_for
+
+    return digest(body_for(package).text)
+
+
 #: One citation row per kind per package, plus the two committee rows that
 #: differ in ``target_resolved``: every column path, without turning the
 #: generic loop into five hundred near-identical cases.
@@ -784,8 +791,9 @@ def _document_citation_cases() -> list[ShapedCase]:
                 _case(
                     "document_citations",
                     row,
-                    # Rebuilt from the finding, never read back out of the row.
-                    (package, finding.kind, finding.target_key, str(finding.span_start)),
+                    # Rebuilt from the finding and the fixture's own text,
+                    # never read back out of the row.
+                    (package, _text_digest(package), finding.kind, finding.target_key, str(finding.span_start)),
                 )
             )
     return cases

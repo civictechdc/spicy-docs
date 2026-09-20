@@ -37,8 +37,10 @@ records — 198 for -118hrpt968, 413 for -118hrpt965 — which
 `extension` children, the same boundary `_mods_bills` draws. The kept span is
 therefore everything the reader under test looks at, and it still carries all
 179 (resp. 380) root-level `<bill>` elements, all 6 (resp. 16) `<law>`
-elements, the `<congCommittee>` and the `<session>`. Both full digests and the
-dropped counts are in each `.json` sidecar.
+elements, both `<USCode>` blocks (one section, one chapter-only), the 11
+(resp. 15) `<congReport>` elements, the `<congMember role="SUBMITTEDBY">`, the
+`<congCommittee>` and the `<session>`. Both full digests and the dropped
+counts are in each `.json` sidecar.
 
 ## Why these two
 
@@ -48,8 +50,25 @@ committee candidates of which 8 occurrences settle to a `system_code`.
 `tests/test_citations.py` reproduces all of them from this text.
 
 `CRPT-118hrpt965` is a 60-page read of a 282-page print, so it is what
-exercises `pages_capped` and what shows a MODS naming 380 bills where the
-capped read sees 39.
+exercises `pages_capped` and what shows a MODS naming 380 bills and
+`15 U.S.C. 57a` where the capped read sees 39 bills and no Code section. It is
+also the package whose `<congMember role="SUBMITTEDBY">` carries **no**
+`bioGuideId`, which is what stops the contract from assuming the role implies
+one; -118hrpt968's states `M001157`.
+
+Between them the two cover both sides of every MODS reader: a `<USCode>`
+section and a chapter-only block, a submitter with and without an id, a
+complete read and a capped one.
+
+**What they cannot show.** Neither reaches a RIN or an agency docket, which
+the [MODS re-check](../../../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
+found to be this family's two largest genuinely-new kinds (87 and 38 across
+the eight reports). Both sit in oversight chapters past the 60-page cap the
+rollup read to, so these fixtures exercise the contract's shape for those
+kinds and nothing about their content. Neither states a `<cfr>`, a
+`<statuteAtLarge>` or a `<rin>` element either; those readers are exercised on
+inline markup in `tests/test_citations.py`, with the element shapes taken from
+the collections that do carry them.
 
 ## Rebuild
 
