@@ -200,6 +200,30 @@ def test_the_governing_header_band_is_the_nearest_one_and_not_the_first() -> Non
     assert bands[4][-1] == "AMOUNT ($)"
 
 
+def test_a_second_header_band_inherits_the_first_across_a_body_row() -> None:
+    """The band walk looks back past a body row, and this is the case a rewrite breaks.
+
+    `organization_detail` is header, body, header, header, body...: the second
+    band's own row states nothing at column 3, and the label there has to come
+    from the *first* band, two rows up and across an intervening body row. A
+    walk that reset its accumulation at every non-header row would lose it and
+    every test but this one would still pass.
+    """
+    table = next(
+        table for page in pages_for(BOTH_GRIDS) for table in page.tables if grid_kind(table) == "organization_detail"
+    )
+    bands = [
+        read_json_column(row["column_headers_json"]) for row in rows_for(BOTH_GRIDS) if row["page"] == str(table.page)
+    ]
+    # Row 2 is itself a header row; the band governing it is the one above it.
+    assert bands[2][3] == "DESCRIPTION"
+    assert bands[2][0] is None
+    # Row 3 (the START/END sub-band) is governed by row 2's band alone.
+    assert bands[3][0] == "DOCUMENT NO."
+    # And a body row under both keeps the nearer band's roles, not the first's.
+    assert bands[4][0] == "DOCUMENT NO."
+
+
 def test_the_printed_page_label_is_stated_on_every_table_page() -> None:
     """139 of 139 measured pages state one, and it is what the volume's contents index by."""
     labels = [row["printed_page"] for row in rows_for(SUMMARY_ONLY)]
@@ -309,15 +333,28 @@ def test_the_totals_check_refuses_rather_than_agreeing_with_nothing() -> None:
         ("-12,161,280.90", Decimal("-12161280.90")),
         ("(1,234.56)", Decimal("-1234.56")),
         ("0.00", Decimal(0)),
+        # The sign before the dollar sign: how the print writes every negative
+        # in an organization summary, 72 distinct of them on the measured
+        # pages. Stripping `$` first stranded the `-` and refused the amount.
+        ("-$204,348.74", Decimal("-204348.74")),
+        ("-$8,819.25", Decimal("-8819.25")),
+        ("$-8,819.25", Decimal("-8819.25")),
     ],
 )
 def test_every_amount_spelling_the_print_uses_parses(printed: str, expected: Decimal) -> None:
     assert parse_amount(printed) == expected
 
 
-@pytest.mark.parametrize("printed", ["", "   ", "-", "—", "Totals", "2025", None, "X (REVOLVING)", "B-1243"])
+@pytest.mark.parametrize(
+    "printed",
+    ["", "   ", "-", "—", "Totals", "2025", None, "X (REVOLVING)", "B-1243", "--5.00", "-$-5.00", "$"],
+)
 def test_a_string_the_print_does_not_mean_as_an_amount_refuses(printed: str | None) -> None:
-    """A bare year, a dash and a label are not amounts; guessing would publish an invention."""
+    """A bare year, a dash and a label are not amounts; guessing would publish an invention.
+
+    A doubled sign refuses too: the sign comes off exactly once, so `--5.00`
+    is not quietly read as a negative five.
+    """
     assert parse_amount(printed) is None
 
 
@@ -328,14 +365,85 @@ def test_a_bare_year_inside_an_account_title_is_not_counted_as_an_amount() -> No
     assert amounts[0] is None
     assert [one["amount"] for one in amounts[2]] == ["798584.35", "687246.58", "24949150.00"]
     # Seven money columns, three fiscal years stacked in each: 21, and not the
-    # 24 a rule that read the three years in the title cell as money would give.
+    # 25 a rule accepting bare integers would give -- it read the three years
+    # in the title cell *and* the `0100` in the account-number cell as money.
     assert row["amount_count"] == "21"
 
 
 def test_the_page_context_reads_nothing_out_of_an_empty_page() -> None:
     empty = page_context("")
     assert empty.printed_page is None and empty.office is None
+    assert empty.funding_year is None and empty.funding_year_end is None
     assert empty.text_sha256 == digest("")
+
+
+#: Printed page B-48 of `GPO-CDOC-119sdoc3-1.pdf` (PDF page 66), verbatim from
+#: the retained dump. A two-year appropriation, which is the spelling that
+#: broke the first funding-year rule.
+B48_PAGE_TAIL = (
+    "AMOUNT ($)\n"
+    "START\n"
+    "END\n"
+    "DETAILED AND SUMMARY STATEMENT OF EXPENDITURES\n"
+    "CHAPLAIN\n"
+    "Funding Year          2021-2023\n"
+    "SALARIES, OFFICERS AND EMPLOYEES\n"
+    "B-48"
+)
+
+
+def test_a_multi_year_funding_block_states_its_office_like_any_other() -> None:
+    """The regression the fixtures cannot reach, because both end before page 66.
+
+    Five of the 83 office pages in the measured range spell a span --
+    `Funding Year 2021-2023`, the Chaplain's blocks at printed B-48, B-49,
+    B-51, B-53 and B-55. A rule matching only `\\d{4}` read no office on any of
+    them, and because `office` is documented as forward-filled by the consumer,
+    those rows would have been attributed to the *preceding* office: a wrong
+    answer wearing a missing one's clothes.
+    """
+    context = page_context(B48_PAGE_TAIL)
+
+    assert context.office == "CHAPLAIN"
+    assert context.funding_year == "2021"
+    assert context.funding_year_end == "2023"
+    assert context.appropriation_title == "SALARIES, OFFICERS AND EMPLOYEES"
+    assert context.section_heading == "DETAILED AND SUMMARY STATEMENT OF EXPENDITURES"
+    assert context.printed_page == "B-48"
+
+
+def test_a_single_year_funding_block_states_no_span() -> None:
+    """`funding_year_end` is NULL for one year, so a span is told apart rather than folded."""
+    single = B48_PAGE_TAIL.replace("2021-2023", "2023").replace("B-48", "B-50")
+    context = page_context(single)
+
+    assert context.office == "CHAPLAIN"
+    assert context.funding_year == "2023"
+    assert context.funding_year_end is None
+    assert context.printed_page == "B-50"
+
+
+@pytest.mark.parametrize(
+    ("last_line", "expected"),
+    [
+        ("A-7", "A-7"),
+        ("B-1243", "B-1243"),
+        ("B-2-146", "B-2-146"),
+        ("x", "x"),
+        ("(iii)", "(iii)"),
+        ("viii", "viii"),
+        # Not page labels: an ordinary word of roman letters, a bare number,
+        # and the cover's own last line. Each must land as NULL rather than be
+        # published as a locator.
+        ("civil", None),
+        ("mix", None),
+        ("2025", None),
+        ("MAY 14, 2025—Ordered to lie on the table", None),
+        ("$8,301,439.18", None),
+    ],
+)
+def test_only_a_page_label_the_print_uses_is_read_as_one(last_line: str, expected: str | None) -> None:
+    assert page_context(f"SOMETHING\n{last_line}").printed_page == expected
 
 
 def test_the_table_period_refuses_a_spelling_the_print_does_not_use() -> None:

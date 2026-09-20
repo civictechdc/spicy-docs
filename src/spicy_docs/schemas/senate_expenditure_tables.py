@@ -46,10 +46,11 @@ Grid                       Tables  What one ruled row is
 =========================  ======  =============================================
 
 **The decisive measurement is that the print does not rule the payee lines.**
-Of 6,172 cells, 3,905 are positions PyMuPDF finds no cell region at all.  Every
-one of the 58 ``appropriation_summary`` body rows has all nine cells ruled; every
-``organization_detail`` and ``payee_detail`` body row has exactly **one** of ten
-or one of seven.  A payee line --
+Of 6,172 cells, 3,905 are positions PyMuPDF finds no cell region at all.  Of the
+227 rows this contract calls ``entry``, every one of the 56
+``appropriation_summary`` entry rows has all nine cells ruled, and every one of
+the other 171 -- 99 ``organization_detail`` and 72 ``payee_detail`` -- has
+exactly **one**, of ten or of seven.  A payee line --
 ``00646684 02/19/2025 PATTY MURRAY 02/19/2025 02/19/2025 SENATOR TRANSPORTATION $19.96``
 -- is a *line inside one cell*, not a ruled row.
 
@@ -78,10 +79,19 @@ text**, not from the table: measured, the page states them on 83 of 139 table
 pages and the table's own first cell on only 21, and every one of those 21 is
 also in the page text.  On the other 56 -- continuation pages -- the print
 states no office, so the column is NULL and a consumer forward-fills by
-``printed_page``.  ``printed_page`` itself is the last non-empty line of the
-page text and was present on **139 of 139** table pages (``A-7``, ``B-1243``):
-it is the locator the volume's own table of contents indexes by, and the PDF
-page number is not.
+``printed_page``.
+
+**That forward-fill is why the funding-year grammar has to cover the span
+spelling.**  Five of the 83 office pages read ``Funding Year 2021-2023`` rather
+than a single year, and a rule that matched only ``\\d{4}`` left them with no
+office -- which the forward-fill then silently charged to the *preceding*
+office.  A missing value would have been visible; a wrong attribution is not.
+``funding_year`` carries the first year either way and ``funding_year_end`` the
+second, NULL for a single-year block.
+
+``printed_page`` is the last non-empty line of the page text and was present on
+**139 of 139** table pages (``A-7``, ``B-1243``): it is the locator the volume's
+own table of contents indexes by, and the PDF page number is not.
 
 ## Two rows, as the print states them
 
@@ -191,12 +201,25 @@ _GRID_BY_FIRST_LABEL: tuple[tuple[str, str], ...] = (
     ("TOTAL FUNDING YTD ($)", "organization_detail"),
 )
 
-_FUNDING_YEAR = re.compile(r"^Funding Year\s+(\d{4})$")
+#: The print's funding-year line, which states either one year or a span.  A
+#: two-year appropriation is spelled ``Funding Year 2021-2023`` and the volume's
+#: own contents spell the same block ``FY 21/23``; five of the 83 measured
+#: office pages are spans (the Chaplain's, printed B-48 to B-55).  A rule that
+#: matched only a single year left those five pages with no office at all, and
+#: the documented forward-fill then attributed their rows to the *preceding*
+#: office -- a wrong answer that looked like a missing one.
+_FUNDING_YEAR = re.compile(r"^Funding Year\s+(\d{4})(?:\s*-\s*(\d{4}))?$")
 _SLASHED = re.compile(r"\b(\d{2})/(\d{2})/(\d{4})\b")
 _LONG_DATE = re.compile(r"\b([A-Z][a-z]+) (\d{1,2}), (\d{4})\b")
 _PERIOD = re.compile(r"PERIOD OF\s+(\d{2}/\d{2}/\d{4})\s+THRU\s+(\d{2}/\d{2}/\d{4})")
-#: The print's own page label: ``A-7``, ``B-1243``, ``B-2-146``, ``x``, ``(iii)``.
-_PRINTED_PAGE = re.compile(r"[A-Z]-[\d-]+|\(?[ivxlc]+\)?|\d+")
+#: The print's own page label.  Two forms, both measured: the ledger label
+#: ``A-7``, ``B-1243``, ``B-2-146``, which is the only form any of the 139
+#: measured *table* pages used, and the front matter's roman numeral ``x`` or
+#: ``(iii)``.  Deliberately narrow on both: a bare-integer branch would have
+#: accepted any trailing number as a page label, and a loose ``[ivxlc]+``
+#: accepts ordinary words (``civil``, ``mix``).  Nothing measured needs either,
+#: and an unrecognised last line must land as NULL rather than as a label.
+_PRINTED_PAGE = re.compile(r"[A-Z]-\d+(?:-\d+)*|\(?(?=[ivx])x{0,3}(?:ix|iv|v?i{0,3})\)?")
 #: The print's own total labels.  ``Totals`` is the appropriation-summary grid's
 #: last row; ``ORGANIZATION TOTALS`` is inside the organization block's one cell.
 _TOTALS_CELL = "Totals"
@@ -283,7 +306,17 @@ SENATE_EXPENDITURES = table_contract(
             "on a continuation page, which the print leaves unlabelled; a consumer forward-fills in "
             "`printed_page` order."
         ),
-        "funding_year": "The four-digit funding year the page's own `Funding Year` line states; NULL where it states none.",
+        "funding_year": (
+            "The funding year the page's own `Funding Year` line states, and the **first** of them where it "
+            "states a span, so a single-year block and a multi-year appropriation are comparable on this "
+            "column.  NULL where the page states no funding-year line, which is every continuation page."
+        ),
+        "funding_year_end": (
+            "The last year of a multi-year appropriation, which the print spells `Funding Year 2021-2023` and "
+            "its own contents spell `FY 21/23`.  NULL where the print states one year, so a span and a single "
+            "year are told apart rather than folded together.  Five of the 83 measured office pages are "
+            "spans -- the Chaplain's, printed B-48 to B-55."
+        ),
         "appropriation_title": (
             "The appropriation the page names under its funding year, joined to one line; the module "
             "docstring quotes one in full.  NULL where the page states none."
@@ -355,7 +388,12 @@ SENATE_EXPENDITURES = table_contract(
 
 #: An amount as this print spells it: an optional sign, an optional ``$``,
 #: grouped digits, and a decimal point that is **required**.
-_AMOUNT = re.compile(r"-?\d*\.\d+")
+#: What is left of an amount once the sign, the ``$`` and the grouping commas
+#: are off: digits and a decimal point, the point required.  Unsigned on
+#: purpose -- the sign is taken off exactly once above, so a second one left in
+#: the body (``--5.00``) is a spelling the print does not use and is refused
+#: here rather than read as a negative.
+_AMOUNT = re.compile(r"\d*\.\d+")
 
 
 def parse_amount(value: str | None) -> Decimal | None:
@@ -382,7 +420,21 @@ def parse_amount(value: str | None) -> Decimal | None:
     negative = body.startswith("(") and body.endswith(")")
     if negative:
         body = body[1:-1].strip()
-    body = body.lstrip("$").strip().replace(",", "")
+    # The sign is taken off before the dollar sign, and exactly once.  The
+    # print writes `-$204,348.74` -- 72 distinct sign-first negatives on the
+    # 160 measured pages -- and stripping `$` first left the leading `-`
+    # stranded, so the whole amount was refused.  Stripping only one sign is
+    # what keeps `--5.00` refused rather than read as a negative.
+    if body.startswith("-"):
+        negative = True
+        body = body[1:].strip()
+        body = body.removeprefix("$").strip()
+    else:
+        body = body.removeprefix("$").strip()
+        if body.startswith("-"):
+            negative = True
+            body = body[1:].strip()
+    body = body.replace(",", "")
     if _AMOUNT.fullmatch(body) is None:
         return None
     try:
@@ -430,6 +482,7 @@ class PageContext:
     section_heading: str | None
     office: str | None
     funding_year: str | None
+    funding_year_end: str | None
     appropriation_title: str | None
     text_sha256: str | None
 
@@ -442,55 +495,78 @@ def page_context(page_text: str) -> PageContext:
     page of an office block only.  The rule is the block the print draws: find
     its ``Funding Year`` line, take the line above as the office and the lines
     below up to the page label as the title.
+
+    A multi-year appropriation states a span (``Funding Year 2021-2023``), and
+    both ends are kept: ``funding_year`` is the first year either way, so a
+    single-year block and a span are comparable on it, and
+    ``funding_year_end`` is NULL unless the print states a second year.
     """
     lines = [line.strip() for line in page_text.split("\n") if line.strip()]
     if not lines:
-        return PageContext(None, None, None, None, None, digest(page_text))
+        return PageContext(None, None, None, None, None, None, digest(page_text))
     last = lines[-1]
     printed_page = last if _PRINTED_PAGE.fullmatch(last) else None
     heading = next((line for line in lines if line in SECTION_HEADINGS), None)
-    office = year = title = None
+    office = year = year_end = title = None
     for index, line in enumerate(lines):
         found = _FUNDING_YEAR.fullmatch(line)
         if found is None:
             continue
-        year = found.group(1)
+        year, year_end = found.group(1), found.group(2)
         office = lines[index - 1] if index else None
         tail = lines[index + 1 : -1] if printed_page is not None else lines[index + 1 :]
         title = " ".join(tail) or None
         break
-    return PageContext(printed_page, heading, office, year, title, digest(page_text))
+    return PageContext(printed_page, heading, office, year, year_end, title, digest(page_text))
 
 
-def _governing_headers(cells: Sequence[Sequence[str | None]], row_ordinal: int) -> list[str | None]:
-    """The header labels governing one row, from the nearest band of header rows above it.
+def _governing_headers(cells: Sequence[Sequence[str | None]]) -> list[list[str | None]]:
+    """The header labels governing each row, for the whole table in one pass.
 
-    A band is a run of consecutive header rows; the governing one is the run
-    ending at the last header row before ``row_ordinal``.  Reading only that run
-    is what keeps an ``organization_detail`` table's two bands apart: its first
-    band names column 3 ``DESCRIPTION`` for the organization summary and its
-    second names column 7 ``DESCRIPTION`` for the payee lines, and a row under
-    the second must not inherit the first.
+    A band is a run of consecutive header rows; the band governing a row is the
+    run ending at the last header row above it.  Reading only that run is what
+    keeps an ``organization_detail`` table's two bands apart: its first band
+    names column 3 ``DESCRIPTION`` for the organization summary and its second
+    names column 7 ``DESCRIPTION`` for the payee lines, and a row under the
+    second must not inherit the first.
+
+    **One pass, not one pass per row.**  Doing this per row re-decided
+    ``_is_header_row`` for every row above the one being shaped and then
+    re-walked the band, which is ``O(R^2 * C)`` -- measured at 2.2x to 3.0x per
+    doubling of the row count, in a shaper whose docstring claimed linear.  The
+    band a header row extends is accumulated as the walk passes it, so each row
+    reads a band that is already built: ``O(R * C)``, and rows sharing a band
+    share one list rather than each copying it.
+
+    A header row is governed by the band *above* it, not by itself, and a band
+    is found by looking back to the last header row even across body rows --
+    which is what gives an ``organization_detail`` second header band the first
+    band's labels rather than nothing.
     """
     width = len(cells[0]) if cells else 0
-    header_rows = [i for i in range(row_ordinal) if _is_header_row(cells[i])]
-    if not header_rows:
-        return [None] * width
-    band: list[int] = [header_rows[-1]]
-    for index in reversed(header_rows[:-1]):
-        if index != band[0] - 1:
-            break
-        band.insert(0, index)
-    labels: list[str | None] = [None] * width
-    # Nearest band row wins at a column both state: the sub-band under
-    # FUNDING ADJUSTMENTS names SUPPLEMENTALS, TRANSFERS and RESCISSIONS,
-    # and those are the roles, not the span above them.
-    for index in band:
-        for column, cell in enumerate(cells[index]):
+    empty: list[str | None] = [None] * width
+    governing: list[list[str | None]] = []
+    # The band ending at the last header row seen, and whether that row was the
+    # row immediately above the one being visited.
+    band: list[str | None] = empty
+    previous_was_header = False
+    for row in cells:
+        governing.append(band)
+        if not _is_header_row(row):
+            previous_was_header = False
+            continue
+        # Nearest band row wins at a column both state: the sub-band under
+        # FUNDING ADJUSTMENTS names SUPPLEMENTALS, TRANSFERS and RESCISSIONS,
+        # and those are the roles, not the span above them.  A header row that
+        # continues the run extends its band; one that starts a run begins a
+        # new band rather than extending the last one.
+        band = list(band) if previous_was_header else list(empty)
+        for column, cell in enumerate(row):
             collapsed = _collapse(cell)
             if _is_header_label(collapsed):
-                labels[column] = collapsed
-    return labels
+                band[column] = collapsed
+        previous_was_header = True
+    return governing
 
 
 def _is_header_row(row: Sequence[str | None]) -> bool:
@@ -594,8 +670,10 @@ def shape_senate_expenditure_rows(
     hashed once; it is computed here when a caller shapes one table alone.
 
     For a table of ``R`` rows and ``C`` columns over a page of ``N`` characters
-    this is ``O(N + R * C)`` with one pass per cell, and the page scan is paid
-    once per page rather than once per row.
+    this is ``O(N + R * C)``: one pass per cell, the page scan paid once per
+    page rather than once per row, and the header bands built in one walk of
+    the table rather than re-derived for every row -- which is what made an
+    earlier version ``O(R^2 * C)``, measured at up to 3.0x per doubling.
     """
     for attribute in ("page", "bbox", "row_count", "column_count", "cells"):
         if not hasattr(table, attribute):
@@ -607,9 +685,10 @@ def shape_senate_expenditure_rows(
     period_start, period_end = table_period(table)
     capped = pages_read < page_count
     bbox = table.bbox
+    bands = _governing_headers(cells)
     rows: list[Row] = []
     for ordinal, row in enumerate(cells):
-        headers = _governing_headers(cells, ordinal)
+        headers = bands[ordinal]
         ruled = sum(1 for cell in row if cell is not None) > 1
         amounts, amount_count = _row_amounts(row)
         promoted = {
@@ -637,6 +716,7 @@ def shape_senate_expenditure_rows(
                 "cells_ruled": flag(ruled),
                 "office": text(context.office),
                 "funding_year": text(context.funding_year),
+                "funding_year_end": text(context.funding_year_end),
                 "appropriation_title": text(context.appropriation_title),
                 "period_start": text(period_start),
                 "period_end": text(period_end),
@@ -691,6 +771,12 @@ def summary_totals(rows: Sequence[Row]) -> list[ColumnTotal]:
     than one, returns an empty list, so a caller cannot read "nothing to check"
     as agreement.  ``rows`` must be the shaped rows of one whole section; a
     partial section would disagree and should.
+
+    An entry row narrower than the total row contributes nothing to the columns
+    it does not have, rather than raising: a section mixing a nine- and a
+    ten-column summary is not something the measured print does, but a shaped
+    row is data from somewhere else and a check must refuse it, not crash on
+    it.  Each row's amounts are decoded once, not once per column.
     """
     from spicy_docs.schemas.tables import read_json_column
 
@@ -699,20 +785,20 @@ def summary_totals(rows: Sequence[Row]) -> list[ColumnTotal]:
     if len(totals) != 1:
         return []
     stated_row = totals[0]
-    entries = [row for row in summary if row["row_kind"] == "entry"]
     stated_amounts = read_json_column(stated_row["amounts_json"])
     headers = read_json_column(stated_row["column_headers_json"])
+    entries = [read_json_column(row["amounts_json"]) for row in summary if row["row_kind"] == "entry"]
     out: list[ColumnTotal] = []
     for column, found in enumerate(stated_amounts):
         if not found:
             continue
         stated = sum((Decimal(one["amount"]) for one in found), Decimal(0))
         summed = Decimal(0)
-        for row in entries:
-            cell = read_json_column(row["amounts_json"])[column]
+        for amounts in entries:
+            cell = amounts[column] if column < len(amounts) else None
             if cell:
                 summed += sum((Decimal(one["amount"]) for one in cell), Decimal(0))
-        out.append(ColumnTotal(column, headers[column], stated, summed))
+        out.append(ColumnTotal(column, headers[column] if column < len(headers) else None, stated, summed))
     return out
 
 
