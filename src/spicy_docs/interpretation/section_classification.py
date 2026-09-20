@@ -26,6 +26,19 @@ reason: ``CLASSIFICATION_FIELDS`` is what ``build_prompt`` asks for and what
 sibling summary prompt named none of its keys at all and refused every answer
 of the first live run (2026-09-19, receipt ``c1-provenance.json``), which is
 the measurement behind both ``v2`` prompts.
+
+**The original did not rely on its prompt for the key set, and neither should
+a reader of this file.** ``classifications.ts:21-29`` declares a zod
+``ClassifySchema`` -- ``z.object({ classifications: z.array(z.object({
+sectionId, label: z.enum([...the five...]), confidence: z.number().min(0).max(1)
+})) })`` -- and passes it to ``generateObject`` (``:76-78``), so the shape, the
+vocabulary and the 0-1 range were *enforced on the request*, not asked for in
+prose. The port copied the prompt bytes (``classifications.ts:79-89``) and the
+schema's constraints into ``_read_row``, and left the schema itself behind;
+``v1``'s sentence was all that remained of it. So ``CLASSIFY_PROMPT_TEMPLATE``
+is no longer byte-identical to ``classifications.ts:86`` either -- the same
+deliberate break as the diff prompt next door, recorded in
+``docs/decisions.md``, not an accident to undo.
 """
 
 from __future__ import annotations
@@ -70,8 +83,11 @@ LABEL_NAMES: tuple[str, ...] = tuple(label.name for label in CLASSIFICATION_LABE
 
 #: Each answered row's keys, types and ranges, stated once: ``build_prompt``
 #: sends them and ``_read_row`` enforces them. ``section_id`` is a spelling the
-#: reader accepts and the prompt does not offer, for a model that snake-cases a
-#: camelCase key.
+#: reader accepts and the prompt does not offer -- kept from the ``v1`` reader
+#: (``row.get("sectionId", row.get("section_id"))``), where it was tolerance for
+#: a model that snake-cases a camelCase key rather than an observed answer. No
+#: live answer has used it; it is covered by a test, which is the only thing
+#: that keeps an unused tolerance honest.
 CLASSIFICATION_FIELDS: tuple[AnswerField, ...] = (
     AnswerField(
         "sectionId",
@@ -144,9 +160,13 @@ def prompt_hash(prompt: str) -> str:
     return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
 
 
-#: A wrapping the reader accepts and the prompt does not ask for: a model told
-#: to answer with an array sometimes wraps it in a one-key object instead.
-#: Tolerated in one direction only, like ``AnswerField.aliases``.
+#: A wrapping the reader accepts and the prompt does not ask for. Not a guess
+#: about model behaviour: it is the original's own answer shape --
+#: ``ClassifySchema`` is ``z.object({ classifications: z.array(...) })``
+#: (``classifications.ts:21-29``), so every answer BillTrax read arrived
+#: wrapped, while its prompt asked for a bare array. The prompt here asks for
+#: the array; the wrapper stays readable, in one direction only, like
+#: ``AnswerField.aliases``.
 CLASSIFICATIONS_WRAPPER_KEY = "classifications"
 
 

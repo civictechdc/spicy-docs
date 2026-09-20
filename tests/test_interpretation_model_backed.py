@@ -21,7 +21,7 @@ from spicy_docs.interpretation.bill_summaries import (
     summarize_bill,
     summarize_diff,
 )
-from spicy_docs.interpretation.model_call import AnswerField, ModelCallError, ModelResponse
+from spicy_docs.interpretation.model_call import AnswerField, ModelCallError, ModelResponse, answer_shape_block
 from spicy_docs.interpretation.money_bills import MONEY_BILL_KINDS
 from spicy_docs.interpretation.section_classification import (
     CLASSIFICATION_FIELDS,
@@ -405,15 +405,23 @@ PROMPTS: tuple[tuple[str, str, tuple[AnswerField, ...]], ...] = (
     ("diff summary", build_diff_prompt(diff_text_from_items(DIFF_ITEMS)), DIFF_SUMMARY_FIELDS),
 )
 
-#: Exactly the keys and types the model returned on the first live
-#: bill-summary call, as `c1-provenance.json` recorded its shape. The values
-#: stand in for the model's prose, which the receipt deliberately did not
-#: retain: only the shape is the evidence.
+#: The keys and types the model returned on the first live bill-summary call,
+#: taken from the retained receipt `c1-provenance.json` (204 tokens in, 206
+#: out). The values stand in for the model's prose, which the receipt
+#: deliberately did not retain: only the shape is the evidence.
+#:
+#: The spelling is the model's, and it was not stable. That run's own README
+#: tabulates `affected_audience` from another invocation of the byte-identical
+#: v1 prompt, where the retained JSON records `most_affected_audience`. Both
+#: miss the same two keys and refuse identically, which is why the fix is a
+#: prompt that states the key set, not a reader taught one more synonym.
 C1_LIVE_ANSWER = {
     "summary": "This bill funds the Department of Defense for the coming fiscal year. " * 3,
-    "affected_audience": "Service members and defense contractors",
+    "most_affected_audience": "Service members and defense contractors",
     "notable_provisions": ["Sets troop pay", "Authorizes shipbuilding"],
 }
+#: The other invocation's spelling, from the same receipt's README table.
+C1_OTHER_SPELLING = "affected_audience"
 
 
 @pytest.mark.parametrize("name,prompt,fields", PROMPTS, ids=[row[0] for row in PROMPTS])
@@ -424,16 +432,56 @@ def test_each_prompt_names_every_key_its_reader_requires(name, prompt, fields) -
         for alias in field.aliases:
             # An alias is tolerated on the way in, never offered on the way out.
             assert f'"{alias}"' not in prompt
+    # And nothing beyond them: the prompt's key list is the declaration itself,
+    # so it cannot offer a key no reader declares.
+    assert answer_shape_block(fields) in prompt
+
+
+def test_the_wrapper_the_reader_unwraps_is_not_offered_by_the_prompt() -> None:
+    # BillTrax's ClassifySchema wrapped the array (classifications.ts:21-29),
+    # so the wrapper stays readable; the prompt asks for the bare array, and
+    # both shapes must reach _read_row.
+    prompt = section_classification.build_prompt(PINNED_SECTIONS)
+    assert '"classifications"' not in prompt
+    row = {"sectionId": "sec-0", "label": "other", "confidence": 0.5}
+    for answer in (row_list := [row], {"classifications": row_list}):
+        results = classify_sections(
+            sections(1), lambda *, model, prompt, a=answer: ModelResponse(a), model="m", clock=clock()
+        )
+        assert [result.section_id for result in results] == ["sec-0"]
+
+
+@pytest.mark.parametrize(
+    "answer,reads",
+    [
+        ({"summary": None, "audience": "Readers", "top_provisions": ["a"]}, ("a",)),
+        ({"summary": None, "audience": "Readers", "topThreeProvisions": ["a"]}, ("a",)),
+    ],
+    ids=["snake_cased alias", "the key the prompt names"],
+)
+def test_the_reader_accepts_the_alias_the_prompt_does_not_offer(answer, reads) -> None:
+    answer = {**answer, "summary": C1_LIVE_ANSWER["summary"]}
+    result = summarize_bill(VERSION, lambda *, model, prompt: ModelResponse(answer), model="m", clock=clock())
+    assert result is not None
+    assert result.top_provisions == reads
+
+
+def test_a_classification_row_keyed_by_the_snake_cased_alias_is_read() -> None:
+    def call(*, model: str, prompt: str) -> ModelResponse:
+        return ModelResponse([{"section_id": "sec-0", "label": "deadline", "confidence": 0.7}])
+
+    results = classify_sections(sections(1), call, model="m", clock=clock())
+    assert [(r.section_id, r.label) for r in results] == [("sec-0", "deadline")]
 
 
 def test_the_answer_the_first_live_call_returned_names_the_keys_it_is_missing() -> None:
     # The v1 prompt asked for its three items in prose and named no key, so
     # gemini-3.8-flash chose its own spellings and the reader refused the
-    # answer: 204 tokens in, 213 out, zero rows (receipt
+    # answer: 204 tokens in, 206 out, zero rows (receipt
     # ~/Work/corpora/supply-2026-09-02/receipts/d1-measured-run-2026-09-19).
     # A refusal must name every key that is missing, not just the first.
     def call(*, model: str, prompt: str) -> ModelResponse:
-        return ModelResponse(dict(C1_LIVE_ANSWER), input_tokens=204, output_tokens=213)
+        return ModelResponse(dict(C1_LIVE_ANSWER), input_tokens=204, output_tokens=206)
 
     with pytest.raises(ModelCallError) as refusal:
         summarize_bill(VERSION, call, model="gemini-3.8-flash", clock=clock())
@@ -441,12 +489,25 @@ def test_the_answer_the_first_live_call_returned_names_the_keys_it_is_missing() 
     assert refusal.value.details == C1_LIVE_ANSWER
 
 
+def test_the_other_invocations_spelling_refuses_identically() -> None:
+    # Same v1 prompt, same bill, a different key the model invented: the
+    # refusal names the same two missing keys, so nothing here is tuned to one
+    # observed answer.
+    answer = {
+        "summary": C1_LIVE_ANSWER["summary"],
+        C1_OTHER_SPELLING: C1_LIVE_ANSWER["most_affected_audience"],
+        "notable_provisions": C1_LIVE_ANSWER["notable_provisions"],
+    }
+    with pytest.raises(ModelCallError, match="^summary answer is missing audience, topThreeProvisions$"):
+        summarize_bill(VERSION, lambda *, model, prompt: ModelResponse(answer), model="m", clock=clock())
+
+
 def test_the_v2_prompt_asks_for_the_keys_that_answer_lacked() -> None:
     # The other direction: the same answer under the keys the prompt now names
     # is read, so the fix is the spelling and not the content.
     corrected = {
         "summary": C1_LIVE_ANSWER["summary"],
-        "audience": C1_LIVE_ANSWER["affected_audience"],
+        "audience": C1_LIVE_ANSWER["most_affected_audience"],
         "topThreeProvisions": C1_LIVE_ANSWER["notable_provisions"],
     }
     result = summarize_bill(VERSION, lambda *, model, prompt: ModelResponse(corrected), model="m", clock=clock())

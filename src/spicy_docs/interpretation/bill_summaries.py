@@ -32,12 +32,34 @@ short to summarize.
 declaration the reader reads** (``SUMMARY_FIELDS``, ``DIFF_SUMMARY_FIELDS``;
 see ``model_call.AnswerField``). Until ``v2`` they did not: the summary prompt
 asked for its three items in prose and named none of the keys, and the first
-live call refused every answer (2026-09-19, receipt ``c1-provenance.json``);
-the diff prompt named its five keys but not their types, so an absent list
-could come back as ``null``. That cost the diff prompt its byte-for-byte seal
-against ``route.ts:119-129`` -- the ``v1`` bytes remain in this file's history
-and under that version -- because a prompt reproduced exactly and refused on
-arrival is a faithful copy of nothing.
+live call refused its answer (2026-09-19, receipt ``c1-provenance.json``); the
+diff prompt named its five keys but not their types, so an absent list could
+come back as ``null``.
+
+**BillTrax never relied on prompt prose for the key set, and this port's
+mistake was dropping the half that carried it.** ``bill-summaries.ts:41-45``
+declares a zod ``SummarySchema`` -- ``summary: z.string().min(60).max(1200)``,
+``audience: z.string()``, ``topThreeProvisions: z.array(z.string()).max(3)`` --
+and passes it to ``generateObject`` (``:163-165``); the diff route does the
+same with its own five-key ``SummarySchema`` (``summarize/route.ts:13-19``,
+passed to ``streamObject`` at ``:116-121``). Every constant in this module --
+``SUMMARY_CHARS``, ``MAX_PROVISIONS``, the key spellings ``_read_answer``
+requires -- is a transcription of that schema. The prompt bytes were ported and
+the schema was not, so the request stopped stating what the reader still
+enforced, and only a live call could show it. Nothing here should be "restored"
+to the original bytes on the belief that the original asked in prose alone.
+Follow-up, not done here: ``ModelCall`` could carry an optional response schema
+derived from these same ``AnswerField`` tuples, which
+``extraction/gemini.py:154-157`` already knows how to send as
+``responseJsonSchema`` -- putting the enforcement back on the request where
+BillTrax had it, with the declaration still in one place.
+
+Breaking the seal was therefore deliberate: ``DIFF_SUMMARY_PROMPT_TEMPLATE`` is
+no longer byte-identical to ``route.ts:119-129`` (nor is the classification
+prompt to its source, for the same reason). The ``v1`` bytes remain in this
+file's history and under that version, because a prompt reproduced exactly,
+stripped of the schema that made it work, and refused on arrival is a faithful
+copy of nothing.
 """
 
 from __future__ import annotations
@@ -128,6 +150,10 @@ SUMMARY_FIELDS: tuple[AnswerField, ...] = (
         "topThreeProvisions",
         f"array of at most {MAX_PROVISIONS} strings",
         "Up to three notable provisions in plain language, one per entry.",
+        # Kept from the v1 reader's own `elif "top_provisions" in data` branch:
+        # tolerance for a model that snake-cases a camelCase key, not a spelling
+        # any live answer has used. Covered by a test, which is the only thing
+        # that keeps an unused tolerance honest.
         aliases=("top_provisions",),
     ),
 )

@@ -9,11 +9,15 @@ provenance the answer is stored with.
 
 ``AnswerField`` is the other half of that seam, and it exists because of a
 measured failure. The bill-summary prompt asked for its three items in prose
-and never named the JSON keys ``_read_answer`` required; the first live call
-(2026-09-19, receipt ``c1-provenance.json``) came back with
-``affected_audience`` and ``notable_provisions`` where the reader wanted
-``audience`` and ``topThreeProvisions``, and every row would have been refused.
-A prompt and its reader must therefore be **one statement**: each module
+and never named the JSON keys ``_read_answer`` required, so the spelling was
+the model's to choose -- and it chose differently each time it was asked. The
+retained receipt of the first live run (2026-09-19, ``c1-provenance.json``)
+records ``most_affected_audience`` and ``notable_provisions``; that run's own
+README tabulates ``affected_audience`` from another invocation of the identical
+prompt. Both miss ``audience`` and ``topThreeProvisions``, and both refuse
+identically, which is the point: the defect is not one wrong spelling to
+accommodate but an unstated key set. A prompt and its reader must therefore be
+**one statement**: each module
 declares its answer's keys, types and counts once as ``AnswerField`` records,
 ``answer_shape_block`` turns that declaration into the lines the prompt sends,
 and the reader looks its values up through the same records. Neither side can
