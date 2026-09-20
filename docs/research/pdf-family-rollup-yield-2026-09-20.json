@@ -25,8 +25,8 @@
             },
             "page_count": 21,
             "pages_read": 21,
-            "seconds": 0.642,
-            "slowest_page_seconds": 0.059,
+            "seconds": 0.69,
+            "slowest_page_seconds": 0.0617,
             "table_shapes": [
               [
                 3,
@@ -129,8 +129,8 @@
             },
             "page_count": 16,
             "pages_read": 16,
-            "seconds": 0.489,
-            "slowest_page_seconds": 0.0854,
+            "seconds": 0.524,
+            "slowest_page_seconds": 0.094,
             "table_shapes": [
               [
                 5,
@@ -251,8 +251,8 @@
             },
             "page_count": 30,
             "pages_read": 30,
-            "seconds": 1.247,
-            "slowest_page_seconds": 0.0846,
+            "seconds": 1.29,
+            "slowest_page_seconds": 0.0898,
             "table_shapes": [
               [
                 3,
@@ -374,8 +374,8 @@
             },
             "page_count": 46,
             "pages_read": 46,
-            "seconds": 1.861,
-            "slowest_page_seconds": 0.0783,
+            "seconds": 1.973,
+            "slowest_page_seconds": 0.0785,
             "table_shapes": [
               [
                 2,
@@ -540,8 +540,8 @@
             },
             "page_count": 17,
             "pages_read": 17,
-            "seconds": 0.399,
-            "slowest_page_seconds": 0.05,
+            "seconds": 0.423,
+            "slowest_page_seconds": 0.052,
             "table_shapes": [
               [
                 4,
@@ -646,8 +646,8 @@
             },
             "page_count": 53,
             "pages_read": 53,
-            "seconds": 0.535,
-            "slowest_page_seconds": 0.0627,
+            "seconds": 0.561,
+            "slowest_page_seconds": 0.0674,
             "table_shapes": [
               [
                 1,
@@ -739,8 +739,8 @@
             },
             "page_count": 8,
             "pages_read": 8,
-            "seconds": 0.257,
-            "slowest_page_seconds": 0.0586,
+            "seconds": 0.268,
+            "slowest_page_seconds": 0.0604,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "c59a4b65877b3f29347f7419577087b63525dc5b8355f028b417361d2263fc8b",
@@ -817,8 +817,8 @@
             },
             "page_count": 28,
             "pages_read": 28,
-            "seconds": 0.943,
-            "slowest_page_seconds": 0.062,
+            "seconds": 0.996,
+            "slowest_page_seconds": 0.066,
             "table_shapes": [
               [
                 1,
@@ -1184,8 +1184,8 @@
             },
             "page_count": 12,
             "pages_read": 12,
-            "seconds": 0.305,
-            "slowest_page_seconds": 0.1842,
+            "seconds": 0.309,
+            "slowest_page_seconds": 0.1869,
             "table_shapes": [
               [
                 10,
@@ -1257,8 +1257,8 @@
             },
             "page_count": 16,
             "pages_read": 16,
-            "seconds": 0.442,
-            "slowest_page_seconds": 0.077,
+            "seconds": 0.463,
+            "slowest_page_seconds": 0.0814,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "c5cb60c3e33ea5a2893abaaed48b6b5e8a9a844242182beeeb200f469e43dca4",
@@ -1368,8 +1368,8 @@
             },
             "page_count": 25,
             "pages_read": 25,
-            "seconds": 0.543,
-            "slowest_page_seconds": 0.0395,
+            "seconds": 0.575,
+            "slowest_page_seconds": 0.0451,
             "table_shapes": [
               [
                 1,
@@ -1459,8 +1459,8 @@
             },
             "page_count": 22,
             "pages_read": 22,
-            "seconds": 0.324,
-            "slowest_page_seconds": 0.0383,
+            "seconds": 0.355,
+            "slowest_page_seconds": 0.0439,
             "table_shapes": [
               [
                 1,
@@ -1516,8 +1516,8 @@
             },
             "page_count": 1340,
             "pages_read": 60,
-            "seconds": 9.887,
-            "slowest_page_seconds": 0.2542,
+            "seconds": 10.461,
+            "slowest_page_seconds": 0.2811,
             "table_shapes": [
               [
                 3,
@@ -1613,19 +1613,29 @@
                 "COMMITTEEONENVIRONMENTANDPUBLICWORKS": "ssev00",
                 "COMMITTEEONETHICS": "hsso00",
                 "COMMITTEEONFINANCIAL": "hsba00",
-                "COMMITTEEONHOMELANDSECURITYANDGOVERNMENTAL": "hshm00",
                 "COMMITTEEONHOUSEADMIN": "hsha00",
                 "COMMITTEEONHOUSEADMINISTRATION": "hsha00",
                 "COMMITTEEONOVERSIGHTANDGOVERNMENTREFORM": "hsgo00",
                 "COMMITTEEONRULES": "hsru00",
                 "COMMITTEEONRULESANDADMINISTRATION": "ssra00"
               },
+              "resolved_by_route": {
+                "COMMITTEEONAPPROPRIATIONS": "exact",
+                "COMMITTEEONBANKINGHOUSING": "roster_prefix",
+                "COMMITTEEONENVIRONMENTANDPUBLICWORKS": "exact",
+                "COMMITTEEONETHICS": "exact",
+                "COMMITTEEONFINANCIAL": "roster_prefix",
+                "COMMITTEEONHOUSEADMIN": "roster_prefix",
+                "COMMITTEEONHOUSEADMINISTRATION": "exact",
+                "COMMITTEEONOVERSIGHTANDGOVERNMENTREFORM": "exact",
+                "COMMITTEEONRULES": "exact",
+                "COMMITTEEONRULESANDADMINISTRATION": "exact"
+              },
               "resolved_system_codes": [
                 "hsap00",
                 "hsba00",
                 "hsgo00",
                 "hsha00",
-                "hshm00",
                 "hsru00",
                 "hsso00",
                 "ssbk00",
@@ -1634,6 +1644,7 @@
               ],
               "stated_by_index_count": 0,
               "unresolved": [
+                "COMMITTEEONHOMELANDSECURITYANDGOVERNMENTAL",
                 "COMMITTEEONTAXATION",
                 "COMMITTEEONTHELIBRARY"
               ]
@@ -1817,8 +1828,8 @@
             },
             "page_count": 92,
             "pages_read": 60,
-            "seconds": 2.236,
-            "slowest_page_seconds": 0.0756,
+            "seconds": 2.34,
+            "slowest_page_seconds": 0.0771,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "2072661006b4d48d7151d5005bc194b4eb2320e34e90debffb4a822f51711c3d",
@@ -1905,8 +1916,8 @@
             },
             "page_count": 158,
             "pages_read": 60,
-            "seconds": 5.115,
-            "slowest_page_seconds": 0.2602,
+            "seconds": 5.495,
+            "slowest_page_seconds": 0.2783,
             "table_shapes": [
               [
                 2,
@@ -2011,6 +2022,7 @@
               ],
               "not_in_index_count": 1,
               "resolved": {},
+              "resolved_by_route": {},
               "resolved_system_codes": [],
               "stated_by_index_count": 0,
               "unresolved": [
@@ -2170,8 +2182,8 @@
             },
             "page_count": 120,
             "pages_read": 60,
-            "seconds": 7.618,
-            "slowest_page_seconds": 0.2188,
+            "seconds": 7.986,
+            "slowest_page_seconds": 0.2275,
             "table_shapes": [
               [
                 3,
@@ -2307,7 +2319,7 @@
           "rate": 0.125,
           "rate_beyond_index": 0.125
         },
-        "committee_candidates_unresolved": 3,
+        "committee_candidates_unresolved": 4,
         "committee_name": {
           "distinct_values": 14,
           "distinct_values_beyond_index": 14,
@@ -2323,7 +2335,6 @@
           "hsba00",
           "hsgo00",
           "hsha00",
-          "hshm00",
           "hsru00",
           "hsso00",
           "ssbk00",
@@ -2771,8 +2782,8 @@
             },
             "page_count": 5,
             "pages_read": 5,
-            "seconds": 0.088,
-            "slowest_page_seconds": 0.0235,
+            "seconds": 0.103,
+            "slowest_page_seconds": 0.0292,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "cc51ba0279803624d854969796f77629ab1106d184ac86772df03827eb5244ca",
@@ -2857,8 +2868,8 @@
             },
             "page_count": 14,
             "pages_read": 14,
-            "seconds": 0.304,
-            "slowest_page_seconds": 0.0244,
+            "seconds": 0.333,
+            "slowest_page_seconds": 0.0276,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "5ac0985b155b6fea01a6b128c27ca53eb123ee747db5f49ae3c3c25beb0d06c3",
@@ -2987,8 +2998,8 @@
             },
             "page_count": 37,
             "pages_read": 37,
-            "seconds": 0.877,
-            "slowest_page_seconds": 0.0338,
+            "seconds": 0.93,
+            "slowest_page_seconds": 0.0342,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "a2122db234f0db992bfe9f26d654f5309d67839ef4e0c85c079e04c8bd119ae8",
@@ -3081,8 +3092,8 @@
             },
             "page_count": 194,
             "pages_read": 60,
-            "seconds": 1.487,
-            "slowest_page_seconds": 0.0427,
+            "seconds": 1.588,
+            "slowest_page_seconds": 0.0463,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "d662efb550546bfde5525201b1253fb654f6a89d822fa67ba2ce18863ae19b61",
@@ -3229,8 +3240,8 @@
             },
             "page_count": 51,
             "pages_read": 51,
-            "seconds": 1.238,
-            "slowest_page_seconds": 0.0389,
+            "seconds": 1.313,
+            "slowest_page_seconds": 0.0416,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "55465ab39f0b1a828b67b86b0a84e123a1a21b51d8229e0a5b7144c08dbd52df",
@@ -3411,8 +3422,8 @@
             },
             "page_count": 194,
             "pages_read": 60,
-            "seconds": 1.505,
-            "slowest_page_seconds": 0.0464,
+            "seconds": 1.579,
+            "slowest_page_seconds": 0.043,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "d662efb550546bfde5525201b1253fb654f6a89d822fa67ba2ce18863ae19b61",
@@ -3559,8 +3570,8 @@
             },
             "page_count": 77,
             "pages_read": 60,
-            "seconds": 1.389,
-            "slowest_page_seconds": 0.038,
+            "seconds": 1.498,
+            "slowest_page_seconds": 0.0402,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "a1a87879e751f55137aaed2f5bee3d4bd8339278fb84f0f0b064f80d3fa9151b",
@@ -3715,8 +3726,8 @@
             },
             "page_count": 72,
             "pages_read": 60,
-            "seconds": 1.436,
-            "slowest_page_seconds": 0.0399,
+            "seconds": 1.54,
+            "slowest_page_seconds": 0.0435,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "734a6dea90c8593977211562f617dfa88468beaebdbfc93943a5b709ee003f37",
@@ -4065,8 +4076,8 @@
             },
             "page_count": 4,
             "pages_read": 4,
-            "seconds": 0.139,
-            "slowest_page_seconds": 0.0588,
+            "seconds": 0.157,
+            "slowest_page_seconds": 0.0707,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "21825947aced4d279c2dde6dd27ea3b56c76165f5417bbb4889876c9149fa6c7",
@@ -4161,8 +4172,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.17,
-            "slowest_page_seconds": 0.081,
+            "seconds": 0.182,
+            "slowest_page_seconds": 0.0854,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "b233e39344d1562112bbb16286349aa8625197e4ed94974cef80e6332151f3a8",
@@ -4385,8 +4396,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.195,
-            "slowest_page_seconds": 0.0964,
+            "seconds": 0.204,
+            "slowest_page_seconds": 0.0969,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "ea9256376a85d77db4b51c46e3785106322a96354e15ae1dad2a89811c4a616a",
@@ -4535,8 +4546,8 @@
             },
             "page_count": 64,
             "pages_read": 60,
-            "seconds": 3.56,
-            "slowest_page_seconds": 0.1871,
+            "seconds": 3.668,
+            "slowest_page_seconds": 0.1885,
             "table_shapes": [
               [
                 2,
@@ -4720,6 +4731,14 @@
                 "COMMITTEEONFINANCIALSERVICES": "hsba00",
                 "COMMITTEEONTHEJUDICIARY": "hsju00"
               },
+              "resolved_by_route": {
+                "COMMITTEEONBANKINGHOUSING": "roster_prefix",
+                "COMMITTEEONBANKINGHOUSINGANDURBAN": "roster_prefix",
+                "COMMITTEEONBANKINGHOUSINGANDURBANAFFAIRS": "exact",
+                "COMMITTEEONBANKINGHOUSINGANDURBANAFFAIRSMAY": "name_prefix",
+                "COMMITTEEONFINANCIALSERVICES": "exact",
+                "COMMITTEEONTHEJUDICIARY": "exact"
+              },
               "resolved_system_codes": [
                 "hsba00",
                 "hsju00",
@@ -4865,8 +4884,8 @@
             },
             "page_count": 5,
             "pages_read": 5,
-            "seconds": 0.181,
-            "slowest_page_seconds": 0.0484,
+            "seconds": 0.194,
+            "slowest_page_seconds": 0.0507,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "014167cbf1dcab2166cc3bea4a05a39404f0abc4735e0fa429f8ad3185386694",
@@ -5010,8 +5029,8 @@
             },
             "page_count": 5,
             "pages_read": 5,
-            "seconds": 0.182,
-            "slowest_page_seconds": 0.0588,
+            "seconds": 0.181,
+            "slowest_page_seconds": 0.0589,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "0cf26852aca474f934197a3e86aa9d84201cf377b280b6c80e795c1e43e85287",
@@ -5193,8 +5212,8 @@
             },
             "page_count": 41,
             "pages_read": 41,
-            "seconds": 2.55,
-            "slowest_page_seconds": 0.1466,
+            "seconds": 2.62,
+            "slowest_page_seconds": 0.1481,
             "table_shapes": [
               [
                 2,
@@ -5631,6 +5650,9 @@
               "resolved": {
                 "COMMITTEEONNATURALRESOURCES": "hsii00"
               },
+              "resolved_by_route": {
+                "COMMITTEEONNATURALRESOURCES": "exact"
+              },
               "resolved_system_codes": [
                 "hsii00"
               ],
@@ -5811,8 +5833,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.216,
-            "slowest_page_seconds": 0.1058,
+            "seconds": 0.224,
+            "slowest_page_seconds": 0.1111,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "503ca6f24a55b1d32e85ec4e2fd7a157e82cd8ef4c23973b05630a8435da5cf8",
@@ -6168,8 +6190,8 @@
             },
             "page_count": 2,
             "pages_read": 2,
-            "seconds": 0.14,
-            "slowest_page_seconds": 0.0894,
+            "seconds": 0.144,
+            "slowest_page_seconds": 0.0908,
             "table_shapes": [
               [
                 9,
@@ -6257,8 +6279,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.185,
-            "slowest_page_seconds": 0.1064,
+            "seconds": 0.198,
+            "slowest_page_seconds": 0.1144,
             "table_shapes": [
               [
                 9,
@@ -6356,8 +6378,8 @@
             },
             "page_count": 49,
             "pages_read": 49,
-            "seconds": 1.511,
-            "slowest_page_seconds": 0.0895,
+            "seconds": 1.532,
+            "slowest_page_seconds": 0.087,
             "table_shapes": [
               [
                 1,
@@ -6419,6 +6441,9 @@
               "not_in_index_count": 1,
               "resolved": {
                 "COMMITTEEONAPPROPRIATIONS": "hsap00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONAPPROPRIATIONS": "exact"
               },
               "resolved_system_codes": [
                 "hsap00"
@@ -6575,8 +6600,8 @@
             },
             "page_count": 30,
             "pages_read": 30,
-            "seconds": 1.176,
-            "slowest_page_seconds": 0.064,
+            "seconds": 1.21,
+            "slowest_page_seconds": 0.0676,
             "table_shapes": [
               [
                 14,
@@ -6648,6 +6673,9 @@
               "not_in_index_count": 1,
               "resolved": {
                 "COMMITTEEONHOMELANDSECURITY": "hshm00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONHOMELANDSECURITY": "exact"
               },
               "resolved_system_codes": [
                 "hshm00"
@@ -6813,8 +6841,8 @@
             },
             "page_count": 43,
             "pages_read": 43,
-            "seconds": 1.022,
-            "slowest_page_seconds": 0.0657,
+            "seconds": 1.042,
+            "slowest_page_seconds": 0.0658,
             "table_shapes": [
               [
                 1,
@@ -6883,6 +6911,10 @@
               "resolved": {
                 "COMMITTEEONENERGYANDCOMMERCE": "hsif00",
                 "COMMITTEEONHEALTHEDUCATIONLABORANDPENSIONS": "sshr00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONENERGYANDCOMMERCE": "exact",
+                "COMMITTEEONHEALTHEDUCATIONLABORANDPENSIONS": "exact"
               },
               "resolved_system_codes": [
                 "hsif00",
@@ -6969,8 +7001,8 @@
             },
             "page_count": 59,
             "pages_read": 59,
-            "seconds": 1.973,
-            "slowest_page_seconds": 0.0891,
+            "seconds": 2.015,
+            "slowest_page_seconds": 0.0917,
             "table_shapes": [
               [
                 1,
@@ -7023,6 +7055,7 @@
               ],
               "not_in_index_count": 1,
               "resolved": {},
+              "resolved_by_route": {},
               "resolved_system_codes": [],
               "stated_by_index_count": 0,
               "unresolved": [
@@ -7101,8 +7134,8 @@
             },
             "page_count": 70,
             "pages_read": 60,
-            "seconds": 1.597,
-            "slowest_page_seconds": 0.0783,
+            "seconds": 1.655,
+            "slowest_page_seconds": 0.0793,
             "table_shapes": [
               [
                 1,
@@ -7173,14 +7206,18 @@
               ],
               "not_in_index_count": 2,
               "resolved": {
-                "COMMITTEEONHOMELANDSECURITY": "hshm00",
-                "COMMITTEEONHOMELANDSECURITYANDGOVERNMENTALAFFAIRS": "hshm00"
+                "COMMITTEEONHOMELANDSECURITY": "hshm00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONHOMELANDSECURITY": "exact"
               },
               "resolved_system_codes": [
                 "hshm00"
               ],
               "stated_by_index_count": 0,
-              "unresolved": []
+              "unresolved": [
+                "COMMITTEEONHOMELANDSECURITYANDGOVERNMENTALAFFAIRS"
+              ]
             },
             "dollar_amount": {
               "count": 1,
@@ -7314,8 +7351,8 @@
             },
             "page_count": 45,
             "pages_read": 45,
-            "seconds": 1.191,
-            "slowest_page_seconds": 0.0901,
+            "seconds": 1.237,
+            "slowest_page_seconds": 0.0919,
             "table_shapes": [
               [
                 1,
@@ -7357,6 +7394,9 @@
               "not_in_index_count": 1,
               "resolved": {
                 "COMMITTEEONOVERSIGHTANDGOVERNMENTREFORM": "hsgo00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONOVERSIGHTANDGOVERNMENTREFORM": "exact"
               },
               "resolved_system_codes": [
                 "hsgo00"
@@ -7555,7 +7595,7 @@
           "rate": 0.5,
           "rate_beyond_index": 0.5
         },
-        "committee_candidates_unresolved": 1,
+        "committee_candidates_unresolved": 2,
         "committee_name": {
           "distinct_values": 7,
           "distinct_values_beyond_index": 7,
@@ -7741,8 +7781,8 @@
             },
             "page_count": 56,
             "pages_read": 56,
-            "seconds": 2.013,
-            "slowest_page_seconds": 0.0504,
+            "seconds": 2.129,
+            "slowest_page_seconds": 0.0516,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "f2c52f60c527c27c0ef6389cf4f2fbb94c5cedd7ba5cfe3632d459dd7ad915f7",
@@ -7818,6 +7858,12 @@
                 "COMMITTEEONFOREIGNAFFAIRS": "hsfa00",
                 "COMMITTEEONHOUSEADMINISTRATION": "hsha00"
               },
+              "resolved_by_route": {
+                "COMMITTEEONAPPROPRIATIONS": "exact",
+                "COMMITTEEONFOREIGN": "sibling_prefix",
+                "COMMITTEEONFOREIGNAFFAIRS": "exact",
+                "COMMITTEEONHOUSEADMINISTRATION": "exact"
+              },
               "resolved_system_codes": [
                 "hsap00",
                 "hsfa00",
@@ -7890,8 +7936,8 @@
             },
             "page_count": 296,
             "pages_read": 60,
-            "seconds": 2.0,
-            "slowest_page_seconds": 0.0853,
+            "seconds": 2.161,
+            "slowest_page_seconds": 0.094,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "0ab5ba64e5dcfb5d9fe9f6699f9031d8e0ba13373e339ccd0b95aebee076846d",
@@ -7989,6 +8035,21 @@
                 "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTURE": "hspw00",
                 "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTUREMEM": "hspw00",
                 "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTUREMEMBERDAY": "hspw00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONCOMMERCE": "roster_prefix",
+                "COMMITTEEONHOUSEADMINISTRA": "roster_prefix",
+                "COMMITTEEONHOUSEADMINISTRATION": "exact",
+                "COMMITTEEONOVER": "roster_prefix",
+                "COMMITTEEONRULES": "exact",
+                "COMMITTEEONRULESHON": "name_prefix",
+                "COMMITTEEONTHEBUDGET": "exact",
+                "COMMITTEEONTRANS": "roster_prefix",
+                "COMMITTEEONTRANSPORTATION": "roster_prefix",
+                "COMMITTEEONTRANSPORTATIONANDIN": "roster_prefix",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTURE": "exact",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTUREMEM": "name_prefix",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTUREMEMBERDAY": "name_prefix"
               },
               "resolved_system_codes": [
                 "hsbu00",
@@ -8096,8 +8157,8 @@
             },
             "page_count": 119,
             "pages_read": 60,
-            "seconds": 2.279,
-            "slowest_page_seconds": 0.0533,
+            "seconds": 2.416,
+            "slowest_page_seconds": 0.0521,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "eea0708b2add9b42f1c5b478fdbd69142f11093f1834846acda22a60e9d50c04",
@@ -8182,8 +8243,14 @@
                 "COMMITTEEONOVER": "hsgo00",
                 "COMMITTEEONTHEJUDICI": "hsju00",
                 "COMMITTEEONTHEJUDICIARY": "hsju00",
-                "COMMITTEEONTHEJUDICIARYANDCOMMITTEE": "hsju00",
                 "COMMITTEEONWAYS": "hswm00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONHOUSEADMINISTRATION": "exact",
+                "COMMITTEEONOVER": "roster_prefix",
+                "COMMITTEEONTHEJUDICI": "roster_prefix",
+                "COMMITTEEONTHEJUDICIARY": "exact",
+                "COMMITTEEONWAYS": "roster_prefix"
               },
               "resolved_system_codes": [
                 "hsgo00",
@@ -8196,6 +8263,7 @@
                 "COMMITTEEONOVERSIGHTANDAC",
                 "COMMITTEEONOVERSIGHTANDACCOUNT",
                 "COMMITTEEONOVERSIGHTANDACCOUNTABILITY",
+                "COMMITTEEONTHEJUDICIARYANDCOMMITTEE",
                 "COMMITTEEONTHEPRESENTDANGER"
               ]
             },
@@ -8331,8 +8399,8 @@
             },
             "page_count": 127,
             "pages_read": 60,
-            "seconds": 2.136,
-            "slowest_page_seconds": 0.0485,
+            "seconds": 2.297,
+            "slowest_page_seconds": 0.0526,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "66a98b6613817dfa3aa748766648e557f5fe35332f212665b07efcb9589ef3ea",
@@ -8426,6 +8494,17 @@
                 "COMMITTEEONHEALTHEDUCATIONLABORANDPENSIONS": "sshr00",
                 "COMMITTEEONOVERSIGHT": "hsgo00",
                 "COMMITTEEONWAYS": "hswm00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONAGRICULTURECHAIRMANGLENN": "name_prefix",
+                "COMMITTEEONAGRICULTURESUBCOMMITTEE": "name_prefix",
+                "COMMITTEEONEDUCATION": "roster_prefix",
+                "COMMITTEEONEDUCATIONANDWORKFORCE": "exact",
+                "COMMITTEEONHEALTHEDU": "roster_prefix",
+                "COMMITTEEONHEALTHEDUCATION": "roster_prefix",
+                "COMMITTEEONHEALTHEDUCATIONLABORANDPENSIONS": "exact",
+                "COMMITTEEONOVERSIGHT": "roster_prefix",
+                "COMMITTEEONWAYS": "roster_prefix"
               },
               "resolved_system_codes": [
                 "hsag00",
@@ -8525,8 +8604,8 @@
             },
             "page_count": 99,
             "pages_read": 60,
-            "seconds": 2.127,
-            "slowest_page_seconds": 0.0596,
+            "seconds": 2.324,
+            "slowest_page_seconds": 0.0635,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "0a287930da4c7f80e54355ecc115fb5e2630feea8b9e048d4b9cef591085d321",
@@ -8611,7 +8690,6 @@
               ],
               "not_in_index_count": 41,
               "resolved": {
-                "COMMITTEEONAG": "hsag00",
                 "COMMITTEEONAGRI": "hsag00",
                 "COMMITTEEONAGRICULTURE": "hsag00",
                 "COMMITTEEONAGRICULTUREBUTNOTCONSID": "hsag00",
@@ -8627,10 +8705,8 @@
                 "COMMITTEEONENERGY": "hsif00",
                 "COMMITTEEONENERGYANDCOM": "hsif00",
                 "COMMITTEEONENERGYANDCOMMERCE": "hsif00",
-                "COMMITTEEONFI": "hsba00",
                 "COMMITTEEONFINANCIALSERV": "hsba00",
                 "COMMITTEEONFINANCIALSERVICES": "hsba00",
-                "COMMITTEEONFINANCIALSERVICESANDCOMMODITYMARKETSDIGITALASSETS": "hsba00",
                 "COMMITTEEONHOUSEADMINIS": "hsha00",
                 "COMMITTEEONNAT": "hsii00",
                 "COMMITTEEONNATURAL": "hsii00",
@@ -8648,6 +8724,42 @@
                 "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTURE": "hspw00",
                 "COMMITTEEONVETERANSAFFAIRS": "hsvr00",
                 "COMMITTEEONWAYS": "hswm00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONAGRI": "sibling_prefix",
+                "COMMITTEEONAGRICULTURE": "exact",
+                "COMMITTEEONAGRICULTUREBUTNOTCONSID": "name_prefix",
+                "COMMITTEEONAGRICULTURECHAIRMANGLENN": "name_prefix",
+                "COMMITTEEONAGRICULTUREMEMBERSREP": "name_prefix",
+                "COMMITTEEONAGRICULTURES": "name_prefix",
+                "COMMITTEEONAGRICULTURESJURISDICTION": "name_prefix",
+                "COMMITTEEONAP": "roster_prefix",
+                "COMMITTEEONAPPRO": "roster_prefix",
+                "COMMITTEEONAPPROPRIA": "roster_prefix",
+                "COMMITTEEONAPPROPRIATIONS": "exact",
+                "COMMITTEEONEDUCATION": "roster_prefix",
+                "COMMITTEEONENERGY": "sibling_prefix",
+                "COMMITTEEONENERGYANDCOM": "roster_prefix",
+                "COMMITTEEONENERGYANDCOMMERCE": "exact",
+                "COMMITTEEONFINANCIALSERV": "roster_prefix",
+                "COMMITTEEONFINANCIALSERVICES": "exact",
+                "COMMITTEEONHOUSEADMINIS": "roster_prefix",
+                "COMMITTEEONNAT": "roster_prefix",
+                "COMMITTEEONNATURAL": "roster_prefix",
+                "COMMITTEEONNATURALRE": "roster_prefix",
+                "COMMITTEEONNATURALRESOURCES": "exact",
+                "COMMITTEEONOVERSIGHT": "roster_prefix",
+                "COMMITTEEONRULES": "exact",
+                "COMMITTEEONSCIENCE": "roster_prefix",
+                "COMMITTEEONSCIENCESPACE": "roster_prefix",
+                "COMMITTEEONSCIENCESPACEANDTECHNOLOGY": "exact",
+                "COMMITTEEONTHEBUDGET": "exact",
+                "COMMITTEEONTHEJU": "roster_prefix",
+                "COMMITTEEONTRANSPORTATION": "roster_prefix",
+                "COMMITTEEONTRANSPORTATIONANDIN": "roster_prefix",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTURE": "exact",
+                "COMMITTEEONVETERANSAFFAIRS": "exact",
+                "COMMITTEEONWAYS": "roster_prefix"
               },
               "resolved_system_codes": [
                 "hsag00",
@@ -8668,6 +8780,9 @@
               ],
               "stated_by_index_count": 0,
               "unresolved": [
+                "COMMITTEEONAG",
+                "COMMITTEEONFI",
+                "COMMITTEEONFINANCIALSERVICESANDCOMMODITYMARKETSDIGITALASSETS",
                 "COMMITTEEONINTERNATIONALRELATIONS",
                 "COMMITTEEONOVERSIGHTANDACCOUNTABILITY",
                 "COMMITTEEONOVERSIGHTANDREFORMANDHOUSEADMINISTRA",
@@ -8806,8 +8921,8 @@
             },
             "page_count": 282,
             "pages_read": 60,
-            "seconds": 1.651,
-            "slowest_page_seconds": 0.0432,
+            "seconds": 1.764,
+            "slowest_page_seconds": 0.0459,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "3878beee22ee5e2a84a728c4fd2ccc401649fd11852e62659a4143ea066dd723",
@@ -8896,7 +9011,6 @@
                 "COMMITTEEONCOMMERCESCIENCE": "sscm00",
                 "COMMITTEEONCOMMERCESCIENCEANDTRANS": "sscm00",
                 "COMMITTEEONCOMMERCESCIENCEANDTRANSPOR": "sscm00",
-                "COMMITTEEONEN": "hsif00",
                 "COMMITTEEONENERGY": "hsif00",
                 "COMMITTEEONENERGYANDCOM": "hsif00",
                 "COMMITTEEONENERGYANDCOMMERCE": "hsif00",
@@ -8905,6 +9019,20 @@
                 "COMMITTEEONNATURALRESOURCES": "hsii00",
                 "COMMITTEEONTRANSPORTATIONANDIN": "hspw00",
                 "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTURE": "hspw00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONAGRICULTURE": "exact",
+                "COMMITTEEONCOMMERCESCIENCE": "roster_prefix",
+                "COMMITTEEONCOMMERCESCIENCEANDTRANS": "roster_prefix",
+                "COMMITTEEONCOMMERCESCIENCEANDTRANSPOR": "roster_prefix",
+                "COMMITTEEONENERGY": "sibling_prefix",
+                "COMMITTEEONENERGYANDCOM": "roster_prefix",
+                "COMMITTEEONENERGYANDCOMMERCE": "exact",
+                "COMMITTEEONFOREIGNAFFAIRS": "exact",
+                "COMMITTEEONHOUSEADMINISTRATION": "exact",
+                "COMMITTEEONNATURALRESOURCES": "exact",
+                "COMMITTEEONTRANSPORTATIONANDIN": "roster_prefix",
+                "COMMITTEEONTRANSPORTATIONANDINFRASTRUCTURE": "exact"
               },
               "resolved_system_codes": [
                 "hsag00",
@@ -8918,6 +9046,7 @@
               "stated_by_index_count": 0,
               "unresolved": [
                 "COMMITTEEONCHINA",
+                "COMMITTEEONEN",
                 "COMMITTEEONFOREIGNINVESTMENTS"
               ]
             },
@@ -8977,8 +9106,8 @@
             },
             "page_count": 103,
             "pages_read": 60,
-            "seconds": 2.303,
-            "slowest_page_seconds": 0.0721,
+            "seconds": 2.474,
+            "slowest_page_seconds": 0.0746,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "3bf3d097845cd32838da634ff18ee09521befb95589e484b059c8ef8bf9144b6",
@@ -9070,8 +9199,17 @@
                 "COMMITTEEONFINANCERANKINGMEMBERMIKE": "ssfi00",
                 "COMMITTEEONWAYS": "hswm00",
                 "COMMITTEEONWAYSANDMEANS": "hswm00",
-                "COMMITTEEONWAYSANDMEANSANDMEMBER": "hswm00",
                 "COMMITTEEONWAYSANDMEANSREPUB": "hswm00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONBANKINGHOUSINGANDURBANAFFAIRSUNITED": "name_prefix",
+                "COMMITTEEONFINANCE": "exact",
+                "COMMITTEEONFINANCECHAIRMANWYDEN": "name_prefix",
+                "COMMITTEEONFINANCERANKING": "name_prefix",
+                "COMMITTEEONFINANCERANKINGMEMBERMIKE": "name_prefix",
+                "COMMITTEEONWAYS": "roster_prefix",
+                "COMMITTEEONWAYSANDMEANS": "exact",
+                "COMMITTEEONWAYSANDMEANSREPUB": "name_prefix"
               },
               "resolved_system_codes": [
                 "hswm00",
@@ -9084,7 +9222,8 @@
                 "COMMITTEEONSEP",
                 "COMMITTEEONTAX",
                 "COMMITTEEONTHEADMINISTRA",
-                "COMMITTEEONTHEADMINISTRATIONS"
+                "COMMITTEEONTHEADMINISTRATIONS",
+                "COMMITTEEONWAYSANDMEANSANDMEMBER"
               ]
             },
             "dollar_amount": {
@@ -9225,8 +9364,8 @@
             },
             "page_count": 167,
             "pages_read": 60,
-            "seconds": 2.251,
-            "slowest_page_seconds": 0.0538,
+            "seconds": 2.374,
+            "slowest_page_seconds": 0.0573,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "75d9fa63fa1a6f0e0fa3b3ddaef2f34918405a4af50178e8fb455da4bfba11b0",
@@ -9302,6 +9441,13 @@
                 "COMMITTEEONNATURALRE": "hsii00",
                 "COMMITTEEONNATURALRESOURCES": "hsii00",
                 "COMMITTEEONRULES": "hsru00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONHOUSEADMINISTRATION": "exact",
+                "COMMITTEEONNATURAL": "roster_prefix",
+                "COMMITTEEONNATURALRE": "roster_prefix",
+                "COMMITTEEONNATURALRESOURCES": "exact",
+                "COMMITTEEONRULES": "exact"
               },
               "resolved_system_codes": [
                 "hsha00",
@@ -9413,7 +9559,7 @@
           "rate": 0.0,
           "rate_beyond_index": 0.0
         },
-        "committee_candidates_unresolved": 20,
+        "committee_candidates_unresolved": 26,
         "committee_name": {
           "distinct_values": 87,
           "distinct_values_beyond_index": 87,
@@ -9660,6 +9806,9 @@
               "resolved": {
                 "COMMITTEEONETHICS": "hsso00"
               },
+              "resolved_by_route": {
+                "COMMITTEEONETHICS": "exact"
+              },
               "resolved_system_codes": [
                 "hsso00"
               ],
@@ -9710,8 +9859,8 @@
             },
             "page_count": 22,
             "pages_read": 22,
-            "seconds": 0.807,
-            "slowest_page_seconds": 0.0403,
+            "seconds": 0.85,
+            "slowest_page_seconds": 0.0439,
             "table_shapes": [
               [
                 3,
@@ -9791,6 +9940,9 @@
               "not_in_index_count": 1,
               "resolved": {
                 "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONETHICS": "exact"
               },
               "resolved_system_codes": [
                 "hsso00"
@@ -9881,8 +10033,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.066,
-            "slowest_page_seconds": 0.0263,
+            "seconds": 0.069,
+            "slowest_page_seconds": 0.0277,
             "table_shapes": [
               [
                 3,
@@ -9930,6 +10082,9 @@
               "not_in_index_count": 1,
               "resolved": {
                 "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONETHICS": "exact"
               },
               "resolved_system_codes": [
                 "hsso00"
@@ -9991,8 +10146,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.059,
-            "slowest_page_seconds": 0.0253,
+            "seconds": 0.063,
+            "slowest_page_seconds": 0.027,
             "table_shapes": [
               [
                 3,
@@ -10040,6 +10195,9 @@
               "not_in_index_count": 1,
               "resolved": {
                 "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONETHICS": "exact"
               },
               "resolved_system_codes": [
                 "hsso00"
@@ -10101,8 +10259,8 @@
             },
             "page_count": 4,
             "pages_read": 4,
-            "seconds": 0.082,
-            "slowest_page_seconds": 0.0282,
+            "seconds": 0.087,
+            "slowest_page_seconds": 0.0301,
             "table_shapes": [
               [
                 2,
@@ -10154,6 +10312,9 @@
               "not_in_index_count": 1,
               "resolved": {
                 "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONETHICS": "exact"
               },
               "resolved_system_codes": [
                 "hsso00"
@@ -10209,8 +10370,8 @@
             },
             "page_count": 8,
             "pages_read": 8,
-            "seconds": 0.251,
-            "slowest_page_seconds": 0.043,
+            "seconds": 0.259,
+            "slowest_page_seconds": 0.0439,
             "table_shapes": [
               [
                 2,
@@ -10279,6 +10440,9 @@
               "resolved": {
                 "COMMITTEEONETHICS": "hsso00"
               },
+              "resolved_by_route": {
+                "COMMITTEEONETHICS": "exact"
+              },
               "resolved_system_codes": [
                 "hsso00"
               ],
@@ -10329,8 +10493,8 @@
             },
             "page_count": 3,
             "pages_read": 3,
-            "seconds": 0.057,
-            "slowest_page_seconds": 0.0267,
+            "seconds": 0.054,
+            "slowest_page_seconds": 0.0249,
             "table_shapes": [
               [
                 3,
@@ -10377,6 +10541,9 @@
               "not_in_index_count": 1,
               "resolved": {
                 "COMMITTEEONETHICS": "hsso00"
+              },
+              "resolved_by_route": {
+                "COMMITTEEONETHICS": "exact"
               },
               "resolved_system_codes": [
                 "hsso00"
@@ -10660,8 +10827,8 @@
             },
             "page_count": 5,
             "pages_read": 5,
-            "seconds": 0.092,
-            "slowest_page_seconds": 0.0275,
+            "seconds": 0.094,
+            "slowest_page_seconds": 0.0284,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "cc51ba0279803624d854969796f77629ab1106d184ac86772df03827eb5244ca",
@@ -10744,8 +10911,8 @@
             },
             "page_count": 14,
             "pages_read": 14,
-            "seconds": 0.303,
-            "slowest_page_seconds": 0.0247,
+            "seconds": 0.318,
+            "slowest_page_seconds": 0.026,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "5ac0985b155b6fea01a6b128c27ca53eb123ee747db5f49ae3c3c25beb0d06c3",
@@ -10872,8 +11039,8 @@
             },
             "page_count": 37,
             "pages_read": 37,
-            "seconds": 0.88,
-            "slowest_page_seconds": 0.0318,
+            "seconds": 0.901,
+            "slowest_page_seconds": 0.0324,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "a2122db234f0db992bfe9f26d654f5309d67839ef4e0c85c079e04c8bd119ae8",
@@ -10964,8 +11131,8 @@
             },
             "page_count": 77,
             "pages_read": 60,
-            "seconds": 1.428,
-            "slowest_page_seconds": 0.038,
+            "seconds": 1.442,
+            "slowest_page_seconds": 0.04,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "a1a87879e751f55137aaed2f5bee3d4bd8339278fb84f0f0b064f80d3fa9151b",
@@ -11118,8 +11285,8 @@
             },
             "page_count": 51,
             "pages_read": 51,
-            "seconds": 1.198,
-            "slowest_page_seconds": 0.0398,
+            "seconds": 1.25,
+            "slowest_page_seconds": 0.0405,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "55465ab39f0b1a828b67b86b0a84e123a1a21b51d8229e0a5b7144c08dbd52df",
@@ -11297,8 +11464,8 @@
             },
             "page_count": 194,
             "pages_read": 60,
-            "seconds": 1.476,
-            "slowest_page_seconds": 0.039,
+            "seconds": 1.584,
+            "slowest_page_seconds": 0.0396,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "d662efb550546bfde5525201b1253fb654f6a89d822fa67ba2ce18863ae19b61",
@@ -11445,8 +11612,8 @@
             },
             "page_count": 48,
             "pages_read": 48,
-            "seconds": 1.155,
-            "slowest_page_seconds": 0.0374,
+            "seconds": 1.286,
+            "slowest_page_seconds": 0.0426,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "8bc60bed003e31f619472e78d38b3140f3afdcd1610502196d946e8accab5bec",
@@ -11597,8 +11764,8 @@
             },
             "page_count": 72,
             "pages_read": 60,
-            "seconds": 1.449,
-            "slowest_page_seconds": 0.0399,
+            "seconds": 1.509,
+            "slowest_page_seconds": 0.0434,
             "table_shapes": [],
             "tables": 0,
             "text_sha256": "734a6dea90c8593977211562f617dfa88468beaebdbfc93943a5b709ee003f37",
@@ -11921,8 +12088,8 @@
             },
             "page_count": 2506,
             "pages_read": 60,
-            "seconds": 1.339,
-            "slowest_page_seconds": 0.0983,
+            "seconds": 1.435,
+            "slowest_page_seconds": 0.1077,
             "table_shapes": [
               [
                 5,
@@ -12066,8 +12233,8 @@
             },
             "page_count": 1259,
             "pages_read": 60,
-            "seconds": 1.339,
-            "slowest_page_seconds": 0.0991,
+            "seconds": 1.448,
+            "slowest_page_seconds": 0.111,
             "table_shapes": [
               [
                 5,
@@ -12211,8 +12378,8 @@
             },
             "page_count": 1264,
             "pages_read": 60,
-            "seconds": 2.212,
-            "slowest_page_seconds": 0.099,
+            "seconds": 2.37,
+            "slowest_page_seconds": 0.1087,
             "table_shapes": [
               [
                 3,
@@ -12372,8 +12539,8 @@
             },
             "page_count": 3018,
             "pages_read": 60,
-            "seconds": 1.325,
-            "slowest_page_seconds": 0.0829,
+            "seconds": 1.437,
+            "slowest_page_seconds": 0.0911,
             "table_shapes": [
               [
                 3,
@@ -12523,8 +12690,8 @@
             },
             "page_count": 1476,
             "pages_read": 60,
-            "seconds": 1.311,
-            "slowest_page_seconds": 0.083,
+            "seconds": 1.37,
+            "slowest_page_seconds": 0.0865,
             "table_shapes": [
               [
                 3,
@@ -12674,8 +12841,8 @@
             },
             "page_count": 1542,
             "pages_read": 60,
-            "seconds": 2.363,
-            "slowest_page_seconds": 0.0818,
+            "seconds": 2.439,
+            "slowest_page_seconds": 0.087,
             "table_shapes": [
               [
                 3,
@@ -12841,8 +13008,8 @@
             },
             "page_count": 2685,
             "pages_read": 60,
-            "seconds": 1.315,
-            "slowest_page_seconds": 0.085,
+            "seconds": 1.419,
+            "slowest_page_seconds": 0.0946,
             "table_shapes": [
               [
                 3,
@@ -12986,8 +13153,8 @@
             },
             "page_count": 1335,
             "pages_read": 60,
-            "seconds": 1.296,
-            "slowest_page_seconds": 0.0906,
+            "seconds": 1.372,
+            "slowest_page_seconds": 0.0946,
             "table_shapes": [
               [
                 3,
@@ -13336,7 +13503,7 @@
         "S4601",
         "ANALYSIS. 12"
       ],
-      "target_key": "bill_id",
+      "target_key": "bill_id: {congress}-{bill_type}-{number}, from the caller's stated Congress",
       "target_table": "congress_bills"
     },
     {
@@ -13350,7 +13517,7 @@
         "Republic Law 5",
         "Pub. L. Rev."
       ],
-      "target_key": "(congress, law_type, number)",
+      "target_key": "(congress, law_type, number), joined: {congress}-public-{number}",
       "target_table": "laws"
     },
     {
@@ -13361,7 +13528,7 @@
         "Stat. of the Union",
         "12 State 45"
       ],
-      "target_key": "statutes_at_large_cite",
+      "target_key": "statutes_at_large_cite as {volume}-{page}",
       "target_table": "laws"
     },
     {
@@ -13372,7 +13539,7 @@
         "U.S. Code of conduct",
         "42 USC for"
       ],
-      "target_key": "(title, section)",
+      "target_key": "{usc_title}-{usc_section}",
       "target_table": "law_code_sections"
     },
     {
@@ -13383,7 +13550,7 @@
         "CFR is the",
         "40 CRF 60"
       ],
-      "target_key": "(title, part)",
+      "target_key": "{title}-{part}",
       "target_table": "cfr sections (host-side)"
     },
     {
@@ -13394,18 +13561,18 @@
         "Fed. Reg. of the",
         "88 Federal agencies"
       ],
-      "target_key": "document_number (via volume/page lookup)",
+      "target_key": "{volume}-{start_page}; the host resolves document_number by that pair",
       "target_table": "federal_register"
     },
     {
       "name": "rin",
-      "note": "",
+      "note": "87 distinct RINs across the eight House activity reports and none in any CRPT MODS: the family's largest single citation yield, and invisible to a 60-page read",
       "pattern": "\\bRIN[: ]\\s?\\d{4}[-\u2013][A-Z]{2}\\d{2}\\b",
       "rejects": [
         "RIN of the",
         "RIN 1234"
       ],
-      "target_key": "regulation_id_numbers_json",
+      "target_key": "the bare RIN, as regulation_id_numbers_json spells it",
       "target_table": "federal_register"
     },
     {
@@ -13416,7 +13583,7 @@
         "GAO reported",
         "GAO-2026"
       ],
-      "target_key": "product_id",
+      "target_key": "product_id as GAO-YY-NNNNN",
       "target_table": "gao products (not hosted; gao/files.py selection key)"
     },
     {
@@ -13427,12 +13594,12 @@
         "R 1234",
         "RL-31312"
       ],
-      "target_key": "report_id",
+      "target_key": "report_id as the publisher spells it",
       "target_table": "crs reports (Congress.gov crsreport)"
     },
     {
       "name": "bioguide_id",
-      "note": "",
+      "note": "measured zero across all ten families: a bioguide id is an identifier the publishers assign and do not print, so this rule states a negative result rather than reaching a key",
       "pattern": "\\b[A-Z]\\d{6}\\b",
       "rejects": [
         "A 000375",
@@ -13443,13 +13610,13 @@
     },
     {
       "name": "docket_number",
-      "note": "",
+      "note": "38 distinct agency dockets across the eight House activity reports; no CRPT MODS states one",
       "pattern": "\\b[A-Z]{2,7}[-\u2013]\\d{4}[-\u2013]\\d{4}\\b",
       "rejects": [
         "FAA 2016 6907",
         "ABC-16-0001"
       ],
-      "target_key": "docket_id",
+      "target_key": "docket_id as the agency prints it",
       "target_table": "dockets"
     },
     {
@@ -13462,7 +13629,7 @@
         "Pub. L. No. 89-136",
         "P.L. No. 89-136"
       ],
-      "target_key": "docket_number",
+      "target_key": "docket_number as {term}-{sequence}",
       "target_table": "courtlistener clusters (not hosted)"
     },
     {
@@ -13473,7 +13640,7 @@
         "U.S. Government",
         "600 US 1"
       ],
-      "target_key": "citation",
+      "target_key": "citation as {volume}-{page}",
       "target_table": "courtlistener opinions (not hosted)"
     },
     {
@@ -13485,7 +13652,7 @@
         "Committee of the Whole",
         "Committee on June 5"
       ],
-      "target_key": "system_code, through the chamber rosters",
+      "target_key": "system_code, through the chamber rosters; the canonical printed name when none settles it",
       "target_table": "committees"
     },
     {
@@ -13496,7 +13663,7 @@
         "$ per",
         "USD 400"
       ],
-      "target_key": "amount",
+      "target_key": "the amount as printed, punctuation removed",
       "target_table": "financial_changes (shape); no hosted target yet"
     },
     {
@@ -13507,7 +13674,7 @@
         "FY of",
         "fiscal years"
       ],
-      "target_key": "fiscal_year",
+      "target_key": "the fiscal year as printed",
       "target_table": "no hosted target yet"
     }
   ],

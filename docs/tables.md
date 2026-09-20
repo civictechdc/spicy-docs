@@ -172,7 +172,7 @@ depth**, 1,249 pages against the rollup's capped 476.
 | Kind | Print-only, eight reports, every page |
 | --- | --- |
 | `bill_number` | **0 of 1,406** |
-| `public_law` | **1 of 174** |
+| `public_law` | **0 of 174** (the one apparent survivor, `188-11`, is the print's own misprint of 118-11) |
 | `usc_section` | **0 of 37** |
 | `statutes_at_large` | **0 of 7** |
 | `committee_name` | **27 resolved codes**, 71 of 79 rows |

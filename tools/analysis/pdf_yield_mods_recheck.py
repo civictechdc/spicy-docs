@@ -79,6 +79,7 @@ from tools.analysis.pdf_family_rollup import (
     CHECKOUT_ENV,
     JOIN_KEY_RULES,
     REFSPEC_ENV,
+    committee_vocabulary,
     resolve_committee_names,
 )
 
@@ -625,7 +626,10 @@ def _print_sets(document: Mapping[str, Any]) -> dict[str, list[str]]:
 
 def _committee_codes(values: Iterable[str]) -> set[str]:
     """A printed committee candidate counts only once a pinned roster settles it to a system code."""
-    return {code for code in resolve_committee_names(values).values() if code is not None}
+    # The resolver is pure and takes its roster vocabulary as an argument; the rollup tool
+    # builds it from the pinned chamber excerpts, and the re-check must resolve the same way.
+    resolution = resolve_committee_names(values, committee_vocabulary())
+    return {outcome.system_code for outcome in resolution.values() if outcome.system_code is not None}
 
 
 def compare_document(print_sets: Mapping[str, Sequence[str]], facts: Mapping[str, Any]) -> dict[str, Any]:

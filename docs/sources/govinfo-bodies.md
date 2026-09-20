@@ -620,7 +620,7 @@ activity reports the [PDF-family rollup](../research/pdf-family-rollup-yield-202
 read are what `document_citations` was first built on, and the
 [MODS re-check](../research/pdf-yield-mods-recheck-2026-09-20.md) then measured
 that family properly — all eight reports, every page, 1,249 of them. Against
-each package's own MODS, the print names **0 of 1,406 bills, 1 of 174 public
+each package's own MODS, the print names **0 of 1,406 bills, 0 of 174 public
 laws, 0 of 37 U.S. Code sections and 0 of 7 Statutes pages** that the MODS
 does not already state. For those four kinds the MODS is the authoritative
 source and what a print read adds is the *evidence span*.

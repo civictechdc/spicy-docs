@@ -28,7 +28,7 @@ MODS:
 Kind                         Print-only, eight reports, every page
 ===========================  ==========================================
 ``bill_number``              **0 of 1,406**
-``public_law``               **1 of 174**
+``public_law``               **0 of 174** (the one apparent survivor, ``188-11``, is the print's misprint)
 ``usc_section``              **0 of 37**
 ``statutes_at_large``        **0 of 7**
 ``committee_name``           **27 resolved codes**, 71 of 79 rows
@@ -251,7 +251,7 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
         ),
         "distinct_laws": "How many distinct public laws the print names; a floor bounded by pages_read.",
         "distinct_laws_beyond_index": (
-            "How many of those the MODS does not already state: 1 of 174 across all eight sampled reports at "
+            "How many of those the MODS does not already state: 0 of 174 across all eight sampled reports at "
             "full page depth.  A floor with `stated_by_index` semantics, not a yield estimate."
         ),
         "distinct_usc_sections": "How many distinct U.S. Code sections the print names; a floor bounded by pages_read.",

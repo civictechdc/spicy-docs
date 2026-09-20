@@ -957,7 +957,7 @@ what building this measured:
 
 > **The package MODS already states the bills, laws, U.S. Code sections and
 > Statutes pages the print names.** Across all eight sampled activity reports
-> at full page depth, print-only is **0 of 1,406 bills, 1 of 174 laws, 0 of 37
+> at full page depth, print-only is **0 of 1,406 bills, 0 of 174 laws (the one apparent survivor is the print's misprint 188-11), 0 of 37
 > Code sections and 0 of 7 Statutes pages**
 > ([MODS re-check](research/pdf-yield-mods-recheck-2026-09-20.md)); on the two
 > packages this branch pins, 179 of 179 and 39 of 39 bills, 3 of 3 and 1 of 1

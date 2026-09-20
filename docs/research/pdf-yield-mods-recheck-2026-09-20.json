@@ -581,20 +581,19 @@
               "mods_distinct": 0,
               "mods_only": 0,
               "mods_states_this_kind": true,
-              "print_distinct": 10,
+              "print_distinct": 9,
               "print_only": [
                 "hsap00",
                 "hsba00",
                 "hsgo00",
                 "hsha00",
-                "hshm00",
                 "hsru00",
                 "hsso00",
                 "ssbk00",
                 "ssev00",
                 "ssra00"
               ],
-              "print_only_count": 10
+              "print_only_count": 9
             },
             "dollar_amount": {
               "intersection": 0,
@@ -984,11 +983,11 @@
           "mods_only_link_rows": 0,
           "mods_reader_exists": true,
           "mods_states_this_kind": false,
-          "print_distinct_values": 10,
-          "print_link_rows": 10,
-          "print_only_against_family_union": 10,
-          "print_only_distinct_values": 10,
-          "print_only_link_rows": 10
+          "print_distinct_values": 9,
+          "print_link_rows": 9,
+          "print_only_against_family_union": 9,
+          "print_only_distinct_values": 9,
+          "print_only_link_rows": 9
         },
         "crs_report_id": {
           "documents": 1,
