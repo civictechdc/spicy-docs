@@ -56,7 +56,7 @@ network or credentials and leaves inspectable output.
 | [CRS files](sources/crs-files.md) | The publisher's stated file URL, or id and version | Exact signed PDF; family directories are not always the id prefix. |
 | [GAO files](sources/gao-files.md) | Product id and rendition | Exact PDF from the keyless file host; the web host is gated. |
 | [regulations.gov API](sources/regulations-gov-api.md) | A filtered document query, a document id, or a stated attachment locator | Exact pages and PDFs; the reachable count is capped at forty pages and the declared count drifts. |
-| [CBO](sources/cbo.md) | A Congress number, or a feed-stated document link | Exact per-Congress feed; the site's XML feed and documents sit behind a bot wall. |
+| [CBO](sources/cbo.md) | A Congress number, or a feed-stated document link | Exact per-Congress feed; the site's XML feed and documents sit behind a bot wall. The estimate *index* is keyless in the BILLSTATUS bulk zips and the letter *text* is reprinted in the bill's committee report ([routes](research/cbo-cost-estimate-routes-2026-09-20.md)); neither needs this host. |
 
 Prefer community SpicyRegs tables when they supply the needed data; choose origin
 acquisition for uncovered needs. This [supply rule](decisions.md#community-supply-precedes-origin-acquisition)
