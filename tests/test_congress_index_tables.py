@@ -25,15 +25,18 @@ from spicy_docs.schemas import TABLE_CONTRACTS
 from spicy_docs.schemas.committee_report_tables import COMMITTEE_REPORTS, HEARING_TRANSCRIPTS
 from spicy_docs.schemas.congress_index_tables import (
     CHAMBERS_RULE,
+    COMMUNICATION_SOURCE_ROUTES,
     PACKAGE_ID_RULE_RECORD,
     PACKAGE_ID_RULE_TREATY,
     shape_committee_meeting,
     shape_house_communication,
+    shape_record_communication,
     shape_record_issue,
     shape_treaty,
     treaty_package_id,
 )
 from spicy_docs.schemas.tables import UNIT_SEPARATOR, TableContractError, read_json_column
+from spicy_docs.sources.congress.record_communications import normalized_entry_text
 
 LISTINGS = Path(__file__).parent / "fixtures" / "listings"
 NATURAL_KEY = re.compile(r"^\d+-[a-z]+-\d+$")
@@ -103,6 +106,153 @@ def test_the_captured_communication_carries_the_bridge_on_one_row() -> None:
     assert row["legal_authority"].startswith("5 U.S.C. 801(a)(1)(A)")
     assert row["url"] == listed["url"]
     assert TABLE_CONTRACTS["house_communications"].checked(row) is row
+
+
+# --- the two eras of one contract ------------------------------------------------------
+
+
+def _record_entries(granule_id: str):
+    from spicy_docs.extraction.body_text import rendition_text
+    from spicy_docs.sources.congress.record_communications import parse_record_communications
+
+    body = (Path(__file__).parent / "fixtures/record_communications" / f"{granule_id}.excerpt.htm").read_bytes()
+    entries = parse_record_communications(
+        rendition_text(body, rendition="htm").text,
+        package_id=granule_id.split("-pt")[0],
+        granule_id=granule_id,
+    )
+    return {entry.number: entry for entry in entries}
+
+
+def _reconstructed(number: int = 4329):
+    entry = _record_entries("CREC-2016-02-12-pt1-PgH815-4")[number]
+    return entry, shape_record_communication(
+        entry, congress=114, record_date="2016-02-12", rin=rin_from_report_nature(entry.report_nature)
+    )
+
+
+def test_a_reconstructed_row_carries_the_same_identity_and_the_granule_that_printed_it() -> None:
+    """The point of one contract rather than two: the key is the publisher's own on both sides."""
+    entry, row = _reconstructed()
+    assert row["communication_id"] == "114-ec-4329"
+    assert TABLE_CONTRACTS["house_communications"].key(row) == ("114", "ec", "4329")
+    assert row["source_route"] == "congressional-record-granule"
+    assert row["record_package_id"] == "CREC-2016-02-12"
+    assert row["record_granule_id"] == "CREC-2016-02-12-pt1-PgH815-4"
+    assert row["record_entry_text"] == entry.entry_text
+    assert row["reconstruction_rule_version"] == entry.rule_version
+    assert row["rin"] == "1218-AC97"
+    assert row["referral_committee_name"] == "Education and the Workforce"
+    # Measured on 264 of 264 retained referrals: the publisher's referralDate
+    # equals its congressionalRecordDate.
+    assert row["referral_date"] == row["congressional_record_date"] == "2016-02-12"
+    assert TABLE_CONTRACTS["house_communications"].checked(row) is row
+
+
+def test_contract_rule_one_a_reconstructed_rows_url_is_null() -> None:
+    """The publisher's detail route 404s for every pre-114th communication; writing a url would lie."""
+    _, row = _reconstructed()
+    assert row["url"] is None
+    listed = _listing("congress-house-communication-list.json")["houseCommunications"][0]
+    assert shape_house_communication(listed, None)["url"] == listed["url"]
+
+
+def test_contract_rule_two_the_source_route_decides_the_merge_not_the_update_date() -> None:
+    """A reconstructed row has no ``update_date``, so the version column alone cannot order the two."""
+    _, reconstructed = _reconstructed()
+    detail = _listing("congress-house-communication-detail.json")["houseCommunication"]
+    published = shape_house_communication(detail, detail)
+    assert reconstructed["update_date"] is None
+    assert published["update_date"] is not None
+    assert published["source_route"] == COMMUNICATION_SOURCE_ROUTES[0] == "congress-gov-detail"
+    assert reconstructed["source_route"] == COMMUNICATION_SOURCE_ROUTES[1]
+    # Every provenance column is NULL on the publisher's own row, so a consumer
+    # can tell the two apart on either column.
+    assert [published[name] for name in ("record_package_id", "record_granule_id", "record_entry_text")] == [
+        None,
+        None,
+        None,
+    ]
+    assert published["reconstruction_rule_version"] is None
+
+
+def test_contract_rule_three_an_unresolved_split_is_null_beside_the_retained_sentence() -> None:
+    """The split scored 88.4% held-out, under the declared 90%, so it does not publish at all."""
+    entry, row = _reconstructed()
+    assert row["submitting_official"] is None
+    assert row["submitting_agency"] is None
+    # The rule *did* resolve this one -- the NULL is the contract's decision,
+    # not the parser failing -- and the sentence it resolved from is on the row.
+    assert entry.split_resolved is True
+    assert entry.from_clause in row["record_entry_text"]
+
+    # The same holds for every other field the Record does not state.
+    assert row["is_rulemaking"] is None
+    assert row["matching_requirement_number"] is None
+    assert row["referral_system_code"] is None
+    assert row["session"] is None
+
+
+def test_a_reconstructed_rows_abstract_is_the_value_the_publisher_would_have_carried() -> None:
+    """`abstract` is the print under the four normalizations; `record_entry_text` is the print.
+
+    They are two different strings on this row, and the difference is exactly
+    what the publisher's own abstract does to the same sentence -- which is why
+    the column carrying "the publisher's abstract" cannot be the raw print.
+    """
+    from spicy_docs.sources.congress.record_communications import (
+        expand_public_law_abbreviation,
+        expand_section_abbreviation,
+        fold_en_dash,
+        fold_print_dash,
+        publisher_normalized,
+    )
+
+    entry, row = _reconstructed()
+    assert row["record_entry_text"] == entry.entry_text
+    assert row["abstract"] == publisher_normalized(entry.entry_text)
+    assert row["abstract"] != row["record_entry_text"]
+
+    # The whole difference, rule by rule, with nothing else moving.
+    assert "final rule -- Maine" in row["record_entry_text"]
+    assert "final rule - Maine" in row["abstract"]
+    assert "Public Law 104-121, Sec. 251" in row["record_entry_text"]
+    assert "Public Law 104-121, section 251" in row["abstract"]
+    assert row["abstract"] == fold_print_dash(
+        expand_public_law_abbreviation(expand_section_abbreviation(fold_en_dash(row["record_entry_text"])))
+    )
+
+    # And it is the publisher's own captured string for the same communication.
+    published = _listing("congress-house-communication-detail-114-ec-4329.json")["houseCommunication"]["abstract"]
+    assert row["abstract"] == publisher_normalized(normalized_entry_text(published))
+
+
+def test_the_referral_publishes_the_records_own_words_and_no_system_code() -> None:
+    """The names are a fact the print states; the identity is not, until a resolver exists.
+
+    They are published because the Record's name is the committee's name on the
+    day, and the referral count agrees with the publisher on 95.1% of held-out
+    rows. They are not the publisher's spelling of the same committee -- 71.5%
+    -- so nothing joins on them.
+    """
+    _, row = _reconstructed()
+    assert row["referral_committee_name"] == "Education and the Workforce"
+    assert row["referral_count"] == "1"
+    assert read_json_column(row["committees_json"]) == [{"name": "Education and the Workforce"}]
+    assert row["referral_system_code"] is None
+
+    # The publisher's own row for the same communication spells it differently
+    # and carries the code; that is the drift, and it is why the code is the key.
+    published = _listing("congress-house-communication-detail-114-ec-4329.json")["houseCommunication"]
+    assert published["committees"][0]["name"] == "Education and Workforce Committee"
+    assert published["committees"][0]["systemCode"] == "hsed00"
+
+
+def test_a_joint_referral_reconstructs_with_every_committee_in_committees_json() -> None:
+    entry, row = _reconstructed(4350)
+    assert row["referral_count"] == "3"
+    assert [item["name"] for item in read_json_column(row["committees_json"])] == list(entry.committee_names)
+    assert row["referral_committee_name"] == "Appropriations"
 
 
 def test_the_truth_fold_takes_the_publishers_two_spellings_and_refuses_a_third() -> None:

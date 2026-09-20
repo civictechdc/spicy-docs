@@ -152,6 +152,30 @@ retries when an issue's requested unmatched-number set changes.
   and `tests/test_pdf_yield_mods_recheck_tool.py` pins the MODS shapes, the
   credential scrub, the identity proof and the committed sidecar.
 
+- [record_communications_overlap](analysis/record_communications_overlap.py): score
+  `sources/congress/record_communications.py`'s parse rule against Congress.gov's
+  own decomposition of the same sentence, field by field. The research that
+  proposed the backfill compared **two** rows; the 114th Congress onward is the
+  overlap era, where a printed Record entry and a publisher-decomposed detail
+  record both exist, so the rule can be scored on rows it was never fitted to.
+  `fetch` acquires ten sampled House sitting days (two per Congress, 114th
+  through 118th) through `GovInfoBodyAcquirer.acquire_granule` and then one
+  detail record per printed number at the publisher's own upper-case locator
+  `house-communication/{congress}/EC/{n}`; `score` and `render` make no request.
+  **Caps declared before the first request and enforced by a counter across
+  resumes: at most 40 GovInfo requests and 600 keyed Congress.gov requests for
+  the whole campaign** (`MAX_GOVINFO_REQUESTS`, `MAX_CONGRESS_REQUESTS`). A 404
+  on a detail record is recorded as the publisher's answer, a 200 with an empty
+  body as requested-empty, a transport failure as refused and re-requested on
+  the next resume; 401/403 ends the run. `API_GOV` is read with `read_api_key`
+  and travels in a header only; every recorded URL and message is scrubbed
+  before it is written or truncated. Entries are requested round-robin across
+  issues so a cap truncates every issue's tail rather than deleting the last
+  Congresses from the sample. The report is
+  [`docs/research/record-communications-overlap-2026-09-20.md`](../docs/research/record-communications-overlap-2026-09-20.md)
+  and `tests/test_record_communications_overlap_tool.py` pins the scoring, the
+  request bookkeeping, the credential scrub and the committed sidecar.
+
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,
 count mismatches, or a full 1,000-row page. A full page is indeterminate even when

@@ -49,7 +49,7 @@ sentence per column for the host's data dictionary.
 | `committee_reports` | One row per captured GovInfo committee report package. | `package_id` | `last_modified` | 19 | `sources.govinfo.body_acquisition` |
 | `report_sections` | One row per agency block parsed out of one committee report's text. | `package_id`, `seq` | `last_modified` | 12 | `sources.agency_reports.report_blocks` |
 | `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | 20 | `sources.govinfo.body_acquisition`, `sources.congress.listing` (`hearing-detail`) |
-| `house_communications` | One row per House executive communication, as the Congress.gov house-communication routes state it. | `congress`, `communication_type`, `number` | `update_date` | 27 | `sources.congress.listing` (`house-communication`, `house-communication-detail`), `interpretation.communication_rin` |
+| `house_communications` | One row per House executive communication: the Congress.gov house-communication routes where the publisher decomposes it, the Congressional Record entry it printed where the publisher does not. | `congress`, `communication_type`, `number` | `update_date` | 32 | `sources.congress.listing` (`house-communication`, `house-communication-detail`), `sources.congress.record_communications`, `interpretation.communication_rin` |
 | `committee_meetings` | One row per scheduled committee meeting, as the Congress.gov committee-meeting routes state it. | `congress`, `chamber`, `event_id` | `update_date` | 27 | `sources.congress.listing` (`committee-meeting`, `committee-meeting-detail`) |
 | `record_issues` | One row per daily Congressional Record issue, which is also one legislative day per chamber named. | `volume`, `issue` | `update_date` | 17 | `sources.congress.listing` (`daily-congressional-record`, `daily-congressional-record-detail`) |
 | `treaties` | One row per treaty document, as the Congress.gov treaty routes state it. | `congress_received`, `number`, `suffix` | `update_date` | 24 | `sources.congress.listing` (`treaty`, `treaty-detail`) |
@@ -66,7 +66,7 @@ sentence per column for the host's data dictionary.
 | `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | 27 | `schemas.bill_action_tables`, `interpretation.bill_actions` |
 | `hearing_bill_links` | One row per bill one source states a hearing was held on or noticed for: the pair, the source that stated it, and the committee-and-date key the statement was checked against. | `package_id`, `bill_id`, `link_source` | `link_rule_version` | 12 | `schemas.hearing_bill_link_tables`, `interpretation.hearing_bill_links`, `sources.congress.house_committee_repository` |
 
-Seven hundred and seventy-eight columns in all, each with its own sentence.
+Seven hundred and eighty-three columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -134,6 +134,49 @@ invented for either.
   on `rin`. There is no `senate_communications` table: the Senate detail
   carries the abstract, the referral and the Record date and none of the
   bridge's fields, so it could not fill the same columns without invention.
+
+  **It carries two eras under one identity.** Congress.gov decomposes a House
+  executive communication only from the 114th Congress. For the ten before it
+  the Congressional Record printed the same sentence — the publisher's
+  `abstract` *equals* the printed entry under four named normalizations — and
+  `sources/congress/record_communications.py` reads it back into the same
+  columns ([research](research/executive-communications-backfill-2026-09-20.md)
+  §5, [score](research/record-communications-overlap-2026-09-20.md)).
+  `source_route` says which produced a row (`congress-gov-detail` or
+  `congressional-record-granule`), `record_package_id` and `record_granule_id`
+  name the CREC granule that printed it, `record_entry_text` keeps the exact
+  sentence, and `reconstruction_rule_version` names the rule. Three rules hold
+  across the two eras:
+
+  1. a reconstructed row's `url` is **NULL** — the detail route 404s for every
+     pre-114th communication, so writing one would assert a route that refuses;
+  2. the merge prefers **provenance over `update_date`**: for one identity a
+     `congress-gov-detail` row wins over a `congressional-record-granule` row
+     whatever `update_date` says, so a later publisher backfill overwrites the
+     reconstruction and never the reverse; within one `source_route` the larger
+     `update_date` still wins;
+  3. an **unresolved field is NULL beside the retained sentence**, never a
+     guess. `submitting_official` and `submitting_agency` are the measured
+     case. They are one boundary decision, scored on one declared denominator —
+     the rows the split rule answered and the publisher decomposed — and on it
+     the pair fails on **both** sides (agency 88.4%, official 85.3% held out,
+     against a 90% threshold declared before the run). Neither publishes, and
+     the whole from-clause survives inside `record_entry_text`.
+     `is_rulemaking`, `matching_requirement_number` and `session` are NULL for
+     the plainer reason that the Record states none of them.
+     `referral_system_code` is NULL because the resolver from a printed
+     committee name to a `committees.system_code` is **not built**.
+
+  The referral's *names* are published: `referral_committee_name` and
+  `committees_json` carry the Record's own words, which are the committee's
+  name on the day. They are not the publisher's spelling of the same committee
+  — 71.5% agreement under a normalized comparison, because the 116th Record
+  prints *Oversight and Reform* where Congress.gov states *Oversight and
+  Government Reform Committee* — so nothing joins on them.
+
+  Scored against the publisher on 256 rows of the overlap era, 144 of them
+  held out: `abstract` 97.9%, `legal_authority` 99.1%, `rin` 100%,
+  `report_nature` 95.8%, `referral_count` 95.1%.
 - **`committee_meetings`** is keyed on the publisher's own address
   `(congress, chamber, event_id)`, with `hearing_jacket` (the first jacket)
   beside `hearing_jackets_json` (every one: the captured hearing's meeting

@@ -29,6 +29,7 @@ from typing import Any
 
 import pytest
 
+from spicy_docs.extraction.body_text import rendition_text
 from spicy_docs.extraction.gpo_normalize import GpoPageCleanup, normalize_gpo_pages
 from spicy_docs.interpretation.bill_family import BillFamilyCapture
 from spicy_docs.interpretation.communication_rin import rin_from_report_nature
@@ -59,6 +60,7 @@ from spicy_docs.schemas.congress_index_tables import (
     shape_committee_meeting,
     shape_house_communication,
     shape_nomination,
+    shape_record_communication,
     shape_record_issue,
     shape_treaty,
 )
@@ -68,6 +70,7 @@ from spicy_docs.sources.agency_reports.report_blocks import parse_agency_blocks
 from spicy_docs.sources.congress.bill_status import BillIdentity
 from spicy_docs.sources.congress.bill_tree import engine_available
 from spicy_docs.sources.congress.press_releases import PRESS_RELEASE_FEEDS, parse_press_release_feed
+from spicy_docs.sources.congress.record_communications import parse_record_communications
 from spicy_docs.sources.congress.votes import VoteLocator, parse_clerk_vote, parse_senate_vote
 from spicy_docs.sources.govinfo.bodies import (
     PackageBodyIdentity,
@@ -331,6 +334,52 @@ def _listing(name: str) -> dict[str, Any]:
     return json.loads((FIXTURES / "listings" / name).read_text())
 
 
+#: The fixture granules the backfilled rows are built from, with the Congress
+#: and issue date the granule itself states. Identities are disjoint from the
+#: 119th-Congress list page above, so the uniqueness loop sees both eras of one
+#: table at once, which is the whole point of landing them in one contract.
+_RECORD_SECTIONS: tuple[tuple[str, int, str], ...] = (
+    ("CREC-2016-02-12-pt1-PgH815-4", 114, "2016-02-12"),
+    ("CREC-2008-06-11-pt1-PgH5326-4", 110, "2008-06-11"),
+    ("CREC-2004-06-16-pt1-PgH4278", 108, "2004-06-16"),
+)
+
+
+def _reconstructed_communication_cases() -> list[ShapedCase]:
+    """``house_communications`` rows reconstructed from the entries the Record printed.
+
+    The other era of the same contract: these are shaped from the committed
+    CREC excerpts through the same parse rule the backfill runs
+    (``tests/fixtures/record_communications/README.md``), so the round-trip,
+    identity and description loops hold them to the same column tuple as the
+    publisher-decomposed rows beside them.
+    """
+    cases: list[ShapedCase] = []
+    for granule_id, congress, record_date in _RECORD_SECTIONS:
+        body = (FIXTURES / "record_communications" / f"{granule_id}.excerpt.htm").read_bytes()
+        entries = parse_record_communications(
+            rendition_text(body, rendition="htm").text,
+            package_id=granule_id.split("-pt")[0],
+            granule_id=granule_id,
+        )
+        assert entries, granule_id
+        for entry in entries:
+            cases.append(
+                _case(
+                    "house_communications",
+                    shape_record_communication(
+                        entry,
+                        congress=congress,
+                        record_date=record_date,
+                        rin=rin_from_report_nature(entry.report_nature),
+                    ),
+                    (str(congress), entry.communication_type, str(entry.number)),
+                    committees_json=[{"name": name} for name in entry.committee_names],
+                )
+            )
+    return cases
+
+
 def _congress_index_cases() -> list[ShapedCase]:
     """The five Congress.gov index tables, each from a captured list page and, where one exists, a captured detail.
 
@@ -365,6 +414,7 @@ def _congress_index_cases() -> list[ShapedCase]:
                 **json_columns,
             )
         )
+    cases += _reconstructed_communication_cases()
 
     meetings = {
         record["eventId"]: record
@@ -1275,7 +1325,11 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
         "sources/congress/listing.py",
     ),
     # Wave 2, gaps A5, A7 and A10: the Congress.gov index tables.
-    "house_communications": ("schemas/congress_index_tables.py", "interpretation/communication_rin.py"),
+    "house_communications": (
+        "schemas/congress_index_tables.py",
+        "interpretation/communication_rin.py",
+        "sources/congress/record_communications.py",
+    ),
     "committee_meetings": ("schemas/congress_index_tables.py",),
     "record_issues": ("schemas/congress_index_tables.py",),
     "treaties": ("schemas/congress_index_tables.py",),
