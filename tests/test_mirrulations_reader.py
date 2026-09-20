@@ -6,7 +6,7 @@ from json import dumps
 import pytest
 from botocore.exceptions import ClientError
 
-from spicy_docs.schemas import COMMENT, DOCKET, DOCUMENT
+from spicy_docs.schemas import COMMENT, DOCKET, DOCUMENT, RECORD_TYPES, RecordType
 from spicy_docs.sources.mirrulations import MirrulationsReader
 
 BUCKET = "mirrulations"
@@ -685,8 +685,8 @@ def _typed_store() -> dict[str, bytes]:
     base = f"{PREFIX}/{AGENCY}/EPA-2024-0001/text-EPA-2024-0001"
     return {
         f"{base}/docket/EPA-2024-0001.json": dumps(_docket_payload("EPA-2024-0001")).encode(),
-        f"{base}/documents/EPA-2024-0001-0001.json": b'{"data": {}}',
-        f"{base}/comments/EPA-2024-0001-0002.json": b'{"data": {}}',
+        f"{base}/documents/EPA-2024-0001-0001.json": b'{"data": {"id": "EPA-2024-0001-0001"}}',
+        f"{base}/comments/EPA-2024-0001-0002.json": b'{"data": {"id": "EPA-2024-0001-0002"}}',
         # Non-JSON / binary — must be ignored.
         f"{base}/binary-EPA-2024-0001/docket/x.pdf": b"x",
     }
@@ -774,7 +774,7 @@ def test_download_keys_bounds_pending_work_for_a_streaming_listing(
                 raise AssertionError("download_keys consumed beyond its bounded pending window")
             yield f"key-{index}"
 
-    def blocked_download(_resource, _bucket, key, _extract):
+    def blocked_download(_resource, _bucket, key, _extract, *, record_type=None):
         release.wait(timeout=5)
         return {"key": key}
 
@@ -1112,6 +1112,195 @@ def test_an_empty_or_mis_shaped_success_is_requested_empty_not_a_record(body: by
     (outcome,) = reader.unresolved
     assert (outcome.key, outcome.status) == (empty, STATUS_REQUESTED_EMPTY)
     assert named in outcome.reason  # the shape mismatch is named, not just counted
+
+
+@pytest.mark.parametrize(
+    ("body", "named"),
+    [
+        (b'{"data":{}}', "a data envelope containing an empty object"),
+        (b'{"errors":[{"detail":"upstream failed"}]}', "a publisher error envelope"),
+    ],
+    ids=["empty-data", "publisher-error"],
+)
+@pytest.mark.parametrize("record_type", RECORD_TYPES.values(), ids=RECORD_TYPES)
+@pytest.mark.parametrize("workers", [1, 4])
+def test_a_populated_object_without_record_identity_is_requested_empty(
+    body: bytes, named: str, record_type: RecordType, workers: int
+) -> None:
+    """The host's two reproduced null-id rows remain unresolved for every type."""
+    store = _typed_store()
+    key = next(key for key in store if record_type.path_pattern in key and key.endswith(".json"))
+    store[key] = body
+    # A second key exercises the thread-pool branch as well as a valid neighbor.
+    good = key.replace(".json", "-good.json")
+    payload = {"data": {"id": "EPA-2024-0001-good"}}
+    store[good] = dumps(payload).encode()
+    reader = MirrulationsReader(_FakeS3Resource(store), BUCKET, PREFIX, AGENCY, record_type, download_workers=workers)
+
+    records = list(reader.iter_records())
+
+    assert records == [payload]
+    assert reader.last_keys == [good]
+    assert reader.failed_keys == reader.parse_failed_keys == [key]
+    (outcome,) = reader.unresolved
+    assert (outcome.key, outcome.status, outcome.attempts) == (key, "requested-empty", 1)
+    assert named in outcome.reason
+    assert f"missing nonblank data.id identity for {record_type.name} ({record_type.dedup_key})" in outcome.reason
+    if "errors" in body.decode():
+        assert "upstream failed" in outcome.reason
+
+
+@pytest.mark.parametrize("record_type", RECORD_TYPES.values(), ids=RECORD_TYPES)
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"title": "no data"},
+        {"data": None},
+        {"data": []},
+        {"data": {"attributes": {"docketId": "parent-is-not-identity"}}},
+        {"data": {"id": None}},
+        {"data": {"id": ""}},
+        {"data": {"id": " \t "}},
+        {"data": {"id": 42}},
+        {"data": {"id": {"nested": "id"}}},
+    ],
+    ids=[
+        "no-data",
+        "null-data",
+        "array-data",
+        "parent-id",
+        "null-id",
+        "empty-id",
+        "blank-id",
+        "number-id",
+        "object-id",
+    ],
+)
+def test_missing_or_empty_record_identity_stays_unresolved(payload: dict, record_type: RecordType) -> None:
+    key = f"{PREFIX}/{AGENCY}/EPA-2024-0001/text-EPA-2024-0001{record_type.path_pattern}record.json"
+    resource = _FakeS3Resource({key: dumps(payload).encode()})
+    reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, record_type)
+
+    assert list(reader.iter_records()) == []
+    assert reader.last_keys == []
+    (outcome,) = reader.unresolved
+    assert (outcome.key, outcome.status) == (key, "requested-empty")
+    assert f"missing nonblank data.id identity for {record_type.name} ({record_type.dedup_key})" in outcome.reason
+
+
+@pytest.mark.parametrize("record_type", RECORD_TYPES.values(), ids=RECORD_TYPES)
+@pytest.mark.parametrize("extra_fields", [{}, {"attributes": None, "unrecognized": [1, 2]}])
+def test_record_identity_is_sufficient_and_raw_fields_are_preserved(
+    record_type: RecordType, extra_fields: dict
+) -> None:
+    """All registered types define data.id as identity; optional fields stay raw."""
+    identity = "EPA-2024-0001-0002"
+    minimal = {"data": {"id": identity}}
+    assert record_type.extract(minimal)[record_type.dedup_key] == identity
+    payload = {"data": {"id": identity, **extra_fields}, "unknown": {"source": "kept"}}
+    key = f"{PREFIX}/{AGENCY}/EPA-2024-0001/text-EPA-2024-0001{record_type.path_pattern}record.json"
+    reader = MirrulationsReader(_FakeS3Resource({key: dumps(payload).encode()}), BUCKET, PREFIX, AGENCY, record_type)
+
+    assert list(reader.iter_records()) == [payload]
+    assert reader.last_keys == [key]
+    assert reader.unresolved == []
+
+
+def test_publisher_error_message_is_scrubbed_before_truncation_and_logging() -> None:
+    from spicy_docs.sources import mirrulations
+    from spicy_docs.sources.mirrulations import EmptyPayloadError, download_and_parse
+
+    secret = "SENSITIVE" * 80  # crosses the truncation boundary
+    message = f"upstream failed: https://example.test/?api_key={secret}&after=retained"
+    body = dumps({"errors": [{"detail": message}]}).encode()
+    key = _docket_key("EPA-2024-0001")
+    resource = _FakeS3Resource({key: body})
+    with pytest.raises(EmptyPayloadError) as raised:
+        download_and_parse(resource, BUCKET, key, lambda payload: payload, record_type=DOCKET)
+    detail = raised.value.detail
+    assert "publisher error envelope" in detail and "upstream failed" in detail
+    assert "api_key=<redacted>&after=retained" in detail
+    assert "SENSITIVE" not in str(raised.value)
+    assert len(detail) <= mirrulations._REASON_CHARACTERS
+
+    logged = []
+    sink = mirrulations.logger.add(lambda message: logged.append(str(message)))
+    try:
+        reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, DOCKET)
+        assert list(reader.iter_records()) == []
+    finally:
+        mirrulations.logger.remove(sink)
+    assert reader.unresolved[0].reason == detail
+    assert "SENSITIVE" not in "".join(logged)
+    assert "api_key=<redacted>&after=retained" in "".join(logged)
+
+
+def test_publisher_error_envelope_is_not_a_record_even_with_an_id() -> None:
+    key = _docket_key("EPA-2024-0001")
+    payload = {"data": {"id": "EPA-2024-0001"}, "errors": [{"detail": "upstream failed"}]}
+    reader = MirrulationsReader(_FakeS3Resource({key: dumps(payload).encode()}), BUCKET, PREFIX, AGENCY, DOCKET)
+    assert list(reader.iter_records()) == []
+    assert reader.last_keys == []
+    assert reader.unresolved[0].status == "requested-empty"
+    assert "publisher error envelope" in reader.unresolved[0].reason
+
+
+def test_direct_downloads_require_identity_without_a_record_type_label() -> None:
+    from spicy_docs.sources.mirrulations import EmptyPayloadError, download_and_parse, download_keys
+
+    key = _docket_key("EPA-2024-0001")
+    resource = _FakeS3Resource({key: b'{"data":{}}'})
+    with pytest.raises(EmptyPayloadError, match="missing nonblank data.id identity"):
+        download_and_parse(resource, BUCKET, key, lambda payload: payload)
+    outcomes = []
+    assert list(download_keys(resource, BUCKET, [key], outcomes=outcomes)) == []
+    assert outcomes[0].status == "requested-empty"
+
+
+def test_bounded_reader_refuses_identity_free_success() -> None:
+    from spicy_docs.sources.mirrulations import EmptyPayloadError, reader_factory
+
+    key = _docket_key("EPA-2024-0001")
+    resource = _FakeS3Resource({key: b'{"data":{}}'})
+    read = reader_factory([DOCKET], resource_factory=lambda: resource, bounded=True)
+    reader = read(AGENCY, DOCKET)
+    with pytest.raises(EmptyPayloadError, match="dockets \\(docket_id\\)"):
+        list(reader.iter_records())
+    assert reader.last_keys == []
+    assert len(resource.get_requests) == 1
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+def test_identity_is_checked_after_an_in_run_transport_retry(workers: int) -> None:
+    key = _docket_key("EPA-2024-0001")
+    resource = _FlakyResource({key: b'{"data":{}}'}, transient_fail=[key], fail_once=True)
+    reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, DOCKET, download_workers=workers)
+
+    assert list(reader.iter_records()) == []
+    assert reader.last_keys == []
+    (outcome,) = reader.unresolved
+    assert (outcome.status, outcome.attempts) == ("requested-empty", 2)
+    assert "dockets (docket_id)" in outcome.reason
+
+
+@pytest.mark.parametrize("body", [b'{"data":{}}', b'{"errors":[{"detail":"upstream failed"}]}'])
+def test_identity_free_answer_is_retried_and_repaired(body: bytes) -> None:
+    key = _docket_key("EPA-2024-0001")
+    store = {key: body}
+    prior = []
+    for attempt in (1, 2):
+        reader = MirrulationsReader(_FakeS3Resource(store), BUCKET, PREFIX, AGENCY, DOCKET, unresolved_keys=prior)
+        assert list(reader.iter_records()) == []
+        assert reader.last_keys == []
+        assert reader.unresolved[0].attempts == attempt
+        prior = reader.unresolved
+    payload = _docket_payload("EPA-2024-0001")
+    store[key] = dumps(payload).encode()
+    repaired = MirrulationsReader(
+        _FakeS3Resource(store), BUCKET, PREFIX, AGENCY, DOCKET, unresolved_keys=prior, key_lister=list
+    )
+    assert list(repaired.iter_records()) == [payload]
+    assert repaired.last_keys == [key] and repaired.unresolved == []
 
 
 def test_a_server_error_then_success_recovers_across_two_runs() -> None:

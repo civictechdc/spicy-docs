@@ -19,8 +19,8 @@ Recovery follows the package's fetcher rules (``AGENTS.md``):
 2. Every key that produced no record -- transport answer, unreadable bytes, or a
    2xx whose body held no record -- stays out of ``last_keys`` and is retried on
    the next run, with its last answer retained as a :class:`KeyOutcome`.
-3. An empty or mis-shaped 2xx is ``requested-empty``, an observation of what the
-   mirror answered, never an observation that the object is absent.
+3. An empty or mis-shaped 2xx, including an object without record identity, is
+   ``requested-empty``: what the mirror answered, never proof of absence.
 4. Reasons are scrubbed before they are truncated, logged, or retained.
 """
 
@@ -304,7 +304,7 @@ class PayloadParseError(UnresolvedKeyError):
 
 
 class EmptyPayloadError(PayloadParseError):
-    """A 2xx that carried no record: zero bytes, or JSON that is not a populated object.
+    """A 2xx that carried no record: empty bytes, unexpected JSON, or missing identity.
 
     A subclass because the handling is identical -- the bytes arrived, the
     record did not -- while the status separates "the mirror answered with
@@ -498,7 +498,11 @@ def _describe_shape(payload: object) -> str:
     if payload is None:
         return "null"
     if isinstance(payload, dict):
-        return "an empty object"
+        if "errors" in payload:
+            return "a publisher error envelope"
+        if "data" in payload:
+            return f"a data envelope containing {_describe_shape(payload['data'])}"
+        return "a populated object" if payload else "an empty object"
     if isinstance(payload, list):
         return f"an array of {len(payload)} items"
     return f"a bare {type(payload).__name__}"
@@ -509,6 +513,8 @@ def download_and_parse(
     bucket_name: str,
     key: str,
     extract_fn: Callable[[dict], dict],
+    *,
+    record_type: RecordType | None = None,
 ) -> dict:
     """Download and extract one S3 JSON object.
 
@@ -519,9 +525,13 @@ def download_and_parse(
     that ends the run. The download helper closes the response on every path to
     prevent connection-pool exhaustion.
 
-    The only shape asserted is that a record arrived at all -- a populated JSON
-    object. Reading its fields is the caller's job, so ``{}``, ``null`` and a
-    bare scalar are reported as answers rather than interpreted here.
+    Identity is the line between a record and an answer that must remain
+    unresolved: accepting an identity-free object lets callers manifest a key
+    and write a null-id row. All supported Mirrulations types (dockets,
+    documents, comments) define their identity from ``data.id``. Require that
+    nonblank string only; other fields and unknown fields stay untouched for
+    the caller. ``record_type`` names its declared key in the reason; direct
+    download callers use the same source identity check without a type label.
     """
     try:
         content = download_object_bytes(s3_resource, bucket_name, key).content
@@ -537,6 +547,19 @@ def download_and_parse(
         raise PayloadParseError(key) from exc
     if not isinstance(payload, dict) or not payload:
         raise EmptyPayloadError(key, f"the body decoded to {_describe_shape(payload)}, not a record")
+    data = payload.get("data")
+    identity = data.get("id") if isinstance(data, dict) else None
+    missing_identity = not isinstance(identity, str) or not identity.strip()
+    if missing_identity or "errors" in payload:
+        expected = f" for {record_type.name} ({record_type.dedup_key})" if record_type is not None else ""
+        detail = f"the body decoded to {_describe_shape(payload)}"
+        if missing_identity:
+            detail += f"; missing nonblank data.id identity{expected}"
+        if "errors" in payload:
+            # The publisher's own message is useful evidence. Scrub the entire
+            # value before truncation, including exceptions raised to direct callers.
+            detail += f"; publisher errors: {payload['errors']}"
+        raise EmptyPayloadError(key, scrub_credential(detail)[:_REASON_CHARACTERS])
     try:
         return extract_fn(payload)
     except Exception as exc:
@@ -584,6 +607,7 @@ def download_keys(
     keys: Iterable[str],
     workers: int = DEFAULT_DOWNLOAD_WORKERS,
     *,
+    record_type: RecordType | None = None,
     label: str = "",
     outcomes: list[KeyOutcome] | None = None,
     prior_outcomes: Iterable[KeyOutcome] = (),
@@ -611,7 +635,7 @@ def download_keys(
     def download(key: str) -> dict | None:
         for attempt in range(transient_retries + 1):
             try:
-                return download_and_parse(s3_resource, bucket_name, key, _identity)
+                return download_and_parse(s3_resource, bucket_name, key, _identity, record_type=record_type)
             except UnresolvedKeyError as exc:
                 if isinstance(exc, TransientDownloadError) and attempt < transient_retries:
                     continue
@@ -878,6 +902,7 @@ class MirrulationsReader(Reader):
             self.bucket,
             keys,
             self.download_workers,
+            record_type=self.record_type,
             label=label,
             outcomes=outcomes,
             prior_outcomes=self._prior_outcomes,
@@ -898,6 +923,7 @@ class MirrulationsReader(Reader):
                     self.bucket,
                     again,
                     self.download_workers,
+                    record_type=self.record_type,
                     label=f"{label} retry",
                     outcomes=outcomes,
                     prior_outcomes=retry_outcomes,

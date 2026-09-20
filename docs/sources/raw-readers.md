@@ -44,7 +44,7 @@ After complete raw iteration:
 - `unresolved` holds a `KeyOutcome(key, status, reason, attempted_at, attempts)`
   for each, with `status` one of `transport` (connection, 429, 5xx, a vanished object),
   `unreadable` (bytes that are not a JSON record), or `requested-empty` (a 2xx
-  that decoded to nothing — the reason names the shape). `requested-empty` is an
+  that held no identified record — the reason names the shape). `requested-empty` is an
   observation of the answer, never of absence. `parse_failed_keys` remains as the
   non-`transport` subset. `attempts` counts reader download attempts, including
   in-run retries; botocore's internal retries are not counted.
@@ -54,6 +54,23 @@ After complete raw iteration:
   `unresolved_keys=previous_reader.unresolved`, to carry attempt counts forward.
   Bare key strings retain priority but supply no attempt history; counts start
   at one when no prior outcome is supplied.
+
+**Record identity.** Dockets, documents, and comments each require a nonblank
+string at `data.id`, the source field for their declared `docket_id`,
+`document_id`, and `comment_id` keys. The raw reader checks identity only and
+preserves the rest of the payload unchanged; it does not validate a full record
+schema. This prevents a populated object from becoming a null-id row and a
+processed key. `{"data":{}}` and `{"errors":[{"detail":"upstream failed"}]}`
+both reproduced that defect. They now yield no record, stay off `last_keys`, and
+produce `requested-empty` observations that name the missing identity. A
+publisher error envelope is also named as such, with its own message scrubbed
+through `scrub_credential` before truncation, logging, or raising. Direct
+`download_keys` and `download_and_parse` calls apply the same identity check;
+passing `record_type=` adds the type and its declared key to the reason.
+
+The downstream spicy-regs host carries a temporary identity guard until it
+adopts the release containing this fix. This local change does not establish
+release adoption or repair previously manifested null-id rows.
 
 Nothing is marked processed on a failure, so an object repaired upstream — or a
 parser fixed here — comes back on the next run. The in-run retry pass covers
