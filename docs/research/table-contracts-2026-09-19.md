@@ -631,6 +631,21 @@ collection code each record states, and `transport/zyte.py` for walled routes.
 spicy-regs adopts it the same way as 0.22.0 and gains one rollup per new
 contract.
 
+spicy-docs 0.24.0 (cut 2026-09-20: commit 713c821, tag v0.24.0 pushed,
+`dist/spicy_docs-0.24.0-py3-none-any.whl` 1,319,390 bytes, sha256
+`0a03ce34916cfedf4162356dd49e8dc4d95cb50e9dd280f4256c087d379f680a`): a minor bump; two new
+contracts (`hearing_bill_links`, `cbo_cost_estimates`) and three widened
+ones (`house_communications` +5 backfill provenance columns,
+`committee_reports` +13 for the reprinted CBO letter, `congress_bills` +1
+per-bill estimate outcome), thirty-nine contracts over 813 columns; the
+Record executive-communications parse rule, the House Committee Repository
+reader, the hearing-bill link rules, the CBO letter rule, the
+activity-report title rule moved out of tools, `PRINT_BODY_PREFERENCE`,
+thirteen measured BUDGET parts, and the Mirrulations reader brought under
+the fetcher rules. spicy-regs adopts it the same way as 0.23.0, deletes its
+own Mirrulations reader and its restated title rule and print preference
+for the package's, and gains rollups for the two new tables.
+
 spicy-regs adoption (done 2026-09-19 on the fork branch `billtrax-hosting-prep`;
 no push to origin unless the user names the branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
 `[tool.uv.sources] spicy-docs` at it; set both `source-readers` pins to
