@@ -280,7 +280,13 @@ HOUSE_ACTIVITY_REPORTS = table_contract(
             "one `package_id` with opposite meanings (282 against 60 on CRPT-118hrpt965)."
         ),
         "pages_capped": "Whether the read stopped short of the document, so every count above is a floor.",
-        "body_rendition": "Which rendition the text was derived from; `pdf` for this family.",
+        "body_rendition": (
+            "Which rendition the text was derived from.  `pdf` here because the acquirer is asked for "
+            "`sources.govinfo.bodies.PRINT_BODY_PREFERENCE` -- the sealed order with PDF first -- and **not** "
+            "because it is all an activity report offers: these packages state `htm` too, and under the sealed "
+            "default 10 of 41 refused on HTML nesting depth while the 31 that were read stated no page at all, "
+            "which is what the four page-stating columns here need."
+        ),
         "body_derivation": "How that rendition became text.",
         "text_sha256": "Digest of the normalized text the citation spans index into.",
         "rule_set_version": (
