@@ -364,28 +364,29 @@ def download_object_bytes(
     except ClientError as error:
         _raise_if_access_refused(error, key)
         raise
-    content_length = response.get("ContentLength")
-    if max_bytes is not None and content_length is not None and content_length > max_bytes:
-        raise ValueError(f"{key} exceeds the {max_bytes} byte cap")
     body = response["Body"]
     try:
+        # GET already opened the stream, even when its metadata rejects the body.
+        content_length = response.get("ContentLength")
+        if max_bytes is not None and content_length is not None and content_length > max_bytes:
+            raise ValueError(f"{key} exceeds the {max_bytes} byte cap")
         content = body.read(max_bytes + 1) if max_bytes is not None else body.read()
+        if max_bytes is not None and len(content) > max_bytes:
+            raise ValueError(f"{key} exceeds the {max_bytes} byte cap")
+        if content_length is not None and content_length != len(content):
+            raise ValueError(f"{key} returned {len(content)} bytes but declared {content_length}")
+        etag = response.get("ETag")
+        if if_match is not None and etag != if_match:
+            raise ValueError(f"{key} returned ETag {etag!r}, expected {if_match!r}")
+        return DownloadedObject(
+            content=content,
+            etag=etag,
+            version_id=response.get("VersionId"),
+            last_modified=response.get("LastModified"),
+            content_length=content_length,
+        )
     finally:
         body.close()
-    if max_bytes is not None and len(content) > max_bytes:
-        raise ValueError(f"{key} exceeds the {max_bytes} byte cap")
-    if content_length is not None and content_length != len(content):
-        raise ValueError(f"{key} returned {len(content)} bytes but declared {content_length}")
-    etag = response.get("ETag")
-    if if_match is not None and etag != if_match:
-        raise ValueError(f"{key} returned ETag {etag!r}, expected {if_match!r}")
-    return DownloadedObject(
-        content=content,
-        etag=etag,
-        version_id=response.get("VersionId"),
-        last_modified=response.get("LastModified"),
-        content_length=content_length,
-    )
 
 
 # Retry temporary S3 congestion after botocore's own retries are exhausted.

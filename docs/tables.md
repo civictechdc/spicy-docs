@@ -558,12 +558,11 @@ and it is unmeasured.
 - **The amounts are decimal strings and never a canonical key.** The
   `dollar_amount` canonical the rollup used erases the decimal separator and was
   measured colliding, so a dollar figure is not a join key until that is fixed.
-- **Acquisition is not wired up.** `sources/govinfo/bodies.py`'s package-id
-  grammar reaches neither `BUDGET-*` nor `GPO-CDOC-*`, so `GovInfoBodyAcquirer`
-  cannot fetch these packages in product code; the register's B4 row carries
-  that as an open decision record. The contract is filled from the bytes the
-  rollup retained, and the shapers are pure, so the grammar is the only thing
-  missing.
+- **Acquisition is wired up.** `GovInfoBodyAcquirer` supports the measured
+  `BUDGET-*` and `GPO-CDOC-*` package-id forms with summary and MODS identity
+  checks. See the [integration decision](decisions.md#budget-and-the-gpo-prefixed-cdoc-reprints-join-the-package-id-grammar)
+  and [supported identifiers and renditions](sources/govinfo-bodies.md).
+  The shapers still take table observations and page text.
 
 ## What the tests do not establish
 

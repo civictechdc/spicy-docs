@@ -74,7 +74,7 @@ def fetch_one(client: httpx.Client, report_id: str, api_key: str) -> dict[str, A
             raise ValueError(f"{report_id}: response carries id {report.get('id')!r}")
         return report
 
-    return retry_http(_attempt, retryable=(httpx.RequestError, _RetryableStatus))
+    return retry_http(_attempt, retryable=(httpx.RequestError, _RetryableStatus), api_key=api_key)
 
 
 def run(

@@ -208,3 +208,59 @@ def test_retry_logs_attempt_delay_and_reason_to_stderr(
     assert f"retry 1/{retry.MAX_HTTP_ATTEMPTS - 1}" in err
     assert "RetryableHTTPStatusError" in err
     assert "retryable Federal Register response" in err
+
+
+@pytest.mark.parametrize(
+    "credential_form", ["exact-key", "api_key", "X-Amz-Credential", "X-Amz-Signature", "X-Amz-Security-Token"]
+)
+def test_shared_retry_scrubs_credentials_before_truncating_and_logging(
+    credential_form: str,
+    capsys: pytest.CaptureFixture[str],
+    recorded_sleeps: list[float],
+) -> None:
+    secret = "SYNTHETIC-RETRY-" + "x" * 400
+    # A query credential must be scrubbed even when no literal was supplied.
+    api_key = secret if credential_form == "exact-key" else ""
+    detail = (
+        f"X-Api-Key: {secret}; endpoint=fixture"
+        if api_key
+        else f"https://example.test/?{credential_form}={secret}&format=json"
+    )
+    attempts = 0
+
+    def operation() -> bytes:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise httpx.ConnectError(f"connection reset: {detail}")
+        return b"payload"
+
+    assert retry.retry_http(operation, retryable=(httpx.RequestError,), api_key=api_key) == b"payload"
+    assert attempts == 2 and len(recorded_sleeps) == 1
+    log = capsys.readouterr().err
+    assert "SYNTHETIC-" not in log
+    assert "ConnectError: connection reset:" in log
+    assert f"retry 1/{retry.MAX_HTTP_ATTEMPTS - 1} in " in log
+    assert "(cap 2s)" in log
+    if api_key:
+        assert "X-Api-Key: <redacted>; endpoint=fixture" in log
+    else:
+        assert f"{credential_form}=<redacted>&format=json" in log
+
+
+@_FETCHERS
+def test_keyless_fetchers_scrub_query_credentials_in_retry_errors(
+    fetch: Callable[[httpx.Client, str], bytes | None],
+    capsys: pytest.CaptureFixture[str],
+    recorded_sleeps: list[float],
+) -> None:
+    client, calls = _scripted_client(
+        httpx.ConnectError("connection reset: https://other.example.test/?api_key=SYNTHETIC-REDIRECT&format=json"),
+        _response(200, b"payload"),
+    )
+    with client:
+        assert fetch(client, "https://example.test/fixture") == b"payload"
+    assert len(calls) == 2 and len(recorded_sleeps) == 1
+    log = capsys.readouterr().err
+    assert "SYNTHETIC-REDIRECT" not in log
+    assert "api_key=<redacted>&format=json" in log
