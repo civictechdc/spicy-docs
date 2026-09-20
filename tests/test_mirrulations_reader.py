@@ -809,6 +809,54 @@ def test_bounded_reader_preserves_one_in_run_transient_retry() -> None:
     assert resource._attempts[_docket_key("EPA-2024-0001")] == 2
 
 
+@pytest.mark.parametrize(
+    ("content_length", "max_bytes", "etag", "reason", "expected_reads"),
+    [
+        (8, 2, '"expected"', "exceeds the 2 byte cap", 0),
+        (None, 2, '"expected"', "exceeds the 2 byte cap", 1),
+        (8, None, '"expected"', "returned 7 bytes but declared 8", 1),
+        (7, None, '"changed"', "returned ETag", 1),
+    ],
+    ids=["advertised-oversize", "unadvertised-oversize", "wrong-length", "changed-etag"],
+)
+def test_download_object_bytes_closes_body_on_validation_failure(
+    content_length: int | None,
+    max_bytes: int | None,
+    etag: str,
+    reason: str,
+    expected_reads: int,
+) -> None:
+    from spicy_docs.sources.mirrulations import download_object_bytes
+
+    class _TrackingBody(_FakeBody):
+        reads = 0
+        closes = 0
+
+        def read(self, size: int | None = None) -> bytes:
+            self.reads += 1
+            return super().read(size)
+
+        def close(self) -> None:
+            self.closes += 1
+
+    body = _TrackingBody(b"payload")
+
+    class _Obj:
+        def get(self, **kwargs: str) -> dict:
+            assert kwargs == {"IfMatch": '"expected"'}
+            return {"Body": body, "ContentLength": content_length, "ETag": etag}
+
+    class _Res:
+        def Object(self, bucket: str, key: str) -> _Obj:
+            return _Obj()
+
+    with pytest.raises(ValueError, match=reason):
+        download_object_bytes(_Res(), BUCKET, "some/key.json", if_match='"expected"', max_bytes=max_bytes)
+
+    assert body.reads == expected_reads
+    assert body.closes == 1
+
+
 def test_download_and_parse_closes_body_on_read_error() -> None:
     """A failed download raises TransientDownloadError but still closes the body.
 
