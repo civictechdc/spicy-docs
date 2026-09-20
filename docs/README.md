@@ -50,7 +50,8 @@
 - [Bill tree and section diff](sources/congress-bill-tree.md): the DeltaTrack engine as a pinned dependency behind the `bill-diff` extra, with thin adapters that gate bytes through this repo's XML entry, keep an inventory of dropped elements, and shape diff records with provenance.
 - [Interpretation](interpretation.md): shared judgment over publisher facts, rules in tables and findings that name the rule: bill stage, money bills, bill signals, vote, release and member matching, section classification and summaries.
 - [Reconstruction](reconstruction.md): deterministic structure from text renditions where retrieval has nothing structured to give -- evidence-linked nodes that name the rule that placed them, serialization to a pinned vocabulary with a source-map sidecar, five validation findings and an acceptance gate; the CFR benchmark measures it.
-- [Tables](tables.md): the thirty-four table contracts spicy-regs hosts, each with grain, identity, version column, supplier and per-column descriptions, and the one-pass bill-family build behind them.
+- [Tables](tables.md): the thirty-five table contracts spicy-regs hosts, each with grain, identity, version column, supplier and per-column descriptions, and the one-pass bill-family build behind them.
+- [Report of the Secretary of the Senate](sources/senate-secretary-report.md): the Senate's semiannual expenditure statement as a GovInfo `GPO-CDOC` package — what its listing and MODS state, and the ruled tables only the PDF holds.
 - [GovInfo metadata](sources/govinfo-metadata.md): published field definitions and mapped source records · [preservation metadata (PREMIS)](sources/govinfo-premis.md): retained GovInfo PREMIS 2 XML and digest comparison.
 - [Captured public comments](sources/public-comments.md)
 - [Fetcher formats](fetcher-formats.md): current inputs and XML/JSON opportunities.

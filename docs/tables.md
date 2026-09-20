@@ -20,7 +20,7 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 
 ## The tables
 
-`TABLE_CONTRACTS` holds all thirty-four by name. Each carries its columns in
+`TABLE_CONTRACTS` holds all thirty-five by name. Each carries its columns in
 publish order, its identity, its version column — the column a merge prefers the
 larger value of when two rows share an identity — a one-sentence grain, and one
 sentence per column for the host's data dictionary.
@@ -61,8 +61,9 @@ sentence per column for the host's data dictionary.
 | `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | 20 | `schemas.roster_tables` |
 | `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | 17 | `schemas.document_citation_tables`, `interpretation.citations` |
 | `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 36 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
+| `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | 34 | `schemas.senate_expenditure_tables` |
 
-Six hundred and seventy columns in all, each with its own sentence.
+Seven hundred and four columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -71,7 +72,7 @@ appended.
 
 ## The bill family is one pass
 
-Twelve of the thirty-four tables come out of a single call to
+Twelve of the thirty-five tables come out of a single call to
 `build_bill_family`, in an order where no step reads a table an earlier step
 published:
 
@@ -257,6 +258,67 @@ rollup estimated.
 root extension. A chapter-only `<USCode>` block contributes nothing: a chapter
 is not a section and has no hosted key.
 
+## The Senate expenditure table carries the cells, not a guess about them
+
+`senate_expenditures` is step 4 of the same build order and the one PDF-only
+family whose value is a **table**: its citation yield against the package MODS
+is zero, and a full read of the eight sampled volumes carries 65,261 distinct
+dollar figures over 161,536 rows against a publisher listing that states two
+fields. The source is the
+[Report of the Secretary of the Senate](sources/senate-secretary-report.md);
+what its ruled tables are was
+[measured first](research/senate-expenditure-tables-2026-09-20.md), and the
+measurement changed the design.
+
+**The print draws three grids and rules only one of them into cells.** Of 227
+ruled body rows across 160 measured pages, the 56 in the
+`appropriation_summary` grid carry all nine cells — account title, account
+number and six money columns, each stacking one amount per fiscal year — while
+every one of the other 171 carries exactly **one** cell of ten or of seven. A
+payment is a line inside that cell, not a ruled row, even though the print's
+own header band above it names `DOCUMENT NO.`, `DATE POSTED`, `PAYEE NAME`,
+`DESCRIPTION` and `AMOUNT ($)`.
+
+So the table has **no `payee_name`, `document_number`, `date_posted` or
+singular `amount` column**. Filling them would mean splitting a blob on an
+unmeasured guess, and a column NULL on every row of every fixture is the defect
+the design brief names for `hearing_transcripts`. What lands instead:
+`cells_json` holds the row exactly as the print states it, newlines and all;
+`column_headers_json` holds the role the print's own header band gives each
+column; `cells_ruled` is the consumer's predicate for the rows whose cells are
+separate facts. Splitting the payee block is a text rule for `interpretation/`
+and it is unmeasured.
+
+- **The governing header band is the nearest one, not the table's first.** An
+  `organization_detail` table carries two bands: column 0 goes from the office
+  block to `DOCUMENT NO.` and `DESCRIPTION` moves from column 3 to column 7
+  inside one table. That is also why there is no separate
+  `senate_expenditure_tables` companion — there is no one header row for it to
+  hold.
+- **`file_name` is in the identity.** One package publishes the whole report
+  and each of its parts as separate PDFs, and `GPO-CDOC-119sdoc3.pdf` and
+  `GPO-CDOC-119sdoc3-1.pdf` extract byte-identical text over their first sixty
+  pages. Keying on `(package_id, page, table_ordinal, row_ordinal)` alone would
+  have collided them silently.
+- **`text_sha256` is in the identity for the same reason it is in
+  `document_citations`**: a re-extraction that finds one more ruled band moves
+  every ordinal after it, and two extractions of one page must not merge.
+- **The office, the funding year and the printed page come from the page text,
+  not the table.** The page states the printed page label on 139 of 139 table
+  pages and the office block on 78; the table's own first cell states the office
+  on 21, all of which the page text also states. On a continuation page the
+  print states no office and the column is NULL. This is why the shapers take
+  a `TableObservation` **plus the page text**.
+- **The amounts are decimal strings and never a canonical key.** The
+  `dollar_amount` canonical the rollup used erases the decimal separator and was
+  measured colliding, so a dollar figure is not a join key until that is fixed.
+- **Acquisition is not wired up.** `sources/govinfo/bodies.py`'s package-id
+  grammar reaches neither `BUDGET-*` nor `GPO-CDOC-*`, so `GovInfoBodyAcquirer`
+  cannot fetch these packages in product code; the register's B4 row carries
+  that as an open decision record. The contract is filled from the bytes the
+  rollup retained, and the shapers are pure, so the grammar is the only thing
+  missing.
+
 ## What the tests do not establish
 
 Every contract has at least one shaped row built from a fixture in this
@@ -313,6 +375,36 @@ that bounds what they establish:
   figures quoted above are the [MODS re-check](research/pdf-yield-mods-recheck-2026-09-20.md)'s,
   not this branch's. The request budget for this build was four keyed records
   and all four were spent on these two packages.
+
+`senate_expenditures` is built from **two bounded page ranges of two of the
+eight** retained volumes — 19 pages of 2,599 — cut from the rollup's own bytes
+and never re-fetched. All 114 ruled rows run through the generic loop, not a
+selection, because the identity's whole job is to stay unique across two
+volumes carrying the same printed grid. What that does and does not establish:
+
+- **The totals check is real and it is one grid's.** Each fixture holds a
+  *complete* `SUMMARY OF TRANSACTIONS BY APPROPRIATIONS` section, so the parsed
+  amounts of 28 account rows are summed across seven printed pages against the
+  `Totals` row the print states, on seven money columns, and agree to the cent
+  on both. A companion test deletes one entry row and asserts the check then
+  fails, so it is proved to bite. `organization_detail` states
+  `ORGANIZATION TOTALS` inside its one body cell rather than as a row, so
+  there is no cell-level arithmetic to check there and none is claimed.
+- **The check cannot see column 0**, because the `Totals` row states no amount
+  there — and that is exactly where the one defect this build found was
+  hiding: an amount rule that accepted a bare integer read the fiscal years
+  stacked in the title cell as money, passed the totals check, and failed only
+  a test that asserted the title cell states none. The rule now requires a
+  decimal point, which is a measurement: of 1,316 amount-shaped lines every one
+  carries a `.dd` tail, and the 143 that do not are all account numbers or
+  fiscal years.
+- **Nineteen pages establish no family coverage.** Neither fixture reaches the
+  `C-` compensation or `D-` mail-allocation sections the volumes' contents name,
+  both past page 2,000, and nothing here says what grids those carry. No
+  measured page carried two ruled tables, so `table_ordinal` is `0` throughout
+  and the column exists because nothing in the print guarantees it.
+- **No request was made for this table at all**, so nothing here speaks to the
+  route's availability; the rollup's receipt is the only evidence of it.
 
 ## What is still a preserved NULL
 
