@@ -50,7 +50,7 @@ someone forgets the first.
 **Rungs come from ``bill_stage`` and are never invented here.**
 :func:`sealed_stage` runs the print's own matched phrase through
 ``infer_stage_from_text``, so a phrasing either resolves to a sealed rung with
-the matcher that fired or is reported unmapped. Nine of the twenty-five
+the matcher that fired or is reported unmapped. Ten of the twenty-five
 phrasings resolve; the rest are the *print register*, and they are recorded as
 such rather than patched into ``STAGE_RULES``. ``passed the House`` is the
 sharpest case: the sealed matcher is ``passed house``, one word away, and
@@ -211,35 +211,61 @@ SENATE = "senate"
 UNSTATED = "unstated"
 
 
+#: Where a code's existence was established. The distinction is the whole
+#: lesson of this module's second correction: the guide's own section 3 says
+#: *"Codes in this table are representational... It is provided as a courtesy;
+#: a complete, authoritative list of action codes does not exist."* Reading it
+#: as the publisher's vocabulary anyway -- and then self-checking this mapping
+#: against that same list -- produced a check that agreed with itself and could
+#: not fail.
+FROM_GUIDE = "guide-section-3"
+FROM_THE_WIRE = "observed-2026-09-20"
+
+
 @dataclass(frozen=True, slots=True)
 class GuideCode:
-    """One ``<actionCode>`` value the publisher's BILLSTATUS guide lists, and whose chamber."""
+    """One ``<actionCode>`` value, whose chamber, and how its existence is known.
+
+    ``source`` is ``FROM_GUIDE`` for a code the retained user guide's section 3
+    lists and ``FROM_THE_WIRE`` for one only the publisher's own responses
+    show. Both are real; only the first can be checked against a committed
+    fixture, and conflating them is what made the earlier self-check vacuous.
+    """
 
     code: str
     chamber: str
     text: str
+    source: str = FROM_GUIDE
 
 
-#: What section 3 of the BILLSTATUS user guide -- *"Action Code Element
-#: Possible Values"* -- states for each print phrasing. **Section 3 only.**
+#: What the publisher states for each print phrasing.
 #:
-#: This mapping was wrong in its first version and the error ran in the
-#: direction that suppressed action, so it is stated plainly. It cited 72
-#: *Hearing held in House*, 74 *Markup in House*, 77, 79, 81, 82, 47, 48 and
-#: 49 as action codes. Every one of those is in **section 5**, the mapping of
-#: *LOC summaries version codes* to ``<actionDesc>`` text -- the
-#: ``<versionCode>`` child of ``<summaries>``, not ``<actionCode>`` at all --
-#: and the self-check that was supposed to catch it scanned the whole guide, so
-#: it validated against a 123-code superset drawn from three different tables
-#: and could not fail.
+#: **Two corrections are recorded here, and the second reversed the first.**
 #:
-#: Corrected, the finding reverses: **section 3 has no House-side code for a
-#: committee hearing or a markup.** The only hearing and markup codes in it are
-#: ``13100`` and ``13200``, and both say *Senate*. For a House committee's
-#: hearing or markup on a bill, BILLSTATUS's action-code vocabulary states
-#: nothing, so the print's own sentence is the only structured statement of
-#: those two events -- and they are the two largest phrasings in the measured
-#: corpus (420 and 219 rows of 4,456).
+#: The first version of this mapping cited 72 *Hearing held in House* and 74
+#: *Markup in House* as action codes. They are **section 5** values -- the
+#: mapping of *LOC summaries version codes* to ``<actionDesc>`` text, the
+#: ``<versionCode>`` child of ``<summaries>`` -- and the self-check scanned the
+#: whole guide, so it validated against a 123-code superset drawn from three
+#: tables and could not fail.
+#:
+#: The correction to that then over-corrected, in the same shape: scoped to
+#: section 3, the table has no House hearing or markup code, and this module
+#: concluded the publisher therefore **has** none and the print was the only
+#: structured source. **That is false on the wire.** Section 3 states in its own
+#: first paragraph that it is representational and not authoritative, and the
+#: 20 retained BILLSTATUS responses
+#: (``~/Work/corpora/supply-2026-09-02/receipts/bill-action-relationship-2026-09-20/billstatus/``)
+#: carry **13 of their 35 distinct action codes nowhere in section 3**,
+#: including every House committee-actor code below. A check that reads an
+#: explicitly incomplete list as a vocabulary and then validates against it is
+#: the same defect one level down.
+#:
+#: What the same bytes do support is narrower and is what the hosted contract
+#: rests on: on the 20-bill probe the publisher states **10 of 15** of the
+#: print's subcommittee hearings **not at all**, and codes only 2 of the 5 it
+#: does state. For markups the print is a **second, coded** source, not the
+#: only one.
 BILLSTATUS_ACTION_CODES: Mapping[str, tuple[GuideCode, ...]] = {
     "became_public_law": (
         GuideCode("36000", UNSTATED, "Became Public Law"),
@@ -294,38 +320,47 @@ BILLSTATUS_ACTION_CODES: Mapping[str, tuple[GuideCode, ...]] = {
     ),
     "received_in_chamber": (GuideCode("H14000", HOUSE, "Received in the House"),),
     "conference": (GuideCode("H25200", UNSTATED, "Conference report [free text] filed"),),
-    # Senate-only, and that is the finding rather than an omission: these are
-    # the ONLY hearing and markup codes section 3 has.
-    "held_hearing": (GuideCode("13100", SENATE, "Senate committee/subcommittee hearings"),),
-    "held_markup": (GuideCode("13200", SENATE, "Senate committee/subcommittee markups"),),
+    # The two committee-actor events, and the reason ``source`` exists. Section
+    # 3 lists only the Senate-side codes; the House-side ones below are in the
+    # publisher's own responses and in no committed fixture, which is exactly
+    # why they must be marked as observed rather than quietly asserted.
+    "held_hearing": (
+        GuideCode("13100", SENATE, "Senate committee/subcommittee hearings"),
+        GuideCode("H21000", HOUSE, "Subcommittee Hearings Held", FROM_THE_WIRE),
+    ),
+    "held_markup": (
+        GuideCode("13200", SENATE, "Senate committee/subcommittee markups"),
+        GuideCode("H15000-B", HOUSE, "Committee Consideration and Mark-up Session Held", FROM_THE_WIRE),
+        GuideCode("H15001", HOUSE, "Committee Consideration and Mark-up Session Held", FROM_THE_WIRE),
+        GuideCode("H22000", HOUSE, "Subcommittee Consideration and Mark-up Session Held", FROM_THE_WIRE),
+    ),
 }
 
-#: Phrasings whose every section-3 code names the *other* chamber than the one
-#: these prints are about, so a House report's row carries no code for them.
-#: Derived from :data:`BILLSTATUS_ACTION_CODES`, never written twice.
-SENATE_ONLY_IN_THE_GUIDE: frozenset[str] = frozenset(
-    key for key, codes in BILLSTATUS_ACTION_CODES.items() if codes and all(code.chamber == SENATE for code in codes)
+#: The codes a committed fixture can check. Everything else was learned from a
+#: response and is checkable only against the retained receipt, which is what
+#: ``source`` records and what the tool's cross-check reports.
+GUIDE_LISTED_CODES: frozenset[str] = frozenset(
+    entry.code for codes in BILLSTATUS_ACTION_CODES.values() for entry in codes if entry.source == FROM_GUIDE
+)
+
+#: Phrasings the publisher codes only through a code the retained guide does
+#: **not** list. Named for what it is -- a gap in the *document*, never a gap
+#: in the publisher's vocabulary -- because the earlier name
+#: (``HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE``) asserted the second and the wire
+#: refuted it.
+HOUSE_CODES_ABSENT_FROM_THE_GUIDE: frozenset[str] = frozenset(
+    key
+    for key, codes in BILLSTATUS_ACTION_CODES.items()
+    if any(entry.chamber == HOUSE and entry.source == FROM_THE_WIRE for entry in codes)
 )
 
 
-#: The events a **House committee** performs for which the publisher's
-#: action-code table has no code at all. Derived: Senate-only in the guide, and
-#: not one of the phrasings that names its own chamber (``passed the Senate``
-#: is a Senate event stated in a House print and its Senate code is the right
-#: one, so it does not belong here). These two -- 639 of 4,456 measured rows --
-#: are where a House committee print is the only structured statement of the
-#: event.
-HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE: frozenset[str] = frozenset({"held_hearing", "held_markup"})
-
-
 def guide_codes_for(phrasing: str, chamber: str | None) -> tuple[str, ...]:
-    """The section-3 codes that apply to ``chamber``, or ``()`` where the guide has none.
+    """The action codes that apply to ``chamber``, or ``()`` where none is known.
 
-    A code applies when its own text names this chamber or names none at all.
-    One that names the *other* chamber is excluded, which is the whole reason
-    a House committee's hearing and markup come back empty: ``13100`` and
-    ``13200`` say Senate and nothing else in section 3 covers either event.
-    ``chamber`` of ``None`` asks for every code the guide lists.
+    A code applies when its own text names this chamber or names none at all;
+    one that names the *other* chamber is excluded. ``chamber`` of ``None``
+    asks for every code known for the phrasing.
     """
     codes = BILLSTATUS_ACTION_CODES.get(phrasing, ())
     if chamber is None:
@@ -334,31 +369,47 @@ def guide_codes_for(phrasing: str, chamber: str | None) -> tuple[str, ...]:
 
 
 #: Phrasings that name their own chamber, so the code is chosen by the phrase
-#: rather than by the measure. Everything else is an action on the measure and
-#: takes the measure's own chamber.
+#: rather than by anything around it.
 _CHAMBER_IN_THE_PHRASE: Mapping[str, str] = {"passed_house": HOUSE, "passed_senate": SENATE}
 
+#: Phrasings whose **actor is the committee**, not the measure. A House
+#: committee holding a hearing on a Senate bill is a House committee action,
+#: and falling through to the measure's type published ``13100`` *Senate
+#: committee hearings* for it. Latent rather than observed -- 0 of the 639
+#: hearing and markup rows in the measured corpus sits on a Senate measure --
+#: and fixed anyway, because the next print to do it would publish a confidently
+#: wrong code.
+_COMMITTEE_IS_THE_ACTOR: frozenset[str] = frozenset({"held_hearing", "held_markup"})
 
-def chamber_of(phrasing: str, matched_text: str, bill_designator: str) -> str | None:
+
+def chamber_of(
+    phrasing: str,
+    matched_text: str,
+    bill_designator: str,
+    committee_chamber: str | None = None,
+) -> str | None:
     """Which chamber's code vocabulary this one row is answerable to.
 
-    Not the document's chamber, which would be an assumption: a House
-    committee's activity report states *"the Senate passed H.R. 2365"* and
-    *"the Senate Committee on Commerce ... ordered the measure favorably
-    reported to the Senate"* about a Senate bill, and both belong to the Senate
-    side of the publisher's vocabulary while sitting in a House print.
+    Three rules, in order, and none of them is "the document's chamber", which
+    would be an assumption: a House committee's activity report states *"the
+    Senate passed H.R. 2365"* and reports a Senate committee acting on a Senate
+    bill, and both belong to the Senate side while sitting in a House print.
 
-    So the chamber is read off the row itself, in the publisher's own terms:
-    the phrase where the phrase names one (``passed the Senate``, ``received in
-    the House``), and otherwise the **measure's own type**, which is the one
-    fact the bill key always carries. ``H.R. 2365`` is a House measure whatever
-    document discusses it.
+    1. **The phrase names one** -- ``passed the Senate``, ``received in the
+       House`` -- and then the phrase decides.
+    2. **The committee is the actor** -- a hearing, a markup -- and then the
+       *stating committee's* chamber decides, because the event is the
+       committee's and not the measure's. ``committee_chamber`` of ``None``
+       leaves it unresolved rather than guessed.
+    3. Otherwise the action is on the measure, and the **measure's own type**
+       decides: ``H.R. 2365`` is a House measure whatever document discusses it.
     """
     if phrasing in _CHAMBER_IN_THE_PHRASE:
         return _CHAMBER_IN_THE_PHRASE[phrasing]
-    lowered = matched_text.lower()
     if phrasing == "received_in_chamber":
-        return SENATE if "senate" in lowered else HOUSE
+        return SENATE if "senate" in matched_text.lower() else HOUSE
+    if phrasing in _COMMITTEE_IS_THE_ACTOR:
+        return committee_chamber
     parts = bill_type_and_number(bill_designator)
     if parts is None:
         return None
@@ -391,7 +442,7 @@ class PrintAction:
 _PUBLIC_LAW = CITATION_RULES_BY_NAME["public_law"].pattern
 
 #: The sealed vocabulary, **additions-only**: a key here is published in
-#: ``bill_committee_actions.action_phrasing``, so renaming or deleting one
+#: ``bill_committee_actions.print_phrasing``, so renaming or deleting one
 #: rewrites rows that are already out. Append, move
 #: :data:`PRINT_ACTION_VOCABULARY_VERSION`, re-pin the fixtures.
 #:
@@ -504,16 +555,32 @@ UNCODED_IN_THE_GUIDE: frozenset[str] = frozenset(
 PRINT_ACTION_VOCABULARY_VERSION = "001"
 
 
-def _rule_set_version(rules: Sequence[PrintAction]) -> str:
-    """A digest over every phrasing's name and pattern, derived rather than written.
+def _rule_set_version(
+    rules: Sequence[PrintAction],
+    codes: Mapping[str, tuple[GuideCode, ...]] | None = None,
+    chamber_rules: Mapping[str, str] | None = None,
+) -> str:
+    """A digest over everything that decides what a published row says.
 
-    The device ``citations.CITATION_RULE_SET_VERSION`` uses: editing a pattern
-    moves this even when someone forgets to move
-    :data:`PRINT_ACTION_VOCABULARY_VERSION`, so a sidecar or a fixture pinned
-    against it cannot silently describe a different vocabulary.
+    The device ``citations.CITATION_RULE_SET_VERSION`` uses, widened twice over
+    what it first covered. A pattern is not the only input to a row: the
+    code mapping fills ``billstatus_action_code`` and the chamber rules decide
+    which of its entries apply, so an edit to either changes **every** row's
+    published code while leaving the patterns untouched. Digesting only the
+    patterns let that happen without moving a version -- and the two
+    corrections this module has already been through were both edits to exactly
+    those inputs.
     """
-    joined = "\n".join(f"{rule.key}|{rule.pattern}" for rule in rules)
-    return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:12]
+    codes = BILLSTATUS_ACTION_CODES if codes is None else codes
+    chamber_rules = _CHAMBER_IN_THE_PHRASE if chamber_rules is None else chamber_rules
+    parts = [f"{rule.key}|{rule.pattern}" for rule in rules]
+    parts += [
+        f"{key}|" + ",".join(f"{entry.code}:{entry.chamber}:{entry.source}" for entry in codes[key])
+        for key in sorted(codes)
+    ]
+    parts += [f"{key}|{value}" for key, value in sorted(chamber_rules.items())]
+    parts += sorted(_COMMITTEE_IS_THE_ACTOR)
+    return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()[:12]
 
 
 PRINT_ACTION_RULE_SET_VERSION = _rule_set_version(PRINT_ACTION_RULES)
@@ -663,7 +730,12 @@ class BillActionReading:
     mentions_in_multi_bill_sentence: int
 
 
-def find_bill_actions(text: str, citations: Iterable[object]) -> BillActionReading:
+def find_bill_actions(
+    text: str,
+    citations: Iterable[object],
+    *,
+    committee_chamber: str | None = None,
+) -> BillActionReading:
     """Every action the print states about a bill it names, from the text and its cites.
 
     ``citations`` are the ``bill_number`` :class:`CitationFinding`s already
@@ -672,10 +744,11 @@ def find_bill_actions(text: str, citations: Iterable[object]) -> BillActionReadi
     about where a bill was named. Anything else is ignored, so a caller may
     hand over the whole finding tuple.
 
-    Each row's BILLSTATUS action codes are chosen by :func:`chamber_of`, from
-    the row itself rather than from the document: a House committee's hearing
-    or markup on a House measure carries **no** code, because the only hearing
-    and markup codes in the publisher's action-code table say Senate.
+    ``committee_chamber`` is the chamber of the committee whose document this
+    is, and it is used for one thing only: a hearing and a markup are the
+    committee's own acts, so their action code follows the actor and not the
+    measure (see :func:`chamber_of`). Every other row's chamber is read off the
+    row.
 
     **The attachment rule is nearest-mention-in-sentence**, ties going to the
     designator after the phrase, because the print's grammar puts the measure
@@ -722,7 +795,7 @@ def find_bill_actions(text: str, citations: Iterable[object]) -> BillActionReadi
                 key=lambda entry: (abs(entry[1] - anchor), 0 if entry[1] >= anchor else 1),
             )
             stage, matcher = sealed_stage(matched)
-            chamber = chamber_of(key, matched, mention.matched_text)
+            chamber = chamber_of(key, matched, mention.matched_text, committee_chamber)
             findings.append(
                 BillActionFinding(
                     bill_id=mention.target_key,
@@ -745,11 +818,7 @@ def find_bill_actions(text: str, citations: Iterable[object]) -> BillActionReadi
                 )
             )
     findings.sort(key=lambda finding: (finding.span_start, finding.bill_id, finding.phrasing))
-    exposed = sum(
-        len(here)
-        for (here,) in ((value,) for value in by_sentence.values())
-        if len({f.target_key for f, _ in here}) > 1
-    )
+    exposed = sum(len(here) for here in by_sentence.values() if len({mention.target_key for mention, _ in here}) > 1)
     return BillActionReading(tuple(findings), dict(sorted(orphans.items())), len(starts), exposed)
 
 
@@ -758,13 +827,15 @@ __all__ = [
     "ATTACHMENT_PRECISION",
     "ATTACHMENT_SINGLE",
     "BILLSTATUS_ACTION_CODES",
+    "FROM_GUIDE",
+    "FROM_THE_WIRE",
+    "GUIDE_LISTED_CODES",
     "HOUSE",
-    "HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE",
+    "HOUSE_CODES_ABSENT_FROM_THE_GUIDE",
     "PRINT_ACTION_RULES",
     "PRINT_ACTION_RULE_SET_VERSION",
     "PRINT_ACTION_VOCABULARY_VERSION",
     "SENATE",
-    "SENATE_ONLY_IN_THE_GUIDE",
     "TRUSTED_ATTACHMENT",
     "UNCODED_IN_THE_GUIDE",
     "UNSTATED",

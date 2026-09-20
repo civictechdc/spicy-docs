@@ -25,8 +25,10 @@ from spicy_docs.interpretation.bill_actions import (
     ATTACHMENT_MULTI,
     ATTACHMENT_SINGLE,
     BILLSTATUS_ACTION_CODES,
+    FROM_THE_WIRE,
+    GUIDE_LISTED_CODES,
     HOUSE,
-    HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE,
+    HOUSE_CODES_ABSENT_FROM_THE_GUIDE,
     PRINT_ACTION_RULE_SET_VERSION,
     PRINT_ACTION_RULES,
     PRINT_ACTION_VOCABULARY_VERSION,
@@ -86,26 +88,35 @@ def test_the_summaries_version_codes_are_not_action_codes() -> None:
     assert "| **74** | HOUSE | Markup in House |" in GUIDE.read_text()
 
 
-def test_every_code_this_repository_claims_is_in_the_publisher_s_own_action_code_table() -> None:
+def test_every_guide_sourced_code_is_in_the_guide_and_the_wire_codes_are_marked_as_such() -> None:
+    """The check only covers what a committed fixture can cover.  Claiming it covers
+    the rest is what made the earlier version vacuous: the guide says in its own first
+    paragraph that it is representational and that no authoritative list exists."""
     stated = guide_action_codes(GUIDE)
-    claimed = {entry.code for codes in BILLSTATUS_ACTION_CODES.values() for entry in codes}
 
-    assert claimed <= stated, sorted(claimed - stated)
+    assert GUIDE_LISTED_CODES <= stated, sorted(GUIDE_LISTED_CODES - stated)
+    observed = {
+        entry.code for codes in BILLSTATUS_ACTION_CODES.values() for entry in codes if entry.source == FROM_THE_WIRE
+    }
+    assert observed == {"H21000", "H15000-B", "H15001", "H22000"}
+    # ...and every one of them is real and absent from the guide, which is the
+    # whole reason the source field exists.
+    assert not (observed & stated)
 
 
-def test_a_house_committee_hearing_and_markup_have_no_action_code_at_all() -> None:
-    """The finding the hosted contract rests on, asserted as the two facts it is:
-    the only hearing and markup codes in the table say Senate, and nothing else
-    in the table covers either event."""
-    assert guide_codes_for("held_hearing", HOUSE) == ()
-    assert guide_codes_for("held_markup", HOUSE) == ()
+def test_a_house_committee_hearing_and_markup_are_coded_by_a_code_the_guide_omits() -> None:
+    """Retracted claim, kept as a test: these two DO have House codes.  The guide
+    simply does not list them, which is a gap in the document and not in the
+    publisher's vocabulary."""
+    assert guide_codes_for("held_hearing", HOUSE) == ("H21000",)
+    assert guide_codes_for("held_markup", HOUSE) == ("H15000-B", "H15001", "H22000")
     assert guide_codes_for("held_hearing", SENATE) == ("13100",)
-    assert guide_codes_for("held_markup", SENATE) == ("13200",)
-    assert HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE == {"held_hearing", "held_markup"}
+    assert HOUSE_CODES_ABSENT_FROM_THE_GUIDE == {"held_hearing", "held_markup"}
 
 
-def test_uncoded_and_senate_only_are_different_sets() -> None:
-    """Conflating them double-counted both in the first rendering."""
+def test_a_phrasing_with_no_known_code_is_a_different_set_from_one_the_guide_omits() -> None:
+    """Conflating them double-counted both in an earlier rendering, and they are
+    different facts: no code exists at all, against no code is in the document."""
     assert UNCODED_IN_THE_GUIDE == {
         "vetoed",
         "not_considered",
@@ -113,7 +124,7 @@ def test_uncoded_and_senate_only_are_different_sets() -> None:
         "favorably_forwarded",
         "included_in",
     }
-    assert not (UNCODED_IN_THE_GUIDE & HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE)
+    assert not (UNCODED_IN_THE_GUIDE & HOUSE_CODES_ABSENT_FROM_THE_GUIDE)
 
 
 def test_a_missing_guide_is_refused_rather_than_read_as_an_empty_vocabulary(tmp_path: Path) -> None:
@@ -128,7 +139,6 @@ def test_a_missing_guide_is_refused_rather_than_read_as_an_empty_vocabulary(tmp_
         ("passed_senate", "the Senate passed", "H.R. 2365", SENATE),
         ("received_in_chamber", "received in the Senate", "H.R. 2365", SENATE),
         # Otherwise the measure's own type decides, never the document's.
-        ("held_hearing", "held a hearing", "H.R. 2365", HOUSE),
         ("ordered_reported", "ordered favorably reported", "S. 3475", SENATE),
         ("reported", "reported", "H. Res. 1085", HOUSE),
     ],
@@ -137,6 +147,27 @@ def test_the_chamber_is_read_off_the_row_and_not_off_the_document(
     phrasing: str, matched: str, designator: str, chamber: str
 ) -> None:
     assert chamber_of(phrasing, matched, designator) == chamber
+
+
+@pytest.mark.parametrize(
+    ("designator", "committee_chamber", "chamber"),
+    [
+        # A House committee's hearing is a House committee action whatever the
+        # measure is. Falling through to the measure's type published `13100`
+        # *Senate committee hearings* for a House committee hearing on a Senate
+        # bill -- latent today (0 of 639 rows) and wrong whenever it fires.
+        ("S. 1234", HOUSE, HOUSE),
+        ("H.R. 2365", HOUSE, HOUSE),
+        ("S. 1234", SENATE, SENATE),
+        # With no stating committee it is left unresolved rather than guessed.
+        ("S. 1234", None, None),
+    ],
+)
+def test_a_committee_actor_phrasing_takes_the_committee_s_chamber_not_the_measure_s(
+    designator: str, committee_chamber: str | None, chamber: str | None
+) -> None:
+    assert chamber_of("held_hearing", "held a hearing", designator, committee_chamber) == chamber
+    assert chamber_of("held_markup", "Markup of", designator, committee_chamber) == chamber
 
 
 # --- the flattened matching text -----------------------------------------------------
@@ -308,7 +339,10 @@ def _fixture_reading(package: str):
         pages.append(text[cursor : cursor + length])
         cursor += length + 1
     citations = find_citations(text, pages=tuple(pages), kinds=("bill_number",), congress=118)
-    return text, find_bill_actions(text, citations)
+    # These are House committee activity reports, and a hearing or a markup is
+    # the committee's own act, so the committee's chamber is what its code
+    # follows.
+    return text, find_bill_actions(text, citations, committee_chamber=HOUSE)
 
 
 @pytest.fixture(scope="module")
@@ -335,36 +369,46 @@ def test_the_complete_fixture_reproduces_its_whole_document_row_for_row(sidecar:
 
     assert len(reading.findings) == document["action_rows"]
     assert document["pages"] == sidecar["fixtures"]["CRPT-118hrpt968"]["pages"]
+    # The fixture text IS the document the measurement read, not another
+    # extraction of it: same bytes, same digest, so the offsets are the same.
+    assert sidecar["fixtures"]["CRPT-118hrpt968"]["text_sha256"] == document["text_sha256"]
 
 
 def test_the_capped_fixture_is_a_prefix_subset_of_the_full_read(sidecar: dict) -> None:
     """``CRPT-118hrpt965`` is 60 pages of 282.  The capped text is a prefix of the full
-    text, so every capped row must be a full-read row at the same offset -- a stronger
-    statement than "fewer rows", and the one that shows the offsets are stable."""
-    text, reading = _fixture_reading("CRPT-118hrpt965")
-    full = next(d for d in sidecar["documents"] if d["package_id"] == "CRPT-118hrpt965")
+    text, so every capped row must be a full-read row **at the same offset** -- which is
+    what shows the offsets are stable under a shorter read.
 
-    assert len(reading.findings) < full["action_rows"]
-    assert all(action.span_start < len(text) for action in reading.findings)
-    assert sidecar["fixtures"]["CRPT-118hrpt965"]["pages"] == 60
+    The earlier version of this asserted ``span_start < len(text)``, which cannot fail:
+    every span is an offset into the text it was read from."""
+    _text, reading = _fixture_reading("CRPT-118hrpt965")
+    full = next(d for d in sidecar["documents"] if d["package_id"] == "CRPT-118hrpt965")
+    counts = sidecar["fixtures"]["CRPT-118hrpt965"]
+
+    assert counts["pages"] == 60 and full["pages"] == 282
+    assert len(reading.findings) == counts["action_rows"] < full["action_rows"]
+    # `report` holds both reads and records how many of the capped rows are
+    # also rows of the full one, keyed on (bill, phrasing, phrase offset).
+    # Anything but equality means a shorter read moved an offset.
+    assert counts["rows_also_in_the_full_read"] == counts["action_rows"]
 
 
 # --- the hosted contract -------------------------------------------------------------
 
 
-def test_a_house_hearing_row_carries_no_action_code_and_says_why_in_the_contract() -> None:
-    """The column is NULL because the publisher has no code, not because the print is
-    unmapped, and the contract's own prose has to say so."""
+def test_a_house_hearing_row_carries_the_wire_code_and_the_contract_says_it_is_off_guide() -> None:
+    """The column is not NULL for a House hearing, and the prose has to say the code
+    comes from the publisher's responses rather than from a committed fixture."""
     _text, reading = _fixture_reading("CRPT-118hrpt965")
     hearings = [action for action in reading.findings if action.phrasing == "held_hearing"]
 
     assert hearings, "the fixture states at least one hearing"
-    assert all(action.billstatus_action_codes == () for action in hearings)
+    assert all(action.billstatus_action_codes == ("H21000",) for action in hearings)
     assert all(action.chamber == HOUSE for action in hearings)
 
     description = TABLE_CONTRACTS["bill_committee_actions"].descriptions["billstatus_action_code"]
-    assert "NULL does not mean" in description
-    assert "13100" in description and "13200" in description
+    assert "not in the retained user guide" in description
+    assert "H21000" in description
 
 
 def test_the_shaped_row_keys_on_the_phrase_offset_so_two_events_do_not_collide() -> None:

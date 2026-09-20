@@ -51,137 +51,248 @@
       }
     ],
     "bills_requested": 20,
-    "code_matched": 44,
+    "code_matched": 57,
     "date_matched": 52,
+    "guide_listed_codes": 36,
     "hearing_or_markup_rows": 23,
     "hearing_or_markup_stated_by_billstatus": 13,
-    "no_code_in_vocabulary": 29,
+    "no_code_in_vocabulary": 6,
     "per_phrasing": {
       "became_public_law": {
         "code_matched": 2,
-        "coded": true,
         "date_matched": 1,
-        "rows": 2
+        "mapped_codes": [
+          "36000",
+          "E30000",
+          "E40000"
+        ],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 2,
+        "stated_by_any_wording": 0
       },
       "declined_markup": {
         "code_matched": 0,
-        "coded": false,
         "date_matched": 0,
-        "rows": 1
+        "mapped_codes": [],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 1,
+        "stated_by_any_wording": 0
       },
       "discharged": {
         "code_matched": 0,
-        "coded": true,
         "date_matched": 1,
-        "rows": 1
+        "mapped_codes": [
+          "H12300"
+        ],
+        "publisher_codes_on_matched_wording": [
+          "14500"
+        ],
+        "rows": 1,
+        "stated_by_any_wording": 1
       },
       "favorably_forwarded": {
         "code_matched": 0,
-        "coded": false,
         "date_matched": 2,
-        "rows": 2
+        "mapped_codes": [],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 2,
+        "stated_by_any_wording": 0
       },
       "favorably_reported": {
         "code_matched": 4,
-        "coded": true,
         "date_matched": 3,
-        "rows": 5
+        "mapped_codes": [
+          "5000",
+          "H12200"
+        ],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 5,
+        "stated_by_any_wording": 0
       },
       "held_hearing": {
-        "code_matched": 0,
-        "coded": false,
+        "code_matched": 5,
         "date_matched": 3,
+        "mapped_codes": [
+          "H21000"
+        ],
+        "publisher_codes_on_matched_wording": [
+          "H21000"
+        ],
         "rows": 15,
         "stated_by_any_wording": 5
       },
       "held_markup": {
-        "code_matched": 0,
-        "coded": false,
+        "code_matched": 8,
         "date_matched": 7,
+        "mapped_codes": [
+          "H15000-B",
+          "H15001",
+          "H22000"
+        ],
+        "publisher_codes_on_matched_wording": [
+          "H15000-B",
+          "H15001",
+          "H22000"
+        ],
         "rows": 8,
         "stated_by_any_wording": 8
       },
       "introduced": {
         "code_matched": 16,
-        "coded": true,
         "date_matched": 15,
-        "rows": 16
+        "mapped_codes": [
+          "1000"
+        ],
+        "publisher_codes_on_matched_wording": [
+          "1000",
+          "10000",
+          "Intro-H"
+        ],
+        "rows": 16,
+        "stated_by_any_wording": 16
       },
       "not_considered": {
         "code_matched": 0,
-        "coded": false,
         "date_matched": 0,
-        "rows": 1
+        "mapped_codes": [],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 1,
+        "stated_by_any_wording": 0
       },
       "ordered_reported": {
         "code_matched": 3,
-        "coded": true,
         "date_matched": 0,
-        "rows": 3
+        "mapped_codes": [
+          "5000",
+          "H12200"
+        ],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 3,
+        "stated_by_any_wording": 0
       },
       "passed_house": {
         "code_matched": 1,
-        "coded": true,
         "date_matched": 1,
-        "rows": 1
+        "mapped_codes": [
+          "8000"
+        ],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 1,
+        "stated_by_any_wording": 0
       },
       "passed_senate": {
         "code_matched": 1,
-        "coded": true,
         "date_matched": 0,
-        "rows": 1
+        "mapped_codes": [
+          "17000"
+        ],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 1,
+        "stated_by_any_wording": 0
       },
       "placed_on_calendar": {
         "code_matched": 1,
-        "coded": true,
         "date_matched": 1,
-        "rows": 1
+        "mapped_codes": [
+          "H12410"
+        ],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 1,
+        "stated_by_any_wording": 0
       },
       "presented_to_president": {
         "code_matched": 1,
-        "coded": true,
         "date_matched": 1,
-        "rows": 1
+        "mapped_codes": [
+          "28000",
+          "E20000"
+        ],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 1,
+        "stated_by_any_wording": 0
       },
       "received_in_chamber": {
         "code_matched": 0,
-        "coded": false,
         "date_matched": 2,
-        "rows": 2
+        "mapped_codes": [],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 2,
+        "stated_by_any_wording": 0
       },
       "referred": {
         "code_matched": 12,
-        "coded": true,
         "date_matched": 12,
-        "rows": 12
+        "mapped_codes": [
+          "2000",
+          "H11100"
+        ],
+        "publisher_codes_on_matched_wording": [
+          "H11000",
+          "H11100"
+        ],
+        "rows": 12,
+        "stated_by_any_wording": 12
       },
       "report_filed": {
         "code_matched": 0,
-        "coded": true,
         "date_matched": 0,
-        "rows": 1
+        "mapped_codes": [
+          "H12100"
+        ],
+        "publisher_codes_on_matched_wording": [
+          "5000",
+          "H12200",
+          "H19000"
+        ],
+        "rows": 1,
+        "stated_by_any_wording": 1
       },
       "reported": {
         "code_matched": 1,
-        "coded": true,
         "date_matched": 1,
-        "rows": 1
+        "mapped_codes": [
+          "5000",
+          "H12200"
+        ],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 1,
+        "stated_by_any_wording": 0
       },
       "suspension": {
         "code_matched": 2,
-        "coded": true,
         "date_matched": 2,
-        "rows": 2
+        "mapped_codes": [
+          "H37300"
+        ],
+        "publisher_codes_on_matched_wording": [],
+        "rows": 2,
+        "stated_by_any_wording": 0
       }
     },
     "publisher_action_rows": 197,
+    "publisher_distinct_codes": 35,
     "publisher_source_systems": {
       "House committee actions": 48,
       "House floor actions": 69,
       "Library of Congress": 65,
       "Senate": 15
     },
-    "rows_compared": 76
+    "rows_compared": 76,
+    "wire_codes_absent_from_the_guide": [
+      "H11000",
+      "H15000-B",
+      "H15001",
+      "H19000",
+      "H21000",
+      "H22000",
+      "H23000",
+      "H25000",
+      "H30300",
+      "H37100",
+      "H37220",
+      "H38800",
+      "Intro-H"
+    ]
   },
   "citation_rule_version": "001",
   "documents": [
@@ -495,6 +606,7 @@
       "mentions": 208,
       "orphan_phrases": 98,
       "pages": 60,
+      "rows_also_in_the_full_read": 182,
       "text_sha256": "3878beee22ee5e2a84a728c4fd2ccc401649fd11852e62659a4143ea066dd723",
       "trusted_rows": 181
     },
@@ -507,11 +619,21 @@
       "mentions": 267,
       "orphan_phrases": 159,
       "pages": 56,
+      "rows_also_in_the_full_read": 23,
       "text_sha256": "f2c52f60c527c27c0ef6389cf4f2fbb94c5cedd7ba5cfe3632d459dd7ad915f7",
       "trusted_rows": 23
     }
   },
-  "guide_codes_not_in_the_retained_guide": {},
+  "guide_codes_not_in_the_retained_guide": {
+    "held_hearing": [
+      "H21000"
+    ],
+    "held_markup": [
+      "H15000-B",
+      "H15001",
+      "H22000"
+    ]
+  },
   "hand_check": {
     "attachment": {
       "correct": 32,
@@ -906,9 +1028,16 @@
       "sealed_stage": "committee"
     },
     {
-      "billstatus_codes": [],
+      "billstatus_codes": [
+        "H15000-B",
+        "H15001",
+        "H22000"
+      ],
       "billstatus_codes_any_chamber": [
-        "13200"
+        "13200",
+        "H15000-B",
+        "H15001",
+        "H22000"
       ],
       "distinct_bills": 155,
       "house_code_absent": true,
@@ -920,9 +1049,12 @@
       "sealed_stage": "committee"
     },
     {
-      "billstatus_codes": [],
+      "billstatus_codes": [
+        "H21000"
+      ],
       "billstatus_codes_any_chamber": [
-        "13100"
+        "13100",
+        "H21000"
       ],
       "distinct_bills": 333,
       "house_code_absent": true,
@@ -999,7 +1131,7 @@
     }
   ],
   "requests": 0,
-  "rule_set_version": "25d697b17e28",
+  "rule_set_version": "f9130c97fe4b",
   "totals": {
     "action_rows": 4456,
     "distinct_bills": 978,

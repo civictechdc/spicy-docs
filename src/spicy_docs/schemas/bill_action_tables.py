@@ -1,29 +1,35 @@
 """What a committee print says happened to a bill, hosted with its measured reliability.
 
-One table. It exists because of a finding that ran the other way from the one
-first reported, and the finding is the contract's whole justification, so it is
-stated here before the columns.
+One table. It exists because of what the publisher's own action lists do *not*
+contain, and that claim has been wrong twice in opposite directions, so it is
+stated here at the strength the retained bytes actually support.
 
-**The publisher's action-code table has no House hearing or markup code.**
-``tests/fixtures/billstatus_codes/guide-2026-08-03.md`` section 3, *Action Code
-Element Possible Values*, is the ``<actionCode>`` vocabulary. Its only hearing
-and markup entries are ``13100`` *Senate committee/subcommittee hearings* and
-``13200`` *Senate committee/subcommittee markups*. There is no House
-counterpart to either. So when a House committee's activity report says *"On
-June 14, 2023, the Subcommittee on Health held a hearing on H.R. 2365"*, the
-print's sentence is **the only structured statement of that event** -- and
-hearings and markups are the two largest phrasings in the measured corpus, 420
-and 219 rows of 4,456.
+**What this is for: a subcommittee hearing on a bill is often recorded
+nowhere else.** On a 20-bill probe of the publisher's whole action lists
+(``~/Work/corpora/supply-2026-09-02/receipts/bill-action-relationship-2026-09-20/billstatus/``),
+**10 of the 15 subcommittee hearings these prints state have no counterpart in
+BILLSTATUS at all** -- no action, no code, no wording. The five that do appear
+come from two bills and both carry ``H21000`` *Subcommittee Hearings Held*.
+Markups are different and the difference is stated because it bounds the claim:
+all 8 markup rows are in the publisher's list, coded ``H15000-B``, ``H15001``
+or ``H22000`` by the ``House committee actions`` source system, so for a markup
+the print is a **second, coded** source rather than the only one.
 
-The first version of this measurement claimed the opposite, citing codes 72
-*Hearing held in House* and 74 *Markup in House*. Those are **section 5**
-values -- the mapping of LOC *summaries* version codes to ``<actionDesc>``
-text, the ``<versionCode>`` child of ``<summaries>`` -- and not action codes at
-all. The self-check that should have caught it scanned the whole guide and so
-validated against a 123-code superset drawn from three tables; it could not
-fail. ``interpretation/bill_actions.py`` carries the corrected mapping and
-``tests/test_bill_actions.py`` scopes the check to section 3 and asserts the
-section-5 codes are absent from it.
+**Two retracted claims, kept visible because each was a check that could not
+fail.** The first version cited codes 72 *Hearing held in House* and 74 *Markup
+in House* as proof that BILLSTATUS already holds this, and concluded the table
+was not worth building; those are **section 5** values -- LOC *summaries*
+version codes, the ``<versionCode>`` child of ``<summaries>`` -- and the
+self-check scanned the whole guide, so it validated against a 123-code superset
+drawn from three tables. The correction then over-corrected in the same shape:
+scoped to section 3, the guide lists no House hearing or markup code, and this
+module concluded the publisher **has** none and the print is the only
+structured source. **That is false on the wire.** Section 3 says in its own
+first paragraph that it is representational and that no authoritative list
+exists, and 13 of the 35 distinct codes in the retained responses appear
+nowhere in it -- including every House committee-actor code above. A list the
+publisher calls incomplete is not a vocabulary, and validating a mapping
+against it is the same defect one level down.
 
 **What the rows are worth, measured, both directions.** From 60 hand-checked
 mentions over the eight retained prints
@@ -136,13 +142,15 @@ BILL_COMMITTEE_ACTIONS = table_contract(
             "than trusted; NULL wherever `sealed_stage` is."
         ),
         "billstatus_action_code": (
-            "The `<actionCode>` values the publisher's own BILLSTATUS guide (section 3) gives for this "
-            "phrasing in this row's chamber, joined; NULL where the publisher has none.  **NULL does not mean "
-            "the print is unmapped.** For a House committee's hearing or markup it means the publisher has no "
-            "code at all: section 3's only hearing and markup codes are `13100` and `13200`, both Senate, so "
-            "for those two events -- 639 of 4,456 rows -- this print sentence is the only structured "
-            "statement that exists.  NULL also on `favorably_forwarded`, `declined_markup`, `not_considered`, "
-            "`included_in` and `vetoed`, 280 rows the guide's vocabulary has no entry for in either chamber."
+            "The `<actionCode>` values the publisher uses for this phrasing in this row's chamber, joined; "
+            "NULL where no code is known for it.  **Two of these are not in the retained user guide.** A "
+            "House committee hearing is coded `H21000` and a markup `H15000-B`, `H15001` or `H22000`, and "
+            "none of the four appears in the guide's section 3 -- which states in its own first paragraph "
+            "that it is representational and that no authoritative list exists.  They were read off the "
+            "publisher's responses instead, and `interpretation.bill_actions.GuideCode.source` records which "
+            "of the two a code came from, because only a guide-listed one can be checked against a committed "
+            "fixture.  NULL on `favorably_forwarded`, `declined_markup`, `not_considered`, `included_in` and "
+            "`vetoed` -- 280 rows -- where no code is known from either."
         ),
         "chamber": (
             "Which chamber's vocabulary the codes were chosen from, read off the row and not off the "

@@ -816,7 +816,7 @@ def _bill_committee_action_cases(package: str, findings) -> list[ShapedCase]:
     body = body_for(package)
     provenance = document_provenance(body, document_key=package, document_kind=GOVINFO_PACKAGE)
     version = CITATION_RULES_BY_NAME["bill_number"].version
-    reading = find_bill_actions(body.text, findings)
+    reading = find_bill_actions(body.text, findings, committee_chamber="house")
     chosen: dict[str, object] = {}
     for action in reading.findings:
         chosen.setdefault(f"{action.phrasing}:{action.attachment}:{bool(action.billstatus_action_codes)}", action)

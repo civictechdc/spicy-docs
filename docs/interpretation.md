@@ -214,11 +214,16 @@ name the bill — 2,952 phrase occurrences across the eight measured prints — 
 recall against what a reader sees is 59.6% and the two figures must never be
 read as one. It never widens `bill_stage`'s sealed matchers to the print's
 register: `passed the House` is one word from the sealed `passed house` and is
-recorded with a NULL rung instead. And it attributes the publisher's action
-codes per row rather than per document, because a House committee's report
-states Senate actions on Senate bills — the two events it finds **no** code for
-in either chamber are a House committee hearing and a House markup, which is
-the measured reason `bill_committee_actions` exists.
+recorded with a NULL rung instead. It attributes the publisher's action codes per
+row rather than per document, because a House committee's report states Senate
+actions on Senate bills, and it takes the *committee's* chamber for a hearing
+and a markup because those are the committee's own acts. And it records, per
+code, whether a committed fixture can check it: `H21000` for a hearing and
+`H15000-B`/`H15001`/`H22000` for a markup are in the publisher's responses and
+in no fixture, because the guide's section 3 is explicitly not an authoritative
+list. The measured reason `bill_committee_actions` exists is narrower than the
+absence of a code: on a 20-bill probe the publisher has no counterpart at all
+to **10 of 15** of the subcommittee hearings these prints state.
 
 ## Decision
 

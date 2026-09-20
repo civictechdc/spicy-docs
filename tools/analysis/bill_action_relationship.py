@@ -86,7 +86,7 @@ from spicy_docs.interpretation.bill_actions import (
     ATTACHMENT_SINGLE,
     BILLSTATUS_ACTION_CODES,
     HOUSE,
-    HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE,
+    HOUSE_CODES_ABSENT_FROM_THE_GUIDE,
     PRINT_ACTION_RULE_SET_VERSION,
     PRINT_ACTION_RULES,
     find_bill_actions,
@@ -105,6 +105,11 @@ FAMILY = "house_activity"
 #: that assumption carries on this very sample: 1 of 1,406 distinct print keys
 #: is dated by its own MODS to another Congress.
 PACKAGE_CONGRESS = 118
+
+#: Every sampled print is a House committee's activity report, and a hearing
+#: or a markup is that committee's own act, so its action code follows the
+#: committee and not the measure (``bill_actions.chamber_of``).
+COMMITTEE_CHAMBER = "house"
 
 
 class RelationshipError(RuntimeError):
@@ -131,7 +136,7 @@ def measure_document(package_id: str, pages: Sequence[str]) -> dict[str, Any]:
     """
     text = "\n".join(pages)
     findings = find_citations(text, pages=pages, kinds=("bill_number",), congress=PACKAGE_CONGRESS)
-    reading = find_bill_actions(text, findings)
+    reading = find_bill_actions(text, findings, committee_chamber=COMMITTEE_CHAMBER)
 
     phrasing_counts: Counter[str] = Counter()
     phrasing_bills: dict[str, set[str]] = {}
@@ -439,22 +444,32 @@ def _billstatus_sample(measured: Mapping[str, Any], size: int) -> list[str]:
     return sorted(chosen + rest)
 
 
-def billstatus_overlap(receipt: Path) -> dict[str, Any]:
+def billstatus_overlap(receipt: Path, guide: Path | None = None) -> dict[str, Any]:
     """Compare the print's rows against the retained action lists, row for row.
 
-    Offline: reads what :func:`billstatus` retained. For each sampled bill,
-    every action the publisher states is reduced to ``(actionCode, actionDate,
-    text)``, and each of the print's single-attachment rows is asked two
-    questions: does the publisher state an action carrying one of the codes
-    this phrasing maps to, and does it state one on the date the print states?
-    A phrasing with no code in the publisher's vocabulary can only be asked the
-    second, and ``held_hearing``/``held_markup`` are asked a third: does the
-    publisher's list state the event *at all*, by any code or wording?
+    Offline: reads what :func:`billstatus` retained.
+
+    **The first version of this comparison could not fail.** It asked whether
+    the publisher states a code this repository maps the phrasing to -- and for
+    ``held_hearing`` and ``held_markup`` that mapping was empty by
+    construction, so the branch inspecting ``actionCode`` was dead and
+    ``code_matched == 0`` was an identity restated as a finding. A test then
+    asserted the identity. That is the same shape as reading an explicitly
+    incomplete code table as the publisher's vocabulary, one level down.
+
+    So the publisher's codes are now read **independently of this repository's
+    mapping**: for every compared row, the distinct ``actionCode`` values the
+    publisher states on the actions whose *wording* matches the phrasing are
+    recorded as ``publisher_codes_on_matched_wording``, whatever this module
+    thinks the phrasing maps to. ``wire_codes_absent_from_the_guide`` then says
+    which of those the retained guide never lists, which is what showed the
+    guide to be incomplete.
     """
     bodies = receipt / "billstatus"
     if not bodies.exists():
         raise RelationshipError("no retained BILLSTATUS bodies; run the `billstatus` phase first")
     measured = json.loads((receipt / "measure.json").read_text())
+    listed = guide_action_codes(guide) if guide is not None else frozenset()
     published: dict[str, list[dict[str, Any]]] = {}
     for path in sorted(bodies.glob("*.json")):
         payload = json.loads(path.read_text())
@@ -469,12 +484,23 @@ def billstatus_overlap(receipt: Path) -> dict[str, Any]:
             for item in payload.get("actions", [])
         ]
     sources: Counter[str] = Counter()
+    wire_codes: Counter[str] = Counter()
     for actions in published.values():
         for action in actions:
             sources[action["source"]] += 1
-    hearing_words = ("hearing", "hearings held")
-    markup_words = ("markup", "mark-up", "consideration and mark-up")
-    result = {
+            if action["code"]:
+                wire_codes[action["code"]] += 1
+    #: What the publisher's *own wording* looks like for each phrasing, so the
+    #: match is on the event and not on this repository's code mapping.
+    wording = {
+        "held_hearing": ("hearing",),
+        "held_markup": ("markup", "mark-up"),
+        "referred": ("referred",),
+        "introduced": ("introduced",),
+        "discharged": ("discharged",),
+        "report_filed": ("report",),
+    }
+    result: dict[str, Any] = {
         "bills_requested": len(published),
         "rows_compared": 0,
         "code_matched": 0,
@@ -483,7 +509,10 @@ def billstatus_overlap(receipt: Path) -> dict[str, Any]:
         "hearing_or_markup_rows": 0,
         "hearing_or_markup_stated_by_billstatus": 0,
         "publisher_action_rows": sum(len(actions) for actions in published.values()),
+        "publisher_distinct_codes": len(wire_codes),
         "publisher_source_systems": {},
+        "wire_codes_absent_from_the_guide": sorted(set(wire_codes) - listed) if listed else [],
+        "guide_listed_codes": len(listed),
         "absent_from_billstatus": [],
         "per_phrasing": {},
     }
@@ -495,7 +524,14 @@ def billstatus_overlap(receipt: Path) -> dict[str, Any]:
             result["rows_compared"] += 1
             cell = result["per_phrasing"].setdefault(
                 row["phrasing"],
-                {"rows": 0, "code_matched": 0, "date_matched": 0, "coded": bool(row["billstatus_action_codes"])},
+                {
+                    "rows": 0,
+                    "code_matched": 0,
+                    "date_matched": 0,
+                    "mapped_codes": sorted(set(row["billstatus_action_codes"])),
+                    "publisher_codes_on_matched_wording": [],
+                    "stated_by_any_wording": 0,
+                },
             )
             cell["rows"] += 1
             codes = set(row["billstatus_action_codes"])
@@ -508,22 +544,29 @@ def billstatus_overlap(receipt: Path) -> dict[str, Any]:
             if dates and any(action["date"] in dates for action in actions):
                 result["date_matched"] += 1
                 cell["date_matched"] += 1
-            if row["phrasing"] in {"held_hearing", "held_markup"}:
-                result["hearing_or_markup_rows"] += 1
-                words = hearing_words if row["phrasing"] == "held_hearing" else markup_words
-                stated = any(any(word in action["text"].lower() for word in words) for action in actions)
-                cell["stated_by_any_wording"] = cell.get("stated_by_any_wording", 0) + int(stated)
-                if stated:
-                    result["hearing_or_markup_stated_by_billstatus"] += 1
-                elif len(result["absent_from_billstatus"]) < 8:
-                    result["absent_from_billstatus"].append(
-                        {
-                            "bill_id": row["bill_id"],
-                            "phrasing": row["phrasing"],
-                            "stated_date": (row["stated_dates"] or [None])[0],
-                            "matched_text": " ".join(row["matched_text"].split()),
-                        }
-                    )
+            # Independent of the mapping: what does the publisher actually code
+            # the matching event as?
+            words = wording.get(row["phrasing"])
+            if words:
+                matched = [action for action in actions if any(word in action["text"].lower() for word in words)]
+                cell["stated_by_any_wording"] += int(bool(matched))
+                observed = {action["code"] for action in matched if action["code"]}
+                cell["publisher_codes_on_matched_wording"] = sorted(
+                    set(cell["publisher_codes_on_matched_wording"]) | observed
+                )
+                if row["phrasing"] in {"held_hearing", "held_markup"}:
+                    result["hearing_or_markup_rows"] += 1
+                    if matched:
+                        result["hearing_or_markup_stated_by_billstatus"] += 1
+                    elif len(result["absent_from_billstatus"]) < 8:
+                        result["absent_from_billstatus"].append(
+                            {
+                                "bill_id": row["bill_id"],
+                                "phrasing": row["phrasing"],
+                                "stated_date": (row["stated_dates"] or [None])[0],
+                                "matched_text": " ".join(row["matched_text"].split()),
+                            }
+                        )
     result["publisher_source_systems"] = dict(sources.most_common())
     return result
 
@@ -844,7 +887,7 @@ def score(rows: Sequence[Mapping[str, str]], strata: Mapping[str, int]) -> dict[
 FIXTURE_PACKAGES: tuple[str, ...] = ("CRPT-118hrpt965", "CRPT-118hrpt968")
 
 
-def fixture_counts(fixtures: Path) -> dict[str, Any]:
+def fixture_counts(fixtures: Path, documents: Sequence[Mapping[str, Any]] = ()) -> dict[str, Any]:
     """What the committed fixture texts produce, so a test can pin the loader to it.
 
     Read from ``tests/fixtures/document_citations`` rather than from the
@@ -860,8 +903,18 @@ def fixture_counts(fixtures: Path) -> dict[str, Any]:
             pages.append(text[cursor : cursor + length])
             cursor += length + 1
         citations = find_citations(text, pages=tuple(pages), kinds=("bill_number",), congress=PACKAGE_CONGRESS)
-        reading = find_bill_actions(text, citations)
+        reading = find_bill_actions(text, citations, committee_chamber=COMMITTEE_CHAMBER)
         attachment = Counter(action.attachment for action in reading.findings)
+        # How many of these rows are also rows of the full-depth read of the
+        # same document, keyed on (bill, phrasing, phrase offset). A capped
+        # read is a prefix of the full text, so equality with `action_rows` is
+        # the property; anything less means a shorter read moved an offset.
+        full = next((d for d in documents if d["package_id"] == package), None)
+        shared = (
+            {(row["bill_id"], row["phrasing"], row["span_start"]) for row in full["rows"]}
+            if full is not None
+            else set()
+        )
         counted[package] = {
             "pages": len(pages),
             "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
@@ -871,11 +924,14 @@ def fixture_counts(fixtures: Path) -> dict[str, Any]:
             "attachment": dict(sorted(attachment.items())),
             "orphan_phrases": sum(reading.orphan_phrasings.values()),
             "distinct_bills_with_an_action": len({action.bill_id for action in reading.findings}),
+            "rows_also_in_the_full_read": sum(
+                1 for a in reading.findings if (a.bill_id, a.phrasing, a.span_start) in shared
+            ),
         }
     return counted
 
 
-def report(receipt: Path, output: Path, fixtures: Path) -> None:
+def report(receipt: Path, output: Path, fixtures: Path, guide: Path) -> None:
     """Fold the measurement and the filled hand-check sheet into the committed sidecar."""
     measured = json.loads((receipt / "measure.json").read_text())
     documents = measured["documents"]
@@ -901,7 +957,7 @@ def report(receipt: Path, output: Path, fixtures: Path) -> None:
                 "sealed_matcher": matcher,
                 "billstatus_codes": list(guide_codes_for(rule.key, HOUSE)),
                 "billstatus_codes_any_chamber": [entry.code for entry in BILLSTATUS_ACTION_CODES.get(rule.key, ())],
-                "house_code_absent": rule.key in HOUSE_COMMITTEE_EVENTS_WITHOUT_A_CODE,
+                "house_code_absent": rule.key in HOUSE_CODES_ABSENT_FROM_THE_GUIDE,
                 "note": rule.note,
             }
         )
@@ -949,8 +1005,8 @@ def report(receipt: Path, output: Path, fixtures: Path) -> None:
             ),
         },
         "phrasings": table,
-        "fixtures": fixture_counts(fixtures),
-        "billstatus_overlap": billstatus_overlap(receipt),
+        "fixtures": fixture_counts(fixtures, documents),
+        "billstatus_overlap": billstatus_overlap(receipt, guide),
         "hand_check": score(
             read_hand_check(receipt),
             {
@@ -1007,15 +1063,16 @@ def render_block(sidecar: Mapping[str, Any]) -> str:
     lines.append("### Every print phrasing, with what the sealed vocabulary makes of it")
     lines.append("")
     lines.append("`Orphan` counts the same phrasing in a sentence that names no bill at all — what no")
-    lines.append("sentence-scoped rule can ever attach.")
+    lines.append("sentence-scoped rule can ever attach. † marks a code the retained user guide does not")
+    lines.append("list and that only the publisher's own responses show.")
     lines.append("")
     lines.append("| Print phrasing | Rows | Orphan | Bills | `bill_stage` rung | BILLSTATUS action code, House |")
     lines.append("| --- | ---: | ---: | ---: | --- | --- |")
     for row in sorted(sidecar["phrasings"], key=lambda entry: (-entry["occurrences"], entry["phrasing"])):
         stage = f"`{row['sealed_stage']}`" if row["sealed_stage"] else "**none**"
-        codes = ", ".join(f"`{code}`" for code in row["billstatus_codes"])
-        if not codes:
-            codes = "**none — Senate-only**" if row["house_code_absent"] else "**none**"
+        codes = ", ".join(f"`{code}`" for code in row["billstatus_codes"]) or "**none**"
+        if row["house_code_absent"]:
+            codes += " †"
         lines.append(
             f"| `{row['phrasing']}` | {row['occurrences']:,} | {row['orphan_occurrences']:,} | "
             f"{row['distinct_bills']:,} | {stage} | {codes} |"
@@ -1036,18 +1093,20 @@ def render_block(sidecar: Mapping[str, Any]) -> str:
         f"**{totals['orphan_phrases']:,} further phrase occurrences** sit in a sentence that names "
         f"no bill, against {total:,} that reach one."
     )
-    senate_only = [row["phrasing"] for row in sidecar["phrasings"] if row["house_code_absent"]]
-    senate_only_rows = sum(row["occurrences"] for row in sidecar["phrasings"] if row["house_code_absent"])
+    off_guide = [row["phrasing"] for row in sidecar["phrasings"] if row["house_code_absent"]]
+    off_guide_rows = sum(row["occurrences"] for row in sidecar["phrasings"] if row["house_code_absent"])
+    overlap_rows = sidecar["billstatus_overlap"]
     lines.append("")
     lines.append(
-        f"**{len(uncoded)} phrasings have no action code in either chamber** — "
-        f"{', '.join(f'`{name}`' for name in uncoded)}, "
-        f"{uncoded_rows:,} rows — and "
-        f"**{len(senate_only)} more have one only for the Senate**: "
-        f"{', '.join(f'`{name}`' for name in senate_only)}, **{senate_only_rows:,} rows**. "
-        f"Section 3 of the publisher's guide has no House hearing code and no House markup code at all, "
-        f"so for those two events in a House committee's print the sentence is the only structured "
-        f"statement there is."
+        f"**{len(uncoded)} phrasings have no known action code at all** — "
+        f"{', '.join(f'`{name}`' for name in uncoded)}, {uncoded_rows:,} rows. "
+        f"**{len(off_guide)} more ({', '.join(f'`{name}`' for name in off_guide)}, "
+        f"{off_guide_rows:,} rows) are coded by the publisher through a code the retained guide never "
+        f"lists.** That is a gap in the *document*, not in the vocabulary: section 3 says in its own "
+        f"first paragraph that it is representational and that no authoritative list exists, and "
+        f"{len(overlap_rows['wire_codes_absent_from_the_guide'])} of the "
+        f"{overlap_rows['publisher_distinct_codes']} distinct codes in the retained responses appear "
+        f"nowhere in it."
     )
     lines.append("")
     lines.append("### Per print")
@@ -1129,35 +1188,36 @@ def render_block(sidecar: Mapping[str, Any]) -> str:
         f"The retained `congress_bills` export carries one action per bill, so it can only floor the "
         f"duplication. This asked the publisher for the **whole action list** of "
         f"{overlap_rows['bills_requested']} of the bills these prints act on — "
-        f"{overlap_rows['publisher_action_rows']} published actions — and compared "
-        f"{overlap_rows['rows_compared']} single-attachment print rows against them."
+        f"{overlap_rows['publisher_action_rows']} published actions, "
+        f"{overlap_rows['publisher_distinct_codes']} distinct action codes — and compared "
+        f"{overlap_rows['rows_compared']} single-attachment print rows against them. The publisher's "
+        f"codes are read off the response and matched on the event's *wording*, never on this "
+        f"repository's own mapping, because a comparison against one's own mapping is a check that "
+        f"cannot fail."
     )
     lines.append("")
-    lines.append("| | Print rows | Publisher states the same code | Same date | States the event at all |")
-    lines.append("| --- | ---: | ---: | ---: | ---: |")
+    lines.append("| | Print rows | States the event | Codes the publisher uses for it |")
+    lines.append("| --- | ---: | ---: | --- |")
     for name in ("held_hearing", "held_markup"):
         cell = per.get(name, {})
-        lines.append(
-            f"| `{name}` | {cell.get('rows', 0)} | **{cell.get('code_matched', 0)}** (no code exists) | "
-            f"{cell.get('date_matched', 0)} | **{cell.get('stated_by_any_wording', 0)}** |"
-        )
-    coded = {name: cell for name, cell in per.items() if cell.get("coded")}
-    lines.append(
-        f"| every coded phrasing | {sum(c['rows'] for c in coded.values())} | "
-        f"{sum(c['code_matched'] for c in coded.values())} | "
-        f"{sum(c['date_matched'] for c in coded.values())} | — |"
-    )
+        observed = ", ".join(f"`{code}`" for code in cell.get("publisher_codes_on_matched_wording", ())) or "—"
+        lines.append(f"| `{name}` | {cell.get('rows', 0)} | **{cell.get('stated_by_any_wording', 0)}** | {observed} |")
     hearing = per.get("held_hearing", {})
+    markup = per.get("held_markup", {})
     lines.append("")
     lines.append(
         f"**{hearing.get('rows', 0) - hearing.get('stated_by_any_wording', 0)} of "
-        f"{hearing.get('rows', 0)} subcommittee hearings the print states are absent from BILLSTATUS "
-        f"altogether** — no code, no wording, nothing. Markups are different and the difference is the "
-        f"finding's own limit: all {per.get('held_markup', {}).get('rows', 0)} markup rows appear in the "
-        f"publisher's list as free text filed by the `House committee actions` source system "
+        f"{hearing.get('rows', 0)} subcommittee hearings the print states have no counterpart in "
+        f"BILLSTATUS at all** — no action, no code, no wording. The "
+        f"{hearing.get('stated_by_any_wording', 0)} rows it does state come from two bills and both "
+        f"carry `H21000` *Subcommittee Hearings Held*. **Markups are stated in full**: all "
+        f"{markup.get('rows', 0)} of them, coded "
+        f"{', '.join(f'`{code}`' for code in markup.get('publisher_codes_on_matched_wording', ()))}, "
+        f"filed by the `House committee actions` source system "
         f"({overlap_rows['publisher_source_systems'].get('House committee actions', 0)} of "
-        f"{overlap_rows['publisher_action_rows']} published actions), carrying no action code. So the "
-        f"print is the sole source for hearings, and a second, uncoded source for markups."
+        f"{overlap_rows['publisher_action_rows']} actions). So for a markup the print is a **second, "
+        f"coded** source, and for a subcommittee hearing it is often the **only** record — which is "
+        f"the narrower claim this table earns its place on."
     )
     lines.append("")
     lines.append("### Against the hosted `congress_bills` export")
@@ -1225,6 +1285,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if name == "report":
             phase.add_argument("--output", type=Path, required=True)
             phase.add_argument("--fixtures", type=Path, default=Path("tests/fixtures/document_citations"))
+            phase.add_argument("--guide", type=Path, default=DEFAULT_GUIDE)
         if name == "render":
             phase.add_argument("--sidecar", type=Path, required=True)
             phase.add_argument("--report", type=Path, required=True)
@@ -1239,7 +1300,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     elif args.phase == "billstatus":
         billstatus(receipt, args.env.expanduser(), args.max_requests)
     elif args.phase == "report":
-        report(receipt, args.output, args.fixtures)
+        report(receipt, args.output, args.fixtures, args.guide)
     elif args.phase == "render":
         render(args.sidecar, args.report)
     return 0

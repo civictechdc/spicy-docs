@@ -246,15 +246,19 @@ rollup estimated.
   hearings from these rows is counting a floor, and
   `document_citations.span_start` on the same document and digest is where the
   rest of the evidence is.
-  **`billstatus_action_code` is NULL for a House hearing or markup because the
-  publisher has no code**, not because the print is unmapped: section 3 of the
-  BILLSTATUS user guide has no House-side hearing or markup code at all — its
-  only entries are `13100` and `13200`, both Senate. Asked for 20 sampled
-  bills' whole action lists, the publisher states **none** of the print's 15
-  subcommittee hearings by code and 10 of them not at all, while all 8 markups
-  appear as free text from the `House committee actions` source system. So for
-  hearings the print is the only structured source, and for markups it is a
-  second, coded one.
+  **What this table is for: a subcommittee hearing on a bill is often recorded
+  nowhere else.** Asked for 20 sampled bills' whole action lists, the publisher
+  has **no counterpart at all** to 10 of the 15 subcommittee hearings these
+  prints state — no action, no code, no wording. Markups are stated in full and
+  coded (`H15000-B`, `H15001`, `H22000`), so there the print is a second,
+  coded source rather than the only one.
+  **`billstatus_action_code` carries codes the retained guide does not list.**
+  `H21000` for a hearing and the three markup codes appear nowhere in the
+  guide's section 3, which says in its own first paragraph that it is
+  representational and that no authoritative list exists; 13 of the 35 distinct
+  codes in the retained responses are absent from it. They were read off the
+  publisher's responses, and `GuideCode.source` records which codes a committed
+  fixture can check and which only the receipt can.
 - **`house_activity_reports`** takes every descriptive field from the keyed
   GovInfo records and none from the print: the summary's title, Congress,
   session, issue date and **page count**, and the MODS's authoring committee

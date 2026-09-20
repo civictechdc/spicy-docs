@@ -1060,3 +1060,73 @@ moved the committee numbers on purpose, and the rollup document states which
 and by how much. The committed sidecar was deliberately **not** regenerated —
 it is the measurement as run, and a re-run's timings would contradict the
 prose the report quotes from it.
+
+## A print's bill-action rows are hosted with their error rate on every row, keyed on the phrase
+
+A House committee activity report says *that* it names `H.R. 1093` — the
+package MODS says that too — and it says *what happened to the bill*, which no
+index in the [MODS re-check](research/pdf-yield-mods-recheck-2026-09-20.md)
+states. `bill_committee_actions` hosts that relationship. Three choices in it
+are worth the record.
+
+**The reliability is a column, not a footnote.** Measured on 60 hand-checked
+mentions: a published row is both the right kind and the right bill **83.3%**
+of the time where its sentence names one bill and **50%** where it names
+several. So `attachment_confidence` carries the class on every row,
+`bills_in_sentence` carries the raw predicate it is derived from, and
+`docs/tables.md` tells a consumer that `WHERE attachment_confidence = 'single'`
+is the trusted view. **The `multi` rows are kept**, at 50%, because they are
+readable: the row carries `sentence_start` and `matched_text`, so a consumer
+can open the sentence and judge it. A dropped row is a fact nobody can check.
+Separately and always stated separately: **recall is 59.6%**. The 83.3% says
+what is published is right, never that what the document contains is captured.
+
+**Identity is the action phrase's own span**, not the bill mention's:
+`(document_key, text_sha256, bill_id, print_phrasing, span_start)`. One
+sentence states *signed by the President* and *became Public Law No: 118-83*
+about one bill, which is two rows, and only the phrase offset separates them.
+`text_sha256` is in the identity for the reason it is in `document_citations`':
+a re-extraction that moves one character moves every offset after it.
+
+**The phrasing vocabulary is sealed and additions-only.** `print_phrasing` is
+published, so renaming or deleting a key rewrites rows that are already out;
+new phrasings are appended and `PRINT_ACTION_VOCABULARY_VERSION` moves.
+`PRINT_ACTION_RULE_SET_VERSION` is derived over the patterns **and** over the
+action-code mapping and the chamber rules, because those fill
+`billstatus_action_code` on every row and an edit to either changed what is
+published while leaving the patterns untouched. Rungs are never invented here:
+`sealed_stage` runs the matched phrase through `bill_stage` and records `NULL`
+where nothing reads it — 1,670 of 4,456 rows. `passed the House` is one word
+from the sealed `passed house` and stays NULL rather than widening a sealed
+matcher list to a second publisher's register.
+
+### What the table is for, after two wrong answers
+
+The justification was wrong twice, in opposite directions, by the same
+mechanism: **a check validated against a record that was not the publisher's
+answer, and so agreed with itself.**
+
+1. It read codes `72` *Hearing held in House* and `74` *Markup in House* from
+   the BILLSTATUS guide as proof the publisher already holds this, and
+   concluded the table was not worth building. Both are **section 5** values —
+   LOC *summaries* version codes, the `<versionCode>` child of `<summaries>` —
+   and the self-check scanned the whole guide, validating against a 123-code
+   superset drawn from three tables.
+2. Scoped to section 3, it found no House hearing or markup code and concluded
+   the publisher **has** none, so the print was the only structured source.
+   Section 3's own first paragraph says it is representational and that no
+   authoritative list exists; **13 of the 35 distinct codes in the retained
+   responses appear nowhere in it**, including `H21000` and the three markup
+   codes. The overlap that should have caught it asked only whether the
+   publisher states a code *this repository maps the phrasing to* — empty by
+   construction for those two — so `code_matched == 0` was an identity, and a
+   test asserted it as a finding.
+
+**What the bytes support, and what the table is built on:** on a 20-bill probe
+of whole action lists, the publisher has **no counterpart at all to 10 of the
+15** subcommittee hearings these prints state; the 5 it does state come from
+two bills, both coded `H21000`. **All 8 markups are stated and coded**, so
+there the print is a second, coded source. `GuideCode.source` now records, per
+code, whether a committed fixture can check it or only the receipt can, and the
+overlap reads the publisher's codes off the response matched on the event's
+wording rather than on this repository's mapping.

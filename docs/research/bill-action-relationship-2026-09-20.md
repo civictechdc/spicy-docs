@@ -1,4 +1,4 @@
-# The print states what happened to the bill, and for a hearing it is the only source
+# The print states what happened to the bill, and often it is the only record of a hearing
 
 Status: measured 2026-09-20. **Every figure but one comes from retained
 bytes** — the eight activity-report PDFs in the rollup receipt's `blobs/`,
@@ -48,45 +48,65 @@ right*; it does not say *what the document contains is captured*. A consumer
 counting hearings off these rows is counting a floor. The five measurements
 that would raise it are listed below, and every one of them is request-free.
 
-### What this is the only source for
+### What this is worth, and the two claims that were wrong before it
 
-The first version of this measurement concluded the opposite, and the
-correction is the reason the table exists. It read codes `72` *Hearing held in
-House* and `74` *Markup in House* out of the publisher's guide and concluded
-BILLSTATUS already states a House committee's hearings and markups. **Those are
-section 5 values** — the mapping of LOC *summaries* version codes to
-`<actionDesc>` text, the `<versionCode>` child of `<summaries>` — and not
-`<actionCode>` values at all. The self-check that should have caught it scanned
-the whole guide, so it validated against a 123-code superset drawn from three
-tables and could not fail. `guide_action_codes` is now scoped to section 3 and
-a test asserts the section-5 codes stay out of it.
+**A subcommittee hearing on a bill is often recorded nowhere else.** Asked for
+the whole action list of 20 of these bills — 20 keyed requests, 197 published
+actions — the publisher has **no counterpart at all to 10 of the 15
+subcommittee hearings the print states**: no action, no code, no wording. The
+five it does state come from two bills and both carry `H21000` *Subcommittee
+Hearings Held*.
 
-Scoped correctly, **section 3 has no House hearing code and no House markup
-code.** Its only entries for either event are `13100` and `13200`, both Senate.
-And asked for the whole action list of 20 of these bills — 20 keyed requests,
-197 published actions — the publisher states:
+**Markups are stated in full, and saying so is what makes the first claim
+credible.** All 8 markup rows appear in the publisher's list, coded
+`H15000-B`, `H15001` or `H22000` by the `House committee actions` source
+system, which files 48 of the 197 actions. For a markup the print is a
+*second, coded* source, not the only one.
 
-- **0 of 15** of the print's subcommittee hearings by any action code, and
-  **10 of 15 not at all**, by code or by wording;
-- **8 of 8** markups, as free text filed by the `House committee actions`
-  source system (48 of the 197 actions), carrying no action code.
-
-So for a House committee hearing on a bill the print is the **only** structured
-statement that exists, and for a markup it is a second one that the publisher
-files without a code. That is 639 of 4,456 rows, and it is what this table is
-worth.
-
-Five more phrasings have no code in either chamber — `favorably_forwarded`
-(the subcommittee-to-full-committee step), `declined_markup`, `not_considered`,
+Five more phrasings have no known code at all — `favorably_forwarded` (the
+subcommittee-to-full-committee step), `declined_markup`, `not_considered`,
 `included_in`, `vetoed` — 280 rows, three of them *negative* statements no
-index can carry at all.
+index carries.
+
+#### Two retracted claims, and why both checks could not fail
+
+This document has now been wrong about the same thing in both directions, and
+the mechanism was identical each time: a check validated against a record that
+was not the publisher's answer.
+
+**First**, it read codes `72` *Hearing held in House* and `74` *Markup in
+House* out of the guide and concluded BILLSTATUS already states a House
+committee's hearings and markups, so the table was not worth building. Those
+are **section 5** values — the mapping of LOC *summaries* version codes to
+`<actionDesc>` text, the `<versionCode>` child of `<summaries>` — and the
+self-check scanned the whole guide, so it validated against a 123-code superset
+drawn from three tables.
+
+**Second**, the correction scoped the scan to section 3, found no House hearing
+or markup code, and concluded the publisher **has** none and the print is the
+only structured source. That is false on the wire. Section 3's own first
+paragraph says *"Codes in this table are representational... It is provided as
+a courtesy; a complete, authoritative list of action codes does not exist."*
+**13 of the 35 distinct action codes in the retained responses appear nowhere
+in it** — `H11000`, `H15000-B`, `H15001`, `H19000`, `H21000`, `H22000`,
+`H23000`, `H25000`, `H30300`, `H37100`, `H37220`, `H38800`, `Intro-H`. A list
+the publisher calls incomplete is not a vocabulary.
+
+The comparison that found it had the same defect as the claim: it asked whether
+the publisher states a code *this repository maps the phrasing to*, and for
+hearings and markups that mapping was empty by construction, so the branch
+reading `actionCode` was dead and `code_matched == 0` was an identity restated
+as a finding — with a test asserting the identity. The overlap now reads the
+publisher's codes off the response, matched on the event's wording, and reports
+which of them the retained guide never lists.
 
 ### What it duplicates, and that is fine
 
-Of the 47 single-attachment rows whose phrasing the guide does code, the
-publisher states the same code on **44**. Those rows are not the reason to
-build; they are what makes the table joinable, and `billstatus_action_code`
-carries the code so a consumer can drop them with one predicate.
+Most of it. Of the single-attachment rows whose phrasing carries a known code,
+the publisher states the same code on the great majority — referrals,
+introductions, reportings, passage. Those rows are not the reason to build;
+they are what makes the table joinable, and `billstatus_action_code` carries
+the code so a consumer can drop them with one predicate.
 
 ## How the relationship was read
 
@@ -126,23 +146,24 @@ real ones.
 
 <!-- generated by tools/analysis/bill_action_relationship.py: start -->
 
-Measured 2026-09-20 from retained bytes, **0 requests**: 1,249 pages of the eight prints, 6,365 bill mentions over 978 distinct bills, 4,456 action rows. Phrasing rule set `25d697b17e28`, `bill_number` rule version `001`.
+Measured 2026-09-20 from retained bytes, **0 requests**: 1,249 pages of the eight prints, 6,365 bill mentions over 978 distinct bills, 4,456 action rows. Phrasing rule set `f9130c97fe4b`, `bill_number` rule version `001`.
 
 ### Every print phrasing, with what the sealed vocabulary makes of it
 
 `Orphan` counts the same phrasing in a sentence that names no bill at all — what no
-sentence-scoped rule can ever attach.
+sentence-scoped rule can ever attach. † marks a code the retained user guide does not
+list and that only the publisher's own responses show.
 
 | Print phrasing | Rows | Orphan | Bills | `bill_stage` rung | BILLSTATUS action code, House |
 | --- | ---: | ---: | ---: | --- | --- |
 | `introduced` | 753 | 238 | 699 | `introduced` | `1000` |
 | `referred` | 744 | 105 | 501 | `other_chamber` | `H11100`, `2000` |
-| `held_hearing` | 420 | 1,590 | 333 | **none** | **none — Senate-only** |
+| `held_hearing` | 420 | 1,590 | 333 | **none** | `H21000` † |
 | `ordered_reported` | 270 | 124 | 175 | `committee` | `H12200`, `5000` |
 | `became_public_law` | 263 | 230 | 126 | `law` | `36000`, `E40000`, `E30000` |
 | `considered` | 245 | 109 | 146 | **none** | `H30000` |
 | `favorably_reported` | 228 | 31 | 215 | `committee` | `H12200`, `5000` |
-| `held_markup` | 219 | 57 | 155 | `committee` | **none — Senate-only** |
+| `held_markup` | 219 | 57 | 155 | `committee` | `H15000-B`, `H15001`, `H22000` † |
 | `discharged` | 206 | 17 | 104 | **none** | `H12300` |
 | `reported` | 162 | 54 | 145 | `committee` | `H12200`, `5000` |
 | `suspension` | 146 | 38 | 134 | **none** | `H37300` |
@@ -165,7 +186,7 @@ sentence-scoped rule can ever attach.
 
 **2,952 further phrase occurrences** sit in a sentence that names no bill, against 4,456 that reach one.
 
-**5 phrasings have no action code in either chamber** — `vetoed`, `not_considered`, `declined_markup`, `favorably_forwarded`, `included_in`, 280 rows — and **2 more have one only for the Senate**: `held_markup`, `held_hearing`, **639 rows**. Section 3 of the publisher's guide has no House hearing code and no House markup code at all, so for those two events in a House committee's print the sentence is the only structured statement there is.
+**5 phrasings have no known action code at all** — `vetoed`, `not_considered`, `declined_markup`, `favorably_forwarded`, `included_in`, 280 rows. **2 more (`held_markup`, `held_hearing`, 639 rows) are coded by the publisher through a code the retained guide never lists.** That is a gap in the *document*, not in the vocabulary: section 3 says in its own first paragraph that it is representational and that no authoritative list exists, and 13 of the 35 distinct codes in the retained responses appear nowhere in it.
 
 ### Per print
 
@@ -199,15 +220,14 @@ sentence-scoped rule can ever attach.
 
 ### The row-for-row BILLSTATUS overlap, 20 keyed requests
 
-The retained `congress_bills` export carries one action per bill, so it can only floor the duplication. This asked the publisher for the **whole action list** of 20 of the bills these prints act on — 197 published actions — and compared 76 single-attachment print rows against them.
+The retained `congress_bills` export carries one action per bill, so it can only floor the duplication. This asked the publisher for the **whole action list** of 20 of the bills these prints act on — 197 published actions, 35 distinct action codes — and compared 76 single-attachment print rows against them. The publisher's codes are read off the response and matched on the event's *wording*, never on this repository's own mapping, because a comparison against one's own mapping is a check that cannot fail.
 
-| | Print rows | Publisher states the same code | Same date | States the event at all |
-| --- | ---: | ---: | ---: | ---: |
-| `held_hearing` | 15 | **0** (no code exists) | 3 | **5** |
-| `held_markup` | 8 | **0** (no code exists) | 7 | **8** |
-| every coded phrasing | 47 | 44 | 38 | — |
+| | Print rows | States the event | Codes the publisher uses for it |
+| --- | ---: | ---: | --- |
+| `held_hearing` | 15 | **5** | `H21000` |
+| `held_markup` | 8 | **8** | `H15000-B`, `H15001`, `H22000` |
 
-**10 of 15 subcommittee hearings the print states are absent from BILLSTATUS altogether** — no code, no wording, nothing. Markups are different and the difference is the finding's own limit: all 8 markup rows appear in the publisher's list as free text filed by the `House committee actions` source system (48 of 197 published actions), carrying no action code. So the print is the sole source for hearings, and a second, uncoded source for markups.
+**10 of 15 subcommittee hearings the print states have no counterpart in BILLSTATUS at all** — no action, no code, no wording. The 5 rows it does state come from two bills and both carry `H21000` *Subcommittee Hearings Held*. **Markups are stated in full**: all 8 of them, coded `H15000-B`, `H15001`, `H22000`, filed by the `House committee actions` source system (48 of 197 actions). So for a markup the print is a **second, coded** source, and for a subcommittee hearing it is often the **only** record — which is the narrower claim this table earns its place on.
 
 ### Against the hosted `congress_bills` export
 
@@ -233,16 +253,15 @@ the events the code table says have no House entry. 197 published actions, 76
 single-attachment print rows compared. The result is in the generated block
 above; the three numbers that matter:
 
-- **0 of 23** hearing and markup rows carry a code the publisher also states,
-  because no House code for either event exists to carry.
 - **10 of 15** subcommittee hearings the print states are absent from
-  BILLSTATUS altogether — no code, no wording.
-- **8 of 8** markups *are* stated, as free text from the `House committee
-  actions` source system, which files 48 of the 197 actions and attaches no
-  action code to any of them.
+  BILLSTATUS altogether — no action, no code, no wording.
+- The **5** it does state come from two bills, both coded `H21000`.
+- **8 of 8** markups are stated and coded (`H15000-B`, `H15001`, `H22000`), by
+  the `House committee actions` source system, which files 48 of the 197
+  actions.
 
-So the print is the sole source for a House committee hearing on a bill, and a
-second source for a markup. Saying both is what makes the first credible.
+So the print is often the only record of a subcommittee hearing, and a second,
+coded source for a markup. Saying both is what makes the first credible.
 
 **What this still cannot see.** Twenty bills is 2% of the sample and the draw
 is deliberately not uniform, so these are statements about hearings and markups
@@ -317,8 +336,9 @@ disposition follows as a fragment — *"...and for other purposes. (Green)
 and its disposition are two sentences and the second names no bill. **116 of
 that print's 125 "ordered favorably reported" occurrences sit in a sentence
 naming no bill at all**, which is why it yields 23 rows over 179 MODS-stated
-bills while `CRPT-118hrpt974`, writing the same event as one clean sentence,
-yields 1,441.
+bills, while `CRPT-118hrpt965` — writing the same events as clean
+`Legislative History` sentences — yields 1,764 over 282 pages. That is 0.4
+rows per page against 6.3, a factor of 15.
 
 **The en-bloc disposition names no bill by design.** *"The measures considered
 en bloc were ordered favorably reported to the House by voice vote."* is a
@@ -373,9 +393,9 @@ Nothing here is superlinear in the corpus.
   hearings and markups on purpose. It settles what the print is the only
   source for; it does not establish a corpus-wide duplication rate.
 - **Eight prints, eight committees.** The per-print spread is the finding, not
-  noise: 27 rows from one 56-page print and 1,443 from one 296-page print. A
-  ninth committee's house style is unmeasured, and the two extremes here are
-  four orders of magnitude apart per page.
+  noise: 23 rows from a complete 56-page print against 1,764 from a 282-page
+  one — 0.4 rows per page against 6.3, a factor of 15. A ninth committee's
+  house style is unmeasured.
 - **60 mentions.** At 40 judged rows the classification rate has roughly a
   ±9-point interval, and the multi-bill attachment cell is 4 rows. The 892
   multi-bill mentions and the 2,952 orphan phrases are corpus-wide counts and

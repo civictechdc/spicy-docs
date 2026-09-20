@@ -135,18 +135,26 @@ def test_the_figures_the_verdict_turns_on(sidecar: dict) -> None:
     assert totals["orphan_phrases"] == 2952
 
 
-def test_the_row_for_row_overlap_is_what_the_hearing_claim_rests_on(sidecar: dict) -> None:
-    """Not the code table alone: the publisher was asked for 20 bills' whole action
-    lists, and two-thirds of the print's subcommittee hearings are not in them."""
+def test_the_row_for_row_overlap_reads_the_publisher_s_own_codes(sidecar: dict) -> None:
+    """The claim rests on what the publisher's responses say, not on this repository's
+    mapping.  The earlier version asserted ``code_matched == 0``, which was an identity:
+    the mapping for these two phrasings was empty by construction, so the branch that
+    would have read ``actionCode`` never ran."""
     overlap = sidecar["billstatus_overlap"]
     hearing = overlap["per_phrasing"]["held_hearing"]
     markup = overlap["per_phrasing"]["held_markup"]
 
-    assert hearing["code_matched"] == 0 and markup["code_matched"] == 0
+    # Read off the response, matched on the event's wording.
+    assert hearing["publisher_codes_on_matched_wording"] == ["H21000"]
+    assert markup["publisher_codes_on_matched_wording"] == ["H15000-B", "H15001", "H22000"]
+    # ...and none of the four is in the retained guide, which is how the guide
+    # was shown to be an incomplete document rather than the vocabulary.
+    absent = set(overlap["wire_codes_absent_from_the_guide"])
+    assert {"H21000", "H15000-B", "H15001", "H22000"} <= absent
+    assert len(absent) == 13 and overlap["publisher_distinct_codes"] == 35
+
+    # The narrower claim the table is built on.
     assert hearing["rows"] - hearing["stated_by_any_wording"] == 10
-    # Markups are filed as free text by the committee-actions source system, so
-    # the print is a second source there rather than the only one. Saying both
-    # is what makes the hearing claim credible.
     assert markup["stated_by_any_wording"] == markup["rows"]
     assert overlap["publisher_source_systems"]["House committee actions"] > 0
 
@@ -173,8 +181,9 @@ def test_the_rendered_block_states_every_number_a_reader_would_act_on(sidecar: d
         assert number in block, number
     for rate in ("**83.3%**", "**50.0%**", "**59.6%**"):
         assert rate in block, rate
-    assert "no House hearing code and no House markup code" in block
+    assert "13 of the 35 distinct codes" in block
     assert "10 of 15 subcommittee hearings" in block
+    assert "`H21000`" in block and "`H15000-B`" in block
     assert "no pre-108th bill at all" in block
 
 
