@@ -30,9 +30,14 @@ deliberate: the diff is the only superlinear operation in the family.
 
 **Refusals are never silent.**  A pair that cannot be diffed, a row whose
 identity has a null part, a version the summarizer declined, a printing whose
-version type the sealed vocabulary does not name -- each becomes a named
-:class:`FamilyRefusal` rather than a missing row nobody can account for, and
-none of them aborts the rest of the bill.
+version type the sealed vocabulary does not name, an answer the model's own
+reader refused -- each becomes a named :class:`FamilyRefusal` rather than a
+missing row nobody can account for, and none of them aborts the rest of the
+bill.  The last of those was added on 2026-09-20, found by spicy-regs adopting
+0.21.3: a ``ModelCallError`` escaped this function and aborted a whole rollup,
+and a caller that caught it outside had to report a refused answer as a
+declined one, which says the printing's text was too short and is false.  See
+:func:`_model_answer` for what is caught and what must still abort.
 """
 
 from __future__ import annotations
@@ -48,6 +53,7 @@ from typing import Any, Protocol
 
 from spicy_docs.interpretation import bill_stage, money_bills, version_kind
 from spicy_docs.interpretation.bill_summaries import BillVersionText, DiffItemText, frame_for_kind
+from spicy_docs.interpretation.model_call import ModelCallError
 from spicy_docs.interpretation.section_classification import (
     CLASSIFICATION_LABELS,
     ClassifiableSection,
@@ -425,6 +431,40 @@ class _Admitter:
 
     def refuse(self, table: str, identity: tuple[str, ...], reason: str) -> None:
         self.refusals.append(FamilyRefusal(table=table, identity=identity, reason=reason))
+
+
+#: Returned in place of an answer the reader refused, so the caller can tell it
+#: apart from the ``None`` a generator returns when it *declines* to ask. The
+#: two are different facts and were filed as one before: a refused summary was
+#: reported as a printing whose text was below the minimum, which was false.
+_REFUSED = object()
+
+
+def _model_answer(
+    generate: Callable[[], Any], *, table: str, identity: tuple[str, ...], admit: _Admitter
+) -> Any | None:
+    """One model generator, run inside the guard the shapers already run inside.
+
+    A ``ModelCallError`` is the reader refusing the model's answer -- a missing
+    key, a label outside the sealed vocabulary, a section id the batch never
+    sent. That is a record about one printing, not a reason to lose the other
+    twelve tables of the bill, so it is filed and the pass continues. It used
+    to escape ``build_bill_family`` and abort the caller's whole rollup, which
+    is the silent-gap-by-another-name ``FamilyRefusal`` exists to prevent.
+
+    **Only the message is filed.** ``ModelCallError.details`` carries the answer
+    itself, which is model prose about the document, and a refusal is stored
+    and logged.
+
+    Nothing wider is caught, on purpose: a credential refusal must abort the
+    run rather than be recorded per row, and a transport failure establishes
+    nothing about this printing -- neither is a fact about the bill.
+    """
+    try:
+        return generate()
+    except ModelCallError as error:
+        admit.refuse(table, identity, f"the model's answer was refused: {error}")
+        return _REFUSED
 
 
 def _sorted_versions(versions: Iterable[BillVersionCapture]) -> list[BillVersionCapture]:
@@ -809,23 +849,31 @@ def _summarize_pair(
             "and summarizing edit instructions as bill text is the failure this guard exists for",
         )
         return
-    result = summarize_diff(
-        identity,
-        from_version_id=older.version_code,
-        to_version_id=newer.version_code,
-        items=tuple(
-            DiffItemText(
-                op=item.op,
-                # The adapter composes one heading, preferring the later
-                # printing's, which is the side the generator reads first.
-                from_heading=None,
-                to_heading=item.heading or None,
-                from_body=item.from_text,
-                to_body=item.to_text,
-            )
-            for item in comparison.items
+    result = _model_answer(
+        partial(
+            summarize_diff,
+            identity,
+            from_version_id=older.version_code,
+            to_version_id=newer.version_code,
+            items=tuple(
+                DiffItemText(
+                    op=item.op,
+                    # The adapter composes one heading, preferring the later
+                    # printing's, which is the side the generator reads first.
+                    from_heading=None,
+                    to_heading=item.heading or None,
+                    from_body=item.from_text,
+                    to_body=item.to_text,
+                )
+                for item in comparison.items
+            ),
         ),
+        table=DIFF_SUMMARIES.name,
+        identity=pair,
+        admit=admit,
     )
+    if result is _REFUSED:
+        return
     if result is None:
         admit.refuse(
             DIFF_SUMMARIES.name,
@@ -860,7 +908,19 @@ def _classify_version(
     ]
     if not classifiable:
         return
-    for result in classify(classifiable):
+    # A refusal in any batch loses the batches already read: `classify_sections`
+    # returns its rows only when every batch has been read, which is its own
+    # contract and not this layer's to second-guess. One refusal is filed for
+    # the printing.
+    results = _model_answer(
+        partial(classify, classifiable),
+        table=SECTION_CLASSIFICATIONS.name,
+        identity=(entry.version_code, entry.source),
+        admit=admit,
+    )
+    if results is _REFUSED:
+        return
+    for result in results:
         section = section_by_reference.get(result.section_id)
         if section is None:
             admit.refuse(
@@ -893,19 +953,28 @@ def _summarize_version(
     rows: list[Row],
     bill_key: str,
 ) -> None:
-    result = summarize(
-        BillVersionText(
-            identity=status.identity,
-            version_id=entry.version_code,
-            version_label=entry.version.type or entry.version_code,
-            title=status.title,
-            # The stage key, not the latest action's prose: it is a published
-            # column, so a summary's stated status is checkable against a row.
-            status=stage.stage,
-            text=_body_text(entry.document),
-            money_bill_kind=money.kind,
-        )
+    result = _model_answer(
+        partial(
+            summarize,
+            BillVersionText(
+                identity=status.identity,
+                version_id=entry.version_code,
+                version_label=entry.version.type or entry.version_code,
+                title=status.title,
+                # The stage key, not the latest action's prose: it is a
+                # published column, so a summary's stated status is checkable
+                # against a row.
+                status=stage.stage,
+                text=_body_text(entry.document),
+                money_bill_kind=money.kind,
+            ),
+        ),
+        table=BILL_SUMMARIES.name,
+        identity=(bill_key, entry.version_code, entry.source),
+        admit=admit,
     )
+    if result is _REFUSED:
+        return
     if result is None:
         admit.refuse(
             BILL_SUMMARIES.name,
