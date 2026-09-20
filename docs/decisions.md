@@ -1100,8 +1100,22 @@ What changed, and what a later change must preserve:
 - **An empty 2xx is an answer, not an absence.** A body of zero bytes, `{}`,
   `null`, `[]` or a bare scalar used to be yielded as a record and manifested:
   an empty answer became apparent coverage. It is now `requested-empty`, with
-  the shape named in the reason. The only shape this reader asserts is that a
-  record arrived at all; reading its fields stays the caller's job.
+  the shape named in the reason.
+- **A populated object must carry record identity.** The downstream review
+  reproduced `{"data":{}}` and `{"errors":[{"detail":"upstream failed"}]}`:
+  both passed the original object check, yielded null-id rows, and made their
+  keys eligible for the processed manifest. Dockets, documents, and comments
+  now require their shared source identity, a nonblank string at `data.id`.
+  Identity establishes that a record arrived; validating every field would
+  exceed the raw reader's role. Both reproduced bodies now yield no record and
+  stay unresolved as `requested-empty`, with the missing identity named. Error
+  envelopes are named explicitly, and their publisher message passes through
+  `scrub_credential` before truncation, logging, or raising. The
+  [raw-reader guide](sources/raw-readers.md#mirrulations) owns the API rule.
+
+The spicy-regs host carries a temporary identity guard until it adopts the
+release containing this fix. Release adoption and repair of already manifested
+null-id rows remain downstream work.
 
 **What callers relied on that is gone.** `DownloadFailures` is replaced by the
 `list[KeyOutcome]` that `download_keys(outcomes=...)` fills; `parse_failed_keys`
@@ -1122,6 +1136,14 @@ putting the non-transport keys back into `last_keys` fails
 three AWS presigning parameters alongside `api_key`, because an injected signed
 resource renders a presigned URL into botocore's message; both of its passes
 stay separately mutation-checked.
+
+The identity regression covers every registered Mirrulations record type,
+empty and misplaced identities, raw-field preservation, direct and bounded
+downloads, and recovery across runs. Disabling identity validation while
+retaining publisher-error rejection fails 38 cases, including all six
+empty-data reproductions across record types and download branches. Removing
+the publisher-message scrub fails its dedicated test, which checks the raised
+error, retained reason, and log. These are offline fixture proofs.
 
 The review declined a wider refactor of the 1,012-line module to keep this fix
 focused on recovery behavior.
