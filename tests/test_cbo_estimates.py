@@ -30,6 +30,9 @@ from spicy_docs.interpretation.cbo_estimates import (
     read_cbo_estimate,
     recital_bill_id,
 )
+from spicy_docs.schemas import COMMITTEE_REPORTS, DOCUMENT_CITATIONS, HEARING_TRANSCRIPTS
+from spicy_docs.schemas.committee_report_tables import shape_committee_report
+from spicy_docs.schemas.tables import digest
 
 FIXTURES = Path(__file__).parent / "fixtures" / "cbo_estimates"
 
@@ -314,3 +317,130 @@ def test_the_recital_and_attribution_patterns_are_spelled_once() -> None:
     assert source.count(DIRECTOR_ATTRIBUTION.pattern) == 1
     assert source.count(ACCOMPANIES.pattern) == 1
     assert {p.name for p in ABSENCE_REASONS} == {"not_available", "not_received"}
+
+
+# --- the link: the estimate columns on the package-keyed report row ------------------
+
+
+class _Capture:
+    body = b""
+    requested_url = "https://www.govinfo.gov/content/pkg/CRPT-118hrpt53/html/CRPT-118hrpt53.htm"
+    resolved_url = requested_url
+    byte_size = 21080
+    sha256 = "sha256:" + "0" * 64
+    observed_at = "2026-09-20T14:57:19Z"
+
+
+class _Identity:
+    package_id = "CRPT-118hrpt53"
+    collection = "CRPT"
+    congress = 118
+    document_type = "hrpt"
+    number = "53"
+
+
+class _Summary:
+    title = "Securing the Border for Public Health Act of 2023"
+    date_issued = "2023-05-11"
+    last_modified = "2023-05-12T00:00:00Z"
+
+
+class _Body:
+    """The three things ``_package_row`` reads, and nothing this test does not need."""
+
+    identity = _Identity()
+    summary = _Summary()
+    body_capture = _Capture()
+    format = "htm"
+
+    class body:
+        media_type = "text/html"
+
+
+def report_row(package: str, **kwargs: object) -> dict[str, str | None]:
+    text = body(package)
+    finding = read_cbo_estimate(text)
+    return COMMITTEE_REPORTS.checked(
+        shape_committee_report(
+            _Body(),
+            text_sha256=digest(text),
+            estimate=finding,
+            recital_bill_id=recital_bill_id(finding, 118),
+            **kwargs,
+        )
+    )
+
+
+def test_a_reprinted_letter_lands_on_the_report_row_with_its_span() -> None:
+    text = body("CRPT-118hrpt53")
+    row = report_row("CRPT-118hrpt53")
+    assert row["report_states_estimate"] == "true"
+    assert row["recital_bill_id"] == "118-hr-801"
+    assert row["estimate_rule"] == CBO_ESTIMATE_RULE
+    assert row["estimate_rule_version"] == CBO_ESTIMATE_RULE_VERSION
+    assert row["estimate_heading_rule"] == "cbo_estimate"
+    assert row["letter_end_rule"] == "director_attribution"
+    assert row["letter_signatory"] == "Phillip L. Swagel"
+    assert row["estimate_absence_reason"] is None
+    # The span indexes into the text text_sha256 digests, so the row is self-checking.
+    letter = text[int(row["letter_span_start"]) : int(row["letter_span_end"])]
+    assert row["letter_text_sha256"] == digest(letter)
+    assert row["text_sha256"] == digest(text)
+
+
+def test_a_refused_estimate_lands_with_the_publishers_reason_and_no_span() -> None:
+    row = report_row("CRPT-118hrpt18")
+    assert row["report_states_estimate"] == "false"
+    assert row["letter_span_start"] is None
+    assert row["letter_span_end"] is None
+    assert row["letter_text_sha256"] is None
+    assert row["estimate_absence_rule"] == "not_available"
+    assert "was not available" in " ".join(row["estimate_absence_reason"].split())
+
+
+def test_no_rule_run_is_null_and_not_false() -> None:
+    """ "Not read" and "the cover declares no estimate" are different answers."""
+    row = COMMITTEE_REPORTS.checked(shape_committee_report(_Body()))
+    assert row["report_states_estimate"] is None
+    assert row["estimate_rule"] is None
+    assert row["estimate_absence_reason"] is None
+
+
+def test_the_nineteen_package_columns_keep_their_order_and_the_rest_are_appended() -> None:
+    """The published prefix is frozen; every estimate column is new and comes after it."""
+    assert COMMITTEE_REPORTS.columns[:19] == (
+        "package_id",
+        "collection",
+        "congress",
+        "report_type",
+        "report_number",
+        "chamber",
+        "title",
+        "date_issued",
+        "last_modified",
+        "bill_id",
+        "format",
+        "media_type",
+        "requested_url",
+        "resolved_url",
+        "byte_size",
+        "sha256",
+        "observed_at",
+        "page_count",
+        "text_sha256",
+    )
+    assert COMMITTEE_REPORTS.identity == ("package_id",)
+    assert COMMITTEE_REPORTS.version_column == "last_modified"
+    assert len(COMMITTEE_REPORTS.columns) == 32
+
+
+def test_the_hearing_table_did_not_take_the_estimate_columns() -> None:
+    """A hearing transcript reprints no CBO letter; the shared block must not have moved."""
+    assert not set(COMMITTEE_REPORTS.columns[19:]) & set(HEARING_TRANSCRIPTS.columns)
+
+
+def test_no_citation_kind_was_added_for_the_estimate() -> None:
+    """The print states no publication id, so the link is a bill join and not a cite row."""
+    assert "cbo" not in " ".join(DOCUMENT_CITATIONS.columns)
+    assert "cbo_cost_estimate" not in DOCUMENT_CITATIONS.descriptions["cite_kind"]
+    assert body("CRPT-118hrpt53").count("cbo.gov") == 0

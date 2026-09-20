@@ -31,6 +31,7 @@ import pytest
 
 from spicy_docs.extraction.gpo_normalize import GpoPageCleanup, normalize_gpo_pages
 from spicy_docs.interpretation.bill_family import BillFamilyCapture
+from spicy_docs.interpretation.cbo_estimates import read_cbo_estimate, recital_bill_id
 from spicy_docs.interpretation.communication_rin import rin_from_report_nature
 from spicy_docs.interpretation.release_matching import compile_bill_patterns, match_releases
 from spicy_docs.interpretation.section_diff import diff_sections
@@ -727,10 +728,22 @@ def _report_cases() -> list[ShapedCase]:
     # ``page_count`` and ``text_sha256`` describe the extraction, not the
     # response, so the caller that ran the extraction supplies them.
     extracted = digest(text)
+    # The CBO estimate columns need a report whose cover declares one, and the
+    # captured CRPT package's own body does not; the finding therefore comes
+    # from a retained recital body, the same borrowing hearing_transcripts
+    # makes for want of a captured CHRG.
+    estimate = read_cbo_estimate((FIXTURES / "cbo_estimates/CRPT-118hrpt53.txt").read_text())
     cases: list[ShapedCase] = [
         _case(
             "committee_reports",
-            shape_committee_report(_package_body(CRPT), bill_id="119-hr-6028", page_count=12, text_sha256=extracted),
+            shape_committee_report(
+                _package_body(CRPT),
+                bill_id="119-hr-6028",
+                page_count=12,
+                text_sha256=extracted,
+                estimate=estimate,
+                recital_bill_id=recital_bill_id(estimate, 118),
+            ),
             (CRPT,),
         ),
         _case(
@@ -1241,7 +1254,12 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "member_votes": ("schemas/congress_activity_tables.py", "sources/congress/votes.py"),
     "members": ("schemas/legislator_tables.py", "sources/legislators.py"),
     "member_terms": ("schemas/legislator_tables.py", "sources/legislators.py"),
-    "committee_reports": ("schemas/committee_report_tables.py", "sources/govinfo/bodies.py"),
+    "committee_reports": (
+        "schemas/committee_report_tables.py",
+        "sources/govinfo/bodies.py",
+        # B4: the CBO estimate columns appended to the package row.
+        "interpretation/cbo_estimates.py",
+    ),
     "report_sections": ("schemas/committee_report_tables.py", "sources/agency_reports/report_blocks.py"),
     "hearing_transcripts": (
         "schemas/committee_report_tables.py",

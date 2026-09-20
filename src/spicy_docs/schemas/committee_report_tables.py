@@ -10,11 +10,36 @@ contract nothing filled.
 ``report_sections.pattern`` is this table's provenance column: it names the
 header pattern that fired to produce the block, so a mis-split report is
 readable from the row rather than only from re-running the parser.
+
+**The CBO estimate columns are the report-to-estimate link** (B4).  A
+committee report reprints the CBO cost-estimate letter verbatim when its cover
+declares it, which is the only text route to an estimate CBO's own site
+refuses.  Those columns are appended *here*, on the package-keyed row, rather
+than on ``cbo_cost_estimates``, and no ``document_citations`` row is written.
+Both choices are measured, not aesthetic (``docs/decisions.md``):
+
+* **The print names no estimate key.**  The retained CRPT body contains zero
+  ``cbo.gov`` occurrences, so a citation row would have to carry a
+  ``target_key`` nothing in the document settles, in a table whose grain is
+  one occurrence *of a cited key*.  The letter is also one span per document,
+  not one occurrence per key.
+* **The estimate row cannot know which letter is its own.**  It is shaped from
+  one BILLSTATUS document in one pass and the report is a different package;
+  61 of the 1,368 scored bills of the 118th carry more than one estimate and
+  28 of those also carry a report, so attributing one reprinted letter to one
+  of several estimates would be a guess on 28 bills.
+
+So the relation is a join on the bill, which both sides state:
+``cbo_cost_estimates.bill_id`` against this table's ``recital_bill_id`` -- the
+*print's own* answer, read off the cover's ``[To accompany H.R. 801]`` -- with
+``bill_id`` left as whatever index record the caller read.  Two columns for
+one fact on purpose: what the print says and what an index says are different
+claims, and the two agreeing is the check.
 """
 
 from __future__ import annotations
 
-from spicy_docs.schemas.tables import Row, table_contract, text
+from spicy_docs.schemas.tables import Row, flag, table_contract, text
 
 #: Which chamber each GovInfo document-type code belongs to.  CRPT's ``erpt``
 #: is a Senate executive report, not a House one; naming the six codes as data
@@ -68,15 +93,84 @@ def _package_columns(
 
 COMMITTEE_REPORTS = table_contract(
     "committee_reports",
-    grain="One row per captured GovInfo committee report package.",
+    grain="One row per captured GovInfo committee report package, with the CBO estimate it reprints or refuses.",
     identity=("package_id",),
     version_column="last_modified",
-    columns=_package_columns(
-        type_column="report_type",
-        type_description="The report's document-type code (hrpt, srpt, erpt).",
-        number_column="report_number",
-        number_description="The report's number within its Congress and type.",
-    ),
+    columns={
+        **_package_columns(
+            type_column="report_type",
+            type_description="The report's document-type code (hrpt, srpt, erpt).",
+            number_column="report_number",
+            number_description="The report's number within its Congress and type.",
+        ),
+        # Appended after the nineteen shared columns, the way a hosted table
+        # takes new ones (docs/tables.md): every column before this keeps its
+        # order and spelling for anyone pinning the prefix.  NULL throughout
+        # where no estimate rule was run over this package's text.
+        "estimate_rule": (
+            "Which rule read this report's cost-estimate statement.  Named even though there is one today, "
+            "for the reason document_citations names its own: a second reader over another rendition "
+            "would have to say which one produced the span."
+        ),
+        "estimate_rule_version": (
+            "That rule's version, a digest over every pattern and every lookalike it rejects, so a re-read "
+            "under a corrected rule is attributable."
+        ),
+        "report_states_estimate": (
+            "Whether the report's own cover carries the statutory recital `Including cost estimate of the "
+            "Congressional Budget Office`, printed in brackets.  This is the gate and a heading is never "
+            "one: three retained "
+            "reports print a CBO heading over a section saying the estimate was not received, and one prints "
+            "the estimate under a heading no pattern set had.  `false` is requested-empty with "
+            "estimate_absence_reason attached, never absence: 3 of 13 reported bills whose index named an "
+            "estimate had none in the report."
+        ),
+        "recital_bill_id": (
+            "The measure the cover states this report accompanies, keyed the way congress_bills.bill_id is, "
+            "with the Congress taken from this package's own identity because the cover states none.  The "
+            "print's own answer to the report-to-bill join, which is what cbo_cost_estimates.bill_id joins "
+            "against; bill_id beside it stays whatever index record the caller read."
+        ),
+        "estimate_heading": (
+            "The section heading the located span opens on, as the committee spelled it, collapsed to one "
+            "line where GPO wrapped it across two.  Committee-specific prose no index states."
+        ),
+        "estimate_heading_rule": (
+            "Which entry of the heading vocabulary matched.  **That vocabulary is a floor**: it only ever "
+            "locates a span the recital already declared, and one retained report uses a spelling the routes "
+            "measurement's five patterns missed."
+        ),
+        "letter_span_start": (
+            "Character offset of the reprinted letter in the extracted text text_sha256 digests, counted "
+            "from zero.  The letter is not carried in the row, so the span is how it is re-read."
+        ),
+        "letter_span_end": "Offset just past the letter, so text[letter_span_start:letter_span_end] is it.",
+        "letter_text_sha256": (
+            "Digest of exactly those characters, so a consumer can prove the span it re-read is the span that "
+            "was measured.  A re-extraction that moved one character moves every offset after it, which is "
+            "why text_sha256 says which text these offsets index into."
+        ),
+        "letter_end_rule": (
+            "How the end was found: `director_attribution` on the letter's own close, or "
+            "`next_heading_in_series` where the report prints a summary table with no attribution at all.  A "
+            "declared letter whose end could not be found publishes a NULL span rather than a guessed "
+            "boundary."
+        ),
+        "letter_signatory": (
+            "The Director as the letter names them; NULL where the attribution states no name, which the one "
+            "table-shaped estimate does."
+        ),
+        "estimate_absence_reason": (
+            "The publisher's own paragraph saying why the estimate is not here, verbatim, where the cover "
+            "declares none.  Carried whole rather than as a span, unlike the letter: it is a paragraph, and a "
+            "row that holds the words needs no offset to read them."
+        ),
+        "estimate_absence_rule": (
+            "Which reason pattern matched: `not_available` (the estimate had not arrived when the report was "
+            "filed) or `not_received` (the committee asked and CBO had not answered).  NULL where the report "
+            "gives no reason, which is not the same as having none to give."
+        ),
+    },
 )
 
 HEARING_TRANSCRIPTS = table_contract(
@@ -179,9 +273,25 @@ def shape_committee_report(
     bill_id: str | None = None,
     page_count: int | None = None,
     text_sha256: str | None = None,
+    estimate: object = None,
+    recital_bill_id: str | None = None,
 ) -> Row:
-    """One ``committee_reports`` row from one acquired CRPT package."""
-    return _package_row(
+    """One ``committee_reports`` row from one acquired CRPT package.
+
+    ``estimate`` is the ``interpretation.cbo_estimates.CboEstimateFinding``
+    read over this package's extracted text, or ``None`` where no rule was
+    run -- which lands as NULL throughout rather than as ``false``, because
+    "not read" and "the cover declares no estimate" are different answers and
+    the whole requested-empty rule turns on the difference.  It is read
+    structurally, so this module stays the stdlib-only leaf ``schemas`` is.
+
+    ``recital_bill_id`` is
+    ``cbo_estimates.recital_bill_id(estimate, identity.congress)``, passed in
+    rather than derived here for the reason ``shape_bill_committee`` takes
+    ``referral_signal``: reading a printed designator into a bill key is the
+    ``interpretation`` package's vocabulary, and this layer does not import it.
+    """
+    row = _package_row(
         body,
         type_column="report_type",
         number_column="report_number",
@@ -189,6 +299,23 @@ def shape_committee_report(
         page_count=page_count,
         text_sha256=text_sha256,
     )
+    span = None if estimate is None else estimate.letter_span
+    row |= {
+        "estimate_rule": text(None if estimate is None else estimate.rule),
+        "estimate_rule_version": text(None if estimate is None else estimate.rule_version),
+        "report_states_estimate": flag(None if estimate is None else estimate.report_states_estimate),
+        "recital_bill_id": text(recital_bill_id),
+        "estimate_heading": text(None if estimate is None else estimate.heading),
+        "estimate_heading_rule": text(None if estimate is None else estimate.heading_rule),
+        "letter_span_start": text(None if span is None else span[0]),
+        "letter_span_end": text(None if span is None else span[1]),
+        "letter_text_sha256": text(None if estimate is None else estimate.letter_sha256),
+        "letter_end_rule": text(None if estimate is None else estimate.letter_end_rule),
+        "letter_signatory": text(None if estimate is None else estimate.signatory),
+        "estimate_absence_reason": text(None if estimate is None else estimate.absence_reason),
+        "estimate_absence_rule": text(None if estimate is None else estimate.absence_rule),
+    }
+    return row
 
 
 def shape_hearing_transcript(
