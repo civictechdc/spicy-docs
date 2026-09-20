@@ -17,6 +17,7 @@ from types import MappingProxyType
 
 from spicy_docs.schemas.activity_events import PUBLIC_ACTIVITY_EVENTS
 from spicy_docs.schemas.base import RecordType
+from spicy_docs.schemas.bill_action_tables import BILL_COMMITTEE_ACTIONS
 from spicy_docs.schemas.bill_diff_tables import (
     FINANCIAL_CHANGES,
     SECTION_DIFF_ITEMS,
@@ -109,6 +110,9 @@ _REGISTERED: tuple[TableContract, ...] = (
     # The build order's step 4: the one PDF-only family whose value is a ruled
     # table and not a citation.
     SENATE_EXPENDITURES,
+    # What the print states that no index does: the bill-action relationship,
+    # hosted with its measured attachment reliability per row.
+    BILL_COMMITTEE_ACTIONS,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -123,6 +127,7 @@ __all__ = [
     "AMENDMENTS",
     "BILL_ACTIONS",
     "BILL_COMMITTEES",
+    "BILL_COMMITTEE_ACTIONS",
     "BILL_PUBLISHER_SUMMARIES",
     "BILL_SECTIONS",
     "BILL_SUMMARIES",

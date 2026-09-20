@@ -20,7 +20,7 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 
 ## The tables
 
-`TABLE_CONTRACTS` holds all thirty-six by name. Each carries its columns in
+`TABLE_CONTRACTS` holds all thirty-seven by name. Each carries its columns in
 publish order, its identity, its version column — the column a merge prefers the
 larger value of when two rows share an identity — a one-sentence grain, and one
 sentence per column for the host's data dictionary.
@@ -63,8 +63,9 @@ sentence per column for the host's data dictionary.
 | `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 36 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
 | `budget_volumes` | One row per published volume of the President's budget, with what its print adds to its own index. | `package_id` | `last_modified` | 34 | `schemas.budget_volume_tables`, `sources.govinfo.bodies` |
 | `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | 35 | `schemas.senate_expenditure_tables` |
+| `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | 27 | `schemas.bill_action_tables`, `interpretation.bill_actions` |
 
-Seven hundred and thirty-nine columns in all, each with its own sentence.
+Seven hundred and sixty-six columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -73,7 +74,7 @@ appended.
 
 ## The bill family is one pass
 
-Twelve of the thirty-six tables come out of a single call to
+Twelve of the thirty-seven tables come out of a single call to
 `build_bill_family`, in an order where no step reads a table an earlier step
 published:
 
@@ -227,6 +228,39 @@ rollup estimated.
   row per (document, key) is `GROUP BY document_key, cite_kind, target_key`
   with `COUNT(*)` and `MIN(span_start)`. Storing that instead would make the
   table a lossy copy of the MODS, which is exactly what it must not be.
+- **`bill_committee_actions`** is the one table here whose rows carry their
+  own measured error rate, and **a consumer must filter on it**:
+  `WHERE attachment_confidence = 'single'` is the hosted-quality subset.
+  Measured on 60 hand-checked mentions
+  (`docs/research/bill-action-relationship-2026-09-20.md`): a `single` row is
+  both the right kind and the right bill **83.3%** of the time (30 of 36), a
+  `multi` row **50%** (2 of 4). **4,089 of 4,456 rows (91.8%) are `single`**,
+  so the restriction costs 8% of the volume. `multi` rows are kept in the
+  table as evidence to verify rather than dropped, because a coin-flip row a
+  reader can check beats a fact nobody can. `bills_in_sentence` is the raw
+  predicate behind the label, published so a consumer can set its own
+  threshold.
+  **Precision is not recall.** 83.3% is a statement about *what is published*.
+  Against what a reader sees stated in the entry, these rules capture
+  **59.6%**: the print writes "the bill" after naming it once, sets an en-bloc
+  disposition as a sentence about "the measures", and states a committee
+  consideration date in a ruled table's column header. A consumer counting
+  hearings from these rows is counting a floor, and
+  `document_citations.span_start` on the same document and digest is where the
+  rest of the evidence is.
+  **What this table is for: a subcommittee hearing on a bill is often recorded
+  nowhere else.** Asked for 20 sampled bills' whole action lists, the publisher
+  has **no counterpart at all** to 10 of the 15 subcommittee hearings these
+  prints state — no action, no code, no wording. Markups are stated in full and
+  coded (`H15000-B`, `H15001`, `H22000`), so there the print is a second,
+  coded source rather than the only one.
+  **`billstatus_action_code` carries codes the retained guide does not list.**
+  `H21000` for a hearing and the three markup codes appear nowhere in the
+  guide's section 3, which says in its own first paragraph that it is
+  representational and that no authoritative list exists; 13 of the 35 distinct
+  codes in the retained responses are absent from it. They were read off the
+  publisher's responses, and `GuideCode.source` records which codes a committed
+  fixture can check and which only the receipt can.
 - **`house_activity_reports`** takes every descriptive field from the keyed
   GovInfo records and none from the print: the summary's title, Congress,
   session, issue date and **page count**, and the MODS's authoring committee
