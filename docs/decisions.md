@@ -1160,6 +1160,30 @@ addresses no hosted row -- `congress_bills.bill_id` needs the Congress this
 family never states -- and the per-row `stated_by_index` stays NULL, since the
 strict comparison a row would have to claim still cannot be made.
 
+**The budget-part vocabulary widened once, on a wider walk, and stays sealed to
+measured parts** (2026-09-20, receipt `budget-parts-2026-09-20/`). The six
+above were measured on a `published/BUDGET` walk from 2025-01-01. The first
+hosted run of the PDF-family rollups walked the same route from **2023-01-01**,
+served 40 rows and **refused 17 by name** — real budget volumes carrying
+`OBJCLASS`, `TAB`, `DB`, `CLIMATE`, `LRB`, `CROSSCUT` or `DOD`. The rollup's
+behaviour was correct and is the reason this is recoverable at all: the refusal
+named the id, the run logged all seventeen, and nothing was fetched at a
+guessed address. Seven parts join the vocabulary, each with the id that showed
+it, on the same standard the first widening held itself to: one package summary
+and one package MODS fetched per part (14 keyed requests against a cap of 20
+declared before the run), all seven stating `collectionCode` `GPO` in both
+records and passing `validate_package_summary` and `validate_package_mods`;
+the same bytes under another real `BUDGET-` id of the same part refuse, and
+`APPENDIX`, `TOC`, `SUPP` and a lower-case `objclass` still refuse by name, so
+this is thirteen measured parts and not a token. What the widening also
+established is that **an address is not a body**: only three of the seven state
+a PDF at `package_body_locator(id, "pdf")`; three state theirs only inside a
+constituent at a granule stem, where `acquire` answers
+`GovInfoFormatNotOfferedError` and `acquire_granule` is the route; and `LRB`
+states one XLS and no body rendition at all. Those are the publisher's own
+answers, and none of them was reachable while the id itself refused. One id per
+part was measured, which is what is claimed.
+
 ## A print's bill-action rows are hosted with their error rate on every row, keyed on the phrase
 
 A House committee activity report says *that* it names `H.R. 1093` — the
@@ -1329,3 +1353,75 @@ oversight hearing are indistinguishable, and nothing in the table says which.
 Three is not a rule; the per-chamber census is the open measurement, and
 `daily_digest_entry` — both chambers, back to 1994 — is the route that would
 close it.
+
+## What a host restates is a rule this package failed to own
+
+Adopted 2026-09-20 from the first hosted run of the PDF-family rollups
+(spicy-regs `adopt-spicy-docs-0.23.0`; receipt
+`rollups-pdf-families-2026-09-20/`), with [GovInfo bodies](sources/govinfo-bodies.md)
+and [table contracts](tables.md) updated; the B4 row of
+[closing the gaps](research/closing-the-gaps-2026-09-19.md).
+
+The run built the four tables of the `print-citations` rollup and published
+them, and two of the three follow-ups it exposed are the same defect seen from
+two sides: **a rule this package had measured but not published, which the host
+therefore had to restate or invent.** A restated rule is a rule that will
+drift, and the drift is silent — both copies keep passing their own tests.
+
+**The activity-report title rule lives in the package now.** Nothing in a CRPT
+package's id, `docClass` or MODS says it is an end-of-Congress committee
+activity report; only its title does. The rule was written in
+`tools/analysis/pdf_family_rollup.py`, the wheel ships `src/` and not `tools/`,
+and the host's own docstring names the consequence: "the one selection rule in
+this module that is a copy rather than an import". It is now
+`sources/govinfo/activity_reports.py`, beside the collection walk whose rows it
+selects, and the analysis tool imports it — the arrangement
+`interpretation/citations.py` already has with the citation rules, for the same
+reason: a rule corrected in one place must not stay wrong in the other.
+
+What moved with it is what makes it checkable: the pattern, **the bare-word
+alternative it rejects**, and a version digested over both. Keeping the
+rejected rule beside the chosen one is the point — the precision this rule was
+selected on is a ratio, and a ratio whose denominator lives only in prose
+cannot be re-derived. Re-derived where it now lives, request-free from the CRPT
+index page the rollup retained (`activity-report-title-rule-2026-09-20/`): 71
+packages walked, 20 titles carrying `activit`, **15 the phrase rule matches**.
+Three of the five rejects are the false positives it exists to reject; **two
+are real activity reports it misses**, both naming a Congress and no committee.
+The rule is not widened to reach them, because dropping the committee
+requirement is exactly what readmits the other three and this window does not
+measure what that would cost. 15 is published as a floor with the two named,
+and widening it means a window that separates the classes and a new
+`ACTIVITY_REPORT_RULE_VERSION`.
+
+**A per-family body preference belongs beside the sealed one, not in the
+host.** `BODY_PREFERENCE` is right and does not move: "Why PDF is last" was
+measured on committee reports, whose `htm` keeps account rows joined and words
+whole, and it still decides every collection whose contract states no page. But
+`house_activity_reports` and `budget_volumes` publish four columns that state a
+page — `pages_read`, `stated_page_count`, `pages_capped` and every citation
+row's `evidence_page` — and **no GovInfo `htm` body of any collection carries a
+page boundary**. `extraction/body_text.py` already said so structurally, in
+that `BodyText.pages` is `None` for every rendition but `pdf`; the run measured
+what ignoring it costs. Under the sealed order, **10 of 41** activity reports
+refused outright on HTML nesting depth and the 31 that were read published **0
+page attributions across 29,308 citation rows**. Under PDF-first: 41 reports
+and 23 budget volumes, zero refusals, an `evidence_page` on all 49,792 rows.
+
+So `PRINT_BODY_PREFERENCE` sits beside `BODY_PREFERENCE` and
+`GRANULE_BODY_PREFERENCE`, **derived from the sealed order** rather than
+spelled out, so a rendition added to one joins the other and the two cannot
+disagree about what the renditions are. It is a permutation with PDF first, not
+`("pdf",)`: the whole sealed order follows, so a package offering no PDF — four
+of the thirteen measured BUDGET parts state none at the package root — still
+yields a body instead of being refused for want of one. A test holds both
+properties, including that the sealed order itself did not move, because that
+is exactly what a second named preference must not cost.
+
+**The rule this leaves.** A host restating something to build a table is a
+finding about this package, not about the host: the thing restated is either a
+published contract that should have been importable, or a rule that was never
+measured. Either way it comes back here. The third follow-up from the same run
+— seventeen BUDGET package ids refused by a sealed vocabulary measured on a
+narrower window — is the second kind, and is recorded in the grammar's own
+entry above.

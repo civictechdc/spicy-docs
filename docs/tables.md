@@ -163,6 +163,24 @@ lift reproduces every count, distinct set and resolved system code in the
 sidecar; the only differences are per-page timings and the rules' own prose
 (`document-citations-2026-09-20/diff-sidecar.txt`).
 
+**Which CRPT packages are activity reports is a title rule, and the package
+owns it.** Nothing in a package id, its `docClass` or its MODS separates an
+end-of-Congress activity report from any other committee report in the same
+collection walk; only the title does.
+[`sources/govinfo/activity_reports.py`](../src/spicy_docs/sources/govinfo/activity_reports.py)
+holds it, so a host publishing this table imports the rule instead of
+restating it — and the analysis tools select with the same object, the
+arrangement the citation rules already have. It matches a *phrase* and never
+the bare word `activit`: on the 71 CRPT packages of the measured window, 20
+titles carry the word and the rule matches 15, rejecting two
+`DIRECTING THE SECRETARY … ACTIVITIES` resolutions and one
+`PROVIDING FOR CONSIDERATION … FOREST MANAGEMENT ACTIVITIES`. **Read 15 as a
+floor**: it also misses two real activity reports that name a Congress and no
+committee (`SUMMARY OF ACTIVITIES ONE HUNDRED EIGHTEENTH CONGRESS`,
+`REVIEW OF LEGISLATIVE ACTIVITY DURING THE 118TH CONGRESS`), and the rule is
+not widened to reach them because dropping the committee requirement readmits
+the three above (receipt `activity-report-title-rule-2026-09-20/`).
+
 **Building it corrected the measurement's headline.** The rollup reported 883
 distinct bills "beyond the index" for this family, because the index it
 compared against was the `published` listing row — seven fields and no

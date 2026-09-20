@@ -201,7 +201,17 @@ BUDGET_VOLUMES = table_contract(
             "Whether the read stopped short of the volume, so every count above is a floor.  NULL where "
             "the read states no page split or the publisher states no numeric extent."
         ),
-        "body_rendition": "Which rendition the text was derived from; `pdf` for this family, the only one offered.",
+        "body_rendition": (
+            "Which rendition the text was derived from.  `pdf` here because the acquirer is asked for "
+            "`sources.govinfo.bodies.PRINT_BODY_PREFERENCE` -- the sealed order with PDF first, for the "
+            "families whose contracts publish a page -- and **not** because PDF is all a budget volume "
+            "offers.  A package-root format refusal on this family is the publisher's answer, not a missing "
+            "volume: 4 of the 13 measured parts state no PDF at the package root (one id per part, measured "
+            "2026-09-20).  `TAB`, `DB` and `CLIMATE` state theirs inside a constituent record at a *granule* "
+            "stem (`pdf/BUDGET-2027-TAB-1.pdf`), which `acquire_granule` reaches and the package locator does "
+            "not derive; `LRB` states one XLS and no body rendition at all.  A `published/BUDGET` walk that "
+            "meets `GovInfoFormatNotOfferedError` on one of those has found that shape."
+        ),
         "body_derivation": "How that rendition became text.",
         "text_sha256": "Digest of the normalized text the citation spans index into.",
         "rule_set_version": (

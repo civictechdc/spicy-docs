@@ -91,17 +91,79 @@ _JACKET = r"[0-9]+"
 # the frozenset iterates in, so the compiled pattern is the same every run.
 _BILL_TYPE = "|".join(sorted(BILL_TYPES, key=lambda name: (-len(name), name)))
 _DATE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}"
-# A budget volume is addressed by its fiscal year and the part of the budget it
-# is, not by a Congress: ``BUDGET-2027-APP``. The six parts are the ones
-# measured on 2026-09-20 across the eight retained volumes -- ``APP``
-# (Appendix), ``BALANCES`` (Balances of Budget Authority), ``BUD`` (Budget of
-# the U.S. Government), ``FCS`` (Federal Credit Supplement), ``MSR``
-# (Mid-Session Review) and ``PER`` (Analytical Perspectives). Sealed rather
-# than widened to a general token, for the same reason every other grammar here
-# is strict: a part this sample never saw is a part whose address is not
-# established, and a refusal that names what was expected is recoverable where
-# a guessed address is not. Adding one is this line plus the id that showed it.
-_BUDGET_PART = "APP|BALANCES|BUD|FCS|MSR|PER"
+#: Every part of the President's budget the publisher has been measured
+#: spelling. A budget volume is addressed by its fiscal year and its part, with
+#: no Congress anywhere: ``BUDGET-2027-APP``.
+#:
+#: **Sealed to measured parts, and additions-only.** A part no sample has seen
+#: is a part whose address is not established, and a refusal naming what was
+#: expected is recoverable where a guessed address is not -- the rule every
+#: other grammar here follows. Adding one is an entry here plus the id that
+#: showed it. It is one object rather than a pattern plus a prose list so that
+#: a caller reporting coverage and the parser that refuses a row cannot
+#: disagree about what the vocabulary is.
+#:
+#: The first six were measured 2026-09-20 across the eight retained volumes, on
+#: a ``published/BUDGET`` walk from 2025-01-01:
+#:
+#: - ``APP`` (Appendix) -- BUDGET-2027-APP
+#: - ``BALANCES`` (Balances of Budget Authority) -- BUDGET-2026-BALANCES
+#: - ``BUD`` (Budget of the U.S. Government) -- BUDGET-2027-BUD
+#: - ``FCS`` (Federal Credit Supplement) -- BUDGET-2027-FCS
+#: - ``MSR`` (Mid-Session Review) -- BUDGET-2026-MSR
+#: - ``PER`` (Analytical Perspectives) -- BUDGET-2027-PER
+#:
+#: Seven more joined the same day. A hosted run walked the same route from
+#: **2023-01-01** and served 40 rows, of which **17 carried a part outside the
+#: six** and were refused by name (receipt
+#: ``rollups-pdf-families-2026-09-20/requests/print-citations-resume.json``).
+#: Each is proved on its own summary and MODS, fetched once
+#: (``budget-parts-2026-09-20/``, 14 requests of a 20 cap):
+#:
+#: - ``OBJCLASS`` (Object Class Analysis) -- BUDGET-2027-OBJCLASS
+#: - ``TAB`` (Historical Tables) -- BUDGET-2027-TAB
+#: - ``DB`` (Public Budget Database) -- BUDGET-2027-DB
+#: - ``CLIMATE`` (Climate Risk Analysis) -- BUDGET-2025-CLIMATE
+#: - ``LRB`` (Long Range Budget Projections) -- BUDGET-2025-LRB
+#: - ``CROSSCUT`` (Crosscut Tables) -- BUDGET-2026-CROSSCUT
+#: - ``DOD`` (Department of Defense Appendix) -- BUDGET-2026-DOD
+#:
+#: **An id parsing is not a promise that a package body exists**, and these
+#: seven are where the two come apart. Three of them (OBJCLASS, CROSSCUT, DOD)
+#: state a PDF at exactly ``package_body_locator(id, "pdf")``. Three (CLIMATE,
+#: DB, TAB) state their PDF only inside a constituent, at a *granule* stem
+#: (``pdf/BUDGET-2027-TAB-1.pdf``), so the package root offers nothing and
+#: ``acquire`` answers ``GovInfoFormatNotOfferedError`` while
+#: ``acquire_granule`` reaches the body. One (LRB) states one XLS at the
+#: package stem and no body rendition at all. That is the publisher's own
+#: answer in each case, and it is only reachable because the address parses:
+#: before this widening all seven were refused before any request. A caller
+#: walking this collection reads such a refusal as that shape, not as a
+#: missing volume.
+MEASURED_BUDGET_PARTS: frozenset[str] = frozenset(
+    {
+        "APP",
+        "BALANCES",
+        "BUD",
+        "CLIMATE",
+        "CROSSCUT",
+        "DB",
+        "DOD",
+        "FCS",
+        "LRB",
+        "MSR",
+        "OBJCLASS",
+        "PER",
+        "TAB",
+    }
+)
+# Sorted so the compiled pattern is byte-identical every run, the same reason
+# ``_BILL_TYPE`` sorts: a frozenset's iteration order is not stable across
+# interpreters. Alphabetical is safe where ``_BILL_TYPE``'s longest-first is
+# not, because this alternation sits inside a ``fullmatch`` that backtracks
+# past a shorter alternative -- ``DB`` cannot shadow ``DOD``, and a test parses
+# every part to hold that.
+_BUDGET_PART = "|".join(sorted(MEASURED_BUDGET_PARTS))
 _FISCAL_YEAR = r"[0-9]{4}"
 
 
@@ -252,6 +314,41 @@ PACKAGE_BODY_FORMATS: dict[str, BodyFormat] = {
 #: first; USLM still outranks HTML and text, since it is markup over the same
 #: structured source, not a plain-text reduction of it.
 BODY_PREFERENCE: tuple[str, ...] = ("xml", "uslm", "htm", "txt", "pdf")
+
+#: ``BODY_PREFERENCE`` with PDF moved from last to first, for the print
+#: families whose own contracts publish a page number. **The sealed order does
+#: not move**: this is a second named order a caller passes as ``prefer``, the
+#: way ``bill_pdf.py`` passes ``("pdf",)``, and every collection that does not
+#: state a page keeps the default.
+#:
+#: "Why PDF is last" is still true where it was measured -- a committee
+#: report's ``htm`` keeps its account rows joined and its words whole -- and is
+#: not the question here. The question is whether the rendition can answer what
+#: the contract publishes, and for the page-stating families it cannot.
+#: Measured 2026-09-20 on the first hosted run of the PDF-family rollups
+#: (receipt ``rollups-pdf-families-2026-09-20/``, the retained wrong run
+#: ``requests/print-citations-attempt-1-html.json``), over 41 CRPT committee
+#: activity reports read under the sealed order:
+#:
+#: - **10 of 41 refused outright**, every run, with ``MarkupReadError: HTML
+#:   markup exceeds the supported nesting depth``. A quarter of the family
+#:   unreadable is not a preference question.
+#: - The 31 that were read published **0 page attributions across 29,308
+#:   citation rows**, and NULL ``pages_read``, ``stated_page_count`` and
+#:   ``pages_capped`` on every document row. No GovInfo ``htm`` body of any
+#:   collection carries a page boundary, and ``extraction/body_text.py`` says
+#:   so structurally: ``BodyText.pages`` is ``None`` for every rendition but
+#:   ``pdf``. Four published columns state a page, so reading HTML publishes
+#:   four NULLs and calls it a row.
+#: - Under this order the same window read as PDF: 41 reports and 23 budget
+#:   volumes, **zero refusals**, and an ``evidence_page`` on every one of
+#:   49,792 citation rows.
+#:
+#: PDF is first and the whole sealed order follows it, rather than
+#: ``("pdf",)``: a package that offers no PDF -- and four of the thirteen
+#: measured BUDGET parts state none at the package root -- still yields a body
+#: instead of being refused for want of one.
+PRINT_BODY_PREFERENCE: tuple[str, ...] = ("pdf", *(name for name in BODY_PREFERENCE if name != "pdf"))
 
 #: The granule counterpart of ``BODY_PREFERENCE``, for
 #: ``GovInfoBodyAcquirer.acquire_granule``. Measured on CREC-2026-09-18 (§B2):
@@ -1376,7 +1473,9 @@ def validate_granule_body(
 __all__ = [
     "BODY_PREFERENCE",
     "GRANULE_BODY_PREFERENCE",
+    "MEASURED_BUDGET_PARTS",
     "PACKAGE_BODY_FORMATS",
+    "PRINT_BODY_PREFERENCE",
     "BodyFormat",
     "GovInfoBodySourceError",
     "GranuleBodyIdentity",

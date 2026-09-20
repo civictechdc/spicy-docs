@@ -16,7 +16,7 @@ import httpx
 import pytest
 
 from spicy_docs.reading.refusals import RefusedResponse
-from spicy_docs.sources.govinfo.bodies import BODY_PREFERENCE, GovInfoBodySourceError
+from spicy_docs.sources.govinfo.bodies import BODY_PREFERENCE, PRINT_BODY_PREFERENCE, GovInfoBodySourceError
 from spicy_docs.sources.govinfo.body_acquisition import (
     GovInfoBodyAcquirer,
     GovInfoBodyBudget,
@@ -143,6 +143,43 @@ def test_pdf_is_reached_when_the_caller_names_it() -> None:
 
     assert transport.urls[-1] == PDF_URL
     assert result.format == "pdf" and result.body.media_type == "application/pdf"
+
+
+def test_the_print_preference_is_the_sealed_order_with_pdf_moved_to_the_front() -> None:
+    """A permutation, never a different opinion about what the renditions are.
+
+    Derived from ``BODY_PREFERENCE`` rather than spelled out, so a rendition
+    added to the sealed order joins this one too; and the sealed order itself
+    is asserted unmoved, because that is what a second named preference must
+    not cost.
+    """
+    assert PRINT_BODY_PREFERENCE[0] == "pdf"
+    assert sorted(PRINT_BODY_PREFERENCE) == sorted(BODY_PREFERENCE)
+    assert PRINT_BODY_PREFERENCE[1:] == tuple(name for name in BODY_PREFERENCE if name != "pdf")
+    assert BODY_PREFERENCE == ("xml", "uslm", "htm", "txt", "pdf")
+    # Not ("pdf",): a package that offers no PDF still yields a body.
+    assert len(PRINT_BODY_PREFERENCE) == len(BODY_PREFERENCE)
+
+
+def test_the_print_preference_takes_the_pdf_of_a_package_that_offers_both() -> None:
+    """An activity report offers htm and pdf, and only the pdf states a page."""
+    transport = Transport(**{PDF_URL: reply(b"%PDF-1.4\nbody", content_type="application/pdf")})
+    result = acquire(transport, prefer=PRINT_BODY_PREFERENCE)
+
+    assert result.offered_formats == ("htm", "pdf")
+    assert result.format == "pdf"
+    assert transport.urls[-1] == PDF_URL
+    assert HTM_URL not in transport.urls
+
+
+def test_the_print_preference_still_reaches_a_text_rendition_when_no_pdf_is_offered() -> None:
+    """Why the whole sealed order follows PDF instead of stopping at ``("pdf",)``."""
+    htm_only = f'<url displayLabel="HTML rendition" access="raw object">{HTM_URL}</url>'
+    transport = Transport(**{MODS_URL: reply(mods_xml(urls=htm_only), content_type="application/xml")})
+    result = acquire(transport, prefer=PRINT_BODY_PREFERENCE)
+
+    assert result.offered_formats == ("htm",)
+    assert result.format == "htm"
 
 
 def test_pdf_is_last_under_the_default_so_an_offered_text_rendition_wins() -> None:

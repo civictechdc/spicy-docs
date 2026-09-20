@@ -54,6 +54,7 @@ from spicy_docs.interpretation.citations import (
     resolve_committee_names,
 )
 from spicy_docs.interpretation.citations import committee_vocabulary as build_committee_vocabulary
+from spicy_docs.sources.govinfo.activity_reports import is_activity_report, names_activity
 from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key, scrub_credential
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -677,18 +678,15 @@ def discover_courtlistener(fetchers: Fetchers) -> dict[str, Any]:
     return {"index_fields": index_fields, "documents": documents}
 
 
-#: An end-of-Congress activity report names itself three ways. A bare "activit"
-#: also matches ordinary reports -- two of the first eight matches on
-#: 2026-09-20 were "DIRECTING THE SECRETARY ... RELATING TO ... ACTIVITIES" --
-#: so the phrase, not the word, is the rule, and the precision is reported.
-_ACTIVITY_REPORT_TITLE = re.compile(
-    r"(?i)activit(?:y|ies)\b[^.]{0,80}\bcommittee\b|\bcommittee\b[^.]{0,80}\bactivit(?:y|ies)\b"
-    r"|\bactivity report\b|\breport on activities\b"
-)
-
-
 def discover_house_activity(fetchers: Fetchers) -> dict[str, Any]:
-    """End-of-Congress committee activity reports, found in GovInfo's own CRPT index."""
+    """End-of-Congress committee activity reports, found in GovInfo's own CRPT index.
+
+    The title rule and its rejected bare-word alternative are
+    ``sources.govinfo.activity_reports``'s, not this tool's, so the precision
+    this function reports is measured on the same object the product selects
+    with -- the arrangement ``JOIN_KEY_RULES`` already has with the citation
+    rules.
+    """
     from spicy_docs.sources.govinfo.discovery import published_url
 
     documents: list[dict[str, Any]] = []
@@ -708,11 +706,11 @@ def discover_house_activity(fetchers: Fetchers) -> dict[str, Any]:
             index_fields = index_fields or {k: type(v).__name__ for k, v in sorted(package.items())}
             considered += 1
             title = package.get("title") or ""
-            if "activit" in title.casefold():
+            if names_activity(title):
                 loose_matches += 1
-            if _ACTIVITY_REPORT_TITLE.search(title) is None:
+            package_id = package.get("packageId") or ""
+            if not is_activity_report(package_id, title):
                 continue
-            package_id = package["packageId"]
             documents.append(
                 {
                     "id": package_id,

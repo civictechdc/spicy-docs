@@ -68,6 +68,23 @@ naming `("pdf",)` because it wants that rendition specifically rather than the
 best one available. `max_bytes` can narrow the body allowance for one call,
 never raise it — a PDF is the rendition most likely to exceed it.
 
+`PRINT_BODY_PREFERENCE` (`("pdf", "xml", "uslm", "htm", "txt")`) is a second
+named order beside the sealed one, for the print families whose own contracts
+publish a page number — the CRPT committee activity reports behind
+`house_activity_reports` and the `budget_volumes` — because `pdf` is the only
+rendition that states a page (`BodyText.pages` is `None` for every other one)
+and because the HTML rendition **refused 10 of 41 activity reports** on markup
+nesting depth while the 31 it did read published **0 page attributions across
+29,308 citation rows** (measured 2026-09-20, receipt
+`~/Work/corpora/supply-2026-09-02/receipts/rollups-pdf-families-2026-09-20/`,
+the retained wrong run `requests/print-citations-attempt-1-html.json`).
+**`BODY_PREFERENCE` does not move**: "Why PDF is last" below is still the right
+default for every collection whose contract states no page — a committee
+report's `htm` keeps its account rows joined and its words whole — and this
+order is a permutation of it, PDF first and the sealed order behind, so a
+package offering no PDF still yields a body rather than being refused for want
+of one.
+
 What the sealed order changes, measured over the original six collections
 (the formats table below adds a seventh, CPRT, after this ruling): for CRPT,
 CHRG, CDOC, CDIR and BILLS it picks exactly what the previous default picked.
@@ -95,7 +112,7 @@ structure-first rule the rest of the order already follows.
 | Congressional Record | `CREC-{yyyy-mm-dd}` with optional `-v{volume}` or `-i{issue}` | `CREC-2019-01-03-v164` |
 | Congressional Directory | `CDIR-{yyyy-mm-dd}` | `CDIR-2026-02-20` |
 | Bill text | `BILLS-{congress}{type}{number}{version}` | `BILLS-119hr1enr` |
-| President's budget | `BUDGET-{fiscal year}-{APP\|BALANCES\|BUD\|FCS\|MSR\|PER}` | `BUDGET-2027-APP` |
+| President's budget | `BUDGET-{fiscal year}-{part}`, one of thirteen measured parts (below) | `BUDGET-2027-APP` |
 | Senate Secretary reprints | `GPO-CDOC-{congress}sdoc{number}` | `GPO-CDOC-119sdoc3` |
 
 Congress.gov route URLs carry these ids as their file stems, so a caller
@@ -109,8 +126,58 @@ committee-report token it otherwise resembles (`hrpt`/`srpt`/`erpt`) — verifie
 on a real package summary 2026-09-19, not inferred from CRPT's own spelling.
 
 A budget volume is addressed by fiscal year and part, with no Congress in the
-id at all; the six parts are the ones measured 2026-09-20 across the eight
-retained volumes. The Senate Secretary's semiannual report is a CDOC reprint
+id at all. **The part vocabulary is sealed to measured parts and is
+additions-only**: each is one entry plus the id that showed it. It is one
+object, `bodies.MEASURED_BUDGET_PARTS`, which the grammar's alternation is
+built from, so a caller reporting this family's coverage and the parser that
+refuses a row cannot disagree about what the vocabulary is. Thirteen so far,
+in two measurements:
+
+| Part | Volume | First shown by |
+| --- | --- | --- |
+| `APP` | Appendix | `BUDGET-2027-APP` |
+| `BALANCES` | Balances of Budget Authority | `BUDGET-2026-BALANCES` |
+| `BUD` | Budget of the U.S. Government | `BUDGET-2027-BUD` |
+| `FCS` | Federal Credit Supplement | `BUDGET-2027-FCS` |
+| `MSR` | Mid-Session Review | `BUDGET-2026-MSR` |
+| `PER` | Analytical Perspectives | `BUDGET-2027-PER` |
+| `OBJCLASS` | Object Class Analysis | `BUDGET-2027-OBJCLASS` |
+| `TAB` | Historical Tables | `BUDGET-2027-TAB` |
+| `DB` | Public Budget Database | `BUDGET-2027-DB` |
+| `CLIMATE` | Climate Risk Analysis | `BUDGET-2025-CLIMATE` |
+| `LRB` | Long Range Budget Projections | `BUDGET-2025-LRB` |
+| `CROSSCUT` | Crosscut Tables | `BUDGET-2026-CROSSCUT` |
+| `DOD` | Department of Defense Appendix | `BUDGET-2026-DOD` |
+
+The first six were measured 2026-09-20 across the eight retained volumes, on a
+`published/BUDGET` walk from 2025-01-01. The last seven were added the same day
+on a wider walk: the first hosted run of the PDF-family rollups walked the same
+route from **2023-01-01**, served 40 rows and **refused 17 of them by name** —
+real budget volumes whose part was outside the six. Each of the seven parts was
+then proved on its own package summary and MODS (receipt
+`~/Work/corpora/supply-2026-09-02/receipts/budget-parts-2026-09-20/`, 14 keyed
+requests against a cap of 20 declared before the run): all seven state
+`collectionCode` `GPO` in both records, a `<field name="Fiscal Year">` equal to
+the year the id carries, and pass `validate_package_summary` and
+`validate_package_mods`. The same bytes offered under another real `BUDGET-` id
+of the same part are refused, and parts still outside the thirteen
+(`APPENDIX`, `TOC`, `SUPP`, a lower-case `objclass`) still refuse by name.
+
+**A parsing id is not a promise that a package body exists**, and these seven
+are where the two come apart. Three (`OBJCLASS`, `CROSSCUT`, `DOD`) state a PDF
+at exactly `package_body_locator(id, "pdf")`. Three (`TAB`, `DB`, `CLIMATE`)
+state their PDF only inside a constituent record and at a *granule* stem
+(`pdf/BUDGET-2027-TAB-1.pdf`) — an address the package locator does not derive
+and the root-only reader never reads, the same shape the Balances volumes' XLS
+already had — so `acquire` answers `GovInfoFormatNotOfferedError` there and
+`acquire_granule` reaches the body. One (`LRB`) states a single XLS at the
+package stem and no body rendition at all, so it lands in `other_renditions`.
+That is the publisher's own answer in each case, and it is only reachable
+because the address parses: before the widening all seven refused before any
+request was made. One id per part was measured, so what this establishes is the
+part, not every one of the seventeen volumes.
+
+The Senate Secretary's semiannual report is a CDOC reprint
 under a `GPO-` prefix, and only `sdoc` is sealed — `hdoc` and `tdoc` are real
 CDOC document types that no measured `GPO-CDOC-` id carries, so they are
 refused rather than inferred, exactly as CPRT's upper-case token was measured
@@ -187,21 +254,33 @@ whose URL is exactly this module's locator for a supported format. Measured
 | `CREC-2026-01-02` | PDF | `pdf` | four PDF links |
 | `CDIR-2026-02-20` | PDF, Text | `pdf` (18.3 MB), `txt` | `txtLink`, `pdfLink` |
 | `BILLS-119hr1enr` | HTML, PDF, XML, USLM | `htm`, `xml`, `pdf`, `uslm` | `xmlLink`, `txtLink`, `xhtmlLink`, `uslmLink`, `pdfLink` |
-| `BUDGET-*` (all 8 volumes) | PDF | not re-probed | `pdfLink`, `thumbnailJpeg` (2 summaries retained) |
+| `BUDGET-*` (the 8 volumes of the six original parts) | PDF | not re-probed | `pdfLink`, `thumbnailJpeg` (2 summaries retained) |
+| `BUDGET-*` (one volume of each of the seven parts added later) | PDF at the package locator on 3 of 7; nothing at the root on 3; one XLS on 1 | not probed | `pdfLink` on all 7 |
 | `GPO-CDOC-*` (3 packages, 5 granules) | PDF | not re-probed | `pdfLink` (1 summary retained) |
 
-The last two rows were added 2026-09-20 from the retained MODS alone; those
-routes were **not** re-probed, so they state what the publisher says these
-packages offer and not a fresh confirmation of what they serve. Every one of
-the eleven package records and five granule records states PDF, at exactly this
-module's own locator, and no second body rendition anywhere. What five of them
-state *beside* the PDF is a JPEG thumbnail, and one (`BUDGET-2027-FCS`) an XLS;
-neither is a body text rendition and `extraction/body_text.py` has no
-derivation for either, so both stay in `other_renditions` and
-`PACKAGE_BODY_FORMATS` gained no entry. The two Balances volumes state an XLS
-too, but inside a constituent record and at a granule stem
+The last three rows were added 2026-09-20 from retained MODS alone; those
+routes were **not** probed, so they state what the publisher says these
+packages offer and not a confirmation of what they serve. Every one of the
+eleven package records and five granule records of the first two rows states
+PDF, at exactly this module's own locator, and no second body rendition
+anywhere. What five of them state *beside* the PDF is a JPEG thumbnail, and one
+(`BUDGET-2027-FCS`) an XLS; neither is a body text rendition and
+`extraction/body_text.py` has no derivation for either, so both stay in
+`other_renditions` and `PACKAGE_BODY_FORMATS` gained no entry. The two Balances
+volumes state an XLS too, but inside a constituent record and at a granule stem
 (`xls/BUDGET-2026-BALANCES-1.xlsx`) — an address this module's package locator
 does not derive, and a record this module's root-only reader never reads.
+
+**The seven later parts are where a package root stops being the address.**
+`OBJCLASS`, `CROSSCUT` and `DOD` behave like the first eight: a PDF at
+`package_body_locator(id, "pdf")`. `TAB`, `DB` and `CLIMATE` state **nothing**
+at the package root — every one of their `raw object` renditions is a
+constituent's, at a granule stem (`TAB` states 58 of them: 1 PDF and 57 XLS;
+`DB` 4). `LRB` states one XLS at the package stem and no body rendition. So
+`acquire` refuses four of the seven with `GovInfoFormatNotOfferedError` and
+that refusal is the publisher's own answer, not a gap in this module: the body
+that exists for three of them is a granule's, and `acquire_granule` is its
+route. Measured on one volume per part.
 
 The MODS statement agreed exactly with what the routes served, in both
 directions, for every package measured: each stated rendition answered 200 and
