@@ -281,6 +281,41 @@ PACKAGE_BODY_FORMATS: dict[str, BodyFormat] = {
 #: structured source, not a plain-text reduction of it.
 BODY_PREFERENCE: tuple[str, ...] = ("xml", "uslm", "htm", "txt", "pdf")
 
+#: ``BODY_PREFERENCE`` with PDF moved from last to first, for the print
+#: families whose own contracts publish a page number. **The sealed order does
+#: not move**: this is a second named order a caller passes as ``prefer``, the
+#: way ``bill_pdf.py`` passes ``("pdf",)``, and every collection that does not
+#: state a page keeps the default.
+#:
+#: "Why PDF is last" is still true where it was measured -- a committee
+#: report's ``htm`` keeps its account rows joined and its words whole -- and is
+#: not the question here. The question is whether the rendition can answer what
+#: the contract publishes, and for the page-stating families it cannot.
+#: Measured 2026-09-20 on the first hosted run of the PDF-family rollups
+#: (receipt ``rollups-pdf-families-2026-09-20/``, the retained wrong run
+#: ``requests/print-citations-attempt-1-html.json``), over 41 CRPT committee
+#: activity reports read under the sealed order:
+#:
+#: - **10 of 41 refused outright**, every run, with ``MarkupReadError: HTML
+#:   markup exceeds the supported nesting depth``. A quarter of the family
+#:   unreadable is not a preference question.
+#: - The 31 that were read published **0 page attributions across 29,308
+#:   citation rows**, and NULL ``pages_read``, ``stated_page_count`` and
+#:   ``pages_capped`` on every document row. No GovInfo ``htm`` body of any
+#:   collection carries a page boundary, and ``extraction/body_text.py`` says
+#:   so structurally: ``BodyText.pages`` is ``None`` for every rendition but
+#:   ``pdf``. Four published columns state a page, so reading HTML publishes
+#:   four NULLs and calls it a row.
+#: - Under this order the same window read as PDF: 41 reports and 23 budget
+#:   volumes, **zero refusals**, and an ``evidence_page`` on every one of
+#:   49,792 citation rows.
+#:
+#: PDF is first and the whole sealed order follows it, rather than
+#: ``("pdf",)``: a package that offers no PDF -- and four of the thirteen
+#: measured BUDGET parts state none at the package root -- still yields a body
+#: instead of being refused for want of one.
+PRINT_BODY_PREFERENCE: tuple[str, ...] = ("pdf", *(name for name in BODY_PREFERENCE if name != "pdf"))
+
 #: The granule counterpart of ``BODY_PREFERENCE``, for
 #: ``GovInfoBodyAcquirer.acquire_granule``. Measured on CREC-2026-09-18 (§B2):
 #: every one of its 11 granules states HTML and PDF, both through the granule's
@@ -1384,6 +1419,7 @@ __all__ = [
     "BODY_PREFERENCE",
     "GRANULE_BODY_PREFERENCE",
     "PACKAGE_BODY_FORMATS",
+    "PRINT_BODY_PREFERENCE",
     "BodyFormat",
     "GovInfoBodySourceError",
     "GranuleBodyIdentity",

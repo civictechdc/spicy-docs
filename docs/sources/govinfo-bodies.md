@@ -68,6 +68,23 @@ naming `("pdf",)` because it wants that rendition specifically rather than the
 best one available. `max_bytes` can narrow the body allowance for one call,
 never raise it — a PDF is the rendition most likely to exceed it.
 
+`PRINT_BODY_PREFERENCE` (`("pdf", "xml", "uslm", "htm", "txt")`) is a second
+named order beside the sealed one, for the print families whose own contracts
+publish a page number — the CRPT committee activity reports behind
+`house_activity_reports` and the `budget_volumes` — because `pdf` is the only
+rendition that states a page (`BodyText.pages` is `None` for every other one)
+and because the HTML rendition **refused 10 of 41 activity reports** on markup
+nesting depth while the 31 it did read published **0 page attributions across
+29,308 citation rows** (measured 2026-09-20, receipt
+`~/Work/corpora/supply-2026-09-02/receipts/rollups-pdf-families-2026-09-20/`,
+the retained wrong run `requests/print-citations-attempt-1-html.json`).
+**`BODY_PREFERENCE` does not move**: "Why PDF is last" below is still the right
+default for every collection whose contract states no page — a committee
+report's `htm` keeps its account rows joined and its words whole — and this
+order is a permutation of it, PDF first and the sealed order behind, so a
+package offering no PDF still yields a body rather than being refused for want
+of one.
+
 What the sealed order changes, measured over the original six collections
 (the formats table below adds a seventh, CPRT, after this ruling): for CRPT,
 CHRG, CDOC, CDIR and BILLS it picks exactly what the previous default picked.
