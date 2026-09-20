@@ -269,8 +269,17 @@ def _prove_identity(body: bytes, document: GovInfoDocument, final_url: str) -> s
     proof: it checks the final URL, every root ``accessId``, the
     ``collectionCode``, and for a granule the host package nested in a
     ``relatedItem type="host"``. Where the grammar does not (BUDGET, the
-    GPO-prefixed CDOC reprints), the same ``accessId`` check is applied
-    directly, so no record is read that does not name itself.
+    GPO-prefixed CDOC reprints), the record still has to name itself, so the
+    ``accessId`` check is applied directly and a granule's host package is
+    checked the same way ``validate_granule_mods`` checks it.
+
+    **The fallback proves less than the sealed validators**, and the report
+    says so: it does not check the final URL against a derived locator, and it
+    does not check ``collectionCode``, because this module derives neither for
+    a collection the grammar does not cover. Widening that grammar to
+    ``BUDGET-*`` and ``GPO-CDOC-*`` is owed a decision record before either
+    family is acquired in product code; a measurement may read a record the
+    sealed acquirer would refuse to fetch, a contract may not.
     """
     try:
         identity = parse_package_id(document.package_id)
@@ -282,6 +291,18 @@ def _prove_identity(body: bytes, document: GovInfoDocument, final_url: str) -> s
             raise RecheckError(f"{document.mods_key}: MODS states no accessId") from error
         if any(value != expected for value in access_ids):
             raise RecheckError(f"{document.mods_key}: MODS accessId differs from the requested record") from error
+        if document.granule_id is not None:
+            hosts = [record for record in parsed.package.related_items if record.element.attribute("type") == "host"]
+            host_ids = tuple(
+                element.text.strip() for record in hosts for element in record.fields("extension", "accessId")
+            )
+            if not host_ids:
+                raise RecheckError(f"{document.mods_key}: granule MODS states no host package") from error
+            if any(value != document.package_id for value in host_ids):
+                raise RecheckError(
+                    f"{document.mods_key}: granule MODS host package differs from the requested package"
+                ) from error
+            return "accessId+host"
         return "accessId"
     if document.granule_id is None:
         validate_package_mods(body, package=identity, final_url=final_url, max_bytes=MAX_MODS_BYTES)
@@ -586,6 +607,9 @@ def mods_facts(body: bytes) -> dict[str, Any]:
         "bill_natural_keys": sorted(_bill_keys(root)[1]),
         "law_natural_keys": sorted(_law_keys(root)[1]),
         "document_references": references,
+        # The publisher's own collection for this record. It is not the
+        # package-id prefix: BUDGET and the GPO-CDOC reprints both state GPO.
+        "collection_code": sorted({element.text.strip() for element in root.fields("extension", "collectionCode")}),
         "source_sha256": parsed.source_sha256,
         "source_byte_size": parsed.source_byte_size,
     }
@@ -635,6 +659,23 @@ def compare_document(print_sets: Mapping[str, Sequence[str]], facts: Mapping[str
     return result
 
 
+def _request_counts(receipt: Path) -> dict[str, Any]:
+    """What the receipt's own log says this measurement spent, read back rather than asserted."""
+    path = receipt / "requests.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()] if path.exists() else []
+    statuses: Counter[str] = Counter(str(row["status"]) for row in rows)
+    purposes: Counter[str] = Counter(row["purpose"] for row in rows)
+    proofs: Counter[str] = Counter(row["note"] for row in rows if row["note"])
+    return {
+        "total": len(rows),
+        "keyed": sum(1 for row in rows if row["class"] == "keyed"),
+        "bytes": sum(row["bytes"] or 0 for row in rows),
+        "by_status": dict(sorted(statuses.items())),
+        "by_purpose": dict(sorted(purposes.items())),
+        "by_identity_proof": dict(sorted(proofs.items())),
+    }
+
+
 def analyze(receipt: Path, source_receipt: Path, output: Path) -> None:
     documents = govinfo_documents(source_receipt)
     per_family = json.loads((source_receipt / "tables" / "per-family.json").read_text())
@@ -648,6 +689,7 @@ def analyze(receipt: Path, source_receipt: Path, output: Path) -> None:
         "supersedes": "docs/research/pdf-family-rollup-yield-2026-09-20.json",
         "mods_route": f"{API}/packages/{{packageId}}[/granules/{{granuleId}}]/mods",
         "mods_kinds": sorted(MODS_KINDS),
+        "requests": _request_counts(receipt),
         "families": {},
         "collection_mods_vocabulary": {},
         "collection_kinds_stated": {},
@@ -681,6 +723,7 @@ def analyze(receipt: Path, source_receipt: Path, output: Path) -> None:
             document.collection, dict.fromkeys([*MODS_KINDS, *DOCUMENT_REFERENCE_ELEMENTS, "records"], 0)
         )
         stated_here["records"] += 1
+        stated_here["collection_code"] = "/".join(facts["collection_code"]) or "none"
         for name, values in facts["stated"].items():
             stated_here[name] += 1 if values else 0
         for name in DOCUMENT_REFERENCE_ELEMENTS:
@@ -710,10 +753,27 @@ def analyze(receipt: Path, source_receipt: Path, output: Path) -> None:
         uncapped_report = json.loads(uncapped_path.read_text())
         report["uncapped"] = {
             "restated": uncapped_report["restated"],
+            # Wall-clock, so it moves between runs. It is carried here anyway
+            # because the report quotes it, and a number the report quotes
+            # belongs in the record the report is rendered from.
+            "timings": uncapped_report["timings"],
             "pages_read": {
                 family: sum(row["page_count"] for row in uncapped_report["documents"] if row["family"] == family)
                 for family in sorted({row["family"] for row in uncapped_report["documents"]})
             },
+            "per_document_bills": [
+                {
+                    "id": row["id"],
+                    "pages": row["page_count"],
+                    "print": row["comparison"]["bill_number"]["print_distinct"]
+                    if isinstance(row["comparison"]["bill_number"]["print_distinct"], int)
+                    else len(row["comparison"]["bill_number"]["print_distinct"]),
+                    "mods": row["comparison"]["bill_number"]["mods_distinct"],
+                    "print_only": len(row["comparison"]["bill_number"]["print_only"]),
+                }
+                for row in uncapped_report["documents"]
+                if row["family"] == "house_activity"
+            ],
         }
     (receipt / "recheck.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -731,7 +791,10 @@ def _restate(documents: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     read = [document for document in documents if document.get("comparison")]
     restated: dict[str, Any] = {"documents_with_mods": len(read)}
     for rule in JOIN_KEY_RULES:
-        cells = [document["comparison"][rule.name] for document in read]
+        # ``.get``: a comparison read back from a receipt may carry only the
+        # kinds that had a value, and a rule absent from every document is
+        # already reported by its absence from the table.
+        cells = [cell for document in read if (cell := document["comparison"].get(rule.name))]
         if not cells or not any(cell["print_distinct"] or cell["mods_distinct"] for cell in cells):
             continue
         print_union = {value for cell in cells for value in cell["print_distinct"]}
@@ -789,6 +852,140 @@ def _compact(report: Mapping[str, Any]) -> dict[str, Any]:
     return result
 
 
+# --- the print side's own false positives --------------------------------------------
+
+#: The Congress sitting when this was measured. A public-law or bill key naming
+#: a later one cannot be a real citation, whatever the print appears to say.
+CURRENT_CONGRESS = 119
+#: Positive titles the publishers actually have. 54 U.S. Code titles, 50 CFR
+#: titles, ~91 Federal Register volumes by 2026, ~610 U.S. Reports volumes,
+#: ~140 Statutes at Large volumes. Each is an upper bound with slack, so a
+#: flagged value is one no plausible reading rescues.
+_RANGES: dict[str, tuple[int, int]] = {
+    "usc_section": (1, 54),
+    "cfr_section": (1, 50),
+    "federal_register_cite": (1, 100),
+    "us_reports_cite": (1, 610),
+    "statutes_at_large": (1, 140),
+}
+
+
+def _leading_number(value: str, pattern: str) -> int | None:
+    match = re.match(pattern, value)
+    return int(match.group(1)) if match else None
+
+
+def implausible(kind: str, value: str) -> str | None:
+    """Why this canonical key cannot be the thing its rule names, or ``None``.
+
+    The rollup measured its rules against *lookalikes* -- strings that match a
+    pattern and are not the key. This is the mirror check it never ran, on the
+    surviving yield only: a key that survives the MODS comparison is one a
+    contract would actually be built on, so a false positive there is a row
+    that would be published. It is deliberately conservative -- every bound is
+    the publisher's real range with slack -- because the cost of flagging a
+    real key is higher than the cost of carrying a suspect one into a note.
+    """
+    if kind == "public_law":
+        congress = _leading_number(value, r"(\d+)-")
+        if congress is not None and not 1 <= congress <= CURRENT_CONGRESS:
+            return f"names Congress {congress}; the {CURRENT_CONGRESS}th is sitting"
+    if kind == "bill_number":
+        number = re.search(r"(\d+)$", value)
+        if number and (number.group(1).startswith("0") or number.group(1) == "0"):
+            return "a bill number is never zero-padded"
+    if kind == "docket_number":
+        year = _leading_number(value, r"[A-Z]+(\d{4})")
+        if year is not None and not 1900 <= year <= 2026:
+            return f"names docket year {year}"
+    if kind in _RANGES:
+        low, high = _RANGES[kind]
+        first = _leading_number(value, r"(\d+)")
+        if first is not None and not low <= first <= high:
+            return f"leading number {first} is outside {low}-{high}"
+    if kind == "dollar_amount" and (re.fullmatch(r"0+", value) or len(value) < 2):
+        # Not a false positive -- ``$0`` is a real figure -- but not a key a
+        # join can be built on either, so it is reported apart from the rest.
+        return "not usable as a join key"
+    return None
+
+
+def _evidence(text: str, kind: str, value: str) -> str | None:
+    """The first place in the print this canonical key was read from, with its context."""
+    rule = next((candidate for candidate in JOIN_KEY_RULES if candidate.name == kind), None)
+    if rule is None:
+        return None
+    for match in rule.compiled().finditer(text):
+        raw = match.group(0)
+        if rule.canonical(raw) != value:
+            continue
+        start, end = max(0, match.start() - 70), min(len(text), match.end() + 70)
+        return " ".join(text[start:end].split())
+    return None
+
+
+def lossy_dollar_keys(text: str) -> dict[str, list[str]]:
+    """Dollar keys behind which the print states more than one amount.
+
+    ``dollar_amount``'s canonical reduces to alphanumerics, which erases the
+    decimal separator, so ``$28.4 billion`` and ``$284 billion`` are one key.
+    Every other rule's canonical erases only punctuation and case the two
+    publishers spell differently -- ``P.L. 117-2`` and ``Public Law 117-2``
+    are one law and collapsing them is the point -- so the check is applied
+    here alone, and only where the raw spellings still differ once the
+    currency sign, thousands separators and whitespace are removed.
+
+    It runs against the yield in the deflating direction: a lossy key makes
+    the distinct count *smaller* than the number of amounts the print states,
+    and makes the key itself useless for a join.
+    """
+    spellings: dict[str, set[str]] = {}
+    rule = next(candidate for candidate in JOIN_KEY_RULES if candidate.name == "dollar_amount")
+    for match in rule.compiled().finditer(text):
+        raw = " ".join(match.group(0).split())
+        spellings.setdefault(rule.canonical(raw), set()).add(re.sub(r"[$,\s]|,$", "", raw))
+    return {key: sorted(values) for key, values in spellings.items() if len(values) > 1}
+
+
+def congress_blind_exposure(facts: Mapping[str, Any], printed: Sequence[str], package_id: str) -> list[str]:
+    """Print bill keys the MODS dates to a Congress other than the package's own.
+
+    This is exactly what the congress-blind comparison could hide: if a print
+    names a bill of an earlier Congress, matching on ``type+number`` alone
+    calls it stated while a ``natural_key`` match with the package's Congress
+    imputed would not. Measuring it turns the caveat from a worry into a
+    number.
+    """
+    match = re.search(r"-(\d{2,3})[a-z]", package_id)
+    if match is None:
+        return []
+    congress = match.group(1)
+    congresses: dict[str, set[str]] = {}
+    for key in facts["bill_natural_keys"]:
+        stated, kind, number = key.split("-", 2)
+        congresses.setdefault(_alnum(f"{kind}{number}"), set()).add(stated)
+    return sorted(value for value in printed if (stated := congresses.get(value)) and congress not in stated)
+
+
+def sanity_flags(text: str, comparison: Mapping[str, Any]) -> dict[str, Any]:
+    """Every surviving key this document contributes that cannot be what its rule names."""
+    flagged: dict[str, list[dict[str, str]]] = {}
+    for kind, cell in comparison.items():
+        for value in cell["print_only"]:
+            reason = implausible(kind, value)
+            if reason is None:
+                continue
+            flagged.setdefault(kind, []).append(
+                {"value": value, "reason": reason, "evidence": _evidence(text, kind, value) or ""}
+            )
+    lossy = lossy_dollar_keys(text)
+    return {
+        "flagged": flagged,
+        "lossy_dollar_keys": len(lossy),
+        "lossy_dollar_examples": {key: lossy[key] for key in sorted(lossy)[:5]},
+    }
+
+
 # --- the uncapped re-read ------------------------------------------------------------
 
 
@@ -838,9 +1035,14 @@ def uncapped(receipt: Path, source_receipt: Path, families: Sequence[str]) -> No
         # The same rules the rollup ran, imported rather than restated; the
         # index argument is irrelevant here because the comparison below is
         # against the MODS, so an empty record is passed deliberately.
-        measured = measure_keys("\n".join(normalized), None)
+        whole = "\n".join(normalized)
+        measured = measure_keys(whole, None)
         facts = mods_facts(retained.read_bytes())
         comparison = compare_document({name: found["distinct"] for name, found in measured["join_keys"].items()}, facts)
+        # The false-positive pass runs on this read rather than in a phase of
+        # its own: it needs the same text, and re-extracting 18,119 pages to
+        # ask a second question of them would be the measurement paying twice.
+        sanity = sanity_flags(whole, comparison)
         rows.append(
             {
                 "id": document.document_id,
@@ -853,6 +1055,10 @@ def uncapped(receipt: Path, source_receipt: Path, families: Sequence[str]) -> No
                     name: len(values) for name, values in facts["document_references"].items()
                 },
                 "comparison": comparison,
+                "sanity": sanity,
+                "congress_blind_exposure": congress_blind_exposure(
+                    facts, comparison["bill_number"]["print_distinct"], document.package_id
+                ),
             }
         )
         cell = comparison["bill_number"]
@@ -862,14 +1068,204 @@ def uncapped(receipt: Path, source_receipt: Path, families: Sequence[str]) -> No
             f"bills print {len(cell['print_distinct'])} mods {cell['mods_distinct']} print-only {len(cell['print_only'])}, "
             f"laws print {len(law['print_distinct'])} mods {law['mods_distinct']} print-only {len(law['print_only'])}"
         )
-    summary = {
-        family: _restate([row for row in rows if row["family"] == family])
-        for family in sorted({row["family"] for row in rows})
+    families_read = sorted({row["family"] for row in rows})
+    summary = {family: _restate([row for row in rows if row["family"] == family]) for family in families_read}
+    for family in families_read:
+        summary[family]["sanity"] = _sanity_summary([row for row in rows if row["family"] == family])
+    timings = {
+        family: {
+            "seconds": round(sum(row["seconds"] for row in rows if row["family"] == family), 2),
+            "pages": sum(row["page_count"] for row in rows if row["family"] == family),
+        }
+        for family in families_read
+    }
+    for family, timing in timings.items():
+        timing["ms_per_page"] = round(1000 * timing["seconds"] / timing["pages"], 2)
+    per_document = sorted(1000 * row["seconds"] / row["page_count"] for row in rows if row["page_count"])
+    timings["all"] = {
+        "seconds": round(sum(row["seconds"] for row in rows), 2),
+        "pages": sum(row["page_count"] for row in rows),
+        "ms_per_page": round(1000 * sum(row["seconds"] for row in rows) / sum(row["page_count"] for row in rows), 2),
+        "slowest_document_ms_per_page": round(per_document[-1], 1),
+        "fastest_document_ms_per_page": round(per_document[0], 1),
     }
     (receipt / "uncapped.json").write_text(
-        json.dumps({"documents": rows, "restated": summary}, indent=2, sort_keys=True) + "\n"
+        json.dumps({"documents": rows, "restated": summary, "timings": timings}, indent=2, sort_keys=True) + "\n"
     )
-    print(json.dumps(summary, indent=2))
+    print(json.dumps({"restated": summary, "timings": timings}, indent=2))
+
+
+def _sanity_summary(documents: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Per family: which surviving keys are false positives, and the restated count.
+
+    The flagged set is a union across documents, the same way
+    ``print_only_distinct_values`` is, so subtracting it from that number gives
+    the count a contract would actually be built on.
+    """
+    flagged: dict[str, set[str]] = {}
+    reasons: dict[str, dict[str, str]] = {}
+    for document in documents:
+        for kind, entries in document["sanity"]["flagged"].items():
+            for entry in entries:
+                flagged.setdefault(kind, set()).add(entry["value"])
+                reasons.setdefault(kind, {})[entry["value"]] = entry["reason"]
+    examples: dict[str, list[str]] = {}
+    for document in documents:
+        examples.update(document["sanity"]["lossy_dollar_examples"])
+    exposure = sorted({value for document in documents for value in document["congress_blind_exposure"]})
+    return {
+        "flagged_distinct_values": {kind: len(values) for kind, values in sorted(flagged.items())},
+        "flagged_values": {kind: sorted(values) for kind, values in sorted(flagged.items())},
+        "flagged_reasons": {kind: dict(sorted(entries.items())) for kind, entries in sorted(reasons.items())},
+        "lossy_dollar_keys": sum(document["sanity"]["lossy_dollar_keys"] for document in documents),
+        "lossy_dollar_examples": {key: examples[key] for key in sorted(examples)[:5]},
+        "congress_blind_exposure": exposure,
+        "congress_blind_exposure_count": len(exposure),
+    }
+
+
+# --- the report's generated block ----------------------------------------------------
+
+MARK_START = "<!-- generated by tools/analysis/pdf_yield_mods_recheck.py: start -->"
+MARK_END = "<!-- generated by tools/analysis/pdf_yield_mods_recheck.py: end -->"
+
+#: The order the surviving-yield table reads in: the keys a citation contract
+#: joins on first, then the ones with no hosted target yet.
+YIELD_ORDER: tuple[str, ...] = (
+    "bill_number",
+    "public_law",
+    "usc_section",
+    "statutes_at_large",
+    "cfr_section",
+    "federal_register_cite",
+    "rin",
+    "gao_product_id",
+    "crs_report_id",
+    "docket_number",
+    "case_docket_number",
+    "us_reports_cite",
+    "committee_name",
+    "bioguide_id",
+    "dollar_amount",
+    "fiscal_year",
+)
+_FAMILY_TITLES = {
+    "house_activity": "Activity reports",
+    "budget": "Budget",
+    "senate_secretary": "SecSen",
+}
+
+
+def surviving(restated: Mapping[str, Any], kind: str) -> tuple[int, int]:
+    """``(print-only distinct, flagged as impossible)`` for one family and kind."""
+    cell = restated.get(kind)
+    if not isinstance(cell, dict):
+        return 0, 0
+    flagged = restated.get("sanity", {}).get("flagged_distinct_values", {}).get(kind, 0)
+    return cell["print_only_distinct_values"], flagged
+
+
+def render_block(sidecar: Mapping[str, Any]) -> str:
+    """The markdown between the markers, rendered from the sidecar alone.
+
+    Every number the report leads with is here, so a report that drifts from
+    its own measurement fails a test instead of being believed.
+    """
+    uncapped_report = sidecar["uncapped"]
+    restated = uncapped_report["restated"]
+    timings = uncapped_report["timings"]
+    families = [name for name in ("house_activity", "budget", "senate_secretary") if name in restated]
+    lines = [MARK_START, ""]
+    lines.append(
+        f"Measured {sidecar['measured_at']} from {sidecar['requests']['total']} keyed requests over "
+        f"{len(sidecar['collection_kinds_stated'])} collections "
+        f"({', '.join(f'`{name}`' for name in sidecar['collection_kinds_stated'])}). "
+        f"The uncapped re-read covered {timings['all']['pages']:,} pages in "
+        f"{timings['all']['seconds']:.0f} s, {timings['all']['ms_per_page']:.1f} ms/page "
+        f"({timings['all']['fastest_document_ms_per_page']:.1f} to "
+        f"{timings['all']['slowest_document_ms_per_page']:.1f} per document)."
+    )
+    lines.append("")
+    lines.append("### Every bill each activity report names, against its own MODS")
+    lines.append("")
+    lines.append("| Report | Pages | Print, 60 pages | Print, all pages | MODS | Print-only |")
+    lines.append("| --- | --- | --- | --- | --- | --- |")
+    capped = {
+        document["id"]: document["comparison"]["bill_number"]
+        for document in sidecar["families"]["house_activity"]["documents"]
+        if document.get("comparison")
+    }
+    for row in sorted(uncapped_report["per_document_bills"], key=lambda entry: entry["id"]):
+        sampled = capped.get(row["id"], {})
+        lines.append(
+            f"| {row['id']} | {row['pages']} | {sampled.get('print_distinct', 0)} | "
+            f"{row['print']} | {row['mods']} | **{row['print_only']}** |"
+        )
+    activity = restated["house_activity"]
+    lines.append(
+        f"| **Total** | {uncapped_report['pages_read']['house_activity']:,} | "
+        f"{sidecar['families']['house_activity']['restated']['bill_number']['print_link_rows']:,} | "
+        f"{activity['bill_number']['print_link_rows']:,} | "
+        f"{activity['bill_number']['mods_link_rows']:,} | "
+        f"**{activity['bill_number']['print_only_link_rows']}** |"
+    )
+    lines.append("")
+    lines.append("### The surviving yield, after the false-positive pass")
+    lines.append("")
+    lines.append("Distinct print-only keys on the uncapped read, with the keys that cannot be")
+    lines.append("what their rule names subtracted. A dash is a kind the print never stated.")
+    lines.append("")
+    lines.append("| Kind | MODS states it | " + " | ".join(_FAMILY_TITLES[name] for name in families) + " |")
+    lines.append("| --- | --- |" + " --- |" * len(families))
+    for kind in YIELD_ORDER:
+        cells = []
+        stated = []
+        for name in families:
+            total, flagged = surviving(restated[name], kind)
+            cell = restated[name].get(kind)
+            if isinstance(cell, dict):
+                stated.append(_FAMILY_TITLES[name] if cell["mods_states_this_kind"] else "")
+            if not total and not flagged:
+                cells.append("—" if not isinstance(cell, dict) or not cell["mods_link_rows"] else "0")
+                continue
+            survives = total - flagged
+            shown = f"**{survives:,}**" if survives else "0"
+            cells.append(shown + (f" (−{flagged})" if flagged else ""))
+        naming = ", ".join(name for name in stated if name) or "no"
+        lines.append(f"| `{kind}` | {naming} | " + " | ".join(cells) + " |")
+    lines.append("")
+    for name in families:
+        sanity = restated[name].get("sanity", {})
+        flagged = sanity.get("flagged_values", {})
+        reasons = sanity.get("flagged_reasons", {})
+        if not flagged:
+            lines.append(f"`{_FAMILY_TITLES[name]}`: nothing flagged.")
+            continue
+        parts = []
+        for kind, values in flagged.items():
+            shown = ", ".join(f"`{value}` ({reasons[kind][value]})" for value in values[:3])
+            parts.append(f"{kind}: {shown}" + (f", and {len(values) - 3} more" if len(values) > 3 else ""))
+        lines.append(f"`{_FAMILY_TITLES[name]}` flagged — " + "; ".join(parts) + ".")
+        if sanity.get("lossy_dollar_keys"):
+            lines.append(
+                f"`{_FAMILY_TITLES[name]}` also carries {sanity['lossy_dollar_keys']} dollar keys behind which "
+                "the print states more than one amount, because the canonical erases the decimal separator "
+                f"(for example `{next(iter(sanity['lossy_dollar_examples']))}`)."
+            )
+    lines.append("")
+    lines.append(MARK_END)
+    return "\n".join(lines)
+
+
+def render(sidecar_path: Path, report_path: Path) -> None:
+    """Rewrite the report's generated block from the committed sidecar. No request, no PDF."""
+    block = render_block(json.loads(sidecar_path.read_text()))
+    report = report_path.read_text()
+    start, end = report.find(MARK_START), report.find(MARK_END)
+    if start < 0 or end < 0:
+        raise RecheckError(f"{report_path} carries no generated-block markers")
+    report_path.write_text(report[:start] + block + report[end + len(MARK_END) :])
+    print(f"rendered {len(block)} characters into {report_path}")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -887,11 +1283,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     uncapped_parser.add_argument("--receipt", type=Path, required=True)
     uncapped_parser.add_argument("--source-receipt", type=Path, required=True)
     uncapped_parser.add_argument("--family", action="append", default=[])
+    render_parser = sub.add_parser("render")
+    render_parser.add_argument("--sidecar", type=Path, required=True)
+    render_parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.phase == "fetch":
         fetch(args.receipt.expanduser(), args.source_receipt.expanduser(), args.max_requests)
     elif args.phase == "uncapped":
         uncapped(args.receipt.expanduser(), args.source_receipt.expanduser(), args.family)
+    elif args.phase == "render":
+        render(args.sidecar.expanduser(), args.report.expanduser())
     else:
         analyze(args.receipt.expanduser(), args.source_receipt.expanduser(), args.output)
     return 0

@@ -4,6 +4,7 @@
       "bill_number": 1,
       "bioguide_id": 0,
       "cfr_section": 2,
+      "collection_code": "GPO",
       "committee_name": 0,
       "congDoc": 0,
       "congHearing": 0,
@@ -20,6 +21,7 @@
       "bill_number": 8,
       "bioguide_id": 7,
       "cfr_section": 0,
+      "collection_code": "CRPT",
       "committee_name": 8,
       "congDoc": 1,
       "congHearing": 1,
@@ -36,6 +38,7 @@
       "bill_number": 0,
       "bioguide_id": 0,
       "cfr_section": 0,
+      "collection_code": "GPO",
       "committee_name": 0,
       "congDoc": 0,
       "congHearing": 0,
@@ -2764,6 +2767,22 @@
   ],
   "mods_route": "https://api.govinfo.gov/packages/{packageId}[/granules/{granuleId}]/mods",
   "receipt": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-yield-mods-recheck-2026-09-20",
+  "requests": {
+    "by_identity_proof": {
+      "accessId": 16,
+      "validate_package_mods": 8
+    },
+    "by_purpose": {
+      "granule-mods": 5,
+      "package-mods": 19
+    },
+    "by_status": {
+      "200": 24
+    },
+    "bytes": 4119885,
+    "keyed": 24,
+    "total": 24
+  },
   "source_receipt": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20",
   "supersedes": "docs/research/pdf-family-rollup-yield-2026-09-20.json",
   "uncapped": {
@@ -2772,6 +2791,64 @@
       "house_activity": 1249,
       "senate_secretary": 15085
     },
+    "per_document_bills": [
+      {
+        "id": "CRPT-118hrpt968",
+        "mods": 179,
+        "pages": 56,
+        "print": 179,
+        "print_only": 0
+      },
+      {
+        "id": "CRPT-118hrpt974",
+        "mods": 194,
+        "pages": 296,
+        "print": 193,
+        "print_only": 0
+      },
+      {
+        "id": "CRPT-118hrpt972",
+        "mods": 217,
+        "pages": 119,
+        "print": 217,
+        "print_only": 0
+      },
+      {
+        "id": "CRPT-118hrpt970",
+        "mods": 111,
+        "pages": 127,
+        "print": 110,
+        "print_only": 0
+      },
+      {
+        "id": "CRPT-118hrpt976",
+        "mods": 48,
+        "pages": 99,
+        "print": 46,
+        "print_only": 0
+      },
+      {
+        "id": "CRPT-118hrpt965",
+        "mods": 380,
+        "pages": 282,
+        "print": 379,
+        "print_only": 0
+      },
+      {
+        "id": "CRPT-118hrpt975",
+        "mods": 90,
+        "pages": 103,
+        "print": 89,
+        "print_only": 0
+      },
+      {
+        "id": "CRPT-118hrpt977",
+        "mods": 281,
+        "pages": 167,
+        "print": 281,
+        "print_only": 0
+      }
+    ],
     "restated": {
       "budget": {
         "bill_number": {
@@ -2915,6 +2992,66 @@
           "print_only_against_family_union": 0,
           "print_only_distinct_values": 0,
           "print_only_link_rows": 0
+        },
+        "sanity": {
+          "congress_blind_exposure": [],
+          "congress_blind_exposure_count": 0,
+          "flagged_distinct_values": {
+            "dollar_amount": 11
+          },
+          "flagged_reasons": {
+            "dollar_amount": {
+              "0": "not usable as a join key",
+              "000000000": "not usable as a join key",
+              "0000000000": "not usable as a join key",
+              "1": "not usable as a join key",
+              "2": "not usable as a join key",
+              "3": "not usable as a join key",
+              "4": "not usable as a join key",
+              "5": "not usable as a join key",
+              "6": "not usable as a join key",
+              "8": "not usable as a join key",
+              "9": "not usable as a join key"
+            }
+          },
+          "flagged_values": {
+            "dollar_amount": [
+              "0",
+              "000000000",
+              "0000000000",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "8",
+              "9"
+            ]
+          },
+          "lossy_dollar_examples": {
+            "105MILLION": [
+              "10.5million",
+              "105million"
+            ],
+            "10BILLION": [
+              "1.0billion",
+              "10billion"
+            ],
+            "11BILLION": [
+              "1.1billion",
+              "11billion"
+            ],
+            "125BILLION": [
+              "1.25billion",
+              "12.5billion"
+            ],
+            "125MILLION": [
+              "1.25million",
+              "125million"
+            ]
+          },
+          "lossy_dollar_keys": 53
         },
         "statutes_at_large": {
           "documents": 1,
@@ -3102,6 +3239,43 @@
           "print_only_distinct_values": 87,
           "print_only_link_rows": 87
         },
+        "sanity": {
+          "congress_blind_exposure": [
+            "HR2773"
+          ],
+          "congress_blind_exposure_count": 1,
+          "flagged_distinct_values": {
+            "docket_number": 1,
+            "dollar_amount": 2,
+            "public_law": 1
+          },
+          "flagged_reasons": {
+            "docket_number": {
+              "APHIS20290068": "names docket year 2029"
+            },
+            "dollar_amount": {
+              "0": "not usable as a join key",
+              "1": "not usable as a join key"
+            },
+            "public_law": {
+              "188-11": "names Congress 188; the 119th is sitting"
+            }
+          },
+          "flagged_values": {
+            "docket_number": [
+              "APHIS20290068"
+            ],
+            "dollar_amount": [
+              "0",
+              "1"
+            ],
+            "public_law": [
+              "188-11"
+            ]
+          },
+          "lossy_dollar_examples": {},
+          "lossy_dollar_keys": 0
+        },
         "statutes_at_large": {
           "documents": 1,
           "documents_beyond_mods": 0,
@@ -3204,6 +3378,25 @@
           "print_only_distinct_values": 0,
           "print_only_link_rows": 0
         },
+        "sanity": {
+          "congress_blind_exposure": [],
+          "congress_blind_exposure_count": 0,
+          "flagged_distinct_values": {
+            "bill_number": 1
+          },
+          "flagged_reasons": {
+            "bill_number": {
+              "S08": "a bill number is never zero-padded"
+            }
+          },
+          "flagged_values": {
+            "bill_number": [
+              "S08"
+            ]
+          },
+          "lossy_dollar_examples": {},
+          "lossy_dollar_keys": 0
+        },
         "usc_section": {
           "documents": 8,
           "documents_beyond_mods": 0,
@@ -3218,6 +3411,30 @@
           "print_only_distinct_values": 0,
           "print_only_link_rows": 0
         }
+      }
+    },
+    "timings": {
+      "all": {
+        "fastest_document_ms_per_page": 5.0,
+        "ms_per_page": 9.76,
+        "pages": 18119,
+        "seconds": 176.82,
+        "slowest_document_ms_per_page": 26.4
+      },
+      "budget": {
+        "ms_per_page": 22.81,
+        "pages": 1785,
+        "seconds": 40.72
+      },
+      "house_activity": {
+        "ms_per_page": 7.63,
+        "pages": 1249,
+        "seconds": 9.53
+      },
+      "senate_secretary": {
+        "ms_per_page": 8.39,
+        "pages": 15085,
+        "seconds": 126.57
       }
     }
   }
