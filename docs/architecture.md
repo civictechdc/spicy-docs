@@ -33,6 +33,7 @@ Paths below are relative to `src/spicy_docs/`.
 | U.S. Code, Supreme Court, CBO | `sources/uscode/` (release points, archives, Popular Name Tool, Table III); `sources/supreme_court.py`; `sources/cbo.py` |
 | Document files beside listings | `sources/congress/crs_files.py`; `sources/gao/files.py`; `sources/regulations_gov/api.py` and `attachments.py`; PDF checks in `reading/pdf_bytes.py` |
 | Explicit bill status and selected text XML | `sources/congress/bill_acquisition.py`; `bill_status.py`; `bill_text.py`; `bulk_status.py` reads one Congress/type BILLSTATUS zip through `reading/zip_archive.py` |
+| House executive communications the Congressional Record printed | `sources/congress/record_communications.py` reads one CREC `EXECUTIVE COMMUNICATIONS, ETC.` granule's text into one record per printed entry, with the publisher's three normalizations, a versioned rule identity and the per-issue contiguity witness |
 | GAO pages | `sources/gao/native.py` |
 | Captured public comments | `sources/public_comments/native.py` |
 | Raw streams | `sources/mirrulations.py`, `sources/courtlistener/bulk.py` |

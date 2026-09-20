@@ -1,0 +1,53 @@
+{
+    "houseCommunication": {
+        "abstract": "A letter from the Labor Member and Management Member, Railroad Retirement Board, transmitting the Congressional Justification of Budget Estimates for FY 2017 including the Performance Plan for the year for the Railroad Retirement Board, pursuant to 45 U.S.C. 231f(f); Public Law 93–445, title I, section 416; (97 Stat. 436); jointly to the Committees on Appropriations, Transportation and Infrastructure, and Ways and Means.",
+        "chamber": "House",
+        "committees": [
+            {
+                "name": "Appropriations Committee",
+                "referralDate": "2016-02-12",
+                "systemCode": "hsap00",
+                "url": "https://api.congress.gov/v3/committee/house/hsap00?format=xml"
+            },
+            {
+                "name": "Transportation and Infrastructure Committee",
+                "referralDate": "2016-02-12",
+                "systemCode": "hspw00",
+                "url": "https://api.congress.gov/v3/committee/house/hspw00?format=xml"
+            },
+            {
+                "name": "Ways and Means Committee",
+                "referralDate": "2016-02-12",
+                "systemCode": "hswm00",
+                "url": "https://api.congress.gov/v3/committee/house/hswm00?format=xml"
+            }
+        ],
+        "communicationType": {
+            "code": "EC",
+            "name": "Executive Communication"
+        },
+        "congress": 114,
+        "congressionalRecordDate": "2016-02-12",
+        "isRulemaking": "False",
+        "legalAuthority": "45 U.S.C. 231f(f); Public Law 93–445, title I, section 416; (97 Stat. 436)",
+        "matchingRequirements": [
+            {
+                "number": 3182,
+                "url": "https://api.congress.gov/v3/house-requirement/3182"
+            }
+        ],
+        "number": 4350,
+        "reportNature": "The Congressional Justification of Budget Estimates for FY 2017 including the Performance Plan for the year for the Railroad Retirement Board.",
+        "sessionNumber": 2,
+        "submittingAgency": "Railroad Retirement Board",
+        "submittingOfficial": "Labor Member and Management Member",
+        "updateDate": "2017-06-19"
+    },
+    "request": {
+        "communicationNum": "4350",
+        "congress": "114",
+        "contentType": "application/json",
+        "execCommunicationType": "ec",
+        "format": "json"
+    }
+}

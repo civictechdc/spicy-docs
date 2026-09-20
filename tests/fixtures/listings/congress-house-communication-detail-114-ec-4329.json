@@ -1,0 +1,41 @@
+{
+    "houseCommunication": {
+        "abstract": "A letter from the Deputy Director, Directorate of Cooperative and State Programs, Occupational Safety and Health Administration, Department of Labor, transmitting the Department's final rule - Maine State Plan for State and Local Government Employers [Docket No.: OSHA-2015-0003] (RIN: 1218-AC97) received February 9, 2016, pursuant to 5 U.S.C. 801(a)(1)(A); Added by Public Law 104–121, section 251; (110 Stat. 868); to the Committee on Education and the Workforce.",
+        "chamber": "House",
+        "committees": [
+            {
+                "name": "Education and Workforce Committee",
+                "referralDate": "2016-02-12",
+                "systemCode": "hsed00",
+                "url": "https://api.congress.gov/v3/committee/house/hsed00?format=xml"
+            }
+        ],
+        "communicationType": {
+            "code": "EC",
+            "name": "Executive Communication"
+        },
+        "congress": 114,
+        "congressionalRecordDate": "2016-02-12",
+        "isRulemaking": "True",
+        "legalAuthority": "5 U.S.C. 801(a)(1)(A); Added by Public Law 104–121, section 251; (110 Stat. 868)",
+        "matchingRequirements": [
+            {
+                "number": 8070,
+                "url": "https://api.congress.gov/v3/house-requirement/8070"
+            }
+        ],
+        "number": 4329,
+        "reportNature": "The Department's final rule - Maine State Plan for State and Local Government Employers [Docket No.: OSHA-2015-0003] (RIN: 1218-AC97) received February 9, 2016.",
+        "sessionNumber": 2,
+        "submittingAgency": "Occupational Safety and Health Administration, Department of Labor",
+        "submittingOfficial": "Deputy Director, Directorate of Cooperative and State Programs",
+        "updateDate": "2017-06-19"
+    },
+    "request": {
+        "communicationNum": "4329",
+        "congress": "114",
+        "contentType": "application/json",
+        "execCommunicationType": "ec",
+        "format": "json"
+    }
+}

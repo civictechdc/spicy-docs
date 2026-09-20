@@ -1,0 +1,96 @@
+{
+ "count": 228,
+ "granules": [
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "HOUSE",
+   "granuleId": "CREC-2004-06-16-pt1-PgH4278",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt1-PgH4278/summary",
+   "title": "EXECUTIVE COMMUNICATIONS, ETC."
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "SENATE",
+   "granuleId": "CREC-2004-06-16-pt1-PgS6859",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt1-PgS6859/summary",
+   "title": "EXECUTIVE SESSION"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "SENATE",
+   "granuleId": "CREC-2004-06-16-pt1-PgS6880-2",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt1-PgS6880-2/summary",
+   "title": "EXECUTIVE MESSAGES REFERRED"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "SENATE",
+   "granuleId": "CREC-2004-06-16-pt1-PgS6880-4",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt1-PgS6880-4/summary",
+   "title": "EXECUTIVE AND OTHER COMMUNICATIONS"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "SENATE",
+   "granuleId": "CREC-2004-06-16-pt1-PgS6881",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt1-PgS6881/summary",
+   "title": "EXECUTIVE REPORT OF COMMITTEE"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "HOUSE",
+   "granuleId": "CREC-2004-06-16-pt2-PgH4285",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt2-PgH4285/summary",
+   "title": "EXECUTIVE COMMUNICATIONS, ETC."
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "DAILYDIGEST",
+   "granuleId": "CREC-2004-06-16-pt2-PgD623",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt2-PgD623/summary",
+   "title": "Daily Digest/Highlights + Senate"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "DAILYDIGEST",
+   "granuleId": "CREC-2004-06-16-pt2-PgD624",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt2-PgD624/summary",
+   "title": "Daily Digest/Senate Committee Meetings"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "DAILYDIGEST",
+   "granuleId": "CREC-2004-06-16-pt2-PgD627",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt2-PgD627/summary",
+   "title": "Daily Digest/House of Representatives"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "DAILYDIGEST",
+   "granuleId": "CREC-2004-06-16-pt2-PgD629",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt2-PgD629/summary",
+   "title": "Daily Digest/House Committee Meetings"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "DAILYDIGEST",
+   "granuleId": "CREC-2004-06-16-pt2-PgD632",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt2-PgD632/summary",
+   "title": "Daily Digest/NEW PUBLIC LAWS"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "DAILYDIGEST",
+   "granuleId": "CREC-2004-06-16-pt2-PgD632-2",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt2-PgD632-2/summary",
+   "title": "Daily Digest/COMMITTEE MEETINGS FOR 2004-06-17"
+  },
+  {
+   "dateIssued": "2004-06-16",
+   "granuleClass": "DAILYDIGEST",
+   "granuleId": "CREC-2004-06-16-pt2-PgD633",
+   "granuleLink": "https://api.govinfo.gov/packages/CREC-2004-06-16/granules/CREC-2004-06-16-pt2-PgD633/summary",
+   "title": "Daily Digest/Next Meeting of the SENATE + Next Meeting of the HOUSE OF REPRESENTATIVES + Other End Matter"
+  }
+ ]
+}
