@@ -166,7 +166,7 @@ class RequestLog:
         return text
 
     def spent(self, publisher: str) -> int:
-        return sum(1 for row in self.rows if row["publisher"] == publisher for _ in range(row.get("requests", 1)))
+        return sum(row.get("requests", 1) for row in self.rows if row["publisher"] == publisher)
 
     def retained(self, folder: str, key: str, suffix: str) -> Path | None:
         path = self.receipt / folder / f"{_safe(key)}{suffix}"
@@ -253,8 +253,9 @@ def fetch_sections(receipt: Path, key: str, log: RequestLog) -> None:
     try:
         for congress, day in SAMPLE_ISSUES:
             package = f"CREC-{day}"
-            spent = log.spent("govinfo")
-            if spent + 4 > MAX_GOVINFO_REQUESTS:
+            # The budget is checked against what is still *unretained*: a
+            # resume must not refuse to read a page it already paid for.
+            if log.retained("granules", package, ".json") is None and log.spent("govinfo") + 4 > MAX_GOVINFO_REQUESTS:
                 print(f"{package}: not requested, would exceed the {MAX_GOVINFO_REQUESTS}-request GovInfo cap")
                 continue
             granules = _granule_page(reader, log, package, key)
@@ -569,29 +570,52 @@ class FieldScore:
         }
 
 
+#: The Congresses whose disagreements the parse rule was revised against, after
+#: the first run scored `abstract` at 58.4%. Three print artifacts were found
+#: there and fixed (`Pub. L.`, a four-hyphen print dash, GPO's hyphenated line
+#: wrap), so the tuning half's score is an **in-sample upper bound**. The
+#: held-out half was never read while the rules were being changed, and its
+#: score is the one the threshold is applied to.
+TUNING_CONGRESSES: frozenset[int] = frozenset({114, 115})
+
+FIELD_NAMES: tuple[str, ...] = (
+    "abstract",
+    "report_nature",
+    "legal_authority",
+    "submitting_official",
+    "submitting_agency",
+    "from_clause_concatenation",
+    "referral_count",
+    "referral_names",
+    "rin",
+)
+
+
+def _score_rows(rows: Sequence[tuple[str, RecordCommunicationEntry, Mapping[str, Any]]]) -> dict[str, Any]:
+    fields = {name: FieldScore() for name in FIELD_NAMES}
+    for key, entry, detail in rows:
+        _score_row(fields, entry, detail, key)
+    return {
+        "entriesCompared": len(rows),
+        "splitRuleFired": sum(1 for _, entry, _ in rows if entry.split_resolved),
+        "fields": {name: score.as_json() for name, score in fields.items()},
+    }
+
+
 def score(receipt: Path) -> dict[str, Any]:
-    """Compare every retained detail record against the entry the Record printed."""
+    """Compare every retained detail record against the entry the Record printed.
+
+    Reported three ways: the whole sample, the tuning half the rule was revised
+    against, and the held-out half it never saw. A score measured on the rows
+    that produced the fixes is an upper bound, and saying so is the difference
+    between a measurement and a formatting assertion.
+    """
     log_rows = [json.loads(line) for line in (receipt / "requests.jsonl").read_text().splitlines() if line.strip()]
     entries = {
         f"{congress}-ec-{entry.number}": (congress, granule_id, entry)
         for congress, granule_id, entry in retained_entries(receipt)
     }
-    fields = {
-        name: FieldScore()
-        for name in (
-            "abstract",
-            "report_nature",
-            "legal_authority",
-            "submitting_official",
-            "submitting_agency",
-            "from_clause_concatenation",
-            "referral_count",
-            "referral_names",
-            "rin",
-        )
-    }
-    split_fired = 0
-    compared = 0
+    rows: list[tuple[int, str, RecordCommunicationEntry, Mapping[str, Any]]] = []
     for path in sorted((receipt / "details").glob("*.json")):
         row_key = path.stem
         if row_key not in entries:
@@ -599,16 +623,14 @@ def score(receipt: Path) -> dict[str, Any]:
         detail = json.loads(path.read_text()).get("houseCommunication")
         if not isinstance(detail, Mapping):
             continue
-        _, _, entry = entries[row_key]
-        compared += 1
-        split_fired += int(entry.split_resolved)
-        _score_row(fields, entry, detail, row_key)
+        congress, _, entry = entries[row_key]
+        rows.append((congress, row_key, entry, detail))
 
-    witnesses = _witnesses(receipt)
     answers: dict[str, int] = {}
     for row in log_rows:
         if row["publisher"] == "congress-gov" and row["purpose"] == "detail":
             answers[row["answer"]] = answers.get(row["answer"], 0) + 1
+    whole = _score_rows([(key, entry, detail) for _, key, entry, detail in rows])
     return {
         "measuredOn": datetime.now(UTC).date().isoformat(),
         "ruleVersion": RECORD_COMMUNICATION_RULE_VERSION,
@@ -618,11 +640,16 @@ def score(receipt: Path) -> dict[str, Any]:
             "congressGov": sum(row.get("requests", 1) for row in log_rows if row["publisher"] == "congress-gov"),
         },
         "publisherAnswers": answers,
-        "issues": witnesses,
+        "issues": _witnesses(receipt),
         "entriesPrinted": len(entries),
-        "entriesCompared": compared,
-        "splitRuleFired": split_fired,
-        "fields": {name: score.as_json() for name, score in fields.items()},
+        "tuningCongresses": sorted(TUNING_CONGRESSES),
+        "tuning": _score_rows(
+            [(key, entry, detail) for congress, key, entry, detail in rows if congress in TUNING_CONGRESSES]
+        ),
+        "heldOut": _score_rows(
+            [(key, entry, detail) for congress, key, entry, detail in rows if congress not in TUNING_CONGRESSES]
+        ),
+        **whole,
     }
 
 
@@ -744,15 +771,24 @@ def _witnesses(receipt: Path) -> list[dict[str, Any]]:
 # --- render -------------------------------------------------------------------------
 
 
-def _row(name: str, field: Mapping[str, Any]) -> str:
-    precision = field["precision"]
-    share = "n/a" if precision is None else f"{precision * 100:.1f}%"
-    return f"| `{name}` | {field['agreed']} | {field['stated']} | {share} |"
+def _row(name: str, whole: Mapping[str, Any], tuning: Mapping[str, Any], held: Mapping[str, Any]) -> str:
+    def share(field: Mapping[str, Any]) -> str:
+        precision = field["precision"]
+        return "n/a" if precision is None else f"{precision * 100:.1f}%"
+
+    def counted(field: Mapping[str, Any]) -> str:
+        return f"{field['agreed']}/{field['stated']}"
+
+    return (
+        f"| `{name}` | {counted(held[name])} | {share(held[name])} | "
+        f"{counted(tuning[name])} | {share(tuning[name])} | {counted(whole[name])} | {share(whole[name])} |"
+    )
 
 
 def generated_block(measurement: Mapping[str, Any]) -> str:
     """The report's measured block, rebuilt from the sidecar alone."""
-    fields = measurement["fields"]
+    whole, tuning, held = measurement["fields"], measurement["tuning"], measurement["heldOut"]
+    congresses = " and ".join(f"{number}th" for number in measurement["tuningCongresses"])
     lines = [
         _GENERATED_START,
         "",
@@ -769,10 +805,18 @@ def generated_block(measurement: Mapping[str, Any]) -> str:
             f"The official/agency split rule fired on {measurement['splitRuleFired']} of them."
         ),
         "",
-        "| Field | Agreed | Publisher stated | Precision |",
-        "| --- | ---: | ---: | ---: |",
+        (
+            f"**Held out** is the {measurement['heldOut']['entriesCompared']} rows of the Congresses the rule "
+            f"was never revised against; **tuning** is the {measurement['tuning']['entriesCompared']} rows of "
+            f"the {congresses}, whose disagreements produced the three print-artifact fixes, so its column is "
+            "an in-sample upper bound. The threshold applies to the held-out column."
+        ),
+        "",
+        "| Field | Held out | | Tuning | | Whole sample | |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| | agreed/stated | precision | agreed/stated | precision | agreed/stated | precision |",
     ]
-    lines += [_row(name, fields[name]) for name in sorted(fields)]
+    lines += [_row(name, whole, tuning["fields"], held["fields"]) for name in sorted(whole)]
     lines += [
         "",
         "Per-issue completeness witness:",

@@ -1,0 +1,752 @@
+{
+ "caps": {
+  "congressGov": 600,
+  "govinfo": 40
+ },
+ "entriesCompared": 256,
+ "entriesPrinted": 256,
+ "fields": {
+  "abstract": {
+   "agreed": 251,
+   "disagreements": [
+    {
+     "key": "114-ec-5693",
+     "printed": "A letter from the Director, Regulatory Management Division, Environmental Protection Agency, transmitting the Agency's final rule -- Hazardous Chemical Reporting: Community Right-to-Know; Revisions to Hazard Categories and Minor Corrections [EPA-HQ-SFUND-2010-0763; FRL-9945-07-OLEM] (RIN: 2050-AG85)",
+     "published": "A letter from the Director, Regulatory Management Division, Environmental Protection Agency, transmitting the Agency's final rule - Hazardous Chemical Reporting: Community Right-to-Know; Revisions to Hazard Categories and Minor Corrections [EPA-HQ-SFUND-2010-07 3; FRL-9945-07-OLEM] (RIN: 2050-AG85) "
+    },
+    {
+     "key": "114-ec-5697",
+     "printed": "A letter from the Director, Regulatory Management Division, Environmental Protection Agency, transmitting the Agency's final rule -- Alpha-2,4,6-Tris[1-(phenyl)ethyl]- Omega-hydroxypoly(oxyethylene) poly(oxypropylene) copolymer; Tolerance Exemption; Technical Correction [EPA-HQ-OPP-2015-0485; FRL-99",
+     "published": "A letter from the Director, Regulatory Management Division, Environmental Protection Agency, transmitting the Agency's final rule - Alpha-2,4,6-Tris[1-(phenyl)ethyl]-Omega-hydroxypoly(oxyethylene) poly(oxypropylene) copolymer; Tolerance Exemption; Technical Correction [EPA-HQ-OPP-2015-0485; FRL-9946"
+    },
+    {
+     "key": "116-ec-5278",
+     "printed": "A letter from the Under Secretary, Personnel and Readiness, Department of Defense, transmitting a letter on the approved retirement of Lieutenant General Bradford J. Shwedo, United States Air Force, and his advancement to the grade of lieutenant general on the retired list, pursuant to 10 U.S.C. 137",
+     "published": "A letter from the Under Secretary, Personnel and Readiness, Department of Defense, transmitting a letter on the approved retirement of Lieutenant General Bradford J. Shwedo, Untied States Air Force, and his advancement to the grade of lieutenant general on the retired list, pursuant to 10 U.S.C. 137"
+    },
+    {
+     "key": "117-ec-1384",
+     "printed": "A letter from the Chair, Board of Governors of the Federal Reserve System, transmitting the Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2021; ; to the Committee on Oversight and Reform.",
+     "published": "A letter from the Chair, Board of Governors of the Federal Reserve System, transmitting the Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2021; to the Committee on Oversight and Reform."
+    },
+    {
+     "key": "117-ec-4351",
+     "printed": "A letter from the Chair, Board of Governors of the Federal Reserve System, transmitting the Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2022; ; to the Committee on Oversight and Reform.",
+     "published": "A letter from the Chair, Board of Governors of the Federal Reserve System, transmitting the Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2022; to the Committee on Oversight and Reform."
+    }
+   ],
+   "precision": 0.9805,
+   "stated": 256
+  },
+  "from_clause_concatenation": {
+   "agreed": 231,
+   "disagreements": [
+    {
+     "key": "114-ec-5712",
+     "printed": "Secretary, Department of Health and Human Services",
+     "published": "Secretary,  Department of Health and Human Services"
+    },
+    {
+     "key": "116-ec-5284",
+     "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services, Department of Education",
+     "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services, Department of Education"
+    },
+    {
+     "key": "116-ec-5285",
+     "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services, Department of Education",
+     "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services, Department of Education"
+    },
+    {
+     "key": "116-ec-5286",
+     "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services, Department of Education",
+     "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services, Department of Education"
+    }
+   ],
+   "precision": 0.983,
+   "stated": 235
+  },
+  "legal_authority": {
+   "agreed": 201,
+   "disagreements": [
+    {
+     "key": "117-ec-4345",
+     "printed": "section 2(b)(3) of the Export-Import Bank Act of 1945, pursuant to 12 U.S.C. 635(b)(3); July 31, 1945, ch. 341, Sec. 2 (as added by Public Law 102-266, Sec. 102); (106 Stat. 95)",
+     "published": "12 U.S.C. 635(b)(3); July 31, 1945, ch. 341, section 2 (as added by Public Law 102\u2013266, section 102); (106 Stat. 95)"
+    }
+   ],
+   "precision": 0.995,
+   "stated": 202
+  },
+  "referral_count": {
+   "agreed": 248,
+   "disagreements": [
+    {
+     "key": "114-ec-5717",
+     "printed": "('Armed Services and Oversight and Government Reform',)",
+     "published": "['Armed Services Committee', 'Oversight and Government Reform Committee']"
+    },
+    {
+     "key": "117-ec-4347",
+     "printed": "('Energy and Commerce and Ways and Means',)",
+     "published": "['Energy and Commerce Committee', 'Ways and Means Committee']"
+    },
+    {
+     "key": "118-ec-4525",
+     "printed": "('Energy and Commerce and the Judiciary',)",
+     "published": "['Judiciary Committee', 'Energy and Commerce Committee']"
+    },
+    {
+     "key": "118-ec-4526",
+     "printed": "('Energy and Commerce and the Judiciary',)",
+     "published": "['Energy and Commerce Committee', 'Judiciary Committee']"
+    },
+    {
+     "key": "118-ec-4527",
+     "printed": "('Energy and Commerce and the Judiciary',)",
+     "published": "['Energy and Commerce Committee', 'Judiciary Committee']"
+    }
+   ],
+   "precision": 0.9688,
+   "stated": 256
+  },
+  "referral_names": {
+   "agreed": 215,
+   "disagreements": [
+    {
+     "key": "116-ec-1279",
+     "printed": "('Oversight and Reform',)",
+     "published": "['Oversight and Government Reform Committee']"
+    },
+    {
+     "key": "116-ec-1280",
+     "printed": "('Oversight and Reform',)",
+     "published": "['Oversight and Government Reform Committee']"
+    },
+    {
+     "key": "116-ec-1281",
+     "printed": "('Oversight and Reform',)",
+     "published": "['Oversight and Government Reform Committee']"
+    },
+    {
+     "key": "116-ec-1282",
+     "printed": "('Oversight and Reform',)",
+     "published": "['Oversight and Government Reform Committee']"
+    },
+    {
+     "key": "116-ec-1283",
+     "printed": "('Oversight and Reform',)",
+     "published": "['Oversight and Government Reform Committee']"
+    }
+   ],
+   "precision": 0.8398,
+   "stated": 256
+  },
+  "report_nature": {
+   "agreed": 227,
+   "disagreements": [
+    {
+     "key": "114-ec-1785",
+     "printed": "notice of Proposed Issuance of Letter of Offer and Acceptance to the Republic of Korea",
+     "published": "Notice of Proposed Issuance of Letter of Offer and Acceptance to the Republic of Korea, pursuant to section 36(b)(1) of the Arms Export Control Act, as amended, Public Law 94\u2013329, Transmittal No.: 15-24."
+    },
+    {
+     "key": "114-ec-1786",
+     "printed": "notification that the President has directed the Secretary of State to inform the Speaker of the House of Representatives of his intent to exercise his authority to designate Tunisia as a Major Non-NATO Ally",
+     "published": "Notification that the President has directed the Secretary of State to inform the Speaker of the House of Representatives of his intent to exercise his authority to designate Tunisia as a Major Non-NATO Ally, pursuant to section 517 of the Foreign Assistance Act of 1961, as amended, (FAA), (22 U.S.C"
+    },
+    {
+     "key": "114-ec-1788",
+     "printed": "the Semiannual Report of the Office of Inspector General for the period from October 1, 2014, to March 31, 2015",
+     "published": "The Semiannual Report of the Office of Inspector General for the period from October 1, 2014, to March 31, 2015, pursuant to the Inspector General Act of 1978, as amended."
+    },
+    {
+     "key": "114-ec-1789",
+     "printed": "the Agency's Semiannual Report to Congress, of the Office of Inspector General",
+     "published": "The Agency's Semiannual Report to Congress, of the Office of Inspector General, pursuant to Public Law 95\u2013452, the Inspector General Act of 1978."
+    },
+    {
+     "key": "114-ec-1790",
+     "printed": "the 2014 Statement on System of Internal Controls of the Federal Home Loan Bank of Pittsburgh",
+     "published": "The 2014 Statement on System of Internal Controls of the Federal Home Loan Bank of Pittsburgh, pursuant to 31 U.S.C. 9106, and the Bank's 2014 audited financial statements."
+    }
+   ],
+   "precision": 0.9342,
+   "stated": 243
+  },
+  "rin": {
+   "agreed": 88,
+   "disagreements": [],
+   "precision": 1.0,
+   "stated": 88
+  },
+  "submitting_agency": {
+   "agreed": 200,
+   "disagreements": [
+    {
+     "key": "114-ec-1773",
+     "printed": "Department of Education",
+     "published": "Postsecondary Education, Department of Education"
+    },
+    {
+     "key": "114-ec-5687",
+     "printed": "Department of Defense",
+     "published": "Acquisition, Technology, and Logistics, Department of Defense"
+    },
+    {
+     "key": "114-ec-5690",
+     "printed": "Department of Defense",
+     "published": "Personnel and Readiness, Department of Defense"
+    },
+    {
+     "key": "114-ec-5712",
+     "printed": "Department of Health and Human Services",
+     "published": " Department of Health and Human Services"
+    },
+    {
+     "key": "115-ec-1664",
+     "printed": "Department of Defense",
+     "published": "Personnel and Readiness, Department of Defense"
+    }
+   ],
+   "precision": 0.8969,
+   "stated": 223
+  },
+  "submitting_official": {
+   "agreed": 197,
+   "disagreements": [
+    {
+     "key": "114-ec-1773",
+     "printed": "Acting Assistant General Counsel for Regulatory Services, Office of the General Counsel, Postsecondary Education",
+     "published": "Acting Assistant General Counsel for Regulatory Services, Office of the General Counsel"
+    },
+    {
+     "key": "114-ec-5687",
+     "printed": "Under Secretary, Acquisition, Technology, and Logistics",
+     "published": "Under Secretary"
+    },
+    {
+     "key": "114-ec-5690",
+     "printed": "Acting Under Secretary, Personnel and Readiness",
+     "published": "Acting Under Secretary"
+    },
+    {
+     "key": "115-ec-1664",
+     "printed": "Under Secretary, Personnel and Readiness",
+     "published": "Under Secretary"
+    },
+    {
+     "key": "115-ec-5137",
+     "printed": "Director, Regulations Policy and Management Staff, FDA",
+     "published": "Director, Regulations Policy and Management Staff"
+    }
+   ],
+   "precision": 0.9163,
+   "stated": 215
+  }
+ },
+ "heldOut": {
+  "entriesCompared": 144,
+  "fields": {
+   "abstract": {
+    "agreed": 141,
+    "disagreements": [
+     {
+      "key": "116-ec-5278",
+      "printed": "A letter from the Under Secretary, Personnel and Readiness, Department of Defense, transmitting a letter on the approved retirement of Lieutenant General Bradford J. Shwedo, United States Air Force, and his advancement to the grade of lieutenant general on the retired list, pursuant to 10 U.S.C. 137",
+      "published": "A letter from the Under Secretary, Personnel and Readiness, Department of Defense, transmitting a letter on the approved retirement of Lieutenant General Bradford J. Shwedo, Untied States Air Force, and his advancement to the grade of lieutenant general on the retired list, pursuant to 10 U.S.C. 137"
+     },
+     {
+      "key": "117-ec-1384",
+      "printed": "A letter from the Chair, Board of Governors of the Federal Reserve System, transmitting the Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2021; ; to the Committee on Oversight and Reform.",
+      "published": "A letter from the Chair, Board of Governors of the Federal Reserve System, transmitting the Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2021; to the Committee on Oversight and Reform."
+     },
+     {
+      "key": "117-ec-4351",
+      "printed": "A letter from the Chair, Board of Governors of the Federal Reserve System, transmitting the Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2022; ; to the Committee on Oversight and Reform.",
+      "published": "A letter from the Chair, Board of Governors of the Federal Reserve System, transmitting the Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2022; to the Committee on Oversight and Reform."
+     }
+    ],
+    "precision": 0.9792,
+    "stated": 144
+   },
+   "from_clause_concatenation": {
+    "agreed": 133,
+    "disagreements": [
+     {
+      "key": "116-ec-5284",
+      "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services, Department of Education",
+      "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services, Department of Education"
+     },
+     {
+      "key": "116-ec-5285",
+      "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services, Department of Education",
+      "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services, Department of Education"
+     },
+     {
+      "key": "116-ec-5286",
+      "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services, Department of Education",
+      "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services, Department of Education"
+     }
+    ],
+    "precision": 0.9779,
+    "stated": 136
+   },
+   "legal_authority": {
+    "agreed": 112,
+    "disagreements": [
+     {
+      "key": "117-ec-4345",
+      "printed": "section 2(b)(3) of the Export-Import Bank Act of 1945, pursuant to 12 U.S.C. 635(b)(3); July 31, 1945, ch. 341, Sec. 2 (as added by Public Law 102-266, Sec. 102); (106 Stat. 95)",
+      "published": "12 U.S.C. 635(b)(3); July 31, 1945, ch. 341, section 2 (as added by Public Law 102\u2013266, section 102); (106 Stat. 95)"
+     }
+    ],
+    "precision": 0.9912,
+    "stated": 113
+   },
+   "referral_count": {
+    "agreed": 137,
+    "disagreements": [
+     {
+      "key": "117-ec-4347",
+      "printed": "('Energy and Commerce and Ways and Means',)",
+      "published": "['Energy and Commerce Committee', 'Ways and Means Committee']"
+     },
+     {
+      "key": "118-ec-4525",
+      "printed": "('Energy and Commerce and the Judiciary',)",
+      "published": "['Judiciary Committee', 'Energy and Commerce Committee']"
+     },
+     {
+      "key": "118-ec-4526",
+      "printed": "('Energy and Commerce and the Judiciary',)",
+      "published": "['Energy and Commerce Committee', 'Judiciary Committee']"
+     },
+     {
+      "key": "118-ec-4527",
+      "printed": "('Energy and Commerce and the Judiciary',)",
+      "published": "['Energy and Commerce Committee', 'Judiciary Committee']"
+     },
+     {
+      "key": "118-ec-4528",
+      "printed": "('Oversight and Accountability and Foreign Affairs',)",
+      "published": "['Oversight and Government Reform Committee', 'Foreign Affairs Committee']"
+     }
+    ],
+    "precision": 0.9514,
+    "stated": 144
+   },
+   "referral_names": {
+    "agreed": 103,
+    "disagreements": [
+     {
+      "key": "116-ec-1279",
+      "printed": "('Oversight and Reform',)",
+      "published": "['Oversight and Government Reform Committee']"
+     },
+     {
+      "key": "116-ec-1280",
+      "printed": "('Oversight and Reform',)",
+      "published": "['Oversight and Government Reform Committee']"
+     },
+     {
+      "key": "116-ec-1281",
+      "printed": "('Oversight and Reform',)",
+      "published": "['Oversight and Government Reform Committee']"
+     },
+     {
+      "key": "116-ec-1282",
+      "printed": "('Oversight and Reform',)",
+      "published": "['Oversight and Government Reform Committee']"
+     },
+     {
+      "key": "116-ec-1283",
+      "printed": "('Oversight and Reform',)",
+      "published": "['Oversight and Government Reform Committee']"
+     }
+    ],
+    "precision": 0.7153,
+    "stated": 144
+   },
+   "report_nature": {
+    "agreed": 138,
+    "disagreements": [
+     {
+      "key": "116-ec-1281",
+      "printed": "the Corps' semiannual report of the Office of the Inspector General covering the period from October 1, 2018, through March 31, 2019",
+      "published": "The Corps' semiannual report of the Office of the Inspector General covering the period from October 1, 2018, through March 31, 2019, pursuant to section 5 of the Inspector General Act of 1978."
+     },
+     {
+      "key": "116-ec-1286",
+      "printed": "the Administration's Semiannual Management Report to Congress, for the period of October 1, 2018, through March 31, 2019",
+      "published": "The Administration's Semiannual Management Report to Congress, for the period of October 1, 2018, through March 31, 2019, pursuant to the Inspector General Act of 1978, as amended, 5 U.S.C. App. 5."
+     },
+     {
+      "key": "116-ec-5278",
+      "printed": "a letter on the approved retirement of Lieutenant General Bradford J. Shwedo, United States Air Force, and his advancement to the grade of lieutenant general on the retired list",
+      "published": "A letter on the approved retirement of Lieutenant General Bradford J. Shwedo, Untied States Air Force, and his advancement to the grade of lieutenant general on the retired list."
+     },
+     {
+      "key": "117-ec-1384",
+      "printed": "the Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2021;",
+      "published": "The Board's Office of Inspector General Semiannual Report to Congress for the six-month period ending March 31, 2021."
+     },
+     {
+      "key": "117-ec-4345",
+      "printed": "a transaction",
+      "published": "A transaction pursuant to section 2(b)(3) of the Export-Import Bank Act of 1945."
+     }
+    ],
+    "precision": 0.9583,
+    "stated": 144
+   },
+   "rin": {
+    "agreed": 34,
+    "disagreements": [],
+    "precision": 1.0,
+    "stated": 34
+   },
+   "submitting_agency": {
+    "agreed": 114,
+    "disagreements": [
+     {
+      "key": "116-ec-1277",
+      "printed": "Media Bureau, Federal Communications Commission",
+      "published": "Federal Communications Commission"
+     },
+     {
+      "key": "116-ec-5300",
+      "printed": "Federal Motor Carrier Safety Administration, Department of Transportation",
+      "published": "Department of Transportation"
+     },
+     {
+      "key": "117-ec-4345",
+      "printed": "Board of Directors, Export-Import Bank of the United States",
+      "published": "Export-Import Bank of the United States"
+     },
+     {
+      "key": "117-ec-4348",
+      "printed": "Bureau of Legislative Affairs, Department of State",
+      "published": "Department of State"
+     },
+     {
+      "key": "117-ec-4350",
+      "printed": "Bureau of Legislative Affairs, Department of State",
+      "published": "Department of State"
+     }
+    ],
+    "precision": 0.8837,
+    "stated": 129
+   },
+   "submitting_official": {
+    "agreed": 110,
+    "disagreements": [
+     {
+      "key": "116-ec-1277",
+      "printed": "Chief of Staff",
+      "published": "Chief of Staff, Media Bureau"
+     },
+     {
+      "key": "116-ec-1291",
+      "printed": "Attorney -- Advisor, U.S. Coast Guard",
+      "published": "Attorney - Advisor, U.S. Coast Guard"
+     },
+     {
+      "key": "116-ec-5284",
+      "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services",
+      "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services"
+     },
+     {
+      "key": "116-ec-5285",
+      "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services",
+      "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services"
+     },
+     {
+      "key": "116-ec-5286",
+      "printed": "Deputy Assistant General Counsel, Office of Special Education and Rehabilitative Services",
+      "published": "Deputy Assistant General Counsel, Office of Special Education and  Rehabilitative Services"
+     }
+    ],
+    "precision": 0.9091,
+    "stated": 121
+   }
+  },
+  "splitRuleFired": 129
+ },
+ "issues": [
+  {
+   "congress": 114,
+   "contiguous": true,
+   "entries": 31,
+   "first": 1772,
+   "granuleId": "CREC-2015-06-10-pt1-PgH4133-4",
+   "holes": [],
+   "last": 1802,
+   "strictlyIncreasing": true
+  },
+  {
+   "congress": 114,
+   "contiguous": true,
+   "entries": 31,
+   "first": 5687,
+   "granuleId": "CREC-2016-06-15-pt1-PgH3912-2",
+   "holes": [],
+   "last": 5717,
+   "strictlyIncreasing": true
+  },
+  {
+   "congress": 115,
+   "contiguous": true,
+   "entries": 20,
+   "first": 1661,
+   "granuleId": "CREC-2017-06-14-pt1-PgH4917-3",
+   "holes": [],
+   "last": 1680,
+   "strictlyIncreasing": true
+  },
+  {
+   "congress": 115,
+   "contiguous": true,
+   "entries": 30,
+   "first": 5136,
+   "granuleId": "CREC-2018-06-13-pt1-PgH5150-4",
+   "holes": [],
+   "last": 5165,
+   "strictlyIncreasing": true
+  },
+  {
+   "congress": 116,
+   "contiguous": true,
+   "entries": 29,
+   "first": 1266,
+   "granuleId": "CREC-2019-06-12-pt2-PgH4625-3",
+   "holes": [],
+   "last": 1294,
+   "strictlyIncreasing": true
+  },
+  {
+   "congress": 116,
+   "contiguous": true,
+   "entries": 25,
+   "first": 5277,
+   "granuleId": "CREC-2020-09-16-pt1-PgH4488-2",
+   "holes": [],
+   "last": 5301,
+   "strictlyIncreasing": true
+  },
+  {
+   "congress": 117,
+   "contiguous": true,
+   "entries": 35,
+   "first": 1358,
+   "granuleId": "CREC-2021-06-16-pt1-PgH2889",
+   "holes": [],
+   "last": 1392,
+   "strictlyIncreasing": true
+  },
+  {
+   "congress": 117,
+   "contiguous": true,
+   "entries": 14,
+   "first": 4345,
+   "granuleId": "CREC-2022-06-15-pt1-PgH5608-2",
+   "holes": [],
+   "last": 4358,
+   "strictlyIncreasing": true
+  },
+  {
+   "congress": 118,
+   "contiguous": true,
+   "entries": 30,
+   "first": 1205,
+   "granuleId": "CREC-2023-06-14-pt1-PgH2929-2",
+   "holes": [],
+   "last": 1234,
+   "strictlyIncreasing": true
+  },
+  {
+   "congress": 118,
+   "contiguous": true,
+   "entries": 11,
+   "first": 4520,
+   "granuleId": "CREC-2024-06-12-pt1-PgH3973",
+   "holes": [],
+   "last": 4530,
+   "strictlyIncreasing": true
+  }
+ ],
+ "measuredOn": "2026-09-20",
+ "publisherAnswers": {
+  "ok": 256
+ },
+ "requests": {
+  "congressGov": 256,
+  "govinfo": 40
+ },
+ "ruleVersion": "record-communication-dceeb0d93d03",
+ "splitRuleFired": 234,
+ "tuning": {
+  "entriesCompared": 112,
+  "fields": {
+   "abstract": {
+    "agreed": 110,
+    "disagreements": [
+     {
+      "key": "114-ec-5693",
+      "printed": "A letter from the Director, Regulatory Management Division, Environmental Protection Agency, transmitting the Agency's final rule -- Hazardous Chemical Reporting: Community Right-to-Know; Revisions to Hazard Categories and Minor Corrections [EPA-HQ-SFUND-2010-0763; FRL-9945-07-OLEM] (RIN: 2050-AG85)",
+      "published": "A letter from the Director, Regulatory Management Division, Environmental Protection Agency, transmitting the Agency's final rule - Hazardous Chemical Reporting: Community Right-to-Know; Revisions to Hazard Categories and Minor Corrections [EPA-HQ-SFUND-2010-07 3; FRL-9945-07-OLEM] (RIN: 2050-AG85) "
+     },
+     {
+      "key": "114-ec-5697",
+      "printed": "A letter from the Director, Regulatory Management Division, Environmental Protection Agency, transmitting the Agency's final rule -- Alpha-2,4,6-Tris[1-(phenyl)ethyl]- Omega-hydroxypoly(oxyethylene) poly(oxypropylene) copolymer; Tolerance Exemption; Technical Correction [EPA-HQ-OPP-2015-0485; FRL-99",
+      "published": "A letter from the Director, Regulatory Management Division, Environmental Protection Agency, transmitting the Agency's final rule - Alpha-2,4,6-Tris[1-(phenyl)ethyl]-Omega-hydroxypoly(oxyethylene) poly(oxypropylene) copolymer; Tolerance Exemption; Technical Correction [EPA-HQ-OPP-2015-0485; FRL-9946"
+     }
+    ],
+    "precision": 0.9821,
+    "stated": 112
+   },
+   "from_clause_concatenation": {
+    "agreed": 98,
+    "disagreements": [
+     {
+      "key": "114-ec-5712",
+      "printed": "Secretary, Department of Health and Human Services",
+      "published": "Secretary,  Department of Health and Human Services"
+     }
+    ],
+    "precision": 0.9899,
+    "stated": 99
+   },
+   "legal_authority": {
+    "agreed": 89,
+    "disagreements": [],
+    "precision": 1.0,
+    "stated": 89
+   },
+   "referral_count": {
+    "agreed": 111,
+    "disagreements": [
+     {
+      "key": "114-ec-5717",
+      "printed": "('Armed Services and Oversight and Government Reform',)",
+      "published": "['Armed Services Committee', 'Oversight and Government Reform Committee']"
+     }
+    ],
+    "precision": 0.9911,
+    "stated": 112
+   },
+   "referral_names": {
+    "agreed": 112,
+    "disagreements": [],
+    "precision": 1.0,
+    "stated": 112
+   },
+   "report_nature": {
+    "agreed": 89,
+    "disagreements": [
+     {
+      "key": "114-ec-1785",
+      "printed": "notice of Proposed Issuance of Letter of Offer and Acceptance to the Republic of Korea",
+      "published": "Notice of Proposed Issuance of Letter of Offer and Acceptance to the Republic of Korea, pursuant to section 36(b)(1) of the Arms Export Control Act, as amended, Public Law 94\u2013329, Transmittal No.: 15-24."
+     },
+     {
+      "key": "114-ec-1786",
+      "printed": "notification that the President has directed the Secretary of State to inform the Speaker of the House of Representatives of his intent to exercise his authority to designate Tunisia as a Major Non-NATO Ally",
+      "published": "Notification that the President has directed the Secretary of State to inform the Speaker of the House of Representatives of his intent to exercise his authority to designate Tunisia as a Major Non-NATO Ally, pursuant to section 517 of the Foreign Assistance Act of 1961, as amended, (FAA), (22 U.S.C"
+     },
+     {
+      "key": "114-ec-1788",
+      "printed": "the Semiannual Report of the Office of Inspector General for the period from October 1, 2014, to March 31, 2015",
+      "published": "The Semiannual Report of the Office of Inspector General for the period from October 1, 2014, to March 31, 2015, pursuant to the Inspector General Act of 1978, as amended."
+     },
+     {
+      "key": "114-ec-1789",
+      "printed": "the Agency's Semiannual Report to Congress, of the Office of Inspector General",
+      "published": "The Agency's Semiannual Report to Congress, of the Office of Inspector General, pursuant to Public Law 95\u2013452, the Inspector General Act of 1978."
+     },
+     {
+      "key": "114-ec-1790",
+      "printed": "the 2014 Statement on System of Internal Controls of the Federal Home Loan Bank of Pittsburgh",
+      "published": "The 2014 Statement on System of Internal Controls of the Federal Home Loan Bank of Pittsburgh, pursuant to 31 U.S.C. 9106, and the Bank's 2014 audited financial statements."
+     }
+    ],
+    "precision": 0.899,
+    "stated": 99
+   },
+   "rin": {
+    "agreed": 54,
+    "disagreements": [],
+    "precision": 1.0,
+    "stated": 54
+   },
+   "submitting_agency": {
+    "agreed": 86,
+    "disagreements": [
+     {
+      "key": "114-ec-1773",
+      "printed": "Department of Education",
+      "published": "Postsecondary Education, Department of Education"
+     },
+     {
+      "key": "114-ec-5687",
+      "printed": "Department of Defense",
+      "published": "Acquisition, Technology, and Logistics, Department of Defense"
+     },
+     {
+      "key": "114-ec-5690",
+      "printed": "Department of Defense",
+      "published": "Personnel and Readiness, Department of Defense"
+     },
+     {
+      "key": "114-ec-5712",
+      "printed": "Department of Health and Human Services",
+      "published": " Department of Health and Human Services"
+     },
+     {
+      "key": "115-ec-1664",
+      "printed": "Department of Defense",
+      "published": "Personnel and Readiness, Department of Defense"
+     }
+    ],
+    "precision": 0.9149,
+    "stated": 94
+   },
+   "submitting_official": {
+    "agreed": 87,
+    "disagreements": [
+     {
+      "key": "114-ec-1773",
+      "printed": "Acting Assistant General Counsel for Regulatory Services, Office of the General Counsel, Postsecondary Education",
+      "published": "Acting Assistant General Counsel for Regulatory Services, Office of the General Counsel"
+     },
+     {
+      "key": "114-ec-5687",
+      "printed": "Under Secretary, Acquisition, Technology, and Logistics",
+      "published": "Under Secretary"
+     },
+     {
+      "key": "114-ec-5690",
+      "printed": "Acting Under Secretary, Personnel and Readiness",
+      "published": "Acting Under Secretary"
+     },
+     {
+      "key": "115-ec-1664",
+      "printed": "Under Secretary, Personnel and Readiness",
+      "published": "Under Secretary"
+     },
+     {
+      "key": "115-ec-5137",
+      "printed": "Director, Regulations Policy and Management Staff, FDA",
+      "published": "Director, Regulations Policy and Management Staff"
+     }
+    ],
+    "precision": 0.9255,
+    "stated": 94
+   }
+  },
+  "splitRuleFired": 105
+ },
+ "tuningCongresses": [
+  114,
+  115
+ ]
+}

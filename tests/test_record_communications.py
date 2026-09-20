@@ -25,12 +25,14 @@ from spicy_docs.sources.congress.record_communications import (
     RecordCommunicationError,
     contiguity_witness,
     executive_communication_granules,
+    expand_public_law_abbreviation,
     expand_section_abbreviation,
     fold_en_dash,
     fold_print_dash,
     normalized_entry_text,
     parse_record_communications,
     publisher_normalized,
+    rejoin_print_wraps,
     split_from_clause,
 )
 
@@ -64,7 +66,7 @@ def publisher_detail(number: int) -> dict:
 def test_the_publishers_abstract_equals_the_printed_entry(number: int) -> None:
     """§2's decisive comparison, re-derived here from committed bytes.
 
-    Byte for byte these differ; under the three named normalizations and
+    Byte for byte these differ; under the four named normalizations and
     nothing else they are the same string. That is the whole basis for reading
     a pre-114th entry as a communication record.
     """
@@ -111,19 +113,54 @@ def test_the_rin_rule_this_repository_already_owns_reads_a_reconstructed_subject
     assert rin_from_report_nature(entries[4350].report_nature).rin is None
 
 
-# --- the three normalizations, each on its own -----------------------------------------
+# --- the publisher normalizations, each on its own -----------------------------------------
 
 
 def test_each_publisher_normalization_does_one_thing() -> None:
     assert fold_print_dash("final rule--Maine State Plan") == "final rule - Maine State Plan"
     assert fold_print_dash("final rule -- Maine") == "final rule - Maine"
+    # 114th EC 1773 prints four hyphens where the publisher prints one dash;
+    # `-{2,3}` left the remainder standing and the abstract never matched.
+    assert fold_print_dash("Criterion ---- First") == "Criterion - First"
     assert expand_section_abbreviation("Public Law 104-121, Sec. 251") == "Public Law 104-121, section 251"
+    assert expand_public_law_abbreviation("pursuant to Pub. L. 95-452") == "pursuant to Public Law 95-452"
     assert fold_en_dash("Public Law 104–121") == "Public Law 104-121"
 
     # Each leaves what the others own alone, so a failure names one rule.
     assert fold_print_dash("Sec. 251") == "Sec. 251"
     assert expand_section_abbreviation("rule--Maine") == "rule--Maine"
+    assert expand_public_law_abbreviation("Sec. 251") == "Sec. 251"
     assert fold_en_dash("Sec. 251") == "Sec. 251"
+
+
+def test_a_token_gpo_wrapped_across_two_lines_is_rejoined() -> None:
+    """The single largest disagreement the overlap run found, and the RIN it was eating."""
+    assert rejoin_print_wraps("[Docket No.: FDA-2013-\nC-1008)") == "[Docket No.: FDA-2013-C-1008)"
+    assert rejoin_print_wraps("GROB-\nWERKE") == "GROB-WERKE"
+    # A line-final print dash is not a wrap, and neither is a hyphen with no
+    # word right after it: both are what the alphanumeric guards are for.
+    assert rejoin_print_wraps("final rule--\nListing") == "final rule--\nListing"
+    assert rejoin_print_wraps("rule -\n     Maine") == "rule -\n     Maine"
+
+    # And through the whole normalization, with a page marker inside the token.
+    assert normalized_entry_text("[EPA-R03-OAR-2013-\n\n[[Page H816]]\n\n0423; FRL-9928-78]") == (
+        "[EPA-R03-OAR-2013-0423; FRL-9928-78]"
+    )
+
+
+def test_the_record_changed_how_it_numbers_an_entry_and_both_spellings_read() -> None:
+    """1996-2020 print `1205.`; 2021 on print `EC-1205.`. Zero entries is the failure this prevents."""
+    modern = parse_record_communications(
+        "       EC-1205. A letter from the Director, Office of Personnel\n"
+        "     Management, transmitting a letter reporting a violation, pursuant\n"
+        "     to 31 U.S.C. 1517(b); to the Committee on Appropriations.\n"
+    )
+    assert [entry.number for entry in modern] == [1205]
+    assert modern[0].communication_type == "ec"
+    # "Office" is measured-ambiguous, so the split declines and the clause is kept whole.
+    assert modern[0].split_resolved is False
+    assert modern[0].from_clause == "Director, Office of Personnel Management"
+    assert modern[0].committee_names == ("Appropriations",)
 
 
 def test_the_en_dash_folds_before_the_print_dash() -> None:
@@ -316,7 +353,7 @@ def test_the_rule_version_is_pinned_and_moves_when_a_pattern_moves(monkeypatch: 
     """Derived, not written: the digest has to follow the patterns it digests."""
     from spicy_docs.sources.congress import record_communications as module
 
-    assert RECORD_COMMUNICATION_RULE_VERSION == "record-communication-37ed22490e0e"
+    assert RECORD_COMMUNICATION_RULE_VERSION == "record-communication-dceeb0d93d03"
 
     monkeypatch.setattr(module, "_PURSUANT", re.compile(r",?\s+in\s+accordance\s+with\s+", re.IGNORECASE))
     assert module._rule_version() != RECORD_COMMUNICATION_RULE_VERSION.removeprefix("record-communication-")

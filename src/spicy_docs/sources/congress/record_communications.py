@@ -13,7 +13,7 @@ with an HTML rendition back to 1994. Each numbered entry in it is one sentence:
 
 Congress.gov's ``house-communication/{congress}/EC/{number}`` detail record is
 a **decomposition of that same sentence**: its ``abstract`` equals the printed
-entry under the three normalizations :func:`publisher_normalized` names, and
+entry under the four normalizations :func:`publisher_normalized` names, and
 ``submittingOfficial``, ``submittingAgency``, ``reportNature``,
 ``legalAuthority`` and the committee referral are spans of it
 (``docs/research/executive-communications-backfill-2026-09-20.md`` §2). The
@@ -40,6 +40,15 @@ The rules were ported from the research receipt's ``measure_parse_rule_v2.py``,
 which measured them on 216 entries across seven issues spanning the 104th to
 the 114th Congress: opening 216/216, ``transmitting`` split 216/216, committee
 referral 216/216, ``pursuant to`` authority 210/216 (six entries state none).
+
+They were then **scored against the publisher's own decomposition** on the
+overlap era, where both records exist
+(``tools/analysis/record_communications_overlap.py``,
+``docs/research/record-communications-overlap-2026-09-20.md``). That run found
+what two ground-truth rows could not: a fourth publisher normalization
+(``Pub. L.``), a print dash the Record spells with four hyphens, and GPO's
+hyphenated line wrap, which had been silently splitting docket numbers and
+RINs. Each is fixed here with its reason beside it.
 """
 
 from __future__ import annotations
@@ -73,8 +82,17 @@ _SECTION_TITLE_RE = re.compile(r"executive\s+communication", re.IGNORECASE)
 #: One printed entry: its number, then everything up to the next numbered
 #: entry. Lookahead rather than a line-bounded match, because the Record wraps
 #: one entry over many lines and the sentence has to arrive whole.
+#:
+#: The ``EC-`` prefix is optional because the Record changed its own spelling:
+#: every issue sampled from 1996 through 2020 numbers an entry ``1205.`` and
+#: every issue from 2021 on numbers it ``EC-1205.``. The overlap measurement
+#: found this by reading **zero** entries out of the 117th and 118th sections
+#: it had just fetched -- a recall failure a field-by-field score could never
+#: have reported, because a section that yields no entries yields nothing to
+#: disagree about.
 _ENTRY = re.compile(
-    r"^\s{0,12}(\d{1,5})\.\s+(A\s+letter\s+from\s+.*?)(?=^\s{0,12}\d{1,5}\.\s+A\s+letter\s+from|\Z)",
+    r"^\s{0,12}(?:EC-)?(\d{1,5})\.\s+(A\s+letter\s+from\s+.*?)"
+    r"(?=^\s{0,12}(?:EC-)?\d{1,5}\.\s+A\s+letter\s+from|\Z)",
     re.MULTILINE | re.DOTALL | re.IGNORECASE,
 )
 _OPENING = re.compile(r"^A\s+letter\s+from\s+the\s+", re.IGNORECASE)
@@ -92,6 +110,10 @@ _REFERRAL = re.compile(
 _PAGE_MARKER = re.compile(r"\s*\[\[Page\s+[^\]]*\]\]\s*")
 #: The rule of an underscore rule line that closes a Record section.
 _TRAILER = re.compile(r"\s*_{4,}\s*$")
+#: A line-final hyphen inside a token, with the rest of that token on the next
+#: line: GPO wraps `[Docket No.: FDA-2013-C-1008]` after `FDA-2013-`, and the
+#: publisher's own abstract has no space there. See :func:`rejoin_print_wraps`.
+_HYPHEN_WRAP = re.compile(r"(?<=[A-Za-z0-9])-\n(?=[A-Za-z0-9])")
 
 #: The comma-group head nouns that begin the agency side of a from-clause.
 #:
@@ -158,6 +180,7 @@ def _rule_version() -> str:
         f"referral|{_REFERRAL.pattern}",
         f"page-marker|{_PAGE_MARKER.pattern}",
         f"trailer|{_TRAILER.pattern}",
+        f"hyphen-wrap|{_HYPHEN_WRAP.pattern}",
         f"communication-type|{SECTION_COMMUNICATION_TYPE}",
         f"split-policy|{SPLIT_POLICY_VERSION}",
         "agency-head-words|" + ",".join(sorted(AGENCY_HEAD_WORDS)),
@@ -175,23 +198,44 @@ class RecordCommunicationError(ValueError):
     """A granule body this module cannot read as the executive-communications section."""
 
 
-# --- the three publisher normalizations ----------------------------------------------
+# --- the publisher normalizations -----------------------------------------------------
 #
 # Each is one edit the publisher's own `abstract` makes to the sentence the
 # Record printed. Named separately because the first byte-for-byte comparison
 # said "not equal", which is what a measurement that encodes its own assumption
-# looks like: relaxed with these three named and nothing else, the abstract
-# *equals* the printed entry on both ground-truth rows (§2).
+# looks like: relaxed with these named and nothing else, the abstract *equals*
+# the printed entry.
+#
+# The research named three (§2). The overlap measurement, run on 166 rows the
+# rule was not fitted to, named a fourth -- `Pub. L.` -- and widened the print
+# dash from `-{2,3}` to `-{2,}`, because the Record prints `----` where the
+# publisher prints one dash. Both were found by disagreement with the
+# publisher, which is what two ground-truth rows could not have shown.
 
 
 def fold_print_dash(value: str) -> str:
-    """``--`` (GPO's em dash in running text) folded to the publisher's `` - ``."""
-    return re.sub(r"\s*-{2,3}\s*", " - ", value)
+    """A run of GPO's print dashes folded to the publisher's single `` - ``.
+
+    ``-{2,}`` and not ``-{2,3}``: 114th EC 1773 prints ``Criterion ---- First``
+    where the publisher's abstract has one dash, and the narrower rule left the
+    remainder standing as a second dash.
+    """
+    return re.sub(r"\s*-{2,}\s*", " - ", value)
 
 
 def expand_section_abbreviation(value: str) -> str:
     """The Record's ``Sec.`` expanded to the publisher's ``section``."""
     return re.sub(r"\bSec\.\s*", "section ", value)
+
+
+def expand_public_law_abbreviation(value: str) -> str:
+    """The Record's ``Pub. L.`` expanded to the publisher's ``Public Law``.
+
+    The same kind of edit as ``Sec.``, found the same way -- by the overlap
+    measurement, on rows citing the Inspector General Act and the Arms Export
+    Control Act, where the two publishers' strings differ in nothing else.
+    """
+    return re.sub(r"\bPub\.\s*L\.\s*", "Public Law ", value)
 
 
 def fold_en_dash(value: str) -> str:
@@ -200,13 +244,31 @@ def fold_en_dash(value: str) -> str:
 
 
 def publisher_normalized(value: str) -> str:
-    """All three normalizations, in the one order the comparison uses.
+    """All four normalizations, in the one order the comparison uses.
 
     En dash first: folding it to a hyphen before :func:`fold_print_dash` runs
     means a publisher's ``104–121`` and a Record's ``104-121`` reach that rule
     as the same string, and neither is then mistaken for a print dash.
     """
-    return fold_print_dash(expand_section_abbreviation(fold_en_dash(value)))
+    return fold_print_dash(expand_public_law_abbreviation(expand_section_abbreviation(fold_en_dash(value))))
+
+
+def rejoin_print_wraps(text: str) -> str:
+    """Rejoin a token GPO broke across two printed lines at its own hyphen.
+
+    The Record wraps ``[Docket No.: FDA-2013-C-1008]`` as ``FDA-2013-`` then a
+    new line, and collapsing the layout naively leaves ``FDA-2013- C-1008``
+    where the publisher has no space. It is the same print artifact
+    ``extraction/gpo_normalize.py``'s ``_rejoin_hyphens`` handles for PDF text,
+    which §3.1 of the research said the HTML path would need too; the rule here
+    is a little wider, because GPO wraps after a digit (``FDA-2013-``) as
+    readily as after a letter.
+
+    Gated by its own evidence on both sides: the character before the hyphen
+    must be alphanumeric -- which is what keeps a line-final ``--`` print dash
+    out of it -- and the next line must start with one.
+    """
+    return _HYPHEN_WRAP.sub("-", text)
 
 
 def normalized_entry_text(value: str) -> str:
@@ -214,14 +276,21 @@ def normalized_entry_text(value: str) -> str:
 
     Unicode-normalized (the Record's typographic quotes and dashes are the
     same characters the publisher's JSON carries in a different normal form),
-    page markers stripped, the section's closing rule line removed, and runs of
-    whitespace collapsed -- the Record wraps one sentence over a dozen indented
-    lines, and the sentence is the fact, not its column width.
+    page markers stripped, wrapped tokens rejoined, the section's closing rule
+    line removed, and runs of whitespace collapsed -- the Record wraps one
+    sentence over a dozen indented lines, and the sentence is the fact, not its
+    column width.
+
+    A page marker becomes a line break rather than a space, so a token the
+    marker lands inside still meets :func:`rejoin_print_wraps` as a wrap.
     """
     text = unicodedata.normalize("NFKC", value)
     text = text.replace("–", "-").replace("—", "--").replace("’", "'")
-    text = _PAGE_MARKER.sub(" ", text)
-    return _TRAILER.sub("", " ".join(text.split()))
+    text = _PAGE_MARKER.sub("\n", text)
+    # One newline per line break, with the print's indentation gone, so the
+    # wrap rule sees `-\n` wherever GPO broke a token.
+    text = re.sub(r"[ \t]*\n\s*", "\n", text)
+    return _TRAILER.sub("", " ".join(rejoin_print_wraps(text).split()))
 
 
 # --- one entry ------------------------------------------------------------------------
@@ -463,6 +532,7 @@ __all__ = [
     "RecordCommunicationError",
     "contiguity_witness",
     "executive_communication_granules",
+    "expand_public_law_abbreviation",
     "expand_section_abbreviation",
     "fold_en_dash",
     "fold_print_dash",
@@ -470,5 +540,6 @@ __all__ = [
     "parse_granule_body",
     "parse_record_communications",
     "publisher_normalized",
+    "rejoin_print_wraps",
     "split_from_clause",
 ]

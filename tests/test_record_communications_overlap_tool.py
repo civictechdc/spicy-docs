@@ -339,7 +339,7 @@ def test_render_rewrites_only_the_block_between_the_markers(tmp_path: Path, grou
     assert text.startswith("# Title\n\nkept before\n")
     assert text.endswith("kept after\n")
     assert "stale" not in text
-    assert "| `abstract` | 2 | 2 | 100.0% |" in text
+    assert "| `abstract` | 0/0 | n/a | 2/2 | 100.0% | 2/2 | 100.0% |" in text
     assert generated_block(measurement) in text
 
 
