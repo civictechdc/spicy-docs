@@ -208,6 +208,12 @@ These operations ship with `spicy_docs` and accept caller-selected paths. Use
   measure where the bytes go. Reads committed fixtures and the retained inputs
   beside its output; makes no request. Supply `--output`; the design record is
   [`docs/research/document-capture-schema-2026-09-19.md`](../docs/research/document-capture-schema-2026-09-19.md).
+- [measure_document_capture_xml](analysis/measure_document_capture_xml.py):
+  compare every tracked capture field after package XML encoding/decoding,
+  validate both objects, and retain input pins, XML, decoded JSON and byte
+  costs in a new output directory. No requests. Run
+  `UV_OFFLINE=1 uv run --frozen python -m tools.analysis.measure_document_capture_xml --output /tmp/capture-xml-run`.
+  See the [format and measurement](../docs/research/document-capture-xml-roundtrip-2026-09-20.md).
 - [document_capture_pdf_tables](analysis/document_capture_pdf_tables.py): compose
   the line adapter with `PageResult.tables` through `pdf_pages_to_nodes` and
   `tables_to_nodes`. The bounded `senate-expenditures-pdf` entry point retains

@@ -24,8 +24,7 @@ format attributes are unqualified. Each value has a `type` attribute:
 - Ordinary strings are XML character data, with XML escaping. Strings
   containing carriage returns or characters XML 1.0 forbids use
   `encoding="json"` and an ASCII JSON string literal. PDF page separators
-  are U+000C (form feed), so this rule is required by real captures. JSON
-  escaping also preserves lone surrogates in extension values. Decoding
+  are U+000C (form feed), so this rule is required by real captures. Decoding
   restores every code point; no whitespace or Unicode normalization occurs.
 - Python JSON integers use `integer`; finite Python floats use `number`
   and their round-trip decimal spelling. These types preserve `1` versus
@@ -48,3 +47,10 @@ stated facts without repairing them.
 No value normalization is planned. Equality must compare all object keys,
 array positions, scalar types, string code points, and exact finite float
 values, including signed zero. Escaping is reversed before comparison.
+
+Implementation refinement: surrogate code points in Python strings or keys
+are refused. They are not Unicode scalar values, and JSON decoding combines
+a raw surrogate pair into a single code point, breaking exact Python string
+equality. Ordinary supplementary characters such as emoji remain supported.
+Cycles and nesting beyond Python's recursion limit also refuse. These
+refusals affect none of the retained captures.

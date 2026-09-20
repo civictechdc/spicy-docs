@@ -68,3 +68,30 @@ and checks `artifact.sha256` lands on the bytes the publisher issued.
 Changing the parent moves its digest, every profile's `x-parent` pin, every
 committed capture's `schema` pin and this directory's `PINS.json` in one
 change; `tests/test_document_capture.py` fails otherwise.
+
+## Reversible capture XML
+
+`spicy_docs.schemas.document_capture.xml` supplies `encode_capture(dict) -> bytes`
+and `decode_capture(bytes) -> dict` without optional dependencies. Namespace:
+`urn:spicy-docs:document-capture:xml:1`. This represents the capture's fields,
+including provenance, rather than a publisher vocabulary. It leaves the
+schemas and existing publisher serializers unchanged.
+
+```python
+import json
+from pathlib import Path
+from spicy_docs.schemas.document_capture.xml import encode_capture, decode_capture
+
+capture = json.loads(Path("document.capture.json").read_bytes())
+xml = encode_capture(capture)
+Path("document.capture.xml").write_bytes(xml)
+restored = decode_capture(xml)
+```
+
+Run Python examples through `UV_OFFLINE=1 uv run --frozen python`. Serialization
+checks the XML format and capture version; validate the capture separately
+against its pinned parent/profile and Rulespec invariants. Unsupported values
+raise `CaptureXmlError`. The [format and measurement record](../../../../../docs/research/document-capture-xml-roundtrip-2026-09-20.md)
+defines exact escaping, numeric types and refusal rules. The full-value tests
+in `tests/test_document_capture_xml.py` include every tracked `*.capture.json`
+and a fresh Senate table adapter result.
