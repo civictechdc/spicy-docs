@@ -61,9 +61,9 @@ sentence per column for the host's data dictionary.
 | `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | 20 | `schemas.roster_tables` |
 | `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | 17 | `schemas.document_citation_tables`, `interpretation.citations` |
 | `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 36 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
-| `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | 34 | `schemas.senate_expenditure_tables` |
+| `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | 35 | `schemas.senate_expenditure_tables` |
 
-Seven hundred and four columns in all, each with its own sentence.
+Seven hundred and five columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -305,10 +305,18 @@ and it is unmeasured.
   every ordinal after it, and two extractions of one page must not merge.
 - **The office, the funding year and the printed page come from the page text,
   not the table.** The page states the printed page label on 139 of 139 table
-  pages and the office block on 78; the table's own first cell states the office
-  on 21, all of which the page text also states. On a continuation page the
-  print states no office and the column is NULL. This is why the shapers take
-  a `TableObservation` **plus the page text**.
+  pages and the office block on 83; the table's own first cell states the office
+  on 21, all of which the page text also states. On the other 56 — continuation
+  pages — the print states no office and the column is NULL, and a consumer
+  forward-fills in `printed_page` order. This is why the shapers take a
+  `TableObservation` **plus the page text**.
+- **Five of those 83 pages state a funding-year *span*** (`Funding Year
+  2021-2023`, the Chaplain's blocks at B-48 to B-55), so `funding_year` carries
+  the first year either way and `funding_year_end` the second, NULL for a single
+  year. This is load-bearing rather than cosmetic: a rule matching one year left
+  those five pages with no office, and the documented forward-fill then charged
+  their rows to the *preceding* office — a wrong attribution, which is less
+  visible than a missing value.
 - **The amounts are decimal strings and never a canonical key.** The
   `dollar_amount` canonical the rollup used erases the decimal separator and was
   measured colliding, so a dollar figure is not a join key until that is fixed.

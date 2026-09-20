@@ -35,11 +35,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
 from spicy_docs.schemas.senate_expenditure_tables import parse_amount
+
+#: An office block, counted **without** the contract's grammar: any line the
+#: print begins with ``Funding Year``, whatever follows it.  The census
+#: otherwise classifies with the contract's own functions, which is what keeps
+#: the note and the rows in agreement -- but agreement with itself is not a
+#: verification, and a rule that narrowed would report a smaller print and call
+#: it correct.  That is exactly how a single-year-only ``Funding Year`` rule
+#: shipped reading 78 office pages where the print states 83.
+_ANY_FUNDING_YEAR = re.compile(r"^Funding Year\b", re.MULTILINE)
 
 ROLLUP = Path.home() / "Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20"
 
@@ -124,7 +134,8 @@ def census(dumps: list[dict]) -> dict:
     ruled_by_grid: dict[str, Counter[int]] = {}
     amount_lines: Counter[str] = Counter()
     tables = rows = cells = none_cells = amounts = 0
-    office_pages = label_pages = table_pages = 0
+    office_pages = label_pages = table_pages = printed_office_pages = 0
+    spans = 0
     per_file: dict[str, dict] = {}
     for one in dumps:
         file_id = one["file_id"]
@@ -138,6 +149,10 @@ def census(dumps: list[dict]) -> dict:
             context = page_context(page["text"])
             office_pages += context.office is not None
             label_pages += context.printed_page is not None
+            spans += context.funding_year_end is not None
+            # The independent count, by a reader that knows nothing of the
+            # contract's funding-year grammar.
+            printed_office_pages += bool(_ANY_FUNDING_YEAR.search(page["text"]))
             for ordinal, table in enumerate(page["tables"]):
                 observation = _Observation(table, page["page"])
                 tables += 1
@@ -195,7 +210,13 @@ def census(dumps: list[dict]) -> dict:
         "geometry_min_rows_columns": list(shapes[0]) if shapes else None,
         "geometry_max_rows_columns": list(shapes[-1]) if shapes else None,
         "distinct_geometries": len(geometry),
+        # These two must agree.  The first is what `page_context` read, the
+        # second what the print states, counted by a reader that shares none of
+        # its grammar; a gap means the contract's rule is narrower than the
+        # print and some pages lost their office silently.
         "table_pages_stating_an_office": office_pages,
+        "table_pages_the_print_states_an_office_on": printed_office_pages,
+        "table_pages_with_a_multi_year_funding_span": spans,
         "table_pages_stating_a_printed_page": label_pages,
     }
 

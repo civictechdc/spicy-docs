@@ -5,7 +5,11 @@ Status: measured 2026-09-20, read-only over bytes the
 **No request was made.** Input pins, the commands and the retained output are
 in `~/Work/corpora/supply-2026-09-02/receipts/senate-expenditure-tables-2026-09-20/`.
 Tool: [`tools/analysis/senate_expenditure_tables.py`](../../tools/analysis/senate_expenditure_tables.py),
-two phases, both through `uv run --frozen --all-extras`.
+two phases, both through `uv run --frozen --all-extras`. Sidecar:
+[`senate-expenditure-tables-2026-09-20.json`](senate-expenditure-tables-2026-09-20.json),
+the census this note quotes;
+`tests/test_senate_expenditure_tables_tool.py` pins every count below to it, so
+a number here that the measurement does not state fails the gate.
 
 This is the measurement that had to come before
 [`senate_expenditures`](../tables.md), item 4 of the
@@ -124,18 +128,48 @@ header, 85 are `total` and 227 are `entry`.
 | Fact | Stated on | Of 139 table pages |
 | --- | --- | ---: |
 | Printed page label (`A-7`, `B-1243`) | last non-empty line of the page text | **139** |
-| Office / `Funding Year` / appropriation title | page text | 78 |
+| Office / `Funding Year` / appropriation title | page text | **83** |
 | The same block, in the table's own first cell | table | 21 |
 
 Every one of the 21 table-cell occurrences is also in the page text, so the
 page text is a strict superset and is the source the contract reads. The other
-61 table pages are continuation pages, on which the print states no office at
+56 table pages are continuation pages, on which the print states no office at
 all; `office` is NULL there and a consumer forward-fills in `printed_page`
 order. That is also why the shapers take `TableObservation` **plus the page
 text**: the table alone would lose the office on three pages in four.
 
 `printed_page` is the locator that matters: the volume's own table of contents
 indexes by `B-1 – B-36`, not by PDF page.
+
+### The office count is 83, and the first rule read 78
+
+Five of those 83 pages spell a **multi-year** appropriation —
+`Funding Year 2021-2023`, the Chaplain's blocks at printed B-48, B-49, B-51,
+B-53 and B-55, which the volume's own contents index as `FY 21/23 – FY 25/27`.
+The first funding-year rule matched a single `\d{4}` only, so on those five it
+found no block at all and `office`, `funding_year` and `appropriation_title`
+were NULL.
+
+**That is worse than it looks, and worse than a NULL.** `office` is documented
+as forward-filled by the consumer in `printed_page` order, so the five orphaned
+pages would have been charged to the *preceding* office — every Chaplain row
+attributed to the Committee on Appropriations. A missing value is visible; a
+wrong attribution is not.
+
+It survived the first pass because **the census agreed with itself**: it
+counted office pages by running the same `page_context` the contract runs, so
+the rule and its check were one rule. The receipt's independent reader
+(`where-office.py`, which only looks for the words `Funding Year`) said 83
+against the census's 78, and that gap is the whole finding. The census now
+carries both numbers — `table_pages_stating_an_office` from `page_context` and
+`table_pages_the_print_states_an_office_on` from a reader sharing none of its
+grammar — and `tests/test_senate_expenditure_tables_tool.py` asserts they are
+equal, so a rule that narrows again fails rather than reporting a smaller
+print.
+
+`funding_year` carries the first year either way, so a single-year block and a
+span are comparable on it; `funding_year_end` carries the second and is NULL
+for a single year, so the two are told apart rather than folded together.
 
 ## The check that can fail
 
@@ -161,20 +195,38 @@ also runs it on a section with one entry row deleted, so the check is proved to
 bite rather than to agree with itself.
 
 **What it cannot see** is column 0, because the `Totals` row states no amount
-there. That is exactly where the one defect this measurement found was hiding.
+there — and that is exactly where one of the two defects below was hiding.
 
-## The defect the totals check missed
+## The defects the checks missed, and why
 
-The first amount rule accepted a bare integer, so it read the fiscal years
-`2023`, `2024`, `2025` stacked in the title cell as money. The totals check
-passed anyway — it never reaches column 0 — and the error surfaced only in a
-test that asserted the title cell states no amount.
+Both matter more for what they say about the checks than for their own size.
+
+**The funding-year span**, above: the totals check never reads the page text,
+and the census that would have caught it was running the contract's own rule,
+so it agreed with itself at 78. Fixed by giving the census a second reader that
+shares no grammar with the first, and asserting the two agree.
+
+**A bare integer read as money.** The first amount rule accepted an integer
+with no decimal point, so it read the fiscal years `2023`, `2024`, `2025`
+stacked in the title cell — and the `0100` in the account-number cell — as
+amounts, putting the row's `amount_count` at 25 instead of 21. The totals check
+passed anyway, because it never reaches column 0 or column 1, and the error
+surfaced only in a test that asserted the title cell states no amount.
 
 Re-measured across both volumes: **1,316 printed lines are amount-shaped and
 every one carries a `.dd` tail.** The 143 that do not are 32 distinct strings,
 and all 32 are appropriation account numbers (`0100` through `4326`) or fiscal
 years (`2023` through `2026`). So the decimal point is required, and that is
 the print's own spelling rather than a convention.
+
+**A third, found in review rather than by a check:** the print writes a
+negative in an organization summary sign-first, `-$204,348.74`, and the rule
+stripped the `$` before the sign, stranding the `-` and refusing the amount
+outright. 72 distinct sign-first negatives are printed on the measured pages.
+None of them reached a published count — every one sits inside a multi-value
+line that does not parse as a single amount either way, which is why the census
+total is 1,316 before and after — but the rule was wrong about the print's own
+spelling, and the next cell to state one alone would have lost it silently.
 
 ## Two files of one package carry the same pages
 
@@ -200,8 +252,25 @@ any route can fill the table without this module changing.
 Per page of `N` characters holding a table of `R` rows and `C` columns, shaping
 is `O(N + R·C)`: the page scan and digest are paid once per page rather than
 once per row, which is the difference between `O(N)` and `O(R·N)` on a page
-with eleven ruled rows. The census is linear in dumped cells. Nothing here is
-superlinear, and nothing re-reads a page.
+with eleven ruled rows. The census is linear in dumped cells.
+
+**That claim was false when first written, and is now measured.** The header
+band governing a row was derived per row by scanning every row above it, which
+is `O(R²·C)`. It hid because the measured tables are 3 to 11 rows, where
+quadratic and linear are indistinguishable — and the docstring asserting linear
+was the only thing anyone would have read. Building the bands in one walk of
+the table fixes it; timed on a synthetic table doubling from 250 to 4,000 ruled
+rows (`scaling.py` in the receipt):
+
+| Ruled rows | Before | After |
+| ---: | ---: | ---: |
+| 250 | 2.89 ms | 2.54 ms |
+| 500 | 6.25 ms (×2.16) | 5.07 ms (×1.99) |
+| 1,000 | 14.69 ms (×2.35) | 10.02 ms (×1.98) |
+| 2,000 | 39.96 ms (×2.72) | 19.75 ms (×1.97) |
+| 4,000 | 117.98 ms (×2.95) | 39.49 ms (×2.00) |
+
+Nothing else here is superlinear, and nothing re-reads a page.
 
 The cost that *is* superlinear in practice is the read itself:
 `find_tables()` cost the rollup 26.5–84.6 ms/page against a few ms without it,

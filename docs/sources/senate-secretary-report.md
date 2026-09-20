@@ -81,8 +81,16 @@ beside it rather than splitting it on a guess.
 Two facts the page text holds and the table does not: the **printed page label**
 (`A-7`, `B-1243`), present on 139 of 139 table pages and the locator the
 volume's own contents index by; and the **office, funding year and appropriation
-title**, stated on the first page of each office block and on no continuation
-page.
+title**, stated on 83 of them — the first page of each office block — and on no
+continuation page.
+
+The funding year is sometimes a **span**. A two-year appropriation prints as
+`Funding Year 2021-2023` and the contents index the same block as
+`FY 21/23 – FY 25/27`; five of the 83 measured office pages are spans, all of
+them the Chaplain's. A reader that expects a single year loses the office on
+those pages entirely, which is worse than it sounds, because the office is
+carried only on the first page of a block and a consumer fills the rest
+forward.
 
 ## Acquisition
 
