@@ -61,9 +61,9 @@ sentence per column for the host's data dictionary.
 | `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | 20 | `schemas.roster_tables` |
 | `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | 17 | `schemas.document_citation_tables`, `interpretation.citations` |
 | `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 36 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
-| `budget_volumes` | One row per published volume of the President's budget, with what its print adds to its own index. | `package_id` | `last_modified` | 32 | `schemas.budget_volume_tables`, `sources.govinfo.bodies` |
+| `budget_volumes` | One row per published volume of the President's budget, with what its print adds to its own index. | `package_id` | `last_modified` | 34 | `schemas.budget_volume_tables`, `sources.govinfo.bodies` |
 
-Seven hundred and two columns in all, each with its own sentence.
+Seven hundred and four columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -72,7 +72,7 @@ appended.
 
 ## The bill family is one pass
 
-Twelve of the thirty-four tables come out of a single call to
+Twelve of the thirty-five tables come out of a single call to
 `build_bill_family`, in an order where no step reads a table an earlier step
 published:
 
@@ -270,7 +270,7 @@ reports' is zero for the same kinds.
 
 `budget_volumes` is the document row and `document_citations` is still the only
 link table: a budget citation is a `document_citations` row with
-`document_kind` `budget-volume`, not a second table. The document row takes
+`document_kind` `budget_volume`, not a second table. The document row takes
 every descriptive field from the keyed records — the summary's title, issue
 date and **page count**, and the MODS's `<law>`, `<USCode>` section, `<cfr>`
 part, `<statuteAtLarge>` and `<bill>` lists — and the print contributes counts
@@ -284,7 +284,14 @@ Three things about this family are not true of the others.
   `119-hr-7806`, and those are not comparable. `budget_index_stated_keys`
   drops `bill_number` from the comparison rather than publishing a `false`
   no comparison earned, so those rows carry NULL and the MODS's own bill list
-  is published whole in `associated_bills_json`.
+  is published whole in `associated_bills_json`. The weaker comparison that
+  *is* possible is published as a count and labelled as one:
+  `distinct_bills` and `distinct_bills_beyond_index_congress_blind` reduce both
+  sides to `{bill_type}-{number}`, which is how 6 of the 8 distinct printed
+  bills across the eight volumes are print-only. Neither column is a join key —
+  `congress_bills.bill_id` cannot be built from either side — and saying so in
+  the column name is what stops the family's own headline from being read as
+  one.
 - **The volumes are long, so the read depth is the finding.** `BUDGET-2027-APP`
   is 1,340 pages; read to 60 it names 29 public laws and read whole it names
   490. `pages_read`, `stated_page_count` and `pages_capped` are what keep a

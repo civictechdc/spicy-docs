@@ -1121,10 +1121,11 @@ Measured 2026-09-20 on 11 MODS records, 5 granule MODS and 3 package summaries
 
 **What the widening buys, re-derived.** Every one of the sixteen records the
 re-check could prove only by `accessId` now passes the sealed validator that
-covers it: 11 `validate_package_mods`, 5 `validate_granule_mods` (host package
-included), 3 `validate_package_summary`, zero refusals, and the same bytes
-offered under another real package id of the same collection are refused
-(`budget-volumes-2026-09-20/reprove-identity.py`, offline, no request).
+covers it: 11 `validate_package_mods` and 5 `validate_granule_mods` (host
+package included), zero refusals. The three package summaries fetched for the
+budget contract pass `validate_package_summary` on top of those sixteen, and
+the same bytes offered under another real package id of the same collection are
+refused (`budget-volumes-2026-09-20/reprove-identity.py`, offline, no request).
 
 **`BODY_PREFERENCE` does not move, and `PACKAGE_BODY_FORMATS` gains no entry.**
 Every retained record in both families offers `pdf` and nothing else, so the
@@ -1145,6 +1146,16 @@ Those are not comparable, and reporting `false` for every printed bill would be
 a `stated_by_index` value no comparison earned. `budget_volume_tables.
 budget_index_stated_keys` therefore drops `bill_number` from the comparison, so
 those rows land NULL, and the MODS's own bill list is published whole in
-`associated_bills_json`. The re-check's own 6-of-7 budget bill figure is a
-*congress-blind* comparison, which a contract cannot make: it would key rows on
-a form no hosted table uses.
+`associated_bills_json`.
+
+The congress-blind comparison the re-check *did* make is still worth
+publishing, as a count and never as a key: `distinct_bills` and
+`distinct_bills_beyond_index_congress_blind` reduce both sides to
+`{bill_type}-{number}` through `index_stated_bill_pairs`, which is how **6 of
+the 8** distinct printed bills across the eight volumes are print-only. (Six is
+what the re-check's own table publishes; the 7 beside it in the sidecar is
+print-only *link rows*, a different denominator.) Those two columns say
+congress-blind in the name and in their prose, because `{bill_type}-{number}`
+addresses no hosted row -- `congress_bills.bill_id` needs the Congress this
+family never states -- and the per-row `stated_by_index` stays NULL, since the
+strict comparison a row would have to claim still cannot be made.
