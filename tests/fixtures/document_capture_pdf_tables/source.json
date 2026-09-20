@@ -1,0 +1,13 @@
+{
+  "fixture": "GPO-CDOC-119sdoc3-1.page17.pdf",
+  "sha256": "20d77a2462a333f8d05bc9ef80feff8493dd5d5cb8c7146245cf76174e67798b",
+  "bytes": 163971,
+  "source_path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20/blobs/2248097b0c5106889d8882a979a0488a49f283b29e28289d2778864c40b7b13e",
+  "source_sha256": "2248097b0c5106889d8882a979a0488a49f283b29e28289d2778864c40b7b13e",
+  "source_file": "GPO-CDOC-119sdoc3-1.pdf",
+  "source_page": 17,
+  "package_id": "GPO-CDOC-119sdoc3",
+  "cut_method": "PyMuPDF insert_pdf(from_page=16, to_page=16); save(garbage=4, deflate=True)",
+  "pymupdf": "1.28.2",
+  "cut_checked_against_full_pdf": true
+}

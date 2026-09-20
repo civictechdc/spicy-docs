@@ -208,6 +208,22 @@ These operations ship with `spicy_docs` and accept caller-selected paths. Use
   measure where the bytes go. Reads committed fixtures and the retained inputs
   beside its output; makes no request. Supply `--output`; the design record is
   [`docs/research/document-capture-schema-2026-09-19.md`](../docs/research/document-capture-schema-2026-09-19.md).
+- [document_capture_pdf_tables](analysis/document_capture_pdf_tables.py): compose
+  the line adapter with `PageResult.tables` through `pdf_pages_to_nodes` and
+  `tables_to_nodes`. The bounded `senate-expenditures-pdf` entry point retains
+  cell text and geometry, transfers exact matches into cell-owned stream spans,
+  and keeps unmatched observations with reasons. It uses the existing builder,
+  parent schema and validators.
+- [measure_document_capture_pdf_tables](analysis/measure_document_capture_pdf_tables.py):
+  compare fresh captures with the independently retained Senate table readings
+  passed through `senate_expenditures`. From the repository root, run
+  `UV_OFFLINE=1 uv run --frozen python -m tools.analysis.measure_document_capture_pdf_tables`.
+  Defaults read pages 1–80 of each of two pinned retained volumes, write full
+  captures and differences under the corpus receipt
+  `document-capture-pdf-tables-2026-09-20/`, and write a bounded sidecar to
+  `docs/research/document-capture-pdf-tables-2026-09-20.json`. Override
+  `--receipts`, `--output` or `--sidecar` to relocate them. Makes zero requests;
+  exits 1 on row/cell disagreement, schema failure or a changed text stream.
 
 ## Reproduce a measurement through the product rules
 

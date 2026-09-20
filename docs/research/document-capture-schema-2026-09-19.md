@@ -2,6 +2,21 @@
 
 An outside static review of this design and its use, retained verbatim: [document-capture-review-codex-2026-09-20.md](document-capture-review-codex-2026-09-20.md) (2026-09-20).
 
+**PDF tables, measured 2026-09-20:** the reusable
+`tools/analysis/document_capture_pdf_tables.py` adapter now carries
+`PageResult.tables` beside the existing line stream. On 160 retained Senate
+pages it preserves 2,267/2,267 cells across 673/673 ruled rows, with zero cells
+unique to either the capture or the independent analytical reading. Of 2,180
+nonempty cells, 1,505 have exact stream spans and 675 retain their observed text
+with an unresolved reason and no invented span; 87 empty cells remain distinct
+from 3,905 missing positions. The new bounded `senate-expenditures-pdf` profile
+declares observation fields and composes the unchanged parent. This closes
+G2's loss of an available structural input for this sample, not table detection
+or all-family coverage. The [measurement](document-capture-pdf-tables-2026-09-20.md)
+states the reconciliation rule and missing-geometry limits. Reversible XML
+(G1) and required shared provenance (G3) remain separate open gaps in the
+[register's §2.7](closing-the-gaps-2026-09-19.md#27-candidates-from-the-capture-schema-review-filed-unbuilt).
+
 *2026-09-19. Design record for the `DocumentCapture v1` shape. Reviewed the
 same day by an architecture review of both branches and a visual review of the
 six profiles against the print rendition of each family's document; this

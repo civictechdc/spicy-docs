@@ -351,12 +351,7 @@ def _assemble(lines: Iterable[_Line]) -> Iterator[tuple[_Line, int]]:
             if current.text and not current.text[-1].isspace() and line.text and not line.text[0].isspace():
                 runs.append(StyledRun(" "))
             runs.extend(line.runs)
-            box = Box(
-                min(current.box.x0, line.box.x0),
-                min(current.box.y0, line.box.y0),
-                max(current.box.x1, line.box.x1),
-                max(current.box.y1, line.box.y1),
-            )
+            box = current.box.union(line.box)
             current = _Line("".join(run.text for run in runs), box, tuple(runs))
             count += 1
             continue

@@ -12,6 +12,14 @@ is a **table** rather than a citation, and it is step 4 of the
 [revised build order](../research/pdf-yield-mods-recheck-2026-09-20.md#revised-build-order).
 The contract it fills is [`senate_expenditures`](../tables.md).
 
+For a structural capture of retained pages, the bounded
+[`senate-expenditures-pdf` adapter](../../tools/analysis/document_capture_pdf_tables.py)
+preserves table, row and cell observations beside the PDF line stream. The
+[offline comparison](../research/document-capture-pdf-tables-2026-09-20.md)
+retains 2,267/2,267 observed cells across the same 160-page sample. Unmatched
+cell text remains in the capture with a reason; analytical rows continue to
+come directly from the independent `senate_expenditures` shaper.
+
 ## The index
 
 **GovInfo's `CDOC` collection listing**, under package ids of the form

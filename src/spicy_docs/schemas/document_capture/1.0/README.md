@@ -40,8 +40,28 @@ because they name a schema; nothing serves them.
 | `federal-register-xml` | FR XML | The publisher's elements; `GPOTABLE` rows and cells carry cell geometry; `FRDOC`/`BILCOD` become core `backMatter` | `listOfSubjects`, `regText` |
 | `cfr-reconstruction` | A section PDF through the retained extractor document | `spicy_docs.reconstruction`'s nodes with their `decision` (`reconstructed`) | `flushParagraph`, `cita`, `blank`, `partHeading`, `contents`, `authority`, `sourceNote` |
 | `slip-opinion-pdf` | A slip opinion PDF through the retained extractor document | Pages and lines, with the opinion division read from the designator in the running-head band and the opening formula | `syllabus`, `opinion`, `perCuriam`, `concurrence`, `dissent` |
+| `senate-expenditures-pdf` | Selected retained Senate expenditure PDF pages | The shared line adapter plus `PageResult.tables`; every observed cell survives, with exact stream spans when reconciled | None; uses core `table`, `row`, `cell` |
 
-For the two PDF families the `artifact` is the PDF and the extractor document
+The Senate profile adds no core kinds and changes no existing profile. None of
+the original six describes this family. Its closed extension fields retain the
+package and file, selected pages, raw page-text digest, table dimensions and
+ordinal, and `observedText` for each cell. The adapter lives beside the original
+converter in `tools/analysis/document_capture_pdf_tables.py`; the new profile
+composes the same pinned parent under the same meta-schema.
+
+An empty string is a present empty cell; a position with neither text nor box
+has no cell node. A nonempty observation without a box remains with a
+`pdf-cell-box-missing` issue. Text reconciliation never edits the line stream:
+an exact match on the same page transfers existing spans to the cell. Repeated
+matches require cell-local line geometry; remaining ambiguity, overlapping
+claims, and text absent from the stream become `pdf-cell-text-unresolved`
+issues with `reviewStatus: needs_review`. The verbatim observation remains in
+`ext.observedText`. The parent's `unresolved` array cannot hold these cases
+because each region requires an existing span; inventing one would break the
+text partition. `rowSpan`, `columnSpan` and `header` remain unstated because
+`TableObservation` does not supply them.
+
+For the PDF families the `artifact` is the PDF and the extractor document
 is `rendition.intermediate`: a consumer that follows `artifact.locator.url`
 and checks `artifact.sha256` lands on the bytes the publisher issued.
 

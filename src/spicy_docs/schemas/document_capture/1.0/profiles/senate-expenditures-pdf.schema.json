@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:senate-expenditures-pdf",
+  "title": "DocumentCapture profile: senate-expenditures-pdf v1",
+  "description": "Selected Senate expenditure PDF pages: extracted lines and ruled table observations. Exact cell text is retained separately from reconciled stream spans; unresolved cells carry an issue. No payment-line split, header inference, or merged-cell inference.",
+  "x-parent": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
+  },
+  "allOf": [
+    {
+      "$ref": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json"
+    },
+    {
+      "properties": {
+        "profile": {
+          "properties": {
+            "name": {
+              "const": "senate-expenditures-pdf"
+            },
+            "version": {
+              "const": "1"
+            },
+            "ext": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "packageId",
+                "fileName",
+                "pagesRead",
+                "pageCount",
+                "lineConverterSha256"
+              ],
+              "properties": {
+                "packageId": {
+                  "type": "string"
+                },
+                "fileName": {
+                  "type": "string"
+                },
+                "pagesRead": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                "pageCount": {
+                  "type": "integer"
+                },
+                "lineConverterSha256": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "nodes": {
+          "items": {
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "pattern": "^senate-expenditures-pdf:"
+                    }
+                  },
+                  "required": [
+                    "kind"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "kind": {
+                      "enum": []
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "kind": {
+                    "not": {
+                      "pattern": "^(?!senate-expenditures-pdf:)[a-z][a-z0-9-]*:"
+                    }
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "ext": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "tableOrdinal": {
+                        "type": "integer"
+                      },
+                      "rowCount": {
+                        "type": "integer"
+                      },
+                      "columnCount": {
+                        "type": "integer"
+                      },
+                      "observedText": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Verbatim TableObservation cell text, including text absent from the line stream. Null means a box without text; absent cells have no node."
+                      },
+                      "pageTextSha256": {
+                        "type": "string",
+                        "description": "Digest of PageResult.text before line assembly; joins the Senate ruled-row identity, never a capture-stream offset."
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
