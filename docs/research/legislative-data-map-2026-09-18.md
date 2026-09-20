@@ -1,6 +1,8 @@
 # Legislative-branch data map: coverage, candidates, sequencing
 
-Status: reference + proposal, not started. Written 2026-09-18 against the
+Status: reference + proposal. Source-status judgments refreshed offline on
+2026-09-20; publisher measurements retain their original dates and revision.
+Written 2026-09-18 against the
 [BillTrax port plan](billtrax-port-2026-09-15.md) (`a6b685f`/`2cc2f4e` pins);
 the spicy-docs revision measured against is stated in the generated block.
 The tables below are generated: `tools/analysis/legislative_data_map.py`
@@ -22,8 +24,9 @@ uv run --frozen python -m tools.analysis.legislative_data_map --env-file .env \
   --map docs/research/legislative-data-map-2026-09-18.md
 ```
 
-Add `--offline` to rewrite the tables from the last measurement without the
-network.
+Add `--offline` to refresh the tables and sidecar row judgments from the last
+measurement without the network. Measurement dates, revision and request counts
+stay unchanged.
 
 Scope: US Congress (House + Senate), legislative-branch support agencies
 (CRS, CBO, GAO, JCT, Architect/Clerk-side offices), and the bill→law→code
@@ -94,7 +97,7 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 | treaties | Treaties | `treaty` | `have` | api.data.gov key | 81st Congress+; updated ≥ 2026-09-15 (sort ignored) | 786 | listing route landed in `congress/listing.py`; not previously mapped |
 | record | Daily Congressional Record | `daily-congressional-record` | `have` | api.data.gov key | vol. 141+; updated ≥ 2026-09-18 (sort ignored) | 5,868 | listing route landed in `congress/listing.py`; the primary floor record and the legislative-day calendar: one issue per day either chamber met, pro forma days included, with House and Senate sections saying which; the Clerk floor summary is its digest |
 | record | Bound Congressional Record | `bound-congressional-record` | `candidate` | api.data.gov key | ≥ 2014 (error); updated ≥ 2025-04-18 (sort ignored) | 93,290 | historical only; take on a historical-reach need |
-| communications | House executive communications | `house-communication` (+ detail) | `have` | api.data.gov key | 114th Congress+; updated ≥ 2026-09-18 (sort ignored) | 41,709 | listing route landed in `congress/listing.py` 2026-09-19; typed: isRulemaking, CRA authority, committee referral with systemCode and date, matching requirement, RIN in reportNature (17 of 25 sampled are rulemakings with a RIN); the RIN resolves in the Federal Register API by its structured filter, so this is the bridge from this repo's regulatory sources to Congress |
+| communications | House executive communications | `house-communication` (+ detail) | `have` | api.data.gov key | 114th Congress+; updated ≥ 2026-09-18 (sort ignored) | 41,709 | listing route landed in `congress/listing.py` 2026-09-19; typed: isRulemaking, CRA authority, committee referral with systemCode and date, matching requirement, RIN in reportNature (17 of 25 sampled are rulemakings with a RIN); the RIN resolves in the Federal Register API by its structured filter, so this is the bridge from this repo's regulatory sources to Congress; `congress/record_communications.py` also reads House CREC granules through `parse_granule_body`, with `shape_record_communication` in `schemas/congress_index_tables.py` retaining the Record provenance; committee-name-to-code resolution remains open |
 | communications | Senate executive communications | `senate-communication` | `have` | api.data.gov key | 96th Congress+; updated ≥ 2026-09-18 (sort ignored) | 175,597 | listing route landed in `congress/listing.py`; abstract, committee referral and Record date only; no rulemaking flag, authority or RIN field (sampled) |
 | reference | House reporting requirements | `house-requirement` (+ `/matching-communications`) | `have` | api.data.gov key | updated ≥ 2021-11-05 (sort ignored) | 3,226 | listing route landed in `congress/listing.py`; 3,226 requirements, each with legal authority, frequency, agency and its matching communications; requirement 8070's 92,450-row CRA list (A6) walked in full and histogrammed by Congress, detail records resolving from the 114th on (28.9% of the walked rows, not a useful share by the proposal's rule); every requirement's own update date is 2021-11-05, so the requirement list itself is a snapshot; the index of the agency reports to Congress that BillTrax takes as uploads, entered from the communication side |
 | crs | CRS report metadata and summaries | `crsreport/{id}` | `have` | api.data.gov key | updated ≥ 2026-09-18 (sort ignored) | 14,127 | `crs_summaries.py`; the port plan names its query-param key (`:54`) as the legacy exception, not the pattern to clone |
@@ -111,17 +114,20 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 | laws | Statute compilations (COMPS) | `bulkdata/COMPS` USLM | `have` | none | API 1862+; bulk, flat | 2,685 pkgs; bulk 2,682 files, 718 MB | `govinfo/uslm_acquisition.py` |
 | laws | Statutes at Large | `bulkdata/STATUTE` | `candidate` | none | API 1845+; bulk 1–137 | 137 pkgs | one XML per volume; the only XML route for every law before PLAW bulk begins |
 | committees | Committee report bodies | `CRPT` package body | `have` | api.data.gov key | API 1817+ | 162,737 pkgs | `govinfo/body_acquisition.py` (landed 2026-09-19): summary, then MODS, then the body, identity proved before any body byte; the offered formats are read from MODS because the summary names none for this collection |
-| committees | Hearing transcript bodies | `CHRG` package body | `have` | api.data.gov key | API 1896+ (1 inventory packages undated) | 47,793 pkgs | same module; the PDF of a long hearing can exceed the 24 MiB evidence bound, which is why text formats are preferred |
+| committees | Hearing transcript bodies | `CHRG` package body | `have` | api.data.gov key | API 1896+ (1 inventory packages undated) | 47,793 pkgs | `govinfo/body_acquisition.py`: `GovInfoBodyAcquirer` fetches the transcript; `schemas/hearing_bill_link_tables.py` adds `shape_hearing_bill_link` for source-keyed MODS cover and House agenda links, distinguishing held-on from noticed bills; other link sources remain unimplemented |
 | committees | Congressional documents | `CDOC` package body | `have` | api.data.gov key | API 1817+ | 82,390 pkgs | same module; CDOC carries treaty documents (`CDOC-119tdoc2` resolved in the flow pass) |
-| committees | Committee prints | `CPRT` package body | `candidate` | api.data.gov key | API 1923+ | 7,784 pkgs | not in the body grammar yet; one more row in its collection table when a consumer asks |
-| record | Congressional Record bodies | `CREC` package body (daily); `CRECB` (bound) | `have` | api.data.gov key | API 1994+ | 6,020 pkgs | same module; the daily package id carries a volume or issue suffix on split days, which the grammar accepts |
+| committees | Committee prints | `CPRT` package body | `have` | api.data.gov key | API 1923+ | 7,784 pkgs | `govinfo/bodies.py`: `parse_package_id` accepts the measured HPRT/SPRT/JPRT grammar; `GovInfoBodyAcquirer` in `govinfo/body_acquisition.py` fetches the MODS-offered rendition with identity checks |
+| record | Congressional Record bodies | `CREC` package and granule bodies (daily) | `have` | api.data.gov key | API 1994+ | 6,020 pkgs | `govinfo/bodies.py`, `govinfo/body_acquisition.py`: `GovInfoBodyAcquirer` accepts split-day package suffixes and `acquire_granule` proves the granule's identity and package membership before fetching its body |
+| record | Bound Congressional Record bodies | `CRECB` package body | `candidate` | api.data.gov key | API 1873+ | 2,420 pkgs | `govinfo/bodies.py`: the sealed body grammar has no CRECB entry, so `parse_package_id` refuses it before acquisition; discovery coverage does not establish a supported body path; widening requires retained measurement |
 | reference | Congressional Directory | `CDIR` package body | `have` | api.data.gov key | API 1869+ | 239 pkgs | same module; offers PDF and text, the PDF above the evidence bound |
 | reference | Government Manual | `bulkdata/GOVMAN` | `candidate` | none | API 1935+; bulk 2011–2025 | 98 pkgs | clean org XML |
 | reference | House Rules and Manual | `bulkdata/HMAN` | `candidate` | none | API 1896+; bulk 112–117 | 25 pkgs | clean XML |
 | reference | Privacy Act Issuances | `bulkdata/PAI` | `rejected` | none | API 1995+ (42 inventory packages undated); bulk 2007–2025 | 1,685 pkgs | biennial SOR descriptions; no consumer |
 | reference | Congressional Pictorial Directory | GovInfo collection | `rejected` | api.data.gov key |  |  | Bioguide and `member` cover it |
 | reference | MODS, PREMIS, discovery | `packages`, `granules`, `published`, `collections` | `have` | api.data.gov key |  |  | `govinfo/mods.py`, `premis.py`, `discovery.py` |
-| committees | House committee activity reports | search over doctype `HRPT`; CHA monthly PDFs | `rejected` | api.data.gov key |  |  | end-of-Congress PDF cadence; low value now |
+| committees | House committee activity reports | `CRPT` published listing and package bodies | `have` | api.data.gov key |  |  | `govinfo/activity_reports.py`: `is_activity_report` selects CRPT titles; `schemas/document_citation_tables.py` adds `shape_activity_report` and `shape_document_citation`; `schemas/bill_action_tables.py` adds `shape_bill_committee_action` for interpreted print actions; the measured title rule misses two of seventeen reports, and CHA monthly PDFs remain unimplemented |
+| spending | Report of the Secretary of the Senate | `GPO-CDOC-…` package and granule PDFs | `have` | api.data.gov key |  | CDTF #104, irregular | `schemas/senate_expenditure_tables.py`: `shape_senate_expenditure_rows` publishes ruled rows and funding blocks; `govinfo/bodies.py` and `govinfo/body_acquisition.py` support GPO-CDOC reprints; payee/payment parsing and later report sections remain unqualified |
+| reference | President's Budget volumes (including Appendix) | `BUDGET-{year}-{part}` | `have` | api.data.gov key |  | CDTF #63, annual | `schemas/budget_volume_tables.py`: `shape_budget_volume` publishes volume facts and citation counts; `govinfo/bodies.py` accepts thirteen measured parts, with CLIMATE/DB/TAB bodies at granules and LRB XLS-only, outside the body formats; `govinfo/body_acquisition.py` follows the offered renditions |
 
 ### Table C: publisher XML, feeds and sites. Keyless; the sample column shows what the payload states about itself.
 
@@ -129,13 +135,14 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 |---|---|---|---|---|---|---|---|
 | votes | House per-vote XML | `clerk.house.gov/evs/{year}/roll{N}.xml` | `have` | none |  | sample 82,515 B, root `rollcall-vote`, 2 children; names congress, session, rollcall-num | `congress/votes.py`: the `house-vote` API names this file as its source; bioguide-keyed |
 | votes | Senate per-vote XML | `senate.gov/legislative/LIS/roll_call_votes/vote{c}{s}/vote_{c}_{s}_{n}.xml` | `have` | none |  | sample 28,670 B, root `roll_call_vote`, 18 children; names congress, congress_year, document_congress, session | `congress/votes.py`: LIS-keyed, not bioguide; no Congress.gov route exists, so this is the only source; `votes.py` also gains the session's vote-menu index -- `parse_senate_vote_menu` reads the file into a `SenateVoteMenu`, identity proved from its own congress and session; `VoteAcquirer`'s `list_senate_votes` fetches and parses one keylessly into a `SenateVoteMenuAcquisition`; `locator_from_menu_entry` builds the `VoteLocator` for one entry |
-| members | House MemberData.xml | `clerk.house.gov/xml/lists/MemberData.xml` | `candidate` | none |  | sample 556,936 B, root `MemberData`, 3 children; names congress-num, congress-text, session | members plus committee assignments with codes; only for fields the `member` API lacks |
+| members | House MemberData.xml | `clerk.house.gov/xml/lists/MemberData.xml` | `have` | none |  | sample 556,936 B, root `MemberData`, 3 children; names congress-num, congress-text, session | `congress/committee_rosters.py`: `CommitteeRosterAcquirer` and `parse_house_member_data` read current members and committee assignments, prove Congress/session, and retain vacancies and empty-assignment counts |
 | members | House members.xml extras | `member-info.house.gov/members.xml` | `candidate` | none |  | sample 397,944 B, root `Members`, 441 children; dated only (last_updated) | photos and social; only if the API lacks a needed field |
-| members | Senate committee XML | `senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml` | `candidate` | none |  | sample 67,616 B, root `senators`, 101 children; dated only (date, lastUpdate) | bioguide⇄LIS crosswalk; the community legislators JSON (Table D) is the crosswalk `congress/votes.py` actually uses, since it also covers Senate voters who have already left the roster |
+| members | Senate committee XML | `senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml` | `have` | none |  | sample 67,616 B, root `senators`, 101 children; dated only (date, lastUpdate) | `congress/committee_rosters.py`: `CommitteeRosterAcquirer` and `parse_senate_cvc` read current assignments and both member ids; the file states no Congress, so that value remains caller-supplied; the historical LIS crosswalk stays in `sources/legislators.py` |
 | members | Senate contact XML | `senate.gov/general/contact_information/senators_cfm.xml` | `rejected` | none |  | sample 52,541 B, root `contact_information`, 101 children; dated only (last_updated) | cvc covers it |
 | members | Bioguide bulk JSON | `bioguide.congress.gov` | `rejected` | none |  | CDTF #67, irregular | the `member` route is bioguide-keyed and tier-1 but its floor measured at the 68th Congress; Bioguide holds the earlier members, so take it only for them or for biography text |
 | nominations | Senate LIS nomination feeds (9) | `senate.gov/legislative/LIS/nominations/Nom{Category}.xml` | `candidate` | none |  | sample 48,536 B, root `Nominations`, 76 children; names Congress, SessionNumber, NominationDisplayNumber | alternative to the `nomination` API; take only for fields the API lacks |
-| proceedings | House committee and floor repositories | `docs.house.gov/committee`, `/floor` (weekly XML + RSS) | `candidate` | none |  | sample refused: Body source response exceeds its byte bound | documents behind scheduled items; the `committee-meeting` API links here; the RSS measured 38.9 MB on 2026-09-18, so the weekly XML is the route |
+| proceedings | House committee repository | `docs.house.gov/meetings/.../*.xml` | `have` | none |  |  | `congress/house_committee_repository.py`: `parse_house_committee_meeting` reads one retained agenda and `house_meeting_xml_locator` builds its known address; BR documents supply noticed-bill links through `schemas/hearing_bill_link_tables.py`; first-fetch discovery remains unimplemented |
+| proceedings | House floor repository | `docs.house.gov/floor` (weekly XML + RSS) | `candidate` | none |  | sample refused: Body source response exceeds its byte bound | floor documents remain unimplemented; the RSS measured 38.9 MB on 2026-09-18, so the weekly XML is the proposed route |
 | proceedings | House Rules Committee | `rules.house.gov` | `candidate` | none |  | CDTF #85, irregular | amendment text and rules for floor bills; fills part of the amendment-text gap |
 | proceedings | House floor summary | `clerk.house.gov/floorsummary/floor-download.aspx` + RSS | `candidate` | none |  | CDTF #78, continuous | timestamped floor chronology; unsampled |
 | proceedings | Senate hearings calendar | `senate.gov/general/committee_schedules/hearings.xml` | `candidate` | none |  | sample 23,853 B, root `css_meetings_scheduled`, 19 children; dated only (date, date_iso_8601) | forward-looking only |
@@ -146,19 +153,18 @@ Measured 2026-09-18 by `tools/analysis/legislative_data_map.py` at spicy-docs `c
 | ethics | House Clerk disclosures (financial, travel, mass comms, post-employment) | clerk microsites | `rejected` | none |  | CDTF #70, daily | search-site PDFs; take per collection when a need names one |
 | ethics | Senate financial disclosure and gifts | `efdsearch.senate.gov` | `rejected` | none |  | CDTF #108, daily | agreement-gated search; not worth a driver |
 | spending | House Statement of Disbursements | `house.gov`, CSV since 2016 | `candidate` | none |  | CDTF #86, quarterly | USAspending excludes Congress |
-| spending | Report of the Secretary of the Senate | `senate.gov`, PDF since 2011 | `rejected` | none |  | CDTF #104, irregular | PDF-only; revisit if XML or CSV appears |
 | spending | PLUM report | `opm.gov`, annual | `candidate` | none |  | CDTF #64, annual | "thousands" of filled and vacant senior positions per the catalog; no count verified |
 | gao | GAO reports and testimony feed, files | `gao.gov` RSS, `files.gao.gov` | `have` | none |  | CDTF #19, continuous | `gao/rss.py`, `gao/files.py` |
 | gao | GAO product pages | `gao.gov` | `have` | Zyte |  |  | gated pages via `gao/native.py` |
 | gao | GAO legal products and the restricted-reports list | `gao.gov/legal/...`; `gao.gov/reports-testimonies/restricted` | `candidate` | none |  | CDTF #14, irregular | appropriations-law decisions, bid protests and docket, other opinions |
-| cbo | CBO cost-estimate feeds | `cbo.gov/rss/{c}congress-cost-estimates.xml` | `have` | none |  | CDTF #6, continuous | the one keyless route; every document route is a DataDome wall (`cbo.md`) |
+| cbo | CBO cost-estimate feeds | `cbo.gov/rss/{c}congress-cost-estimates.xml` | `have` | none |  | CDTF #6, continuous | `sources/cbo.py` reads the keyless feed; `schemas/cost_estimate_tables.py` adds `shape_cbo_cost_estimate` for the BILLSTATUS index, and `interpretation/cbo_estimates.py` adds `read_cbo_estimate` for letters reprinted in CRPT bodies; CBO-hosted documents remain gated, and a reprinted letter is not assigned a publication id |
 | jct | Joint Committee on Taxation estimates and publications | `jct.gov` | `candidate` | none |  |  | support agency absent from the catalog and the map; unsampled |
 | uscode | US Code, Popular Names, Table III | OLRC `uscode.house.gov` | `have` | none |  | CDTF #62, irregular | `uscode/` |
-| uscode | OLRC classification tables (per Congress) | `uscode.house.gov/classification` | `candidate` | none |  |  | which Code sections each new public law touched; Table III is the historical act-section view |
-| crs | CRS report PDFs | `congress.gov/crs_external_products` | `have` | none |  |  | `crs_files.py` |
+| uscode | OLRC classification tables (per Congress) | `uscode.house.gov/classification` | `have` | none |  |  | `uscode/classification.py`: `parse_classification_table` reads each session's fixed-width rows in either order and proves Congress/session; `uscode/acquisition.py` adds index and table capture through `UsCodeAcquirer` |
+| crs | CRS report PDFs | `congress.gov/crs_external_products` | `have` | none |  |  | `congress/crs_files.py`: `acquire_report` now prefers current-version HTML and retains refusals before PDF fallback; historical versions go directly to PDF |
 | reference | CISA .gov domain registry | `github.com/cisagov/dotgov-data` | `candidate` | none |  | CDTF #11, continuous | agency-entity resolution CSV |
 | reference | Appropriations status table | `crsreports.congress.gov` HTML | `rejected` | none |  | sample refused: HTTP 301 | low structure; a keyless request is redirected (301) and the redirect target answers HTTP 403 |
-| reference | President's Budget Appendix, CBJs | OMB, agencies | `rejected` | none |  | CDTF #63, annual | PDF-heavy; OMB non-compliant on format |
+| reference | Agency congressional budget justifications (CBJs) | agencies | `rejected` | none |  |  | PDF-heavy agency files remain rejected; the GovInfo budget-volume landing covers the President's Budget only |
 
 ### Table D: civil society, BillTrax-side and interpretation.
 
@@ -464,8 +470,9 @@ establishes:
   all four. CBO estimate pages are named by
   bills but walled. Lobbying filings name no bill in any structured field,
   and none of twenty-five sampled filings did so in free text either.
-  Committee rosters from the publisher files are current-only snapshots
-  that carry no Congress of their own, and the Senate schedule lists
+  Committee rosters from the publisher files are current-only snapshots;
+  the House file states Congress and session, while the Senate file states
+  neither. The Senate schedule lists
   recesses, never legislative days; the Record's daily issues, with their
   House and Senate sections, are the legislative-day calendar.
 - **What twenty items per edge add.** The bill spine holds at twenty of
@@ -520,7 +527,10 @@ establishes:
   House executive communications beside the bill and CRS routes.
   `govinfo/body_acquisition.py` fetches a package body by id for CRPT, CHRG,
   CREC, CDOC, CDIR and BILLS, proving identity from the summary and MODS
-  before any body byte. Together they supply the port's re-hydration
+  before any body byte. The current grammar also covers CPRT, thirteen
+  measured BUDGET parts and GPO-CDOC Senate reprints; supported bodies may
+  sit at granules, and LRB offers only an unsupported XLS rendition.
+  CRECB remains outside the grammar. Together they supply the port's re-hydration
   contract (`hearing_transcripts.text`, `committee_reports.text` in BillTrax
   `catalog-tables.ts:54-59`). `congress/bulk_status.py` is the Phase 6
   backfill, and `sources/legislators.py` the LIS and FEC crosswalk. Every
@@ -528,10 +538,11 @@ establishes:
 - **Publisher files only for what the API lacks.** The comparisons found
   exactly three things: House and Senate committee assignments, the Senate
   bioguide⇄LIS crosswalk, and Senate member-level votes, for which no API
-  route exists. Take those files when Senate votes are needed, plus the
-  legislators JSON for the LIS ids of senators who have left, and nothing
-  else from Table C until a route proves it cannot supply a field. No HTML
-  scraping; every site that would need it is already `rejected`.
+  route exists. The chamber roster readers have landed, alongside the
+  legislators JSON for the LIS ids of senators who have left. OLRC
+  classification tables and House committee agenda XML also have readers;
+  the agenda's first-fetch discovery and the House floor repository remain
+  unimplemented, as the row notes state.
 - **Communications and requirements are the regulatory bridge**, not a
   legislative afterthought: they are two more rows in the Congress.gov
   family, and the RIN they carry is the key the Federal Register,

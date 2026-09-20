@@ -11,7 +11,8 @@ missing. Run from the repository root:
       --env-file .env --output docs/research/legislative-data-map-2026-09-18.json \\
       --map docs/research/legislative-data-map-2026-09-18.md
 
-``--offline`` rewrites the tables from an existing output without the network.
+``--offline`` refreshes the tables and saved row judgments from an existing
+output without changing its measurements or using the network.
 
 Measurements, and what each cannot see:
 
@@ -232,7 +233,10 @@ ROWS = (
     Row(A, "communications", "House executive communications", "`house-communication` (+ detail)", "have", KEY,
         "listing route landed in `congress/listing.py` 2026-09-19; typed: isRulemaking, CRA authority, committee referral with systemCode and date, matching requirement, "
         "RIN in reportNature (17 of 25 sampled are rulemakings with a RIN); the RIN resolves in the Federal Register API by its structured filter, "
-        "so this is the bridge from this repo's regulatory sources to Congress", ("congress", "house-communication"), ("src/spicy_docs/sources/congress/listing.py",)),
+        "so this is the bridge from this repo's regulatory sources to Congress; `congress/record_communications.py` also reads House CREC granules through "
+        "`parse_granule_body`, with `shape_record_communication` in `schemas/congress_index_tables.py` retaining the Record provenance; committee-name-to-code resolution remains open",
+        ("congress", "house-communication"), ("src/spicy_docs/sources/congress/listing.py",
+         "src/spicy_docs/sources/congress/record_communications.py", "src/spicy_docs/schemas/congress_index_tables.py")),
     Row(A, "communications", "Senate executive communications", "`senate-communication`", "have", KEY,
         "listing route landed in `congress/listing.py`; abstract, committee referral and Record date only; no rulemaking flag, "
         "authority or RIN field (sampled)", ("congress", "senate-communication"), ("src/spicy_docs/sources/congress/listing.py",)),
@@ -269,14 +273,25 @@ ROWS = (
         "`govinfo/body_acquisition.py` (landed 2026-09-19): summary, then MODS, then the body, identity proved before any body byte; the offered formats "
         "are read from MODS because the summary names none for this collection", ("govinfo", "CRPT"), ("src/spicy_docs/sources/govinfo/body_acquisition.py", "src/spicy_docs/sources/govinfo/bodies.py")),
     Row(B, "committees", "Hearing transcript bodies", "`CHRG` package body", "have", KEY,
-        "same module; the PDF of a long hearing can exceed the 24 MiB evidence bound, which is why text formats are preferred", ("govinfo", "CHRG"), ("src/spicy_docs/sources/govinfo/body_acquisition.py", "src/spicy_docs/sources/govinfo/bodies.py")),
+        "`govinfo/body_acquisition.py`: `GovInfoBodyAcquirer` fetches the transcript; `schemas/hearing_bill_link_tables.py` adds `shape_hearing_bill_link` "
+        "for source-keyed MODS cover and House agenda links, distinguishing held-on from noticed bills; other link sources remain unimplemented",
+        ("govinfo", "CHRG"), ("src/spicy_docs/sources/govinfo/body_acquisition.py", "src/spicy_docs/sources/govinfo/bodies.py",
+         "src/spicy_docs/schemas/hearing_bill_link_tables.py")),
     Row(B, "committees", "Congressional documents", "`CDOC` package body", "have", KEY,
         "same module; CDOC carries treaty documents (`CDOC-119tdoc2` resolved in the flow pass)", ("govinfo", "CDOC"),
         ("src/spicy_docs/sources/govinfo/body_acquisition.py", "src/spicy_docs/sources/govinfo/bodies.py")),
-    Row(B, "committees", "Committee prints", "`CPRT` package body", "candidate", KEY,
-        "not in the body grammar yet; one more row in its collection table when a consumer asks", ("govinfo", "CPRT")),
-    Row(B, "record", "Congressional Record bodies", "`CREC` package body (daily); `CRECB` (bound)", "have", KEY,
-        "same module; the daily package id carries a volume or issue suffix on split days, which the grammar accepts", ("govinfo", "CREC"), ("src/spicy_docs/sources/govinfo/body_acquisition.py", "src/spicy_docs/sources/govinfo/bodies.py")),
+    Row(B, "committees", "Committee prints", "`CPRT` package body", "have", KEY,
+        "`govinfo/bodies.py`: `parse_package_id` accepts the measured HPRT/SPRT/JPRT grammar; `GovInfoBodyAcquirer` in `govinfo/body_acquisition.py` "
+        "fetches the MODS-offered rendition with identity checks", ("govinfo", "CPRT"),
+        ("src/spicy_docs/sources/govinfo/bodies.py", "src/spicy_docs/sources/govinfo/body_acquisition.py")),
+    Row(B, "record", "Congressional Record bodies", "`CREC` package and granule bodies (daily)", "have", KEY,
+        "`govinfo/bodies.py`, `govinfo/body_acquisition.py`: `GovInfoBodyAcquirer` accepts split-day package suffixes and `acquire_granule` "
+        "proves the granule's identity and package membership before fetching its body", ("govinfo", "CREC"),
+        ("src/spicy_docs/sources/govinfo/body_acquisition.py", "src/spicy_docs/sources/govinfo/bodies.py")),
+    Row(B, "record", "Bound Congressional Record bodies", "`CRECB` package body", "candidate", KEY,
+        "`govinfo/bodies.py`: the sealed body grammar has no CRECB entry, so `parse_package_id` refuses it before acquisition; "
+        "discovery coverage does not establish a supported body path; widening requires retained measurement", ("govinfo", "CRECB"),
+        ("src/spicy_docs/sources/govinfo/bodies.py",)),
     Row(B, "reference", "Congressional Directory", "`CDIR` package body", "have", KEY,
         "same module; offers PDF and text, the PDF above the evidence bound", ("govinfo", "CDIR"), ("src/spicy_docs/sources/govinfo/body_acquisition.py", "src/spicy_docs/sources/govinfo/bodies.py")),
     Row(B, "reference", "Government Manual", "`bulkdata/GOVMAN`", "candidate", NONE, "clean org XML", ("govinfo", "GOVMAN")),
@@ -288,8 +303,22 @@ ROWS = (
         "`govinfo/mods.py`, `premis.py`, `discovery.py`", None,
         ("src/spicy_docs/sources/govinfo/mods.py", "src/spicy_docs/sources/govinfo/premis.py",
          "src/spicy_docs/sources/govinfo/discovery.py")),
-    Row(B, "committees", "House committee activity reports", "search over doctype `HRPT`; CHA monthly PDFs", "rejected", KEY,
-        "end-of-Congress PDF cadence; low value now"),
+    Row(B, "committees", "House committee activity reports", "`CRPT` published listing and package bodies", "have", KEY,
+        "`govinfo/activity_reports.py`: `is_activity_report` selects CRPT titles; `schemas/document_citation_tables.py` adds `shape_activity_report` "
+        "and `shape_document_citation`; `schemas/bill_action_tables.py` adds `shape_bill_committee_action` for interpreted print actions; "
+        "the measured title rule misses two of seventeen reports, and CHA monthly PDFs remain unimplemented",
+        None, ("src/spicy_docs/sources/govinfo/activity_reports.py", "src/spicy_docs/schemas/document_citation_tables.py",
+         "src/spicy_docs/schemas/bill_action_tables.py")),
+    Row(B, "spending", "Report of the Secretary of the Senate", "`GPO-CDOC-…` package and granule PDFs", "have", KEY,
+        "`schemas/senate_expenditure_tables.py`: `shape_senate_expenditure_rows` publishes ruled rows and funding blocks; `govinfo/bodies.py` "
+        "and `govinfo/body_acquisition.py` support GPO-CDOC reprints; payee/payment parsing and later report sections remain unqualified",
+        ("cdtf", "104"), ("src/spicy_docs/schemas/senate_expenditure_tables.py", "src/spicy_docs/sources/govinfo/bodies.py",
+         "src/spicy_docs/sources/govinfo/body_acquisition.py")),
+    Row(B, "reference", "President's Budget volumes (including Appendix)", "`BUDGET-{year}-{part}`", "have", KEY,
+        "`schemas/budget_volume_tables.py`: `shape_budget_volume` publishes volume facts and citation counts; `govinfo/bodies.py` accepts thirteen measured parts, "
+        "with CLIMATE/DB/TAB bodies at granules and LRB XLS-only, outside the body formats; `govinfo/body_acquisition.py` follows the offered renditions",
+        ("cdtf", "63"), ("src/spicy_docs/schemas/budget_volume_tables.py", "src/spicy_docs/sources/govinfo/bodies.py",
+         "src/spicy_docs/sources/govinfo/body_acquisition.py")),
     # Table C: publisher XML, feeds and sites. Keyless; identity is what the sample shows.
     Row(C, "votes", "House per-vote XML", "`clerk.house.gov/evs/{year}/roll{N}.xml`", "have", NONE,
         "`congress/votes.py`: the `house-vote` API names this file as its source; bioguide-keyed", ("sample", "clerk-vote"),
@@ -301,13 +330,16 @@ ROWS = (
         "from its own congress and session; `VoteAcquirer`'s `list_senate_votes` fetches and parses one keylessly into a "
         "`SenateVoteMenuAcquisition`; `locator_from_menu_entry` builds the `VoteLocator` for one entry",
         ("sample", "senate-vote"), ("src/spicy_docs/sources/congress/votes.py",)),
-    Row(C, "members", "House MemberData.xml", "`clerk.house.gov/xml/lists/MemberData.xml`", "candidate", NONE,
-        "members plus committee assignments with codes; only for fields the `member` API lacks", ("sample", "house-memberdata")),
+    Row(C, "members", "House MemberData.xml", "`clerk.house.gov/xml/lists/MemberData.xml`", "have", NONE,
+        "`congress/committee_rosters.py`: `CommitteeRosterAcquirer` and `parse_house_member_data` read current members and committee assignments, "
+        "prove Congress/session, and retain vacancies and empty-assignment counts", ("sample", "house-memberdata"),
+        ("src/spicy_docs/sources/congress/committee_rosters.py",)),
     Row(C, "members", "House members.xml extras", "`member-info.house.gov/members.xml`", "candidate", NONE,
         "photos and social; only if the API lacks a needed field", ("sample", "house-members-xml")),
-    Row(C, "members", "Senate committee XML", "`senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml`", "candidate", NONE,
-        "bioguide⇄LIS crosswalk; the community legislators JSON (Table D) is the crosswalk `congress/votes.py` actually uses, "
-        "since it also covers Senate voters who have already left the roster", ("sample", "senate-cvc")),
+    Row(C, "members", "Senate committee XML", "`senate.gov/legislative/LIS_MEMBER/cvc_member_data.xml`", "have", NONE,
+        "`congress/committee_rosters.py`: `CommitteeRosterAcquirer` and `parse_senate_cvc` read current assignments and both member ids; "
+        "the file states no Congress, so that value remains caller-supplied; the historical LIS crosswalk stays in `sources/legislators.py`",
+        ("sample", "senate-cvc"), ("src/spicy_docs/sources/congress/committee_rosters.py",)),
     Row(C, "members", "Senate contact XML", "`senate.gov/general/contact_information/senators_cfm.xml`", "rejected", NONE,
         "cvc covers it", ("sample", "senate-contact")),
     Row(C, "members", "Bioguide bulk JSON", "`bioguide.congress.gov`", "rejected", NONE,
@@ -316,8 +348,13 @@ ROWS = (
     Row(C, "nominations", "Senate LIS nomination feeds (9)", "`senate.gov/legislative/LIS/nominations/Nom{Category}.xml`",
         "candidate", NONE, "alternative to the `nomination` API; take only for fields the API lacks",
         ("sample", "senate-nomination-feed")),
-    Row(C, "proceedings", "House committee and floor repositories", "`docs.house.gov/committee`, `/floor` (weekly XML + RSS)",
-        "candidate", NONE, "documents behind scheduled items; the `committee-meeting` API links here; the RSS measured 38.9 MB on 2026-09-18, so the weekly XML is the route", ("sample", "docs-house-floor-rss")),
+    Row(C, "proceedings", "House committee repository", "`docs.house.gov/meetings/.../*.xml`", "have", NONE,
+        "`congress/house_committee_repository.py`: `parse_house_committee_meeting` reads one retained agenda and `house_meeting_xml_locator` builds "
+        "its known address; BR documents supply noticed-bill links through `schemas/hearing_bill_link_tables.py`; first-fetch discovery remains unimplemented",
+        None, ("src/spicy_docs/sources/congress/house_committee_repository.py", "src/spicy_docs/schemas/hearing_bill_link_tables.py")),
+    Row(C, "proceedings", "House floor repository", "`docs.house.gov/floor` (weekly XML + RSS)", "candidate", NONE,
+        "floor documents remain unimplemented; the RSS measured 38.9 MB on 2026-09-18, so the weekly XML is the proposed route",
+        ("sample", "docs-house-floor-rss")),
     Row(C, "proceedings", "House Rules Committee", "`rules.house.gov`", "candidate", NONE,
         "amendment text and rules for floor bills; fills part of the amendment-text gap", ("cdtf", "85")),
     Row(C, "proceedings", "House floor summary", "`clerk.house.gov/floorsummary/floor-download.aspx` + RSS", "candidate", NONE,
@@ -339,8 +376,6 @@ ROWS = (
         "agreement-gated search; not worth a driver", ("cdtf", "108")),
     Row(C, "spending", "House Statement of Disbursements", "`house.gov`, CSV since 2016", "candidate", NONE,
         "USAspending excludes Congress", ("cdtf", "86")),
-    Row(C, "spending", "Report of the Secretary of the Senate", "`senate.gov`, PDF since 2011", "rejected", NONE,
-        "PDF-only; revisit if XML or CSV appears", ("cdtf", "104")),
     Row(C, "spending", "PLUM report", "`opm.gov`, annual", "candidate", NONE,
         "\"thousands\" of filled and vacant senior positions per the catalog; no count verified", ("cdtf", "64")),
     Row(C, "gao", "GAO reports and testimony feed, files", "`gao.gov` RSS, `files.gao.gov`", "have", NONE,
@@ -351,22 +386,28 @@ ROWS = (
         "`gao.gov/legal/...`; `gao.gov/reports-testimonies/restricted`", "candidate", NONE,
         "appropriations-law decisions, bid protests and docket, other opinions", ("cdtf", "14")),
     Row(C, "cbo", "CBO cost-estimate feeds", "`cbo.gov/rss/{c}congress-cost-estimates.xml`", "have", NONE,
-        "the one keyless route; every document route is a DataDome wall (`cbo.md`)", ("cdtf", "6"),
-        ("src/spicy_docs/sources/cbo.py", "docs/sources/cbo.md")),
+        "`sources/cbo.py` reads the keyless feed; `schemas/cost_estimate_tables.py` adds `shape_cbo_cost_estimate` for the BILLSTATUS index, "
+        "and `interpretation/cbo_estimates.py` adds `read_cbo_estimate` for letters reprinted in CRPT bodies; CBO-hosted documents remain gated, "
+        "and a reprinted letter is not assigned a publication id", ("cdtf", "6"),
+        ("src/spicy_docs/sources/cbo.py", "src/spicy_docs/schemas/cost_estimate_tables.py",
+         "src/spicy_docs/interpretation/cbo_estimates.py", "src/spicy_docs/schemas/committee_report_tables.py")),
     Row(C, "jct", "Joint Committee on Taxation estimates and publications", "`jct.gov`", "candidate", NONE,
         "support agency absent from the catalog and the map; unsampled"),
     Row(C, "uscode", "US Code, Popular Names, Table III", "OLRC `uscode.house.gov`", "have", NONE, "`uscode/`", ("cdtf", "62"),
         ("src/spicy_docs/sources/uscode/__init__.py",)),
-    Row(C, "uscode", "OLRC classification tables (per Congress)", "`uscode.house.gov/classification`", "candidate", NONE,
-        "which Code sections each new public law touched; Table III is the historical act-section view"),
-    Row(C, "crs", "CRS report PDFs", "`congress.gov/crs_external_products`", "have", NONE, "`crs_files.py`", None,
+    Row(C, "uscode", "OLRC classification tables (per Congress)", "`uscode.house.gov/classification`", "have", NONE,
+        "`uscode/classification.py`: `parse_classification_table` reads each session's fixed-width rows in either order and proves Congress/session; "
+        "`uscode/acquisition.py` adds index and table capture through `UsCodeAcquirer`", None,
+        ("src/spicy_docs/sources/uscode/classification.py", "src/spicy_docs/sources/uscode/acquisition.py")),
+    Row(C, "crs", "CRS report PDFs", "`congress.gov/crs_external_products`", "have", NONE,
+        "`congress/crs_files.py`: `acquire_report` now prefers current-version HTML and retains refusals before PDF fallback; historical versions go directly to PDF", None,
         ("src/spicy_docs/sources/congress/crs_files.py",)),
     Row(C, "reference", "CISA .gov domain registry", "`github.com/cisagov/dotgov-data`", "candidate", NONE,
         "agency-entity resolution CSV", ("cdtf", "11")),
     Row(C, "reference", "Appropriations status table", "`crsreports.congress.gov` HTML", "rejected", NONE,
         "low structure; a keyless request is redirected (301) and the redirect target answers HTTP 403", ("sample", "crs-appropriations-table")),
-    Row(C, "reference", "President's Budget Appendix, CBJs", "OMB, agencies", "rejected", NONE,
-        "PDF-heavy; OMB non-compliant on format", ("cdtf", "63")),
+    Row(C, "reference", "Agency congressional budget justifications (CBJs)", "agencies", "rejected", NONE,
+        "PDF-heavy agency files remain rejected; the GovInfo budget-volume landing covers the President's Budget only"),
     # Table D: civil society, BillTrax-side, and interpretation.
     Row(D, "crs", "EveryCRSReport bulk", "`everycrsreport.com` (AmericaLabs)", "candidate", NONE,
         "versioned and broader than congress.gov; verify maintenance cadence first", ("cdtf", "4")),
@@ -3896,8 +3937,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"credential refused; stopping: {scrub_credential(str(error), api_key)}", file=sys.stderr)
             return 1
         measures["requests"]["total"] = sum(measures["requests"].values())
-        measures["rows"] = [asdict(row) for row in ROWS]
-        args.output.write_text(json.dumps(measures, indent=2, sort_keys=True) + "\n")
+    # Judgments belong to this tree; retain the original measurement dates,
+    # revision and request counts when refreshing them offline.
+    measures["rows"] = [asdict(row) for row in ROWS]
+    args.output.write_text(json.dumps(measures, indent=2, sort_keys=True) + "\n")
     if args.diff:
         print("\n".join(diff_measures(json.loads(args.diff.read_text()), measures)))
     rewrite_map(args.map, render_tables(measures))
