@@ -109,6 +109,24 @@ retries when an issue's requested unmatched-number set changes.
   real GPO bytes in `tests/fixtures/govinfo_bill_html/`, and proves the two
   corpora disjoint.
 
+- [pdf_family_rollup](analysis/pdf_family_rollup.py): measure what the ten
+  PDF-only families of the [census](../docs/research/pdf-only-corpus-2026-09-19.md)
+  would add as hosted tables. `acquire` samples each family's index record and up
+  to eight of its documents, over three request classes — keyless, keyed
+  (`API_GOV`, header only) and Zyte for the two routes the census recorded as
+  walled — writing every request to `requests.jsonl` and every body to
+  `blobs/<sha256>`; it is resumable and re-requests only what has no retained
+  body. `analyze` makes no request: it extracts each retained PDF with
+  `tables=True`, strips GPO print artifacts, and reports per family which join
+  keys and which structured content the documents hold **that the index does not
+  already state** — the owner's rule that existing data is not recreated, made
+  measurable by reading the same rule off both sides and reducing both to one
+  canonical key. The report is
+  [`docs/research/pdf-family-rollup-yield-2026-09-20.md`](../docs/research/pdf-family-rollup-yield-2026-09-20.md).
+  The index side is rendered generously on purpose, so every "beyond the index"
+  count is a floor; at most 60 pages of a document are read and each row records
+  the real page count beside it.
+
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,
 count mismatches, or a full 1,000-row page. A full page is indeterminate even when

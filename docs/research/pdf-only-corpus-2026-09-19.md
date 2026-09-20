@@ -2,6 +2,14 @@
 
 Status: measured 2026-09-19, read-only, about twenty bounded requests; nothing changed in any repository.
 
+**Followed by the yield measurement**, 2026-09-20: what these families would
+actually contribute as hosted tables, family by family, against what each
+publisher's index already states —
+[pdf-family-rollup-yield-2026-09-20.md](pdf-family-rollup-yield-2026-09-20.md).
+It confirms CBO as blocked (refused even through a paid proxy), finds the House
+committee activity reports to be the densest join surface in the corpus, and
+finds CRS's bills-discussed already present in the Congress.gov index.
+
 Read-only measurement. Repo: `../../spicy-docs` (main), no files
 modified. Corpus enumerated from `docs/source-workflows.md` (both tables), `docs/README.md`'s
 "Work on a source" list, every file under `docs/sources/*.md`, and the body-carrying rows of
