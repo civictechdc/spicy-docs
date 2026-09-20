@@ -67,6 +67,8 @@ def scrub_credential(text: str, api_key: str = "") -> str:
     ``api_key`` defaults to empty for the keyless and anonymous routes: they
     hold no literal to remove, but their transports still render URLs into
     exception messages, so the pattern pass still has work to do.
+    The parameter pattern uses ``re.IGNORECASE`` to scrub names regardless of
+    how a transport capitalizes them.
     """
     scrubbed = _CREDENTIAL_PARAMETER_PATTERN.sub(r"\1<redacted>", text)
     if len(api_key) >= 8:

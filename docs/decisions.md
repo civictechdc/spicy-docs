@@ -1076,22 +1076,27 @@ second one, which is how it survived.
 
 What changed, and what a later change must preserve:
 
-- **A refusal ends the run.** `download_object_bytes` turns a 401/403 into
-  `MirrulationsAccessRefusedError`, a `CredentialRefusedError`, at the single
-  point every path fetches through. The mirror is read anonymously, so this is
-  the bucket refusing access rather than a key being rejected — but the
+- **A refusal ends the run.** Agency-object listings and `download_object_bytes`
+  share the check that turns a 401/403 into `MirrulationsAccessRefusedError`, a
+  `CredentialRefusedError`, including failures during lazy pagination.
+  The mirror is read anonymously, so this is the bucket refusing access
+  rather than a key being rejected — but the
   subclass keeps every caller that already aborts on a refusal aborting, the
   way `RegulationsGovAttachmentRefusedError` does for that keyless host. No key
   is written for it, and `fail_fast` does not reach it: that switch governs
-  transport answers only.
+  unresolved-key failures.
 - **Nothing is marked processed on a failure.** `last_keys` now means "produced
   a record" and is empty until a pass completes; every other key is on
-  `failed_keys` with a `KeyOutcome(key, status, reason, attempted_at)` on
+  `failed_keys` with a `KeyOutcome(key, status, reason, attempted_at, attempts)` on
   `unresolved`. `status` is `transport`, `unreadable`, or `requested-empty`.
   The in-run retry still covers `transport` alone — the other two cannot change
   without a new request — but all three are retried on the next run, and
   `unresolved_keys=` puts them ahead of newly listed work so a capped or
-  interrupted run cannot keep postponing them.
+  interrupted run cannot keep postponing them. Passing the prior outcomes also
+  carries `attempts` forward, counting reader download attempts and in-run
+  retries, but not botocore's internal retries. A retention or retirement rule
+  remains an unmade decision: permanent corruption is retried indefinitely,
+  at the cost stated in the [raw-reader guide](sources/raw-readers.md#mirrulations).
 - **An empty 2xx is an answer, not an absence.** A body of zero bytes, `{}`,
   `null`, `[]` or a bare scalar used to be yielded as a record and manifested:
   an empty answer became apparent coverage. It is now `requested-empty`, with
@@ -1107,14 +1112,19 @@ botocore's `ClientError` escape. `last_keys` is no longer populated eagerly with
 the whole listing: a partial pass reports nothing, because a partial pass
 establishes nothing.
 
-Removing either half is mutation-checked. Dropping the abort fails the four
+The original regression set mutation-checks both load-bearing changes, with
+seven failures each. Dropping the abort fails the four
 `test_an_access_refusal_aborts_the_run_and_writes_no_key` cases and both
-enumeration cases; putting the non-transport keys back into `last_keys` fails
+enumeration cases plus `test_an_access_refusal_is_not_retried_as_a_transient_answer`;
+putting the non-transport keys back into `last_keys` fails
 `test_iter_records_keeps_parse_failures_out_of_last_keys`, the five
 `requested-empty` cases and the two-run repair test. `scrub_credential` grew the
 three AWS presigning parameters alongside `api_key`, because an injected signed
 resource renders a presigned URL into botocore's message; both of its passes
 stay separately mutation-checked.
+
+The review declined a wider refactor of the 1,012-line module to keep this fix
+focused on recovery behavior.
 
 ## BUDGET and the GPO-prefixed CDOC reprints join the package-id grammar
 

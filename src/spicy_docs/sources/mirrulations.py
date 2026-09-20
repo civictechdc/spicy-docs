@@ -13,7 +13,8 @@ in spicy-regs.
 
 Recovery follows the package's fetcher rules (``AGENTS.md``):
 
-1. A 401/403 from the mirror aborts the run as ``MirrulationsAccessRefusedError``.
+1. A 401/403 while listing agency objects or fetching one aborts the run as
+   ``MirrulationsAccessRefusedError``.
    It is never recorded as a key that merely failed.
 2. Every key that produced no record -- transport answer, unreadable bytes, or a
    2xx whose body held no record -- stays out of ``last_keys`` and is retried on
@@ -120,6 +121,15 @@ def get_agencies(s3_client: Any, bucket_name: str, prefix: str) -> list[str]:
     return sorted(agencies)
 
 
+def _iter_objects(bucket: Any, prefix: str) -> Iterator[Any]:
+    """List objects with refusal handling across lazy pagination."""
+    try:
+        yield from bucket.objects.filter(Prefix=prefix)
+    except ClientError as error:
+        _raise_if_access_refused(error, prefix)
+        raise
+
+
 def iter_json_files(
     s3_resource: Any,
     bucket_name: str,
@@ -141,7 +151,7 @@ def iter_json_files(
     total_scanned = 0
     bucket = s3_resource.Bucket(bucket_name)
 
-    for obj in bucket.objects.filter(Prefix=f"{prefix}/{agency}/"):
+    for obj in _iter_objects(bucket, f"{prefix}/{agency}/"):
         key = obj.key
         if "/text-" in key and path_pattern in key and key.endswith(".json"):
             total_scanned += 1
@@ -213,7 +223,7 @@ def list_agency_files_by_type(
     result: dict[str, list[str]] = {rt.name: [] for rt in record_types}
 
     bucket = s3_resource.Bucket(bucket_name)
-    for obj in bucket.objects.filter(Prefix=f"{prefix}/{agency}/"):
+    for obj in _iter_objects(bucket, f"{prefix}/{agency}/"):
         key = obj.key
         if "/text-" not in key or not key.endswith(".json"):
             continue
@@ -342,8 +352,8 @@ def download_object_bytes(
     is closed on every path so concurrent batch readers return connections to
     botocore's pool promptly.
 
-    A 401/403 becomes :class:`MirrulationsAccessRefusedError` here, at the one
-    point every path fetches through, so no caller can turn a refusal into a row.
+    A GET's 401/403 becomes :class:`MirrulationsAccessRefusedError` here, using
+    the same refusal check as agency-object listings.
     """
 
     if max_bytes is not None and max_bytes <= 0:
@@ -352,9 +362,7 @@ def download_object_bytes(
     try:
         response = obj.get(**({"IfMatch": if_match} if if_match is not None else {}))
     except ClientError as error:
-        status = _response_status(error)
-        if status in ACCESS_REFUSED_STATUSES:
-            raise MirrulationsAccessRefusedError(refusal_message("the Mirrulations mirror", status, key)) from error
+        _raise_if_access_refused(error, key)
         raise
     content_length = response.get("ContentLength")
     if max_bytes is not None and content_length is not None and content_length > max_bytes:
@@ -393,6 +401,13 @@ def _response_status(exc: BaseException) -> int | None:
         status = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
         return status if isinstance(status, int) else None
     return None
+
+
+def _raise_if_access_refused(error: ClientError, subject: str) -> None:
+    """Raise the typed refusal for a GET or agency-object listing."""
+    status = _response_status(error)
+    if status in ACCESS_REFUSED_STATUSES:
+        raise MirrulationsAccessRefusedError(refusal_message("the Mirrulations mirror", status, subject)) from error
 
 
 def _is_transient_transport_error(exc: BaseException) -> bool:
@@ -465,14 +480,17 @@ class KeyOutcome:
     """What one unresolved key last answered, retained so the next run can retry it.
 
     An explicit observation, not a verdict: ``status`` names the class of answer,
-    ``reason`` the scrubbed detail, and ``attempted_at`` when it was asked. None
-    of them mark the key processed.
+    ``reason`` the scrubbed detail, and ``attempted_at`` when it was asked.
+    ``attempts`` counts reader download attempts, including in-run retries and
+    supplied prior outcomes, but excluding botocore's internal retries. None of
+    them mark the key processed.
     """
 
     key: str
     status: str
     reason: str
     attempted_at: str
+    attempts: int = 1
 
 
 def _describe_shape(payload: object) -> str:
@@ -535,7 +553,9 @@ def _identity(payload: dict) -> dict:
     return payload
 
 
-def _record_outcome(exc: UnresolvedKeyError, key: str, label: str, outcomes: list[KeyOutcome] | None) -> None:
+def _record_outcome(
+    exc: UnresolvedKeyError, key: str, label: str, outcomes: list[KeyOutcome] | None, attempts: int
+) -> None:
     """Log one unresolved key and, when collecting, retain its observation.
 
     Every class is surfaced at ``warning`` and every class is retried next run,
@@ -553,6 +573,7 @@ def _record_outcome(exc: UnresolvedKeyError, key: str, label: str, outcomes: lis
                 status=exc.status,
                 reason=reason,
                 attempted_at=datetime.now(UTC).isoformat(timespec="seconds"),
+                attempts=attempts,
             )
         )
 
@@ -565,6 +586,7 @@ def download_keys(
     *,
     label: str = "",
     outcomes: list[KeyOutcome] | None = None,
+    prior_outcomes: Iterable[KeyOutcome] = (),
     raise_failures: bool = False,
     transient_retries: int = 0,
 ) -> Iterator[dict]:
@@ -579,35 +601,39 @@ def download_keys(
     can keep all of them out of the manifest. ``outcomes=None`` keeps the
     drop-and-continue behavior for callers that don't track keys. ``raise_failures``
     governs those answers only: a 401/403 propagates either way.
+    ``prior_outcomes`` carries attempt counts forward when retrying keys.
     """
     if transient_retries < 0:
         raise ValueError("transient_retries cannot be negative")
 
-    def download(key: str) -> dict:
+    prior_attempts = {outcome.key: outcome.attempts for outcome in prior_outcomes}
+
+    def download(key: str) -> dict | None:
         for attempt in range(transient_retries + 1):
             try:
                 return download_and_parse(s3_resource, bucket_name, key, _identity)
-            except TransientDownloadError:
-                if attempt == transient_retries:
+            except UnresolvedKeyError as exc:
+                if isinstance(exc, TransientDownloadError) and attempt < transient_retries:
+                    continue
+                _record_outcome(exc, key, label, outcomes, prior_attempts.get(key, 0) + attempt + 1)
+                if raise_failures:
                     raise
+                return None
         raise AssertionError("unreachable")
 
     total = len(keys) if isinstance(keys, Sized) else None
     n = max(1, min(workers, total)) if total is not None and total else max(1, workers)
     if n <= 1:
         for key in keys:
-            try:
-                yield download(key)
-            except UnresolvedKeyError as exc:
-                _record_outcome(exc, key, label, outcomes)
-                if raise_failures:
-                    raise
+            payload = download(key)
+            if payload is not None:
+                yield payload
         return
 
     done = 0
     with ThreadPoolExecutor(max_workers=n) as executor:
         iterator = iter(keys)
-        submitted: dict[Future[dict], str] = {}
+        submitted: dict[Future[dict | None], str] = {}
         exhausted = False
         while submitted or not exhausted:
             while not exhausted and len(submitted) < 2 * n:
@@ -622,7 +648,7 @@ def download_keys(
                 break
             completed, _pending = wait(submitted, return_when=FIRST_COMPLETED)
             for future in completed:
-                key = submitted.pop(future)
+                submitted.pop(future)
                 done += 1
                 if label and done % _PROGRESS_EVERY == 0:
                     logger.info(
@@ -631,12 +657,9 @@ def download_keys(
                         done,
                         f"/{total}" if total is not None else "",
                     )
-                try:
-                    yield future.result()
-                except UnresolvedKeyError as exc:
-                    _record_outcome(exc, key, label, outcomes)
-                    if raise_failures:
-                        raise
+                payload = future.result()
+                if payload is not None:
+                    yield payload
 
 
 _EXHAUSTED = object()
@@ -690,7 +713,7 @@ class MirrulationsReader(Reader):
     retry. ``unresolved_keys`` feeds the previous run's observations back in, and
     those keys are attempted before any newly listed work.
 
-    ``fail_fast`` governs transport answers only. A 401/403 raises
+    ``fail_fast`` governs unresolved-key failures. A 401/403 raises
     :class:`MirrulationsAccessRefusedError` either way; a refusal is never a row.
     """
 
@@ -708,7 +731,7 @@ class MirrulationsReader(Reader):
         key_lister: Callable[[], Iterable[str]] | None = None,
         retain_keys: bool = True,
         fail_fast: bool = False,
-        unresolved_keys: Iterable[str] | None = None,
+        unresolved_keys: Iterable[str | KeyOutcome] | None = None,
     ) -> None:
         self.s3_resource = s3_resource
         self.bucket = bucket
@@ -726,7 +749,9 @@ class MirrulationsReader(Reader):
         self.fail_fast = fail_fast
         # Retried before new work, so a run that is capped or interrupted cannot
         # keep postponing the keys a previous run already failed to resolve.
-        self.unresolved_keys = list(dict.fromkeys(unresolved_keys or ()))
+        prior = list(unresolved_keys or ())
+        self._prior_outcomes = [outcome for outcome in prior if isinstance(outcome, KeyOutcome)]
+        self.unresolved_keys = list(dict.fromkeys(item.key if isinstance(item, KeyOutcome) else item for item in prior))
         super().__init__()
         self.unresolved: list[KeyOutcome] = []
 
@@ -772,7 +797,7 @@ class MirrulationsReader(Reader):
 
         def listed_entries() -> Iterator[tuple[str, str, int | None]]:
             previous_key: str | None = None
-            for summary in bucket.objects.filter(Prefix=f"{self.prefix}/{self.agency}/"):
+            for summary in _iter_objects(bucket, f"{self.prefix}/{self.agency}/"):
                 key = summary.key
                 if "/text-" not in key or path_pattern not in key or not key.endswith(".json"):
                     continue
@@ -855,6 +880,7 @@ class MirrulationsReader(Reader):
             self.download_workers,
             label=label,
             outcomes=outcomes,
+            prior_outcomes=self._prior_outcomes,
             raise_failures=self.fail_fast,
             transient_retries=1 if self.fail_fast else 0,
         )
@@ -863,7 +889,8 @@ class MirrulationsReader(Reader):
         # unresolved -- including the unreadable and requested-empty answers --
         # stays out of last_keys, so the next run re-lists and re-asks for it.
         if not self.fail_fast:
-            again = [outcome.key for outcome in outcomes if outcome.status == STATUS_TRANSPORT]
+            retry_outcomes = [outcome for outcome in outcomes if outcome.status == STATUS_TRANSPORT]
+            again = [outcome.key for outcome in retry_outcomes]
             if again:
                 outcomes = [outcome for outcome in outcomes if outcome.status != STATUS_TRANSPORT]
                 yield from download_keys(
@@ -873,6 +900,7 @@ class MirrulationsReader(Reader):
                     self.download_workers,
                     label=f"{label} retry",
                     outcomes=outcomes,
+                    prior_outcomes=retry_outcomes,
                 )
 
         self.unresolved = outcomes
@@ -934,7 +962,7 @@ def reader_factory(
     download_workers: int = DEFAULT_DOWNLOAD_WORKERS,
     resource_factory: Callable[[], Any] | None = None,
     bounded: bool = False,
-    unresolved_keys: Callable[[str, RecordType], Iterable[str]] | None = None,
+    unresolved_keys: Callable[[str, RecordType], Iterable[str | KeyOutcome]] | None = None,
 ) -> Callable[[str, RecordType], MirrulationsReader]:
     """Build a ``read(agency, record_type) -> MirrulationsReader`` factory.
 
@@ -946,9 +974,10 @@ def reader_factory(
     manifest list. Each reader gets its own S3 resource.
 
     ``unresolved_keys`` hands each reader the keys the previous run left
-    unresolved, to attempt before its newly listed work. Without it a resume
-    still re-asks for them -- they were never manifested -- but only wherever
-    the listing happens to place them.
+    unresolved, to attempt before its newly listed work. Pass ``KeyOutcome``
+    values to preserve attempt counts; bare keys carry no attempt history.
+    Without it a resume still re-asks for them -- they were never manifested --
+    but only wherever the listing happens to place them.
     """
     cache = (
         None

@@ -161,6 +161,39 @@ class _RefusingResource(_FakeS3Resource):
         return _RefusedObj()
 
 
+class _RefusingListingResource(_FakeS3Resource):
+    """Fail either when constructing a listing or while advancing its pages."""
+
+    def __init__(self, store: dict[str, bytes], status: int, after_first: bool) -> None:
+        super().__init__(store)
+        self.error = ClientError(
+            {
+                "Error": {"Code": "ListingFailed", "Message": "Listing failed"},
+                "ResponseMetadata": {"HTTPStatusCode": status},
+            },
+            "ListObjectsV2",
+        )
+        self.after_first = after_first
+
+    def Bucket(self, name: str) -> _FakeBucket:
+        resource = self
+
+        class _RefusingObjects(_FakeObjects):
+            def filter(self, Prefix: str):
+                if not resource.after_first:
+                    raise resource.error
+
+                def pages():
+                    yield next(_FakeObjects.filter(self, Prefix=Prefix))
+                    raise resource.error
+
+                return pages()
+
+        bucket = super().Bucket(name)
+        bucket.objects = _RefusingObjects(self._store)
+        return bucket
+
+
 def _docket_key(docket_id: str) -> str:
     return f"{PREFIX}/{AGENCY}/{docket_id}/text-{docket_id}/docket/{docket_id}.json"
 
@@ -862,6 +895,7 @@ def test_download_keys_observes_every_key_that_produced_no_record(workers: int) 
     for outcome in outcomes:
         assert outcome.reason  # the answer is named, not merely counted
         assert outcome.attempted_at.startswith("20") and outcome.attempted_at.endswith("+00:00")
+        assert outcome.attempts == 1
 
 
 def test_iter_records_excludes_transient_failures_from_last_keys() -> None:
@@ -965,6 +999,70 @@ def test_an_access_refusal_aborts_the_exact_enumeration_too(status: int) -> None
         list(reader.iter_source_objects())
 
 
+@pytest.mark.parametrize("status", [401, 403])
+@pytest.mark.parametrize("after_first", [False, True])
+def test_iter_json_files_raises_typed_listing_refusal(status: int, after_first: bool) -> None:
+    from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError, iter_json_files
+
+    resource = _RefusingListingResource(_make_store(), status, after_first)
+    keys = iter_json_files(resource, BUCKET, PREFIX, AGENCY, DOCKET.name, DOCKET.path_pattern)
+    if after_first:
+        assert next(keys) == _docket_key("EPA-2024-0001")
+    with pytest.raises(MirrulationsAccessRefusedError, match=f"answered {status} for {PREFIX}/{AGENCY}/") as raised:
+        list(keys)
+    assert raised.value.__cause__ is resource.error
+    assert resource.get_requests == []
+
+
+@pytest.mark.parametrize("status", [401, 403])
+@pytest.mark.parametrize("after_first", [False, True])
+def test_list_agency_files_by_type_raises_typed_listing_refusal(status: int, after_first: bool) -> None:
+    from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError, list_agency_files_by_type
+
+    resource = _RefusingListingResource(_typed_store(), status, after_first)
+    with pytest.raises(MirrulationsAccessRefusedError, match=f"answered {status} for {PREFIX}/{AGENCY}/") as raised:
+        list_agency_files_by_type(resource, BUCKET, PREFIX, AGENCY, [DOCKET, DOCUMENT, COMMENT])
+    assert raised.value.__cause__ is resource.error
+    assert resource.get_requests == []
+
+
+@pytest.mark.parametrize("status", [401, 403])
+@pytest.mark.parametrize("after_first", [False, True])
+def test_iter_source_objects_raises_typed_listing_refusal(status: int, after_first: bool) -> None:
+    from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError
+
+    resource = _RefusingListingResource(_make_store(), status, after_first)
+    reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, DOCKET, download_workers=1)
+    with pytest.raises(MirrulationsAccessRefusedError, match=f"answered {status} for {PREFIX}/{AGENCY}/") as raised:
+        list(reader.iter_source_objects())
+    assert raised.value.__cause__ is resource.error
+    assert reader.last_keys == reader.failed_keys == reader.unresolved == []
+
+
+def test_listing_preserves_non_refusal_client_errors() -> None:
+    from spicy_docs.sources.mirrulations import iter_json_files
+
+    resource = _RefusingListingResource(_make_store(), 503, after_first=True)
+    with pytest.raises(ClientError) as raised:
+        list(iter_json_files(resource, BUCKET, PREFIX, AGENCY, DOCKET.name, DOCKET.path_pattern))
+    assert raised.value is resource.error
+
+
+@pytest.mark.parametrize("status", [401, 403])
+@pytest.mark.parametrize("workers", [1, 4])
+def test_iter_records_fail_fast_preserves_typed_access_refusal(status: int, workers: int) -> None:
+    from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError
+
+    store = _make_store()
+    refused = _docket_key("EPA-2025-0002")
+    resource = _RefusingResource(store, {refused: status})
+    reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, DOCKET, download_workers=workers, fail_fast=True)
+    with pytest.raises(MirrulationsAccessRefusedError, match=f"answered {status}"):
+        list(reader.iter_records())
+    assert resource.attempts[refused] == 1
+    assert reader.last_keys == reader.failed_keys == reader.unresolved == []
+
+
 def test_an_access_refusal_is_not_retried_as_a_transient_answer(monkeypatch: pytest.MonkeyPatch) -> None:
     """A refusal must not spend the transient budget: it is an answer, not congestion."""
     from spicy_docs.sources import mirrulations
@@ -1041,7 +1139,7 @@ def test_a_server_error_then_success_recovers_across_two_runs() -> None:
         DOCKET,
         processed_keys=manifest,
         download_workers=1,
-        unresolved_keys=[o.key for o in first.unresolved],
+        unresolved_keys=first.unresolved,
     )
 
     assert [_raw_id(r) for r in recovered.iter_records()] == ["EPA-2025-0002"]
@@ -1074,7 +1172,7 @@ def test_a_malformed_record_repaired_upstream_is_recovered_on_the_next_run() -> 
         DOCKET,
         processed_keys=manifest,
         download_workers=1,
-        unresolved_keys=[o.key for o in first.unresolved],
+        unresolved_keys=first.unresolved,
     )
 
     assert [_raw_id(r) for r in second.iter_records()] == ["EPA-2025-0002"]
@@ -1104,6 +1202,73 @@ def test_previously_unresolved_keys_are_attempted_before_newly_listed_work() -> 
 
     assert fetched[:2] == [keys[3], keys[1]]  # the unresolved keys come first
     assert sorted(fetched) == sorted(keys)  # and each key is asked for exactly once
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize(
+    ("body", "status", "attempts_per_run"),
+    [(b"{ broken json", None, 1), (b"{}", None, 1), (b"{}", 503, 2)],
+)
+def test_unresolved_attempts_accumulate_across_runs(
+    body: bytes, status: int | None, attempts_per_run: int, workers: int
+) -> None:
+    from spicy_docs.sources.mirrulations import reader_factory
+
+    store = _make_store()
+    unresolved = _docket_key("EPA-2025-0002")
+    store[unresolved] = body
+    resource = _RefusingResource(store, {unresolved: status} if status is not None else {})
+    prior = []
+    processed: set[str] = set()
+    for run in range(1, 4):
+        read = reader_factory(
+            [DOCKET],
+            resource_factory=lambda: resource,
+            processed_keys=processed,
+            download_workers=workers,
+            unresolved_keys=lambda _agency, _record_type, prior=prior: prior,
+        )
+        reader = read(AGENCY, DOCKET)
+        list(reader.iter_records())
+        (outcome,) = reader.unresolved
+        assert outcome.key == unresolved
+        assert outcome.attempts == resource.attempts[unresolved] == attempts_per_run * run
+        assert unresolved not in reader.last_keys
+        processed.update(reader.last_keys)
+        prior = reader.unresolved
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize("raise_failures", [False, True])
+def test_download_keys_counts_retries_before_a_changed_failure(workers: int, raise_failures: bool) -> None:
+    from spicy_docs.sources.mirrulations import STATUS_UNREADABLE, KeyOutcome, PayloadParseError, download_keys
+
+    store = _make_store()
+    broken = _docket_key("EPA-2025-0002")
+    store[broken] = b"{ broken json"
+    resource = _FlakyResource(store, transient_fail=[broken], fail_once=True)
+    prior = KeyOutcome(broken, STATUS_UNREADABLE, "bad JSON", "2026-09-19T00:00:00+00:00", attempts=49)
+    outcomes: list[KeyOutcome] = []
+    records = download_keys(
+        resource,
+        BUCKET,
+        [_docket_key("EPA-2024-0001"), broken],
+        workers=workers,
+        outcomes=outcomes,
+        prior_outcomes=[prior],
+        transient_retries=1,
+        raise_failures=raise_failures,
+    )
+    if raise_failures:
+        with pytest.raises(PayloadParseError):
+            list(records)
+    else:
+        assert [_raw_id(record) for record in records] == ["EPA-2024-0001"]
+    (outcome,) = outcomes
+    assert outcome.status == STATUS_UNREADABLE
+    assert outcome.attempts == 51
+    assert resource._attempts[broken] == 2
+    assert prior.attempts == 49
 
 
 def test_a_recorded_reason_is_scrubbed_before_it_is_truncated() -> None:

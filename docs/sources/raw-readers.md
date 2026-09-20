@@ -30,30 +30,37 @@ classification separately retains original structure.
 | `reader_factory(..., bounded=True)` | Streams the listing, fails after a transient retry, and avoids retaining processed keys. | Own checkpoints or full retry and completion receipts. |
 | `iter_source_objects()` | Lists and yields in key order; pins GETs to listed ETags and checks metadata/bytes. | Preserve exact objects through the [release evidence pack](regulations-gov.md). |
 
-**Recovery.** A 401/403 from the mirror raises `MirrulationsAccessRefusedError`,
-a `CredentialRefusedError`, on every path. It ends the run, writes no key, and is
-never recorded as a failed or processed key: a refusal over a prefix would
-otherwise read downstream as those objects being absent. `fail_fast` governs
-transport answers only and does not reach this.
+**Recovery.** A 401/403 during an agency-object listing or GET raises
+`MirrulationsAccessRefusedError`, a `CredentialRefusedError`. It ends the run
+and is never recorded as a failed or processed key: a refusal over a prefix
+would otherwise read downstream as those objects being absent. `fail_fast`
+governs unresolved-key failures; refusals always abort.
 
 After complete raw iteration:
 
 - `last_keys` holds only the keys that produced a record. Manifest exactly these.
 - `failed_keys` holds every key that produced none, whatever the reason. They stay
   outside processed keys, so the next run asks for them again.
-- `unresolved` holds a `KeyOutcome(key, status, reason, attempted_at)` for each,
-  with `status` one of `transport` (connection, 429, 5xx, a vanished object),
+- `unresolved` holds a `KeyOutcome(key, status, reason, attempted_at, attempts)`
+  for each, with `status` one of `transport` (connection, 429, 5xx, a vanished object),
   `unreadable` (bytes that are not a JSON record), or `requested-empty` (a 2xx
   that decoded to nothing — the reason names the shape). `requested-empty` is an
   observation of the answer, never of absence. `parse_failed_keys` remains as the
-  non-`transport` subset.
+  non-`transport` subset. `attempts` counts reader download attempts, including
+  in-run retries; botocore's internal retries are not counted.
 - `unresolved_keys=` (reader) or `unresolved_keys=lambda agency, record_type: ...`
   (factory) feeds those keys back to the next run, which attempts them before any
-  newly listed work.
+  newly listed work. Pass the prior `KeyOutcome` values, such as
+  `unresolved_keys=previous_reader.unresolved`, to carry attempt counts forward.
+  Bare key strings retain priority but supply no attempt history; counts start
+  at one when no prior outcome is supplied.
 
 Nothing is marked processed on a failure, so an object repaired upstream — or a
 parser fixed here — comes back on the next run. The in-run retry pass covers
 `transport` answers only; the other two cannot change without a new request.
+The base cost is one GET per unresolved key per run, with no automatic
+retirement. A permanently corrupt or empty object incurs that cost indefinitely;
+transport failures can add the in-run retry and botocore's internal retries.
 
 Partial iteration does not establish final accounting. The exact path accepts
 no nonempty processed-key set. It retries connections, 429s, and server errors
