@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-19T23:54:44+00:00",
+ "generatedAt": "2026-09-20T21:22:50+00:00",
  "parentSchema": {
   "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
   "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
@@ -13,6 +13,7 @@
   "cfr-reconstruction": [],
   "committee-report-html": [],
   "federal-register-xml": [],
+  "senate-expenditures-pdf": [],
   "slip-opinion-pdf": [],
   "uslm-law": []
  },
@@ -23,7 +24,7 @@
    "family": "uslm-law",
    "rendition": "xml",
    "artifactBytes": 23379,
-   "captureBytes": 141485,
+   "captureBytes": 142002,
    "nodes": 321,
    "leaves": 216,
    "emptyLeaves": 0,
@@ -47,13 +48,13 @@
     "n0320"
    ],
    "size": {
-    "bytes": 141485,
-    "indentedBytes": 189763,
+    "bytes": 142002,
+    "indentedBytes": 190361,
     "exactTextBytes": 8831,
-    "withoutLeafText": 130575,
-    "withoutSpanIdAndEnd": 131085,
-    "withoutSpanSource": 129784,
-    "withoutNodeSource": 91917
+    "withoutLeafText": 131092,
+    "withoutSpanIdAndEnd": 131602,
+    "withoutSpanSource": 130301,
+    "withoutNodeSource": 92434
    },
    "seconds": 0.0011,
    "errors": []
@@ -95,7 +96,7 @@
     "withoutSpanSource": 17089,
     "withoutNodeSource": 14266
    },
-   "seconds": 0.0003,
+   "seconds": 0.0015,
    "errors": []
   },
   {
@@ -135,7 +136,7 @@
     "withoutSpanSource": 105454,
     "withoutNodeSource": 119317
    },
-   "seconds": 0.0011,
+   "seconds": 0.0023,
    "errors": []
   },
   {
@@ -255,7 +256,7 @@
     "withoutSpanSource": 95383,
     "withoutNodeSource": 110394
    },
-   "seconds": 0.0009,
+   "seconds": 0.0008,
    "errors": []
   }
  ]

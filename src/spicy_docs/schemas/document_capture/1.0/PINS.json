@@ -38,7 +38,7 @@
     },
     "uslm-law": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:uslm-law",
-      "sha256": "0fa3e7f6547da5ad5e80b36b2df8aaaf9a70804c8fcfdce32250df4abf6d2652"
+      "sha256": "5ffaa7ed833a31d3ba282349f3d11b2b3c5a9b81196090517aeb7941fe354446"
     },
     "senate-expenditures-pdf": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:senate-expenditures-pdf",

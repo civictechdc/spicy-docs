@@ -83,6 +83,65 @@
                     "string",
                     "null"
                   ]
+                },
+                "archiveMember": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "archive",
+                    "memberPath",
+                    "sha256",
+                    "byteSize",
+                    "mediaType"
+                  ],
+                  "properties": {
+                    "archive": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "url",
+                        "path",
+                        "sha256",
+                        "byteSize",
+                        "mediaType",
+                        "retrievedAt"
+                      ],
+                      "properties": {
+                        "url": {
+                          "type": "string"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "byteSize": {
+                          "type": "integer"
+                        },
+                        "mediaType": {
+                          "const": "application/zip"
+                        },
+                        "retrievedAt": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "memberPath": {
+                      "type": "string"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "byteSize": {
+                      "type": "integer"
+                    },
+                    "mediaType": {
+                      "const": "application/xml"
+                    }
+                  }
                 }
               }
             }

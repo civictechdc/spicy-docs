@@ -1745,19 +1745,22 @@ def convert_uslm(path: Path) -> Conversion:
     data = path.read_bytes()
     selection = PublicLawSelection(119, "public", 1)
     meta = validate_public_law_xml(data, selection=selection, final_url=public_law_xml_locator(selection))
+    member = json.loads((FIXTURES / "document_capture_provenance/public-law.json").read_bytes())["archiveMember"]
+    if sha256(data) != member["sha256"] or len(data) != member["byteSize"]:
+        raise ValueError("public-law fixture differs from the retained archive member")
     artifact = read_artifact(
         path,
         "application/xml",
         {
-            "url": "https://www.govinfo.gov/bulkdata/PLAW/119/public/PLAW-119-public.zip",
             "path": str(path.relative_to(ROOT)),
             "publisher": "GovInfo",
             "publisherId": "PLAW-119publ1",
         },
         [("rkaf:uslm", "/us/pl/119/1"), *(("rkaf:partner-defined", f"citableAs:{c}") for c in meta.citable_as)],
-        FIXTURE_RETRIEVED["tests/fixtures/uslm/README.md"],
+        member["archive"]["retrievedAt"],
     )
     ext = {
+        "archiveMember": member,
         "source": meta.source,
         "title": meta.title,
         "docNumber": meta.doc_number,
