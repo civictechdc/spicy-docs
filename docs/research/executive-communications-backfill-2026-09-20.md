@@ -16,7 +16,7 @@ an alternative, and it is the publisher of record.
 **The finding.** Congress.gov's `house-communication` detail record is a
 decomposition of one sentence printed in the Congressional Record's House
 section `EXECUTIVE COMMUNICATIONS, ETC.`. For 114th EC 4329 the publisher's
-`abstract` **equals** the printed entry under exactly two normalizations, and
+`abstract` **equals** the printed entry under three normalizations the publisher applies, and
 `submittingAgency`, `submittingOfficial`, `legalAuthority` and the committee
 referral are spans of that same sentence. The Record prints that section for
 every House sitting day back to 1994 -- the whole 104th-113th gap -- as a
@@ -45,8 +45,9 @@ authority or referral. A table built from them would state that a
 communication exists and nothing about what it communicated.
 
 **The detail floor is the publisher's answer, not the probe's spelling.**
-`tools/analysis/legislative_data_map.py`'s `measure_requirements` builds its
-detail path with `code.lower()`, while the publisher's own list row spells it
+`tools/analysis/legislative_data_map.py`'s `measure_requirements` built its
+detail path with `code.lower()` (until c43db45 on main, which asks the row's
+stated `url` and constructs a path only for a row stating none), while the publisher's own list row spells it
 `.../house-communication/112/EC/2`. A measurement that only ever asked the
 lowercased form could not have seen a route that answers the uppercased one.
 Probe 6 requested the publisher's locator verbatim, read off the retained list
@@ -89,11 +90,12 @@ publisher's own decomposition of the same communications.
 > Workforce.*
 >
 > **`abstract`** (`house-communication/114/EC/4329`): identical, with `--`
-> folded to ` - ` and `Sec.` expanded to `section`.
+> folded to ` - `, `Sec.` expanded to `section`, and the en dash the publisher
+> prints in Public Law numbers (`104–121`) folded to the Record's hyphen.
 
 The first comparison, run byte for byte, said *not equal*, which is what a
 measurement that encodes its own assumption looks like. Re-derived with those
-two publisher normalizations relaxed and named, `abstract == printed entry` for
+three publisher normalizations relaxed and named, `abstract == printed entry` for
 both ground-truth rows (`relaxed-comparison.json`). The typed fields are spans
 of the same sentence:
 
@@ -109,7 +111,7 @@ of the same sentence:
 | `matching_requirement_number` | **not in the Record at all** | 8070 | 3182 |
 
 `interpretation/communication_rin.py`'s existing rule, unchanged, fires on a
-`report_nature` reconstructed this way: 88 of the 216 entries (40.7%).
+`report_nature` reconstructed this way: 87 of the 216 entries (40.3%).
 
 ### How far one candidate parse rule gets
 
@@ -122,7 +124,7 @@ the seven issues are text the rule was not fitted to:
 | `, transmitting ` split | 216/216 | 100% |
 | committee referral tail | 216/216 | 100% |
 | `pursuant to ` authority | 210/216 | 97.2% |
-| RIN (repo's own rule) | 88/216 | 40.7% |
+| RIN (repo's own rule) | 87/216 | 40.3% |
 
 The six entries with no authority state none; that is a real absence, correctly
 NULL. Four entries are joint referrals.
@@ -203,7 +205,7 @@ grammar.
 
 ### 3. `house-requirement/8070/matching-communications` — **a membership witness**
 
-*States*: five fields, and a `url` that 404s for every pre-114th row. 65,725
+*States*: five fields, and a `url` that 404s on both pre-114th rows probed (108th, 112th). 65,725
 pre-114th rows, all of them Congressional Review Act rule submissions.
 
 *Role*: an independent second derivation of `is_rulemaking` and
