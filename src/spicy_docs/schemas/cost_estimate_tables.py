@@ -21,8 +21,9 @@ whole.
 **What this table cannot see, and says so.**  The element is never emitted
 empty -- zero of 16,213 bills in the two measured zips carries a self-closing
 one -- so a bill absent from this table is *either* never scored *or* not yet
-linked, and no count taken from it is a CBO production rate.  Every row is
-requested-empty evidence about one bill, never absence.
+linked, and no count taken from it is a CBO production rate.  The sibling
+``congress_bills.cbo_cost_estimates_outcome`` preserves unread, populated and
+requested-empty observations even when this table has no row for the bill.
 
 **The text of the estimate is not here.**  The letter itself is reprinted in
 the bill's committee report, for the 883 of 1,368 scored bills (64.5%) that
@@ -138,8 +139,8 @@ CBO_COST_ESTIMATES = table_contract(
             "ampersand).  The column exists so folding onto the identity drops nothing."
         ),
         "report_citation_count": (
-            "How many committee reports this bill's own BILLSTATUS names.  Zero means no CRPT package exists "
-            "and the letter text is unreachable by any route measured: 883 of the 1,368 scored bills of the "
+            "How many committee reports this bill's own BILLSTATUS names. Zero means this document names "
+            "no report citation; it does not establish that no CRPT package exists. 883 of the 1,368 scored bills of the "
             "118th are nonzero (64.5%), and the Senate shortfall is structural -- 155 of 395 scored Senate "
             "bills were reported without a written report."
         ),

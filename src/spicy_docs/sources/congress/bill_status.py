@@ -278,6 +278,9 @@ class BillStatus:
     #: It is what says whether a bill's CBO estimate is reachable as *text*:
     #: the letter is reprinted in the committee report or nowhere.
     report_citations: tuple[str, ...] = ()
+    #: NULL means this block was not read. Empty observations name the XML
+    #: shape, never whether CBO produced an estimate. Published per bill.
+    cbo_cost_estimates_outcome: str | None = None
 
 
 def _validated_identity(identity: BillIdentity) -> BillIdentity:
@@ -445,6 +448,53 @@ def _cbo_cost_estimate(element: Element) -> CboCostEstimate:
     )
 
 
+def _cbo_cost_estimates(bill: Element) -> tuple[tuple[CboCostEstimate, ...], str]:
+    """Keep the observed list shape even when it cannot supply estimate rows.
+
+    Shape labels contain no source text, attribute values or locators. The
+    retained XML supplies those observations; a published marker must never
+    copy a credential from an unexpected answer.
+    """
+    containers = bill.findall("cboCostEstimates")
+    if not containers:
+        return (), "requested-empty:absent"
+    if len(containers) != 1:
+        return (), "requested-empty:unexpected-shape:multiple-containers"
+    container = containers[0]
+    problem = None
+    if container.attrib:
+        problem = "container-attributes"
+    elif (container.text or "").strip():
+        problem = "container-text"
+    elif any(item.tag != "item" for item in container):
+        problem = "non-item-child"
+    elif any((item.tail or "").strip() for item in container):
+        problem = "container-mixed-text"
+    if problem:
+        return (), f"requested-empty:unexpected-shape:{problem}"
+    if not len(container):
+        return (), "requested-empty:present-and-empty"
+    fields = {"pubDate", "title", "url", "description", "rptPubDate", "rptTitle", "rptUrl"}
+    for item in container:
+        if item.attrib:
+            problem = "item-attributes"
+        elif (item.text or "").strip():
+            problem = "item-text"
+        elif any(field.tag not in fields for field in item):
+            problem = "unknown-item-field"
+        elif len({field.tag for field in item}) != len(item):
+            problem = "duplicate-item-field"
+        elif any(len(field) or field.attrib for field in item):
+            problem = "non-scalar-item-field"
+        elif any((field.tail or "").strip() for field in item):
+            problem = "item-mixed-text"
+        elif not any((field.text or "").strip() for field in item):
+            problem = "empty-item"
+        if problem:
+            return (), f"requested-empty:unexpected-shape:{problem}"
+    return tuple(_cbo_cost_estimate(item) for item in container), "populated"
+
+
 def _title(element: Element) -> BillTitle:
     return BillTitle(
         title=_title_text(element),
@@ -542,6 +592,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
     # Current BILLSTATUS repeats this source term in both documented locations.
     if policy_area is not None and subject_policy_area is not None and policy_area != subject_policy_area:
         raise BillSourceError("BILLSTATUS policy area fields disagree")
+    estimates, estimates_outcome = _cbo_cost_estimates(bill)
     return BillStatus(
         identity=identity,
         schema_version=_required_text(root, "version"),
@@ -564,10 +615,11 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
         committees=tuple(_committee(item) for item in _items(bill, "committees")),
         titles=tuple(_title(item) for item in _items(bill, "titles")),
         related_bills=tuple(_related_bill(item) for item in _items(bill, "relatedBills")),
-        cbo_cost_estimates=tuple(_cbo_cost_estimate(item) for item in _items(bill, "cboCostEstimates")),
+        cbo_cost_estimates=estimates,
         report_citations=tuple(
             _required_text(item, "citation") for item in _items(bill, "committeeReports", "committeeReport")
         ),
+        cbo_cost_estimates_outcome=estimates_outcome,
     )
 
 

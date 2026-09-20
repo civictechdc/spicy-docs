@@ -33,7 +33,7 @@ once more in [the docs index](README.md).
 
 | Table | Grain | Identity | Version column | Columns | Supplier |
 | --- | --- | --- | --- | --- | --- |
-| `congress_bills` | One row per bill or resolution, as one BILLSTATUS document states it. | `bill_id` | `update_date` | 48 | `interpretation.bill_family` |
+| `congress_bills` | One row per bill or resolution, as one BILLSTATUS document states it. | `bill_id` | `update_date` | 49 | `interpretation.bill_family` |
 | `bill_actions` | One row per action entry in a bill's BILLSTATUS document, in publisher order. | `bill_id`, `action_index` | `action_date` | 14 | `interpretation.bill_family` |
 | `bill_committees` | One row per committee or subcommittee a bill reached, as its BILLSTATUS document names it. | `bill_id`, `system_code` | `snapshot_update_date` | 10 | `interpretation.bill_family` |
 | `bill_publisher_summaries` | One row per CRS summary the publisher states on a bill, at the version and action it describes. | `bill_id`, `summary_version_code`, `action_date` | `update_date` | 7 | `interpretation.bill_family` |
@@ -72,7 +72,7 @@ once more in [the docs index](README.md).
 | `senate_expenditures` | One row per ruled row of one ruled table on one page of a Report of the Secretary of the Senate, with the cells exactly as the print states them and the roles its own header band names. | `package_id`, `file_name`, `page`, `table_ordinal`, `row_ordinal`, `text_sha256` | `extraction_rule_version` | 35 | `schemas.senate_expenditure_tables` |
 | `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | 27 | `schemas.bill_action_tables`, `interpretation.bill_actions` |
 
-Seven hundred and ninety-five columns in all, each with its own sentence.
+Seven hundred and ninety-six columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -532,15 +532,21 @@ is a new table rather than columns appended to `congress_bills`.
   `https://www.cbo.gov/publication/{id}` page all 1,468 measured urls are; a
   url outside that shape is a named `FamilyRefusal`, not a row keyed on a
   coerced id.
-- **A bill absent from this table is requested-empty, never absence.** The
-  element is never emitted empty — zero of 16,213 bills carries a self-closing
-  one — so "never scored" and "not yet linked" are the same bytes and no count
-  taken from this table is a CBO production rate.
+- **`congress_bills.cbo_cost_estimates_outcome` records every bill's answer.**
+  The appended, nullable column is NULL for unread data, `populated` for read
+  items, `requested-empty:absent` for a missing element,
+  `requested-empty:present-and-empty` for an empty element, and
+  `requested-empty:unexpected-shape:<shape>` for an unsupported shape (for
+  example `non-item-child` or `empty-item`). An estimate table cannot publish
+  this marker when it has no rows. The re-measurement found 1,368 populated
+  blocks, 14,845 absent, zero empty and zero unexpected; none establishes
+  whether an unlisted estimate exists. Unkeyable populated items still produce
+  family refusals naming the rule, host and path shape, without the URL.
 - **`report_citation_count` is the text route's reachability, per row.** 883 of
   the 1,368 scored bills (64.5%) have a committee report at all; the Senate
   shortfall is structural, since 155 of 395 scored Senate bills were reported
-  without a written report. `WHERE report_citation_count = 0` is the ~35% for
-  which no text route exists in any measured route.
+  without a written report. `WHERE report_citation_count = 0` selects bills for which this
+  BILLSTATUS capture names no report; it does not prove no CRPT package exists.
 
 **`committee_reports` carries the letter.** A report reprints the CBO letter
 verbatim when its cover carries the statutory recital, and thirteen appended

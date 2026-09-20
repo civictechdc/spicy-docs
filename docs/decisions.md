@@ -1295,6 +1295,24 @@ columns for one fact, on purpose and in this repository's own house style: what
 a print says and what an index says are different claims, and the two agreeing
 is the check — the same reason `document_citations.stated_by_index` exists.
 
+**The bill carries the empty observation.** Append
+`congress_bills.cbo_cost_estimates_outcome`, leaving every existing column in
+place. NULL means unread; `populated` means estimate items were read;
+`requested-empty:absent` and `requested-empty:present-and-empty` distinguish a
+missing element from an empty one; `requested-empty:unexpected-shape:<shape>`
+names an unsupported structure without copying source text. This is the plain
+home because `cbo_cost_estimates` has one row per estimate and no row on which
+to record an empty answer. A populated block can still yield an unkeyable item:
+its refusal names `cbo_publication_url`, host and path shape, never the URL,
+and free-text reasons are scrubbed before truncation. Zero report citations
+means this BILLSTATUS names no report, not that no CRPT package exists.
+
+The original build's empty-element counter could not fail: it returned zero
+whenever any bill had estimates. The corrected offline measurement uses these
+reader outcomes and a mixed-shape synthetic zip that detects that defect.
+The retained 16,213 bills yield 1,368 populated blocks, 14,845 absent, zero
+present-and-empty and zero unexpected. No count establishes an unscored bill.
+
 **The gate is the cover recital, and a heading is never one.** House Rule XIII
 cl. 3(a)(1)(B) makes the cover carry the recital when the estimate is in the
 report, identically in both chambers. The corpus breaks every looser gate:

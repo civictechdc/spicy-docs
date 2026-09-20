@@ -52,6 +52,8 @@ of the filter rather than a measurement.
 | `<item>` rows stated | **1,468** | 1,468 |
 | Distinct publication ids (**union** across both zips) | **1,431** | 1,431 |
 | Self-closing / empty elements | **0** | 0 |
+| Absent elements | **14,845** | — |
+| Unexpected block shapes | **0** | — |
 | Urls outside the measured `/publication/{id}` shape | **0** | 0 of 1,468 |
 
 Per zip: `118/hr` 10,564 bills, 973 with the element, 1,062 items, 1,035 ids;
@@ -61,6 +63,14 @@ and it is still re-derived as a union rather than left as an assumption.
 
 **Published rows: 1,431, every one keying uniquely** on
 `(bill_id, publication_id)` through `CBO_COST_ESTIMATES.checked`.
+
+The first build measurement hard-coded `empty_elements` to zero whenever
+any bill had estimates. It could not detect an empty element. This rerun
+counts the product reader's explicit outcomes and first tests a synthetic zip
+containing populated, absent, empty and unexpected blocks. Restoring the old
+hard-coded expression fails that control. The retained zips still measure
+zero empty blocks; this is now an observation the measurement can disprove.
+The sidecar records all four control bills separately from the corpus counts.
 
 ### The 37 rows the identity would have dropped
 
@@ -178,6 +188,7 @@ about the publisher.
 
 | | |
 | --- | --- |
+| `congress_bills` | One appended nullable `cbo_cost_estimates_outcome` column; unread, populated and requested-empty shapes survive without estimate rows |
 | `cbo_cost_estimates` | 16 columns, keyed `(bill_id, publication_id)`, filled in the bill family's one pass from the same BILLSTATUS document as its other four tables |
 | `committee_reports` | 13 appended columns: the recital's answer, the print's own bill key, the heading, the letter's span, digest, end rule and signatory, and the publisher's reason |
 | `interpretation/cbo_estimates.py` | the named, versioned rule, with each pattern's reason and its rejects beside it |

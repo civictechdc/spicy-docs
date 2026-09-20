@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from spicy_docs.interpretation.bill_family import BillFamilyCapture, EngineStamp, build_bill_family
-from spicy_docs.schemas import CBO_COST_ESTIMATES
+from spicy_docs.schemas import CBO_COST_ESTIMATES, CONGRESS_BILLS
 from spicy_docs.schemas.cost_estimate_tables import (
     BILLSTATUS_BULK,
     PUBLICATION_ID_RULE,
@@ -57,12 +57,57 @@ def test_reader_states_the_estimate_and_the_report_citation() -> None:
     assert parsed.report_citations == ("H. Rept. 118-53",)
 
 
-def test_reader_defaults_are_empty_for_a_bill_the_publisher_never_scored() -> None:
-    """The element is never emitted empty, so absent is the ordinary case."""
+def test_reader_records_an_absent_element_without_claiming_an_unscored_bill() -> None:
     body = (Path(__file__).parent / "fixtures" / "govinfo_bills" / "status-119hr6028.xml").read_bytes()
     parsed = parse_bill_status(body, identity=BillIdentity(119, "hr", 6028))
     assert parsed.cbo_cost_estimates == ()
     assert parsed.report_citations == ()
+    assert parsed.cbo_cost_estimates_outcome == "requested-empty:absent"
+
+
+@pytest.mark.parametrize(
+    ("block", "outcome"),
+    [
+        ("", "absent"),
+        ("<cboCostEstimates/>", "present-and-empty"),
+        ("<cboCostEstimates> \n </cboCostEstimates>", "present-and-empty"),
+        ("<cboCostEstimates>challenge</cboCostEstimates>", "unexpected-shape:container-text"),
+        ("<cboCostEstimates><estimate/></cboCostEstimates>", "unexpected-shape:non-item-child"),
+        ("<cboCostEstimates><item/></cboCostEstimates>", "unexpected-shape:empty-item"),
+        ("<cboCostEstimates/><cboCostEstimates/>", "unexpected-shape:multiple-containers"),
+        ("<cboCostEstimates><item><url/><url/></item></cboCostEstimates>", "unexpected-shape:duplicate-item-field"),
+        ("<cboCostEstimates><item><mystery/></item></cboCostEstimates>", "unexpected-shape:unknown-item-field"),
+        (
+            "<cboCostEstimates><item><url><value/></url></item></cboCostEstimates>",
+            "unexpected-shape:non-scalar-item-field",
+        ),
+    ],
+)
+def test_empty_observations_publish_on_the_bill_without_estimate_rows(block: str, outcome: str) -> None:
+    xml = (
+        "<billStatus><version>3.0.0</version><bill><congress>118</congress><type>HR</type>"
+        f"<number>801</number><title>Example</title>{block}</bill></billStatus>"
+    ).encode()
+    parsed = parse_bill_status(xml, identity=HR801)
+    family = build_bill_family(BillFamilyCapture(status=parsed, versions=()), engine=ENGINE, diff=False)
+    assert parsed.cbo_cost_estimates == ()
+    assert parsed.cbo_cost_estimates_outcome == f"requested-empty:{outcome}"
+    assert family.bills[0]["cbo_cost_estimates_outcome"] == f"requested-empty:{outcome}"
+    assert family.cbo_cost_estimates == ()
+
+
+def test_unread_and_populated_are_distinct_and_the_column_is_appended() -> None:
+    parsed = status("BILLSTATUS-118hr801", HR801)
+    assert parsed.cbo_cost_estimates_outcome == "populated"
+    for value in (None, "populated"):
+        family = build_bill_family(
+            BillFamilyCapture(status=replace(parsed, cbo_cost_estimates_outcome=value), versions=()),
+            engine=ENGINE,
+            diff=False,
+        )
+        assert family.bills[0]["cbo_cost_estimates_outcome"] == value
+    assert len(CONGRESS_BILLS.columns) == 49
+    assert CONGRESS_BILLS.columns[-2:] == ("related_bill_count", "cbo_cost_estimates_outcome")
 
 
 def test_reader_falls_back_to_the_guide_spelling() -> None:
