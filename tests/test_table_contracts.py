@@ -839,6 +839,7 @@ def _budget_volume_cases() -> list[ShapedCase]:
                     (package, digested, finding.kind, finding.target_key, str(finding.span_start)),
                 )
             )
+    return cases
 
 
 # The second PDF-only family: two bounded page ranges of two Senate volumes.
