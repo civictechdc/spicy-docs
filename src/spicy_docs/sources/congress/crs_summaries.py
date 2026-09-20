@@ -25,7 +25,13 @@ from typing import Any
 
 import httpx
 
-from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key, scrub_credential
+from spicy_docs.transport.credentials import (
+    ACCESS_REFUSED_STATUSES,
+    CredentialRefusedError,
+    read_api_key,
+    refusal_message,
+    scrub_credential,
+)
 from spicy_docs.transport.retry import retry_http
 
 API = "https://api.congress.gov/v3/crsreport/{report_id}"
@@ -53,11 +59,8 @@ def fetch_one(client: httpx.Client, report_id: str, api_key: str) -> dict[str, A
             API.format(report_id=report_id),
             params={"api_key": api_key, "format": "json"},
         )
-        if response.status_code in (401, 403):
-            raise CredentialRefusedError(
-                f"congress.gov answered {response.status_code} for {report_id}: the key was "
-                "refused. Stopping rather than continuing or falling back."
-            )
+        if response.status_code in ACCESS_REFUSED_STATUSES:
+            raise CredentialRefusedError(refusal_message("congress.gov", response.status_code, report_id))
         if response.status_code == 429 or response.status_code >= 500:
             raise _RetryableStatus("retryable congress.gov response", request=response.request, response=response)
         response.raise_for_status()
