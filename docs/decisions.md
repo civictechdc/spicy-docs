@@ -689,3 +689,57 @@ refuses a file whose statement differs from the request; the Senate file states 
 the caller's Congress with `congress_basis = "caller"` — weaker provenance published, not hidden. The Senate
 file's LIS id is published as one seat fact; the LIS crosswalk itself remains the legislators JSON, still the
 only route to a former senator's LIS id, and nothing here duplicates it.
+
+## A prompt states the JSON shape its reader parses, from one declaration
+
+Adopted 2026-09-19 from the first live model run (register row C1 of
+[closing the gaps](research/closing-the-gaps-2026-09-19.md)), landed in
+`interpretation/model_call.py`, `bill_summaries.py` and
+`section_classification.py`, documented in [Interpretation](interpretation.md).
+
+**The sealed prompt asked for prose; the reader required keys the prompt never
+named.** `SUMMARY_PROMPT_TEMPLATE` (`v1`) asked for "a single paragraph", "a
+short phrase describing the most-affected audience" and "up to three notable
+provisions" while the adapter asked for `application/json`, so the key spelling
+was left to the model. One live `summarize_bill` call over the repository's own
+fixture bill (119 HR 6028, `gemini-3.8-flash`, HTTP 200 in 4.45 s, 204 input and
+213 output tokens) came back with `summary`, `affected_audience` and
+`notable_provisions`; `_read_answer` requires `summary`, `audience` and
+`topThreeProvisions`, so it refused the answer. **A keyed production run would
+have published zero `bill_summaries` rows**, every bill refused. Every test
+stubbed the call with the right keys, so nothing offline could see it. The
+evidence is the C1 receipt,
+`~/Work/corpora/supply-2026-09-02/receipts/d1-measured-run-2026-09-19/`
+(`c1-provenance.json`, `scripts/c1_model_run.py`). The fix is proved live in
+`c1-prompt-fix-2026-09-19/` beside it: three keyed calls, one per prompt kind,
+over the same fixture bill — the summary and the diff summary are now answered
+in the named keys and read into rows, and the classification answer came back
+in the named keys too but was refused by the batch guard for naming a section
+id it was never sent, which is a different defect and is recorded, not fixed
+here.
+
+**A prompt and its reader are now one statement.** Each module declares its
+answer's keys, types and enforced counts once as `AnswerField` records;
+`answer_shape_block` turns that declaration into the lines the prompt sends and
+the reader looks its values up through the same records, so neither side can
+name a key the other does not. A test derives both sides from the declaration,
+and a second feeds `_read_answer` the exact shape the live call returned and
+requires the refusal to name every missing key.
+
+All three prompts moved to `v2` and their digests were re-pinned, because all
+three left something to the model: the summary prompt named none of its keys;
+the classification prompt named its three but not their types; the diff prompt
+named its five but not theirs, so a list with nothing in it could arrive as
+`null` and refuse the whole answer. Spellings a model may reasonably choose
+instead — `top_provisions`, `section_id`, a `classifications` wrapper around a
+requested array — stay accepted by the reader and unoffered by the prompt: a
+one-directional tolerance, declared beside the key, never a second name the
+answer may choose between. `affected_audience` and `notable_provisions` were
+deliberately **not** added as aliases; teaching the reader the answer a
+defective prompt provoked would have left the prompt defective.
+
+**The diff prompt lost its byte-for-byte seal against BillTrax
+(`summarize/route.ts:119-129`), on purpose.** It keeps the route's wording and
+order and adds only each key's type. A prompt reproduced exactly and refused on
+arrival is a faithful copy of nothing, and no `diff_summaries` row has ever
+been published under `v1` for the change to invalidate.
