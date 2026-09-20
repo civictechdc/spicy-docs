@@ -20,7 +20,7 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 
 ## The tables
 
-`TABLE_CONTRACTS` holds all thirty-four by name. Each carries its columns in
+`TABLE_CONTRACTS` holds all thirty-five by name. Each carries its columns in
 publish order, its identity, its version column — the column a merge prefers the
 larger value of when two rows share an identity — a one-sentence grain, and one
 sentence per column for the host's data dictionary.
@@ -61,8 +61,9 @@ sentence per column for the host's data dictionary.
 | `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | 20 | `schemas.roster_tables` |
 | `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | 17 | `schemas.document_citation_tables`, `interpretation.citations` |
 | `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 36 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
+| `budget_volumes` | One row per published volume of the President's budget, with what its print adds to its own index. | `package_id` | `last_modified` | 34 | `schemas.budget_volume_tables`, `sources.govinfo.bodies` |
 
-Six hundred and seventy columns in all, each with its own sentence.
+Seven hundred and four columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -71,7 +72,7 @@ appended.
 
 ## The bill family is one pass
 
-Twelve of the thirty-four tables come out of a single call to
+Twelve of the thirty-five tables come out of a single call to
 `build_bill_family`, in an order where no step reads a table an earlier step
 published:
 
@@ -256,6 +257,58 @@ rollup estimated.
 `.laws`, `.usc_sections`, `.reports`, `.members` and `.session` from the MODS
 root extension. A chapter-only `<USCode>` block contributes nothing: a chapter
 is not a section and has no hosted key.
+
+## The budget volumes are the family whose print outruns its index
+
+`schemas/budget_volume_tables.py` is what the
+[MODS re-check](research/pdf-yield-mods-recheck-2026-09-20.md)'s revised build
+order puts first, and it is the mirror image of the activity reports. Read at
+full page depth, the eight retained volumes name **504 public laws of 518, 97
+U.S. Code sections of 922 and 13 CFR parts of 18 that their own MODS does not
+state** — the largest real citation yield in the corpus, where the activity
+reports' is zero for the same kinds.
+
+`budget_volumes` is the document row and `document_citations` is still the only
+link table: a budget citation is a `document_citations` row with
+`document_kind` `budget_volume`, not a second table. The document row takes
+every descriptive field from the keyed records — the summary's title, issue
+date and **page count**, and the MODS's `<law>`, `<USCode>` section, `<cfr>`
+part, `<statuteAtLarge>` and `<bill>` lists — and the print contributes counts
+only.
+
+Three things about this family are not true of the others.
+
+- **There is no Congress anywhere.** A BUDGET package id carries a fiscal year
+  and a part, and a BUDGET summary states no `congress` field at all. So the
+  print's bill key is the congress-free `HR7806` and the MODS's is
+  `119-hr-7806`, and those are not comparable. `budget_index_stated_keys`
+  drops `bill_number` from the comparison rather than publishing a `false`
+  no comparison earned, so those rows carry NULL and the MODS's own bill list
+  is published whole in `associated_bills_json`. The weaker comparison that
+  *is* possible is published as a count and labelled as one:
+  `distinct_bills` and `distinct_bills_beyond_index_congress_blind` reduce both
+  sides to `{bill_type}-{number}`, which is how 6 of the 8 distinct printed
+  bills across the eight volumes are print-only. Neither column is a join key —
+  `congress_bills.bill_id` cannot be built from either side — and saying so in
+  the column name is what stops the family's own headline from being read as
+  one.
+- **The volumes are long, so the read depth is the finding.** `BUDGET-2027-APP`
+  is 1,340 pages; read to 60 it names 29 public laws and read whole it names
+  490. `pages_read`, `stated_page_count` and `pages_capped` are what keep a
+  count from being read as the volume's when it is a window's. The fixture
+  `BUDGET-2027-BUD` is the small version of the same fact: 2 print-only laws
+  at 60 pages, 3 across all 92.
+- **The fiscal year is stated twice and held equal.** The package id carries
+  it and the MODS states it as `<field name="Fiscal Year">`; the column
+  publishes the MODS's and a test asserts the two agree on both fixtures,
+  because a single source would agree with itself whatever it said. It is not
+  the issue year: `BUDGET-2026-MSR` was issued 2025-09-05.
+
+Reaching these packages at all needed the package-id grammar widened to
+`BUDGET-*` and `GPO-CDOC-*`, which is [its own decision
+record](decisions.md#budget-and-the-gpo-prefixed-cdoc-reprints-join-the-package-id-grammar):
+before it, `GovInfoBodyAcquirer` refused both collections and the measurement
+proved their identity by a fallback weaker than the sealed validators.
 
 ## What the tests do not establish
 

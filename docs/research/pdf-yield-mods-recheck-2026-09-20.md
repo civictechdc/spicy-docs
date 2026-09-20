@@ -251,6 +251,19 @@ what the grammar is, why those ids are not the neighbouring-collection ids the
 current refusal exists to reject, and what `collectionCode` check replaces the
 one that cannot run — before either family is acquired in product code.
 
+> **Answered 2026-09-20, after this measurement ran.** The grammar now covers
+> `BUDGET-{fiscal year}-{APP|BALANCES|BUD|FCS|MSR|PER}` and
+> `GPO-CDOC-{congress}sdoc{number}`, and each collection carries the
+> `collectionCode` its records state — both of these state `GPO`, so the check
+> compares against that rather than against the id's prefix, and
+> `GPO-J6-REPORT` stays refused because the registered collection is the whole
+> `GPO-CDOC` prefix. All 16 records proved here by the bare `accessId` pass
+> the sealed validators offline: 11 `validate_package_mods`, 5
+> `validate_granule_mods`, zero refusals
+> (`budget-volumes-2026-09-20/reprove-identity.py`). See
+> [the decision record](../decisions.md#budget-and-the-gpo-prefixed-cdoc-reprints-join-the-package-id-grammar).
+> The paragraph above is left as it was measured; this is what changed after.
+
 ## The non-GovInfo publishers
 
 The same question, asked of every family with no MODS: is there a field in the

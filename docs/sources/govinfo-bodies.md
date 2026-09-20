@@ -95,6 +95,8 @@ structure-first rule the rest of the order already follows.
 | Congressional Record | `CREC-{yyyy-mm-dd}` with optional `-v{volume}` or `-i{issue}` | `CREC-2019-01-03-v164` |
 | Congressional Directory | `CDIR-{yyyy-mm-dd}` | `CDIR-2026-02-20` |
 | Bill text | `BILLS-{congress}{type}{number}{version}` | `BILLS-119hr1enr` |
+| President's budget | `BUDGET-{fiscal year}-{APP\|BALANCES\|BUD\|FCS\|MSR\|PER}` | `BUDGET-2027-APP` |
+| Senate Secretary reprints | `GPO-CDOC-{congress}sdoc{number}` | `GPO-CDOC-119sdoc3` |
 
 Congress.gov route URLs carry these ids as their file stems, so a caller
 holding a route holds a package id. A Record date alone is not one: a single
@@ -106,12 +108,30 @@ The committee-print token is upper-case (`HPRT`/`SPRT`/`JPRT`), unlike the
 committee-report token it otherwise resembles (`hrpt`/`srpt`/`erpt`) — verified
 on a real package summary 2026-09-19, not inferred from CRPT's own spelling.
 
+A budget volume is addressed by fiscal year and part, with no Congress in the
+id at all; the six parts are the ones measured 2026-09-20 across the eight
+retained volumes. The Senate Secretary's semiannual report is a CDOC reprint
+under a `GPO-` prefix, and only `sdoc` is sealed — `hdoc` and `tdoc` are real
+CDOC document types that no measured `GPO-CDOC-` id carries, so they are
+refused rather than inferred, exactly as CPRT's upper-case token was measured
+rather than inferred from CRPT's.
+
 `parse_package_id` refuses anything else and names what it expected. That
 includes real packages from neighboring collections that a collection-scoped
 `published` walk returns anyway — `ERP-2009` states `collectionCode` `ERP` and
 `GPO-J6-REPORT` states `GPO` (79 of 1,681 CDOC-scoped and 3 of 3,000
 CRPT-scoped ids sampled on 2026-09-19). They have different addresses, so they
-are refused rather than guessed at.
+are refused rather than guessed at. `GPO-J6-REPORT` stays refused now that
+`GPO-CDOC-*` is covered, because the registered collection is the **whole id
+prefix** matched longest-first: `GPO-CDOC` is a collection and `GPO` is not.
+
+**A collection's name is not always the `collectionCode` its records state.**
+Seven collections state their own id prefix. BUDGET and the GPO-prefixed CDOC
+reprints both state `GPO` — measured 2026-09-20 on 11 MODS records, 5 granule
+MODS and 3 package summaries — so each grammar entry carries the code its
+records state and the summary, MODS and granule checks compare against that
+(`stated_collection_code`). Comparing against the prefix would refuse these two
+families' own real publisher records.
 
 A **granule id** names one constituent of a package — the daily Record's
 individual speeches and page ranges — and has no per-collection grammar of its
@@ -167,6 +187,21 @@ whose URL is exactly this module's locator for a supported format. Measured
 | `CREC-2026-01-02` | PDF | `pdf` | four PDF links |
 | `CDIR-2026-02-20` | PDF, Text | `pdf` (18.3 MB), `txt` | `txtLink`, `pdfLink` |
 | `BILLS-119hr1enr` | HTML, PDF, XML, USLM | `htm`, `xml`, `pdf`, `uslm` | `xmlLink`, `txtLink`, `xhtmlLink`, `uslmLink`, `pdfLink` |
+| `BUDGET-*` (all 8 volumes) | PDF | not re-probed | `pdfLink`, `thumbnailJpeg` (2 summaries retained) |
+| `GPO-CDOC-*` (3 packages, 5 granules) | PDF | not re-probed | `pdfLink` (1 summary retained) |
+
+The last two rows were added 2026-09-20 from the retained MODS alone; those
+routes were **not** re-probed, so they state what the publisher says these
+packages offer and not a fresh confirmation of what they serve. Every one of
+the eleven package records and five granule records states PDF, at exactly this
+module's own locator, and no second body rendition anywhere. What five of them
+state *beside* the PDF is a JPEG thumbnail, and one (`BUDGET-2027-FCS`) an XLS;
+neither is a body text rendition and `extraction/body_text.py` has no
+derivation for either, so both stay in `other_renditions` and
+`PACKAGE_BODY_FORMATS` gained no entry. The two Balances volumes state an XLS
+too, but inside a constituent record and at a granule stem
+(`xls/BUDGET-2026-BALANCES-1.xlsx`) — an address this module's package locator
+does not derive, and a record this module's root-only reader never reads.
 
 The MODS statement agreed exactly with what the routes served, in both
 directions, for every package measured: each stated rendition answered 200 and

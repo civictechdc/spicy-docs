@@ -313,28 +313,60 @@ def _mods_naming(access_id: str, host: str | None = None) -> bytes:
     ).encode()
 
 
+#: A real id from a neighbouring collection that a collection-scoped
+#: ``published`` walk returns and ``bodies.py``'s grammar still refuses.  The
+#: fallback's two cases were written on ``BUDGET-*`` and ``GPO-CDOC-*``, which
+#: the grammar covered from 2026-09-20 (``docs/decisions.md``), so exercising
+#: it needs a collection that is still outside the grammar or the branch is
+#: never entered.
+UNCOVERED = "ERP-2009"
+
+
 def test_a_mods_that_names_another_package_is_refused() -> None:
     """The fallback's whole job: a record that does not name itself is not read."""
-    document = GovInfoDocument("budget", "BUDGET-2027-APP", "BUDGET-2027-APP", None, "https://www.govinfo.gov/")
+    document = GovInfoDocument("budget", UNCOVERED, UNCOVERED, None, "https://www.govinfo.gov/")
 
     with pytest.raises(RecheckError, match="accessId differs"):
-        prove_identity(_mods_naming("BUDGET-2027-BUD"), document, document.mods_url)
-    assert prove_identity(_mods_naming("BUDGET-2027-APP"), document, document.mods_url) == "accessId"
+        prove_identity(_mods_naming("ERP-2010"), document, document.mods_url)
+    assert prove_identity(_mods_naming(UNCOVERED), document, document.mods_url) == "accessId"
 
 
 def test_a_granule_mods_must_also_name_its_host_package() -> None:
     """``validate_granule_mods`` proves membership this way; the fallback now does too."""
-    document = GovInfoDocument(
-        "senate_secretary", "x", "GPO-CDOC-119sdoc6", "GPO-CDOC-119sdoc6-1", "https://www.govinfo.gov/"
-    )
-    granule = "GPO-CDOC-119sdoc6-1"
+    document = GovInfoDocument("budget", "x", UNCOVERED, f"{UNCOVERED}-1", "https://www.govinfo.gov/")
+    granule = f"{UNCOVERED}-1"
 
     with pytest.raises(RecheckError, match="states no host package"):
         prove_identity(_mods_naming(granule), document, document.mods_url)
     with pytest.raises(RecheckError, match="host package differs"):
-        prove_identity(_mods_naming(granule, host="GPO-CDOC-119sdoc5"), document, document.mods_url)
-    proof = prove_identity(_mods_naming(granule, host="GPO-CDOC-119sdoc6"), document, document.mods_url)
+        prove_identity(_mods_naming(granule, host="ERP-2010"), document, document.mods_url)
+    proof = prove_identity(_mods_naming(granule, host=UNCOVERED), document, document.mods_url)
     assert proof == "accessId+host"
+
+
+def test_the_two_families_this_receipt_measured_no_longer_take_the_fallback() -> None:
+    """The widened grammar reaches both, so the sealed validators do the proving.
+
+    The re-check proved 16 of its 24 records by the ``accessId`` fallback
+    because ``bodies.py``'s grammar covered neither ``BUDGET-*`` nor the
+    GPO-prefixed CDOC reprints. It covers both now, so the same call reports
+    the sealed validator's name -- and the refusal it raises is that
+    validator's, not ``RecheckError``, because the stronger check ran first.
+    """
+    from spicy_docs.sources.govinfo.bodies import GovInfoBodySourceError
+
+    package = GovInfoDocument("budget", "BUDGET-2027-APP", "BUDGET-2027-APP", None, "https://www.govinfo.gov/")
+    assert prove_identity(_mods_naming("BUDGET-2027-APP"), package, package.mods_url) == "validate_package_mods"
+    with pytest.raises(GovInfoBodySourceError, match="accessId differs"):
+        prove_identity(_mods_naming("BUDGET-2027-BUD"), package, package.mods_url)
+
+    granule = GovInfoDocument(
+        "senate_secretary", "x", "GPO-CDOC-119sdoc6", "GPO-CDOC-119sdoc6-1", "https://www.govinfo.gov/"
+    )
+    proof = prove_identity(_mods_naming("GPO-CDOC-119sdoc6-1", host="GPO-CDOC-119sdoc6"), granule, granule.mods_url)
+    assert proof == "validate_granule_mods"
+    with pytest.raises(GovInfoBodySourceError, match="states no host package"):
+        prove_identity(_mods_naming("GPO-CDOC-119sdoc6-1"), granule, granule.mods_url)
 
 
 def test_only_govinfo_locators_are_read_and_only_the_first_eight(tmp_path: Path) -> None:

@@ -1,0 +1,108 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1e03f35ea">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Executive Office of the President</namePart>
+         <namePart>Office of Management and Budget</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>GPO</collectionCode>
+         <category>Budget and Presidential Materials</category>
+         <branch>executive</branch>
+         <dateIngested>2026-04-03</dateIngested>
+    </extension>
+    <originInfo>
+         <publisher>Office of Management and Budget, Executive Office of the President</publisher>
+         <dateIssued encoding="w3cdtf">2026-04-03</dateIssued>
+         <issuance>continuing</issuance>
+         <frequency authority="marcfrequency">Annual</frequency>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>92 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">PREX 2.8:2027</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/BUDGET-2027-BUD</identifier>
+    <identifier type="local">P0b002ee1e03f35ea</identifier>
+    <identifier type="isbn">978-0-16-097477-9</identifier>
+    <identifier type="stock number">041-001-00757-1</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2026-04-03</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2026-04-03</recordChangeDate>
+         <recordIdentifier source="DGPO">BUDGET-2027-BUD</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <docClass>BUDGET</docClass>
+         <accessId>BUDGET-2027-BUD</accessId>
+         <ACCode>BUDGET</ACCode>
+         <isCurrentEdition>true</isCurrentEdition>
+         <editionId>BUDGET-BUD</editionId>
+         <field name="Fiscal Year">2027</field>
+         <description>Contains information on the President&apos;s priorities and summary tables.</description>
+         <image>thumbnails/BUDGET-2027-BUD.jpg</image>
+         <docCitation text="Budget FY 2027"></docCitation>
+         <genericNav1Value>Budget of the U.S. Government</genericNav1Value>
+         <genericNav2Value>Fiscal Year 2027</genericNav2Value>
+         <packageSort>A</packageSort>
+         <president id="DJT" party="R">
+                                
+              <name type="authority-lnf">Trump, Donald J.</name>
+                                
+              <name type="authority-fnf">Donald J. Trump</name>
+                                
+              <name type="authority-other">Donald Trump</name>
+                                
+              <name type="authority-other">Donald John Trump</name>
+                            
+        </president>
+    </extension>
+    <titleInfo>
+         <title>Budget of the U.S. Government</title>
+    </titleInfo>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/BUDGET-2027-BUD</url>
+         <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/BUDGET-2027-BUD/pdf/BUDGET-2027-BUD.pdf</url>
+         <url access="raw object" displayLabel="JPEG rendition">https://www.govinfo.gov/content/pkg/BUDGET-2027-BUD/thumbnails/BUDGET-2027-BUD.jpg</url>
+    </location>
+    <identifier type="preferred citation">Budget FY 2027</identifier>
+    <abstract>Contains information on the President&apos;s priorities and summary tables.</abstract>
+    <name type="personal">
+         <namePart>Donald J. Trump</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">originator</roleTerm>
+              <roleTerm authority="marcrelator" type="code">org</roleTerm>
+        </role>
+         <description>President of the United States</description>
+    </name>
+    <extension>
+         <searchTitle>Budget FY 2027;Budget of the U.S. Government;
+            </searchTitle>
+    </extension>
+</mods>

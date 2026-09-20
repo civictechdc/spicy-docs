@@ -327,8 +327,46 @@ def document_provenance(body: object, *, document_key: str, document_kind: str) 
     )
 
 
-def _bill_key(bill: object) -> str:
+def bill_key(bill: object) -> str:
+    """One ``ModsBill`` as ``congress_bills.bill_id`` spells it.
+
+    Shared by every family whose document row publishes the MODS's own
+    ``<bill>`` list, so one reading of the publisher's ``type``/``number``
+    reaches every table.
+    """
     return natural_key(bill.congress, bill.normalized_bill_type or str(bill.bill_type).lower(), bill.number)
+
+
+def distinct_targets(findings: Iterable[object], kind: str) -> set[str]:
+    """Every distinct ``target_key`` of one kind among one document's findings.
+
+    Shared because a document row's ``distinct_*`` columns are this count in
+    every family, and a second spelling of it would be a second definition of
+    what "distinct" means.
+    """
+    return {finding.target_key for finding in findings if finding.kind == kind}
+
+
+def read_depth(body: object, summary: object) -> tuple[int | None, str | None, bool | None]:
+    """``(pages_read, stated_page_count, pages_capped)`` for one document.
+
+    The publisher states the extent and the extraction states how far it got,
+    and the two are never re-derived from each other: a capped read reports
+    both rather than publishing its own count as the document's.
+    ``pages_capped`` is NULL when the rendition states no page split, and also
+    when the publisher ever states a non-numeric extent -- which must not crash
+    the row or, worse, be read as uncapped.
+
+    Shared by every family that reads a paginated body, so the cap rule is
+    stated once (measured 2026-09-20: CRPT-118hrpt965 states 282 pages and a
+    60-page read saw 60).
+    """
+    pages = getattr(body, "pages", None)
+    pages_read = None if pages is None else len(pages)
+    page_count = summary.pages
+    numeric_pages = page_count is not None and str(page_count).isdecimal()
+    capped = None if pages_read is None or not numeric_pages else pages_read < int(page_count)
+    return pages_read, page_count, capped
 
 
 def index_stated_keys(mods: object) -> dict[str, frozenset[str]]:
@@ -354,7 +392,7 @@ def index_stated_keys(mods: object) -> dict[str, frozenset[str]]:
     """
     laws = {natural_key(law.congress, law.law_type, law.number) for law in getattr(mods, "laws", ())}
     return {
-        "bill_number": frozenset(_bill_key(bill) for bill in getattr(mods, "bills", ())),
+        "bill_number": frozenset(bill_key(bill) for bill in getattr(mods, "bills", ())),
         "public_law": frozenset(laws),
         "statutes_at_large": frozenset(
             f"{statute.volume}-{statute.pages}" for statute in getattr(mods, "statutes", ())
@@ -423,10 +461,6 @@ def shape_document_citation(
     }
 
 
-def _distinct(findings: Iterable[object], kind: str) -> set[str]:
-    return {finding.target_key for finding in findings if finding.kind == kind}
-
-
 def shape_activity_report(
     summary: object,
     mods: object,
@@ -456,21 +490,15 @@ def shape_activity_report(
     identity = summary.identity
     provenance = document_provenance(body, document_key=identity.package_id, document_kind=GOVINFO_PACKAGE)
     stated = index_stated_keys(mods)
-    bills = _distinct(citations, "bill_number")
-    laws = _distinct(citations, "public_law")
-    sections = _distinct(citations, "usc_section")
+    bills = distinct_targets(citations, "bill_number")
+    laws = distinct_targets(citations, "public_law")
+    sections = distinct_targets(citations, "usc_section")
     committees = [finding for finding in citations if finding.kind == "committee_name"]
     # A bill the index states only under another Congress: it misses the
     # strict key and matches the Congress-free one.
     loose = index_stated_bill_pairs(mods)
     mismatched = {key for key in bills - stated["bill_number"] if "-".join(key.split("-")[1:]) in loose}
-    pages = getattr(body, "pages", None)
-    pages_read = None if pages is None else len(pages)
-    page_count = summary.pages
-    # A publisher that ever states a non-numeric extent must not crash the row
-    # or, worse, have it silently read as uncapped.
-    numeric_pages = page_count is not None and str(page_count).isdecimal()
-    capped = None if pages_read is None or not numeric_pages else pages_read < int(page_count)
+    pages_read, page_count, capped = read_depth(body, summary)
     submitter = getattr(mods, "submitted_by", None)
     return {
         "package_id": text(identity.package_id),
@@ -496,7 +524,7 @@ def shape_activity_report(
         ),
         "associated_bill_count": text(len(mods.bills)),
         "associated_bills_json": json_column(
-            [{"bill_id": _bill_key(bill), "context": bill.context} for bill in mods.bills]
+            [{"bill_id": bill_key(bill), "context": bill.context} for bill in mods.bills]
         ),
         "associated_law_count": text(len(mods.laws)),
         "associated_laws_json": json_column([natural_key(law.congress, law.law_type, law.number) for law in mods.laws]),
@@ -534,9 +562,12 @@ __all__ = [
     "GOVINFO_PACKAGE",
     "HOUSE_ACTIVITY_REPORTS",
     "DocumentProvenance",
+    "bill_key",
+    "distinct_targets",
     "document_provenance",
     "index_stated_bill_pairs",
     "index_stated_keys",
+    "read_depth",
     "shape_activity_report",
     "shape_document_citation",
 ]

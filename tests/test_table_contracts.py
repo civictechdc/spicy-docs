@@ -800,6 +800,49 @@ def _document_citation_cases() -> list[ShapedCase]:
 
 
 # ---------------------------------------------------------------------------
+# The budget volumes: the family whose print outruns its own index.
+# ---------------------------------------------------------------------------
+
+
+#: One document row per retained volume, plus one citation row per kind per
+#: volume -- every column path, without turning the generic loop into a
+#: thousand near-identical cases.  ``tests/test_budget_volumes.py`` owns the
+#: fixture loading, the rules and the counts, so the two read one set of bytes.
+def _budget_volume_cases() -> list[ShapedCase]:
+    from tests.test_budget_volumes import VOLUMES, body_for, rows_for
+
+    cases: list[ShapedCase] = []
+    for package in VOLUMES:
+        document, rows, findings, mods = rows_for(package)
+        cases.append(
+            _case(
+                "budget_volumes",
+                document,
+                # Rebuilt from the package id, not read back out of the row
+                # the case is checking.
+                (package,),
+                associated_laws_json=[f"{law.congress}-{law.law_type}-{law.number}" for law in mods.laws],
+                associated_cfr_parts_json=[f"{part.title}-{part.part}" for part in mods.cfr_parts],
+                associated_statutes_json=[f"{s.volume}-{s.pages}" for s in mods.statutes],
+            )
+        )
+        chosen: dict[str, tuple[dict[str, str | None], object]] = {}
+        for row, finding in zip(rows, findings, strict=True):
+            chosen.setdefault(f"{finding.kind}:{row['stated_by_index']}", (row, finding))
+        digested = digest(body_for(package).text)
+        for row, finding in chosen.values():
+            cases.append(
+                _case(
+                    "document_citations",
+                    row,
+                    # Rebuilt from the finding and the fixture's own text.
+                    (package, digested, finding.kind, finding.target_key, str(finding.span_start)),
+                )
+            )
+    return cases
+
+
+# ---------------------------------------------------------------------------
 # The A8 laws tables and the A9 rosters: real captures, one law per row.
 # ---------------------------------------------------------------------------
 
@@ -943,6 +986,7 @@ def all_cases() -> list[ShapedCase]:
         + _laws_cases()
         + _roster_cases()
         + _document_citation_cases()
+        + _budget_volume_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -1119,6 +1163,12 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "document_citations": ("schemas/document_citation_tables.py", "interpretation/citations.py"),
     "house_activity_reports": (
         "schemas/document_citation_tables.py",
+        "interpretation/citations.py",
+        "sources/govinfo/bodies.py",
+    ),
+    # The revised build order's first family (B4): the budget volumes.
+    "budget_volumes": (
+        "schemas/budget_volume_tables.py",
         "interpretation/citations.py",
         "sources/govinfo/bodies.py",
     ),

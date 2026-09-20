@@ -1,0 +1,52 @@
+{
+  "document_bytes": 1080427,
+  "document_sha256": "e3d1438f9118add755cb2f9d677b9e839b6644250889eca27b8b857c24dbf833",
+  "document_url": "https://www.govinfo.gov/content/pkg/BUDGET-2026-MSR/pdf/BUDGET-2026-MSR.pdf",
+  "gpo_cleanup": {
+    "gpo_footers_stripped": false,
+    "hyphen_rejoins": 0,
+    "line_numbers_stripped": false,
+    "running_footer_lines": 0,
+    "small_caps_merges": 0
+  },
+  "mods_excerpt_bytes": 6072,
+  "mods_full_bytes": 7403,
+  "mods_full_sha256": "26673c13d09ca221740a0a8630a01f73d14e21f05e38da9b9bbabb2abf98fd07",
+  "mods_related_items_dropped": 3,
+  "mods_url": "https://api.govinfo.gov/packages/BUDGET-2026-MSR/mods",
+  "package_id": "BUDGET-2026-MSR",
+  "page_count": 16,
+  "page_lengths": [
+    94,
+    0,
+    94,
+    0,
+    1,
+    0,
+    1354,
+    0,
+    4467,
+    3142,
+    4765,
+    4992,
+    3556,
+    2392,
+    1826,
+    85
+  ],
+  "page_range": [
+    1,
+    16
+  ],
+  "pages_read": 16,
+  "receipts": [
+    "~/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20",
+    "~/Work/corpora/supply-2026-09-02/receipts/pdf-yield-mods-recheck-2026-09-20",
+    "~/Work/corpora/supply-2026-09-02/receipts/budget-volumes-2026-09-20"
+  ],
+  "summary_bytes": 2354,
+  "summary_sha256": "c28161989a2a2833c36c32a80eb24bd8114e554298252b956d572feeaf050c5c",
+  "summary_url": "https://api.govinfo.gov/packages/BUDGET-2026-MSR/summary",
+  "text_characters": 26783,
+  "text_sha256": "c5cb60c3e33ea5a2893abaaed48b6b5e8a9a844242182beeeb200f469e43dca4"
+}

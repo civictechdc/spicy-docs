@@ -269,18 +269,25 @@ def _prove_identity(body: bytes, document: GovInfoDocument, final_url: str) -> s
     Where ``bodies.py``'s grammar covers the collection, its validator is the
     proof: it checks the final URL, every root ``accessId``, the
     ``collectionCode``, and for a granule the host package nested in a
-    ``relatedItem type="host"``. Where the grammar does not (BUDGET, the
-    GPO-prefixed CDOC reprints), the record still has to name itself, so the
-    ``accessId`` check is applied directly and a granule's host package is
-    checked the same way ``validate_granule_mods`` checks it.
+    ``relatedItem type="host"``. Where the grammar does not, the record still
+    has to name itself, so the ``accessId`` check is applied directly and a
+    granule's host package is checked the same way ``validate_granule_mods``
+    checks it.
 
     **The fallback proves less than the sealed validators**, and the report
     says so: it does not check the final URL against a derived locator, and it
     does not check ``collectionCode``, because this module derives neither for
-    a collection the grammar does not cover. Widening that grammar to
-    ``BUDGET-*`` and ``GPO-CDOC-*`` is owed a decision record before either
-    family is acquired in product code; a measurement may read a record the
-    sealed acquirer would refuse to fetch, a contract may not.
+    a collection the grammar does not cover. A measurement may read a record
+    the sealed acquirer would refuse to fetch; a contract may not.
+
+    **As run on 2026-09-20, 16 of the 24 records took the fallback** because
+    the grammar reached neither ``BUDGET-*`` nor the GPO-prefixed CDOC
+    reprints. It reaches both since the decision record "BUDGET and the
+    GPO-prefixed CDOC reprints join the package-id grammar"
+    (``docs/decisions.md``), so a re-run of those two families now takes the
+    sealed branch and the fallback is reached only by a collection still
+    outside the grammar -- ``ERP-*``, ``GPO-J6-REPORT`` and the other
+    neighbouring-collection ids a scoped ``published`` walk returns.
     """
     try:
         identity = parse_package_id(document.package_id)
