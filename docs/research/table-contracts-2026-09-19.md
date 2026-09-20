@@ -656,6 +656,15 @@ check and became coverage with null identity fields, and are now
 requested-empty observations naming what was missing. The host's temporary
 guard is deleted on this adoption.
 
+spicy-docs 0.24.2 (cut 2026-09-20: commit 965776e, tag v0.24.2 pushed,
+`dist/spicy_docs-0.24.2-py3-none-any.whl` 1,333,353 bytes, sha256
+`cf84fb9f5ede4a53d1dca078759297b08ca30c63c82eb6343ccf53142caf72b1`): a patch, no contract
+moves. The shared retry scrubs an exception before logging and before
+truncating it, so a query-string credential can no longer stand in a log
+line that a later success leaves behind; and an S3 body rejected on its
+advertised length is closed, as its helper always promised. A host adopting
+it needs no code change.
+
 spicy-regs adoption (done 2026-09-19 on the fork branch `billtrax-hosting-prep`;
 no push to origin unless the user names the branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
 `[tool.uv.sources] spicy-docs` at it; set both `source-readers` pins to
