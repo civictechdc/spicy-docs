@@ -18,6 +18,27 @@ One addition. BillTrax stored ``section_classifications`` with no model and no
 prompt version (``migrations/006``), so a stored label could not be attributed
 to the prompt that produced it while ``bill_summaries`` next door recorded
 both. Every result here carries them.
+
+The answer's keys are declared the same way as the labels, and for the same
+reason: ``CLASSIFICATION_FIELDS`` is what ``build_prompt`` asks for and what
+``_read_row`` enforces, so neither can name a key the other does not. The
+``v1`` prompt named its three keys in a sentence without their types; the
+sibling summary prompt named none of its keys at all and refused every answer
+of the first live run (2026-09-19, receipt ``c1-provenance.json``), which is
+the measurement behind both ``v2`` prompts.
+
+**The original did not rely on its prompt for the key set, and neither should
+a reader of this file.** ``classifications.ts:21-29`` declares a zod
+``ClassifySchema`` -- ``z.object({ classifications: z.array(z.object({
+sectionId, label: z.enum([...the five...]), confidence: z.number().min(0).max(1)
+})) })`` -- and passes it to ``generateObject`` (``:76-78``), so the shape, the
+vocabulary and the 0-1 range were *enforced on the request*, not asked for in
+prose. The port copied the prompt bytes (``classifications.ts:79-89``) and the
+schema's constraints into ``_read_row``, and left the schema itself behind;
+``v1``'s sentence was all that remained of it. So ``CLASSIFY_PROMPT_TEMPLATE``
+is no longer byte-identical to ``classifications.ts:86`` either -- the same
+deliberate break as the diff prompt next door, recorded in
+``docs/decisions.md``, not an accident to undo.
 """
 
 from __future__ import annotations
@@ -27,9 +48,18 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from spicy_docs.interpretation.model_call import ModelCall, ModelCallError, ModelResponse
+from spicy_docs.interpretation.model_call import (
+    AnswerField,
+    ModelCall,
+    ModelCallError,
+    ModelResponse,
+    answer_shape_block,
+    require_fields,
+)
 
-PROMPT_VERSION = "v1"
+#: v2 (2026-09-19): the prompt states each row's key, type and range rather
+#: than listing the names in a sentence. See ``docs/decisions.md``.
+PROMPT_VERSION = "v2"
 BATCH_SIZE = 30
 BODY_CHARS = 500
 
@@ -51,10 +81,29 @@ CLASSIFICATION_LABELS: tuple[ClassificationLabel, ...] = (
 )
 LABEL_NAMES: tuple[str, ...] = tuple(label.name for label in CLASSIFICATION_LABELS)
 
+#: Each answered row's keys, types and ranges, stated once: ``build_prompt``
+#: sends them and ``_read_row`` enforces them. ``section_id`` is a spelling the
+#: reader accepts and the prompt does not offer -- kept from the ``v1`` reader
+#: (``row.get("sectionId", row.get("section_id"))``), where it was tolerance for
+#: a model that snake-cases a camelCase key rather than an observed answer. No
+#: live answer has used it; it is covered by a test, which is the only thing
+#: that keeps an unused tolerance honest.
+CLASSIFICATION_FIELDS: tuple[AnswerField, ...] = (
+    AnswerField(
+        "sectionId",
+        "string",
+        "the section's bracketed id, copied exactly as given below",
+        aliases=("section_id",),
+    ),
+    AnswerField("label", "string", "one of the labels above, spelled exactly"),
+    AnswerField("confidence", "number from 0 to 1", "how certain the label is"),
+)
+
 CLASSIFY_PROMPT_TEMPLATE = """Classify each of the following bill sections. For each section, assign one label:
 {labels}
 
-Return a JSON array with sectionId, label, and confidence (0–1).
+Answer with a JSON array holding one object per section, each carrying exactly these keys:
+{answer_shape}
 
 Sections:
 {sections}"""
@@ -100,17 +149,31 @@ def section_block(sections: Sequence[ClassifiableSection]) -> str:
 
 
 def build_prompt(sections: Sequence[ClassifiableSection]) -> str:
-    return CLASSIFY_PROMPT_TEMPLATE.format(labels=label_block(), sections=section_block(sections))
+    return CLASSIFY_PROMPT_TEMPLATE.format(
+        labels=label_block(),
+        answer_shape=answer_shape_block(CLASSIFICATION_FIELDS),
+        sections=section_block(sections),
+    )
 
 
 def prompt_hash(prompt: str) -> str:
     return hashlib.sha256(prompt.encode("utf-8")).hexdigest()
 
 
+#: A wrapping the reader accepts and the prompt does not ask for. Not a guess
+#: about model behaviour: it is the original's own answer shape --
+#: ``ClassifySchema`` is ``z.object({ classifications: z.array(...) })``
+#: (``classifications.ts:21-29``), so every answer BillTrax read arrived
+#: wrapped, while its prompt asked for a bare array. The prompt here asks for
+#: the array; the wrapper stays readable, in one direction only, like
+#: ``AnswerField.aliases``.
+CLASSIFICATIONS_WRAPPER_KEY = "classifications"
+
+
 def _rows(response: ModelResponse) -> Sequence[object]:
     data = response.data
     if isinstance(data, Mapping):
-        data = data.get("classifications")
+        data = data.get(CLASSIFICATIONS_WRAPPER_KEY)
     if isinstance(data, str) or not isinstance(data, Sequence):
         raise ModelCallError("classification answer must be a list of rows", details=response.data)
     return data
@@ -119,9 +182,11 @@ def _rows(response: ModelResponse) -> Sequence[object]:
 def _read_row(row: object, allowed: frozenset[str]) -> tuple[str, str, float]:
     if not isinstance(row, Mapping):
         raise ModelCallError("classification row must be a mapping", details=row)
-    section_id = row.get("sectionId", row.get("section_id"))
-    label = row.get("label")
-    confidence = row.get("confidence")
+    require_fields(row, CLASSIFICATION_FIELDS, what="classification row")
+    id_field, label_field, confidence_field = CLASSIFICATION_FIELDS
+    section_id = id_field.value_in(row)
+    label = label_field.value_in(row)
+    confidence = confidence_field.value_in(row)
     if not isinstance(section_id, str) or section_id not in allowed:
         raise ModelCallError("classification names a section outside its batch", details=row)
     if not isinstance(label, str) or label not in LABEL_NAMES:
@@ -180,6 +245,8 @@ def classify_sections(
 __all__ = [
     "BATCH_SIZE",
     "BODY_CHARS",
+    "CLASSIFICATIONS_WRAPPER_KEY",
+    "CLASSIFICATION_FIELDS",
     "CLASSIFICATION_LABELS",
     "CLASSIFY_PROMPT_TEMPLATE",
     "LABEL_NAMES",

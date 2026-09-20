@@ -7,8 +7,10 @@ import pytest
 
 from spicy_docs.interpretation import bill_summaries, section_classification
 from spicy_docs.interpretation.bill_summaries import (
+    DIFF_SUMMARY_FIELDS,
     DIFF_SUMMARY_PROMPT_VERSION,
     MONEY_BILL_FRAMES,
+    SUMMARY_FIELDS,
     BillVersionText,
     DiffItemText,
     build_diff_prompt,
@@ -19,9 +21,10 @@ from spicy_docs.interpretation.bill_summaries import (
     summarize_bill,
     summarize_diff,
 )
-from spicy_docs.interpretation.model_call import ModelCallError, ModelResponse
+from spicy_docs.interpretation.model_call import AnswerField, ModelCallError, ModelResponse, answer_shape_block
 from spicy_docs.interpretation.money_bills import MONEY_BILL_KINDS
 from spicy_docs.interpretation.section_classification import (
+    CLASSIFICATION_FIELDS,
     CLASSIFICATION_LABELS,
     LABEL_NAMES,
     ClassifiableSection,
@@ -80,7 +83,7 @@ def test_classification_carries_the_provenance_billtrax_never_stored() -> None:
     result = results[0]
     assert (result.section_id, result.label, result.confidence) == ("sec-0", "directive", 0.9)
     assert result.model == "test-model-1"
-    assert result.prompt_version == "v1"
+    assert result.prompt_version == section_classification.PROMPT_VERSION
     assert len(result.prompt_hash) == 64
     assert result.requested_at == "2026-09-19T12:00:00+00:00"
     assert result.completed_at == "2026-09-19T12:00:03+00:00"
@@ -165,7 +168,7 @@ def test_the_summary_keeps_the_exact_provenance_columns() -> None:
     result = summarize_bill(VERSION, summary_call, model="test-model-1", clock=clock())
     assert result is not None
     assert result.model == "test-model-1"
-    assert result.prompt_version == "v1"
+    assert result.prompt_version == bill_summaries.PROMPT_VERSION
     assert result.content_hash == content_hash(VERSION.text)
     assert (result.input_tokens, result.output_tokens) == (5000, 250)
     assert result.requested_at == "2026-09-19T12:00:00+00:00"
@@ -182,9 +185,11 @@ def test_a_version_too_short_to_summarize_produces_no_row() -> None:
 
 def test_regeneration_is_decided_by_content_hash_and_prompt_version() -> None:
     digest = content_hash(VERSION.text)
-    assert not needs_regeneration(cached_content_hash=digest, cached_prompt_version="v1", digest=digest)
-    assert needs_regeneration(cached_content_hash=digest, cached_prompt_version="v0", digest=digest)
-    assert needs_regeneration(cached_content_hash=None, cached_prompt_version="v1", digest=digest)
+    current = bill_summaries.PROMPT_VERSION
+    assert not needs_regeneration(cached_content_hash=digest, cached_prompt_version=current, digest=digest)
+    # A summary stored under the prompt that never named its keys is regenerated.
+    assert needs_regeneration(cached_content_hash=digest, cached_prompt_version="v1", digest=digest)
+    assert needs_regeneration(cached_content_hash=None, cached_prompt_version=current, digest=digest)
 
 
 def test_a_summary_outside_the_declared_length_is_refused() -> None:
@@ -210,7 +215,8 @@ def test_more_than_three_provisions_is_refused() -> None:
 
 
 def test_both_model_backed_modules_share_one_prompt_version_constant_shape() -> None:
-    assert bill_summaries.PROMPT_VERSION == section_classification.PROMPT_VERSION == "v1"
+    # v2: both prompts name the keys and types their readers require (2026-09-19).
+    assert bill_summaries.PROMPT_VERSION == section_classification.PROMPT_VERSION == "v2"
 
 
 # --- diff summaries (ported from BillTrax summarize/route.ts) ---
@@ -288,7 +294,7 @@ def test_the_diff_summary_keeps_the_exact_provenance_columns() -> None:
     assert result.sections_removed == ("Old Gadget Program",)
     assert result.dollar_changes == ("Section New Widget Program increased by $2M",)
     assert result.model == "test-model-1"
-    assert result.prompt_version == DIFF_SUMMARY_PROMPT_VERSION == "v1"
+    assert result.prompt_version == DIFF_SUMMARY_PROMPT_VERSION == "v2"
     assert result.content_hash == content_hash(diff_text_from_items(DIFF_ITEMS))
     assert (result.input_tokens, result.output_tokens) == (400, 60)
     assert result.requested_at == "2026-09-19T12:00:00+00:00"
@@ -344,35 +350,187 @@ def test_the_summary_prompt_is_the_pinned_bytes() -> None:
     # what every stored summary was generated from, so it changes with the
     # version or not at all. Typography counts -- the em and en dashes here are
     # the source's own, not ASCII hyphens.
-    assert digest(build_prompt(VERSION)) == "b16cf2b16fdf32ddca72facd2db5d87cff0b12d3e0e69b28cf3ab65550173655"
+    # v1 was b16cf2b16fdf32ddca72facd2db5d87cff0b12d3e0e69b28cf3ab65550173655;
+    # it named none of the keys _read_answer requires (C1, 2026-09-19).
+    assert bill_summaries.PROMPT_VERSION == "v2"
+    assert digest(build_prompt(VERSION)) == "5f2cf1983b3065d3674646c97b07b08f15ea3d2ff9352094d2f187dd409d212e"
 
 
 def test_the_classification_prompt_is_the_pinned_bytes() -> None:
+    # v1 was 7fdb2f0aca587e55f62cece1fbdc7455fa27f583665f5d38f9f64950bf4c3bc7.
+    assert section_classification.PROMPT_VERSION == "v2"
     assert digest(section_classification.build_prompt(PINNED_SECTIONS)) == (
-        "7fdb2f0aca587e55f62cece1fbdc7455fa27f583665f5d38f9f64950bf4c3bc7"
+        "3c8af9496addd0b8598212f2f2b899950284c5aa850a47f04c92cd8f4cd5909f"
     )
 
 
 def test_the_diff_summary_prompt_is_the_pinned_bytes() -> None:
-    # Sealed against `summarize/route.ts:119-129`'s template literal, verified
-    # with a hexdump against the TS source (see the module docstring): it
-    # carries no non-ASCII bytes at all, unlike the two prompts above.
+    # v1 was f9828decc6d973153997d44c693234bf331d8befa4c6f86be7ab2a76c1b15387,
+    # `summarize/route.ts:119-129`'s template literal byte for byte. v2 keeps
+    # its wording and order but states each key's type (see the module
+    # docstring); it still carries no non-ASCII bytes, unlike the two prompts
+    # above.
+    assert DIFF_SUMMARY_PROMPT_VERSION == "v2"
     prompt = build_diff_prompt(diff_text_from_items(DIFF_ITEMS))
-    assert digest(prompt) == "f9828decc6d973153997d44c693234bf331d8befa4c6f86be7ab2a76c1b15387"
+    assert digest(prompt) == "74172eba372dc534989ad25e96ae24b92c6402c55ec1990c4511fca8c2ecb967"
+    assert prompt.isascii()
 
 
 def test_the_prompts_carry_the_source_s_own_typography() -> None:
     assert "— someone who does not work in government" in bill_summaries.SUMMARY_PROMPT_TEMPLATE
     assert "Bill: {display_number} — {title}" in bill_summaries.SUMMARY_PROMPT_TEMPLATE
-    assert "A single paragraph (4–6 sentences)" in bill_summaries.SUMMARY_PROMPT_TEMPLATE
+    assert "A single paragraph (4–6 sentences)" in SUMMARY_FIELDS[0].describes
     assert "package — a single bill" in MONEY_BILL_FRAMES["omnibus"]
     assert "bill — emergency or one-time" in MONEY_BILL_FRAMES["supplemental"]
     assert "levels — it does NOT appropriate" in MONEY_BILL_FRAMES["ndaa"]
-    assert "confidence (0–1)" in section_classification.CLASSIFY_PROMPT_TEMPLATE
     # The TS sources carry exactly these two non-ASCII codepoints inside the
-    # prompt-bearing literals; anything else means a character drifted.
-    # DIFF_SUMMARY_PROMPT_TEMPLATE is pure ASCII (its TS source has no
-    # typographic dashes to preserve), so folding it in must not change the set.
+    # prompt-bearing literals; anything else means a character drifted. Since
+    # v2 the field declarations are prompt-bearing too -- their lines are what
+    # is sent -- so they are folded in here, and the diff prompt (whose TS
+    # source has no typographic dashes) must not change the set.
     sealed = bill_summaries.SUMMARY_PROMPT_TEMPLATE + section_classification.CLASSIFY_PROMPT_TEMPLATE
     sealed += "".join(MONEY_BILL_FRAMES.values()) + bill_summaries.DIFF_SUMMARY_PROMPT_TEMPLATE
+    sealed += "".join(field.kind + field.describes for _, _, fields in PROMPTS for field in fields)
     assert {character for character in sealed if ord(character) > 127} == {"–", "—"}
+
+
+# --- the prompt and its reader are one statement (C1, 2026-09-19) ---
+
+#: Every prompt with the declaration its own reader reads. Both are taken from
+#: the module, never restated here: a test that repeats a key spelling can only
+#: prove the spelling it repeated.
+PROMPTS: tuple[tuple[str, str, tuple[AnswerField, ...]], ...] = (
+    ("summary", build_prompt(VERSION), SUMMARY_FIELDS),
+    ("classification", section_classification.build_prompt(PINNED_SECTIONS), CLASSIFICATION_FIELDS),
+    ("diff summary", build_diff_prompt(diff_text_from_items(DIFF_ITEMS)), DIFF_SUMMARY_FIELDS),
+)
+
+#: The keys and types the model returned on the first live bill-summary call,
+#: taken from the retained receipt `c1-provenance.json` (204 tokens in, 206
+#: out). The values stand in for the model's prose, which the receipt
+#: deliberately did not retain: only the shape is the evidence.
+#:
+#: The spelling is the model's, and it was not stable. That run's own README
+#: tabulates `affected_audience` from another invocation of the byte-identical
+#: v1 prompt, where the retained JSON records `most_affected_audience`. Both
+#: miss the same two keys and refuse identically, which is why the fix is a
+#: prompt that states the key set, not a reader taught one more synonym.
+C1_LIVE_ANSWER = {
+    "summary": "This bill funds the Department of Defense for the coming fiscal year. " * 3,
+    "most_affected_audience": "Service members and defense contractors",
+    "notable_provisions": ["Sets troop pay", "Authorizes shipbuilding"],
+}
+#: The other invocation's spelling, from the same receipt's README table.
+C1_OTHER_SPELLING = "affected_audience"
+
+
+@pytest.mark.parametrize("name,prompt,fields", PROMPTS, ids=[row[0] for row in PROMPTS])
+def test_each_prompt_names_every_key_its_reader_requires(name, prompt, fields) -> None:
+    assert fields, f"the {name} prompt declares no answer fields"
+    for field in fields:
+        assert f'"{field.key}" ({field.kind})' in prompt
+        for alias in field.aliases:
+            # An alias is tolerated on the way in, never offered on the way out.
+            assert f'"{alias}"' not in prompt
+    # And nothing beyond them: the prompt's key list is the declaration itself,
+    # so it cannot offer a key no reader declares.
+    assert answer_shape_block(fields) in prompt
+
+
+def test_the_wrapper_the_reader_unwraps_is_not_offered_by_the_prompt() -> None:
+    # BillTrax's ClassifySchema wrapped the array (classifications.ts:21-29),
+    # so the wrapper stays readable; the prompt asks for the bare array, and
+    # both shapes must reach _read_row.
+    prompt = section_classification.build_prompt(PINNED_SECTIONS)
+    assert '"classifications"' not in prompt
+    row = {"sectionId": "sec-0", "label": "other", "confidence": 0.5}
+    for answer in (row_list := [row], {"classifications": row_list}):
+        results = classify_sections(
+            sections(1), lambda *, model, prompt, a=answer: ModelResponse(a), model="m", clock=clock()
+        )
+        assert [result.section_id for result in results] == ["sec-0"]
+
+
+@pytest.mark.parametrize(
+    "answer,reads",
+    [
+        ({"summary": None, "audience": "Readers", "top_provisions": ["a"]}, ("a",)),
+        ({"summary": None, "audience": "Readers", "topThreeProvisions": ["a"]}, ("a",)),
+    ],
+    ids=["snake_cased alias", "the key the prompt names"],
+)
+def test_the_reader_accepts_the_alias_the_prompt_does_not_offer(answer, reads) -> None:
+    answer = {**answer, "summary": C1_LIVE_ANSWER["summary"]}
+    result = summarize_bill(VERSION, lambda *, model, prompt: ModelResponse(answer), model="m", clock=clock())
+    assert result is not None
+    assert result.top_provisions == reads
+
+
+def test_a_classification_row_keyed_by_the_snake_cased_alias_is_read() -> None:
+    def call(*, model: str, prompt: str) -> ModelResponse:
+        return ModelResponse([{"section_id": "sec-0", "label": "deadline", "confidence": 0.7}])
+
+    results = classify_sections(sections(1), call, model="m", clock=clock())
+    assert [(r.section_id, r.label) for r in results] == [("sec-0", "deadline")]
+
+
+def test_the_answer_the_first_live_call_returned_names_the_keys_it_is_missing() -> None:
+    # The v1 prompt asked for its three items in prose and named no key, so
+    # gemini-3.8-flash chose its own spellings and the reader refused the
+    # answer: 204 tokens in, 206 out, zero rows (receipt
+    # ~/Work/corpora/supply-2026-09-02/receipts/d1-measured-run-2026-09-19).
+    # A refusal must name every key that is missing, not just the first.
+    def call(*, model: str, prompt: str) -> ModelResponse:
+        return ModelResponse(dict(C1_LIVE_ANSWER), input_tokens=204, output_tokens=206)
+
+    with pytest.raises(ModelCallError) as refusal:
+        summarize_bill(VERSION, call, model="gemini-3.8-flash", clock=clock())
+    assert str(refusal.value) == "summary answer is missing audience, topThreeProvisions"
+    assert refusal.value.details == C1_LIVE_ANSWER
+
+
+def test_the_other_invocations_spelling_refuses_identically() -> None:
+    # Same v1 prompt, same bill, a different key the model invented: the
+    # refusal names the same two missing keys, so nothing here is tuned to one
+    # observed answer.
+    answer = {
+        "summary": C1_LIVE_ANSWER["summary"],
+        C1_OTHER_SPELLING: C1_LIVE_ANSWER["most_affected_audience"],
+        "notable_provisions": C1_LIVE_ANSWER["notable_provisions"],
+    }
+    with pytest.raises(ModelCallError, match="^summary answer is missing audience, topThreeProvisions$"):
+        summarize_bill(VERSION, lambda *, model, prompt: ModelResponse(answer), model="m", clock=clock())
+
+
+def test_the_v2_prompt_asks_for_the_keys_that_answer_lacked() -> None:
+    # The other direction: the same answer under the keys the prompt now names
+    # is read, so the fix is the spelling and not the content.
+    corrected = {
+        "summary": C1_LIVE_ANSWER["summary"],
+        "audience": C1_LIVE_ANSWER["most_affected_audience"],
+        "topThreeProvisions": C1_LIVE_ANSWER["notable_provisions"],
+    }
+    result = summarize_bill(VERSION, lambda *, model, prompt: ModelResponse(corrected), model="m", clock=clock())
+    assert result is not None
+    assert result.audience == "Service members and defense contractors"
+    assert result.top_provisions == ("Sets troop pay", "Authorizes shipbuilding")
+
+
+def test_a_diff_answer_that_leaves_its_lists_out_names_them() -> None:
+    # The same defect class next door: v1 named the five keys but not their
+    # types, so a list with nothing in it could arrive absent or as null.
+    def call(*, model: str, prompt: str) -> ModelResponse:
+        return ModelResponse({"headline": "H", "keyChanges": []})
+
+    with pytest.raises(ModelCallError, match="missing sectionsAdded, sectionsRemoved, dollarChanges"):
+        summarize_diff(
+            VERSION.identity, from_version_id="v1", to_version_id="v2", items=DIFF_ITEMS, call=call, model="m"
+        )
+
+
+def test_a_classification_row_missing_a_key_names_it() -> None:
+    def call(*, model: str, prompt: str) -> ModelResponse:
+        return ModelResponse({"classifications": [{"sectionId": "sec-0", "label": "other"}]})
+
+    with pytest.raises(ModelCallError, match="classification row is missing confidence"):
+        classify_sections(sections(1), call, model="m", clock=clock())

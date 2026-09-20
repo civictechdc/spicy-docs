@@ -89,10 +89,41 @@ old outcome beside the new one.
 - **One bad recorded vote costs that entry, not the bill.** Refusals are
   returned beside the references rather than raised over the whole action list.
 
+- **A prompt states the JSON shape its reader parses.** Each model-backed
+  module declares its answer's keys, types and enforced counts once as
+  `AnswerField` records (`model_call.py`); the prompt's key list is generated
+  from that declaration and the reader reads its values through the same
+  records, so the request and the contract cannot drift apart. `v1` left the
+  spelling to the model and the summary prompt named no key at all.
+
 The prompts and their `PROMPT_VERSION` are sealed together, down to the
 typography: the em and en dashes the source wrote are pinned by a `sha256`
 test, because a prompt that changes silently makes every stored row
-unattributable.
+unattributable. All three prompts are at `v2` (2026-09-19), and two of them —
+the diff-summary and classification prompts — are **no longer byte-identical to
+their BillTrax sources**, deliberately: the originals enforced their key set
+with a schema on the request, which the port did not carry over, so reproducing
+their bytes alone reproduces a prompt that is refused on arrival. See the
+decision.
+
+## What the model-backed modules have actually been run against
+
+Until 2026-09-19 `summarize_bill`, `classify_sections` and `summarize_diff` had
+only ever been exercised with stubs — and every stub answered with the keys the
+reader wanted, which is why nothing offline could see what the first live call
+saw. Two runs of `gemini-3.8-flash` over this repository's own fixtures now
+stand behind them, receipts (model, prompt digest, tokens, cost, parsed rows)
+under `~/Work/corpora/supply-2026-09-02/receipts/` in
+`d1-measured-run-2026-09-19/` and `c1-prompt-fix-2026-09-19/`.
+
+| | Coverage |
+| --- | --- |
+| `summarize_bill` | **Measured live, refused under `v1`, read under `v2`.** The first call (119 HR 6028, 204 in / 206 out) answered with `most_affected_audience` and `notable_provisions` where the reader requires `audience` and `topThreeProvisions`, so it was refused — a keyed production run would have published **zero** `bill_summaries` rows. The spelling was not even stable across invocations of the identical prompt: that receipt's README tabulates `affected_audience` from another one, and both refuse identically. The same bill under `v2` (250 in / 197 out, USD 0.00057 at the pinned rate) is read into a row carrying its audience, three provisions and full provenance. |
+| `summarize_diff` | **Measured live under `v2`**: all five keys returned, one `diff_summaries` row, over the constructed division fixtures — 119 HR 6028's own two printings settle as entirely unchanged, so the family declines that pair before asking. What a live diff of two *published* printings returns is still unmeasured. |
+| `classify_sections` | **Prompt measured, module not.** The `v2` prompt got `sectionId`, `label` and `confidence` back, but the answer named a section id the batch never sent, so the batch guard refused it and no row was produced. Which id the model substituted was not captured; the receipt says so rather than guessing. |
+
+See the decision ["A prompt states the JSON shape its reader
+parses"](decisions.md#a-prompt-states-the-json-shape-its-reader-parses-from-one-declaration).
 
 ## What these rules cannot see
 

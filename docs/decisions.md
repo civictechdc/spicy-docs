@@ -689,3 +689,93 @@ refuses a file whose statement differs from the request; the Senate file states 
 the caller's Congress with `congress_basis = "caller"` — weaker provenance published, not hidden. The Senate
 file's LIS id is published as one seat fact; the LIS crosswalk itself remains the legislators JSON, still the
 only route to a former senator's LIS id, and nothing here duplicates it.
+
+## A prompt states the JSON shape its reader parses, from one declaration
+
+Adopted 2026-09-19 from the first live model run (register row C1 of
+[closing the gaps](research/closing-the-gaps-2026-09-19.md)), landed in
+`interpretation/model_call.py`, `bill_summaries.py` and
+`section_classification.py`, documented in [Interpretation](interpretation.md).
+
+**The sealed prompt asked for prose; the reader required keys the prompt never
+named.** `SUMMARY_PROMPT_TEMPLATE` (`v1`) asked for "a single paragraph", "a
+short phrase describing the most-affected audience" and "up to three notable
+provisions" while the adapter asked for `application/json`, so the key spelling
+was left to the model. One live `summarize_bill` call over the repository's own
+fixture bill (119 HR 6028, `gemini-3.8-flash`, HTTP 200, 204 input and 206
+output tokens) came back with `summary`, `most_affected_audience` and
+`notable_provisions`; `_read_answer` requires `summary`, `audience` and
+`topThreeProvisions`, so it refused the answer. **The model did not even choose
+the same wrong spelling twice**: the retained `c1-provenance.json` records
+`most_affected_audience`, while that receipt's own README tabulates
+`affected_audience` from another invocation of the byte-identical prompt. Both
+miss the same two keys and refuse identically, which is why the fix is a prompt
+that states its key set rather than a reader taught one more synonym. **A keyed production run would
+have published zero `bill_summaries` rows**, every bill refused. Every test
+stubbed the call with the right keys, so nothing offline could see it. The
+evidence is the C1 receipt,
+`~/Work/corpora/supply-2026-09-02/receipts/d1-measured-run-2026-09-19/`
+(`c1-provenance.json`, `scripts/c1_model_run.py`). The fix is proved live in
+`c1-prompt-fix-2026-09-19/` beside it: three keyed calls, one per prompt kind,
+over the same fixture bill — the summary and the diff summary are now answered
+in the named keys and read into rows, and the classification answer came back
+in the named keys too but was refused by the batch guard for naming a section
+id it was never sent, which is a different defect and is recorded, not fixed
+here.
+
+**A prompt and its reader are now one statement.** Each module declares its
+answer's keys, types and enforced counts once as `AnswerField` records;
+`answer_shape_block` turns that declaration into the lines the prompt sends and
+the reader looks its values up through the same records, so neither side can
+name a key the other does not. A test derives both sides from the declaration,
+and a second feeds `_read_answer` the exact shape the live call returned and
+requires the refusal to name every missing key.
+
+All three prompts moved to `v2` and their digests were re-pinned, because all
+three left something to the model: the summary prompt named none of its keys;
+the classification prompt named its three but not their types; the diff prompt
+named its five but not theirs, so a list with nothing in it could arrive as
+`null` and refuse the whole answer. Spellings a model may reasonably choose
+instead — `top_provisions`, `section_id`, a `classifications` wrapper around a
+requested array — stay accepted by the reader and unoffered by the prompt: a
+one-directional tolerance, declared beside the key, never a second name the
+answer may choose between. Neither spelling the `v1` prompt provoked —
+`most_affected_audience`, `affected_audience` — nor `notable_provisions` was
+added as an alias: teaching the reader the answers a defective prompt provoked
+would have left the prompt defective, and there was no end to the list.
+
+**BillTrax never relied on prompt prose for the key set; the port dropped the
+half that carried it.** Each of the three originals declares a zod schema and
+passes it *on the request*: `bill-summaries.ts:41-45` (`summary`
+`.min(60).max(1200)`, `audience`, `topThreeProvisions` `.max(3)`) to
+`generateObject` at `:163-165`; `summarize/route.ts:13-19` to `streamObject` at
+`:116-121`; `classifications.ts:21-29` (a `classifications` array of
+`sectionId`/`label` enum/`confidence` 0-1) to `generateObject` at `:76-78`.
+`SUMMARY_CHARS`, `MAX_PROVISIONS`, the key spellings and the `classifications`
+wrapper this repository tolerates are all transcriptions of those schemas. The
+port copied the prompt bytes and left the schema behind, so the request stopped
+stating what the reader still enforced — and only a live call could show it.
+This is recorded so nobody later "restores" a prompt to its original bytes
+believing the original asked in prose alone. **Follow-up, not taken here:**
+widen `ModelCall` to carry an optional response schema derived from the same
+`AnswerField` tuples — `extraction/gemini.py:154-157` already sends
+`responseJsonSchema` — putting the enforcement back on the request where
+BillTrax had it, with the declaration still in one place.
+
+**Two ported prompts therefore lost their byte-for-byte seal, on purpose**: the
+diff prompt against `summarize/route.ts:119-129` and the classification prompt
+against `classifications.ts:86`, both keeping their source's wording and order
+and adding only the answer's shape. A prompt reproduced exactly, stripped of
+the schema that made it work, and refused on arrival is a faithful copy of
+nothing. No row of any of the three model tables has ever been published under
+`v1` for the change to invalidate: the R2 read taken immediately before the D1
+run (`~/Work/corpora/supply-2026-09-02/receipts/d1-measured-run-2026-09-19/prior-tables.json`)
+found 35 of 36 tables `404` — never published, which that file distinguishes
+from a zero-row table — including `bill_summaries`, `diff_summaries` and
+`section_classifications`; only `congress_bills` existed. BillTrax's own
+`diff_summaries` rows, written from these same prompt bytes, carry no version
+label to invalidate either: `migrations/012_ai_provenance.ts:26` adds
+`prompt_version` to that table as NULLable, and the route's insert
+(`summarize/route.ts:134-136`) writes only `id`, `bill_id`, `from_version`,
+`to_version`, `summary_json` and `created_at`, so the column is never filled.
+The claim here is about the spicy-docs `v1` label.

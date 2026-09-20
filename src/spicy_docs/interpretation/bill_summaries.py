@@ -20,14 +20,46 @@ storing.
 ``src/app/api/bills/[id]/summarize/route.ts`` (read-only,
 ``/Users/mikewolfd/Work/spicy-stack/BillTrax``): a section-diff summary, not a
 version summary. Its prompt carries no bill identity or framing -- the
-original sends only the diff text -- so ``DIFF_SUMMARY_PROMPT_TEMPLATE`` is
-sealed as measured, not reshaped to match ``SUMMARY_PROMPT_TEMPLATE``'s
-richer one. The route's own two guards (refuse a procedural-document version
-pair; 404 on no diff rows at all) read ``bill_versions.kind`` and
-``section_diffs`` rows this module is never handed, so they stay the caller's
-job; the one condition this module can see for itself -- a diff with nothing
-but ``"unchanged"`` items -- returns ``None``, the same contract
-``summarize_bill`` uses for a version too short to summarize.
+original sends only the diff text -- and nothing here adds either. The
+route's own two guards (refuse a procedural-document version pair; 404 on no
+diff rows at all) read ``bill_versions.kind`` and ``section_diffs`` rows this
+module is never handed, so they stay the caller's job; the one condition this
+module can see for itself -- a diff with nothing but ``"unchanged"`` items --
+returns ``None``, the same contract ``summarize_bill`` uses for a version too
+short to summarize.
+
+**Both prompts state the JSON object their reader parses, from the same
+declaration the reader reads** (``SUMMARY_FIELDS``, ``DIFF_SUMMARY_FIELDS``;
+see ``model_call.AnswerField``). Until ``v2`` they did not: the summary prompt
+asked for its three items in prose and named none of the keys, and the first
+live call refused its answer (2026-09-19, receipt ``c1-provenance.json``); the
+diff prompt named its five keys but not their types, so an absent list could
+come back as ``null``.
+
+**BillTrax never relied on prompt prose for the key set, and this port's
+mistake was dropping the half that carried it.** ``bill-summaries.ts:41-45``
+declares a zod ``SummarySchema`` -- ``summary: z.string().min(60).max(1200)``,
+``audience: z.string()``, ``topThreeProvisions: z.array(z.string()).max(3)`` --
+and passes it to ``generateObject`` (``:163-165``); the diff route does the
+same with its own five-key ``SummarySchema`` (``summarize/route.ts:13-19``,
+passed to ``streamObject`` at ``:116-121``). Every constant in this module --
+``SUMMARY_CHARS``, ``MAX_PROVISIONS``, the key spellings ``_read_answer``
+requires -- is a transcription of that schema. The prompt bytes were ported and
+the schema was not, so the request stopped stating what the reader still
+enforced, and only a live call could show it. Nothing here should be "restored"
+to the original bytes on the belief that the original asked in prose alone.
+Follow-up, not done here: ``ModelCall`` could carry an optional response schema
+derived from these same ``AnswerField`` tuples, which
+``extraction/gemini.py:154-157`` already knows how to send as
+``responseJsonSchema`` -- putting the enforcement back on the request where
+BillTrax had it, with the declaration still in one place.
+
+Breaking the seal was therefore deliberate: ``DIFF_SUMMARY_PROMPT_TEMPLATE`` is
+no longer byte-identical to ``route.ts:119-129`` (nor is the classification
+prompt to its source, for the same reason). The ``v1`` bytes remain in this
+file's history and under that version, because a prompt reproduced exactly,
+stripped of the schema that made it work, and refused on arrival is a faithful
+copy of nothing.
 """
 
 from __future__ import annotations
@@ -38,10 +70,18 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from types import MappingProxyType
 
-from spicy_docs.interpretation.model_call import ModelCall, ModelCallError
+from spicy_docs.interpretation.model_call import (
+    AnswerField,
+    ModelCall,
+    ModelCallError,
+    answer_shape_block,
+    require_fields,
+)
 from spicy_docs.sources.congress.bill_status import BillIdentity
 
-PROMPT_VERSION = "v1"
+#: v2 (2026-09-19): the prompt names the keys the reader requires. See the
+#: module docstring and ``docs/decisions.md``.
+PROMPT_VERSION = "v2"
 # ~25K characters is roughly 6K tokens of body; the cap controls cost.
 TEXT_CHARS = 25_000
 MIN_TEXT_CHARS = 200
@@ -91,6 +131,33 @@ MONEY_BILL_FRAMES: Mapping[str, str] = MappingProxyType(
     }
 )
 
+#: The answer's keys, types and counts, stated once: ``build_prompt`` sends
+#: them and ``_read_answer`` enforces them. The prose is the ``v1`` prompt's
+#: own three items, now attached to the key each one belongs in.
+SUMMARY_FIELDS: tuple[AnswerField, ...] = (
+    AnswerField(
+        "summary",
+        f"string, {SUMMARY_CHARS[0]}–{SUMMARY_CHARS[1]} characters",
+        "A single paragraph (4–6 sentences) explaining what this bill does, in plain English. Avoid jargon. "
+        "Lead with what is funded, by whom, for what period. End with the current legislative status.",
+    ),
+    AnswerField(
+        "audience",
+        "string",
+        "A short phrase describing the most-affected audience.",
+    ),
+    AnswerField(
+        "topThreeProvisions",
+        f"array of at most {MAX_PROVISIONS} strings",
+        "Up to three notable provisions in plain language, one per entry.",
+        # Kept from the v1 reader's own `elif "top_provisions" in data` branch:
+        # tolerance for a model that snake-cases a camelCase key, not a spelling
+        # any live answer has used. Covered by a test, which is the only thing
+        # that keeps an unused tolerance honest.
+        aliases=("top_provisions",),
+    ),
+)
+
 SUMMARY_PROMPT_TEMPLATE = """You are summarizing a U.S. congressional bill for an ordinary citizen \
 — someone who does not work in government and does not have a policy background.
 
@@ -100,35 +167,56 @@ Current legislative status: {status}
 
 Framing: {frame}
 
-Write:
-1. A single paragraph (4–6 sentences) explaining what this bill does, in plain English. Avoid jargon. \
-Lead with what is funded, by whom, for what period. End with the current legislative status.
-2. A short phrase describing the most-affected audience.
-3. Up to three notable provisions in plain language.
+Answer with one JSON object carrying exactly these keys:
+{answer_shape}
 
 Bill text (may be truncated):
 {body}"""
 
-DIFF_SUMMARY_PROMPT_VERSION = "v1"
+#: v2 (2026-09-19): the prompt states the type of each of its five keys.
+DIFF_SUMMARY_PROMPT_VERSION = "v2"
 #: Diff items beyond this many (after dropping "unchanged" ones) are not sent (route.ts:104).
 DIFF_ITEM_CAP = 40
 #: Each item's body is excerpted to this many characters (route.ts:107).
 DIFF_EXCERPT_CHARS = 300
 
-# Sealed byte-for-byte against `summarize/route.ts:119-129`'s template literal
-# (verified with a hexdump against the TS source; it carries no non-ASCII
-# bytes, so there are no typographic dashes to preserve here, unlike
-# SUMMARY_PROMPT_TEMPLATE above). Unlike that prompt, this one names no bill
-# identity or framing -- the original sends only the diff text -- so nothing
-# here adds either.
+#: The five keys `summarize/route.ts:119-129` asks for, in its order and its
+#: words, now carrying the type each one's reader enforces. An empty array is
+#: named on purpose for the three that can legitimately have nothing in them:
+#: the reader refuses ``null``, and a prompt that does not say so leaves that
+#: choice to the model, which is the whole defect this version fixes.
+DIFF_SUMMARY_FIELDS: tuple[AnswerField, ...] = (
+    AnswerField("headline", "string", "one sentence summary of the most important change"),
+    AnswerField(
+        "keyChanges",
+        "array of strings",
+        "up to 5 bullet points describing the most significant changes",
+    ),
+    AnswerField(
+        "sectionsAdded",
+        "array of strings",
+        "section headings that were added; an empty array when none were",
+    ),
+    AnswerField(
+        "sectionsRemoved",
+        "array of strings",
+        "section headings that were removed; an empty array when none were",
+    ),
+    AnswerField(
+        "dollarChanges",
+        "array of strings",
+        'notable dollar amount changes (e.g. "Section X increased by $2M"); an empty array when none',
+    ),
+)
+
+# `summarize/route.ts:119-129`'s template literal, kept in its wording and its
+# order but no longer byte-for-byte: the answer's shape is now stated (see the
+# module docstring). It still carries no non-ASCII bytes, so there are no
+# typographic dashes to preserve here, unlike SUMMARY_PROMPT_TEMPLATE above.
 DIFF_SUMMARY_PROMPT_TEMPLATE = """Summarize the following bill version diff. The diff shows changes between two versions of an appropriations bill.
 
-Provide:
-- headline: one sentence summary of the most important change
-- keyChanges: up to 5 bullet points describing the most significant changes
-- sectionsAdded: list of section headings that were added
-- sectionsRemoved: list of section headings that were removed
-- dollarChanges: list of notable dollar amount changes (e.g. "Section X increased by $2M")
+Answer with one JSON object carrying exactly these keys:
+{answer_shape}
 
 Diff:
 {diff_text}"""
@@ -225,6 +313,7 @@ def build_prompt(version: BillVersionText) -> str:
         version_label=version.version_label,
         status=version.status,
         frame=frame_for_kind(version.money_bill_kind),
+        answer_shape=answer_shape_block(SUMMARY_FIELDS),
         body=version.text[:TEXT_CHARS],
     )
 
@@ -237,20 +326,17 @@ def needs_regeneration(*, cached_content_hash: str | None, cached_prompt_version
 def _read_answer(data: object) -> tuple[str, str, tuple[str, ...]]:
     if not isinstance(data, Mapping):
         raise ModelCallError("summary answer must be a mapping", details=data)
-    summary = data.get("summary")
+    require_fields(data, SUMMARY_FIELDS, what="summary answer")
+    summary_field, audience_field, provisions_field = SUMMARY_FIELDS
+    summary = summary_field.value_in(data)
+    audience = audience_field.value_in(data)
+    provisions = provisions_field.value_in(data)
     if not isinstance(summary, str) or not SUMMARY_CHARS[0] <= len(summary) <= SUMMARY_CHARS[1]:
         raise ModelCallError(
             f"summary must be a string of {SUMMARY_CHARS[0]}-{SUMMARY_CHARS[1]} characters", details=data
         )
-    audience = data.get("audience")
     if not isinstance(audience, str) or not audience.strip():
-        raise ModelCallError("summary must name the most-affected audience", details=data)
-    if "topThreeProvisions" in data:
-        provisions = data["topThreeProvisions"]
-    elif "top_provisions" in data:
-        provisions = data["top_provisions"]
-    else:
-        raise ModelCallError("summary must state its notable provisions", details=data)
+        raise ModelCallError("summary audience must name the most-affected audience", details=data)
     if isinstance(provisions, str) or not isinstance(provisions, Sequence):
         raise ModelCallError("summary provisions must be a list", details=data)
     if len(provisions) > MAX_PROVISIONS:
@@ -321,7 +407,9 @@ def diff_text_from_items(items: Sequence[DiffItemText]) -> str:
 
 
 def build_diff_prompt(diff_text: str) -> str:
-    return DIFF_SUMMARY_PROMPT_TEMPLATE.format(diff_text=diff_text)
+    return DIFF_SUMMARY_PROMPT_TEMPLATE.format(
+        answer_shape=answer_shape_block(DIFF_SUMMARY_FIELDS), diff_text=diff_text
+    )
 
 
 def _read_diff_answer(
@@ -329,22 +417,24 @@ def _read_diff_answer(
 ) -> tuple[str, tuple[str, ...], tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
     if not isinstance(data, Mapping):
         raise ModelCallError("diff summary answer must be a mapping", details=data)
-    headline = data.get("headline")
+    require_fields(data, DIFF_SUMMARY_FIELDS, what="diff summary answer")
+    headline_field, changes_field, added_field, removed_field, dollars_field = DIFF_SUMMARY_FIELDS
+    headline = headline_field.value_in(data)
     if not isinstance(headline, str):
         raise ModelCallError("diff summary must state a headline", details=data)
 
-    def _strings(field: str) -> tuple[str, ...]:
-        value = data.get(field)
+    def _strings(field: AnswerField) -> tuple[str, ...]:
+        value = field.value_in(data)
         if isinstance(value, str) or not isinstance(value, Sequence) or any(not isinstance(v, str) for v in value):
-            raise ModelCallError(f"diff summary {field} must be a list of strings", details=data)
+            raise ModelCallError(f"diff summary {field.key} must be a list of strings", details=data)
         return tuple(value)
 
     return (
         headline,
-        _strings("keyChanges"),
-        _strings("sectionsAdded"),
-        _strings("sectionsRemoved"),
-        _strings("dollarChanges"),
+        _strings(changes_field),
+        _strings(added_field),
+        _strings(removed_field),
+        _strings(dollars_field),
     )
 
 
@@ -403,6 +493,7 @@ __all__ = [
     "DEFAULT_FRAME",
     "DIFF_EXCERPT_CHARS",
     "DIFF_ITEM_CAP",
+    "DIFF_SUMMARY_FIELDS",
     "DIFF_SUMMARY_PROMPT_TEMPLATE",
     "DIFF_SUMMARY_PROMPT_VERSION",
     "MAX_PROVISIONS",
@@ -410,6 +501,7 @@ __all__ = [
     "MONEY_BILL_FRAMES",
     "PROMPT_VERSION",
     "SUMMARY_CHARS",
+    "SUMMARY_FIELDS",
     "SUMMARY_PROMPT_TEMPLATE",
     "TEXT_CHARS",
     "BillSummaryResult",
