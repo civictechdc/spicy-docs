@@ -81,7 +81,7 @@ def test_a_403_aborts_the_run_rather_than_being_recorded(tmp_path: Path) -> None
         seen.append(request)
         return httpx.Response(403, json={"error": "denied"})
 
-    with pytest.raises(CredentialRefusedError, match="the key was refused"):
+    with pytest.raises(CredentialRefusedError, match="access was refused"):
         run(parquet, output, api_key="k", delay_seconds=0.0, transport=_transport(handler))
 
     assert len(seen) == 1
