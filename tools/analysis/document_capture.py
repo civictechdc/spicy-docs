@@ -69,7 +69,7 @@ PARENT_SCHEMA = "document-capture-v1.schema.json"
 PROFILE_META_SCHEMA = "document-capture-profile-v1.schema.json"
 #: Rulespec's invariant validator, vendored beside its schemas and pinned in ``PINS.json``.
 VENDORED_INVARIANTS = "rulespec/document_capture.py"
-CONVERTER_VERSION = "1"
+CONVERTER_VERSION = "2"
 FIXTURES = ROOT / "tests" / "fixtures"
 
 NONE = {"coordinateSystem": "none"}
@@ -440,7 +440,12 @@ class MarkupConverter:
         if not node.container:
             self.builder.span(node, text, text_source(event), tags=tags)
         elif text.strip():
-            leaf = Node("text", node, self.grammar.derivation)
+            leaf = Node(
+                "text",
+                node,
+                self.grammar.derivation,
+                decision={"method": "generated", "rule": "implicit-character-data-leaf-v1"},
+            )
             self.builder.span(leaf, text, text_source(event), tags=tags)
         else:
             self.builder.span(node, text, text_source(event))
@@ -507,6 +512,7 @@ class MarkupConverter:
                 depth += 1
             current = current.parent
         node.level = max(depth, 1)
+        node.decision = {"method": "rule", "rule": "enclosing-unit-heading-level-v1"}
 
 
 Piece = tuple[str, dict[str, Any]]
@@ -622,7 +628,13 @@ def _emit_report_block(
         kind, designation = classify(text)
         single = kind in ("pageNumber", "committee-report-html:banner", "committee-report-html:rule")
         if node is None or node.kind != kind or single:
-            node = Node(kind, container, "markup", designation=designation)
+            node = Node(
+                kind,
+                container,
+                "markup",
+                designation=designation,
+                decision={"method": "rule", "rule": "gpo-blank-line-block-and-line-kind-v1"},
+            )
         content = line[:-1] if line and line[-1][0] == "\n" else line
         newline = line[-1] if line and line[-1][0] == "\n" else None
         for piece in content:
@@ -658,16 +670,23 @@ def _emit_report_table(
         content = line[:-1] if line and line[-1][0] == "\n" else line
         newline = line[-1] if line and line[-1][0] == "\n" else None
         if _CRPT_RULE.match(text):
-            rule = Node("committee-report-html:rule", table, "markup")
+            rule = Node(
+                "committee-report-html:rule",
+                table,
+                "markup",
+                decision={"method": "rule", "rule": "gpo-fixed-pitch-rule-v1"},
+            )
             for piece in content:
                 builder.span(rule, *piece)
         else:
-            row = Node("row", table, "markup")
+            row = Node("row", table, "markup", decision={"method": "rule", "rule": "gpo-fixed-pitch-row-v1"})
             column = 0
             for piece in content:
                 for part in _split_piece(piece, _columns(piece[0])):
                     if part[0].strip():
-                        cell = Node("cell", row, "markup")
+                        cell = Node(
+                            "cell", row, "markup", decision={"method": "rule", "rule": "gpo-fixed-pitch-column-v1"}
+                        )
                         cell.cell = {"row": row_index, "column": column, "header": index == 1}
                         builder.span(cell, *part)
                         column += 1
@@ -771,7 +790,8 @@ def lines_to_pages(
                 container=True,
                 designation=str(block.page),
                 page_size=(sizes or {}).get(block.page),
-                source={"coordinateSystem": "page-region", "page": block.page},
+                source={"coordinateSystem": "page-region", "page": block.page, "box": [0, 0, 1000, 1000]},
+                decision={"method": "generated", "rule": "extractor-page-container-v1"},
             )
             lines[block.page] = []
         elif previous is not None:
@@ -782,7 +802,13 @@ def lines_to_pages(
         if not block.text.strip():
             builder.span(page, block.text, block_source(block))
             continue
-        leaf = Node("line", page, derivation, source=block_source(block))
+        leaf = Node(
+            "line",
+            page,
+            derivation,
+            source=block_source(block),
+            decision={"method": "rule", "rule": "retained-evidence-block-to-line-v1"},
+        )
         builder.span(leaf, block.text, block_source(block), style=block_style(block))
         lines[block.page].append((leaf, block))
     if classify is not None:
@@ -1508,7 +1534,13 @@ def wrap_children(parent: Node, kind: str, derivation: str, chosen: Sequence[Nod
     if not chosen:
         return None
     index = parent.children.index(chosen[0])
-    container = Node(kind, parent, derivation, container=True)  # appended at the end
+    container = Node(
+        kind,
+        parent,
+        derivation,
+        container=True,
+        decision={"method": "generated", "rule": "trailing-source-elements-wrapper-v1"},
+    )
     for child in chosen:
         parent.children.remove(child)
         child.parent = container
@@ -1529,6 +1561,12 @@ def _git_revision() -> str:
 
 def converter_record(family: str, extra: Sequence[tuple[str, str]] = ()) -> dict[str, Any]:
     deps = [("python", sys.version.split()[0]), ("spicy-docs", importlib.metadata.version("spicy-docs")), *extra]
+    deps.append(
+        (
+            "document_capture_sources.py",
+            "sha256:" + sha256(Path(__file__).with_name("document_capture_sources.py").read_bytes()),
+        )
+    )
     return {
         "id": f"spicy-docs/tools/analysis/document_capture.py#{family}",
         "version": CONVERTER_VERSION,
@@ -1658,6 +1696,9 @@ class Conversion:
         return self.artifact_bytes
 
     def capture(self) -> dict[str, Any]:
+        from tools.analysis.document_capture_sources import populate
+
+        populate(self)
         nodes, stream = self.builder.finish()
         digest = sha256(stream)
         norm_id, statement = NORMALIZATIONS["evidence-lines" if self.intermediate else self.rendition]
@@ -1745,19 +1786,22 @@ def convert_uslm(path: Path) -> Conversion:
     data = path.read_bytes()
     selection = PublicLawSelection(119, "public", 1)
     meta = validate_public_law_xml(data, selection=selection, final_url=public_law_xml_locator(selection))
+    member = json.loads((FIXTURES / "document_capture_provenance/public-law.json").read_bytes())["archiveMember"]
+    if sha256(data) != member["sha256"] or len(data) != member["byteSize"]:
+        raise ValueError("public-law fixture differs from the retained archive member")
     artifact = read_artifact(
         path,
         "application/xml",
         {
-            "url": "https://www.govinfo.gov/bulkdata/PLAW/119/public/PLAW-119-public.zip",
             "path": str(path.relative_to(ROOT)),
             "publisher": "GovInfo",
             "publisherId": "PLAW-119publ1",
         },
         [("rkaf:uslm", "/us/pl/119/1"), *(("rkaf:partner-defined", f"citableAs:{c}") for c in meta.citable_as)],
-        FIXTURE_RETRIEVED["tests/fixtures/uslm/README.md"],
+        member["archive"]["retrievedAt"],
     )
     ext = {
+        "archiveMember": member,
         "source": meta.source,
         "title": meta.title,
         "docNumber": meta.doc_number,
@@ -1878,6 +1922,10 @@ def convert_federal_register(xml_path: Path, json_path: Path, receipt: Mapping[s
         "endPage": document["end_page"],
         "agencies": [a.get("name") for a in document["agencies"]],
         "documentJsonSha256": sha256(json_path.read_bytes()),
+        "documentJsonPath": str(json_path.relative_to(ROOT)),
+        "docketIds": document["docket_ids"],
+        "regulationIdNumbers": document["regulation_id_numbers"],
+        "dates": document["dates"],
     }
     conversion = convert_markup("fr-2026-19200", FEDERAL_REGISTER, data, "xml", artifact, ext=ext)
     # Built once per table and once per row: reading a cell's geometry with
@@ -2007,7 +2055,15 @@ def convert_cfr(evidence_path: Path, provenance: Mapping[str, Any], pages_path: 
         "application/json",
         "extraction.DocumentExtractor(NativeText()) then reconstruction.evidence.evidence_from_pages",
     )
-    builder = Builder(Node("document", None, "reconstructed", container=True))
+    builder = Builder(
+        Node(
+            "document",
+            None,
+            "reconstructed",
+            container=True,
+            decision={"method": "generated", "rule": "reconstruction-document-root-v1"},
+        )
+    )
     sizes = read_page_sizes(pages_path, provenance["pdfSha256"])
     holders: dict[str, Node | Region] = {}
     paths = {entry.node: entry.path for entry in serialized.source_map.entries}
@@ -2061,6 +2117,7 @@ def convert_cfr(evidence_path: Path, provenance: Mapping[str, Any], pages_path: 
                 "text",
                 holder,
                 "reconstructed",
+                decision={"method": "generated", "rule": "reconstructed-parent-own-text-v1"},
                 ext={"reconstructionNode": record.id, "reconstructionKind": record.kind},
             )
             holder.children.remove(leaf)
@@ -2170,7 +2227,15 @@ def convert_slip_opinion(
         "application/json",
         "extraction.DocumentExtractor(NativeText()) then reconstruction.evidence.evidence_from_pages",
     )
-    builder = Builder(Node("document", None, "pdf-text", container=True))
+    builder = Builder(
+        Node(
+            "document",
+            None,
+            "pdf-text",
+            container=True,
+            decision={"method": "generated", "rule": "extractor-document-root-v1"},
+        )
+    )
     sizes = read_page_sizes(pages_path, receipt["sha256"])
     pages = lines_to_pages(
         evidence,

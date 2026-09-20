@@ -32,7 +32,13 @@
                 "endPage",
                 "publicationDate",
                 "startPage",
-                "type"
+                "type",
+                "sourceRecords",
+                "renditionReason",
+                "docketIds",
+                "regulationIdNumbers",
+                "dates",
+                "documentJsonPath"
               ],
               "properties": {
                 "documentNumber": {
@@ -66,6 +72,139 @@
                   }
                 },
                 "documentJsonSha256": {
+                  "type": "string"
+                },
+                "sourceRecords": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "role",
+                      "sha256",
+                      "byteSize",
+                      "mediaType"
+                    ],
+                    "properties": {
+                      "role": {
+                        "enum": [
+                          "acquisition",
+                          "mods"
+                        ]
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "url": {
+                        "type": "string"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "byteSize": {
+                        "type": "integer"
+                      },
+                      "mediaType": {
+                        "type": "string"
+                      },
+                      "retrievedAt": {
+                        "type": "string"
+                      },
+                      "receipt": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "path",
+                          "sha256",
+                          "selector"
+                        ],
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "sha256": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "selector": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "packageId": {
+                        "type": "string"
+                      },
+                      "granuleId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "identityPaths": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "sourceFields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "name",
+                            "value",
+                            "attributes",
+                            "path"
+                          ],
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "attributes": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              }
+                            },
+                            "path": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "renditionReason": {
+                  "type": "string"
+                },
+                "docketIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "regulationIdNumbers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "dates": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "documentJsonPath": {
                   "type": "string"
                 }
               }

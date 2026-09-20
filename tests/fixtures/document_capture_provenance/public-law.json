@@ -1,0 +1,39 @@
+{
+  "receipt": {
+    "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/comps-plaw-pin-2026-09-14/fetched.jsonl",
+    "sha256": "2cc497a86b06564a6e7afcbf722e783f5f4cb1048955fc4f2ac3dedf1ec536c2",
+    "line": 36
+  },
+  "observation": {
+    "attempt": 1,
+    "blob": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/blobs/sha256/5694c34db729f07246208a8226abb8744dd79a509e8ee8068282681f1d03cfbf",
+    "bytes": 3221106,
+    "contentType": "application/zip",
+    "kind": "zip",
+    "observedAt": "2026-09-14T14:52:27.864916+00:00",
+    "outcome": "pinned",
+    "responseHeaders": {
+      "Content-Length": "3221106",
+      "Date": "Mon, 14 Sep 2026 14:52:27 GMT",
+      "Last-Modified": "Wed, 09 Sep 2026 15:30:21 GMT"
+    },
+    "scope": "PLAW/119/public",
+    "sha256": "5694c34db729f07246208a8226abb8744dd79a509e8ee8068282681f1d03cfbf",
+    "status": 200,
+    "url": "https://www.govinfo.gov/bulkdata/PLAW/119/public/PLAW-119-public.zip"
+  },
+  "archiveMember": {
+    "archive": {
+      "url": "https://www.govinfo.gov/bulkdata/PLAW/119/public/PLAW-119-public.zip",
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/blobs/sha256/5694c34db729f07246208a8226abb8744dd79a509e8ee8068282681f1d03cfbf",
+      "sha256": "5694c34db729f07246208a8226abb8744dd79a509e8ee8068282681f1d03cfbf",
+      "byteSize": 3221106,
+      "mediaType": "application/zip",
+      "retrievedAt": "2026-09-14T14:52:27.864916+00:00"
+    },
+    "memberPath": "PLAW-119publ1.xml",
+    "sha256": "ee0e7a5d534411f78dd325405c42d386a1cfcf14f3870c93f5488874bb7acb54",
+    "byteSize": 23379,
+    "mediaType": "application/xml"
+  }
+}
