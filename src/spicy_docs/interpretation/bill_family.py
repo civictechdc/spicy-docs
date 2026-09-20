@@ -1,4 +1,4 @@
-"""One pass over one bill: twelve tables, in an order where nothing reads another's output.
+"""One pass over one bill: thirteen tables, in an order where nothing reads another's output.
 
 The family builder is the one place a bill's documents and this package's
 findings meet.  It lives here, not in ``schemas/``, because composing them needs
@@ -16,8 +16,9 @@ skips that model table entirely, which is what a keyless CI run and every
 hermetic test do.
 
 **Order, one pass:** referrals, then the three bill-level findings, then the
-four BILLSTATUS tables, then versions, then sections, then the diff of
-consecutive pairs only, then the three model tables.  No step reads a table an
+four BILLSTATUS tables and the CBO cost-estimate index the same document
+states, then versions, then sections, then the diff of consecutive pairs only,
+then the three model tables.  No step reads a table an
 earlier step produced as *published* rows; the diff reads parsed documents, not
 ``bill_sections``.
 
@@ -91,6 +92,11 @@ from spicy_docs.schemas.bill_version_tables import (
     BILL_VERSIONS,
     shape_bill_section,
     shape_bill_version,
+)
+from spicy_docs.schemas.cost_estimate_tables import (
+    CBO_COST_ESTIMATES,
+    fold_cbo_cost_estimates,
+    shape_cbo_cost_estimate,
 )
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError, bill_id, joined
 from spicy_docs.sources.congress.bill_versions import (
@@ -268,6 +274,7 @@ class BillFamilyTables:
     bill_actions: tuple[Row, ...] = ()
     bill_committees: tuple[Row, ...] = ()
     bill_publisher_summaries: tuple[Row, ...] = ()
+    cbo_cost_estimates: tuple[Row, ...] = ()
     bill_versions: tuple[Row, ...] = ()
     bill_sections: tuple[Row, ...] = ()
     section_diffs: tuple[Row, ...] = ()
@@ -448,7 +455,7 @@ def _model_answer(
     A ``ModelCallError`` is the reader refusing the model's answer -- a missing
     key, a label outside the sealed vocabulary, a section id the batch never
     sent. That is a record about one printing, not a reason to lose the other
-    twelve tables of the bill, so it is filed and the pass continues. It used
+    thirteen tables of the bill, so it is filed and the pass continues. It used
     to escape ``build_bill_family`` and abort the caller's whole rollup, which
     is the silent-gap-by-another-name ``FamilyRefusal`` exists to prevent.
 
@@ -574,6 +581,32 @@ def build_bill_family(
             publisher_summaries,
             (key, summary.version_code or "", summary.action_date or ""),
             partial(shape_bill_publisher_summary, identity, summary),
+        )
+
+    # 3b. The fifth table the same document fills: the CBO cost-estimate
+    # index.  Folded onto (bill, publication) first, because the publisher
+    # states one publication twice on some bills and that is one estimate;
+    # a url outside the measured /publication/{id} shape cannot be keyed and
+    # is refused by name rather than published unidentified.
+    estimates: list[Row] = []
+    folded, unkeyable = fold_cbo_cost_estimates(status.cbo_cost_estimates)
+    for index, url in unkeyable:
+        admit.refuse(
+            CBO_COST_ESTIMATES.name,
+            (key, str(index)),
+            f"cost-estimate url is outside the measured publication-page shape: {url!r}",
+        )
+    for entry in folded:
+        admit(
+            CBO_COST_ESTIMATES,
+            estimates,
+            (key, entry.publication_id),
+            partial(
+                shape_cbo_cost_estimate,
+                identity,
+                entry,
+                report_citations=status.report_citations,
+            ),
         )
 
     # 4. One row per acquired printing, with the kind it classifies as.
@@ -702,6 +735,7 @@ def build_bill_family(
         bill_actions=tuple(actions),
         bill_committees=tuple(committees),
         bill_publisher_summaries=tuple(publisher_summaries),
+        cbo_cost_estimates=tuple(estimates),
         bill_versions=tuple(versions),
         bill_sections=tuple(sections),
         section_diffs=tuple(diffs),

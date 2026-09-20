@@ -45,10 +45,21 @@ link came from. These operations return captures; they do not publish a release
 or write a catalog. A hash checks retained bytes, not publisher authenticity.
 
 Parsed status fields include title, source update dates, latest action, actions,
-sponsors, policy area, subjects, summaries and text versions/formats. Original
+sponsors, policy area, subjects, summaries, text versions/formats, the
+`<committeeReports>` citations and the `<cboCostEstimates>` items. Original
 XML preserves fields outside this typed subset. Source strings and summary HTML
 stay intact. A status update, summary action date, text version and acquisition
 time describe different events.
+
+`<cboCostEstimates>` is the keyless route to CBO's cost-estimate index, whose
+own site is walled ([routes](../research/cbo-cost-estimate-routes-2026-09-20.md)).
+Read it as **requested-empty, never absence**: the publisher never emits the
+element empty — zero of the 16,213 bills in the 118th's two bulk zips does — so
+a bill without it is either never scored or not yet linked and nothing in this
+route tells the two apart. The publisher's own user guide is stale on this
+element, documenting `rptPubDate`/`rptTitle`/`rptUrl` and no description; the
+live files state `pubDate`/`title`/`url`/`description`, which is what the
+Congress.gov API serves. Both spellings are read, the live one first.
 
 ## Supported input and visible failures
 

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BILLSTATUS-118hr589.xml, a bounded excerpt.
+  Source: https://www.govinfo.gov/bulkdata/BILLSTATUS/118/hr/BILLSTATUS-118-hr.zip
+  retained as blobs/8e7ca7dab50a7b9b977f021ec1b3231f8fedf82c33494553857b892fadfdba98 in
+  ~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/ (2026-09-20).
+  Whole record: 81823 bytes, sha256 ecaca1937ec6cf211fdece5619f2ccb1bda00b595441839454342d41ad6f7d9a.
+  Kept: the identity block parse_bill_status validates, <committeeReports>
+  and <cboCostEstimates>, each element whole and verbatim. Dropped:
+  actions, summaries, subjects, titles, sponsors, cosponsors, textVersions,
+  relatedBills, committees, laws, notes and amendments; none of which
+  this table reads.
+  The publisher states publication 59121 twice with a re-spelled title
+  ('Human rights' then 'Human Rights'): what restatements_json keeps.
+-->
+<billStatus>
+  <version>3.0.0</version>
+  <bill>
+    <number>589</number>
+    <updateDate>2025-05-27T14:15:43Z</updateDate>
+    <updateDateIncludingText>2025-05-27T14:15:43Z</updateDateIncludingText>
+    <originChamber>House</originChamber>
+    <type>HR</type>
+    <introducedDate>2023-01-27</introducedDate>
+    <congress>118</congress>
+    <committeeReports>
+      <committeeReport>
+        <citation>H. Rept. 118-118</citation>
+      </committeeReport>
+    </committeeReports>
+    <cboCostEstimates>
+      <item>
+        <pubDate>2023-05-04T13:53:00Z</pubDate>
+        <title>H.R. 589, Mahsa Amini Human rights and Security Accountability Act</title>
+        <url>https://www.cbo.gov/publication/59121</url>
+        <description>As ordered reported by the House Committee on Foreign Affairs on April 26, 2023</description>
+      </item>
+      <item>
+        <pubDate>2023-05-04T13:53:00Z</pubDate>
+        <title>H.R. 589, Mahsa Amini Human Rights and Security Accountability Act</title>
+        <url>https://www.cbo.gov/publication/59121</url>
+        <description>As ordered reported by the House Committee on Foreign Affairs on April 26, 2023</description>
+      </item>
+    </cboCostEstimates>
+    <title>MAHSA Act</title>
+  </bill>
+</billStatus>
