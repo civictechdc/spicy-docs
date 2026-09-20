@@ -1,0 +1,4903 @@
+{
+  "beforeCommit": "053c1fbb3a01dff1b9ecb0308f1a26f9d6518448",
+  "afterCommit": "beff73a1cb761486940c977135a411a8353f9f3b",
+  "requests": 0,
+  "captureCount": 7,
+  "observationInput": {
+    "path": "tests/fixtures/document_capture_provenance/observations.json",
+    "sha256": "bea60d8d1ff1035419b877f2180d93b5e4b00ab3904e03afb4dd2a531a757eba"
+  },
+  "retainedReceipts": [
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/bill-parser-probe-2026-09-12/BILLS-119hjres25enr.json",
+      "sha256": "b048714304746360336608ebd64617349b76ac8587fcde453768a50bf928098e",
+      "selector": "$"
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/inputs/requests.jsonl",
+      "sha256": "9b0b23b8f199edf4b3202b7ff1001d1da221bb20ae8f06060a0993a14b6dc8be",
+      "selector": "line:1"
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/inputs/requests.jsonl",
+      "sha256": "9b0b23b8f199edf4b3202b7ff1001d1da221bb20ae8f06060a0993a14b6dc8be",
+      "selector": "line:5"
+    },
+    {
+      "path": "tests/fixtures/reconstruction/cfr/provenance.json",
+      "sha256": "425baddd31eeb4bbf5808efff15222dfb9a592e62feed77c6111162ab65a17b3",
+      "selector": "section=716.2"
+    },
+    {
+      "path": "tests/fixtures/govinfo_bodies/README.md",
+      "sha256": "1fd3b02ec8ddf5487fe96e2442972849a517f21078a8bec1ad74522745fc7012",
+      "selector": "body-CRPT-119hrpt1.htm table row; acquisition date in opening paragraph"
+    },
+    {
+      "path": "tests/fixtures/document_capture_provenance/public-law.json",
+      "sha256": "4ad38d438f9a8504f11be5338696d80a68ff863317906dfa07d846e78c6f0a4d",
+      "selector": "archiveMember.archive"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20/requests.jsonl",
+      "sha256": "dcdfa8bd7c1c4744a3be7996334a35f52e41057890e69c6705d1ac1bccd0b210",
+      "selector": "line:29"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-yield-mods-recheck-2026-09-20/requests.jsonl",
+      "sha256": "f55021eef8763f5690049ea754b0b0deb688eb9c5a0ac130efbd2a725e38b939",
+      "selector": "line:24"
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/comps-plaw-pin-2026-09-14/fetched.jsonl",
+      "sha256": "2cc497a86b06564a6e7afcbf722e783f5f4cb1048955fc4f2ac3dedf1ec536c2",
+      "line": 36
+    }
+  ],
+  "retainedInputs": [
+    {
+      "path": "tests/fixtures/govinfo_bills/text-119hjres25enr.xml",
+      "sha256": "690ca61f34b0927bf8da34addcf721e4fd704c22c98cf99aaccfbd26e31889e4",
+      "bytes": 2751
+    },
+    {
+      "path": "tests/fixtures/reconstruction/cfr/CFR-2025-title30-vol3-sec716-2.evidence.json",
+      "sha256": "0a5c7bf6230da08409eba9f7ffee7c155cf6fbb82e5d6143a12f9526a6d6b76f",
+      "bytes": 101921
+    },
+    {
+      "path": "tests/fixtures/govinfo_bodies/body-CRPT-119hrpt1.htm",
+      "sha256": "d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9",
+      "bytes": 13953
+    },
+    {
+      "path": "tests/fixtures/govinfo_bodies/mods-CRPT-119hrpt1.xml",
+      "sha256": "d73ea7b12140ca7e1ad08649092a9e14a432a9fce8948d8a4975e4f3cd43f9d2",
+      "bytes": 9787
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/inputs/fr-2026-19200.xml",
+      "sha256": "0f0653b6ea1063944e444893cb385f24a3cfe635088683465d6a9ce3e903c3e2",
+      "bytes": 10224
+    },
+    {
+      "path": "tests/fixtures/uslm/plaw-119publ1.xml",
+      "sha256": "ee0e7a5d534411f78dd325405c42d386a1cfcf14f3870c93f5488874bb7acb54",
+      "bytes": 23379
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/blobs/sha256/5694c34db729f07246208a8226abb8744dd79a509e8ee8068282681f1d03cfbf",
+      "sha256": "5694c34db729f07246208a8226abb8744dd79a509e8ee8068282681f1d03cfbf",
+      "bytes": 3221106
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/inputs/26a274_l537.evidence.json",
+      "sha256": "57e257b23ed9911ec00e36b1763f17b999c7a7515ddb2e009507f5c0ad799a9d",
+      "bytes": 73533
+    },
+    {
+      "path": "tests/fixtures/document_capture_pdf_tables/GPO-CDOC-119sdoc3-1.page17.pdf",
+      "sha256": "20d77a2462a333f8d05bc9ef80feff8493dd5d5cb8c7146245cf76174e67798b",
+      "bytes": 163971
+    },
+    {
+      "path": "tests/fixtures/document_capture_provenance/mods-GPO-CDOC-119sdoc3-1.xml",
+      "sha256": "2bdc75916a2fda4de274b1c492830bcd82c6070810d1856d9635779d601fa16c",
+      "bytes": 11898
+    },
+    {
+      "path": "tests/fixtures/document_capture_pdf_tables/senate-page17.evidence.json",
+      "sha256": "88a28a16259d0a34f8e0b6291802cfceafd5f3dbb4116ca32ee3ba509118aaf2",
+      "bytes": 11371
+    },
+    {
+      "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20/blobs/2248097b0c5106889d8882a979a0488a49f283b29e28289d2778864c40b7b13e",
+      "sha256": "2248097b0c5106889d8882a979a0488a49f283b29e28289d2778864c40b7b13e",
+      "bytes": 5657813
+    },
+    {
+      "path": "tests/fixtures/reconstruction/cfr/README.md",
+      "sha256": "8f5b3134325d1576fd7c91b38bf10b6bff3578ca5904fbbbd1c5fc01be17a6b9",
+      "bytes": 4372
+    },
+    {
+      "path": "tests/fixtures/document_capture_pdf_tables/source.json",
+      "sha256": "ef48a82bb13f9bf321a9677ebc6bd5d00691c1f94dc3b3036dd2b7ea39f54d12",
+      "bytes": 679
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/inputs/fr-2026-19200.json",
+      "sha256": "d7ee5568bb8a19ba2399423fba2e663443aa8981adaeee85a91ae563ffe68e02",
+      "bytes": 3237
+    },
+    {
+      "path": "src/spicy_docs/schemas/document_capture/1.0/PINS.json",
+      "sha256": "aaade77bda5f63753e4a421076f47e9be15afcc15e57982b1a19f8de33db2559",
+      "bytes": 2154
+    }
+  ],
+  "families": [
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/bills-119hjres25enr.capture.json",
+      "family": "bill-xml",
+      "before": {
+        "sha256": "8296186d64fddedb0eaa4625006932f67f79e8940f98a264497b168b7ef24068",
+        "bytes": 18638,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 0,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 0,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 0,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 0,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 0,
+            "total": 0
+          },
+          "5.renditionReason": {
+            "present": 0,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 45,
+            "total": 45
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 23,
+            "total": 23
+          },
+          "6.pageNumber": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageBox": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageDimensions": {
+            "present": 0,
+            "total": 0
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 0,
+            "total": 0
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 1
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 1
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 0,
+            "total": 0
+          },
+          "10.tableStructure": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellRowColumn": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 14,
+        "applicableFields": 26,
+        "findings": [
+          {
+            "code": "retrieval-timestamp",
+            "path": "/artifact/retrievedAt"
+          },
+          {
+            "code": "acquisition-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "rendition-reason",
+            "path": "/profile/ext/renditionReason"
+          },
+          {
+            "code": "govinfo-pair",
+            "path": "/profile/ext/govinfoIdentity"
+          },
+          {
+            "code": "mods-record",
+            "path": "/profile/ext/sourceRecords"
+          }
+        ]
+      },
+      "after": {
+        "sha256": "86c081f436412f0130f4661e8681542c9f8b197ee3ff9d02c86d82c4c97bf3b9",
+        "bytes": 19554,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 1,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 0,
+            "total": 0
+          },
+          "5.renditionReason": {
+            "present": 1,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 45,
+            "total": 45
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 23,
+            "total": 23
+          },
+          "6.pageNumber": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageBox": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageDimensions": {
+            "present": 0,
+            "total": 0
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 0,
+            "total": 0
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 1
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 1
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 0,
+            "total": 0
+          },
+          "10.tableStructure": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellRowColumn": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 20,
+        "applicableFields": 26,
+        "findings": [
+          {
+            "code": "mods-record",
+            "path": "/profile/ext/sourceRecords"
+          }
+        ]
+      }
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/cfr-2025-title30-vol3-sec716-2.capture.json",
+      "family": "cfr-reconstruction",
+      "before": {
+        "sha256": "e200e4490be487c64b81aabc018215433fba988174a5514c1c33d566488206e8",
+        "bytes": 186831,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 0,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 0,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 0,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionReason": {
+            "present": 0,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 721,
+            "total": 721
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 87,
+            "total": 87
+          },
+          "6.pageNumber": {
+            "present": 367,
+            "total": 367
+          },
+          "6.pageBox": {
+            "present": 367,
+            "total": 367
+          },
+          "6.pageDimensions": {
+            "present": 3,
+            "total": 3
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 75,
+            "total": 87
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 0
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 0,
+            "total": 0
+          },
+          "10.tableStructure": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellRowColumn": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 18,
+        "applicableFields": 28,
+        "findings": [
+          {
+            "code": "retrieval-timestamp",
+            "path": "/artifact/retrievedAt"
+          },
+          {
+            "code": "acquisition-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "rendition-reason",
+            "path": "/profile/ext/renditionReason"
+          },
+          {
+            "code": "govinfo-pair",
+            "path": "/profile/ext/govinfoIdentity"
+          },
+          {
+            "code": "mods-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/0/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/11/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/28/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/30/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/34/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/39/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/47/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/51/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/67/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/72/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/79/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/85/decision"
+          }
+        ]
+      },
+      "after": {
+        "sha256": "934177ef4fb056a641d06efb359ddff503454c70141ab069e0a78f4d58d373d7",
+        "bytes": 188639,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 0,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionReason": {
+            "present": 1,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 721,
+            "total": 721
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 87,
+            "total": 87
+          },
+          "6.pageNumber": {
+            "present": 367,
+            "total": 367
+          },
+          "6.pageBox": {
+            "present": 367,
+            "total": 367
+          },
+          "6.pageDimensions": {
+            "present": 3,
+            "total": 3
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 87,
+            "total": 87
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 0
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 0,
+            "total": 0
+          },
+          "10.tableStructure": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellRowColumn": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 23,
+        "applicableFields": 28,
+        "findings": [
+          {
+            "code": "retrieval-timestamp",
+            "path": "/artifact/retrievedAt"
+          },
+          {
+            "code": "mods-record",
+            "path": "/profile/ext/sourceRecords"
+          }
+        ]
+      }
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/crpt-119hrpt1.capture.json",
+      "family": "committee-report-html",
+      "before": {
+        "sha256": "6271c316535f3079b3a72a959681988392458d69ff9513fefca03f6c1f6c572e",
+        "bytes": 127644,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 0,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 0,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 0,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 0,
+            "total": 0
+          },
+          "5.renditionReason": {
+            "present": 0,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 625,
+            "total": 625
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 217,
+            "total": 217
+          },
+          "6.pageNumber": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageBox": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageDimensions": {
+            "present": 0,
+            "total": 0
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 15,
+            "total": 213
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 0
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 1
+          },
+          "9.publicationApprovalDate": {
+            "present": 0,
+            "total": 1
+          },
+          "10.tableStructure": {
+            "present": 1,
+            "total": 1
+          },
+          "10.cellRowColumn": {
+            "present": 120,
+            "total": 120
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 120
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 120
+          },
+          "10.cell.header": {
+            "present": 120,
+            "total": 120
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 17,
+        "applicableFields": 31,
+        "findings": [
+          {
+            "code": "retrieval-timestamp",
+            "path": "/artifact/retrievedAt"
+          },
+          {
+            "code": "acquisition-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "rendition-reason",
+            "path": "/profile/ext/renditionReason"
+          },
+          {
+            "code": "govinfo-pair",
+            "path": "/profile/ext/govinfoIdentity"
+          },
+          {
+            "code": "mods-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/4/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/5/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/6/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/7/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/8/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/9/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/10/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/11/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/12/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/14/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/15/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/17/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/19/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/21/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/23/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/25/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/26/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/27/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/28/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/29/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/30/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/31/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/32/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/33/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/34/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/35/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/36/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/37/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/38/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/39/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/40/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/41/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/42/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/43/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/44/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/45/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/46/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/47/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/48/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/49/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/50/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/51/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/52/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/53/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/54/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/55/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/56/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/57/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/58/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/59/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/60/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/61/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/62/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/63/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/64/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/65/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/66/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/67/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/69/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/71/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/72/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/73/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/74/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/75/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/76/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/77/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/78/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/79/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/80/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/81/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/82/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/83/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/84/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/85/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/86/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/87/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/88/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/89/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/90/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/91/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/92/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/93/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/94/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/95/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/96/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/97/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/98/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/99/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/100/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/101/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/102/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/103/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/104/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/105/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/106/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/107/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/108/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/109/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/110/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/111/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/112/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/113/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/115/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/117/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/118/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/119/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/120/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/121/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/122/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/123/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/124/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/125/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/126/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/127/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/128/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/129/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/130/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/131/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/132/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/133/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/134/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/135/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/136/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/137/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/138/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/139/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/140/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/141/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/142/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/143/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/144/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/145/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/146/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/147/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/148/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/149/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/150/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/151/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/152/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/153/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/154/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/155/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/156/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/157/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/158/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/159/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/161/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/163/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/164/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/165/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/166/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/167/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/168/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/169/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/170/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/171/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/172/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/173/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/174/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/175/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/176/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/177/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/178/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/179/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/180/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/181/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/182/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/183/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/184/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/185/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/186/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/187/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/188/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/189/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/190/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/191/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/192/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/193/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/194/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/195/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/196/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/197/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/198/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/199/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/200/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/201/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/202/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/203/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/204/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/205/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/207/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/209/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/210/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/211/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/212/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/213/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/215/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/216/decision"
+          }
+        ]
+      },
+      "after": {
+        "sha256": "68632053484354422f84899fc243f4e50bcd282f3c6b6f72abdb2db138d4fbfb",
+        "bytes": 145780,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 1,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 0,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 0,
+            "total": 0
+          },
+          "5.renditionReason": {
+            "present": 1,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 625,
+            "total": 625
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 217,
+            "total": 217
+          },
+          "6.pageNumber": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageBox": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageDimensions": {
+            "present": 0,
+            "total": 0
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 213,
+            "total": 213
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 0
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 1,
+            "total": 1
+          },
+          "9.publicationApprovalDate": {
+            "present": 1,
+            "total": 1
+          },
+          "10.tableStructure": {
+            "present": 1,
+            "total": 1
+          },
+          "10.cellRowColumn": {
+            "present": 120,
+            "total": 120
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 120
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 120
+          },
+          "10.cell.header": {
+            "present": 120,
+            "total": 120
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 26,
+        "applicableFields": 31,
+        "findings": [
+          {
+            "code": "retrieval-timestamp",
+            "path": "/artifact/retrievedAt"
+          }
+        ]
+      }
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/fr-2026-19200.capture.json",
+      "family": "federal-register-xml",
+      "before": {
+        "sha256": "4539ffa6e4b978274d07922e0959d14bf2d1c5f76cb739e7c55698ad44a602e8",
+        "bytes": 62503,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 0,
+            "total": 0
+          },
+          "1.govinfoGranuleId": {
+            "present": 0,
+            "total": 0
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 0
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 1,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 0,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 0,
+            "total": 0
+          },
+          "5.renditionReason": {
+            "present": 0,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 209,
+            "total": 209
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 74,
+            "total": 74
+          },
+          "6.pageNumber": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageBox": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageDimensions": {
+            "present": 0,
+            "total": 0
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 0,
+            "total": 1
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 0
+          },
+          "9.frCitation": {
+            "present": 1,
+            "total": 1
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 1
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 1
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 1,
+            "total": 1
+          },
+          "10.tableStructure": {
+            "present": 1,
+            "total": 1
+          },
+          "10.cellRowColumn": {
+            "present": 21,
+            "total": 21
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 21
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 21
+          },
+          "10.cell.header": {
+            "present": 21,
+            "total": 21
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 19,
+        "applicableFields": 28,
+        "findings": [
+          {
+            "code": "acquisition-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "rendition-reason",
+            "path": "/profile/ext/renditionReason"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/73/decision"
+          }
+        ]
+      },
+      "after": {
+        "sha256": "7cf0c761f83869d9e63309fbb78dcca3c139cfdaeb58de35f3d4d658df939a92",
+        "bytes": 63522,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 0,
+            "total": 0
+          },
+          "1.govinfoGranuleId": {
+            "present": 0,
+            "total": 0
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 0
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 1,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 0,
+            "total": 0
+          },
+          "5.renditionReason": {
+            "present": 1,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 209,
+            "total": 209
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 74,
+            "total": 74
+          },
+          "6.pageNumber": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageBox": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageDimensions": {
+            "present": 0,
+            "total": 0
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 1,
+            "total": 1
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 0
+          },
+          "9.frCitation": {
+            "present": 1,
+            "total": 1
+          },
+          "9.docketIds": {
+            "present": 1,
+            "total": 1
+          },
+          "9.rins": {
+            "present": 1,
+            "total": 1
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 1,
+            "total": 1
+          },
+          "10.tableStructure": {
+            "present": 1,
+            "total": 1
+          },
+          "10.cellRowColumn": {
+            "present": 21,
+            "total": 21
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 21
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 21
+          },
+          "10.cell.header": {
+            "present": 21,
+            "total": 21
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 24,
+        "applicableFields": 28,
+        "findings": []
+      }
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/plaw-119publ1.capture.json",
+      "family": "uslm-law",
+      "before": {
+        "sha256": "765abe4904fb74be3173c5b89f5ded16076edb4032ef55fb2f572cbbe07f2cff",
+        "bytes": 141485,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 0,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 0,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 0,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 0,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 0,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 0,
+            "total": 0
+          },
+          "5.renditionReason": {
+            "present": 0,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 325,
+            "total": 325
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 321,
+            "total": 321
+          },
+          "6.pageNumber": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageBox": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageDimensions": {
+            "present": 0,
+            "total": 0
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 0,
+            "total": 129
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 1
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 1,
+            "total": 1
+          },
+          "10.tableStructure": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellRowColumn": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 14,
+        "applicableFields": 27,
+        "findings": [
+          {
+            "code": "retrieval-timestamp",
+            "path": "/artifact/retrievedAt"
+          },
+          {
+            "code": "acquisition-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "rendition-reason",
+            "path": "/profile/ext/renditionReason"
+          },
+          {
+            "code": "govinfo-pair",
+            "path": "/profile/ext/govinfoIdentity"
+          },
+          {
+            "code": "mods-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/29/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/40/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/44/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/46/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/47/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/48/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/50/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/51/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/58/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/60/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/61/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/62/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/63/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/67/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/69/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/70/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/72/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/73/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/74/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/75/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/79/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/81/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/82/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/88/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/93/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/97/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/99/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/100/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/104/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/106/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/107/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/111/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/116/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/118/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/121/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/124/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/126/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/127/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/128/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/130/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/131/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/135/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/137/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/138/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/142/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/144/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/145/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/150/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/152/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/155/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/163/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/165/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/166/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/167/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/168/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/172/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/174/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/175/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/176/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/177/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/178/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/179/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/183/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/185/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/186/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/190/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/192/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/195/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/197/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/198/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/199/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/201/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/202/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/204/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/205/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/209/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/211/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/214/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/216/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/217/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/218/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/220/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/221/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/225/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/227/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/228/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/229/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/230/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/232/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/233/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/234/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/235/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/240/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/242/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/243/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/248/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/251/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/253/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/254/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/255/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/257/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/258/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/262/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/264/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/265/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/266/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/267/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/269/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/270/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/274/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/276/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/280/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/282/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/283/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/287/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/289/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/292/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/294/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/295/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/296/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/298/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/299/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/301/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/302/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/307/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/309/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/312/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/314/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/318/decision"
+          }
+        ]
+      },
+      "after": {
+        "sha256": "1caf7a0906227d03e549deedd26e72f02bf7a3801efa4cd6088d14933ee64f4c",
+        "bytes": 152439,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 1,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 0,
+            "total": 0
+          },
+          "5.renditionReason": {
+            "present": 1,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 325,
+            "total": 325
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 321,
+            "total": 321
+          },
+          "6.pageNumber": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageBox": {
+            "present": 0,
+            "total": 0
+          },
+          "6.pageDimensions": {
+            "present": 0,
+            "total": 0
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 129,
+            "total": 129
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 1
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 1,
+            "total": 1
+          },
+          "10.tableStructure": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellRowColumn": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 22,
+        "applicableFields": 27,
+        "findings": [
+          {
+            "code": "mods-record",
+            "path": "/profile/ext/sourceRecords"
+          }
+        ]
+      }
+    },
+    {
+      "path": "docs/research/document-capture-schema-2026-09-19/scotus-26a274_l537.capture.json",
+      "family": "slip-opinion-pdf",
+      "before": {
+        "sha256": "559985811a6870abfd0146da93e73bbbd4f06847e7380f6dfec2a228ea4f1f49",
+        "bytes": 124689,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 0,
+            "total": 0
+          },
+          "1.govinfoGranuleId": {
+            "present": 0,
+            "total": 0
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 0
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 1,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 0,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionReason": {
+            "present": 0,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 473,
+            "total": 473
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 168,
+            "total": 168
+          },
+          "6.pageNumber": {
+            "present": 402,
+            "total": 402
+          },
+          "6.pageBox": {
+            "present": 397,
+            "total": 402
+          },
+          "6.pageDimensions": {
+            "present": 5,
+            "total": 5
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 17,
+            "total": 168
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 0
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 0,
+            "total": 0
+          },
+          "10.tableStructure": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellRowColumn": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 17,
+        "applicableFields": 23,
+        "findings": [
+          {
+            "code": "acquisition-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "rendition-reason",
+            "path": "/profile/ext/renditionReason"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/0/decision"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/2/source"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/2/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/3/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/4/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/8/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/9/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/10/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/11/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/12/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/13/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/14/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/15/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/16/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/17/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/18/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/19/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/20/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/21/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/22/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/23/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/24/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/25/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/26/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/27/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/28/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/29/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/30/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/31/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/32/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/33/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/34/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/35/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/36/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/37/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/38/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/39/decision"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/40/source"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/40/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/44/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/45/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/46/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/47/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/48/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/49/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/50/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/51/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/52/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/53/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/54/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/55/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/56/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/57/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/58/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/59/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/60/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/61/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/62/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/63/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/64/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/65/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/66/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/67/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/68/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/69/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/70/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/71/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/72/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/73/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/74/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/75/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/76/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/77/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/78/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/79/decision"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/80/source"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/80/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/84/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/85/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/86/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/87/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/88/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/89/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/90/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/91/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/92/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/93/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/94/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/95/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/96/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/97/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/98/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/99/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/100/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/101/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/102/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/103/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/104/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/105/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/106/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/107/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/108/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/109/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/110/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/111/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/112/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/113/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/114/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/115/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/116/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/117/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/118/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/119/decision"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/120/source"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/120/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/124/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/125/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/126/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/127/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/128/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/129/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/130/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/131/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/132/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/133/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/134/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/135/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/136/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/137/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/138/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/139/decision"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/141/source"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/141/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/142/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/143/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/147/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/148/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/149/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/150/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/151/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/152/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/153/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/154/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/155/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/156/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/157/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/158/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/159/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/160/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/161/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/162/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/163/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/164/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/165/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/166/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/167/decision"
+          }
+        ]
+      },
+      "after": {
+        "sha256": "ba41629b4504914cc2607e3916c42ea03a5da97c041832c45f813233d25231e9",
+        "bytes": 136525,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 0,
+            "total": 0
+          },
+          "1.govinfoGranuleId": {
+            "present": 0,
+            "total": 0
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 0
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 1,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionReason": {
+            "present": 1,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 473,
+            "total": 473
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 168,
+            "total": 168
+          },
+          "6.pageNumber": {
+            "present": 402,
+            "total": 402
+          },
+          "6.pageBox": {
+            "present": 402,
+            "total": 402
+          },
+          "6.pageDimensions": {
+            "present": 5,
+            "total": 5
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 168,
+            "total": 168
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 0
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 0,
+            "total": 0
+          },
+          "10.tableStructure": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellRowColumn": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 0
+          },
+          "10.cellPageBox": {
+            "present": 0,
+            "total": 0
+          }
+        },
+        "completeFields": 21,
+        "applicableFields": 23,
+        "findings": []
+      }
+    },
+    {
+      "path": "tests/fixtures/document_capture_pdf_tables/senate-page17.capture.json",
+      "family": "senate-expenditures-pdf",
+      "before": {
+        "sha256": "50359aed976149f8168d78aab46537c9a1cfdf14ed2db42a4cc5dde36a41fceb",
+        "bytes": 23919,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 0,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 0,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 0,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 0,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 0,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 0,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionReason": {
+            "present": 0,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 46,
+            "total": 46
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 31,
+            "total": 31
+          },
+          "6.pageNumber": {
+            "present": 69,
+            "total": 69
+          },
+          "6.pageBox": {
+            "present": 62,
+            "total": 69
+          },
+          "6.pageDimensions": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 23,
+            "total": 39
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 1
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 0,
+            "total": 1
+          },
+          "10.tableStructure": {
+            "present": 1,
+            "total": 1
+          },
+          "10.cellRowColumn": {
+            "present": 19,
+            "total": 19
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 19
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 19
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 19
+          },
+          "10.cellPageBox": {
+            "present": 13,
+            "total": 19
+          }
+        },
+        "completeFields": 18,
+        "applicableFields": 36,
+        "findings": [
+          {
+            "code": "publisher-url",
+            "path": "/artifact/locator/url"
+          },
+          {
+            "code": "retrieval-timestamp",
+            "path": "/artifact/retrievedAt"
+          },
+          {
+            "code": "acquisition-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "rendition-reason",
+            "path": "/profile/ext/renditionReason"
+          },
+          {
+            "code": "govinfo-pair",
+            "path": "/profile/ext/govinfoIdentity"
+          },
+          {
+            "code": "mods-record",
+            "path": "/profile/ext/sourceRecords"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/0/decision"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/1/source"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/1/decision"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/8/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/9/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/10/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/22/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/23/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/24/source"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/25/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/26/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/27/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/28/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/29/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/30/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/31/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/32/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/33/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/34/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/35/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/36/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/37/decision"
+          },
+          {
+            "code": "derived-node-decision",
+            "path": "/nodes/38/decision"
+          }
+        ]
+      },
+      "after": {
+        "sha256": "b1eed26cc5e0c914ce757c9cbca82fbed56a061dfaf0b4a371402e298d54520a",
+        "bytes": 34998,
+        "fields": {
+          "1.govinfoPackageId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.govinfoGranuleId": {
+            "present": 1,
+            "total": 1
+          },
+          "1.pairedGovinfoIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "2.modsIdentity": {
+            "present": 1,
+            "total": 1
+          },
+          "2.modsEvidence": {
+            "present": 1,
+            "total": 1
+          },
+          "3.publisherUrl": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.sha256": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.byteSize": {
+            "present": 1,
+            "total": 1
+          },
+          "4.artifact.mediaType": {
+            "present": 1,
+            "total": 1
+          },
+          "4.fullRetrievalTime": {
+            "present": 1,
+            "total": 1
+          },
+          "4.acquisitionRecord": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionKind": {
+            "present": 1,
+            "total": 1
+          },
+          "5.textStreamDigest": {
+            "present": 1,
+            "total": 1
+          },
+          "5.normalization": {
+            "present": 1,
+            "total": 1
+          },
+          "5.extractorIntermediate": {
+            "present": 1,
+            "total": 1
+          },
+          "5.renditionReason": {
+            "present": 1,
+            "total": 1
+          },
+          "6.spanCharacterProvenance": {
+            "present": 46,
+            "total": 46
+          },
+          "6.nodeCharacterEvidence": {
+            "present": 31,
+            "total": 31
+          },
+          "6.pageNumber": {
+            "present": 69,
+            "total": 69
+          },
+          "6.pageBox": {
+            "present": 63,
+            "total": 69
+          },
+          "6.pageDimensions": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.version": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.implementation": {
+            "present": 1,
+            "total": 1
+          },
+          "7.converter.dependencies": {
+            "present": 1,
+            "total": 1
+          },
+          "7.profilePin": {
+            "present": 1,
+            "total": 1
+          },
+          "7.nodeDecision": {
+            "present": 39,
+            "total": 39
+          },
+          "7.dedicatedRuleVersion": {
+            "present": 0,
+            "total": 1
+          },
+          "8.billLawIdentity": {
+            "present": 0,
+            "total": 0
+          },
+          "8.normalizedBillId": {
+            "present": 0,
+            "total": 0
+          },
+          "8.citationTargetList": {
+            "present": 0,
+            "total": 1
+          },
+          "9.uscTargets": {
+            "present": 0,
+            "total": 1
+          },
+          "9.frCitation": {
+            "present": 0,
+            "total": 0
+          },
+          "9.docketIds": {
+            "present": 0,
+            "total": 0
+          },
+          "9.rins": {
+            "present": 0,
+            "total": 0
+          },
+          "9.committeeCodes": {
+            "present": 0,
+            "total": 0
+          },
+          "9.publicationApprovalDate": {
+            "present": 1,
+            "total": 1
+          },
+          "10.tableStructure": {
+            "present": 1,
+            "total": 1
+          },
+          "10.cellRowColumn": {
+            "present": 19,
+            "total": 19
+          },
+          "10.cell.rowSpan": {
+            "present": 0,
+            "total": 19
+          },
+          "10.cell.columnSpan": {
+            "present": 0,
+            "total": 19
+          },
+          "10.cell.header": {
+            "present": 0,
+            "total": 19
+          },
+          "10.cellPageBox": {
+            "present": 13,
+            "total": 19
+          }
+        },
+        "completeFields": 28,
+        "applicableFields": 36,
+        "findings": [
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/8/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/9/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/10/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/22/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/23/source"
+          },
+          {
+            "code": "coordinate-fields",
+            "path": "/nodes/24/source"
+          }
+        ]
+      }
+    }
+  ],
+  "retainedVerification": {
+    "inputsAndReceipts": "all digests match",
+    "archiveAndMember": "both match"
+  }
+}

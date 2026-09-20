@@ -68,6 +68,98 @@ MODS records, and six coordinate findings. The other two families have none.
 G3's converter and package-check work is delivered; complete source evidence
 and parent-level enforcement remain open.
 
+## Measurement from committed captures
+
+The population is **seven captures total** at both commits: six original
+families under `docs/research/document-capture-schema-2026-09-19/` and
+`tests/fixtures/document_capture_pdf_tables/senate-page17.capture.json`.
+`git ls-tree` finds no eighth capture. No generated result is counted in the
+same pass that produces it. The measurement reads `git show <commit>:<path>`
+for the before and after captures and refuses a changed capture population.
+
+Before: `053c1fbb3a01dff1b9ecb0308f1a26f9d6518448`.
+After: `beff73a1cb761486940c977135a411a8353f9f3b`.
+The [JSON sidecar](document-capture-provenance-2026-09-20.json) pins each
+capture's exact bytes, each retained input and receipt, and every field's
+present/applicable instance counts. The prefixes `1.` through `10.` map to
+the review inventory's ten rows in order. Bundled rows are split into atomic
+fields: for example, retrieval capture becomes digest, byte size, media type,
+full timestamp and acquisition-record reference. This avoids treating a
+present digest as proof of a present retrieval timestamp.
+
+A field is complete only if **all applicable instances** are present. `0/0`
+means not applicable and contributes nothing to the denominator. There is
+no decision denominator for this bill's entirely publisher-read nodes; the
+mutation test inserts a reconstructed node and proves its decision is then
+required. Package-level `granuleId: null` is an explicit scope value and
+counts as present. Publisher-stated empty RIN lists count as present; unknown
+MODS does not. Publisher URL presence also requires the URL's independently
+retained byte facts to match, so the old public-law ZIP/XML pairing fails.
+
+These are **field-completeness counts**, not acquisition coverage or counts
+of parent-schema-required fields. They include absent downstream analytical
+keys, dedicated rule versions and optional cell span/header fields. A cell
+span or header value absent from the source stays absent rather than being
+filled for a better score. Source-native MODS committee codes and dates count
+as structured observations; they do not establish normalized analytical joins.
+
+| Family | Complete fields before | Complete fields after | Provenance findings before → after |
+| --- | ---: | ---: | ---: |
+| `bill-xml` | 14/26 | 20/26 | 5 → 1 |
+| `cfr-reconstruction` | 18/28 | 23/28 | 17 → 2 |
+| `committee-report-html` | 17/31 | 26/31 | 203 → 1 |
+| `federal-register-xml` | 19/28 | 24/28 | 3 → 0 |
+| `uslm-law` | 14/27 | 22/27 | 134 → 1 |
+| `slip-opinion-pdf` | 17/23 | 21/23 | 158 → 0 |
+| `senate-expenditures-pdf` | 18/36 | 28/36 | 29 → 6 |
+| **Total** | **117/199** | **164/199** | **549 → 11** |
+
+The repeated-field denominators expose what changed inside a single field:
+
+| Field instances | Before | After |
+| --- | ---: | ---: |
+| CFR reconstructed-node decisions | 75/87 | 87/87 |
+| Committee report derived-node decisions | 15/213 | 213/213 |
+| FR generated-wrapper decisions | 0/1 | 1/1 |
+| USLM implicit-node and inferred-heading decisions | 0/129 | 129/129 |
+| Slip-opinion derived-node decisions | 17/168 | 168/168 |
+| Senate derived-node decisions | 23/39 | 39/39 |
+| Slip-opinion page-region boxes (nodes and spans) | 397/402 | 402/402 |
+| Senate page-region boxes (nodes and spans) | 62/69 | 63/69 |
+| Senate cell boxes | 13/19 | 13/19 |
+
+Reproduce without acquisition:
+
+```sh
+UV_OFFLINE=1 uv run --frozen python -m tools.analysis.measure_document_capture_provenance \
+  --before 053c1fbb3a01dff1b9ecb0308f1a26f9d6518448 \
+  --after beff73a1cb761486940c977135a411a8353f9f3b \
+  --verify-retained \
+  --output docs/research/document-capture-provenance-2026-09-20.json
+```
+
+This run made **zero requests**. It verified 16 retained input pins and nine
+receipt references, including the original acquisition log behind the bounded
+public-law fixture, and checked the real ZIP's unique member against the
+capture. A missing file or wrong digest fails the command. The external
+receipt directory is
+`/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-provenance-2026-09-20/`:
+`command.json` pins the command, script and measurement;
+`measurement.json` retains the result; `gate.log` retains the full gate output.
+Large originals and campaign logs remain outside the repository.
+
+`tests/test_document_capture_provenance_measurement.py` replays both pinned
+commits, compares the entire sidecar, and checks current capture files against
+the measured after-digests. It then removes source records from each family's
+stored capture, drops a known page box, and restores the ZIP/XML mismatch;
+every mutation changes the measurement. Separate package tests require
+findings for deleted family provenance, and replay timestamps and MODS against
+the independently retained records. The existing JSON/XML equality tests
+cover all added extensions without changing the XML serializer.
+
+Final offline gate: `UV_OFFLINE=1 ./scripts/check` passed. Summary:
+`7231 passed, 5 skipped, 46 deselected, 5 warnings in 48.81s`.
+
 ## What rulespec must change
 
 The parent and profile meta-schema in this repository remain byte-identical
