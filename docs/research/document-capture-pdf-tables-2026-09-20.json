@@ -1,0 +1,363 @@
+{
+  "networkRequests": 0,
+  "parentSchema": {
+    "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
+    "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
+  },
+  "profileSchema": {
+    "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:senate-expenditures-pdf",
+    "sha256": "36a19615b7beffb3f28eec5dad6ef3f4fa7de01affd9ca7d19c115a36db5b1e9"
+  },
+  "implementation": {
+    "tools/analysis/measure_document_capture_pdf_tables.py": "8b50293b8cb2e26873aa84a2366d1cb1412a1b906cb8033091a3d7bfec7c4e4c",
+    "tools/analysis/document_capture_pdf_tables.py": "8e0f70c720e1890ffa1c9f8f66466e6d1c5971f24697581c48b429ddb5ccae23",
+    "tools/analysis/document_capture.py": "31d599efa43437e3d3920c52dc1d3c20e13b2e4d229bc643d496bec16f951f9f",
+    "src/spicy_docs/schemas/senate_expenditure_tables.py": "be2134c052f7977ced15f7d3193be8a8c3b0d7bfd22642752ea16854ce0bd84a"
+  },
+  "converter": {
+    "id": "spicy-docs/tools/analysis/document_capture_pdf_tables.py#senate-expenditures-pdf",
+    "version": "1",
+    "implementation": {
+      "repository": "spicy-docs",
+      "revision": "f9050c019ce916941e8dc242d2f2d0f376d2f4c5",
+      "fileSha256": "8e0f70c720e1890ffa1c9f8f66466e6d1c5971f24697581c48b429ddb5ccae23"
+    },
+    "dependencies": [
+      {
+        "name": "python",
+        "version": "3.12.13"
+      },
+      {
+        "name": "spicy-docs",
+        "version": "0.24.0"
+      },
+      {
+        "name": "pymupdf",
+        "version": "1.28.2"
+      }
+    ]
+  },
+  "documents": [
+    {
+      "packageId": "GPO-CDOC-119sdoc3",
+      "fileName": "GPO-CDOC-119sdoc3-1.pdf",
+      "pdf": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20/blobs/2248097b0c5106889d8882a979a0488a49f283b29e28289d2778864c40b7b13e",
+        "sha256": "2248097b0c5106889d8882a979a0488a49f283b29e28289d2778864c40b7b13e",
+        "bytes": 5657813
+      },
+      "reference": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/senate-expenditure-tables-2026-09-20/sdoc3-1.p1-80.json",
+        "sha256": "072e0d43692d7ba0dd4f0b4e1dbf19e9361e11502b453c576f9a856e2225c75e"
+      },
+      "pagesRead": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ],
+      "pageCount": 1335,
+      "tablePages": 69,
+      "tables": 69,
+      "agreement": {
+        "rows": {
+          "contract": 357,
+          "capture": 357,
+          "matched": 357,
+          "contractOnly": 0,
+          "captureOnly": 0
+        },
+        "cells": {
+          "contract": 1202,
+          "capture": 1202,
+          "matched": 1202,
+          "contractOnly": 0,
+          "captureOnly": 0
+        },
+        "positioned": {
+          "contract": 1202,
+          "capture": 1202,
+          "matched": 1202,
+          "contractOnly": 0,
+          "captureOnly": 0
+        },
+        "agrees": true
+      },
+      "cellsWithSpans": 733,
+      "emptyCells": 60,
+      "missingCellSlots": 2286,
+      "cellsWithoutBoxes": 288,
+      "unresolvedCells": 409,
+      "unresolvedReasons": {
+        "text-not-in-page-stream": 180,
+        "repeated-text-without-cell-local-match": 200,
+        "ambiguous-page-text": 29
+      },
+      "validationErrors": [],
+      "capture": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-pdf-tables-2026-09-20/GPO-CDOC-119sdoc3.capture.json",
+        "sha256": "1acbcfc7607a8d60fe5e02f8da92065d1c4bd036f65f70fe9b95f9f27b244094"
+      },
+      "details": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-pdf-tables-2026-09-20/GPO-CDOC-119sdoc3.comparison.json",
+        "sha256": "e1f1f85a4b069482df7e149c12214bb61bd710fecd1fd26f1c872cfe953ce5bc"
+      }
+    },
+    {
+      "packageId": "GPO-CDOC-119sdoc6",
+      "fileName": "GPO-CDOC-119sdoc6-2.pdf",
+      "pdf": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20/blobs/8c0198e57f3f4a3bba56939e3972c7c2d3ef55f4d01aa0addd2457ff98158e47",
+        "sha256": "8c0198e57f3f4a3bba56939e3972c7c2d3ef55f4d01aa0addd2457ff98158e47",
+        "bytes": 5192693
+      },
+      "reference": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/senate-expenditure-tables-2026-09-20/sdoc6-2.p1-80.json",
+        "sha256": "0cce1eea1664fafef816371486c57288f9cd7eb5b060fb1185f17ccabe03b4c5"
+      },
+      "pagesRead": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ],
+      "pageCount": 1264,
+      "tablePages": 70,
+      "tables": 70,
+      "agreement": {
+        "rows": {
+          "contract": 316,
+          "capture": 316,
+          "matched": 316,
+          "contractOnly": 0,
+          "captureOnly": 0
+        },
+        "cells": {
+          "contract": 1065,
+          "capture": 1065,
+          "matched": 1065,
+          "contractOnly": 0,
+          "captureOnly": 0
+        },
+        "positioned": {
+          "contract": 1065,
+          "capture": 1065,
+          "matched": 1065,
+          "contractOnly": 0,
+          "captureOnly": 0
+        },
+        "agrees": true
+      },
+      "cellsWithSpans": 772,
+      "emptyCells": 27,
+      "missingCellSlots": 1619,
+      "cellsWithoutBoxes": 217,
+      "unresolvedCells": 266,
+      "unresolvedReasons": {
+        "text-not-in-page-stream": 109,
+        "ambiguous-page-text": 31,
+        "repeated-text-without-cell-local-match": 126
+      },
+      "validationErrors": [],
+      "capture": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-pdf-tables-2026-09-20/GPO-CDOC-119sdoc6.capture.json",
+        "sha256": "e0b57b17598f1597f1c418f549b505a2b1af3fc2861ee80e7d6ce64abbe4a838"
+      },
+      "details": {
+        "path": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-pdf-tables-2026-09-20/GPO-CDOC-119sdoc6.comparison.json",
+        "sha256": "81628c0d2bb7dd175ba57b4d50cb12e431ce94aebb26e21a2b7acf0922f7e5ee"
+      }
+    }
+  ],
+  "totals": {
+    "tablePages": 139,
+    "tables": 139,
+    "cellsWithSpans": 1505,
+    "emptyCells": 87,
+    "missingCellSlots": 3905,
+    "cellsWithoutBoxes": 505,
+    "unresolvedCells": 675,
+    "pagesRead": 160,
+    "agreement": {
+      "rows": {
+        "contract": 673,
+        "capture": 673,
+        "matched": 673,
+        "contractOnly": 0,
+        "captureOnly": 0
+      },
+      "cells": {
+        "contract": 2267,
+        "capture": 2267,
+        "matched": 2267,
+        "contractOnly": 0,
+        "captureOnly": 0
+      },
+      "positioned": {
+        "contract": 2267,
+        "capture": 2267,
+        "matched": 2267,
+        "contractOnly": 0,
+        "captureOnly": 0
+      }
+    },
+    "unresolvedReasons": {
+      "text-not-in-page-stream": 289,
+      "repeated-text-without-cell-local-match": 326,
+      "ambiguous-page-text": 60
+    }
+  },
+  "passed": true
+}
