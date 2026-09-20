@@ -220,6 +220,41 @@ def test_render_from_the_saved_measurement_keeps_every_row_and_section() -> None
         assert "```mermaid" in text and "subgraph unjoined" in text
 
 
+def test_committed_map_and_sidecar_match_the_current_rows() -> None:
+    measures = json.loads(SIDECAR.read_text())
+    assert measures["rows"] == json.loads(json.dumps([dataclasses.asdict(row) for row in ROWS]))
+    committed = SIDECAR.with_suffix(".md").read_bytes()
+    start = committed.index(MARK_START.encode())
+    end = committed.index(MARK_END.encode()) + len(MARK_END.encode())
+    assert committed[start:end] == render_tables(measures).encode()
+
+
+def test_offline_refresh_updates_judgments_without_remeasuring(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def unexpected_request(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("offline refresh must not initialize a network reader")
+
+    for reader in ("CongressListingReader", "GovInfoDiscoveryReader", "KeylessProbe"):
+        monkeypatch.setattr(data_map_tool, reader, unexpected_request)
+    original = json.loads(SIDECAR.read_text())
+    original["rows"] = [{"status": "stale"}]
+    output = tmp_path / "map.json"
+    output.write_text(json.dumps(original))
+    document = tmp_path / "map.md"
+    document.write_text(f"before\n{MARK_START}\nstale\n{MARK_END}\nafter\n")
+    args = ["--offline", "--output", str(output), "--map", str(document)]
+
+    assert data_map_tool.main(args) == 0
+    refreshed = json.loads(output.read_text())
+    assert refreshed.pop("rows") == json.loads(json.dumps([dataclasses.asdict(row) for row in ROWS]))
+    original.pop("rows")
+    assert refreshed == original  # Counts, dates, revision and retained evidence stay measured facts.
+    assert document.read_text() == f"before\n{render_tables(refreshed)}\nafter\n"
+
+    first = output.read_bytes(), document.read_bytes()
+    assert data_map_tool.main(args) == 0
+    assert (output.read_bytes(), document.read_bytes()) == first
+
+
 def test_committee_codes_map_by_rule() -> None:
     assert _system_code("house", "JU00") == "hsju00"
     assert _system_code("senate", "SSAS") == "ssas00"
