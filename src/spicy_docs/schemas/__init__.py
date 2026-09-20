@@ -34,6 +34,7 @@ from spicy_docs.schemas.bill_tables import (
     CONGRESS_BILLS,
 )
 from spicy_docs.schemas.bill_version_tables import BILL_SECTIONS, BILL_VERSIONS
+from spicy_docs.schemas.budget_volume_tables import BUDGET_VOLUMES
 from spicy_docs.schemas.committee_report_tables import (
     COMMITTEE_REPORTS,
     HEARING_TRANSCRIPTS,
@@ -101,6 +102,9 @@ _REGISTERED: tuple[TableContract, ...] = (
     # on (the rollup's build order, step 1).
     DOCUMENT_CITATIONS,
     HOUSE_ACTIVITY_REPORTS,
+    # The revised build order's first family: the budget volumes, whose print
+    # names 504 public laws their own MODS does not (B4).
+    BUDGET_VOLUMES,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -119,6 +123,7 @@ __all__ = [
     "BILL_SECTIONS",
     "BILL_SUMMARIES",
     "BILL_VERSIONS",
+    "BUDGET_VOLUMES",
     "COMMENT",
     "COMMITTEES",
     "COMMITTEE_ASSIGNMENTS",
