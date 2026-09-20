@@ -92,16 +92,44 @@ _JACKET = r"[0-9]+"
 _BILL_TYPE = "|".join(sorted(BILL_TYPES, key=lambda name: (-len(name), name)))
 _DATE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}"
 # A budget volume is addressed by its fiscal year and the part of the budget it
-# is, not by a Congress: ``BUDGET-2027-APP``. The six parts are the ones
-# measured on 2026-09-20 across the eight retained volumes -- ``APP``
-# (Appendix), ``BALANCES`` (Balances of Budget Authority), ``BUD`` (Budget of
-# the U.S. Government), ``FCS`` (Federal Credit Supplement), ``MSR``
-# (Mid-Session Review) and ``PER`` (Analytical Perspectives). Sealed rather
-# than widened to a general token, for the same reason every other grammar here
-# is strict: a part this sample never saw is a part whose address is not
-# established, and a refusal that names what was expected is recoverable where
-# a guessed address is not. Adding one is this line plus the id that showed it.
-_BUDGET_PART = "APP|BALANCES|BUD|FCS|MSR|PER"
+# is, not by a Congress: ``BUDGET-2027-APP``. Sealed rather than widened to a
+# general token, for the same reason every other grammar here is strict: a part
+# no sample has seen is a part whose address is not established, and a refusal
+# that names what was expected is recoverable where a guessed address is not.
+# Adding one is this line plus the id that showed it.
+#
+# The first six were measured 2026-09-20 across the eight retained volumes:
+# ``APP`` (Appendix), ``BALANCES`` (Balances of Budget Authority), ``BUD``
+# (Budget of the U.S. Government), ``FCS`` (Federal Credit Supplement), ``MSR``
+# (Mid-Session Review) and ``PER`` (Analytical Perspectives).
+#
+# Seven more joined the same day, each with the id that showed it. The first
+# sample walked ``published/BUDGET`` from 2025-01-01; a hosted run walked it
+# from 2023-01-01 and served 40 rows, of which **17 carried a part outside the
+# six** and were refused by name (receipt
+# ``rollups-pdf-families-2026-09-20/requests/print-citations-resume.json``).
+# Each part below is proved on its own summary and MODS, fetched once
+# (``budget-parts-2026-09-20/``, 14 requests of a 20 cap):
+#
+# - ``OBJCLASS`` (Object Class Analysis) -- BUDGET-2027-OBJCLASS
+# - ``TAB`` (Historical Tables) -- BUDGET-2027-TAB
+# - ``DB`` (Public Budget Database) -- BUDGET-2027-DB
+# - ``CLIMATE`` (Climate Risk Analysis) -- BUDGET-2025-CLIMATE
+# - ``LRB`` (Long Range Budget Projections) -- BUDGET-2025-LRB
+# - ``CROSSCUT`` (Crosscut Tables) -- BUDGET-2026-CROSSCUT
+# - ``DOD`` (Department of Defense Appendix) -- BUDGET-2026-DOD
+#
+# **An id parsing is not a promise that a package body exists**, and these
+# seven are where the two come apart. Three of them (OBJCLASS, CROSSCUT, DOD)
+# state a PDF at exactly ``package_body_locator(id, "pdf")``. Three (CLIMATE,
+# DB, TAB) state their PDF only inside a constituent, at a *granule* stem
+# (``pdf/BUDGET-2027-TAB-1.pdf``), so the package root offers nothing and
+# ``acquire`` answers ``GovInfoFormatNotOfferedError`` while
+# ``acquire_granule`` reaches the body. One (LRB) states one XLS at the
+# package stem and no body rendition at all. That is the publisher's own
+# answer in each case, and it is only reachable because the address parses:
+# before this widening all seven were refused before any request.
+_BUDGET_PART = "APP|BALANCES|BUD|CLIMATE|CROSSCUT|DB|DOD|FCS|LRB|MSR|OBJCLASS|PER|TAB"
 _FISCAL_YEAR = r"[0-9]{4}"
 
 

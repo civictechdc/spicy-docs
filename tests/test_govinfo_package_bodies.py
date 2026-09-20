@@ -17,6 +17,7 @@ from spicy_docs.sources.federal_register.body_sources import (
     validate_govinfo_granule,
 )
 from spicy_docs.sources.govinfo.bodies import (
+    _BUDGET_PART,
     PACKAGE_BODY_FORMATS,
     GovInfoBodySourceError,
     ModsBill,
@@ -100,6 +101,17 @@ def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = 
         ("BUDGET-2027-FCS", {"fiscal_year": "2027", "document_type": "FCS"}),
         ("BUDGET-2026-MSR", {"fiscal_year": "2026", "document_type": "MSR"}),
         ("BUDGET-2027-PER", {"fiscal_year": "2027", "document_type": "PER"}),
+        # Seven more the 2023-01-01 published/BUDGET walk served and the sealed
+        # six refused, each proved on its own summary and MODS 2026-09-20
+        # (receipt budget-parts-2026-09-20/). The id here is the one that
+        # showed the part, which is what the grammar's comment asks for.
+        ("BUDGET-2027-OBJCLASS", {"fiscal_year": "2027", "document_type": "OBJCLASS"}),
+        ("BUDGET-2027-TAB", {"fiscal_year": "2027", "document_type": "TAB"}),
+        ("BUDGET-2027-DB", {"fiscal_year": "2027", "document_type": "DB"}),
+        ("BUDGET-2025-CLIMATE", {"fiscal_year": "2025", "document_type": "CLIMATE"}),
+        ("BUDGET-2025-LRB", {"fiscal_year": "2025", "document_type": "LRB"}),
+        ("BUDGET-2026-CROSSCUT", {"fiscal_year": "2026", "document_type": "CROSSCUT"}),
+        ("BUDGET-2026-DOD", {"fiscal_year": "2026", "document_type": "DOD"}),
         # The Senate Secretary's CDOC reprints. The collection is the whole
         # two-segment prefix, which is what keeps GPO-J6-REPORT refused below.
         ("GPO-CDOC-119sdoc3", {"collection": "GPO-CDOC", "congress": 119, "document_type": "sdoc", "number": "3"}),
@@ -137,11 +149,16 @@ def test_each_collection_grammar_keeps_the_publishers_own_parts(package_id: str,
         ("", "nonempty string"),
         ("CRPT-" + "1" * 200, "128 characters"),
         # A budget part no measurement has seen: refused rather than addressed
-        # at a guessed URL, the rule every grammar here follows.
+        # at a guessed URL, the rule every grammar here follows. The
+        # vocabulary is additions-only and still sealed after the 2026-09-20
+        # widening -- these are not near-misses of the thirteen, they are
+        # plausible spellings the publisher has never been seen to use.
         ("BUDGET-2027-APPENDIX", "grammar"),
         ("BUDGET-2027-TOC", "grammar"),
+        ("BUDGET-2027-SUPP", "grammar"),
         ("BUDGET-27-APP", "grammar"),
         ("BUDGET-2027-app", "grammar"),
+        ("BUDGET-2027-objclass", "grammar"),
         # hdoc and tdoc are real CDOC document types and are deliberately not
         # inferred for the GPO-prefixed reprints: only sdoc has been measured.
         ("GPO-CDOC-119hdoc3", "grammar"),
@@ -160,6 +177,45 @@ def test_unsupported_package_ids_refuse_by_name(package_id: str, message: str) -
 def test_package_id_must_be_a_string() -> None:
     with pytest.raises(GovInfoBodySourceError, match="nonempty string"):
         parse_package_id(None)
+
+
+#: Every BUDGET part the publisher has been measured spelling: the six of
+#: 2026-09-20's eight retained volumes, then the seven a 2023-01-01
+#: ``published/BUDGET`` walk served the same day (receipt
+#: ``budget-parts-2026-09-20/``). The set is published, so it is
+#: additions-only: a part is appended with the id that showed it, and none is
+#: renamed or removed.
+MEASURED_BUDGET_PARTS = frozenset(
+    {
+        "APP",
+        "BALANCES",
+        "BUD",
+        "FCS",
+        "MSR",
+        "PER",
+        "CLIMATE",
+        "CROSSCUT",
+        "DB",
+        "DOD",
+        "LRB",
+        "OBJCLASS",
+        "TAB",
+    }
+)
+
+
+def test_the_budget_part_vocabulary_is_exactly_what_was_measured() -> None:
+    """Sealed, not a token: the regex accepts these thirteen and nothing else.
+
+    Pinned as a set, not as the pattern's own spelling, so the alternation can
+    be reordered without the published vocabulary moving -- and checked through
+    ``parse_package_id`` as well, because ``DB`` and ``DOD`` share a first
+    letter and only the full parse proves the shorter one does not shadow the
+    longer.
+    """
+    assert set(_BUDGET_PART.split("|")) == MEASURED_BUDGET_PARTS
+    for part in MEASURED_BUDGET_PARTS:
+        assert parse_package_id(f"BUDGET-2027-{part}").document_type == part
 
 
 @pytest.mark.parametrize(

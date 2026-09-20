@@ -1160,6 +1160,30 @@ addresses no hosted row -- `congress_bills.bill_id` needs the Congress this
 family never states -- and the per-row `stated_by_index` stays NULL, since the
 strict comparison a row would have to claim still cannot be made.
 
+**The budget-part vocabulary widened once, on a wider walk, and stays sealed to
+measured parts** (2026-09-20, receipt `budget-parts-2026-09-20/`). The six
+above were measured on a `published/BUDGET` walk from 2025-01-01. The first
+hosted run of the PDF-family rollups walked the same route from **2023-01-01**,
+served 40 rows and **refused 17 by name** — real budget volumes carrying
+`OBJCLASS`, `TAB`, `DB`, `CLIMATE`, `LRB`, `CROSSCUT` or `DOD`. The rollup's
+behaviour was correct and is the reason this is recoverable at all: the refusal
+named the id, the run logged all seventeen, and nothing was fetched at a
+guessed address. Seven parts join the vocabulary, each with the id that showed
+it, on the same standard the first widening held itself to: one package summary
+and one package MODS fetched per part (14 keyed requests against a cap of 20
+declared before the run), all seven stating `collectionCode` `GPO` in both
+records and passing `validate_package_summary` and `validate_package_mods`;
+the same bytes under another real `BUDGET-` id of the same part refuse, and
+`APPENDIX`, `TOC`, `SUPP` and a lower-case `objclass` still refuse by name, so
+this is thirteen measured parts and not a token. What the widening also
+established is that **an address is not a body**: only three of the seven state
+a PDF at `package_body_locator(id, "pdf")`; three state theirs only inside a
+constituent at a granule stem, where `acquire` answers
+`GovInfoFormatNotOfferedError` and `acquire_granule` is the route; and `LRB`
+states one XLS and no body rendition at all. Those are the publisher's own
+answers, and none of them was reachable while the id itself refused. One id per
+part was measured, which is what is claimed.
+
 ## A print's bill-action rows are hosted with their error rate on every row, keyed on the phrase
 
 A House committee activity report says *that* it names `H.R. 1093` — the
