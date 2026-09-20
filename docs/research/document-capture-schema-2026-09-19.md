@@ -1,5 +1,7 @@
 # A document capture schema for the platform
 
+An outside static review of this design and its use, retained verbatim: [document-capture-review-codex-2026-09-20.md](document-capture-review-codex-2026-09-20.md) (2026-09-20).
+
 *2026-09-19. Design record for the `DocumentCapture v1` shape. Reviewed the
 same day by an architecture review of both branches and a visual review of the
 six profiles against the print rendition of each family's document; this
