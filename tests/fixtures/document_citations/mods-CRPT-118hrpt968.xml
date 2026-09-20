@@ -1,0 +1,335 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1d133e0dd">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CRPT</collectionCode>
+         <category>Congressional Committee Materials</category>
+         <waisDatabaseName>118_cong_reports</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2025-03-27</dateIngested>
+    </extension>
+    <titleInfo>
+         <title>LEGISLATIVE REVIEW AND OVERSIGHT ACTIVITIES of the COMMITTEE ON FOREIGN AFFAIRS</title>
+    </titleInfo>
+    <originInfo>
+         <publisher>U.S. Government Publishing Office</publisher>
+         <dateIssued encoding="w3cdtf">2025-01-02</dateIssued>
+         <issuance>monographic</issuance>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>56 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">Y 1.1/8:</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CRPT-118hrpt968</identifier>
+    <identifier type="local">P0b002ee1d133e0dd</identifier>
+    <identifier type="ILS system id">000829209</identifier>
+    <identifier type="former package identifier">f:hr968.118.txt</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2025-03-27</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2025-03-27</recordChangeDate>
+         <recordIdentifier source="DGPO">CRPT-118hrpt968</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <subtitle>Report U.S. HOUSE OF REPRESENTATIVES COMMITTEE ON FOREIGN AFFAIRS COMMITTEE MEMBERSHIP 118th Congress MICHAEL T. McCAUL, Texas, Chairman (28,25) CHRISTOPHER SMITH, New Jersey GREGORY MEEKS, New York JOE WILSON, South Carolina BRAD SHERMAN, California SCOTT PERRY, Pennsylvania GERALD CONNOLLY, Virginia DARRELL ISSA, California WILLIAM KEATING, Massachusetts ANN WAGNER, Missouri DAVID CICILLINE, Rhode Island* BRIAN MAST, Florida AMI BERA, California KEN BUCK, Colorado*** JOAQUIN CASTRO, Texas TIM BURCHETT, Tennessee DINA TITUS, Nevada MARK GREEN, Tennessee TED LIEU, California ANDY BARR, Kentucky SUSAN WILD, Pennsylvania RONNY JACKSON, Texas DEAN PHILLIPS, Minnesota YOUNG KIM, California COLIN ALLRED, Texas MARIA SALAZAR, Florida ANDY KIM, New Jersey BILL HUIZENGA, Michigan SARA JACOBS, California AMATA RADEWAGEN, American Samoa KATHY MANNING, North Carolina FRENCH HILL, Arkansas SHEILA CHERFILUS-McCORMICK, WARREN DAVIDSON, Ohio Florida JIM BAIRD, indiana GREG STANTON, Arizona MIKE WALTZ, Florida MADELEINE DEAN, Pennsylvania THOMAS KEAN, New Jersey JARED MOSKOWITZ, Florida MICHAEL LAWLER, New York JONATHAN JACKSON, Illinois CORY MILLS, Florida SYDNEY KAMLAGER-DOVE, California RICH McCORMICK, Georgia JIM COSTA, California NATHANIEL MORAN, Texas JASON CROW, Colorado JOHN JAMES, Michigan GABRIEL AMO, Rhode Island** KEITH SELF, Texas BRAD SCHNEIDER, Illinois RYAN C. ZINKE, Montana**** KWEISI MFUME, Maryland****** JAMES MOYLAN, Guam***** Brendan Shields, Majority Staff Director Sophia A. LaFargue, Minority Staff Director Sajit Gandhi, Minority Staff Director ---------------- *Rep. Cicilline resigned from the Committee on June 1, 2023. **Rep. Amo appointed to the Committee on November 15, 2023. ***Rep. Buck resigned from the Committee on March 22, 2024. ****Rep. Zinke appointed to the Committee on June 4, 2024. *****Rep. Moylan appointed to the Committee on June 4, 2024. ******Rep. Mfume appointed to the Committee on June 4, 2024.7 MEMBERSHIP OF THE SUBCOMMITTEES OF THE COMMITTEE ON FOREIGN AFFAIRS Subcommittee on Africa Sara Jacobs, CA, Ranking Member John James, MI, Chairman Sheila Cherfilus-McCormick, FL Christopher Smith, NJ Colin Allred, TX Young Kim, CA Jonathan Jackson, IL Jim Baird, IN Thomas Kean, NJ Cory Mills Subcommittee on Europe William Keating, MA, Ranking Member Thomas Kean, NJ, Chairman Dina Titus, NV Joe Wilson, SC Madeleine Dean, PA Darrell Issa, CA Jim Costa, CA Ann Wagner, MO David Cicilline, RI*** Bill Huizenga, MI Susan Wild, PA Michael Lawler, NY Gabriel Amo, RI**** Nathaniel Moran, TX Keith Self, TX Subcommittee on Global Health, Global Human Rights and international Organizations Susan Wild, PA, Ranking Member Christopher Smith, NJ, Chairman Ami Bera, CA Maria Salazar, FL Sara Jacobs, CA Amata Radewagen, AS-AL Kathy Manning, NC French Hill, AR Rich McCormick, GA John James, MI Subcommittee on the indo-Pacific Ami Bera, CA, Ranking Member Young Kim, CA, Chairwoman Andy Kim, NJ Ann Wagner, MO Brad Sherman, CA Ken Buck, CO***** Gerald Connolly, VA Mark Green, TN William Keating, MA Andy Barr, KY Joaquin Castro, TX Amata Radewagen, AS-AL Mike Waltz, FL Warren Davidson, OH James Moylan, GU******* Subcommittee on the Middle East, North Africa, and Central Asia Dean Phillips, MN, Ranking Member Joe Wilson, SC, Chairman Brad Sherman, CA Brian Mast, FL Gerald Connolly, VA Tim Burchett, TN David Cicilline, RI*** Ronny Jackson, TX Kathy Manning, NC Jim Baird, IN Gabriel Amo, RI**** Michael Lawler, NY Kweisi Mfume, MD******** Rich McCormick, GA Ryan C. Zinke, MT****** Subcommittee on Oversight and Accountability Jason Crow, CO, Ranking Member Brian Mast, FL, Chairman Dina Titus, NV Scott Perry, PA Colin Allred, TX Darrell Issa, CA Andy Kim, NJ Tim Burchett, TN Sheila Cherfilus-McCormick, FL French Hill, AR Madeleine Dean, PA Mike Waltz, FL Cory Mills, FL Nathaniel Moran, TX Subcommittee on the Western Hemisphere Joaquin Castro, Ranking Member Maria Salazar, FL, Chairwoman Greg Stanton, AZ Ken Buck, CO* Jared Moskowitz, FL Mark Green, TN Sydney Kamlager-Dove, CA Bill Huizenga, MI Warren Davidson, OH Keith Self, TX John James, MI** ---------------- *Rep. Buck resigned from the Subcommittee on Western Hemisphere on April 17, 2023. **Rep. James appointed to the Subcommittee on Western Hemisphere on April 17, 2023. ***Rep. Cicilline resigned from the Subcommittee on Europe and the Middle East, North Africa, and Central Asia on June 1, 2023. ****Rep. Amo appointed to the Subcommittee on Europe and the Middle East, North Africa, and Central Asia on November 15, 2023. *****Rep. Buck resigned from the Subcommittee on the indo- Pacific on March 22, 2024. ******Rep. Zinke appointed to the Subcommittee on the Middle East, North Africa, and Central Asia on June 4, 2024. *******Rep. Moylan appointed to the Subcommittee on the indo-Pacific on June 4, 2024. ********Rep. Mfume appointed to the Subcommittee on the Middle East, North Africa, and Central Asia on June 25, 2024. I. SUMMARY OF LEGISLATIVE ACTIVITY A. Full Committee Markup Summaries 2/28/23-3/1/23 Foreign Affairs Markup Summary</subtitle>
+         <docClass>HRPT</docClass>
+         <accessId>CRPT-118hrpt968</accessId>
+         <chamber>HOUSE</chamber>
+         <congress years="2023-2024">118</congress>
+         <number>968</number>
+         <session>2</session>
+         <isConferenceReport>false</isConferenceReport>
+         <congCalendar congress="118" number="815" type="UNION"></congCalendar>
+         <isSerialSet>true</isSerialSet>
+    </extension>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CRPT-118hrpt968</url>
+         <url displayLabel="HTML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CRPT-118hrpt968/html/CRPT-118hrpt968.htm</url>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CRPT-118hrpt968/pdf/CRPT-118hrpt968.pdf</url>
+    </location>
+    <identifier type="preferred citation">H. Rept. 118-968</identifier>
+    <extension>
+         <searchTitle>LEGISLATIVE REVIEW AND OVERSIGHT ACTIVITIES of the COMMITTEE ON FOREIGN AFFAIRS;H. Rept. 118-968</searchTitle>
+         <legislativeHistory>Committed to the Committee of the Whole House on the State of the Union and ordered to be printed</legislativeHistory>
+         <granuleClass>FIRSTPART</granuleClass>
+         <accessId>CRPT-118hrpt968</accessId>
+         <action date="2025-01-02">Committed to the Committee of the Whole House on the State of the Union and ordered to be printed</action>
+         <session>2</session>
+         <submittedStatement>Mr. McCaul, from the Committee on Foreign Affairs, submitted the following</submittedStatement>
+         <bill congress="118" context="OTHER" number="2" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7" type="HCONRES"></bill>
+         <bill congress="118" context="OTHER" number="21" type="HCONRES"></bill>
+         <bill congress="118" context="OTHER" number="27" type="HCONRES"></bill>
+         <bill congress="118" context="OTHER" number="30" type="HCONRES"></bill>
+         <bill congress="118" context="OTHER" number="57" type="HCONRES"></bill>
+         <bill congress="118" context="OTHER" number="68" type="HJRES"></bill>
+         <bill congress="118" context="OTHER" number="70" type="HJRES"></bill>
+         <bill congress="118" context="OTHER" number="71" type="HJRES"></bill>
+         <bill congress="118" context="OTHER" number="74" type="HJRES"></bill>
+         <bill congress="118" context="OTHER" number="79" type="HJRES"></bill>
+         <bill congress="118" context="OTHER" number="81" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="82" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="90" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="104" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="115" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="132" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="149" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="158" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="164" type="HJRES"></bill>
+         <bill congress="118" context="OTHER" number="240" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="272" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="288" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="300" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="311" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="314" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="340" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="377" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="406" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="488" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="492" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="533" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="554" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="559" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="578" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="589" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="599" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="616" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="681" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="683" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="771" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="793" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="803" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="837" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="883" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="888" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="894" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="901" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="915" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="965" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="966" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1056" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1063" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1084" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1093" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1103" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1107" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1117" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1135" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1143" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1149" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1150" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1151" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1153" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1154" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1157" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1159" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1176" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1189" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1323" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1328" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1348" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1425" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1435" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1449" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1456" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1469" type="HRES"></bill>
+         <bill congress="118" context="OTHER" number="1684" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1690" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1776" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="1809" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2766" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2789" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="2973" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3012" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3016" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3033" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3042" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3099" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3152" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3202" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3203" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3205" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3246" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3266" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3334" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3569" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="3774" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4039" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4132" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4175" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4517" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4619" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4681" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4691" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4715" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4716" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4723" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4725" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4741" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="4825" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5245" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5375" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5532" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5613" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5826" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5856" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5917" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5947" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="5961" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6015" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6046" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6087" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6119" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6306" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6323" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6349" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6370" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6416" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6544" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6586" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6602" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6603" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6606" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6609" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6610" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6614" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6727" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="6831" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7025" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7089" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7122" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7151" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7152" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7159" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7256" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7586" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7701" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7710" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="7914" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8001" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8038" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8046" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8152" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8232" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8234" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8282" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8310" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8315" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8345" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8361" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8362" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8368" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8369" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8437" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8566" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8683" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8892" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8924" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8926" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8934" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="8936" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9082" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9172" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9456" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9564" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9668" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9718" type="HR"></bill>
+         <bill congress="118" context="OTHER" number="9719" type="HR"></bill>
+         <congCommittee authorityId="hsfa00" chamber="H" congress="119" type="S">
+                                    
+              <name type="authority-standard">Committee on Foreign Affairs</name>
+                                    
+              <name type="authority-short">Foreign Affairs</name>
+                                
+        </congCommittee>
+         <congMember bioGuideId="M001157" chamber="H" congress="119" party="R" role="SUBMITTEDBY" state="TX">
+                                    
+              <name type="parsed">Mr. McCaul</name>
+                                    
+              <name type="authority-fnf">Michael T. McCaul</name>
+                                    
+              <name type="authority-lnf">McCaul, Michael T.</name>
+                                    
+              <name type="authority-other">Mr. Michael Mccaul</name>
+                                
+        </congMember>
+         <law congress="91" isPrivate="false" number="510"></law>
+         <law congress="92" isPrivate="false" number="136"></law>
+         <law congress="107" isPrivate="false" number="40"></law>
+         <law congress="107" isPrivate="false" number="228"></law>
+         <law congress="117" isPrivate="false" number="81"></law>
+         <law congress="117" isPrivate="false" number="263"></law>
+         <USCode title="2">
+                                    
+              <section detail="(d)" number="190"></section>
+                                
+        </USCode>
+         <USCode title="5">
+                                    
+              <chapter number="8"></chapter>
+                                
+        </USCode>
+         <congReport congress="118" number="29" type="H"></congReport>
+         <congReport congress="118" number="44" type="H"></congReport>
+         <congReport congress="118" number="46" type="H"></congReport>
+         <congReport congress="118" number="63" type="H"></congReport>
+         <congReport congress="118" number="118" type="H"></congReport>
+         <congReport congress="118" number="270" type="H"></congReport>
+         <congReport congress="118" number="404" type="H"></congReport>
+         <congReport congress="118" number="406" type="H"></congReport>
+         <congReport congress="118" number="643" type="H"></congReport>
+         <congReport congress="118" number="664" type="H"></congReport>
+         <congReport congress="118" number="708" type="H"></congReport>
+    </extension>
+    <name type="personal">
+         <namePart>Michael T. McCaul</namePart>
+         <affiliation>United States House of Representatives</affiliation>
+         <role>
+              <roleTerm authority="marcrelator" type="text">sponsor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">spn</roleTerm>
+        </role>
+         <description>United States Congress Member</description>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>House of Representatives</namePart>
+         <namePart>Committee on Foreign Affairs</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">associated name</roleTerm>
+              <roleTerm authority="marcrelator" type="code">asn</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    </mods>

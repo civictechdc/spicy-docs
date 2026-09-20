@@ -52,6 +52,10 @@ from spicy_docs.schemas.congress_index_tables import (
     RECORD_ISSUES,
     TREATIES,
 )
+from spicy_docs.schemas.document_citation_tables import (
+    DOCUMENT_CITATIONS,
+    HOUSE_ACTIVITY_REPORTS,
+)
 from spicy_docs.schemas.law_tables import LAW_CODE_SECTIONS, LAWS, TABLE3_RECORDS
 from spicy_docs.schemas.legislator_tables import MEMBER_TERMS, MEMBERS
 from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT, RECORD_TYPES
@@ -93,6 +97,10 @@ _REGISTERED: tuple[TableContract, ...] = (
     TABLE3_RECORDS,
     COMMITTEES,
     COMMITTEE_ASSIGNMENTS,
+    # The first PDF-only family contract and the shared link table it is built
+    # on (the rollup's build order, step 1).
+    DOCUMENT_CITATIONS,
+    HOUSE_ACTIVITY_REPORTS,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -120,8 +128,10 @@ __all__ = [
     "DIFF_SUMMARIES",
     "DOCKET",
     "DOCUMENT",
+    "DOCUMENT_CITATIONS",
     "FINANCIAL_CHANGES",
     "HEARING_TRANSCRIPTS",
+    "HOUSE_ACTIVITY_REPORTS",
     "HOUSE_COMMUNICATIONS",
     "LAWS",
     "LAW_CODE_SECTIONS",
