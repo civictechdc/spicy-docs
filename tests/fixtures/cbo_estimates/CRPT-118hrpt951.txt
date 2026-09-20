@@ -1,0 +1,174 @@
+[omitted: characters 0-0 of the full extracted text]
+
+
+
+
+[House Report 118-951]
+[From the U.S. Government Publishing Office]
+
+
+118th Congress }                                             { Report
+                        HOUSE OF REPRESENTATIVES
+  2d Session   }                                             { 118-951
+
+======================================================================
+
+
+
+
+              STRENGTHENING STATE AND TRIBAL CHILD SUPPORT
+                            ENFORCEMENT ACT
+
+                                _______
+
+
+ December 24, 2024.--Committed to the Committee of the Whole House on
+            the State of the Union and ordered to be printed
+
+                                _______
+
+
+      Mr. Smith of Missouri, from the Committee on Ways and Means,
+                        submitted the following
+
+
+                              R E P O R T
+
+                        [To accompany H.R. 7906]
+
+      [Including cost estimate of the Congressional Budget Office]
+
+    The Committee on Ways and Means, to whom was referred the
+bill (H.R. 7906) to improve the effectiveness and available
+tools of State and tribal child support enforcement agencies,
+and for other purposes, having considered the same, reports
+favorably thereon with an amendment and recommends that the
+bill as amended do pass.
+
+                                CONTENTS
+
+                                                                   Page
+  I. SUMMARY AND B
+[omitted: characters 1399-49052 of the full extracted text]
+
+ion is estimated to have negligible effect on
+Federal fiscal year budget receipts.
+
+       B. Statement Regarding New Budget Authority and Tax
+                  Expenditures Budget Authority
+
+    In compliance with clause 3(c)(2) of rule XIII of the Rules
+of the House of Representatives, the Committee states that the
+bill involves no new or increased budget authority.
+
+           V. COST ESTIMATE PREPARED BY THE CONGRESSIONAL
+                           BUDGET OFFICE
+
+    In compliance with clause 3(c)(3) of rule XIII of the Rules
+of the House of Representatives, requiring a cost estimate
+prepared by the CBO, the following statement by CBO is
+provided.
+
+[GRAPHIC(S) NOT AVAILABLE IN TIFF FORMAT]
+
+
+    H.R. 7906 would amend the Internal Revenue Code and the
+Social Security Act to allow contractors to state, local, and
+tribal child support enforcement agencies to access federal
+taxpayer information (FTI) that employees of state or local
+child support enforcement agencies access under current law.
+CBO estimates that enacting the bill would decrease net direct
+spending by $777 million over the 2024-2034 period. The staff
+of the Joint Committee on Taxation (JCT) estimate that enacting
+H.R. 7906 would have a negligible effect on revenues over the
+2024-2034 period.
+    Access to FTI by contractors: H.R. 7906 would allow
+contractors to child support enforcement agencies to access
+additional FTI for the purpose of collecting and disbursing
+child support, eliminating the need for such agencies to
+prevent that access going forward. In June 2023, the Internal
+Revenue Service issued a Security and Privacy Alert Memo
+requiring those agencies to prevent contractors from accessing
+FTI other than an individual's address, Social Security number,
+and the amount of any tax refund offset for payment of child
+support. Using information from the Department of Health and
+Human Services (HHS), states, and child support enforcement
+associations, CBO estimates that HHS would spend $777 million
+over the 2024-2034 period to reimburse child support
+enforcement agencies for costs incurred to protect data. CBO's
+baseline projections for the child support enforcement program
+include that cost, which is classified as direct spending.
+Thus, CBO estimates that enacting the bill would reduce direct
+spending by $777 million over the 2024-2034 period.
+    Access to FTI by tribal child support enforcement agencies:
+Under current law, neither employees nor contractors of tribal
+governments have direct access to FTI. Based on information
+from HHS, CBO expects that, under H.R. 7906, 25 tribes would
+implement the safeguards required to access FTI and would use
+that data to collect additional child support. Federal costs
+and savings associated with that access are anticipated to
+roughly offset one another.
+    CBO expects that tribes would incur costs to access and
+protect FTI and to collect additional child support. CBO
+estimates that such costs, which are reimbursed by the federal
+government, would total about $2 million over the 2024-2034
+period.
+    Savings associated with allowing tribes to access FTI also
+would total about $2 million over the 2024-2034 period, CBO
+estimates. Most of those savings arise because a portion of the
+child support collected on behalf of families receiving cash
+benefits from the Temporary Assistance for Needy Families
+program is retained by the federal government and recorded in
+the budget as an offsetting receipt (or a reduction in direct
+spending). In addition, CBO expects that, because some families
+would receive child support that would not otherwise be
+collected, their income would increase. As a result, they would
+qualify for smaller Supplemental Security Income (SSI)
+benefits. CBO estimates that the reduction in SSI benefits
+would total less than $500,000 over the 2024-2034 period.
+    Effect on revenues: JCT estimates that enacting H.R. 7906
+could change individuals' behavior around income tax filing.
+Those changes could increase or decrease revenues by small
+amounts.
+    The costs of the legislation, detailed in Table 1, fall
+within budget function 600 (income security).
+
+                                                   TABLE 1.--ESTIMATED BUDGETARY EFFECTS OF H.R. 7906
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                              By fiscal year, millions of dollars--
+                                       -----------------------------------------------------------------------------------------------------------------
+                                                                                                                                         2024-    2024-
+                                        2024    2025     2026     2027     2028     2029     2030     2031     2032     2033     2034     2029     2034
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                            DECREASES (-) IN DIRECT SPENDING
+
+Estimated Budget Authority............     0      -78      -85     -101     -101      -62      -62      -62      -70      -78      -78     -427     -777
+Estimated Outlays.....................     0      -78      -85     -101     -101      -62      -62      -62      -70      -78      -78     -427     -777
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+The staff of JCT estimate that enacting H.R. 7906 would have a negligible effect on revenues over the 2024-2034 period.
+
+    Mandates: CBO and JCT have determined that the bill
+contains no intergovernmental or private-sector mandates as
+defined in the Unfunded Mandates Reform Act.
+    The CBO staff contact for this estimate is Susanne Mehlman.
+The estimate was reviewed by Christina Hawley Anthony, Deputy
+Director of Budget Analysis.
+                                         Phillip L. Swagel,
+                             Director, Congressional Budget Office.
+
+             VI. OTHER MATTERS TO BE DISCUSSED UNDER THE
+                          RULES OF THE HOUSE
+
+
+          A. Committee Oversight Findings and Recommendations
+
+    With respect to clause 3(c)(1) of rule XIII of the Rules of
+the House of Representatives, the Committee made findings and
+recommendations that are reflected in this report.
+
+        B. Statement of General Performance Goals and Objectives
+
+    With respect to clause 3(c)(4) of rule XIII of the Rules of
+the House of
+
+[omitted: characters 55782-411029 of the full extracted text]
