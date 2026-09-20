@@ -118,9 +118,16 @@ def test_the_rule_version_is_derived_from_the_rule() -> None:
 def test_the_tools_and_the_package_select_with_one_object() -> None:
     """The restatement this move exists to delete must not come back.
 
-    ``tools/analysis/pdf_family_rollup.py`` measured this family's yield and
-    a host publishes it; a second copy of the regex in either is how the
+    ``tools/analysis/pdf_family_rollup.py`` measured this family's yield and a
+    host publishes it; a second copy of the regex in either is how the
     measurement and the product drift apart.
+
+    **The identity assertions are the guard.** They hold whatever the tool's
+    source looks like: the objects the tool selects with are these objects, so
+    a divergent copy cannot be what it calls. The source check below is a
+    smell test and nothing more -- it catches a character-identical
+    copy-paste of this pattern and would miss any paraphrase of it, which is
+    why it is not relied on.
     """
     from tools.analysis import pdf_family_rollup
 

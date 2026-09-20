@@ -17,7 +17,7 @@ from spicy_docs.sources.federal_register.body_sources import (
     validate_govinfo_granule,
 )
 from spicy_docs.sources.govinfo.bodies import (
-    _BUDGET_PART,
+    MEASURED_BUDGET_PARTS,
     PACKAGE_BODY_FORMATS,
     GovInfoBodySourceError,
     ModsBill,
@@ -57,6 +57,31 @@ BILLS_FIXTURES = Path(__file__).parent / "fixtures" / "govinfo_bills"
 USLM_BILL_PACKAGE = "BILLS-119hconres11enr"
 USLM_BILL_MODS = (BILLS_FIXTURES / "mods-119hconres11enr.xml").read_bytes()
 
+#: One real package id per measured BUDGET part -- the id that showed it, which
+#: is what the grammar's own comment asks an addition to carry. A fiscal year
+#: and a part, with no Congress anywhere in the id.
+#:
+#: The first six were measured 2026-09-20 across the eight retained volumes; the
+#: last seven are the parts a 2023-01-01 ``published/BUDGET`` walk served that
+#: the sealed six refused, each proved on its own summary and MODS the same day
+#: (receipt ``budget-parts-2026-09-20/``). This list is the independent side of
+#: ``test_the_budget_part_vocabulary_is_exactly_what_an_id_proved``.
+BUDGET_ID_CASES: tuple[tuple[str, dict[str, object]], ...] = (
+    ("BUDGET-2027-APP", {"fiscal_year": "2027", "document_type": "APP", "congress": None}),
+    ("BUDGET-2026-BALANCES", {"fiscal_year": "2026", "document_type": "BALANCES"}),
+    ("BUDGET-2027-BUD", {"fiscal_year": "2027", "document_type": "BUD"}),
+    ("BUDGET-2027-FCS", {"fiscal_year": "2027", "document_type": "FCS"}),
+    ("BUDGET-2026-MSR", {"fiscal_year": "2026", "document_type": "MSR"}),
+    ("BUDGET-2027-PER", {"fiscal_year": "2027", "document_type": "PER"}),
+    ("BUDGET-2027-OBJCLASS", {"fiscal_year": "2027", "document_type": "OBJCLASS"}),
+    ("BUDGET-2027-TAB", {"fiscal_year": "2027", "document_type": "TAB"}),
+    ("BUDGET-2027-DB", {"fiscal_year": "2027", "document_type": "DB"}),
+    ("BUDGET-2025-CLIMATE", {"fiscal_year": "2025", "document_type": "CLIMATE"}),
+    ("BUDGET-2025-LRB", {"fiscal_year": "2025", "document_type": "LRB"}),
+    ("BUDGET-2026-CROSSCUT", {"fiscal_year": "2026", "document_type": "CROSSCUT"}),
+    ("BUDGET-2026-DOD", {"fiscal_year": "2026", "document_type": "DOD"}),
+)
+
 
 def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = "") -> bytes:
     renditions = urls or (
@@ -93,25 +118,7 @@ def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = 
         ("CDIR-2026-02-20", {"issue_date": "2026-02-20"}),
         ("BILLS-119hr1enr", {"congress": 119, "document_type": "hr", "number": "1", "version": "enr"}),
         ("BILLS-119hjres25enr", {"congress": 119, "document_type": "hjres", "number": "25", "version": "enr"}),
-        # The President's budget: a fiscal year and a part, no Congress at all.
-        # Six parts measured 2026-09-20 across the eight retained volumes.
-        ("BUDGET-2027-APP", {"fiscal_year": "2027", "document_type": "APP", "congress": None}),
-        ("BUDGET-2026-BALANCES", {"fiscal_year": "2026", "document_type": "BALANCES"}),
-        ("BUDGET-2027-BUD", {"fiscal_year": "2027", "document_type": "BUD"}),
-        ("BUDGET-2027-FCS", {"fiscal_year": "2027", "document_type": "FCS"}),
-        ("BUDGET-2026-MSR", {"fiscal_year": "2026", "document_type": "MSR"}),
-        ("BUDGET-2027-PER", {"fiscal_year": "2027", "document_type": "PER"}),
-        # Seven more the 2023-01-01 published/BUDGET walk served and the sealed
-        # six refused, each proved on its own summary and MODS 2026-09-20
-        # (receipt budget-parts-2026-09-20/). The id here is the one that
-        # showed the part, which is what the grammar's comment asks for.
-        ("BUDGET-2027-OBJCLASS", {"fiscal_year": "2027", "document_type": "OBJCLASS"}),
-        ("BUDGET-2027-TAB", {"fiscal_year": "2027", "document_type": "TAB"}),
-        ("BUDGET-2027-DB", {"fiscal_year": "2027", "document_type": "DB"}),
-        ("BUDGET-2025-CLIMATE", {"fiscal_year": "2025", "document_type": "CLIMATE"}),
-        ("BUDGET-2025-LRB", {"fiscal_year": "2025", "document_type": "LRB"}),
-        ("BUDGET-2026-CROSSCUT", {"fiscal_year": "2026", "document_type": "CROSSCUT"}),
-        ("BUDGET-2026-DOD", {"fiscal_year": "2026", "document_type": "DOD"}),
+        *BUDGET_ID_CASES,
         # The Senate Secretary's CDOC reprints. The collection is the whole
         # two-segment prefix, which is what keeps GPO-J6-REPORT refused below.
         ("GPO-CDOC-119sdoc3", {"collection": "GPO-CDOC", "congress": 119, "document_type": "sdoc", "number": "3"}),
@@ -179,43 +186,24 @@ def test_package_id_must_be_a_string() -> None:
         parse_package_id(None)
 
 
-#: Every BUDGET part the publisher has been measured spelling: the six of
-#: 2026-09-20's eight retained volumes, then the seven a 2023-01-01
-#: ``published/BUDGET`` walk served the same day (receipt
-#: ``budget-parts-2026-09-20/``). The set is published, so it is
-#: additions-only: a part is appended with the id that showed it, and none is
-#: renamed or removed.
-MEASURED_BUDGET_PARTS = frozenset(
-    {
-        "APP",
-        "BALANCES",
-        "BUD",
-        "FCS",
-        "MSR",
-        "PER",
-        "CLIMATE",
-        "CROSSCUT",
-        "DB",
-        "DOD",
-        "LRB",
-        "OBJCLASS",
-        "TAB",
-    }
-)
+def test_the_budget_part_vocabulary_is_exactly_what_an_id_proved() -> None:
+    """Sealed, not a token, and every part carries the id that showed it.
 
+    ``MEASURED_BUDGET_PARTS`` is the vocabulary and the grammar's alternation
+    is built from it, so asserting one against a copy of the other here would
+    be the set agreeing with itself. It is checked against the independent
+    thing instead: ``BUDGET_ID_CASES``, thirteen real package ids from
+    measured ``published`` walks. A part added without the id that showed it
+    fails the first assertion; an id whose part is not in the vocabulary makes
+    ``parse_package_id`` raise. The count is pinned separately, so dropping a
+    matched pair passes neither.
 
-def test_the_budget_part_vocabulary_is_exactly_what_was_measured() -> None:
-    """Sealed, not a token: the regex accepts these thirteen and nothing else.
-
-    Pinned as a set, not as the pattern's own spelling, so the alternation can
-    be reordered without the published vocabulary moving -- and checked through
-    ``parse_package_id`` as well, because ``DB`` and ``DOD`` share a first
-    letter and only the full parse proves the shorter one does not shadow the
-    longer.
+    Parsing each id is also what proves ``DB`` does not shadow ``DOD``: the
+    alternation is sorted alphabetically, and only ``fullmatch``'s
+    backtracking past a shorter alternative makes that safe.
     """
-    assert set(_BUDGET_PART.split("|")) == MEASURED_BUDGET_PARTS
-    for part in MEASURED_BUDGET_PARTS:
-        assert parse_package_id(f"BUDGET-2027-{part}").document_type == part
+    assert {parse_package_id(package_id).document_type for package_id, _ in BUDGET_ID_CASES} == MEASURED_BUDGET_PARTS
+    assert len(MEASURED_BUDGET_PARTS) == len(BUDGET_ID_CASES) == 13
 
 
 @pytest.mark.parametrize(

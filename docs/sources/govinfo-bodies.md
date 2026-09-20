@@ -127,8 +127,11 @@ on a real package summary 2026-09-19, not inferred from CRPT's own spelling.
 
 A budget volume is addressed by fiscal year and part, with no Congress in the
 id at all. **The part vocabulary is sealed to measured parts and is
-additions-only**: each is one line in the grammar plus the id that showed it.
-Thirteen so far, in two measurements:
+additions-only**: each is one entry plus the id that showed it. It is one
+object, `bodies.MEASURED_BUDGET_PARTS`, which the grammar's alternation is
+built from, so a caller reporting this family's coverage and the parser that
+refuses a row cannot disagree about what the vocabulary is. Thirteen so far,
+in two measurements:
 
 | Part | Volume | First shown by |
 | --- | --- | --- |
