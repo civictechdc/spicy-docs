@@ -102,6 +102,12 @@ def check_invariants(capture: Mapping[str, Any], *, parent_schema: Mapping[str, 
     unowned = [s["id"] for s in spans if s["id"] not in owners]
     if unowned:
         problems.append(f"{len(unowned)} spans owned by nothing, first {unowned[0]}")
+    # The converse: an evidence id that names no span is a dangling citation, and the
+    # leaf-text check below must not hide it by skipping what it cannot find.
+    span_ids = {s["id"] for s in spans}
+    dangling = [s for s in owners if s not in span_ids]
+    if dangling:
+        problems.append(f"{len(dangling)} evidence ids name no span, first {dangling[0]}")
 
     # 3. Tree, and 5. kind namespace.
     kinds = core_kinds(parent_schema)
@@ -131,6 +137,7 @@ def check_invariants(capture: Mapping[str, Any], *, parent_schema: Mapping[str, 
 
     # 4. Leaf text: citable text sits on a leaf, and a stated text is the spans'.
     for node in capture["nodes"]:
+        # A dangling id is reported by the ownership check above; skip it here.
         own = "".join(span_by_id[s]["exact"] for s in node["evidence"] if s in span_by_id)
         if node["id"] in children:
             if "text" in node:
@@ -166,15 +173,6 @@ def check_profile_bindings(
     clauses = profile.get("allOf") or []
     if len(clauses) == 2 and clauses[0].get("$ref") not in (None, pin.get("$id")):
         problems.append("allOf[0] references a schema other than the pinned parent")
-    own = clauses[1]["properties"] if len(clauses) == 2 else {}
-    name = ((own.get("profile") or {}).get("properties") or {}).get("name", {}).get("const")
-    if not name:
-        problems.append("the profile does not name itself")
-        return problems
-    node_clauses = ((own.get("nodes") or {}).get("items") or {}).get("allOf") or []
-    if len(node_clauses) != 3:
-        return [*problems, "the node narrowing is not the three clauses the meta-schema requires"]
-    kind_clause, foreign_clause, _ = node_clauses
 
     def at(value: Any, *keys: str) -> Any:
         """Read a path that the meta-schema guarantees; missing means the meta-schema already refused it."""
@@ -183,6 +181,16 @@ def check_profile_bindings(
                 return None
             value = value.get(key)
         return value
+
+    own = (at(clauses[1], "properties") if len(clauses) == 2 else None) or {}
+    name = at(own, "profile", "properties", "name", "const")
+    if not name:
+        problems.append("the profile does not name itself")
+        return problems
+    node_clauses = ((own.get("nodes") or {}).get("items") or {}).get("allOf") or []
+    if len(node_clauses) != 3:
+        return [*problems, "the node narrowing is not the three clauses the meta-schema requires"]
+    kind_clause, foreign_clause, _ = node_clauses
 
     if at(kind_clause, "if", "properties", "kind", "pattern") != f"^{name}:":
         problems.append(f"the kind clause tests a namespace other than {name}:")

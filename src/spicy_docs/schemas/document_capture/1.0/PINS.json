@@ -9,7 +9,7 @@
   },
   "invariantValidator": {
     "module": "rulespec_artifacts.document_capture",
-    "sha256": "01b093ffbcdea10fae02ddde6c4e867ef414ca8e54ad26054cc10cf08db71a90"
+    "sha256": "874ea57a6db25728c8808e7636b177cf4da9afef38457c94a5294c811c246920"
   },
   "sourceFragment": {
     "$id": "https://rulespec.org/jsonschema/source-fragment.json",

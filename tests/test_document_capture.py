@@ -68,11 +68,20 @@ def test_the_vendored_copies_equal_the_wheel_when_the_wheel_carries_them() -> No
     rather than a surprise in a consumer; at that point the vendored copies and
     the loader shim in ``document_capture.py`` go away together.
     """
+    from importlib.metadata import version
+
     resources = pytest.importorskip("rulespec_artifacts.resources")
-    if not hasattr(resources, "document_capture_schema_bytes"):
-        pytest.skip("the pinned rulespec-artifacts wheel does not ship the capture schemas yet")
+    # Gate on the version the schemas shipped in, not on a capability probe: a
+    # wheel that renamed the accessor must fail here, not skip.
+    if tuple(int(part) for part in version("rulespec-artifacts").split(".")[:3]) < (1, 0, 14):
+        pytest.skip("the pinned rulespec-artifacts wheel predates 1.0.14, which ships the capture schemas")
+    assert hasattr(resources, "document_capture_schema_bytes")
     assert resources.document_capture_schema_bytes() == dc.SCHEMAS.joinpath(dc.PARENT_SCHEMA).read_bytes()
     assert resources.document_capture_profile_schema_bytes() == dc.SCHEMAS.joinpath(dc.PROFILE_META_SCHEMA).read_bytes()
+    # The validator swaps to the wheel's module the moment it imports, so its
+    # bytes must equal the vendored copy too, or the pin guards a file nothing loads.
+    shipped = dc.rulespec_invariants()
+    assert Path(shipped.__file__).read_bytes() == dc.SCHEMAS.joinpath(dc.VENDORED_INVARIANTS).read_bytes()
 
 
 def test_the_invariant_validator_in_use_is_rulespecs() -> None:
@@ -287,6 +296,7 @@ def test_every_rendition_selector_resolves_against_the_bytes_it_names(path: Path
     [
         ("partition", lambda d: d["evidence"][1].update(start=d["evidence"][1]["start"] + 1)),
         ("ownership", lambda d: [n["evidence"].clear() for n in d["nodes"][1:2]]),
+        ("dangling evidence id", lambda d: d["nodes"][1]["evidence"].append("s9999")),
         ("kind namespace", lambda d: d["nodes"][1].__setitem__("kind", "other:Foo")),
         (
             "leaf text",
