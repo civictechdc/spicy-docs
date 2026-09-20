@@ -1229,3 +1229,103 @@ there the print is a second, coded source. `GuideCode.source` now records, per
 code, whether a committed fixture can check it or only the receipt can, and the
 overlap reads the publisher's codes off the response matched on the event's
 wording rather than on this repository's mapping.
+
+## A hearing's bills are a link table keyed on the source that stated them
+
+Adopted 2026-09-20 with the `hearing_bill_links` contract
+(`schemas/hearing_bill_link_tables.py`), the two link rules
+(`interpretation/hearing_bill_links.py`) and the House Committee Repository
+reader (`sources/congress/house_committee_repository.py`); the A2 and A7 rows
+of [closing the gaps](research/closing-the-gaps-2026-09-19.md), measured in
+[the linkage note](research/hearing-bill-linkage-2026-09-20.md) (198 requests,
+receipt `hearing-bill-linkage-2026-09-20/`).
+
+**Why a table and not a column.** `hearing_transcripts.bill_id` was left NULL
+on 2026-09-19 because no hearing in 52 stated a `PRIMARY` bill and no meeting
+in 12 named one in `relatedItems.bills`. Both findings were re-measured and
+both still hold. **The conclusion drawn from them was wrong**, and in the shape
+this repository keeps warning about: the measurement asked the two sources a
+committee *report* answers and read their silence as the absence of any source.
+A hearing has no `PRIMARY` bill because a hearing is not filed against one
+bill. A legislative hearing is convened on a **list** — twelve bills on
+`CHRG-118hhrg56198` — and four publishers state that list. So the column stays
+NULL and the *reason* moves: from "no source states it" to "the relationship is
+one-to-many and a scalar column is the wrong shape". `shape_hearing_transcript`
+lost its `bill_id` argument, so the contract's claim is now something the code
+cannot contradict.
+
+**Why the source is in the identity.** `(package_id, bill_id, link_source)`,
+not `(package_id, bill_id)`. Two publishers naming the same pair is the
+strongest evidence in this measurement — where the MODS cover and the House
+agenda agree, the bill's own *Hearings Held* action confirms **18 of 18** —
+and one row per pair would collapse the agreement into a single row whose
+`evidence_text` came from whichever source was written last. The aggregate is
+derivable from the per-source rows (`GROUP BY package_id, bill_id` with
+`COUNT(*)`); the reverse is not, which is the same argument
+`document_citations` makes for keeping the span.
+
+**Why `COVER` links and `BODY` only counts.** The MODS `context` marker is the
+publisher's own distinction between the bills a hearing was convened on and the
+bills its transcript happens to mention, and the bill side agrees with it:
+**19 of 20** `COVER` pairs carry a *Hearings Held* action by that committee on
+that date (the one exception has three actions in total, so the bill side is
+silent, not contradicting), against **0 of 23** `BODY`-only mentions. Six
+set-comparisons of the `COVER` list against a list produced by a different
+process — the Congress.gov hearing title three times, the Daily Digest
+committee entry, `relatedItems.bills`, the transcript's own front page — are
+**6 of 6 set-equal over 55 bills**. A mention is evidence of citation, not of
+convening; it belongs in `document_citations` with its span, and nothing
+promotes one to a link.
+
+**Why the agenda is `noticed` and not `held_on`.** docs.house.gov states what
+was scheduled. Where the agenda and the cover agree the bill side confirms 18
+of 18; where the agenda alone states a bill it confirms **1 of 18**,
+**contradicts 1** (`118-hr-2997`, noticed for 2023-05-23 and recorded as heard
+2023-06-22) and is silent on 16. A sealed two-value `relation` keeps the
+distinction the numbers make; publishing both as `held_on` would publish a
+calendar as a record of events, and 16 of those 18 are unverifiable rather than
+wrong, so dropping them would lose evidence a consumer can check.
+
+**Why the identity check is per row.** The route only works because
+docs.house.gov's `EventID` is Congress.gov's `eventId` — 9 of 9 sampled, and
+all 9 passed a *committee-and-date* check rather than a status check. Neither
+publisher documents the equality; Congress.gov's endpoint documentation never
+mentions docs.house.gov and its OpenAPI spec spells the field `eventid` while
+the wire spells it `eventId`. A measured regularity is not a contract, so
+`check_meeting_identity` refuses unless this meeting's `<calendar-date>` equals
+this hearing's MODS `heldDate` and one of its committees' parent codes equals
+one of the MODS's `congCommittee` authority ids. A one-time assumption would
+notice nothing when the equality stops holding.
+
+**Why a type-less `<legis-num>` is refused.** `BILLS-118226ih.pdf` beside
+`<legis-num>226</legis-num>` states no bill type. The long-standing community
+scraper (`unitedstates/congress`) defaults it to `hr`; a bare `226` at a House
+hearing can be a Senate measure, and a silently wrong linkage is worse than a
+refusal. The rule falls through to the `<description>`, which usually spells
+the designator in full under the **same** `bill_number` citation rule a
+committee print is read with — taken, not respelled, so one designator reduces
+to one key whichever document it was read in. **36 of 46** retained `BR`
+documents resolve; the 10 that do not are `BILLS-118Xih.pdf` discussion drafts
+with no number at all, and each carries its refusal reason rather than
+vanishing.
+
+**Why the vocabulary names sources it does not implement.** `link_source` is
+published and is part of the identity, so a rename rewrites rows already out.
+All five measured sources are in the sealed tuple from the start —
+`daily_digest_entry`, `congress_related_items` and `front_matter_designator`
+carry their measured figures and `implemented=False` — so taking one later is
+an addition. `link_rule_version` is *derived* over every rule's name, version,
+publisher, relation and reader, the way `CITATION_RULE_SET_VERSION` is, so
+changing what a rule reads moves it even when someone forgets to move that
+rule's own version; it is blind to a change inside a reader, which is what the
+per-rule `version` is for.
+
+**What this does not establish.** Every number above is the 118th Congress.
+Recall is unmeasured: 2 of 20 sampled House hearings carry a `COVER` bill at
+all and hearing type was never classified, so that is a floor over all hearings
+and not a rate over legislative ones. **0 of 3 sampled Senate hearings state a
+bill in any context**, so a missing Senate row and a correct silence on an
+oversight hearing are indistinguishable, and nothing in the table says which.
+Three is not a rule; the per-chamber census is the open measurement, and
+`daily_digest_entry` — both chambers, back to 1994 — is the route that would
+close it.
