@@ -1229,3 +1229,72 @@ there the print is a second, coded source. `GuideCode.source` now records, per
 code, whether a committed fixture can check it or only the receipt can, and the
 overlap reads the publisher's codes off the response matched on the event's
 wording rather than on this repository's mapping.
+
+## The Record's executive-communication entries land in `house_communications`, and the official/agency split does not publish
+
+**2026-09-20.** Congress.gov decomposes a House executive communication only
+from the 114th Congress; the Congressional Record printed the same sentence for
+the ten Congresses before it, in its House `EXECUTIVE COMMUNICATIONS, ETC.`
+section, as a titled CREC granule with HTML back to 1994. The
+[backfill research](research/executive-communications-backfill-2026-09-20.md)
+measured that the publisher's `abstract` **equals** that printed entry under
+named normalizations, and that every other typed field is a span of the same
+sentence. Two decisions follow, and a later change must preserve both reasons.
+
+### One contract, not a sibling table
+
+The reconstructed rows land in `house_communications` with provenance columns
+(`source_route`, `record_package_id`, `record_granule_id`, `record_entry_text`,
+`reconstruction_rule_version`) rather than in a `record_communications` sibling.
+The grain is identical — one row per House executive communication — and
+`(congress, communication_type, number)` is the publisher's own address on both
+sides of 2015. A sibling would split one fact across two contracts and force
+every consumer to union them; a consumer that wants the publisher's own
+decomposition alone filters `source_route = 'congress-gov-detail'` instead.
+
+Three rules hold across the two eras, each of which is a bug if missed: a
+reconstructed row's `url` is NULL (the detail route 404s for every pre-114th
+communication, measured); the merge prefers `source_route` over `update_date`,
+so a `congress-gov-detail` row wins whatever the version column says and a
+later publisher backfill overwrites the reconstruction rather than the reverse;
+and an unresolved field is NULL beside the retained sentence, never a guess.
+
+### The split columns stay NULL, because the measurement said so
+
+`submitting_official` and `submitting_agency` are the one field pair a
+punctuation rule cannot produce: the boundary sits after two comma groups in
+114th EC 4329 and after one in EC 4350. A candidate rule — the agency begins at
+the first comma group whose head noun is an organization word — reproduced the
+publisher's split on both ground truths, which is exactly the agreement that
+means nothing on its own.
+
+It was therefore scored against the publisher on the overlap era, where both
+records exist ([the score](research/record-communications-overlap-2026-09-20.md),
+296 requests under caps declared first). **On 144 held-out rows it agreed 88.4%
+of the time, under the 90% threshold declared before the run.** So it does not
+publish. The rule stays in
+`sources/congress/record_communications.py` — it is a capability with a
+measured limit, not a dead end — and the whole from-clause survives on every
+row inside `record_entry_text`, where it matches the publisher's two fields
+concatenated on 97.8% of held-out rows. `submitting_official` scored 90.9%, but
+the two are one boundary decision, and half of a decision that is wrong more
+than one row in ten is still an invented fact.
+
+**What would reverse it**: 90% or better on a fresh held-out draw under a newly
+declared cap, from a resolver against a published organization roster — the way
+committee names already resolve against `committees.system_code` — and not from
+fitting the four sub-agency units this run's disagreements happened to name.
+
+### What the measurement was worth
+
+It can fail, and it did. The first score was **58.4% on `abstract`**, against
+two ground-truth rows that had agreed perfectly. Three GPO print artifacts
+explained nearly all of it — the hyphenated line wrap the PDF path already
+handles, a fourth publisher normalization (`Pub. L.`), and a print dash the
+Record spells with four hyphens — and a fourth finding came from the sections
+rather than from any field comparison: the 117th and 118th parsed to **zero**
+entries, because the Record numbers an entry `EC-1205.` from 2021 and `1205.`
+before it. A field-by-field score cannot see that; a section yielding no
+entries yields nothing to disagree about. The rules revised against the
+114th-115th disagreements are reported as an in-sample upper bound, separately
+from the 116th-118th rows no field rule was changed against.

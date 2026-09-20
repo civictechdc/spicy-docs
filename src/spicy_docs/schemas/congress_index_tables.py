@@ -19,6 +19,31 @@ Decisions, each with its reason:
   with the type lowercased the way the address spells it and ``amendments``
   spells its type.  The type is read off the record, never checked against a
   vocabulary here; the route module owns that vocabulary.
+* ``house_communications`` carries **two eras under one identity**. Congress.gov
+  decomposes a House executive communication only from the 114th Congress; for
+  the ten before it the Record printed the same sentence and nothing
+  decomposed it, so :func:`shape_record_communication` reconstructs a row from
+  that sentence (``sources/congress/record_communications.py``,
+  ``docs/research/executive-communications-backfill-2026-09-20.md`` §5). The
+  grain, the identity and the columns are the same on both sides of 2015;
+  ``source_route`` says which produced a row, and three rules hold across them:
+
+  1. **A reconstructed row's ``url`` is NULL.** The publisher's detail route
+     answers 404 for every pre-114th communication (measured), so writing one
+     would assert a route that refuses.
+  2. **The merge prefers provenance over ``update_date``.** For one identity a
+     ``congress-gov-detail`` row wins over a ``congressional-record-granule``
+     row *whatever* ``update_date`` says -- a reconstructed row has none, and
+     the version column's usual rule would let the reconstruction outlive a
+     later publisher backfill. Within one ``source_route`` the larger
+     ``update_date`` still wins.
+  3. **An unresolved field is NULL beside the retained sentence, never a
+     guess.** ``record_entry_text`` keeps the printed entry whole, so every
+     NULL a reconstructed row carries is readable and recoverable. The
+     official/agency split is the measured case: it scored 88.4% against the
+     publisher, under the 90% threshold declared before that run
+     (``docs/research/record-communications-overlap-2026-09-20.md``), so it
+     does not publish at all.
 * ``is_rulemaking`` folds the publisher's ``"True"`` / ``"False"`` strings
   (those two spellings and no other on 18 of 18 sampled 2026-09-19) onto the
   one published truth spelling; any other spelling refuses rather than
@@ -75,9 +100,16 @@ from spicy_docs.schemas.tables import (
     text,
 )
 
+#: What produced a ``house_communications`` row. A consumer that wants only the
+#: publisher's own decomposition filters on the first.
+COMMUNICATION_SOURCE_ROUTES: tuple[str, ...] = ("congress-gov-detail", "congressional-record-granule")
+
 HOUSE_COMMUNICATIONS = table_contract(
     "house_communications",
-    grain="One row per House executive communication, as the Congress.gov house-communication routes state it.",
+    grain=(
+        "One row per House executive communication: the Congress.gov house-communication routes where the "
+        "publisher decomposes it, the Congressional Record entry it printed where the publisher does not."
+    ),
     identity=("congress", "communication_type", "number"),
     version_column="update_date",
     columns={
@@ -114,8 +146,34 @@ HOUSE_COMMUNICATIONS = table_contract(
         "rin": "The Regulation Identifier Number read from report_nature, where the rule found one.",
         "rin_rule": "Which RIN rule fired (`report_nature_rin_label`), or `unmatched`; NULL where the rule was not run.",
         "rin_matched_text": "The exact text the RIN rule matched, so a false positive is readable from the row.",
-        "update_date": "The publisher's updateDate; the merge prefers the larger value.",
-        "url": "The publisher's own URL for this communication, which only the list row states.",
+        "update_date": (
+            "The publisher's updateDate; the merge prefers the larger value, except across source_route, "
+            "where a `congress-gov-detail` row always wins."
+        ),
+        "url": (
+            "The publisher's own URL for this communication, which only the list row states. NULL on a "
+            "`congressional-record-granule` row: the detail route 404s for every pre-114th communication."
+        ),
+        "source_route": (
+            "What produced this row: `congress-gov-detail` where the publisher decomposed the communication "
+            "itself, `congressional-record-granule` where it was reconstructed from the printed entry."
+        ),
+        "record_package_id": (
+            "The CREC package whose issue printed the entry (`CREC-{congressional_record_date}`); NULL on a "
+            "publisher-decomposed row."
+        ),
+        "record_granule_id": (
+            "The `EXECUTIVE COMMUNICATIONS, ETC.` granule within that package, so the row is replayable the "
+            "way `committee_reports` replays from `package_id`; NULL on a publisher-decomposed row."
+        ),
+        "record_entry_text": (
+            "The exact sentence the Record printed, kept beside the derived fields the way `rin_matched_text` "
+            "is kept beside `rin`, so a bad parse is readable from the row; NULL on a publisher-decomposed row."
+        ),
+        "reconstruction_rule_version": (
+            "The `record-communication-` rule identity that produced the derived fields "
+            "(`RECORD_COMMUNICATION_RULE_VERSION`); NULL on a publisher-decomposed row."
+        ),
     },
 )
 
@@ -345,6 +403,97 @@ def shape_house_communication(
         "rin_matched_text": None if rin is None else text(rin.matched_text),
         "update_date": text(read.get("updateDate")),
         "url": text(listed.get("url")),
+        "source_route": COMMUNICATION_SOURCE_ROUTES[0],
+        "record_package_id": None,
+        "record_granule_id": None,
+        "record_entry_text": None,
+        "reconstruction_rule_version": None,
+    }
+
+
+#: The Record prints this section under the House heading, and Congress.gov
+#: spells that chamber ``House`` on every row of the same table. Folding
+#: GovInfo's ``granuleClass: HOUSE`` onto the publisher's spelling is a
+#: normalization; leaving the column NULL would be losing a fact the section
+#: itself states.
+_RECORD_CHAMBER = "House"
+
+
+def shape_record_communication(
+    entry: Any,
+    *,
+    congress: int | str,
+    record_date: str,
+    rin: object | None = None,
+) -> Row:
+    """One ``house_communications`` row reconstructed from a printed Record entry.
+
+    ``entry`` is a ``sources.congress.record_communications.RecordCommunicationEntry``,
+    read by attribute so ``schemas/`` stays a stdlib-only leaf. ``congress`` and
+    ``record_date`` come from the granule the entry was printed in, which the
+    entry itself does not state. ``rin`` is a ``RinFinding`` over the
+    reconstructed ``report_nature``, exactly as for a publisher-decomposed row.
+
+    What this deliberately leaves NULL, and why
+    (``docs/research/record-communications-overlap-2026-09-20.md``):
+
+    * ``url`` -- the detail route answers 404 for every pre-114th
+      communication, so writing one would assert a route that refuses.
+    * ``submitting_agency`` / ``submitting_official`` -- the split rule scored
+      88.4% against the publisher on held-out rows, under the 90% threshold
+      declared before that run. They are one boundary decision, so publishing
+      the official alone would be half a decision that is wrong more than one
+      row in ten. The whole from-clause survives inside ``record_entry_text``.
+    * ``is_rulemaking``, ``matching_requirement_number`` -- the Record states
+      neither. Both are derivable from the cited authority, and that derivation
+      is interpretation nobody has measured.
+    * ``referral_system_code`` -- a committee name resolves against
+      ``committees.system_code``; splitting the referral tail on ``and``
+      shatters *Ways and Means*, which the research measured.
+    * ``session``, ``communication_type_name``, ``update_date`` -- the Record
+      states none of them, and the publisher's own value for a different era is
+      not this row's fact.
+
+    ``referral_date`` **is** filled from the Record date: the publisher's own
+    ``referralDate`` equals its ``congressionalRecordDate`` on 264 of 264
+    referrals in the retained overlap sample.
+    """
+    committees = tuple(entry.committee_names)
+    return {
+        "communication_id": natural_key(congress, entry.communication_type, entry.number),
+        "congress": text(congress),
+        "communication_type": text(entry.communication_type),
+        "communication_type_name": None,
+        "number": text(entry.number),
+        "chamber": _RECORD_CHAMBER,
+        "session": None,
+        # The measured finding: the publisher's abstract *is* this sentence,
+        # under four named normalizations (97.9% on held-out rows).
+        "abstract": text(entry.entry_text),
+        "report_nature": text(entry.report_nature),
+        "legal_authority": text(entry.legal_authority),
+        "submitting_agency": None,
+        "submitting_official": None,
+        "congressional_record_date": text(record_date),
+        "is_rulemaking": None,
+        "referral_system_code": None,
+        "referral_committee_name": committees[0] if committees else None,
+        "referral_date": text(record_date),
+        "referral_count": str(len(committees)),
+        "committees_json": json_column([{"name": name} for name in committees]),
+        "matching_requirement_number": None,
+        "matching_requirement_count": None,
+        "matching_requirements_json": None,
+        "rin": None if rin is None else text(rin.rin),
+        "rin_rule": None if rin is None else text(rin.rule),
+        "rin_matched_text": None if rin is None else text(rin.matched_text),
+        "update_date": None,
+        "url": None,
+        "source_route": COMMUNICATION_SOURCE_ROUTES[1],
+        "record_package_id": text(entry.record_package_id),
+        "record_granule_id": text(entry.record_granule_id),
+        "record_entry_text": text(entry.entry_text),
+        "reconstruction_rule_version": text(entry.rule_version),
     }
 
 
@@ -545,6 +694,7 @@ def shape_nomination(record: Mapping[str, Any]) -> Row:
 __all__ = [
     "CHAMBERS_RULE",
     "COMMITTEE_MEETINGS",
+    "COMMUNICATION_SOURCE_ROUTES",
     "HOUSE_COMMUNICATIONS",
     "NOMINATIONS",
     "PACKAGE_ID_RULE_RECORD",
@@ -555,6 +705,7 @@ __all__ = [
     "shape_committee_meeting",
     "shape_house_communication",
     "shape_nomination",
+    "shape_record_communication",
     "shape_record_issue",
     "shape_treaty",
     "treaty_id",
