@@ -135,30 +135,61 @@ def test_the_committee_vocabulary_comes_from_the_pinned_chamber_rosters() -> Non
 
 
 def test_a_wrapped_or_run_on_committee_name_resolves_to_one_system_code() -> None:
-    """The failure this fixes: 90 candidates reported as 90 committees."""
+    """The failure this fixes: 90 candidates reported as 90 committees.
+
+    The resolver is the library's now, and this measurement supplies the
+    vocabulary its own pinned rosters state.  ``COMMITTEEONAG`` is no longer
+    among the resolved: the sibling route refuses a fragment shorter than
+    ``Committee on`` plus four characters, because below that it takes
+    whichever single sibling happens to share the prefix.  The three system
+    codes are unchanged, since the prints that wrap a name also spell it out.
+    """
     resolved = resolve_committee_names(
         [
             "COMMITTEEONAGRICULTURE",
             "COMMITTEEONAGRI",  # a line wrap; ambiguous against the roster alone
-            "COMMITTEEONAG",
+            "COMMITTEEONAG",  # too short for the sibling route to settle
             "COMMITTEEONWAYSANDMEANSREPUB",  # runs into following prose
             "COMMITTEEONNATURALRE",
             "COMMITTEEONTHEPRESENTDANGER",  # not a congressional committee
-        ]
+        ],
+        committee_vocabulary(),
     )
+    codes = {name: outcome.system_code for name, outcome in resolved.items()}
 
-    assert resolved["COMMITTEEONAGRICULTURE"] == "hsag00"
-    assert resolved["COMMITTEEONAGRI"] == "hsag00"
-    assert resolved["COMMITTEEONAG"] == "hsag00"
-    assert resolved["COMMITTEEONWAYSANDMEANSREPUB"] == "hswm00"
-    assert resolved["COMMITTEEONNATURALRE"] == "hsii00"
-    assert resolved["COMMITTEEONTHEPRESENTDANGER"] is None
-    assert len({code for code in resolved.values() if code}) == 3
+    assert codes["COMMITTEEONAGRICULTURE"] == "hsag00"
+    assert codes["COMMITTEEONAGRI"] == "hsag00"
+    assert codes["COMMITTEEONAG"] is None
+    assert codes["COMMITTEEONWAYSANDMEANSREPUB"] == "hswm00"
+    assert codes["COMMITTEEONNATURALRE"] == "hsii00"
+    assert codes["COMMITTEEONTHEPRESENTDANGER"] is None
+    assert len({code for code in codes.values() if code}) == 3
+    assert resolved["COMMITTEEONAGRI"].route == "sibling_prefix"
 
 
 def test_an_ambiguous_fragment_alone_stays_unresolved() -> None:
     """Without a sibling in the same document, ``Committee on Agri`` names two chambers' committees."""
-    assert resolve_committee_names(["COMMITTEEONAGRI"])["COMMITTEEONAGRI"] is None
+    settled = resolve_committee_names(["COMMITTEEONAGRI"], committee_vocabulary())
+    assert settled["COMMITTEEONAGRI"].system_code is None
+
+
+def test_a_senate_committee_is_not_resolved_to_the_house_one_it_starts_with() -> None:
+    """Two measured cases where the run-on route published the wrong chamber's code.
+
+    Found in the budget and GAO samples: the Senate's Homeland Security and
+    Governmental Affairs starts with the House's Homeland Security, and the
+    Senate's Small Business and Entrepreneurship with the House's Small
+    Business.  The run-on route read both as the House committee with prose
+    after it.
+    """
+    settled = resolve_committee_names(
+        [
+            "COMMITTEEONHOMELANDSECURITYANDGOVERNMENTALAFFAIRS",
+            "COMMITTEEONSMALLBUSINESSANDENTREPRENEURSHIP",
+        ],
+        committee_vocabulary(),
+    )
+    assert [outcome.system_code for outcome in settled.values()] == [None, None]
 
 
 def test_the_recommendation_marker_reads_the_publishers_heading_not_a_verb() -> None:
@@ -178,21 +209,35 @@ def test_the_committed_sidecar_was_written_by_these_rules() -> None:
 
 
 def test_the_committed_sidecar_states_the_numbers_the_report_leads_with() -> None:
+    """The sidecar as run, not as it should have been.
+
+    ``distinct_values_beyond_index`` for the activity reports is **883 and
+    wrong**: it was measured against the ``published`` listing row rather than
+    the package MODS, and
+    ``docs/research/pdf-yield-mods-recheck-2026-09-20.md`` puts the real
+    print-only figure at 0 of 1,406. The number is pinned here because the
+    sidecar is a retained artifact of a dated run and this test's job is to
+    hold the committed file to what that run produced -- regenerating it would
+    contradict the prose the report quotes from it. The corrected claim lives
+    in the report's own correction section and in ``docs/tables.md``.
+    """
     sidecar = json.loads(SIDECAR.read_text())
     families = sidecar["families"]
 
     # CBO: blocked, no document read at all.
     assert families["cbo"]["presence"]["documents_read"] == 0
-    # CRS: every bill the prints discuss is already in the index.
+    # CRS: every bill the prints discuss is already in the index -- the one
+    # family this measurement compared against the right record.
     assert families["crs"]["presence"]["bill_number"]["distinct_values_beyond_index"] == 0
-    # The activity reports are the densest join surface measured, and the row
-    # count and the distinct-key count are different numbers.
+    # The row count and the distinct-key count are different numbers, which is
+    # the distinction the report makes correctly whatever it compared against.
     activity = families["house_activity"]["presence"]["bill_number"]
     assert activity["distinct_values_beyond_index"] == 883
     assert activity["link_rows_beyond_index"] == 940
     # Committee names are reported as resolved system codes, never as candidates.
     assert len(families["house_activity"]["presence"]["committee_system_codes"]) == 20
-    # No print in any family states a bioguide id.
+    # No print in any family states a bioguide id. The *index* does: a CRPT
+    # MODS names the submitting member's, on seven of eight sampled reports.
     assert all(family["presence"].get("bioguide_id", {}).get("documents", 0) == 0 for family in families.values())
 
 

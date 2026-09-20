@@ -17,9 +17,11 @@ value, the way ``press_releases`` carries its match and
 documents in ten source families and is lifted here unchanged from
 ``tools/analysis/pdf_family_rollup.py``, which now imports them from this
 module so the measurement and the product can never drift apart
-(``docs/research/pdf-family-rollup-yield-2026-09-20.md``). Four of them were
-wrong until that sample corrected them, and each correction is a comment beside
-the pattern it explains:
+(``docs/research/pdf-family-rollup-yield-2026-09-20.md``; the *yield* that
+measurement claimed is superseded by
+``docs/research/pdf-yield-mods-recheck-2026-09-20.md``, but its rules and its
+corrections stand). Four of them were wrong until that sample corrected them,
+and each correction is a comment beside the pattern it explains:
 
 * ``bill_number`` without its ``[.\\s]`` separator read the GPO running head
   ``HR974`` and the Congressional Record locator ``S4601`` as bills, and
@@ -31,7 +33,10 @@ the pattern it explains:
   cites as a circuit docket, and now refuses a ``No.`` preceded by ``L.``;
 * ``committee_name`` is a *candidate* finder and not a committee: a committee
   report wraps the name across lines and runs it into the following prose, so
-  90 distinct candidates over eight prints settled to 20 ``system_code``s.
+  90 distinct candidates over eight prints settled to 20 ``system_code``s at
+  the rollup's read depth, and 27 on a full read. Two of its four resolution
+  routes were also reaching *wrong* answers and now refuse them (see
+  :func:`resolve_committee_names`).
 
 Each rule carries the lookalikes it must reject, and
 ``tests/test_citations.py`` asserts the rejection, so a rule that widened into
@@ -146,48 +151,109 @@ def committee_vocabulary(*, house: Iterable[object] = (), senate: Iterable[objec
     return tuple(sorted(entries.items()))
 
 
-def resolve_committee_names(values: Iterable[str], vocabulary: Sequence[tuple[str, str]]) -> dict[str, str | None]:
+#: The routes :func:`resolve_committee_names` settles a candidate by, in the
+#: order it tries them.  ``exact`` and ``roster_prefix`` are lookups against
+#: the supplied vocabulary; ``name_prefix`` and ``sibling_prefix`` are
+#: *inferences* from the printed text, which is why the route is reported and
+#: a consumer wanting only lookups can filter on it.
+COMMITTEE_ROUTES: tuple[str, ...] = ("exact", "roster_prefix", "name_prefix", "sibling_prefix", "unresolved")
+
+#: Tokens that join two halves of a committee's name.  A remainder containing
+#: one means the candidate is a *longer committee's* name and not a roster
+#: name with prose after it, so route 3 must refuse it.
+_NAME_JOINING_TOKENS: tuple[str, ...] = ("AND",)
+
+#: The shortest fragment route 4 will settle.  ``COMMITTEEON`` plus four
+#: characters: below that a fragment is a line-wrap stub that happens to
+#: prefix one sibling, and ``COMMITTEEONA`` resolving to Appropriations is the
+#: measured case this refuses.
+_MIN_SIBLING_FRAGMENT = len("COMMITTEEON") + 4
+
+
+@dataclass(frozen=True, slots=True)
+class CommitteeResolution:
+    """One printed candidate's outcome: the code, and which route reached it."""
+
+    system_code: str | None
+    route: str
+
+
+def _joins_a_longer_name(remainder: str) -> bool:
+    """Does what follows a matched roster name continue that name, or start prose?
+
+    ``COMMITTEEONWAYSANDMEANS`` + ``REPUB`` is the roster name running into a
+    chairman's party; ``COMMITTEEONHOMELANDSECURITY`` + ``ANDGOVERNMENTALAFFAIRS``
+    is a *different, longer* committee -- the Senate's -- that merely starts
+    with the House's name.  Resolving the second to the House code was wrong
+    in exactly the way that matters: a plausible, published, unflagged join.
+    """
+    return any(remainder.startswith(token) for token in _NAME_JOINING_TOKENS)
+
+
+def resolve_committee_names(
+    values: Iterable[str], vocabulary: Sequence[tuple[str, str]]
+) -> dict[str, CommitteeResolution]:
     """Settle each printed candidate against the rosters, or leave it unresolved.
 
-    Four ways, in order, and each is a statement about the print rather than a
-    guess: the candidate *is* a roster name; the candidate is a line-wrapped
-    **prefix** of exactly one roster name (``Committee on Natural Re``); a
-    roster name is a prefix of the candidate, which is the name running into
-    following prose (``Committee on Ways and Means Repub``); or the candidate
-    is a prefix of other candidates **in the same document** that all resolved
-    to one committee, which is how ``Committee on Agri`` settles where the
-    roster alone cannot -- it prefixes the House's Agriculture and the Senate's
-    Agriculture, Nutrition, and Forestry, but the report that wrapped it also
-    prints the full House name.
+    Four routes, in order, each a statement about the print rather than a
+    guess, and each reported by name on the result:
+
+    1. ``exact`` -- the candidate *is* a roster name.
+    2. ``roster_prefix`` -- the candidate is a line-wrapped prefix of exactly
+       one roster name (``Committee on Natural Re``).
+    3. ``name_prefix`` -- a roster name is a prefix of the candidate, which is
+       that name running into following prose (``Committee on Ways and Means
+       Repub``). **Refused when the remainder begins a name-joining token**:
+       with the pinned rosters, ``Committee on Homeland Security and
+       Governmental Affairs`` (Senate) and ``Committee on Small Business and
+       Entrepreneurship`` (Senate) each start with a House committee's whole
+       name, and this route published ``hshm00`` and ``hssm00`` for them.
+    4. ``sibling_prefix`` -- the candidate is a prefix of other candidates **in
+       the same document** that all resolved to one committee, which is how
+       ``Committee on Agri`` settles where the roster alone cannot: it prefixes
+       the House's Agriculture and the Senate's Agriculture, Nutrition, and
+       Forestry, but the report that wrapped it also prints the full House
+       name.  A fragment shorter than ``Committee on`` plus four characters is
+       refused: ``Committee on A`` would otherwise take whichever single
+       sibling happened to share its first letter.
 
     A candidate that stays ambiguous, and every committee no supplied roster
-    names, is reported unresolved rather than counted.
+    names, is ``unresolved`` rather than counted.
 
     ``O(V * (R + V))`` over one document's candidates and the roster, with R
     fixed at a few dozen and V at about a hundred.
     """
-    resolved: dict[str, str | None] = {}
+    resolved: dict[str, CommitteeResolution] = {}
     for value in values:
         exact = [code for name, code in vocabulary if name == value]
         if exact:
-            resolved[value] = exact[0]
+            resolved[value] = CommitteeResolution(exact[0], "exact")
             continue
         prefixed = {code for name, code in vocabulary if name.startswith(value)}
         if len(prefixed) == 1:
-            resolved[value] = prefixed.pop()
+            resolved[value] = CommitteeResolution(prefixed.pop(), "roster_prefix")
             continue
         contains = sorted(
-            ((name, code) for name, code in vocabulary if value.startswith(name)), key=lambda pair: -len(pair[0])
+            (
+                (name, code)
+                for name, code in vocabulary
+                if value.startswith(name) and not _joins_a_longer_name(value[len(name) :])
+            ),
+            key=lambda pair: -len(pair[0]),
         )
-        resolved[value] = contains[0][1] if contains else None
-    for value, code in list(resolved.items()):
-        if code is not None:
+        resolved[value] = (
+            CommitteeResolution(contains[0][1], "name_prefix") if contains else CommitteeResolution(None, "unresolved")
+        )
+    for value, outcome in list(resolved.items()):
+        if outcome.system_code is not None or len(value) < _MIN_SIBLING_FRAGMENT:
             continue
         siblings = {
-            other_code for other, other_code in resolved.items() if other_code is not None and other.startswith(value)
+            other.system_code
+            for name, other in resolved.items()
+            if other.system_code is not None and name.startswith(value)
         }
         if len(siblings) == 1:
-            resolved[value] = siblings.pop()
+            resolved[value] = CommitteeResolution(siblings.pop(), "sibling_prefix")
     return resolved
 
 
@@ -205,45 +271,69 @@ class CitationContext:
     never from a guess.  With no Congress the finding keeps the printed form
     and says it is unresolved.
 
-    ``committees`` is the ``{canonical candidate: system_code or None}`` map
+    ``committees`` is the ``{canonical candidate: CommitteeResolution}`` map
     :func:`resolve_committee_names` produced for this one document.
     """
 
     congress: int | None = None
-    committees: Mapping[str, str | None] = field(default_factory=dict)
+    committees: Mapping[str, CommitteeResolution] = field(default_factory=dict)
 
 
-#: ``(target key, whether the key is the hosted table's own spelling)``.
-type TargetReader = Callable[[str, CitationContext], tuple[str, bool]]
+#: ``(target key, whether the key is the hosted table's own spelling, the rule
+#: that reached it)``.  The third part is the rule's own name for every kind
+#: but ``committee_name``, where it is the resolution route.
+type TargetReader = Callable[[str, CitationContext], tuple[str, bool, str]]
 
 
-def _target_from_canonical(canonical: Callable[[str], str]) -> TargetReader:
-    return lambda value, _context: (canonical(value), True)
+def _target_from_canonical(name: str, canonical: Callable[[str], str]) -> TargetReader:
+    return lambda value, _context: (canonical(value), True, name)
 
 
 _BILL_SPLIT = re.compile(r"([A-Z]+)(\d{1,5})$")
 
 
-def _bill_target(value: str, context: CitationContext) -> tuple[str, bool]:
-    """``H.R. 7806`` in a 118th-Congress document is ``118-hr-7806``.
+def bill_type_and_number(value: str) -> tuple[str, str] | None:
+    """``H.R. 7806`` is ``("hr", "7806")``; anything outside the vocabulary is ``None``.
 
-    The Congress is the caller's, from its own index record; without one the
-    canonical printed form stands and the finding says the key is not the
-    catalog's.  The type/number split runs longest-name-first so ``S. Res. 21``
-    is ``sres`` and not ``s``.
+    The Congress-free half of a bill key, exposed because a consumer comparing
+    a print against an index has to be able to compare without one -- see
+    :func:`_bill_target` for why that matters.
     """
-    canonical = canonical_alnum(value)
-    split = _BILL_SPLIT.fullmatch(canonical)
-    if split is None or context.congress is None:
-        return canonical, False
+    split = _BILL_SPLIT.fullmatch(canonical_alnum(value))
+    if split is None:
+        return None
     letters, number = split.group(1).lower(), split.group(2)
     kind = next((name for name in BILL_TYPES_BY_LENGTH if letters == name), None)
-    if kind is None:
-        return canonical, False
-    return natural_key(context.congress, kind, number), True
+    return None if kind is None else (kind, number)
 
 
-def _public_law_target(value: str, _context: CitationContext) -> tuple[str, bool]:
+def _bill_target(value: str, context: CitationContext) -> tuple[str, bool, str]:
+    """``H.R. 7806`` in a 118th-Congress document is ``118-hr-7806``.
+
+    **The Congress is an assumption, and a bounded one.** A print writes
+    ``H.R. 7806`` and never the Congress, so the caller supplies the one its
+    own index record states and every bare designator in the document is
+    stamped with it. An activity report *does* discuss measures from earlier
+    Congresses -- it prints the laws they became -- so a cross-Congress
+    mention publishes a `bill_id` for the wrong Congress, with
+    ``target_resolved`` true. Nothing in the printed text distinguishes the
+    two cases, which is why ``house_activity_reports`` carries
+    ``bills_congress_mismatch``: the index's own bill list is compared a
+    second time on ``(type, number)`` alone, and any bill that matches loosely
+    but not strictly is a stamped Congress the publisher disagrees with.
+    Measured zero on both fixture packages.
+
+    Without a stated Congress the canonical printed form stands and the
+    finding says the key is not the catalog's. The type/number split runs
+    longest-name-first so ``S. Res. 21`` is ``sres`` and not ``s``.
+    """
+    parts = bill_type_and_number(value)
+    if parts is None or context.congress is None:
+        return canonical_alnum(value), False, "bill_number"
+    return natural_key(context.congress, *parts), True, "bill_number"
+
+
+def _public_law_target(value: str, _context: CitationContext) -> tuple[str, bool, str]:
     """``Pub. L. No. 118-31`` is ``118-public-31``: the ``laws`` identity, joined.
 
     Always ``public``: this rule's pattern reads only the public spellings, and
@@ -253,42 +343,65 @@ def _public_law_target(value: str, _context: CitationContext) -> tuple[str, bool
     number = canonical_law_number(value)
     congress, _, within = number.partition("-")
     if not congress.isdecimal() or not within.isdecimal():
-        return number, False
-    return natural_key(congress, "public", within), True
+        return number, False, "public_law"
+    return natural_key(congress, "public", within), True, "public_law"
 
 
 _USC_PARTS = re.compile(r"(\d{1,2})\s+U\.?\s?S\.?\s?C\.?\s+(?:§{1,2}\s?)?(\d[\w.–-]*)")
 _CFR_PARTS = re.compile(r"(\d{1,2})\s+C\.?\s?F\.?\s?R\.?\s+(?:part\s+|§\s?)?(\d[\w.–-]*)")
 _FEDERAL_REGISTER_PARTS = re.compile(r"(\d{1,3})\s+Fed\.?\s?Reg\.?\s+([\d,]{3,9})")
 _DOCKET_PARTS = re.compile(r"(\d{2})[-–](\d{1,4})")
+_US_REPORTS_PARTS = re.compile(r"(\d{1,3})\s+U\.\s?S\.\s+(\d{1,4})")
+_RIN_NUMBER = re.compile(r"\d{4}[-–][A-Z]{2}\d{2}")
 
 
-def _two_part_target(pattern: re.Pattern[str], *, strip: str = "") -> TargetReader:
+def _two_part_target(name: str, pattern: re.Pattern[str], *, strip: str = "") -> TargetReader:
     """``{first}-{second}`` from a two-part cite, or the printed form unresolved."""
 
-    def read(value: str, _context: CitationContext) -> tuple[str, bool]:
+    def read(value: str, _context: CitationContext) -> tuple[str, bool, str]:
         parts = pattern.search(value)
         if parts is None:
-            return canonical_alnum(value), False
+            return canonical_alnum(value), False, name
         second = parts.group(2)
         for character in strip:
             second = second.replace(character, "")
-        return f"{parts.group(1)}-{second}", True
+        return f"{parts.group(1)}-{second}", True, name
 
+    read.__name__ = f"two_part_{name}"
     return read
 
 
-def _gao_product_target(value: str, _context: CitationContext) -> tuple[str, bool]:
-    """``GAO–24–106221`` is the product id ``gao/files.py`` selects on, ``GAO-24-106221``.
+def _printed_id_target(name: str) -> TargetReader:
+    """The identifier exactly as its publisher spells it, upper-cased.
 
-    The canonical form the measurement compares on strips the hyphens; the
-    publisher's own id keeps them, so the stored key restores the spelling the
-    selection key uses and the en-dash a print sets becomes a hyphen.
+    For ``gao_product_id`` and ``docket_number`` the canonical form the
+    *measurement* compares on strips the separators (``GAO24106221``), while
+    the key a consumer joins on keeps them: ``gao/files.py``'s selection key
+    and ``dockets.docket_id`` are both the hyphenated form.  An en-dash a
+    print sets becomes the hyphen the publisher uses.
     """
-    return value.strip().upper().replace("–", "-"), True
+
+    def read(value: str, _context: CitationContext) -> tuple[str, bool, str]:
+        return value.strip().upper().replace("–", "-"), True, name
+
+    read.__name__ = f"printed_id_{name}"
+    return read
 
 
-def _committee_target(value: str, context: CitationContext) -> tuple[str, bool]:
+def _rin_target(value: str, _context: CitationContext) -> tuple[str, bool, str]:
+    """``RIN: 3133-AF97`` is ``3133-AF97``, the spelling the Federal Register record uses.
+
+    ``federal_register.regulation_id_numbers_json`` holds the bare number, so
+    the label and the punctuation the print sets come off.  The measurement's
+    canonical form keeps them and is deliberately left alone.
+    """
+    match = _RIN_NUMBER.search(value)
+    if match is None:
+        return canonical_alnum(value), False, "rin"
+    return match.group(0).replace("–", "-"), True, "rin"
+
+
+def _committee_target(value: str, context: CitationContext) -> tuple[str, bool, str]:
     """The ``system_code`` a roster settled this candidate to, or the candidate itself.
 
     An unresolved candidate is still stored, keyed on its own canonical printed
@@ -298,8 +411,10 @@ def _committee_target(value: str, context: CitationContext) -> tuple[str, bool]:
     filter on one column instead of guessing from the key's shape.
     """
     canonical = canonical_alnum(value)
-    code = context.committees.get(canonical)
-    return (code, True) if code is not None else (canonical, False)
+    outcome = context.committees.get(canonical) or CommitteeResolution(None, "unresolved")
+    if outcome.system_code is None:
+        return canonical, False, outcome.route
+    return outcome.system_code, True, outcome.route
 
 
 @dataclass(frozen=True, slots=True)
@@ -343,8 +458,8 @@ class CitationRule:
     def compiled_index(self) -> re.Pattern[str]:
         return re.compile(self.index_pattern or self.pattern)
 
-    def target_key(self, matched: str, context: CitationContext) -> tuple[str, bool]:
-        reader = self.target or _target_from_canonical(self.canonical)
+    def target_key(self, matched: str, context: CitationContext) -> tuple[str, bool, str]:
+        reader = self.target or _target_from_canonical(self.name, self.canonical)
         return reader(matched, context)
 
 
@@ -401,7 +516,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
         target_table="law_code_sections",
         target_key_shape="{usc_title}-{usc_section}",
         rejects=("U.S. Code of conduct", "42 USC for"),
-        target=_two_part_target(_USC_PARTS),
+        target=_two_part_target("usc_section", _USC_PARTS),
     ),
     CitationRule(
         name="cfr_section",
@@ -410,7 +525,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
         target_table="cfr sections (host-side)",
         target_key_shape="{title}-{part}",
         rejects=("CFR is the", "40 CRF 60"),
-        target=_two_part_target(_CFR_PARTS),
+        target=_two_part_target("cfr_section", _CFR_PARTS),
     ),
     CitationRule(
         name="federal_register_cite",
@@ -419,15 +534,20 @@ CITATION_RULES: tuple[CitationRule, ...] = (
         target_table="federal_register",
         target_key_shape="{volume}-{start_page}; the host resolves document_number by that pair",
         rejects=("Fed. Reg. of the", "88 Federal agencies"),
-        target=_two_part_target(_FEDERAL_REGISTER_PARTS, strip=","),
+        target=_two_part_target("federal_register_cite", _FEDERAL_REGISTER_PARTS, strip=","),
     ),
     CitationRule(
         name="rin",
-        version="001",
+        version="002",
         pattern=r"\bRIN[: ]\s?\d{4}[-–][A-Z]{2}\d{2}\b",
         target_table="federal_register",
-        target_key_shape="the RIN, as regulation_id_numbers_json spells it",
+        target_key_shape="the bare RIN, as regulation_id_numbers_json spells it",
         rejects=("RIN of the", "RIN 1234"),
+        note=(
+            "87 distinct RINs across the eight House activity reports and none in any CRPT MODS: "
+            "the family's largest single citation yield, and invisible to a 60-page read"
+        ),
+        target=_rin_target,
     ),
     CitationRule(
         name="gao_product_id",
@@ -436,7 +556,7 @@ CITATION_RULES: tuple[CitationRule, ...] = (
         target_table="gao products (not hosted; gao/files.py selection key)",
         target_key_shape="product_id as GAO-YY-NNNNN",
         rejects=("GAO reported", "GAO-2026"),
-        target=_gao_product_target,
+        target=_printed_id_target("gao_product_id"),
     ),
     CitationRule(
         name="crs_report_id",
@@ -460,11 +580,13 @@ CITATION_RULES: tuple[CitationRule, ...] = (
     ),
     CitationRule(
         name="docket_number",
-        version="001",
+        version="002",
         pattern=r"\b[A-Z]{2,7}[-–]\d{4}[-–]\d{4}\b",
         target_table="dockets",
         target_key_shape="docket_id as the agency prints it",
         rejects=("FAA 2016 6907", "ABC-16-0001"),
+        note="38 distinct agency dockets across the eight House activity reports; no CRPT MODS states one",
+        target=_printed_id_target("docket_number"),
     ),
     CitationRule(
         name="case_docket_number",
@@ -479,15 +601,16 @@ CITATION_RULES: tuple[CitationRule, ...] = (
             "any federal case number printed in this shape, not only a Supreme Court docket: "
             "a GAO report cites circuit and district dockets the same way"
         ),
-        target=_two_part_target(_DOCKET_PARTS),
+        target=_two_part_target("case_docket_number", _DOCKET_PARTS),
     ),
     CitationRule(
         name="us_reports_cite",
-        version="001",
+        version="002",
         pattern=r"\b\d{1,3}\s+U\.\s?S\.\s+\d{1,4}\b",
         target_table="courtlistener opinions (not hosted)",
         target_key_shape="citation as {volume}-{page}",
         rejects=("U.S. Government", "600 US 1"),
+        target=_two_part_target("us_reports_cite", _US_REPORTS_PARTS),
     ),
     CitationRule(
         name="committee_name",
@@ -532,34 +655,54 @@ CITATION_RULES: tuple[CitationRule, ...] = (
 CITATION_RULES_BY_NAME: Mapping[str, CitationRule] = {rule.name: rule for rule in CITATION_RULES}
 
 #: The kinds ``document_citations`` stores: every rule that reaches a key some
-#: table or publisher addresses.  ``bioguide_id`` is excluded because it
-#: measured zero everywhere and no print states one; ``dollar_amount`` and
-#: ``fiscal_year`` because they are quantities, not links, and have no target.
-#: ``statutes_at_large``, ``rin``, ``docket_number`` and ``us_reports_cite``
-#: stay in the rule set -- the measurement runs all sixteen -- and join the
-#: stored kinds when a family that carries them is built (build order steps 2
-#: and 3).
+#: table or publisher addresses.  Three of the sixteen are left out and each
+#: for its own reason -- ``bioguide_id`` because no print states one (measured
+#: zero across ten families; the *index* states it, and
+#: ``house_activity_reports.submitted_by_bioguide_id`` carries that), and
+#: ``dollar_amount`` and ``fiscal_year`` because they are quantities rather
+#: than links and address nothing.
+#:
+#: ``rin`` and ``docket_number`` are stored because they are the activity
+#: reports' largest real yield: the
+#: [MODS re-check](../../../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
+#: found 87 distinct RINs and 38 agency dockets across the eight prints, none
+#: of them in any CRPT MODS, where the bills and laws the rollup led with are
+#: all already stated.
 DOCUMENT_CITATION_KINDS: tuple[str, ...] = (
     "bill_number",
     "public_law",
+    "statutes_at_large",
     "usc_section",
     "cfr_section",
     "federal_register_cite",
+    "rin",
     "gao_product_id",
     "crs_report_id",
+    "docket_number",
     "case_docket_number",
+    "us_reports_cite",
     "committee_name",
 )
 
 
 def _rule_set_version(rules: Sequence[CitationRule]) -> str:
-    """A digest over every rule's name, version and pattern.
+    """A digest over every rule's name, version, pattern **and rejects**.
 
     Derived, not written: editing a pattern moves this even when someone
     forgets to move that rule's own ``version``, and the pinned test then names
-    both.  Twelve hex characters is 48 bits over a sixteen-row input.
+    both.  The rejects are in the input because they are part of the rule --
+    deleting three of ``public_law``'s once passed the whole suite, since a
+    reject that is no longer asserted cannot fail -- and so is the target
+    reader's name, because swapping which function builds the published key
+    changes that key without touching the pattern.  It cannot see a change
+    *inside* a reader; that is what the per-rule ``version`` is for.  Twelve
+    hex characters is 48 bits over a sixteen-row input.
     """
-    joined = "\n".join(f"{rule.name}|{rule.version}|{rule.pattern}" for rule in rules)
+    joined = "\n".join(
+        f"{rule.name}|{rule.version}|{rule.pattern}|{'|'.join(rule.rejects)}"
+        f"|{getattr(rule.target, '__name__', 'canonical')}"
+        for rule in rules
+    )
     return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:12]
 
 
@@ -588,6 +731,12 @@ class CitationFinding:
     target_key: str
     target_table: str
     target_resolved: bool
+    #: How this key was reached.  The rule's own name for every kind but
+    #: ``committee_name``, where it is one of :data:`COMMITTEE_ROUTES`: the
+    #: two roster lookups (``exact``, ``roster_prefix``) are a different kind
+    #: of claim from the two inferences (``name_prefix``, ``sibling_prefix``),
+    #: and a consumer wanting only lookups filters on this.
+    target_rule: str
     matched_text: str
     span_start: int
     span_end: int
@@ -651,7 +800,7 @@ def find_citations(
     for name in kinds:
         rule = CITATION_RULES_BY_NAME[name]
         for matched, start, end in matches[name]:
-            target, resolved = rule.target_key(matched, context)
+            target, resolved, route = rule.target_key(matched, context)
             findings.append(
                 CitationFinding(
                     kind=rule.name,
@@ -659,6 +808,7 @@ def find_citations(
                     target_key=target,
                     target_table=rule.target_table,
                     target_resolved=resolved,
+                    target_rule=route,
                     matched_text=matched,
                     span_start=start,
                     span_end=end,
@@ -689,6 +839,7 @@ __all__ = [
     "CITATION_RULES",
     "CITATION_RULES_BY_NAME",
     "CITATION_RULE_SET_VERSION",
+    "COMMITTEE_ROUTES",
     "CONGRESS_CHAMBER",
     "DOCUMENT_CITATION_KINDS",
     "MONTHS",
@@ -696,6 +847,8 @@ __all__ = [
     "CitationError",
     "CitationFinding",
     "CitationRule",
+    "CommitteeResolution",
+    "bill_type_and_number",
     "canonical_alnum",
     "canonical_digits",
     "canonical_law_number",

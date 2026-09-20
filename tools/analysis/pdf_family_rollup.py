@@ -40,16 +40,20 @@ import hashlib
 import json
 import re
 import time
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 from typing import Any
 
-from spicy_docs.interpretation.citations import CITATION_RULES, CitationRule, rejected_lookalikes
+from spicy_docs.interpretation.citations import (
+    CITATION_RULES,
+    CitationRule,
+    rejected_lookalikes,
+    resolve_committee_names,
+)
 from spicy_docs.interpretation.citations import committee_vocabulary as build_committee_vocabulary
-from spicy_docs.interpretation.citations import resolve_committee_names as settle_committee_names
 from spicy_docs.transport.credentials import CredentialRefusedError, read_api_key, scrub_credential
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -392,11 +396,6 @@ def committee_vocabulary() -> tuple[tuple[str, str], ...]:
     house = parse_house_member_data(HOUSE_ROSTER.read_bytes(), congress=119)
     senate = parse_senate_cvc(SENATE_ROSTER.read_bytes())
     return build_committee_vocabulary(house=(house,), senate=(senate,))
-
-
-def resolve_committee_names(values: Iterable[str]) -> dict[str, str | None]:
-    """The library's resolver, against the rosters this measurement pins."""
-    return settle_committee_names(values, committee_vocabulary())
 
 
 #: Structured content a consumer would otherwise have to re-read the PDF for.
@@ -1294,14 +1293,20 @@ def measure_keys(text: str, index_row: Any) -> dict[str, Any]:
             "not_in_index_count": len(new_values),
             "not_in_index": new_values,
         }
-    # A printed committee name is a candidate until a roster settles it.
-    resolution = resolve_committee_names(found["committee_name"]["distinct"])
+    # A printed committee name is a candidate until a roster settles it. The
+    # route each one settled by is reported too: two of the four are roster
+    # lookups and two are inferences from the print, and a reader of this
+    # report should be able to tell which produced a given code.
+    resolution = resolve_committee_names(found["committee_name"]["distinct"], committee_vocabulary())
     found["committee_name"]["resolved"] = {
-        value: code for value, code in sorted(resolution.items()) if code is not None
+        value: outcome.system_code for value, outcome in sorted(resolution.items()) if outcome.system_code is not None
     }
-    found["committee_name"]["unresolved"] = sorted(v for v, code in resolution.items() if code is None)
+    found["committee_name"]["resolved_by_route"] = {
+        value: outcome.route for value, outcome in sorted(resolution.items()) if outcome.system_code is not None
+    }
+    found["committee_name"]["unresolved"] = sorted(v for v, o in resolution.items() if o.system_code is None)
     found["committee_name"]["resolved_system_codes"] = sorted(
-        {code for code in resolution.values() if code is not None}
+        {outcome.system_code for outcome in resolution.values() if outcome.system_code is not None}
     )
     structure = {}
     for name, pattern in STRUCTURE_RULES:
