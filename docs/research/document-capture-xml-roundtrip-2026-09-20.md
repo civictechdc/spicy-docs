@@ -5,8 +5,9 @@ captures preserve every field through XML, including the Senate table cells.
 XML costs 1,618,906 bytes against 685,709 JSON bytes: **933,197 extra bytes,
 2.36× overall**. The run made **zero requests**. The
 [vocabulary decision](../decisions.md#reversible-capture-xml-names-the-captures-structures)
-preceded implementation in commit `7c33e74`; code and fixtures are in
-`fe6876e`. Publisher-vocabulary output stays separate and unchanged.
+preceded implementation in commit `7c33e74`; initial code and fixtures are in
+`fe6876e`, with diagnostic fixes and expanded mutation tests in `0433fd9`.
+Publisher-vocabulary output stays separate and unchanged.
 
 ## Format decided before implementation
 
@@ -33,6 +34,11 @@ format attributes are unqualified. Each value has a `type` attribute:
   and their round-trip decimal spelling. These types preserve `1` versus
   `1.0`, float precision, and negative floating zero. Booleans have their
   own type. Non-finite floats and non-JSON Python types are refused.
+  Unsupported-type diagnostics name the type and property path, never the
+  value: `unsupported type Decimal at $/profile/ext/value; only JSON dict,
+  list, str, int, finite float, bool and None values are supported`. Paths
+  start at `$`, include array indices, and escape `~` and `/` in keys as
+  `~0` and `~1` so property names remain unambiguous.
   The API works on parsed JSON values: original JSON indentation, escape
   spellings, duplicate keys, and number lexemes are outside that input.
 - Decoding refuses duplicate properties, wrong namespaces, unknown format
@@ -109,18 +115,37 @@ capture with its own time, paths and converter provenance intact.
 
 ## Proof that can fail
 
-Nineteen mutations to encoded XML fail full equality: node order, extension
-value, span offset, cell box, schema pin, capture time, artifact digest and
-locator, rendition, converter, profile pin, parent, depth, ordinal, decision,
-exact text, cell position, unresolved reason and issue. Four injected encoder
-faults separately make the **unmodified positive fixture tests** fail:
+Twenty-five mutations to encoded XML fail full equality: node order,
+extension value, span offset, span ownership, span record order, a node's
+span-reference order, heading attachment, footnote attachment, span style,
+cell box, schema pin, capture time, artifact digest and locator, rendition,
+converter, profile pin, parent, depth, ordinal, decision, exact text, cell
+position, unresolved reason and issue. Each case requires its exact expected
+comparison path and reason. Parent and attachment cases reassign an existing
+non-root parent reference to another existing parent; the root's null parent
+stays intact. Heading and footnote cases use the committed Federal Register
+capture, and the style case toggles the Senate capture's `Span.style.bold`.
 
-| Injected loss | Positive fixture results |
+Eleven injected encoder faults separately make the **unmodified positive
+fixture tests** fail. The corrected node-order injection checks for a list;
+the bill metadata's integer `nodes` field passes through unchanged. The probe
+requires each fixture's expected comparison path and reason, checks expected
+passes, and rejects errors or skipped tests. Its 77 fixture executions yield
+**57 expected comparison failures, 20 expected passes, and zero probe errors**:
+
+| Encoder fault | Positive fixture results |
 | --- | --- |
 | Swap two nodes | 7 failed |
-| Change extension values | 7 failed |
+| Add an extension property | 7 failed |
 | Move offsets | 7 failed |
 | Drop a cell's source box | 1 failed, 6 passed; only Senate has cell source boxes |
+| Swap span ownership between nodes | 7 failed |
+| Swap two span records | 7 failed |
+| Swap two span references within a node | 7 failed |
+| Reassign a non-root parent reference | 7 failed |
+| Reattach a heading | 3 failed, 4 passed; CFR, Federal Register and public law have headings |
+| Reattach a footnote | 1 failed, 6 passed; only Federal Register has footnotes |
+| Toggle a span's bold style | 3 failed, 4 passed; CFR, slip opinion and Senate have span styles |
 
 The six other captures include table positions where stated; those are
 distinct from PDF cell source boxes. Tests compare every property the pinned
@@ -141,19 +166,21 @@ points, duplicate properties, wrong namespaces and malformed XML refuse.
 
 The [retained receipt](/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-xml-roundtrip-2026-09-20/)
 contains `measured/measurement.json`, all input/output bytes, schema/profile
-pins, codec/tool digests, `mutation_probe.py`, four failing-test logs and
-`gate.log`. The probe injects faults only in subprocess memory. Commands:
+pins, codec/tool digests, `mutation_probe.py`, `mutations.json`, eleven
+failing-test logs with JUnit reports, and the refreshed `final-gate.log`.
+The mutation receipt pins the codec, tests, probe and all seven input files.
+The probe injects faults only in subprocess memory. Commands:
 
 ```sh
 UV_OFFLINE=1 uv run --frozen python -m tools.analysis.measure_document_capture_xml --output /tmp/capture-xml-rerun
-UV_OFFLINE=1 uv run --frozen pytest -q tests/test_document_capture_xml.py tests/test_document_capture.py tests/test_document_capture_pdf_tables.py
+UV_OFFLINE=1 uv run --frozen python - < /Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-xml-roundtrip-2026-09-20/mutation_probe.py
 UV_OFFLINE=1 ./scripts/check
 ```
 
-The output directory must be new. The focused checks passed **163 tests,
-one skipped**; the gate passed ruff checks and **7,125 tests, five skipped,
-46 deselected**, with five existing PyMuPDF deprecation warnings. The receipt
-retains the exact commands and result lines.
+The measurement output directory must be new. The refreshed gate passed both
+ruff checks and **7,135 tests, five skipped, 46 deselected**, with five existing
+PyMuPDF deprecation warnings. The receipt retains the exact commands and
+result lines.
 
 This proves capture-value preservation, not publisher XML reconstruction,
 PDF byte reconstruction, correct extraction, all-family coverage, or the
