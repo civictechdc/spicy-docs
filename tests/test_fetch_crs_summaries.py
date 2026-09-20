@@ -217,6 +217,50 @@ def test_a_recorded_error_does_not_carry_the_credential(tmp_path: Path) -> None:
     assert "api_key=<redacted>" in row["error"][:120]
 
 
+@pytest.mark.parametrize("credential_form", ["exact-key", "request-url", "nested-query"])
+def test_retry_log_scrubs_credentials_even_when_the_next_attempt_succeeds(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    credential_form: str,
+) -> None:
+    from spicy_docs.transport import retry
+
+    # Cross the diagnostic bound so truncating before scrubbing also fails.
+    secret = "SYNTHETIC-CRS-" + "x" * 400
+    other_secret = "SYNTHETIC-REDIRECT-" + "y" * 400
+    parquet = _parquet(tmp_path, ["R1"])
+    output = tmp_path / "out.jsonl"
+    seen: list[httpx.Request] = []
+    monkeypatch.setattr(retry.time, "sleep", lambda _: None)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        assert request.url.params["api_key"] == secret
+        if len(seen) == 1:
+            detail = {
+                "exact-key": f"X-Api-Key: {secret}; endpoint=crsreport",
+                "request-url": str(request.url),
+                "nested-query": f"https://other.example.test/?api_key={other_secret}&format=json",
+            }[credential_form]
+            raise httpx.ConnectError(f"connection reset: {detail}", request=request)
+        return httpx.Response(200, json=_report("R1"))
+
+    assert run(parquet, output, api_key=secret, delay_seconds=0.0, transport=_transport(handler)) == 0
+    assert len(seen) == 2
+    (row,) = _rows(output)
+    assert row["status"] == "ok" and row["reportId"] == "R1"
+    assert "error" not in row  # No outer error-row scrub runs on this path.
+    log = capsys.readouterr().err
+    assert "SYNTHETIC-" not in log + output.read_text()
+    assert f"retry 1/{retry.MAX_HTTP_ATTEMPTS - 1}" in log
+    assert "ConnectError: connection reset:" in log
+    if credential_form == "exact-key":
+        assert "X-Api-Key: <redacted>; endpoint=crsreport" in log
+    else:
+        assert "api_key=<redacted>&format=json" in log
+
+
 def test_the_scrub_removes_a_key_it_was_not_handed(tmp_path: Path) -> None:
     """The pattern half, which the literal half cannot cover.
 
