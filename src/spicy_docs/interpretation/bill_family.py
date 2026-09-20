@@ -667,6 +667,7 @@ def build_bill_family(
                 vocabulary_hash=vocabulary,
                 admit=admit,
                 rows=classifications,
+                bill_key=key,
             )
         if summarize is not None:
             _summarize_version(
@@ -897,7 +898,15 @@ def _classify_version(
     vocabulary_hash: str,
     admit: _Admitter,
     rows: list[Row],
+    bill_key: str,
 ) -> None:
+    """One printing's labels, or a named refusal per answer this pass cannot store.
+
+    Both refusals here are filed under the bill key first, like every other
+    refusal the pass files: a rollup collecting refusals across bills reads
+    ``identity[0]`` as the bill and could not otherwise say which bill a
+    printing belonged to.
+    """
     classifiable = [
         ClassifiableSection(
             section_id=section_reference(entry.version_code, entry.source, seq),
@@ -915,7 +924,7 @@ def _classify_version(
     results = _model_answer(
         partial(classify, classifiable),
         table=SECTION_CLASSIFICATIONS.name,
-        identity=(entry.version_code, entry.source),
+        identity=(bill_key, entry.version_code, entry.source),
         admit=admit,
     )
     if results is _REFUSED:
@@ -925,7 +934,7 @@ def _classify_version(
         if section is None:
             admit.refuse(
                 SECTION_CLASSIFICATIONS.name,
-                (entry.version_code, entry.source, result.section_id),
+                (bill_key, entry.version_code, entry.source, result.section_id),
                 "the model named a section this pass did not publish a row for",
             )
             continue

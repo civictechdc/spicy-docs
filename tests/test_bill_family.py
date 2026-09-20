@@ -509,7 +509,7 @@ def refusing(error: Exception):
     "seam,table,identity",
     [
         ("summarize", "bill_summaries", ("119-hr-6028", "introduced-in-house", "govinfo")),
-        ("classify", "section_classifications", ("introduced-in-house", "govinfo")),
+        ("classify", "section_classifications", ("119-hr-6028", "introduced-in-house", "govinfo")),
     ],
     ids=["summary", "classification"],
 )
@@ -586,6 +586,22 @@ def test_a_model_answer_naming_an_unpublished_section_is_refused() -> None:
     refusals = [r for r in tables.refusals if r.table == "section_classifications"]
     assert len(refusals) == len(tables.bill_versions)
     assert all("did not publish a row" in refusal.reason for refusal in refusals)
+    assert all(refusal.identity[0] == "119-hr-6028" for refusal in refusals)
+
+
+@needs_engine
+def test_every_refusal_this_pass_files_names_its_bill_first() -> None:
+    # A rollup collecting refusals across bills reads identity[0] as the bill.
+    # The section_classifications refusals used to omit it, alone among the
+    # twelve tables', so a printing could not be traced back to its bill.
+    tables = family(
+        three_printing_capture(),
+        classify=refusing(ModelCallError("classification names a section outside its batch")),
+        summarize=refusing(ModelCallError(REFUSAL)),
+        summarize_diff=refusing(ModelCallError("diff summary answer is missing headline")),
+    )
+    assert tables.refusals
+    assert {refusal.identity[0] for refusal in tables.refusals} == {"119-hr-6028"}
 
 
 def test_section_reference_is_unique_per_printing_and_position() -> None:

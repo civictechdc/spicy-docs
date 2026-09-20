@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -576,16 +577,19 @@ LIVE_ANSWERS = json.loads((Path(__file__).parent / "fixtures/interpretation/c1-v
 #: Each declaration beside the schema its module actually sends. Both come from
 #: the module; the keys are never restated here, so a field added to a tuple
 #: fails this file only by reaching the schema.
-SCHEMAS: tuple[tuple[str, tuple[AnswerField, ...], dict], ...] = (
-    ("summary", SUMMARY_FIELDS, SUMMARY_ANSWER_SCHEMA),
-    ("classification row", CLASSIFICATION_FIELDS, CLASSIFICATION_ANSWER_SCHEMA["items"]),
-    ("diff summary", DIFF_SUMMARY_FIELDS, DIFF_SUMMARY_ANSWER_SCHEMA),
+#: Each prompt beside the schema its module sends, extending `PROMPTS` rather
+#: than restating it, so a row cannot pair one module's prompt with another's
+#: schema.
+SCHEMAS: tuple[tuple[str, str, tuple[AnswerField, ...], dict], ...] = (
+    (*PROMPTS[0], SUMMARY_ANSWER_SCHEMA),
+    (*PROMPTS[1], CLASSIFICATION_ANSWER_SCHEMA["items"]),
+    (*PROMPTS[2], DIFF_SUMMARY_ANSWER_SCHEMA),
 )
 SCHEMA_IDS = [row[0] for row in SCHEMAS]
 
 
-@pytest.mark.parametrize("name,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
-def test_the_schema_requires_exactly_the_keys_its_declaration_names(name, fields, schema) -> None:
+@pytest.mark.parametrize("name,prompt,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
+def test_the_schema_requires_exactly_the_keys_its_declaration_names(name, prompt, fields, schema) -> None:
     declared = [field.key for field in fields]
     assert schema == answer_schema(fields), f"the {name} schema is not the one its declaration derives"
     assert schema["required"] == declared
@@ -599,23 +603,53 @@ def test_the_schema_requires_exactly_the_keys_its_declaration_names(name, fields
             assert alias not in schema["required"]
 
 
-@pytest.mark.parametrize("name,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
-def test_the_derived_schema_is_a_draft_2020_12_schema(name, fields, schema) -> None:
+@pytest.mark.parametrize("name,prompt,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
+def test_the_derived_schema_is_a_draft_2020_12_schema(name, prompt, fields, schema) -> None:
     Draft202012Validator.check_schema(schema)
 
 
-@pytest.mark.parametrize("name,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
-def test_every_bound_the_schema_enforces_is_stated_in_the_prompt_s_own_words(name, fields, schema) -> None:
+@pytest.mark.parametrize("name,prompt,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
+def test_every_bound_the_schema_enforces_is_stated_in_the_prompt_s_own_words(name, prompt, fields, schema) -> None:
     # The two halves of one declaration, checked against each other: a number
     # the request enforces that the prompt never says would be exactly the v1
-    # defect running the other way.
+    # defect running the other way. Both halves come from this row, so a
+    # vocabulary is checked against the prompt that actually carries it.
     bounds = {"minLength", "maxLength", "minItems", "maxItems", "minimum", "maximum"}
     for field in fields:
         for key, value in field.schema.items():
             if key in bounds:
                 assert str(value) in field.kind, f"{field.key}: the prompt does not state {key}"
             if key == "enum":
-                assert all(choice in section_classification.label_block() for choice in value)
+                for choice in value:
+                    assert choice in prompt, f"{name}: the prompt never offers {choice}"
+
+
+@pytest.mark.parametrize(
+    "field,message",
+    [
+        ({"shape": "text"}, "unknown answer shape"),
+        ({"shape": "array of strings", "bounds": (1, 3)}, "bound the prompt cannot state"),
+        ({"shape": "string", "bounds": (None, 1200)}, "bound the prompt cannot state"),
+        ({"shape": "number", "bounds": (0, None)}, "bound the prompt cannot state"),
+        ({"shape": "number", "choices": ("a", "b")}, "only a string is drawn from a fixed vocabulary"),
+        ({"shape": "string", "bounds": (60,)}, "bounds is a (lower, upper) pair"),
+    ],
+    ids=[
+        "unknown shape",
+        "array lower bound",
+        "string missing a bound",
+        "number missing a bound",
+        "choices on a number",
+        "a 1-tuple",
+    ],
+)
+def test_a_declaration_the_prompt_could_not_state_is_refused_where_it_is_written(field, message) -> None:
+    # `kind` and `schema` are both derived, so a declaration the prompt cannot
+    # pronounce would ship a request enforcing more than it says -- the v1
+    # defect turned around. It is refused at construction, where the mistake
+    # is, rather than at the first live call.
+    with pytest.raises(ValueError, match=re.escape(message)):
+        AnswerField("someKey", describes="what it holds", **field)
 
 
 def test_a_key_added_to_a_declaration_reaches_the_schema() -> None:

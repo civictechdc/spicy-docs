@@ -37,7 +37,7 @@ and not the contract: a provider may accept it and answer around it, so
 from __future__ import annotations
 
 import copy
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Protocol
@@ -76,33 +76,49 @@ class ModelCall(Protocol):
     ) -> ModelResponse: ...
 
 
-#: Each value type a declaration can state: the draft 2020-12 schema it
-#: derives, and the two schema keys a reader-enforced bound goes under. A shape
-#: is addable here only with both, which is what keeps the request's words and
-#: the request's schema one statement rather than two that agree today.
-_SHAPES: Mapping[str, tuple[Mapping[str, Any], tuple[str, str]]] = MappingProxyType(
+@dataclass(frozen=True, slots=True)
+class _Shape:
+    """One value type, stated once for both halves of the request.
+
+    ``schema`` is what the request carries and ``phrase`` is what the prompt
+    says, so neither can be added without the other. ``bound_keys`` are the
+    schema keys a reader-enforced bound goes under, and ``bounds_stated`` is
+    which end of a bound ``phrase`` actually puts into words -- a bound the
+    prompt cannot say is refused when the field is declared, so the request
+    never enforces more than it states.
+    """
+
+    schema: Mapping[str, Any]
+    bound_keys: tuple[str, str]
+    bounds_stated: tuple[bool, bool]
+    phrase: Callable[[float | None, float | None], str]
+
+
+#: Every value type a declaration can state. A fourth one cannot be added
+#: without saying how the prompt pronounces it, which is the whole point: the
+#: words and the schema are one statement, not two that agree today.
+_SHAPES: Mapping[str, _Shape] = MappingProxyType(
     {
-        "string": ({"type": "string"}, ("minLength", "maxLength")),
-        "array of strings": ({"type": "array", "items": {"type": "string"}}, ("minItems", "maxItems")),
-        "number": ({"type": "number"}, ("minimum", "maximum")),
+        "string": _Shape(
+            {"type": "string"},
+            ("minLength", "maxLength"),
+            (True, True),
+            lambda lower, upper: f"string, {lower}–{upper} characters",
+        ),
+        "array of strings": _Shape(
+            {"type": "array", "items": {"type": "string"}},
+            ("minItems", "maxItems"),
+            (False, True),
+            lambda lower, upper: f"array of at most {upper} strings",
+        ),
+        "number": _Shape(
+            {"type": "number"},
+            ("minimum", "maximum"),
+            (True, True),
+            lambda lower, upper: f"number from {lower} to {upper}",
+        ),
     }
 )
-
-#: Which end of ``bounds`` each shape's phrase below actually states. A bound
-#: the prompt cannot put into words is refused at declaration time, so the
-#: request never enforces more than it says -- the ``v1`` defect turned around.
-_BOUNDS_STATED: Mapping[str, tuple[bool, bool]] = MappingProxyType(
-    {"string": (True, True), "array of strings": (False, True), "number": (True, True)}
-)
-
-
-def _bounded_phrase(shape: str, lower: float | None, upper: float | None) -> str:
-    """The prompt's words for a bounded value of ``shape``."""
-    if shape == "string":
-        return f"string, {lower}–{upper} characters"
-    if shape == "array of strings":
-        return f"array of at most {upper} strings"
-    return f"number from {lower} to {upper}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,22 +158,22 @@ class AnswerField:
             return
         if len(self.bounds) != 2:
             raise ValueError(f"{self.key}: bounds is a (lower, upper) pair")
-        stated = _BOUNDS_STATED[self.shape]
+        stated = _SHAPES[self.shape].bounds_stated
         if tuple(value is not None for value in self.bounds) != stated:
             raise ValueError(f"{self.key}: a {self.shape!r} bound the prompt cannot state would go unsaid")
 
     @property
     def kind(self) -> str:
         """The prompt's words for this value's type and the range the reader enforces."""
-        return self.shape if self.bounds is None else _bounded_phrase(self.shape, *self.bounds)
+        return self.shape if self.bounds is None else _SHAPES[self.shape].phrase(*self.bounds)
 
     @property
     def schema(self) -> dict[str, Any]:
         """This value's draft 2020-12 subschema: its type, the reader's bounds, its vocabulary."""
-        base, bound_keys = _SHAPES[self.shape]
-        schema = copy.deepcopy(dict(base))
+        shape = _SHAPES[self.shape]
+        schema = copy.deepcopy(dict(shape.schema))
         if self.bounds is not None:
-            for value, bound_key in zip(self.bounds, bound_keys, strict=True):
+            for value, bound_key in zip(self.bounds, shape.bound_keys, strict=True):
                 if value is not None:
                     schema[bound_key] = value
         if self.choices:

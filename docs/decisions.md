@@ -806,8 +806,11 @@ accepted. Only the reader's refusal keeps a row out of a table.
 reader enforces* — and derives both its prompt words (`kind`) and its schema
 from them. Before, the prose was the declaration and a schema would have been a
 second one; two statements that agree on the day they are written is the shape
-of the defect this entry is about. A bound a shape's phrase cannot state is
-refused at construction, so the request can never enforce more than it says.
+of the defect this entry is about. Each shape carries its schema *and* the
+words the prompt pronounces it in, in one record, so a fourth cannot be added
+that renders silently; and a bound a shape's phrase cannot state is refused at
+construction, so the request can never enforce more than it says. That guard is
+load-bearing and mutation-checked: removing it fails six cases.
 
 **The adapter moved into spicy-docs** (`interpretation/gemini_call.py`). It was
 in spicy-regs (`transforms/model_call.py`), which is why the 2026-09-19 run had
@@ -826,7 +829,10 @@ answer as a *declined* one — "its text is below the minimum" — which is fals
 about the printing. The three model call sites now run inside the same guard
 the shapers do (`_model_answer`), filing a `FamilyRefusal` with the model's own
 message and finishing the bill. Only the message: `ModelCallError.details` is
-the answer itself, which for a summary is model prose about the document.
+the answer itself, which for a summary is model prose about the document. Every
+refusal the pass files now names its bill first, `section_classifications`
+included — it was the one table whose refusals omitted the bill key, so a
+rollup reading `identity[0]` across bills could not place the printing.
 `CredentialRefusedError` and `ExtractionError` still abort, because a 401 must
 end a run rather than be filed per row and a transport failure establishes
 nothing about the printing.
