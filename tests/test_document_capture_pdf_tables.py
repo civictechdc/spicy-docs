@@ -80,7 +80,11 @@ def test_real_page_kinds_geometry_empty_missing_and_unresolved(page, tmp_path):
     assert "".join(s["exact"] for s in capture["evidence"]) == independent
 
 
-def test_comparison_refuses_changed_missing_duplicate_and_moved_cells(page, tmp_path):
+@pytest.mark.parametrize(
+    "mutation",
+    ("change", "drop", "duplicate", "column", "package", "file", "page", "table", "row", "page-text-digest"),
+)
+def test_comparison_refuses_changed_missing_duplicate_moved_and_misidentified_cells(page, tmp_path, mutation):
     # Separate extraction from the same fixture bytes, then the analytical
     # shaper. Never feed capture-owned observations into the reference.
     source = json.loads((FIXTURE / "source.json").read_text())
@@ -97,25 +101,31 @@ def test_comparison_refuses_changed_missing_duplicate_and_moved_cells(page, tmp_
     reference = contract_reading(dump, source["package_id"])
     capture = build(page, tmp_path)
     assert compare_readings(reference, capture_reading(capture))["agrees"]
-    for mutation in ("change", "drop", "duplicate", "column", "page", "page-text-digest"):
-        broken = copy.deepcopy(capture)
-        node = next(n for n in broken["nodes"] if n["kind"] == "cell")
-        if mutation == "change":
-            node["ext"]["observedText"] += " changed"
-        elif mutation == "drop":
-            broken["nodes"].remove(node)
-        elif mutation == "duplicate":
-            broken["nodes"].append(copy.deepcopy(node))
-        elif mutation == "column":
-            node["cell"]["column"] += 1
+    broken = copy.deepcopy(capture)
+    node = next(n for n in broken["nodes"] if n["kind"] == "cell")
+    if mutation == "change":
+        node["ext"]["observedText"] += " changed"
+    elif mutation == "drop":
+        broken["nodes"].remove(node)
+    elif mutation == "duplicate":
+        broken["nodes"].append(copy.deepcopy(node))
+    elif mutation == "column":
+        node["cell"]["column"] += 1
+    elif mutation in {"package", "file"}:
+        key = "packageId" if mutation == "package" else "fileName"
+        broken["profile"]["ext"][key] += " changed"
+    elif mutation == "table":
+        next(n for n in broken["nodes"] if n["kind"] == "table")["ext"]["tableOrdinal"] += 1
+    elif mutation == "row":
+        next(n for n in broken["nodes"] if n["kind"] == "row")["ordinal"] += 1
+    else:
+        p = next(n for n in broken["nodes"] if n["kind"] == "page")
+        if mutation == "page":
+            p["source"]["page"] += 1
         else:
-            p = next(n for n in broken["nodes"] if n["kind"] == "page")
-            if mutation == "page":
-                p["source"]["page"] += 1
-            else:
-                p["ext"]["pageTextSha256"] = "0" * 64
-        result = compare_readings(reference, capture_reading(broken))
-        assert not result["agrees"], mutation
+            p["ext"]["pageTextSha256"] = "0" * 64
+    result = compare_readings(reference, capture_reading(broken))
+    assert not result["agrees"], mutation
 
 
 def synthetic(texts, line_text="same same", boxes=None):
@@ -155,6 +165,52 @@ def test_exact_match_splits_and_transfers_without_duplicate_ownership():
     assert [n.text for n in nodes if n.kind == "line"] == ["prefix   suffix"]
     assert Counter(id(s) for n in nodes for s in n.spans) == Counter(id(s) for s in builder.spans)
     assert [s.start for s in builder.spans] == [0, 7, 12, 13, 17]
+
+
+@pytest.mark.parametrize(
+    ("texts", "line", "resolved"),
+    [
+        (["one two three", "one", "two", "three", "three four", "four", "safe"], "one two three four safe", ["safe"]),
+        (["a ", "b"], "a b", ["a ", "b"]),
+        (["same"] * 500, "same", []),
+    ],
+    ids=("nested-and-chained-overlaps", "touching-claims", "duplicate-claims"),
+)
+def test_overlap_components_refuse_every_participant_but_keep_disjoint_claims(texts, line, resolved):
+    builder = synthetic(texts, line)
+    nodes, stream = builder.finish()
+    assert stream == line
+    cells = [n for n in nodes if n.kind == "cell"]
+    assert [n.text for n in cells if n.spans] == resolved
+    for cell in cells:
+        if not cell.spans:
+            assert {"code": "pdf-cell-text-unresolved", "detail": "overlapping-cell-claims"} in cell.issues
+    assert Counter(id(s) for n in nodes for s in n.spans) == Counter(id(s) for s in builder.spans)
+
+
+def test_multiple_pages_keep_text_offsets_ownership_and_empty_pages(page):
+    pages = [
+        replace(
+            page,
+            metadata={**page.metadata, "page": number, "page_count": 4},
+            tables=tuple(replace(t, page=number) for t in page.tables) if number in (1, 4) else (),
+        )
+        for number in range(1, 5)
+    ]
+    pages[2] = replace(pages[2], content=PageContent((), (Observation("native", "", {}, {"blocks": []}, ()),)))
+    builder = dc.Builder(dc.Node("document", None, "pdf-text", container=True))
+    evidence = pdf_tables.pdf_pages_to_nodes(pages, builder)
+    nodes, stream = builder.finish()
+    independent, _ = dc.independent_text("evidence-lines", b"", evidence)
+    assert stream == independent
+    assert stream.count("\f") == 2  # the empty page adds no evidence separator
+    assert [n.source["page"] for n in nodes if n.kind == "page"] == [1, 2, 3, 4]
+    assert Counter(id(s) for n in nodes for s in n.spans) == Counter(id(s) for s in builder.spans)
+    assert all(stream[s.start : s.end] == s.exact for s in builder.spans)
+    cells = [n for n in nodes if n.kind == "cell"]
+    first, last = [n for n in cells if n.source["page"] == 1], [n for n in cells if n.source["page"] == 4]
+    assert [(n.text, n.ext, n.issues) for n in first] == [(n.text, n.ext, n.issues) for n in last]
+    assert all(s.source.get("page") in (None, n.source["page"]) for n in cells for s in n.spans)
 
 
 def test_no_line_page_and_box_without_text_survive():

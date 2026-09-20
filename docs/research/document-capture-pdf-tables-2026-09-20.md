@@ -12,7 +12,7 @@ implementation digests, counts, validations and full receipt paths. The
 [receipt README](/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-pdf-tables-2026-09-20/README.md)
 names the retained captures, extractor evidence and per-cell differences.
 
-## Inputs and independent comparison
+## Inputs and preservation comparison
 
 Both inputs are read-only blobs under
 `/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20/blobs/<sha256>`.
@@ -29,15 +29,26 @@ The reference passes the independently retained `sdoc3-1.p1-80.json` and
 `sdoc6-2.p1-80.json` readings through `shape_senate_expenditure_rows`. The
 capture side freshly runs `DocumentExtractor(NativeText(), tables=True)` on
 the pinned PDF bytes and the new adapter. It never consumes reference cells.
-Both paths share PyMuPDF 1.28.2, so shared detector defects remain untested.
+Both readings go through PyMuPDF 1.28.2. A shared extraction defect is invisible
+to this comparison, and detector-level agreement is near-identity. The
+2,267-of-2,267 agreement establishes preservation: the adapter neither changes,
+drops, duplicates, moves nor misidentifies an observation relative to the
+reference reading. It does not independently establish that PyMuPDF read the
+printed table correctly.
+
+A stronger publication check was not done: re-reading the analytical Parquet
+rows the contract published, or previously retained shaper output. Instead,
+this measurement recomputes the reference with the shaper in the same pass.
 
 Row identity is `(package_id, file_name, page, table_ordinal, row_ordinal,
 text_sha256)`. That last digest describes **raw page text**, not a cell or the
 capture stream; the comparison removes only the contract's `sha256:` prefix.
 Cell comparison uses multisets of `(package, file, page, table ordinal, row
 ordinal, SHA-256 of verbatim cell text)`, preserving repeated identical cells.
-A second comparison also requires the column to agree. Changed, dropped,
-duplicated and moved cells, and a changed page digest, fail the mutation tests.
+A second comparison also requires the column to agree. Mutation tests prove
+each of the five preservation failures makes the comparison fail: changed
+text, dropped cells, duplicate cells, moved columns, and misidentified
+package/file/page/table/row or page-text digest.
 
 | Reading | Table pages / read | Ruled rows matched / contract | Cells matched / contract | Capture-only / capture | Contract-only / contract |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -86,12 +97,36 @@ invented span. These are node issues, not entries in `unresolved`: the parent
 requires each such region to own an existing span. Full per-cell reasons are
 retained in the receipt, with the text in the captures.
 
+## Bounded adapter timing after review
+
+The adapter now indexes nodes and spans by page once, searches only that
+page's text, and rebuilds document spans once after collecting all claims.
+It clears owner lists once and detects overlapping interval groups without
+comparing every pair. Permille conversion uses `block_source`; row and
+assembled-line boxes share `Box.union`.
+
+For 20/40/80/160 repeated fixture pages, the review reported
+0.032/0.113/0.428/1.751 seconds. A matched local rerun measured
+**0.025/0.084/0.326/1.297 seconds before** and
+**0.009/0.018/0.037/0.088 seconds after** (median of five runs of
+`pdf_pages_to_nodes`, excluding PDF extraction). This bounded probe now grows
+roughly with page count; it does not measure whole-volume extraction or dense
+single-page search costs. The pinned fixture, original adapter, command and
+raw samples are retained in
+[`document-capture-pdf-tables-review-2026-09-20`](/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/document-capture-pdf-tables-review-2026-09-20/).
+The original sidecar and receipts remain the baseline; review reruns use a
+separate output directory. Capture byte digests also cover converter source,
+Git revision, capture time and the retained-evidence path. Any changed digest
+must be reported rather than substituted into that baseline.
+
 ## Reproduce and check
 
 From this worktree, using cached dependencies and retained inputs only:
 
 ```sh
-UV_OFFLINE=1 uv run --frozen python -m tools.analysis.measure_document_capture_pdf_tables
+UV_OFFLINE=1 uv run --frozen python -m tools.analysis.measure_document_capture_pdf_tables \
+  --output /tmp/document-capture-pdf-tables-rerun \
+  --sidecar /tmp/document-capture-pdf-tables-rerun.json
 UV_OFFLINE=1 uv run --frozen pytest -q tests/test_document_capture_pdf_tables.py tests/test_document_capture.py
 UV_OFFLINE=1 ./scripts/check
 ```

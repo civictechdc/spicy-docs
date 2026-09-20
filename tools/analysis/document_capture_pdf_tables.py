@@ -10,10 +10,13 @@ from __future__ import annotations
 import importlib.metadata
 import json
 from bisect import bisect_right
+from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import asdict, replace
+from functools import reduce
 from itertools import pairwise
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from spicy_docs.extraction.model import Box, PageResult
@@ -24,9 +27,10 @@ RULE = "pdf-table-exact-page-text-v1"
 
 
 def source_box(page: int, box: Box | None) -> dict[str, Any]:
-    source: dict[str, Any] = {"coordinateSystem": "page-region", "page": page}
-    if box is not None:
-        source["box"] = [round(v * 1000) for v in (box.x0, box.y0, box.x1, box.y1)]
+    if box is None:
+        return {"coordinateSystem": "page-region", "page": page}
+    source = dc.block_source(SimpleNamespace(page=page, box=box, line=None))
+    del source["line"]
     return source
 
 
@@ -35,7 +39,7 @@ def _contained(inner: Sequence[int], outer: Sequence[int]) -> bool:
     return all(inner[i] >= outer[i] - 1 for i in (0, 1)) and all(inner[i] <= outer[i] + 1 for i in (2, 3))
 
 
-def tables_to_nodes(page: PageResult, builder: dc.Builder, parent: dc.Node) -> None:
+def tables_to_nodes(page: PageResult, parent: dc.Node, original: Sequence[dc.Span]) -> list[tuple[int, int, dc.Node]]:
     """Retain every observed cell and reconcile exact text without changing the stream.
 
     None/None means no cell; an empty string means a present empty cell. A text
@@ -52,17 +56,18 @@ def tables_to_nodes(page: PageResult, builder: dc.Builder, parent: dc.Node) -> N
     Unmatched observations stay in ext.observedText with needs_review and a
     pdf-cell-text-unresolved issue. They cannot be UnresolvedRegion objects:
     the pinned parent requires those to own at least one existing span.
+
+    ``original`` contains only this page's spans, including its separators.
+    Return disjoint claims for one document-wide transfer after all pages.
     """
     if not page.tables:
-        return
+        return []
     number = page.metadata["page"]
-    original = list(builder.spans)
-    owners = {id(s): n for n in builder.nodes() for s in n.spans}
     owned = [s for s in original if s.source.get("page") == number]
     lo = min((s.start for s in owned), default=0)
     hi = max((s.end for s in owned), default=lo)
-    stream = "".join(s.exact for s in original)
-    page_text = stream[lo:hi]
+    stream_start = original[0].start if original else 0
+    page_text = "".join(s.exact for s in original)[lo - stream_start : hi - stream_start]
     starts = [s.start for s in original]
     claims: list[tuple[int, int, dc.Node]] = []
 
@@ -84,16 +89,7 @@ def tables_to_nodes(page: PageResult, builder: dc.Builder, parent: dc.Node) -> N
         )
         for r, (texts, boxes) in enumerate(zip(observation.cells, observation.cell_boxes, strict=True)):
             present_boxes = [b for b in boxes if b is not None]
-            hull = (
-                Box(
-                    min(b.x0 for b in present_boxes),
-                    min(b.y0 for b in present_boxes),
-                    max(b.x1 for b in present_boxes),
-                    max(b.y1 for b in present_boxes),
-                )
-                if present_boxes
-                else None
-            )
+            hull = reduce(Box.union, present_boxes) if present_boxes else None
             row = dc.Node(
                 "row",
                 table,
@@ -159,24 +155,37 @@ def tables_to_nodes(page: PageResult, builder: dc.Builder, parent: dc.Node) -> N
     # Refuse both sides of an overlap, including duplicate table observations.
     claims.sort(key=lambda claim: (claim[0], claim[1]))
     conflicting: set[int] = set()
-    active: list[tuple[int, int, dc.Node]] = []
+    # Sorted interval components let us flag every participant once, even
+    # when all claims overlap or one long claim contains many shorter ones.
+    component: list[dc.Node] = []
+    component_end = -1
     for claim in claims:
-        active = [other for other in active if other[1] > claim[0]]
-        for other in active:
-            conflicting.update((id(claim[2]), id(other[2])))
-        active.append(claim)
+        if claim[0] >= component_end:
+            if len(component) > 1:
+                conflicting.update(id(cell) for cell in component)
+            component = []
+        component.append(claim[2])
+        component_end = max(component_end, claim[1])
+    if len(component) > 1:
+        conflicting.update(id(cell) for cell in component)
     for _, _, cell in claims:
         if id(cell) in conflicting:
             unresolved(cell, "overlapping-cell-claims")
-    claims = [claim for claim in claims if id(claim[2]) not in conflicting]
+    return [claim for claim in claims if id(claim[2]) not in conflicting]
+
+
+def _transfer_spans(builder: dc.Builder, owners: dict[int, dc.Node], claims: list[tuple[int, int, dc.Node]]) -> None:
+    """Split the document once and replace each owner's span list without searches."""
     if not claims:
         return
+    claims.sort(key=lambda claim: (claim[0], claim[1]))
     claim_starts = [c[0] for c in claims]
     boundaries = sorted({p for start, end, _ in claims for p in (start, end)})
     rebuilt: list[dc.Span] = []
-    for span in original:
+    for owner in {id(owner): owner for owner in owners.values()}.values():
+        owner.spans.clear()
+    for span in builder.spans:
         owner = owners[id(span)]
-        owner.spans.remove(span)
         cuts = [
             span.start,
             *boundaries[bisect_right(boundaries, span.start) : bisect_right(boundaries, span.end - 1)],
@@ -189,6 +198,9 @@ def tables_to_nodes(page: PageResult, builder: dc.Builder, parent: dc.Node) -> N
             target.spans.append(piece)
             rebuilt.append(piece)
     builder.spans = rebuilt
+
+
+def _order_page(parent: dc.Node, hi: int) -> None:
     # A fully transferred line no longer represents an independent text leaf.
     parent.children[:] = [n for n in parent.children if n.kind != "line" or n.spans]
 
@@ -208,6 +220,16 @@ def pdf_pages_to_nodes(pages: Sequence[PageResult], builder: dc.Builder) -> dict
         x0, y0, x1, y1 = page.metadata["geometry"]["display_rect"]
         sizes[page.metadata["page"]] = {"width": x1 - x0, "height": y1 - y0, "unit": "point"}
     nodes = dc.lines_to_pages(evidence, builder, "pdf-text", sizes)
+    owners = {id(s): n for n in builder.nodes() for s in n.spans}
+    spans_by_page: dict[int, list[dc.Span]] = defaultdict(list)
+    for span in builder.spans:
+        # Page-owned newlines have no source coordinates; the document owns
+        # form feeds, which must never enter a cell's search text.
+        number = owners[id(span)].source.get("page")
+        if number is not None:
+            spans_by_page[number].append(span)
+    claims = []
+    matched_pages = []
     for page in pages:
         number = page.metadata["page"]
         if number not in nodes:
@@ -221,7 +243,15 @@ def pdf_pages_to_nodes(pages: Sequence[PageResult], builder: dc.Builder) -> dict
                 page_size=sizes[number],
             )
         nodes[number].ext = {"pageTextSha256": dc.sha256(page.text)}
-        tables_to_nodes(page, builder, nodes[number])
+        original = spans_by_page[number]
+        page_claims = tables_to_nodes(page, nodes[number], original)
+        claims.extend(page_claims)
+        if page_claims:
+            hi = max((s.end for s in original if s.source.get("page") == number), default=0)
+            matched_pages.append((nodes[number], hi))
+    _transfer_spans(builder, owners, claims)
+    for parent, hi in matched_pages:
+        _order_page(parent, hi)
     builder.root.children.sort(key=lambda n: n.source["page"])
     retained = json.loads(evidence.dumps())
     retained["tablePages"] = [
