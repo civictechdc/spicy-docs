@@ -175,6 +175,21 @@ correct or disclose: the header's completion summary, header snapshot numbers,
 filed against a different defect than the row names. The map's `ROWS` still
 mislabel several landed sources; that refresh is A12's next pass.
 
+### 2.7 Candidates from the capture-schema review (filed, unbuilt)
+
+The outside read of DocumentCapture ([document-capture-review-codex-2026-09-20.md](document-capture-review-codex-2026-09-20.md)) kept the architecture and named what the owner's goal still lacks. Each is a candidate until built and measured.
+
+| # | Candidate | Evidence | Why it matters | Fix | Proof | Home |
+|---|---|---|---|---|---|---|
+| G1 | No reversible XML form of a capture | the converter writes JSON only; the CFR serializer consumes `ReconstructedDocument`, not a capture | The goal is a capture that composes back to JSON or XML | Specify a reversible XML representation (nodes, spans, cells, headings, footnotes, provenance, extension values); implement encoder and decoder | A fixture round-trip asserting full structural equality both ways | rulespec (spec), spicy-docs (code) |
+| G2 | PDF tables never enter the capture adapter | `evidence_from_pages` reads assembled lines and ignores `PageResult.tables`, though the parent schema can represent cells | A PDF capture drops a structural input it already has | A reusable adapter carrying table and cell observations with geometry, preserving empty-cell versus missing-cell | Exercised on the retained Senate expenditure PDFs against the ruled rows | spicy-docs |
+| G3 | Critical provenance is optional | retrieval time, publisher URL, page and box, MODS identity, join keys are optional or absent in the parent schema | "All critical metadata" is neither carried consistently nor enforced | Shared source-record references and conditional requirements in the parent; populated from retained acquisition and MODS records | Validation failing a capture that omits a required source record | rulespec, then spicy-docs |
+| G4 | A public-law artifact records a ZIP URL against an XML digest | `tools/analysis/document_capture.py` around 1748 | The artifact's locator and its digest describe different bytes | Archive and member provenance in the parent; populate and test the association | The artifact test hashes the member and names the archive | rulespec, spicy-docs |
+| G5 | The validator does not enforce its declared tree guarantee | parents-precede-children is specified but the checker builds a dictionary of all nodes first; no id-uniqueness check | A malformed capture validates | Add the checks and negative fixtures | Mutation fixtures that fail | rulespec |
+| G6 | Consumers pin rulespec 1.0.13 while the schema ships in 1.0.14 | `PINS.json`, spicy-regs `vendor/`; the wheel-equality test skips | The temporary vendored loader stays in place | Release 1.0.14, move both pins, delete the loader when equality holds | The wheel-equality test running, not skipping | user (rulespec release), then spicy-docs and spicy-regs |
+
+The same review noted that the six profiles compose from the parent without copying it, that the ownership boundary holds, and that the newer PDF-family tables bypass DocumentCapture by design; none of that is a gap.
+
 ## 3. Reconstruction: GovernmentXML as a spicy-docs subpackage
 
 The external proposal's architecture is right and about half of it is
