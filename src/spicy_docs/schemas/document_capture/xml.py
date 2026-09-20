@@ -54,10 +54,13 @@ def _check_capture(value: Any) -> None:
         raise CaptureXmlError("expected a DocumentCapture object with integer captureVersion 1")
 
 
-def _encode(element: ET.Element, value: Any) -> None:
+def _encode(element: ET.Element, value: Any, path: str = "$") -> None:
     kind = _TYPES.get(type(value))
     if kind is None:
-        raise CaptureXmlError("only JSON dict, list, str, int, finite float, bool and None values are supported")
+        raise CaptureXmlError(
+            f"unsupported type {type(value).__name__} at {path}; "
+            "only JSON dict, list, str, int, finite float, bool and None values are supported"
+        )
     element.set("type", kind)
     if kind == "object":
         for key, item in value.items():
@@ -68,10 +71,12 @@ def _encode(element: ET.Element, value: Any) -> None:
                 child = ET.SubElement(element, key)
             else:
                 child = ET.SubElement(element, "property", {"name": json.dumps(key, ensure_ascii=True)})
-            _encode(child, item)
+            # JSON Pointer escaping keeps slashes and tildes in keys unambiguous.
+            token = key.replace("~", "~0").replace("/", "~1")
+            _encode(child, item, f"{path}/{token}")
     elif kind == "array":
-        for item in value:
-            _encode(ET.SubElement(element, "item"), item)
+        for index, item in enumerate(value):
+            _encode(ET.SubElement(element, "item"), item, f"{path}/{index}")
     elif kind == "string":
         _check_string(value)
         if _ESCAPE_STRING.search(value):

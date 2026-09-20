@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 import math
+import re
 import xml.etree.ElementTree as ET
 from decimal import Decimal
 
@@ -163,6 +164,12 @@ def test_every_parent_property_is_exercised(optional_fields):
         "node-order",
         "extension",
         "span-offset",
+        "span-ownership",
+        "span-order",
+        "span-reference-order",
+        "heading-attachment",
+        "footnote-attachment",
+        "span-style",
         "cell-geometry",
         "schema-pin",
         "capture-time",
@@ -183,6 +190,8 @@ def test_every_parent_property_is_exercised(optional_fields):
 )
 def test_xml_mutation_fails_full_equality(optional_fields, mutation):
     original = optional_fields
+    if mutation in {"heading-attachment", "footnote-attachment"}:
+        original = load(next(p for p in CAPTURES if p.name == "fr-2026-19200.capture.json"))
     xml = encode_capture(original)
     assert_same_value(original, decode_capture(xml))
     root = ET.fromstring(xml)
@@ -197,19 +206,60 @@ def test_xml_mutation_fails_full_equality(optional_fields, mutation):
         first = nodes[1]
         nodes.remove(first)
         nodes.insert(2, first)
+        expected = "$/nodes/1: object properties changed"
+    elif mutation == "span-order":
+        spans = find("evidence")
+        first = spans[0]
+        spans.remove(first)
+        spans.insert(1, first)
+        # The supplemental first span has sha256; the second does not.
+        expected = "$/evidence/0: object properties changed"
+    elif mutation in {"span-ownership", "span-reference-order"}:
+        owners = [
+            (i, n.find(Q + "evidence")) for i, n in enumerate(find("nodes")) if n.find(Q + "evidence") is not None
+        ]
+        if mutation == "span-ownership":
+            (index, left), (_, right) = [(i, e) for i, e in owners if len(e)][:2]
+            assert left[0].text != right[0].text
+            left[0].text, right[0].text = right[0].text, left[0].text
+        else:
+            index, left = next((i, e) for i, e in owners if len(e) > 1)
+            assert left[0].text != left[1].text
+            left[0].text, left[1].text = left[1].text, left[0].text
+        expected = f"$/nodes/{index}/evidence/0: value changed"
+    elif mutation in {"node-parent", "heading-attachment", "footnote-attachment"}:
+        nodes = find("nodes")
+        kind = {"node-parent": "cell", "heading-attachment": "heading", "footnote-attachment": "footnote"}[mutation]
+        index, node = next((i, n) for i, n in enumerate(nodes) if n.find(Q + "kind").text == kind)
+        parent = node.find(Q + "parent")
+        parent_ids = {n["parent"] for n in original["nodes"]}
+        # Reattach to another existing non-root parent that precedes this node.
+        replacement = next(
+            n.find(Q + "id").text
+            for n in list(nodes)[1:index]
+            if n.find(Q + "id").text in parent_ids and n.find(Q + "id").text != parent.text
+        )
+        assert parent.get("type") == "string"
+        assert parent.text in parent_ids and parent.text != nodes[0].find(Q + "id").text
+        parent.text = replacement
+        expected = f"$/nodes/{index}/parent: value changed"
     elif mutation in {"cell-geometry", "cell-position", "decision"}:
-        cell = next(n for n in find("nodes") if n.find(Q + "kind").text == "cell")
+        index, cell = next((i, n) for i, n in enumerate(find("nodes")) if n.find(Q + "kind").text == "cell")
         if mutation == "cell-geometry":
             source = cell.find(Q + "source")
             source.remove(source.find(Q + "box"))
+            expected = f"$/nodes/{index}/source: object properties changed"
         elif mutation == "cell-position":
             cell.find(Q + "cell/" + Q + "column").text = "99"
+            expected = f"$/nodes/{index}/cell/column: value changed"
         else:
             cell.find(Q + "decision/" + Q + "rule").text += " changed"
+            expected = f"$/nodes/{index}/decision/rule: value changed"
     else:
         paths = {
             "extension": "profile/ext/packageId",
             "span-offset": "evidence/item/start",
+            "span-style": "evidence/item/style/bold",
             "schema-pin": "schema/sha256",
             "capture-time": "capture/capturedAt",
             "artifact-digest": "artifact/sha256",
@@ -217,7 +267,6 @@ def test_xml_mutation_fails_full_equality(optional_fields, mutation):
             "rendition": "rendition/textStream/normalization/statement",
             "converter": "converter/implementation/fileSha256",
             "profile-pin": "profile/schema/sha256",
-            "node-parent": "nodes/item/parent",
             "node-depth": "nodes/item/depth",
             "node-ordinal": "nodes/item/ordinal",
             "exact-text": "evidence/item/exact",
@@ -227,13 +276,16 @@ def test_xml_mutation_fails_full_equality(optional_fields, mutation):
         element = find(paths[mutation])
         if element.get("type") == "integer":
             element.text = str(int(element.text) + 1)
+        elif element.get("type") == "boolean":
+            element.text = "false" if element.text == "true" else "true"
         else:
             element.set("type", "string")
             element.text = (element.text or "") + " changed"
+        expected = "$/" + paths[mutation].replace("/item/", "/0/") + ": value changed"
     # These remain decodable XML; only the independent full-value comparison
     # can establish loss. Text concatenation misses most of these mutations.
     changed = decode_capture(ET.tostring(root))
-    with pytest.raises(AssertionError, match=r"\$"):
+    with pytest.raises(AssertionError, match="^" + re.escape(expected) + "$"):
         assert_same_value(original, changed)
 
 
@@ -251,25 +303,43 @@ def test_extension_types_keys_and_string_codepoints_are_exact(senate):
 
 
 @pytest.mark.parametrize(
-    "value",
+    "value, reason",
     [
-        float("nan"),
-        float("inf"),
-        -float("inf"),
-        Decimal("0.1"),
-        (1, 2),
-        {1: "key"},
-        b"bytes",
-        "\ud800",
-        "\ud800\udc00",
-        {"\ud800": "key"},
+        (float("nan"), "non-finite numbers are not JSON values"),
+        (float("inf"), "non-finite numbers are not JSON values"),
+        (-float("inf"), "non-finite numbers are not JSON values"),
+        (Decimal("314159.265358979"), "Decimal"),
+        (("credential-sentinel",), "tuple"),
+        ({1: "key"}, "object keys must be strings"),
+        (b"credential-sentinel", "bytes"),
+        ("\ud800", "surrogate code points are not supported; supply Unicode scalar values"),
+        ("\ud800\udc00", "surrogate code points are not supported; supply Unicode scalar values"),
+        ({"\ud800": "key"}, "surrogate code points are not supported; supply Unicode scalar values"),
     ],
 )
-def test_unsupported_values_refuse_instead_of_coercing(senate, value):
+def test_unsupported_values_refuse_instead_of_coercing(senate, value, reason):
     capture = copy.deepcopy(senate)
     capture["profile"]["ext"] = {"value": value}
-    with pytest.raises(CaptureXmlError):
+    if reason in {"Decimal", "tuple", "bytes"}:
+        reason = (
+            f"unsupported type {reason} at $/profile/ext/value; "
+            "only JSON dict, list, str, int, finite float, bool and None values are supported"
+        )
+    with pytest.raises(CaptureXmlError) as error:
         encode_capture(capture)
+    assert str(error.value) == reason
+
+
+@pytest.mark.parametrize("key, token", [("value", "value"), ("a/b~c", "a~1b~0c"), ("", ""), ("非ASCII", "非ASCII")])
+def test_unsupported_type_path_tracks_nested_arrays_and_escaped_keys(senate, key, token):
+    capture = copy.deepcopy(senate)
+    capture["profile"]["ext"] = {key: [{"nested": b"credential-sentinel"}]}
+    with pytest.raises(CaptureXmlError) as error:
+        encode_capture(capture)
+    assert str(error.value) == (
+        f"unsupported type bytes at $/profile/ext/{token}/0/nested; "
+        "only JSON dict, list, str, int, finite float, bool and None values are supported"
+    )
 
 
 @pytest.mark.parametrize(
