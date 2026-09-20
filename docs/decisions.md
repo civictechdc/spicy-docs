@@ -884,3 +884,51 @@ Narrowing it would have forced an exact match, produced three rows, and hidden
 why the earlier run failed. Now that the cause is named, the prompt is the
 thing to fix: an `enum` of the batch's ids would make a badly worded prompt
 produce correct rows, which is how a defect survives a fix.
+
+## The shared Zyte transport lives in spicy-docs and records that a capture was proxied
+
+Every `SourceAcquirer` here takes an injected `transport: httpx.BaseTransport`,
+but the Zyte adapter was a standalone fetcher, so the two routes the
+[PDF-only census](research/pdf-only-corpus-2026-09-19.md) recorded as walled —
+CBO's DataDome-protected documents and Congress.gov's CRS HTML — could not be
+reached through the acquirers that already know their locators, byte bounds and
+identity proofs. `transport/zyte.py` is that adapter in the injectable shape,
+over the same `sources/zyte.py` fetcher; it adds no second HTTP client and no
+second copy of the provider protocol.
+
+**It lives here because RefSpec depends on spicy-docs, not the reverse.**
+RefSpec's `registry/infrastructure/zyte_transport.py` and this package's
+`sources/zyte.py` are the same adapter written twice. Acquisition is this
+package's job, so the shared copy is this one and RefSpec imports it; until it
+does, the duplicate there is a known copy, not a second design.
+
+**A proxied body is evidence of what Zyte's client was served — a weaker
+statement than a direct capture makes.** `transport/capture.py` requires that an
+injected transport add no hidden request and no authentication to the
+publisher. This transport honours that literally: exactly one provider call per
+`handle_request`, no retry of its own, and no credential reaching the publisher
+— the token authenticates *to Zyte*. What the publisher saw was Zyte's client,
+so every response carries a `ZyteProxyRecord` naming the provider's request id,
+the mode and the proxy, on the response's `extensions` and in order on the
+transport, and a receipt row that omits it would report a proxied capture as a
+direct one. A resolved URL other than the requested one is refused rather than
+reported under the requested URL, because the caller's client follows no
+redirect and would otherwise never see the hop.
+
+`browserHtml` stays distinct from `httpResponseBody` for the same reason: a
+rendered DOM is not bytes any publisher sent, it states no publisher
+`Content-Type`, and `ZyteHttpResponse.mode` is what says which of the two a
+retained body is.
+
+**What this bought, measured.** [The PDF-family rollup
+measurement](research/pdf-family-rollup-yield-2026-09-20.md) ran both walled
+routes through it on 2026-09-20. Congress.gov's CRS HTML answered `200`
+directly and through the proxy, byte-identical both ways. CBO answered
+`200` through the proxy on its *unwalled* feed — byte-identical to the keyless
+capture, which is the control that says the wiring works — and refused nine
+walled URLs over eleven attempts, in both modes, with Zyte's own
+`/download/temporary-error`. A paid
+proxy is therefore not a way past that wall, and `ZyteBudget` exists so the
+next attempt cannot find that out expensively: it is one ceiling shared by
+every transport drawing on it, since a per-acquirer request budget cannot bound
+spend across a run that opens one acquirer per family.
