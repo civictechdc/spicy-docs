@@ -26,7 +26,8 @@ rather than buried in control flow.
 | `version_kind` | a bill version's `version_code` slug and, for the size heuristic, its extracted section count or body byte length | `VersionKindFinding` (kind, the rule that fired, section count, body bytes); `version_kind` is a thin wrapper returning just the kind |
 | `section_classification` | parsed bill sections and an injected `ModelCall` | `SectionClassification` with model, prompt version, prompt hash, batch and timestamps |
 | `bill_summaries` | one bill version's text, title, status and money-bill kind, and an injected `ModelCall`; or, for `summarize_diff`, a section diff's changed items (`op`, both placements' heading and body) and an injected `ModelCall` | `BillSummaryResult` with model, prompt version, content hash, token counts and timestamps; `summarize_diff` produces `DiffSummaryResult` (headline, key changes, sections added/removed, dollar changes) with the same provenance columns |
-| `model_call` | — | the one injected model seam (`ModelCall`, `ModelResponse`, `ModelCallError`) the two model-backed modules share |
+| `model_call` | — | the one injected model seam (`ModelCall`, `ModelResponse`, `ModelCallError`) the two model-backed modules share, and the `AnswerField` declaration each prompt, each reader and each request schema (`answer_schema`) is derived from |
+| `gemini_call` | a `GenerationClient` (`extraction/gemini`'s `GeminiClient`, or a stub) | that client as a `ModelCall`: it builds the request, sends the caller's `response_schema` as `responseJsonSchema`, parses the answer and carries the publisher's token counts |
 | `bill_family` | one `BillFamilyCapture` (a `BillStatus` and every acquired printing), plus three injected model seams | twelve tables' worth of rows from `spicy_docs.schemas`, each one already proved against its own contract, and a `FamilyRefusal` for every row it could have produced and did not — see [`tables.md`](tables.md) |
 
 `normalize_for_comparison` and `token_jaccard` live in `bill_signals`, where
@@ -89,12 +90,20 @@ old outcome beside the new one.
 - **One bad recorded vote costs that entry, not the bill.** Refusals are
   returned beside the references rather than raised over the whole action list.
 
-- **A prompt states the JSON shape its reader parses.** Each model-backed
-  module declares its answer's keys, types and enforced counts once as
-  `AnswerField` records (`model_call.py`); the prompt's key list is generated
-  from that declaration and the reader reads its values through the same
-  records, so the request and the contract cannot drift apart. `v1` left the
-  spelling to the model and the summary prompt named no key at all.
+- **A prompt states the JSON shape its reader parses, and so does the
+  request.** Each model-backed module declares its answer's keys, types and
+  enforced counts once as `AnswerField` records (`model_call.py`); the prompt's
+  key list, the reader's lookups and — since 2026-09-20 — the draft 2020-12
+  schema the request carries (`answer_schema`, sent as `responseJsonSchema`)
+  all come from that one declaration, so the request and the contract cannot
+  drift apart. `v1` left the spelling to the model and the summary prompt named
+  no key at all; the port had also dropped the schema BillTrax passed on every
+  one of these three requests. The reader's refusal stays the contract: a
+  provider may accept a schema and answer around it.
+- **A refused model answer is a refusal, not an aborted bill.** `bill_family`
+  runs the three generators inside the same guard its shapers run inside, so a
+  `ModelCallError` becomes a `FamilyRefusal` naming the model's own reason and
+  the pass finishes. A credential refusal and a transport failure still abort.
 
 The prompts and their `PROMPT_VERSION` are sealed together, down to the
 typography: the em and en dashes the source wrote are pinned by a `sha256`
@@ -111,16 +120,19 @@ decision.
 Until 2026-09-19 `summarize_bill`, `classify_sections` and `summarize_diff` had
 only ever been exercised with stubs — and every stub answered with the keys the
 reader wanted, which is why nothing offline could see what the first live call
-saw. Two runs of `gemini-3.8-flash` over this repository's own fixtures now
+saw. Three runs of `gemini-3.8-flash` over this repository's own fixtures now
 stand behind them, receipts (model, prompt digest, tokens, cost, parsed rows)
 under `~/Work/corpora/supply-2026-09-02/receipts/` in
-`d1-measured-run-2026-09-19/` and `c1-prompt-fix-2026-09-19/`.
+`d1-measured-run-2026-09-19/`, `c1-prompt-fix-2026-09-19/` and
+`c1-classification-2026-09-20/`. Each of the three found something no stub
+could: a stub that answers the way its reader reads is a formatting assertion,
+not a measurement.
 
 | | Coverage |
 | --- | --- |
 | `summarize_bill` | **Measured live, refused under `v1`, read under `v2`.** The first call (119 HR 6028, 204 in / 206 out) answered with `most_affected_audience` and `notable_provisions` where the reader requires `audience` and `topThreeProvisions`, so it was refused — a keyed production run would have published **zero** `bill_summaries` rows. The spelling was not even stable across invocations of the identical prompt: that receipt's README tabulates `affected_audience` from another one, and both refuse identically. The same bill under `v2` (250 in / 197 out, USD 0.00057 at the pinned rate) is read into a row carrying its audience, three provisions and full provenance. |
 | `summarize_diff` | **Measured live under `v2`**: all five keys returned, one `diff_summaries` row, over the constructed division fixtures — 119 HR 6028's own two printings settle as entirely unchanged, so the family declines that pair before asking. What a live diff of two *published* printings returns is still unmeasured. |
-| `classify_sections` | **Prompt measured, module not.** The `v2` prompt got `sectionId`, `label` and `confidence` back, but the answer named a section id the batch never sent, so the batch guard refused it and no row was produced. Which id the model substituted was not captured; the receipt says so rather than guessing. |
+| `classify_sections` | **Measured live and refused, with the cause now named.** Asked again on 2026-09-20 with the answer's schema on the request (`c1-classification-2026-09-20/`, same batch, byte-identical prompt digest `6add710c…`, 263 in / 80 out, USD 0.000279, one keyed call): the answer honoured the schema in every respect it constrains — bare array, three rows, three keys and no others, a sealed label, a confidence in range — and the batch guard refused it again, because **the model returned each section id with the prompt's own square brackets around it** (`[introduced-in-house\|govinfo\|0]`). `section_block` writes `[<id>] <heading>` and the field asks for "the section's bracketed id, copied exactly as given below", so copying exactly includes the brackets, while `_read_row` requires the bare id. **A keyed production run publishes zero `section_classifications` rows.** Pinned by a test over the live answer, not fixed: fixing it moves the sealed prompt bytes and so `PROMPT_VERSION`. |
 
 See the decision ["A prompt states the JSON shape its reader
 parses"](decisions.md#a-prompt-states-the-json-shape-its-reader-parses-from-one-declaration).

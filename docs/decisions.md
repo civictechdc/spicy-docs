@@ -779,3 +779,83 @@ label to invalidate either: `migrations/012_ai_provenance.ts:26` adds
 (`summarize/route.ts:134-136`) writes only `id`, `bill_id`, `from_version`,
 `to_version`, `summary_json` and `created_at`, so the column is never filled.
 The claim here is about the spicy-docs `v1` label.
+
+### Addendum, 2026-09-20: the shape is on the request, and the prompt's remaining ambiguity is measured
+
+The follow-up named above is taken. `model_call.answer_schema` derives a draft
+2020-12 schema from the same `AnswerField` tuple the prompt and the reader are
+built from; `ModelCall` carries it as an optional `response_schema`; the three
+generators pass it; and the Gemini adapter sends it as `responseJsonSchema`
+through `extraction/gemini.py`'s `json_generation_config`, which is now the one
+home for those two request keys rather than one spelling per caller. The
+schema requires every declared key, allows nothing else, bounds the summary by
+`SUMMARY_CHARS` and the provisions by `MAX_PROVISIONS`, bounds `confidence` to
+0–1 and draws `label` from the five sealed labels — that last one restoring
+`classifications.ts:21-29`'s `z.enum`. **No alias appears in a schema**, for
+the reason none appears in a prompt: a tolerance offered on the request stops
+being one-directional.
+
+**The prompt bytes did not move.** The schema travels in the generation config,
+so all three `PROMPT_VERSION`s stay `v2` and all three pinned digests are
+unchanged, which the prompt-seal tests assert. **`require_fields` and every
+reader stay exactly as they were**: a provider may accept a schema and answer
+around it, so the schema is what was asked for and the reader is what is
+accepted. Only the reader's refusal keeps a row out of a table.
+
+`AnswerField` now declares `shape` and `bounds` — the type and the range *the
+reader enforces* — and derives both its prompt words (`kind`) and its schema
+from them. Before, the prose was the declaration and a schema would have been a
+second one; two statements that agree on the day they are written is the shape
+of the defect this entry is about. A bound a shape's phrase cannot state is
+refused at construction, so the request can never enforce more than it says.
+
+**The adapter moved into spicy-docs** (`interpretation/gemini_call.py`). It was
+in spicy-regs (`transforms/model_call.py`), which is why the 2026-09-19 run had
+to load it by path; the register's own C1 row always named spicy-docs as its
+home. Both halves it joins are here, the schema it now sends is derived here,
+and no hosting application needs its own copy of a request body. **This widens
+`ModelCall` for every implementation**: a call site now passes
+`response_schema`, so an adapter that takes only `model` and `prompt` raises.
+spicy-regs' copy is one such, and should become an import of this module rather
+than a second body shape kept in step by hand.
+
+**`build_bill_family` no longer dies with a refused answer.** Found by
+spicy-regs adopting 0.21.3: a `ModelCallError` escaped the builder and aborted
+the whole rollup, and a caller that caught it outside had to report a refused
+answer as a *declined* one — "its text is below the minimum" — which is false
+about the printing. The three model call sites now run inside the same guard
+the shapers do (`_model_answer`), filing a `FamilyRefusal` with the model's own
+message and finishing the bill. Only the message: `ModelCallError.details` is
+the answer itself, which for a summary is model prose about the document.
+`CredentialRefusedError` and `ExtractionError` still abort, because a 401 must
+end a run rather than be filed per row and a transport failure establishes
+nothing about the printing.
+
+**What one live call then measured** (receipt
+`~/Work/corpora/supply-2026-09-02/receipts/c1-classification-2026-09-20/`; same
+fixture batch, prompt digest `6add710c…` byte-identical to the day before, 263
+in / 80 out, USD 0.000279). The classification answer honoured the schema in
+every respect it constrains — a bare array, three rows, the three keys and no
+others, a sealed label, a confidence in range — and was refused again by the
+batch guard, because **the model returned each section id with the prompt's own
+square brackets still around it**: `[introduced-in-house|govinfo|0]` for
+`introduced-in-house|govinfo|0`. `section_block` writes `[<id>] <heading>` and
+the field asks for "the section's bracketed id, copied exactly as given below",
+so a model that copies exactly what it is shown includes the brackets; the
+reader requires the bare id. That is the same defect family as the `v1` key
+spellings one layer down — the prompt describes its value ambiguously and the
+reader enforces something else — and every stub ever written answered with what
+the reader wanted, so nothing offline could see it. A keyed production run
+publishes **zero** `section_classifications` rows.
+
+It is **pinned and not fixed here**: the fix moves sealed prompt bytes and so
+`PROMPT_VERSION`, which this change held at `v2` on purpose so that the schema
+could be measured on its own. The live answer is a committed fixture and a test
+asserts both that the schema accepts it and that the reader refuses it.
+
+`sectionId`'s schema is deliberately `{"type": "string"}` and **not** narrowed
+to the batch's own ids, although `_read_row` refuses one outside them.
+Narrowing it would have forced an exact match, produced three rows, and hidden
+why the earlier run failed. Now that the cause is named, the prompt is the
+thing to fix: an `enum` of the batch's ids would make a badly worded prompt
+produce correct rows, which is how a defect survives a fix.
