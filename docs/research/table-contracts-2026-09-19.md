@@ -618,6 +618,19 @@ it (an adapter taking only model and prompt raises); the family pass files a
 refused model answer instead of aborting; the v3 classification prompt is
 proved live with two calls that stored every row.
 
+spicy-docs 0.23.0 (cut 2026-09-20: commit 73b10e5, tag v0.23.0 pushed,
+`dist/spicy_docs-0.23.0-py3-none-any.whl` 1,259,241 bytes, sha256
+`36d619a6744cf10d37bf466a3114b1958f59453b22d90ba42be61c6719be4f66`): a minor bump because the
+public surface grew without moving anything sealed: five new contracts
+(`document_citations`, `house_activity_reports`, `budget_volumes`,
+`senate_expenditures`, `bill_committee_actions`; the registry is thirty-seven
+over 766 columns), `interpretation/citations.py` and
+`interpretation/bill_actions.py` that shape them, the package-id grammar
+widened to `BUDGET-{fy}-{part}` and `GPO-CDOC-{congress}sdoc{n}` with the
+collection code each record states, and `transport/zyte.py` for walled routes.
+spicy-regs adopts it the same way as 0.22.0 and gains one rollup per new
+contract.
+
 spicy-regs adoption (done 2026-09-19 on the fork branch `billtrax-hosting-prep`;
 no push to origin unless the user names the branch): copy the wheel into `vendor/` and delete the 0.20.0 wheel; point
 `[tool.uv.sources] spicy-docs` at it; set both `source-readers` pins to
