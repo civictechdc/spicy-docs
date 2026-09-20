@@ -127,6 +127,25 @@ retries when an issue's requested unmatched-number set changes.
   count is a floor; at most 60 pages of a document are read and each row records
   the real page count beside it.
 
+  **Superseded for the GovInfo-served families** by
+  [pdf_yield_mods_recheck](analysis/pdf_yield_mods_recheck.py), which asks the
+  same question against the record a GovInfo body actually has. The rollup
+  compared each print against GovInfo's `published` listing row; the index is
+  the package MODS, which `GovInfoBodyAcquirer` fetches for every body it reads
+  and which states bills, laws, U.S. Code sections, CFR parts, Statutes at Large
+  pages, RINs, committees and the submitting member as named elements. `fetch`
+  reads one MODS per sampled package or granule (keyed, `API_GOV` header only,
+  24 requests bounded at 40, identity proved by `validate_package_mods` where
+  `bodies.py`'s grammar reaches and by the MODS's own `accessId` where it does
+  not). `analyze` and `uncapped` make no request: the first restates the
+  rollup's own figures against the MODS, the second removes the 60-page cap and
+  re-reads all 18,119 pages of the retained PDFs, which is the check the
+  headline result turns on. Rules and committee resolution are imported from
+  `pdf_family_rollup`, never restated. The report is
+  [`docs/research/pdf-yield-mods-recheck-2026-09-20.md`](../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
+  and `tests/test_pdf_yield_mods_recheck_tool.py` pins the MODS shapes and the
+  committed sidecar.
+
 Both stop on HTTP 401/403. The resolver retries request errors, empty, invalid,
 and incomplete listings. It requests one page per issue and refuses `nextPage`,
 count mismatches, or a full 1,000-row page. A full page is indeterminate even when

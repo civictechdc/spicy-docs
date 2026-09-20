@@ -1,0 +1,3224 @@
+{
+  "collection_kinds_stated": {
+    "BUDGET": {
+      "bill_number": 1,
+      "bioguide_id": 0,
+      "cfr_section": 2,
+      "committee_name": 0,
+      "congDoc": 0,
+      "congHearing": 0,
+      "congReport": 0,
+      "congSerial": 0,
+      "fiscal_year": 8,
+      "public_law": 3,
+      "records": 8,
+      "rin": 1,
+      "statutes_at_large": 2,
+      "usc_section": 4
+    },
+    "CRPT": {
+      "bill_number": 8,
+      "bioguide_id": 7,
+      "cfr_section": 0,
+      "committee_name": 8,
+      "congDoc": 1,
+      "congHearing": 1,
+      "congReport": 7,
+      "congSerial": 1,
+      "fiscal_year": 0,
+      "public_law": 8,
+      "records": 8,
+      "rin": 0,
+      "statutes_at_large": 1,
+      "usc_section": 8
+    },
+    "GPO-CDOC": {
+      "bill_number": 0,
+      "bioguide_id": 0,
+      "cfr_section": 0,
+      "committee_name": 0,
+      "congDoc": 0,
+      "congHearing": 0,
+      "congReport": 0,
+      "congSerial": 0,
+      "fiscal_year": 0,
+      "public_law": 8,
+      "records": 8,
+      "rin": 0,
+      "statutes_at_large": 0,
+      "usc_section": 8
+    }
+  },
+  "collection_mods_vocabulary": {
+    "BUDGET": {
+      "mods": 8,
+      "mods/abstract": 5,
+      "mods/accessCondition": 8,
+      "mods/classification": 8,
+      "mods/extension": 24,
+      "mods/extension/ACCode": 8,
+      "mods/extension/USCode": 142,
+      "mods/extension/USCode/appendix": 6,
+      "mods/extension/USCode/chapter": 172,
+      "mods/extension/USCode/section": 4086,
+      "mods/extension/accessId": 8,
+      "mods/extension/bill": 6,
+      "mods/extension/branch": 8,
+      "mods/extension/category": 8,
+      "mods/extension/cfr": 40,
+      "mods/extension/cfr/part": 40,
+      "mods/extension/collectionCode": 8,
+      "mods/extension/dateIngested": 8,
+      "mods/extension/description": 5,
+      "mods/extension/docCitation": 8,
+      "mods/extension/docClass": 8,
+      "mods/extension/editionId": 8,
+      "mods/extension/field": 8,
+      "mods/extension/genericNav1Value": 8,
+      "mods/extension/genericNav2Value": 8,
+      "mods/extension/image": 5,
+      "mods/extension/isCurrentEdition": 8,
+      "mods/extension/law": 63,
+      "mods/extension/packageSort": 8,
+      "mods/extension/president": 8,
+      "mods/extension/president/name": 32,
+      "mods/extension/presidentialDoc": 2,
+      "mods/extension/rin": 1,
+      "mods/extension/searchTitle": 8,
+      "mods/extension/statuteAtLarge": 124,
+      "mods/extension/statuteAtLarge/pages": 183,
+      "mods/extension/waisDatabaseName": 1,
+      "mods/genre": 8,
+      "mods/identifier": 34,
+      "mods/language": 8,
+      "mods/language/languageTerm": 8,
+      "mods/location": 8,
+      "mods/location/url": 22,
+      "mods/name": 24,
+      "mods/name/description": 16,
+      "mods/name/namePart": 40,
+      "mods/name/role": 32,
+      "mods/name/role/roleTerm": 64,
+      "mods/originInfo": 8,
+      "mods/originInfo/dateIssued": 8,
+      "mods/originInfo/frequency": 8,
+      "mods/originInfo/issuance": 8,
+      "mods/originInfo/publisher": 8,
+      "mods/physicalDescription": 8,
+      "mods/physicalDescription/digitalOrigin": 8,
+      "mods/physicalDescription/extent": 8,
+      "mods/physicalDescription/note": 8,
+      "mods/recordInfo": 8,
+      "mods/recordInfo/languageOfCataloging": 8,
+      "mods/recordInfo/languageOfCataloging/languageTerm": 8,
+      "mods/recordInfo/recordChangeDate": 8,
+      "mods/recordInfo/recordContentSource": 8,
+      "mods/recordInfo/recordCreationDate": 8,
+      "mods/recordInfo/recordIdentifier": 8,
+      "mods/recordInfo/recordOrigin": 8,
+      "mods/relatedItem": 470,
+      "mods/relatedItem/extension": 99,
+      "mods/relatedItem/extension/USCode": 759,
+      "mods/relatedItem/extension/USCode/appendix": 8,
+      "mods/relatedItem/extension/USCode/chapter": 213,
+      "mods/relatedItem/extension/USCode/section": 5267,
+      "mods/relatedItem/extension/accessId": 93,
+      "mods/relatedItem/extension/agency": 80,
+      "mods/relatedItem/extension/bill": 11,
+      "mods/relatedItem/extension/cfr": 56,
+      "mods/relatedItem/extension/cfr/part": 56,
+      "mods/relatedItem/extension/congress": 6,
+      "mods/relatedItem/extension/granuleClass": 93,
+      "mods/relatedItem/extension/presidentialDoc": 4,
+      "mods/relatedItem/extension/rin": 2,
+      "mods/relatedItem/extension/searchTitle": 93,
+      "mods/relatedItem/extension/sequenceNumber": 93,
+      "mods/relatedItem/extension/statuteAtLarge": 212,
+      "mods/relatedItem/extension/statuteAtLarge/pages": 256,
+      "mods/relatedItem/identifier": 4714,
+      "mods/relatedItem/location": 93,
+      "mods/relatedItem/location/url": 184,
+      "mods/relatedItem/name": 80,
+      "mods/relatedItem/name/description": 80,
+      "mods/relatedItem/name/namePart": 160,
+      "mods/relatedItem/name/role": 80,
+      "mods/relatedItem/name/role/roleTerm": 160,
+      "mods/relatedItem/relatedItem": 1133,
+      "mods/relatedItem/relatedItem/extension": 11,
+      "mods/relatedItem/relatedItem/extension/congress": 11,
+      "mods/relatedItem/relatedItem/identifier": 5906,
+      "mods/relatedItem/relatedItem/titleInfo": 1042,
+      "mods/relatedItem/relatedItem/titleInfo/partNumber": 5800,
+      "mods/relatedItem/relatedItem/titleInfo/title": 1042,
+      "mods/relatedItem/titleInfo": 470,
+      "mods/relatedItem/titleInfo/partNumber": 4487,
+      "mods/relatedItem/titleInfo/title": 470,
+      "mods/titleInfo": 8,
+      "mods/titleInfo/title": 8,
+      "mods/typeOfResource": 8
+    },
+    "CRPT": {
+      "mods": 8,
+      "mods/accessCondition": 8,
+      "mods/classification": 8,
+      "mods/extension": 24,
+      "mods/extension/USCode": 29,
+      "mods/extension/USCode/chapter": 6,
+      "mods/extension/USCode/section": 40,
+      "mods/extension/accessId": 16,
+      "mods/extension/action": 8,
+      "mods/extension/bill": 1501,
+      "mods/extension/branch": 8,
+      "mods/extension/category": 8,
+      "mods/extension/chamber": 8,
+      "mods/extension/collectionCode": 8,
+      "mods/extension/congCalendar": 8,
+      "mods/extension/congCommittee": 8,
+      "mods/extension/congCommittee/name": 16,
+      "mods/extension/congDoc": 1,
+      "mods/extension/congHearing": 1,
+      "mods/extension/congMember": 8,
+      "mods/extension/congMember/name": 23,
+      "mods/extension/congReport": 347,
+      "mods/extension/congSerial": 27,
+      "mods/extension/congress": 8,
+      "mods/extension/dateIngested": 8,
+      "mods/extension/docClass": 8,
+      "mods/extension/granuleClass": 8,
+      "mods/extension/isConferenceReport": 8,
+      "mods/extension/isFallbackTitle": 1,
+      "mods/extension/isSerialSet": 8,
+      "mods/extension/law": 219,
+      "mods/extension/legislativeHistory": 8,
+      "mods/extension/number": 8,
+      "mods/extension/searchTitle": 8,
+      "mods/extension/session": 16,
+      "mods/extension/statuteAtLarge": 7,
+      "mods/extension/statuteAtLarge/pages": 7,
+      "mods/extension/submittedStatement": 8,
+      "mods/extension/subtitle": 8,
+      "mods/extension/waisDatabaseName": 8,
+      "mods/genre": 8,
+      "mods/identifier": 40,
+      "mods/language": 8,
+      "mods/language/languageTerm": 8,
+      "mods/location": 8,
+      "mods/location/url": 24,
+      "mods/name": 32,
+      "mods/name/affiliation": 8,
+      "mods/name/description": 24,
+      "mods/name/namePart": 72,
+      "mods/name/role": 40,
+      "mods/name/role/roleTerm": 80,
+      "mods/originInfo": 8,
+      "mods/originInfo/dateIssued": 8,
+      "mods/originInfo/issuance": 8,
+      "mods/originInfo/publisher": 8,
+      "mods/physicalDescription": 8,
+      "mods/physicalDescription/digitalOrigin": 8,
+      "mods/physicalDescription/extent": 8,
+      "mods/physicalDescription/note": 8,
+      "mods/recordInfo": 8,
+      "mods/recordInfo/languageOfCataloging": 8,
+      "mods/recordInfo/languageOfCataloging/languageTerm": 8,
+      "mods/recordInfo/recordChangeDate": 8,
+      "mods/recordInfo/recordContentSource": 8,
+      "mods/recordInfo/recordCreationDate": 8,
+      "mods/recordInfo/recordIdentifier": 8,
+      "mods/recordInfo/recordOrigin": 8,
+      "mods/relatedItem": 2132,
+      "mods/relatedItem/extension": 1502,
+      "mods/relatedItem/extension/congress": 1502,
+      "mods/relatedItem/extension/context": 1502,
+      "mods/relatedItem/identifier": 2368,
+      "mods/relatedItem/part": 3,
+      "mods/relatedItem/part/text": 3,
+      "mods/relatedItem/titleInfo": 2132,
+      "mods/relatedItem/titleInfo/partNumber": 53,
+      "mods/relatedItem/titleInfo/title": 2132,
+      "mods/titleInfo": 8,
+      "mods/titleInfo/title": 8,
+      "mods/typeOfResource": 8
+    },
+    "GPO-CDOC": {
+      "mods": 8,
+      "mods/accessCondition": 3,
+      "mods/extension": 19,
+      "mods/extension/ACCode": 3,
+      "mods/extension/USCode": 8,
+      "mods/extension/USCode/section": 16,
+      "mods/extension/accessId": 8,
+      "mods/extension/branch": 8,
+      "mods/extension/category": 8,
+      "mods/extension/chamber": 3,
+      "mods/extension/collectionCode": 8,
+      "mods/extension/congress": 3,
+      "mods/extension/dateIngested": 8,
+      "mods/extension/docCitation": 3,
+      "mods/extension/docClass": 3,
+      "mods/extension/fedPubName": 3,
+      "mods/extension/field": 6,
+      "mods/extension/genericNav1Value": 3,
+      "mods/extension/granuleClass": 5,
+      "mods/extension/law": 51,
+      "mods/extension/number": 3,
+      "mods/extension/packageSort": 3,
+      "mods/extension/searchTitle": 8,
+      "mods/extension/sequenceNumber": 5,
+      "mods/extension/session": 3,
+      "mods/genre": 8,
+      "mods/identifier": 14,
+      "mods/language": 8,
+      "mods/language/languageTerm": 8,
+      "mods/location": 8,
+      "mods/location/url": 16,
+      "mods/name": 16,
+      "mods/name/description": 8,
+      "mods/name/namePart": 40,
+      "mods/name/role": 24,
+      "mods/name/role/roleTerm": 48,
+      "mods/originInfo": 3,
+      "mods/originInfo/dateIssued": 3,
+      "mods/originInfo/frequency": 3,
+      "mods/originInfo/issuance": 3,
+      "mods/originInfo/publisher": 3,
+      "mods/physicalDescription": 3,
+      "mods/physicalDescription/digitalOrigin": 3,
+      "mods/physicalDescription/extent": 3,
+      "mods/physicalDescription/note": 3,
+      "mods/recordInfo": 3,
+      "mods/recordInfo/languageOfCataloging": 3,
+      "mods/recordInfo/languageOfCataloging/languageTerm": 3,
+      "mods/recordInfo/recordChangeDate": 3,
+      "mods/recordInfo/recordContentSource": 3,
+      "mods/recordInfo/recordCreationDate": 3,
+      "mods/recordInfo/recordIdentifier": 3,
+      "mods/recordInfo/recordOrigin": 3,
+      "mods/relatedItem": 75,
+      "mods/relatedItem/accessCondition": 5,
+      "mods/relatedItem/extension": 16,
+      "mods/relatedItem/extension/ACCode": 5,
+      "mods/relatedItem/extension/USCode": 11,
+      "mods/relatedItem/extension/USCode/section": 22,
+      "mods/relatedItem/extension/accessId": 11,
+      "mods/relatedItem/extension/chamber": 5,
+      "mods/relatedItem/extension/congress": 5,
+      "mods/relatedItem/extension/docCitation": 5,
+      "mods/relatedItem/extension/docClass": 5,
+      "mods/relatedItem/extension/fedPubName": 5,
+      "mods/relatedItem/extension/field": 8,
+      "mods/relatedItem/extension/genericNav1Value": 5,
+      "mods/relatedItem/extension/granuleClass": 6,
+      "mods/relatedItem/extension/law": 69,
+      "mods/relatedItem/extension/number": 5,
+      "mods/relatedItem/extension/packageSort": 5,
+      "mods/relatedItem/extension/searchTitle": 11,
+      "mods/relatedItem/extension/sequenceNumber": 6,
+      "mods/relatedItem/extension/session": 5,
+      "mods/relatedItem/identifier": 144,
+      "mods/relatedItem/location": 11,
+      "mods/relatedItem/location/url": 22,
+      "mods/relatedItem/originInfo": 5,
+      "mods/relatedItem/originInfo/dateIssued": 5,
+      "mods/relatedItem/originInfo/frequency": 5,
+      "mods/relatedItem/originInfo/issuance": 5,
+      "mods/relatedItem/originInfo/publisher": 5,
+      "mods/relatedItem/physicalDescription": 5,
+      "mods/relatedItem/physicalDescription/digitalOrigin": 5,
+      "mods/relatedItem/physicalDescription/extent": 5,
+      "mods/relatedItem/physicalDescription/note": 5,
+      "mods/relatedItem/recordInfo": 5,
+      "mods/relatedItem/recordInfo/languageOfCataloging": 5,
+      "mods/relatedItem/recordInfo/languageOfCataloging/languageTerm": 5,
+      "mods/relatedItem/recordInfo/recordChangeDate": 5,
+      "mods/relatedItem/recordInfo/recordContentSource": 5,
+      "mods/relatedItem/recordInfo/recordCreationDate": 5,
+      "mods/relatedItem/recordInfo/recordIdentifier": 5,
+      "mods/relatedItem/recordInfo/recordOrigin": 5,
+      "mods/relatedItem/relatedItem": 86,
+      "mods/relatedItem/relatedItem/identifier": 166,
+      "mods/relatedItem/relatedItem/titleInfo": 80,
+      "mods/relatedItem/relatedItem/titleInfo/partNumber": 22,
+      "mods/relatedItem/relatedItem/titleInfo/title": 80,
+      "mods/relatedItem/titleInfo": 70,
+      "mods/relatedItem/titleInfo/partNumber": 16,
+      "mods/relatedItem/titleInfo/title": 70,
+      "mods/titleInfo": 8,
+      "mods/titleInfo/title": 8,
+      "mods/typeOfResource": 8
+    }
+  },
+  "families": {
+    "budget": {
+      "documents": [
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "BUDGET",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 2,
+              "print_only": [
+                "500MILLION",
+                "876BILLION"
+              ],
+              "print_only_count": 2
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "BUDGET-2027-MSR",
+          "mods_bytes": 6721,
+          "mods_document_references": {},
+          "mods_key": "BUDGET-2027-MSR",
+          "mods_retained": true,
+          "mods_sha256": "sha256:c0f7b611c1a9ad10253cd9be577267a8aa212fe50b02c419f5aca513d7923aef",
+          "mods_states": {
+            "fiscal_year": 1,
+            "usc_section": 1
+          },
+          "mods_url": "https://api.govinfo.gov/packages/BUDGET-2027-MSR/mods",
+          "package_id": "BUDGET-2027-MSR"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "BUDGET",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 37,
+              "print_only": [
+                "09TRILLION",
+                "109BILLION",
+                "10TRILLION",
+                "136BILLION",
+                "140BILLION",
+                "14BILLION",
+                "157TRILLION",
+                "158TRILLION",
+                "15TRILLION",
+                "18TRILLION",
+                "19",
+                "19TRILLION"
+              ],
+              "print_only_count": 37
+            },
+            "fiscal_year": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "public_law": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "BUDGET-2026-MSR",
+          "mods_bytes": 7403,
+          "mods_document_references": {},
+          "mods_key": "BUDGET-2026-MSR",
+          "mods_retained": true,
+          "mods_sha256": "sha256:26673c13d09ca221740a0a8630a01f73d14e21f05e38da9b9bbabb2abf98fd07",
+          "mods_states": {
+            "fiscal_year": 1,
+            "public_law": 1,
+            "usc_section": 1
+          },
+          "mods_url": "https://api.govinfo.gov/packages/BUDGET-2026-MSR/mods",
+          "package_id": "BUDGET-2026-MSR"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "BUDGET",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 32,
+              "print_only": [
+                "179BILLION",
+                "1BILLION",
+                "2143BILLION",
+                "22BILLION",
+                "230BILLION",
+                "236BILLION",
+                "246BILLION",
+                "24BILLION",
+                "254BILLION",
+                "287BILLION",
+                "28BILLION",
+                "2986BILLION"
+              ],
+              "print_only_count": 32
+            },
+            "fiscal_year": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "BUDGET-2027-BALANCES",
+          "mods_bytes": 6483,
+          "mods_document_references": {},
+          "mods_key": "BUDGET-2027-BALANCES",
+          "mods_retained": true,
+          "mods_sha256": "sha256:210391050dd20ac1261ea0c322565231075050ad7d992b004b30c3b1625d0e5b",
+          "mods_states": {
+            "fiscal_year": 1
+          },
+          "mods_url": "https://api.govinfo.gov/packages/BUDGET-2027-BALANCES/mods",
+          "package_id": "BUDGET-2027-BALANCES"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "BUDGET",
+          "comparison": {
+            "fiscal_year": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "BUDGET-2026-BALANCES",
+          "mods_bytes": 6544,
+          "mods_document_references": {},
+          "mods_key": "BUDGET-2026-BALANCES",
+          "mods_retained": true,
+          "mods_sha256": "sha256:70c35d0dd14f378147c42fef148204d46d845d45a3c83dcecfff3a9fafd26c69",
+          "mods_states": {
+            "fiscal_year": 1
+          },
+          "mods_url": "https://api.govinfo.gov/packages/BUDGET-2026-BALANCES/mods",
+          "package_id": "BUDGET-2026-BALANCES"
+        },
+        {
+          "bill_natural_keys_stated": 6,
+          "collection": "BUDGET",
+          "comparison": {
+            "bill_number": {
+              "intersection": 2,
+              "mods_distinct": 6,
+              "mods_only": 4,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [
+                "HR7147"
+              ],
+              "print_only_count": 1
+            },
+            "cfr_section": {
+              "intersection": 0,
+              "mods_distinct": 18,
+              "mods_only": 18,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [
+                "2CFR200334",
+                "2CFR200337",
+                "37CFR1304"
+              ],
+              "print_only_count": 3
+            },
+            "committee_name": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 10,
+              "print_only": [
+                "hsap00",
+                "hsba00",
+                "hsgo00",
+                "hsha00",
+                "hshm00",
+                "hsru00",
+                "hsso00",
+                "ssbk00",
+                "ssev00",
+                "ssra00"
+              ],
+              "print_only_count": 10
+            },
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 287,
+              "print_only": [
+                "1000",
+                "10000",
+                "100000",
+                "1000000",
+                "10000000",
+                "100000000",
+                "100842000",
+                "1022000",
+                "102386000",
+                "10300000",
+                "103852000",
+                "10499000"
+              ],
+              "print_only_count": 287
+            },
+            "fiscal_year": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 8,
+              "print_only": [
+                "2016",
+                "2017",
+                "2022",
+                "2023",
+                "2025",
+                "2026",
+                "2032"
+              ],
+              "print_only_count": 7
+            },
+            "public_law": {
+              "intersection": 2,
+              "mods_distinct": 2,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 29,
+              "print_only": [
+                "100-480",
+                "104-1",
+                "105-33",
+                "105-339",
+                "106-286",
+                "106-398",
+                "108-458",
+                "108-7",
+                "109-108",
+                "111-117",
+                "111-203",
+                "111-248"
+              ],
+              "print_only_count": 27
+            },
+            "rin": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "statutes_at_large": {
+              "intersection": 5,
+              "mods_distinct": 90,
+              "mods_only": 85,
+              "mods_states_this_kind": true,
+              "print_distinct": 6,
+              "print_only": [
+                "46-32"
+              ],
+              "print_only_count": 1
+            },
+            "usc_section": {
+              "intersection": 77,
+              "mods_distinct": 1351,
+              "mods_only": 1274,
+              "mods_states_this_kind": true,
+              "print_distinct": 84,
+              "print_only": [
+                "2USC661661F",
+                "2USC93139",
+                "35USC145146",
+                "42USC1395B6",
+                "42USC300AA12",
+                "50USC16011651",
+                "5USC59225924"
+              ],
+              "print_only_count": 7
+            }
+          },
+          "granule_id": null,
+          "id": "BUDGET-2027-APP",
+          "mods_bytes": 2844685,
+          "mods_document_references": {},
+          "mods_key": "BUDGET-2027-APP",
+          "mods_retained": true,
+          "mods_sha256": "sha256:fe3f0630535497a035dce82ed1d9566eacfac11acc251af595229cbcdd139f27",
+          "mods_states": {
+            "bill_number": 6,
+            "cfr_section": 18,
+            "fiscal_year": 1,
+            "public_law": 2,
+            "rin": 1,
+            "statutes_at_large": 90,
+            "usc_section": 1351
+          },
+          "mods_url": "https://api.govinfo.gov/packages/BUDGET-2027-APP/mods",
+          "package_id": "BUDGET-2027-APP"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "BUDGET",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 185,
+              "print_only": [
+                "05MILLION",
+                "100MILLION",
+                "101MILLION",
+                "105BILLION",
+                "107BILLION",
+                "10BILLION",
+                "10MILLION",
+                "110MILLION",
+                "1111BILLION",
+                "115BILLION",
+                "118BILLION",
+                "11BILLION"
+              ],
+              "print_only_count": 185
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "public_law": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [
+                "119-37",
+                "119-75"
+              ],
+              "print_only_count": 2
+            }
+          },
+          "granule_id": null,
+          "id": "BUDGET-2027-BUD",
+          "mods_bytes": 36851,
+          "mods_document_references": {},
+          "mods_key": "BUDGET-2027-BUD",
+          "mods_retained": true,
+          "mods_sha256": "sha256:41c456be3fc5c034c15aee49482c3024a03cd0b2218c1152d18fe721d3d2d11e",
+          "mods_states": {
+            "fiscal_year": 1
+          },
+          "mods_url": "https://api.govinfo.gov/packages/BUDGET-2027-BUD/mods",
+          "package_id": "BUDGET-2027-BUD"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "BUDGET",
+          "comparison": {
+            "bill_number": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [
+                "HR4"
+              ],
+              "print_only_count": 1
+            },
+            "cfr_section": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "crs_report_id": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 1,
+              "print_only": [
+                "R46240"
+              ],
+              "print_only_count": 1
+            },
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 184,
+              "print_only": [
+                "0",
+                "1",
+                "100000",
+                "10048BILLION",
+                "100BILLION",
+                "100MILLION",
+                "10110BILLION",
+                "1011MILLION",
+                "1060",
+                "106BILLION",
+                "106TRILLION",
+                "10BILLION"
+              ],
+              "print_only_count": 184
+            },
+            "fiscal_year": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 7,
+              "print_only": [
+                "1996",
+                "2009",
+                "2021",
+                "2024",
+                "2025",
+                "2028"
+              ],
+              "print_only_count": 6
+            },
+            "public_law": {
+              "intersection": 28,
+              "mods_distinct": 60,
+              "mods_only": 32,
+              "mods_states_this_kind": true,
+              "print_distinct": 45,
+              "print_only": [
+                "102-550",
+                "103-66",
+                "108-361",
+                "109-58",
+                "110-140",
+                "111-152",
+                "111-22",
+                "111-5",
+                "114-1",
+                "115-325",
+                "116-94",
+                "118-63"
+              ],
+              "print_only_count": 17
+            },
+            "statutes_at_large": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 5,
+              "mods_distinct": 31,
+              "mods_only": 26,
+              "mods_states_this_kind": true,
+              "print_distinct": 5,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "BUDGET-2027-PER",
+          "mods_bytes": 82615,
+          "mods_document_references": {},
+          "mods_key": "BUDGET-2027-PER",
+          "mods_retained": true,
+          "mods_sha256": "sha256:aae276ff00df1ef50cc811cb69fc44a5abf07609c4d43f08de4494522e5a2ccc",
+          "mods_states": {
+            "cfr_section": 1,
+            "fiscal_year": 1,
+            "public_law": 60,
+            "statutes_at_large": 1,
+            "usc_section": 31
+          },
+          "mods_url": "https://api.govinfo.gov/packages/BUDGET-2027-PER/mods",
+          "package_id": "BUDGET-2027-PER"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "BUDGET",
+          "comparison": {
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 34,
+              "print_only": [
+                "1992",
+                "1993",
+                "1994",
+                "1995",
+                "1996",
+                "1997",
+                "1998",
+                "1999",
+                "2000",
+                "2001",
+                "2002",
+                "2003"
+              ],
+              "print_only_count": 34
+            }
+          },
+          "granule_id": null,
+          "id": "BUDGET-2027-FCS",
+          "mods_bytes": 5189,
+          "mods_document_references": {},
+          "mods_key": "BUDGET-2027-FCS",
+          "mods_retained": true,
+          "mods_sha256": "sha256:6fb78b7875ab3e3b150bc006e83286d910ee3af42cac87df958ae0fbeac1f2b6",
+          "mods_states": {
+            "fiscal_year": 1
+          },
+          "mods_url": "https://api.govinfo.gov/packages/BUDGET-2027-FCS/mods",
+          "package_id": "BUDGET-2027-FCS"
+        }
+      ],
+      "restated": {
+        "bill_number": {
+          "documents": 2,
+          "documents_beyond_mods": 2,
+          "mods_distinct_values": 6,
+          "mods_link_rows": 6,
+          "mods_only_link_rows": 4,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 4,
+          "print_link_rows": 4,
+          "print_only_against_family_union": 2,
+          "print_only_distinct_values": 2,
+          "print_only_link_rows": 2
+        },
+        "cfr_section": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 18,
+          "mods_link_rows": 19,
+          "mods_only_link_rows": 19,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 3,
+          "print_link_rows": 3,
+          "print_only_against_family_union": 3,
+          "print_only_distinct_values": 3,
+          "print_only_link_rows": 3
+        },
+        "committee_name": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 10,
+          "print_link_rows": 10,
+          "print_only_against_family_union": 10,
+          "print_only_distinct_values": 10,
+          "print_only_link_rows": 10
+        },
+        "crs_report_id": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 1,
+          "print_link_rows": 1,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "documents_with_mods": 8,
+        "dollar_amount": {
+          "documents": 6,
+          "documents_beyond_mods": 6,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 658,
+          "print_link_rows": 727,
+          "print_only_against_family_union": 658,
+          "print_only_distinct_values": 658,
+          "print_only_link_rows": 727
+        },
+        "fiscal_year": {
+          "documents": 6,
+          "documents_beyond_mods": 3,
+          "mods_distinct_values": 2,
+          "mods_link_rows": 8,
+          "mods_only_link_rows": 3,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 38,
+          "print_link_rows": 52,
+          "print_only_against_family_union": 36,
+          "print_only_distinct_values": 37,
+          "print_only_link_rows": 47
+        },
+        "mods_document_reference_rows": 0,
+        "public_law": {
+          "documents": 4,
+          "documents_beyond_mods": 3,
+          "mods_distinct_values": 63,
+          "mods_link_rows": 63,
+          "mods_only_link_rows": 32,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 69,
+          "print_link_rows": 77,
+          "print_only_against_family_union": 36,
+          "print_only_distinct_values": 43,
+          "print_only_link_rows": 46
+        },
+        "rin": {
+          "documents": 0,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 1,
+          "mods_link_rows": 1,
+          "mods_only_link_rows": 1,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 0,
+          "print_link_rows": 0,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "statutes_at_large": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 91,
+          "mods_link_rows": 91,
+          "mods_only_link_rows": 86,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 6,
+          "print_link_rows": 6,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "usc_section": {
+          "documents": 4,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 1380,
+          "mods_link_rows": 1384,
+          "mods_only_link_rows": 1300,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 90,
+          "print_link_rows": 91,
+          "print_only_against_family_union": 6,
+          "print_only_distinct_values": 7,
+          "print_only_link_rows": 7
+        }
+      },
+      "title": "budget"
+    },
+    "house_activity": {
+      "documents": [
+        {
+          "bill_natural_keys_stated": 179,
+          "collection": "CRPT",
+          "comparison": {
+            "bill_number": {
+              "intersection": 179,
+              "mods_distinct": 179,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 179,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "bioguide_id": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "committee_name": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [
+                "hsap00",
+                "hsha00"
+              ],
+              "print_only_count": 2
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [
+                "2025",
+                "2026"
+              ],
+              "print_only_count": 2
+            },
+            "public_law": {
+              "intersection": 3,
+              "mods_distinct": 6,
+              "mods_only": 3,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 1,
+              "mods_distinct": 2,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "CRPT-118hrpt968",
+          "mods_bytes": 100652,
+          "mods_document_references": {
+            "congReport": 11
+          },
+          "mods_key": "CRPT-118hrpt968",
+          "mods_retained": true,
+          "mods_sha256": "sha256:40990b6a7275d2ae3c760ad57e9ee2154a03bab6835f385f8b599022303f1210",
+          "mods_states": {
+            "bill_number": 179,
+            "bioguide_id": 1,
+            "committee_name": 1,
+            "public_law": 6,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/CRPT-118hrpt968/mods",
+          "package_id": "CRPT-118hrpt968"
+        },
+        {
+          "bill_natural_keys_stated": 194,
+          "collection": "CRPT",
+          "comparison": {
+            "bill_number": {
+              "intersection": 169,
+              "mods_distinct": 194,
+              "mods_only": 25,
+              "mods_states_this_kind": true,
+              "print_distinct": 169,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "bioguide_id": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "committee_name": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 6,
+              "print_only": [
+                "hsbu00",
+                "hsgo00",
+                "hsha00",
+                "hsru00",
+                "sscm00"
+              ],
+              "print_only_count": 5
+            },
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 1,
+              "print_only": [
+                "15000000"
+              ],
+              "print_only_count": 1
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [
+                "2024"
+              ],
+              "print_only_count": 1
+            },
+            "public_law": {
+              "intersection": 19,
+              "mods_distinct": 50,
+              "mods_only": 31,
+              "mods_states_this_kind": true,
+              "print_distinct": 19,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 1,
+              "mods_distinct": 5,
+              "mods_only": 4,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "CRPT-118hrpt974",
+          "mods_bytes": 179584,
+          "mods_document_references": {
+            "congHearing": 1,
+            "congReport": 89
+          },
+          "mods_key": "CRPT-118hrpt974",
+          "mods_retained": true,
+          "mods_sha256": "sha256:1f45d2d7708a329865f981a8f1016dcca378cd56643107be3e21f6606300492c",
+          "mods_states": {
+            "bill_number": 194,
+            "bioguide_id": 1,
+            "committee_name": 1,
+            "public_law": 50,
+            "usc_section": 5
+          },
+          "mods_url": "https://api.govinfo.gov/packages/CRPT-118hrpt974/mods",
+          "package_id": "CRPT-118hrpt974"
+        },
+        {
+          "bill_natural_keys_stated": 217,
+          "collection": "CRPT",
+          "comparison": {
+            "bill_number": {
+              "intersection": 124,
+              "mods_distinct": 217,
+              "mods_only": 93,
+              "mods_states_this_kind": true,
+              "print_distinct": 124,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "bioguide_id": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "committee_name": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [
+                "hsha00",
+                "hsju00",
+                "hswm00"
+              ],
+              "print_only_count": 3
+            },
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 13,
+              "print_only": [
+                "1",
+                "10000",
+                "100MILLION",
+                "109000000",
+                "1250000",
+                "17TRILLION",
+                "180000",
+                "1MILLION",
+                "20000000",
+                "298579000",
+                "300000",
+                "3000000"
+              ],
+              "print_only_count": 13
+            },
+            "federal_register_cite": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 1,
+              "print_only": [
+                "87FEDREG6312"
+              ],
+              "print_only_count": 1
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [
+                "2024"
+              ],
+              "print_only_count": 1
+            },
+            "public_law": {
+              "intersection": 22,
+              "mods_distinct": 56,
+              "mods_only": 34,
+              "mods_states_this_kind": true,
+              "print_distinct": 22,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 5,
+              "mods_distinct": 8,
+              "mods_only": 3,
+              "mods_states_this_kind": true,
+              "print_distinct": 5,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "CRPT-118hrpt972",
+          "mods_bytes": 130980,
+          "mods_document_references": {},
+          "mods_key": "CRPT-118hrpt972",
+          "mods_retained": true,
+          "mods_sha256": "sha256:5e17fef1cc46e80388a5afdbb58678360ee02e8515d0cc62369eb835dcf50686",
+          "mods_states": {
+            "bill_number": 217,
+            "bioguide_id": 1,
+            "committee_name": 1,
+            "public_law": 56,
+            "usc_section": 8
+          },
+          "mods_url": "https://api.govinfo.gov/packages/CRPT-118hrpt972/mods",
+          "package_id": "CRPT-118hrpt972"
+        },
+        {
+          "bill_natural_keys_stated": 111,
+          "collection": "CRPT",
+          "comparison": {
+            "bill_number": {
+              "intersection": 71,
+              "mods_distinct": 111,
+              "mods_only": 40,
+              "mods_states_this_kind": true,
+              "print_distinct": 71,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "bioguide_id": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "committee_name": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 5,
+              "print_only": [
+                "hsag00",
+                "hsgo00",
+                "hswm00",
+                "sshr00"
+              ],
+              "print_only_count": 4
+            },
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 6,
+              "print_only": [
+                "127MILLION",
+                "14BILLION",
+                "250MILLION",
+                "39",
+                "49734",
+                "6BILLION"
+              ],
+              "print_only_count": 6
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [
+                "2023",
+                "2024"
+              ],
+              "print_only_count": 2
+            },
+            "public_law": {
+              "intersection": 7,
+              "mods_distinct": 8,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 7,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "CRPT-118hrpt970",
+          "mods_bytes": 78911,
+          "mods_document_references": {
+            "congReport": 53
+          },
+          "mods_key": "CRPT-118hrpt970",
+          "mods_retained": true,
+          "mods_sha256": "sha256:bdcb57d6849b51c62611b4eb0e736f9f79a25a00a1683f83e65bde1aa33fcc83",
+          "mods_states": {
+            "bill_number": 111,
+            "bioguide_id": 1,
+            "committee_name": 1,
+            "public_law": 8,
+            "usc_section": 1
+          },
+          "mods_url": "https://api.govinfo.gov/packages/CRPT-118hrpt970/mods",
+          "package_id": "CRPT-118hrpt970"
+        },
+        {
+          "bill_natural_keys_stated": 48,
+          "collection": "CRPT",
+          "comparison": {
+            "bill_number": {
+              "intersection": 45,
+              "mods_distinct": 48,
+              "mods_only": 3,
+              "mods_states_this_kind": true,
+              "print_distinct": 45,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "bioguide_id": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "committee_name": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 15,
+              "print_only": [
+                "hsap00",
+                "hsba00",
+                "hsbu00",
+                "hsed00",
+                "hsgo00",
+                "hsha00",
+                "hsif00",
+                "hsii00",
+                "hsju00",
+                "hspw00",
+                "hsru00",
+                "hssy00"
+              ],
+              "print_only_count": 14
+            },
+            "docket_number": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 1,
+              "print_only": [
+                "APHIS20190035"
+              ],
+              "print_only_count": 1
+            },
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 1,
+              "print_only": [
+                "50000"
+              ],
+              "print_only_count": 1
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [
+                "2023",
+                "2024",
+                "2025",
+                "2030"
+              ],
+              "print_only_count": 4
+            },
+            "public_law": {
+              "intersection": 10,
+              "mods_distinct": 25,
+              "mods_only": 15,
+              "mods_states_this_kind": true,
+              "print_distinct": 10,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "rin": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [
+                "RIN0579AE53"
+              ],
+              "print_only_count": 1
+            },
+            "statutes_at_large": {
+              "intersection": 2,
+              "mods_distinct": 7,
+              "mods_only": 5,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 1,
+              "mods_distinct": 17,
+              "mods_only": 16,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "CRPT-118hrpt976",
+          "mods_bytes": 57801,
+          "mods_document_references": {
+            "congDoc": 1,
+            "congReport": 2,
+            "congSerial": 25
+          },
+          "mods_key": "CRPT-118hrpt976",
+          "mods_retained": true,
+          "mods_sha256": "sha256:4b6768791abfc1b66e93a8115d11f206f656c18db2af10f5bc26dfa2af1576fa",
+          "mods_states": {
+            "bill_number": 48,
+            "bioguide_id": 1,
+            "committee_name": 1,
+            "public_law": 25,
+            "statutes_at_large": 7,
+            "usc_section": 17
+          },
+          "mods_url": "https://api.govinfo.gov/packages/CRPT-118hrpt976/mods",
+          "package_id": "CRPT-118hrpt976"
+        },
+        {
+          "bill_natural_keys_stated": 380,
+          "collection": "CRPT",
+          "comparison": {
+            "bill_number": {
+              "intersection": 39,
+              "mods_distinct": 380,
+              "mods_only": 341,
+              "mods_states_this_kind": true,
+              "print_distinct": 39,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "committee_name": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 7,
+              "print_only": [
+                "hsag00",
+                "hsfa00",
+                "hsha00",
+                "hsii00",
+                "hspw00",
+                "sscm00"
+              ],
+              "print_only_count": 6
+            },
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 1,
+              "print_only": [
+                "20BILLION"
+              ],
+              "print_only_count": 1
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [
+                "2025"
+              ],
+              "print_only_count": 1
+            },
+            "public_law": {
+              "intersection": 1,
+              "mods_distinct": 16,
+              "mods_only": 15,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 0,
+              "mods_distinct": 2,
+              "mods_only": 2,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "CRPT-118hrpt965",
+          "mods_bytes": 191584,
+          "mods_document_references": {
+            "congReport": 15
+          },
+          "mods_key": "CRPT-118hrpt965",
+          "mods_retained": true,
+          "mods_sha256": "sha256:fddafcb80e56c487a12beaddf2f261435c949fc507aa3879a25c1cb7ee8506c8",
+          "mods_states": {
+            "bill_number": 380,
+            "committee_name": 1,
+            "public_law": 16,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/CRPT-118hrpt965/mods",
+          "package_id": "CRPT-118hrpt965"
+        },
+        {
+          "bill_natural_keys_stated": 91,
+          "collection": "CRPT",
+          "comparison": {
+            "bill_number": {
+              "intersection": 86,
+              "mods_distinct": 90,
+              "mods_only": 4,
+              "mods_states_this_kind": true,
+              "print_distinct": 86,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "bioguide_id": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "committee_name": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [
+                "ssbk00",
+                "ssfi00"
+              ],
+              "print_only_count": 2
+            },
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 24,
+              "print_only": [
+                "100",
+                "100000",
+                "135",
+                "16BILLION",
+                "2000",
+                "20000",
+                "200000",
+                "209BILLION",
+                "250000",
+                "2BILLION",
+                "3050",
+                "30MILLION"
+              ],
+              "print_only_count": 24
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [
+                "2024"
+              ],
+              "print_only_count": 1
+            },
+            "gao_product_id": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 2,
+              "print_only": [
+                "GAO23105523",
+                "GAO23106696"
+              ],
+              "print_only_count": 2
+            },
+            "public_law": {
+              "intersection": 20,
+              "mods_distinct": 25,
+              "mods_only": 5,
+              "mods_states_this_kind": true,
+              "print_distinct": 20,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 6,
+              "mods_distinct": 7,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 6,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "CRPT-118hrpt975",
+          "mods_bytes": 66292,
+          "mods_document_references": {
+            "congReport": 15
+          },
+          "mods_key": "CRPT-118hrpt975",
+          "mods_retained": true,
+          "mods_sha256": "sha256:2bd8ba8c366136e481e26f6ef2124c9edd8558360abd446f7f8f1ca392a02146",
+          "mods_states": {
+            "bill_number": 90,
+            "bioguide_id": 1,
+            "committee_name": 1,
+            "public_law": 25,
+            "usc_section": 7
+          },
+          "mods_url": "https://api.govinfo.gov/packages/CRPT-118hrpt975/mods",
+          "package_id": "CRPT-118hrpt975"
+        },
+        {
+          "bill_natural_keys_stated": 281,
+          "collection": "CRPT",
+          "comparison": {
+            "bill_number": {
+              "intersection": 227,
+              "mods_distinct": 281,
+              "mods_only": 54,
+              "mods_states_this_kind": true,
+              "print_distinct": 227,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "bioguide_id": {
+              "intersection": 0,
+              "mods_distinct": 1,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 0,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "committee_name": {
+              "intersection": 1,
+              "mods_distinct": 1,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [
+                "hsha00",
+                "hsru00"
+              ],
+              "print_only_count": 2
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [
+                "2024",
+                "2025",
+                "2029"
+              ],
+              "print_only_count": 3
+            },
+            "public_law": {
+              "intersection": 3,
+              "mods_distinct": 33,
+              "mods_only": 30,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 1,
+              "mods_distinct": 4,
+              "mods_only": 3,
+              "mods_states_this_kind": true,
+              "print_distinct": 1,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "CRPT-118hrpt977",
+          "mods_bytes": 204146,
+          "mods_document_references": {
+            "congReport": 162
+          },
+          "mods_key": "CRPT-118hrpt977",
+          "mods_retained": true,
+          "mods_sha256": "sha256:6bb88f266dc6ef3b5f536b2cd3dd0a3fb5e0a1534f6362de4858467724187572",
+          "mods_states": {
+            "bill_number": 281,
+            "bioguide_id": 1,
+            "committee_name": 1,
+            "public_law": 33,
+            "usc_section": 4
+          },
+          "mods_url": "https://api.govinfo.gov/packages/CRPT-118hrpt977/mods",
+          "package_id": "CRPT-118hrpt977"
+        }
+      ],
+      "restated": {
+        "bill_number": {
+          "documents": 8,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 1410,
+          "mods_link_rows": 1500,
+          "mods_only_link_rows": 560,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 883,
+          "print_link_rows": 940,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "bioguide_id": {
+          "documents": 0,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 7,
+          "mods_link_rows": 7,
+          "mods_only_link_rows": 7,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 0,
+          "print_link_rows": 0,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "committee_name": {
+          "documents": 8,
+          "documents_beyond_mods": 8,
+          "mods_distinct_values": 8,
+          "mods_link_rows": 8,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 20,
+          "print_link_rows": 46,
+          "print_only_against_family_union": 12,
+          "print_only_distinct_values": 20,
+          "print_only_link_rows": 38
+        },
+        "docket_number": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 1,
+          "print_link_rows": 1,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "documents_with_mods": 8,
+        "dollar_amount": {
+          "documents": 6,
+          "documents_beyond_mods": 6,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 46,
+          "print_link_rows": 46,
+          "print_only_against_family_union": 46,
+          "print_only_distinct_values": 46,
+          "print_only_link_rows": 46
+        },
+        "federal_register_cite": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 1,
+          "print_link_rows": 1,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "fiscal_year": {
+          "documents": 8,
+          "documents_beyond_mods": 8,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 6,
+          "print_link_rows": 15,
+          "print_only_against_family_union": 6,
+          "print_only_distinct_values": 6,
+          "print_only_link_rows": 15
+        },
+        "gao_product_id": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 2,
+          "print_link_rows": 2,
+          "print_only_against_family_union": 2,
+          "print_only_distinct_values": 2,
+          "print_only_link_rows": 2
+        },
+        "mods_document_reference_rows": 374,
+        "public_law": {
+          "documents": 8,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 188,
+          "mods_link_rows": 219,
+          "mods_only_link_rows": 134,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 75,
+          "print_link_rows": 85,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "rin": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 1,
+          "print_link_rows": 1,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "statutes_at_large": {
+          "documents": 1,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 7,
+          "mods_link_rows": 7,
+          "mods_only_link_rows": 5,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 2,
+          "print_link_rows": 2,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "usc_section": {
+          "documents": 6,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 42,
+          "mods_link_rows": 46,
+          "mods_only_link_rows": 31,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 15,
+          "print_link_rows": 15,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        }
+      },
+      "title": "house_activity"
+    },
+    "senate_secretary": {
+      "documents": [
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "GPO-CDOC",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 68,
+              "print_only": [
+                "1022392",
+                "105464",
+                "136884",
+                "1429548",
+                "1486532",
+                "1490487",
+                "1500000",
+                "150392",
+                "1507",
+                "1659599589",
+                "1676985707",
+                "1681600"
+              ],
+              "print_only_count": 68
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 5,
+              "print_only": [
+                "2019",
+                "2023",
+                "2024",
+                "2025",
+                "2026"
+              ],
+              "print_only_count": 5
+            },
+            "public_law": {
+              "intersection": 4,
+              "mods_distinct": 7,
+              "mods_only": 3,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 2,
+              "mods_distinct": 2,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "GPO-CDOC-119sdoc6.pdf",
+          "mods_bytes": 17079,
+          "mods_document_references": {},
+          "mods_key": "GPO-CDOC-119sdoc6",
+          "mods_retained": true,
+          "mods_sha256": "sha256:b898b53d508d2e7c6c78201d9ab5a6dd97f96de596c79cd2720d292b85422132",
+          "mods_states": {
+            "public_law": 7,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc6/mods",
+          "package_id": "GPO-CDOC-119sdoc6"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "GPO-CDOC",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 68,
+              "print_only": [
+                "1022392",
+                "105464",
+                "136884",
+                "1429548",
+                "1486532",
+                "1490487",
+                "1500000",
+                "150392",
+                "1507",
+                "1659599589",
+                "1676985707",
+                "1681600"
+              ],
+              "print_only_count": 68
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 5,
+              "print_only": [
+                "2019",
+                "2023",
+                "2024",
+                "2025",
+                "2026"
+              ],
+              "print_only_count": 5
+            },
+            "public_law": {
+              "intersection": 4,
+              "mods_distinct": 7,
+              "mods_only": 3,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 2,
+              "mods_distinct": 2,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": "GPO-CDOC-119sdoc6-1",
+          "id": "GPO-CDOC-119sdoc6-1.pdf",
+          "mods_bytes": 12712,
+          "mods_document_references": {},
+          "mods_key": "GPO-CDOC-119sdoc6/GPO-CDOC-119sdoc6-1",
+          "mods_retained": true,
+          "mods_sha256": "sha256:dc3a86de4e867684c1dba83c9aaf461f7bd2811df96434bb7fdd3f9ccb530edd",
+          "mods_states": {
+            "public_law": 7,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc6/granules/GPO-CDOC-119sdoc6-1/mods",
+          "package_id": "GPO-CDOC-119sdoc6"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "GPO-CDOC",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 788,
+              "print_only": [
+                "100000",
+                "10005",
+                "100202",
+                "10029145",
+                "10038",
+                "10049994",
+                "10224",
+                "102250",
+                "1025000",
+                "102617",
+                "103820",
+                "104101"
+              ],
+              "print_only_count": 788
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 5,
+              "print_only": [
+                "2019",
+                "2023",
+                "2024",
+                "2025",
+                "2026"
+              ],
+              "print_only_count": 5
+            },
+            "public_law": {
+              "intersection": 4,
+              "mods_distinct": 4,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 2,
+              "mods_distinct": 2,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": "GPO-CDOC-119sdoc6-2",
+          "id": "GPO-CDOC-119sdoc6-2.pdf",
+          "mods_bytes": 11537,
+          "mods_document_references": {},
+          "mods_key": "GPO-CDOC-119sdoc6/GPO-CDOC-119sdoc6-2",
+          "mods_retained": true,
+          "mods_sha256": "sha256:5598c87226c4f77a1337256e1f49ebf5ae402a97610ce38793c7864cb90fb15a",
+          "mods_states": {
+            "public_law": 4,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc6/granules/GPO-CDOC-119sdoc6-2/mods",
+          "package_id": "GPO-CDOC-119sdoc6"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "GPO-CDOC",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 63,
+              "print_only": [
+                "1022392",
+                "105464",
+                "1122843",
+                "1235635",
+                "12405",
+                "136884",
+                "1429548",
+                "1486532",
+                "1490487",
+                "1500000",
+                "1515347",
+                "1596537"
+              ],
+              "print_only_count": 63
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [
+                "2019",
+                "2023",
+                "2024",
+                "2025"
+              ],
+              "print_only_count": 4
+            },
+            "public_law": {
+              "intersection": 4,
+              "mods_distinct": 8,
+              "mods_only": 4,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 2,
+              "mods_distinct": 2,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "GPO-CDOC-119sdoc5.pdf",
+          "mods_bytes": 18424,
+          "mods_document_references": {},
+          "mods_key": "GPO-CDOC-119sdoc5",
+          "mods_retained": true,
+          "mods_sha256": "sha256:595dd6a92851506faae485a138a6d0c7e5c54f01bc11c962b81fd7e53e748683",
+          "mods_states": {
+            "public_law": 8,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc5/mods",
+          "package_id": "GPO-CDOC-119sdoc5"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "GPO-CDOC",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 63,
+              "print_only": [
+                "1022392",
+                "105464",
+                "1122843",
+                "1235635",
+                "12405",
+                "136884",
+                "1429548",
+                "1486532",
+                "1490487",
+                "1500000",
+                "1515347",
+                "1596537"
+              ],
+              "print_only_count": 63
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [
+                "2019",
+                "2023",
+                "2024",
+                "2025"
+              ],
+              "print_only_count": 4
+            },
+            "public_law": {
+              "intersection": 4,
+              "mods_distinct": 8,
+              "mods_only": 4,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 2,
+              "mods_distinct": 2,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": "GPO-CDOC-119sdoc5-1",
+          "id": "GPO-CDOC-119sdoc5-1.pdf",
+          "mods_bytes": 13586,
+          "mods_document_references": {},
+          "mods_key": "GPO-CDOC-119sdoc5/GPO-CDOC-119sdoc5-1",
+          "mods_retained": true,
+          "mods_sha256": "sha256:9271be1cfd26d750166b7c8f87afc3a9dace9bcd289f2e07158c5f7049e42ca5",
+          "mods_states": {
+            "public_law": 8,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc5/granules/GPO-CDOC-119sdoc5-1/mods",
+          "package_id": "GPO-CDOC-119sdoc5"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "GPO-CDOC",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 832,
+              "print_only": [
+                "1000",
+                "10010",
+                "10020",
+                "10080",
+                "10115",
+                "10150",
+                "1017",
+                "101933",
+                "10220",
+                "10227",
+                "10240",
+                "103243"
+              ],
+              "print_only_count": 832
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [
+                "2019",
+                "2023",
+                "2024",
+                "2025"
+              ],
+              "print_only_count": 4
+            },
+            "public_law": {
+              "intersection": 4,
+              "mods_distinct": 5,
+              "mods_only": 1,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 2,
+              "mods_distinct": 2,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": "GPO-CDOC-119sdoc5-2",
+          "id": "GPO-CDOC-119sdoc5-2.pdf",
+          "mods_bytes": 12411,
+          "mods_document_references": {},
+          "mods_key": "GPO-CDOC-119sdoc5/GPO-CDOC-119sdoc5-2",
+          "mods_retained": true,
+          "mods_sha256": "sha256:4af219f87903b0e9913205e5d27a461dac4c74545a754ae512a3015cf852f10b",
+          "mods_states": {
+            "public_law": 5,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc5/granules/GPO-CDOC-119sdoc5-2/mods",
+          "package_id": "GPO-CDOC-119sdoc5"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "GPO-CDOC",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 61,
+              "print_only": [
+                "1013097",
+                "1021709",
+                "1022392",
+                "105464",
+                "106000",
+                "1118075",
+                "1119198",
+                "1167828",
+                "11992",
+                "136884",
+                "1486532",
+                "1500000"
+              ],
+              "print_only_count": 61
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [
+                "2019",
+                "2023",
+                "2024",
+                "2025"
+              ],
+              "print_only_count": 4
+            },
+            "public_law": {
+              "intersection": 3,
+              "mods_distinct": 6,
+              "mods_only": 3,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 2,
+              "mods_distinct": 2,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": null,
+          "id": "GPO-CDOC-119sdoc3.pdf",
+          "mods_bytes": 15797,
+          "mods_document_references": {},
+          "mods_key": "GPO-CDOC-119sdoc3",
+          "mods_retained": true,
+          "mods_sha256": "sha256:31e229e8fbba75cddeb0d90c89c7c3f6509131c49495f215f65f50b6842d92fb",
+          "mods_states": {
+            "public_law": 6,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc3/mods",
+          "package_id": "GPO-CDOC-119sdoc3"
+        },
+        {
+          "bill_natural_keys_stated": 0,
+          "collection": "GPO-CDOC",
+          "comparison": {
+            "dollar_amount": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": false,
+              "print_distinct": 61,
+              "print_only": [
+                "1013097",
+                "1021709",
+                "1022392",
+                "105464",
+                "106000",
+                "1118075",
+                "1119198",
+                "1167828",
+                "11992",
+                "136884",
+                "1486532",
+                "1500000"
+              ],
+              "print_only_count": 61
+            },
+            "fiscal_year": {
+              "intersection": 0,
+              "mods_distinct": 0,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 4,
+              "print_only": [
+                "2019",
+                "2023",
+                "2024",
+                "2025"
+              ],
+              "print_only_count": 4
+            },
+            "public_law": {
+              "intersection": 3,
+              "mods_distinct": 6,
+              "mods_only": 3,
+              "mods_states_this_kind": true,
+              "print_distinct": 3,
+              "print_only": [],
+              "print_only_count": 0
+            },
+            "usc_section": {
+              "intersection": 2,
+              "mods_distinct": 2,
+              "mods_only": 0,
+              "mods_states_this_kind": true,
+              "print_distinct": 2,
+              "print_only": [],
+              "print_only_count": 0
+            }
+          },
+          "granule_id": "GPO-CDOC-119sdoc3-1",
+          "id": "GPO-CDOC-119sdoc3-1.pdf",
+          "mods_bytes": 11898,
+          "mods_document_references": {},
+          "mods_key": "GPO-CDOC-119sdoc3/GPO-CDOC-119sdoc3-1",
+          "mods_retained": true,
+          "mods_sha256": "sha256:2bdc75916a2fda4de274b1c492830bcd82c6070810d1856d9635779d601fa16c",
+          "mods_states": {
+            "public_law": 6,
+            "usc_section": 2
+          },
+          "mods_url": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc3/granules/GPO-CDOC-119sdoc3-1/mods",
+          "package_id": "GPO-CDOC-119sdoc3"
+        }
+      ],
+      "restated": {
+        "documents_with_mods": 8,
+        "dollar_amount": {
+          "documents": 8,
+          "documents_beyond_mods": 8,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 1687,
+          "print_link_rows": 2004,
+          "print_only_against_family_union": 1687,
+          "print_only_distinct_values": 1687,
+          "print_only_link_rows": 2004
+        },
+        "fiscal_year": {
+          "documents": 8,
+          "documents_beyond_mods": 8,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 5,
+          "print_link_rows": 35,
+          "print_only_against_family_union": 5,
+          "print_only_distinct_values": 5,
+          "print_only_link_rows": 35
+        },
+        "mods_document_reference_rows": 0,
+        "public_law": {
+          "documents": 8,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 8,
+          "mods_link_rows": 51,
+          "mods_only_link_rows": 21,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 5,
+          "print_link_rows": 30,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "usc_section": {
+          "documents": 8,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 2,
+          "mods_link_rows": 16,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 2,
+          "print_link_rows": 16,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        }
+      },
+      "title": "senate_secretary"
+    }
+  },
+  "measured_at": "2026-09-20",
+  "mods_kinds": [
+    "bill_number",
+    "bioguide_id",
+    "cfr_section",
+    "committee_name",
+    "fiscal_year",
+    "public_law",
+    "rin",
+    "statutes_at_large",
+    "usc_section"
+  ],
+  "mods_route": "https://api.govinfo.gov/packages/{packageId}[/granules/{granuleId}]/mods",
+  "receipt": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-yield-mods-recheck-2026-09-20",
+  "source_receipt": "/Users/mikewolfd/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20",
+  "supersedes": "docs/research/pdf-family-rollup-yield-2026-09-20.json",
+  "uncapped": {
+    "pages_read": {
+      "budget": 1785,
+      "house_activity": 1249,
+      "senate_secretary": 15085
+    },
+    "restated": {
+      "budget": {
+        "bill_number": {
+          "documents": 2,
+          "documents_beyond_mods": 2,
+          "mods_distinct_values": 6,
+          "mods_link_rows": 6,
+          "mods_only_link_rows": 4,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 8,
+          "print_link_rows": 9,
+          "print_only_against_family_union": 6,
+          "print_only_distinct_values": 6,
+          "print_only_link_rows": 7
+        },
+        "case_docket_number": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 2,
+          "print_link_rows": 2,
+          "print_only_against_family_union": 2,
+          "print_only_distinct_values": 2,
+          "print_only_link_rows": 2
+        },
+        "cfr_section": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 18,
+          "mods_link_rows": 19,
+          "mods_only_link_rows": 14,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 18,
+          "print_link_rows": 18,
+          "print_only_against_family_union": 13,
+          "print_only_distinct_values": 13,
+          "print_only_link_rows": 13
+        },
+        "committee_name": {
+          "documents": 2,
+          "documents_beyond_mods": 2,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 20,
+          "print_link_rows": 20,
+          "print_only_against_family_union": 20,
+          "print_only_distinct_values": 20,
+          "print_only_link_rows": 20
+        },
+        "crs_report_id": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 1,
+          "print_link_rows": 1,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "documents_with_mods": 8,
+        "dollar_amount": {
+          "documents": 7,
+          "documents_beyond_mods": 7,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 2838,
+          "print_link_rows": 3129,
+          "print_only_against_family_union": 2838,
+          "print_only_distinct_values": 2838,
+          "print_only_link_rows": 3129
+        },
+        "federal_register_cite": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 9,
+          "print_link_rows": 9,
+          "print_only_against_family_union": 9,
+          "print_only_distinct_values": 9,
+          "print_only_link_rows": 9
+        },
+        "fiscal_year": {
+          "documents": 6,
+          "documents_beyond_mods": 3,
+          "mods_distinct_values": 2,
+          "mods_link_rows": 8,
+          "mods_only_link_rows": 3,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 48,
+          "print_link_rows": 77,
+          "print_only_against_family_union": 46,
+          "print_only_distinct_values": 47,
+          "print_only_link_rows": 72
+        },
+        "mods_document_reference_rows": 0,
+        "public_law": {
+          "documents": 5,
+          "documents_beyond_mods": 4,
+          "mods_distinct_values": 63,
+          "mods_link_rows": 63,
+          "mods_only_link_rows": 24,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 518,
+          "print_link_rows": 562,
+          "print_only_against_family_union": 472,
+          "print_only_distinct_values": 504,
+          "print_only_link_rows": 523
+        },
+        "rin": {
+          "documents": 0,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 1,
+          "mods_link_rows": 1,
+          "mods_only_link_rows": 1,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 0,
+          "print_link_rows": 0,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "statutes_at_large": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 91,
+          "mods_link_rows": 91,
+          "mods_only_link_rows": 11,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 81,
+          "print_link_rows": 81,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "usc_section": {
+          "documents": 4,
+          "documents_beyond_mods": 2,
+          "mods_distinct_values": 1380,
+          "mods_link_rows": 1384,
+          "mods_only_link_rows": 556,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 922,
+          "print_link_rows": 925,
+          "print_only_against_family_union": 96,
+          "print_only_distinct_values": 97,
+          "print_only_link_rows": 97
+        }
+      },
+      "house_activity": {
+        "bill_number": {
+          "documents": 8,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 1410,
+          "mods_link_rows": 1500,
+          "mods_only_link_rows": 6,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 1406,
+          "print_link_rows": 1494,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "bioguide_id": {
+          "documents": 0,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 7,
+          "mods_link_rows": 7,
+          "mods_only_link_rows": 7,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 0,
+          "print_link_rows": 0,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "cfr_section": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 1,
+          "print_link_rows": 1,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "committee_name": {
+          "documents": 8,
+          "documents_beyond_mods": 8,
+          "mods_distinct_values": 8,
+          "mods_link_rows": 8,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 27,
+          "print_link_rows": 79,
+          "print_only_against_family_union": 19,
+          "print_only_distinct_values": 27,
+          "print_only_link_rows": 71
+        },
+        "docket_number": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 38,
+          "print_link_rows": 38,
+          "print_only_against_family_union": 38,
+          "print_only_distinct_values": 38,
+          "print_only_link_rows": 38
+        },
+        "documents_with_mods": 8,
+        "dollar_amount": {
+          "documents": 7,
+          "documents_beyond_mods": 7,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 157,
+          "print_link_rows": 170,
+          "print_only_against_family_union": 157,
+          "print_only_distinct_values": 157,
+          "print_only_link_rows": 170
+        },
+        "federal_register_cite": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 1,
+          "print_link_rows": 1,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "fiscal_year": {
+          "documents": 8,
+          "documents_beyond_mods": 8,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 16,
+          "print_link_rows": 39,
+          "print_only_against_family_union": 16,
+          "print_only_distinct_values": 16,
+          "print_only_link_rows": 39
+        },
+        "gao_product_id": {
+          "documents": 3,
+          "documents_beyond_mods": 3,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 5,
+          "print_link_rows": 5,
+          "print_only_against_family_union": 5,
+          "print_only_distinct_values": 5,
+          "print_only_link_rows": 5
+        },
+        "mods_document_reference_rows": 374,
+        "public_law": {
+          "documents": 8,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 188,
+          "mods_link_rows": 219,
+          "mods_only_link_rows": 18,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 174,
+          "print_link_rows": 202,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "rin": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 87,
+          "print_link_rows": 87,
+          "print_only_against_family_union": 87,
+          "print_only_distinct_values": 87,
+          "print_only_link_rows": 87
+        },
+        "statutes_at_large": {
+          "documents": 1,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 7,
+          "mods_link_rows": 7,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 7,
+          "print_link_rows": 7,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "us_reports_cite": {
+          "documents": 2,
+          "documents_beyond_mods": 2,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 2,
+          "print_link_rows": 2,
+          "print_only_against_family_union": 2,
+          "print_only_distinct_values": 2,
+          "print_only_link_rows": 2
+        },
+        "usc_section": {
+          "documents": 7,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 42,
+          "mods_link_rows": 46,
+          "mods_only_link_rows": 9,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 37,
+          "print_link_rows": 37,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        }
+      },
+      "senate_secretary": {
+        "bill_number": {
+          "documents": 1,
+          "documents_beyond_mods": 1,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 1,
+          "print_link_rows": 1,
+          "print_only_against_family_union": 1,
+          "print_only_distinct_values": 1,
+          "print_only_link_rows": 1
+        },
+        "documents_with_mods": 8,
+        "dollar_amount": {
+          "documents": 8,
+          "documents_beyond_mods": 8,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": false,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 65261,
+          "print_link_rows": 161536,
+          "print_only_against_family_union": 65261,
+          "print_only_distinct_values": 65261,
+          "print_only_link_rows": 161536
+        },
+        "fiscal_year": {
+          "documents": 8,
+          "documents_beyond_mods": 8,
+          "mods_distinct_values": 0,
+          "mods_link_rows": 0,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": false,
+          "print_distinct_values": 5,
+          "print_link_rows": 35,
+          "print_only_against_family_union": 5,
+          "print_only_distinct_values": 5,
+          "print_only_link_rows": 35
+        },
+        "mods_document_reference_rows": 0,
+        "public_law": {
+          "documents": 8,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 8,
+          "mods_link_rows": 51,
+          "mods_only_link_rows": 9,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 7,
+          "print_link_rows": 42,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        },
+        "usc_section": {
+          "documents": 8,
+          "documents_beyond_mods": 0,
+          "mods_distinct_values": 2,
+          "mods_link_rows": 16,
+          "mods_only_link_rows": 0,
+          "mods_reader_exists": true,
+          "mods_states_this_kind": true,
+          "print_distinct_values": 2,
+          "print_link_rows": 16,
+          "print_only_against_family_union": 0,
+          "print_only_distinct_values": 0,
+          "print_only_link_rows": 0
+        }
+      }
+    }
+  }
+}

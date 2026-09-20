@@ -21,6 +21,29 @@ the two rules the owner set:
    value means join keys to the [32 hosted tables](../tables.md) and structured
    content a consumer would otherwise re-read the PDF for.
 
+## Corrections
+
+**2026-09-20 — every GovInfo-served family below was measured against the wrong
+index, and its "beyond the index" figures are superseded by
+[the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md).** This measurement
+read GovInfo's `published` listing row — seven fields, no citation among them —
+as the index. The index a GovInfo body actually has is the **package MODS**,
+which `GovInfoBodyAcquirer` fetches for every body it reads and which states
+bills, laws, U.S. Code sections, CFR parts, Statutes at Large pages, RINs,
+committees and the submitting member as named elements. Measured against it,
+the headline result of this document reverses: the House committee activity
+reports name **no** bill and **no** public law their own MODS does not already
+state — 0 of 883 on this sample, and 0 of 1,406 on a complete read of every
+page. The affected rows are `house_activity`, `budget` and `senate_secretary`
+in every table below, and recommendations 1 and 4 in
+[the build order](#recommended-build-order). The non-GovInfo families (CRS,
+GAO, the Court, CourtListener, the Clerk, agency uploads, CBO) have no MODS and
+their rows stand, with one narrowing: the recheck found that CourtListener's
+search record states the outbound opinion-to-opinion edge in `opinions[].cites`
+and that this measurement had dropped that field from the record it compared
+against. The rules, the sample, the retained bytes and the request accounting
+here are unchanged and the recheck reuses them.
+
 ## The verdict, per family
 
 | Family | Documents read | Verdict | What only the PDF supplies | What the index already supplies |
