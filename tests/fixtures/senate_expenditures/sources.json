@@ -1,0 +1,36 @@
+[
+ {
+  "fixture": "GPO-CDOC-119sdoc3-1.pages11-17.pdf",
+  "bytes": 87002,
+  "sha256": "180f1b97a60a20ba356bcfd73c81787096ad50c26567485b2b5073e4f9ed3175",
+  "source_file": "GPO-CDOC-119sdoc3-1.pdf",
+  "source_sha256": "2248097b0c5106889d8882a979a0488a49f283b29e28289d2778864c40b7b13e",
+  "source_bytes": 5657813,
+  "source_page_count": 1335,
+  "pages": [
+   11,
+   17
+  ],
+  "package_id": "GPO-CDOC-119sdoc3",
+  "url": "https://www.govinfo.gov/content/pkg/GPO-CDOC-119sdoc3/pdf/GPO-CDOC-119sdoc3-1.pdf",
+  "tables": 7,
+  "ruled_rows": 43
+ },
+ {
+  "fixture": "GPO-CDOC-119sdoc6-2.pages11-22.pdf",
+  "bytes": 138247,
+  "sha256": "32834f1078045ef2d298cfbe664db9527d0eb39e1557fe9eb656e2ba38e1f7b6",
+  "source_file": "GPO-CDOC-119sdoc6-2.pdf",
+  "source_sha256": "8c0198e57f3f4a3bba56939e3972c7c2d3ef55f4d01aa0addd2457ff98158e47",
+  "source_bytes": 5192693,
+  "source_page_count": 1264,
+  "pages": [
+   11,
+   22
+  ],
+  "package_id": "GPO-CDOC-119sdoc6",
+  "url": "https://www.govinfo.gov/content/pkg/GPO-CDOC-119sdoc6/pdf/GPO-CDOC-119sdoc6-2.pdf",
+  "tables": 12,
+  "ruled_rows": 71
+ }
+]

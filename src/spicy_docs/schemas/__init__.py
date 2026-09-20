@@ -60,6 +60,7 @@ from spicy_docs.schemas.law_tables import LAW_CODE_SECTIONS, LAWS, TABLE3_RECORD
 from spicy_docs.schemas.legislator_tables import MEMBER_TERMS, MEMBERS
 from spicy_docs.schemas.regulations import COMMENT, DOCKET, DOCUMENT, RECORD_TYPES
 from spicy_docs.schemas.roster_tables import COMMITTEE_ASSIGNMENTS, COMMITTEES
+from spicy_docs.schemas.senate_expenditure_tables import SENATE_EXPENDITURES
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError
 
 _REGISTERED: tuple[TableContract, ...] = (
@@ -101,6 +102,9 @@ _REGISTERED: tuple[TableContract, ...] = (
     # on (the rollup's build order, step 1).
     DOCUMENT_CITATIONS,
     HOUSE_ACTIVITY_REPORTS,
+    # The build order's step 4: the one PDF-only family whose value is a ruled
+    # table and not a citation.
+    SENATE_EXPENDITURES,
 )
 
 if len({contract.name for contract in _REGISTERED}) != len(_REGISTERED):
@@ -148,6 +152,7 @@ __all__ = [
     "SECTION_CLASSIFICATIONS",
     "SECTION_DIFFS",
     "SECTION_DIFF_ITEMS",
+    "SENATE_EXPENDITURES",
     "TABLE3_RECORDS",
     "TABLE_CONTRACTS",
     "TREATIES",
