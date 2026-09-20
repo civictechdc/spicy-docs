@@ -51,6 +51,7 @@ from functools import partial
 from importlib import metadata
 from json import JSONDecodeError, loads
 from typing import Any, Protocol
+from urllib.parse import urlsplit
 
 from spicy_docs.interpretation import bill_stage, money_bills, version_kind
 from spicy_docs.interpretation.bill_summaries import BillVersionText, DiffItemText, frame_for_kind
@@ -95,7 +96,9 @@ from spicy_docs.schemas.bill_version_tables import (
 )
 from spicy_docs.schemas.cost_estimate_tables import (
     CBO_COST_ESTIMATES,
+    PUBLICATION_ID_RULE,
     fold_cbo_cost_estimates,
+    publication_id,
     shape_cbo_cost_estimate,
 )
 from spicy_docs.schemas.tables import Row, TableContract, TableContractError, bill_id, joined
@@ -105,6 +108,7 @@ from spicy_docs.sources.congress.bill_versions import (
     version_slug_reprints,
 )
 from spicy_docs.sources.congress.bill_versions import format_name as format_name_of
+from spicy_docs.transport.credentials import scrub_credential
 
 #: Version codes in the sealed vocabulary's own declaration order, which is
 #: earliest printing first for a shared publisher name.  A slug outside the
@@ -437,7 +441,25 @@ class _Admitter:
         return row
 
     def refuse(self, table: str, identity: tuple[str, ...], reason: str) -> None:
-        self.refusals.append(FamilyRefusal(table=table, identity=identity, reason=reason))
+        # Pattern scrubbing also removes keys the caller never received. Do it
+        # before bounding free text so a truncated key prefix cannot survive.
+        self.refusals.append(
+            FamilyRefusal(table=table, identity=identity, reason=scrub_credential(reason, "")[:2000])
+        )
+
+
+def _cost_estimate_refusal(url: object) -> str:
+    """Describe a rejected locator without retaining its query, fragment or user info."""
+    prefix = f"{PUBLICATION_ID_RULE}: cost-estimate url is outside the measured publication-page shape"
+    if not isinstance(url, str):
+        return f"{prefix}; url type={type(url).__name__}"
+    try:
+        parts = urlsplit(url)
+        parsed_id = publication_id(parts._replace(query="", fragment="").geturl())
+        shape = "/publication/{id}" if parsed_id else "/".join("{segment}" for _ in parts.path.split("/"))
+        return f"{prefix}; host={parts.hostname or '(missing)'}; path shape={shape}"
+    except ValueError:
+        return f"{prefix}; malformed URL"
 
 
 #: Returned in place of an answer the reader refused, so the caller can tell it
@@ -594,7 +616,7 @@ def build_bill_family(
         admit.refuse(
             CBO_COST_ESTIMATES.name,
             (key, str(index)),
-            f"cost-estimate url is outside the measured publication-page shape: {url!r}",
+            _cost_estimate_refusal(url),
         )
     for entry in folded:
         admit(

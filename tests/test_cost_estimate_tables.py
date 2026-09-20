@@ -8,6 +8,8 @@ bulk zips the routes measurement retained; see
 from __future__ import annotations
 
 import json
+import logging
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -245,3 +247,34 @@ def test_the_family_pass_refuses_an_unkeyable_url_by_name() -> None:
     refusal = next(r for r in family.refusals if r.table == "cbo_cost_estimates")
     assert refusal.identity == ("118-hr-801", "0")
     assert "publication-page shape" in refusal.reason
+
+
+def test_refused_query_credential_never_reaches_a_reason_row_or_log(caplog: pytest.LogCaptureFixture) -> None:
+    sentinel = "sentinel-credential-must-not-survive"
+    parsed = replace(
+        status("BILLSTATUS-118hr801", HR801),
+        cbo_cost_estimates=(
+            CboCostEstimate(None, None, f"https://www.cbo.gov/publication/59139?api_key={sentinel}", None),
+        ),
+    )
+    family = build_bill_family(BillFamilyCapture(status=parsed, versions=()), engine=ENGINE, diff=False)
+    assert family.cbo_cost_estimates == ()
+    refusal = next(r for r in family.refusals if r.table == "cbo_cost_estimates")
+    assert refusal.reason == (
+        "cbo_publication_url: cost-estimate url is outside the measured publication-page shape; "
+        "host=www.cbo.gov; path shape=/publication/{id}"
+    )
+    assert sentinel not in refusal.reason
+    assert sentinel not in repr(family)
+    logging.getLogger(__name__).warning("Family result: %s", family)
+    assert "Family result:" in caplog.text
+    assert sentinel not in caplog.text
+
+
+def test_family_refusal_scrubs_free_text_before_truncation() -> None:
+    from spicy_docs.interpretation.bill_family import _Admitter
+
+    admit = _Admitter()
+    admit.refuse("cbo_cost_estimates", ("118-hr-801", "0"), "x" * 1980 + " api_key=" + "sentinel" * 20)
+    assert "sentinel" not in admit.refusals[0].reason
+    assert "<redacted>" in admit.refusals[0].reason
