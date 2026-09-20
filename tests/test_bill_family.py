@@ -20,6 +20,7 @@ from typing import Any
 
 import pytest
 
+from spicy_docs.extraction.model import ExtractionError
 from spicy_docs.interpretation.bill_family import (
     BillFamilyCapture,
     BillFamilyTables,
@@ -36,6 +37,7 @@ from spicy_docs.interpretation.bill_summaries import (
     DiffItemText,
     DiffSummaryResult,
 )
+from spicy_docs.interpretation.model_call import ModelCallError
 from spicy_docs.interpretation.section_classification import (
     PROMPT_VERSION as CLASSIFY_PROMPT_VERSION,
 )
@@ -47,6 +49,7 @@ from spicy_docs.schemas import BILL_SECTIONS, BILL_VERSIONS, TABLE_CONTRACTS
 from spicy_docs.sources.congress.bill_status import BillIdentity, BillTextVersion, parse_bill_status
 from spicy_docs.sources.congress.bill_tree import engine_available, parse_bill_tree
 from spicy_docs.transport.captured import CapturedBodyResponse
+from spicy_docs.transport.credentials import CredentialRefusedError
 
 FIXTURES = Path(__file__).parent / "fixtures"
 CAPTURED = FIXTURES / "govinfo_bills"
@@ -481,6 +484,88 @@ def test_a_declined_summary_is_a_refusal_rather_than_a_silently_missing_row() ->
     assert [refusal.identity for refusal in declined] == [("119-hr-6028", "introduced-in-house", "govinfo")]
 
 
+# --- an answer the model's own reader refused (2026-09-20) ---
+#
+# Found by spicy-regs adopting 0.21.3: `ModelCallError` escaped
+# `build_bill_family` and aborted the whole rollup, and catching it outside
+# left the family filing a *declined* refusal -- "its text is below the
+# minimum" -- for an answer that was refused, which is false about the
+# printing.
+
+REFUSAL = "summary answer is missing audience, topThreeProvisions"
+
+
+def refusing(error: Exception):
+    """A model seam that raises instead of answering, whatever it is handed."""
+
+    def call(*arguments: Any, **keywords: Any):
+        raise error
+
+    return call
+
+
+@needs_engine
+@pytest.mark.parametrize(
+    "seam,table,identity",
+    [
+        ("summarize", "bill_summaries", ("119-hr-6028", "introduced-in-house", "govinfo")),
+        ("classify", "section_classifications", ("119-hr-6028", "introduced-in-house", "govinfo")),
+    ],
+    ids=["summary", "classification"],
+)
+def test_an_answer_the_reader_refused_is_a_named_refusal_and_the_pass_finishes(seam, table, identity) -> None:
+    tables = family(**{seam: refusing(ModelCallError(REFUSAL, details={"summary": "model prose"}))})
+
+    # The bill is still built: twelve tables do not depend on one answer.
+    assert [row["bill_id"] for row in tables.bills] == ["119-hr-6028"]
+    assert len(tables.bill_versions) == 2
+    assert getattr(tables, table) == ()
+    refusals = [refusal for refusal in tables.refusals if refusal.table == table]
+    assert identity in [refusal.identity for refusal in refusals]
+    # The model's own reason, and *only* the message: `details` is the answer
+    # itself, which is model prose about the document.
+    assert all(REFUSAL in refusal.reason for refusal in refusals)
+    assert all("model prose" not in refusal.reason for refusal in refusals)
+
+
+@needs_engine
+def test_a_refused_diff_summary_is_a_named_refusal_and_the_pass_finishes() -> None:
+    tables = family(three_printing_capture(), summarize_diff=refusing(ModelCallError("diff summary answer is missing")))
+    assert tables.diff_summaries == ()
+    refusals = [refusal for refusal in tables.refusals if refusal.table == "diff_summaries"]
+    assert refusals and all("was refused" in refusal.reason for refusal in refusals)
+    assert tables.section_diffs, "the diff itself is unaffected by the summary being refused"
+
+
+@needs_engine
+def test_a_refused_answer_and_a_declined_one_are_different_records() -> None:
+    # The whole point: a caller reading the refusal must be able to tell "the
+    # model answered something the reader would not take" from "the generator
+    # never asked, because this printing is too short to summarize".
+    refused = family(summarize=refusing(ModelCallError(REFUSAL)))
+    declined = family(summarize=StubSummarizer(declines=frozenset({"introduced-in-house", "engrossed-in-house"})))
+    reasons = {
+        name: {refusal.reason for refusal in tables.refusals if refusal.table == "bill_summaries"}
+        for name, tables in (("refused", refused), ("declined", declined))
+    }
+    assert not reasons["refused"] & reasons["declined"]
+    assert all("below the minimum" in reason for reason in reasons["declined"])
+    assert all("below the minimum" not in reason for reason in reasons["refused"])
+
+
+@needs_engine
+@pytest.mark.parametrize(
+    "error",
+    [CredentialRefusedError("Gemini refused credentials (401)"), ExtractionError("Gemini HTTP 502")],
+    ids=["credential refusal", "transport failure"],
+)
+def test_a_credential_refusal_or_a_transport_failure_still_aborts_the_pass(error) -> None:
+    # Neither is a fact about this printing. A 401 must end the run rather than
+    # be filed once per row, and a 502 establishes nothing to record.
+    with pytest.raises(type(error)):
+        family(summarize=refusing(error))
+
+
 @needs_engine
 def test_classifications_resolve_through_the_section_row_not_the_model_answer() -> None:
     tables = modelled_family()
@@ -501,6 +586,22 @@ def test_a_model_answer_naming_an_unpublished_section_is_refused() -> None:
     refusals = [r for r in tables.refusals if r.table == "section_classifications"]
     assert len(refusals) == len(tables.bill_versions)
     assert all("did not publish a row" in refusal.reason for refusal in refusals)
+    assert all(refusal.identity[0] == "119-hr-6028" for refusal in refusals)
+
+
+@needs_engine
+def test_every_refusal_this_pass_files_names_its_bill_first() -> None:
+    # A rollup collecting refusals across bills reads identity[0] as the bill.
+    # The section_classifications refusals used to omit it, alone among the
+    # twelve tables', so a printing could not be traced back to its bill.
+    tables = family(
+        three_printing_capture(),
+        classify=refusing(ModelCallError("classification names a section outside its batch")),
+        summarize=refusing(ModelCallError(REFUSAL)),
+        summarize_diff=refusing(ModelCallError("diff summary answer is missing headline")),
+    )
+    assert tables.refusals
+    assert {refusal.identity[0] for refusal in tables.refusals} == {"119-hr-6028"}
 
 
 def test_section_reference_is_unique_per_printing_and_position() -> None:

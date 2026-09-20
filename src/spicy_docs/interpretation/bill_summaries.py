@@ -48,11 +48,14 @@ requires -- is a transcription of that schema. The prompt bytes were ported and
 the schema was not, so the request stopped stating what the reader still
 enforced, and only a live call could show it. Nothing here should be "restored"
 to the original bytes on the belief that the original asked in prose alone.
-Follow-up, not done here: ``ModelCall`` could carry an optional response schema
-derived from these same ``AnswerField`` tuples, which
-``extraction/gemini.py:154-157`` already knows how to send as
-``responseJsonSchema`` -- putting the enforcement back on the request where
-BillTrax had it, with the declaration still in one place.
+
+**The schema is back on the request** (2026-09-20): ``SUMMARY_ANSWER_SCHEMA``
+and ``DIFF_SUMMARY_ANSWER_SCHEMA`` are derived from these same ``AnswerField``
+tuples by ``model_call.answer_schema`` and travel as ``ModelCall``'s
+``response_schema``, which the Gemini adapter sends as ``responseJsonSchema``.
+The prompt bytes are untouched -- the schema rides in the generation config --
+so ``PROMPT_VERSION`` stays ``v2``. ``_read_answer`` is unchanged and still
+refuses: the schema is what was asked for, the reader is what is accepted.
 
 Breaking the seal was therefore deliberate: ``DIFF_SUMMARY_PROMPT_TEMPLATE`` is
 no longer byte-identical to ``route.ts:119-129`` (nor is the classification
@@ -74,6 +77,7 @@ from spicy_docs.interpretation.model_call import (
     AnswerField,
     ModelCall,
     ModelCallError,
+    answer_schema,
     answer_shape_block,
     require_fields,
 )
@@ -137,9 +141,10 @@ MONEY_BILL_FRAMES: Mapping[str, str] = MappingProxyType(
 SUMMARY_FIELDS: tuple[AnswerField, ...] = (
     AnswerField(
         "summary",
-        f"string, {SUMMARY_CHARS[0]}–{SUMMARY_CHARS[1]} characters",
+        "string",
         "A single paragraph (4–6 sentences) explaining what this bill does, in plain English. Avoid jargon. "
         "Lead with what is funded, by whom, for what period. End with the current legislative status.",
+        bounds=SUMMARY_CHARS,
     ),
     AnswerField(
         "audience",
@@ -148,8 +153,9 @@ SUMMARY_FIELDS: tuple[AnswerField, ...] = (
     ),
     AnswerField(
         "topThreeProvisions",
-        f"array of at most {MAX_PROVISIONS} strings",
+        "array of strings",
         "Up to three notable provisions in plain language, one per entry.",
+        bounds=(None, MAX_PROVISIONS),
         # Kept from the v1 reader's own `elif "top_provisions" in data` branch:
         # tolerance for a model that snake-cases a camelCase key, not a spelling
         # any live answer has used. Covered by a test, which is the only thing
@@ -172,6 +178,11 @@ Answer with one JSON object carrying exactly these keys:
 
 Bill text (may be truncated):
 {body}"""
+
+#: The same declaration as a constraint on the request, which is where
+#: ``bill-summaries.ts:41-45`` put it. The prompt bytes do not change: this
+#: travels in the request's generation config, not in the prompt.
+SUMMARY_ANSWER_SCHEMA = answer_schema(SUMMARY_FIELDS)
 
 #: v2 (2026-09-19): the prompt states the type of each of its five keys.
 DIFF_SUMMARY_PROMPT_VERSION = "v2"
@@ -220,6 +231,11 @@ Answer with one JSON object carrying exactly these keys:
 
 Diff:
 {diff_text}"""
+
+#: ``summarize/route.ts:13-19``'s schema, back on the request. ``keyChanges``
+#: carries no ``maxItems``: the prompt asks for up to five bullets and the
+#: reader enforces no count, and a schema may only state what the reader does.
+DIFF_SUMMARY_ANSWER_SCHEMA = answer_schema(DIFF_SUMMARY_FIELDS)
 
 
 @dataclass(frozen=True, slots=True)
@@ -365,7 +381,7 @@ def summarize_bill(
     digest = content_hash(version.text)
     prompt = build_prompt(version)
     requested_at = now().isoformat()
-    response = call(model=model, prompt=prompt)
+    response = call(model=model, prompt=prompt, response_schema=SUMMARY_ANSWER_SCHEMA)
     completed_at = now().isoformat()
     summary, audience, provisions = _read_answer(response.data)
     return BillSummaryResult(
@@ -467,7 +483,7 @@ def summarize_diff(
     digest = content_hash(diff_body)
     prompt = build_diff_prompt(diff_body)
     requested_at = now().isoformat()
-    response = call(model=model, prompt=prompt)
+    response = call(model=model, prompt=prompt, response_schema=DIFF_SUMMARY_ANSWER_SCHEMA)
     completed_at = now().isoformat()
     headline, key_changes, sections_added, sections_removed, dollar_changes = _read_diff_answer(response.data)
     return DiffSummaryResult(
@@ -493,6 +509,7 @@ __all__ = [
     "DEFAULT_FRAME",
     "DIFF_EXCERPT_CHARS",
     "DIFF_ITEM_CAP",
+    "DIFF_SUMMARY_ANSWER_SCHEMA",
     "DIFF_SUMMARY_FIELDS",
     "DIFF_SUMMARY_PROMPT_TEMPLATE",
     "DIFF_SUMMARY_PROMPT_VERSION",
@@ -500,6 +517,7 @@ __all__ = [
     "MIN_TEXT_CHARS",
     "MONEY_BILL_FRAMES",
     "PROMPT_VERSION",
+    "SUMMARY_ANSWER_SCHEMA",
     "SUMMARY_CHARS",
     "SUMMARY_FIELDS",
     "SUMMARY_PROMPT_TEMPLATE",
