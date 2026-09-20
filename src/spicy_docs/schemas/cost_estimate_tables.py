@@ -223,29 +223,28 @@ def fold_cbo_cost_estimates(
     and ``(bill_id, publication_id)`` is one estimate.  ``O(n)`` in the bill's
     own item count, which is at most a handful.
     """
-    folded: dict[str, FoldedEstimate] = {}
-    order: list[str] = []
+    groups: dict[str, list[tuple[int, object]]] = {}
     refused: list[tuple[int, object]] = []
     for index, estimate in enumerate(estimates):
         key = publication_id(getattr(estimate, "url", None))
         if key is None:
             refused.append((index, getattr(estimate, "url", None)))
-            continue
-        first = folded.get(key)
-        if first is None:
-            folded[key] = FoldedEstimate(key, index, estimate, 1, ())
-            order.append(key)
-            continue
-        differences = {
-            field: getattr(estimate, field, None)
-            for field in _FOLDED_FIELDS
-            if getattr(estimate, field, None) != getattr(first.estimate, field, None)
-        }
-        restatements = first.restatements
-        if differences:
-            restatements = (*restatements, {"estimate_index": index, **differences})
-        folded[key] = FoldedEstimate(key, first.estimate_index, first.estimate, first.stated_count + 1, restatements)
-    return tuple(folded[key] for key in order), tuple(refused)
+        else:
+            groups.setdefault(key, []).append((index, estimate))
+    folded: list[FoldedEstimate] = []
+    for key, items in groups.items():
+        first_index, first = items[0]
+        restatements: list[dict[str, object]] = []
+        for index, estimate in items[1:]:
+            differences = {
+                field: getattr(estimate, field, None)
+                for field in _FOLDED_FIELDS
+                if getattr(estimate, field, None) != getattr(first, field, None)
+            }
+            if differences:
+                restatements.append({"estimate_index": index, **differences})
+        folded.append(FoldedEstimate(key, first_index, first, len(items), tuple(restatements)))
+    return tuple(folded), tuple(refused)
 
 
 def shape_cbo_cost_estimate(
