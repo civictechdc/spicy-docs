@@ -67,6 +67,10 @@ CONTENT = "https://www.govinfo.gov"
 MAX_PACKAGE_ID = 128
 _RAW_OBJECT = "raw object"
 _MODS_URL = f"{{{MODS_NAMESPACE}}}url"
+# GPO writes ``<congCommittee>`` inside the GPO extension but its ``<name>``
+# children in the MODS namespace, so the child name is expanded and the
+# extension's own children are not.
+_MODS_NAME = f"{{{MODS_NAMESPACE}}}name"
 _CONGRESS = r"[1-9][0-9]*"
 _NUMBER = r"[1-9][0-9]*"
 # A hearing jacket is an opaque printing number, so leading zeros are kept.
@@ -238,6 +242,16 @@ class PackageSummary:
     #: Every ``download`` link as the publisher spelled it, ``(name, url)``,
     #: repeated names included. Evidence, not a statement of what is fetchable.
     download_links: tuple[tuple[str, str], ...]
+    #: The session of Congress the summary states, as the publisher spells it.
+    #: Kept as a string: it is an identifier in the publisher's own grammar,
+    #: not an arithmetic quantity.
+    session: str | None = None
+    #: How many pages the publisher says the document has, verbatim. This is
+    #: the document's own extent, not how far any reader got, so a caller that
+    #: reads a capped window reports both and never re-derives this from the
+    #: bytes (measured 2026-09-20: CRPT-118hrpt968 states 56 and PyMuPDF counts
+    #: 56; CRPT-118hrpt965 states 282 and a 60-page read saw 60).
+    pages: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,6 +336,40 @@ def _mods_bills(root: ModsRecord) -> tuple[ModsBill, ...]:
 
 
 @dataclass(frozen=True, slots=True)
+class ModsCommittee:
+    """One ``<congCommittee>`` a package MODS names, with its own authority id.
+
+    ``authority_id`` is the ``systemCode`` the Congress.gov committee routes
+    and this repository's ``committees`` table already key on (``hsfa00``), so
+    a report's authoring committee is a join and not a name match.  It is the
+    publisher's statement about the document, which is why a contract reads it
+    here rather than resolving the committee name a print happens to set.
+    """
+
+    authority_id: str
+    chamber: str | None
+    congress: int | None
+    type: str | None
+    #: The ``type="authority-standard"`` name, the roster's own spelling.
+    name: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ModsLaw:
+    """One ``<law>`` a package MODS names, in the publisher's own document order.
+
+    ``is_private`` is the publisher's own ``isPrivate`` flag folded onto the
+    ``public``/``private`` vocabulary ``laws.law_type`` seals; a ``<law>`` that
+    states neither a numeric congress nor a numeric number is skipped rather
+    than guessed at, the same boundary :func:`_mods_bills` draws.
+    """
+
+    congress: int
+    number: str
+    law_type: str
+
+
+@dataclass(frozen=True, slots=True)
 class PackageModsIdentity:
     """The MODS accessIds and the renditions the publisher says it offers."""
 
@@ -339,6 +387,12 @@ class PackageModsIdentity:
     #: Every ``<bill>`` the MODS names, in document order. Empty for a
     #: package whose MODS states none.
     bills: tuple[ModsBill, ...]
+    #: Every ``<congCommittee>`` the root extension names, in document order.
+    committees: tuple[ModsCommittee, ...] = ()
+    #: Every ``<law>`` the root extension names, in document order.
+    laws: tuple[ModsLaw, ...] = ()
+    #: The session of Congress the root extension states.
+    session: str | None = None
 
     @property
     def primary_bill(self) -> ModsBill | None:
@@ -349,6 +403,52 @@ class PackageModsIdentity:
         ``PRIMARY``).
         """
         return next((bill for bill in self.bills if bill.context == "PRIMARY"), None)
+
+
+def _mods_committees(root: ModsRecord) -> tuple[ModsCommittee, ...]:
+    """Every root-level ``<congCommittee>``, read the way ``_mods_bills`` reads bills.
+
+    Root-level only, so a constituent granule's own committee is not read here.
+    A ``<congCommittee>`` with no ``authorityId`` is skipped: the id is the
+    whole point of reading this element, and a committee with only a printed
+    name is what the ``committee_name`` citation rule is for.
+    """
+    committees: list[ModsCommittee] = []
+    for element in root.fields("extension", "congCommittee"):
+        authority = element.attribute("authorityId")
+        if not authority:
+            continue
+        congress = element.attribute("congress")
+        names = {name.attribute("type"): name.text.strip() for name in element.findall(_MODS_NAME)}
+        committees.append(
+            ModsCommittee(
+                authority_id=authority,
+                chamber=element.attribute("chamber"),
+                congress=int(congress) if congress and congress.isdecimal() else None,
+                type=element.attribute("type"),
+                name=names.get("authority-standard") or next(iter(names.values()), None),
+            )
+        )
+    return tuple(committees)
+
+
+def _mods_laws(root: ModsRecord) -> tuple[ModsLaw, ...]:
+    """Every root-level ``<law>``, folded onto the sealed ``public``/``private`` vocabulary.
+
+    The publisher states ``isPrivate="false"`` on every ``<law>`` measured
+    2026-09-20 (22 across two CRPT packages); anything but the literal
+    ``"true"`` reads as public, because that is the flag's own spelling and a
+    missing flag on a congressional report is the ordinary public case.
+    """
+    laws: list[ModsLaw] = []
+    for element in root.fields("extension", "law"):
+        congress = element.attribute("congress")
+        number = element.attribute("number")
+        if not (congress and congress.isdecimal() and number and number.isdecimal()):
+            continue
+        private = (element.attribute("isPrivate") or "").strip().lower() == "true"
+        laws.append(ModsLaw(congress=int(congress), number=number, law_type="private" if private else "public"))
+    return tuple(laws)
 
 
 @dataclass(frozen=True, slots=True)
@@ -567,6 +667,8 @@ def validate_package_summary(
         last_modified=_text(document.get("lastModified")),
         title=_text(document.get("title")),
         download_links=_download_links(document.get("download"), label="summary"),
+        session=_text(document.get("session")),
+        pages=_text(document.get("pages")),
     )
 
 
@@ -705,6 +807,9 @@ def validate_package_mods(
         moved_renditions=moved,
         other_renditions=other,
         bills=_mods_bills(root),
+        committees=_mods_committees(root),
+        laws=_mods_laws(root),
+        session=next((element.text.strip() for element in root.fields("extension", "session")), None),
     )
 
 
@@ -919,6 +1024,8 @@ __all__ = [
     "GranuleModsIdentity",
     "GranuleSummary",
     "ModsBill",
+    "ModsCommittee",
+    "ModsLaw",
     "PackageBodyIdentity",
     "PackageIdentity",
     "PackageModsIdentity",
