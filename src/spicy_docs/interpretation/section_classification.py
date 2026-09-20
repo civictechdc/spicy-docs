@@ -27,6 +27,10 @@ sibling summary prompt named none of its keys at all and refused every answer
 of the first live run (2026-09-19, receipt ``c1-provenance.json``), which is
 the measurement behind both ``v2`` prompts.
 
+``v3`` (2026-09-20) is the same lesson one layer down, and also measured: a
+key set can be right while the *value* a key asks for is described ambiguously.
+See the ``sectionId`` field below.
+
 **The original did not rely on its prompt for the key set, and neither should
 a reader of this file.** ``classifications.ts:21-29`` declares a zod
 ``ClassifySchema`` -- ``z.object({ classifications: z.array(z.object({
@@ -65,9 +69,13 @@ from spicy_docs.interpretation.model_call import (
     require_fields,
 )
 
-#: v2 (2026-09-19): the prompt states each row's key, type and range rather
-#: than listing the names in a sentence. See ``docs/decisions.md``.
-PROMPT_VERSION = "v2"
+#: v3 (2026-09-20): the ``sectionId`` field says which part of the bracketed
+#: line it wants. Under ``v2`` it asked for "the bracketed id, copied exactly
+#: as given below" and the model copied the brackets too -- measured live,
+#: twice, zero rows stored. v2 (2026-09-19): the prompt states each row's key,
+#: type and range rather than listing the names in a sentence. See
+#: ``docs/decisions.md``.
+PROMPT_VERSION = "v3"
 BATCH_SIZE = 30
 BODY_CHARS = 500
 
@@ -97,10 +105,17 @@ LABEL_NAMES: tuple[str, ...] = tuple(label.name for label in CLASSIFICATION_LABE
 #: live answer has used it; it is covered by a test, which is the only thing
 #: that keeps an unused tolerance honest.
 CLASSIFICATION_FIELDS: tuple[AnswerField, ...] = (
+    # v3: `section_block` renders each section as `[<id>] <heading>`, which is
+    # BillTrax's own line and stays byte-faithful. What moved is this phrase.
+    # "the bracketed id, copied exactly as given below" was this repository's
+    # 2026-09-19 wording, and a model that copies exactly what it is shown
+    # returns `[introduced-in-house|govinfo|0]` -- measured live on 2026-09-19
+    # and again on 2026-09-20, both refused by the batch guard, zero rows
+    # either time. The phrase now names the part of the line it wants.
     AnswerField(
         "sectionId",
         "string",
-        "the section's bracketed id, copied exactly as given below",
+        "the section's id: the text inside the square brackets below, without the brackets",
         aliases=("section_id",),
     ),
     # The vocabulary reaches the prompt through the label block above and the
@@ -189,10 +204,12 @@ CLASSIFICATIONS_WRAPPER_KEY = "classifications"
 #:
 #: The row's ``sectionId`` is **not** narrowed to the batch's own ids, although
 #: ``_read_row`` refuses one outside them. BillTrax enforced only
-#: ``z.string()`` there, and the 2026-09-19 run's one open finding is a model
-#: that named an id it was never sent: constraining the request to the batch
-#: would hide that behaviour rather than measure it. See
-#: ``docs/decisions.md``; it is an open option, not an oversight.
+#: ``z.string()`` there. Leaving it open is what let the 2026-09-20 run *see*
+#: what the ``v2`` phrasing provoked -- ids returned with the prompt's brackets
+#: still around them -- rather than force a match and store rows from a prompt
+#: that was asking for the wrong thing. It stays open for the same reason
+#: going forward: the batch guard in ``_read_row`` is the contract, and an
+#: ``enum`` on the request would make a badly worded prompt look correct.
 CLASSIFICATION_ANSWER_SCHEMA = {"type": "array", "items": answer_schema(CLASSIFICATION_FIELDS)}
 
 

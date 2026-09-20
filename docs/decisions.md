@@ -848,10 +848,29 @@ reader enforces something else — and every stub ever written answered with wha
 the reader wanted, so nothing offline could see it. A keyed production run
 publishes **zero** `section_classifications` rows.
 
-It is **pinned and not fixed here**: the fix moves sealed prompt bytes and so
-`PROMPT_VERSION`, which this change held at `v2` on purpose so that the schema
-could be measured on its own. The live answer is a committed fixture and a test
-asserts both that the schema accepts it and that the reader refuses it.
+**Fixed as `v3`, and proved, the same day.** The `sectionId` field now asks for
+"the section's id: the text inside the square brackets below, without the
+brackets", `section_classification.PROMPT_VERSION` is `v3` and its digest is
+re-pinned. `section_block` is **not** touched: `[<id>] <heading>` is BillTrax's
+own rendering, and the phrase that misled the model was this repository's own
+2026-09-19 addition, so the wording is what moves. `_read_row` is not touched
+either. Two identical keyed calls over the same fixture batch
+(`c1-classification-v3-2026-09-20/`, prompt digest `411e9f67…` recorded beside
+the `v2` `6add710c…`, 534 in / 200 out, USD 0.00066) each answered in the
+batch's own ids and each stored three `section_classifications` rows under
+`prompt_version` `v3`, with no refusal and no substituted id — two because one
+success does not establish a route. `classify_sections` is now
+module-measured, and all three model-backed modules produce live rows.
+
+The `v2` answer stays in the repository exactly as it came back, as a committed
+fixture with a test asserting both that the schema accepts it and that the
+reader refuses it: the counter-example is what keeps the reworded phrase from
+quietly regressing, and it is the standing demonstration that a schema the
+provider honours is not the contract.
+
+The two summary prompts stay at `v2`. A `PROMPT_VERSION` is per prompt so a
+stored row remains attributable to the bytes that produced it; only the
+classification prompt's bytes moved.
 
 `sectionId`'s schema is deliberately `{"type": "string"}` and **not** narrowed
 to the batch's own ids, although `_read_row` refuses one outside them.

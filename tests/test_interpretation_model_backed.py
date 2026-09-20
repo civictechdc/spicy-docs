@@ -230,8 +230,13 @@ def test_more_than_three_provisions_is_refused() -> None:
 
 
 def test_both_model_backed_modules_share_one_prompt_version_constant_shape() -> None:
-    # v2: both prompts name the keys and types their readers require (2026-09-19).
-    assert bill_summaries.PROMPT_VERSION == section_classification.PROMPT_VERSION == "v2"
+    # v2 (2026-09-19): both prompts name the keys and types their readers
+    # require. The two constants have moved apart since: the classification
+    # prompt is at v3 (2026-09-20) because only its `sectionId` wording was
+    # wrong, and a version is per prompt so that a stored row stays
+    # attributable to the bytes that produced it.
+    assert bill_summaries.PROMPT_VERSION == "v2"
+    assert section_classification.PROMPT_VERSION == "v3"
 
 
 # --- diff summaries (ported from BillTrax summarize/route.ts) ---
@@ -373,9 +378,14 @@ def test_the_summary_prompt_is_the_pinned_bytes() -> None:
 
 def test_the_classification_prompt_is_the_pinned_bytes() -> None:
     # v1 was 7fdb2f0aca587e55f62cece1fbdc7455fa27f583665f5d38f9f64950bf4c3bc7.
-    assert section_classification.PROMPT_VERSION == "v2"
+    # v2 was 3c8af9496addd0b8598212f2f2b899950284c5aa850a47f04c92cd8f4cd5909f;
+    # it asked for "the section's bracketed id, copied exactly as given below"
+    # and two live calls copied the brackets too, storing zero rows. v3 names
+    # the part of the bracketed line it wants. `section_block` is untouched:
+    # `[<id>] <heading>` is BillTrax's own rendering.
+    assert section_classification.PROMPT_VERSION == "v3"
     assert digest(section_classification.build_prompt(PINNED_SECTIONS)) == (
-        "3c8af9496addd0b8598212f2f2b899950284c5aa850a47f04c92cd8f4cd5909f"
+        "63005e503ed202cd94a4595227733c2f446b451e8f4c5e60f11ef47ece7c3631"
     )
 
 
@@ -738,15 +748,20 @@ def test_the_schema_accepts_the_classification_answer_that_the_reader_refused() 
 
 
 def test_the_live_classification_answer_copied_the_prompt_s_own_brackets() -> None:
-    # Measured 2026-09-20, `gemini-3.8-flash`, 263 in / 80 out, one keyed call.
-    # `section_block` writes `[<id>] <heading>` and the `sectionId` field asks
-    # for "the section's bracketed id, copied exactly as given below", so the
-    # model returned `[introduced-in-house|govinfo|0]` -- the id as shown,
-    # brackets and all -- while `_read_row` requires the bare id. This is the
-    # same defect family as the `v1` key spellings: the prompt describes the
-    # value it wants ambiguously and the reader enforces something else. It is
-    # pinned here rather than fixed, because fixing it moves the sealed prompt
-    # bytes and so `PROMPT_VERSION`; see `docs/decisions.md`.
+    # Measured 2026-09-20 under `v2`, `gemini-3.8-flash`, 263 in / 80 out, one
+    # keyed call. `section_block` writes `[<id>] <heading>` and the `v2`
+    # `sectionId` field asked for "the section's bracketed id, copied exactly
+    # as given below", so the model returned `[introduced-in-house|govinfo|0]`
+    # -- the id as shown, brackets and all -- while `_read_row` requires the
+    # bare id. Same defect family as the `v1` key spellings: the prompt
+    # describes the value it wants ambiguously and the reader enforces
+    # something else.
+    #
+    # The wording moved to `v3` the same day and `section_block` did not: the
+    # bracketed line is BillTrax's own. This answer is kept exactly as it came
+    # back, as the **counter-example**. It is what the old phrase provoked, and
+    # the reader refuses it under every prompt version, which is why the fix
+    # was the prompt and never a widened reader.
     returned = [row["sectionId"] for row in LIVE_ANSWERS["classification"]]
     assert returned == [f"[{section_id}]" for section_id in LIVE_SECTION_IDS]
     for section_id in LIVE_SECTION_IDS:
@@ -767,7 +782,8 @@ def test_the_schema_travels_beside_the_prompt_and_not_inside_it() -> None:
     # response schema changed no prompt byte and so no PROMPT_VERSION. This
     # states the reason they still hold: nothing about the schema is rendered
     # into a prompt.
-    assert bill_summaries.PROMPT_VERSION == DIFF_SUMMARY_PROMPT_VERSION == section_classification.PROMPT_VERSION == "v2"
+    assert bill_summaries.PROMPT_VERSION == DIFF_SUMMARY_PROMPT_VERSION == "v2"
+    assert section_classification.PROMPT_VERSION == "v3"
     for _, prompt, _fields in PROMPTS:
         for token in ("responseJsonSchema", "additionalProperties", "minLength", "maxItems", "required"):
             assert token not in prompt
