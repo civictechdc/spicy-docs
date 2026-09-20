@@ -1033,6 +1033,49 @@ def _roster_cases() -> list[ShapedCase]:
     return cases
 
 
+# ---------------------------------------------------------------------------
+# A2 reopened: the hearing-to-bill link table, over both of its sources.
+# ---------------------------------------------------------------------------
+
+
+def _hearing_bill_link_cases() -> list[ShapedCase]:
+    """Every column path the link table has, from the retained records themselves.
+
+    Two sources over one hearing, plus the one-to-many hearing on its own, so
+    the case set carries a `held_on` row and a `noticed` row, a filled and a
+    NULL `event_id`, and all three `evidence_rule` values.
+    `tests/test_hearing_bill_links.py` owns the fixture loading and the rules;
+    this reuses it so the generic loop and the rule assertions read one set of
+    bytes.
+    """
+    from spicy_docs.interpretation.hearing_bill_links import agenda_links, cover_links
+    from spicy_docs.schemas.hearing_bill_link_tables import shape_hearing_bill_link
+    from spicy_docs.sources.congress.house_committee_repository import parse_house_committee_meeting
+    from tests.test_hearing_bill_links import BOTH, EVENT, FIXTURES, MANY, mods_for
+
+    meeting = parse_house_committee_meeting((FIXTURES / "meeting-115955.xml").read_bytes())
+    links = [
+        *cover_links(mods_for(MANY)),
+        *cover_links(mods_for(BOTH), event_id=EVENT),
+        *agenda_links(mods_for(BOTH), meeting),
+    ]
+    # One case per (source, evidence rule), not one per bill: the generic loop
+    # asserts a shape, and `test_every_hearing_bill_link_row_keys_uniquely`
+    # below covers identity over the whole set.
+    chosen: dict[str, object] = {}
+    for link in links:
+        chosen.setdefault(f"{link.link_source}:{link.evidence_rule}:{link.event_id is None}", link)
+    return [
+        _case(
+            "hearing_bill_links",
+            shape_hearing_bill_link(link),
+            # Rebuilt from the finding, never read back out of the row.
+            (link.package_id, link.bill_id, link.link_source),
+        )
+        for link in chosen.values()
+    ]
+
+
 def all_cases() -> list[ShapedCase]:
     cases = (
         _billstatus_only_cases()
@@ -1048,6 +1091,7 @@ def all_cases() -> list[ShapedCase]:
         + _budget_volume_cases()
         # --- The build order's step 4: the Senate expenditure tables. ---
         + _senate_expenditure_cases()
+        + _hearing_bill_link_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -1151,6 +1195,28 @@ def test_every_citation_row_of_both_reports_keys_uniquely() -> None:
         assert len(set(keys)) == len(keys) > 250
 
 
+def test_every_hearing_bill_link_row_keys_uniquely_and_the_sources_do_not_collide() -> None:
+    """The bounded selection above keeps one row per rule; identity holds over all of them.
+
+    Seven of the eight bills here are stated by both sources, which is the
+    agreement this table exists to keep: with the source in the identity they
+    are fourteen rows, and without it they would be seven, with one source's
+    evidence overwriting the other's.
+    """
+    from spicy_docs.interpretation.hearing_bill_links import agenda_links, cover_links
+    from spicy_docs.schemas.hearing_bill_link_tables import shape_hearing_bill_link
+    from spicy_docs.sources.congress.house_committee_repository import parse_house_committee_meeting
+    from tests.test_hearing_bill_links import BOTH, EVENT, FIXTURES, mods_for
+
+    contract = TABLE_CONTRACTS["hearing_bill_links"]
+    mods = mods_for(BOTH)
+    meeting = parse_house_committee_meeting((FIXTURES / "meeting-115955.xml").read_bytes())
+    links = (*cover_links(mods, event_id=EVENT), *agenda_links(mods, meeting))
+    keys = [contract.key(contract.checked(shape_hearing_bill_link(link))) for link in links]
+    assert len(set(keys)) == len(keys) == 16
+    assert len({(package, bill) for package, bill, _ in keys}) == 9
+
+
 # ---------------------------------------------------------------------------
 # Loop 4: every column has a description.
 # ---------------------------------------------------------------------------
@@ -1237,6 +1303,12 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     # The build order's step 4: the ruled-table contract over the Secretary of
     # the Senate's expenditure volumes.
     "senate_expenditures": ("schemas/senate_expenditure_tables.py",),
+    # A2 reopened: one row per (hearing, bill, source), from two readers.
+    "hearing_bill_links": (
+        "schemas/hearing_bill_link_tables.py",
+        "interpretation/hearing_bill_links.py",
+        "sources/congress/house_committee_repository.py",
+    ),
 }
 
 #: A value a description names in backticks.  Prose that says a column carries

@@ -1,0 +1,407 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:exslt="http://exslt.org/common" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1d576aa2d">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>Senate</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>CHRG</collectionCode>
+         <category>Congressional Committee Materials</category>
+         <waisDatabaseName>118_senate_hearings</waisDatabaseName>
+         <branch>legislative</branch>
+         <dateIngested>2025-07-22</dateIngested>
+    </extension>
+    <titleInfo>
+         <title>RISKY RESEARCH: OVERSIGHT OF U.S. TAXPAYER FUNDED HIGH RISK VIRUS RESEARCH</title>
+    </titleInfo>
+    <titleInfo type="alternative"></titleInfo>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/CHRG-118shrg56403</url>
+         <url displayLabel="HTML rendition" access="raw object">https://www.govinfo.gov/content/pkg/CHRG-118shrg56403/html/CHRG-118shrg56403.htm</url>
+         <url displayLabel="PDF rendition" access="raw object">https://www.govinfo.gov/content/pkg/CHRG-118shrg56403/pdf/CHRG-118shrg56403.pdf</url>
+    </location>
+    <originInfo>
+         <publisher>U.S. Government Publishing Office</publisher>
+         <dateIssued encoding="w3cdtf">2024-07-11</dateIssued>
+         <issuance>monographic</issuance>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>948 digital object pages</extent>
+    </physicalDescription>
+    <classification authority="sudocs">Y 4.G 74/9:</classification>
+    <identifier type="uri">https://www.govinfo.gov/app/details/CHRG-118shrg56403</identifier>
+    <identifier type="local">P0b002ee1d576aa2d</identifier>
+    <identifier type="former package identifier">f:56403.txt</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2025-07-22</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2025-07-22</recordChangeDate>
+         <recordIdentifier source="DGPO">CHRG-118shrg56403</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <docClass>SHRG</docClass>
+         <accessId>CHRG-118shrg56403</accessId>
+         <type>G</type>
+         <chamber>SENATE</chamber>
+         <congress years="2023-2024">118</congress>
+         <session>2</session>
+         <number>376</number>
+         <heldDate>2024-07-11</heldDate>
+         <preferredCitation>S. Hrg. 118-376</preferredCitation>
+    </extension>
+    <extension>
+         <searchTitle>RISKY RESEARCH: OVERSIGHT OF U.S. TAXPAYER FUNDED HIGH RISK VIRUS RESEARCH</searchTitle>
+         <granuleClass>OTHERPART</granuleClass>
+         <accessId>CHRG-118shrg56403</accessId>
+         <witness>Gerald W. Parker, DVM, Ph.D., Associate Dean for Global One Health, College of Veterinary Medicine Director, Biosecurity and Pandemic Preparedness Policy Program Scowcroft Institute of International Affairs, Texas A&amp;M University</witness>
+         <witness>Carrie D. Wolinetz, Ph.D., Senior Principal and Chair Health &amp; Bioscience Innovation Practice, Lewis-Burke Associates, LLC</witness>
+         <witness>Robert R. Redfield, M.D., Former Director (2018-2021) Centers for Disease Control and Prevention, U.S. Department of Health, and Human Services</witness>
+         <witness>Kevin M. Esvelt, Ph.D., Associate Professor MIT Media Lab, Massachusetts Institute of Technology</witness>
+         <isAppropriation>false</isAppropriation>
+         <jacketId>56-403</jacketId>
+         <congCommittee authorityId="ssga00" chamber="S" congress="118" type="S">
+                                    
+              <name type="authority-standard">Committee on Homeland Security and Governmental Affairs</name>
+                                    
+              <name type="authority-short">Homeland Security and Governmental Affairs</name>
+                                
+        </congCommittee>
+         <eventId>335993</eventId>
+         <congMember bioGuideId="B001277" chamber="S" congress="118" party="D" role="COMMMEMBER" state="CT">
+                                    
+              <name type="parsed">RICHARD BLUMENTHAL of Connecticut</name>
+                                    
+              <name type="authority-fnf">Richard Blumenthal</name>
+                                    
+              <name type="authority-lnf">Blumenthal, Richard</name>
+                                
+        </congMember>
+         <congMember bioGuideId="B001320" chamber="S" congress="118" party="D" role="COMMMEMBER" state="CA">
+                                    
+              <name type="parsed">LAPHONZA BUTLER of California</name>
+                                    
+              <name type="authority-fnf">Laphonza R. Butler</name>
+                                    
+              <name type="authority-lnf">Butler, Laphonza R.</name>
+                                    
+              <name type="authority-other">Laphonza Butler</name>
+                                
+        </congMember>
+         <congMember bioGuideId="C000174" chamber="S" congress="118" party="D" role="COMMMEMBER" state="DE">
+                                    
+              <name type="parsed">THOMAS R. CARPER of Delaware</name>
+                                    
+              <name type="authority-fnf">Thomas R. Carper</name>
+                                    
+              <name type="authority-lnf">Carper, Thomas R.</name>
+                                    
+              <name type="authority-other">Thomas Carper</name>
+                                
+        </congMember>
+         <congMember bioGuideId="H001076" chamber="S" congress="118" party="D" role="COMMMEMBER" state="NH">
+                                    
+              <name type="parsed">MAGGIE HASSAN of New Hampshire</name>
+                                    
+              <name type="authority-fnf">Margaret Wood Hassan</name>
+                                    
+              <name type="authority-lnf">Hassan, Margaret Wood</name>
+                                    
+              <name type="authority-other">Maggie Hassan</name>
+                                
+        </congMember>
+         <congMember bioGuideId="H001089" chamber="S" congress="118" party="R" role="COMMMEMBER" state="MO">
+                                    
+              <name type="parsed">JOSH HAWLEY of Missouri</name>
+                                    
+              <name type="authority-fnf">Josh Hawley</name>
+                                    
+              <name type="authority-lnf">Hawley, Josh</name>
+                                
+        </congMember>
+         <congMember bioGuideId="J000293" chamber="S" congress="118" party="R" role="COMMMEMBER" state="WI">
+                                    
+              <name type="parsed">RON JOHNSON of Wisconsin</name>
+                                    
+              <name type="authority-fnf">Ron Johnson</name>
+                                    
+              <name type="authority-lnf">Johnson, Ron</name>
+                                
+        </congMember>
+         <congMember bioGuideId="L000575" chamber="S" congress="118" party="R" role="COMMMEMBER" state="OK">
+                                    
+              <name type="parsed">JAMES LANKFORD of Oklahoma</name>
+                                    
+              <name type="authority-fnf">James Lankford</name>
+                                    
+              <name type="authority-lnf">Lankford, James</name>
+                                
+        </congMember>
+         <congMember bioGuideId="M001198" chamber="S" congress="118" party="R" role="COMMMEMBER" state="KS">
+                                    
+              <name type="parsed">ROGER MARSHALL of Kansas</name>
+                                    
+              <name type="authority-fnf">Roger Marshall</name>
+                                    
+              <name type="authority-lnf">Marshall, Roger</name>
+                                
+        </congMember>
+         <congMember bioGuideId="O000174" chamber="S" congress="118" party="D" role="COMMMEMBER" state="GA">
+                                    
+              <name type="parsed">JON OSSOFF of Georgia</name>
+                                    
+              <name type="authority-fnf">Jon Ossoff</name>
+                                    
+              <name type="authority-lnf">Ossoff, Jon</name>
+                                
+        </congMember>
+         <congMember bioGuideId="P000595" chamber="S" congress="118" party="D" role="COMMMEMBER" state="MI">
+                                    
+              <name type="parsed">GARY C. PETERS of Michigan</name>
+                                    
+              <name type="authority-fnf">Gary C. Peters</name>
+                                    
+              <name type="authority-lnf">Peters, Gary C.</name>
+                                    
+              <name type="authority-other">Gary Peters</name>
+                                
+        </congMember>
+         <congMember bioGuideId="P000603" chamber="S" congress="118" party="R" role="COMMMEMBER" state="KY">
+                                    
+              <name type="parsed">RAND PAUL of Kentucky</name>
+                                    
+              <name type="authority-fnf">Rand Paul</name>
+                                    
+              <name type="authority-lnf">Paul, Rand</name>
+                                
+        </congMember>
+         <congMember bioGuideId="R000608" chamber="S" congress="118" party="D" role="COMMMEMBER" state="NV">
+                                    
+              <name type="parsed">JACKY ROSEN of Nevada</name>
+                                    
+              <name type="authority-fnf">Jacky Rosen</name>
+                                    
+              <name type="authority-lnf">Rosen, Jacky</name>
+                                
+        </congMember>
+         <congMember bioGuideId="R000615" chamber="S" congress="118" party="R" role="COMMMEMBER" state="UT">
+                                    
+              <name type="parsed">MITT ROMNEY of Utah</name>
+                                    
+              <name type="authority-fnf">Mitt Romney</name>
+                                    
+              <name type="authority-lnf">Romney, Mitt</name>
+                                
+        </congMember>
+         <congMember bioGuideId="S001191" chamber="S" congress="118" party="I" role="COMMMEMBER" state="AZ">
+                                    
+              <name type="parsed">KYRSTEN SINEMA of Arizona</name>
+                                    
+              <name type="authority-fnf">Kyrsten Sinema</name>
+                                    
+              <name type="authority-lnf">Sinema, Kyrsten</name>
+                                
+        </congMember>
+         <congMember bioGuideId="S001217" chamber="S" congress="118" party="R" role="COMMMEMBER" state="FL">
+                                    
+              <name type="parsed">RICK SCOTT of Florida</name>
+                                    
+              <name type="authority-fnf">Rick Scott</name>
+                                    
+              <name type="authority-lnf">Scott, Rick</name>
+                                
+        </congMember>
+         <isNomination>false</isNomination>
+         <isErrata>false</isErrata>
+    </extension>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>Senate</namePart>
+         <namePart>Committee on Homeland Security and Governmental Affairs</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">associated name</roleTerm>
+              <roleTerm authority="marcrelator" type="code">asn</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <name type="personal">
+         <namePart>Richard Blumenthal</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Laphonza R. Butler</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Thomas R. Carper</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Margaret Wood Hassan</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Josh Hawley</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Ron Johnson</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>James Lankford</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Roger Marshall</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Jon Ossoff</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Gary C. Peters</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Rand Paul</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Jacky Rosen</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Mitt Romney</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Kyrsten Sinema</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Rick Scott</namePart>
+         <affiliation>United States Senate</affiliation>
+         <role>
+              <roleTerm type="text">committee member</roleTerm>
+        </role>
+         <description>United States Congressional Member</description>
+    </name>
+    <name type="personal">
+         <namePart>Gerald W. Parker, DVM, Ph.D., Associate Dean for Global One Health, College of Veterinary Medicine Director, Biosecurity and Pandemic Preparedness Policy Program Scowcroft Institute of International Affairs, Texas A&amp;M University</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Carrie D. Wolinetz, Ph.D., Senior Principal and Chair Health &amp; Bioscience Innovation Practice, Lewis-Burke Associates, LLC</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Robert R. Redfield, M.D., Former Director (2018-2021) Centers for Disease Control and Prevention, U.S. Department of Health, and Human Services</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+    <name type="personal">
+         <namePart>Kevin M. Esvelt, Ph.D., Associate Professor MIT Media Lab, Massachusetts Institute of Technology</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">witness</roleTerm>
+              <roleTerm authority="marcrelator" type="code">wit</roleTerm>
+        </role>
+         <description>Hearing Witness</description>
+    </name>
+</mods>
