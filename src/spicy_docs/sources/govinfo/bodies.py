@@ -565,6 +565,13 @@ class PackageModsIdentity:
     #: the publisher's own labelled statement of a fact the BUDGET package id
     #: also carries -- two independent statements a caller can hold equal.
     fiscal_year: str | None = None
+    #: The ``<heldDate>`` the root extension states: the day a hearing was
+    #: held, which is not the day its transcript was issued (CHRG-118hhrg52385
+    #: was held 2023-05-23 and issued 2024-02-15). Read because it is half the
+    #: join key every hearing-to-bill link rule checks itself against
+    #: (``interpretation/hearing_bill_links.py``); ``None`` for a collection
+    #: whose records state none, which every sampled CRPT record does.
+    held_date: str | None = None
 
     @property
     def submitted_by(self) -> ModsMember | None:
@@ -706,6 +713,19 @@ def _mods_fiscal_year(root: ModsRecord) -> str | None:
         ),
         None,
     )
+
+
+def _mods_held_date(root: ModsRecord) -> str | None:
+    """The ``<heldDate>`` the root extension states, if any.
+
+    One per record on all 25 CHRG MODS retained by the
+    [hearing-bill linkage measurement](../../../../docs/research/hearing-bill-linkage-2026-09-20.md),
+    House and Senate alike, and it is the date Congress.gov's *Hearings Held*
+    action and docs.house.gov's ``<calendar-date>`` were both checked against.
+    A record stating several would keep the first in document order rather
+    than guess between them; none measured states more than one.
+    """
+    return next((text for element in root.fields("extension", "heldDate") if (text := element.text.strip())), None)
 
 
 def _mods_reports(root: ModsRecord) -> tuple[ModsReport, ...]:
@@ -1149,6 +1169,7 @@ def validate_package_mods(
         members=_mods_members(root),
         session=next((element.text.strip() for element in root.fields("extension", "session")), None),
         fiscal_year=_mods_fiscal_year(root),
+        held_date=_mods_held_date(root),
     )
 
 
