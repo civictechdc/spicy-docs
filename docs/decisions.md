@@ -936,3 +936,63 @@ proxy is therefore not a way past that wall, and `ZyteBudget` exists so the
 next attempt cannot find that out expensively: it is one ceiling shared by
 every transport drawing on it, since a per-acquirer request budget cannot bound
 spend across a run that opens one acquirer per family.
+
+## A citation is keyed on where it was read, and its rule carries a version
+
+`document_citations` is one shared link table over every document family
+(`schemas/document_citation_tables.py`), built first on the House committee
+activity reports as the
+[rollup's build order](research/pdf-family-rollup-yield-2026-09-20.md#recommended-build-order)
+asked. Three choices in it are load-bearing.
+
+**The identity is `(document_key, cite_kind, target_key, span_start)`, and the
+span is in it because the span is the yield.** The obvious identity —
+document, kind, target — would collapse CRPT-118hrpt968's 267 bill mentions
+into 179 rows and throw away which page each discussion is on. That would be
+the wrong thing to throw away, because of what building this measured:
+
+> **The package MODS already states every bill and every law the print names.**
+> 179 of 179 bills for CRPT-118hrpt968, 39 of 39 for CRPT-118hrpt965; 3 of 3
+> and 1 of 1 laws (receipt `document-citations-2026-09-20/`,
+> `tests/test_citations.py`).
+
+The rollup reported 883 bills "beyond the index" for this family because it
+compared against the `published` listing row — seven fields, no bill — and not
+against the MODS the body acquirer already fetches for every package it reads.
+That is a real instance of the failure this repository warns about: a check
+that could only ever look one way. Under the owner's do-not-recreate rule the
+bill *key* is not yield here; the offset at which a 282-page print discusses
+that bill is, and no GovInfo record carries it. So `stated_by_index` is a
+column, set per row from the MODS, and NULL — not `false` — where no index
+record was read, because "not compared" and "the index does not state it" are
+different answers.
+
+**An unsettled key is stored, not dropped.** A bill named without a stated
+Congress, and a committee name no supplied roster reaches, keep the rule's
+canonical printed form as `target_key` and set `target_resolved` to `false`.
+Dropping them would lose exactly what only the print holds; giving them a
+NULL key would make them unkeyable. The pinned Senate roster excerpt reaches
+only the committees its sampled senators sit on, so `committees_unresolved` is
+a floor on what a full roster would settle and never a defect count.
+
+**A rule change moves that rule's version and re-pins its fixture counts.**
+Each `CitationRule` in `interpretation/citations.py` carries a `version`, and
+`document_citations.rule_version` is the table's version column, so a
+re-extraction under a corrected rule wins the merge the way a newer
+`prompt_version` does. Versions are zero-padded decimals (`001`) because the
+published column is a string and `v10 < v2`. `CITATION_RULE_SET_VERSION` is
+*derived* — a digest over every rule's name, version and pattern — so editing
+a pattern moves it even when someone forgets to move that rule's own version,
+and the pinned assertion in `tests/test_citations.py` then names both. The
+procedure when it fails: move the changed rule's `version`, re-pin the digest,
+and re-pin the per-print counts the fixtures assert.
+
+**The rules have one home.** `tools/analysis/pdf_family_rollup.py` imports
+them rather than declaring them, so the measurement and the product cannot
+drift. Proof that the lift changed nothing: re-running `analyze` over the same
+retained bytes reproduces every count, distinct set, presence figure and
+resolved system code in the committed sidecar; the 153 differing values are
+all per-page timings or the rules' own prose
+(`document-citations-2026-09-20/diff-sidecar.txt`). The committed sidecar was
+deliberately **not** regenerated — it is the measurement as run, and a re-run's
+timings would contradict the prose the report quotes from it.

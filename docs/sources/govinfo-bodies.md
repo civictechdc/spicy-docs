@@ -595,6 +595,37 @@ is not one of that vocabulary's entries, so a caller need not normalize
 twice. A `<bill>` missing any of `congress`/`type`/`number`/`context` is
 skipped, not guessed at.
 
+### What else the root extension states, and why a contract reads it
+
+Three more root-level facts are read, each because a hosted row would
+otherwise re-derive from the print something the publisher already stated
+(measured 2026-09-20 on CRPT-118hrpt968 and -118hrpt965, receipt
+`document-citations-2026-09-20/`):
+
+| Field | Where | What it settles |
+| --- | --- | --- |
+| `PackageSummary.session` / `PackageModsIdentity.session` | summary `session`, MODS root `extension/session` | The session of Congress, which no other record here carries. Both state `2` for both packages. |
+| `PackageSummary.pages` | summary `pages` | The document's own extent: `56` and `282`, against a 60-page capped read. A capped reader reports how far it got beside this, never in place of it. |
+| `PackageModsIdentity.committees` | MODS root `extension/congCommittee` | The authoring committee's `authorityId`, which is the `systemCode` `committees` and the Congress.gov committee routes already key on (`hsfa00`, `hsif00`). A report's committee is therefore a join, not a name match. Its `@congress` is the authority record's, not the report's: both packages are 118th-Congress reports carrying `congress="119"`. |
+| `PackageModsIdentity.laws` | MODS root `extension/law` | Every public law the package names, folded onto the sealed `public`/`private` vocabulary by the publisher's own `isPrivate` flag. |
+
+A `<congCommittee>` with no `authorityId` is skipped, because the id is the
+whole point of reading the element; a `<law>` without a numeric congress and
+number is skipped, the same boundary `<bill>` draws.
+
+**What the CRPT body adds that these do not.** The eight House committee
+activity reports the [PDF-family rollup](../research/pdf-family-rollup-yield-2026-09-20.md)
+read are the densest citation surface in that corpus, and the `document_citations`
+contract is built on them. Measured on both retained packages, the MODS
+`<bill>` and `<law>` lists **already state every bill and every law the print
+names** — 179 of 179 and 39 of 39 bills, 3 of 3 and 1 of 1 laws — so what the
+print alone supplies is the *evidence span* for those, plus the committees
+other than the authoring one, the U.S. Code and CFR sections, the Federal
+Register cites, and the GAO and CRS ids. The MODS also names bills the capped
+read never reached (380 against the 39 the first 60 pages of -118hrpt965
+name), which is the opposite direction of yield from what the rollup assumed.
+See [Table contracts](../tables.md#the-citation-link-table-stores-the-span-not-the-key).
+
 `GovInfoGranuleBody` is the same shape for `acquire_granule`, with a
 `GranuleIdentity` (the package and granule together), a `GranuleSummary` and a
 `GranuleModsIdentity` (which also carries `host_package_ids`, the proof of

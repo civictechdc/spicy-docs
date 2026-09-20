@@ -20,7 +20,7 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 
 ## The tables
 
-`TABLE_CONTRACTS` holds all thirty-two by name. Each carries its columns in
+`TABLE_CONTRACTS` holds all thirty-four by name. Each carries its columns in
 publish order, its identity, its version column — the column a merge prefers the
 larger value of when two rows share an identity — a one-sentence grain, and one
 sentence per column for the host's data dictionary.
@@ -59,8 +59,10 @@ sentence per column for the host's data dictionary.
 | `table3_records` | One row per classification record on one act's OLRC Table III page. | `act_key`, `seq` | `observed_at` | 14 | `schemas.law_tables` |
 | `committees` | One row per committee or subcommittee the Congress.gov committee list route states, with its detail record where captured. | `system_code` | `update_date` | 21 | `schemas.roster_tables` |
 | `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | 20 | `schemas.roster_tables` |
+| `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `cite_kind`, `target_key`, `span_start` | `rule_version` | 16 | `schemas.document_citation_tables`, `interpretation.citations` |
+| `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 28 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
 
-Six hundred and seventeen columns in all, each with its own sentence.
+Six hundred and sixty-one columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -69,7 +71,7 @@ appended.
 
 ## The bill family is one pass
 
-Twelve of the thirty-two tables come out of a single call to
+Twelve of the thirty-four tables come out of a single call to
 `build_bill_family`, in an order where no step reads a table an earlier step
 published:
 
@@ -142,6 +144,62 @@ invented for either.
 - **`treaties`** carries `package_id` by the map's `CDOC-{c}tdoc{n}` rule on an
   unpartitioned treaty; **`nominations`** is keyed `(congress, citation)`.
 
+## The citation link table stores the span, not the key
+
+`schemas/document_citation_tables.py` is step 1 of the
+[PDF-family build order](research/pdf-family-rollup-yield-2026-09-20.md#recommended-build-order):
+one shared link table, built first on the House committee activity reports.
+The rules are
+[`interpretation/citations.py`](../src/spicy_docs/interpretation/citations.py)'s
+— nine stored kinds out of the sixteen the rollup measured, lifted from that
+measurement unchanged, with `tools/analysis/pdf_family_rollup.py` now importing
+them so the measurement and the contract cannot disagree about what a bill
+number looks like. Re-running `analyze` over the same retained bytes after the
+lift reproduces every count, distinct set and resolved system code in the
+sidecar; the only differences are per-page timings and the rules' own prose
+(`document-citations-2026-09-20/diff-sidecar.txt`).
+
+**Building it corrected the measurement's headline.** The rollup reported 883
+distinct bills "beyond the index" for this family, because the index it
+compared against was the `published` listing row — seven fields and no bill.
+The **package MODS** states them: on both fixture packages it already names
+every bill and every law the print does (179 of 179 and 39 of 39 bills; 3 of 3
+and 1 of 1 laws), and the body acquirer already fetches it for every package it
+reads. So a bill row here is not a new join key. It is *where in a 282-page
+print that bill is discussed*, which is why `span_start` is part of the
+identity and why `stated_by_index` is a column rather than a research note.
+Measured on two of the eight sampled reports; the other six have no MODS
+retained.
+
+What the print reaches that no GovInfo record states survives that correction:
+the committees other than the authoring one (16 House and 4 Senate
+`system_code`s across the eight prints, from 87 printed candidates), the U.S.
+Code and CFR sections, the Federal Register cites, the GAO product ids and the
+CRS report ids.
+
+- **`document_citations`** is keyed `(document_key, cite_kind, target_key,
+  span_start)`. `target_key` is the hosted target's own spelling —
+  `118-hr-1093`, `117-public-263`, `hsfa00` — and where nothing settled it (a
+  bill with no stated Congress, a committee name no supplied roster reaches)
+  the rule's canonical printed form stands and `target_resolved` is `false`.
+  An unsettled key is kept rather than dropped: it is evidence only the print
+  holds. `rule_version` is the version column, so a re-extraction under a
+  corrected rule is attributable the way `prompt_version` is.
+- **`house_activity_reports`** takes every descriptive field from the keyed
+  GovInfo records and none from the print: the summary's title, Congress,
+  session, issue date and **page count**, and the MODS's authoring committee
+  `systemCode`, `<bill>` list with each bill's context, and `<law>` list. What
+  the PDF adds is counts — distinct bills and laws, how many of each the MODS
+  does not already state, committees resolved and unresolved, pages read and
+  whether the read was capped. It overlaps `committee_reports` on four columns
+  and spells them identically, so a host can join the two on `package_id`;
+  `committee_reports` is the generic captured-package row, this is the activity
+  report's own.
+
+`sources/govinfo/bodies.py` grew the three index facts those columns need:
+`PackageSummary.session` and `.pages`, and `PackageModsIdentity.committees`,
+`.laws` and `.session` from the MODS root extension.
+
 ## What the tests do not establish
 
 Every contract has at least one shaped row built from a fixture in this
@@ -168,6 +226,25 @@ row has no detail the case shapes it list-only, and meeting 119003 shapes from
 its detail alone. Those establish the shapes on the day they were captured,
 not coverage: `record_issues.chambers` has been exercised on one issue that
 names one chamber, and `treaties.package_id` on one unpartitioned treaty.
+
+The two citation tables are built from **two of the eight** activity reports
+the rollup read, rebuilt from its retained bytes and never re-fetched, and
+that bounds what they establish:
+
+- the normalized text is the rollup's own extract, held to the digest its
+  sidecar states, so the counts are measured over the same characters the
+  report was — but 179 distinct bills is CRPT-118hrpt968's number, not the
+  family's;
+- **`CRPT-118hrpt965` is a 60-page read of a 282-page print**, so its counts
+  are a floor and `pages_capped` says so. Nothing here establishes what the
+  other 222 pages name;
+- the committee vocabulary is the two pinned roster excerpts. The Senate `cvc`
+  excerpt reaches only the committees its sampled senators sit on, so
+  `committees_unresolved` is a floor on what a full roster would settle, not a
+  defect count;
+- **the MODS-states-every-bill result is two packages, not eight.** The other
+  six have no MODS retained and were not fetched; the request budget for this
+  build was four keyed records and all four were spent on these two.
 
 ## What is still a preserved NULL
 
