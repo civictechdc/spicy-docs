@@ -11,6 +11,7 @@ refused for naming no number.
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -325,3 +326,79 @@ def test_the_rule_set_version_is_pinned_and_moves_when_a_rule_changes() -> None:
 def test_a_rule_asserting_a_relation_outside_the_sealed_pair_refuses() -> None:
     with pytest.raises(HearingBillLinkError, match="relation"):
         replace(HEARING_BILL_LINK_RULES[0], relation="heard")
+
+
+# --- the reproduction tool -----------------------------------------------------------
+
+
+def _miniature_receipt(root: Path) -> Path:
+    """A one-hearing receipt in the shape the real one has, from the committed fixtures.
+
+    The real receipt lives outside this repository, so the offline suite cannot
+    read it.  What it *can* prove is that the comparison machinery reads both
+    sides, agrees when they agree and fires when they do not -- which is the
+    only part of the tool that could be quietly inert.
+    """
+    responses = root / "responses"
+    responses.mkdir(parents=True)
+    (responses / f"p1-mods-{BOTH}.xml").write_bytes((FIXTURES / f"mods-{BOTH}.excerpt.xml").read_bytes())
+    (responses / f"p1-meeting-{EVENT}.xml").write_bytes((FIXTURES / "meeting-115955.xml").read_bytes())
+    mods = mods_for(BOTH)
+    meeting = parse_house_committee_meeting((FIXTURES / "meeting-115955.xml").read_bytes())
+    cover = sorted(link.bill_id for link in cover_links(mods))
+    agenda = list(meeting.agenda_documents)
+    (root / "cover-agreement.json").write_text(
+        json.dumps(
+            {
+                "bills_in_agreeing_comparisons": len(cover),
+                "rows": [{"package_id": BOTH, "against": "the fixture itself", "cover": len(cover), "equal": True}],
+            }
+        )
+    )
+    (root / "probe1-recomputed.json").write_text(
+        json.dumps(
+            {
+                "rows": [
+                    {
+                        "package_id": BOTH,
+                        "event_id": EVENT,
+                        "mods_cover": cover,
+                        "docs_BR_keys": sorted({document.bill_id for document in agenda if document.bill_id}),
+                        "docs_parent_codes": list(meeting.parent_committee_codes),
+                        "docs_BR_detail": [{"key": document.bill_id} for document in agenda],
+                    }
+                ]
+            }
+        )
+    )
+    return root
+
+
+def test_the_recompute_tool_agrees_with_a_receipt_that_states_what_the_rules_produce(tmp_path) -> None:
+    from tools.analysis.hearing_bill_links_recompute import compare, shaped_rows
+
+    receipt = _miniature_receipt(tmp_path / "receipt")
+    checks, report = compare(receipt)
+    assert report["disagreements"] == []
+    assert report["requests"] == 0
+    assert len(checks) == 7
+    assert all(check.agrees for check in checks)
+    rows = shaped_rows(receipt, BOTH, EVENT)
+    assert len(rows) == 16
+    assert {row["link_source"] for row in rows} == {"mods_cover", "docs_house_br"}
+
+
+def test_the_recompute_tool_fires_when_the_receipt_and_the_rules_disagree(tmp_path) -> None:
+    """A comparison that cannot fail is a formatting assertion; this proves it bites."""
+    from tools.analysis.hearing_bill_links_recompute import compare
+
+    receipt = _miniature_receipt(tmp_path / "receipt")
+    stated = json.loads((receipt / "probe1-recomputed.json").read_text())
+    stated["rows"][0]["mods_cover"] = ["118-hr-9999"]
+    stated["rows"][0]["docs_BR_detail"].append({"key": "118-hr-9999"})
+    (receipt / "probe1-recomputed.json").write_text(json.dumps(stated))
+    checks, report = compare(receipt)
+    claims = {entry["claim"] for entry in report["disagreements"]}
+    assert any("COVER set" in claim for claim in claims)
+    assert any("BR documents in all" in claim for claim in claims)
+    assert report["agreeing"] < len(checks)
