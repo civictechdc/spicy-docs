@@ -179,3 +179,18 @@ def test_fresh_converters_populate_precise_receipts_mods_and_decisions():
     report = dc.convert_committee_report(dc.FIXTURES / "govinfo_bodies/body-CRPT-119hrpt1.htm").capture()
     assert [f["code"] for f in check_provenance(report)] == ["retrieval-timestamp"]
     assert report["profile"]["ext"]["govinfoIdentity"]["granuleId"] is None
+    mods = next(r for r in report["profile"]["ext"]["sourceRecords"] if r["role"] == "mods")
+    committee = next(f for f in mods["sourceFields"] if f["name"] == "congCommittee")
+    assert committee["attributes"]["authorityId"] == "hsru00"
+    assert committee["path"]
+
+
+def test_retained_fr_docket_and_empty_rin_list_are_populated():
+    capture = json.loads(next(p for p in CAPTURES if p.name.startswith("fr-")).read_bytes())
+    ext = capture["profile"]["ext"]
+    source = (ROOT / ext["documentJsonPath"]).read_bytes()
+    assert hashlib.sha256(source).hexdigest() == ext["documentJsonSha256"]
+    document = json.loads(source)
+    assert ext["docketIds"] == document["docket_ids"] == ["Docket No. IC26-36-000"]
+    assert ext["regulationIdNumbers"] == document["regulation_id_numbers"] == []
+    assert ext["dates"] == document["dates"]

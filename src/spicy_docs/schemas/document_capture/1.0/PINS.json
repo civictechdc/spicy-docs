@@ -18,31 +18,31 @@
   "profiles": {
     "bill-xml": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:bill-xml",
-      "sha256": "3f51b5e1651cc4133ed15fa0791e55f2b0a8102e8e29583b61813d2f51fa43b6"
+      "sha256": "c35296405fbf0fa7f3bb2da2cfb178f719a62de3572af05f1c240be8bfe7020a"
     },
     "cfr-reconstruction": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:cfr-reconstruction",
-      "sha256": "1ef81f663f398b2cb2cab397e4e5b002ec41987ac6624111a8a4c50189afbafc"
+      "sha256": "bee1e7e061cf18d6fb59def8de26fcebf4894a2830e79327bef465c6de6a4bf3"
     },
     "committee-report-html": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:committee-report-html",
-      "sha256": "326dbac850ae2613014bdbce43042bd3f5d79d2d2de93af458b6d0fe2b52dc62"
+      "sha256": "467559d7bce8d7fbd7bf7cecd11abf55a7ac81c9bc8529a323358799063482a1"
     },
     "federal-register-xml": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:federal-register-xml",
-      "sha256": "4d2a99b04223b94aafb5d5346f31098db2baff6af6560b0bc26c5ceed19a38c9"
+      "sha256": "fc10c338fc7666fb9cd7a168dc4935b22d8e58d1f6c467862caa78d172ec256f"
     },
     "slip-opinion-pdf": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:slip-opinion-pdf",
-      "sha256": "22fb0e589c6e2cec3e012eb15122a30a4a83c78fdb7875068e5ef2a17977b1ac"
+      "sha256": "d79f2eb055cfc1415e2e23bea68941a9dc2cfa7cebefd702d2b821d10863b76f"
     },
     "uslm-law": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:uslm-law",
-      "sha256": "c4c89e107460424dcd479da3e8c5c08271b21bc5dc6a8f5e7c290cdbfa519917"
+      "sha256": "41d2b0a3bacbe44fa62230e4b2314b42fc4dd8d9091819e403f4b25a3ea10fa7"
     },
     "senate-expenditures-pdf": {
       "$id": "urn:spicy-docs:schema:document-capture:1.0:profile:senate-expenditures-pdf",
-      "sha256": "0e23cc3e0490d44276cbb626c474919b7d0ac4bfd694a2689eb4de45ba09211f"
+      "sha256": "7db2fab38187df273dad0ae615d1540db4edae6ca46c35b24ba8b07237400413"
     }
   }
 }

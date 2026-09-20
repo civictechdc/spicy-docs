@@ -38,6 +38,39 @@ def mods_record(path: Path, package: str, granule: str | None) -> dict[str, Any]
         raise ValueError("MODS does not state the selected package/granule pair")
     digest = hashlib.sha256(data).hexdigest()
     observed = source_records(digest)
+    # Preserve the publisher's spelling and XML path, not normalized joins.
+    inventory_names = {
+        "identifier",
+        "recordIdentifier",
+        "accessId",
+        "dateIssued",
+        "dateIngested",
+        "recordCreationDate",
+        "recordChangeDate",
+        "action",
+        "bill",
+        "law",
+        "congCommittee",
+        "congress",
+        "chamber",
+        "session",
+        "title",
+    }
+    fields = []
+    pending = [record.element]
+    while pending:
+        element = pending.pop()
+        name = element.name.rsplit("}", 1)[-1]
+        if name in inventory_names:
+            fields.append(
+                {
+                    "name": name,
+                    "value": element.text,
+                    "attributes": dict(element.attributes),
+                    "path": list(element.path),
+                }
+            )
+        pending.extend(reversed(element.children))
     return {
         "role": "mods",
         "path": str(path.relative_to(ROOT)),
@@ -46,6 +79,7 @@ def mods_record(path: Path, package: str, granule: str | None) -> dict[str, Any]
         "mediaType": "application/xml",
         "packageId": package,
         "granuleId": granule,
+        "sourceFields": fields,
         "identityPaths": ["mods/extension/accessId", "mods/relatedItem[@type='host']/extension/accessId"]
         if granule
         else ["mods/extension/accessId"],
@@ -84,6 +118,14 @@ def populate(conversion: Any) -> None:
                 "packageId": artifact["locator"]["publisherId"],
                 "granuleId": None,
                 "basis": "retained PLAW member name and validated USLM identity; package-level rendition",
+            }
+        elif ext.get("packageId"):
+            package = ext["packageId"]
+            file_id = ext["fileName"].removesuffix(".pdf")
+            identity = {
+                "packageId": package,
+                "granuleId": file_id if file_id != package else None,
+                "basis": "caller-selected package and file; acquisition and MODS remain unverified",
             }
     if identity:
         package, granule = identity["packageId"], identity["granuleId"]

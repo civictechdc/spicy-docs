@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-09-20T21:31:18+00:00",
+ "generatedAt": "2026-09-20T21:36:01+00:00",
  "parentSchema": {
   "$id": "https://rulespec.org/schemas/releases/document-capture-v1.schema.json",
   "sha256": "a090fbc8baf6ae55c80a29ad70fc9d411b495ede26443dd0c4f125dd4184689e"
@@ -56,7 +56,7 @@
     "withoutSpanSource": 140738,
     "withoutNodeSource": 102871
    },
-   "seconds": 0.0015,
+   "seconds": 0.0022,
    "errors": []
   },
   {
@@ -104,7 +104,7 @@
    "family": "committee-report-html",
    "rendition": "html",
    "artifactBytes": 13953,
-   "captureBytes": 141633,
+   "captureBytes": 145780,
    "nodes": 217,
    "leaves": 170,
    "emptyLeaves": 0,
@@ -128,13 +128,13 @@
     "n0216"
    ],
    "size": {
-    "bytes": 141633,
-    "indentedBytes": 196452,
+    "bytes": 145780,
+    "indentedBytes": 204124,
     "exactTextBytes": 13900,
-    "withoutLeafText": 126996,
-    "withoutSpanIdAndEnd": 121485,
-    "withoutSpanSource": 119443,
-    "withoutNodeSource": 133306
+    "withoutLeafText": 131143,
+    "withoutSpanIdAndEnd": 125632,
+    "withoutSpanSource": 123590,
+    "withoutNodeSource": 137453
    },
    "seconds": 0.0016,
    "errors": []
@@ -144,7 +144,7 @@
    "family": "federal-register-xml",
    "rendition": "xml",
    "artifactBytes": 10224,
-   "captureBytes": 63284,
+   "captureBytes": 63522,
    "nodes": 76,
    "leaves": 59,
    "emptyLeaves": 2,
@@ -168,15 +168,15 @@
     "n0069"
    ],
    "size": {
-    "bytes": 63284,
-    "indentedBytes": 84310,
+    "bytes": 63522,
+    "indentedBytes": 84577,
     "exactTextBytes": 8785,
-    "withoutLeafText": 55610,
-    "withoutSpanIdAndEnd": 56627,
-    "withoutSpanSource": 52875,
-    "withoutNodeSource": 52874
+    "withoutLeafText": 55848,
+    "withoutSpanIdAndEnd": 56865,
+    "withoutSpanSource": 53113,
+    "withoutNodeSource": 53112
    },
-   "seconds": 0.0005,
+   "seconds": 0.0006,
    "errors": []
   },
   {
@@ -216,7 +216,7 @@
     "withoutSpanSource": 143581,
     "withoutNodeSource": 185420
    },
-   "seconds": 0.0011,
+   "seconds": 0.0014,
    "errors": []
   },
   {

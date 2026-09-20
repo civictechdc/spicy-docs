@@ -16,28 +16,6 @@ original receipt by path, digest and line. Generic artifact checks compare
 XML file cannot justify associating its digest with a ZIP URL. Tests restore
 that wrong association and require a finding.
 
-## What rulespec must change
-
-The parent and profile meta-schema in this repository remain byte-identical
-to their pinned originals. The USLM extension is a temporary family-owned
-representation, not a change to the meaning of the parent.
-
-1. Add shared archive/member provenance to
-   `release-records/schemas/document-capture-v1.schema.json`. An archive must
-   have its own locator, SHA-256, byte size, media type and retrieval timestamp;
-   a member must name that archive and its exact entry path. The member's
-   artifact digest and media type describe uncompressed member bytes. Require
-   equality between repeated member byte facts and the artifact. Reject a ZIP
-   locator used as the member's direct locator. The byte validator must verify
-   both the archive and the uniquely named member; duplicate entry names
-   require an ordinal or an explicit ambiguity refusal.
-2. Migration must move this profile extension into the shared representation,
-   publish updated parent/meta-schema/validator resources, and update pins
-   and captures together. SpicyDocs cannot tighten parent fields through the
-   current profile meta-schema; no vendored parent file is edited here.
-
-G3 requirements and the committed-input measurement follow in the next change.
-
 ## Required provenance in SpicyDocs
 
 `spicy_docs.schemas.document_capture.provenance.check_provenance(capture)`
@@ -90,11 +68,25 @@ MODS records, and six coordinate findings. The other two families have none.
 G3's converter and package-check work is delivered; complete source evidence
 and parent-level enforcement remain open.
 
-### Additional rulespec work
+## What rulespec must change
 
-The following extends **What rulespec must change** above; another worker can
-apply it in `/Users/mikewolfd/Work/spicy-stack/rulespec` without changing the
-meaning of this repository's pinned v1 files:
+The parent and profile meta-schema in this repository remain byte-identical
+to their pinned originals. The USLM extension is a temporary family-owned
+representation, not a change to the meaning of the parent.
+
+1. Add shared archive/member provenance to
+   `release-records/schemas/document-capture-v1.schema.json`. An archive must
+   have its own locator, SHA-256, byte size, media type and retrieval timestamp;
+   a member must name that archive and its exact entry path. The member's
+   artifact digest and media type describe uncompressed member bytes. Require
+   equality between repeated member byte facts and the artifact. Reject a ZIP
+   locator used as the member's direct locator. The byte validator must verify
+   both the archive and the uniquely named member; duplicate entry names
+   require an ordinal or an explicit ambiguity refusal.
+2. Migration must move this profile extension into the shared representation,
+   publish updated parent/meta-schema/validator resources, and update pins
+   and captures together. SpicyDocs cannot tighten parent fields through the
+   current profile meta-schema; no vendored parent file is edited here.
 
 3. Define a shared `SourceRecord` with role (`acquisition`, `mods`, or
    `derivation`), its own exact byte pin (`sha256`, `byteSize`, `mediaType`),
@@ -155,6 +147,10 @@ meaning of this repository's pinned v1 files:
 Normalized `bill_id`, USC/FR citation targets, dockets, RINs and committee-code
 relationships stay in downstream analytical tables linked to capture evidence.
 Their absence from a capture is measured, not repaired by guessing from text.
-Source-native bill/law identity, FR citation and publication/approval dates
-already present in the family extensions remain there. They are not evidence
+Source-native bill/law identity and FR citation remain in their family
+extensions. The pinned MODS records now also carry ordered source fields,
+including identifiers, dates, bill/law references and committee authority ids,
+with literal values, attributes and XML child-index paths. FR retains the
+publisher JSON path/digest, docket strings, stated RIN list (empty here), and
+literal dates text. They are not evidence
 of a normalized relationship model.

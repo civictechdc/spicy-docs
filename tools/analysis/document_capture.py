@@ -1922,6 +1922,10 @@ def convert_federal_register(xml_path: Path, json_path: Path, receipt: Mapping[s
         "endPage": document["end_page"],
         "agencies": [a.get("name") for a in document["agencies"]],
         "documentJsonSha256": sha256(json_path.read_bytes()),
+        "documentJsonPath": str(json_path.relative_to(ROOT)),
+        "docketIds": document["docket_ids"],
+        "regulationIdNumbers": document["regulation_id_numbers"],
+        "dates": document["dates"],
     }
     conversion = convert_markup("fr-2026-19200", FEDERAL_REGISTER, data, "xml", artifact, ext=ext)
     # Built once per table and once per row: reading a cell's geometry with

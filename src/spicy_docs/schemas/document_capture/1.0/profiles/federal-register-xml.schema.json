@@ -34,7 +34,11 @@
                 "startPage",
                 "type",
                 "sourceRecords",
-                "renditionReason"
+                "renditionReason",
+                "docketIds",
+                "regulationIdNumbers",
+                "dates",
+                "documentJsonPath"
               ],
               "properties": {
                 "documentNumber": {
@@ -142,11 +146,65 @@
                         "items": {
                           "type": "string"
                         }
+                      },
+                      "sourceFields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "name",
+                            "value",
+                            "attributes",
+                            "path"
+                          ],
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "type": "string"
+                            },
+                            "attributes": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "string"
+                              }
+                            },
+                            "path": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
                       }
                     }
                   }
                 },
                 "renditionReason": {
+                  "type": "string"
+                },
+                "docketIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "regulationIdNumbers": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "dates": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "documentJsonPath": {
                   "type": "string"
                 }
               }
