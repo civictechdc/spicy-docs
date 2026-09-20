@@ -1,0 +1,67 @@
+{
+ "files": {
+  "GPO-CDOC-119sdoc3-1.pdf": {
+   "pages": 80,
+   "tables": 69,
+   "rows": 357,
+   "amounts": 658
+  },
+  "GPO-CDOC-119sdoc6-2.pdf": {
+   "pages": 80,
+   "tables": 70,
+   "rows": 316,
+   "amounts": 658
+  }
+ },
+ "pages": 160,
+ "pages_with_a_table": 139,
+ "tables": 139,
+ "tables_per_page": {
+  "0": 21,
+  "1": 139
+ },
+ "grid_kinds": {
+  "appropriation_summary": 13,
+  "organization_detail": 83,
+  "payee_detail": 43
+ },
+ "rows": 673,
+ "row_kinds": {
+  "entry": 227,
+  "header": 361,
+  "total": 85
+ },
+ "cells": 6172,
+ "cells_with_no_region": 3905,
+ "entry_row_cells_present_by_grid": {
+  "appropriation_summary": {
+   "9": 56
+  },
+  "organization_detail": {
+   "1": 99
+  },
+  "payee_detail": {
+   "1": 72
+  }
+ },
+ "amounts": 1316,
+ "distinct_amount_spellings": 446,
+ "column_counts": {
+  "7": 43,
+  "9": 13,
+  "10": 83
+ },
+ "geometry_min_rows_columns": [
+  3,
+  7
+ ],
+ "geometry_max_rows_columns": [
+  11,
+  9
+ ],
+ "distinct_geometries": 13,
+ "table_pages_stating_an_office": 83,
+ "table_pages_the_print_states_an_office_on": 83,
+ "table_pages_with_a_multi_year_funding_span": 5,
+ "table_pages_stating_a_printed_page": 139
+}

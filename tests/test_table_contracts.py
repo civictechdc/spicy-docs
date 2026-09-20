@@ -839,6 +839,29 @@ def _budget_volume_cases() -> list[ShapedCase]:
                     (package, digested, finding.kind, finding.target_key, str(finding.span_start)),
                 )
             )
+
+
+# The second PDF-only family: two bounded page ranges of two Senate volumes.
+# ---------------------------------------------------------------------------
+
+
+def _senate_expenditure_cases() -> list[ShapedCase]:
+    """Every ruled row of both fixtures, with the identity rebuilt from the extraction.
+
+    ``tests/test_senate_expenditures.py`` owns the fixture reading and the
+    measured pins; this reuses it so the generic loop and the pins read one set
+    of bytes.  All 114 rows run, not a selection: the whole point of the
+    identity here is that a page, a table ordinal and a row ordinal are unique
+    across two volumes that carry the same printed grid, and a bounded sample
+    would not test that.
+    """
+    from tests.test_senate_expenditures import BOTH_GRIDS, SUMMARY_ONLY, identities_for, rows_for
+
+    cases: list[ShapedCase] = []
+    for fixture in (SUMMARY_ONLY, BOTH_GRIDS):
+        rows, identities = rows_for(fixture), identities_for(fixture)
+        for row, identity in zip(rows, identities, strict=True):
+            cases.append(_case("senate_expenditures", row, identity))
     return cases
 
 
@@ -987,6 +1010,8 @@ def all_cases() -> list[ShapedCase]:
         + _roster_cases()
         + _document_citation_cases()
         + _budget_volume_cases()
+        # --- The build order's step 4: the Senate expenditure tables. ---
+        + _senate_expenditure_cases()
     )
     if engine_available():
         cases = _family_cases() + cases
@@ -1172,6 +1197,9 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
         "interpretation/citations.py",
         "sources/govinfo/bodies.py",
     ),
+    # The build order's step 4: the ruled-table contract over the Secretary of
+    # the Senate's expenditure volumes.
+    "senate_expenditures": ("schemas/senate_expenditure_tables.py",),
 }
 
 #: A value a description names in backticks.  Prose that says a column carries
