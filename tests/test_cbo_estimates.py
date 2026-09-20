@@ -440,7 +440,14 @@ def test_the_hearing_table_did_not_take_the_estimate_columns() -> None:
 
 
 def test_no_citation_kind_was_added_for_the_estimate() -> None:
-    """The print states no publication id, so the link is a bill join and not a cite row."""
+    """The print states no publication id, so the link is a bill join and not a cite row.
+
+    Measured over all 17 retained bodies: one ``cbo.gov`` locator in the lot,
+    a footnote to an unrelated 2018 CBO study, no ``/publication/{id}`` page
+    and none inside a located letter.  None of the seven excerpts here carries
+    one at all.
+    """
     assert "cbo" not in " ".join(DOCUMENT_CITATIONS.columns)
     assert "cbo_cost_estimate" not in DOCUMENT_CITATIONS.descriptions["cite_kind"]
-    assert body("CRPT-118hrpt53").count("cbo.gov") == 0
+    for package in sorted(json.loads((FIXTURES / "sources.json").read_text())):
+        assert "cbo.gov/publication/" not in body(package)

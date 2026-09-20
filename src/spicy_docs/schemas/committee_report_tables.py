@@ -18,8 +18,10 @@ refuses.  Those columns are appended *here*, on the package-keyed row, rather
 than on ``cbo_cost_estimates``, and no ``document_citations`` row is written.
 Both choices are measured, not aesthetic (``docs/decisions.md``):
 
-* **The print names no estimate key.**  The retained CRPT body contains zero
-  ``cbo.gov`` occurrences, so a citation row would have to carry a
+* **The print names no estimate key.**  Across all 17 retained CRPT bodies
+  there is exactly **one** ``cbo.gov`` locator -- a footnote to an unrelated
+  2018 CBO study -- **no** ``/publication/{id}`` page, and no locator inside
+  any located letter.  A citation row would therefore have to carry a
   ``target_key`` nothing in the document settles, in a table whose grain is
   one occurrence *of a cited key*.  The letter is also one span per document,
   not one occurrence per key.

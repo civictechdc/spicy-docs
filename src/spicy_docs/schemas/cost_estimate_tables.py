@@ -29,8 +29,10 @@ the bill's committee report, for the 883 of 1,368 scored bills (64.5%) that
 have one; ``report_citations_json`` carries the publisher's own statement of
 which reports those are, so a consumer can tell from this row alone whether a
 text route exists.  The letter's span lands on ``committee_reports``, keyed by
-package, because the report states no publication id at all (measured: zero
-``cbo.gov`` occurrences in the retained CRPT body) and because 28 of the 61
+package, because the report states no publication id at all (measured over
+all 17 retained CRPT bodies: **one** ``cbo.gov`` locator in the lot, a
+footnote to an unrelated 2018 CBO study, **zero** ``/publication/{id}`` pages
+and zero locators inside any located letter) and because 28 of the 61
 bills carrying more than one estimate also carry a report -- nothing settles
 which of those estimates a reprinted letter scores.  See
 ``docs/decisions.md``.
@@ -66,11 +68,17 @@ _PUBLICATION_URL = re.compile(r"https://www\.cbo\.gov/publication/(?P<id>[1-9][0
 REPORT_CITATION_RULE = "billstatus_committee_report_citation"
 
 #: Every ``<committeeReports>`` citation shape measured over the two zips:
-#: ``H. Rept. 118-53`` (649), ``S. Rept. 118-201`` (249) and ``H. Rept. 118-4,
-#: Part 1`` (12), 910 of 910.  The chamber letter maps to the GovInfo
-#: document-type code ``committee_reports.report_type`` publishes.
+#: ``H. Rept. 118-53``, ``S. Rept. 118-201`` and the part form, which the
+#: publisher writes **without a space after the comma** -- every one of the
+#: thirteen measured is ``H. Rept. 118-167,Part 2``, and a pattern demanding
+#: the space read all twelve occurrences as unparsed.  The space is allowed
+#: anyway, because a publisher that writes one is spelling the same fact.  The
+#: chamber letter maps to the GovInfo document-type code
+#: ``committee_reports.report_type`` publishes; a part has no package id under
+#: GovInfo's sealed CRPT grammar, so none is derived from one.
 _REPORT_CITATION = re.compile(
-    r"(?P<chamber>[HS])\. Rept\. (?P<congress>[1-9][0-9]*)-(?P<number>[1-9][0-9]*)(?:, Part (?P<part>[1-9][0-9]*))?"
+    r"(?P<chamber>[HS])\. Rept\. (?P<congress>[1-9][0-9]*)-(?P<number>[1-9][0-9]*)"
+    r"(?:,\s*Part\s+(?P<part>[1-9][0-9]*))?"
 )
 _REPORT_TYPE_BY_CHAMBER = {"H": "hrpt", "S": "srpt"}
 

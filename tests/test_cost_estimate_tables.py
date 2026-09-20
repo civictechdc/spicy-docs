@@ -120,6 +120,9 @@ def test_publication_id_reads_the_measured_shape() -> None:
     [
         ("H. Rept. 118-53", {"congress": "118", "report_type": "hrpt", "number": "53", "part": None}),
         ("S. Rept. 118-201", {"congress": "118", "report_type": "srpt", "number": "201", "part": None}),
+        # The publisher writes the part form with no space after the comma;
+        # all thirteen measured citations are spelled that way.
+        ("H. Rept. 118-167,Part 2", {"congress": "118", "report_type": "hrpt", "number": "167", "part": "2"}),
         ("H. Rept. 118-4, Part 1", {"congress": "118", "report_type": "hrpt", "number": "4", "part": "1"}),
     ],
 )
