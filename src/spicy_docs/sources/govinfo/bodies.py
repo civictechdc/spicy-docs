@@ -24,7 +24,9 @@ Source rules, each measured on 2026-09-19 (receipts in the fixture README):
   HTML from ``html/{id}.htm``.
 - Not every package offers every format. CRPT/CHRG/CDOC offer HTML and PDF,
   CPRT offers HTML, PDF and XML, CREC offers PDF, CDIR offers PDF and text,
-  BILLS offers HTML, PDF, XML and USLM. A format a package does not offer
+  BILLS offers HTML, PDF, XML and USLM, and BUDGET and the GPO-prefixed CDOC
+  reprints offer PDF alone (measured 2026-09-20 on all eleven retained
+  records). A format a package does not offer
   redirects to ``/error``, which answers
   HTTP 200 with the publisher's 44,165-byte "Page Not Found" page. A 200 that
   is not the requested object is a refusal with its bytes retained, never data
@@ -36,6 +38,12 @@ Source rules, each measured on 2026-09-19 (receipts in the fixture README):
   for CRPT, CHRG and CDOC, and spells the BILLS HTML rendition ``txtLink``.
   So the offered set is read from MODS, and the summary's links are kept as
   evidence with nothing derived from them.
+- **The collection a package id names is not always the ``collectionCode`` its
+  records state.** Seven collections state their own id prefix; ``BUDGET`` and
+  the GPO-prefixed CDOC reprints both state ``GPO`` -- measured 2026-09-20 on
+  11 retained MODS records and 3 package summaries -- so each entry in
+  ``_GRAMMARS`` carries the code its records state and the check compares
+  against that, rather than assuming the prefix and the code are one string.
 - A body carries no machine-readable package id (the CRPT-119hrpt1 HTML body
   never spells it), unlike a Federal Register granule's ``[FR Doc No: ...]``.
   Identity is therefore the locator the request named, the summary's
@@ -83,20 +91,83 @@ _JACKET = r"[0-9]+"
 # the frozenset iterates in, so the compiled pattern is the same every run.
 _BILL_TYPE = "|".join(sorted(BILL_TYPES, key=lambda name: (-len(name), name)))
 _DATE = r"[0-9]{4}-[0-9]{2}-[0-9]{2}"
-_GRAMMARS: dict[str, tuple[re.Pattern[str], str]] = {
-    "CRPT": (re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hrpt|srpt|erpt)(?P<number>{_NUMBER})"), "119hrpt1"),
-    "CHRG": (re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hhrg|shrg|jhrg)(?P<number>{_JACKET})"), "119hhrg64242"),
-    "CDOC": (re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hdoc|sdoc|tdoc)(?P<number>{_NUMBER})"), "119tdoc2"),
+# A budget volume is addressed by its fiscal year and the part of the budget it
+# is, not by a Congress: ``BUDGET-2027-APP``. The six parts are the ones
+# measured on 2026-09-20 across the eight retained volumes -- ``APP``
+# (Appendix), ``BALANCES`` (Balances of Budget Authority), ``BUD`` (Budget of
+# the U.S. Government), ``FCS`` (Federal Credit Supplement), ``MSR``
+# (Mid-Session Review) and ``PER`` (Analytical Perspectives). Sealed rather
+# than widened to a general token, for the same reason every other grammar here
+# is strict: a part this sample never saw is a part whose address is not
+# established, and a refusal that names what was expected is recoverable where
+# a guessed address is not. Adding one is this line plus the id that showed it.
+_BUDGET_PART = "APP|BALANCES|BUD|FCS|MSR|PER"
+_FISCAL_YEAR = r"[0-9]{4}"
+
+
+@dataclass(frozen=True, slots=True)
+class PackageGrammar:
+    """One collection's id grammar, an example of it, and the code its records state.
+
+    ``collection_code`` is the ``collectionCode`` the publisher's own summary
+    and MODS state for this collection, which is *not* always the id's prefix:
+    ``BUDGET-2027-BUD`` and ``GPO-CDOC-119sdoc3`` both state ``GPO`` (measured
+    2026-09-20). It lives beside the pattern so a collection states everything
+    about itself in one place and no check has to assume the two agree.
+    """
+
+    pattern: re.Pattern[str]
+    example: str
+    collection_code: str
+
+
+_GRAMMARS: dict[str, PackageGrammar] = {
+    "CRPT": PackageGrammar(
+        re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hrpt|srpt|erpt)(?P<number>{_NUMBER})"), "119hrpt1", "CRPT"
+    ),
+    "CHRG": PackageGrammar(
+        re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hhrg|shrg|jhrg)(?P<number>{_JACKET})"), "119hhrg64242", "CHRG"
+    ),
+    "CDOC": PackageGrammar(
+        re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>hdoc|sdoc|tdoc)(?P<number>{_NUMBER})"), "119tdoc2", "CDOC"
+    ),
     # Verified on a real package summary 2026-09-19 (CPRT-118HPRT57104): the
     # chamber-plus-doctype token is spelled upper-case here, unlike CRPT's own
     # lower-case hrpt/srpt/erpt -- the two collections do not share a case
     # convention, so this is measured, not inferred from CRPT's shape.
-    "CPRT": (re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>HPRT|SPRT|JPRT)(?P<number>{_NUMBER})"), "118HPRT57104"),
-    "CREC": (re.compile(rf"(?P<date>{_DATE})(?:-(?P<suffix>[vi]{_NUMBER}))?"), "2026-01-02 or 2019-01-03-v164"),
-    "CDIR": (re.compile(rf"(?P<date>{_DATE})"), "2026-02-20"),
-    "BILLS": (
+    "CPRT": PackageGrammar(
+        re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>HPRT|SPRT|JPRT)(?P<number>{_NUMBER})"), "118HPRT57104", "CPRT"
+    ),
+    "CREC": PackageGrammar(
+        re.compile(rf"(?P<date>{_DATE})(?:-(?P<suffix>[vi]{_NUMBER}))?"), "2026-01-02 or 2019-01-03-v164", "CREC"
+    ),
+    "CDIR": PackageGrammar(re.compile(rf"(?P<date>{_DATE})"), "2026-02-20", "CDIR"),
+    "BILLS": PackageGrammar(
         re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>{_BILL_TYPE})(?P<number>{_NUMBER})(?P<version>[a-z][a-z0-9]*)"),
         "119hr1enr",
+        "BILLS",
+    ),
+    # The President's budget. Its records state ``collectionCode`` ``GPO`` and
+    # ``docClass`` ``BUDGET``; the fiscal year in the id is the one the MODS
+    # also states as ``<field name="Fiscal Year">`` on all eight volumes
+    # measured, and it is not the ``dateIssued`` year (BUDGET-2026-MSR was
+    # issued 2025-09-05).
+    "BUDGET": PackageGrammar(
+        re.compile(rf"(?P<fiscal_year>{_FISCAL_YEAR})-(?P<type>{_BUDGET_PART})"), "2027-APP", "GPO"
+    ),
+    # The Senate Secretary's semiannual report, published as a CDOC reprint
+    # under a ``GPO-`` prefix. The collection is the whole two-segment prefix,
+    # never ``GPO`` alone: ``GPO-J6-REPORT`` states ``collectionCode`` ``GPO``
+    # too and is a different family with a different address, so matching on
+    # ``GPO`` would readmit exactly the id ``parse_package_id`` exists to
+    # refuse. Only ``sdoc`` is sealed: all three retained reprints and all
+    # five of their granules spell it that way and state ``docClass`` ``SDOC``
+    # (2026-09-20). ``hdoc`` and ``tdoc`` are real CDOC document types and are
+    # deliberately *not* inferred here -- no ``GPO-CDOC-`` id carrying one has
+    # been measured, and this module already refused to infer CPRT's case
+    # convention from CRPT's for the same reason.
+    "GPO-CDOC": PackageGrammar(
+        re.compile(rf"(?P<congress>{_CONGRESS})(?P<type>sdoc)(?P<number>{_NUMBER})"), "119sdoc3", "GPO"
     ),
 }
 
@@ -219,6 +290,11 @@ class PackageIdentity:
     issue_date: str | None = None
     issue_suffix: str | None = None
     version: str | None = None
+    #: The fiscal year a BUDGET id names, as the publisher spells it. Kept as a
+    #: string, the way ``PackageSummary.session`` is: it is an identifier in the
+    #: publisher's own grammar, not an arithmetic quantity. ``None`` for every
+    #: collection whose ids carry no fiscal year.
+    fiscal_year: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -483,6 +559,12 @@ class PackageModsIdentity:
     members: tuple[ModsMember, ...] = ()
     #: The session of Congress the root extension states.
     session: str | None = None
+    #: The fiscal year the root extension states as
+    #: ``<field name="Fiscal Year">``. All eight retained budget volumes state
+    #: one and no sampled CRPT or GPO-CDOC record does (2026-09-20), so this is
+    #: the publisher's own labelled statement of a fact the BUDGET package id
+    #: also carries -- two independent statements a caller can hold equal.
+    fiscal_year: str | None = None
 
     @property
     def submitted_by(self) -> ModsMember | None:
@@ -608,6 +690,24 @@ def _mods_rins(root: ModsRecord) -> tuple[str, ...]:
     return tuple(number for element in root.fields("extension", "rin") if (number := element.attribute("number")))
 
 
+def _mods_fiscal_year(root: ModsRecord) -> str | None:
+    """The ``<field name="Fiscal Year">`` the root extension states, if any.
+
+    GPO carries this as a *named* field rather than an element of its own, so
+    the name is matched and nothing is read off position. Measured 2026-09-20:
+    8 of 8 budget volumes state exactly one, and no CRPT or GPO-CDOC record
+    states any field of this name.
+    """
+    return next(
+        (
+            text
+            for element in root.fields("extension", "field")
+            if element.attribute("name") == "Fiscal Year" and (text := element.text.strip())
+        ),
+        None,
+    )
+
+
 def _mods_reports(root: ModsRecord) -> tuple[ModsReport, ...]:
     """Every root-level ``<congReport>``: the sibling reports this one names."""
     reports: list[ModsReport] = []
@@ -712,6 +812,20 @@ def _checked_date(value: str, collection: str) -> str:
     return value
 
 
+def _collection_of(package_id: str) -> str | None:
+    """The registered collection whose prefix this id carries, longest prefix first.
+
+    A collection name is not always one path segment: the Senate Secretary's
+    reprints are addressed ``GPO-CDOC-119sdoc3``, so the prefix that has to
+    match is the whole family name. Longest-first is what keeps that safe --
+    matching ``GPO`` alone would readmit ``GPO-J6-REPORT``, a different family
+    at a different address, which is exactly what this function's caller
+    exists to refuse. ``O(K * I)`` over the nine registered collections.
+    """
+    matched = [name for name in _GRAMMARS if package_id.startswith(f"{name}-")]
+    return max(matched, key=len) if matched else None
+
+
 def parse_package_id(package_id: object) -> PackageIdentity:
     """Parse one package id under its collection's grammar, or refuse it by name.
 
@@ -721,20 +835,22 @@ def parse_package_id(package_id: object) -> PackageIdentity:
     and ``GPO-J6-REPORT`` states ``GPO`` (79 of 1,681 CDOC-scoped and 3 of
     3,000 CRPT-scoped ids sampled on 2026-09-19). Those are other collections
     with other addresses, so they are refused here rather than guessed at.
+    ``GPO-CDOC-*`` is now covered and ``GPO-J6-REPORT`` still is not, because
+    the registered prefix is the whole two-segment family name.
     """
     if not isinstance(package_id, str) or not package_id:
         raise GovInfoBodySourceError("package id must be a nonempty string")
     if len(package_id) > MAX_PACKAGE_ID:
         raise GovInfoBodySourceError(f"package id exceeds {MAX_PACKAGE_ID} characters")
-    collection, separator, remainder = package_id.partition("-")
-    if not separator or collection not in _GRAMMARS:
+    collection = _collection_of(package_id)
+    if collection is None:
         supported = ", ".join(sorted(_GRAMMARS))
         raise GovInfoBodySourceError(f"package id collection is unsupported; expected one of {supported}")
-    grammar, example = _GRAMMARS[collection]
-    match = grammar.fullmatch(remainder)
+    grammar = _GRAMMARS[collection]
+    match = grammar.pattern.fullmatch(package_id[len(collection) + 1 :])
     if match is None:
         raise GovInfoBodySourceError(
-            f"{collection} package id does not match its grammar; expected {collection}-{example}"
+            f"{collection} package id does not match its grammar; expected {collection}-{grammar.example}"
         )
     parts = match.groupdict()
     issue_date = parts.get("date")
@@ -747,7 +863,21 @@ def parse_package_id(package_id: object) -> PackageIdentity:
         issue_date=_checked_date(issue_date, collection) if issue_date else None,
         issue_suffix=parts.get("suffix"),
         version=parts.get("version"),
+        fiscal_year=parts.get("fiscal_year"),
     )
+
+
+def stated_collection_code(collection: str) -> str:
+    """The ``collectionCode`` the publisher's records state for one collection.
+
+    Seven of the nine are their own id prefix; ``BUDGET`` and ``GPO-CDOC``
+    both state ``GPO``. Exposed so a caller comparing a record against a
+    collection asks this module rather than re-deriving the rule.
+    """
+    grammar = _GRAMMARS.get(collection)
+    if grammar is None:
+        raise GovInfoBodySourceError(f"package id collection is unsupported; expected one of {', '.join(_GRAMMARS)}")
+    return grammar.collection_code
 
 
 def _identity(value: PackageIdentity | str) -> PackageIdentity:
@@ -851,7 +981,7 @@ def validate_package_summary(
     if document.get("packageId") != identity.package_id:
         raise GovInfoBodySourceError("GovInfo summary packageId differs from the requested package")
     collection_code = document.get("collectionCode")
-    if not isinstance(collection_code, str) or collection_code != identity.collection:
+    if not isinstance(collection_code, str) or collection_code != stated_collection_code(identity.collection):
         raise GovInfoBodySourceError("GovInfo summary collectionCode differs from the requested collection")
     return PackageSummary(
         identity=identity,
@@ -897,7 +1027,7 @@ def validate_granule_summary(
     if document.get("granuleId") != identity.granule_id:
         raise GovInfoBodySourceError("GovInfo granule summary granuleId differs from the requested granule")
     collection_code = document.get("collectionCode")
-    if not isinstance(collection_code, str) or collection_code != identity.package.collection:
+    if not isinstance(collection_code, str) or collection_code != stated_collection_code(identity.package.collection):
         raise GovInfoBodySourceError("GovInfo granule summary collectionCode differs from the requested collection")
     return GranuleSummary(
         identity=identity,
@@ -988,7 +1118,7 @@ def validate_package_mods(
     if any(value != identity.package_id for value in access_ids):
         raise GovInfoBodySourceError("GovInfo MODS accessId differs from the requested package")
     codes = {element.text.strip() for element in root.fields("extension", "collectionCode")}
-    if codes and codes != {identity.collection}:
+    if codes and codes != {stated_collection_code(identity.collection)}:
         raise GovInfoBodySourceError("GovInfo MODS collectionCode differs from the requested collection")
     locators = {package_body_locator(identity, name): name for name in PACKAGE_BODY_FORMATS}
     offered, moved, other = _read_offered_renditions(root, locators, identity)
@@ -1009,6 +1139,7 @@ def validate_package_mods(
         reports=_mods_reports(root),
         members=_mods_members(root),
         session=next((element.text.strip() for element in root.fields("extension", "session")), None),
+        fiscal_year=_mods_fiscal_year(root),
     )
 
 
@@ -1053,7 +1184,7 @@ def validate_granule_mods(
     if any(value != identity.granule_id for value in access_ids):
         raise GovInfoBodySourceError("GovInfo granule MODS accessId differs from the requested granule")
     codes = {element.text.strip() for element in root.fields("extension", "collectionCode")}
-    if codes and codes != {identity.package.collection}:
+    if codes and codes != {stated_collection_code(identity.package.collection)}:
         raise GovInfoBodySourceError("GovInfo granule MODS collectionCode differs from the requested collection")
     hosts = [record for record in root.related_items if record.element.attribute("type") == "host"]
     host_ids = tuple(element.text.strip() for record in hosts for element in record.fields("extension", "accessId"))
@@ -1231,6 +1362,7 @@ __all__ = [
     "ModsStatute",
     "ModsUsCodeSection",
     "PackageBodyIdentity",
+    "PackageGrammar",
     "PackageIdentity",
     "PackageModsIdentity",
     "PackageSummary",
@@ -1242,6 +1374,7 @@ __all__ = [
     "package_summary_locator",
     "parse_granule_identity",
     "parse_package_id",
+    "stated_collection_code",
     "validate_granule_body",
     "validate_granule_mods",
     "validate_granule_summary",

@@ -1060,3 +1060,91 @@ moved the committee numbers on purpose, and the rollup document states which
 and by how much. The committed sidecar was deliberately **not** regenerated —
 it is the measurement as run, and a re-run's timings would contradict the
 prose the report quotes from it.
+
+## BUDGET and the GPO-prefixed CDOC reprints join the package-id grammar
+
+Adopted 2026-09-20 with [GovInfo bodies](sources/govinfo-bodies.md) (updated)
+and the `budget_volumes` contract; the B4 row of
+[closing the gaps](research/closing-the-gaps-2026-09-19.md).
+
+**Why now.** The [MODS re-check](research/pdf-yield-mods-recheck-2026-09-20.md)
+read 24 records across three collections and could prove only eight of them
+through `validate_package_mods`: `bodies.py`'s grammar covered CRPT and neither
+`BUDGET-*` nor the `GPO-`-prefixed CDOC reprints. The other sixteen were proved
+by a fallback that checks the root `accessId` and nothing else — **no final-URL
+check and no `collectionCode` check**, because the module derived neither for a
+collection it did not cover. That is acceptable for a measurement and not for a
+contract, and both families are now hosted targets: the budget volumes carry the
+largest real citation yield in the corpus (504 print-only public laws of 518),
+and the Senate Secretary's reprints are the `senate_expenditures` table. The
+re-check said this record was owed before either family was acquired in product
+code; this is it.
+
+**The grammar, as the publisher spells it.**
+
+- `BUDGET-{fiscal year}-{part}` — `BUDGET-2027-APP`. A four-digit fiscal year
+  and one of six parts: `APP`, `BALANCES`, `BUD`, `FCS`, `MSR`, `PER`. No
+  Congress anywhere in the id, which is the first thing that makes this
+  collection unlike every other one here.
+- `GPO-CDOC-{congress}sdoc{number}` — `GPO-CDOC-119sdoc3`.
+
+Both are read off the 24 retained MODS records' own `accessId`s and the
+re-check's request log, not inferred. **Both vocabularies are sealed to what
+was measured**, the same standard the CPRT row held itself to when it declined
+to infer `HPRT` from CRPT's `hrpt`: a budget part this sample never saw is a
+part whose address is not established, and `hdoc`/`tdoc` are real CDOC document
+types that no `GPO-CDOC-` id has been measured carrying. Each is one line plus
+the id that showed it.
+
+**Why these are not the neighbouring-collection ids the refusal exists to
+reject.** `parse_package_id` refuses `ERP-2009` and `GPO-J6-REPORT` because a
+collection-scoped `published` walk returns them and they live at other
+addresses. `GPO-J6-REPORT` states `collectionCode` `GPO` — and so, it turns
+out, do both of these families. So the discriminator cannot be the collection
+code, and it is not: the registered collection is the **whole id prefix**,
+matched longest-first, so `GPO-CDOC` is a collection and `GPO` is not.
+`GPO-J6-REPORT` therefore still refuses by name, and a test holds it refusing.
+The positive half is what the id-prefix match buys: for all eleven retained
+package records the MODS's own `raw object` rendition URL is *exactly*
+`package_body_locator(id, "pdf")`, so the address is the publisher's statement
+and not a construction.
+
+**What replaces the `collectionCode` check that could not run.** Nothing is
+dropped; the check is corrected. It compared the record's `collectionCode`
+against the id's own prefix, which is true for seven collections and false for
+these two. Each entry in `_GRAMMARS` now carries the code its records state
+(`PackageGrammar.collection_code`, `stated_collection_code()`), and summary,
+MODS, granule summary and granule MODS all compare against that. BUDGET and
+GPO-CDOC state `GPO`; the other seven state their own prefix, unchanged.
+Measured 2026-09-20 on 11 MODS records, 5 granule MODS and 3 package summaries
+— and the refusal still bites, asserted on a record stating `CRPT`.
+
+**What the widening buys, re-derived.** Every one of the sixteen records the
+re-check could prove only by `accessId` now passes the sealed validator that
+covers it: 11 `validate_package_mods`, 5 `validate_granule_mods` (host package
+included), 3 `validate_package_summary`, zero refusals, and the same bytes
+offered under another real package id of the same collection are refused
+(`budget-volumes-2026-09-20/reprove-identity.py`, offline, no request).
+
+**`BODY_PREFERENCE` does not move, and `PACKAGE_BODY_FORMATS` gains no entry.**
+Every retained record in both families offers `pdf` and nothing else, so the
+sealed order needs no new opinion. The renditions these records state *beside*
+the PDF are a JPEG thumbnail (5 of 11) and, on `BUDGET-2027-FCS`, an XLS —
+neither is a body text rendition and `extraction/body_text.py` has no
+derivation for either, so both stay in `other_renditions` as evidence. The two
+Balances volumes state an XLS as well, but inside a constituent record and at a
+*granule* stem (`xls/BUDGET-2026-BALANCES-1.xlsx`): an address this module's
+package locator does not derive, and a record its root-only reader never reads.
+That is a second reason not to admit the format on one sample.
+
+**One fact the widening exposes, and the contract acts on it.** A BUDGET
+summary states no `congress` at all. `interpretation/citations.py` stamps the
+document's own Congress onto every bare bill designator, so for a budget volume
+the print side can only produce `HR7806` while the MODS states `119-hr-7806`.
+Those are not comparable, and reporting `false` for every printed bill would be
+a `stated_by_index` value no comparison earned. `budget_volume_tables.
+budget_index_stated_keys` therefore drops `bill_number` from the comparison, so
+those rows land NULL, and the MODS's own bill list is published whole in
+`associated_bills_json`. The re-check's own 6-of-7 budget bill figure is a
+*congress-blind* comparison, which a contract cannot make: it would key rows on
+a form no hosted table uses.

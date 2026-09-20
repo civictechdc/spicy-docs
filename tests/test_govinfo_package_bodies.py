@@ -24,6 +24,7 @@ from spicy_docs.sources.govinfo.bodies import (
     package_mods_locator,
     package_summary_locator,
     parse_package_id,
+    stated_collection_code,
     validate_package_body,
     validate_package_mods,
     validate_package_summary,
@@ -42,6 +43,14 @@ ERROR_PAGE = b'<html><a href="https://www.govinfo.gov/error">Page Not Found</a><
 CPRT_PACKAGE = "CPRT-118HPRT57104"
 CPRT_SUMMARY = (FIXTURES / f"summary-{CPRT_PACKAGE}.json").read_bytes()
 CPRT_MODS = (FIXTURES / f"mods-{CPRT_PACKAGE}.xml").read_bytes()
+
+#: The two collections the grammar was widened to on 2026-09-20. The budget
+#: volume's records live with the rest of its fixture -- its text, its
+#: provenance and both keyed records are one set and are not split across two
+#: directories to save a second copy of 8 KB.
+REPRINT_PACKAGE = "GPO-CDOC-119sdoc3"
+BUDGET_PACKAGE = "BUDGET-2026-MSR"
+BUDGET_FIXTURES = Path(__file__).parent / "fixtures" / "budget_volumes"
 
 BILLS_FIXTURES = Path(__file__).parent / "fixtures" / "govinfo_bills"
 USLM_BILL_PACKAGE = "BILLS-119hconres11enr"
@@ -83,12 +92,26 @@ def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = 
         ("CDIR-2026-02-20", {"issue_date": "2026-02-20"}),
         ("BILLS-119hr1enr", {"congress": 119, "document_type": "hr", "number": "1", "version": "enr"}),
         ("BILLS-119hjres25enr", {"congress": 119, "document_type": "hjres", "number": "25", "version": "enr"}),
+        # The President's budget: a fiscal year and a part, no Congress at all.
+        # Six parts measured 2026-09-20 across the eight retained volumes.
+        ("BUDGET-2027-APP", {"fiscal_year": "2027", "document_type": "APP", "congress": None}),
+        ("BUDGET-2026-BALANCES", {"fiscal_year": "2026", "document_type": "BALANCES"}),
+        ("BUDGET-2027-BUD", {"fiscal_year": "2027", "document_type": "BUD"}),
+        ("BUDGET-2027-FCS", {"fiscal_year": "2027", "document_type": "FCS"}),
+        ("BUDGET-2026-MSR", {"fiscal_year": "2026", "document_type": "MSR"}),
+        ("BUDGET-2027-PER", {"fiscal_year": "2027", "document_type": "PER"}),
+        # The Senate Secretary's CDOC reprints. The collection is the whole
+        # two-segment prefix, which is what keeps GPO-J6-REPORT refused below.
+        ("GPO-CDOC-119sdoc3", {"collection": "GPO-CDOC", "congress": 119, "document_type": "sdoc", "number": "3"}),
+        ("GPO-CDOC-119sdoc6", {"collection": "GPO-CDOC", "congress": 119, "document_type": "sdoc", "number": "6"}),
     ],
 )
 def test_each_collection_grammar_keeps_the_publishers_own_parts(package_id: str, fields: dict[str, object]) -> None:
     identity = parse_package_id(package_id)
     assert identity.package_id == package_id
-    assert identity.collection == package_id.split("-", 1)[0]
+    # The collection is the id's own prefix, which is one path segment for
+    # seven collections and two for the GPO-prefixed CDOC reprints.
+    assert package_id.startswith(f"{identity.collection}-")
     for name, value in fields.items():
         assert getattr(identity, name) == value
 
@@ -113,6 +136,20 @@ def test_each_collection_grammar_keeps_the_publishers_own_parts(package_id: str,
         ("CRPT119hrpt1", "collection is unsupported"),
         ("", "nonempty string"),
         ("CRPT-" + "1" * 200, "128 characters"),
+        # A budget part no measurement has seen: refused rather than addressed
+        # at a guessed URL, the rule every grammar here follows.
+        ("BUDGET-2027-APPENDIX", "grammar"),
+        ("BUDGET-2027-TOC", "grammar"),
+        ("BUDGET-27-APP", "grammar"),
+        ("BUDGET-2027-app", "grammar"),
+        # hdoc and tdoc are real CDOC document types and are deliberately not
+        # inferred for the GPO-prefixed reprints: only sdoc has been measured.
+        ("GPO-CDOC-119hdoc3", "grammar"),
+        ("GPO-CDOC-119tdoc3", "grammar"),
+        ("GPO-CDOC-119sdoc0", "grammar"),
+        # And the id the two-segment prefix exists to keep refused: it states
+        # collectionCode GPO too, and is a different family at another address.
+        ("GPO-CDOC2-119sdoc3", "collection is unsupported"),
     ],
 )
 def test_unsupported_package_ids_refuse_by_name(package_id: str, message: str) -> None:
@@ -330,6 +367,107 @@ def test_real_cprt_summary_and_mods_state_the_committee_print() -> None:
         ModsBill(congress=118, bill_type="HR", number="8205", context="COVER", normalized_bill_type="hr"),
     )
     assert mods.primary_bill is None
+
+
+@pytest.mark.parametrize(
+    ("package", "records", "fiscal_year", "laws"),
+    [
+        # Both families the grammar was widened to on 2026-09-20. Before it,
+        # the MODS re-check could prove these records only by a fallback that
+        # checks the root accessId alone: no final-URL check and no
+        # collectionCode check, because this module derived neither for a
+        # collection its grammar did not cover.
+        (BUDGET_PACKAGE, BUDGET_FIXTURES, "2026", 1),
+        (REPRINT_PACKAGE, FIXTURES, None, 6),
+    ],
+)
+def test_the_two_widened_collections_prove_identity_through_the_sealed_validators(
+    package: str, records: Path, fiscal_year: str | None, laws: int
+) -> None:
+    """Both state ``collectionCode`` ``GPO``, which is not either one's id prefix.
+
+    That is the whole reason the check compares against the code the grammar
+    records rather than against the prefix: under the old rule these real
+    publisher records would each have been refused as a collection mismatch.
+    """
+    summary_url = f"https://api.govinfo.gov/packages/{package}/summary"
+    mods_url = f"https://api.govinfo.gov/packages/{package}/mods"
+
+    summary = validate_package_summary(
+        (records / f"summary-{package}.json").read_bytes(), package=package, final_url=summary_url, max_bytes=200_000
+    )
+    assert summary.identity.package_id == package
+    assert summary.collection_code == "GPO" != summary.identity.collection
+    assert summary.pages is not None and summary.pages.isdecimal()
+
+    mods = validate_package_mods(
+        (records / f"mods-{package}.xml").read_bytes(), package=package, final_url=mods_url, max_bytes=200_000
+    )
+    assert mods.access_ids == (package,)
+    assert mods.collection_code == "GPO"
+    # PDF and nothing else, for every one of the eleven records measured, and
+    # the rendition URL the publisher states is exactly this module's locator.
+    assert mods.offered_formats == ("pdf",)
+    assert mods.moved_renditions == ()
+    assert mods.fiscal_year == fiscal_year
+    assert len(mods.laws) == laws
+
+
+@pytest.mark.parametrize("package", [BUDGET_PACKAGE, REPRINT_PACKAGE])
+@pytest.mark.parametrize("record", ["summary", "mods"])
+def test_a_widened_collections_record_offered_under_another_id_is_refused(package: str, record: str) -> None:
+    """The refusal direction: the check above would pass on any record without it.
+
+    The other id is a *real* package of the same collection, which is the case
+    that matters -- a caller resuming a walk and pairing the wrong retained
+    body with the right locator.
+    """
+    other = {BUDGET_PACKAGE: "BUDGET-2027-BUD", REPRINT_PACKAGE: "GPO-CDOC-119sdoc5"}[package]
+    records = BUDGET_FIXTURES if package == BUDGET_PACKAGE else FIXTURES
+    if record == "summary":
+        body = (records / f"summary-{package}.json").read_bytes()
+        with pytest.raises(GovInfoBodySourceError, match="packageId"):
+            validate_package_summary(body, package=other, final_url=package_summary_locator(other), max_bytes=200_000)
+        # And the same bytes at the wrong final URL, the check the measurement
+        # tool's fallback could not make at all.
+        with pytest.raises(GovInfoBodySourceError, match="final URL"):
+            validate_package_summary(body, package=package, final_url=package_mods_locator(package), max_bytes=200_000)
+        return
+    body = (records / f"mods-{package}.xml").read_bytes()
+    with pytest.raises(GovInfoBodySourceError, match="accessId"):
+        validate_package_mods(body, package=other, final_url=package_mods_locator(other), max_bytes=200_000)
+    with pytest.raises(GovInfoBodySourceError, match="final URL"):
+        validate_package_mods(body, package=package, final_url=package_summary_locator(package), max_bytes=200_000)
+
+
+@pytest.mark.parametrize("collection", ["BUDGET", "GPO-CDOC"])
+def test_a_widened_collection_still_refuses_a_record_stating_another_code(collection: str) -> None:
+    """``GPO`` is what these two state; anything else is still a mismatch.
+
+    Widening the check must not have turned it off. ``CRPT`` is used as the
+    wrong code deliberately: it is a code some *other* collection really does
+    state, so this is the confusable case rather than a nonsense string.
+    """
+    package = f"{collection}-2026-MSR" if collection == "BUDGET" else f"{collection}-119sdoc3"
+    document = json.dumps({"packageId": package, "collectionCode": "CRPT"}).encode()
+    with pytest.raises(GovInfoBodySourceError, match="collectionCode"):
+        validate_package_summary(
+            document, package=package, final_url=package_summary_locator(package), max_bytes=10_000
+        )
+    mods = (
+        '<mods xmlns="http://www.loc.gov/mods/v3"><extension>'
+        f"<collectionCode>CRPT</collectionCode><accessId>{package}</accessId>"
+        "</extension></mods>"
+    ).encode()
+    with pytest.raises(GovInfoBodySourceError, match="collectionCode"):
+        validate_package_mods(mods, package=package, final_url=package_mods_locator(package), max_bytes=10_000)
+
+
+def test_stated_collection_code_is_the_publishers_answer_not_the_prefix() -> None:
+    assert stated_collection_code("CRPT") == "CRPT"
+    assert stated_collection_code("BUDGET") == stated_collection_code("GPO-CDOC") == "GPO"
+    with pytest.raises(GovInfoBodySourceError, match="collection is unsupported"):
+        stated_collection_code("ERP")
 
 
 def test_real_bills_mods_offers_uslm_directly_not_moved() -> None:

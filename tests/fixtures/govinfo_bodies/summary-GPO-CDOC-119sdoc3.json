@@ -1,0 +1,79 @@
+{
+    "dateIssued": "2025-05-29",
+    "references": [
+        {
+            "contents": [{
+                "label": "U.S.C",
+                "title": "2",
+                "sections": [
+                    "4108",
+                    "4575"
+                ]
+            }],
+            "collectionCode": "USCODE",
+            "collectionName": "U.S. Code"
+        },
+        {
+            "contents": [
+                {
+                    "number": "90",
+                    "congress": "102",
+                    "label": "Public Law"
+                },
+                {
+                    "number": "197",
+                    "congress": "104",
+                    "label": "Public Law"
+                },
+                {
+                    "number": "83",
+                    "congress": "108",
+                    "label": "Public Law"
+                },
+                {
+                    "number": "13",
+                    "congress": "109",
+                    "label": "Public Law"
+                },
+                {
+                    "number": "136",
+                    "congress": "116",
+                    "label": "Public Law"
+                },
+                {
+                    "number": "81",
+                    "congress": "117",
+                    "label": "Public Law"
+                }
+            ],
+            "collectionCode": "PLAW",
+            "collectionName": "Public and Private Laws"
+        }
+    ],
+    "documentType": "SDOC",
+    "congress": "119",
+    "session": "1",
+    "documentNumber": "3",
+    "packageId": "GPO-CDOC-119sdoc3",
+    "collectionCode": "GPO",
+    "detailsLink": "https://www.govinfo.gov/app/details/GPO-CDOC-119sdoc3",
+    "title": "Report of the Secretary of the Senate: October 1, 2024 to March 31, 2025",
+    "branch": "legislative",
+    "collectionName": "Additional Government Publications",
+    "download": {
+        "premisLink": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc3/premis",
+        "zipLink": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc3/zip",
+        "modsLink": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc3/mods",
+        "pdfLink": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc3/pdf"
+    },
+    "pages": "2685",
+    "governmentAuthor2": "Senate",
+    "chamber": "SENATE",
+    "governmentAuthor1": "Congress",
+    "federalPublicationName": "Featured Senate Publications",
+    "publisher": "U.S. Government Publishing Office",
+    "docClass": "SDOC",
+    "lastModified": "2025-12-31T18:36:58Z",
+    "category": "Congressional Committee Materials",
+    "granulesLink": "https://api.govinfo.gov/packages/GPO-CDOC-119sdoc3/granules?offsetMark=*&pageSize=100"
+}

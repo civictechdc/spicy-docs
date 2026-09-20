@@ -183,3 +183,26 @@ they produced are in `docs/sources/govinfo-bodies.md`, "Why PDF is last".
 
 Full probe output and the capture scripts are session receipts; they are not
 kept in this repository. Re-derive them with the routes named above.
+
+## The Senate Secretary reprint, for the widened grammar (2026-09-20)
+
+`GPO-CDOC-119sdoc3` is the second id shape
+`sources/govinfo/bodies.py`'s package-id grammar was widened to
+([decision record](../../../docs/decisions.md#budget-and-the-gpo-prefixed-cdoc-reprints-join-the-package-id-grammar)).
+Records only, no body: the Senate Secretary's expenditure tables are another
+contract's subject and this pair is here to exercise the grammar and the two
+sealed validators.
+
+| Fixture | What it is | Bytes | SHA-256 |
+| --- | --- | --- | --- |
+| `summary-GPO-CDOC-119sdoc3.json` | verbatim: `api.govinfo.gov/packages/GPO-CDOC-119sdoc3/summary`, one keyed request 2026-09-20, receipt `corpora/supply-2026-09-02/receipts/budget-volumes-2026-09-20/` | 2,677 | `0361cfeb5274685036089948422c6088b62cb2bc2dae3823efa814e60c226d9d` |
+| `mods-GPO-CDOC-119sdoc3.xml` | **reduced** (everything before the first `<relatedItem>`, then `</mods>`; 9 constituent records dropped): `api.govinfo.gov/packages/GPO-CDOC-119sdoc3/mods`, 15,797 bytes, `sha256:31e229e8fbba75cddeb0d90c89c7c3f6509131c49495f215f65f50b6842d92fb`, retained by the MODS re-check | 4,809 | `8aba15aaf7ac5ec1cd5cb81328d73c436adf6f830081e8a2a972b2cea2eab9be` |
+
+Both records state `collectionCode` **`GPO`**, which is neither the package-id
+prefix nor a collection this module addresses on its own — the same code
+`GPO-J6-REPORT` states, which is still refused because the registered
+collection is the whole `GPO-CDOC` prefix. That pair of facts is what the
+grammar's `collection_code` field exists for, and why the check compares
+against the code a collection's records state rather than against its prefix.
+The budget volume this widening was built for keeps its own records beside its
+text in `tests/fixtures/budget_volumes/`.

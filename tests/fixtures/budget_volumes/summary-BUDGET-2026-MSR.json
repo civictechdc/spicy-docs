@@ -1,0 +1,67 @@
+{
+    "dateIssued": "2025-09-05",
+    "references": [
+        {
+            "contents": [
+                {
+                    "label": "U.S.C",
+                    "title": "31",
+                    "sections": ["1106"]
+                },
+                {
+                    "label": "U.S.C",
+                    "title": "31",
+                    "sections": []
+                }
+            ],
+            "collectionCode": "USCODE",
+            "collectionName": "U.S. Code"
+        },
+        {
+            "contents": [{
+                "number": "21",
+                "congress": "119",
+                "label": "Public Law"
+            }],
+            "collectionCode": "PLAW",
+            "collectionName": "Public and Private Laws"
+        }
+    ],
+    "documentType": "BUDGET",
+    "packageId": "BUDGET-2026-MSR",
+    "collectionCode": "GPO",
+    "detailsLink": "https://www.govinfo.gov/app/details/BUDGET-2026-MSR",
+    "title": "Mid-Session Review",
+    "branch": "executive",
+    "collectionName": "Additional Government Publications",
+    "download": {
+        "premisLink": "https://api.govinfo.gov/packages/BUDGET-2026-MSR/premis",
+        "thumbnailJpeg": "https://api.govinfo.gov/packages/BUDGET-2026-MSR/thumbnailJpeg",
+        "zipLink": "https://api.govinfo.gov/packages/BUDGET-2026-MSR/zip",
+        "modsLink": "https://api.govinfo.gov/packages/BUDGET-2026-MSR/mods",
+        "pdfLink": "https://api.govinfo.gov/packages/BUDGET-2026-MSR/pdf"
+    },
+    "pages": "16",
+    "governmentAuthor2": "Office of Management and Budget",
+    "governmentAuthor1": "Executive Office of the President",
+    "publisher": "Office of Management and Budget, Executive Office of the President",
+    "suDocClassNumber": "PREX 2.8:2026",
+    "docClass": "BUDGET",
+    "lastModified": "2026-09-04T20:04:11Z",
+    "category": "Budget and Presidential Materials",
+    "fields": {
+        "name": "Fiscal Year",
+        "value": "2026"
+    },
+    "granulesLink": "https://api.govinfo.gov/packages/BUDGET-2026-MSR/granules?offsetMark=*&pageSize=100",
+    "president": {
+        "names": [
+            {"authority-fnf": "Donald J. Trump"},
+            {"authority-lnf": "Trump, Donald J."},
+            {"authority-other": "Donald Trump"},
+            {"authority-other": "Donald John Trump"}
+        ],
+        "id": "DJT",
+        "party": "R"
+    }
+}

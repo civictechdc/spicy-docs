@@ -1,0 +1,44 @@
+{
+    "dateIssued": "2026-04-03",
+    "documentType": "BUDGET",
+    "packageId": "BUDGET-2027-BUD",
+    "collectionCode": "GPO",
+    "detailsLink": "https://www.govinfo.gov/app/details/BUDGET-2027-BUD",
+    "title": "Budget of the U.S. Government",
+    "branch": "executive",
+    "collectionName": "Additional Government Publications",
+    "download": {
+        "premisLink": "https://api.govinfo.gov/packages/BUDGET-2027-BUD/premis",
+        "thumbnailJpeg": "https://api.govinfo.gov/packages/BUDGET-2027-BUD/thumbnailJpeg",
+        "zipLink": "https://api.govinfo.gov/packages/BUDGET-2027-BUD/zip",
+        "modsLink": "https://api.govinfo.gov/packages/BUDGET-2027-BUD/mods",
+        "pdfLink": "https://api.govinfo.gov/packages/BUDGET-2027-BUD/pdf"
+    },
+    "pages": "92",
+    "governmentAuthor2": "Office of Management and Budget",
+    "governmentAuthor1": "Executive Office of the President",
+    "publisher": "Office of Management and Budget, Executive Office of the President",
+    "suDocClassNumber": "PREX 2.8:2027",
+    "docClass": "BUDGET",
+    "lastModified": "2026-04-03T20:55:57Z",
+    "category": "Budget and Presidential Materials",
+    "otherIdentifier": {
+        "isbn": "978-0-16-097477-9",
+        "stock-number": "041-001-00757-1"
+    },
+    "fields": {
+        "name": "Fiscal Year",
+        "value": "2027"
+    },
+    "granulesLink": "https://api.govinfo.gov/packages/BUDGET-2027-BUD/granules?offsetMark=*&pageSize=100",
+    "president": {
+        "names": [
+            {"authority-lnf": "Trump, Donald J."},
+            {"authority-fnf": "Donald J. Trump"},
+            {"authority-other": "Donald Trump"},
+            {"authority-other": "Donald John Trump"}
+        ],
+        "id": "DJT",
+        "party": "R"
+    }
+}

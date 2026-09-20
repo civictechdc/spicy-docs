@@ -1,0 +1,97 @@
+<mods xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.loc.gov/mods/v3" version="3.3" xsi:schemaLocation="http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd" ID="P0b002ee1d37c4826">
+    <name type="corporate">
+         <namePart>United States Government Publishing Office</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">publisher</roleTerm>
+              <roleTerm authority="marcrelator" type="code">pbl</roleTerm>
+        </role>
+         <role>
+              <roleTerm authority="marcrelator" type="text">distributor</roleTerm>
+              <roleTerm authority="marcrelator" type="code">dst</roleTerm>
+        </role>
+    </name>
+    <name type="corporate">
+         <namePart>United States</namePart>
+         <namePart>Congress</namePart>
+         <namePart>Senate</namePart>
+         <namePart>Office of the Secretary</namePart>
+         <role>
+              <roleTerm authority="marcrelator" type="text">author</roleTerm>
+              <roleTerm authority="marcrelator" type="code">aut</roleTerm>
+        </role>
+         <description>Government Organization</description>
+    </name>
+    <typeOfResource>text</typeOfResource>
+    <genre authority="marcgt">government publication</genre>
+    <language>
+         <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+    </language>
+    <extension>
+         <collectionCode>GPO</collectionCode>
+         <category>Congressional Committee Materials</category>
+         <branch>legislative</branch>
+         <dateIngested>2025-05-28</dateIngested>
+    </extension>
+    <originInfo>
+         <publisher>U.S. Government Publishing Office</publisher>
+         <dateIssued encoding="w3cdtf">2025-05-29</dateIssued>
+         <issuance>continuing</issuance>
+         <frequency authority="marcfrequency">Semiannual</frequency>
+    </originInfo>
+    <physicalDescription>
+         <note type="source content type">Deposited</note>
+         <digitalOrigin>born digital</digitalOrigin>
+         <extent>2685 digital object pages</extent>
+    </physicalDescription>
+    <identifier type="uri">https://www.govinfo.gov/app/details/GPO-CDOC-119sdoc3</identifier>
+    <identifier type="local">P0b002ee1d37c4826</identifier>
+    <recordInfo>
+         <recordContentSource authority="marcorg">DGPO</recordContentSource>
+         <recordCreationDate encoding="w3cdtf">2025-05-28</recordCreationDate>
+         <recordChangeDate encoding="w3cdtf">2025-05-28</recordChangeDate>
+         <recordIdentifier source="DGPO">GPO-CDOC-119sdoc3</recordIdentifier>
+         <recordOrigin>machine generated</recordOrigin>
+         <languageOfCataloging>
+              <languageTerm type="code" authority="iso639-2b">eng</languageTerm>
+        </languageOfCataloging>
+    </recordInfo>
+    <accessCondition type="GPO scope determination">fdlp</accessCondition>
+    <extension>
+         <docClass>SDOC</docClass>
+         <accessId>GPO-CDOC-119sdoc3</accessId>
+         <chamber>SENATE</chamber>
+         <ACCode>GPO;CDOC</ACCode>
+         <fedPubName>Featured Senate Publications</fedPubName>
+         <docCitation descriptiveType="Senate Documents (S. Doc.)" text="S. Doc. 119-3"></docCitation>
+         <congress>119</congress>
+         <session>1</session>
+         <number>3</number>
+         <genericNav1Value>119th Congress</genericNav1Value>
+         <packageSort>G</packageSort>
+         <law congress="102" isPrivate="false" number="90"></law>
+         <law congress="104" isPrivate="false" number="197"></law>
+         <law congress="108" isPrivate="false" number="83"></law>
+         <law congress="109" isPrivate="false" number="13"></law>
+         <law congress="116" isPrivate="false" number="136"></law>
+         <law congress="117" isPrivate="false" number="81"></law>
+         <USCode title="2">
+                                
+              <section number="4108"></section>
+                                
+              <section detail="note" number="4575"></section>
+                            
+        </USCode>
+    </extension>
+    <titleInfo>
+         <title>Report of the Secretary of the Senate: October 1, 2024 to March 31, 2025</title>
+    </titleInfo>
+    <location>
+         <url displayLabel="Content Detail" access="object in context">https://www.govinfo.gov/app/details/GPO-CDOC-119sdoc3</url>
+         <url access="raw object" displayLabel="PDF rendition">https://www.govinfo.gov/content/pkg/GPO-CDOC-119sdoc3/pdf/GPO-CDOC-119sdoc3.pdf</url>
+    </location>
+    <identifier type="preferred citation">S. Doc. 119-3</identifier>
+    <extension>
+         <searchTitle>S. Doc. 119-3;Report of the Secretary of the Senate: October 1, 2024 to March 31, 2025;
+            </searchTitle>
+    </extension>
+</mods>

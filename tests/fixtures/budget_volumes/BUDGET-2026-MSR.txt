@@ -1,0 +1,1397 @@
+
+Technical Supplement
+to the 2026 Budget
+Mid-Session Review
+Office of Management and Budget
+x
+
+
+Technical Supplement
+to the 2026 Budget
+Mid-Session Review
+Office of Management and Budget
+x
+
+i
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+TABLE OF CONTENTS
+PAGE
+Transmittal Letter ..............................................................................................................i
+Mid-Session Review .......................................................................................................... 1
+Table 1. Savings in Receipts and Outlays ................................................................................2
+Table 2. Economic Assumptions .................................................................................................5
+Table 3. Outlays for Mandatory Programs Under Current Law .................................................6
+Table 4. Estimated Spending from 2026 Balances of Budget Authority:
+Discretionary Spending ................................................................................................ 7
+GENERAL NOTES
+1. All years referenced for budget data are fscal years unless otherwise noted. All years referenced
+for economic data are calendar years unless otherwise noted.
+2. Mandatory spending and receipts proposals in this document are limited to those proposals that support
+the President's 2026 discretionary request.
+3. Detail in the document may not add to the totals due to rounding.
+THE PRESIDENT'S BUDGET IS AVAILABLE ONLINE
+https://www.whitehouse.gov/omb/information-resources/budget/
+iii
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+MID-SESSION REVIEW, FISCAL YEAR 2026
+Defcits Cut in Half After Only Six
+Months of President Trump's Policies
+B
+efore President Trump took ofce, the U.S.
+was barreling towards fscal catastrophe due
+to chronic overspending. Table 1 shows the defcit
+trajectory. At the end of the previous Administra­
+tion, the current policy defcit1 was projected to
+grow an average of 6 percent each year from $2.1
+trillion in 2025 to $3.8 trillion in 2035, which is
+double the rate of infation projected at the time
+for this period.
+Since President Trump returned to ofce, the
+Administration enacted a once-in-a-generation
+piece of legislation, Public Law 119-21 or the One
+Big Beautiful Bill Act (OBBB), negotiated tough
+trade deals, unleashed American energy, eliminat­
+ed burdensome regulations, and slashed wasteful
+government spending. These actions both save
+money and stimulate economic growth, resulting
+in a $287 billion reduction in the defcit in 2025
+(from $2.1 trillion to $1.8 trillion) and a $2.8 tril­
+lion reduction in the defcit in 2035 (from $3.8
+trillion to $944 billion). The defcit in 2035 would
+be below $1 trillion for the frst time since 2019,
+during President Trump's frst term.
+Over the ten-year window of 2026 through
+2035, the Fiscal Year 2026 Mid-Session Review
+(MSR) projects defcits to decline from $31.5 tril­
+lion to $15.7 trillion—a reduction of $15.8 trillion,
+or by 50 percent.
+The One Big Beautiful Bill Bends the
+Cost Curve with $1.9 Trillion in Savings
+The largest, and most impactful, improvement
+in the spending trajectory was the enactment of
+the OBBB, which ushered in over $1.9 trillion2 in
+mandatory spending reforms. The OBBB achieved
+substantially more mandatory savings than the
+Defcit Reduction Act of 2005 ($140 billion), the
+Balanced Budget Act of 1997 ($800 billion), the
+Omnibus Budget Reconciliation Act of 1993 ($370
+billion), and the Omnibus Budget Reconciliation
+Act of 1990 ($440 billion) on an infation adjust­
+ed basis. In fact, the spending cuts in OBBB are
+larger than that of the next two largest reconcili­
+ation bills combined.
+The OBBB puts the Medicaid program on a
+more sustainable path, with over $1 trillion in sav­
+ings over ten years, reducing the program's growth
+rate from 6.3 percent to 4.7 percent. The legisla­
+tion strengthens guardrails around enrollment
+and eligibility requirements to address improper
+payments and ensure the program is only available
+to those who qualify, while preserving Medicaid
+for disabled people, children, pregnant women,
+and working, able-bodied adults. OBBB also in­
+creases the efciency of the Medicaid program by
+ensuring the Federal government and States are
+appropriately sharing costs. The legislation spe­
+cifcally targets states' abuse of provider taxes and
+state-directed payments—mechanisms that allow
+states to infate federal matching dollars without
+commensurate increases in state contributions.
+The OBBB reins in excessive student loan bor­
+rowing and forgiveness, resulting in over $400
+billion in savings; and returns accountability to
+the Supplemental Nutrition Assistance Program
+through stronger work requirements and a cost-
+share for States that have excessive payment er­
+rors, resulting in over $246 billion in savings.
+The One Big Beautiful Bill Keeps
+the President's Promises
+The OBBB delivers on many of President
+Trump's campaign promises such as "No Tax on
+Tips", "No Tax on Social Security", "No Tax on
+Overtime", and "No Tax on Car Loans". To ofset
+the cost of these tax cuts, the OBBB includes $488
+billion in savings by ending the Green New Deal.
+The OBBB also ends special interest tax breaks
+and loopholes such as closing the loophole that
+U.S. multinationals have exploited in an attempt
+to avoid nearly all tax on the profts of their for­
+1 That is, the defcit forecast including the permanent extension of the 2017 Tax Cut and Jobs Act (TCJA).
+2 CBO's July 21, 2025 estimate of the OBBB included approximate $1.5 trillion in savings. The most notable diferences in the
+Administration's estimate and CBO's estimate are: 1) CBO estimates savings over the 2025 to 2034 period, while the 2026 MSR es­
+timates savings for 2026 through 2035; 2) the 2026 MSR utilizes the Administration's economic assumptions at the time of OBBB
+enactment; and 3) the 2026 MSR applies diferent programmatic and technical assumptions based on the Administration's under­
+standing of how the programs will be afected.
+1
+
+
+
+
+
+
+
+
+
+
+
+
+
+2
+MID-SESSION REVIEW
+Table 1. Savings in Receipts and Outlays 1
+In Billions of Dollars
+Totals
+2025
+2026
+2027
+2028
+2029
+2030
+2031
+2032
+2033
+2034
+2035
+2026–
+2026–
+2030
+2035
+Defcit before Administration actions
+and proposals 2 .................................
+2,112
+2,572
+2,488
+2,702
+2,813
+3,067
+3,214
+3,417
+3,704
+3,727
+3,754 13,642 31,457
+Budgetary efect of the One Big Beautiful Bill
+(OBBB); Public Law 119-21):
+Receipts .................................................
+Outlays:
+Investment in defense and border ......
+24
+5
+127
+181
+77
+97
+77
+30
+60
+24
+6
+12
+−14
+1
+−19
+*
+−9
+*
+6
+*
+21
+.........
+347
+344
+332
+346
+Savings and other provisions ..............
+Total, outlays .................................
+Total, budgetary efect of
+OBBB ................................
+−137
+−133
+−108
+−45
+137
+263
+−87
+10
+87
+−151
+−122
+−44
+−169
+−145
+−85
+−209
+−197
+−191
+−219
+−219
+−232
+−270
+−270
+−289
+−255
+−255
+−263
+−269
+−269
+−263
+−265
+−265
+−244
+−661
+−316
+31
+−1,939
+−1,593
+−1,261
+Economic efect of OBBB and
+Administration policies .................................
+16
+−6
+−146
+−271
+−393
+−512
+−619
+−728
+−850
+−979 −1,108 −1,328 −5,612
+Efects of tarifs .................................................
+−135
+−323
+−333
+−347
+−363
+−383
+−399
+−416
+−433
+−452
+−472 −1,749 −3,920
+Other Administration policies:
+Discretionary appropriations:
+Defense programs
+3 ............................
+Non-defense programs .......................
+Subtotal, discretionary
+appropriations ..........................
+Mandatory programs:
+Mandatory policies that support
+the discretionary request
+for FY 2026 ...................................
+.........
+.........
+.........
+.........
+−6
+−105
+−111
+5
+28
+−248
+−219
+5
+57
+−341
+−284
+1
+64
+−407
+−342
+*
+65
+−459
+−394
+2
+51
+−503
+−452
+2
+30
+−538
+−509
+1
+4
+−574
+−570
+*
+−23
+−608
+−632
+–1
+−52
+−643
+−695
+–1
+208
+−1,559
+−1,351
+13
+217
+−4,425
+−4,207
+14
+Total, Administration policies .........
+.........
+−106
+−214
+−284
+−342
+−392
+−450
+−507
+−570
+−633
+−696 −1,338 −4,193
+Technical reestimates:
+Receipts .................................................
+Discretionary and mandatory programs ...
+Total, technical reestimates ................
+−4
+–54
+−58
+−237
+48
+−188
+18
+93
+110
+16
+111
+127
+−14
+97
+84
+−24
+124
+100
+–12
+113
+101
+2
+116
+118
+20
+140
+160
+29
+154
+183
+16
+143
+158
+–241
+473
+232
+–186
+1,139
+953
+Debt service and other interest efects ..............
+–2
+8
+–20
+–42
+–75
+–117
+–168
+–229
+–297
+–373
+–449
+–245 –1,761
+Total savings in receipts and outlays .....
+–287
+–352
+–515
+–861 –1,174 –1,494 –1,767 –2,051 –2,253 –2,517 –2,810 –4,396 –15,794
+Resulting defcit ...................................
+1,825
+2,220
+1,973
+1,841
+1,639
+1,572
+1,447
+1,366
+1,451
+1,210
+944
+9,246 15,664
+Memorandum, tarifs:
+Total tarif collections ..............................
+220
+400
+410
+428
+448
+472
+492
+513
+534
+557
+582
+2,158
+4,836
+*$500 million or less.
+1 Negative amounts are defcit reducing.
+2 Assumes an extension of the Tax Cuts and Jobs Act.
+3 The President's 2026 Budget requests $1.0 trillion for defense programs. Part of that request was enacted in OBBB. The total estimated change in defense outlays due to the
+Administration's policies is $109 billion in 2026 and $365 billion over 2026-2035.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3
+MID-SESSION REVIEW
+eign subsidiaries, and it stopped U.S. corporations
+from getting a reduced income tax rate on selling
+their valuable intellectual property and business
+assets to foreign buyers. On net, these revenue
+policies increase the defcit by $332 billion over
+the ten-year budget period.
+The OBBB also makes critical investments in
+U.S. border and national security. Funding for the
+Departments of Defense and Homeland Security,
+as well as the National Nuclear Security Adminis­
+tration in the Department of Energy, are projected
+to add $346 billion in outlays over 2026-2035. As
+part of the border security money, OBBB has over
+$45 billion to complete border wall construction
+and another $45 billion to fund ICE operations
+at detention centers.
+Tarifs and Reciprocal
+Trade Boost Revenues
+Persistent, world-record trade imbalances and
+lack of reciprocity in our bilateral trade relation­
+ships have caused an unusual and extraordinary
+threat to the national security and economy of
+the United States. Foreign countries have imple­
+mented beggar-thy-neighbor trade and industrial
+overproduction policies, excessively relying upon
+U.S. consumers for their growth and employment.
+As a result of these unbalanced trade relations,
+hundreds of thousands of American manufactur­
+ing jobs have been lost, our manufacturing base
+has been weakened, GDP growth has sufered,
+and fscal defcits have increased.
+To address this pressing national emergency,
+the Administration has taken decisive action and
+implemented the Fair and Reciprocal Trade Plan
+by imposing reciprocal tarifs. This strategy is
+already yielding results. From the start of fscal
+year 2025 through July, the U.S. has collected $136
+billion in customs duties, a 116 percent increase
+over the same time last year. Looking forward,
+the Administration estimates an additional $3.9
+trillion in defcit-reducing tarif revenue over the
+10-year window. This level is in addition to the
+$0.9 trillion in tarifs that are projected to be col­
+lected over the 10-year window as part of baseline
+import activities, bringing total tarif revenues in
+the MSR to nearly $5 trillion. Table 1 breaks out
+the additional Fair and Reciprocal Trade Plan ten-
+year tarif revenue.
+Just as past Section 301 tariffs on Chinese
+imports lowered our bilateral trade defcit with
+China and increased production in protected in­
+dustries, the Fair and Reciprocal Trade Plan is
+expected to improve our trade balance and revi­
+talize the American industrial base.
+Unleashing American Energy
+Allows Americans to Thrive
+The Administration has made unleashing
+American energy one of its priorities in a broad­
+er agenda aimed at strengthening the economy
+and bringing down the cost of living. While the
+United States has vast energy resources, current
+energy production is far below potential and is
+insufcient to meet current or future needs. This
+is refected in the weak growth of electricity pro­
+duction over the past 20 years and the dramatic
+40 percent rise in electricity costs since 2020
+that has burdened households and businesses.
+Additionally, the rise of intermittent genera­
+tion sources such as wind and aging transmis­
+sion infrastructure has also increased strain on
+our energy systems. Looking forward, growing
+American manufacturing and maintaining the
+United States' lead in artifcial intelligence (AI)
+will require more and cheaper energy. Building
+American energy dominance will address these
+various concerns and prepare the economy for
+sustained long-term growth.
+To support energy dominance, stimulate do­
+mestic energy production, and reduce costs the
+Administration has taken a broad range of bold
+actions. These include reforming burdensome reg­
+ulations, reducing review and approval timelines
+for permits, resuming federal lease sales for energy
+development, issuing permits for new Liquefed
+Natural Gas (LNG) export terminals, supporting
+advanced nuclear technology development and
+knowledge transfer, modernizing and securing
+the electricity grid, and streamlining funding de­
+cisions, among others. These policies will raise
+oil and gas output, lower the cost of electricity,
+and raise GDP growth over the budget window.
+Responsible Regulatory Reform
+Unleashes American Ingenuity
+The Trump Administration continues to ad­
+vance regulatory reform by lifting the burdens
+of excessive regulation, resulting in greater op­
+portunities for individuals, business owners, and
+families. Responsible regulatory reform promotes
+economic growth and innovation, leaving the
+American people with more freedom to pursue
+their work and exercise ingenuity.
+In January, President Trump issued Execu­
+tive Order (EO) 14192, "Unleashing Prosperity
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4
+MID-SESSION REVIEW
+Through Deregulation," which requires agencies
+to repeal ten existing regulations for every new
+one they issue and also imposes a regulatory bud­
+geting process. Shortly after, EO 14219, "Ensuring
+Lawful Governance and Implementing the Presi­
+dent's Department of Government Efciency De-
+regulatory Initiative," directed agencies to review
+all existing rules and identify any that exceed
+statutory authority, infringe constitutional limits,
+or impose unnecessary burdens. And fnally, EO
+14215, "Ensuring Accountability for All Agencies,"
+further strengthened these eforts by bringing the
+regulations of independent agencies—such as the
+Security and Exchange Commisson (SEC), Fed­
+eral Trade Commission (FTC), and Federal Com­
+munications Commission (FCC)—under Ofce
+of Management and Budget (OMB) review for
+the frst time, ensuring that the Administration's
+cost-control and legality checks apply across the
+full regulatory landscape.
+Together, EO 14192 supplies the discipline to
+reduce the regulatory burden, EO 14219 deliv­
+ers the legal and policy framework for removing
+unlawful or excessive rules, and EO 14215 ex­
+pands the reach of both reforms to so-called in­
+dependent agencies. This coordinated approach
+removes barriers to innovation and investment,
+lowers hidden compliance costs, and sets the na­
+tion on a path toward a leaner federal government.
+Together, President Trump's Policies
+Are Catalyzing Economic Growth
+President Trump's pro-growth policies and
+reining in wasteful spending will unleash ro­
+bust, real economic growth, lower infation, and
+restore fscal sanity. Table 2 provides a summary
+of the updated economic assumptions. The pro­
+jected real Gross Domestic Product (GDP) annual
+growth rate (fourth-quarter-over-fourth-quarter)
+will rise to 3.2 percent in 2026 and average about
+2.9 percent over the next ten years. Infation is
+forecasted to remain at stable, low levels. Infa­
+tion, as measured by the year-over-year change
+in the consumer price index (CPI) and personal
+consumption expenditures (PCE) price index, is
+projected to be 2.5 percent and 2.4 percent, re­
+spectively, in 2025 before returning to 2.2 percent
+and 2.0 percent, respectively in 2026. The unem­
+ployment rate will likewise decline to 3.7 percent
+by 2026 and remain low throughout the forecast
+period. Thanks to restored fscal discipline and
+renewed confdence in the United States' fnances,
+short term interest rates will decline to 3.1 percent
+by 2027 and remain low going forward while long­
+term interest rates will gradually fall from their
+current level of 4.2 percent to 3.3 percent by 2035.
+Compared to the economic forecast of the pre­
+vious administration, the economy is forecasted to
+be far stronger across multiple dimensions. Most
+notably, GDP growth is about 1 percentage point
+faster every year starting in 2025. The gains from
+this faster growth compound over time, raising
+projected real GDP in 2034 by approximately 10
+percentage points compared to the previous fore­
+cast. As a result of this faster growth, wages and
+salaries are also now expected to grow almost 1
+percent faster on average over the forecast win­
+dow. Additionally, 10-year interest rates are pro­
+jected to fall more quickly and settle at a level that
+is about 0.5 percentage points lower by the end of
+the forecast window. Infation and the unemploy­
+ment rate are also projected to be slightly lower
+over the forecast window. This combination of
+increased economic growth and lower long-term
+interest rates, expected as a result of President
+Trump's policies, will reduce defcits by $5.6 tril­
+lion over the ten-year budget window.
+The Administration's MSR forecast difers
+from external forecasts in part because of difer­
+ent timing across forecasts and partly because of
+difering assumptions about the implementation
+and impacts of Administration policies. Additional
+diferences also arise due to the Administration's
+assumption that the President's policy proposals
+will be enacted and implemented. Outside fore­
+casters may also difer on their assessments of en­
+acted legislation such as OBBB and the economic
+impacts of Administration eforts to rebalance
+trade, expand domestic energy production, and
+reduce burdensome regulations.
+Updated Spending Assumptions
+Working with the Congress, the Administra­
+tion enacted The Rescissions Act of 2025 on July
+17, 2025. This legislation eliminated $9 billion in
+wasteful discretionary funding for foreign assis­
+tance programs and the Corporation for Public
+Broadcasting. This law builds on the President's
+2026 Discretionary Budget Request to fnd sav­
+ings through eliminating programs found to be
+woke and weaponized against ordinary working
+Americans, wasteful, or best left to the States and
+localities to provide. The MSR assumes non-de­
+fense, discretionary funding is held fat from these
+FY 2026 levels, resulting in $4.4 trillion in savings
+over the ten-year budget window.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+MID-SESSION REVIEW
+5
+Table 2. Economic Assumptions
+1
+Calendar Years, In Billions of Dollars
+Actual
+Projections
+2024
+2025
+2026
+2027
+2028
+2029
+2030
+2031
+2032
+2033
+2034
+2035
+Gross Domestic Product (GDP):
+Nominal Level .................................................................. 29,185 30,604 32,333 34,021 35,776 37,621 39,536 41,507 43,560 45,714 47,974 50,345
+Percent Change, Year/Year:
+Current Dollars ............................................................
+5.3
+4.9
+5.6
+5.2
+5.2
+5.2
+5.1
+5.0
+4.9
+4.9
+4.9
+4.9
+Real, Chained (2017) Dollars .......................................
+2.8
+1.8
+3.0
+3.1
+3.1
+3.1
+3.0
+2.9
+2.9
+2.9
+2.9
+2.9
+Percent Change, Fourth-Quarter-over-Fourth-Quarter:
+Real, Chained (2017) Dollars .......................................
+2.5
+1.8
+3.2
+3.1
+3.1
+3.1
+3.0
+2.9
+2.9
+2.9
+2.9
+2.9
+Price Indices, Percent Change, Year/Year:
+GDP Chained Price Index .................................................
+2.4
+3.0
+2.6
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+Consumer Price Index (All Urban)
+2 ...................................
+3.0
+2.5
+2.2
+2.3
+2.2
+2.2
+2.2
+2.2
+2.2
+2.2
+2.2
+2.2
+Personal Consumption Expenditures (PCE) Price Index .....
+2.5
+2.4
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+Wages and Salaries .......................................................... 12,401 12,962 13,644 14,321 15,101 15,927 16,778 17,666 18,596 19,591 20,640 21,750
+Unemployment Rate, Civilian, Percent 3 .......................
+4.0
+4.1
+3.9
+3.7
+3.7
+3.7
+3.7
+3.7
+3.7
+3.7
+3.7
+3.7
+Interest Rates, Percent 4:
+91-Day Treasury Bills .......................................................
+5.0
+4.1
+3.4
+3.1
+3.1
+3.1
+3.1
+3.1
+3.1
+3.1
+3.1
+3.1
+10-Year Treasury Notes ....................................................
+4.2
+4.3
+3.8
+3.6
+3.5
+3.4
+3.4
+3.3
+3.3
+3.3
+3.3
+3.3
+1 Based on information available as of July 24, 2025.
+2 Seasonally adjusted.
+3 Annual average.
+4 Average rate, secondary market (bank discount basis).
+For defense discretionary spending, the MSR
+assumes the total 2026 request of $1.0 trillion
+grows with infation during the frst fve years,
+and it also assumes placeholders in the second
+half of the ten-year window that hold defense
+funding fat, resulting in an increase in outlays
+of $217 billion.
+Additionally, MSR includes several small man­
+datory policy proposals that support and interact
+with the discretionary policy proposals included
+in the FY 2026 Discretionary Budget Request.
+These proposals result in a minor $14 billion in­
+crease to the defcit over the ten-year period.
+Outlays for debt service and other net interest
+efects are projected to decrease by $1.8 trillion
+over 2026-2035, while technical reestimates prin­
+cipally relating to entitlement programs increase
+defcits by $953 billion. Table 1 shows the ten-year
+spending, debt service, and net interest trajectory.
+Other Statutorily Required Tables
+Table 3 describes outlays for mandatory pro­
+grams under current law, and meets the require­
+ments of 31 USC 1106(a)(2).
+Table 4 describes estimated outlays from un­
+spent balances of discretionary funding proposed
+for 2026 and provided in prior years. Funding of­
+ten outlays over a period of time as the govern­
+ment liquidates its obligations, as shown in this
+table. This table meets the requirement of 31 USC
+1106(a)(3).
+The Way Forward
+President Trump continues to focus on pro­
+moting economic policies that foster growth;
+reduce waste, fraud, and abuse; fght infation;
+unleash American energy; and rebalance trade
+relationships. The Administration has only just
+begun, and defcits have already been cut in half.
+
+
+
+
+
+
+
+6
+MID-SESSION REVIEW
+Table 3. Outlays for Mandatory Programs Under Current Law 1
+In Billions of Dollars
+Totals
+2024
+2025
+2026
+2027
+2028
+2029
+2030
+2031
+2032
+2033
+2034
+2035
+2026–
+2026–
+2030
+2035
+OUTLAYS:
+Human resources programs:
+Education, training,
+employment and
+social services .....................
+185
+–45
+42
+37
+25
+22
+21
+20
+19
+19
+19
+19
+147
+242
+Health .....................................
+812
+898
+904
+903
+923
+968
+1,005
+1,033
+1,087
+1,144
+1,203
+1,279
+4,704 10,450
+Medicare .................................
+865
+992
+1,086
+1,171
+1,343
+1,288
+1,460
+1,554
+1,668
+1,921
+1,943
+1,931
+6,348 15,365
+Income security .......................
+567
+601
+617
+604
+619
+610
+633
+648
+664
+694
+698
+702
+3,083
+6,490
+Social Security .........................
+1,454
+1,569
+1,667
+1,758
+1,850
+1,943
+2,038
+2,138
+2,240
+2,346
+2,453
+2,564
+9,255 20,996
+Veterans benefts
+and services ........................
+192
+252
+306
+330
+378
+357
+405
+430
+454
+508
+506
+502
+1,777
+4,176
+Subtotal, human resources
+programs .......................
+4,075
+4,267
+4,622
+4,804
+5,139
+5,188
+5,562
+5,823
+6,133
+6,631
+6,822
+6,996 25,314 57,719
+Other mandatory programs:
+International afairs ..................
+–6
+–3
+–2
+–2
+–2
+–3
+–3
+–3
+–3
+–4
+–4
+–4
+–13
+–30
+Energy .....................................
+5
+10
+17
+17
+15
+14
+12
+11
+12
+11
+9
+9
+76
+128
+Natural resources and
+environment ........................
+3
+26
+13
+14
+10
+7
+4
+3
+2
+2
+2
+2
+47
+58
+Agriculture ...............................
+20
+24
+28
+33
+33
+33
+29
+29
+29
+29
+29
+29
+156
+30
+Commerce and housing
+credit ..................................
+27
+–22
+–1
+8
+–70
+15
+16
+14
+15
+15
+9
+15
+–32
+36
+Transportation .........................
+6
+*
+*
+10
+13
+11
+5
+4
+4
+4
+4
+1
+40
+58
+Justice .....................................
+4
+9
+43
+65
+50
+27
+19
+4
+11
+10
+10
+10
+204
+249
+General government .................
+14
+25
+20
+19
+13
+14
+14
+14
+11
+12
+13
+13
+79
+142
+Undistributed ofsetting
+receipts ...............................
+–147
+–149
+–158
+–161
+–179
+–179
+–184
+–178
+–211
+–198
+–202
+–196
+–861 –1,846
+Other functions ........................
+59
+40
+156
+75
+42
+41
+38
+37
+38
+40
+41
+42
+351
+549
+Subtotal, other mandatory
+programs .......................
+−15
+−40
+115
+79
+−76
+–20
+–50
+–66
+–93
+–78
+–89
+–79
+47
+–356
+Total, outlays for mandatory
+programs under
+current law ..........................
+4,061
+4,228
+4,736
+4,883
+5,063
+5,167
+5,512
+5,757
+6,040
+6,554
+6,733
+6,918 25,361 57,363
+*$500 million or less.
+1 This table meets the requirements of 31 USC 1106(a)(2).
+
+
+7
+MID-SESSION REVIEW
+Table 4. Estimated Spending from 2025 Balances of Budget Authority:
+Discretionary Programs
+In Billions of Dollars
+Total
+OUTLAYS FROM END-OF-2026 BALANCES:
+2027 .............................................................................................................................................
+980.1
+2028 .............................................................................................................................................
+448.6
+2029 .............................................................................................................................................
+229.6
+2030 .............................................................................................................................................
+128.8
+2031 .............................................................................................................................................
+68.5
+2032 .............................................................................................................................................
+40.8
+2033 .............................................................................................................................................
+22.8
+2034 .............................................................................................................................................
+13.8
+2035 .............................................................................................................................................
+8.2
+Note: Required by 31 USC 1106(a)(3). Balances as of the end of 2026 include unspent balances of discretionary budget
+authority provided in 2026 and prior years, as well as unspent balances of mandatory contract authority that is subject to
+discretionary obligation limitations.
+Executive Office of the President
+Office of Management and Budget
+Washington, D.C.
