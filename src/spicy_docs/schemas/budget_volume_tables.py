@@ -23,7 +23,7 @@ Kind                       Print-only, eight volumes, every page
 ``usc_section``            **97 of 922**
 ``cfr_section``            **13 of 18**
 ``statutes_at_large``      1 of 81
-``bill_number``            6 of 7 (not comparable; see below)
+``bill_number``            **6 of 8**, congress-blind only (see below)
 =========================  ==========================================
 
 Against the activity reports' 0 of 1,406 bills and 0 of 174 laws, that is the
@@ -43,15 +43,23 @@ report ``false`` for every printed bill: a claim that the index does not state
 a key, made by a comparison that never happened.  :func:`budget_index_stated_keys`
 therefore drops ``bill_number`` from the comparison entirely, so those rows
 carry NULL -- "no comparison was possible" -- and the MODS's own bill list is
-published whole in ``associated_bills_json`` for a consumer that wants the
-edge.  (The re-check's own 6-of-7 figure is a *congress-blind* comparison,
-which this contract does not make: it would key rows on a form no hosted table
-uses.)
+published whole in ``associated_bills_json``.
+
+What *is* publishable is the congress-blind comparison the re-check itself
+made, and ``distinct_bills`` / ``distinct_bills_beyond_index_congress_blind``
+carry it: both sides reduced to ``{type}-{number}`` through
+``index_stated_bill_pairs``, which is how 6 of the 8 distinct printed bills
+across the eight volumes are print-only.  **That pair is a count and never a
+join key** -- ``{type}-{number}`` addresses no hosted row, because
+``congress_bills.bill_id`` needs the Congress this family never states -- so it
+is two summary columns and no ``document_citations`` row changes: the per-row
+``stated_by_index`` stays NULL, because the comparison a row would have to
+claim is still the strict one.
 
 **One link table, not two.** A citation row from a budget volume is a
 ``document_citations`` row shaped by
 ``document_citation_tables.shape_document_citation`` with
-``document_kind`` ``budget-volume``, carrying the same
+``document_kind`` ``budget_volume``, carrying the same
 ``stated_by_index`` semantics: ``true`` where this volume's MODS already
 states the key, ``false`` where the MODS vocabulary can state that kind and
 this record states nothing of it, and NULL where no comparison was possible.
@@ -63,14 +71,24 @@ looks like.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
-from spicy_docs.schemas.document_citation_tables import document_provenance, index_stated_keys
+from spicy_docs.schemas.document_citation_tables import (
+    bill_key,
+    distinct_targets,
+    document_provenance,
+    index_stated_bill_pairs,
+    index_stated_keys,
+    read_depth,
+)
 from spicy_docs.schemas.tables import Row, flag, json_column, natural_key, table_contract, text
 
 #: The value ``document_citations.document_kind`` takes for a budget volume,
-#: beside ``document_citation_tables.GOVINFO_PACKAGE``.
-BUDGET_VOLUME = "budget-volume"
+#: beside ``document_citation_tables.GOVINFO_PACKAGE``.  snake_case, like every
+#: other enum value this column family publishes: the vocabulary is a public
+#: contract, and one spelling settled before anything consumes it costs nothing
+#: where moving it afterwards would need a behavior change to justify it.
+BUDGET_VOLUME = "budget_volume"
 
 BUDGET_VOLUMES = table_contract(
     "budget_volumes",
@@ -102,8 +120,9 @@ BUDGET_VOLUMES = table_contract(
         "associated_bills_json": (
             "Every root-level `<bill>` the MODS names, as a JSON array of objects carrying the bill's "
             "natural key and the publisher's own `context` marker, in document order.  Published whole "
-            "because it is the only comparable statement of this edge: a budget volume's print names a "
-            "bill without a Congress, so no printed bill key can be compared with these."
+            "because it is the only statement of this edge that carries a Congress: a budget volume's print "
+            "names a bill without one, so a printed key can be compared with these only congress-blind and "
+            "can join `congress_bills` not at all."
         ),
         "associated_law_count": "How many laws the MODS names; every one is in associated_laws_json.",
         "associated_laws_json": (
@@ -130,6 +149,21 @@ BUDGET_VOLUMES = table_contract(
         "associated_statutes_json": (
             "Every `<statuteAtLarge>` page the MODS names, as a JSON array of `{volume}-{pages}` keys, in "
             "document order."
+        ),
+        "distinct_bills": (
+            "How many distinct bills the print names, by the shared citation rules.  A floor bounded by "
+            "pages_read, and **not a join key**: a budget volume states no Congress, so the rule leaves each "
+            "one as the congress-free `HR7806` and `congress_bills.bill_id` cannot be built from it.  The "
+            "MODS's own bill list, which does carry a Congress, is in associated_bills_json."
+        ),
+        "distinct_bills_beyond_index_congress_blind": (
+            "How many of those the MODS does not state **with the Congress dropped from both sides** -- the "
+            "only comparison this family supports, and the one the re-check made when it reported 6 "
+            "print-only of 8 distinct across the eight sampled volumes at full page depth.  Named for what "
+            "it is: a count, never a key, and weaker than every other `*_beyond_index` column here, because "
+            "two measures numbered alike in different Congresses are one value.  The per-row "
+            "`document_citations.stated_by_index` stays NULL for bills, because the strict comparison a row "
+            "would have to claim still cannot be made."
         ),
         "distinct_laws": (
             "How many distinct public laws the print names, by the shared citation rules.  A floor, not a "
@@ -199,12 +233,24 @@ def budget_index_stated_keys(mods: object) -> dict[str, frozenset[str]]:
     return stated
 
 
-def _distinct(findings: Iterable[object], kind: str) -> set[str]:
-    return {finding.target_key for finding in findings if finding.kind == kind}
+def congress_blind_bill_keys(mods: object) -> frozenset[str]:
+    """The MODS's bills in the spelling a Congress-less print can be compared with.
 
+    :func:`~spicy_docs.schemas.document_citation_tables.index_stated_bill_pairs`
+    already drops the Congress and gives ``hr-7806``; the print side of this
+    family gives ``HR7806``, because with no Congress to stamp,
+    ``interpretation.citations`` leaves a bill finding as its rule's own
+    canonical -- upper-case alphanumerics only.  So the *index* side is reduced
+    to meet the print, rather than the print being re-parsed here: this module
+    is a stdlib-only leaf and must not learn the bill-type vocabulary a second
+    time.
 
-def _bill_key(bill: object) -> str:
-    return natural_key(bill.congress, bill.normalized_bill_type or str(bill.bill_type).lower(), bill.number)
+    It is the same reduction the re-check compared on
+    (``_bill_keys(root)[0]`` is ``_alnum(type + number)``), which is what makes
+    ``distinct_bills_beyond_index_congress_blind`` reproduce a published count
+    rather than a private one.
+    """
+    return frozenset(pair.replace("-", "").upper() for pair in index_stated_bill_pairs(mods))
 
 
 def shape_budget_volume(
@@ -229,17 +275,12 @@ def shape_budget_volume(
     identity = summary.identity
     provenance = document_provenance(body, document_key=identity.package_id, document_kind=BUDGET_VOLUME)
     stated = budget_index_stated_keys(mods)
-    laws = _distinct(citations, "public_law")
-    sections = _distinct(citations, "usc_section")
-    parts = _distinct(citations, "cfr_section")
-    statutes = _distinct(citations, "statutes_at_large")
-    pages = getattr(body, "pages", None)
-    pages_read = None if pages is None else len(pages)
-    page_count = summary.pages
-    # A publisher that ever states a non-numeric extent must not crash the row
-    # or, worse, have it silently read as uncapped.
-    numeric_pages = page_count is not None and str(page_count).isdecimal()
-    capped = None if pages_read is None or not numeric_pages else pages_read < int(page_count)
+    bills = distinct_targets(citations, "bill_number")
+    laws = distinct_targets(citations, "public_law")
+    sections = distinct_targets(citations, "usc_section")
+    parts = distinct_targets(citations, "cfr_section")
+    statutes = distinct_targets(citations, "statutes_at_large")
+    pages_read, page_count, capped = read_depth(body, summary)
     return {
         "package_id": text(identity.package_id),
         "fiscal_year": text(getattr(mods, "fiscal_year", None) or identity.fiscal_year),
@@ -250,7 +291,7 @@ def shape_budget_volume(
         "stated_page_count": text(page_count),
         "associated_bill_count": text(len(mods.bills)),
         "associated_bills_json": json_column(
-            [{"bill_id": _bill_key(bill), "context": bill.context} for bill in mods.bills]
+            [{"bill_id": bill_key(bill), "context": bill.context} for bill in mods.bills]
         ),
         "associated_law_count": text(len(mods.laws)),
         "associated_laws_json": json_column([natural_key(law.congress, law.law_type, law.number) for law in mods.laws]),
@@ -265,6 +306,8 @@ def shape_budget_volume(
         "associated_cfr_parts_json": json_column([f"{part.title}-{part.part}" for part in mods.cfr_parts]),
         "associated_statute_count": text(len(mods.statutes)),
         "associated_statutes_json": json_column([f"{s.volume}-{s.pages}" for s in mods.statutes]),
+        "distinct_bills": text(len(bills)),
+        "distinct_bills_beyond_index_congress_blind": text(len(bills - congress_blind_bill_keys(mods))),
         "distinct_laws": text(len(laws)),
         "distinct_laws_beyond_index": text(len(laws - stated["public_law"])),
         "distinct_usc_sections": text(len(sections)),
@@ -287,5 +330,6 @@ __all__ = [
     "BUDGET_VOLUME",
     "BUDGET_VOLUMES",
     "budget_index_stated_keys",
+    "congress_blind_bill_keys",
     "shape_budget_volume",
 ]

@@ -821,6 +821,14 @@ def _collection_of(package_id: str) -> str | None:
     matching ``GPO`` alone would readmit ``GPO-J6-REPORT``, a different family
     at a different address, which is exactly what this function's caller
     exists to refuse. ``O(K * I)`` over the nine registered collections.
+
+    **The match does not backtrack**: the longest registered prefix wins and
+    its grammar is the only one tried, so registering a *shorter* prefix later
+    -- a bare ``GPO`` collection, say -- would not merely add a collection, it
+    would reroute nothing already covered but would start claiming ids this
+    function currently refuses. Adding a prefix that is a prefix of another is
+    therefore a routing change and belongs in a decision record, not in the
+    table alone.
     """
     matched = [name for name in _GRAMMARS if package_id.startswith(f"{name}-")]
     return max(matched, key=len) if matched else None
@@ -876,7 +884,8 @@ def stated_collection_code(collection: str) -> str:
     """
     grammar = _GRAMMARS.get(collection)
     if grammar is None:
-        raise GovInfoBodySourceError(f"package id collection is unsupported; expected one of {', '.join(_GRAMMARS)}")
+        supported = ", ".join(sorted(_GRAMMARS))
+        raise GovInfoBodySourceError(f"package id collection is unsupported; expected one of {supported}")
     return grammar.collection_code
 
 

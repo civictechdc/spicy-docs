@@ -1,4 +1,4 @@
-"""The budget-volume contract, pinned on two of the eight retained volumes.
+"""The budget_volume contract, pinned on two of the eight retained volumes.
 
 Four things are asserted here and nowhere else:
 
@@ -36,10 +36,12 @@ from spicy_docs.interpretation.citations import CITATION_RULE_SET_VERSION, find_
 from spicy_docs.schemas.budget_volume_tables import (
     BUDGET_VOLUME,
     budget_index_stated_keys,
+    congress_blind_bill_keys,
     shape_budget_volume,
 )
 from spicy_docs.schemas.document_citation_tables import (
     document_provenance,
+    index_stated_bill_pairs,
     index_stated_keys,
     shape_document_citation,
 )
@@ -282,11 +284,60 @@ def test_a_budget_volume_states_no_congress_so_a_printed_bill_is_not_comparable(
     )
 
 
+def test_the_congress_blind_bill_count_is_published_and_named_for_what_it_is() -> None:
+    """The one bill comparison this family supports, held against the re-check's own.
+
+    Neither fixture volume prints a bill -- the ones that do are the 1,340-page
+    Appendix and the 158-page Analytical Perspectives, both too large to commit
+    -- so the reduction is exercised on a MODS written for the purpose and the
+    print side taken from the shared rules, which is what the comparison
+    actually joins. ``HR2`` is stated by this index and ``HR3288`` is not, the
+    same split the re-check measured across the eight volumes.
+    """
+    mods = validate_package_mods(
+        (
+            b'<mods xmlns="http://www.loc.gov/mods/v3"><extension>'
+            b"<collectionCode>GPO</collectionCode><accessId>BUDGET-2027-APP</accessId>"
+            b'<bill congress="119" type="HR" number="2" context="OTHER"/>'
+            b'<bill congress="118" type="HCONRES" number="14" context="OTHER"/>'
+            b"</extension></mods>"
+        ),
+        package="BUDGET-2027-APP",
+        final_url=package_mods_locator("BUDGET-2027-APP"),
+        max_bytes=100_000,
+    )
+    # The index side, reduced to meet a print that states no Congress.
+    assert index_stated_bill_pairs(mods) == {"hr-2", "hconres-14"}
+    assert congress_blind_bill_keys(mods) == {"HR2", "HCONRES14"}
+
+    # And the print side, through the rules the measurement ran, with no
+    # Congress supplied -- which is what leaves the key congress-free.
+    findings = find_citations("H.R. 2, H. Con. Res. 14 and H.R. 3288", kinds=("bill_number",))
+    printed = {finding.target_key for finding in findings}
+    assert printed == {"HR2", "HCONRES14", "HR3288"}
+    assert all(not finding.target_resolved for finding in findings)
+    assert printed - congress_blind_bill_keys(mods) == {"HR3288"}
+
+
+@pytest.mark.parametrize("package", VOLUMES)
+def test_neither_fixture_volume_prints_a_bill_so_both_counts_are_zero(package: str) -> None:
+    """Stated rather than left implicit: a zero here is the document, not a gap.
+
+    The family's 6-of-8 congress-blind figure is carried by BUDGET-2027-APP and
+    BUDGET-2027-PER, neither of which is committable; these two volumes name no
+    bill at all at full page depth, in the re-check's own rows as well.
+    """
+    document, _rows, findings, _mods = rows_for(package)
+    assert [f for f in findings if f.kind == "bill_number"] == []
+    assert document["distinct_bills"] == "0"
+    assert document["distinct_bills_beyond_index_congress_blind"] == "0"
+
+
 @pytest.mark.parametrize("package", VOLUMES)
 def test_every_citation_row_carries_this_volumes_kind_and_digest(package: str) -> None:
     document, rows, findings, _mods = rows_for(package)
     assert rows
-    assert {row["document_kind"] for row in rows} == {"budget-volume"}
+    assert {row["document_kind"] for row in rows} == {"budget_volume"}
     assert {row["document_key"] for row in rows} == {package}
     assert {row["text_sha256"] for row in rows} == {document["text_sha256"]}
     assert document["citation_rows"] == str(len(findings))
