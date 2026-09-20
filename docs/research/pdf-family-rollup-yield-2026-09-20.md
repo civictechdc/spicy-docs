@@ -1,6 +1,8 @@
 # What the PDF-only families would add as hosted tables
 
-Status: measured 2026-09-20. Read-only, ten families, 118 logged requests;
+Status: measured 2026-09-20. **Superseded for the three GovInfo-served
+families on 2026-09-20** — see [the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md); struck cells
+below are the ones it replaces. Read-only, ten families, 118 logged requests;
 nothing published, no contract built. Sidecar:
 [`pdf-family-rollup-yield-2026-09-20.json`](pdf-family-rollup-yield-2026-09-20.json).
 Receipt: `~/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20/`.
@@ -21,15 +23,39 @@ the two rules the owner set:
    value means join keys to the [32 hosted tables](../tables.md) and structured
    content a consumer would otherwise re-read the PDF for.
 
+## Corrections
+
+**2026-09-20 — every GovInfo-served family below was measured against the wrong
+index, and its "beyond the index" figures are superseded by
+[the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md).** This measurement
+read GovInfo's `published` listing row — seven fields, no citation among them —
+as the index. The index a GovInfo body actually has is the **package MODS**,
+which `GovInfoBodyAcquirer` fetches for every body it reads and which states
+bills, laws, U.S. Code sections, CFR parts, Statutes at Large pages, RINs,
+committees and the submitting member as named elements. Measured against it,
+the headline result of this document reverses: the House committee activity
+reports name **no** bill and **no** public law their own MODS does not already
+state — 0 of 883 on this sample, and 0 of 1,406 on a complete read of every
+page. The affected columns are **Activity**, **SecSen** and **Budget** in the
+join-key table, the three GovInfo rows of the verdict table, and
+recommendations 1 and 4 in [the build order](#recommended-build-order); each is
+struck in place below. The non-GovInfo families (CRS,
+GAO, the Court, CourtListener, the Clerk, agency uploads, CBO) have no MODS and
+their rows stand, with one narrowing: the recheck found that CourtListener's
+search record states the outbound opinion-to-opinion edge in `opinions[].cites`
+and that this measurement had dropped that field from the record it compared
+against. The rules, the sample, the retained bytes and the request accounting
+here are unchanged and the recheck reuses them.
+
 ## The verdict, per family
 
 | Family | Documents read | Verdict | What only the PDF supplies | What the index already supplies |
 | --- | --- | --- | --- | --- |
-| **House committee activity reports** (GovInfo `CRPT`) | 8/8 | **Host as a contract** — the highest-yield family in the corpus | **883 distinct bill numbers**, 75 public laws and **20 committees resolved to a `system_code`**, none of them stated by the index (940, 85 and 120 link rows) | `packageId`, `title`, `dateIssued`, `lastModified`, `congress` — and nothing else |
-| **Report of the Secretary of the Senate** (GovInfo `CDOC`) | 8/8 | **Host as a contract** — a cost/expenditure table, not prose | 396 ruled tables in 480 sampled pages (median 5 rows × 10 columns); 1,687 distinct dollar figures over 2,004 link rows; 5 distinct public laws | The senate.gov page states a link and a label (`Full Report`, `Part I`, `Part II`) — two fields |
+| **House committee activity reports** (GovInfo `CRPT`) | 8/8 | ~~**Host as a contract** — the highest-yield family in the corpus~~ **Superseded**: its own MODS states all of it | ~~**883 distinct bill numbers**, 75 public laws and **20 committees resolved to a `system_code`**, none of them stated by the index (940, 85 and 120 link rows)~~ **0 bills and 0 laws** beyond the package MODS; 27 committees, 87 RINs and 37 dockets survive — see [the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md) | `packageId`, `title`, `dateIssued`, `lastModified`, `congress` — and nothing else |
+| **Report of the Secretary of the Senate** (GovInfo `CDOC`, really `GPO`) | 8/8 | **Host as a contract** — a cost/expenditure table, not prose (unchanged; the citation half was always the smaller claim) | 396 ruled tables in 480 sampled pages (median 5 rows × 10 columns); 1,687 distinct dollar figures over 2,004 link rows (65,261 over 161,536 on a full read); ~~5 distinct public laws~~ **0 laws** beyond the MODS — see [the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md) | The senate.gov page states a link and a label (`Full Report`, `Part I`, `Part II`) — two fields |
 | **GAO reports** | 8/8 | **Host as a contract** — recommendations and cross-product citations | Recommendation sections in 5/8, *Matters for Congressional Consideration* in 1/8, 44 of the 45 distinct GAO product ids cited are other products, 25 ruled tables | `product_id`, `title`, `link`, `guid`, `pub_date`, and a `description` that is the "What GAO Found" abstract |
 | **Agency uploaded-report PDFs** (measured on Oversight.gov) | 8/8 | **Host as a contract**, but a narrow one | Recommendation sections in 6/8, 57 ruled tables, 11 distinct fiscal years, 4 distinct CFR cites | An unusually rich record: agency reviewed, components, report number, report type, date issued, external entity, **number of recommendations**, questioned costs, funds for better use |
-| **Budget justifications** (GovInfo `BUDGET`) | 8/8 | **Host as a contract** — account tables, with a caveat | 658 distinct dollar figures (727 link rows), 90 distinct U.S. Code cites, 69 distinct public laws, 71 ruled tables, appropriation-account headings in 4/8 | `packageId`, `title` (`Appendix`, `Analytical Perspectives`, …), `dateIssued` — nothing below volume level |
+| **Budget justifications** (GovInfo `BUDGET`) | 8/8 | **Host as a contract** — and now the *first* family to build | ~~658 distinct dollar figures (727 link rows), 90 distinct U.S. Code cites, 69 distinct public laws~~ beyond the MODS and on a full read: **504 public laws**, 97 U.S. Code cites, 13 CFR parts, 2,827 dollar figures; 71 ruled tables, appropriation-account headings in 4/8 — see [the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md) | `packageId`, `title` (`Appendix`, `Analytical Perspectives`, …), `dateIssued` — nothing below volume level |
 | **House Clerk disclosures** | 7/8 | **Host as a contract** — but a form-extraction one, not a citation one | 56 ruled tables in 45 pages (asset/transaction grids), 44 distinct dollar figures over 102 link rows | The yearly index states `DocID`, `Year`, `FilingType`, `FilingDate`, `Prefix`, `First`, `Last`, `Suffix`, `StateDst` — the filer and the filing, none of the content |
 | **Supreme Court slip opinions** | 8/8 | **Evidence-only for citations; host the body** | 192 distinct U.S. Reports cites over 209 link rows, 22 U.S. Code cites, 14 Statutes at Large cites, syllabus/held markers in 8/8 | The term index already states release number, date, docket, case name, **holding**, authoring Justice and citation |
 | **CourtListener opinions** | 8/8 | **Evidence-only** | Nothing of its own. Every one of its 8 `download_url`s is a supremecourt.gov slip PDF, and 7 of the 8 are the same files the row above sampled; the two that differ are not the same case — CourtListener's extra is a second revision of 25-365, the Court's index's extra is a different case, 24-1260 | 33 fields including `citation`, `docketNumber`, `dateFiled`, `judge`, `panel_names`, `syllabus`, `posture`, `procedural_history`, `scdb_id`, `lexisCite`, `neutralCite` |
@@ -154,28 +180,34 @@ across documents: the slip opinions cite 209 rows against 192 distinct U.S.
 Reports cites, and the activity reports 940 rows against 883 distinct bills.
 The bolded number is the yield over the publisher's own record.
 
+The **Activity**, **SecSen** and **Budget** cells below are struck: they were
+compared against GovInfo's listing row, not against the package MODS. see [the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md).
+
 | Key | Join target | CRS | GAO | SCOTUS | CourtL. | Activity | SecSen | Clerk | Budget | Upload |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `bill_number` | `congress_bills.bill_id` | 6/8 · **0** · 0 | 1/8 · **1** · 1 | 2/8 · **4** · 4 | 2/8 · **2** · 4 | 8/8 · **883** · 940 |  |  | 2/8 · **4** · 4 |  |
-| `public_law` | `laws (congress, law_type, number)` | 7/8 · **1** · 1 | 5/8 · **7** · 7 | 2/8 · **2** · 2 | 2/8 · **2** · 2 | 8/8 · **75** · 85 | 8/8 · **5** · 30 |  | 4/8 · **69** · 77 |  |
-| `statutes_at_large` | `laws.statutes_at_large_cite` |  | 7/8 · **11** · 11 | 5/8 · **14** · 14 | 5/8 · **8** · 13 | 1/8 · **2** · 2 |  |  | 1/8 · **6** · 6 |  |
-| `usc_section` | `law_code_sections` | 3/8 · **22** · 22 | 5/8 · **27** · 27 | 6/8 · **19** · 19 | 6/8 · **13** · 14 | 6/8 · **15** · 15 | 8/8 · **2** · 16 |  | 4/8 · **90** · 91 | 4/8 · **4** · 5 |
-| `cfr_section` | CFR sections (host-side) | 3/8 · **17** · 17 | 4/8 · **9** · 9 | 2/8 · **4** · 4 | 2/8 · **4** · 4 |  |  |  | 1/8 · **3** · 3 | 5/8 · **4** · 6 |
-| `federal_register_cite` | `federal_register.document_number` |  | 2/8 · **7** · 7 | 4/8 · **7** · 7 | 5/8 · **7** · 8 | 1/8 · **1** · 1 |  |  |  |  |
-| `rin` | `federal_register.regulation_id_numbers_json` |  |  |  |  | 1/8 · **1** · 1 |  |  |  |  |
-| `gao_product_id` | GAO product id (`gao/files.py` key) | 1/8 · **3** · 3 | 8/8 · **44** · 44 |  |  | 1/8 · **2** · 2 |  |  |  | 2/8 · **4** · 4 |
-| `crs_report_id` | Congress.gov `crsreport` id | 8/8 · **44** · 44 |  |  |  |  |  |  | 1/8 · **1** · 1 |  |
+| `bill_number` | `congress_bills.bill_id` | 6/8 · **0** · 0 | 1/8 · **1** · 1 | 2/8 · **4** · 4 | 2/8 · **2** · 4 | ~~8/8 · **883** · 940~~ |  |  | ~~2/8 · **4** · 4~~ |  |
+| `public_law` | `laws (congress, law_type, number)` | 7/8 · **1** · 1 | 5/8 · **7** · 7 | 2/8 · **2** · 2 | 2/8 · **2** · 2 | ~~8/8 · **75** · 85~~ | ~~8/8 · **5** · 30~~ |  | ~~4/8 · **69** · 77~~ |  |
+| `statutes_at_large` | `laws.statutes_at_large_cite` |  | 7/8 · **11** · 11 | 5/8 · **14** · 14 | 5/8 · **8** · 13 | ~~1/8 · **2** · 2~~ |  |  | ~~1/8 · **6** · 6~~ |  |
+| `usc_section` | `law_code_sections` | 3/8 · **22** · 22 | 5/8 · **27** · 27 | 6/8 · **19** · 19 | 6/8 · **13** · 14 | ~~6/8 · **15** · 15~~ | ~~8/8 · **2** · 16~~ |  | ~~4/8 · **90** · 91~~ | 4/8 · **4** · 5 |
+| `cfr_section` | CFR sections (host-side) | 3/8 · **17** · 17 | 4/8 · **9** · 9 | 2/8 · **4** · 4 | 2/8 · **4** · 4 |  |  |  | ~~1/8 · **3** · 3~~ | 5/8 · **4** · 6 |
+| `federal_register_cite` | `federal_register.document_number` |  | 2/8 · **7** · 7 | 4/8 · **7** · 7 | 5/8 · **7** · 8 | ~~1/8 · **1** · 1~~ |  |  |  |  |
+| `rin` | `federal_register.regulation_id_numbers_json` |  |  |  |  | ~~1/8 · **1** · 1~~ |  |  |  |  |
+| `gao_product_id` | GAO product id (`gao/files.py` key) | 1/8 · **3** · 3 | 8/8 · **44** · 44 |  |  | ~~1/8 · **2** · 2~~ |  |  |  | 2/8 · **4** · 4 |
+| `crs_report_id` | Congress.gov `crsreport` id | 8/8 · **44** · 44 |  |  |  |  |  |  | ~~1/8 · **1** · 1~~ |  |
 | `bioguide_id` | `members.bioguide_id` |  |  |  |  |  |  |  |  |  |
-| `docket_number` | `dockets.docket_id` |  |  |  |  | 1/8 · **1** · 1 |  |  |  |  |
+| `docket_number` | `dockets.docket_id` |  |  |  |  | ~~1/8 · **1** · 1~~ |  |  |  |  |
 | `case_docket_number` | CourtListener docket |  | 3/8 · **7** · 7 | 6/8 · **9** · 9 | 6/8 · **7** · 8 |  |  |  |  |  |
 | `us_reports_cite` | CourtListener opinion citation |  |  | 8/8 · **192** · 209 | 8/8 · **178** · 222 |  |  |  |  |  |
-| `committee_name` | `committees.system_code`, resolved | 2/8 · **8** · 8 | 6/8 · **7** · 8 |  |  | 8/8 · **87** · 120 |  | 7/7 · **1** · 7 | 2/8 · **14** · 14 |  |
-| `dollar_amount` | no hosted target yet | 8/8 · **177** · 183 | 6/8 · **264** · 265 | 3/8 · **25** · 25 | 3/8 · **25** · 25 | 6/8 · **46** · 46 | 8/8 · **1687** · 2004 | 7/7 · **44** · 102 | 6/8 · **658** · 727 | 4/8 · **55** · 57 |
-| `fiscal_year` | no hosted target yet | 7/8 · **10** · 14 | 5/8 · **15** · 23 |  |  | 8/8 · **7** · 15 | 8/8 · **5** · 35 |  | 6/8 · **49** · 58 | 6/8 · **11** · 17 |
+| `committee_name` | `committees.system_code`, resolved | 2/8 · **8** · 8 | 6/8 · **7** · 8 |  |  | ~~8/8 · **87** · 120~~ |  | 7/7 · **1** · 7 | ~~2/8 · **14** · 14~~ |  |
+| `dollar_amount` | no hosted target yet | 8/8 · **177** · 183 | 6/8 · **264** · 265 | 3/8 · **25** · 25 | 3/8 · **25** · 25 | ~~6/8 · **46** · 46~~ | ~~8/8 · **1687** · 2004~~ | 7/7 · **44** · 102 | ~~6/8 · **658** · 727~~ | 4/8 · **55** · 57 |
+| `fiscal_year` | no hosted target yet | 7/8 · **10** · 14 | 5/8 · **15** · 23 |  |  | ~~8/8 · **7** · 15~~ | ~~8/8 · **5** · 35~~ |  | ~~6/8 · **49** · 58~~ | 6/8 · **11** · 17 |
 
 Two results stand out and neither is where the census pointed.
 
-**`bioguide_id` is zero everywhere, and that was a foregone conclusion.** A
+~~**`bioguide_id` is zero everywhere, and that was a foregone conclusion.**~~
+**Superseded**: the CRPT package MODS states the submitting member's
+`bioGuideId` outright, on 7 of the 8 sampled reports, so no crosswalk is needed
+for that member (see [the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md)). The rest of the paragraph stands: A
 bioguide id is an identifier the publishers assign and do not print; no
 congressional document was ever going to contain one, so this row measures
 nothing and is kept only to say plainly that it does. What these prints *do*
@@ -186,11 +218,16 @@ here says whether a `document → member` contract is feasible; it says only tha
 it cannot be built from a printed identifier, and that the crosswalk it would
 need has not been measured.
 
-**The House committee activity reports are the corpus's densest join surface**:
+~~**The House committee activity reports are the corpus's densest join surface**:
 883 distinct bill numbers and 75 public laws across eight prints — 940 and 85
 link rows — against a publisher index that states seven fields and none of
 that. One report is a whole Congress of one committee's legislative activity,
-and the only place it exists in structured form is this PDF.
+and the only place it exists in structured form is this PDF.~~
+
+**Superseded.** That publisher index is the listing row, not the package MODS.
+The MODS states 1,500 bill entries and 219 law entries across the same eight
+reports, and the print adds none of them; the structured form exists, and this
+repository already fetches it for every body it reads. see [the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md).
 
 **Committee names are a resolution problem, not a count.** The rule that finds
 them is a *candidate* finder: a committee report wraps the name across lines and
@@ -397,7 +434,7 @@ one record's field count — a handful, bounded by the publisher's schema.
 
 ## Recommended build order
 
-1. **`document_citations`, the one shared link contract, built first on the
+1. ~~**`document_citations`, the one shared link contract, built first on the
    House committee activity reports.** Densest yield in the corpus — 883
    distinct bills and 75 distinct laws over 940 and 85 link rows, plus 20
    committees resolved to a `system_code`, across eight prints — against a
@@ -405,7 +442,9 @@ one record's field count — a handful, bounded by the publisher's schema.
    request per 100 packages to discover them, and no table extraction needed,
    because it is a citation contract over prose. It also exercises
    `bill_number`, `public_law`, the committee resolution and the GPO normalizer
-   together on the family where all four matter.
+   together on the family where all four matter.~~
+   **Superseded.** The bills and laws are 0 and 0 against the package MODS. The
+   shared link contract is still first, but on the **budget volumes**; see [the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md).
 2. **Extend `document_citations` to GAO and the slip opinions**, which add the
    `gao_product_id` report→report edge (44 of 45 cites are other products) and
    the `us_reports_cite` opinion→opinion edge (192 distinct cites over 209
@@ -419,9 +458,10 @@ one record's field count — a handful, bounded by the publisher's schema.
    geometry, and a two-field index record that states nothing about the content.
    This is the best ruled-table target in the corpus and it is keyless. Note
    what the join-key table says about it: 1,687 distinct dollar figures but only
-   5 distinct public laws and 2 U.S. Code cites — this family is a *table*
-   contract, not a citation one, and `document_citations` would add almost
-   nothing here.
+   ~~5 distinct public laws and 2 U.S. Code cites~~ **0 laws and 0 U.S. Code
+   cites beyond the package MODS** — this family is a *table*
+   contract, not a citation one, and `document_citations` would add
+   **nothing** here. The verdict is unchanged and better supported; see [the MODS recheck](pdf-yield-mods-recheck-2026-09-20.md).
 5. **`gao_recommendations`** — a list contract, not a citation one, over the
    *Recommendations for Executive Action* and *Matters for Congressional
    Consideration* sections. Worth doing after (2) because it needs a section
