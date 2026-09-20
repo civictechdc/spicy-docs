@@ -59,10 +59,10 @@ sentence per column for the host's data dictionary.
 | `table3_records` | One row per classification record on one act's OLRC Table III page. | `act_key`, `seq` | `observed_at` | 14 | `schemas.law_tables` |
 | `committees` | One row per committee or subcommittee the Congress.gov committee list route states, with its detail record where captured. | `system_code` | `update_date` | 21 | `schemas.roster_tables` |
 | `committee_assignments` | One row per member per committee or subcommittee seat a chamber roster file lists today. | `congress`, `system_code`, `bioguide_id` | `observed_at` | 20 | `schemas.roster_tables` |
-| `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `cite_kind`, `target_key`, `span_start` | `rule_version` | 16 | `schemas.document_citation_tables`, `interpretation.citations` |
-| `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 28 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
+| `document_citations` | One row per occurrence of one cited key in one document's text: the key, the exact text that named it, and the character span it was read at. | `document_key`, `text_sha256`, `cite_kind`, `target_key`, `span_start` | `rule_version` | 17 | `schemas.document_citation_tables`, `interpretation.citations` |
+| `house_activity_reports` | One row per end-of-Congress House committee activity report package, with what its print adds. | `package_id` | `last_modified` | 36 | `schemas.document_citation_tables`, `sources.govinfo.bodies` |
 
-Six hundred and sixty-one columns in all, each with its own sentence.
+Six hundred and seventy columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -151,7 +151,7 @@ invented for either.
 one shared link table, built first on the House committee activity reports.
 The rules are
 [`interpretation/citations.py`](../src/spicy_docs/interpretation/citations.py)'s
-— nine stored kinds out of the sixteen the rollup measured, lifted from that
+— thirteen stored kinds out of the sixteen the rollup measured, lifted from that
 measurement unchanged, with `tools/analysis/pdf_family_rollup.py` now importing
 them so the measurement and the contract cannot disagree about what a bill
 number looks like. Re-running `analyze` over the same retained bytes after the
@@ -161,44 +161,101 @@ sidecar; the only differences are per-page timings and the rules' own prose
 
 **Building it corrected the measurement's headline.** The rollup reported 883
 distinct bills "beyond the index" for this family, because the index it
-compared against was the `published` listing row — seven fields and no bill.
-The **package MODS** states them: on both fixture packages it already names
-every bill and every law the print does (179 of 179 and 39 of 39 bills; 3 of 3
-and 1 of 1 laws), and the body acquirer already fetches it for every package it
-reads. So a bill row here is not a new join key. It is *where in a 282-page
-print that bill is discussed*, which is why `span_start` is part of the
-identity and why `stated_by_index` is a column rather than a research note.
-Measured on two of the eight sampled reports; the other six have no MODS
-retained.
+compared against was the `published` listing row — seven fields and no
+citation among them. The **package MODS** states them, and `GovInfoBodyAcquirer`
+already fetches it for every body it reads.
 
-What the print reaches that no GovInfo record states survives that correction:
-the committees other than the authoring one (16 House and 4 Senate
-`system_code`s across the eight prints, from 87 printed candidates), the U.S.
-Code and CFR sections, the Federal Register cites, the GAO product ids and the
-CRS report ids.
+The [MODS re-check](research/pdf-yield-mods-recheck-2026-09-20.md) then
+measured it properly: all eight sampled activity reports at **full page
+depth**, 1,249 pages against the rollup's capped 476.
 
-- **`document_citations`** is keyed `(document_key, cite_kind, target_key,
-  span_start)`. `target_key` is the hosted target's own spelling —
+| Kind | Print-only, eight reports, every page |
+| --- | --- |
+| `bill_number` | **0 of 1,406** |
+| `public_law` | **1 of 174** |
+| `usc_section` | **0 of 37** |
+| `statutes_at_large` | **0 of 7** |
+| `committee_name` | **27 resolved codes**, 71 of 79 rows |
+| `rin` | **87** |
+| `docket_number` | **38** |
+| `gao_product_id` | 5 |
+| `cfr_section` | 1 of 1 |
+| `federal_register_cite` | 1 |
+| `us_reports_cite` | 2 |
+
+**For bills, laws, U.S. Code sections and Statutes pages the MODS is the
+authoritative source.** `house_activity_reports.associated_bills_json` and
+`.associated_laws_json` are the document-to-target join for those kinds: the
+MODS's list is complete, while the print's is a floor bounded by `pages_read`
+(39 against 380 on CRPT-118hrpt965). What a citation row adds for them is the
+*evidence span* — where in a 282-page print a measure is discussed — which no
+GovInfo record states, and which is why `span_start` is part of the identity.
+
+**What the print adds outright** is the committees beyond the one that
+submitted the report, the RINs, the agency dockets and the GAO ids. **No
+sampled MODS in any collection states a Federal Register cite, a GAO product
+id, a CRS report id, an agency docket, a case docket, a U.S. Reports cite or a
+dollar figure.** `WHERE stated_by_index IS NOT TRUE` is the consumer's
+predicate for those kinds; `stated_by_index` is NULL rather than `false` where
+the MODS vocabulary has no element of that shape at all, because "compared and
+absent" and "no comparison was possible" are different answers.
+
+The re-check also moves this family out of first place in the build order — the
+budget volumes carry 504 print-only public laws against these eight reports'
+one — and narrows the activity-report print contract to what the MODS lacks.
+It is still worth building, and it is an order of magnitude smaller than the
+rollup estimated.
+
+- **`document_citations`** is keyed `(document_key, text_sha256, cite_kind,
+  target_key, span_start)`. `target_key` is the hosted target's own spelling —
   `118-hr-1093`, `117-public-263`, `hsfa00` — and where nothing settled it (a
   bill with no stated Congress, a committee name no supplied roster reaches)
   the rule's canonical printed form stands and `target_resolved` is `false`.
   An unsettled key is kept rather than dropped: it is evidence only the print
-  holds. `rule_version` is the version column, so a re-extraction under a
-  corrected rule is attributable the way `prompt_version` is.
+  holds. `target_rule` says *how* a key was reached, which matters for
+  committees: `exact` and `roster_prefix` are roster lookups, `name_prefix`
+  and `sibling_prefix` are inferences from this one document's printed text,
+  and a consumer wanting only lookups filters on that column.
+  **The table is append-only per text digest.** `text_sha256` is in the
+  identity because a re-extraction that moves one character moves every offset
+  after it, and two extractions must not collide on one identity and silently
+  merge; superseded rows are not retired, and a consumer filters to the digest
+  `house_activity_reports.text_sha256` states for that document.
+  **The aggregate shape is derivable from this one and not the reverse**: one
+  row per (document, key) is `GROUP BY document_key, cite_kind, target_key`
+  with `COUNT(*)` and `MIN(span_start)`. Storing that instead would make the
+  table a lossy copy of the MODS, which is exactly what it must not be.
 - **`house_activity_reports`** takes every descriptive field from the keyed
   GovInfo records and none from the print: the summary's title, Congress,
   session, issue date and **page count**, and the MODS's authoring committee
-  `systemCode`, `<bill>` list with each bill's context, and `<law>` list. What
-  the PDF adds is counts — distinct bills and laws, how many of each the MODS
-  does not already state, committees resolved and unresolved, pages read and
-  whether the read was capped. It overlaps `committee_reports` on four columns
-  and spells them identically, so a host can join the two on `package_id`;
-  `committee_reports` is the generic captured-package row, this is the activity
-  report's own.
+  `systemCode`, the submitting member's bioguide id, the `<bill>` list with
+  each bill's context, the `<law>` list, the `<USCode>` sections and the
+  `<congReport>` sibling reports. What the PDF adds is counts — distinct
+  bills, laws and Code sections, how many of each the MODS does not already
+  state, committees resolved and unresolved, pages read and whether the read
+  was capped. `bills_congress_mismatch` is the check on the one assumption the
+  rules make: a print writes `H.R. 7806` and never a Congress, so every bare
+  designator is stamped with the document's own, and the index comparison runs
+  a second time on `(bill_type, number)` alone so a measure from another
+  Congress shows as a discrepancy rather than a confidently wrong `bill_id`.
+  Measured zero on both packages.
 
-`sources/govinfo/bodies.py` grew the three index facts those columns need:
+  It overlaps `committee_reports` on seven columns under the same `package_id`
+  identity — `package_id`, `congress`, `title`, `date_issued`,
+  `last_modified`, `text_sha256` and, but for a rename, the page count — and
+  spells the first six identically so a host can join the two.
+  `committee_reports` is the generic captured-package row; this is the
+  activity report's own. The page count is deliberately **not** spelled the
+  same: `committee_reports.page_count` is how many pages *that extraction*
+  read, and this table's `stated_page_count` is how many the publisher says
+  the document has. On CRPT-118hrpt965 those are 60 and 282, so one name for
+  both would have been a silent collision.
+
+`sources/govinfo/bodies.py` grew the index facts those columns need:
 `PackageSummary.session` and `.pages`, and `PackageModsIdentity.committees`,
-`.laws` and `.session` from the MODS root extension.
+`.laws`, `.usc_sections`, `.reports`, `.members` and `.session` from the MODS
+root extension. A chapter-only `<USCode>` block contributes nothing: a chapter
+is not a section and has no hosted key.
 
 ## What the tests do not establish
 
@@ -241,10 +298,21 @@ that bounds what they establish:
 - the committee vocabulary is the two pinned roster excerpts. The Senate `cvc`
   excerpt reaches only the committees its sampled senators sit on, so
   `committees_unresolved` is a floor on what a full roster would settle, not a
-  defect count;
-- **the MODS-states-every-bill result is two packages, not eight.** The other
-  six have no MODS retained and were not fetched; the request budget for this
-  build was four keyed records and all four were spent on these two.
+  defect count. Two of the four resolution routes — `name_prefix` and
+  `sibling_prefix` — are inferences from one document's printed text rather
+  than roster lookups, and `target_rule` is what lets a consumer decline them;
+- **the two fixtures reach no RIN and no agency docket**, which are the
+  family's largest genuinely-new kinds (87 and 38 across the eight reports).
+  Both sit in oversight chapters past the rollup's 60-page cap, so these
+  fixtures exercise the contract's shape for those kinds and nothing about
+  its content. The re-check measured them; this repository holds no fixture
+  that does;
+- **`bills_congress_mismatch` is zero on both**, which says those two
+  documents name no measure from another Congress — not that none ever does;
+- **the MODS comparison here is two packages**; the eight-report, full-depth
+  figures quoted above are the [MODS re-check](research/pdf-yield-mods-recheck-2026-09-20.md)'s,
+  not this branch's. The request budget for this build was four keyed records
+  and all four were spent on these two packages.
 
 ## What is still a preserved NULL
 

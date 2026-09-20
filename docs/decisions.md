@@ -945,16 +945,42 @@ activity reports as the
 [rollup's build order](research/pdf-family-rollup-yield-2026-09-20.md#recommended-build-order)
 asked. Three choices in it are load-bearing.
 
-**The identity is `(document_key, cite_kind, target_key, span_start)`, and the
-span is in it because the span is the yield.** The obvious identity —
-document, kind, target — would collapse CRPT-118hrpt968's 267 bill mentions
-into 179 rows and throw away which page each discussion is on. That would be
-the wrong thing to throw away, because of what building this measured:
+**The identity is `(document_key, text_sha256, cite_kind, target_key,
+span_start)`, and the span is in it because the span is the yield.** The
+obvious identity — document, kind, target — would collapse CRPT-118hrpt968's
+267 bill mentions into 179 rows and throw away which page each discussion is
+on. The aggregate shape is derivable from this one (`GROUP BY document_key,
+cite_kind, target_key` with `COUNT(*)` and `MIN(span_start)`) and the reverse
+is not, so keeping the occurrence is what keeps the table evidence rather than
+a lossy copy of the MODS. And a lossy copy is exactly the risk, because of
+what building this measured:
 
-> **The package MODS already states every bill and every law the print names.**
-> 179 of 179 bills for CRPT-118hrpt968, 39 of 39 for CRPT-118hrpt965; 3 of 3
-> and 1 of 1 laws (receipt `document-citations-2026-09-20/`,
+> **The package MODS already states the bills, laws, U.S. Code sections and
+> Statutes pages the print names.** Across all eight sampled activity reports
+> at full page depth, print-only is **0 of 1,406 bills, 1 of 174 laws, 0 of 37
+> Code sections and 0 of 7 Statutes pages**
+> ([MODS re-check](research/pdf-yield-mods-recheck-2026-09-20.md)); on the two
+> packages this branch pins, 179 of 179 and 39 of 39 bills, 3 of 3 and 1 of 1
+> laws, 1 of 1 Code sections (receipt `document-citations-2026-09-20/`,
 > `tests/test_citations.py`).
+
+The Code line was the second correction, found reviewing the first: this
+record originally claimed U.S. Code sections as surviving yield, and
+-118hrpt968's whole printed Code yield is `2 U.S.C. 190`, which its MODS
+states. The test that was supposed to hold the claim compared bills and laws
+and no Code set at all, so it passed while the prose beside it was wrong.
+
+**So the MODS is the authoritative source for those four kinds**, and
+`house_activity_reports.associated_bills_json` / `.associated_laws_json` is the
+document-to-target join for them; the print's list is a floor bounded by
+`pages_read`. What the print adds outright is the committees beyond the one
+that submitted the report (27 resolved codes), **87 RINs**, **38 agency
+dockets** and 5 GAO product ids — which is why `rin` and `docket_number` are
+stored kinds rather than measurement-only rules. No sampled MODS in any
+collection states a Federal Register cite, a GAO product id, a CRS report id,
+an agency docket, a case docket, a U.S. Reports cite or a dollar figure, so
+`stated_by_index` is NULL for those kinds rather than `false`: "compared and
+absent" and "no comparison was possible" are different answers.
 
 The rollup reported 883 bills "beyond the index" for this family because it
 compared against the `published` listing row — seven fields, no bill — and not
@@ -965,7 +991,15 @@ bill *key* is not yield here; the offset at which a 282-page print discusses
 that bill is, and no GovInfo record carries it. So `stated_by_index` is a
 column, set per row from the MODS, and NULL — not `false` — where no index
 record was read, because "not compared" and "the index does not state it" are
-different answers.
+different answers. `WHERE stated_by_index IS NOT TRUE` is the consumer's
+predicate for the kinds that are genuinely new.
+
+**`text_sha256` is in the identity, and the table is append-only per digest.**
+Without it two extractions of the same document collide on one identity and
+the merge picks between rows whose offsets mean different things. With it they
+are disjoint, which does not retire the superseded rows — nothing here can —
+but does stop them from being silently merged; a consumer filters to the
+digest `house_activity_reports.text_sha256` states for that document.
 
 **An unsettled key is stored, not dropped.** A bill named without a stated
 Congress, and a committee name no supplied roster reaches, keep the rule's
@@ -975,24 +1009,54 @@ NULL key would make them unkeyable. The pinned Senate roster excerpt reaches
 only the committees its sampled senators sit on, so `committees_unresolved` is
 a floor on what a full roster would settle and never a defect count.
 
+**A settled key says how it was settled.** The committee resolver has four
+routes and they are not equally strong: `exact` and `roster_prefix` are
+lookups in the supplied vocabulary, while `name_prefix` (a roster name with
+prose after it) and `sibling_prefix` (a fragment settled by the same
+document's other candidates) are inferences from one print. `target_rule`
+carries the route so a consumer can decline the inferences, and two guards
+were added in review because the inferences were reaching wrong answers, not
+merely weak ones: a run-on candidate whose remainder begins `AND` is refused
+(the Senate's *Homeland Security and Governmental Affairs* begins with the
+House's *Homeland Security*, and the route published `hshm00`), and a sibling
+fragment shorter than `Committee on` plus four characters is refused
+(`Committee on A` took Appropriations). Both guards remove published codes
+from the rollup measurement and add none; the activity reports' 20 distinct
+`system_code`s are unchanged, because a print that wraps a name also spells it
+out.
+
+**The bill Congress is an assumption, checked rather than trusted.** A print
+writes `H.R. 7806` and never a Congress, so every bare designator is stamped
+with the document's own and a cross-Congress mention would publish a wrong
+`bill_id` as resolved. `bills_congress_mismatch` runs the index comparison a
+second time on `(bill_type, number)` alone: a bill the MODS states only under
+another Congress misses the strict key and matches the loose one, so it shows
+as a discrepancy rather than as confident wrongness. Zero on both packages.
+
 **A rule change moves that rule's version and re-pins its fixture counts.**
 Each `CitationRule` in `interpretation/citations.py` carries a `version`, and
 `document_citations.rule_version` is the table's version column, so a
 re-extraction under a corrected rule wins the merge the way a newer
 `prompt_version` does. Versions are zero-padded decimals (`001`) because the
 published column is a string and `v10 < v2`. `CITATION_RULE_SET_VERSION` is
-*derived* — a digest over every rule's name, version and pattern — so editing
-a pattern moves it even when someone forgets to move that rule's own version,
-and the pinned assertion in `tests/test_citations.py` then names both. The
+*derived* — a digest over every rule's name, version, pattern **and rejects** —
+so editing any of them moves it even when someone forgets to move that rule's
+own version, and the pinned assertion in `tests/test_citations.py` then names
+both. The rejects are in the input because a deleted reject is a silent
+weakening: removing three of `public_law`'s once passed the entire suite,
+since a reject that is no longer asserted cannot fail. The
 procedure when it fails: move the changed rule's `version`, re-pin the digest,
 and re-pin the per-print counts the fixtures assert.
 
 **The rules have one home.** `tools/analysis/pdf_family_rollup.py` imports
 them rather than declaring them, so the measurement and the product cannot
-drift. Proof that the lift changed nothing: re-running `analyze` over the same
-retained bytes reproduces every count, distinct set, presence figure and
-resolved system code in the committed sidecar; the 153 differing values are
-all per-page timings or the rules' own prose
-(`document-citations-2026-09-20/diff-sidecar.txt`). The committed sidecar was
-deliberately **not** regenerated — it is the measurement as run, and a re-run's
-timings would contradict the prose the report quotes from it.
+drift. Proof that the lift itself changed nothing: re-running `analyze` over
+the same retained bytes reproduced every count, distinct set, presence figure
+and resolved system code in the committed sidecar, with only per-page timings
+and the rules' own prose differing
+(`document-citations-2026-09-20/diff-sidecar.txt`; the differing-value total
+is run-dependent, because the timings are). The resolver guards above then
+moved the committee numbers on purpose, and the rollup document states which
+and by how much. The committed sidecar was deliberately **not** regenerated —
+it is the measurement as run, and a re-run's timings would contradict the
+prose the report quotes from it.

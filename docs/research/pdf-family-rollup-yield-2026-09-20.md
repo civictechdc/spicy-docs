@@ -24,66 +24,89 @@ the two rules the owner set:
 ## Correction, 2026-09-20 (same day, while building step 1)
 
 **This measurement compared against the wrong index record for the GovInfo
-families, and its headline number for the activity reports is wrong.**
+families.** It is superseded for those families by
+[the MODS re-check](pdf-yield-mods-recheck-2026-09-20.md), which measured the
+same question properly: every GovInfo family against its own package MODS, at
+full page depth rather than the 60-page cap. Read that document for the
+verdict and the revised build order; this section records what the error was
+and what remains true here.
 
-"Beyond the index" was measured against the `published` listing row, which
-states seven fields and no bill. GovInfo offers a second index record for the
-same package — the package MODS, which
-[`GovInfoBodyAcquirer`](../sources/govinfo-bodies.md) already fetches for every
-package it reads — and its root-level `<bill>` and `<law>` elements state the
-bills and laws directly.
+"Beyond the index" was measured against the `published` listing row — seven
+fields, no citation among them. GovInfo offers a second index record for the
+same package, the **package MODS**, which
+[`GovInfoBodyAcquirer`](../sources/govinfo-bodies.md) fetches for every body it
+reads, and which states bills, laws, U.S. Code sections, Statutes pages, CFR
+parts, RINs, committees and the submitting member as named elements.
 
-Fetched for two of the eight activity reports (four keyed requests, receipt
-`~/Work/corpora/supply-2026-09-02/receipts/document-citations-2026-09-20/`):
+For the House committee activity reports, all eight, every page:
 
-| Package | Bills in the print | Stated by the MODS | New | Laws in the print | Stated | New | Bills the MODS names |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| CRPT-118hrpt968 | 179 | **179** | 0 | 3 | **3** | 0 | 179 |
-| CRPT-118hrpt965 | 39 | **39** | 0 | 1 | **1** | 0 | 380 |
+| Kind | Printed | Print-only |
+| --- | --- | --- |
+| `bill_number` | 1,406 | **0** |
+| `public_law` | 174 | **1** |
+| `usc_section` | 37 | **0** |
+| `statutes_at_large` | 7 | **0** |
 
-So the table below's "883 distinct bill numbers ... none of them stated by the
-index" does not hold: on both packages measured, the MODS states every one.
-The last column runs the other way too — -118hrpt965's MODS names 380 bills
-where this measurement's 60-page read saw 39, so the index is *ahead* of the
-capped read rather than behind it.
+So this document's "883 distinct bill numbers ... none of them stated by the
+index" is wrong, and so is the verdict built on it: **the citation yield this
+report put first does not exist.**
 
 This is the failure this repository's own rule warns about: a check that could
 only look one way. The index side was rendered generously on purpose so it
 could only overstate what the publisher states, and that guard worked as
 designed — but it was pointed at one of the two index records, and the wrong
-one.
+one. The 60-page cap compounded it: read to all 1,340 pages, `BUDGET-2027-APP`
+names 490 public laws of which 488 are **not** in its MODS, so the budget
+volumes' figures here were a 4-percent sample reported as the volume.
 
-**What survives.** The activity reports are still the right first build, and
-the verdict "host as a contract" stands, for a different reason. The evidence
-*span* — where in a 282-page print a bill is discussed — is what no GovInfo
-record carries, and it is what
-[`document_citations`](../tables.md#the-citation-link-table-stores-the-span-not-the-key)
-is keyed on. The committees other than the authoring one, the U.S. Code and CFR
-sections, the Federal Register cites and the GAO and CRS ids are unaffected:
-the MODS states none of those.
+**What survives for the activity reports**, and it is what the print contract
+is now scoped to: committees beyond the one that submitted the report (27
+resolved `system_code`s over 71 rows), **87 RINs**, **38 agency dockets**, 5
+GAO product ids, 1 CFR part, 1 Federal Register cite and 2 U.S. Reports cites.
+No sampled MODS in any collection states a Federal Register cite, a GAO
+product id, a CRS report id, an agency docket, a case docket, a U.S. Reports
+cite or a dollar figure. The RINs and dockets are zero in the table below only
+because a 60-page read never reached the oversight chapters.
 
-**Scope.** Two of eight packages. The other six have no MODS retained and were
-not fetched. Every other family's index-side comparison in this document is
-unrevised and carries the same question: the CRS verdict below already
-compared against the publisher's own named fields and is not affected, but the
-GAO, budget, Secretary of the Senate and CDOC rows were measured the same way
-the activity reports were and should be re-checked against their own package
-records before anything is built on their "beyond the index" numbers.
-
-**The rules were not the problem and did not change.** Every pattern in this
-report now lives in `src/spicy_docs/interpretation/citations.py`, which
+**The rules were not the problem and did not change** — but the committee
+resolver did, in review, and it changed this report's numbers. Every pattern
+here now lives in `src/spicy_docs/interpretation/citations.py`, which
 `tools/analysis/pdf_family_rollup.py` imports. Re-running `analyze` over the
-same retained bytes after the lift reproduces every count, distinct set,
-presence figure and resolved system code in the sidecar; the 153 differing
-values are per-page timings and the rules' own prose
-(`document-citations-2026-09-20/diff-sidecar.txt`). The sidecar was
-deliberately not regenerated, so it remains the measurement as run.
+same retained bytes reproduced every join-key count, distinct set and presence
+figure unchanged (`document-citations-2026-09-20/diff-sidecar.txt`; the
+differing-value total is run-dependent, because per-page timings are). Two
+resolution guards were then added, and both remove wrong answers:
+
+- **A run-on candidate whose remainder begins `AND` is refused.** The Senate's
+  *Committee on Homeland Security and Governmental Affairs* begins with the
+  House's *Committee on Homeland Security*, and the run-on route read it as
+  the House committee with prose after it — publishing `hshm00`, a plausible,
+  wrong, unflagged join. Same for the Senate's *Small Business and
+  Entrepreneurship* against the House's *Small Business*, and for
+  `Committee on the Judiciary and Committee ...` in an activity report.
+- **A sibling fragment shorter than `Committee on` plus four characters is
+  refused**, because below that it takes whichever single sibling happens to
+  share its prefix (`Committee on A` → Appropriations).
+
+Effect: the budget family loses `hshm00` (10 distinct `system_code`s to 9, and
+it was the Senate committee misread as a House one); GAO's unresolved rises
+1 → 2 with its code set unchanged; the activity reports' unresolved candidates
+rise 20 → 26 with **the 20 distinct `system_code`s unchanged**, because every
+refused fragment's committee is also spelled out in full somewhere in the same
+print. Each finding's route is now reported (`resolved_by_route` in the
+sidecar): `exact` and `roster_prefix` are roster lookups, `name_prefix` and
+`sibling_prefix` are inferences from one document's own text.
+
+The committed sidecar was deliberately **not** regenerated: it is the
+measurement as run, and a re-run's timings would contradict the prose this
+report quotes from it. `rollup-relift.json` in
+`document-citations-2026-09-20/` is the re-run.
 
 ## The verdict, per family
 
 | Family | Documents read | Verdict | What only the PDF supplies | What the index already supplies |
 | --- | --- | --- | --- | --- |
-| **House committee activity reports** (GovInfo `CRPT`) | 8/8 | **Host as a contract** — but see the correction above: the bills and laws are *not* the reason | ~~883 distinct bill numbers, 75 public laws~~ (the package MODS states both: 179 of 179 and 39 of 39 bills on the two re-checked); **20 committees resolved to a `system_code`** over 120 link rows, 15 U.S. Code cites, and the evidence span for every cite, which no GovInfo record carries | The `published` row states `packageId`, `title`, `dateIssued`, `lastModified`, `congress`. **The package MODS states far more**: session, the authoring committee's `systemCode`, every `<bill>` with its context, every `<law>` — and 380 bills for a print whose capped read saw 39 |
+| **House committee activity reports** (GovInfo `CRPT`) | 8/8 | ~~the highest-yield family in the corpus~~ — **superseded**, see the correction above and the [MODS re-check](pdf-yield-mods-recheck-2026-09-20.md) | ~~883 distinct bill numbers, 75 public laws, 15 U.S. Code cites~~ (the package MODS states all of them: 0 of 1,406 bills, 1 of 174 laws and 0 of 37 Code cites are print-only at full page depth). What survives: **27 committees** resolved to a `system_code`, **87 RINs**, **38 agency dockets**, 5 GAO ids, and the evidence span for every cite | The `published` row states `packageId`, `title`, `dateIssued`, `lastModified`, `congress`. **The package MODS states far more**: session, the authoring committee's `systemCode`, the submitting member's bioguide id, every `<bill>` with its context, every `<law>`, every `<USCode>` section and every sibling `<congReport>` — and 380 bills for a print whose capped read saw 39 |
 | **Report of the Secretary of the Senate** (GovInfo `CDOC`) | 8/8 | **Host as a contract** — a cost/expenditure table, not prose | 396 ruled tables in 480 sampled pages (median 5 rows × 10 columns); 1,687 distinct dollar figures over 2,004 link rows; 5 distinct public laws | The senate.gov page states a link and a label (`Full Report`, `Part I`, `Part II`) — two fields |
 | **GAO reports** | 8/8 | **Host as a contract** — recommendations and cross-product citations | Recommendation sections in 5/8, *Matters for Congressional Consideration* in 1/8, 44 of the 45 distinct GAO product ids cited are other products, 25 ruled tables | `product_id`, `title`, `link`, `guid`, `pub_date`, and a `description` that is the "What GAO Found" abstract |
 | **Agency uploaded-report PDFs** (measured on Oversight.gov) | 8/8 | **Host as a contract**, but a narrow one | Recommendation sections in 6/8, 57 ruled tables, 11 distinct fiscal years, 4 distinct CFR cites | An unusually rich record: agency reviewed, components, report number, report type, date issued, external entity, **number of recommendations**, questioned costs, funds for better use |
@@ -212,11 +235,17 @@ across documents: the slip opinions cite 209 rows against 192 distinct U.S.
 Reports cites, and the activity reports 940 rows against 883 distinct bills.
 The bolded number is the yield over the publisher's own record.
 
-Every bolded number in the `Activity` column for `bill_number` and
-`public_law` is **superseded by the correction above**: the package MODS states
-those keys, so their yield beyond the publisher's own record is zero and what
-the contract stores for them is the evidence span. The other rows in that
-column stand, and every other family's column is unrevised and unre-checked.
+The whole `Activity` column is **superseded** by the
+[MODS re-check](pdf-yield-mods-recheck-2026-09-20.md), which read every page
+rather than sixty: `bill_number`, `public_law`, `usc_section` and
+`statutes_at_large` are 0, 1, 0 and 0 print-only there, and `rin` and
+`docket_number` — zero here only because the cap never reached the oversight
+chapters — are 87 and 38. The `committee_name` row's 87 candidates now settle
+with two guards that refuse wrong answers, leaving the same 20 distinct
+`system_code`s at this read depth and 26 rather than 20 unresolved candidates;
+the re-check's full read reaches 27. The Secretary of the Senate and budget
+columns are superseded there too, the budget one in the *other* direction: 504
+of 518 public laws print-only on a full read.
 
 | Key | Join target | CRS | GAO | SCOTUS | CourtL. | Activity | SecSen | Clerk | Budget | Upload |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -463,18 +492,17 @@ one record's field count — a handful, bounded by the publisher's schema.
 
 ## Recommended build order
 
-1. **`document_citations`, the one shared link contract, built first on the
-   House committee activity reports.** **Landed 2026-09-20**, and the build
-   corrected this measurement (see the correction above): the bills and laws
-   are already in the package MODS, so what the contract stores for them is the
-   **evidence span**, and `span_start` is part of its identity. The yield that
-   is genuinely new is the 20 committees resolved to a `system_code` over 120
-   link rows, the U.S. Code and CFR sections, the Federal Register cites and
-   the GAO and CRS ids — plus, for every kind, where in the print it was read.
-   Still the right first build: keyless GovInfo documents, one keyed request
-   per 100 packages to discover them, no table extraction, and it exercises
-   `bill_number`, `public_law`, the committee resolution and the GPO normalizer
-   together on the family where all four matter.
+1. ~~**`document_citations`, built first on the House committee activity
+   reports.**~~ **Superseded** by the
+   [MODS re-check](pdf-yield-mods-recheck-2026-09-20.md#revised-build-order),
+   which puts the budget volumes first (504 print-only public laws against
+   these reports' one) and narrows the activity-report print contract to what
+   the MODS lacks: committees beyond the submitting one, 87 RINs, 38 agency
+   dockets, 5 GAO ids. The shared contract itself **landed 2026-09-20** on the
+   activity reports — `document_citations` and `house_activity_reports` in
+   `schemas/document_citation_tables.py` — which was the right piece of work
+   in the wrong order of priority; it is an order of magnitude smaller than
+   this report estimated, and still worth having.
 2. **Extend `document_citations` to GAO and the slip opinions**, which add the
    `gao_product_id` report→report edge (44 of 45 cites are other products) and
    the `us_reports_cite` opinion→opinion edge (192 distinct cites over 209
