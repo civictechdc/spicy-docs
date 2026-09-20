@@ -120,6 +120,13 @@ CONGRESS_BILLS = table_contract(
             "details nested; this replaces BillTrax's hand-set related_bill_id with the publisher's own fact."
         ),
         "related_bill_count": "How many related bills the publisher states.",
+        "cbo_cost_estimates_outcome": (
+            "BILLSTATUS estimate-block observation: NULL means unread; populated means estimate items were "
+            "read; requested-empty:absent means no element; requested-empty:present-and-empty means an empty "
+            "element; requested-empty:unexpected-shape:<shape> names an unsupported XML shape. These are "
+            "observations of this document, never evidence that no CBO estimate exists. Populated items "
+            "can still have unkeyable URLs, which the family records as refusals."
+        ),
     },
 )
 
@@ -321,6 +328,7 @@ def shape_bill(
         "short_title": text(_short_title(status.titles)),
         "related_bills_json": json_column([_related_bill(entry) for entry in related]),
         "related_bill_count": text(len(related)),
+        "cbo_cost_estimates_outcome": text(getattr(status, "cbo_cost_estimates_outcome", None)),
     }
 
 

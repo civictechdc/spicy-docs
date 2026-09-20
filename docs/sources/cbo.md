@@ -6,6 +6,29 @@ keyless; the routes the publisher advertises for the feed and for the estimate
 documents are behind a bot wall, and this module records that refusal by name
 rather than pretending the route works.
 
+## The index and the text are reachable without this route
+
+The wall below still stands over every `cbo.gov` document path, and nothing on
+this page has changed. What has changed is that the estimates themselves no
+longer depend on it:
+
+- **The index is keyless in GovInfo's BILLSTATUS bulk zips.**
+  `<cboCostEstimates>` carries the `pubDate`, `title`, `url` and stage
+  `description` of every estimate, two requests per Congress and type.
+  `cbo_cost_estimates` hosts it ([tables](../tables.md#the-cbo-cost-estimate-is-an-index-here-and-a-span-there)),
+  and the `publication_id` it parses out of each url is the same key this
+  feed's own `<Link>` states, so the two join.
+- **The letter text is reprinted verbatim in the bill's committee report**, for
+  the 883 of 1,368 scored bills of the 118th (64.5%) that have one;
+  `committee_reports` carries its span.
+- **The summary cost card is a raster** in every rendition, so no figure is
+  published by either table.
+
+See [the routes measurement](../research/cbo-cost-estimate-routes-2026-09-20.md)
+and [what landed](../research/cbo-cost-estimates-build-2026-09-20.md). This
+feed remains the route to CBO's *own* spelling of the measure, which no GovInfo
+route states.
+
 ## What answers, and what does not
 
 | Route | Answered 2026-09-14 | Credential |

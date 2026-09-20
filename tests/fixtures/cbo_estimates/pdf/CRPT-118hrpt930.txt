@@ -1,0 +1,958 @@
+59–006
+118TH CONGRESS
+REPORT
+"
+!
+HOUSE OF REPRESENTATIVES
+2d Session
+118–930
+TO AMEND TITLES 46 AND 49, UNITED STATES CODE, TO STREAMLINE
+THE ENVIRONMENTAL REVIEW PROCESS FOR MAJOR PROJECTS, AND
+FOR OTHER PURPOSES
+DECEMBER 19, 2024.—Committed to the Committee of the Whole House on the State
+of the Union and ordered to be printed
+Mr. GRAVES of Missouri, from the Committee on Transportation
+and Infrastructure, submitted the following
+R E P O R T
+[To accompany H.R. 3316]
+[Including cost estimate of the Congressional Budget Office]
+The Committee on Transportation and Infrastructure, to whom
+was referred the bill (H.R. 3316) to amend titles 46 and 49, United
+States Code, to streamline the environmental review process for
+major projects, and for other purposes, having considered the same,
+reports favorably thereon without amendment and recommends
+that the bill do pass.
+CONTENTS
+Page
+Purpose of Legislation .............................................................................................
+Background and Need for Legislation ....................................................................
+Hearings ...................................................................................................................
+Legislative History and Consideration ..................................................................
+Committee Votes ......................................................................................................
+Committee Oversight Findings and Recommendations ........................................
+New Budget Authority and Tax Expenditures ......................................................
+Congressional Budget Office Cost Estimate ..........................................................
+Performance Goals and Objectives .........................................................................
+Duplication of Federal Programs ............................................................................
+Congressional Earmarks, Limited Tax Benefits, and Limited Tariff Benefits ...
+Federal Mandates Statement .................................................................................
+Preemption Clarification .........................................................................................
+Advisory Committee Statement ..............................................................................
+Applicability to Legislative Branch ........................................................................
+Section-by-Section Analysis of the Legislation ......................................................
+Changes in Existing Law Made by the Bill, as Reported .....................................
+1 23 U.S.C. § 139.
+2 23 U.S.C. § 139(a)(9)(A).
+3 23 U.S.C. § 139(a)(7)(A).
+4 23 U.S.C. § 139(a)(5)(A).
+5 23 U.S.C. § 139(a)(5)(B).
+6 CBO, PUBLIC SPENDING ON TRANSP. AND WATER INFRASTRUCTURE, 1956 to 2017 (2018),
+available at https://www.cbo.gov/system/files/2018-10/54539-Infrastructure.pdf.
+PURPOSE OF LEGISLATION
+The purpose of H.R. 3316 is to amend titles 46 and 49, United
+States Code, to streamline the environmental review process for
+major projects, and for other purposes.
+BACKGROUND AND NEED FOR LEGISLATION
+This legislation applies 23 U.S.C. § 139—Efficient environmental
+reviews for project decision-making and One Federal Decision to
+ports, pipeline safety, and airport and aviation infrastructure
+projects. 23 U.S.C. § 139 generally requires Federal reviews for cer-
+tain projects to proceed in a more streamlined, effective, and rea-
+sonably-timed manner without unnecessary complexity or delays.1
+The only projects currently covered under that statute are "any
+highway
+project,
+public
+transportation
+capital
+project,
+or
+multimodal project that, if implemented as proposed by the project
+sponsor, would require approval by any operating administration or
+secretarial office within the Department of Transportation." 2 More
+specifically, a major project covered under H.R. 3316 is defined as:
+(A) In general.—The term "major project" means a project for
+which—
+(i) multiple permits, approvals, reviews, or studies are required
+under a Federal law other than the National Environmental Policy
+Act of 1969 (42 U.S.C. § 4321 et seq.);
+(ii) the project sponsor has identified the reasonable availability
+of funds sufficient to complete the project;
+(iii) the project is not a covered project (as defined in section
+41001 of the FAST Act (42 U.S.C. § 4370m)); and
+(iv)
+(I) the head of the lead agency has determined that an
+environmental impact statement is required; or
+(II) the head of the lead agency has determined that an
+environmental assessment is required, and the project
+sponsor requests that the project be treated as a major
+project.3
+The "environmental review process" means "the process for pre-
+paring for a project an environmental impact statement, environ-
+mental assessment, categorical exclusion, or other document pre-
+pared under the National Environmental Policy Act of 1969 (42
+U.S.C. § 4321 et seq.)" (NEPA).4 This process also includes the re-
+view and completion of any environmental permit, approval, re-
+view, or study required for a project under any Federal law, other
+than NEPA.5
+According to the Congressional Budget Office, the United States
+spends over $400 billion per year on infrastructure, which illus-
+trates the vast number of projects that potentially go through the
+NEPA process.6 NEPA is frequently used to delay or stop crucial
+infrastructure growth, including critical safety and maintenance
+upgrades to airports, ports, waterways and pipeline-related
+7 National Environmental Policy Act Implementing Regulations Revisions, 86 Fed. Reg. 55,757
+(Oct. 7, 2021).
+8 Update to the Regulations Implementing the Procedural Provisions of the National Environ-
+mental Policy Act, 85 Fed. Reg. 43,304, (July 16, 2020).
+projects.7 For example, the NEPA process averages 7.72 years for
+the Federal Aviation Administration (FAA), which include airport
+and aviation projects.8 Therefore, expanding 23 U.S.C. § 139 to
+port, pipeline safety, and airport and aviation projects will help en-
+sure that these infrastructure projects move forward in a timely
+and efficient manner.
+HEARINGS
+For the purposes of rule XIII, clause 3(c)(6)(A) of the 118th Con-
+gress, the following hearings were used to develop or consider H.R.
+3316:
+On Wednesday, February 1, 2023, the Committee on Transpor-
+tation and Infrastructure held a hearing entitled, "The State of
+Transportation Infrastructure and Supply Chain Challenges." The
+hearing provided an opportunity for Members of the Committee to
+discuss the current state of our Nation's transportation infrastruc-
+ture, the implementation of the Infrastructure Investment and Jobs
+Act (IIJA) (P.L. 117–58) and receive updates on North American
+supply chain challenges. Members received testimony from Mr.
+Chris Spear, President and Chief Executive Officer (CEO) at Amer-
+ican Trucking Associations; Mr. Ian Jefferies, President and CEO
+at the Association of American Railroads (AAR); Mr. Jeff Firth,
+President of Hamilton Construction on behalf of Associated General
+Contractors of America (AGC); Mr. Roger Guenther, Executive Di-
+rector, Port Houston, and Mr. Greg Regan, President of the Trans-
+portation Trades Department, AFL–CIO (TTD). The witnesses tes-
+tified about the need to address supply chain issues, including per-
+mitting issues.
+On March 28, 2023, the Subcommittee on Coast Guard and Mari-
+time Transportation held a hearing entitled, "Maritime Transpor-
+tation Supply Chain Issues." At the hearing Members received tes-
+timony from Mr. Bud Darr, Executive Vice President, MSC Group
+On behalf of the World Shipping Council, Mr. Matthew Leech,
+President and CEO, Ports America, Mr. William H. "Buddy" Allen,
+President and CEO, American Cotton Shippers Association, and
+Mr. Mario Cordero, Executive Director, Port of Long Beach, Cali-
+fornia. This hearing examined the maritime supply chain, includ-
+ing streamlining Federal actions.
+LEGISLATIVE HISTORY AND CONSIDERATION
+H.R. 3316 was introduced in the United States House of Rep-
+resentatives on May 15, 2023, by Mr. Crawford of Arkansas and re-
+ferred to the Committee on Transportation and Infrastructure.
+Within the Committee on Transportation and Infrastructure, H.R.
+3316 was referred to the Subcommittee on Aviation, the Sub-
+committee on Coast Guard and Maritime Transportation, and the
+Subcommittee on Railroads, Pipelines, and Hazardous Materials.
+The Subcommittee on Aviation, the Subcommittee on Coast Guard
+and Maritime Transportation, and the Subcommittee on Railroads,
+Pipelines, and Hazardous Materials were discharged from further
+consideration of H.R. 3316 on May 23, 2023.
+The Committee considered H.R. 3316 on May 23, 2023, and or-
+dered the measure to be reported to the House with a favorable
+recommendation, without amendment, by voice vote.
+The following amendments were offered:
+An amendment to H.R. 3316, offered by Mr. Garamendi (046)
+(#9A); Page 7, after line 6, insert the following: SEC. 5. PROGRAM
+FOR ELIMINATING DUPLICATION OF ENVIRONMENTAL RE-
+VIEWS. Section 330 of title 23, United States Code, is amended—
+(1) by striking subsection (k); and (2) by redesignating subsection
+(l) as subsection (k).; was WITHDRAWN.
+An amendment to H.R. 3316, offered by Mr. Garamendi (047)
+(#9B); Page 7, after line 6, insert the following: SEC. 5. PROGRAM
+FOR ELIMINATING DUPLICATION OF ENVIRONMENTAL RE-
+VIEWS. Section 330(l) of title 23, United States Code, is amend-
+ed— (1) in subparagraph (A) by striking "; and" and inserting a
+semicolon; (2) by redesignating subparagraph (B) as subparagraph
+(C); and (3) by inserting after subparagraph (A) the following: "(B)
+an eligible airport-related project (as such term is defined in sec-
+tion 40117(a) of title 49); and".; was WITHDRAWN.
+COMMITTEE VOTES
+Clause 3(b) of rule XIII of the Rules of the House of Representa-
+tives requires each committee report to include the total number of
+votes cast for and against on each record vote on a motion to report
+and on any amendment offered to the measure or matter, and the
+names of those members voting for and against.
+No recorded votes were requested during consideration of H.R.
+3316.
+COMMITTEE OVERSIGHT FINDINGS AND RECOMMENDATIONS
+With respect to the requirements of clause 3(c)(1) of rule XIII of
+the Rules of the House of Representatives, the Committee's over-
+sight findings and recommendations are reflected in this report.
+NEW BUDGET AUTHORITY AND TAX EXPENDITURES
+Clause 3(c)(2) of rule XIII of the Rules of the House of Represent-
+atives does not apply where a cost estimate and comparison pre-
+pared by the Director of the Congressional Budget Office under sec-
+tion 402 of the Congressional Budget Act of 1974 has been timely
+submitted prior to the filing of the report and is included in the re-
+port. Such a cost estimate is included in this report.
+CONGRESSIONAL BUDGET OFFICE COST ESTIMATE
+With respect to the requirement of clause 3(c)(3) of rule XIII of
+the Rules of the House of Representatives and section 402 of the
+Congressional Budget Act of 1974, the Committee has received the
+enclosed cost estimate for H.R. 3316 from the Director of the Con-
+gressional Budget Office:
+Summary: On May 23, 2023, the House Committee on Transpor-
+tation and Infrastructure considered multiple pieces of legislation.
+This document provides estimates for 12 bills that were ordered re-
+ported.
+The bills would, among other things, direct the Department of
+Transportation (DOT) or the Federal Maritime Commission to:
+the resiliency of the supply chain and revise the permitting process
+for certain port, airport, and pipeline projects, with the goal of ac-
+celerating approval;
+that can travel on the Interstate highways; and
+the safety and efficiency of domestic transportation systems.
+Estimated Federal cost: The bills' estimated budgetary effects are
+shown in Table 1. This cost estimate does not include any effects
+of interaction among the bills. If all 12 bills were combined and en-
+acted as a single piece of legislation, the effects could be different
+from the sum of the separate estimates, although CBO expects that
+any differences would be small. The bills' costs fall within budget
+function 400 (transportation).
+TABLE 1.—ESTIMATED BUDGETARY EFFECTS OF THE SUPPLY CHAIN LEGISLATION
+By fiscal year, millions of dollars—
+2023–
+CHANGES IN SPENDING SUBJECT TO APPROPRIATION
+H.R. 1500, Intelligent Transportation Integration Act:
+Estimated Authorization .................................................
+Estimated Outlays ..........................................................
+H.R. 1836, Ocean Shipping Reform Implementation Act of
+2023:
+Estimated Authorization .................................................
+Estimated Outlays ..........................................................
+CBO estimates that H.R. 915, H.R. 2948, H.R. 3013, H.R. 3316, H.R. 3318, H.R. 3365, H.R. 3372, H.R. 3395, and H.R. 3447, would each
+increase spending subject to appropriation by less than $500,000 in every year and over the 2023–2028 period.
+CBO estimates that H.R. 3316, H.R. 3317, and H.R. 3365 would each affect direct spending by less than $500,000 in every year and over
+the 2023–2033 period.
+Basis of estimate: For this estimate, CBO assumes that the bills
+will be enacted near the end of fiscal year 2023 and that the au-
+thorized and estimated amounts will be appropriated each year.
+Outlays for discretionary programs are estimated based on histor-
+ical spending patterns for similar programs.
+As discussed below, one bill would affect direct spending only
+and two bills would affect both direct spending and spending sub-
+ject to appropriation. CBO estimates that the effects of each bill on
+direct spending would be insignificant over the 2023–2033 period.
+The other bills would affect spending subject to appropriation
+alone. None of the bills would affect revenues.
+Bill that affects direct spending only: CBO estimates that just
+one bill would have an insignificant effect on direct spending and
+no effects on revenues or spending subject to appropriation.
+H.R. 3317, the Rolling Stock Protection Act, would remove an ex-
+emption from current law that allows a small number of public
+transit agencies to procure rolling stock from entities owned, con-
+trolled, or associated with certain countries. CBO estimates that
+enacting the bill could change the pace of spending for amounts
+previously appropriated for the Federal Transit Administration's
+Capital Investment Grants, relative to current law. (Those amounts
+could include funds that were designated as an emergency require-
+ment under the Infrastructure Investment and Jobs Act.) However,
+because few transit agencies would be affected, CBO expects that
+any changes in spending would total less than $500,000 in any
+year and over the 2023–2033 period.
+Bills that affect direct spending and spending subject to appro-
+priation: CBO estimates that two bills could have insignificant ef-
+fects on direct spending and spending subject to appropriation but
+would not affect revenues.
+H.R. 3316, a bill to amend titles 46 and 49, United States Code,
+to streamline the environmental review process for major projects,
+and for other purposes, would require DOT to revise the permitting
+process for certain port, airport, and pipeline projects, with the aim
+of making the process more efficient. The bill also would require
+DOT to maintain a database of projects and to update agency regu-
+lations.
+Under current law, if an agency fails to meet certain permitting
+deadlines, specified amounts of funding would be rescinded from
+that agency's account. Because the bill would expand the number
+of projects subject to those conditions, enacting H.R. 3316 could re-
+duce direct spending. CBO estimates that any effect would not be
+significant over the 2023–2033 period because of the small number
+of projects likely to be affected.
+CBO estimates that implementing the bill would increase spend-
+ing subject to appropriation by less than $500,000 over the 2023–
+2028 period, mostly for administrative activities.
+H.R. 3365, the Supply Chain Improvement Act, would direct
+DOT to prioritize consideration of grant applications for projects
+aimed at improving resiliency in the supply chain, unless those
+projects support the use of electric vehicles. In particular, the re-
+quirement would apply to grants under the Nationally Significant
+Multimodal Freight and Highway Projects program (known as the
+INFRA grant program) and the National Infrastructure Project As-
+sistance program. The bill would increase the share of INFRA
+grants that could be used for intermodal freight rail projects.
+The Infrastructure Investment and Jobs Act provided $21 billion
+for those two programs over the 2022–2026 period. (The appro-
+priated amounts were designated as an emergency requirement.)
+CBO estimates that H.R. 3365 could alter the spending patterns for
+those previously appropriated amounts, which would be recorded as
+changes in direct spending. CBO estimates that, on net, those
+changes would amount to less than $500,000 in any year and over
+the 2023–2033 period.
+H.R. 3365 also would direct the Government Accountability Of-
+fice to report on the effects of electric vehicles in several areas, in-
+cluding infrastructure integrity and grid security. The bill also
+would prevent agencies from prioritizing any project seeking to use
+grants that would support electric vehicles until a subsequent act
+of Congress has been passed allowing such prioritization. Using in-
+formation about similar reports, CBO estimates that the report
+would cost less than $500,000 over the 2023–2028 period; such
+spending would be subject to the availability of appropriated
+amounts.
+Bills that affect spending subject to appropriation by a signifi-
+cant amount: CBO estimates that two bills would affect spending
+subject to appropriation by more than $500,000 over the 2023–2028
+period. The costs for those two bills are shown in Table 1. Neither
+bill would affect direct spending or revenues.
+H.R. 1500, the Intelligent Transportation Integration Act, would
+require DOT to purchase certain data from public and private enti-
+ties to help improve the department's management of traffic and
+transportation infrastructure. DOT would be required to report to
+the Congress annually on those activities. Using information from
+the agency about similar contracting activities, CBO estimates that
+implementing H.R. 1500 would cost $30 million over the 2023–2028
+period, assuming appropriation of the estimated amounts.
+H.R. 1836, the Ocean Shipping Reform Implementation Act of
+2023, would create additional administrative and reporting require-
+ments for the Federal Maritime Commission, including a require-
+ment to issue two new regulations and publish a study. The bill
+also would establish two advisory committees to assist the commis-
+sion in creating policies to ensure competitiveness, reliability, and
+efficiency in international ocean shipping.
+Using information on similar administrative requirements and
+accounting for anticipated inflation, CBO estimates that imple-
+menting H.R. 1836 would cost $7 million over the 2023–2028 pe-
+riod; any spending would be subject to the availability of appro-
+priated amounts.
+Bills that affect spending subject to appropriation by an insignifi-
+cant amount: CBO estimates that implementing the following
+seven bills would cost less than $500,000 each over the 2023–2028
+period. None of the bills would affect direct spending or revenues.
+H.R. 915, the Motor Carrier Safety Selection Standard Act,
+would create new standards for certain motor carriers that trans-
+port goods, require DOT to update regulations to be consistent with
+those standards, and direct the department to stipulate the method
+for revoking a motor carrier's registration.
+H.R. 2948, the CARS Act, would require states to allow certain
+stinger-steered automobile transporters to operate on Interstate
+highways. (Such transporters have a fifth wheel located below the
+rear-most axle of the power unit.)
+H.R. 3013, the LICENSE Act of 2023, would require DOT to
+issue regulations updating the qualifications to be a commercial
+driver's license examiner. The bill also would allow states to ad-
+minister those tests to out-of-state applicants.
+H.R. 3318, a bill to amend title 23, United States Code, to estab-
+lish an axle weight tolerance for certain commercial motor vehicles
+transporting dry bulk goods, and for other purposes, would increase
+the maximum weight per axle that a commercial vehicle trans-
+porting dry bulk goods can carry on an Interstate highway. The bill
+would not change the overall gross vehicle weight limits for such
+vehicles.
+H.R. 3372, a bill to amend title 23, United States Code, to estab-
+lish a safety data collection program for certain 6-axle vehicles, and
+for other purposes, would create a pilot program allowing certain
+six-axle vehicles to be operated on Interstate highways. Under the
+bill, participating states would issue permits by vehicle or by group
+of vehicles that would specify acceptable routes and require permit
+holders to report on accidents and other details. The program
+would be discontinued after five years, although DOT could extend
+the program for five years.
+H.R. 3395, the U.S. Supply Chain Security Review Act of 2023,
+would require the Federal Maritime Commission to study the ef-
+fects of foreign ownership of domestic marine terminals on U.S.
+economic security and report those findings to the Congress.
+H.R. 3447, a bill to amend title 23, United States Code, to au-
+thorize a hydrogen powered vehicle to exceed certain weight limits
+on the Interstate Highway System, and for other purposes, would
+authorize hydrogen-powered vehicles to exceed certain weight lim-
+its specified under current law.
+Pay-As-You-Go considerations: The Statutory Pay-As-You-Go Act
+of 2010 establishes budget-reporting and enforcement procedures
+for legislation affecting direct spending or revenues. Over the
+2023–2033 period, CBO estimates that none of the bills would in-
+crease direct spending by more than $500,000.
+Increase in long-term net direct spending and deficits: None.
+Mandates: None.
+Estimate prepared by: Federal Costs: Aaron Krupkin (for Federal
+Maritime Commission); Robert Reese (for Department of Transpor-
+tation). Mandates: Brandon Lever.
+Estimate reviewed by: Susan Willie, Chief, Natural and Physical
+Resources Cost Estimates Unit; Kathleen FitzGerald, Chief, Public
+and Private Mandates Unit; H. Samuel Papenfuss, Deputy Director
+of Budget Analysis.
+Estimate approved by: Phillip L. Swagel, Director, Congressional
+Budget Office.
+PERFORMANCE GOALS AND OBJECTIVES
+With respect to the requirement of clause 3(c)(4) of rule XIII of
+the Rules of the House of Representatives, the performance goal
+and objective of this legislation is to provide efficient environmental
+reviews for project decision-making and One Federal Decision for
+port, pipeline safety, and airport and aviation projects.
+DUPLICATION OF FEDERAL PROGRAMS
+Pursuant to clause 3(c)(5) of rule XIII of the Rules of the House
+of Representatives, the Committee finds that no provision of H.R.
+3316 establishes or reauthorizes a program of the Federal govern-
+ment known to be duplicative of another Federal program, a pro-
+gram that was included in any report from the Government Ac-
+countability Office to Congress pursuant to section 21 of Public
+Law 111–139, or a program related to a program identified in the
+most recent Catalog of Federal Domestic Assistance.
+CONGRESSIONAL EARMARKS, LIMITED TAX BENEFITS, AND LIMITED
+TARIFF BENEFITS
+In compliance with clause 9 of rule XXI of the Rules of the House
+of Representatives, this bill, as reported, contains no congressional
+earmarks, limited tax benefits, or limited tariff benefits as defined
+in clause 9(e), 9(f), or 9(g) of the rule XXI.
+FEDERAL MANDATES STATEMENT
+The Committee adopts as its own the estimate of Federal man-
+dates prepared by the Director of the Congressional Budget Office
+pursuant to section 423 of the Unfunded Mandates Reform Act
+(Public Law 104–4).
+PREEMPTION CLARIFICATION
+Section 423 of the Congressional Budget Act of 1974 requires the
+report of any Committee on a bill or joint resolution to include a
+statement on the extent to which the bill or joint resolution is in-
+tended to preempt state, local, or tribal law. The Committee finds
+that H.R. 3316 does not preempt any state, local, or tribal law.
+ADVISORY COMMITTEE STATEMENT
+No advisory committees within the meaning of section 5(b) of the
+Federal Advisory Committee Act were created by this legislation.
+APPLICABILITY TO LEGISLATIVE BRANCH
+The Committee finds that the legislation does not relate to the
+terms and conditions of employment or access to public services or
+accommodations within the meaning of section 102(b)(3) of the Con-
+gressional Accountability Act (Public Law 104–1).
+SECTION-BY-SECTION ANALYSIS OF THE LEGISLATION
+Section 1. One Federal decision for ports
+This section amends 46 U.S.C. § 543 to include efficient environ-
+mental reviews and one Federal decision, 23 U.S.C. § 139.
+Section 2. One Federal decision for pipelines
+This section amends 49 U.S.C. § 601 to include efficient environ-
+mental reviews and one Federal decision, 23 U.S.C. § 139.
+Section 3. One Federal decision for airports and aviation
+This section amends 49 U.S.C. § 47171 to include efficient envi-
+ronmental reviews and one Federal decision, 23 U.S.C. § 139.
+Section 4. Efficient environmental reviews
+This section amends 49 U.S.C. § 24204(a)(4) by striking "except
+that the limitation on claims of 150 days shall be 2 years."
+CHANGES IN EXISTING LAW MADE BY THE BILL, AS REPORTED
+In compliance with clause 3(e) of rule XIII of the Rules of the
+House of Representatives, changes in existing law made by the bill,
+as reported, are shown as follows (existing law proposed to be omit-
+ted is enclosed in black brackets, new matter is printed in italic,
+existing law in which no change is proposed is shown in roman):
+CHANGES IN EXISTING LAW MADE BY THE BILL, AS REPORTED
+In compliance with clause 3(e) of rule XIII of the Rules of the
+House of Representatives, changes in existing law made by the bill,
+as reported, are shown as follows (existing law proposed to be omit-
+ted is enclosed in black brackets, new matter is printed in italics,
+and existing law in which no change is proposed is shown in
+roman):
+TITLE 46, UNITED STATES CODE
+*
+*
+*
+*
+*
+*
+*
+SUBTITLE V—MERCHANT MARINE
+*
+*
+*
+*
+*
+*
+*
+PART C—FINANCIAL ASSISTANCE PROGRAMS
+*
+*
+*
+*
+*
+*
+*
+CHAPTER 543—PORT INFRASTRUCTURE DEVELOPMENT
+PROGRAM
+Sec.
+54301. Port infrastructure development program.
+54302. Efficient environmental reviews and one Federal decision.
+*
+*
+*
+*
+*
+*
+*
+§ 54302. Efficient environmental reviews and one Federal de-
+cision
+(a) EFFICIENT ENVIRONMENTAL REVIEWS.—
+(1) IN GENERAL.—The Secretary of Transportation shall apply
+the project development procedures, to the greatest extent fea-
+sible, described in section 139 of title 23 to any port infrastruc-
+ture project that requires the approval of the Secretary under
+the National Environmental Policy Act of 1969 (42 U.S.C. 4321
+et seq.).
+(2) REGULATIONS AND PROCEDURES.—In carrying out para-
+graph (1), the Secretary shall incorporate into agency regula-
+tions and procedures pertaining to port infrastructure projects
+described in paragraph (1) aspects of such project development
+procedures, or portions thereof, determined appropriate by the
+Secretary in a manner consistent with this section, that increase
+the efficiency of the review of port infrastructure projects.
+(3) DISCRETION.—The Secretary may choose not to incor-
+porate into agency regulations and procedures pertaining to
+port infrastructure projects described in paragraph (1) such
+project development procedures that could only feasibly apply to
+highway projects, public transportation capital projects, and
+multimodal projects.
+(4) APPLICABILITY.—Subsection (l) of section 139 of title 23
+shall apply to port infrastructure projects described in para-
+graph (1), except that the limitation on claims of 150 days shall
+be 2 years.
+(b) ADDITIONAL CATEGORICAL EXCLUSIONS.—The Secretary shall
+maintain and make publicly available, including on the Internet, a
+database that identifies project-specific information on the use of a
+categorical exclusion on any port infrastructure project carried out
+under this title.
+*
+*
+*
+*
+*
+*
+*
+TITLE 49, UNITED STATES CODE
+*
+*
+*
+*
+*
+*
+*
+SUBTITLE V—RAIL PROGRAMS
+*
+*
+*
+*
+*
+*
+*
+PART C—PASSENGER TRANSPORTATION
+*
+*
+*
+*
+*
+*
+*
+CHAPTER 242—PROJECT DELIVERY
+*
+*
+*
+*
+*
+*
+*
+§ 24201. Efficient environmental reviews
+(a) EFFICIENT ENVIRONMENTAL REVIEWS.—
+(1) IN
+GENERAL.—The Secretary of Transportation shall
+apply the project development procedures, to the greatest ex-
+tent feasible, described in section 139 of title 23 to any railroad
+project that requires the approval of the Secretary under the
+National Environmental Policy Act of 1969 (42 U.S.C. 4321 et
+seq.).
+(2) REGULATIONS AND PROCEDURES.—In carrying out para-
+graph (1), the Secretary shall incorporate into agency regula-
+tions and procedures pertaining to railroad projects described
+in paragraph (1) aspects of such project development proce-
+dures, or portions thereof, determined appropriate by the Sec-
+retary in a manner consistent with this section, that increase
+the efficiency of the review of railroad projects.
+(3) DISCRETION.—The Secretary may choose not to incor-
+porate into agency regulations and procedures pertaining to
+railroad projects described in paragraph (1) such project devel-
+opment procedures that could only feasibly apply to highway
+projects, public transportation capital projects, and multimodal
+projects.
+(4) APPLICABILITY.—Subsection (l) of section 139 of title 23
+shall apply to railroad projects described in paragraph (1)ø, ex-
+cept that the limitation on claims of 150 days shall be 2
+years¿.
+(b) ADDITIONAL CATEGORICAL EXCLUSIONS.—Not later than 6
+months after the date of enactment of the Passenger Rail Reform
+and Investment Act of 2015, the Secretary shall—
+(1) survey the use by the Federal Railroad Administration of
+categorical exclusions in transportation projects since 2005;
+and
+(2) publish in the Federal Register for notice and public com-
+ment a review of the survey that includes a description of—
+(A) the types of actions categorically excluded; and
+(B) any actions the Secretary is considering for new cat-
+egorical exclusions, including those that would conform to
+those of other modal administrations.
+(c) NEW CATEGORICAL EXCLUSIONS.—Not later than 1 year after
+the date of enactment of the Passenger Rail Reform and Invest-
+ment Act of 2015, the Secretary shall publish a notice of proposed
+rulemaking to propose new and existing categorical exclusions for
+railroad projects that require the approval of the Secretary under
+the National Environmental Policy Act of 1969 (42 U.S.C. 4321 et
+seq.), including those identified under subsection (b), and develop
+a process for considering new categorical exclusions to the extent
+that the categorical exclusions meet the criteria for a categorical
+exclusion under section 1508.4 of title 40, Code of Federal Regula-
+tions.
+(d) TRANSPARENCY.—The Secretary shall maintain and make
+publicly available, including on the Internet, a database that iden-
+tifies project-specific information on the use of a categorical exclu-
+sion on any railroad project carried out under this title.
+(e) PROTECTIONS FOR EXISTING AGREEMENTS AND NEPA.—Noth-
+ing in subtitle E of the Passenger Rail Reform and Investment Act
+of 2015, or any amendment made by such subtitle, shall affect any
+existing environmental review process, program, agreement, or
+funding arrangement approved by the Secretary under title 49, as
+that title was in effect on the day preceding the date of enactment
+of such subtitle.
+*
+*
+*
+*
+*
+*
+*
+SUBTITLE VII—AVIATION PROGRAMS
+*
+*
+*
+*
+*
+*
+*
+PART B—AIRPORT DEVELOPMENT AND NOISE
+*
+*
+*
+*
+*
+*
+*
+CHAPTER 471—AIRPORT DEVELOPMENT
+*
+*
+*
+*
+*
+*
+*
+SUBCHAPTER III—AVIATION DEVELOPMENT
+STREAMLINING
+§ 47171. Expedited, coordinated environmental review proc-
+ess
+ø(a) AVIATION PROJECT REVIEW PROCESS.—The Secretary of
+Transportation shall develop and implement an expedited and co-
+ordinated environmental review process for airport capacity en-
+hancement projects at congested airports, general aviation airport
+construction or improvement projects, aviation safety projects, and
+aviation security projects that—
+ø(1) provides for better coordination among the Federal, re-
+gional, State, and local agencies concerned with the prepara-
+tion of environmental impact statements or environmental as-
+sessments under the National Environmental Policy Act of
+1969 (42 U.S.C. 4321 et seq.);
+ø(2) provides that all environmental reviews, analyses, opin-
+ions, permits, licenses, and approvals that must be issued or
+made by a Federal agency or airport sponsor for such a project
+will be conducted concurrently, to the maximum extent prac-
+ticable; and
+ø(3) provides that any environmental review, analysis, opin-
+ion, permit, license, or approval that must be issued or made
+by a Federal agency or airport sponsor for such a project will
+be completed within a time period established by the Sec-
+retary, in cooperation with the agencies identified under sub-
+section (d) with respect to the project.¿
+(a) AVIATION
+PROJECT
+REVIEW
+PROCESS.—The Secretary of
+Transportation shall apply the project development procedures, to
+the greatest extent feasible, described in section 139 of title 23 to any
+airport or aviation project that requires the approval of the Sec-
+retary under the National Environmental Policy Act of 1969 (42
+U.S.C. 4321 et seq.).
+(b) AVIATION PROJECTS SUBJECT TO A STREAMLINED ENVIRON-
+MENTAL REVIEW PROCESS.—
+(1) AIRPORT
+CAPACITY
+ENHANCEMENT
+PROJECTS
+AT
+CON-
+GESTED AIRPORTS.—An airport capacity enhancement project at
+a congested airport shall be subject to the øcoordinated and ex-
+pedited environmental review process requirements set forth in
+this section¿ project development procedures described in sub-
+section (a) .
+(2) GENERAL AVIATION AIRPORT CONSTRUCTION OR IMPROVE-
+MENT PROJECT.—A general aviation airport construction or im-
+provement project shall be subject to the øcoordinated and ex-
+pedited environmental review process requirements set forth in
+this section¿ project development procedures described in sub-
+section (a) .
+(3) AVIATION SAFETY AND AVIATION SECURITY PROJECTS.—
+(A) IN
+GENERAL.—The Administrator of the Federal
+Aviation Administration may designate an aviation safety
+project or aviation security project for priority environ-
+mental review. The Administrator may not delegate this
+designation authority. A designated project shall be subject
+to the øcoordinated and expedited environmental review
+process requirements set forth in this section¿ project de-
+velopment procedures described in subsection (a) .
+(B) PROJECT DESIGNATION CRITERIA.—The Administrator
+shall establish guidelines for the designation of an aviation
+safety project or aviation security project for priority envi-
+ronmental review. Such guidelines shall provide for consid-
+eration of—
+(i) the importance or urgency of the project;
+(ii) the potential for undertaking the environmental
+review under existing emergency procedures under the
+National Environmental Policy Act of 1969 (42 U.S.C.
+4321 et seq.);
+(iii) the need for cooperation and concurrent reviews
+by other Federal or State agencies;
+(iv) the prospect for undue delay if the project is not
+designated for priority review; and
+(v) for aviation security projects, the views of the
+Department of Homeland Security.
+ø(c) HIGH PRIORITY OF AND AGENCY PARTICIPATION IN COORDI-
+NATED REVIEWS.—
+ø(1) HIGH
+PRIORITY
+FOR
+ENVIRONMENTAL
+REVIEWS.—Each
+Federal agency with jurisdiction over an environmental review,
+analysis, opinion, permit, license, or approval shall accord any
+such review, analysis, opinion, permit, license, or approval in-
+volving an airport capacity enhancement project at a congested
+airport or a project designated under subsection (b)(3) the high-
+est possible priority and conduct the review, analysis, opinion,
+permit, license, or approval expeditiously.
+ø(2) AGENCY PARTICIPATION.—Each Federal agency described
+in subsection (d) shall formulate and implement administra-
+tive, policy, and procedural mechanisms to enable the agency
+to participate in the coordinated environmental review process
+under this section and to ensure completion of environmental
+reviews, analyses, opinions, permits, licenses, and approvals
+described in subsection (a) in a timely and environmentally re-
+sponsible manner.
+ø(d) IDENTIFICATION OF JURISDICTIONAL AGENCIES.—With respect
+to each airport capacity enhancement project at a congested airport
+or a project designated under subsection (b)(3), the Secretary shall
+identify, as soon as practicable, all Federal and State agencies that
+may have jurisdiction over environmental-related matters that may
+be affected by the project or may be required by law to conduct an
+environmental-related review or analysis of the project or deter-
+mine whether to issue an environmental-related permit, license, or
+approval for the project.
+ø(e) STATE AUTHORITY.—Under a coordinated review process
+being implemented under this section by the Secretary with respect
+to a project at an airport within the boundaries of a State, the Gov-
+ernor of the State, consistent with State law, may choose to partici-
+pate in such process and provide that all State agencies that have
+jurisdiction over environmental-related matters that may be af-
+fected by the project or may be required by law to conduct an envi-
+ronmental-related review or analysis of the project or determine
+whether to issue an environmental-related permit, license, or ap-
+proval for the project, be subject to the process.
+ø(f) MEMORANDUM OF UNDERSTANDING.—The coordinated review
+process developed under this section may be incorporated into a
+memorandum of understanding for a project between the Secretary
+and the heads of other Federal and State agencies identified under
+subsection (d) with respect to the project and, if applicable, the air-
+port sponsor.
+ø(g) USE OF INTERAGENCY ENVIRONMENTAL IMPACT STATEMENT
+TEAMS.—
+ø(1) IN GENERAL.—The Secretary may utilize an interagency
+environmental impact statement team to expedite and coordi-
+nate the coordinated environmental review process for a
+project under this section. When utilizing an interagency envi-
+ronmental impact statement team, the Secretary shall invite
+Federal, State and Tribal agencies with jurisdiction by law,
+and may invite such agencies with special expertise, to partici-
+pate on an interagency environmental impact statement team.
+ø(2) RESPONSIBILITY
+OF
+INTERAGENCY
+ENVIRONMENTAL
+IM-
+PACT STATEMENT TEAM.—Under a coordinated environmental
+review process being implemented under this section, the inter-
+agency environmental impact statement team shall assist the
+Federal Aviation Administration in the preparation of the envi-
+ronmental impact statement. To facilitate timely and efficient
+environmental review, the team shall agree on agency or Trib-
+al points of contact, protocols for communication among agen-
+cies, and deadlines for necessary actions by each individual
+agency (including the review of environmental analyses, the
+conduct of required consultation and coordination, and the
+issuance of environmental opinions, licenses, permits, and ap-
+provals). The members of the team may formalize their agree-
+ment in a written memorandum.
+ø(h) LEAD AGENCY RESPONSIBILITY.—The Federal Aviation Ad-
+ministration shall be the lead agency for projects designated under
+subsection (b)(3) and airport capacity enhancement projects at con-
+gested airports and shall be responsible for defining the scope and
+content of the environmental impact statement, consistent with
+regulations issued by the Council on Environmental Quality. Any
+other Federal agency or State agency that is participating in a co-
+ordinated environmental review process under this section shall
+give substantial deference, to the extent consistent with applicable
+law and policy, to the aviation expertise of the Federal Aviation
+Administration.
+ø(i) EFFECT OF FAILURE TO MEET DEADLINE.—
+ø(1) NOTIFICATION OF CONGRESS AND CEQ.— If the Secretary
+determines that a Federal agency, State agency, or airport
+sponsor that is participating in a coordinated review process
+under this section with respect to a project has not met a dead-
+line established under subsection (a)(3) for the project, the Sec-
+retary shall notify, within 30 days of the date of such deter-
+mination, the Committee on Commerce, Science, and Transpor-
+tation of the Senate, the Committee on Transportation and In-
+frastructure of the House of Representatives, the Council on
+Environmental Quality, and the agency or sponsor involved
+about the failure to meet the deadline.
+ø(2) AGENCY REPORT.—Not later than 30 days after date of
+receipt of a notice under paragraph (1), the agency or sponsor
+involved shall submit a report to the Secretary, the Committee
+on Transportation and Infrastructure of the House of Rep-
+resentatives, the Committee on Commerce, Science, and Trans-
+portation of the Senate, and the Council on Environmental
+Quality explaining why the agency or sponsor did not meet the
+deadline and what actions it intends to take to complete or
+issue the required review, analysis, opinion, permit, license, or
+approval.
+ø(j) PURPOSE AND NEED.—For any environmental review, anal-
+ysis, opinion, permit, license, or approval that must be issued or
+made by a Federal or State agency that is participating in a coordi-
+nated review process under this section and that requires an anal-
+ysis of purpose and need for the project, the agency, notwith-
+standing any other provision of law, shall be bound by the project
+purpose and need as defined by the Secretary.
+ø(k) ALTERNATIVES ANALYSIS.—The Secretary shall determine
+the reasonable alternatives to an airport capacity enhancement
+project at a congested airport or a project designated under sub-
+section (b)(3). Any other Federal agency, or State agency that is
+participating in a coordinated review process under this section
+with respect to the project shall consider only those alternatives to
+the project that the Secretary has determined are reasonable.
+ø(l) SOLICITATION AND CONSIDERATION OF COMMENTS.—In apply-
+ing subsections (j) and (k), the Secretary shall solicit and consider
+comments from interested persons and governmental entities in ac-
+cordance with the National Environmental Policy Act of 1969 (42
+U.S.C. 4321 et seq.).
+ø(m) MONITORING BY TASK FORCE.—The Transportation Infra-
+structure Streamlining Task Force, established by Executive Order
+13274 (67 Fed. Reg. 59449; relating to environmental stewardship
+and transportation infrastructure project reviews), may monitor
+airport projects that are subject to the coordinated review process
+under this section.¿
+(c) EFFICIENT ENVIRONMENTAL REVIEWS.—
+(1) REGULATIONS
+AND
+PROCEDURES.—In carrying out sub-
+section (a), the Secretary shall incorporate into agency regula-
+tions and procedures pertaining to airport or aviation projects
+described in subsection (b) aspects of such project development
+procedures, or portions thereof, determined appropriate by the
+Secretary in a manner consistent with this section, that increase
+the efficiency of the review of such projects.
+(2) DISCRETION.—The Secretary may choose not to incor-
+porate into agency regulations and procedures pertaining to air-
+port or aviation projects described in subsection (b) such project
+development procedures that could only feasibly apply to high-
+way projects, public transportation capital projects, and
+multimodal projects.
+(3) APPLICABILITY.—Subsection (l) of section 139 of title 23
+shall apply to airport or aviation projects described in sub-
+section (b).
+(d) ADDITIONAL CATEGORICAL EXCLUSIONS.—The Secretary shall
+maintain and make publicly available, including on the Internet, a
+database that identifies project-specific information on the use of a
+categorical exclusion on any airport or aviation project carried out
+under this title.
+*
+*
+*
+*
+*
+*
+*
+SUBTITLE VIII—PIPELINES
+*
+*
+*
+*
+*
+*
+*
+CHAPTER 601—SAFETY
+Sec.
+*
+*
+*
+*
+*
+*
+*
+60144. Efficient environmental reviews and one Federal decision.
+*
+*
+*
+*
+*
+*
+*
+§ 60144. Efficient environmental reviews and one Federal de-
+cision
+(a) EFFICIENT ENVIRONMENTAL REVIEWS.—
+(1) IN GENERAL.—The Secretary of Transportation shall apply
+the project development procedures, to the greatest extent fea-
+sible, described in section 139 of title 23 to any pipeline project
+that requires the approval of the Secretary under the National
+Environmental Policy Act of 1969 (42 U.S.C. 4321 et seq.).
+(2) REGULATIONS AND PROCEDURES.—In carrying out para-
+graph (1), the Secretary shall incorporate into agency regula-
+tions and procedures pertaining to pipeline projects described in
+paragraph (1) aspects of such project development procedures,
+or portions thereof, determined appropriate by the Secretary in
+a manner consistent with this section, that increase the effi-
+ciency of the review of pipeline projects.
+(3) DISCRETION.—The Secretary may choose not to incor-
+porate into agency regulations and procedures pertaining to
+pipeline projects described in paragraph (1) such project devel-
+opment procedures that could only feasibly apply to highway
+projects, public transportation capital projects, and multimodal
+projects.
+(4) APPLICABILITY.—Subsection (l) of section 139 of title 23
+shall apply to pipeline projects described in paragraph (1).
+(b) ADDITIONAL CATEGORICAL EXCLUSIONS.—The Secretary shall
+maintain and make publicly available, including on the Internet, a
+database that identifies project-specific information on the use of a
+categorical exclusion on any pipeline project carried out under this
+title.
+*
+*
+*
+*
+*
+*
+*
+Æ

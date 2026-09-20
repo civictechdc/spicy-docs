@@ -32,6 +32,7 @@ import pytest
 from spicy_docs.extraction.body_text import rendition_text
 from spicy_docs.extraction.gpo_normalize import GpoPageCleanup, normalize_gpo_pages
 from spicy_docs.interpretation.bill_family import BillFamilyCapture
+from spicy_docs.interpretation.cbo_estimates import read_cbo_estimate, recital_bill_id
 from spicy_docs.interpretation.communication_rin import rin_from_report_nature
 from spicy_docs.interpretation.release_matching import compile_bill_patterns, match_releases
 from spicy_docs.interpretation.section_diff import diff_sections
@@ -64,10 +65,15 @@ from spicy_docs.schemas.congress_index_tables import (
     shape_record_issue,
     shape_treaty,
 )
+from spicy_docs.schemas.cost_estimate_tables import (
+    fold_cbo_cost_estimates,
+    report_citation_parts,
+    shape_cbo_cost_estimate,
+)
 from spicy_docs.schemas.legislator_tables import shape_member, shape_member_term
 from spicy_docs.schemas.tables import bill_id, digest, joined
 from spicy_docs.sources.agency_reports.report_blocks import parse_agency_blocks
-from spicy_docs.sources.congress.bill_status import BillIdentity
+from spicy_docs.sources.congress.bill_status import BillIdentity, parse_bill_status
 from spicy_docs.sources.congress.bill_tree import engine_available
 from spicy_docs.sources.congress.press_releases import PRESS_RELEASE_FEEDS, parse_press_release_feed
 from spicy_docs.sources.congress.record_communications import parse_record_communications
@@ -151,6 +157,39 @@ def _billstatus_only_cases() -> list[ShapedCase]:
             cases.append(_case("bill_committees", row, (key, committee.system_code)))
         for row, summary in zip(tables.bill_publisher_summaries, status.summaries, strict=True):
             cases.append(_case("bill_publisher_summaries", row, (key, summary.version_code, summary.action_date)))
+    return cases
+
+
+#: The four bounded BILLSTATUS excerpts the CBO index is measured on.  They
+#: live apart from ``BILLSTATUS_FIXTURES`` because none of the captured status
+#: documents above carries a ``<cboCostEstimates>`` element at all -- a bill
+#: with a CBO estimate is 1,368 of the 118th's 16,213 -- and because these are
+#: excerpts, not whole records (``tests/fixtures/cbo_cost_estimates/README.md``).
+COST_ESTIMATE_FIXTURES: tuple[tuple[str, BillIdentity], ...] = (
+    ("BILLSTATUS-118hr801.excerpt.xml", BillIdentity(118, "hr", 801)),
+    ("BILLSTATUS-118hr3091.excerpt.xml", BillIdentity(118, "hr", 3091)),
+    ("BILLSTATUS-118hr589.excerpt.xml", BillIdentity(118, "hr", 589)),
+    ("BILLSTATUS-118s3139.excerpt.xml", BillIdentity(118, "s", 3139)),
+)
+
+
+def _cost_estimate_cases() -> list[ShapedCase]:
+    """One row per folded estimate, over every bill whose BILLSTATUS names one."""
+    cases: list[ShapedCase] = []
+    for name, identity in COST_ESTIMATE_FIXTURES:
+        status = parse_bill_status((FIXTURES / "cbo_cost_estimates" / name).read_bytes(), identity=identity)
+        folded, unkeyable = fold_cbo_cost_estimates(status.cbo_cost_estimates)
+        assert unkeyable == ()
+        for entry in folded:
+            cases.append(
+                _case(
+                    "cbo_cost_estimates",
+                    shape_cbo_cost_estimate(identity, entry, report_citations=status.report_citations),
+                    (bill_id(identity), entry.publication_id),
+                    restatements_json=list(entry.restatements),
+                    report_citations_json=[report_citation_parts(c) for c in status.report_citations],
+                )
+            )
     return cases
 
 
@@ -739,10 +778,22 @@ def _report_cases() -> list[ShapedCase]:
     # ``page_count`` and ``text_sha256`` describe the extraction, not the
     # response, so the caller that ran the extraction supplies them.
     extracted = digest(text)
+    # The CBO estimate columns need a report whose cover declares one, and the
+    # captured CRPT package's own body does not; the finding therefore comes
+    # from a retained recital body, the same borrowing hearing_transcripts
+    # makes for want of a captured CHRG.
+    estimate = read_cbo_estimate((FIXTURES / "cbo_estimates/CRPT-118hrpt53.txt").read_text())
     cases: list[ShapedCase] = [
         _case(
             "committee_reports",
-            shape_committee_report(_package_body(CRPT), bill_id="119-hr-6028", page_count=12, text_sha256=extracted),
+            shape_committee_report(
+                _package_body(CRPT),
+                bill_id="119-hr-6028",
+                page_count=12,
+                text_sha256=extracted,
+                estimate=estimate,
+                recital_bill_id=recital_bill_id(estimate, 118),
+            ),
             (CRPT,),
         ),
         _case(
@@ -1139,6 +1190,8 @@ def all_cases() -> list[ShapedCase]:
         + _roster_cases()
         + _document_citation_cases()
         + _budget_volume_cases()
+        # --- B4: the CBO cost-estimate index, off the same BILLSTATUS document. ---
+        + _cost_estimate_cases()
         # --- The build order's step 4: the Senate expenditure tables. ---
         + _senate_expenditure_cases()
         + _hearing_bill_link_cases()
@@ -1317,7 +1370,12 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
     "member_votes": ("schemas/congress_activity_tables.py", "sources/congress/votes.py"),
     "members": ("schemas/legislator_tables.py", "sources/legislators.py"),
     "member_terms": ("schemas/legislator_tables.py", "sources/legislators.py"),
-    "committee_reports": ("schemas/committee_report_tables.py", "sources/govinfo/bodies.py"),
+    "committee_reports": (
+        "schemas/committee_report_tables.py",
+        "sources/govinfo/bodies.py",
+        # B4: the CBO estimate columns appended to the package row.
+        "interpretation/cbo_estimates.py",
+    ),
     "report_sections": ("schemas/committee_report_tables.py", "sources/agency_reports/report_blocks.py"),
     "hearing_transcripts": (
         "schemas/committee_report_tables.py",
@@ -1363,6 +1421,8 @@ FILLED_BY: dict[str, tuple[str, ...]] = {
         "interpretation/hearing_bill_links.py",
         "sources/congress/house_committee_repository.py",
     ),
+    # B4: the index CBO's own wall denies, read keyless out of BILLSTATUS.
+    "cbo_cost_estimates": ("schemas/cost_estimate_tables.py", "sources/congress/bill_status.py"),
 }
 
 #: A value a description names in backticks.  Prose that says a column carries

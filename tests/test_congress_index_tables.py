@@ -317,7 +317,12 @@ def test_hearing_to_meeting_and_back_on_the_captured_pair() -> None:
     stems = {url.rsplit("/", 1)[-1].split(".")[0] for url in (entry["url"] for entry in hearing["formats"])}
     assert stems == {"CHRG-119hhrg64431"}
     assert HEARING_TRANSCRIPTS.columns[-1] == "event_id"
-    assert len(HEARING_TRANSCRIPTS.columns) == len(COMMITTEE_REPORTS.columns) + 1
+    # Both tables are the same nineteen package columns plus their own
+    # appendix: the hearing adds event_id, the report adds the CBO estimate
+    # columns (B4), and only positions 3 and 4 are spelled differently.
+    shared = [index for index in range(19) if index not in (3, 4)]
+    assert [HEARING_TRANSCRIPTS.columns[i] for i in shared] == [COMMITTEE_REPORTS.columns[i] for i in shared]
+    assert len(HEARING_TRANSCRIPTS.columns) == 20
 
 
 def test_meeting_to_bill_on_the_captured_markup() -> None:

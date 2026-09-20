@@ -20,17 +20,24 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 
 ## The tables
 
-`TABLE_CONTRACTS` holds all thirty-eight by name. Each carries its columns in
+`TABLE_CONTRACTS` holds all thirty-nine by name. Each carries its columns in
 publish order, its identity, its version column — the column a merge prefers the
 larger value of when two rows share an identity — a one-sentence grain, and one
 sentence per column for the host's data dictionary.
 
+**Both totals on this page are derived, so recompute rather than add to them**:
+the table count is `len(TABLE_CONTRACTS)` and the column total is
+`sum(len(c.columns) for c in TABLE_CONTRACTS.values())`. Each is spelled in
+exactly one place here — this paragraph and the sentence below the table — and
+once more in [the docs index](README.md).
+
 | Table | Grain | Identity | Version column | Columns | Supplier |
 | --- | --- | --- | --- | --- | --- |
-| `congress_bills` | One row per bill or resolution, as one BILLSTATUS document states it. | `bill_id` | `update_date` | 48 | `interpretation.bill_family` |
+| `congress_bills` | One row per bill or resolution, as one BILLSTATUS document states it. | `bill_id` | `update_date` | 49 | `interpretation.bill_family` |
 | `bill_actions` | One row per action entry in a bill's BILLSTATUS document, in publisher order. | `bill_id`, `action_index` | `action_date` | 14 | `interpretation.bill_family` |
 | `bill_committees` | One row per committee or subcommittee a bill reached, as its BILLSTATUS document names it. | `bill_id`, `system_code` | `snapshot_update_date` | 10 | `interpretation.bill_family` |
 | `bill_publisher_summaries` | One row per CRS summary the publisher states on a bill, at the version and action it describes. | `bill_id`, `summary_version_code`, `action_date` | `update_date` | 7 | `interpretation.bill_family` |
+| `cbo_cost_estimates` | One row per bill and CBO publication the bill's BILLSTATUS document names as a cost estimate of it. | `bill_id`, `publication_id` | `pub_date` | 16 | `interpretation.bill_family` |
 | `bill_versions` | One row per printing of a bill, per source that supplied it. | `bill_id`, `version_code`, `source` | `version_date` | 35 | `interpretation.bill_family` |
 | `bill_sections` | One row per content-bearing node of one bill version, in document order. | `bill_id`, `version_code`, `source`, `match_path`, `body_index` | `version_date` | 18 | `interpretation.bill_family` |
 | `section_diffs` | One row per compared pair of consecutive printings of one bill. | `bill_id`, `from_version_code`, `from_source`, `to_version_code`, `to_source` | `to_version_date` | 19 | `interpretation.bill_family` |
@@ -46,7 +53,7 @@ sentence per column for the host's data dictionary.
 | `member_votes` | One row per member's position on one roll call. | `congress`, `chamber`, `session`, `roll_number`, `member_key` | `vote_date` | 14 | `sources.congress.votes` |
 | `members` | One row per legislator in one capture of the community crosswalk. | `bioguide_id` | `observed_at` | 18 | `sources.legislators` |
 | `member_terms` | One row per term a legislator served, in the crosswalk's own order. | `bioguide_id`, `term_index` | `observed_at` | 9 | `sources.legislators` |
-| `committee_reports` | One row per captured GovInfo committee report package. | `package_id` | `last_modified` | 19 | `sources.govinfo.body_acquisition` |
+| `committee_reports` | One row per captured GovInfo committee report package, with the CBO estimate it reprints or refuses. | `package_id` | `last_modified` | 32 | `sources.govinfo.body_acquisition`, `interpretation.cbo_estimates` |
 | `report_sections` | One row per agency block parsed out of one committee report's text. | `package_id`, `seq` | `last_modified` | 12 | `sources.agency_reports.report_blocks` |
 | `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | 20 | `sources.govinfo.body_acquisition`, `sources.congress.listing` (`hearing-detail`) |
 | `house_communications` | One row per House executive communication: the Congress.gov house-communication routes where the publisher decomposes it, the Congressional Record entry it printed where the publisher does not. | `congress`, `communication_type`, `number` | `update_date` | 32 | `sources.congress.listing` (`house-communication`, `house-communication-detail`), `sources.congress.record_communications`, `interpretation.communication_rin` |
@@ -66,7 +73,7 @@ sentence per column for the host's data dictionary.
 | `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | 27 | `schemas.bill_action_tables`, `interpretation.bill_actions` |
 | `hearing_bill_links` | One row per bill one source states a hearing was held on or noticed for: the pair, the source that stated it, and the committee-and-date key the statement was checked against. | `package_id`, `bill_id`, `link_source` | `link_rule_version` | 12 | `schemas.hearing_bill_link_tables`, `interpretation.hearing_bill_links`, `sources.congress.house_committee_repository` |
 
-Seven hundred and eighty-three columns in all, each with its own sentence.
+Eight hundred and thirteen columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
@@ -75,13 +82,14 @@ appended.
 
 ## The bill family is one pass
 
-Twelve of the thirty-eight tables come out of a single call to
+Thirteen of the thirty-nine tables come out of a single call to
 `build_bill_family`, in an order where no step reads a table an earlier step
 published:
 
 1. referral signals from the committee system codes;
 2. the stage, signing and money-bill findings;
-3. `congress_bills`, `bill_actions`, `bill_committees`, `bill_publisher_summaries`;
+3. `congress_bills`, `bill_actions`, `bill_committees`, `bill_publisher_summaries`,
+   and `cbo_cost_estimates` off the same document;
 4. `bill_versions`, with the version-kind finding;
 5. `bill_sections`, one row per flattened node;
 6. `section_diffs`, `section_diff_items`, `financial_changes`, over consecutive
@@ -663,12 +671,96 @@ volumes carrying the same printed grid. What that does and does not establish:
 - **No request was made for this table at all**, so nothing here speaks to the
   route's availability; the rollup's receipt is the only evidence of it.
 
+## The CBO cost estimate is an index here and a span there
+
+CBO's own site is behind a bot wall whose proxy error names a website ban, so
+no document route to an estimate exists at all
+([routes](research/cbo-cost-estimate-routes-2026-09-20.md)). Two tables carry
+what is reachable without it, and the boundary between them is measured
+([the build](research/cbo-cost-estimates-build-2026-09-20.md)).
+
+**`cbo_cost_estimates` is the index, keyless.** GovInfo's BILLSTATUS bulk zips
+carry `<cboCostEstimates>` per bill: two requests give the whole 118th — 1,368
+bills, 1,468 stated items, 1,431 distinct publication ids, identical to the
+keyed Congress.gov API on all 33 overlapping bills. Step zero of this build
+checked whether the family already published any of it and found none, so this
+is a new table rather than columns appended to `congress_bills`.
+
+- **The identity folds, and the fold keeps what it folds.** 1,468 items become
+  1,431 rows because the publisher states one publication twice on some bills.
+  Nine of those 37 restatements *disagree*, every one in `title` alone, so
+  `restatements_json` carries each differing later item with only its differing
+  fields. `[]` on the other 1,459 rows.
+- **`publication_id` is parsed, never guessed.** The rule takes only the
+  `https://www.cbo.gov/publication/{id}` page all 1,468 measured urls are; a
+  url outside that shape is a named `FamilyRefusal`, not a row keyed on a
+  coerced id.
+- **`congress_bills.cbo_cost_estimates_outcome` records every bill's answer.**
+  The appended, nullable column is NULL for unread data, `populated` for read
+  items, `requested-empty:absent` for a missing element,
+  `requested-empty:present-and-empty` for an empty element, and
+  `requested-empty:unexpected-shape:<shape>` for an unsupported shape (for
+  example `non-item-child` or `empty-item`). An estimate table cannot publish
+  this marker when it has no rows. The re-measurement found 1,368 populated
+  blocks, 14,845 absent, zero empty and zero unexpected; none establishes
+  whether an unlisted estimate exists. Unkeyable populated items still produce
+  family refusals naming the rule, host and path shape, without the URL.
+- **`report_citation_count` is the text route's reachability, per row.** 883 of
+  the 1,368 scored bills (64.5%) have a committee report at all; the Senate
+  shortfall is structural, since 155 of 395 scored Senate bills were reported
+  without a written report. `WHERE report_citation_count = 0` selects bills for which this
+  BILLSTATUS capture names no report; it does not prove no CRPT package exists.
+
+**`committee_reports` carries the letter.** A report reprints the CBO letter
+verbatim when its cover carries the statutory recital, and thirteen appended
+columns hold what the rule found: the recital's answer, the print's own bill
+key, the heading, the span, its digest, the end rule, the signatory, and the
+publisher's own reason where there is no letter.
+
+- **The gate is the recital and never a heading**, in both directions: three
+  retained reports print a CBO heading over a section saying the estimate was
+  not received, and one prints the estimate under a heading no pattern set had.
+  A signature or dateline gate fails too — `CRPT-118srpt99` states `Director,
+  Congressional Budget Office.` in a witness list.
+- **`report_states_estimate = false` is requested-empty with a reason**, not a
+  NULL: four of the seventeen retained bodies say why in their own words, and
+  `estimate_absence_reason` carries the paragraph whole.
+- **NULL throughout means no rule was run**, which is a different answer from
+  `false`.
+- **The heading vocabulary is a floor** and is used only to locate a span the
+  recital has already declared. A declared letter the vocabulary misses
+  publishes a NULL span, which reads as a shortfall rather than as an absence.
+- **HTM and PDF text are supported.** Four retained PDFs now yield exact
+  pinned spans after `rendition_text`; uppercase whole-line headings handle
+  lost indentation, while dot leaders, prose and missing recitals still fail.
+  All 17 retained HTM findings stay unchanged except for the rule version.
+  The caller selects the rendition; PDF is preferred by the research plan.
+  `format` and `text_sha256` identify the text these spans address.
+- **`estimate_rule_version` digests every rule input.** Named and auxiliary
+  patterns, flags, rejects, heading thresholds, punctuation and a control-flow
+  revision are pinned together; mutation tests prove each moves the version.
+- **No letter date is published.** No retained body states a CBO letterhead
+  dateline; the estimate's date is CBO's own `pubDate` on the index row, and
+  re-deriving it from prose would recreate what the index states.
+- **No cost figures are published by either table.** The summary card is a
+  raster in every rendition and no extraction was attempted over it.
+
+**Why no `document_citations` row, and why the letter is not on the estimate
+row.** Across all 17 retained bodies there is exactly one `cbo.gov` locator — a
+footnote to an unrelated study — no `/publication/{id}` page, and none inside
+any located letter, so a citation row's `target_key` would have to be invented.
+And the estimate row is shaped from one BILLSTATUS document in one pass while
+the report is a different package: 61 of the 1,368 scored bills carry more than
+one estimate and 28 of those also carry a report, so one reprinted letter could
+not be attributed to one of them without guessing. The relation is therefore a
+join on the bill, which both sides state.
+
 ## What is still a preserved NULL
 
 | Column | Why | What would fill it |
 | --- | --- | --- |
 | `congress_bills.statutes_at_large_cite` | The family build sees one BILLSTATUS document and its printings; the citation lives in the PLAW package's USLM `meta`, which the laws rollup acquires once per law — filling it here would fetch every PLAW twice or read another table's output. | The merge joins `laws` on `bill_id` (`statutes_at_large_cite` is published there). |
-| `committee_reports.bill_id` | A package-keyed report is fillable today; the report-to-bill linkage is not. | A report-to-bill join. |
+| `committee_reports.bill_id` | A package-keyed report is fillable today; the *index's* report-to-bill linkage is not. | A report-to-bill join from an index record. The **print's** answer now lands beside it on `committee_reports.recital_bill_id`, read off the cover recital; the two are kept apart because what a print says and what an index says are different claims. |
 | `hearing_transcripts.bill_id` | Not for want of a source: four publishers state a hearing's bills. The relationship is one-to-many — twelve bills on `CHRG-118hhrg56198` — so a scalar column would pick one of twelve. | Nothing. `hearing_bill_links` is the answer, and this column stays NULL by design. |
 
 ## Decision

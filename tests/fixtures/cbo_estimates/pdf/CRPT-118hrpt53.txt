@@ -1,0 +1,361 @@
+39–006
+118TH CONGRESS
+REPORT
+"
+!
+HOUSE OF REPRESENTATIVES
+1st Session
+118–53
+SECURING THE BORDER FOR PUBLIC HEALTH ACT OF
+MAY 11, 2023.—Committed to the Committee of the Whole House on the State of
+the Union and ordered to be printed
+Mrs. RODGERS of Washington, from the Committee on Energy and
+Commerce, submitted the following
+R E P O R T
+together with
+MINORITY VIEWS
+[To accompany H.R. 801]
+[Including cost estimate of the Congressional Budget Office]
+The Committee on Energy and Commerce, to whom was referred
+the bill (H.R. 801) to amend title III of the Public Health Service
+Act to provide for suspension of entries and imports from des-
+ignated countries to prevent the spread of communicable diseases
+and import into the United States of certain controlled substances,
+having considered the same, reports favorably thereon without
+amendment and recommends that the bill do pass.
+CONTENTS
+Page
+Purpose and Summary ............................................................................................
+Background and Need for Legislation ....................................................................
+Committee Action ....................................................................................................
+Committee Votes ......................................................................................................
+Oversight Findings and Recommendations ...........................................................
+New Budget Authority, Entitlement Authority, and Tax Expenditures .............
+Congressional Budget Office Estimate ...................................................................
+Federal Mandates Statement .................................................................................
+Statement of General Performance Goals and Objectives ....................................
+Duplication of Federal Programs ............................................................................
+Related Committee and Subcommittee Hearings .................................................
+Committee Cost Estimate .......................................................................................
+Earmark, Limited Tax Benefits, and Limited Tariff Benefits .............................
+Advisory Committee Statement ..............................................................................
+Applicability to Legislative Branch ........................................................................
+Section-by-Section Analysis of the Legislation ......................................................
+Changes in Existing Law Made by the Bill, as Reported .....................................
+Minority, Additional, or Dissenting Views ............................................................
+PURPOSE AND SUMMARY
+This bill allows the Secretary of the Department of Health and
+Human Services, after consultation with the Attorney General, to
+restrict the entry of persons or property from foreign countries to
+prevent the introduction of certain controlled substances into the
+United States.
+BACKGROUND AND NEED FOR LEGISLATION
+Currently, 42 U.S.C. 265 allows the Secretary, in the interest of
+public health, to restrict the entry of persons or property from cer-
+tain designated countries when there is serious danger of introduc-
+tion of a communicable disease into the United States.
+The United States is facing an unprecedented illicit drug crisis,
+and simultaneously suffering under skyrocketing overdose and poi-
+soning rates. This bill would expand the current already existing
+authority under 42 U.S.C. 265 to allow the Secretary, in the inter-
+est of public health, to restrict the entry of persons or property
+from certain designated countries when there is serious danger of
+introduction of a communicable disease or, after consultation with
+the Attorney General, certain controlled substances. The certain
+controlled substances include, as defined in the corresponding Code
+of Federal Regulations, narcotic drugs, opiates, opium derivatives,
+stimulants, and fentanyl-related substances.
+COMMITTEE ACTION
+On February 15, 2023, the Subcommittees on Oversight and In-
+vestigations and Health, jointly, held a hearing on H.R. 801. The
+Subcommittee received testimony from:
+Project
+Council
+On March 8, 2023, the Subcommittee on Health met in open
+markup session and forwarded H.R. 801, without amendment, to
+the full Committee by a recorded vote of 17 yeas and 12 nays. On
+March 23 and 24, 2023, the full Committee on Energy and Com-
+merce met in open markup session and ordered H.R. 801, without
+amendment, favorably reported to the House by a recorded vote of
+24 yeas and 19 nays.
+COMMITTEE VOTES
+Clause 3(b) of rule XIII requires the Committee to list the record
+votes on the motion to report legislation and amendments thereto.
+The following reflects the record votes taken during the Committee
+consideration:
+
+OVERSIGHT FINDINGS AND RECOMMENDATIONS
+Pursuant to clause 2(b)(1) of rule X and clause 3(c)(1) of rule
+XIII, the Committee held a hearing and made findings that are re-
+flected in this report.
+NEW BUDGET AUTHORITY, ENTITLEMENT AUTHORITY, AND TAX
+EXPENDITURES
+Pursuant to clause 3(c)(2) of rule XIII, the Committee finds that
+H.R. 801 would result in no new or increased budget authority, en-
+titlement authority, or tax expenditures or revenues.
+CONGRESSIONAL BUDGET OFFICE ESTIMATE
+Pursuant to clause 3(c)(3) of rule XIII, the following is the cost
+estimate provided by the Congressional Budget Office pursuant to
+section 402 of the Congressional Budget Act of 1974:
+H.R. 801 would authorize the Department of Health and Human
+Services (HHS) to suspend the entry of people and goods into the
+United States from certain countries if the department determines
+that doing so would prevent the arrival of certain controlled sub-
+stances, including opiates and fentanyl. The bill would require
+HHS to consult with the Department of Justice before making such
+a determination.
+Under current law, by invoking its authority under Section 362
+of the Public Health Service Act, HHS can deny entry to people or
+goods from certain countries to prevent the spread of communicable
+diseases. Furthermore, the government may prevent certain people
+(but not goods) from coming into the country if their entry is deter-
+mined to be detrimental to U.S. interests, under Section 212(f) of
+the Immigration and Nationality Act.
+Direct spending: Enacting H.R. 801 would expand the govern-
+ment's authority to restrict the import of goods into the United
+States. If that authority is used, it would result in a net increase
+in direct spending because any such restrictions would decrease the
+collection of certain customs fees charged on the import of these
+goods. Since these fees are classified in the budget as direct spend-
+ing, any decrease in collections would result in an increase in direct
+spending. A portion of the fees collected can be spent by Customs
+and Border Protection without further appropriation; therefore, the
+increase in direct spending under the bill would be less than the
+total change in customs fees collected.
+CBO estimates that direct spending would increase by less than
+$500,000 under the bill. HHS has rarely used its existing Section
+362 authority to restrict the import of goods into the United States,
+and CBO's estimate incorporates the assumption that the new au-
+thority under H.R. 801 would also be used only rarely. However,
+the estimate of costs is subject to significant uncertainty. If the
+new authority is not used at all during the 2023–2033 period, H.R.
+801 would have no effect on direct spending during that period. If
+the authority is used more frequently than CBO anticipates, or if
+an order is issued that affects a larger number of imports than
+CBO expects, costs would be larger. Additionally, if the authority
+under H.R. 801 is used more than CBO expects, total output of the
+economy could change (through changes to international trade, for
+example). CBO has not undertaken an analysis of those effects.
+CBO estimates that the bill would not affect the federal budget
+through immigration channels because H.R. 801 would not expand
+the government's authority to restrict immigration beyond that al-
+ready authorized under the Immigration and Nationality Act. Nu-
+merous Presidents have invoked that authority in recent decades,
+most recently in Presidential Proclamations 9645 and 9983, issued
+in 2017 and 2020, respectively, which prohibited entry into the
+United States by nationals of certain countries.
+Spending subject to appropriation: CBO estimates that it would
+cost HHS less than $500,000 to promulgate rules and enforce or-
+ders if the agency uses the authority under the bill. Such spending
+would be subject to the availability of appropriated funds.
+The CBO staff contact for this estimate is Jeremy Crimm. The
+estimate was reviewed by Chad Chirico, Deputy Director of Budget
+Analysis.
+PHILLIP L. SWAGEL,
+Director, Congressional Budget Office.
+FEDERAL MANDATES STATEMENT
+The Committee adopts as its own the estimate of Federal man-
+dates prepared by the Director of the Congressional Budget Office
+pursuant to section 423 of the Unfunded Mandates Reform Act.
+STATEMENT OF GENERAL PERFORMANCE GOALS AND OBJECTIVES
+Pursuant to clause 3(c)(4) of rule XIII, the general performance
+goal or objective of this legislation is to help stem the tide of the
+nation's illicit drug crisis by restricting the import of persons and
+property that would further increase the introduction of certain
+controlled substances across our borders.
+DUPLICATION OF FEDERAL PROGRAMS
+Pursuant to clause 3(c)(5) of rule XIII, no provision of H.R. 801
+is known to be duplicative of another Federal program, including
+any program that was included in a report to Congress pursuant
+to section 21 of Public Law 111–139 or the most recent Catalog of
+Federal Domestic Assistance.
+RELATED COMMITTEE AND SUBCOMMITTEE HEARINGS
+Pursuant to clause 3(c)(6) of rule XIII,
+1. The following hearing was used to develop or consider
+H.R. 801: Joint Oversight and Investigations Subcommittee
+and Health Subcommittee Field Hearing on February 15, 2023:
+"President Biden's Border Crisis is a Public Health Crisis."
+2. The following related hearing was held on February 15,
+2023: Joint Oversight and Investigations Subcommittee and
+Health Subcommittee Field Hearing: "President Biden's Border
+Crisis is a Public Health Crisis."
+COMMITTEE COST ESTIMATE
+Pursuant to clause 3(d)(1) of rule XIII, the Committee adopts as
+its own the cost estimate prepared by the Director of the Congres-
+sional Budget Office pursuant to section 402 of the Congressional
+Budget Act of 1974.
+EARMARK, LIMITED TAX BENEFITS, AND LIMITED TARIFF BENEFITS
+Pursuant to clause 9(e), 9(f), and 9(g) of rule XXI, the Committee
+finds that H.R. 801 contains no earmarks, limited tax benefits, or
+limited tariff benefits.
+ADVISORY COMMITTEE STATEMENT
+No advisory committees within the meaning of section 5(b) of the
+Federal Advisory Committee Act were created by this legislation.
+APPLICABILITY TO LEGISLATIVE BRANCH
+The Committee finds that the legislation does not relate to the
+terms and conditions of employment or access to public services or
+accommodations within the meaning of section 102(b)(3) of the Con-
+gressional Accountability Act.
+SECTION-BY-SECTION ANALYSIS OF THE LEGISLATION
+Section 1. Short title
+Section 1 provides a short title of Securing the Border for Public
+Health Act of 2023.
+Section 2. Suspension of entries and imports from designated coun-
+tries to prevent spread of communicable diseases and import of
+certain controlled substances
+Section 2 amends Section 362 of the Public Health Service Act
+(42 U.S.C. 265) to authorize the Secretary of the Department of
+Health and Human Services, in the interest of public health, and
+after consultation with the Attorney General, to restrict the entry
+of persons and property from countries designated by the Secretary
+when there is a determination that introduction of certain con-
+trolled substances into the United States would pose a serious dan-
+ger. This section defines "certain controlled substance" to include,
+as defined in the corresponding Code of Federal Regulations, nar-
+cotic drugs, opiates, opium derivatives, stimulants, and fentanyl-re-
+lated substances.
+CHANGES IN EXISTING LAW MADE BY THE BILL, AS REPORTED
+In compliance with clause 3(e) of rule XIII of the Rules of the
+House of Representatives, changes in existing law made by the bill,
+as reported, are shown as follows (existing law proposed to be omit-
+ted is enclosed in black brackets, new matter is printed in italics,
+and existing law in which no change is proposed is shown in
+roman):
+PUBLIC HEALTH SERVICE ACT
+*
+*
+*
+*
+*
+*
+*
+TITLE III—GENERAL POWERS AND DUTIES OF PUBLIC
+HEALTH SERVICE
+*
+*
+*
+*
+*
+*
+*
+PART G—QUARANTINE AND INSPECTION
+*
+*
+*
+*
+*
+*
+*
+øSUSPENSION OF ENTRIES AND IMPORTS FROM DESIGNATED PLACES
+øSEC. 362. Whenever the Surgeon General determines that by
+reason of the existence of any communicable disease in a foreign
+country there is serious danger of the introduction of such disease
+into the United States, and that this danger is so increased by the
+introduction of persons or property from such country that a sus-
+pension of the right to introduce such persons and property is re-
+quired in the interest of the public health, the Surgeon General, in
+accordance with regulations approved by the President, shall have
+the power to prohibit, in whole or in part, the introduction of per-
+sons and property from such countries or places as he shall des-
+ignate in order to avert such danger, and for such period of time
+as he may deem necessary for such purpose.¿
+SEC. 362. SUSPENSION OF ENTRIES AND IMPORTS FROM DESIGNATED
+COUNTRIES TO PREVENT SPREAD OF COMMUNICABLE
+DISEASES AND IMPORT OF CERTAIN CONTROLLED SUB-
+STANCES.
+(a) IN GENERAL.—Whenever the Secretary makes a determination
+described in subsection (b) with respect to a country, the Secretary,
+by regulation, shall have the power to prohibit, in whole or in part,
+for a period of time determined to be necessary by the Secretary, the
+introduction of persons and property from such countries designated
+by the Secretary in order to avert the danger described in such sub-
+section.
+(b) DETERMINATION.—A determination described in this sub-
+section is a determination by the Secretary that, by reason of the ex-
+istence of any communicable disease or, after consultation with the
+Attorney General, certain controlled substances in a foreign coun-
+try—
+(1) there is serious danger of the introduction of such disease
+or substances into the United States; and
+(2) such danger is so increased by the introduction of persons
+or property from such country that a suspension of the right to
+introduce such persons and property is required in the interest
+of the public health.
+(c) DEFINITION.—In this section, the term "certain controlled sub-
+stance" means—
+(1) a narcotic drug as defined in section 1300.01 of title 21,
+Code of Federal Regulations (or successor regulations);
+(2) an opiate as described in section 1308.11(b) or 1308.12(c)
+of such title (or successor regulations);
+(3) an opium derivative as described in section 1308.11(c) of
+such title (or successor regulations);
+(4) a stimulant as described in section 1308.11(f) or
+1308.12(d) of such title (or successor regulations); and
+(5) a fentanyl-related substance as described in section
+1308.11(h) of such title (or successor regulations).
+*
+*
+*
+*
+*
+*
+*
+(9)
+1 42 U.S.C. 265.
+MINORITY VIEWS
+H.R. 801 would vastly expand the authority of the Secretary of
+Health and Human Services (HHS) to deny entry of people into the
+United States, including those seeking legal asylum protections,
+should the Secretary determine that there is a danger of the intro-
+duction of certain controlled substances into the U.S.
+This policy amends Section 362 of the Public Health Service Act,
+often referred to as "Title 42" authorities. Under current law, the
+federal government may suspend the right to introduce persons or
+property into the United States if there is a serious danger of the
+introduction of a communicable disease into the U.S.1 However,
+this legislation would vastly expand this authority to permit the
+Secretary to deny entry of persons or property into the United
+States should he or she determine, after consultation with the At-
+torney General, that there is a "serious danger" of the introduction
+of certain controlled substances into the United States. While the
+public health provisions under Section 362 were intended to pre-
+vent the spread of communicable diseases in the United States,
+this provision was not intended to allow the Secretary to have the
+unchecked authority to deny entry of persons or property into the
+country, which H.R. 801 would provide.
+This policy could be easily misused to inappropriately and
+inhumanely block entry of immigrants and those seeking asylum
+into the United States. The bill would permit the Secretary to close
+U.S. borders to entrants of any country that the Secretary may
+choose based on an overbroad and vague determination that there
+is a "serious danger" of certain controlled substances entering the
+United States. H.R. 801 does not define how the Secretary should
+make a determination of what constitutes a "serious danger" to
+warrant the use of this authority, nor does the legislation provide
+any additional parameters or limitations under what circumstances
+the Secretary could exercise this authority, beyond simply requir-
+ing consultation with the Attorney General.
+As drafted, H.R. 801 could also be interpreted to permit the Sec-
+retary to prohibit entry of property into the United States through
+legal ports of entry, potentially blocking entry of vital goods into
+the U.S. should the Secretary determine, virtually unilaterally,
+that there is a serious danger of the entry of certain controlled sub-
+stances from a specific country. This authority could be easily
+abused.
+The federal government's law enforcement agencies, including
+the Department of Justice and the Department of Homeland Secu-
+rity, are best positioned to detect and divert controlled substances
+at our nation's borders. Limiting entry of controlled substances into
+the United States is not the role of the Department of Health and
+Human Services, or our public health agencies like the Centers for
+Disease Control and Prevention.
+This legislation was not subject to a hearing before the Energy
+and Commerce Committee. As a result, the Committee and the
+public have not had a sufficient opportunity to fully analyze the im-
+plications for the policy. However, this legislation could clearly
+have far-reaching and detrimental consequences by vastly expand-
+ing the authority of the Secretary to unilaterally deny entry to per-
+sons or property into the United States.
+FRANK PALLONE, Jr.,
+Ranking Member.
+Æ

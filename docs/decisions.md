@@ -1591,3 +1591,138 @@ before it. A field-by-field score cannot see that; a section yielding no
 entries yields nothing to disagree about. The rules revised against the
 114th-115th disagreements are reported as an in-sample upper bound, separately
 from the 116th-118th rows no field rule was changed against.
+
+## The CBO estimate index is a new table; its letter hangs off the report, joined on the bill
+
+CBO's own site refuses every document path and Zyte's error names the ban, so
+the estimate family had no route at all until
+[the routes measurement](research/cbo-cost-estimate-routes-2026-09-20.md)
+found two that never touch `cbo.gov`. Building them raised three choices worth
+the record, and all three were settled by looking rather than by arguing.
+Numbers are [the build measurement](research/cbo-cost-estimates-build-2026-09-20.md)'s,
+re-derived offline from retained bytes through the product code.
+
+**Step zero: the family published none of it, so the index is a new table.**
+The owner's rule is that data an index already gives is never recreated, so
+the first question was whether `congress_bills` already carried the estimates
+— in which case only the text side and the link were left to build, and a
+partial answer would have meant appending columns rather than a new contract.
+It carried nothing: `parse_bill_status` read neither `<cboCostEstimates>` nor
+`<committeeReports>`, and `docs/tables.md` had no occurrence of `cbo`. So
+`cbo_cost_estimates` is a new contract — filled in the bill family's same one
+pass, off the same document, through the same reader rather than a second XML
+walk.
+
+**The identity folds on `(bill_id, publication_id)`, and the fold keeps what
+it folds.** The publisher states one publication twice on 37 of 1,468 measured
+items, and **nine of those 37 disagree** — every one in `title` alone, CBO
+re-spelling the measure. Two items naming one publication are one estimate, so
+they fold; but a fold that dropped the second spelling would lose the
+publisher's own correction. `restatements_json` carries every differing later
+item with only its differing fields, and `stated_count` says how many there
+were. `[]` on the other 1,459 rows.
+
+**The letter's span lands on `committee_reports`, and the relation to the
+index is a join on the bill.** Two alternatives were considered and both are
+refused on evidence:
+
+- *A `document_citations` row under a new sealed `cite_kind`.* That table's
+  grain is one occurrence **of a cited key**, and its identity includes
+  `target_key`. Across all 17 retained CRPT bodies there is exactly **one**
+  `cbo.gov` locator — a footnote in `CRPT-118hrpt930` to an unrelated 2018 CBO
+  study — **no** `/publication/{id}` page at all, and none inside any located
+  letter. The print states no key to carry, so the row would carry an invented
+  one. The letter is also one span per document, not one occurrence per key,
+  which is exactly the aggregate-versus-occurrence distinction that table's
+  design defends.
+- *`letter_*` columns on `cbo_cost_estimates`.* That row is shaped from one
+  BILLSTATUS document in one pass, and the report is a different package — the
+  same reason `congress_bills.statutes_at_large_cite` is a preserved NULL. And
+  it could not be filled correctly even with the report in hand: **61 of the
+  1,368 scored bills of the 118th carry more than one estimate, and 28 of those
+  also carry a report**, so attributing one reprinted letter to one of several
+  estimates would be a guess on 28 bills.
+
+So the letter is a property of the report, appended to the package-keyed row,
+and the relation is `cbo_cost_estimates.bill_id` joined to
+`committee_reports.recital_bill_id`. Every identity stays where it was:
+`(bill_id, publication_id)`, `(package_id,)`, and `document_citations`'s
+sealed `cite_kind` vocabulary untouched.
+
+**`recital_bill_id` sits beside `bill_id` rather than replacing it.** The
+cover's `[To accompany H.R. 801]` is the *print's* answer to the report-to-bill
+join, with the Congress taken from the package identity because the cover
+states none. `bill_id` remains whatever index record the caller read. Two
+columns for one fact, on purpose and in this repository's own house style: what
+a print says and what an index says are different claims, and the two agreeing
+is the check — the same reason `document_citations.stated_by_index` exists.
+
+**The bill carries the empty observation.** Append
+`congress_bills.cbo_cost_estimates_outcome`, leaving every existing column in
+place. NULL means unread; `populated` means estimate items were read;
+`requested-empty:absent` and `requested-empty:present-and-empty` distinguish a
+missing element from an empty one; `requested-empty:unexpected-shape:<shape>`
+names an unsupported structure without copying source text. This is the plain
+home because `cbo_cost_estimates` has one row per estimate and no row on which
+to record an empty answer. A populated block can still yield an unkeyable item:
+its refusal names `cbo_publication_url`, host and path shape, never the URL,
+and free-text reasons are scrubbed before truncation. Zero report citations
+means this BILLSTATUS names no report, not that no CRPT package exists.
+
+The original build's empty-element counter could not fail: it returned zero
+whenever any bill had estimates. The corrected offline measurement uses these
+reader outcomes and a mixed-shape synthetic zip that detects that defect.
+The retained 16,213 bills yield 1,368 populated blocks, 14,845 absent, zero
+present-and-empty and zero unexpected. No count establishes an unscored bill.
+
+**The gate is the cover recital, and a heading is never one.** House Rule XIII
+cl. 3(a)(1)(B) makes the cover carry the recital when the estimate is in the
+report, identically in both chambers. The corpus breaks every looser gate:
+three retained reports print a CBO heading over a section that then says the
+estimate was **not** received; one prints the estimate under a heading the
+routes measurement's five patterns missed; and `CRPT-118srpt99` states
+`Director, Congressional Budget Office.` in a **witness list** with a
+`Washington, DC, March 1, 2023.` dateline on the committee's *own* transmittal.
+The heading vocabulary is therefore a floor used only to *locate* a span the
+recital already declared, and a declared letter it misses publishes a NULL span
+— visible as a shortfall, never as an absence.
+
+**A missing estimate is requested-empty with the publisher's reason.** Four of
+the seventeen bodies say why in their own words, and the rule returns that
+paragraph whole with its span rather than a NULL. The reason is **not** gated
+on a heading, because one of the four sits under a heading no pattern matched.
+
+**Support PDF with a bounded heading rule.** The routes plan prefers PDF.
+The first implementation located zero letters in the four retained PDFs after
+`rendition_text` removed indentation. CRPT-118hrpt53, -118hrpt276, -118hrpt930
+and -118srpt289 all print whole uppercase section headings. Accept that form
+alongside the existing indented HTM blocks, reject dot leaders, and still
+require an exact heading-vocabulary match and the cover recital. The two newer
+PDF attributions also wrap between `Congressional` and `Budget Office`.
+This locates all four letters; all 17 HTM findings, including exact spans and
+digests, stay unchanged except for the rule version. The caller can select the
+preferred PDF rendition; no HTM-only deviation remains. Raster figures remain
+outside this capability.
+
+**Version every input that controls the letter rule.** The digest now includes
+reason guards, numbering, dot leaders, whitespace and paragraph boundaries,
+regex flags, heading thresholds, trailing punctuation and the control-flow
+revision, as well as the named patterns and their rejects. Tests pin
+`cf790f0f814a` literally and mutate each input. Paragraphs are scanned once,
+heading blocks are reused, and letter digests use `schemas.tables.digest`.
+
+**No letter date is read, and that is a measurement.** Zero of the seventeen
+bodies states a CBO letterhead dateline. Writing a pattern against a form
+nothing retained has shown is the guess this repository refuses elsewhere, and
+it is unnecessary: the estimate's date is CBO's own `pubDate`, published on
+`cbo_cost_estimates.pub_date`. Re-deriving it from prose would recreate what
+the index states. One retained body whose reprint carries the letterhead
+reverses this.
+
+**What the capability does not claim.** No cost figure is published by either
+table: the summary card is a raster in every rendition and no extraction was
+attempted over it. The ~35% of scored bills with no committee report — and
+every current-year estimate — have no text route at all; their index rows
+still carry the bill, the stage, the date and the locator, and the figures are
+recorded as absent. Under the retain-value rule that is a capability with a
+measured limit, not a gap to hide.

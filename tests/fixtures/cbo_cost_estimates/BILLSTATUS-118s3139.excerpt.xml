@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BILLSTATUS-118s3139.xml, a bounded excerpt.
+  Source: https://www.govinfo.gov/bulkdata/BILLSTATUS/118/s/BILLSTATUS-118-s.zip
+  retained as blobs/269261c0989db3ced789680ee2202747df9a7298f1ac8d2b074d3356b06e399c in
+  ~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/ (2026-09-20).
+  Whole record: 10988 bytes, sha256 4fa1c1a4461f7e991d495ad8189adee297ef47f94d3b1daf6858bf6e96b99c13.
+  Kept: the identity block parse_bill_status validates, <committeeReports>
+  and <cboCostEstimates>, each element whole and verbatim. Dropped:
+  actions, summaries, subjects, titles, sponsors, cosponsors, textVersions,
+  relatedBills, committees, laws, notes and amendments; none of which
+  this table reads.
+  A Senate bill with a Senate report (CRPT-118srpt289), which also carries the
+  cover recital; its letter ends at the 'Estimate approved by' attribution.
+-->
+<billStatus>
+  <version>3.0.0</version>
+  <bill>
+    <number>3139</number>
+    <updateDate>2025-05-27T14:12:34Z</updateDate>
+    <updateDateIncludingText>2025-05-27T14:12:34Z</updateDateIncludingText>
+    <originChamber>Senate</originChamber>
+    <type>S</type>
+    <introducedDate>2023-10-26</introducedDate>
+    <congress>118</congress>
+    <committeeReports>
+      <committeeReport>
+        <citation>S. Rept. 118-289</citation>
+      </committeeReport>
+    </committeeReports>
+    <cboCostEstimates>
+      <item>
+        <pubDate>2024-05-28T20:04:00Z</pubDate>
+        <title>S. 3139, Preventing Child Labor Exploitation Act</title>
+        <url>https://www.cbo.gov/publication/60334</url>
+        <description>As ordered reported by the Senate Committee on Homeland Security and Governmental Affairs on March 6, 2024</description>
+      </item>
+    </cboCostEstimates>
+    <title>Preventing Child Labor Exploitation in Federal Contracting Act</title>
+  </bill>
+</billStatus>

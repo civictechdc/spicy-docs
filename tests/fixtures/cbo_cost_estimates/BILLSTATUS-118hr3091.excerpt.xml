@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  BILLSTATUS-118hr3091.xml, a bounded excerpt.
+  Source: https://www.govinfo.gov/bulkdata/BILLSTATUS/118/hr/BILLSTATUS-118-hr.zip
+  retained as blobs/8e7ca7dab50a7b9b977f021ec1b3231f8fedf82c33494553857b892fadfdba98 in
+  ~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/ (2026-09-20).
+  Whole record: 64361 bytes, sha256 a47320c1b1b15ad1e3f1283ade3711df0be5ad1b8f27c47efb5a1cc79ad898a3.
+  Kept: the identity block parse_bill_status validates, <committeeReports>
+  and <cboCostEstimates>, each element whole and verbatim. Dropped:
+  actions, summaries, subjects, titles, sponsors, cosponsors, textVersions,
+  relatedBills, committees, laws, notes and amendments; none of which
+  this table reads.
+  The publisher states publication 59168 twice, field for field. Two items,
+  one estimate: what fold_cbo_cost_estimates folds and stated_count records.
+-->
+<billStatus>
+  <version>3.0.0</version>
+  <bill>
+    <number>3091</number>
+    <updateDate>2025-07-21T19:32:26Z</updateDate>
+    <updateDateIncludingText>2025-07-21T19:32:26Z</updateDateIncludingText>
+    <originChamber>House</originChamber>
+    <type>HR</type>
+    <introducedDate>2023-05-05</introducedDate>
+    <congress>118</congress>
+    <committeeReports>
+      <committeeReport>
+        <citation>H. Rept. 118-58</citation>
+      </committeeReport>
+    </committeeReports>
+    <cboCostEstimates>
+      <item>
+        <pubDate>2023-05-15T20:33:00Z</pubDate>
+        <title>H.R. 3091, Federal Law Enforcement Officer Service Weapon Purchase Act</title>
+        <url>https://www.cbo.gov/publication/59168</url>
+        <description>As ordered reported by the House Committee on the Judiciary on May 10, 2023</description>
+      </item>
+      <item>
+        <pubDate>2023-05-15T20:33:00Z</pubDate>
+        <title>H.R. 3091, Federal Law Enforcement Officer Service Weapon Purchase Act</title>
+        <url>https://www.cbo.gov/publication/59168</url>
+        <description>As ordered reported by the House Committee on the Judiciary on May 10, 2023</description>
+      </item>
+    </cboCostEstimates>
+    <title>Federal Law Enforcement Officer Service Weapon Purchase Act</title>
+  </bill>
+</billStatus>

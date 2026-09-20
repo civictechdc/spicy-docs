@@ -129,6 +129,39 @@ class RelatedBill:
 
 
 @dataclass(frozen=True, slots=True)
+class CboCostEstimate:
+    """One ``<cboCostEstimates>`` item: CBO's own row about one scored printing.
+
+    **The user guide is stale on this element and the live files govern.** The
+    guide (``tests/fixtures/billstatus_codes/guide-2026-08-03.md``) documents
+    ``rptPubDate``/``rptTitle``/``rptUrl`` and no description; every one of the
+    1,468 items in the 118th's ``hr`` and ``s`` bulk zips states
+    ``pubDate``/``title``/``url``/``description`` instead, which is what the
+    Congress.gov API documents and serves (measured 2026-09-20,
+    ``docs/research/cbo-cost-estimate-routes-2026-09-20.md``). Both spellings
+    are read, the live one first, the same way :func:`_title_text` handles the
+    guide's ``latestTitle``: a field the publisher may resume sending is not
+    ours to drop.
+
+    ``description`` is CBO's own statement of *which printing* it scored ("As
+    ordered reported by the House Committee on Energy and Commerce on March 24,
+    2023"), which is the only thing in this element that distinguishes two
+    estimates of one bill. Every field is optional here because the guide names
+    none required.
+
+    **The element is never emitted empty**: zero of the 16,213 bills in those
+    two zips carries a self-closing ``<cboCostEstimates/>``, so a bill without
+    it is *either* never scored *or* not yet linked and nothing in this route
+    tells the two apart. A caller records requested-empty, never absence.
+    """
+
+    pub_date: str | None
+    title: str | None
+    url: str | None
+    description: str | None
+
+
+@dataclass(frozen=True, slots=True)
 class BillCommittee:
     """One committee or subcommittee the measure reached.
 
@@ -237,6 +270,17 @@ class BillStatus:
     committees: tuple[BillCommittee, ...] = ()
     titles: tuple[BillTitle, ...] = ()
     related_bills: tuple[RelatedBill, ...] = ()
+    cbo_cost_estimates: tuple[CboCostEstimate, ...] = ()
+    #: Every ``<committeeReports>`` citation, in publisher order, exactly as
+    #: written ("H. Rept. 118-53", "H. Rept. 118-4, Part 1"). Every one of the
+    #: 1,153 items in the two measured zips states exactly one ``<citation>``
+    #: and nothing else, so this is a tuple of strings rather than a record.
+    #: It is what says whether a bill's CBO estimate is reachable as *text*:
+    #: the letter is reprinted in the committee report or nowhere.
+    report_citations: tuple[str, ...] = ()
+    #: NULL means this block was not read. Empty observations name the XML
+    #: shape, never whether CBO produced an estimate. Published per bill.
+    cbo_cost_estimates_outcome: str | None = None
 
 
 def _validated_identity(identity: BillIdentity) -> BillIdentity:
@@ -370,19 +414,85 @@ def _recorded_vote(element: Element) -> RecordedVote:
     )
 
 
+def _measured_or_documented(element: Element, measured: str, documented: str) -> str | None:
+    """Read the spelling the live files use, falling back to the guide's own.
+
+    The user guide is stale in more than one place and the corpus is the
+    authority, so every such field reads the measured name first and the
+    documented name only when the measured one is absent. The fallback is
+    never a guess: it is the name the publisher's own guide prints, so a
+    record that ever does use it yields the value instead of ``None``.
+    """
+    value = _text(element, measured)
+    return value if value is not None else _text(element, documented)
+
+
 def _title_text(element: Element) -> str | None:
     """Read ``<title>``, falling back to ``<latestTitle>``, the guide's own spelling for it.
 
     Every live BILLSTATUS this module measured (108th, 113th and 119th
     Congresses) states ``<title>`` and never ``<latestTitle>``, both inside
     ``<titles>`` items and inside ``<relatedBills>`` items -- see the
-    ``RelatedBill`` docstring. Reading ``<title>`` first keeps that measured
-    shape as the fast path; the fallback exists only so a record that ever
-    does use the guide's documented name yields the title instead of
-    ``None``, on either element.
+    ``RelatedBill`` docstring.
     """
-    value = _text(element, "title")
-    return value if value is not None else _text(element, "latestTitle")
+    return _measured_or_documented(element, "title", "latestTitle")
+
+
+def _cbo_cost_estimate(element: Element) -> CboCostEstimate:
+    """One ``<cboCostEstimates>`` item under either spelling; see :class:`CboCostEstimate`."""
+    return CboCostEstimate(
+        pub_date=_measured_or_documented(element, "pubDate", "rptPubDate"),
+        title=_measured_or_documented(element, "title", "rptTitle"),
+        url=_measured_or_documented(element, "url", "rptUrl"),
+        description=_text(element, "description"),
+    )
+
+
+def _cbo_cost_estimates(bill: Element) -> tuple[tuple[CboCostEstimate, ...], str]:
+    """Keep the observed list shape even when it cannot supply estimate rows.
+
+    Shape labels contain no source text, attribute values or locators. The
+    retained XML supplies those observations; a published marker must never
+    copy a credential from an unexpected answer.
+    """
+    containers = bill.findall("cboCostEstimates")
+    if not containers:
+        return (), "requested-empty:absent"
+    if len(containers) != 1:
+        return (), "requested-empty:unexpected-shape:multiple-containers"
+    container = containers[0]
+    problem = None
+    if container.attrib:
+        problem = "container-attributes"
+    elif (container.text or "").strip():
+        problem = "container-text"
+    elif any(item.tag != "item" for item in container):
+        problem = "non-item-child"
+    elif any((item.tail or "").strip() for item in container):
+        problem = "container-mixed-text"
+    if problem:
+        return (), f"requested-empty:unexpected-shape:{problem}"
+    if not len(container):
+        return (), "requested-empty:present-and-empty"
+    fields = {"pubDate", "title", "url", "description", "rptPubDate", "rptTitle", "rptUrl"}
+    for item in container:
+        if item.attrib:
+            problem = "item-attributes"
+        elif (item.text or "").strip():
+            problem = "item-text"
+        elif any(field.tag not in fields for field in item):
+            problem = "unknown-item-field"
+        elif len({field.tag for field in item}) != len(item):
+            problem = "duplicate-item-field"
+        elif any(len(field) or field.attrib for field in item):
+            problem = "non-scalar-item-field"
+        elif any((field.tail or "").strip() for field in item):
+            problem = "item-mixed-text"
+        elif not any((field.text or "").strip() for field in item):
+            problem = "empty-item"
+        if problem:
+            return (), f"requested-empty:unexpected-shape:{problem}"
+    return tuple(_cbo_cost_estimate(item) for item in container), "populated"
 
 
 def _title(element: Element) -> BillTitle:
@@ -482,6 +592,7 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
     # Current BILLSTATUS repeats this source term in both documented locations.
     if policy_area is not None and subject_policy_area is not None and policy_area != subject_policy_area:
         raise BillSourceError("BILLSTATUS policy area fields disagree")
+    estimates, estimates_outcome = _cbo_cost_estimates(bill)
     return BillStatus(
         identity=identity,
         schema_version=_required_text(root, "version"),
@@ -504,6 +615,11 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
         committees=tuple(_committee(item) for item in _items(bill, "committees")),
         titles=tuple(_title(item) for item in _items(bill, "titles")),
         related_bills=tuple(_related_bill(item) for item in _items(bill, "relatedBills")),
+        cbo_cost_estimates=estimates,
+        report_citations=tuple(
+            _required_text(item, "citation") for item in _items(bill, "committeeReports", "committeeReport")
+        ),
+        cbo_cost_estimates_outcome=estimates_outcome,
     )
 
 
@@ -520,6 +636,7 @@ __all__ = [
     "BillTextFormat",
     "BillTextVersion",
     "BillTitle",
+    "CboCostEstimate",
     "RecordedVote",
     "RelatedBill",
     "bill_package_id_from_url",

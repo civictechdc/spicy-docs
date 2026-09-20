@@ -1,0 +1,155 @@
+{
+  "CRPT-118hrpt111": {
+    "derivation": "extraction.body_text.rendition_text(rendition='htm')",
+    "excerptChars": 2281,
+    "excerptSha256": "0b5838f239e7d7d228ce3e4667b4e0a6bc321113adaf603f84b83ac2435b3143",
+    "fullTextChars": 86951,
+    "fullTextSha256": "c05fd2a382e2ef09fd713d61b632a4457c22b49471e7c50896faa6206ac5ad4d",
+    "keptRanges": [
+      [
+        30357,
+        32517
+      ]
+    ],
+    "observedAt": "2026-09-20",
+    "retainedIn": "~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/",
+    "sourceBytes": 88457,
+    "sourceSha256": "3787128f915d937e2bfe298b999ddc4ce69c9d301c522483dd4cf8da9e1a032c",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118hrpt111/html/CRPT-118hrpt111.htm",
+    "why": "No recital; the reason sits under a heading the routes measurement's five patterns missed."
+  },
+  "CRPT-118hrpt18": {
+    "derivation": "extraction.body_text.rendition_text(rendition='htm')",
+    "excerptChars": 2558,
+    "excerptSha256": "8aed5a790f3ffd3f461be3bae185ef9be5e5ffa9d935bda4d1354ef3b6ca0639",
+    "fullTextChars": 25259,
+    "fullTextSha256": "30448dcdfea828f208092dcba9208d6d114feb9713420d79807ac24197d3b08e",
+    "keptRanges": [
+      [
+        13074,
+        15511
+      ]
+    ],
+    "observedAt": "2026-09-20",
+    "retainedIn": "~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/",
+    "sourceBytes": 25930,
+    "sourceSha256": "bba8b39bfafa77e0f7b0db0de8c945b1ed9785a8d7ebe447d550a1c17f897f6c",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118hrpt18/html/CRPT-118hrpt18.htm",
+    "why": "No recital, a CBO heading, and the publisher's own reason: the estimate was not available."
+  },
+  "CRPT-118hrpt53": {
+    "derivation": "extraction.body_text.rendition_text(rendition='htm')",
+    "excerptChars": 6161,
+    "excerptSha256": "72ae5fcd7d6fcea80310852f9a56cf661f279e28f5818db8ec5f391596ae873c",
+    "fullTextChars": 20605,
+    "fullTextSha256": "19ffd0c99030869ee29c56ca0f08a62ad0074b812feb135326940d3b3956d537",
+    "keptRanges": [
+      [
+        0,
+        1546
+      ],
+      [
+        5664,
+        10101
+      ]
+    ],
+    "observedAt": "2026-09-20",
+    "retainedIn": "~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/",
+    "sourceBytes": 21080,
+    "sourceSha256": "7957c856c43d398d703facb625c17559b34a1b7a11e9f019da8f4bf72ff16e3b",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118hrpt53/html/CRPT-118hrpt53.htm",
+    "why": "Recital present, House style: the letter ends at the Director's signature block."
+  },
+  "CRPT-118hrpt780": {
+    "derivation": "extraction.body_text.rendition_text(rendition='htm')",
+    "excerptChars": 3582,
+    "excerptSha256": "47eb3decc88d672dde08e13aedc857a67abf9c588e73cf67be27bd563ca5c8fd",
+    "fullTextChars": 19968,
+    "fullTextSha256": "d23b3e9541c387ee6b7ad1d0742af4cfc95ea28ccc93b77dc24ae92d7844f763",
+    "keptRanges": [
+      [
+        0,
+        1362
+      ],
+      [
+        8617,
+        10659
+      ]
+    ],
+    "observedAt": "2026-09-20",
+    "retainedIn": "~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/",
+    "sourceBytes": 20382,
+    "sourceSha256": "5bccd243d98849e667aad54965b04132575120672da3f829fdc0e4981dff44b6",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118hrpt780/html/CRPT-118hrpt780.htm",
+    "why": "Recital present: the attribution is parenthesised, '(For Phillip L. Swagel, Director, ...)'."
+  },
+  "CRPT-118hrpt951": {
+    "derivation": "extraction.body_text.rendition_text(rendition='htm')",
+    "excerptChars": 8309,
+    "excerptSha256": "bc9e590e1d840af49e005862581b54f860bb31251d2c1e7667511f214d774bb0",
+    "fullTextChars": 411029,
+    "fullTextSha256": "7f1fde6ac06a141d3ac3b71cbc181401f6e17506c8c446040a5af06290eb6914",
+    "keptRanges": [
+      [
+        0,
+        1399
+      ],
+      [
+        49052,
+        55782
+      ]
+    ],
+    "observedAt": "2026-09-20",
+    "retainedIn": "~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/",
+    "sourceBytes": 417473,
+    "sourceSha256": "f027e222096939dedd5310ad8cb913bc992e0e2c67eccff7bf66a2df6a82a5cf",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118hrpt951/html/CRPT-118hrpt951.htm",
+    "why": "Recital present: GPO wrapped the heading across two centered lines."
+  },
+  "CRPT-118srpt298": {
+    "derivation": "extraction.body_text.rendition_text(rendition='htm')",
+    "excerptChars": 5351,
+    "excerptSha256": "943c737bf6327efcc58eb2d6057a4576bf6ee95022ea2c37d0aa42dffeed0170",
+    "fullTextChars": 15700,
+    "fullTextSha256": "33fdc3d827eee45395ce7252dbf323c36364300b5dfff0559cd7a9064c5eaa1b",
+    "keptRanges": [
+      [
+        2118,
+        3642
+      ],
+      [
+        9981,
+        13627
+      ]
+    ],
+    "observedAt": "2026-09-20",
+    "retainedIn": "~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/",
+    "sourceBytes": 16631,
+    "sourceSha256": "7346e57ffe69ebf7f327309d5998414d8e009b80c7bc2fee21022a6cab057724",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118srpt298/html/CRPT-118srpt298.htm",
+    "why": "Recital present, no attribution at all: the span ends at the next heading in the same series."
+  },
+  "CRPT-118srpt99": {
+    "derivation": "extraction.body_text.rendition_text(rendition='htm')",
+    "excerptChars": 2450,
+    "excerptSha256": "ccefbb7aef55dfb07593732f1771bcf6d8f995fc4dcbe2d4589ecd0c41e4d57a",
+    "fullTextChars": 57550,
+    "fullTextSha256": "c89f7adc3d588394c572b6f7761580adbf794bc99be2289276489ed6279dc018",
+    "keptRanges": [
+      [
+        2582,
+        3912
+      ],
+      [
+        49850,
+        50788
+      ]
+    ],
+    "observedAt": "2026-09-20",
+    "retainedIn": "~/Work/corpora/supply-2026-09-02/receipts/cbo-routes-2026-09-20/",
+    "sourceBytes": 58847,
+    "sourceSha256": "4387e5b506293e9e0ec198478ade058516a43e972c7b158d16b562a84a7cc698",
+    "url": "https://www.govinfo.gov/content/pkg/CRPT-118srpt99/html/CRPT-118srpt99.htm",
+    "why": "No recital: a transmittal dateline and a witness-list Director line, both false positives outside the gate."
+  }
+}

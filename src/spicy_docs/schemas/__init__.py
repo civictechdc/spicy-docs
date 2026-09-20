@@ -54,6 +54,7 @@ from spicy_docs.schemas.congress_index_tables import (
     RECORD_ISSUES,
     TREATIES,
 )
+from spicy_docs.schemas.cost_estimate_tables import CBO_COST_ESTIMATES
 from spicy_docs.schemas.document_citation_tables import (
     DOCUMENT_CITATIONS,
     HOUSE_ACTIVITY_REPORTS,
@@ -71,6 +72,9 @@ _REGISTERED: tuple[TableContract, ...] = (
     BILL_ACTIONS,
     BILL_COMMITTEES,
     BILL_PUBLISHER_SUMMARIES,
+    # The fifth table the same BILLSTATUS document fills (B4): the CBO
+    # cost-estimate index, keyless where CBO's own site is walled.
+    CBO_COST_ESTIMATES,
     BILL_VERSIONS,
     BILL_SECTIONS,
     SECTION_DIFFS,
@@ -137,6 +141,7 @@ __all__ = [
     "BILL_SUMMARIES",
     "BILL_VERSIONS",
     "BUDGET_VOLUMES",
+    "CBO_COST_ESTIMATES",
     "COMMENT",
     "COMMITTEES",
     "COMMITTEE_ASSIGNMENTS",
