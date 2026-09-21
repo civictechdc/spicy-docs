@@ -183,6 +183,27 @@ filed against a different defect than the row names. A12's offline refresh
 corrects the stale map rows and separates the unsupported CRECB body claim;
 its local commit and checks are recorded in §2.0.
 
+### 2.8 Irregularities in the produced data (filed 2026-09-20, unmeasured)
+
+Found by reading real rows out of every parquet on disk (62 of the 67 hosted
+tables have one) rather than by reading the contracts. None of these is a
+contract defect; each is a difference between what is declared and what is
+produced.
+
+| # | Irregularity | Evidence | Why it matters | Fix | Proof | Home |
+|---|---|---|---|---|---|---|
+| H1 | Every column but three is stored as text | 62 sampled parquet files: 1,091 of 1,094 columns are parquet `string`; only `comments_index.year/.month/.row_count` are `int64` | A consumer casts every number, date, boolean and count itself (`'119'`, `'true'`, `'2026-05-19'`), and a bad cast is silent | Decide whether the contracts state a physical type per column, or whether text-for-everything is the stated contract; either way say it once in `docs/tables.md` rather than leaving it to be discovered | A reader over the published parquet that asserts each column's declared type | spicy-docs contracts, spicy-regs writers |
+| H2 | Seven tables have a full schema and no rows | `bill_summaries`, `diff_summaries`, `financial_changes`, `section_classifications`, `bill_family_backfills`, `bill_family_backfill_walks`, `hearing_bill_links`: 0 rows in every copy on disk | A consumer cannot tell a table that is empty by design from one whose run never filled it | Establish per table which it is; for those that should fill, name the run that would do it; for those empty by design, say so on the dictionary page | A run that fills each, or a stated reason it stays empty | spicy-regs |
+| H3 | Six tables have no parquet at all, and all six are derived views | `agency_stats`, `agency_monthly_volume`, `discovery_signals`, `feed_summary`, `rulemaking_lifecycles`, `org_committee_links` — nothing under `output/`, `play/` or the receipts; no base fetched table is missing | The declared surface is larger than the produced surface, and the gap is entirely in the aggregate layer | Build the five rollups over dockets, documents and comments plus the one organization-to-committee join, or withdraw them from the catalog | A measured run per table with its row count | spicy-regs |
+| H4 | `congress_bills` disagrees with itself across two measured runs | The 2026-09-19 run has 419,621 rows over 48 columns and lacks the contract column `cbo_cost_estimates_outcome`; the 2026-09-20 run has all 49 columns but 16,213 rows. No file on disk has both | Neither file is the table as declared: one is wide and stale in shape, the other current and narrow in coverage | One run at the current contract over the full window, then delete the superseded file rather than leaving two partial truths | A single parquet with 49 columns and the wider row count | spicy-regs |
+| H5 | `bill_subjects` is published but undeclared | A rollup, a workflow and a 20,013-row `output/bill_subjects.parquet`, with no catalog entry and no `docs/tables/` page | The hosted surface is 67 declared tables plus at least one undeclared output, so the catalog is not the whole answer to what is published | Declare it with a dictionary page and a contract, or stop publishing it | The dictionary check covering it | spicy-regs |
+
+Also established in the same pass, and not a defect: a regex scan of every
+string column of every sampled file found four credential-shaped values, all
+the same public agency URL carrying a `key=` query parameter inside a document
+title and two abstracts. Publisher content, not a leaked credential; nothing
+was redacted.
+
 ### 2.7 Candidates from the capture-schema review (filed, unbuilt)
 
 The outside read of DocumentCapture ([document-capture-review-codex-2026-09-20.md](document-capture-review-codex-2026-09-20.md)) kept the architecture and named what the owner's goal still lacks. Each is a candidate until built and measured.
