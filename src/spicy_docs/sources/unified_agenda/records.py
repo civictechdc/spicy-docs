@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from spicy_docs.reading.xml_observations import XmlElement, XmlObservationScan
+from spicy_docs.transport.source_acquirer import limit_byte_bound
 
 ROOT = "REGINFO_RIN_DATA"
 RECORD = "RIN_INFO"
@@ -38,8 +39,7 @@ class UnifiedAgendaSourceError(ValueError):
 
 
 def _limit(max_bytes: int) -> None:
-    if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_EDITION_BYTES:
-        raise UnifiedAgendaSourceError("max_bytes must be a positive integer no greater than 256 MiB")
+    limit_byte_bound(max_bytes, name="max_bytes", cap=MAX_EDITION_BYTES, error_type=UnifiedAgendaSourceError)
 
 
 @dataclass(frozen=True, slots=True)

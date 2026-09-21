@@ -32,6 +32,18 @@ def check_byte_bound(value: object, name: str, cap: int) -> None:
         raise ValueError(f"{name} must be an integer from 1 to {cap}")
 
 
+def limit_byte_bound(value: object, *, name: str, cap: int, error_type: type[ValueError]) -> int:
+    """One rule every source family applies to its own byte budget.
+
+    The bound must be a positive integer at or under the family's measured cap,
+    refused with the family's own error rather than the shared ``ValueError`` a
+    caller would not catch. Caps are whole MiB and the refusal says so in MiB.
+    """
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= cap:
+        raise error_type(f"{name} must be a positive integer no greater than {cap // (1024 * 1024)} MiB")
+    return value
+
+
 def check_timing(timeout_seconds: object, min_request_interval_seconds: object) -> None:
     """Timeouts must be positive; a zero start interval explicitly disables pacing."""
     for name, value, positive in (

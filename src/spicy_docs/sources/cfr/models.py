@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from datetime import date as Date
 from typing import Literal
 
+from spicy_docs.transport.source_acquirer import limit_byte_bound
+
 DEFAULT_MAX_BYTES = 16 * 1024 * 1024
 MAX_CFR_BYTES = 256 * 1024 * 1024
 _PART = re.compile(r"[0-9]+(?:-[0-9]+)*")
@@ -35,8 +37,7 @@ def _date(value: str) -> str:
 
 
 def _limit(max_bytes: int) -> None:
-    if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_CFR_BYTES:
-        raise CfrSourceError("max_bytes must be a positive integer no greater than 256 MiB")
+    limit_byte_bound(max_bytes, name="max_bytes", cap=MAX_CFR_BYTES, error_type=CfrSourceError)
 
 
 def _section(value: str) -> str:

@@ -20,6 +20,7 @@ from typing import Literal
 
 from spicy_docs.reading.xml import IdentityXmlScan
 from spicy_docs.reading.zip_archive import archive_members, open_archive, read_member
+from spicy_docs.transport.source_acquirer import limit_byte_bound
 
 USLM_NAMESPACE = "http://schemas.gpo.gov/xml/uslm"
 DUBLIN_CORE_NAMESPACE = "http://purl.org/dc/elements/1.1/"
@@ -54,8 +55,7 @@ _MAX_FILE_ID = 999_999_999
 
 
 def _limit(max_bytes: int) -> None:
-    if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_USLM_BYTES:
-        raise UslmSourceError("max_bytes must be a positive integer no greater than 256 MiB")
+    limit_byte_bound(max_bytes, name="max_bytes", cap=MAX_USLM_BYTES, error_type=UslmSourceError)
 
 
 @dataclass(frozen=True, slots=True)

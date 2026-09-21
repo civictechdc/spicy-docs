@@ -76,6 +76,7 @@ from spicy_docs.transport.source_acquirer import (
     check_final_url,
     check_request_count,
     check_timing,
+    limit_byte_bound,
     named_challenge,
     narrow_byte_limit,
     utc_now,
@@ -148,9 +149,7 @@ class CrsHtmlRefusedError(CrsFileSourceError):
 
 
 def _limit(max_bytes: object) -> int:
-    if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or not 1 <= max_bytes <= MAX_CRS_FILE_BYTES:
-        raise CrsFileSourceError("max_bytes must be a positive integer no greater than 64 MiB")
-    return max_bytes
+    return limit_byte_bound(max_bytes, name="max_bytes", cap=MAX_CRS_FILE_BYTES, error_type=CrsFileSourceError)
 
 
 @dataclass(frozen=True, slots=True)
