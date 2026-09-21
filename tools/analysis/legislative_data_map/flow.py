@@ -76,14 +76,17 @@ def _stated_congress_path(url: object) -> str | None:
 
 
 def _cg(reader: PagedJsonReader, path: str) -> Mapping[str, Any]:
+    """Keyed GET of one Congress.gov path, forcing ``format=json`` onto its query."""
     return _keyed_json(reader, f"{CONGRESS_API}/{path}{'&' if '?' in path else '?'}format=json")
 
 
 def _gi(reader: PagedJsonReader, path: str) -> Mapping[str, Any]:
+    """Keyed GET of one GovInfo API path."""
     return _keyed_json(reader, f"{GOVINFO_API}/{path}")
 
 
 def _package_id(url: str) -> str | None:
+    """The GovInfo package id named by a URL, or None when the URL names no package."""
     match = re.search(r"/(?:pkg/)?([A-Z]{3,6}-[0-9A-Za-z._-]+?)(?:/|\.xml|\.htm|\.pdf|\.txt)", url)
     return match[1] if match else None
 
@@ -97,17 +100,24 @@ def _system_code(chamber: str, code: str) -> str:
 
 
 def _committee_name(committee: Mapping[str, Any]) -> str:
+    """A committee's official name from its history, falling back to name then systemCode."""
     history = committee.get("history") or [{}]
     return str(history[0].get("officialName") or committee.get("name") or committee.get("systemCode"))
 
 
 def _bill_ref(item: Mapping[str, Any]) -> str:
+    """The Congress.gov bill path a row's own congress/type/number fields spell."""
     return f"bill/{item.get('congress')}/{str(item.get('type', '')).lower()}/{item.get('number')}"
 
 
 def measure_flow(
     congress: PagedJsonReader, govinfo: PagedJsonReader, probe: KeylessProbe, api_key: str
 ) -> dict[str, Any]:
+    """Probe every relationship between sources, one real item per edge.
+
+    Each edge's predicate proves the target answers to the same identity; both directions are probed
+    where the pair is symmetric. A failing edge is recorded as unresolved with its reason, not raised.
+    """
     c, t, n = FLOW_BILL
     bill_path = f"bill/{c}/{t}/{n}"
     results: dict[str, Any] = {}
@@ -1433,10 +1443,12 @@ UNJOINED = (
 
 
 def _node(label: str) -> str:
+    """The mermaid node id for a source/target label, from ``FLOW_NODES`` or stripped of punctuation."""
     return FLOW_NODES.get(label, re.sub(r"\W", "", label))
 
 
 def render_flow(measures: Mapping[str, Any]) -> list[str]:
+    """The mermaid graph and edge table for the probed flow pass; empty when none has run."""
     flow = measures.get("flow")
     if not flow:
         return []

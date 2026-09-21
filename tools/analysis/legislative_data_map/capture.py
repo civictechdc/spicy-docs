@@ -1,4 +1,7 @@
-"""Capture the measured facts: Congress.gov counts and freshness, GovInfo coverage, the CDTF catalog and publisher samples."""
+"""Measure the map's inputs: Congress.gov counts and freshness, GovInfo coverage, the CDTF catalog and publisher samples.
+
+Coverage floors are lower bounds from a bounded descent; publisher errors are never read as emptiness.
+"""
 
 from __future__ import annotations
 
@@ -51,6 +54,7 @@ DATED_NAMES = re.compile(r"date|update|modif|publish", re.IGNORECASE)
 
 
 def _capture_facts(capture: CapturedBodyResponse) -> dict[str, Any]:
+    """The identity facts of one captured response: resolved URL, status, media type, size, digest, time."""
     return {
         "resolvedUrl": capture.resolved_url,
         "statusCode": capture.status_code,
@@ -62,6 +66,7 @@ def _capture_facts(capture: CapturedBodyResponse) -> dict[str, Any]:
 
 
 def _error(error: Exception, api_key: str = "") -> dict[str, Any]:
+    """A JSON-safe error record with the message scrubbed of credentials before truncation."""
     facts: dict[str, Any] = {"error": type(error).__name__, "message": scrub_credential(str(error), api_key)[:300]}
     capture = getattr(error, "capture", None)
     if isinstance(capture, CapturedBodyResponse):
@@ -74,10 +79,12 @@ def _error(error: Exception, api_key: str = "") -> dict[str, Any]:
 
 
 def _congress_url(path: str) -> str:
+    """A Congress.gov JSON list URL bounded to ``limit=1``."""
     return f"{CONGRESS_API}/{path}?{urlencode({'format': 'json', 'limit': 1})}"
 
 
 def _count(reader: PagedJsonReader, url: str, records_key: str) -> int:
+    """One route's declared total, falling back to the records actually returned when it declares none."""
     REQUESTS[reader.family.name] += 1
     page = reader.page(url, records_key=records_key)
     return page.declared_count if page.declared_count is not None else len(page.records)
@@ -112,6 +119,7 @@ def measure_latest(reader: PagedJsonReader, route: CongressRoute, api_key: str) 
 
 
 def measure_congress(reader: CongressListingReader, *, max_descent: int, api_key: str) -> dict[str, Any]:
+    """Per-route declared totals, newest update dates, and a bounded descent to each coverage floor."""
     out: dict[str, Any] = {}
     for route in CONGRESS_ROUTES:
         facts: dict[str, Any] = {"recordsKey": route.records_key}
@@ -164,10 +172,12 @@ def measure_congress(reader: CongressListingReader, *, max_descent: int, api_key
 
 
 def _published_count(reader: GovInfoDiscoveryReader, code: str, year: int) -> int:
+    """How many packages one collection declares published on or after ``{year}-01-01``."""
     return _count(reader, published_url(f"{year}-01-01", collections=[code], page_size=1), "packages")
 
 
 def _bulk_listing(probe: KeylessProbe, path: str) -> list[Mapping[str, Any]]:
+    """The ``files`` array of one keyless GovInfo bulkdata JSON listing."""
     capture = probe.get(
         f"{GOVINFO_BULK}/{path}", media_types=JSON_TYPES, max_bytes=8 * 1024 * 1024, accept="application/json"
     )
@@ -175,6 +185,7 @@ def _bulk_listing(probe: KeylessProbe, path: str) -> list[Mapping[str, Any]]:
 
 
 def _sized_folder(entries: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """ZIP and loose-file byte totals plus a file count for one bulkdata folder listing."""
     zips = [f for f in entries if str(f.get("name", "")).endswith(".zip")]
     files = [f for f in entries if not f.get("folder") and f not in zips]
     return {
@@ -186,6 +197,7 @@ def _sized_folder(entries: list[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 def measure_govinfo(reader: GovInfoDiscoveryReader, probe: KeylessProbe, *, api_key: str) -> dict[str, Any]:
+    """Package counts from the collections inventory, per-collection earliest issue year, and bulkdata ranges."""
     out: dict[str, Any] = {"collections": {}, "coverage": {}, "bulkdata": {}}
     REQUESTS[reader.family.name] += 1
     page = reader.page(f"{GOVINFO_API}/collections", records_key="collections")
@@ -262,6 +274,7 @@ def measure_govinfo(reader: GovInfoDiscoveryReader, probe: KeylessProbe, *, api_
 
 
 def measure_catalog(probe: KeylessProbe) -> dict[str, Any]:
+    """The CDTF catalog's entry count, periodicity/format caveats and per-identifier titles."""
     capture = probe.get(CDTF_CATALOG, media_types=JSON_TYPES, max_bytes=8 * 1024 * 1024)
     datasets = json.loads(capture.body)["dataset"]
 
@@ -320,6 +333,7 @@ def _identity_order(names: list[str]) -> list[str]:
 
 
 def _xml_shape(body: bytes, key: str) -> dict[str, Any]:
+    """Root, namespace, first- and second-level children and identity-looking names of one XML sample."""
     root = parse_xml(
         body, max_bytes=len(body), error_type=ProbeError, label=key, allow_external_doctype=True, max_depth=64
     )
@@ -342,6 +356,7 @@ def _xml_shape(body: bytes, key: str) -> dict[str, Any]:
 
 
 def _json_shape(value: Any) -> dict[str, Any]:
+    """Top-level keys and, for arrays, record count and the distribution of ``id`` key families."""
     if isinstance(value, dict):
         return {"keys": sorted(value)[:12], "count": value.get("count")}
     if isinstance(value, list):
@@ -352,6 +367,7 @@ def _json_shape(value: Any) -> dict[str, Any]:
 
 
 def measure_samples(probe: KeylessProbe) -> dict[str, Any]:
+    """One keyless capture and shape per publisher sample: size, digest, root and stated identity names."""
     out: dict[str, Any] = {}
     for key, (url, media_types) in SAMPLES.items():
         try:
@@ -393,10 +409,12 @@ def _bioguides(root: Any) -> set[str]:
 
 
 def _texts(root: Any, names: frozenset[str] | set[str]) -> list[str]:
+    """Stripped text of every element whose local name is in ``names``."""
     return [el.text.strip() for el in root.iter() if local_name(el.tag) in names and el.text and el.text.strip()]
 
 
 def _walk(reader: PagedJsonReader, url: str, records_key: str, max_pages: int) -> list[Mapping[str, Any]]:
+    """Every record from up to ``max_pages`` pages of a keyed list, counted against the shared counter."""
     rows: list[Mapping[str, Any]] = []
     for page in reader.pages(url, records_key=records_key, max_pages=max_pages):
         REQUESTS[reader.family.name] += 1
@@ -405,16 +423,19 @@ def _walk(reader: PagedJsonReader, url: str, records_key: str, max_pages: int) -
 
 
 def _congress_list(reader: PagedJsonReader, path: str, key: str, max_pages: int) -> list[Mapping[str, Any]]:
+    """Walk a Congress.gov list route at ``limit=250``, the publisher's page maximum."""
     return _walk(reader, f"{CONGRESS_API}/{path}?{urlencode({'format': 'json', 'limit': 250})}", key, max_pages)
 
 
 def _govinfo_published(
     reader: PagedJsonReader, code: str, start: str, end: str, max_pages: int
 ) -> list[Mapping[str, Any]]:
+    """Walk one GovInfo collection's published-packages window, a bounded number of pages."""
     return _walk(reader, published_url(start, end, collections=[code], page_size=1000), "packages", max_pages)
 
 
 def _keyed_json(reader: PagedJsonReader, url: str) -> Mapping[str, Any]:
+    """One keyed JSON GET parsed as a mapping, bounded and validated by the reader."""
     REQUESTS[reader.family.name] += 1
     value, _ = reader.capture_validated(
         url,
@@ -428,6 +449,7 @@ def _keyed_json(reader: PagedJsonReader, url: str) -> Mapping[str, Any]:
 
 
 def _xml(probe: KeylessProbe, url: str, key: str) -> Any:
+    """Fetch one keyless XML sample and return its parsed root element."""
     capture = probe.get(url, media_types=XML_TYPES, max_bytes=SAMPLE_MAX_BYTES)
     return parse_xml(
         capture.body,
@@ -440,6 +462,7 @@ def _xml(probe: KeylessProbe, url: str, key: str) -> Any:
 
 
 def _result(a: str, b: str, scope: str, left: set[str], right: set[str], detail: str, **extra: Any) -> dict[str, Any]:
+    """The common comparison record: both sides' counts, their overlap, and capped per-side-only samples."""
     return {
         "a": a, "b": b, "scope": scope,
         "aCount": len(left), "bCount": len(right), "both": len(left & right),

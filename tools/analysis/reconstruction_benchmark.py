@@ -1,52 +1,24 @@
 """Build the CFR paired corpus, reconstruct each section from its PDF, and score it against the published XML.
 
 The CFR is the **controlled benchmark**, not the deployment corpus
-(`docs/research/closing-the-gaps-2026-09-19.md` §3.1): every edition GovInfo
-serves has XML, so reconstructing it is an experiment whose answer can be
-checked. That is exactly what makes it worth running -- the deployment corpus
-(pre-113th bill text) has no reference at all, and a pipeline that cannot be
-scored on a corpus that has one should not be pointed at a corpus that has
-none.
-
-Run from the repository root:
+(`docs/research/closing-the-gaps-2026-09-19.md` §3.1): every GovInfo edition has XML, so a
+reconstruction can be checked, unlike the pre-113th bill text it stands in for. Run from the
+repository root:
 
   uv run --frozen python -m tools.analysis.reconstruction_benchmark \\
       --env-file .env --sections 40 \\
       --output docs/research/reconstruction-benchmark-2026-09-19.json \\
       --report docs/research/reconstruction-benchmark-2026-09-19.md
 
-`--offline` re-renders the report's generated block from an existing output
-without the network, the way `legislative_data_map.py --offline` does.
-
-**What is measured, and what it cannot see.**
-
-* The corpus is `--sections` section granules drawn from `EDITIONS`, a fixed
-  list of (year, title, volume) triples chosen to span several titles and
-  several editions. Within a volume the granules are taken at an even stride
-  through the publisher's own granule listing, so the sample is not the front
-  of the volume; it is still one volume per edition, and a title whose
-  typography differs from these could behave differently.
-* Each section costs two keyless body requests (the XML granule and the
-  section PDF) plus one keyed granule listing per edition, and the run refuses
-  to exceed `--max-requests`.
-* **Splits are by edition.** Every section of one edition lands in one split,
-  so no volume's typography appears on both sides of the blind/development
-  line. Sections from the same volume are far from independent, which is why
-  the split is the volume and why the per-split counts are reported.
-* **The XML is hidden from reconstruction.** `_reconstruct` is handed the PDF
-  bytes and nothing else; the reference is read afterwards by the scorer.
-* **Boundary handling.** A section PDF is a page range of the printed volume
-  and routinely carries the end of the previous section and the start of the
-  next. Evidence outside the requested section is counted as *out-of-scope*,
-  never as loss, and the count is reported per document so the reader can see
-  how much of each rendition was another granule's.
-* A score here is a score against GPO's own XML conversion of the same SGML,
-  which is itself a rendition: where the XML and the print disagree, this
-  reports a discrepancy without deciding which is right.
-
-Bodies land in the scratchpad, never in the repository; the sidecar keeps
-each one's digest, byte size and URL, so a rerun can prove it fetched the same
-bytes without the repository carrying them.
+``--offline`` re-renders the report's generated block from an existing output without the network,
+and ``--rescore`` re-scores bodies an earlier run fetched, checking each against its recorded
+digest. The corpus is ``--sections`` granules at an even stride through `EDITIONS` listings;
+splits are whole editions, so no volume's typography reaches two splits. Reconstruction sees only
+the PDF bytes -- the reference is read afterwards; PDF bytes outside the requested section count
+as out-of-scope, never loss; and a low score against GPO's own XML conversion reports a
+discrepancy without deciding which rendition is right. Every section costs two keyless body
+requests plus one keyed listing, bounded by ``--max-requests``; bodies land in the scratchpad,
+never the repository, with digest, size and URL in the sidecar.
 """
 
 from __future__ import annotations
@@ -413,6 +385,7 @@ def score(
 
 
 def _digest(data: bytes) -> str:
+    """The SHA-256 hex digest of ``data``."""
     return hashlib.sha256(data).hexdigest()
 
 
@@ -474,6 +447,7 @@ def measure(
 
 
 def accepted_count(rows: Sequence[Mapping[str, Any]]) -> int:
+    """How many rows the acceptance gate passed."""
     return sum(1 for row in rows if row.get("accepted"))
 
 
@@ -549,6 +523,7 @@ def summarize(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 def _finding(row: Mapping[str, Any], check: str) -> bool:
+    """True when the row's findings contain a passing entry for ``check``."""
     return any(finding["check"] == check and finding["passed"] for finding in row.get("findings", ()))
 
 
@@ -959,6 +934,7 @@ def render_block(measures: Mapping[str, Any]) -> str:
 
 
 def rewrite_report(path: Path, block: str) -> None:
+    """Replace the text between the marker comments in the report; exits if either marker is missing."""
     text = path.read_text()
     start, end = text.find(MARK_START), text.find(MARK_END)
     if start < 0 or end < 0 or end < start:
@@ -967,6 +943,7 @@ def rewrite_report(path: Path, block: str) -> None:
 
 
 def _revision(root: Path) -> str:
+    """The short HEAD hash of the repo at ``root``, or ``"unknown"`` outside git."""
     result = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"], cwd=root, capture_output=True, text=True, check=False
     )
@@ -974,6 +951,7 @@ def _revision(root: Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Draw the corpus, fetch and score each section, then rewrite the report; 1 on credential refusal."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--output", type=Path, required=True, help="the measurements JSON; read with --offline")
     parser.add_argument("--report", type=Path, required=True, help="the markdown whose generated block is rewritten")

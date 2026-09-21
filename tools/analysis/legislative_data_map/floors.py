@@ -58,16 +58,10 @@ FLOOR_EMPTY_TOLERANCE = 8
 def measure_floors(reader: PagedJsonReader, measures: dict[str, Any], api_key: str) -> None:
     """Continue each route's descent below its recorded floor until a real run of empties, not just two.
 
-    ``measure_congress``'s own walk is bounded by ``--max-descent`` steps from the current Congress and
-    stops on the first two consecutive empty Congresses, so a route whose real floor sits further back
-    either exhausts that cap while still finding rows (``committee``, stop ``cap``) or stops on a false
-    two-empty separated from older rows by a gap wider than two (``committee-print``: six empty Congresses
-    before the 94th; ``treaty``: four before the 81st). Re-applying the same two-empty rule one Congress
-    below the recorded floor would hit that identical false stop immediately, so this walks up to
-    ``FLOOR_DESCENT_STEPS`` further Congresses regardless, resetting its empty run on every non-zero count,
-    and only concludes real absence after ``FLOOR_EMPTY_TOLERANCE`` empties in a row -- wide enough to
-    cross both measured gaps. A route whose recorded floor was already real costs a few requests
-    confirming it, all landing empty.
+    ``measure_congress`` stops on two consecutive empty Congresses, which measured routes have hit while
+    older rows sat a wider gap below; so this walks ``FLOOR_DESCENT_STEPS`` further Congresses regardless,
+    resets its empty run on every non-zero count and only stops after ``FLOOR_EMPTY_TOLERANCE`` in a row.
+    A floor that was already real costs a few confirming requests, all landing empty.
     """
     for route in CONGRESS_ROUTES:
         facts = measures.get("congress", {}).get(route.route, {})
@@ -121,15 +115,10 @@ REQUIREMENT_CONGRESSES = tuple(range(105, CURRENT_CONGRESS + 1))
 def measure_requirements(reader: PagedJsonReader, api_key: str) -> dict[str, Any]:
     """Walk requirement 8070's full matching-communications list once, then probe the detail floor.
 
-    The route is a count, not an index (A6): 92,450 rows, unordered by Congress, with no cheap way to
-    bound a walk to one era. A full walk is cheap regardless -- 370 pages of 250, about five minutes --
-    so this reads every row once, keyed, and histograms it by the ``congress`` field each row states.
-    It then probes one communication's detail record per Congress from the 105th through the 119th,
-    since the per-Congress ``house-communication`` route only answers from the 114th on and the older
-    rows may carry no detail record at all; the first Congress whose sampled row resolves is the detail
-    floor. The decision the proposal (`docs/research/closing-the-gaps-2026-09-19.md` A6) names: host
-    `house_requirements` only if the detail era -- every Congress at or above that floor -- covers a
-    useful share of the full histogram.
+    The route is a count, not an index (A6), so the walk is not bounded to an era; it histograms every
+    row by the ``congress`` field it states, then probes one detail record per Congress from the 105th
+    through the 119th and records the first that resolves. The share at or above that floor is the
+    number the A6 keep/drop decision (`docs/research/closing-the-gaps-2026-09-19.md`) turns on.
     """
     url = f"{CONGRESS_API}/house-requirement/8070/matching-communications?{urlencode({'format': 'json', 'limit': 250})}"
     rows = _walk(reader, url, "matchingCommunications", max_pages=380)

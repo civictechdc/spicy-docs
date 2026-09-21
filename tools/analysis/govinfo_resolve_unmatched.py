@@ -1,14 +1,10 @@
 """Check a keyed GovInfo listing for identifiers left unmatched by the MODS census.
 
-The MODS census supplies the issue dates, unmatched numbers, and source release
-identity. This diagnostic asks the keyed endpoint once per issue; it does not
-infer absence from empty, malformed, or incomplete listings. A complete populated
-listing produces ``fused-match`` or ``not-listed`` for each requested number.
-``not-listed`` describes that endpoint's answer, not GovInfo's entire holdings.
-
-Results append to JSONL. Only a complete populated listing settles an issue on
-resume. Empty listings remain recorded as indeterminate and are retried, as are
-request failures and incomplete listings. A credential refusal aborts immediately.
+The census supplies issue dates, unmatched numbers and the source release digest; this asks the keyed
+endpoint once per issue and does not infer absence from empty, malformed or incomplete listings, so
+``not-listed`` describes that endpoint's answer, not GovInfo's holdings. Results append to JSONL; only
+a complete populated listing settles an issue on resume, everything else (empty, request-failed,
+incomplete) is recorded as indeterminate and retried, and a credential refusal aborts immediately.
 Every input and output row must name the same source release digest.
 """
 
@@ -43,6 +39,8 @@ class _RetryableStatus(httpx.HTTPStatusError):
 
 @dataclass(frozen=True)
 class Listing:
+    """One issue's keyed granule answer: its status, ids, declared count and HTTP status."""
+
     status: str
     ids: tuple[str, ...] = ()
     declared: int | None = None
@@ -50,10 +48,12 @@ class Listing:
 
 
 def _rows(path: Path) -> list[dict[str, Any]]:
+    """The non-blank JSONL lines of ``path``, parsed in order."""
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
 def _source_digest(rows: list[dict[str, Any]]) -> str:
+    """The one source-release digest every census row must name; raises when any row is missing it."""
     digests = {row.get("sourceReleaseDigest") for row in rows}
     if not digests or None in digests or any(not isinstance(d, str) or not d.startswith("sha256:") for d in digests):
         raise ValueError("every census row must carry sourceReleaseDigest; regenerate the census if it is missing")
@@ -103,6 +103,8 @@ def _is_fusion_of(granule_id: str, number: str) -> bool:
 
 
 def granule_ids(client: httpx.Client, date: str) -> Listing:
+    """One keyed granule listing for ``date``, classified as listed/empty/incomplete/invalid/failed."""
+
     def fetch() -> httpx.Response:
         try:
             response = client.get(GRANULES.format(date=date))
@@ -147,6 +149,7 @@ def run(
     timeout: float = 90.0,
     transport: httpx.BaseTransport | None = None,
 ) -> int:
+    """Resolve every pending issue, append results to ``output``, and return 1 if any stayed indeterminate."""
     census_rows = _rows(census)
     digest = _source_digest(census_rows)
     pending = unmatched_from_census(census_rows)
@@ -206,6 +209,7 @@ def run(
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Resolve the census's unmatched numbers, reporting credential/IO failures on stderr."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--census", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)

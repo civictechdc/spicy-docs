@@ -54,6 +54,7 @@ def compare(
     identity_fields: tuple[str, ...],
     compare_fields: tuple[str, ...],
 ) -> dict[str, Any]:
+    """Classify every record keyed on ``identity_fields`` as added, removed, changed or unchanged."""
     store = LocalSourceNativeBlobStore(blob_store, create=False)
 
     print("pass A: digesting baseline records", file=sys.stderr)
@@ -172,6 +173,7 @@ def compare(
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Compare the two releases named on the command line and print the result JSON."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-release", type=Path, required=True)
     parser.add_argument("--candidate-release", type=Path, required=True)

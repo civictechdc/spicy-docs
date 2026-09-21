@@ -1,34 +1,17 @@
 """Measure what the Secretary of the Senate's ruled tables actually are.
 
-Read-only over bytes the [PDF-family rollup](../../docs/research/pdf-family-rollup-yield-2026-09-20.md)
-already retained: the eight Senate expenditure PDFs, content-addressed by
-SHA-256 under that measurement's ``blobs/``.  Nothing is fetched, and
-``sources/govinfo/`` is not reached at all -- the package-id grammar does not
-yet cover ``GPO-CDOC-*``, so acquisition for this family wires up when that
-lands and this tool reads the retained bytes until then.
-
-Two phases, both through ``uv run --frozen --all-extras``:
-
-``dump``
-    One ``tables=True`` extraction of a bounded page range, every cell text and
-    every cell box written out whole, so the shaper is written against what
-    PyMuPDF actually returned rather than against a summary of it.
-
-``census``
-    Over one or more dumps: how many tables, what their geometry is, which
-    grid each one is, how many cells the print actually rules, and how many
-    lines parse as amounts.
-
-**The census classifies with the contract's own functions**
-(``schemas.senate_expenditure_tables``), never with a second copy of the rules,
-so the measurement quoted in
-[the note](../../docs/research/senate-expenditure-tables-2026-09-20.md) and the
-published rows cannot disagree about what a header row or an amount is.  This
-is the same discipline ``interpretation/citations.py`` and
-``tools/analysis/pdf_family_rollup.py`` share.
-
-The dumps and the census output are receipts and belong outside the
-repository, under ``~/Work/corpora/supply-2026-09-02/receipts/``.
+Read-only over the eight Senate expenditure PDFs the
+[PDF-family rollup](../../docs/research/pdf-family-rollup-yield-2026-09-20.md) retained under its
+``blobs/``: nothing is fetched and ``sources/govinfo/`` is untouched, because the package-id
+grammar does not yet cover ``GPO-CDOC-*``. Two phases through
+``uv run --frozen --all-extras python -m tools.analysis.senate_expenditure_tables``: ``dump``
+extracts one bounded page range with ``tables=True`` and writes every cell text and box whole, so
+the shaper is written against what PyMuPDF returned; ``census`` reads one or more dumps into table
+geometry, grid kind, ruled-cell and amount counts. The census classifies with the contract's own
+functions (``schemas.senate_expenditure_tables``), never a second copy, so the measurement and the
+published rows cannot disagree about what a header row or an amount is (the one independent
+``Funding Year`` count exists to catch that grammar narrowing). Dumps and census output are receipts
+and belong under ``~/Work/corpora/supply-2026-09-02/receipts/``.
 """
 
 from __future__ import annotations
@@ -97,6 +80,8 @@ def dump(file_id: str, pages: list[int]) -> dict:
 
 
 class _Box:
+    """A dumped bbox read back with the attribute names the contract expects."""
+
     def __init__(self, box: dict):
         self.x0, self.y0, self.x1, self.y1 = box["x0"], box["y0"], box["x1"], box["y1"]
 
@@ -222,6 +207,7 @@ def census(dumps: list[dict]) -> dict:
 
 
 def main() -> None:
+    """Run the ``dump`` or ``census`` phase and print its JSON report."""
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="phase", required=True)
     one = sub.add_parser("dump")

@@ -155,6 +155,7 @@ def _federal_register_findings(date_digests: dict[str, dict[str, list[str]]]) ->
 
 
 def census(args: argparse.Namespace) -> dict[str, object]:
+    """Replay one release's acquisition evidence into multi-observation and discarded-observation counts."""
     profile = PROFILES[args.profile]
     raw_version = RAW_VERSION[args.profile]
     assert profile.observation_version is not None  # every profile in PROFILES declares one
@@ -243,6 +244,7 @@ def census(args: argparse.Namespace) -> dict[str, object]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Print the census JSON for the selected release and profile."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release", type=Path, required=True, help="Published release root")
     parser.add_argument("--blob-store", type=Path, required=True, help="Explicit persistent blob store")

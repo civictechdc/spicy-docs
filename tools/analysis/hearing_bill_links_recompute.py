@@ -1,44 +1,18 @@
 """Reproduce the hearing-to-bill link measurement from its retained bytes, offline.
 
-The [linkage note](../../docs/research/hearing-bill-linkage-2026-09-20.md) was
-measured by scripts that live in its receipt and carry their own copies of the
-rules. This runs the **product** rules -- ``interpretation/hearing_bill_links.py``
-and ``sources/congress/house_committee_repository.py`` -- over the same retained
-responses and compares what they produce against the receipt's own recomputes.
-A rule that drifted from what was measured shows up here as a mismatch rather
-than as a silently different hosted row.
+The [linkage note](../../docs/research/hearing-bill-linkage-2026-09-20.md) was measured by scripts
+kept in its receipt; this runs the **product** rules from ``interpretation/hearing_bill_links.py``
+and ``sources/congress/house_committee_repository.py`` over the same retained responses and reports
+any drift as a mismatch rather than a silently different hosted row. The per-bill, two-directional
+COVER-set comparison is the load-bearing one; the receipt's 19-of-20 and 18-of-18 bill-side
+confirmations are not re-derived because ``probe3.json`` holds only a scored summary of the 60
+``bill/{c}/{t}/{n}/actions`` responses, and those numbers stay the receipt's.
 
     uv run --frozen python -m tools.analysis.hearing_bill_links_recompute \\
         --receipt ~/Work/corpora/supply-2026-09-02/receipts/hearing-bill-linkage-2026-09-20 \\
         --output ~/Work/corpora/supply-2026-09-02/receipts/hearing-bill-links-build-2026-09-20/recompute.json
 
-**Two comparisons, and what each one can and cannot see.**
-
-*The cover sets.* For each retained CHRG MODS, the product ``cover_links`` rule
-is run and its bill keys compared with ``cover-agreement.json``'s ``cover``
-counts for the four packages that file names, and with
-``probe1-recomputed.json``'s ``mods_cover`` **sets** for all twenty of probe 1's
-hearings. The second comparison is the load-bearing one: it is per-bill and
-two-directional, where the first is a count. Both are re-derived from the MODS
-bytes, so neither can be satisfied by reading a number out of a summary file.
-
-*The agenda resolution.* Every retained per-event meeting XML is parsed and its
-``BR`` documents resolved, then compared with ``probe1-recomputed.json``'s
-``docs_BR_keys`` per event and with the totals re-derived from that file's own per-document detail. The parent-committee
-codes are compared too, because the identity check the product rules run is
-built on them.
-
-**What this cannot reproduce.** The 19-of-20 and 18-of-18 bill-side
-confirmations need the 60 ``bill/{c}/{t}/{n}/actions`` responses' own *Hearings
-Held* actions, which ``probe3.json`` holds as a scored summary rather than as
-retained action lists for this rule to re-score. Those numbers stay the
-receipt's, and this tool neither restates nor re-derives them.
-
-**Complexity.** Linear in retained bytes: ``O(sum(M) + sum(X))`` over the MODS
-and meeting files, one pass each, no re-parsing.
-
-**Requests and credentials.** None, and none. Every byte read here is already
-retained; nothing here opens a socket or reads a credential.
+Linear in retained bytes, one pass each over the MODS and meeting files; zero requests, no credential.
 """
 
 from __future__ import annotations
@@ -82,6 +56,7 @@ class Comparison:
 
     @property
     def agrees(self) -> bool:
+        """True when the product code observed exactly what the receipt recorded."""
         return self.expected == self.observed
 
 
@@ -240,6 +215,7 @@ def shaped_rows(receipt: Path, package: str, event: str) -> list[dict[str, str |
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Write the recompute report and return 1 when any comparison disagrees."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--receipt", type=Path, required=True, help="the retained linkage receipt directory")
     parser.add_argument("--output", type=Path, help="where to write the JSON report; stdout when omitted")

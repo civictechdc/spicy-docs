@@ -19,6 +19,7 @@ FIXTURES = ROOT / "tests/fixtures"
 
 
 def source_records(digest: str) -> list[dict[str, Any]]:
+    """Retained acquisition observations whose own bytes hash to ``digest``; empty when none do."""
     rows = json.loads((FIXTURES / "document_capture_provenance/observations.json").read_bytes())
     return [
         {"role": "acquisition", **row["observation"], "receipt": row["receipt"]}
@@ -28,6 +29,7 @@ def source_records(digest: str) -> list[dict[str, Any]]:
 
 
 def mods_record(path: Path, package: str, granule: str | None) -> dict[str, Any]:
+    """A source record from one MODS file, refusing a file that does not state the selected pair."""
     data = path.read_bytes()
     parsed = parse_govinfo_mods(data)
     record = parsed.package

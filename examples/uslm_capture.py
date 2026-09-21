@@ -24,16 +24,19 @@ from spicy_docs.transport.credentials import scrub_credential
 
 
 def _utc_now() -> datetime:
+    """The default clock: the current UTC time."""
     return datetime.now(UTC)
 
 
 def _selection_fields(selection: UslmSelection) -> dict | None:
+    """A selection as the receipt's plain JSON fields: a dataclass, a congress/kind pair, or None."""
     if isinstance(selection, (PublicLawSelection, StatuteCompilationSelection)):
         return asdict(selection)
     return {"congress": selection[0], "kind": selection[1]} if selection is not None else None
 
 
 def _acquire(client: UslmAcquirer, route: str, selection: UslmSelection):
+    """Dispatch one route and selection to the acquirer method it names, or refuse the pair."""
     if route == "public-law" and isinstance(selection, PublicLawSelection):
         return client.acquire_public_law(selection)
     if route == "statute-compilation" and isinstance(selection, StatuteCompilationSelection):
@@ -46,6 +49,7 @@ def _acquire(client: UslmAcquirer, route: str, selection: UslmSelection):
 
 
 def _capture_fields(capture: CapturedBodyResponse) -> dict:
+    """One capture's URL, status, media type, time, size and digest, as the receipt records it."""
     return {
         "requestedUrl": capture.requested_url,
         "resolvedUrl": capture.resolved_url,
@@ -59,6 +63,7 @@ def _capture_fields(capture: CapturedBodyResponse) -> dict:
 
 
 def _failure(error: Exception, output: Path) -> dict:
+    """A failed acquisition as receipt fields, writing any refused response body under ``output``."""
     details = {
         "type": type(error).__name__,
         "message": scrub_credential(str(error), ""),
@@ -89,6 +94,7 @@ def _failure(error: Exception, output: Path) -> dict:
 
 
 def _write_receipt(output: Path, receipt: dict) -> None:
+    """Write the receipt as ``receipt.json`` in the output directory."""
     (output / "receipt.json").write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
@@ -155,6 +161,7 @@ def run_capture(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Parse the route and its selection, run one live capture, and exit 2 on a refused request."""
     parser = argparse.ArgumentParser(description=__doc__)
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--output", type=Path, required=True, help="new directory for original bytes and receipt")

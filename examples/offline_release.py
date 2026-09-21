@@ -130,6 +130,7 @@ def run_example(directory: Path, *, case: str = "matching") -> dict[str, object]
 
 
 def main() -> None:
+    """Run the selected synthetic case, writing under ``--directory`` or a temp directory."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--directory", type=Path, help="Output parent; gao/ must not already exist")
     parser.add_argument("--case", choices=CASES, default="matching", help="Synthetic source condition to demonstrate")

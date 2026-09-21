@@ -39,20 +39,24 @@ from spicy_docs.transport.download import HttpRefusal
 
 
 def encoded(value):
+    """Deterministic compact JSON bytes: sorted keys, non-ASCII kept, NaN refused."""
     return json.dumps(value, default=str, sort_keys=True, ensure_ascii=False, allow_nan=False).encode()
 
 
 def save(path, value):
+    """Write ``value`` atomically under ``path`` through a temporary file."""
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_bytes(encoded(value) + b"\n")
     temporary.replace(path)
 
 
 def pin(path):
+    """A file's name and ``sha256:`` digest, as the receipt records an input."""
     return {"file": path.name, "sha256": "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
 def blob_bytes(store, evidence):
+    """The retained blob's bytes, refusing a length or digest that differs from its evidence pin."""
     with LocalBlobSource(store).open(evidence["sha256"]) as stream:
         raw = stream.read(evidence["bytes"] + 1)
     if len(raw) != evidence["bytes"] or "sha256:" + hashlib.sha256(raw).hexdigest() != evidence["sha256"]:
@@ -168,6 +172,7 @@ def capture_metadata(client, root, year, *, secret=""):
 
 
 def case_ids(events, year):
+    """Every AO the search or directory listing names; refuses counts, duplicates or ids outside the year."""
     search = [event["page"] for event in events if event["label"] == "search"]
     cases = [row["metadata"]["ao_no"] for page in search for row in page["records"]]
     totals = {page["pagination"]["total_advisory_opinions"] for page in search}
@@ -188,6 +193,7 @@ def case_ids(events, year):
 
 
 def load_plan(root, *, manifest=None):
+    """Re-verify the retained metadata against its pin and derive the plan of originals and associations."""
     if manifest is None:
         manifest = json.loads((root / "selection.json").read_bytes())
     path = root / manifest["metadata"]["file"]
@@ -315,6 +321,7 @@ def load_plan(root, *, manifest=None):
 
 
 def acquire_originals(client, root, plan, *, max_bytes, secret=""):
+    """Fetch each planned original once under the aggregate byte bound, checkpointing per object."""
     path = root / "originals.json"
     prior = original_rows(root)
     if prior and [row["selected"] for row in prior] != plan["originals"]:
@@ -376,6 +383,7 @@ def acquire_originals(client, root, plan, *, max_bytes, secret=""):
 
 
 def original_rows(root):
+    """The saved original rows, with any per-object progress merged in after a shape check."""
     path = root / "originals.json"
     rows = json.loads(path.read_bytes()) if path.exists() else []
     by_url = {row["selected"]["url"]: row for row in rows}
@@ -394,6 +402,7 @@ def original_rows(root):
 
 
 def verify(root):
+    """Replay every retained byte and disposition, returning the verification result without HTTP."""
     manifest, plan = load_plan(root)
     rows = original_rows(root)
     if [row["selected"] for row in rows] != plan["originals"]:
@@ -425,6 +434,7 @@ def verify(root):
 
 
 def main():
+    """Capture (or ``--verify-only`` replay) one AO-number year; exit 2 when acquisition is incomplete."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("--year", type=int, default=2024)
