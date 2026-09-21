@@ -10,6 +10,20 @@ API](fec.md) to enumerate XML listings and download selected originals first.
 Keep those discovery captures separately; selecting files here does not establish
 a complete listing, cycle, financial population or publisher snapshot.
 
+For bulk files whose field definitions appear on an official HTML description
+page, `spicy_docs.sources.fec.bulk_dictionary.parse_bulk_dictionary(raw, sha256=...)`
+reads exactly one table headed `Column name`, `Field name`, `Position`. It verifies
+the original digest and requires consecutive one-based positions, unique nonempty
+names and consistent cell counts. Ambiguous tables, spanning cells and incomplete
+definitions refuse. The reader accepts HTML's omitted cell/row end tags.
+
+The result preserves every dictionary cell's text, source byte fragments and
+table/row/cell coordinates. Field names trim surrounding HTML layout whitespace;
+spelling, punctuation and internal whitespace survive. Numeric positions are
+interpreted as integers. The caller explicitly selects which file and cycle use
+the dictionary; reading a current description page establishes no historical
+schema compatibility, data types or financial/amendment interpretation.
+
 ## Inputs and publication
 
 Supply ordered capture dictionaries with these required fields:
