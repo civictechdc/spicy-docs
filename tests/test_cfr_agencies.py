@@ -1,4 +1,9 @@
-"""Source values survive without census, identifier or legal policy."""
+"""Source values survive without census, identifier or legal policy.
+
+Pins the retained agency roster's every row, reference and parent path; survival
+of unknown, missing, null, empty, duplicate and malformed values with issues;
+raw retention on unexpected document shape; and JSON, numeric and bound refusals.
+"""
 
 import json
 from decimal import Decimal
@@ -13,6 +18,9 @@ FIXTURES = Path(__file__).parent / "fixtures" / "cfr_metadata"
 
 
 def test_retained_complete_roster_has_every_row_reference_and_parent() -> None:
+    """The retained roster yields 316 records and 487 references, with every parent path and reference source path
+    matching its raw source.
+    """
     payload = (FIXTURES / "ecfr-agencies.json").read_bytes()
     result = read_ecfr_agency_roster(payload)
     assert result.raw == json.loads(payload)
@@ -30,6 +38,9 @@ def test_retained_complete_roster_has_every_row_reference_and_parent() -> None:
 
 
 def test_unknown_missing_null_empty_duplicate_and_malformed_values_survive() -> None:
+    """Unknown, missing, null, empty, duplicate and malformed values survive as raw source with issue codes,
+    including a Decimal extension.
+    """
     raw = {
         "extension": 1.25,
         "agencies": [
@@ -66,6 +77,7 @@ def test_unknown_missing_null_empty_duplicate_and_malformed_values_survive() -> 
     "payload,code", [(b"null", "object_expected"), (b"{}", "missing_field"), (b'{"agencies":null}', "array_expected")]
 )
 def test_unexpected_document_shape_retains_raw_with_issue(payload: bytes, code: str) -> None:
+    """An unexpected document shape retains the raw payload and files an issue code instead of records."""
     result = read_ecfr_agency_roster(payload)
     assert result.raw == json.loads(payload)
     assert result.records == ()
@@ -77,12 +89,14 @@ def test_unexpected_document_shape_retains_raw_with_issue(payload: bytes, code: 
     [b'{"agencies":[],"agencies":[]}', b'{"agencies":[{"x":1,"x":2}]}', b'{"agencies": [NaN]}', b"\xff", b"{"],
 )
 def test_ambiguous_or_invalid_json_refuses(payload: bytes) -> None:
+    """Ambiguous or invalid JSON is refused."""
     with pytest.raises(CfrSourceError):
         read_ecfr_agency_roster(payload)
 
 
 @pytest.mark.parametrize("number", [b"9" * 5000, b"1e999999999999999999999999"])
 def test_unsupported_numeric_sizes_use_source_refusal(number: bytes) -> None:
+    """Unsupported numeric sizes refuse with a source error naming them."""
     with pytest.raises(CfrSourceError, match="unsupported number"):
         read_ecfr_agency_roster(b'{"agencies":[],"extension":' + number + b"}")
 
@@ -91,5 +105,6 @@ def test_unsupported_numeric_sizes_use_source_refusal(number: bytes) -> None:
     "kwargs", [{"max_bytes": 1}, {"max_nodes": 1}, {"max_depth": 1}, {"max_nodes": True}, {"max_depth": 0}]
 )
 def test_bounds_cover_unknown_fields_too(kwargs: dict[str, int]) -> None:
+    """Byte bounds cover unknown fields too."""
     with pytest.raises(CfrSourceError):
         read_ecfr_agency_roster(b'{"agencies":[],"unknown":{"deep":[1]}}', **kwargs)

@@ -1,4 +1,6 @@
-"""Releases: fixtures behavior."""
+"""Shared fixtures for the releases tests: Federal Register document and page builders, a collapsing profile
+with a swappable observation version, and publisher/reader helpers over a temporary blob store.
+"""
 
 from __future__ import annotations
 
@@ -87,14 +89,9 @@ def _publication_version(record: Mapping[str, Any]) -> str | None:
 
 
 def _signing_date_version(record: Mapping[str, Any]) -> str | None:
-    """A version proxy independent of publication_date.
-
-    Composite identity folds publication_date into sourceRecordId itself, so
-    it can no longer serve as an observation_version that varies *within* one
-    identity (see SD-24). Tests that want three observations of one identity
-    to carry three different versions -- to exercise the grouped-max
-    selection, not the Federal Register field semantics -- hold
-    publication_date fixed and vary this stand-in instead.
+    """A version proxy independent of publication_date: composite identity (SD-24) folds publication_date into
+    sourceRecordId itself, so it cannot vary within one identity. Tests that want several observations of one
+    identity to carry different versions hold publication_date fixed and vary this stand-in instead.
     """
 
     return str(record["signing_date"])

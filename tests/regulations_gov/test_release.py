@@ -1,4 +1,6 @@
-"""Regulations Gov: release behavior."""
+"""Release contract for regulations.gov: document and docket releases are separate, replay exact source bytes
+under the current acquisition-policy version, and document JSON renditions survive publication.
+"""
 
 from __future__ import annotations
 

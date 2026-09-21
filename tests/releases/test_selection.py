@@ -1,4 +1,7 @@
-"""Releases: selection behavior."""
+"""Selection contract: observations collapse by grouped maximum on the observation version, records with
+identical canonical digests collapse without tying, and repeated or ambiguous versions refuse, under the SD-24
+composite ``document_number@publication_date`` identity.
+"""
 
 from __future__ import annotations
 
@@ -27,15 +30,10 @@ from tests.source_fixtures import payload_rows
 def test_three_observations_of_one_identity_keep_the_newest_and_count_the_discards(
     tmp_path: Path,
 ) -> None:
-    """Selection is a grouped maximum, not a pairwise search: three observations
-    of one identity collapse to the newest and count the other two as discarded,
-    whatever order the source enumerated them in.
-
-    SD-24: "one identity" for the Federal Register profile is now
-    (document_number, publication_date) (composite identity), so all three
-    observations share one publication_date here, and signing_date -- a field
-    composite identity does not touch -- stands in for the version an
-    upstream re-observation would actually vary.
+    """Selection is a grouped maximum, not a pairwise search: three observations of one identity keep the newest
+    and count the other two discarded, whatever order the source enumerated them in. SD-24 composite identity
+    holds publication_date fixed, so signing_date -- a field composite identity does not touch -- stands in for
+    the version an upstream re-observation would vary.
     """
     number = "2026-00001"
     pages = _stable_pages(
@@ -61,8 +59,8 @@ def test_three_observations_of_one_identity_keep_the_newest_and_count_the_discar
 
 
 def test_a_repeated_version_among_three_observations_refuses_the_tie(tmp_path: Path) -> None:
-    """A refused tie is not weakened by a third, newer-looking observation: the
-    repeated (identity, normalized instant) pair still fails the publication."""
+    """A refused tie is not weakened by a third, newer-looking observation: the repeated (identity, normalized
+    instant) pair still fails the publication."""
     number = "2026-00001"
     pages = _stable_pages(
         _document(number, publication_date="2026-08-24", title="tied observation"),
@@ -77,13 +75,10 @@ def test_a_repeated_version_among_three_observations_refuses_the_tie(tmp_path: P
 def test_reused_document_number_with_different_dates_are_two_distinct_records(
     tmp_path: Path,
 ) -> None:
-    """SD-24 / composite identity: the source reuses document_number across
-    unrelated documents -- 00-111 resolves (via the API's own
-    /documents/00-111.json) to a 2000-01-18 notice, while the full-history
-    crawl also discovers an older 2000-01-14 rule filed under the same
-    number -- and identity is now (document_number, publication_date), so
-    neither document evicts the other: both are distinct records and both
-    survive. This is the specimen the composite-identity decision names."""
+    """SD-24 composite identity: document_number 00-111 is reused across unrelated documents -- a 2000-01-18
+    notice and an older 2000-01-14 rule -- so neither evicts the other; both are distinct records and both
+    survive. This is the specimen the composite-identity decision names.
+    """
     number = "00-111"
     window = {"publishedFrom": "2000-01-14", "publishedThrough": "2000-01-18"}
     pages = _stable_pages(
@@ -126,10 +121,10 @@ def test_reused_document_number_with_different_dates_are_two_distinct_records(
 
 
 def test_federal_register_source_record_id_is_canonical_and_reversible() -> None:
-    """The composite identity's spelling is a public contract (SD-24): the same
-    two source-issued fields always produce the same string (canonical), and
-    the string can always be split back into exactly those two fields
-    (reversible) -- a lossless pairing, not a hash or a digest."""
+    """The composite identity's spelling is a public contract (SD-24): ``document_number@publication_date`` is
+    canonical and losslessly reversible -- document_number cannot contain '@' (classify_document enforces
+    ``_ASCII_ID``) and the date is canonical ISO text, so splitting on the single '@' recovers both fields.
+    """
     record = {"document_number": "00-111", "publication_date": "2000-01-14", "title": "irrelevant"}
 
     identity = federal_register_source_record_id(record)
@@ -149,10 +144,9 @@ def test_federal_register_source_record_id_is_canonical_and_reversible() -> None
 def test_reused_document_number_with_identical_digests_collapses_without_tying(
     tmp_path: Path,
 ) -> None:
-    """A source refetch of the exact same object under one document_number is
-    not a tie: two byte-identical objects at one publication_date collapse to
-    one published record, and the repeat still counts as a discarded
-    observation (raw bytes need not match, only the canonical record digest)."""
+    """A source refetch of the exact same object under one document_number is not a tie: two byte-identical
+    objects at one publication_date collapse to one published record, and the repeat still counts as a discarded
+    observation -- raw bytes need not match, only the canonical record digest."""
     number = "00-222"
     pages = _stable_pages(_document(number), _document(number))
 
@@ -168,9 +162,8 @@ def test_reused_document_number_with_identical_digests_collapses_without_tying(
 def test_reused_document_number_with_differing_digests_at_one_date_refuses_the_tie(
     tmp_path: Path,
 ) -> None:
-    """Two different objects sharing one document_number and one
-    publication_date are a genuine ambiguity, not a refetch or a window
-    overlap: the shipped profile refuses instead of inventing a winner."""
+    """Two different objects sharing one document_number and one publication_date are a genuine ambiguity, not
+    a refetch or a window overlap: the shipped profile refuses instead of inventing a winner."""
     number = "00-333"
     window = {"publishedFrom": "2000-01-14", "publishedThrough": "2000-01-14"}
     pages = _stable_pages(

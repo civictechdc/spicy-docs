@@ -1,4 +1,7 @@
-"""Releases: acquisition behavior."""
+"""Federal Register acquisition contract: the closed date-window query, two-traversal stable reconciliation,
+cap-splitting into ordered leaf windows, and refusal of incomplete, cyclic, off-host or misordered page
+evidence.
+"""
 
 from __future__ import annotations
 

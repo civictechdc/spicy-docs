@@ -1,4 +1,9 @@
-"""Real retained PDF observations, exact ownership, and a comparison that can fail."""
+"""Real retained PDF observations, exact ownership, and a comparison that can fail.
+
+Pins page, table, row and cell kinds with geometry, observed-text binding,
+empty and unresolved cells, span ownership without duplicates, and refusal of
+overlapping, moved or misidentified claims.
+"""
 
 from __future__ import annotations
 
@@ -20,6 +25,7 @@ FIXTURE = dc.FIXTURES / "document_capture_pdf_tables"
 
 @pytest.fixture(scope="module")
 def page():
+    """Load a retained PDF observation page with its pinned digest."""
     source = json.loads((FIXTURE / "source.json").read_text())
     pdf = (FIXTURE / source["fixture"]).read_bytes()
     assert dc.sha256(pdf) == source["sha256"]
@@ -27,6 +33,7 @@ def page():
 
 
 def build(page, tmp_path):
+    """Build a synthetic multi-page table observation."""
     source = json.loads((FIXTURE / "source.json").read_text())
     path = FIXTURE / source["fixture"]
     return pdf_tables.convert_senate_pages(
@@ -41,6 +48,9 @@ def build(page, tmp_path):
 
 
 def test_real_page_kinds_geometry_empty_missing_and_unresolved(page, tmp_path):
+    """Real retained tables yield exact kinds and geometry, bind observed text to source boxes, and flag empty,
+    missing and unresolved cells without inferred headers or spans.
+    """
     capture = build(page, tmp_path)
     kinds = Counter(n["kind"] for n in capture["nodes"])
     assert kinds["table"] == 1
@@ -86,6 +96,9 @@ def test_real_page_kinds_geometry_empty_missing_and_unresolved(page, tmp_path):
     ("change", "drop", "duplicate", "column", "package", "file", "page", "table", "row", "page-text-digest"),
 )
 def test_comparison_refuses_changed_missing_duplicate_moved_and_misidentified_cells(page, tmp_path, mutation):
+    """The comparison accepts an independent reading and refuses changed, missing, duplicate, moved and misidentified
+    cells.
+    """
     # Separate extraction from the same fixture bytes, then the analytical
     # shaper. Never feed capture-owned observations into the reference.
     source = json.loads((FIXTURE / "source.json").read_text())
@@ -130,6 +143,7 @@ def test_comparison_refuses_changed_missing_duplicate_moved_and_misidentified_ce
 
 
 def synthetic(texts, line_text="same same", boxes=None):
+    """Build a synthetic multi-page table observation from the given claims."""
     box = Box(0, 0, 1, 1)
     blocks = (TextBlock(line_text, box, observation="native"),)
     raw = {"blocks": [{"lines": [{"spans": [{"text": line_text}]}]}]}
@@ -145,6 +159,7 @@ def synthetic(texts, line_text="same same", boxes=None):
 
 
 def test_ambiguous_and_overlapping_claims_never_choose_first():
+    """Ambiguous or overlapping claims resolve nothing and are reported, never chosen first."""
     for texts, line, reason in [
         (["same"], "same same", "ambiguous-page-text"),
         (["same", "same"], "same", "overlapping-cell-claims"),
@@ -159,6 +174,7 @@ def test_ambiguous_and_overlapping_claims_never_choose_first():
 
 
 def test_exact_match_splits_and_transfers_without_duplicate_ownership():
+    """An exact match splits and transfers spans without duplicate ownership."""
     builder = synthetic(["alpha", "beta"], "prefix alpha beta suffix")
     nodes, stream = builder.finish()
     assert stream == "prefix alpha beta suffix"
@@ -178,6 +194,7 @@ def test_exact_match_splits_and_transfers_without_duplicate_ownership():
     ids=("nested-and-chained-overlaps", "touching-claims", "duplicate-claims"),
 )
 def test_overlap_components_refuse_every_participant_but_keep_disjoint_claims(texts, line, resolved):
+    """Overlap components refuse every participant while disjoint claims still resolve."""
     builder = synthetic(texts, line)
     nodes, stream = builder.finish()
     assert stream == line
@@ -190,6 +207,7 @@ def test_overlap_components_refuse_every_participant_but_keep_disjoint_claims(te
 
 
 def test_multiple_pages_keep_text_offsets_ownership_and_empty_pages(page):
+    """Multiple pages keep text offsets, ownership and empty pages, with an empty page adding no evidence separator."""
     pages = [
         replace(
             page,
@@ -215,6 +233,7 @@ def test_multiple_pages_keep_text_offsets_ownership_and_empty_pages(page):
 
 
 def test_no_line_page_and_box_without_text_survive():
+    """A page with no line and a box with no text survive with missing-text issues."""
     builder = synthetic(["", None], "", [Box(0, 0, 0.5, 1), Box(0.5, 0, 1, 1)])
     nodes, stream = builder.finish()
     assert stream == ""
@@ -226,6 +245,7 @@ def test_no_line_page_and_box_without_text_survive():
 
 
 def test_cell_text_does_not_match_another_page(page, tmp_path):
+    """Cell text not present on its own page resolves no spans and is flagged."""
     table = page.tables[0]
     changed = replace(table, cells=(("ONLY ON ANOTHER PAGE", *table.cells[0][1:]), *table.cells[1:]))
     modified = replace(page, tables=(changed,))

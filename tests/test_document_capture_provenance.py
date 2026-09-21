@@ -1,4 +1,9 @@
-"""Provenance checks read committed captures, independently of conversion."""
+"""Provenance checks read committed captures, independently of conversion.
+
+Pins locator-digest binding, archive member uniqueness and bytes, untrusted
+local files, documented evidence gaps, required omissions, full-precision
+timestamps, MODS binding, and date and geometry findings.
+"""
 
 import copy
 import hashlib
@@ -28,6 +33,7 @@ OBSERVATIONS = {
 
 @pytest.mark.parametrize("path", CAPTURES, ids=lambda p: p.stem)
 def test_every_stated_artifact_locator_names_its_digest(path):
+    """Every stated artifact locator names its own digest."""
     capture = json.loads(path.read_bytes())
     assert (
         check_artifact_binding(
@@ -38,6 +44,7 @@ def test_every_stated_artifact_locator_names_its_digest(path):
 
 
 def test_public_law_cannot_pair_archive_url_with_member_digest():
+    """A public-law capture cannot pair an archive URL with a member digest."""
     capture = json.loads(next(p for p in CAPTURES if p.name.startswith("plaw-")).read_bytes())
     member = capture["profile"]["ext"]["archiveMember"]
     retained = json.loads((FIXTURE / "public-law.json").read_bytes())["archiveMember"]
@@ -50,6 +57,7 @@ def test_public_law_cannot_pair_archive_url_with_member_digest():
 
 
 def test_archive_member_check_reads_both_objects_and_refuses_mutations():
+    """The archive-member check reads both objects and refuses archive or member mutations and non-unique members."""
     data = b"<law>retained bytes</law>"
     stream = io.BytesIO()
     with zipfile.ZipFile(stream, "w") as z:
@@ -83,6 +91,7 @@ def test_archive_member_check_reads_both_objects_and_refuses_mutations():
 
 
 def test_generic_binding_check_does_not_trust_a_matching_local_file():
+    """The generic binding check refuses a matching local file when no observation verifies the URL."""
     data = b"same local file"
     artifact = {
         "sha256": hashlib.sha256(data).hexdigest(),
@@ -99,6 +108,7 @@ def test_generic_binding_check_does_not_trust_a_matching_local_file():
 
 @pytest.mark.parametrize("path", CAPTURES, ids=lambda p: p.stem)
 def test_committed_provenance_has_only_the_documented_evidence_gaps(path):
+    """Committed captures carry only their documented evidence gaps."""
     from collections import Counter
 
     capture = json.loads(path.read_bytes())
@@ -116,6 +126,7 @@ def test_committed_provenance_has_only_the_documented_evidence_gaps(path):
 
 @pytest.mark.parametrize("path", CAPTURES, ids=lambda p: p.stem)
 def test_required_family_provenance_omissions_are_findings(path):
+    """Required family provenance omissions are findings."""
     capture = json.loads(path.read_bytes())
     family = capture["profile"]["name"]
     ext = capture["profile"]["ext"]
@@ -144,6 +155,9 @@ def test_required_family_provenance_omissions_are_findings(path):
 
 @pytest.mark.parametrize("path", CAPTURES, ids=lambda p: p.stem)
 def test_full_precision_and_mods_values_are_bound_to_independent_records(path):
+    """Full-precision timestamps and MODS values bind to independent records, with source and artifact digests
+    distinct.
+    """
     from tools.analysis.document_capture_sources import mods_record
 
     capture = json.loads(path.read_bytes())
@@ -161,6 +175,7 @@ def test_full_precision_and_mods_values_are_bound_to_independent_records(path):
 
 
 def test_date_only_invalid_dates_and_geometry_are_findings():
+    """Date-only, invalid and incomplete-geometry values are findings."""
     from spicy_docs.schemas.document_capture.provenance import coordinate_fields_present, full_timestamp
 
     assert full_timestamp("2026-09-20T12:34:56.123456Z")
@@ -172,6 +187,7 @@ def test_date_only_invalid_dates_and_geometry_are_findings():
 
 
 def test_fresh_converters_populate_precise_receipts_mods_and_decisions():
+    """Fresh converter output populates precise receipts, MODS identity and committee decisions."""
     from tools.analysis import document_capture as dc
 
     bill = dc.convert_bill(dc.FIXTURES / "govinfo_bills/text-119hjres25enr.xml").capture()
@@ -186,6 +202,7 @@ def test_fresh_converters_populate_precise_receipts_mods_and_decisions():
 
 
 def test_retained_fr_docket_and_empty_rin_list_are_populated():
+    """The retained FR docket and an empty RIN list are populated exactly."""
     capture = json.loads(next(p for p in CAPTURES if p.name.startswith("fr-")).read_bytes())
     ext = capture["profile"]["ext"]
     source = (ROOT / ext["documentJsonPath"]).read_bytes()

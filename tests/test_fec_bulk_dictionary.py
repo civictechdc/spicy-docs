@@ -1,4 +1,9 @@
-"""Ordered bulk dictionaries retain the source cells that justify each name."""
+"""Ordered bulk dictionaries retain the source cells that justify each name.
+
+Pins omitted cell and row-end handling with exact text evidence, and refusals
+for missing, duplicate, ambiguous, incomplete, multi-table, bad-digest and
+unclosed definitions.
+"""
 
 import hashlib
 from html import unescape
@@ -11,11 +16,13 @@ HEADER = "<tr><td><strong>Column name</strong></td><td>Field name</td><td>Positi
 
 
 def _read(body):
+    """Read a dictionary fixture through the parser."""
     raw = body.encode()
     return raw, parse_bulk_dictionary(raw, sha256="sha256:" + hashlib.sha256(raw).hexdigest())
 
 
 def test_omitted_cell_and_row_ends_preserve_spelling_blank_cells_and_exact_text_evidence():
+    """Omitted cell and row ends preserve publisher spelling, blank cells and exact text evidence."""
     html = "<table><tr><td>Unrelated</td></tr></table><table>" + HEADER
     html += "<tr><td> CAND_ID \r\n<td>Candidate identification<td>1<td>N"
     html += "<tr><td>Offsets_To_Leagal_Accounting<td>Costs &amp; refunds<td>2<td></table>"
@@ -46,11 +53,13 @@ def test_omitted_cell_and_row_ends_preserve_spelling_blank_cells_and_exact_text_
     ],
 )
 def test_missing_duplicate_ambiguous_and_incomplete_definitions_refuse(rows):
+    """Missing, duplicate, ambiguous and incomplete definitions are refused."""
     with pytest.raises(ValueError):
         _read("<table>" + HEADER + rows + "</table>")
 
 
 def test_two_matching_tables_bad_digest_and_unclosed_table_refuse():
+    """Two matching tables, a bad digest and an unclosed table are refused."""
     table = "<table>" + HEADER + "<tr><td>A<td>Name<td>1<td>N</table>"
     with pytest.raises(ValueError, match="exactly one"):
         _read(table + table)

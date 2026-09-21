@@ -1,10 +1,7 @@
 """The overlap measurement's readings, its request bookkeeping, and its report block.
 
-The tool exists to let the parse rule fail against the publisher. Two things
-have to be right for a failure to be readable: what counts as agreement per
-field, and what the publisher's answer was. Both are pinned here on constructed
-receipts, so the offline suite never touches a publisher.
-"""
+The tool exists to let the parse rule fail against the publisher, so what counts as agreement per field and what the
+publisher's answer was are both pinned on constructed receipts; the offline suite never touches a publisher."""
 
 from __future__ import annotations
 

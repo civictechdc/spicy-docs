@@ -1,4 +1,7 @@
-"""OLRC U.S. Code requests and response checks prove native identity and keep publisher spellings."""
+"""OLRC U.S. Code requests and response checks prove native identity and keep publisher spellings.
+
+Covers selections and locators, release-point USLM titles, annual historical archives, the Popular Name Tool, and
+Table III pages and the bulk member, with each refusal naming the failed check."""
 
 import io
 import zipfile

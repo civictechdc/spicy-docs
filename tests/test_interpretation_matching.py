@@ -1,4 +1,11 @@
-"""Vote, release, member and interest-area matching: the corrected behaviours, measured."""
+"""Vote, release, member and interest-area matching: the corrected behaviours, measured.
+
+Pins the sealed recorded-vote shape and roll-number index with its refusals and
+conflicts, release patterns compiled once per bill, member precedence
+(bioguide, LIS crosswalk, then name) with term-ended members excluded, and
+keyword matching under the InnoDB index's token bounds. Ends end-to-end on
+parsed BILLSTATUS fixtures.
+"""
 
 import re
 from pathlib import Path
@@ -72,10 +79,12 @@ SENATE_VOTED_ACTION = {
 
 
 def test_the_six_recorded_vote_fields_are_the_sealed_shape() -> None:
+    """The recorded-vote shape is exactly the six sealed fields, in order."""
     assert RECORDED_VOTE_FIELDS == ("chamber", "congress", "date", "rollNumber", "sessionNumber", "url")
 
 
 def test_a_recorded_vote_is_matched_by_roll_number() -> None:
+    """A recorded vote on an action is indexed by roll number and matched back to its bill."""
     read = recorded_vote_references(HR1, ({"text": "Introduced in House"}, VOTED_ACTION))
     assert len(read.references) == 1 and read.refusals == ()
     index = index_vote_references(read.references)
@@ -87,6 +96,7 @@ def test_a_recorded_vote_is_matched_by_roll_number() -> None:
 
 
 def test_a_senate_vote_matches_too() -> None:
+    """A Senate vote matches its bill, which the old ``[HS]R`` pattern could never do."""
     # The behaviour being corrected: roll-call-votes.ts:143 required an "R"
     # after [HS], so no Senate vote could ever match its bill.
     assert re.search(r"\b([HS])\.?\s*R\.?\s*(\d+)\b", "On Passage of S. 123") is None
@@ -96,12 +106,14 @@ def test_a_senate_vote_matches_too() -> None:
 
 
 def test_an_unreferenced_vote_is_named_unmatched_rather_than_guessed() -> None:
+    """A vote no reference claims is named ``unmatched`` rather than guessed."""
     index = index_vote_references(recorded_vote_references(HR1, (VOTED_ACTION,)).references)
     matches = match_votes((VoteKey(119, "house", 1, 999),), index)
     assert (matches[0].bill, matches[0].rule) == (None, "unmatched")
 
 
 def test_the_house_vote_route_names_its_bill_in_two_fields() -> None:
+    """House vote records name their bill via legislation type and number; missing either yields no reference."""
     references = house_vote_references(
         (
             {
@@ -121,6 +133,7 @@ def test_the_house_vote_route_names_its_bill_in_two_fields() -> None:
 
 
 def test_a_recorded_vote_missing_a_sealed_field_is_refused() -> None:
+    """A recorded vote missing a sealed field is refused with the field named."""
     action = {"recordedVotes": [{"chamber": "House", "congress": 119, "rollNumber": 240, "sessionNumber": 1}]}
     read = recorded_vote_references(HR1, (action,))
     assert read.references == ()
@@ -129,6 +142,8 @@ def test_a_recorded_vote_missing_a_sealed_field_is_refused() -> None:
 
 
 def test_one_bad_entry_costs_that_entry_and_not_the_bill() -> None:
+    """One malformed entry is refused at its action/entry index while the other thirty entries survive."""
+
     def good(roll: int) -> dict[str, object]:
         return {
             "chamber": "House",
@@ -147,11 +162,13 @@ def test_one_bad_entry_costs_that_entry_and_not_the_bill() -> None:
 
 
 def test_a_recorded_votes_that_is_not_a_list_is_a_shape_error() -> None:
+    """A non-list ``recordedVotes`` raises ``VoteMatchError`` instead of being iterated."""
     with pytest.raises(VoteMatchError, match="list of entries"):
         recorded_vote_references(HR1, ({"recordedVotes": "roll 240"},))
 
 
 def test_the_same_roll_call_on_two_actions_is_one_entry_and_no_conflict() -> None:
+    """The same roll call on two actions indexes to one vote entry with no conflict."""
     # The publisher files the same vote as a chamber action and as a Library of
     # Congress summary action; both carry the identical recordedVote.
     summary_action = {"text": "Passed/agreed to in House.", "recordedVotes": VOTED_ACTION["recordedVotes"]}
@@ -163,6 +180,7 @@ def test_the_same_roll_call_on_two_actions_is_one_entry_and_no_conflict() -> Non
 
 
 def test_two_sources_disagreeing_on_a_vote_are_kept_as_a_conflict() -> None:
+    """Two sources naming different bills for one vote keep the first bill and record a conflict."""
     house = house_vote_references(
         (
             {
@@ -183,6 +201,7 @@ def test_two_sources_disagreeing_on_a_vote_are_kept_as_a_conflict() -> None:
 
 
 def test_release_matching_compiles_one_pattern_per_bill(monkeypatch: pytest.MonkeyPatch) -> None:
+    """One pattern is compiled per bill and reused across releases, never rebuilt per release-bill pair."""
     bills = tuple(BillIdentity(119, "hr", number) for number in range(1, 201))
     releases = tuple(Release(f"release-{index}", f"Chairman statement on H.R. {index + 1}") for index in range(500))
 
@@ -207,6 +226,7 @@ def test_release_matching_compiles_one_pattern_per_bill(monkeypatch: pytest.Monk
 
 
 def test_a_release_with_no_description_still_matches_on_its_title() -> None:
+    """A release with no excerpt still matches on its title, naming field, matched text and rule."""
     # The Senate committee feed sends no <description> at all, so an excerpt is
     # permanently empty there and title-only matching is the whole of it.
     patterns = compile_bill_patterns((BillIdentity(119, "s", 4045),))
@@ -218,6 +238,7 @@ def test_a_release_with_no_description_still_matches_on_its_title() -> None:
 
 
 def test_an_excerpt_match_is_reported_as_one() -> None:
+    """An excerpt match reports field ``excerpt`` and rule ``bill_number_in_excerpt``."""
     patterns = compile_bill_patterns((BillIdentity(119, "hr", 4366),))
     release = Release("house-1", "Chairman statement on the funding bill", "The bill, H.R. 4366, advances today.")
     match = match_releases((release,), patterns)[0]
@@ -225,6 +246,7 @@ def test_an_excerpt_match_is_reported_as_one() -> None:
 
 
 def test_a_bare_number_no_longer_matches_every_bill() -> None:
+    """A bare number in text no longer matches every bill."""
     # press-releases.ts offered the raw bill number as a third alternative, so
     # bill 1 matched any "1" in any title.
     patterns = compile_bill_patterns((BillIdentity(119, "hr", 1),))
@@ -233,12 +255,14 @@ def test_a_bare_number_no_longer_matches_every_bill() -> None:
 
 
 def test_the_pattern_is_built_from_the_bill_s_own_type() -> None:
+    """The pattern requires the bill's own type, so H.R. 100 does not match an S. 100 bill."""
     patterns = compile_bill_patterns((BillIdentity(119, "s", 100),))
     assert match_releases((Release("r", "Statement on H.R. 100"),), patterns)[0].bill is None
     assert match_releases((Release("r", "Statement on S. 100"),), patterns)[0].bill is not None
 
 
 def test_a_longer_number_does_not_match_a_shorter_bill() -> None:
+    """``H.R. 50`` does not match bill ``H.R. 5``."""
     patterns = compile_bill_patterns((BillIdentity(119, "hr", 5),))
     assert match_releases((Release("r", "Statement on H.R. 50"),), patterns)[0].bill is None
 
@@ -258,6 +282,7 @@ MEMBERS = (
 
 
 def test_bioguide_beats_name() -> None:
+    """A bioguide id wins over a conflicting name and scores 1.0."""
     match = match_member(
         MemberQuery(bioguide="A000055", name="Sen. Cantwell, Maria [D-WA]"),
         crosswalk=crosswalk(),
@@ -267,6 +292,7 @@ def test_bioguide_beats_name() -> None:
 
 
 def test_lis_resolves_through_the_crosswalk_before_any_name() -> None:
+    """An LIS id resolves through the crosswalk before any name is considered."""
     match = match_member(
         MemberQuery(lis="S275", name="Rep. Aderholt, Robert B. [R-AL-4]"),
         crosswalk=crosswalk(),
@@ -276,6 +302,7 @@ def test_lis_resolves_through_the_crosswalk_before_any_name() -> None:
 
 
 def test_name_matching_is_the_last_resort_and_exposes_its_score() -> None:
+    """Name matching is the last resort: exact scores 1.0 and a surname-only match scores between 0 and 1."""
     index = index_members(MEMBERS)
     match = match_member(MemberQuery(name="Rep. Aderholt, Robert B. [R-AL-4]"), crosswalk=crosswalk(), members=index)
     assert (match.bioguide, match.rule, match.score) == ("A000055", "name_exact", 1.0)
@@ -286,6 +313,7 @@ def test_name_matching_is_the_last_resort_and_exposes_its_score() -> None:
 
 
 def test_the_surname_is_read_from_the_publisher_s_own_spelling() -> None:
+    """The surname is read before the comma and state/district bracket, not as the last whitespace token."""
     # Taking the last whitespace token of this string yields "[R-AL-4]".
     assert last_name_of("Rep. Aderholt, Robert B. [R-AL-4]") == "Aderholt"
     assert last_name_of("Rep. Smith") == "Smith"
@@ -293,15 +321,18 @@ def test_the_surname_is_read_from_the_publisher_s_own_spelling() -> None:
 
 
 def test_a_last_name_match_ignores_members_whose_term_has_ended() -> None:
+    """A surname match ignores members whose term has ended."""
     match = match_member(MemberQuery(name="Rep. Notreal"), crosswalk=crosswalk(), members=index_members(MEMBERS))
     assert (match.bioguide, match.rule) == (None, "unmatched")
 
 
 def test_nothing_to_go_on_is_unmatched_rather_than_a_guess() -> None:
+    """A query with no identifiers is ``unmatched`` rather than a guess."""
     assert match_member(MemberQuery(), crosswalk=crosswalk(), members=index_members(MEMBERS)).rule == "unmatched"
 
 
 def test_member_rows_are_normalized_once_however_many_queries_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Rows normalize twice each at index time and queries twice each at match time, never per row per query."""
     import spicy_docs.interpretation.member_matching as module
 
     calls = 0
@@ -334,6 +365,7 @@ SECTIONS = (
 
 
 def test_any_keyword_token_matches_and_the_hit_names_its_keywords() -> None:
+    """Any keyword token matches, and the hit names only the keywords that hit."""
     matches = find_matching_sections((InterestArea("Water", ("levee", "aquifer")),), SECTIONS)
     assert len(matches) == 1
     assert matches[0].section_id == "sec-1"
@@ -343,12 +375,14 @@ def test_any_keyword_token_matches_and_the_hit_names_its_keywords() -> None:
 
 
 def test_the_excerpt_is_the_fixed_length_the_original_stored() -> None:
+    """The excerpt keeps the original's fixed length of 200 characters."""
     section = Section("sec-3", "ver-1", "119-hr-1", "levee " + "x" * 500)
     match = find_matching_sections((InterestArea("Water", ("levee",)),), (section,))[0]
     assert len(match.excerpt) == 200
 
 
 def test_the_limit_bounds_each_area_and_then_the_whole_result() -> None:
+    """The limit bounds each area first, then the whole result."""
     sections = tuple(Section(f"sec-{index}", "v", "b", "levee repair") for index in range(10))
     areas = (InterestArea("A", ("levee",)), InterestArea("B", ("repair",)))
     matches = find_matching_sections(areas, sections, limit=3)
@@ -357,6 +391,7 @@ def test_the_limit_bounds_each_area_and_then_the_whole_result() -> None:
 
 
 def test_an_area_with_no_keywords_matches_nothing() -> None:
+    """An area with no keywords matches nothing."""
     assert find_matching_sections((InterestArea("Empty", ()),), SECTIONS) == ()
 
 
@@ -371,12 +406,14 @@ def test_an_area_with_no_keywords_matches_nothing() -> None:
 def test_a_keyword_the_innodb_index_would_drop_never_matches_even_though_the_word_is_present(
     keyword: str, rule: str
 ) -> None:
+    """Keywords under 3 chars, over 84, or in the default stopword table never match, as InnoDB would drop them."""
     section = Section("sec-x", "ver-1", "119-hr-1", f"Provisions on {keyword} apply broadly.")
     matches = find_matching_sections((InterestArea("Area", (keyword,)),), (section,))
     assert matches == (), f"{keyword!r} should be dropped by {rule} before matching"
 
 
 def test_relevance_is_the_count_of_distinct_matched_keywords_ordered_then_by_position() -> None:
+    """Relevance is the distinct matched-keyword count, with ties keeping input order."""
     sections = (
         Section("sec-a", "v", "b", "levee repair funding.", "A"),
         Section("sec-b", "v", "b", "levee aquifer repair funding.", "B"),
@@ -402,6 +439,7 @@ def enacted_status():
 
 
 def test_signed_date_reads_a_parsed_status_end_to_end() -> None:
+    """A parsed status yields public law number, signing date, rule and action code, and folds to stage ``law``."""
     from spicy_docs.interpretation.bill_stage import infer_stage, signed_date
 
     status = enacted_status()
@@ -415,6 +453,7 @@ def test_signed_date_reads_a_parsed_status_end_to_end() -> None:
 
 
 def test_recorded_votes_on_a_parsed_status_match_both_chambers() -> None:
+    """Recorded votes parsed from a status match House and Senate keys to the same bill."""
     status = enacted_status()
     read = recorded_vote_references(status.identity, status.actions)
     assert read.refusals == ()
@@ -426,6 +465,7 @@ def test_recorded_votes_on_a_parsed_status_match_both_chambers() -> None:
 
 
 def test_committee_codes_on_a_parsed_status_raise_the_referral_signal() -> None:
+    """Parsed committee codes outside the six raise no referral signal."""
     from spicy_docs.interpretation.money_bills import referrals_from_committee_codes
     from spicy_docs.sources.congress.bill_status import parse_bill_status
 
@@ -439,6 +479,7 @@ def test_committee_codes_on_a_parsed_status_raise_the_referral_signal() -> None:
 
 
 def test_a_member_query_is_built_from_the_parsed_sponsor() -> None:
+    """A parsed sponsor builds a member query that resolves by bioguide, and its surname reads correctly."""
     sponsor = enacted_status().sponsors[0]
     assert (sponsor.bioguide_id, sponsor.full_name) == ("B001319", "Sen. Britt, Katie Boyd [R-AL]")
     match = match_member(MemberQuery(bioguide=sponsor.bioguide_id, name=sponsor.full_name))

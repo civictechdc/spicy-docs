@@ -1,9 +1,10 @@
 """Community legislators crosswalk: shape rules, indexes, bounds and mocked acquisition.
 
-``tests/fixtures/legislators/README.md`` documents where the two excerpt files
-came from and why each kept record is in them. The refusal tests below mutate
-a small synthetic-but-realistic record (``base_row``) rather than the real
-excerpts, so a shape violation is isolated to exactly the field under test.
+Pins the parsed record shape (optional id fields, both FEC candidate-id forms,
+district kept as the publisher's string), refusals that name the offending
+record and field, the byte and record bounds, the two excerpt indexes, and
+mocked acquisition including keyless capture and 401/403 handling. Refusal
+tests mutate ``base_row`` rather than the real excerpts.
 """
 
 from __future__ import annotations
@@ -68,6 +69,7 @@ def no_retry_delay(monkeypatch):
 
 
 def test_a_well_formed_record_round_trips_every_field():
+    """Every field of a well-formed record round-trips, and a sen term carries no district."""
     result = parse_legislators(encoded([base_row()]), max_bytes=BOUND)
     (record,) = result.records
     assert record.bioguide == "T000001" and record.lis == "S001"
@@ -81,6 +83,7 @@ def test_a_well_formed_record_round_trips_every_field():
 
 
 def test_a_rep_terms_district_is_kept_as_the_publisher_spelled_string():
+    """A rep term's district keeps the publisher's string, so at-large 0 stays ``"0"``; a missing party is ``None``."""
     row = base_row()
     row["terms"][0].update({"type": "rep", "state": "VT", "district": 0})  # at-large: 0, not falsy-absent
     del row["terms"][0]["party"]
@@ -91,6 +94,7 @@ def test_a_rep_terms_district_is_kept_as_the_publisher_spelled_string():
 
 @pytest.mark.parametrize("field", ["lis", "fec", "icpsr", "govtrack", "opensecrets", "wikidata"])
 def test_absent_optional_id_fields_are_none_or_empty_not_refused(field):
+    """An absent optional id field is ``None`` or empty rather than a refusal."""
     row = base_row()
     del row["id"][field]
     result = parse_legislators(encoded([row]), max_bytes=BOUND)
@@ -99,7 +103,7 @@ def test_absent_optional_id_fields_are_none_or_empty_not_refused(field):
 
 
 def test_a_term_with_no_end_date_parses_as_in_progress_not_a_refusal():
-    """The publisher omits end elsewhere in these files for an in-progress item; refusing that shape is wrong."""
+    """A term with no end date parses as in progress, not as a refusal."""
     row = base_row()
     del row["terms"][0]["end"]
     result = parse_legislators(encoded([row]), max_bytes=BOUND)
@@ -108,7 +112,7 @@ def test_a_term_with_no_end_date_parses_as_in_progress_not_a_refusal():
 
 @pytest.mark.parametrize("fec_id", ["S8WA00194", "H2CA06028", "P80003023", "P00003483"])
 def test_both_real_fec_candidate_id_shapes_are_accepted(fec_id):
-    """Congressional ids embed a state; presidential ids do not. Both are real FEC ids; see the module docstring."""
+    """Both real FEC id shapes are accepted: congressional ids embed a state and presidential ids do not."""
     row = base_row()
     row["id"]["fec"] = [fec_id]
     result = parse_legislators(encoded([row]), max_bytes=BOUND)
@@ -157,6 +161,7 @@ def test_both_real_fec_candidate_id_shapes_are_accepted(fec_id):
     ],
 )
 def test_record_shape_refusals_name_the_offending_record(mutate, message):
+    """Each shape violation refuses with its own message and names ``record 0``."""
     row = base_row()
     mutate(row)
     with pytest.raises(LegislatorsSourceError, match=message) as raised:
@@ -166,17 +171,20 @@ def test_record_shape_refusals_name_the_offending_record(mutate, message):
 
 @pytest.mark.parametrize("row", [1, "x", None, []])
 def test_a_record_that_is_not_a_json_object_refuses(row):
+    """A non-object record refuses as ``record 0 must be a JSON object``."""
     with pytest.raises(LegislatorsSourceError, match="record 0 must be a JSON object"):
         parse_legislators(encoded([row]), max_bytes=BOUND)
 
 
 def test_duplicate_bioguide_refuses_naming_the_repeating_record():
+    """A repeated bioguide id refuses and names the repeating record."""
     rows = [base_row(), base_row()]
     with pytest.raises(LegislatorsSourceError, match="record 1 repeats bioguide id 'T000001'"):
         parse_legislators(encoded(rows), max_bytes=BOUND)
 
 
 def test_duplicate_lis_refuses_naming_the_repeating_record():
+    """A repeated LIS id refuses and names the repeating record."""
     rows = [base_row(), base_row()]
     rows[1]["id"]["bioguide"] = "T000002"
     with pytest.raises(LegislatorsSourceError, match="record 1 repeats LIS id 'S001'"):
@@ -184,6 +192,7 @@ def test_duplicate_lis_refuses_naming_the_repeating_record():
 
 
 def test_duplicate_fec_id_refuses_naming_the_repeating_record():
+    """A repeated FEC id refuses and names the repeating record."""
     rows = [base_row(), base_row()]
     rows[1]["id"].update(bioguide="T000002", lis="S002")
     with pytest.raises(LegislatorsSourceError, match="record 1 repeats FEC id 'S8WA00194'"):
@@ -192,11 +201,13 @@ def test_duplicate_fec_id_refuses_naming_the_repeating_record():
 
 @pytest.mark.parametrize("payload", [b"{}", b"null", b'"x"', b"[", b""])
 def test_a_body_that_is_not_a_json_list_refuses(payload):
+    """A body that is not a JSON list refuses."""
     with pytest.raises(LegislatorsSourceError):
         parse_legislators(payload, max_bytes=BOUND)
 
 
 def test_an_empty_list_is_a_requested_empty_observation_not_a_refusal():
+    """An empty list is a requested-empty observation, not a refusal."""
     assert parse_legislators(b"[]", max_bytes=BOUND).records == ()
 
 
@@ -205,11 +216,13 @@ def test_an_empty_list_is_a_requested_empty_observation_not_a_refusal():
 
 @pytest.mark.parametrize("max_bytes", [0, True, MAX_HISTORICAL_BYTES + 1])
 def test_max_bytes_bound_is_explicit(max_bytes):
+    """``max_bytes`` refuses zero, booleans and values above the historical ceiling."""
     with pytest.raises(LegislatorsSourceError, match="max_bytes"):
         parse_legislators(encoded([base_row()]), max_bytes=max_bytes)
 
 
 def test_a_body_larger_than_max_bytes_refuses():
+    """A body larger than ``max_bytes`` refuses."""
     payload = encoded([base_row()])
     with pytest.raises(LegislatorsSourceError):
         parse_legislators(payload, max_bytes=len(payload) - 1)
@@ -217,11 +230,13 @@ def test_a_body_larger_than_max_bytes_refuses():
 
 @pytest.mark.parametrize("max_records", [0, True, MAX_RECORDS_CAP + 1])
 def test_max_records_bound_is_explicit(max_records):
+    """``max_records`` refuses zero, booleans and values above the cap."""
     with pytest.raises(LegislatorsSourceError, match="max_records"):
         parse_legislators(encoded([base_row()]), max_bytes=BOUND, max_records=max_records)
 
 
 def test_more_records_than_max_records_refuses():
+    """More records than ``max_records`` refuses."""
     second = base_row()
     second["id"]["bioguide"] = "T000002"
     with pytest.raises(LegislatorsSourceError, match="max_records"):
@@ -232,6 +247,7 @@ def test_more_records_than_max_records_refuses():
 
 
 def test_current_excerpt_parses_and_indexes_every_kept_shape():
+    """The current excerpt parses to five records indexed by bioguide, LIS and FEC, including a dual-FEC senator."""
     result = parse_legislators(CURRENT_EXCERPT, max_bytes=BOUND)
     assert len(result.records) == 5
     assert set(result.by_bioguide) == {"C000127", "S000033", "W000805", "A000055", "G000607"}
@@ -249,6 +265,7 @@ def test_current_excerpt_parses_and_indexes_every_kept_shape():
 
 
 def test_historical_excerpt_parses_and_carries_the_former_senator_crosswalk():
+    """The historical excerpt parses to twenty records with former-senator LIS/FEC crosswalks and a party-less term."""
     result = parse_legislators(HISTORICAL_EXCERPT, max_bytes=BOUND)
     assert len(result.records) == 20
     graham = result.by_bioguide["G000359"]
@@ -287,6 +304,7 @@ BUDGET = LegislatorsBudget(3, DEFAULT_MAX_CURRENT_BYTES, 10, 0)
 
 
 def test_acquirer_captures_exact_current_bytes_keyless():
+    """The keyless acquirer captures the current route's exact bytes with identity encoding and no credential header."""
     transport = Transport(response(CURRENT_EXCERPT))
     with LegislatorsAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_current()
@@ -297,7 +315,7 @@ def test_acquirer_captures_exact_current_bytes_keyless():
 
 
 def test_acquire_current_refuses_a_file_with_no_lis_entries():
-    """Roughly 100 sitting senators always carry id.lis; an empty by_lis means a bad file, not a fact about Congress."""
+    """A current file whose records carry no ``id.lis`` refuses, since sitting senators always have one."""
     row = base_row()
     del row["id"]["lis"]
     transport = Transport(response(encoded([row])))
@@ -309,6 +327,7 @@ def test_acquire_current_refuses_a_file_with_no_lis_entries():
 
 
 def test_acquirer_captures_exact_historical_bytes_at_its_own_bound():
+    """The historical route captures its exact bytes under its own byte bound."""
     transport = Transport(response(HISTORICAL_EXCERPT))
     with LegislatorsAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_historical()
@@ -317,6 +336,7 @@ def test_acquirer_captures_exact_historical_bytes_at_its_own_bound():
 
 
 def test_a_call_may_narrow_the_byte_allowance_but_never_raise_it():
+    """A call may narrow the byte allowance but cannot raise it past the budget."""
     with (
         LegislatorsAcquirer(budget=BUDGET, transport=Transport(response(CURRENT_EXCERPT))) as source,
         pytest.raises(LegislatorsSourceError),
@@ -334,6 +354,7 @@ def test_a_call_may_narrow_the_byte_allowance_but_never_raise_it():
     ],
 )
 def test_wrong_shape_or_unavailable_never_returns_a_file(answer, error, message):
+    """A 404/410, wrong content type or non-list JSON raises the family's own error and records the operation."""
     transport = Transport(answer)
     with (
         LegislatorsAcquirer(budget=BUDGET, transport=transport) as source,
@@ -345,6 +366,7 @@ def test_wrong_shape_or_unavailable_never_returns_a_file(answer, error, message)
 
 
 def test_a_malformed_200_retains_its_exact_bytes_as_refused_evidence():
+    """A malformed 200 keeps its exact bytes as refused evidence."""
     body = b'[{"id": {"bioguide": "X000001"}, "name": {}, "terms": []}]'
     transport = Transport(response(body))
     with (
@@ -357,10 +379,8 @@ def test_a_malformed_200_retains_its_exact_bytes_as_refused_evidence():
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_a_public_access_refusal_on_a_keyless_route_is_named_not_a_credential_refusal(status):
-    """A keyless route holds no credential, so 401/403 is this family's own error, not CredentialRefusedError.
-
-    Catchable as ``LegislatorsSourceError`` -- unlike ``CredentialRefusedError``,
-    which the earlier, unfixed acquirer let escape uncaught.
+    """A keyless 401/403 is this family's own ``LegislatorsSourceError``, not ``CredentialRefusedError``,
+    and keeps its bytes and URL.
     """
     body = b"rate limited"
     transport = Transport(response(body, status, content_type="text/plain"))
@@ -378,6 +398,7 @@ def test_a_public_access_refusal_on_a_keyless_route_is_named_not_a_credential_re
 
 
 def test_the_historical_route_is_bounded_separately_from_the_current_route():
+    """The historical route is bounded separately from the current route."""
     oversized_budget = LegislatorsBudget(
         3, len(CURRENT_EXCERPT), 10, 0, max_historical_bytes=len(HISTORICAL_EXCERPT) - 1
     )
@@ -389,6 +410,7 @@ def test_the_historical_route_is_bounded_separately_from_the_current_route():
 
 
 def test_budget_and_client_configuration_are_explicit():
+    """Budget fields reject zero, negative or over-ceiling values; the acquirer takes a budget object, not a tuple."""
     for fields in (
         {"max_requests": 0},
         {"max_bytes": 0},
@@ -411,6 +433,7 @@ def test_budget_and_client_configuration_are_explicit():
 
 
 def test_parser_import_does_not_require_httpx():
+    """Importing the parser succeeds with httpx blocked."""
     code = """
 import importlib.abc
 import sys

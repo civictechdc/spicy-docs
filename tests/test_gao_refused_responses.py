@@ -1,4 +1,9 @@
-"""GAO refusals carry exact bounded target bytes without becoming valid pages."""
+"""GAO refusals carry exact bounded target bytes without becoming valid pages.
+
+Pins source-validation and transport diagnostics, offline reproduction of the
+original refusal, per-response and total bounds, and suppression of untrusted
+response URLs.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +19,7 @@ from tests.test_gao_product_pages_source_native import PRODUCT_ID, PRODUCT_URL, 
 
 
 def _diagnostic(error: Exception) -> RefusedResponse:
+    """The RefusedResponse attached to the raised error."""
     diagnostic = getattr(error, "refused_response", None)
     assert isinstance(diagnostic, RefusedResponse)
     return diagnostic
@@ -32,6 +38,7 @@ def _diagnostic(error: Exception) -> RefusedResponse:
     ],
 )
 def test_refused_response_preserves_exact_body_and_source_error(response: ZyteHttpResponse, message: str) -> None:
+    """A refused response preserves the exact body, request key, source-validation stage and media type."""
     pages = gao.iter_gao_product_pages(lambda _url: response, query_scope={"productIds": [PRODUCT_ID]})
     with pytest.raises(gao.GaoProductSourceError, match=message) as caught:
         next(pages)
@@ -49,6 +56,7 @@ def test_refused_response_preserves_exact_body_and_source_error(response: ZyteHt
 
 
 def test_duplicate_empty_topic_field_refuses_even_with_one_topic_anchor() -> None:
+    """A duplicated empty topic field refuses even when one topic anchor remains."""
     # Synthetic drift: the original topic remains, but the publisher field is
     # declared a second time without an anchor. Counting anchors alone misses it.
     body = _html().replace(b"</body>", b'<div class="views-field-field-topic"></div></body>')
@@ -68,6 +76,7 @@ def test_duplicate_empty_topic_field_refuses_even_with_one_topic_anchor() -> Non
 
 
 def test_identity_refusal_does_not_export_untrusted_response_urls() -> None:
+    """An identity refusal does not export untrusted response URLs."""
     untrusted_url = "https://www.gao.gov/products/other?api_key=never-record-this"
     response = replace(_capture(), requested_url=untrusted_url, resolved_url=untrusted_url)
     with pytest.raises(gao.GaoProductSourceError, match="requested URL") as caught:
@@ -79,6 +88,7 @@ def test_identity_refusal_does_not_export_untrusted_response_urls() -> None:
 
 
 def test_refused_body_can_reproduce_markup_failure_offline() -> None:
+    """The retained body reproduces the original markup failure offline with the same message."""
     body = _html(topics=(("information-security", "<b>Nested</b>"),))
     with pytest.raises(gao.GaoProductSourceError) as captured:
         next(gao.iter_gao_product_pages(lambda _url: _capture(body), query_scope={"productIds": [PRODUCT_ID]}))
@@ -94,6 +104,7 @@ def test_refused_body_can_reproduce_markup_failure_offline() -> None:
 
 
 def test_per_response_bound_retains_no_truncated_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The per-response bound retains no truncated body and reports the byte limit."""
     body = _html()
     monkeypatch.setattr(gao, "MAX_PAGE_BYTES", len(body) - 1)
     with pytest.raises(gao.GaoProductSourceError, match="byte bound") as caught:
@@ -110,6 +121,7 @@ def test_per_response_bound_retains_no_truncated_body(monkeypatch: pytest.Monkey
 def test_total_bound_also_applies_when_identity_validation_fails_first(
     monkeypatch: pytest.MonkeyPatch, wrong_identity: bool
 ) -> None:
+    """The total bound applies even when identity validation fails first."""
     second_id = "gao-26-107694"
     second_url = gao.gao_product_url(second_id)
     first_body = _html()
@@ -136,6 +148,7 @@ def test_total_bound_also_applies_when_identity_validation_fails_first(
 
 
 def test_transport_refusal_preserves_the_original_exception_and_marks_body_unavailable() -> None:
+    """A transport refusal preserves the original exception and marks the body unavailable."""
     original = ZyteTransportError("Zyte acquisition failed with HTTP 401")
 
     def fetch(_url: str) -> ZyteHttpResponse:
@@ -155,6 +168,7 @@ def test_transport_refusal_preserves_the_original_exception_and_marks_body_unava
 
 
 def test_unsupported_fetch_result_has_no_diagnostic_body() -> None:
+    """An unsupported fetch result has no diagnostic body."""
     with pytest.raises(gao.GaoProductSourceError, match="unsupported response") as caught:
         next(
             gao.iter_gao_product_pages(
@@ -170,6 +184,7 @@ def test_unsupported_fetch_result_has_no_diagnostic_body() -> None:
 
 
 def test_nonbyte_target_body_is_unavailable_instead_of_coerced() -> None:
+    """A non-byte target body is unavailable rather than coerced."""
     response = replace(_capture(), body=cast(bytes, "not exact bytes"))
     with pytest.raises(gao.GaoProductSourceError, match="byte bound or is empty") as caught:
         next(gao.iter_gao_product_pages(lambda _url: response, query_scope={"productIds": [PRODUCT_ID]}))
@@ -180,6 +195,7 @@ def test_nonbyte_target_body_is_unavailable_instead_of_coerced() -> None:
 
 
 def test_transport_origin_context_survives_the_source_handler() -> None:
+    """The transport's origin context survives the source handler."""
     original = ZyteTransportError("Zyte target response contains a transport credential")
     context = RefusedResponse(
         request_key=PRODUCT_URL,

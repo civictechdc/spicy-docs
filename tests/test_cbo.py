@@ -1,13 +1,10 @@
-"""CBO's per-Congress feed is read as an observation whose Links name publications.
+"""CBO's per-Congress feed read as an observation whose Links name publications.
 
-The feed is CBO's own ``<response>``/``<item key="N">`` XML, not RSS 2.0, and it
+The feed is CBO's own ``<response>``/``<item key="N">`` XML, not RSS 2.0, and
 carries no topic, budget-function, mandate or PAYGO field. ``/cost-estimates/xml``
 and every PDF path answer a DataDome bot challenge, which this family names as a
-challenge rather than as a credential refusal, because it holds no credential.
-
-There is no PDF fixture: no CBO estimate PDF is reachable keyless, so the PDF
-bytes below are built here and are not the publisher's. See
-`tests/fixtures/cbo/README.md`.
+challenge rather than a credential refusal because it holds no credential; no CBO
+PDF is reachable keyless, so the PDF fixture bytes are built here, not published.
 """
 
 from pathlib import Path
@@ -45,10 +42,13 @@ MINIMAL = (
 
 
 def response(body=FEED, status=200, *, content_type="text/xml; charset=UTF-8"):
+    """An HTTPX response over the given bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -61,6 +61,7 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
@@ -68,6 +69,9 @@ def no_retry_delay(monkeypatch):
 
 
 def test_pinned_feed_yields_publications_in_feed_order_with_publisher_spellings():
+    """The pinned feed yields two items in feed order with publisher spellings; a procedural item's empty Bill_Number
+    is None, not absent.
+    """
     feed = parse_cbo_cost_estimates_feed(FEED)
     assert [item.index for item in feed.items] == [0, 1]
     first, second = feed.items
@@ -83,16 +87,19 @@ def test_pinned_feed_yields_publications_in_feed_order_with_publisher_spellings(
 
 
 def test_feed_carries_no_channel_header_and_no_fiscal_facets():
+    """The feed model exposes no channel header or topic, budget-function or paygo facets."""
     feed = parse_cbo_cost_estimates_feed(FEED)
     assert not hasattr(feed, "title") and not hasattr(feed, "last_build_date")
     assert not any(hasattr(item, name) for item in feed.items for name in ("topics", "budget_functions", "paygo"))
 
 
 def test_empty_response_is_a_requested_empty_observation_not_a_refusal():
+    """An empty ``<response>`` yields zero items rather than a refusal."""
     assert parse_cbo_cost_estimates_feed(b'<?xml version="1.0"?><response></response>').items == ()
 
 
 def test_numeric_character_references_resolve_to_the_publishers_text():
+    """Numeric character references resolve to the publisher's text."""
     body = MINIMAL.replace(b"<Title>A</Title>", b"<Title>Division N&#x2014;Relief Act</Title>")
     assert parse_cbo_cost_estimates_feed(body).items[0].title == "Division N—Relief Act"
 
@@ -137,12 +144,14 @@ def test_numeric_character_references_resolve_to_the_publishers_text():
     ],
 )
 def test_feed_refusals_name_the_failed_check(body, message):
+    """A feed failing its shape check raises CboSourceError naming that check."""
     with pytest.raises(CboSourceError, match=message):
         parse_cbo_cost_estimates_feed(body)
 
 
 @pytest.mark.parametrize("max_bytes", [0, True, 64 * 1024**2 + 1])
 def test_feed_bounds_are_explicit(max_bytes):
+    """Zero, boolean and over-limit byte allowances are refused."""
     with pytest.raises(CboSourceError, match="max_bytes"):
         parse_cbo_cost_estimates_feed(MINIMAL, max_bytes=max_bytes)
     with pytest.raises(CboSourceError):
@@ -204,6 +213,7 @@ def test_item_position_is_a_per_capture_ordering_not_an_identity():
 
 
 def test_locators_are_the_publishers_own_spellings():
+    """Locators return the publisher's own URLs unchanged."""
     assert cbo_cost_estimates_feed_locator() == CBO_COST_ESTIMATES_FEED_URL
     assert cbo_per_congress_feed_locator(119) == FEED_119_URL
     assert cbo_estimate_document_locator(PDF_URL) == PDF_URL
@@ -211,6 +221,7 @@ def test_locators_are_the_publishers_own_spellings():
 
 @pytest.mark.parametrize("congress", [0, 1000, True, "119", 119.0, None])
 def test_per_congress_locator_refuses_anything_but_a_congress_number(congress):
+    """Zero, oversized, boolean, string, float and None congress values are refused."""
     with pytest.raises(CboSourceError, match="congress must be"):
         cbo_per_congress_feed_locator(congress)
 
@@ -230,6 +241,7 @@ def test_per_congress_locator_refuses_anything_but_a_congress_number(congress):
     ],
 )
 def test_document_locator_refuses_anything_but_an_official_cbo_pdf(url):
+    """A document locator outside official cbo.gov PDF URLs is refused."""
     with pytest.raises(CboSourceError, match="estimate document must be"):
         cbo_estimate_document_locator(url)
 
@@ -238,6 +250,7 @@ def test_document_locator_refuses_anything_but_an_official_cbo_pdf(url):
 
 
 def test_acquirer_captures_exact_feed_bytes_keyless():
+    """The acquirer captures exact feed bytes keyless, with identity encoding and no auth headers."""
     transport = Transport(response())
     with CboAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_per_congress_feed(119)
@@ -249,6 +262,7 @@ def test_acquirer_captures_exact_feed_bytes_keyless():
 
 
 def test_a_call_may_narrow_the_byte_allowance_but_never_raise_it():
+    """A call may narrow the byte allowance but never raise it."""
     with CboAcquirer(budget=BUDGET, transport=Transport(response())) as source, pytest.raises(CboSourceError):
         source.acquire_per_congress_feed(119, max_bytes=len(FEED) - 1)
 
@@ -264,6 +278,7 @@ def test_a_call_may_narrow_the_byte_allowance_but_never_raise_it():
     ],
 )
 def test_wrong_shape_or_walled_feed_never_succeeds(answer, error, message):
+    """A wrong-shape or walled feed fails after one request, recording the per-congress-feed operation."""
     transport = Transport(answer)
     with CboAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(error, match=message) as raised:
         source.acquire_per_congress_feed(119)
@@ -272,6 +287,7 @@ def test_wrong_shape_or_walled_feed_never_succeeds(answer, error, message):
 
 
 def test_a_200_that_is_not_the_expected_shape_retains_its_bytes():
+    """A 200 that is not the expected shape retains its exact bytes in the refusal."""
     transport = Transport(response(b'<?xml version="1.0"?><response><item key="9"/></response>'))
     with CboAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(CboSourceError) as raised:
         source.acquire_per_congress_feed(119)
@@ -279,6 +295,7 @@ def test_a_200_that_is_not_the_expected_shape_retains_its_bytes():
 
 
 def test_the_walled_cost_estimates_route_is_recorded_as_a_challenge_not_a_credential_refusal():
+    """The walled cost-estimates route is recorded as a challenge with its URL, not a credential refusal."""
     transport = Transport(response(CHALLENGE, 403, content_type="text/html;charset=utf-8"))
     with CboAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(CboChallengeError) as raised:
         source.acquire_cost_estimates_feed()
@@ -288,6 +305,7 @@ def test_the_walled_cost_estimates_route_is_recorded_as_a_challenge_not_a_creden
 
 
 def test_a_challenge_reaches_the_caller_with_its_bytes_because_the_route_is_keyless():
+    """A keyless challenge reaches the caller with its bytes; the per-response nonce prevents digest pinning."""
     # Keyless routes retain the 401/403 body, so the wall's own answer is
     # evidence rather than an aborted capture with nothing in it. Its digest
     # cannot be pinned: the challenge carries a per-response nonce.
@@ -317,6 +335,7 @@ def test_an_injected_browser_backed_transport_is_all_the_document_route_still_ne
 
 
 def test_the_cost_estimates_route_would_be_read_by_the_same_parser_if_it_ever_answered():
+    """The cost-estimates route parses through the same feed parser if it answers."""
     transport = Transport(response(MINIMAL))
     with CboAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_cost_estimates_feed()
@@ -327,6 +346,7 @@ def test_the_cost_estimates_route_would_be_read_by_the_same_parser_if_it_ever_an
 
 
 def test_estimate_document_identity_is_proved_by_media_type_magic_and_final_url():
+    """Estimate document identity is proved by media type, magic bytes and final URL, in one request."""
     transport = Transport(response(PDF, content_type="application/pdf"))
     with CboAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_estimate_document(PDF_URL)
@@ -350,6 +370,7 @@ def test_estimate_document_identity_is_proved_by_media_type_magic_and_final_url(
     ],
 )
 def test_estimate_document_refusals_name_the_failed_check(answer, error, message):
+    """Estimate document refusals name the failed check and the estimate-document operation."""
     transport = Transport(answer)
     with CboAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(error, match=message) as raised:
         source.acquire_estimate_document(PDF_URL)
@@ -357,6 +378,7 @@ def test_estimate_document_refusals_name_the_failed_check(answer, error, message
 
 
 def test_a_redirected_document_is_not_the_document_the_locator_named():
+    """A redirected document fails identity rather than being accepted."""
     transport = Transport(response(b"moved", 302, content_type="text/html"))
     with CboAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(CboSourceError, match="HTTP 302"):
         source.acquire_estimate_document(PDF_URL)
@@ -366,6 +388,7 @@ def test_a_redirected_document_is_not_the_document_the_locator_named():
 
 
 def test_budget_and_client_configuration_are_explicit():
+    """Invalid budget values raise ValueError and a wrong transport type raises TypeError."""
     for fields in (
         {"max_requests": 0},
         {"max_bytes": 64 * 1024**2 + 1},

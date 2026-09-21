@@ -1,17 +1,11 @@
-"""The bill-action rules, and the publisher vocabulary the hosted contract rests on.
+"""The bill-action rules and the publisher vocabulary behind ``bill_committee_actions``.
 
-The contract this feeds -- ``bill_committee_actions`` -- is justified by one
-claim: the publisher's BILLSTATUS action-code table has no House hearing or
-markup code, so for those two events a committee print is the only structured
-statement. The first version of that claim said the opposite, because its
-self-check scanned the whole guide and so validated against a superset drawn
-from three different tables. The scoping is therefore pinned here twice: once
-positively, once as a mutation check that the section-5 codes stay out.
-
-Everything else here is the rules the rows are made of: the flattened matching
-text, the sentence boundaries this family actually sets, the precedence that
-makes one span one phrasing, and the attachment rule whose measured precision
-the contract publishes.
+The vocabulary scoping is pinned twice: section-3 action codes stay separate
+from section-5 ``<versionCode>`` summaries values (72/74), and House
+hearing/markup codes are shown to exist in the publisher's responses while the
+retained guide omits them. The rest pins flattened matching text, sentence
+boundaries this family sets, phrasing precedence, chamber attribution, the
+attachment classes and the precision the contract publishes.
 """
 
 from __future__ import annotations
@@ -74,11 +68,9 @@ def test_the_guide_scan_reads_the_action_code_table_and_not_the_whole_document()
 
 
 def test_the_summaries_version_codes_are_not_action_codes() -> None:
-    """The mutation check for the defect that inverted the first conclusion: 72
-    *Hearing held in House* and 74 *Markup in House* are section 5 values, the
-    ``<versionCode>`` child of ``<summaries>``, and reading them as action codes
-    is what produced the claim that BILLSTATUS already states a House
-    committee's hearings and markups."""
+    """Section-5 ``<versionCode>`` values (72, 74, 77, 79, 81, 49) stay out of the action-code set even though they
+    appear in the document -- reading them as action codes inverted the first conclusion.
+    """
     codes = guide_action_codes(GUIDE)
 
     assert not (codes & GUIDE_SUMMARIES_VERSION_CODES), sorted(codes & GUIDE_SUMMARIES_VERSION_CODES)
@@ -89,9 +81,9 @@ def test_the_summaries_version_codes_are_not_action_codes() -> None:
 
 
 def test_every_guide_sourced_code_is_in_the_guide_and_the_wire_codes_are_marked_as_such() -> None:
-    """The check only covers what a committed fixture can cover.  Claiming it covers
-    the rest is what made the earlier version vacuous: the guide says in its own first
-    paragraph that it is representational and that no authoritative list exists."""
+    """Every guide-sourced code appears in the guide, and the four wire-sourced codes are real but absent from it --
+    the distinction the ``source`` field exists for.
+    """
     stated = guide_action_codes(GUIDE)
 
     assert GUIDE_LISTED_CODES <= stated, sorted(GUIDE_LISTED_CODES - stated)
@@ -105,9 +97,9 @@ def test_every_guide_sourced_code_is_in_the_guide_and_the_wire_codes_are_marked_
 
 
 def test_a_house_committee_hearing_and_markup_are_coded_by_a_code_the_guide_omits() -> None:
-    """Retracted claim, kept as a test: these two DO have House codes.  The guide
-    simply does not list them, which is a gap in the document and not in the
-    publisher's vocabulary."""
+    """House hearings and markups do have publisher codes (H21000; H15000-B, H15001, H22000); the guide simply omits
+    them, which is a gap in the document, not the vocabulary.
+    """
     assert guide_codes_for("held_hearing", HOUSE) == ("H21000",)
     assert guide_codes_for("held_markup", HOUSE) == ("H15000-B", "H15001", "H22000")
     assert guide_codes_for("held_hearing", SENATE) == ("13100",)
@@ -115,8 +107,9 @@ def test_a_house_committee_hearing_and_markup_are_coded_by_a_code_the_guide_omit
 
 
 def test_a_phrasing_with_no_known_code_is_a_different_set_from_one_the_guide_omits() -> None:
-    """Conflating them double-counted both in an earlier rendering, and they are
-    different facts: no code exists at all, against no code is in the document."""
+    """Phrasings with no code at all stay distinct from phrasings the guide omits; conflating them double-counted
+    both.
+    """
     assert UNCODED_IN_THE_GUIDE == {
         "vetoed",
         "not_considered",
@@ -128,6 +121,7 @@ def test_a_phrasing_with_no_known_code_is_a_different_set_from_one_the_guide_omi
 
 
 def test_a_missing_guide_is_refused_rather_than_read_as_an_empty_vocabulary(tmp_path: Path) -> None:
+    """A missing guide file raises rather than yielding an empty vocabulary."""
     with pytest.raises(RelationshipError):
         guide_action_codes(tmp_path / "absent.md")
 
@@ -146,6 +140,7 @@ def test_a_missing_guide_is_refused_rather_than_read_as_an_empty_vocabulary(tmp_
 def test_the_chamber_is_read_off_the_row_and_not_off_the_document(
     phrasing: str, matched: str, designator: str, chamber: str
 ) -> None:
+    """The phrasing's named chamber or the measure's own type decides, never the document's chamber."""
     assert chamber_of(phrasing, matched, designator) == chamber
 
 
@@ -166,6 +161,7 @@ def test_the_chamber_is_read_off_the_row_and_not_off_the_document(
 def test_a_committee_actor_phrasing_takes_the_committee_s_chamber_not_the_measure_s(
     designator: str, committee_chamber: str | None, chamber: str | None
 ) -> None:
+    """The stating committee's chamber wins for committee-actor phrasings; with none stated it stays unresolved."""
     assert chamber_of("held_hearing", "held a hearing", designator, committee_chamber) == chamber
     assert chamber_of("held_markup", "Markup of", designator, committee_chamber) == chamber
 
@@ -174,7 +170,9 @@ def test_a_committee_actor_phrasing_takes_the_committee_s_chamber_not_the_measur
 
 
 def test_a_line_wrap_hyphen_is_closed_and_every_span_still_points_at_the_retained_text() -> None:
-    """These prints are not gutter-numbered, so ``normalize_gpo_pages`` leaves them in."""
+    """A hyphen across a line wrap is closed in the flat text while span offsets still map back to the retained
+    ``hear-`` text.
+    """
     retained = "the Subcommittee on Health held a hear-\ning on H.R. 2691."
     flat = flatten(retained)
 
@@ -204,12 +202,14 @@ def test_a_line_wrap_hyphen_is_closed_and_every_span_still_points_at_the_retaine
     ],
 )
 def test_the_sentence_splitter_holds_on_the_shapes_this_family_sets(retained: str, expected: int) -> None:
+    """Vote tallies, quoted sentence ends and bill designators never split; real list markers at sentence heads do."""
     flat = flatten(retained)
 
     assert len(sentence_starts(flat.flat)) == expected, flat.flat
 
 
 def test_a_sentence_is_located_by_offset() -> None:
+    """sentence_at returns the full sentence containing an offset."""
     flat = flatten("First one. Second one here.")
     starts = sentence_starts(flat.flat)
 
@@ -238,6 +238,7 @@ def test_the_reported_rule_reads_the_verb_and_not_the_noun_in_a_bill_title() -> 
 
 
 def test_the_public_law_spelling_is_the_citation_rule_s_and_not_a_second_copy() -> None:
+    """All four public-law spellings map only to became_public_law, via the citation rule."""
     for spelling in ("Public Law 118-15", "P.L. 118–63", "PL 118-31", "Pub. L. No. 118-5"):
         assert [key for key, _, _, _ in phrase_matches(spelling)] == ["became_public_law"], spelling
 
@@ -259,6 +260,7 @@ def test_the_public_law_spelling_is_the_citation_rule_s_and_not_a_second_copy() 
 def test_a_print_phrasing_maps_to_a_rung_only_where_a_sealed_matcher_reads_it(
     phrase: str, stage: str | None, matcher: str | None
 ) -> None:
+    """A phrasing reaches a stage only through a sealed matcher; unmatched print spellings stay NULL."""
     assert sealed_stage(phrase) == (stage, matcher)
 
 
@@ -271,6 +273,7 @@ def test_the_vocabulary_is_sealed_and_its_versions_move_with_it() -> None:
 
 
 def test_both_date_spellings_this_family_sets_read_as_iso() -> None:
+    """Long and numeric date spellings both yield ISO dates; undated text yields none."""
     assert print_dates("On June 13, 2023, the Committee held a markup") == ("2023-06-13",)
     assert print_dates("3/24/23 FOREIGN AFFAIRS MARKUP SUMMARY") == ("2023-03-24",)
     assert print_dates("no date here") == ()
@@ -280,11 +283,13 @@ def test_both_date_spellings_this_family_sets_read_as_iso() -> None:
 
 
 def _actions(text: str):
+    """Read bill actions from text under the shared citation rules."""
     citations = find_citations(text, kinds=("bill_number",), congress=118)
     return find_bill_actions(text, citations)
 
 
 def test_a_one_bill_sentence_is_the_trusted_class() -> None:
+    """A one-bill sentence yields ATTACHMENT_SINGLE with ``bills_in_sentence`` 1."""
     reading = _actions("On March 12, 2024, the Committee held a markup of H.R. 1657 and ordered it reported.")
 
     assert {action.bill_id for action in reading.findings} == {"118-hr-1657"}
@@ -304,7 +309,9 @@ def test_a_multi_bill_sentence_is_marked_rather_than_dropped() -> None:
 
 
 def test_a_phrase_in_a_sentence_naming_no_bill_is_an_orphan_and_is_published_for_nobody() -> None:
-    """The en-bloc disposition: 116 of one print's 125 such phrases are shaped like this."""
+    """A sentence naming no bill yields orphan phrasings and no findings; 116 of one print's 125 such phrases are
+    shaped this way.
+    """
     reading = _actions(
         "6. H.R. 1149, Countering Untrusted Telecommunications Abroad Act (Wild). "
         "The measures considered en bloc were ordered favorably reported to the House by voice vote."
@@ -315,7 +322,9 @@ def test_a_phrase_in_a_sentence_naming_no_bill_is_an_orphan_and_is_published_for
 
 
 def test_one_sentence_stating_two_phrasings_of_one_event_is_two_rows_with_distinct_spans() -> None:
-    """Why the identity keys on the phrase offset and not on the bill mention."""
+    """Two phrasings in one sentence yield two rows with distinct spans, which is why identity keys on the phrase
+    offset.
+    """
     reading = _actions("On September 26, H.R. 9747 was signed by the President and became Public Law No. 118-83.")
     rows = [action for action in reading.findings if action.phrasing == "became_public_law"]
 
@@ -324,6 +333,7 @@ def test_one_sentence_stating_two_phrasings_of_one_event_is_two_rows_with_distin
 
 
 def test_text_that_is_not_text_is_refused() -> None:
+    """Non-text input raises BillActionError."""
     with pytest.raises(BillActionError):
         find_bill_actions(b"bytes", ())  # type: ignore[arg-type]
 
@@ -332,6 +342,7 @@ def test_text_that_is_not_text_is_refused() -> None:
 
 
 def _fixture_reading(package: str):
+    """The retained fixture text and its action reading."""
     text = (CITATION_FIXTURES / f"{package}.txt").read_text()
     lengths = json.loads((CITATION_FIXTURES / f"{package}.json").read_text())["page_lengths"]
     pages, cursor = [], 0
@@ -347,6 +358,7 @@ def _fixture_reading(package: str):
 
 @pytest.fixture(scope="module")
 def sidecar() -> dict:
+    """The committed measurement sidecar."""
     return json.loads(SIDECAR.read_text())
 
 
@@ -375,12 +387,9 @@ def test_the_complete_fixture_reproduces_its_whole_document_row_for_row(sidecar:
 
 
 def test_the_capped_fixture_is_a_prefix_subset_of_the_full_read(sidecar: dict) -> None:
-    """``CRPT-118hrpt965`` is 60 pages of 282.  The capped text is a prefix of the full
-    text, so every capped row must be a full-read row **at the same offset** -- which is
-    what shows the offsets are stable under a shorter read.
-
-    The earlier version of this asserted ``span_start < len(text)``, which cannot fail:
-    every span is an offset into the text it was read from."""
+    """``CRPT-118hrpt965`` reads 60 of 282 pages, and every capped row is also a full-read row at the same offset,
+    showing offsets are stable under a shorter read.
+    """
     _text, reading = _fixture_reading("CRPT-118hrpt965")
     full = next(d for d in sidecar["documents"] if d["package_id"] == "CRPT-118hrpt965")
     counts = sidecar["fixtures"]["CRPT-118hrpt965"]
@@ -412,6 +421,10 @@ def test_a_house_hearing_row_carries_the_wire_code_and_the_contract_says_it_is_o
 
 
 def test_the_shaped_row_keys_on_the_phrase_offset_so_two_events_do_not_collide() -> None:
+    """Two rows from one sentence get distinct contract identity keys, and every shaped row carries exactly the
+    contract columns.
+    """
+
     class _Provenance:
         document_key = "CRPT-118test"
         document_kind = "govinfo_package"

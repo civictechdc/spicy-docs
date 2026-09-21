@@ -1,4 +1,7 @@
-"""Archive delivery preserves the checked bytes without retaining every title body."""
+"""Archive delivery preserves the checked bytes without retaining every title body.
+
+Corpus and annual readers validate each title exactly once; a later refusal leaves earlier callbacks provisional; and
+wrong release points, empty corpora, and over-bound aggregates refuse before CRC."""
 
 import hashlib
 import io

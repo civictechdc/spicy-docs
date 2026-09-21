@@ -1,3 +1,8 @@
+"""Gemini recognition contract: multiturn history retains images, thought signatures, prompts and raw calls;
+invalid or blocked responses are refused with every call kept; credentials are scrubbed before truncation and
+401/403 abort without retry.
+"""
+
 import base64
 import copy
 import json

@@ -22,12 +22,14 @@ URL = "https://www.govinfo.gov/metadata/pkg/CFR-2025-title1-vol1/mods.xml"
 
 
 def parse(body=BODY, selection=SELECTION, **kwargs):
+    """Parse the fixture body, optionally overriding the expected final URL."""
     return parse_annual_cfr_edition(
         body, selection=selection, final_url=annual_cfr_edition_locator(selection), **kwargs
     )
 
 
 def test_explicit_cover_only_type_keeps_publication_and_original_dates_separate():
+    """An explicit cover-only type keeps publication and original dates separate with identity and title fields."""
     result = parse()
     assert (result.year, result.title, result.volume) == (2025, 1, 1)
     assert result.date_issued == "2025-01-01"
@@ -40,6 +42,7 @@ def test_explicit_cover_only_type_keeps_publication_and_original_dates_separate(
 
 
 def test_false_flag_is_not_a_claim_that_the_text_was_revised():
+    """A false flag means NOT_COVER_ONLY, not that the text was revised; a missing flag is UNKNOWN."""
     result = parse((FIXTURES / "annual-title1-2023-edition.xml").read_bytes(), AnnualCfrSelection(2023, 1, 1))
     assert result.is_cover_only is False
     assert result.edition_type is CfrEditionType.NOT_COVER_ONLY
@@ -48,6 +51,7 @@ def test_false_flag_is_not_a_claim_that_the_text_was_revised():
 
 
 def test_missing_flag_is_unknown_even_when_dates_differ():
+    """Differing dates cannot establish cover-only status when the flag is missing."""
     result = parse(BODY.replace(b"<isCoverOnly>true</isCoverOnly>", b""))
     assert result.is_cover_only is None and result.edition_type is CfrEditionType.UNKNOWN
     assert result.date_issued != result.original_date_issued
@@ -55,6 +59,7 @@ def test_missing_flag_is_unknown_even_when_dates_differ():
 
 @pytest.mark.parametrize("value,expected", [(b"1", True), (b"0", False), (b" false ", False)])
 def test_xml_boolean_spellings(value, expected):
+    """XML boolean spellings map to True and False."""
     assert (
         parse(
             BODY.replace(b"<isCoverOnly>true</isCoverOnly>", b"<isCoverOnly>" + value + b"</isCoverOnly>")
@@ -66,6 +71,7 @@ def test_xml_boolean_spellings(value, expected):
 @pytest.mark.parametrize("field", ["isCoverOnly", "isCurrentEdition", "isFallbackTitle"])
 @pytest.mark.parametrize("value", ["", "yes", "TRUE", "2"])
 def test_present_invalid_or_empty_flags_refuse(field, value):
+    """Present but invalid or empty flags are refused."""
     old = f"<{field}>" + ("false" if field == "isFallbackTitle" else "true") + f"</{field}>"
     with pytest.raises(CfrSourceError):
         parse(BODY.replace(old.encode(), f"<{field}>{value}</{field}>".encode()))
@@ -73,6 +79,7 @@ def test_present_invalid_or_empty_flags_refuse(field, value):
 
 @pytest.mark.parametrize("tag", ["isCoverOnly", "dateIssued", "accessId", "titleNumber", "originalDateIssued"])
 def test_duplicate_root_identity_and_edition_fields_refuse(tag):
+    """Duplicate root identity or edition fields are refused as repeats."""
     start = BODY.index(("<" + tag).encode())
     end = BODY.index(("</" + tag + ">").encode(), start) + len(tag) + 3
     duplicate = BODY[start:end]
@@ -93,11 +100,13 @@ def test_duplicate_root_identity_and_edition_fields_refuse(tag):
     ],
 )
 def test_contradictory_package_identity_or_invalid_dates_refuse(old, new):
+    """Contradictory package identity or invalid dates are refused."""
     with pytest.raises(CfrSourceError):
         parse(BODY.replace(old, new))
 
 
 def test_nested_granule_metadata_cannot_supply_package_fields():
+    """Nested granule metadata cannot supply package fields, and an incomplete package identity still refuses."""
     without_flag = BODY.replace(b"<isCoverOnly>true</isCoverOnly>", b"")
     nested = b"<relatedItem><extension><isCoverOnly>true</isCoverOnly><titleNumber>99</titleNumber></extension></relatedItem>"
     result = parse(without_flag.replace(b"</mods>", nested + b"</mods>"))
@@ -109,6 +118,7 @@ def test_nested_granule_metadata_cannot_supply_package_fields():
 
 
 def test_metadata_namespace_scalar_fields_xml_safety_and_bounds():
+    """Namespace-prefixed scalar fields parse, while XML-unsafe or over-bound input refuses."""
     for invalid in [
         BODY.replace(b"http://www.loc.gov/mods/v3", b"https://invalid.test/mods"),
         BODY.replace(b"<isCoverOnly>true", b"<isCoverOnly><x>true</x>"),
@@ -124,6 +134,7 @@ def test_metadata_namespace_scalar_fields_xml_safety_and_bounds():
 
 
 def test_section_and_wrong_final_url_refuse_before_interpretation():
+    """A section selector or wrong final URL refuses before interpretation."""
     with pytest.raises(CfrSourceError):
         annual_cfr_edition_locator(replace(SELECTION, section="1.1"))
     with pytest.raises(CfrSourceError):
@@ -131,6 +142,7 @@ def test_section_and_wrong_final_url_refuse_before_interpretation():
 
 
 def test_missing_optional_dates_and_flags_remain_absent():
+    """Missing optional dates and flags stay None while an explicit cover-only type still classifies."""
     body = BODY
     for tag, value in [
         ("originalDateIssued", "2023-01-01"),
@@ -144,6 +156,9 @@ def test_missing_optional_dates_and_flags_remain_absent():
 
 
 def test_acquisition_retains_one_exact_metadata_response_and_respects_override():
+    """Acquisition retains one exact metadata response, respects the byte override, and links the metadata digest to
+    the capture.
+    """
     calls = []
 
     def handle(request):
@@ -168,6 +183,7 @@ def test_acquisition_retains_one_exact_metadata_response_and_respects_override()
     "status,body", [(200, BODY.replace(b"<isCoverOnly>true", b"<isCoverOnly>bad")), (404, b"missing")]
 )
 def test_refused_or_missing_metadata_keeps_evidence(status, body):
+    """A refused or missing metadata response keeps its evidence, with 404 mapped to unavailable."""
     transport = httpx.MockTransport(
         lambda request: httpx.Response(
             status, stream=httpx.ByteStream(body), headers={"content-type": "application/xml"}
@@ -185,6 +201,7 @@ def test_refused_or_missing_metadata_keeps_evidence(status, body):
 
 
 def test_multiple_titles_remain_mapped_without_invalidating_edition_identity():
+    """An alternate title is ignored while a repeated one leaves title_text None without invalidating identity."""
     alternate = b'<titleInfo type="alternative"><title>Other title</title></titleInfo>'
     assert parse(BODY.replace(b"</mods>", alternate + b"</mods>")).title_text == "General Provisions"
     repeated = b"<titleInfo><title>Second untyped title</title></titleInfo>"
@@ -192,6 +209,7 @@ def test_multiple_titles_remain_mapped_without_invalidating_edition_identity():
 
 
 def test_full_metadata_acquisition_maps_constituents_and_checks_only_package_identity():
+    """Full metadata acquisition maps three constituents and checks only package identity."""
     body = (FIXTURES.parent / "govinfo/cfr-mods-excerpt.xml").read_bytes()
     transport = httpx.MockTransport(
         lambda _: httpx.Response(200, stream=httpx.ByteStream(body), headers={"content-type": "text/xml"})

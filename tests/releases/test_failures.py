@@ -1,4 +1,7 @@
-"""Releases: failures behavior."""
+"""Failure-classification contract: malformed source fields become deterministic failures recorded in the
+ledger with stable reason codes, never aborting the publish, and the ledger's per-bucket success/failure merge
+stays in increasing sourceRecordId order.
+"""
 
 from __future__ import annotations
 
@@ -113,11 +116,8 @@ def test_source_field_type_drift_is_a_deterministic_failure_not_an_abort(
 
 
 def test_every_record_failing_still_publishes_with_zero_published_records(tmp_path: Path) -> None:
-    """The boundary at the other end from a single bad record among many
-    good ones: nothing here survives classification, so the release is a
-    pure failure record -- still a complete, admissible release, never a
-    partial or aborted one.
-    """
+    """Nothing survives classification, so the release is a pure failure record -- still a complete,
+    admissible release, never a partial or aborted one."""
     bad = _document("2026-00001", publication_date="not-a-date")
 
     published = _publish(tmp_path, _stable_pages(bad))
@@ -147,11 +147,9 @@ def test_well_formed_corpus_still_reports_zero_failures(tmp_path: Path) -> None:
 
 
 def test_scattered_failures_interleave_correctly_across_partition_buckets(tmp_path: Path) -> None:
-    """Enough records that both real and synthetic (``unclassified:...``)
-    source-record identities land in the same partition bucket somewhere,
-    proving the ledger's success/failure merge keeps every bucket in
-    strictly increasing sourceRecordId order -- exactly what the partition
-    reader enforces on the other end.
+    """Enough records that real and synthetic (``unclassified:...``) source-record identities share a partition
+    bucket somewhere, proving the ledger's success/failure merge keeps every bucket in strictly increasing
+    sourceRecordId order -- exactly what the partition reader enforces on the other end.
     """
     documents = []
     expected_failures = 0

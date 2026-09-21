@@ -36,15 +36,18 @@ _NOT_AN_ELEMENT = re.compile(rb"<\?.*?\?>|<!--.*?-->|<!DOCTYPE[^>]*>", re.DOTALL
 
 
 def _document(name: str) -> bytes:
+    """The bytes of a captured bill-tree fixture."""
     directory = CONSTRUCTED if name.startswith("constructed-") else CAPTURED
     return (directory / name).read_bytes()
 
 
 def _tree(name: str, *, version: str = "") -> BillDocument:
+    """Parse a captured fixture through the adapter, optionally naming the version code."""
     return parse_bill_tree(_document(name), version=version)
 
 
 def _wrap(body: str, *, root: str = "bill", body_tag: str = "legis-body") -> bytes:
+    """Wrap body markup in a minimal bill root."""
     return f'<{root} {root}-stage="Introduced-in-House"><{body_tag}>{body}</{body_tag}></{root}>'.encode()
 
 
@@ -76,6 +79,7 @@ def test_a_captured_resolution_body_parses() -> None:
     ],
 )
 def test_root_body_and_stage(name: str, root_tag: str, body_tag: str, stage: str) -> None:
+    """Each root/body/stage combination parses with sections."""
     document = _tree(name)
     assert (document.root_tag, document.body_tags, document.stage) == (root_tag, (body_tag,), stage)
     assert document.sections
@@ -90,6 +94,7 @@ def test_every_captured_text_fixture_yields_sections() -> None:
 
 
 def test_an_amendment_block_is_found_at_any_depth() -> None:
+    """An amendment block at any depth is found, with no stage and its text retained."""
     nested = (
         b"<amendment-doc><amendment-form><engrossed-amendment-body><amendment>"
         b"<amendment-block><section><enum>1.</enum><text>Strike all after the enacting clause.</text>"
@@ -102,6 +107,7 @@ def test_an_amendment_block_is_found_at_any_depth() -> None:
 
 
 def test_a_document_with_no_body_refuses_in_this_package_s_words() -> None:
+    """A document with no body refuses with the adapter's own wording."""
     with pytest.raises(BillSourceError, match="cannot be flattened"):
         parse_bill_tree(b"<bill><form><legis-num>H. R. 1</legis-num></form></bill>")
 
@@ -122,16 +128,18 @@ def test_a_resolution_with_paired_committee_variants_refuses_rather_than_choosin
 
 
 def test_the_parse_is_bounded_before_the_engine_sees_anything() -> None:
+    """The byte bound refuses before the engine sees the document."""
     with pytest.raises(BillSourceError, match="within max_bytes"):
         parse_bill_tree(_document("constructed-bill-divisions.xml"), max_bytes=64)
 
 
 def test_the_default_bound_is_the_measured_one() -> None:
+    """DEFAULT_MAX_BYTES is the measured 24 MiB."""
     assert DEFAULT_MAX_BYTES == 24 * 1024 * 1024
 
 
 def test_an_internal_dtd_subset_refuses() -> None:
-    """Every sampled file names a relative SYSTEM id; a declared entity is a different thing."""
+    """An internal DTD subset is refused."""
     declared = (
         b'<!DOCTYPE bill SYSTEM "bill.dtd" [<!ENTITY x "expanded">]>'
         b"<bill><legis-body><section><enum>1.</enum><text>&x;</text></section></legis-body></bill>"
@@ -182,6 +190,7 @@ def test_the_external_dtd_is_accepted_and_never_resolved() -> None:
 
 
 def test_identity_comes_from_the_document() -> None:
+    """Congress, bill type and number are read from the document, not the request."""
     resolution = _tree("constructed-resolution-appropriations.xml", version="ih")
     assert (resolution.tree.congress, resolution.tree.bill_type, resolution.tree.bill_number) == (119, "hjres", 143)
     enrolled = _tree("text-119s5enr.xml")
@@ -194,11 +203,13 @@ def test_a_joint_resolution_number_is_not_read_as_type_j() -> None:
 
 
 def test_the_version_code_reaches_the_engine_through_the_file_name() -> None:
+    """The version code reaches the engine through the file name and is empty when not given."""
     assert _tree("text-119hr6028ih.xml", version="ih").tree.version == "ih"
     assert _tree("text-119hr6028ih.xml").tree.version == ""
 
 
 def test_divisions_titles_and_subsections_build_paths() -> None:
+    """Division keys are built from the header alone, and engine-emitted subsections get their own match paths."""
     document = _tree("constructed-bill-divisions.xml")
     by_id = {node.element_id: node for node in document.sections}
 
@@ -265,6 +276,7 @@ def test_the_inventory_accounts_for_every_element_in_the_document(name: str) -> 
 
 
 def test_the_inventory_names_what_the_output_does_not_contain() -> None:
+    """The inventory names dropped tags and never marks text or section as dropped."""
     document = _tree("constructed-bill-divisions.xml")
     # Sponsorship and Dublin Core are in the bytes and nowhere in the nodes.
     for tag in ("sponsor", "cosponsor", "dublinCore", "metadata"):
@@ -282,6 +294,7 @@ def test_front_matter_text_is_not_reported_dropped() -> None:
 
 
 def test_a_committee_report_reference_and_an_action_are_reported_dropped() -> None:
+    """Committee report references and actions are reported as dropped."""
     document = _tree("constructed-resolution-appropriations.xml")
     for tag in ("action", "action-date", "committee-name"):
         assert document.discarded_elements[tag] >= 1

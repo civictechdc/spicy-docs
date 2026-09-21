@@ -1,4 +1,7 @@
-"""Regulations Gov: selection behavior."""
+"""Selection contract for regulations.gov dockets and documents: the newest observation per identity wins and
+the rest are counted discarded, identical canonical record digests collapse across differing raw bytes, and
+differing bodies at one normalized instant still refuse a tie.
+"""
 
 from __future__ import annotations
 
@@ -46,12 +49,9 @@ from tests.source_fixtures import payload_rows
 
 
 def test_docket_release_selects_newest_observation_and_counts_discard(tmp_path: Path) -> None:
-    """The live Mirrulations mirror holds two objects for docket
-    ACF-2007-0125 (``.../docket/ACF-2007-0125.json``, modifyDate
-    2021-02-12, and the newer ``...(1).json``, modifyDate 2024-06-12) — a
-    later observation of the same record, not a duplicate to filter out by
-    filename. The publisher must collapse to the newest exactly as comments
-    do (2026-09-02 fix), instead of refusing the repeated id.
+    """The live Mirrulations mirror holds two objects for docket ACF-2007-0125 (modifyDate 2021-02-12 and the
+    newer 2024-06-12 refetch), a later observation rather than a duplicate to filter out by filename, and the
+    publisher must collapse to the newest exactly as comments do (2026-09-02 fix).
     """
     identity = "ACF-2007-0125"
     older = _docket(identity, agencyId="ACF", modifyDate="2021-02-12T01:00:50Z", title="older observation")
@@ -101,11 +101,9 @@ def test_docket_release_selects_newest_observation_and_counts_discard(tmp_path: 
 def test_release_collapses_identical_record_digests_with_differing_raw_bytes(
     tmp_path: Path, fixture: _CollapseFixture
 ) -> None:
-    """Collapse equal canonical records even when raw JSON key order differs.
-
-    ACF-2026-0199 refetches (18)/(19) share modifyDate. Reversing one payload's key
-    order changes its bytes, not its record digest. Publish one record and retain
-    all discarded observations byte-for-byte, including the older distinct version.
+    """Collapse equal canonical records even when raw JSON key order differs: ACF-2026-0199 refetches (18)/(19)
+    share modifyDate, and reversing one payload's key order changes its bytes but not its record digest. Publish
+    one record and retain all discarded observations byte-for-byte, including the older distinct version.
     """
     reordered_newest = _reordered(fixture.newest)
     assert reordered_newest == fixture.newest
@@ -160,9 +158,8 @@ def test_release_collapses_identical_record_digests_with_differing_raw_bytes(
 
 
 def test_document_release_selects_newest_observation_and_counts_discard(tmp_path: Path) -> None:
-    """Documents collapse the same way as dockets and comments: a repeat
-    object for one document id keeps only the newest observed modifyDate,
-    with every older observation counted as discarded (2026-09-02 fix).
+    """Documents collapse the same way as dockets and comments: a repeat object for one document id keeps only
+    the newest observed modifyDate, with every older observation counted as discarded (2026-09-02 fix).
     """
     identity = "ACF-2021-0001-0001"
     older = _document(
@@ -215,10 +212,8 @@ def test_document_release_selects_newest_observation_and_counts_discard(tmp_path
 
 
 def test_repeated_normalized_docket_versions_refuse_a_tie(tmp_path: Path) -> None:
-    """Two DIFFERENT bodies at the same normalized instant are a genuine tie
-    and still refuse (2026-09-02): only a repeated pair with an identical
-    canonical record digest at one instant collapses, per
-    ``test_release_collapses_identical_record_digests_with_differing_raw_bytes``.
+    """Two DIFFERENT bodies at the same normalized instant are a genuine tie and still refuse (2026-09-02):
+    only a repeated pair with an identical canonical record digest at one instant collapses.
     """
     identity = "ACF-2007-0125"
     first = _docket(identity, agencyId="ACF", modifyDate="2024-06-12T01:16:04Z", title="first")
@@ -246,11 +241,10 @@ def test_repeated_normalized_docket_versions_refuse_a_tie(tmp_path: Path) -> Non
 
 
 def test_repeated_normalized_document_versions_refuse_a_tie(tmp_path: Path) -> None:
-    """Comparison is on the normalized UTC instant, so two differently offset
-    stamps denoting the same instant still tie. The bodies differ (title
-    "first" vs "second"), so their record digests differ too, and this still
-    refuses (2026-09-02): only a repeated pair with an identical canonical
-    record digest at one instant collapses."""
+    """Comparison is on the normalized UTC instant, so two differently offset stamps denoting the same instant
+    still tie; the bodies differ (title "first" vs "second"), so their record digests differ too, and this still
+    refuses (2026-09-02).
+    """
     identity = "ACF-2021-0001-0001"
     first = _document(
         identity,
@@ -291,11 +285,10 @@ def test_repeated_normalized_document_versions_refuse_a_tie(tmp_path: Path) -> N
 
 
 def test_read_time_derived_field_only_difference_collapses_without_tying(tmp_path: Path) -> None:
-    """Collapse a tied version whose only difference is read-time openForComment.
-
-    BIS-2023-0021-0001 refetches can cross the comment deadline without changing
-    modifyDate. Publish the last-listed object (openForComment=True here) as the
-    only available fetch-recency signal; count and retain the discarded observation.
+    """Collapse a tied version whose only difference is read-time ``openForComment``: BIS-2023-0021-0001
+    refetches can cross the comment deadline without changing modifyDate, so the last-listed object
+    (openForComment=True here) publishes as the only available fetch-recency signal, and the discarded
+    observation is counted and retained.
     """
     assert DOCUMENT_TIE_VOLATILE_FIELDS == {"openForComment", "withinCommentPeriod"}
     identity = "BIS-2023-0021-0001"
@@ -358,12 +351,11 @@ def test_read_time_derived_field_only_difference_collapses_without_tying(tmp_pat
 def test_read_time_derived_field_difference_with_a_substantive_difference_still_refuses_the_tie(
     tmp_path: Path,
 ) -> None:
-    """The same read-time-derived shape measured for
-    EPA-HQ-OAR-2006-0894-0021 (two objects at modifyDate
-    2024-04-25T01:00:59Z, one difference being ``openForComment``) still
-    refuses when a second, substantive field -- here ``title`` -- also
-    differs: only a difference confined to ``DOCUMENT_TIE_VOLATILE_FIELDS``
-    collapses."""
+    """The same read-time-derived shape measured for EPA-HQ-OAR-2006-0894-0021 (two objects at modifyDate
+    2024-04-25T01:00:59Z, one difference being ``openForComment``) still refuses when a second, substantive
+    field -- here ``title`` -- also differs: only a difference confined to ``DOCUMENT_TIE_VOLATILE_FIELDS``
+    collapses.
+    """
     identity = "EPA-HQ-OAR-2006-0894-0021"
     first = _document(
         identity,

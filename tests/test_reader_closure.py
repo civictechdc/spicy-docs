@@ -91,8 +91,8 @@ def test_reader_closure_imports_without_heavy_third_party_modules() -> None:
 def test_each_reader_module_is_guarded_individually() -> None:
     """A module that only stays clean because another imported first is not clean.
 
-    Importing the five together hides the case where one module's closure is
-    dirty but a sibling happened to shadow it. Each is therefore probed alone.
+    Each is probed alone because importing the five together hides the case where one module's closure is dirty but a
+    sibling happened to shadow it.
     """
     for module in _READER_MODULES:
         probe = (

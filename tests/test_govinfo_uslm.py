@@ -1,4 +1,9 @@
-"""USLM requests and response checks prove native identity and keep publisher spellings."""
+"""USLM requests and response checks prove native identity and keep publisher spellings.
+
+Pins selection round trips, keyless bulkdata locators, native identity bases and
+citable-as spellings, currency variants, preface-only stubs, refusals, byte
+bounds, and archive entry validation against entry names.
+"""
 
 import zipfile
 from pathlib import Path
@@ -44,12 +49,14 @@ MINIMAL_COMPS = (
 
 
 def law(body=LAW_XML, *, selection=LAW, final_url=None, **kwargs):
+    """Parse a public-law USLM body."""
     return validate_public_law_xml(
         body, selection=selection, final_url=final_url or public_law_xml_locator(selection), **kwargs
     )
 
 
 def compilation(body=COMPS_XML, *, selection=COMPILATION, final_url=None, **kwargs):
+    """Parse a statute-compilation USLM body."""
     return validate_statute_compilation_xml(
         body, selection=selection, final_url=final_url or statute_compilation_xml_locator(selection), **kwargs
     )
@@ -68,17 +75,20 @@ def compilation(body=COMPS_XML, *, selection=COMPILATION, final_url=None, **kwar
     ],
 )
 def test_law_selection_refuses_invalid_coordinates(selection):
+    """Invalid public-law coordinates are refused."""
     with pytest.raises(UslmSourceError):
         PublicLawSelection(*selection)
 
 
 @pytest.mark.parametrize("file_id", [True, 0, -1, "10542", 1.0, 10**9])
 def test_compilation_selection_refuses_invalid_identifier(file_id):
+    """An invalid compilation identifier is refused."""
     with pytest.raises(UslmSourceError):
         StatuteCompilationSelection(file_id)
 
 
 def test_selection_file_names_round_trip_and_publisher_placeholder_identifier_is_accepted():
+    """Selection file names round-trip, a placeholder identifier is accepted, and malformed names refuse."""
     assert PublicLawSelection.from_file_name("PLAW-119publ1.xml") == LAW
     assert PublicLawSelection.from_file_name("PLAW-115pvtl1.xml") == PublicLawSelection(115, "private", 1)
     assert PublicLawSelection(115, "private", 1).file_name == "PLAW-115pvtl1.xml"
@@ -93,6 +103,7 @@ def test_selection_file_names_round_trip_and_publisher_placeholder_identifier_is
 
 
 def test_locators_name_exact_keyless_bulkdata_routes():
+    """Locators name the exact keyless bulkdata routes, refusing invalid inputs."""
     assert public_law_xml_locator(LAW) == "https://www.govinfo.gov/bulkdata/PLAW/119/public/PLAW-119publ1.xml"
     assert public_law_archive_locator(119, "private") == (
         "https://www.govinfo.gov/bulkdata/PLAW/119/private/PLAW-119-private.zip"
@@ -106,6 +117,7 @@ def test_locators_name_exact_keyless_bulkdata_routes():
 
 
 def test_public_law_fixture_yields_native_identity_and_publisher_spellings():
+    """The public-law fixture yields native identity, publisher citable-as spellings, dates and provenance."""
     result = law()
     assert result.source == "public-law" and result.root_tag == "pLaw"
     assert (result.congress, result.public_private, result.doc_number) == ("119", "public", "1")
@@ -122,6 +134,7 @@ def test_public_law_fixture_yields_native_identity_and_publisher_spellings():
 
 
 def test_compilation_fixture_yields_file_identifier_and_raw_currency():
+    """The compilation fixture yields its file identifier and raw currency values with file-id identity."""
     result = compilation()
     assert result.source == "statute-compilation" and result.root_tag == "statuteCompilation"
     assert result.file_id == "10542"
@@ -137,6 +150,7 @@ def test_compilation_fixture_yields_file_identifier_and_raw_currency():
 
 
 def test_minimal_documents_validate_and_currency_variants_stay_raw_in_order():
+    """Minimal documents validate and currency variants stay raw and in order."""
     assert law(MINIMAL_LAW).citable_as == ("Public Law 119–1", "139 Stat. 3")
     repeated = MINIMAL_COMPS.replace(
         b"</currentThroughPublicLaw>",
@@ -148,6 +162,7 @@ def test_minimal_documents_validate_and_currency_variants_stay_raw_in_order():
 
 
 def test_preface_only_stub_is_accepted_and_flagged_without_main_text():
+    """A preface-only stub is accepted and flagged without main text."""
     stub = MINIMAL_COMPS.replace(b"<main><section>Text.</section></main>", b"<main/>")
     assert compilation(stub).body_present is False
     empty = stub.replace(b'<preface><property role="compShortTitle">ACT</property></preface>', b"<preface/>")
@@ -156,6 +171,7 @@ def test_preface_only_stub_is_accepted_and_flagged_without_main_text():
 
 
 def test_citation_comparison_tolerates_dash_and_spacing_but_keeps_the_publisher_string():
+    """Citation comparison tolerates dash and spacing differences while keeping the publisher's string."""
     hyphen = MINIMAL_LAW.replace(
         b"<citableAs>Public Law 119\xe2\x80\x931</citableAs>", b"<citableAs>Public  Law 119-1</citableAs>"
     )
@@ -193,6 +209,7 @@ def test_citation_comparison_tolerates_dash_and_spacing_but_keeps_the_publisher_
     ],
 )
 def test_public_law_refusals_name_the_failed_check(body, message):
+    """Public-law refusals name the failed check."""
     with pytest.raises(UslmSourceError, match=message):
         law(body)
 
@@ -230,11 +247,13 @@ def test_public_law_refusals_name_the_failed_check(body, message):
     ],
 )
 def test_compilation_refusals_name_the_failed_check(body, message):
+    """Compilation refusals name the failed check."""
     with pytest.raises(UslmSourceError, match=message):
         compilation(body)
 
 
 def test_response_url_must_be_the_requested_locator():
+    """The response URL must be the requested locator."""
     with pytest.raises(UslmSourceError, match="URL"):
         law(final_url=public_law_xml_locator(PublicLawSelection(119, "public", 2)))
     with pytest.raises(UslmSourceError, match="URL"):
@@ -243,6 +262,7 @@ def test_response_url_must_be_the_requested_locator():
 
 @pytest.mark.parametrize("max_bytes", [0, -1, True, 1.5, MAX_USLM_BYTES + 1])
 def test_byte_bounds_are_explicit_and_capped(max_bytes):
+    """Byte bounds are explicit and capped."""
     with pytest.raises(UslmSourceError):
         law(max_bytes=max_bytes)
     with pytest.raises(UslmSourceError):
@@ -250,6 +270,7 @@ def test_byte_bounds_are_explicit_and_capped(max_bytes):
 
 
 def test_body_larger_than_max_bytes_is_refused_before_parsing():
+    """A body larger than max_bytes is refused before parsing; DEFAULT_MAX_BYTES is 32 MiB."""
     with pytest.raises(UslmSourceError, match="max_bytes"):
         law(max_bytes=len(LAW_XML) - 1)
     assert law(max_bytes=len(LAW_XML)).doc_number == "1"
@@ -257,6 +278,7 @@ def test_body_larger_than_max_bytes_is_refused_before_parsing():
 
 
 def test_public_law_archive_validates_every_entry_against_its_own_name():
+    """Every public-law archive entry validates against its own name, with size and digest, including nested paths."""
     second = LAW_XML.replace(b"<docNumber>1</docNumber>", b"<docNumber>2</docNumber>").replace(
         b"<citableAs>Public Law 119\xe2\x80\x931</citableAs>", b"<citableAs>Public Law 119\xe2\x80\x932</citableAs>"
     )
@@ -272,6 +294,7 @@ def test_public_law_archive_validates_every_entry_against_its_own_name():
 
 
 def test_compilations_archive_validates_entries_and_refuses_foreign_names():
+    """The compilations archive validates entries and refuses foreign file names."""
     result = read_statute_compilations_archive(archive(("COMPS-10542.xml", COMPS_XML)))
     assert result.source == "statute-compilation"
     assert result.entries[0].metadata.file_id == "10542"
@@ -295,11 +318,13 @@ def test_compilations_archive_validates_entries_and_refuses_foreign_names():
     ],
 )
 def test_public_law_archive_refusals(body, kwargs, message):
+    """Public-law archive refusals name the failed check."""
     with pytest.raises(UslmSourceError, match=message):
         read_public_law_archive(body, congress=119, kind="public", **kwargs)
 
 
 def test_archive_crc_corruption_is_refused_before_any_entry_is_trusted():
+    """Archive CRC corruption is refused before any entry is trusted."""
     body = bytearray(archive(("PLAW-119publ1.xml", LAW_XML), compression=zipfile.ZIP_STORED))
     offset = body.index(b"<pLaw")
     body[offset + 1] ^= 0x01
@@ -308,6 +333,7 @@ def test_archive_crc_corruption_is_refused_before_any_entry_is_trusted():
 
 
 def test_archive_bounds_are_validated_before_reading():
+    """Archive byte and entry bounds are validated before reading."""
     body = archive(("PLAW-119publ1.xml", LAW_XML))
     with pytest.raises(UslmSourceError, match="max_bytes"):
         read_public_law_archive(body, congress=119, kind="public", max_bytes=len(body) - 1)

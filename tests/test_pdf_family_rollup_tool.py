@@ -1,14 +1,10 @@
-"""The PDF-family rollup's rules, and the sidecar the report is written from.
+"""The PDF-family rollup's rules and the sidecar the report is written from.
 
-The measurement's numbers are only as good as its rules, and four of those rules
-were wrong until the sample and the review corrected them: ``bill_number`` read
-the U.S. Reports cite ``600 U. S. 183`` as Senate bill ``S. 183`` and the GPO
-running head ``HR974`` as a House bill; ``public_law`` could not read the
-Bluebook ``Pub. L. No. 89-136`` at all; ``case_docket_number`` read the ``No.``
-inside that same cite as a circuit docket; and ``committee_name`` reported 90
-line-wrapped fragments as 90 committees. Every correction is pinned here,
-because a rule that widens again raises a presence rate rather than failing
-anything.
+Pins each join-key rule's accepted spellings and rejected lookalikes (U.S.
+Reports cites and GPO running heads are not bills, a Bluebook ``Pub. L. No.``
+is a law not a docket, a month is not a committee), the roster-derived
+committee vocabulary and its resolution routes, and that the committed sidecar
+was written by these rules.
 """
 
 from __future__ import annotations
@@ -38,6 +34,7 @@ def rule(name: str):
 
 
 def test_every_rule_rejects_the_lookalikes_it_names() -> None:
+    """Every join-key rule's spot check passes, rejecting the lookalikes it names."""
     assert spot_check() == {}
 
 
@@ -46,6 +43,7 @@ def test_every_rule_rejects_the_lookalikes_it_names() -> None:
     ["H.R. 7806", "H.R.\n5509", "S. 3948", "H. Res. 5", "H.J. Res. 45", "HR 7806", "S 394"],
 )
 def test_the_bill_rule_reads_every_spelling_the_sample_printed(text: str) -> None:
+    """Every bill spelling the sample printed is read by the bill rule."""
     assert rule("bill_number").compiled().search(text) is not None
 
 
@@ -60,6 +58,7 @@ def test_the_bill_rule_reads_every_spelling_the_sample_printed(text: str) -> Non
     ],
 )
 def test_the_bill_rule_rejects_what_the_sample_proved_it_is_not(text: str) -> None:
+    """U.S. Reports cites, GPO running heads and Record locators are rejected by the bill rule."""
     assert rule("bill_number").compiled().search(text) is None
 
 
@@ -75,7 +74,7 @@ def test_a_two_field_index_key_is_readable_whichever_order_it_was_serialized_in(
 
 
 def test_a_key_the_index_already_states_is_not_counted_as_yield() -> None:
-    """The owner's first rule, in one case: Congress.gov states the bill, the print repeats it."""
+    """A key the index already states is counted as distinct but not as yield."""
     text = "This report discusses H.R. 7806 and S. 3948, and P.L. 98-369."
     index_row = {
         "id": "IF13314",
@@ -93,6 +92,7 @@ def test_a_key_the_index_already_states_is_not_counted_as_yield() -> None:
 
 
 def test_a_key_the_index_lacks_is_counted_as_yield() -> None:
+    """A key absent from the index is listed as yield."""
     text = "The Committee reported H.R. 1234 during the 118th Congress."
     index_row = {"packageId": "CRPT-118hrpt970", "title": "REPORT ON THE ACTIVITIES OF THE COMMITTEE"}
     measured = measure_keys(text, index_row)["join_keys"]
@@ -101,6 +101,7 @@ def test_a_key_the_index_lacks_is_counted_as_yield() -> None:
 
 
 def test_the_public_law_rule_reads_the_two_publishers_spellings_as_one_key() -> None:
+    """``P.L.``, ``Public Law`` and ``PUB`` spellings canonicalize to one law key."""
     law = rule("public_law")
     assert law.canonical("P.L. 98-369") == law.canonical("Public Law 98–369") == "98-369"
     stated = {law.canonical(m) for m in law.compiled_index().findall("PUB 98-369")}
@@ -112,22 +113,24 @@ def test_the_public_law_rule_reads_the_two_publishers_spellings_as_one_key() -> 
     ["Public Law 98-369", "P.L. 98-369", "PL 98-369", "Pub. L. No. 89-136", "Pub. L. 119-21"],
 )
 def test_the_public_law_rule_reads_the_bluebook_spelling_too(text: str) -> None:
-    """The first rule could not, and so missed 35 occurrences across the sample."""
+    """The Bluebook ``Pub. L. No.`` spelling is read too, which the first rule missed."""
     assert rule("public_law").compiled().search(text) is not None
 
 
 def test_a_bluebook_law_cite_is_not_read_as_a_case_docket() -> None:
-    """``Pub. L. No. 89-136`` put a circuit docket in the GAO row until this rule moved."""
+    """A Bluebook law cite is not read as a case docket, while a real ``No.`` docket still is."""
     assert rule("case_docket_number").compiled().search("Pub. L. No. 89-136") is None
     assert rule("case_docket_number").compiled().search("No. 24-1260") is not None
 
 
 def test_a_month_is_not_a_committee() -> None:
+    """A date phrase is not read as a committee name, while a real committee still is."""
     assert rule("committee_name").compiled().search("Committee on June 5, 2024") is None
     assert rule("committee_name").compiled().search("Committee on Agriculture") is not None
 
 
 def test_the_committee_vocabulary_comes_from_the_pinned_chamber_rosters() -> None:
+    """The committee vocabulary comes from both chambers' pinned rosters, with House and Senate codes present."""
     vocabulary = dict(committee_vocabulary())
     assert vocabulary["COMMITTEEONAGRICULTURE"] == "hsag00"
     assert vocabulary["COMMITTEEONWAYSANDMEANS"] == "hswm00"
@@ -135,14 +138,10 @@ def test_the_committee_vocabulary_comes_from_the_pinned_chamber_rosters() -> Non
 
 
 def test_a_wrapped_or_run_on_committee_name_resolves_to_one_system_code() -> None:
-    """The failure this fixes: 90 candidates reported as 90 committees.
+    """Wrapped and run-on committee names resolve to system codes, while a fragment shorter than
+    ``Committee on`` plus four characters stays unresolved.
 
-    The resolver is the library's now, and this measurement supplies the
-    vocabulary its own pinned rosters state.  ``COMMITTEEONAG`` is no longer
-    among the resolved: the sibling route refuses a fragment shorter than
-    ``Committee on`` plus four characters, because below that it takes
-    whichever single sibling happens to share the prefix.  The three system
-    codes are unchanged, since the prints that wrap a name also spell it out.
+    Three codes settle the six candidates, and the wrap resolves through the sibling-prefix route.
     """
     resolved = resolve_committee_names(
         [
@@ -168,20 +167,13 @@ def test_a_wrapped_or_run_on_committee_name_resolves_to_one_system_code() -> Non
 
 
 def test_an_ambiguous_fragment_alone_stays_unresolved() -> None:
-    """Without a sibling in the same document, ``Committee on Agri`` names two chambers' committees."""
+    """Without a sibling in the same document, an ambiguous fragment stays unresolved."""
     settled = resolve_committee_names(["COMMITTEEONAGRI"], committee_vocabulary())
     assert settled["COMMITTEEONAGRI"].system_code is None
 
 
 def test_a_senate_committee_is_not_resolved_to_the_house_one_it_starts_with() -> None:
-    """Two measured cases where the run-on route published the wrong chamber's code.
-
-    Found in the budget and GAO samples: the Senate's Homeland Security and
-    Governmental Affairs starts with the House's Homeland Security, and the
-    Senate's Small Business and Entrepreneurship with the House's Small
-    Business.  The run-on route read both as the House committee with prose
-    after it.
-    """
+    """Senate committees whose names start with a House committee's name are not resolved to the House code."""
     settled = resolve_committee_names(
         [
             "COMMITTEEONHOMELANDSECURITYANDGOVERNMENTALAFFAIRS",
@@ -193,14 +185,14 @@ def test_a_senate_committee_is_not_resolved_to_the_house_one_it_starts_with() ->
 
 
 def test_the_recommendation_marker_reads_the_publishers_heading_not_a_verb() -> None:
-    """``We recommend that`` alone found GAO recommendations in 1 report of 8."""
+    """The recommendation marker reads the publisher's heading, not the verb ``We recommend that``."""
     marker = dict(STRUCTURE_RULES)["recommendation_list"]
     for heading in ("Recommendations for Executive Action", "Recommendation 3", "GAO is making 4 recommendations"):
         assert re.search(marker, heading) is not None
 
 
 def test_the_committed_sidecar_was_written_by_these_rules() -> None:
-    """A report drifting from the code it cites is the failure this prevents."""
+    """The committed sidecar's spot-check and rule patterns match the code's current rules."""
     sidecar = json.loads(SIDECAR.read_text())
 
     assert sidecar["spot_check_failures"] == {}
@@ -209,17 +201,12 @@ def test_the_committed_sidecar_was_written_by_these_rules() -> None:
 
 
 def test_the_committed_sidecar_states_the_numbers_the_report_leads_with() -> None:
-    """The sidecar as run, not as it should have been.
+    """The sidecar is pinned as the dated run produced it, including the wrong 883 print-only count.
 
-    ``distinct_values_beyond_index`` for the activity reports is **883 and
-    wrong**: it was measured against the ``published`` listing row rather than
-    the package MODS, and
-    ``docs/research/pdf-yield-mods-recheck-2026-09-20.md`` puts the real
-    print-only figure at 0 of 1,406. The number is pinned here because the
-    sidecar is a retained artifact of a dated run and this test's job is to
-    hold the committed file to what that run produced -- regenerating it would
-    contradict the prose the report quotes from it. The corrected claim lives
-    in the report's own correction section and in ``docs/tables.md``.
+    That figure was measured against the listing row rather than the package
+    MODS; the corrected 0-of-1,406 claim lives in the recheck report and
+    ``docs/tables.md``. CBO read no documents, CRS has nothing beyond the
+    index, and committee names appear only as resolved system codes.
     """
     sidecar = json.loads(SIDECAR.read_text())
     families = sidecar["families"]
@@ -242,7 +229,7 @@ def test_the_committed_sidecar_states_the_numbers_the_report_leads_with() -> Non
 
 
 def test_the_committed_sidecar_carries_no_per_page_detail() -> None:
-    """The per-page rows are receipt-sized; the repository keeps the summary."""
+    """The sidecar keeps page summaries but no per-page detail, and no page costs zero seconds."""
     sidecar = json.loads(SIDECAR.read_text())
     read = [
         document
@@ -259,7 +246,7 @@ def test_the_committed_sidecar_carries_no_per_page_detail() -> None:
 
 
 def test_the_capture_witness_compares_the_blocks_against_the_page_text() -> None:
-    """``source_sha256_matches`` compared a digest to itself and would pass on anything."""
+    """Captures round-trip against the page text, and the self-comparing ``source_sha256_matches`` field is gone."""
     sidecar = json.loads(SIDECAR.read_text())
     captures = [
         document["capture"]
@@ -274,6 +261,7 @@ def test_the_capture_witness_compares_the_blocks_against_the_page_text() -> None
 
 
 def test_compact_keeps_the_summary_and_drops_the_pages() -> None:
+    """Compaction sums page counts, table shapes and slowest page, drops page detail, and samples the key sets."""
     report = {
         "families": {
             "x": {

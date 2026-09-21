@@ -1,4 +1,9 @@
-"""A retained census releases only replayable, explicitly pinned observations."""
+"""A retained census releases only replayable, explicitly pinned observations.
+
+Pins selected-census publication and replay, requested-empty observations,
+refusal of changed counts, controls, ids, filters and captures, decimal
+spelling, byte and scope bounds, and iterator behavior on short and null reads.
+"""
 
 from __future__ import annotations
 
@@ -31,6 +36,7 @@ URL = "https://api.open.fec.gov/v1/committees/?cycle=2024&cycle=2026&sort=commit
 
 
 def _inputs(tmp_path, *, records=None, response_change=None):
+    """Build the committee-census inputs over the retained captures."""
     if records is None:
         records = [
             {
@@ -79,6 +85,7 @@ def _inputs(tmp_path, *, records=None, response_change=None):
 
 
 def _publish(tmp_path, captures, pages):
+    """Publish the census and return its reader and release root."""
     return SourceNativeReleasePublisher(
         PROFILE,
         blob_store=LocalSourceNativeBlobStore(tmp_path / "release-blobs"),
@@ -93,6 +100,9 @@ def _publish(tmp_path, captures, pages):
 
 
 def test_selected_census_publishes_and_replays_complete_metadata_and_exact_originals(tmp_path):
+    """A selected census publishes and replays complete metadata and exact originals, with assets and bodies
+    separate.
+    """
     captures, originals, blobs = _inputs(tmp_path)
     pages = list(iter_retained_committee_pages(captures, blob_source=blobs))
     assert pages == list(iter_retained_committee_pages(captures, blob_source=blobs))
@@ -135,6 +145,7 @@ def test_selected_census_publishes_and_replays_complete_metadata_and_exact_origi
 
 
 def test_empty_exact_observation_is_publishable_without_claiming_source_absence(tmp_path):
+    """An exact empty observation is publishable without claiming source absence."""
     captures, _, blobs = _inputs(tmp_path, records=[])
     result = _publish(tmp_path, captures, iter_retained_committee_pages(captures, blob_source=blobs))
     assert result.root.is_dir()
@@ -152,6 +163,7 @@ def test_empty_exact_observation_is_publishable_without_claiming_source_absence(
     ],
 )
 def test_publisher_rejects_changed_counts_controls_and_source_ids(tmp_path, change):
+    """Changed counts, controls and source ids are rejected."""
     captures, _, blobs = _inputs(tmp_path, response_change=change)
     with pytest.raises(ValueError):
         _publish(tmp_path, captures, iter_retained_committee_pages(captures, blob_source=blobs))
@@ -159,12 +171,14 @@ def test_publisher_rejects_changed_counts_controls_and_source_ids(tmp_path, chan
 
 
 def test_repeated_committee_id_is_rejected_instead_of_silently_collapsed(tmp_path):
+    """A repeated committee id is rejected rather than silently collapsed."""
     captures, _, blobs = _inputs(tmp_path, records=[{"committee_id": "C00000001"}] * 2)
     with pytest.raises(ValueError, match="repeat or cease increasing"):
         _publish(tmp_path, captures, iter_retained_committee_pages(captures, blob_source=blobs))
 
 
 def test_missing_terminal_capture_cannot_shrink_declared_selected_scope(tmp_path):
+    """A missing terminal capture cannot shrink the declared selected scope."""
     captures, _, blobs = _inputs(tmp_path)
     pages = list(iter_retained_committee_pages(captures, blob_source=blobs))
     with pytest.raises(ValueError, match="terminal page"):
@@ -174,6 +188,7 @@ def test_missing_terminal_capture_cannot_shrink_declared_selected_scope(tmp_path
 
 
 def test_capture_time_and_transport_pins_are_checked_before_record_emission(tmp_path):
+    """Capture time and transport pins are checked before any record is emitted."""
     captures, _, blobs = _inputs(tmp_path)
     pages = list(iter_retained_committee_pages(captures, blob_source=blobs))
     altered = [{**capture, "observedAt": "2026-09-13T00:00:00Z"} for capture in captures]
@@ -182,6 +197,7 @@ def test_capture_time_and_transport_pins_are_checked_before_record_emission(tmp_
 
 
 def test_iterator_hashes_consumed_bytes_and_evidence_parser_checks_inner_pin(tmp_path):
+    """The iterator hashes consumed bytes and the evidence parser checks the inner pin."""
     captures, _, blobs = _inputs(tmp_path)
     altered = [{**capture, "byteSize": capture["byteSize"] - 1} for capture in captures]
     with pytest.raises(ValueError, match="response bytes differ"):
@@ -192,6 +208,7 @@ def test_iterator_hashes_consumed_bytes_and_evidence_parser_checks_inner_pin(tmp
 
 
 def test_scope_keeps_repeated_filters_and_rejects_missing_initial_page_or_changed_filters(tmp_path):
+    """Scope keeps repeated filters and rejects a missing initial page or changed filters."""
     captures, _, _ = _inputs(tmp_path)
     assert "cycle=2024&cycle=2026" in committee_census_scope(captures)["captures"][0]["requestUrl"]
     with pytest.raises(ValueError, match="omits pages"):
@@ -203,6 +220,7 @@ def test_scope_keeps_repeated_filters_and_rejects_missing_initial_page_or_change
 
 
 def test_capture_inventory_has_an_explicit_bound(tmp_path):
+    """The capture inventory has an explicit bound."""
     captures, _, _ = _inputs(tmp_path)
     first = captures[0]
     bounded = []
@@ -215,6 +233,7 @@ def test_capture_inventory_has_an_explicit_bound(tmp_path):
 
 
 def test_profile_import_and_replay_do_not_require_live_http_libraries(tmp_path):
+    """Profile import and replay do not require live HTTP libraries."""
     captures, _, blobs = _inputs(tmp_path)
     page = next(iter_retained_committee_pages(captures, blob_source=blobs))
     evidence = tmp_path / "evidence.zip"
@@ -232,6 +251,7 @@ assert 'spicy_docs.sources.fec.client' not in sys.modules
 
 
 def test_decimal_values_keep_exact_spelling_and_the_original_json_type(tmp_path):
+    """Decimal values keep exact spelling and the original JSON type."""
     captures, originals, blobs = _inputs(tmp_path, records=[{"committee_id": "C00000001", "precise": "NUMBER"}])
     raw = originals[0].replace(b'"NUMBER"', b"12345678901234567890.123400")
     sha256 = "sha256:" + hashlib.sha256(raw).hexdigest()
@@ -245,6 +265,7 @@ def test_decimal_values_keep_exact_spelling_and_the_original_json_type(tmp_path)
 
 
 def test_maximum_response_is_read_once_and_oversized_capture_is_refused(tmp_path):
+    """The maximum response is read once and an oversized capture is refused."""
     captures, originals, blobs = _inputs(tmp_path, records=[{"committee_id": "C00000001"}])
     raw = originals[0] + b" " * (MAX_METADATA_BYTES - len(originals[0]))
     sha256 = "sha256:" + hashlib.sha256(raw).hexdigest()
@@ -267,6 +288,7 @@ def test_maximum_response_is_read_once_and_oversized_capture_is_refused(tmp_path
 
 
 def test_aggregate_scope_bound_refuses_large_metadata_before_reading_blobs(tmp_path):
+    """The aggregate scope bound refuses large metadata before any blob is read."""
     captures, _, _ = _inputs(tmp_path)
     first = captures[0]
     expanded = []
@@ -279,6 +301,7 @@ def test_aggregate_scope_bound_refuses_large_metadata_before_reading_blobs(tmp_p
 
 @pytest.mark.parametrize("chunk_size", [1, 7, 65_536])
 def test_retained_iterator_accepts_short_binary_reads_without_changing_evidence(tmp_path, chunk_size):
+    """The retained iterator accepts short binary reads without changing evidence."""
     captures, originals, blobs = _inputs(tmp_path, records=[{"committee_id": "C00000001"}])
 
     class ShortStream(BytesIO):
@@ -298,6 +321,7 @@ def test_retained_iterator_accepts_short_binary_reads_without_changing_evidence(
 
 @pytest.mark.parametrize("condition", ["null", "truncated", "extra-byte"])
 def test_retained_iterator_refuses_null_reads_and_wrong_lengths(tmp_path, condition):
+    """The retained iterator refuses null reads and wrong lengths."""
     captures, originals, _ = _inputs(tmp_path, records=[{"committee_id": "C00000001"}])
 
     class FaultStream(BytesIO):

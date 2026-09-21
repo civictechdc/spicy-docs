@@ -1,4 +1,10 @@
-"""Read real bzip2 bodies through controlled HTTP responses and retry failures."""
+"""Read real bzip2 bodies through controlled HTTP responses and retry failures.
+
+Pins terminal refusals through every retry layer, credential error identity,
+verified byte-range resume with a strong ETag, header validation before any
+body read, advertised-length checks, repeated resumes, and whitespace handling
+in opaque metadata.
+"""
 
 import bz2
 import io
@@ -19,6 +25,8 @@ ETAG = '"original-object"'
 
 
 class Response(io.BytesIO):
+    """A scripted response that records reads, closure and header mutations."""
+
     def __init__(self, *, payload=PAYLOAD, offset=0, status=None, headers=None, fail_after=None, error=None, url=URL):
         super().__init__(payload[offset:])
         self.status = status if status is not None else (206 if offset else 200)
@@ -50,6 +58,7 @@ class Response(io.BytesIO):
 
 @pytest.fixture
 def network(monkeypatch):
+    """An HTTP handler that serves queued responses and records requests."""
     pending, requests, sleeps = [], [], []
 
     def urlopen(request, **kwargs):
@@ -68,16 +77,19 @@ def network(monkeypatch):
 
 
 def reader(**kwargs):
+    """A bulk reader wired to the scripted network."""
     return bulk.CourtListenerBulkReader("courts", dump_date=date(2026, 6, 30), **kwargs)
 
 
 def error(status):
+    """The expected error type for a given status."""
     return urllib.error.HTTPError(URL, status, "fixture failure", {}, io.BytesIO(b"refused"))
 
 
 @pytest.mark.parametrize("status", [401, 403, 412])
 @pytest.mark.parametrize("stage", ["open", "listing", "initial-read", "resume-open", "resume-read"])
 def test_refusals_are_terminal_through_every_retry_layer(network, status, stage):
+    """Refusals are terminal through every retry layer, with responses closed and no sleeps or extra requests."""
     pending, requests, sleeps = network
     failure = error(status)
     responses = []
@@ -105,6 +117,7 @@ def test_refusals_are_terminal_through_every_retry_layer(network, status, stage)
 
 @pytest.mark.parametrize("stage", ["initial-read", "resume-read"])
 def test_existing_credential_error_preserves_its_identity(network, stage):
+    """An existing CredentialRefusedError propagates as the same object."""
     pending, requests, sleeps = network
     failure = CredentialRefusedError("caller refusal")
     if stage == "initial-read":
@@ -119,6 +132,7 @@ def test_existing_credential_error_preserves_its_identity(network, stage):
 
 @pytest.mark.parametrize("initial_length", [True, False])
 def test_verified_resume_preserves_exact_rows_and_headers(network, initial_length):
+    """A verified resume sends Range and If-Match, preserves exact rows and marks one resume."""
     pending, requests, sleeps = network
     first = Response(fail_after=7, headers={} if initial_length else {"Content-Length": None})
     resumed = Response(offset=7)
@@ -133,6 +147,7 @@ def test_verified_resume_preserves_exact_rows_and_headers(network, initial_lengt
 
 @pytest.mark.parametrize("etag", [None, 'W/"original-object"'])
 def test_uninterrupted_read_needs_no_strong_etag_but_resume_does(network, etag):
+    """An uninterrupted read needs no strong ETag, but a resume without one refuses."""
     pending, requests, sleeps = network
     pending.append(Response(headers={"ETag": etag}))
     assert list(reader().iter_records()) == EXPECTED
@@ -146,6 +161,7 @@ def test_uninterrupted_read_needs_no_strong_etag_but_resume_does(network, etag):
 
 @pytest.mark.parametrize("etag", ["", "unquoted", '"a", "b"', 'w/"a"', '"control\x01"'])
 def test_malformed_initial_etag_refuses_without_reading(network, etag):
+    """A malformed initial ETag refuses before any body read."""
     initial = Response(headers={"ETag": etag})
     network[0].append(initial)
     with pytest.raises(http.BulkTransferError, match="malformed initial ETag"):
@@ -174,6 +190,7 @@ def test_malformed_initial_etag_refuses_without_reading(network, etag):
     ],
 )
 def test_invalid_resume_headers_refuse_before_reading_any_resumed_body(network, mutation):
+    """Invalid resume headers refuse before any resumed body is read."""
     pending, requests, sleeps = network
     first, resumed = Response(fail_after=7), Response(offset=7)
     if mutation == "status":
@@ -210,6 +227,7 @@ def test_invalid_resume_headers_refuse_before_reading_any_resumed_body(network, 
 
 @pytest.mark.parametrize("mutation", ["status", "encoding", "length", "range", "duplicate-length"])
 def test_invalid_initial_headers_close_before_any_body_read(network, mutation):
+    """Invalid initial headers close before any body read and mark the run stopped early."""
     pending, requests, sleeps = network
     initial = Response()
     if mutation == "status":
@@ -234,6 +252,7 @@ def test_invalid_initial_headers_close_before_any_body_read(network, mutation):
 
 @pytest.mark.parametrize("length", [len(PAYLOAD) - 1, len(PAYLOAD) + 1])
 def test_complete_bzip2_member_does_not_hide_an_advertised_length_mismatch(network, length):
+    """A complete bzip2 member does not hide a mismatch against the advertised object length."""
     pending, _, _ = network
     initial = Response(headers={"Content-Length": str(length)})
     pending.append(initial)
@@ -244,6 +263,7 @@ def test_complete_bzip2_member_does_not_hide_an_advertised_length_mismatch(netwo
 
 
 def test_unknown_initial_length_resume_establishes_a_total_checked_at_eof(network):
+    """An unknown initial length is established by the resume and checked at EOF."""
     pending, _, _ = network
     initial = Response(fail_after=7, headers={"Content-Length": None})
     resumed = Response(
@@ -256,12 +276,14 @@ def test_unknown_initial_length_resume_establishes_a_total_checked_at_eof(networ
 
 
 def test_missing_length_without_resume_remains_supported(network):
+    """A missing length without resume remains supported."""
     network[0].append(Response(headers={"Content-Length": None, "ETag": None}))
     assert list(reader().iter_records()) == EXPECTED
 
 
 @pytest.mark.parametrize("limits", [{"max_compressed_bytes": 7}, {"max_records": 1}])
 def test_intentional_limits_do_not_claim_or_require_natural_eof(network, limits):
+    """Intentional limits neither claim nor require natural EOF."""
     initial = Response()
     network[0].append(initial)
     current = reader(**limits)
@@ -273,6 +295,7 @@ def test_intentional_limits_do_not_claim_or_require_natural_eof(network, limits)
 
 
 def test_resume_attempts_are_not_multiplied_by_the_open_retry_loop(network):
+    """Resume attempts are not multiplied by the open retry loop."""
     pending, requests, sleeps = network
     initial = Response(fail_after=7)
     pending.append(initial)
@@ -284,6 +307,7 @@ def test_resume_attempts_are_not_multiplied_by_the_open_retry_loop(network):
 
 
 def test_initial_transient_status_closes_each_response_and_retries(network):
+    """An initial transient status closes each response and retries up to MAX_ATTEMPTS."""
     pending, requests, sleeps = network
     failures = [error(503) for _ in range(http.MAX_ATTEMPTS - 1)]
     final = Response()
@@ -295,6 +319,7 @@ def test_initial_transient_status_closes_each_response_and_retries(network):
 
 @pytest.mark.parametrize("status", [401, 403, 412])
 def test_http_refusal_survives_its_handle_close_failure(network, status):
+    """An HTTP refusal survives a failure while closing its handle."""
     failure = error(status)
 
     def broken_close():
@@ -310,6 +335,8 @@ def test_http_refusal_survives_its_handle_close_failure(network, status):
 
 
 def test_rejected_resume_keeps_protocol_error_when_close_fails(network):
+    """A rejected resume keeps its protocol error even when closing fails."""
+
     class BrokenClose(Response):
         def close(self):
             super().close()
@@ -325,6 +352,7 @@ def test_rejected_resume_keeps_protocol_error_when_close_fails(network):
 
 
 def test_repeated_resumes_keep_original_etag_and_current_offset(network):
+    """Repeated resumes keep the original ETag and advance the byte offset."""
     responses = [Response(fail_after=7), Response(offset=7, fail_after=7), Response(offset=14)]
     network[0].extend(responses)
     current = reader()
@@ -335,6 +363,7 @@ def test_repeated_resumes_keep_original_etag_and_current_offset(network):
 
 
 def test_zero_byte_failure_still_requires_verified_partial_response(network):
+    """A zero-byte failure still requires a verified partial response."""
     initial = Response(fail_after=0)
     resumed = Response(status=206, headers={"Content-Range": f"bytes 0-{len(PAYLOAD) - 1}/{len(PAYLOAD)}"})
     network[0].extend([initial, resumed])
@@ -344,6 +373,7 @@ def test_zero_byte_failure_still_requires_verified_partial_response(network):
 
 
 def test_learned_total_cannot_change_on_a_later_resume(network):
+    """A learned total cannot change on a later resume."""
     first = Response(fail_after=7, headers={"Content-Length": None})
     second = Response(offset=7, fail_after=7)
     third = Response(
@@ -356,6 +386,7 @@ def test_learned_total_cannot_change_on_a_later_resume(network):
 
 
 def test_http_space_and_tab_are_removed_without_changing_the_opaque_etag(network):
+    """HTTP spaces and tabs are removed without changing the opaque ETag."""
     tag = '"literal\\opaque"'
     first = Response(
         fail_after=7,
@@ -385,6 +416,7 @@ def test_http_space_and_tab_are_removed_without_changing_the_opaque_etag(network
     [("ETag", ETAG + "\u00a0"), ("Content-Length", str(len(PAYLOAD)) + "\r\n"), ("Content-Encoding", "\u00a0identity")],
 )
 def test_non_http_whitespace_is_not_normalized_into_valid_metadata(network, name, value):
+    """Non-HTTP whitespace is not normalized into valid metadata."""
     first = Response(headers={name: value})
     network[0].append(first)
     with pytest.raises(http.BulkTransferError):

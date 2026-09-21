@@ -33,6 +33,7 @@ INTERFACES = {
 
 
 def _capture(raw, url):
+    """Build a capture declaration over the given response bytes."""
     return {
         "requestUrl": url,
         "observedAt": "2026-09-15T03:00:00Z",
@@ -42,6 +43,7 @@ def _capture(raw, url):
 
 
 def _legal_inputs(tmp_path, *, records=None, selected="murs", size=1, change=None):
+    """Build legal-query inputs for the retained captures."""
     if records is None:
         records = [{"doc_id": "mur_2", "type": selected}, {"doc_id": "mur_1", "type": selected}]
     blobs = LocalSourceNativeBlobStore(tmp_path / "originals")
@@ -66,6 +68,7 @@ def _legal_inputs(tmp_path, *, records=None, selected="murs", size=1, change=Non
 
 
 def _audit_inputs(tmp_path, *, records=None, change=None):
+    """Build audit-query inputs for the retained captures."""
     captures, originals, blobs = synthetic_inputs(
         tmp_path,
         records=records
@@ -79,6 +82,7 @@ def _audit_inputs(tmp_path, *, records=None, change=None):
 
 
 def _publish(tmp_path, family, captures, blobs, *, pages=None):
+    """Publish one legal or audit release and return its reader."""
     profile, scope, iterate = INTERFACES[family]
     output = LocalSourceNativeBlobStore(tmp_path / "output-blobs")
     published = SourceNativeReleasePublisher(
@@ -100,6 +104,7 @@ def _publish(tmp_path, family, captures, blobs, *, pages=None):
 
 
 def _at(value, pointer):
+    """The source body at the given pointer."""
     for token in pointer.split("/")[1:]:
         key = token.replace("~1", "/").replace("~0", "~")
         value = value[int(key)] if isinstance(value, list) else value[key]
@@ -138,6 +143,7 @@ def _assert_source_reconstruction(reader, originals, captures):
     "selected", json.loads((FIXTURES / "legal/sources.json").read_bytes()), ids=lambda row: row["file"]
 )
 def test_retained_legal_queries_preserve_every_field_and_exact_evidence(tmp_path, selected):
+    """Retained legal queries preserve every field, exact evidence and the source record ids."""
     raw = (FIXTURES / "legal" / selected["file"]).read_bytes()
     capture = selected["capture"]
     assert capture["responseSha256"] == "sha256:" + hashlib.sha256(raw).hexdigest()
@@ -160,6 +166,7 @@ def test_retained_legal_queries_preserve_every_field_and_exact_evidence(tmp_path
     ],
 )
 def test_legal_types_preserve_native_case_id_and_nested_signal(tmp_path, selected, identity):
+    """Legal types preserve the native case id and nested signals, including repeated associations and assets."""
     row = {
         "doc_id": identity,
         "type": selected,
@@ -186,6 +193,7 @@ def test_legal_types_preserve_native_case_id_and_nested_signal(tmp_path, selecte
 
 
 def test_offset_chain_keeps_unsorted_native_ids_and_exact_continuation(tmp_path):
+    """The offset chain keeps unsorted native ids and follows the exact continuation."""
     captures, raw, blobs = _legal_inputs(tmp_path)
     reader = _publish(tmp_path, "legal", captures, blobs)
     _assert_source_reconstruction(reader, raw, captures)
@@ -194,6 +202,7 @@ def test_offset_chain_keeps_unsorted_native_ids_and_exact_continuation(tmp_path)
 
 @pytest.mark.parametrize("family,inputs", [("legal", _legal_inputs), ("audit", _audit_inputs)])
 def test_complete_empty_query_retains_requested_scope(tmp_path, family, inputs):
+    """A complete empty query retains its requested scope and evidence count."""
     captures, _, blobs = inputs(tmp_path, records=[])
     reader = _publish(tmp_path, family, captures, blobs)
     assert list(reader.iter_records()) == []
@@ -204,6 +213,7 @@ def test_complete_empty_query_retains_requested_scope(tmp_path, family, inputs):
 
 @pytest.mark.parametrize("identity", [None, 1, "", " \n"])
 def test_legal_identity_is_required(tmp_path, identity):
+    """A legal record without its doc_id identity is refused."""
     captures, _, blobs = _legal_inputs(tmp_path, records=[{"doc_id": identity, "type": "murs"}])
     with pytest.raises(ValueError, match="doc_id"):
         _publish(tmp_path, "legal", captures, blobs)
@@ -222,6 +232,7 @@ def test_legal_identity_is_required(tmp_path, identity):
     ],
 )
 def test_legal_counts_groups_and_refusals_cannot_publish(tmp_path, change):
+    """Legal counts, groups and source refusals cannot publish."""
     captures, _, blobs = _legal_inputs(tmp_path, records=[{"doc_id": "mur_1", "type": "murs"}], change=change)
     with pytest.raises(ValueError):
         _publish(tmp_path, "legal", captures, blobs)
@@ -229,6 +240,8 @@ def test_legal_counts_groups_and_refusals_cannot_publish(tmp_path, change):
 
 
 def test_omitted_selected_empty_group_is_not_an_empty_answer(tmp_path):
+    """An omitted selected group is not an empty answer."""
+
     def change(value, offset):
         del value["murs"]
         value.update(adrs=[], total_adrs=0)
@@ -239,6 +252,8 @@ def test_omitted_selected_empty_group_is_not_an_empty_answer(tmp_path):
 
 
 def test_declared_total_cannot_change_across_legal_pages(tmp_path):
+    """A declared total cannot change across legal pages."""
+
     def change(value, offset):
         if offset:
             value.update(murs=[], total_murs=1, total_all=1)
@@ -269,12 +284,14 @@ def test_declared_total_cannot_change_across_legal_pages(tmp_path):
     ],
 )
 def test_legal_controls_require_one_supported_type_and_exact_offset(tmp_path, query):
+    """Legal controls require one supported type and an exact offset."""
     capture = _capture(b"{}", LEGAL_URL.split("?")[0] + "?" + query)
     with pytest.raises(ValueError):
         legal_query_scope([capture])
 
 
 def test_legal_maximum_size_and_explicit_zero_offset_are_supported(tmp_path):
+    """The maximum size and an explicit zero offset are supported."""
     records = [{"doc_id": f"mur_{i}", "type": "murs"} for i in range(200)]
     captures, _, blobs = _legal_inputs(tmp_path, records=records, size=200)
     captures[0]["requestUrl"] += "&from_hit=0"
@@ -286,6 +303,7 @@ def test_legal_maximum_size_and_explicit_zero_offset_are_supported(tmp_path):
     [("legal", _legal_inputs, {"doc_id": "mur_1", "type": "murs"}), ("audit", _audit_inputs, {"audit_case_id": "1"})],
 )
 def test_duplicate_source_id_refuses_instead_of_collapsing(tmp_path, family, inputs, identity):
+    """A duplicate source id refuses rather than collapsing."""
     captures, _, blobs = inputs(tmp_path, records=[identity, identity])
     with pytest.raises(ValueError, match="repeats"):
         _publish(tmp_path, family, captures, blobs)
@@ -293,6 +311,7 @@ def test_duplicate_source_id_refuses_instead_of_collapsing(tmp_path, family, inp
 
 @pytest.mark.parametrize("family,inputs", [("legal", _legal_inputs), ("audit", _audit_inputs)])
 def test_missing_page_and_shrunk_capture_inventory_refuse(tmp_path, family, inputs):
+    """A missing page or shrunk capture inventory refuses."""
     captures, _, blobs = inputs(tmp_path)
     pages = list(INTERFACES[family][2](captures, blob_source=blobs))
     with pytest.raises(ValueError, match="terminal"):
@@ -303,6 +322,7 @@ def test_missing_page_and_shrunk_capture_inventory_refuse(tmp_path, family, inpu
 
 
 def test_audit_identity_is_case_id_and_categories_remain_nested(tmp_path):
+    """Audit identity is the case id and categories remain nested."""
     raw = json.loads((FIXTURES / "audit.json").read_bytes())
     # Explicitly synthetic success built from the retained row shape, not a source census.
     records = [raw["results"][0], {**raw["results"][0], "audit_case_id": "2287"}]
@@ -317,12 +337,14 @@ def test_audit_identity_is_case_id_and_categories_remain_nested(tmp_path):
 
 @pytest.mark.parametrize("identity", [None, 123, "", "x", "123\n", True])
 def test_audit_native_case_identity_refuses_invalid_values(tmp_path, identity):
+    """Invalid native audit case ids are refused."""
     captures, _, blobs = _audit_inputs(tmp_path, records=[{"audit_case_id": identity, "audit_id": 123}])
     with pytest.raises(ValueError, match="audit_case_id"):
         _publish(tmp_path, "audit", captures, blobs)
 
 
 def test_retained_partial_audit_listing_cannot_publish(tmp_path):
+    """The retained partial audit listing cannot publish."""
     raw = (FIXTURES / "audit.json").read_bytes()
     # Synthetic credential-free descriptor; the original source bytes/counts are unchanged.
     capture = _capture(raw, "https://api.open.fec.gov/v1/audit-case/?per_page=1")
@@ -334,6 +356,7 @@ def test_retained_partial_audit_listing_cannot_publish(tmp_path):
 
 
 def test_audit_estimated_empty_is_not_complete(tmp_path):
+    """An estimated empty audit count is not complete."""
     captures, _, blobs = _audit_inputs(
         tmp_path, records=[], change=lambda value: value["pagination"].update(is_count_exact=False)
     )
@@ -342,6 +365,7 @@ def test_audit_estimated_empty_is_not_complete(tmp_path):
 
 
 def test_trailing_empty_legal_capture_is_not_part_of_the_declared_query(tmp_path):
+    """A trailing empty legal capture is not part of the declared query."""
     captures, originals, blobs = _legal_inputs(tmp_path)
     extra = json.loads(originals[-1])
     extra["murs"] = []

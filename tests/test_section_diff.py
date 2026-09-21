@@ -1,15 +1,9 @@
 """The DeltaTrack diff adapter: the rows it shapes, the provenance it keeps, and what upstream decides.
 
-Two kinds of case. The adapter's own: that its recomposition of upstream's stage
-sequence produces exactly what ``diff_bills`` produces, that the rows carry the
-columns the diff tables hold, and that a version against itself reports nothing.
-And the measurement cases: each of the divergences and bugs
-``docs/research/billtrax-value-inventory-2026-09-19.md`` §4.4 and §4.5 recorded
-between the two BillTrax copies, asserted against the pinned engine, so the
-port's premise ("upstream already decides this, and this is how") is checked
-rather than claimed. What upstream does *not* have is listed in
-``docs/sources/congress-bill-tree.md`` and is deliberately not patched in here.
-"""
+Recomposing upstream's stage sequence must reproduce ``diff_bills`` exactly, including when a move reorders records;
+rows carry the diff-table columns and their pairing evidence; and the recorded §4.4/§4.5 divergences between the two
+BillTrax copies are asserted against the pinned engine. What upstream does not have stays listed in the source guide
+and is deliberately not patched here."""
 
 from __future__ import annotations
 
@@ -201,12 +195,8 @@ def test_asking_for_pairs_yields_them_only_where_the_amounts_moved(
 
 @pytest.mark.parametrize("pair_amounts", [False, True])
 def test_a_self_diff_emits_no_financial_rows(pair_amounts: bool) -> None:
-    """Nothing changed, so a pairing could only report that each figure equals itself.
-
-    Eight `delta` 0 rows is what this produced before the gate — the exact
-    "populated field nothing reads presents as available" trap upstream's
-    #671/#687 closed.
-    """
+    """Nothing changed, so a pairing could only report that each figure equals itself -- the trap upstream's #671/#687
+    closed."""
     document = _document(CONSTRUCTED, "constructed-resolution-appropriations.xml")
     diff = diff_sections(document, document, from_version="v1", to_version="v1", pair_amounts=pair_amounts)
     rows = [pair for item in diff.items if item.financial is not None for pair in item.financial.pairs]

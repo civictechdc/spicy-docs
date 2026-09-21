@@ -1,4 +1,9 @@
-"""Faithful native FOIA and Oversight metadata/body boundaries on retained inputs."""
+"""Native FOIA and Oversight report boundaries on retained inputs.
+
+FOIA annual report XML keeps literal text, tails, namespace declarations and
+duplicate associations; Oversight HTML keeps field order and moves the body out
+of metadata. Both refuse malformed shapes and violated size/depth bounds.
+"""
 
 import hashlib
 import json
@@ -18,6 +23,7 @@ CORE = "http://niem.gov/niem/niem-core/2.0"
 
 
 def foia(extra=b"", year="2025"):
+    """A FOIA annual report body over the given extra markup and year."""
     return (
         f'<r:FoiaAnnualReport xmlns:r="{ROOT}" xmlns:f="{EXTENSION}" xmlns:n="{CORE}" xmlns:s="http://niem.gov/niem/structures/2.0"><n:Organization s:id="ORG0"><n:OrganizationName>FEC</n:OrganizationName></n:Organization><f:DocumentFiscalYearDate>{year}</f:DocumentFiscalYearDate>'.encode()
         + extra
@@ -26,16 +32,19 @@ def foia(extra=b"", year="2025"):
 
 
 def report(fields, *, recommendations="", depth=0):
+    """An Oversight report page over the given fields and recommendations."""
     return (
         f'<!doctype html><html><header><h1>Source title</h1></header><main><article class="node--type-report"><div class="field-values-list__content">{fields}</div></article>{recommendations}{"<div>" * depth}wrapped value{"</div>" * depth}</main></html>'
     ).encode()
 
 
 def field(name, value, label="Label"):
+    """One Oversight field block with its native name and label."""
     return f'<div class="field field--name-{name}"><div class="title">{label}</div><div>{value}</div></div>'
 
 
 def test_foia_literal_values_namespace_context_and_duplicate_associations():
+    """FOIA parsing keeps literal text/tail, namespace declarations, and duplicate associations apart by child index."""
     body = foia(
         b'<f:Unknown xmlns:q="urn:qualifier" s:type="q:Type">before<f:Amount>01.00</f:Amount>after<f:Amount></f:Amount>end</f:Unknown><f:Association s:ref="ORG0"/><f:Association s:ref="ORG0"/>'
     )
@@ -55,6 +64,7 @@ def test_foia_literal_values_namespace_context_and_duplicate_associations():
 
 @pytest.mark.parametrize("version", ["1.02", "1.03"])
 def test_native_report_versions_keep_literals_and_empty_fields(version):
+    """Schema versions 1.02 and 1.03 keep literal values, including whitespace-padded year and empty elements."""
     body = foia(b'<f:Unknown s:nil="true"/>', year=" 2025 ").replace(b"1.03", version.encode())
     if version == "1.02":
         body = body.replace(b"DocumentFiscalYearDate", b"DocumentFiscalYear")
@@ -77,11 +87,15 @@ def test_native_report_versions_keep_literals_and_empty_fields(version):
     ],
 )
 def test_foia_refuses_other_representations_or_ambiguous_identity(body, match):
+    """Foreign roots, Word Flat OPC, blank/duplicate fiscal years, DOCTYPE or entity use, and truncated XML are
+    refused.
+    """
     with pytest.raises(FoiaReportError, match=match):
         parse_foia_annual_report(body)
 
 
 def test_foia_checks_limits_at_and_over_the_bound():
+    """Byte and element limits pass exactly at the bound and refuse one over; boolean and depth limits are refused."""
     body = foia()
     count = len(parse_foia_annual_report(body)["elements"])
     assert len(parse_foia_annual_report(body, max_bytes=len(body), max_elements=count)["elements"]) == count
@@ -94,6 +108,9 @@ def test_foia_checks_limits_at_and_over_the_bound():
 
 @pytest.mark.parametrize("year, version", [("2010", "1.02"), ("2025", "1.03")])
 def test_retained_foia_matches_every_independently_read_xml_element(year, version):
+    """Retained FOIA files match an independent ElementTree walk on tag, attributes, text and tail, plus version
+    metadata.
+    """
     raw = (FIXTURES / f"foia-fec-{year}.xml").read_bytes()
     result = parse_foia_annual_report(raw)
     expected = []
@@ -123,6 +140,9 @@ def test_retained_foia_matches_every_independently_read_xml_element(year, versio
 
 
 def test_oversight_preserves_fields_and_moves_description_out_of_metadata():
+    """Oversight parsing keeps field order and literals, gives the body field a body index instead of a value, and
+    resolves asset links.
+    """
     fields = field("field-report-file", '<a href="/file.pdf">PDF</a><a href="/file.pdf">PDF copy</a>')
     fields += field("field-report-date-issued", '<time datetime="2026-01-02T00:00:00Z">Printed date</time>')
     fields += field("body", "<p>Exact <strong>body</strong></p>")
@@ -147,6 +167,9 @@ def test_oversight_preserves_fields_and_moves_description_out_of_metadata():
 
 
 def test_retained_oversight_includes_recommendations_outside_the_report_article():
+    """The retained Oversight page captures its title/line position and the recommendation table outside the report
+    article.
+    """
     raw = (FIXTURES / "oversight-data-act.html").read_bytes()
     result = parse_oversight_report(raw, url=URL)
     assert result["metadata"]["title"] == "Evaluation of the FEC’s DATA Act Compliance"
@@ -193,11 +216,17 @@ def test_retained_oversight_includes_recommendations_outside_the_report_article(
     ],
 )
 def test_oversight_refuses_wrong_shapes_and_bounds(body, options, match):
+    """Missing articles, unclosed tags, duplicate classes/attributes, nested fields, and violated byte/field/depth
+    bounds are refused.
+    """
     with pytest.raises(OversightReportError, match=match):
         parse_oversight_report(body, url=URL, **options)
 
 
 def test_oversight_depth_control_keeps_ordinary_wrapping_and_empty_bodies():
+    """Deep ordinary wrappers and an empty body field are accepted at explicit limits, with no recommendation
+    indices.
+    """
     raw = report(field("body", ""), depth=40)
     result = parse_oversight_report(raw, url=URL, max_bytes=len(raw), max_fields=1, max_depth=64)
     assert result["bodies"][0]["text"] == ""
@@ -205,12 +234,14 @@ def test_oversight_depth_control_keeps_ordinary_wrapping_and_empty_bodies():
 
 
 def test_retained_fixture_pins():
+    """Retained fixture bytes and sha256 match the recorded sources.json pins."""
     for row in json.loads((FIXTURES / "sources.json").read_bytes()):
         raw = (FIXTURES / row["file"]).read_bytes()
         assert len(raw) == row["bytes"] and hashlib.sha256(raw).hexdigest() == row["sha256"]
 
 
 def test_oversight_keeps_repeated_items_without_leaking_body_items_into_metadata():
+    """Repeated field items stay in metadata while a body field's items appear only in bodies."""
     items = '<div class="field__items"><div class="field__item">First agency</div><div class="field__item">Second agency</div></div>'
     result = parse_oversight_report(report(field("agency", items) + field("body", items)), url=URL)
     agency, description = result["metadata"]["fields"]
@@ -223,11 +254,13 @@ def test_oversight_keeps_repeated_items_without_leaking_body_items_into_metadata
 
 
 def test_oversight_refuses_missing_article_close_even_when_main_and_html_close():
+    """A missing ``</article>`` is refused even when main and html are closed."""
     with pytest.raises(OversightReportError, match="unclosed"):
         parse_oversight_report(report(field("body", "text")).replace(b"</article>", b""), url=URL)
 
 
 def test_oversight_refuses_nested_recommendation_rows():
+    """Recommendation table rows that nest are refused."""
     block = (
         '<div class="view-report-recommendations"><table><tr><td>outer<tr><td>inner</td></tr></td></tr></table></div>'
     )

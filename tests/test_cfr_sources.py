@@ -1,4 +1,10 @@
-"""CFR requests and response checks retain source dates and refuse false identity."""
+"""CFR request locators and response checks retain source dates and refuse false identity.
+
+Pins selector validation and publisher route spellings; roster currency and
+literal names; API, bulk and annual identity bases with contradiction refusals;
+error and empty-shape refusals; URL and XML-safety checks before acceptance; and
+table- or graphic-only sections as source content.
+"""
 
 import json
 from pathlib import Path
@@ -25,6 +31,7 @@ FIXTURES = Path(__file__).parent / "fixtures" / "cfr"
 
 
 def api(body=None, *, part=None, section=None, title=1, date="2026-07-31", **kwargs):
+    """Parse an eCFR API response under the given selection."""
     selection = EcfrSelection(title, date, part=part, section=section)
     name = "ecfr-api-section18-1.xml" if section else "ecfr-api-part18.xml" if part else "ecfr-api-title1.xml"
     return validate_ecfr_xml(
@@ -36,6 +43,7 @@ def api(body=None, *, part=None, section=None, title=1, date="2026-07-31", **kwa
 
 
 def annual(body=None, *, section=None, year=2025, title=None, volume=None, **kwargs):
+    """Parse an annual-edition response under the given selection."""
     identity = AnnualCfrSelection(year, title or (30 if section else 1), volume or (3 if section else 1), section)
     name = "annual-title30-vol3-sec716-2.xml" if section else "annual-title1-vol1.xml"
     return validate_annual_cfr_xml(
@@ -47,6 +55,7 @@ def annual(body=None, *, section=None, year=2025, title=None, volume=None, **kwa
 
 
 def bulk(body=None, **kwargs):
+    """Parse a bulk-title response under the given selection."""
     return validate_ecfr_bulk_xml(
         (FIXTURES / "ecfr-bulk-title1.xml").read_bytes() if body is None else body,
         title=1,
@@ -57,6 +66,7 @@ def bulk(body=None, **kwargs):
 
 @pytest.mark.parametrize("title", [True, "1", 0, 35, 51, -1])
 def test_title_selectors_refuse_invalid_and_reserved(title):
+    """Reserved, non-numeric and out-of-range title selectors are refused."""
     with pytest.raises(CfrSourceError):
         EcfrSelection(title, "2026-01-01")
     with pytest.raises(CfrSourceError):
@@ -67,17 +77,22 @@ def test_title_selectors_refuse_invalid_and_reserved(title):
 
 @pytest.mark.parametrize("date", ["2026-1-1", "20260201", "2026-02-30", "2026-01-01?part=1", None])
 def test_date_is_a_real_explicit_calendar_date(date):
+    """A non-calendar or malformed date is refused."""
     with pytest.raises(CfrSourceError):
         EcfrSelection(1, date)
 
 
 @pytest.mark.parametrize("part,section", [(None, "1.1"), ("../1", None), ("1", "1.1&part=2")])
 def test_scope_selectors_refuse_ambiguous_or_injectable_coordinates(part, section):
+    """Ambiguous or injectable part/section coordinates are refused."""
     with pytest.raises(CfrSourceError):
         EcfrSelection(1, "2026-01-01", part, section)
 
 
 def test_locators_keep_distinct_publisher_routes_and_allow_real_coordinate_forms():
+    """Each route keeps its own publisher URL spelling, including parenthesized and dashed section forms, while
+    unsupported forms refuse.
+    """
     assert ecfr_xml_locator(EcfrSelection(5, "2026-01-01", "0", "0.1")).endswith("?part=0&section=0.1")
     assert ecfr_xml_locator(EcfrSelection(26, "2026-01-01", "1", "1.401(k)-1")).endswith("section=1.401%28k%29-1")
     assert ecfr_xml_locator(EcfrSelection(41, "2026-01-01", "102-5", "102-5.1")).endswith("section=102-5.1")
@@ -92,6 +107,9 @@ def test_locators_keep_distinct_publisher_routes_and_allow_real_coordinate_forms
 
 
 def test_roster_preserves_currency_processing_and_literal_names_without_inferring_reservation():
+    """The roster keeps 50 titles with a literal reserved flag, processing state and literal names, inferring no
+    reservation.
+    """
     original = (FIXTURES / "ecfr-titles.json").read_bytes()
     source = json.loads(original)
     result = parse_ecfr_titles(original)
@@ -107,6 +125,7 @@ def test_roster_preserves_currency_processing_and_literal_names_without_inferrin
 
 @pytest.mark.parametrize("mutation", ["partial", "duplicate", "date", "reserved", "processing", "name", "number"])
 def test_roster_refuses_incomplete_or_wrong_success_shapes(mutation):
+    """Incomplete or wrong-shaped roster successes are refused."""
     source = json.loads((FIXTURES / "ecfr-titles.json").read_bytes())
     if mutation == "partial":
         source["titles"].pop()
@@ -127,11 +146,15 @@ def test_roster_refuses_incomplete_or_wrong_success_shapes(mutation):
 
 @pytest.mark.parametrize("body", [b"", b"<html>Access request</html>", b"{}", b'{"titles":[],"titles":[],"meta":{}}'])
 def test_roster_empty_and_error_content_refuses(body):
+    """Empty or error roster content is refused."""
     with pytest.raises(CfrSourceError):
         parse_ecfr_titles(body)
 
 
 def test_api_metadata_does_not_invent_title_context_or_equal_amendment_date():
+    """API metadata invents no title context and keeps both amendment-date spellings, with identity basis naming
+    native vs request-url facts.
+    """
     title = api(date="2026-08-10")
     assert title.title == 1 and title.amendment_dates == ("Dec. 29, 2022(fm)\n", "2022-12-29")
     assert title.stated_date is None and title.identity_basis == ("title:native", "date:request-url")
@@ -150,6 +173,7 @@ def test_api_metadata_does_not_invent_title_context_or_equal_amendment_date():
     ],
 )
 def test_api_title_contradictions_refuse(old, new):
+    """A native title contradicting the requested title is refused."""
     source = (FIXTURES / "ecfr-api-title1.xml").read_bytes()
     assert old in source
     with pytest.raises(CfrSourceError):
@@ -168,6 +192,7 @@ def test_api_title_contradictions_refuse(old, new):
     ],
 )
 def test_api_subset_checks_native_and_supplied_hierarchy_identity(old, new):
+    """A subset response checks both native and supplied hierarchy identity."""
     source = (FIXTURES / "ecfr-api-section18-1.xml").read_bytes()
     assert old in source
     with pytest.raises(CfrSourceError):
@@ -175,6 +200,7 @@ def test_api_subset_checks_native_and_supplied_hierarchy_identity(old, new):
 
 
 def test_api_section_refuses_extra_section_but_part_request_accepts_multiple():
+    """A part request may return multiple sections, but an extra section for a section request is refused."""
     source = (FIXTURES / "ecfr-api-part18.xml").read_bytes()
     assert api(source, part="18").part == "18"
     with pytest.raises(CfrSourceError):
@@ -182,6 +208,7 @@ def test_api_section_refuses_extra_section_but_part_request_accepts_multiple():
 
 
 def test_bulk_title_uses_header_id_not_volume_and_checks_all_blocks():
+    """Bulk identity comes from the header id, not the volume, and every block's title heading is checked."""
     source = (FIXTURES / "ecfr-bulk-title1.xml").read_bytes()
     volume_two = source.replace(b'<DIV1 N="1"', b'<DIV1 N="2"')
     assert bulk(volume_two).title == 1
@@ -203,6 +230,7 @@ def test_bulk_title_uses_header_id_not_volume_and_checks_all_blocks():
     "old,new", [(b"\n1</IDNO>", b"\n2</IDNO>"), (b"Title 1:", b"Title 2:"), ("Title 1—".encode(), "Title 2—".encode())]
 )
 def test_bulk_header_and_body_title_disagreement_refuses(old, new):
+    """A bulk header/body title disagreement is refused."""
     source = (FIXTURES / "ecfr-bulk-title1.xml").read_bytes()
     assert old in source
     with pytest.raises(CfrSourceError):
@@ -210,6 +238,9 @@ def test_bulk_header_and_body_title_disagreement_refuses(old, new):
 
 
 def test_annual_requested_edition_and_native_revision_are_separate():
+    """The requested edition and the native revision text stay separate, with the identity basis naming each fact's
+    source.
+    """
     result = annual()
     assert result.stated_date == "As of January 1, 2023"
     assert result.revision_text == "Revised as of January 1, 2023"
@@ -224,6 +255,7 @@ def test_annual_requested_edition_and_native_revision_are_separate():
     "replacement", [b"date unknown (2023)", b"As of _SUBSTITUTE_DATE_", b"As of February 30, 2023"]
 )
 def test_printed_revision_text_is_preserved_without_interpreting_ambiguous_dates(replacement):
+    """Printed revision text is preserved verbatim without interpreting ambiguous dates."""
     source = (FIXTURES / "annual-title1-vol1.xml").read_bytes()
     source = source.replace(b"Revised as of January 1, 2023", replacement).replace(
         b"As of January 1, 2023", replacement
@@ -235,6 +267,7 @@ def test_printed_revision_text_is_preserved_without_interpreting_ambiguous_dates
     "old,new", [(b"<CFRTITLE>30", b"<CFRTITLE>31"), (b"<VOL>3", b"<VOL>4"), (b"716.2</SECTNO>", b"716.3</SECTNO>")]
 )
 def test_annual_granule_native_identity_contradictions_refuse(old, new):
+    """Annual granule identity contradicting the request is refused."""
     source = (FIXTURES / "annual-title30-vol3-sec716-2.xml").read_bytes()
     assert old in source
     with pytest.raises(CfrSourceError):
@@ -246,11 +279,13 @@ def test_annual_granule_native_identity_contradictions_refuse(old, new):
     "body", [b"", b"<html><p>Access request</p></html>", b"<error>Not found</error>", b"<ECFR/>", b"<CFRDOC/>"]
 )
 def test_error_and_empty_success_shapes_refuse(reader, body):
+    """Error and empty success shapes are refused."""
     with pytest.raises(CfrSourceError):
         reader(body)
 
 
 def test_response_url_and_xml_safety_are_checked_before_acceptance():
+    """Response URL, DOCTYPE, nesting and byte bounds are checked before acceptance."""
     selection = EcfrSelection(1, "2026-07-31")
     source = (FIXTURES / "ecfr-api-title1.xml").read_bytes()
     with pytest.raises(CfrSourceError, match="URL"):
@@ -269,6 +304,7 @@ def test_response_url_and_xml_safety_are_checked_before_acceptance():
 
 
 def test_xml_validation_does_not_build_a_tree(monkeypatch):
+    """Validation rejects unsafe XML without building a tree."""
     from spicy_docs.reading import xml
 
     def refuse(*args, **kwargs):
@@ -290,6 +326,7 @@ def test_xml_validation_does_not_build_a_tree(monkeypatch):
     ],
 )
 def test_table_or_graphic_only_annual_section_has_source_content(content):
+    """An annual section whose content is only a table or graphic is still accepted as source content."""
     source = ET.fromstring((FIXTURES / "annual-title30-vol3-sec716-2.xml").read_bytes())
     section = source.find("SECTION")
     assert section is not None
@@ -301,11 +338,13 @@ def test_table_or_graphic_only_annual_section_has_source_content(content):
 
 
 def test_ecfr_graphic_reference_is_source_content_without_fetching_the_image():
+    """An eCFR graphic reference is accepted as content without fetching the image."""
     source = b'<DIV5 N="18" TYPE="PART"><DIV8 N="18.1" TYPE="SECTION"><img src="/graphics/source.gif"/></DIV8></DIV5>'
     assert api(source, part="18", section="18.1").section == "18.1"
 
 
 def test_native_part_is_not_inferred_from_section_number():
+    """The native part is read from the document, never inferred from the section number."""
     source = (FIXTURES / "ecfr-api-title14-numbering.xml").read_bytes()
     assert api(source, title=14).title == 14
     root = ET.fromstring(source)

@@ -1,4 +1,8 @@
-"""Publisher-shaped regression cases moved from SpicySearch with their source IDs."""
+"""Publisher-shaped regression cases moved from SpicySearch with their source IDs.
+
+Pins XML and text carrier block extraction across the shapes that decide the
+reading, the printed sub-heading self-check, and markup stripping.
+"""
 
 from spicy_docs.sources.federal_register import list_of_subjects
 from spicy_docs.sources.federal_register.list_of_subjects import (
@@ -13,6 +17,7 @@ from spicy_docs.sources.federal_register.list_of_subjects import (
 
 
 def test_xml_subjects_preserve_paragraph_order_and_repeated_blocks() -> None:
+    """The XML carrier preserves paragraph order and repeated blocks."""
     body = """<RULE>
       <P>Unrelated preamble.</P>
       <LSTSUB>
@@ -615,6 +620,7 @@ def test_a_cfr_citation_in_prose_is_not_mistaken_for_a_sub_heading() -> None:
 
 
 def test_markup_and_entities_are_stripped_before_reading() -> None:
+    """Markup and entities are stripped before reading, including script content."""
     assert strip_markup('<a href="x">www.gpo.gov</a> &amp; more') == "www.gpo.gov & more"
     assert "alert" not in strip_markup("<script>alert(1)</script>text")
 

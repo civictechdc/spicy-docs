@@ -1,4 +1,9 @@
-"""Fixture coverage for the ``tools/analysis/cross_filing_census.py`` receipt helper (SD-16, SD-17)."""
+"""Fixture coverage for the ``tools/analysis/cross_filing_census.py`` receipt helper (SD-16, SD-17).
+
+Pins scope counts, duplicate groups split by repeated id and agency, the
+co-issued vs parent-child breakdown, content comparison, suspects, id grammar,
+per-profile not-applicable notes, and the documents default staying byte-identical.
+"""
 
 from __future__ import annotations
 
@@ -33,6 +38,8 @@ _WINDOW = {"agencies": ["placeholder"], "publishedFrom": "2020-01-01", "publishe
 
 @dataclass(frozen=True, slots=True)
 class _Object:
+    """A minimal S3 listing object."""
+
     key: str
     etag: str
     version_id: str | None
@@ -40,6 +47,8 @@ class _Object:
 
 
 class _Reader:
+    """A reader over one release with fixed counters."""
+
     def __init__(self, objects: list[_Object]) -> None:
         self.objects = objects
 
@@ -48,12 +57,14 @@ class _Reader:
 
 
 def _document(identity: str, *, agency: str, docket_id: str, posted_date: str, **attributes: object) -> dict:
+    """Build one document record with the given fields."""
     values: dict[str, object] = {"agencyId": agency, "docketId": docket_id, "postedDate": posted_date}
     values.update(attributes)
     return {"data": {"id": identity, "type": "documents", "attributes": values}}
 
 
 def _object(document: dict, *, agency: str, docket_id: str) -> _Object:
+    """Build an object entry with the given key and revision markers."""
     identity = document["data"]["id"]
     content = json.dumps(document).encode()
     return _Object(
@@ -65,6 +76,7 @@ def _object(document: dict, *, agency: str, docket_id: str) -> _Object:
 
 
 def _clock() -> datetime:
+    """A fixed clock for the census run."""
     return datetime(2026, 9, 2, 0, 0, 1, tzinfo=UTC)
 
 
@@ -90,12 +102,14 @@ _DOCKET_WINDOW = {"agencies": ["placeholder"], "modifiedFrom": "2020-01-01", "mo
 
 
 def _docket(identity: str, *, agency: str, modify_date: str, **attributes: object) -> dict:
+    """Build one docket record with the given fields."""
     values: dict[str, object] = {"agencyId": agency, "modifyDate": modify_date}
     values.update(attributes)
     return {"data": {"id": identity, "type": "dockets", "attributes": values}}
 
 
 def _docket_object(docket: dict, *, agency: str) -> _Object:
+    """Build a docket object entry."""
     identity = docket["data"]["id"]
     content = json.dumps(docket).encode()
     return _Object(
@@ -122,6 +136,7 @@ def _publish_dockets(tmp_path: Path, agency: str, *objects: _Object) -> tuple[st
 
 
 def _run_census(tmp_path: Path, releases: list[list[str]], *, profile: str = "documents") -> dict[str, Any]:
+    """Run the census over the given roots and return its report."""
     releases_path = tmp_path / "releases.json"
     releases_path.write_text(json.dumps(releases))
     return census(releases_path, tmp_path / "blobs", profile)
@@ -434,6 +449,7 @@ def _docket_clean_fixture(tmp_path: Path) -> dict[str, Any]:
 
 
 def test_scope_reports_records_not_items_and_the_documents_only_filter(tmp_path: Path) -> None:
+    """Scope counts records rather than catalog items and reports the documents-only release filter."""
     result = _fixture(tmp_path)
 
     scope = cast("dict[str, Any]", result["scope"])
@@ -445,6 +461,9 @@ def test_scope_reports_records_not_items_and_the_documents_only_filter(tmp_path:
 
 
 def test_totals_count_records_including_the_objectid_less_grammar_document(tmp_path: Path) -> None:
+    """Totals count records including the objectId-less grammar document, with distinct object ids and catch-all
+    dockets named.
+    """
     result = _fixture(tmp_path)
 
     totals = cast("dict[str, Any]", result["totals"])
@@ -456,6 +475,7 @@ def test_totals_count_records_including_the_objectid_less_grammar_document(tmp_p
 
 
 def test_duplicate_groups_split_by_repeated_id_and_agency(tmp_path: Path) -> None:
+    """Duplicate groups split by repeated source id and by same- vs cross-agency, each with a population."""
     result = _fixture(tmp_path)
 
     groups = cast("dict[str, Any]", result["duplicateGroups"])
@@ -468,6 +488,7 @@ def test_duplicate_groups_split_by_repeated_id_and_agency(tmp_path: Path) -> Non
 
 
 def test_cross_agency_breakdown_separates_co_issued_from_parent_child(tmp_path: Path) -> None:
+    """The cross-agency breakdown separates co-issued pairs from parent-child pairs."""
     result = _fixture(tmp_path)
 
     breakdown = cast("dict[str, Any]", result["crossAgencyBreakdown"])
@@ -480,6 +501,7 @@ def test_cross_agency_breakdown_separates_co_issued_from_parent_child(tmp_path: 
 
 
 def test_content_comparison_agrees_disagrees_and_names_the_differing_fields(tmp_path: Path) -> None:
+    """Content comparison reports agree/disagree counts, the compared fields and per-field differing counts."""
     result = _fixture(tmp_path)
 
     comparison = cast("dict[str, Any]", result["contentComparison"])
@@ -499,6 +521,7 @@ def test_content_comparison_agrees_disagrees_and_names_the_differing_fields(tmp_
 
 
 def test_suspects_is_narrower_than_content_disagreement_and_tracks_null_fr_doc_num(tmp_path: Path) -> None:
+    """Suspects are narrower than content disagreement and track all-null frDocNum groups."""
     result = _fixture(tmp_path)
 
     suspects = cast("dict[str, Any]", result["suspects"])
@@ -511,6 +534,7 @@ def test_suspects_is_narrower_than_content_disagreement_and_tracks_null_fr_doc_n
 
 
 def test_id_grammar_finds_the_letters_segment_and_its_agencies(tmp_path: Path) -> None:
+    """The id grammar finds the letters segment and names its agencies."""
     result = _fixture(tmp_path)
 
     grammar = cast("dict[str, Any]", result["idGrammar"])
@@ -528,6 +552,7 @@ def test_id_grammar_finds_the_letters_segment_and_its_agencies(tmp_path: Path) -
 
 
 def test_document_id_repeats_within_agency_counts_the_doubly_listed_foo_release(tmp_path: Path) -> None:
+    """A doubly listed release makes its ids repeat within the agency."""
     result = _fixture(tmp_path)
 
     repeats = cast("dict[str, Any]", result["documentIdRepeatsWithinAgency"])
@@ -537,6 +562,7 @@ def test_document_id_repeats_within_agency_counts_the_doubly_listed_foo_release(
 
 
 def test_docket_profile_scope_names_the_dockets_selector_and_skips_documents(tmp_path: Path) -> None:
+    """The dockets profile names its selector and skips documents releases."""
     result = _docket_duplicate_fixture(tmp_path)
 
     scope = cast("dict[str, Any]", result["scope"])
@@ -547,9 +573,7 @@ def test_docket_profile_scope_names_the_dockets_selector_and_skips_documents(tmp
 
 
 def test_docket_profile_counts_a_docket_id_appearing_in_two_releases(tmp_path: Path) -> None:
-    """SD-17: a docket id can appear in more than one release entry exactly as a document id can
-    (here, because the FOO release is listed twice); the same duplicate-identity machinery must
-    catch it, re-deriving what a throwaway script once measured only in a chat log."""
+    """A docket id appearing in two releases is caught by the same duplicate machinery."""
     result = _docket_duplicate_fixture(tmp_path)
 
     totals = cast("dict[str, Any]", result["totals"])
@@ -576,9 +600,9 @@ def test_docket_profile_counts_a_docket_id_appearing_in_two_releases(tmp_path: P
 
 
 def test_docket_profile_document_specific_analyses_are_marked_not_applicable(tmp_path: Path) -> None:
-    """The id-grammar census and the co-issued/parent-child split key on a document-id shape and a
-    document's own docketId attribute respectively; a docket record has neither. suspects narrows
-    on frDocNum/pageCount, which a docket record also lacks. All three must say so, not vanish."""
+    """Document-specific analyses (idGrammar, suspects, co-issued split) are marked not applicable rather than
+    vanishing.
+    """
     result = _docket_duplicate_fixture(tmp_path)
 
     assert "idGrammar" not in result
@@ -604,6 +628,7 @@ def test_docket_profile_document_specific_analyses_are_marked_not_applicable(tmp
 
 
 def test_docket_profile_clean_set_reports_zero(tmp_path: Path) -> None:
+    """A clean docket set reports zeros throughout."""
     result = _docket_clean_fixture(tmp_path)
 
     totals = cast("dict[str, Any]", result["totals"])
@@ -619,8 +644,7 @@ def test_docket_profile_clean_set_reports_zero(tmp_path: Path) -> None:
 
 
 def test_documents_profile_default_is_unchanged_by_dockets_support(tmp_path: Path) -> None:
-    """The --profile addition must not alter a single byte of the pre-existing documents behavior:
-    the default (no profile passed) and an explicit profile="documents" must agree exactly."""
+    """The default and explicit documents profiles produce byte-identical reports."""
     epa_root, epa_digest = _publish(
         tmp_path,
         "EPA",
@@ -651,6 +675,7 @@ def test_documents_profile_default_is_unchanged_by_dockets_support(tmp_path: Pat
 
 
 def test_every_subset_with_a_count_states_its_population(tmp_path: Path) -> None:
+    """Every subset carrying a count states its population, in both profiles."""
     documents_result = _fixture(tmp_path)
     documents_subsets = counted_subsets(documents_result)
     assert len(documents_subsets) >= 10  # duplicateGroups (x4), crossAgencyBreakdown (x2), suspects (x2), and more

@@ -1,4 +1,7 @@
-"""Publish, verify, and inspect expose the same collection facts."""
+"""Publish, verify, and inspect expose the same collection facts.
+
+Inspect defaults to 20 failures, enforces the profile pin and verifier allowlist, and refuses a negative failure
+limit before reading the release."""
 
 from __future__ import annotations
 

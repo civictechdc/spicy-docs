@@ -1,4 +1,7 @@
-"""The shared Zyte adapter bounds bytes and never surfaces its credential."""
+"""The shared Zyte adapter bounds bytes, captures proxy provenance, and never surfaces its credential.
+
+Only GET is proxied, redirects to another URL refuse, the shared budget caps provider calls, and reflected
+credentials or short secrets are suppressed from evidence."""
 
 from __future__ import annotations
 
@@ -230,7 +233,7 @@ def _capture_client(transport: ZyteTransport) -> BoundedHttpCapture:
 
 
 def test_the_injectable_transport_captures_a_body_and_records_that_it_was_proxied(monkeypatch) -> None:
-    """The whole point of the shape: a source acquirer's own client, over Zyte, with provenance."""
+    """A source acquirer's own client captures through Zyte and records the proxy provenance on the response."""
     monkeypatch.setattr(
         zyte.urllib.request,
         "urlopen",

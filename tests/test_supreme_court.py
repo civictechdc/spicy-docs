@@ -1,4 +1,7 @@
-"""A Supreme Court term index is one render that must state its own term; its links are the documents."""
+"""A Supreme Court term index is one render that must state its own term; its links are the documents.
+
+Index rows keep publisher spellings and each refusal names the failed check, while a slip or volume PDF must match
+the length its own header states."""
 
 import hashlib
 from datetime import date

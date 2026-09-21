@@ -1,4 +1,10 @@
-"""Congress.gov list routes name explicit queries and walk exact pages to the publisher's end."""
+"""Congress.gov list routes name explicit queries and walk exact pages to the publisher's end.
+
+Pins the route table's measured sort, window and single-record support plus its
+records keys, URL construction with optional path segments, per-chamber
+communication types, detail-route one-record parsing, and the walk's
+refusal when observed records fall short of the declared count.
+"""
 
 import json
 from pathlib import Path
@@ -217,6 +223,8 @@ DETAIL_ROUTE_EXPECTATIONS: dict[str, tuple[str, object]] = {
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *bodies):
         self.bodies = iter(bodies)
         self.calls = []
@@ -231,16 +239,19 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_family_states_the_publisher_contract():
+    """The family states its host, next/count paths, credential header and credential requirement."""
     assert CONGRESS_GOV.host == "api.congress.gov"
     assert CONGRESS_GOV.next_path == ("pagination", "next") and CONGRESS_GOV.count_path == ("pagination", "count")
     assert CONGRESS_GOV.credential_header == "X-Api-Key" and CONGRESS_GOV.requires_credential
 
 
 def test_list_urls_are_explicit_and_bounded():
+    """The named list builders produce explicit URLs and MAX_LIMIT is 250."""
     assert bill_list_url(limit=2) == "https://api.congress.gov/v3/bill?format=json&limit=2&sort=updateDate+desc"
     assert bill_list_url(
         congress=119, bill_type="hr", from_datetime="2026-09-01T00:00:00Z", to_datetime="2026-09-14T00:00:00Z"
@@ -272,11 +283,13 @@ def test_list_urls_are_explicit_and_bounded():
     ],
 )
 def test_invalid_list_selections_refuse(kwargs):
+    """Invalid list selections are refused."""
     with pytest.raises(PagedJsonSourceError):
         bill_list_url(**kwargs)
 
 
 def test_pinned_pages_parse_with_publisher_spellings():
+    """Pinned pages parse with publisher spellings, declared counts, and the key in headers only."""
     transport = Transport(BILLS, CRS)
     with CongressListingReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
         bills = source.page(bill_list_url(limit=2), records_key=BILLS_KEY)
@@ -294,6 +307,7 @@ def test_pinned_pages_parse_with_publisher_spellings():
 
 
 def test_walk_follows_publisher_continuations_to_a_consistent_end():
+    """The walk follows publisher continuations to a consistent end with no next URL."""
     first = json.loads(BILLS)
     first["pagination"]["count"] = 4
     second = json.loads(BILLS)
@@ -309,6 +323,7 @@ def test_walk_follows_publisher_continuations_to_a_consistent_end():
 
 
 def test_walk_refuses_when_the_publisher_stops_short_of_its_count():
+    """The walk refuses when observed records fall short of the declared count."""
     only = json.loads(BILLS)
     only["pagination"] = {"count": 3}
     transport = Transport(json.dumps(only).encode())
@@ -323,6 +338,7 @@ def test_walk_refuses_when_the_publisher_stops_short_of_its_count():
 
 
 def test_route_table_states_records_keys_and_measured_sort_support():
+    """The route table states each route's records key and measured sort support."""
     assert {name: route.sort_honored for name, route in LIST_ROUTES.items()} == {
         "bill": True,
         "crsreport": False,
@@ -548,10 +564,12 @@ def test_route_table_states_records_keys_and_measured_sort_support():
     ],
 )
 def test_list_route_url_builds_the_exact_publisher_request(route_name, expected):
+    """list_route_url builds the exact publisher request for every route."""
     assert list_route_url(LIST_ROUTES[route_name], limit=3, **ROUTE_PARAMS[route_name]) == expected
 
 
 def test_list_route_url_bare_route_omits_the_congress_segment():
+    """Bare routes omit their optional congress segment, and member has no path parameter at all."""
     assert (
         list_route_url(LIST_ROUTES["amendment"], limit=3) == "https://api.congress.gov/v3/amendment?format=json&limit=3"
     )
@@ -688,6 +706,7 @@ def test_new_list_routes_omit_their_optional_trailing_segments():
     ],
 )
 def test_list_route_url_refuses_invalid_or_missing_path_params(route_name, kwargs):
+    """Invalid or missing path params are refused."""
     with pytest.raises(PagedJsonSourceError):
         list_route_url(LIST_ROUTES[route_name], limit=3, **kwargs)
 
@@ -726,12 +745,14 @@ def test_route_path_refuses_a_values_mapping_missing_one_of_the_routes_own_token
 
 @pytest.mark.parametrize("route_name", sorted(name for name, route in LIST_ROUTES.items() if not route.sort_honored))
 def test_list_route_url_refuses_sort_the_publisher_ignores(route_name):
+    """A sort the publisher ignores is refused."""
     with pytest.raises(PagedJsonSourceError, match="ignores sort"):
         list_route_url(LIST_ROUTES[route_name], sort="updateDate desc", **ROUTE_PARAMS.get(route_name, {}))
 
 
 @pytest.mark.parametrize("route_name", sorted(name for name, route in LIST_ROUTES.items() if route.sort_honored))
 def test_list_route_url_accepts_sort_the_publisher_honors(route_name):
+    """A sort the publisher honors is accepted."""
     url = list_route_url(LIST_ROUTES[route_name], sort="updateDate asc", limit=3, **ROUTE_PARAMS.get(route_name, {}))
     assert "sort=updateDate+asc" in url
 
@@ -753,6 +774,7 @@ def test_crsreport_route_matches_its_named_builder_apart_from_the_legacy_sort():
 
 
 def test_list_route_url_refuses_sort_on_crsreport_but_the_legacy_builder_still_sends_it():
+    """The table route refuses sort on crsreport while the legacy builder still sends it."""
     with pytest.raises(PagedJsonSourceError, match="ignores sort"):
         list_route_url(LIST_ROUTES["crsreport"], sort="updateDate desc")
     assert "sort=updateDate+desc" in crs_report_list_url(sort="updateDate desc")
@@ -767,6 +789,7 @@ def test_legacy_builders_still_refuse_a_literal_sort_none(builder):
 
 
 def test_list_route_url_refuses_a_date_window_the_publisher_ignores():
+    """A date window the publisher ignores is refused."""
     with pytest.raises(PagedJsonSourceError, match="ignores the date window"):
         list_route_url(
             LIST_ROUTES["bill-actions"], from_datetime="2026-09-18T00:00:00Z", **ROUTE_PARAMS["bill-actions"]
@@ -776,6 +799,7 @@ def test_list_route_url_refuses_a_date_window_the_publisher_ignores():
 
 
 def test_list_route_url_accepts_a_date_window_the_publisher_honors():
+    """A date window the publisher honors is accepted."""
     url = list_route_url(
         LIST_ROUTES["committee-bills"], from_datetime="2026-09-18T00:00:00Z", **ROUTE_PARAMS["committee-bills"]
     )
@@ -796,6 +820,7 @@ def test_list_route_url_refuses_a_date_window_the_publisher_ignores_table_driven
 
 @pytest.mark.parametrize("route_name", sorted(name for name, route in LIST_ROUTES.items() if route.window_honored))
 def test_list_route_url_accepts_a_date_window_the_publisher_honors_table_driven(route_name):
+    """Table-driven: every window-honoring route accepts the date window."""
     url = list_route_url(
         LIST_ROUTES[route_name], from_datetime="2026-09-18T00:00:00Z", limit=3, **ROUTE_PARAMS.get(route_name, {})
     )
@@ -837,6 +862,7 @@ def test_congress_list_route_refuses_invalid_construction(kwargs):
 
 @pytest.mark.parametrize("route_name", sorted(ROUTE_PAGE_EXPECTATIONS))
 def test_table_driven_pages_parse_with_publisher_spellings(route_name):
+    """Table-driven pages parse with each route's records key, declared count, next URL and first record field."""
     route = LIST_ROUTES[route_name]
     count, next_url, field, value = ROUTE_PAGE_EXPECTATIONS[route_name]
     transport = Transport(ROUTE_FIXTURE_BYTES[route_name])
@@ -852,6 +878,7 @@ def test_table_driven_pages_parse_with_publisher_spellings(route_name):
 
 
 def test_records_method_walks_a_table_driven_route():
+    """records() walks a table-driven route to its declared count."""
     route = LIST_ROUTES["nomination"]
     transport = Transport(ROUTE_FIXTURE_BYTES["nomination"])
     url = list_route_url(route, congress=119, limit=3)
@@ -977,6 +1004,7 @@ def test_house_requirement_detail_carries_the_matching_communications_pointer_un
 
 
 def test_law_detail_reads_the_whole_bill_record_as_one_row():
+    """Law detail reads the whole bill record as one row, with its laws entry and every other field unshaped."""
     route = LIST_ROUTES["law-detail"]
     transport = Transport(DETAIL_FIXTURE_BYTES["law-detail"])
     url = list_route_url(route, limit=3, **ROUTE_PARAMS["law-detail"])
@@ -995,6 +1023,7 @@ def test_law_detail_reads_the_whole_bill_record_as_one_row():
 
 
 def test_committee_detail_reads_the_whole_committee_record_as_one_row():
+    """Committee detail reads the whole committee record with subcommittees unshaped."""
     route = LIST_ROUTES["committee-detail"]
     transport = Transport(DETAIL_FIXTURE_BYTES["committee-detail"])
     url = list_route_url(route, limit=3, **ROUTE_PARAMS["committee-detail"])
@@ -1013,6 +1042,7 @@ def test_committee_detail_reads_the_whole_committee_record_as_one_row():
 
 
 def test_member_detail_reads_the_whole_member_record_as_one_row():
+    """Member detail reads the whole member record with terms and party history unshaped."""
     route = LIST_ROUTES["member-detail"]
     transport = Transport(DETAIL_FIXTURE_BYTES["member-detail"])
     url = list_route_url(route, limit=3, **ROUTE_PARAMS["member-detail"])
@@ -1028,6 +1058,7 @@ def test_member_detail_reads_the_whole_member_record_as_one_row():
 
 
 def test_committee_print_detail_reads_the_publishers_one_item_array():
+    """Committee-print detail reads the publisher's one-item array with declared count 1."""
     route = LIST_ROUTES["committee-print-detail"]
     transport = Transport(DETAIL_FIXTURE_BYTES["committee-print-detail"])
     url = list_route_url(route, limit=3, **ROUTE_PARAMS["committee-print-detail"])
@@ -1086,6 +1117,7 @@ NO_PAGINATION_ROUTES = frozenset(
 @pytest.mark.integration
 @pytest.mark.parametrize("route_name", sorted(ROUTE_PARAMS))
 def test_table_driven_route_walks_one_live_page(route_name):
+    """Live: a table-driven route walks one page with a non-null count and a publisher-hosted continuation."""
     if not ENV_FILE.exists():
         pytest.skip(f"no credential file at {ENV_FILE}")
     key = read_api_key(ENV_FILE, "API_GOV")

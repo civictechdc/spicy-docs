@@ -1,13 +1,9 @@
 """The DocumentCapture v1 profiles and the six worked conversions, checked from what is committed.
 
-Nothing here fetches: every capture is re-validated against the installed
-parent and its profile, its text stream is re-derived from the retained
-document with another parser, every selector of every rendition fragment is
-resolved against the bytes it names, and each validator is shown to refuse a
-mutation of a committed capture. The one PDF-derived input is the retained
-extractor document, never the PDF; the PDFs themselves are not committed, so
-a page region is checked against the retained page geometry rather than
-against a render.
+Nothing fetches: captures re-validate against the installed parent and profile,
+text streams are re-derived with another parser, every rendition-fragment
+selector resolves against the bytes it names, and each validator refuses a
+mutation. PDF-derived input is the retained extractor document, never the PDF.
 """
 
 from __future__ import annotations
@@ -30,14 +26,17 @@ CAPTURES = sorted(OUTPUT.glob("*.capture.json"))
 
 @pytest.fixture(scope="module")
 def validators():
+    """The installed parent, profile and fragment validators."""
     return dc.validators()
 
 
 def load(path: Path) -> dict:
+    """Load one committed capture JSON."""
     return json.loads(path.read_text())
 
 
 def fragments_of(path: Path) -> list[dict]:
+    """Every fragment entry in a capture, with its path."""
     return json.loads(path.with_name(path.name.replace(".capture.json", ".fragments.json")).read_text())
 
 
@@ -51,6 +50,7 @@ def stream_bytes(capture: dict) -> bytes:
 
 
 def test_installed_schemas_and_validator_match_their_pins() -> None:
+    """Installed schema pins and validator identity match PINS.json, including every profile."""
     assert dc.schema_pin(dc.PARENT_SCHEMA) == PINS["parent"]
     assert dc.schema_pin(dc.PROFILE_META_SCHEMA) == PINS["profileMetaSchema"]
     assert dc.schema_pin("rulespec/source-fragment.schema.json") == PINS["sourceFragment"]
@@ -63,6 +63,7 @@ def test_installed_schemas_and_validator_match_their_pins() -> None:
 
 @pytest.mark.parametrize("defect", ["child-before-parent", "duplicate-node-id"])
 def test_installed_validator_refuses_tree_defects(defect: str) -> None:
+    """The installed validator refuses each tree defect and accepts the repaired capture."""
     # Isolated owner counterexamples pin the corrected installed behavior.
     capture = load(ROOT / "tests" / "fixtures" / "document_capture_invariants" / f"negative-{defect}.json")
     expected = "parent-not-earlier" if defect == "child-before-parent" else "duplicate-node-id"
@@ -79,6 +80,7 @@ def test_installed_validator_refuses_tree_defects(defect: str) -> None:
 
 @pytest.mark.parametrize("name", sorted(PINS["profiles"]))
 def test_profile_composes_the_parent_without_redefining_it(name: str) -> None:
+    """Each profile composes the parent without redefining it and pins its own name."""
     profile = dc.load_schema(f"profiles/{name}.schema.json")
     assert dc.check_profile_composition(profile, dc.load_schema(dc.PARENT_SCHEMA)) == []
     assert profile["allOf"][1]["properties"]["profile"]["properties"]["name"]["const"] == name
@@ -113,6 +115,7 @@ def test_the_meta_schema_refuses_the_seven_tightenings_the_old_checker_admitted(
 
 
 def test_the_meta_schema_refuses_a_foreign_kind_and_a_stale_pin() -> None:
+    """The meta schema refuses a foreign kind and a stale pin."""
     parent = dc.load_schema(dc.PARENT_SCHEMA)
     base = dc.load_schema("profiles/uslm-law.schema.json")
     for name, mutate in {
@@ -130,6 +133,7 @@ def test_the_meta_schema_refuses_a_foreign_kind_and_a_stale_pin() -> None:
 
 
 def test_a_profile_refuses_another_familys_kind(validators) -> None:
+    """A profile refuses another family's kind."""
     _, profiles, _ = validators
     capture = load(CAPTURES[0])
     doc = copy.deepcopy(capture)
@@ -141,6 +145,7 @@ def test_a_profile_refuses_another_familys_kind(validators) -> None:
 
 
 def test_every_family_has_a_worked_conversion() -> None:
+    """Every family except the PDF-generated one has a worked conversion."""
     families = {load(p)["profile"]["name"] for p in CAPTURES}
     # The seventh family is generated from a bounded real PDF in
     # test_document_capture_pdf_tables.py and validated there.
@@ -149,6 +154,7 @@ def test_every_family_has_a_worked_conversion() -> None:
 
 @pytest.mark.parametrize("path", CAPTURES, ids=[p.name for p in CAPTURES])
 def test_capture_validates_and_holds_its_invariants(path: Path, validators) -> None:
+    """Each capture validates against parent and profile and holds its invariants."""
     parent, profiles, _ = validators
     capture = load(path)
     assert capture["schema"] == PINS["parent"]
@@ -160,6 +166,7 @@ def test_capture_validates_and_holds_its_invariants(path: Path, validators) -> N
 
 @pytest.mark.parametrize("path", CAPTURES, ids=[p.name for p in CAPTURES])
 def test_every_capture_names_when_its_bytes_were_read(path: Path) -> None:
+    """Every capture states when its bytes were read."""
     assert load(path)["artifact"].get("retrievedAt")
 
 
@@ -178,7 +185,7 @@ def test_every_capture_names_the_converter_that_made_it(path: Path) -> None:
 
 @pytest.mark.parametrize("path", CAPTURES, ids=[p.name for p in CAPTURES])
 def test_the_artifact_is_the_publishers_own_bytes(path: Path) -> None:
-    """A consumer following locator.url and checking sha256 lands on the artifact, not on a derived file."""
+    """The artifact is the publisher's own bytes: its locator digest matches and differs from the intermediate."""
     capture = load(path)
     artifact, intermediate = capture["artifact"], capture["rendition"].get("intermediate")
     if intermediate is None:
@@ -193,6 +200,7 @@ def test_the_artifact_is_the_publishers_own_bytes(path: Path) -> None:
 
 @pytest.mark.parametrize("path", CAPTURES, ids=[p.name for p in CAPTURES])
 def test_text_stream_round_trips_from_the_retained_document(path: Path) -> None:
+    """The text stream digest and concatenated evidence round-trip from the retained document."""
     capture = load(path)
     data = stream_bytes(capture)
     evidence = json.loads(data) if capture["rendition"].get("intermediate") else None
@@ -204,6 +212,7 @@ def test_text_stream_round_trips_from_the_retained_document(path: Path) -> None:
 
 @pytest.mark.parametrize("path", CAPTURES, ids=[p.name for p in CAPTURES])
 def test_leaf_fragments_are_valid_source_fragments(path: Path, validators) -> None:
+    """Leaf fragments validate, their quotes and digests match the stream, and their positions re-read the text."""
     _, _, fragment_validator = validators
     capture = load(path)
     fragments = fragments_of(path)
@@ -297,7 +306,7 @@ def test_every_rendition_selector_resolves_against_the_bytes_it_names(path: Path
     ],
 )
 def test_the_invariant_validator_names_each_defect(name: str, mutate) -> None:
-    """Stubbing the three validators used to leave every test green; each now has a counterexample."""
+    """The invariant validator names each defect and accepts the good capture."""
     capture = load(CAPTURES[0])
     assert dc.check_invariants(capture) == []
     broken = copy.deepcopy(capture)
@@ -306,6 +315,7 @@ def test_the_invariant_validator_names_each_defect(name: str, mutate) -> None:
 
 
 def test_the_schema_refuses_a_capture_whose_shape_moved(validators) -> None:
+    """The schema refuses a capture whose shape moved."""
     parent, _, _ = validators
     for name, mutate in {
         "a rendition kind that is an extractor output": lambda d: d["rendition"].__setitem__("kind", "evidence-lines"),
@@ -320,6 +330,7 @@ def test_the_schema_refuses_a_capture_whose_shape_moved(validators) -> None:
 
 
 def test_the_fragment_validator_refuses_a_moved_digest(validators) -> None:
+    """The fragment validator refuses a moved digest."""
     _, _, fragment_validator = validators
     fragments = copy.deepcopy(fragments_of(CAPTURES[0]))
     assert dc.validate_fragments(fragments, fragment_validator) == []
@@ -331,6 +342,7 @@ def test_the_fragment_validator_refuses_a_moved_digest(validators) -> None:
 
 
 def test_family_kinds_stay_inside_their_profile_namespace() -> None:
+    """Family node kinds stay inside their profile namespace."""
     core = dc.core_kinds()
     for path in CAPTURES:
         capture = load(path)
@@ -362,6 +374,7 @@ def test_the_slip_opinion_names_its_two_opinions_and_their_printed_pages() -> No
 
 
 def test_the_committee_report_reads_its_ruled_vote_tables_and_centred_heads() -> None:
+    """The committee report reads four ruled vote tables and centred header rows whose cells are headers."""
     capture = load(OUTPUT / "crpt-119hrpt1.capture.json")
     kinds = [n["kind"] for n in capture["nodes"]]
     assert kinds.count("table") == 4
@@ -372,6 +385,7 @@ def test_the_committee_report_reads_its_ruled_vote_tables_and_centred_heads() ->
 
 
 def test_back_matter_and_levels_read_the_same_way_in_every_family() -> None:
+    """Back matter and levels read the same way in every family, with empty leaves flagged."""
     for path in CAPTURES:
         capture = load(path)
         for node in capture["nodes"]:

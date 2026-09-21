@@ -1,4 +1,7 @@
-"""A refused acquisition leaves exact diagnostic bytes, never a partial release."""
+"""A refused acquisition leaves exact diagnostic bytes, never a partial release: the failure report retains the
+publisher's response (or states why it was not retained), scrubs credentials before truncation, and the CLI
+surfaces the same report.
+"""
 
 from __future__ import annotations
 

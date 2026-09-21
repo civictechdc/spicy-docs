@@ -22,6 +22,7 @@ from tests.test_public_table import _PUBLIC_PRODUCER, _public_reader, _source_ro
 
 
 def test_cli_projects_current_native_identity_without_losing_reused_numbers(tmp_path: Path, capsys) -> None:
+    """The CLI projects current native identity while keeping reused document numbers distinct by publication date."""
     scope = {"publishedFrom": "2000-01-14", "publishedThrough": "2000-01-18"}
     documents = [
         _document("00-111", publication_date="2000-01-14", title="Older rule"),
@@ -67,12 +68,14 @@ def test_cli_projects_current_native_identity_without_losing_reused_numbers(tmp_
 
 
 def test_current_projection_refuses_a_wrong_source_identity() -> None:
+    """The current projection refuses a wrong source identity."""
     profile = FEDERAL_REGISTER_PUBLIC_TABLE
     with pytest.raises(PublicTableProjectionError, match="source record identity"):
         profile.project(_source_row(profile, "2026-00001", _document()))
 
 
 def test_compound_public_key_still_refuses_duplicate_pairs(tmp_path: Path) -> None:
+    """The compound public key still refuses duplicate document/date pairs."""
     profile = FEDERAL_REGISTER_PUBLIC_TABLE
     row = _source_row(profile, "2026-00001@2026-08-25", _document())
     with pytest.raises(PublicTableError, match="repeats primary key"):
@@ -85,6 +88,7 @@ def test_compound_public_key_still_refuses_duplicate_pairs(tmp_path: Path) -> No
 
 
 def test_compound_key_encoding_preserves_column_boundaries() -> None:
+    """Compound-key encoding preserves column boundaries, so an embedded separator cannot collide."""
     profile = FEDERAL_REGISTER_PUBLIC_TABLE
     assert profile.row_key({"document_number": "a@b", "publication_date": "c"}) != profile.row_key(
         {"document_number": "a", "publication_date": "b@c"}
@@ -102,10 +106,12 @@ def test_compound_key_encoding_preserves_column_boundaries() -> None:
     ],
 )
 def test_compound_key_requires_a_complete_explicit_profile(changes) -> None:
+    """The compound key requires a complete explicit profile."""
     with pytest.raises(PublicTableError):
         PublicTablePublisher(replace(FEDERAL_REGISTER_PUBLIC_TABLE, **changes))
 
 
 def test_compound_key_requires_every_value() -> None:
+    """The compound key requires every value."""
     with pytest.raises(PublicTableProjectionError, match="primary key is empty"):
         FEDERAL_REGISTER_PUBLIC_TABLE.row_key({"document_number": "00-111", "publication_date": None})

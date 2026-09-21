@@ -1,4 +1,7 @@
-"""Publisher aliases and URL fallbacks produce stable rendition metadata."""
+"""media_type maps publisher aliases and URL fallbacks to stable rendition media types.
+
+A stated publisher type wins over the URL; otherwise the last path segment's suffix decides, and anything
+unrecognized becomes application/octet-stream."""
 
 import pytest
 

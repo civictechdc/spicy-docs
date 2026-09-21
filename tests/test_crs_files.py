@@ -91,10 +91,13 @@ def signed_pdf(*, delta: int = 0, pad: int = 64) -> bytes:
 
 
 def response(body=COMPLETE, status=200, *, content_type="application/pdf"):
+    """An HTTPX response over the given bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -107,11 +110,13 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 @pytest.mark.parametrize("url,family,report_id,version", STATED)
 def test_stated_url_round_trips_through_the_selection(url, family, report_id, version):
+    """A stated URL round-trips to its selection and back, including the file name."""
     selection = crs_file_selection(url)
     assert (selection.family, selection.report_id, selection.version) == (family, report_id, version)
     assert selection.file_name == f"{report_id}.{version}.pdf"
@@ -119,6 +124,7 @@ def test_stated_url_round_trips_through_the_selection(url, family, report_id, ve
 
 
 def test_family_inference_follows_the_prefix_and_refuses_what_it_cannot_state():
+    """Family inference follows the id prefix and refuses a legacy id that states no family."""
     assert family_from_report_id("IF11830") == "IF" and family_from_report_id("LSB10059") == "LSB"
     # RL31312 is filed under RA: the inference is an inference, and answered 404 live.
     assert family_from_report_id("RL31312") == "RL" != crs_file_selection(STATED[3][0]).family
@@ -141,6 +147,7 @@ def test_family_inference_follows_the_prefix_and_refuses_what_it_cannot_state():
     ],
 )
 def test_stated_url_refusals_name_the_failed_check(url, message):
+    """Stated-URL refusals name the failed check."""
     with pytest.raises(CrsFileSourceError, match=message):
         crs_file_selection(url)
 
@@ -161,21 +168,25 @@ def test_stated_url_refusals_name_the_failed_check(url, message):
     ],
 )
 def test_selection_refusals_name_the_failed_check(fields, message):
+    """Selection refusals name the failed check."""
     with pytest.raises(CrsFileSourceError, match=message):
         CrsFileSelection(**{"family": "IF", "report_id": "IF11830", "version": 5, **fields})
 
 
 def test_locator_requires_a_selection():
+    """The locator requires a CrsFileSelection."""
     with pytest.raises(CrsFileSourceError, match="must be a CrsFileSelection"):
         crs_file_locator(LOCATOR)
 
 
 def read(body, selection=SELECTION, **kwargs):
+    """Read the given PDF bytes as the fixture selection."""
     kwargs.setdefault("final_url", LOCATOR)
     return read_crs_pdf(body, selection, **kwargs)
 
 
 def test_complete_file_states_its_pdf_version_and_signed_length():
+    """A complete file states its PDF version, byte size and the publisher's signed byte range."""
     file = read(COMPLETE)
     assert file.pdf_version == "1.7" and file.byte_size == IF11830_BYTES
     # The publisher's own /ByteRange, read from the retained header bytes.
@@ -183,11 +194,13 @@ def test_complete_file_states_its_pdf_version_and_signed_length():
 
 
 def test_unsigned_pdf_keeps_its_absent_signature_absent():
+    """An unsigned PDF keeps its absent signature as None."""
     file = read(b"%PDF-2.0\n" + b"x" * 32 + b"\n%%EOF\n")
     assert file.signed_byte_range_total is None and file.pdf_version == "2.0"
 
 
 def test_signature_length_must_agree_with_the_capture():
+    """A signature stating a length other than the capture's is refused."""
     assert read(signed_pdf()).signed_byte_range_total == len(signed_pdf())
     with pytest.raises(CrsFileSourceError, match="signature states"):
         read(signed_pdf(delta=1))
@@ -207,6 +220,7 @@ def test_signature_length_must_agree_with_the_capture():
     ],
 )
 def test_body_refusals_name_the_failed_check(body, message):
+    """Body refusals name the failed check."""
     with pytest.raises(CrsFileSourceError, match=message):
         read(body)
 
@@ -221,12 +235,14 @@ def test_body_refusals_name_the_failed_check(body, message):
     ],
 )
 def test_a_final_url_other_than_the_locator_is_refused(final_url):
+    """A final URL other than the locator is refused."""
     with pytest.raises(CrsFileSourceError, match="final URL"):
         read(COMPLETE, final_url=final_url)
 
 
 @pytest.mark.parametrize("max_bytes", [0, True, 64 * 1024**2 + 1, "8192"])
 def test_read_bounds_are_explicit(max_bytes):
+    """Read bounds are explicit and refuse on violation."""
     with pytest.raises(CrsFileSourceError, match="max_bytes"):
         read(COMPLETE, max_bytes=max_bytes)
     with pytest.raises(CrsFileSourceError, match="byte bound"):
@@ -234,6 +250,7 @@ def test_read_bounds_are_explicit(max_bytes):
 
 
 def test_acquirer_captures_exact_pdf_bytes_keyless():
+    """The acquirer captures exact PDF bytes keyless by GET with no key header or query."""
     transport = Transport(response())
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report_pdf(SELECTION)
@@ -249,6 +266,7 @@ def test_acquirer_captures_exact_pdf_bytes_keyless():
 
 
 def test_narrowed_byte_bound_refuses_a_larger_file_with_its_evidence():
+    """A narrowed byte bound refuses a larger file and records the bound and reason."""
     transport = Transport(response())
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(CrsFileSourceError) as raised:
         source.acquire_report_pdf(SELECTION, max_bytes=4096)
@@ -267,6 +285,7 @@ def test_narrowed_byte_bound_refuses_a_larger_file_with_its_evidence():
     ],
 )
 def test_wrong_shape_or_missing_file_never_succeeds(answer, error, message):
+    """A wrong-shape or missing file fails once with bytes retained and the operation, selection and URL recorded."""
     transport = Transport(answer)
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(error, match=message) as raised:
         source.acquire_report_pdf(SELECTION)
@@ -278,6 +297,7 @@ def test_wrong_shape_or_missing_file_never_succeeds(answer, error, message):
 
 
 def test_budget_and_client_configuration_are_explicit():
+    """Invalid budget values raise ValueError and a wrong transport type raises TypeError."""
     for fields in ({"max_requests": 0}, {"max_bytes": 64 * 1024**2 + 1}, {"timeout_seconds": 0}):
         with pytest.raises(ValueError):
             CrsFileBudget(
@@ -298,6 +318,7 @@ def test_budget_and_client_configuration_are_explicit():
 
 @pytest.mark.parametrize("url,family,report_id", HTML_STATED)
 def test_html_stated_url_round_trips_through_the_selection(url, family, report_id):
+    """A stated HTML URL round-trips to its selection and back with an .html file name."""
     selection = crs_html_selection(url)
     assert (selection.family, selection.report_id) == (family, report_id)
     assert selection.file_name == f"{report_id}.html"
@@ -319,6 +340,7 @@ def test_html_stated_url_round_trips_through_the_selection(url, family, report_i
     ],
 )
 def test_html_stated_url_refusals_name_the_failed_check(url, message):
+    """HTML stated-URL refusals name the failed check."""
     with pytest.raises(CrsFileSourceError, match=message):
         crs_html_selection(url)
 
@@ -335,21 +357,25 @@ def test_html_stated_url_refusals_name_the_failed_check(url, message):
     ],
 )
 def test_html_selection_refusals_name_the_failed_check(fields, message):
+    """HTML selection refusals name the failed check."""
     with pytest.raises(CrsFileSourceError, match=message):
         CrsHtmlSelection(**{"family": "IF", "report_id": "IF12853", **fields})
 
 
 def test_html_locator_requires_a_selection():
+    """The HTML locator requires a CrsHtmlSelection."""
     with pytest.raises(CrsFileSourceError, match="must be a CrsHtmlSelection"):
         crs_html_locator(HTML_LOCATOR)
 
 
 def read_html(body, selection=HTML_SELECTION, **kwargs):
+    """Read the given HTML bytes as the fixture selection."""
     kwargs.setdefault("final_url", HTML_LOCATOR)
     return read_crs_html(body, selection, **kwargs)
 
 
 def test_the_real_html_body_states_its_report_id_twice_independently():
+    """The real HTML body states its report id twice independently, in prose and in data-prod-type."""
     html = read_html(HTML_BODY)
     assert html.selection == HTML_SELECTION and html.byte_size == len(HTML_BODY)
     assert b"(IF12853)" in HTML_BODY
@@ -374,6 +400,7 @@ def test_the_real_html_body_states_its_report_id_twice_independently():
     ],
 )
 def test_html_body_refusals_name_the_failed_check(body, message):
+    """HTML body refusals name the failed check."""
     with pytest.raises(CrsFileSourceError, match=message):
         read_html(body)
 
@@ -393,11 +420,13 @@ def test_html_identity_is_scoped_to_the_cover_line_not_any_citation_in_prose():
     ],
 )
 def test_html_final_url_other_than_the_locator_is_refused(final_url):
+    """An HTML final URL other than the locator is refused."""
     with pytest.raises(CrsFileSourceError, match="final URL"):
         read_html(HTML_BODY, final_url=final_url)
 
 
 def test_html_read_bounds_are_explicit():
+    """HTML read bounds are explicit and refuse on violation."""
     with pytest.raises(CrsFileSourceError, match="max_bytes"):
         read_html(HTML_BODY, max_bytes="8192")
     with pytest.raises(CrsFileSourceError, match="byte bound"):
@@ -413,10 +442,12 @@ def test_html_fixture_parses_as_markup_through_the_shared_reader():
 
 
 def html_response(body=HTML_BODY, status=200, *, content_type="text/html"):
+    """An HTTPX response over the given HTML bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
 def test_acquirer_captures_exact_html_bytes_keyless():
+    """The acquirer captures exact HTML bytes keyless by GET with no key header or query."""
     transport = Transport(html_response())
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report_html(HTML_SELECTION)
@@ -444,11 +475,13 @@ def test_html_refusal_is_recast_not_a_bare_credential_refused_error():
 
 
 def test_crs_report_selection_reads_both_entries_from_one_formats_array():
+    """A report selection reads both PDF and HTML entries from one formats array."""
     selection = crs_report_selection(FORMATS_WITH_HTML)
     assert selection.pdf == PDF_SELECTION_FOR_HTML_REPORT and selection.html == HTML_SELECTION
 
 
 def test_crs_report_selection_html_is_optional():
+    """A report selection's HTML rendition is optional."""
     selection = crs_report_selection(FORMATS_PDF_ONLY)
     assert selection.pdf == SELECTION and selection.html is None
 
@@ -465,17 +498,20 @@ def test_crs_report_selection_html_is_optional():
     ],
 )
 def test_crs_report_selection_refusals_name_the_failed_check(formats, message):
+    """Report selection refusals name the failed check."""
     with pytest.raises(CrsFileSourceError, match=message):
         crs_report_selection(formats)
 
 
 def test_report_selection_refuses_mismatched_pdf_and_html():
+    """PDF and HTML selections for different reports are refused."""
     with pytest.raises(CrsFileSourceError, match="different reports"):
         CrsReportSelection(PDF_SELECTION_FOR_HTML_REPORT, CrsHtmlSelection("IF", "IF11830"))
 
 
 @pytest.mark.parametrize("fields", [{"pdf": LOCATOR}, {"html": HTML_LOCATOR}])
 def test_report_selection_refuses_the_wrong_types(fields):
+    """Wrong selection types are refused."""
     with pytest.raises(CrsFileSourceError, match="must be a Crs"):
         CrsReportSelection(**{"pdf": PDF_SELECTION_FOR_HTML_REPORT, "html": HTML_SELECTION, **fields})
 
@@ -484,6 +520,7 @@ def test_report_selection_refuses_the_wrong_types(fields):
 
 
 def test_acquire_report_prefers_html_when_it_is_offered():
+    """acquire_report prefers HTML when offered, in one request."""
     transport = Transport(html_response())
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report(REPORT_SELECTION)
@@ -494,6 +531,7 @@ def test_acquire_report_prefers_html_when_it_is_offered():
 
 
 def test_acquire_report_with_no_html_in_the_selection_goes_straight_to_pdf():
+    """With no HTML in the selection, acquire_report goes straight to PDF and records why."""
     transport = Transport(response())
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report(REPORT_SELECTION_NO_HTML)
@@ -504,7 +542,7 @@ def test_acquire_report_with_no_html_in_the_selection_goes_straight_to_pdf():
 
 
 def test_acquire_report_never_uses_html_for_a_superseded_version():
-    """The requested version (4) differs from formats[]'s current (10): HTML is never touched."""
+    """A superseded version never uses HTML, with the version difference named in the skip reason."""
     transport = Transport(response())  # exactly one queued: a second (HTML) request would raise KeyError
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report(REPORT_SELECTION, version=4)
@@ -516,6 +554,7 @@ def test_acquire_report_never_uses_html_for_a_superseded_version():
 
 
 def test_acquire_report_with_the_current_version_explicit_still_prefers_html():
+    """An explicit current version still prefers HTML."""
     transport = Transport(html_response())
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report(REPORT_SELECTION, version=10)
@@ -534,6 +573,7 @@ def test_acquire_report_with_the_current_version_explicit_still_prefers_html():
     ],
 )
 def test_acquire_report_falls_back_to_pdf_on_any_html_refusal(refusal):
+    """Any HTML refusal falls back to PDF in a second request, carrying the refusal on the result."""
     transport = Transport(refusal, response())
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report(REPORT_SELECTION)
@@ -547,6 +587,7 @@ def test_acquire_report_falls_back_to_pdf_on_any_html_refusal(refusal):
 
 
 def test_the_403_refusal_carries_the_bot_walls_own_bytes_on_the_result():
+    """A 403 refusal carries the bot wall's own bytes on the result."""
     transport = Transport(html_response(b"<html>Request Rejected</html>", status=403), response())
     with CrsFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report(REPORT_SELECTION)
@@ -554,6 +595,7 @@ def test_the_403_refusal_carries_the_bot_walls_own_bytes_on_the_result():
 
 
 def test_acquire_report_raises_when_the_pdf_fallback_also_fails():
+    """acquire_report raises when the PDF fallback also fails."""
     transport = Transport(html_response(status=403), response(b"<!DOCTYPE html>404", 404, content_type="text/html"))
     with (
         CrsFileAcquirer(budget=BUDGET, transport=transport) as source,
@@ -563,6 +605,7 @@ def test_acquire_report_raises_when_the_pdf_fallback_also_fails():
 
 
 def test_acquire_report_with_max_requests_one_raises_when_the_fallback_needs_a_second_request():
+    """With max_requests 1, a needed fallback raises the budget error after one request."""
     budget_one = CrsFileBudget(1, 8 * 1024 * 1024, 7, 0)
     transport = Transport(html_response(status=403))  # only one queued; a 2nd request must never be reached
     with (

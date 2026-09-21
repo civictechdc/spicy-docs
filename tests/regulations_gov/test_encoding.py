@@ -1,4 +1,7 @@
-"""Source values survive shared encoding; refused objects keep their exact bytes."""
+"""Encoding contract: source values round-trip byte-exact (integers in the JSON-safe range, Unicode text,
+nulls), while oversized, unsafe-key, non-bytes, float and duplicate-key objects are refused without a release --
+retaining the exact captured bytes when bytes exist and reporting ``not-retained`` when they do not.
+"""
 
 from __future__ import annotations
 

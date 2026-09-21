@@ -1,14 +1,10 @@
-"""The HTML/XML gap tool renders its block from the saved measurement, and its rules hold on print samples.
+"""The HTML/XML gap tool: its rendered block, scoring rules and corpus selection.
 
-Two kinds of case, kept apart. The render cases prove the committed sidecar and
-the document's generated block agree, so the numbers a reader sees are the
-numbers that were measured. The rule cases run the scanner over small
-constructed print samples spelled the way GPO spells them, so a rule that
-regressed is named by the case rather than by a moved percentage: every one
-reproduces a convention the run measured, and the docstring says which.
-
-No case makes a network request or reads a publisher body; the corpus itself
-lives outside this repository with its receipt.
+Render cases prove the committed sidecar and the document's generated block
+agree, so the numbers a reader sees are the measured ones; rule cases run the
+scanner over constructed print samples spelled the way GPO spells them, each
+reproducing a measured convention so a regression is named by case, not by a
+moved percentage. No case makes a network request or reads a publisher body.
 """
 
 from __future__ import annotations
@@ -55,6 +51,7 @@ FIXTURES = ROOT / "tests" / "fixtures" / "govinfo_bill_html"
 
 @pytest.fixture(scope="module")
 def measures() -> dict:
+    """The committed gap-measurement sidecar."""
     if not SIDECAR.exists():  # pragma: no cover - the sidecar is committed
         pytest.skip("no saved measurement")
     return json.loads(SIDECAR.read_text())
@@ -74,6 +71,7 @@ def test_the_block_renders_from_the_sidecar_and_matches_the_document(measures: d
 
 
 def test_every_paired_document_has_a_row_and_a_digest(measures: dict) -> None:
+    """All 30 paired documents appear in the block with 64-character XML and HTML digests."""
     block = render(measures)
     assert len(measures["paired"]) == 30
     for document in measures["paired"]:
@@ -82,6 +80,7 @@ def test_every_paired_document_has_a_row_and_a_digest(measures: dict) -> None:
 
 
 def test_the_block_reports_every_structure_kind_and_observation(measures: dict) -> None:
+    """Every structure kind and observation label appears in the rendered block."""
     block = render(measures)
     for kind in KINDS:
         assert f"| {kind} |" in block
@@ -98,15 +97,13 @@ def test_the_sidecar_carries_no_credential(measures: dict) -> None:
 
 
 def test_the_document_states_the_retained_receipt(measures: dict) -> None:
+    """The rendered block states the retained campaign receipt path."""
     assert "supply-2026-09-02/receipts/bill-html-xml-gap-2026-09-19" in render(measures)
 
 
 def test_the_aggregate_is_recomputable_from_the_per_document_rows(measures: dict) -> None:
-    """The summary is derived, not stored: recomputing it from the rows must agree.
-
-    Compared through JSON, because that is the shape the sidecar holds: the
-    word lists are tuples in memory and arrays on disk, and the check is about
-    the numbers, not about which Python type carried them.
+    """The summary is derived, not stored: recomputing it from per-document rows through JSON agrees with the
+    sidecar's aggregate, since the check is about numbers, not carrier types.
     """
     assert json.loads(json.dumps(aggregate(measures["paired"]))) == measures["aggregate"]
 
@@ -238,6 +235,9 @@ def test_an_inline_quoted_term_does_not_open_a_block() -> None:
 
 
 def test_a_colon_lead_in_opens_a_block_that_ends_at_its_close() -> None:
+    """A colon lead-in opens one quoted block ending at its close, and the quoted section number stays out of this
+    bill's sections.
+    """
     found = scan_html(QUOTED_BLOCK)
     assert found.quoted_blocks == 1
     assert [number for number, _ in found.sections] == ["2", "3"]
@@ -264,6 +264,7 @@ def test_the_body_anchor_falls_back_to_the_resolving_clause() -> None:
 
 
 def test_banners_are_the_bracketed_lines_at_the_top_only() -> None:
+    """Only bracketed lines at the very top are banners; a mid-document bracketed line is not."""
     document = "[Congressional Bills 113th Congress]\n[From the U.S. Government Publishing Office]\n[H.R. 1 Introduced in House (IH)]\n\nSEC. 1. A.\n\n    Text [bracketed mid-document] here.\n"
     found = scan_html(document)
     assert len(found.banners) == 3
@@ -292,6 +293,7 @@ def test_normalization_treats_gpo_dashes_as_separators() -> None:
 
 
 def test_fidelity_reports_the_words_only_one_side_has() -> None:
+    """fidelity reports each side's word totals, the one-sided top words and an overlap ratio."""
     row = fidelity(["a", "b", "c"], ["a", "b"])
     assert row["ratio"] == pytest.approx(0.8)
     assert row["htmlOnly"] == {"count": 1, "top": [("c", 1)]}
@@ -332,6 +334,7 @@ def test_selection_stops_when_a_listing_has_fewer_codes_than_picks() -> None:
 
 
 def test_selection_skips_a_name_the_package_grammar_refuses() -> None:
+    """A filename the package grammar refuses is skipped, leaving only the valid pick."""
     entries = [
         {"fileExtension": "xml", "justFileName": "BILLS-113hr1ih.xml", "size": 10},
         {"fileExtension": "xml", "justFileName": "not-a-package.xml", "size": 10},
@@ -369,6 +372,7 @@ def test_the_measured_dtd_requires_the_fields_the_document_reports(measures: dic
 
 
 def _fixture_text(name: str) -> str:
+    """The ``htm`` rendition text of a committed fixture."""
     return rendition_text((FIXTURES / name).read_bytes(), rendition="htm").text
 
 
@@ -399,12 +403,8 @@ def test_struck_markers_on_publisher_bytes() -> None:
 
 
 def test_struck_markers_are_a_lower_bound_not_an_assumption() -> None:
-    """If GPO stopped escaping the marker the count would fall silently to zero.
-
-    The escaped form is what the rules read. Feeding the same document with the
-    marker gone reproduces exactly that failure -- the headings are still found,
-    so nothing looks wrong -- which is why `struck_expected` asserts the bound
-    against the XML's body count rather than trusting the marker.
+    """Stripping the escaped marker drops struck_sections silently to 0 while all 8 headings survive, which is why
+    the marker count is a lower bound rather than an assumption.
     """
     text = _fixture_text("BILLS-113s2113rs.htm")
     assert scan_html(text).struck_sections == 5
@@ -463,6 +463,7 @@ def test_the_selector_steps_past_an_excluded_file() -> None:
 
 
 def test_the_block_leads_with_the_held_out_score(measures: dict) -> None:
+    """The block leads with the held-out score before the tuning corpus and labels it the headline."""
     block = render(measures)
     held_at = block.find("### Held-out score")
     tuning_at = block.find("### Tuning corpus")
@@ -482,6 +483,7 @@ def test_a_missing_held_out_block_says_so_rather_than_implying_one() -> None:
 
 
 def test_the_sidecar_pins_the_dtd_by_digest(measures: dict) -> None:
+    """The DTD is pinned by HTTPS URL, byte count and 64-character digest and cited, not validated against."""
     pin = measures.get("dtdPin") or {}
     if not pin:  # pragma: no cover - the DTD is pinned in the sidecar
         pytest.skip("no DTD pin in the saved measurement")
@@ -504,6 +506,7 @@ def test_the_deleted_marker_is_recorded_as_an_inference_not_a_dtd_element(measur
 
 
 def test_dtd_declares_reads_the_schema() -> None:
+    """dtd_declares matches declared element names case-sensitively and returns None without a pin."""
     pin = DtdPin("https://example.invalid/bill.dtd", 3, "x" * 64, "<!ELEMENT  deleted-phrase  (#PCDATA)*>")
     assert dtd_declares(pin, "deleted-phrase") is True
     assert dtd_declares(pin, "DELETED") is False
@@ -511,6 +514,7 @@ def test_dtd_declares_reads_the_schema() -> None:
 
 
 def test_the_struck_marker_invariant_held_on_every_multi_body_document(measures: dict) -> None:
+    """No multi-body document in either corpus tripped the struck-marker invariant."""
     for block in (measures, measures.get("heldOut") or {"aggregate": {}}):
         aggregated = block.get("aggregate") or {}
         assert aggregated.get("struckMarkerHeld", []) == []
@@ -535,6 +539,7 @@ def test_catchline_agreement_separates_the_empty_pairings() -> None:
 
 
 def test_the_block_reports_both_catchline_figures(measures: dict) -> None:
+    """The block reports both the real and the trivially agreed catchline figures."""
     block = render(measures)
     assert "where neither" in block
     assert "agrees trivially" in block
@@ -554,10 +559,8 @@ def test_a_refusal_is_scrubbed_before_it_is_truncated() -> None:
 
 
 def test_a_refusal_scrubs_a_key_the_pattern_alone_would_miss() -> None:
-    """The literal pass: the configured key echoed outside an `api_key=` query still has to go.
-
-    Only the literal pass can catch this one, because there is no `api_key=`
-    for the pattern to anchor on.
+    """The literal pass catches the configured key echoed outside an ``api_key=`` query, which the pattern pass alone
+    would miss because it has nothing to anchor on.
     """
     key = "z" * 40
     row = _refusal("BILLS-113hr1ih", ValueError(f"upstream echoed X-Api-Key {key} in its body"), key)
@@ -566,14 +569,8 @@ def test_a_refusal_scrubs_a_key_the_pattern_alone_would_miss() -> None:
 
 
 def test_a_refusal_scrubs_a_key_it_was_not_handed() -> None:
-    """The pattern pass, which the literal pass cannot cover.
-
-    Written because mutation said it was needed: every other credential case
-    here passes the configured key as the literal, so deleting the pattern pass
-    left all of them green and the claim that both passes earn their place was
-    unbacked. A refusal can carry a credential this run was never told about --
-    a redirect to another keyed host, or a nested URL quoted inside a publisher
-    message -- and that is the half only the pattern sees.
+    """The pattern pass catches a credential this run was never handed (a redirect or nested URL), which the literal
+    pass cannot cover.
     """
     other = "SOME-OTHER-SECRET"
     error = ValueError(f"redirected to https://other.example/v3/x?api_key={other}&format=json")
@@ -583,13 +580,8 @@ def test_a_refusal_scrubs_a_key_it_was_not_handed() -> None:
 
 
 def test_a_long_refusal_is_scrubbed_before_it_is_truncated_not_after() -> None:
-    """The order is the whole point, so the case is built to fail if it is reversed.
-
-    The key is placed so the 200-character cut falls *inside* it, and it is
-    echoed in a form only the literal pass catches (no ``api_key=``, which the
-    pattern pass would still redact after truncation). Scrub-then-truncate
-    removes the whole key; truncate-then-scrub leaves its first 20 characters
-    standing, which is exactly the hole AGENTS.md names.
+    """With the 200-character cut placed inside the key, scrub-then-truncate removes it whole where
+    truncate-then-scrub would leave its first 25 characters standing.
     """
     key = "q" * 40
     # Place the key so that 25 of its characters fall before the 200-character
@@ -643,6 +635,7 @@ def test_a_credential_refusal_stops_the_run_without_a_traceback(tmp_path, monkey
 
 
 def test_listing_overrides_are_parsed_as_the_bulk_route_spells_them() -> None:
+    """Listing overrides parse as congress:session:type; missing, extra or non-numeric parts raise ValueError."""
     assert _parse_listing("113:1:hr") == (113, 1, "hr")
     for bad in ("113:1", "113:1:hr:x", "abc:1:hr", "113:x:hr", "113:1:9"):
         with pytest.raises(ValueError):

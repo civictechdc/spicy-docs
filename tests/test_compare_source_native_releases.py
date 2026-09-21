@@ -27,6 +27,7 @@ def _line(
     agencies: list[str] | None = None,
     abstract: str = "An abstract",
 ) -> dict[str, Any]:
+    """Build one release line from the given record."""
     return {
         "sourceRecordId": f"{number}@{date}",
         "record": {
@@ -41,6 +42,7 @@ def _line(
 
 
 def _compare(tmp_path: Path, baseline: list[dict[str, Any]], candidate: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compare baseline and candidate line sets under the given options."""
     base_root, blobs = records_release(tmp_path, "baseline", baseline)
     cand_root, _ = records_release(tmp_path, "candidate", candidate)
     return compare(base_root, cand_root, blobs, IDENTITY, COMPARE)
@@ -124,6 +126,7 @@ def test_title_prefix_variant_is_counted_but_still_a_differing_record(tmp_path: 
 
 
 def test_a_genuinely_different_title_is_not_a_prefix_variant(tmp_path: Path) -> None:
+    """A genuinely different title is not a prefix variant and stays in the residual."""
     baseline = [_line("00-111", "2000-01-18", title="Notice of Filing of Plat of an Island; Minnesota")]
     candidate = [*baseline, _line("00-111", "2000-01-14", title="Compliance Monitoring", type_="Rule")]
 
@@ -134,6 +137,7 @@ def test_a_genuinely_different_title_is_not_a_prefix_variant(tmp_path: Path) -> 
 
 
 def test_membership_only_when_no_compare_field_is_given(tmp_path: Path) -> None:
+    """Without a compare field the result reports membership only, with no differing counts."""
     baseline = [_line("00-111", "2000-01-18")]
     candidate = [*baseline, _line("00-111", "2000-01-14")]
     base_root, blobs = records_release(tmp_path, "baseline", baseline)

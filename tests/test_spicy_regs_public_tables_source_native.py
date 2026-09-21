@@ -1,13 +1,9 @@
 """The spicy-regs public tables as the first rung of supply.
 
-PLAN.md's supply-precedence ruling (accepted 2026-08-31) starts acquisition at
-the community's already-collected tables, captured and digest-pinned like any
-source.  These tests hold the comment-text scope to that: whole partition
-objects pinned by digest, every declared column preserved including the nulls
-and the ``See attached`` bodies, a scope that names exactly the partitions it
-covers, and a fail-closed refusal the moment the published table's columns
-drift.  Nothing here touches the network.
-"""
+The supply-precedence ruling starts acquisition at the community's already-collected tables, captured and
+digest-pinned like any source; these tests hold the comment-text scope to that -- whole partition objects, every
+declared column including nulls and ``See attached`` bodies, and a fail-closed refusal when the published columns
+drift. Nothing here touches the network."""
 
 from __future__ import annotations
 

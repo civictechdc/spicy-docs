@@ -1,4 +1,10 @@
-"""Stage rules ported case for case, plus the two corrections the port makes."""
+"""Bill-stage inference: the ported stage cases, the ladder, and the two corrections the port makes.
+
+Pins each rule's stage in published order, the stage ladder and its progress
+values, the fold that takes the latest classified action regardless of list
+order, and the two fixes: untruncated action text and a signed date read from
+the coded became-law action rather than the latest action.
+"""
 
 import pytest
 
@@ -55,10 +61,12 @@ PORTED_CASES = [
 
 @pytest.mark.parametrize(("text", "expected"), PORTED_CASES)
 def test_ported_stage_cases(text: str | None, expected: str) -> None:
+    """Each ported action or version-type text infers its pinned stage."""
     assert infer_stage_from_text(text).stage == expected
 
 
 def test_ladder_order_and_progress() -> None:
+    """The ladder keeps its order and ``stage_progress`` runs 0.0 to 1.0; an unknown stage raises ``ValueError``."""
     assert [stage.key for stage in STAGES] == [
         "introduced",
         "committee",
@@ -76,6 +84,7 @@ def test_ladder_order_and_progress() -> None:
 
 
 def test_rule_order_is_the_published_order() -> None:
+    """``STAGE_RULES`` is read in the published order, law through introduced."""
     assert [rule.stage for rule in STAGE_RULES] == [
         "law",
         "presented",
@@ -88,12 +97,14 @@ def test_rule_order_is_the_published_order() -> None:
 
 
 def test_finding_names_the_rule_and_the_matcher() -> None:
+    """A finding names the rule and matcher that fired and echoes the source text."""
     finding = infer_stage_from_text("Became Public Law No: 119-12.")
     assert (finding.rule, finding.matcher) == ("law", "public law")
     assert finding.source_text == "Became Public Law No: 119-12."
 
 
 def test_no_rule_fires_leaves_the_default_unattributed() -> None:
+    """Text no rule matches falls to ``introduced`` with no rule or matcher attributed."""
     finding = infer_stage_from_text("Sponsor withdrew the measure.")
     assert (finding.stage, finding.rule, finding.matcher) == ("introduced", None, None)
 
@@ -110,6 +121,7 @@ LONG_ACTION = (
 
 
 def test_truncating_to_100_characters_would_change_the_stage() -> None:
+    """The long action reads as ``presented`` whole, but the same text cut at 100 characters falls to ``introduced``."""
     assert len(LONG_ACTION) > 100
     assert infer_stage_from_text(LONG_ACTION).stage == "presented"
     # The behaviour being corrected, shown rather than asserted about in prose:
@@ -118,6 +130,7 @@ def test_truncating_to_100_characters_would_change_the_stage() -> None:
 
 
 def test_infer_stage_reads_actions_whole_and_names_the_action() -> None:
+    """``infer_stage`` reads whole action text and reports the matched action's index, date and text."""
     actions = (
         BillAction("Introduced in House", "2025-01-03", None, "Intro-H", None, None, None),
         BillAction(LONG_ACTION, "2025-07-01", None, None, None, None, None),
@@ -143,10 +156,14 @@ FOLD_CASES = [
 
 @pytest.mark.parametrize(("actions", "expected"), FOLD_CASES)
 def test_the_fold_takes_the_latest_classified_action(actions: tuple[str, ...], expected: str) -> None:
+    """The fold returns the stage of the latest classified action, not the highest display stage."""
     assert infer_stage(actions).stage == expected
 
 
 def test_display_order_is_not_progress_order() -> None:
+    """``other_chamber`` outranks ``committee`` and ``passed_chamber`` in display order,
+    and a referral alone reads as ``other_chamber``.
+    """
     # The disagreement the fold must not read as a ladder.
     assert stage_index("other_chamber") > stage_index("committee")
     assert stage_index("other_chamber") > stage_index("passed_chamber")
@@ -154,11 +171,13 @@ def test_display_order_is_not_progress_order() -> None:
 
 
 def test_an_unclassified_action_leaves_the_stage_alone() -> None:
+    """An action no rule matches does not change the stage set by earlier classified actions."""
     actions = ("Introduced in House", REFERRAL, "Sponsor's remarks inserted in the Record.")
     assert infer_stage(actions).stage == "other_chamber"
 
 
 def test_enactment_is_terminal_and_a_later_star_print_does_not_demote_it() -> None:
+    """A public law stays the stage even though a later star print classifies as ``other_chamber``."""
     # A star print is not an unclassified action: "star print" is a matcher of
     # other_chamber, so only the terminal-law rule protects the bill here.
     assert infer_stage_from_text("Star Print ordered on the bill.").stage == "other_chamber"
@@ -172,6 +191,7 @@ def test_enactment_is_terminal_and_a_later_star_print_does_not_demote_it() -> No
 
 
 def test_a_newest_first_list_reads_the_same_as_a_chronological_one() -> None:
+    """The same actions in reversed order infer the same stage."""
     chronological = (
         {"text": "Introduced in House", "actionDate": "2025-01-03"},
         {"text": REFERRAL, "actionDate": "2025-01-04"},
@@ -182,6 +202,7 @@ def test_a_newest_first_list_reads_the_same_as_a_chronological_one() -> None:
 
 
 def test_an_undated_action_never_outranks_a_dated_one() -> None:
+    """An action with no date cannot displace the stage of a dated action."""
     actions = (
         {"text": "Reported by the Committee on Ways and Means.", "actionDate": "2025-03-01"},
         {"text": REFERRAL},
@@ -190,6 +211,7 @@ def test_an_undated_action_never_outranks_a_dated_one() -> None:
 
 
 def test_bare_strings_and_an_action_without_text_are_both_accepted() -> None:
+    """Bare strings and textless ``BillAction`` records are accepted, and an empty action list yields no rule."""
     assert infer_stage(("Introduced in House", "Reported by Committee")).stage == "committee"
     assert infer_stage((BillAction(None, "2025-01-03", None, None, None, None, None),)).stage == "introduced"
     assert infer_stage(()).rule is None
@@ -206,6 +228,7 @@ LAW_ACTIONS = (
 
 
 def test_signed_date_comes_from_the_laws_field_and_the_coded_action() -> None:
+    """The signed date comes from the laws entry and the coded became-law action, with rule and action code named."""
     finding = signed_date({"laws": [{"type": "Public Law", "number": "119-21"}], "actions": LAW_ACTIONS})
     assert finding.signed_date == "2025-07-04"
     assert finding.public_law_number == "119-21"
@@ -214,6 +237,7 @@ def test_signed_date_comes_from_the_laws_field_and_the_coded_action() -> None:
 
 
 def test_a_later_action_does_not_suppress_the_signing_date() -> None:
+    """The latest action being an unrelated star print does not suppress the signing date."""
     # congress-api.ts:245-252 keyed on latestAction, so the Star Print action
     # above -- the latest one -- returned no signed date at all.
     assert LAW_ACTIONS[-1]["text"] == "Star Print ordered on the bill."
@@ -222,22 +246,26 @@ def test_a_later_action_does_not_suppress_the_signing_date() -> None:
 
 
 def test_the_executive_became_law_code_is_accepted_too() -> None:
+    """The executive ``E40000`` code also yields the signing date."""
     actions = ({"text": "Became Public Law No: 119-21.", "actionDate": "2025-07-04", "actionCode": "E40000"},)
     finding = signed_date({"laws": [{"type": "Public Law", "number": "119-21"}], "actions": actions})
     assert (finding.signed_date, finding.action_code) == ("2025-07-04", "E40000")
 
 
 def test_no_public_law_entry_means_no_signing_date() -> None:
+    """Without a public-law entry, the rule is ``no_public_law`` and no date or number is reported."""
     finding = signed_date({"laws": [], "actions": LAW_ACTIONS})
     assert (finding.signed_date, finding.public_law_number, finding.rule) == (None, None, "no_public_law")
 
 
 def test_a_private_law_is_not_a_public_law() -> None:
+    """A private law does not satisfy the public-law rule."""
     finding = signed_date({"laws": [{"type": "Private Law", "number": "119-3"}], "actions": LAW_ACTIONS})
     assert finding.rule == "no_public_law"
 
 
 def test_a_public_law_without_a_coded_action_keeps_the_number_and_names_the_outcome() -> None:
+    """A public law without a coded action keeps its number, reports no date, and names that outcome."""
     # Deliberately no fallback to a prose keyword scan: the count of this rule
     # is what would say a fallback is needed.
     actions = ({"text": "Became Public Law No: 119-21.", "actionDate": "2025-07-04"},)

@@ -1,4 +1,9 @@
-"""Known source excerpts and counterexamples for raw AUTH metadata capture."""
+"""Known source excerpts and counterexamples for raw AUTH metadata capture.
+
+Pins exact text runs and source scope, structural heads and sources,
+whitespace/entity/parser-chunk fidelity, namespace handling, provisional
+callbacks, and the byte, depth, observation and text bounds with their refusals.
+"""
 
 from __future__ import annotations
 
@@ -18,6 +23,7 @@ FIXTURES = Path(__file__).parent / "fixtures" / "cfr"
 
 @pytest.mark.parametrize("title,part,division", [(1, "18", "DIV5"), (5, "550", "DIV6")])
 def test_retained_authority_keeps_source_scope_and_exact_text(title, part, division):
+    """A retained authority keeps its exact text, runs, nearest part and division, plus input digests and counts."""
     path = FIXTURES / f"ecfr-authority-title{title}-part{part}.xml"
     body = path.read_bytes()
     authority, headings, sources, parts = [], [], [], []
@@ -48,6 +54,7 @@ def test_retained_authority_keeps_source_scope_and_exact_text(title, part, divis
 
 
 def test_retained_scope_mutation_does_not_invent_part_or_authority():
+    """A renamed scope mutation invents no part or authority, keeping ancestors and divisions literal."""
     body = (FIXTURES / "ecfr-authority-title5-part550.xml").read_bytes()
     notes = []
     result = scan_ecfr_authority_notes(body.replace(b'TYPE="PART"', b'TYPE="UNKNOWN"'), on_authority=notes.append)
@@ -60,6 +67,7 @@ def test_retained_scope_mutation_does_not_invent_part_or_authority():
 
 
 def test_existing_bulk_fixture_uses_the_same_source_reader():
+    """The existing bulk fixture reads through the same source reader with its root and notes."""
     body = (FIXTURES / "ecfr-bulk-title1.xml").read_bytes()
     notes = []
     result = scan_ecfr_authority_notes(body, on_authority=notes.append)
@@ -70,6 +78,7 @@ def test_existing_bulk_fixture_uses_the_same_source_reader():
 
 
 def test_empty_multiple_nested_and_orphan_notes_are_observations():
+    """Empty, multiple, nested and orphan notes are observations with exact nearest scopes."""
     body = b"""<ECFR><AUTH/><DIV5 TYPE="PART" N="outer"><AUTH>A<AUTH>B</AUTH>C</AUTH>
     <DIV5 TYPE="PART"><AUTH> inner </AUTH></DIV5><AUTH/></DIV5>
     <DIV5 TYPE="PART" N="none"/><PART/><PARAUTH>outside</PARAUTH><SECAUTH>outside</SECAUTH></ECFR>"""
@@ -88,6 +97,7 @@ def test_empty_multiple_nested_and_orphan_notes_are_observations():
 
 
 def test_structural_heads_and_sources_keep_actual_context():
+    """Structural heads and sources keep their actual division, part and ancestor context."""
     body = b"""<root><HEAD>orphan</HEAD><DIV5 TYPE="PART" N="7"><HEAD>part</HEAD>
     <DIV6 TYPE="SUBPART" N="A"><HEAD>subpart<E> title</E></HEAD><AUTH a="x">authority</AUTH>
     <DIV8 TYPE="SECTION" N="7.1"><HEAD>section</HEAD><SOURCE>section source</SOURCE>
@@ -104,6 +114,7 @@ def test_structural_heads_and_sources_keep_actual_context():
 
 
 def test_text_runs_preserve_whitespace_entities_and_element_boundaries():
+    """Text runs preserve whitespace, entities and element boundaries; comments and PIs add nothing while CDATA does."""
     notes = []
     body = b"<AUTH>\r\n<HED>Authority:</HED><PSPACE>A&amp;B&#32;C<E>D</E>E<BR/>F</PSPACE>\t</AUTH>"
     scan_ecfr_authority_notes(body, on_authority=notes.append)
@@ -116,6 +127,7 @@ def test_text_runs_preserve_whitespace_entities_and_element_boundaries():
 
 
 def test_parser_chunks_do_not_split_runs():
+    """Parser chunk boundaries do not split text runs."""
     notes = []
     body = b"<AUTH>" + b"a" * 65530 + b"&amp;b</AUTH>"
     scan_ecfr_authority_notes(body, on_authority=notes.append)
@@ -123,6 +135,7 @@ def test_parser_chunks_do_not_split_runs():
 
 
 def test_declared_encoding_is_decoded_by_xml_parser():
+    """The declared encoding is decoded by the XML parser."""
     notes = []
     scan_ecfr_authority_notes(
         b'<?xml version="1.0" encoding="ISO-8859-1"?><AUTH>\xa7</AUTH>', on_authority=notes.append
@@ -131,6 +144,7 @@ def test_declared_encoding_is_decoded_by_xml_parser():
 
 
 def test_local_names_select_and_expanded_names_survive():
+    """Selection uses local names while expanded names survive on elements and scopes."""
     notes = []
     scan_ecfr_authority_notes(
         b'<x:DIV5 xmlns:x="urn:source" TYPE="PART" N="x"><x:AUTH x:flag="y">raw</x:AUTH></x:DIV5>',
@@ -142,6 +156,7 @@ def test_local_names_select_and_expanded_names_survive():
 
 
 def test_callback_snapshots_do_not_mutate_scanner_ancestry():
+    """Callback snapshots do not mutate the scanner's ancestry."""
     notes = []
 
     def mutate(part):
@@ -166,11 +181,13 @@ def test_callback_snapshots_do_not_mutate_scanner_ancestry():
     ],
 )
 def test_unsafe_or_malformed_xml_refuses(body):
+    """Unsafe or malformed XML is refused."""
     with pytest.raises(CfrSourceError):
         scan_ecfr_authority_notes(body)
 
 
 def test_callbacks_are_provisional_until_success():
+    """Callbacks are provisional: a later failure discards the run."""
     notes = []
     with pytest.raises(CfrSourceError):
         scan_ecfr_authority_notes(b"<root><AUTH>seen</AUTH><bad></root>", on_authority=notes.append)
@@ -180,6 +197,7 @@ def test_callbacks_are_provisional_until_success():
 @pytest.mark.parametrize("sink", ["on_part", "on_authority", "on_heading", "on_source"])
 @pytest.mark.parametrize("error_type", [ValueError, ExpatError])
 def test_callback_error_keeps_original_identity(sink, error_type):
+    """A callback error propagates as the same object."""
     failure = error_type("receiver failure")
 
     def refuse(_row):
@@ -193,11 +211,13 @@ def test_callback_error_keeps_original_identity(sink, error_type):
 @pytest.mark.parametrize("option", ["max_bytes", "max_depth", "max_observations", "max_text_characters"])
 @pytest.mark.parametrize("value", [True, 0, -1, 1.5])
 def test_bounds_require_positive_integers(option, value):
+    """Bounds must be positive integers."""
     with pytest.raises(CfrSourceError):
         scan_ecfr_authority_notes(b"<AUTH/>", **{option: value})
 
 
 def test_byte_depth_observation_and_active_text_bounds():
+    """Byte, depth, observation and active-text bounds each refuse on violation; only concurrently open text counts."""
     with pytest.raises(CfrSourceError, match="max_bytes"):
         scan_ecfr_authority_notes(b"<AUTH/>", max_bytes=6)
     with pytest.raises(CfrSourceError, match="depth"):
@@ -216,5 +236,6 @@ def test_byte_depth_observation_and_active_text_bounds():
 
 
 def test_noncallable_sink_refuses_before_scan():
+    """A non-callable sink refuses before the scan starts."""
     with pytest.raises(CfrSourceError, match="callable"):
         scan_ecfr_authority_notes(b"<AUTH/>", on_authority=1)

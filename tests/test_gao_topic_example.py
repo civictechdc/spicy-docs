@@ -1,4 +1,8 @@
-"""Retained topic examples preserve literal fields or explicit refusal evidence."""
+"""Retained topic examples preserve literal fields or explicit refusal evidence.
+
+Pins exact admitted HTML and evidence digests, refusal retention without a
+release, and unexpected publication failures.
+"""
 
 from __future__ import annotations
 
@@ -28,6 +32,7 @@ from spicy_docs.sources.gao.native import parse_gao_product_page_response
 def test_topic_example_exposes_literal_values_and_exact_admitted_html(
     tmp_path: Path, case: str, slug: str, label: str
 ) -> None:
+    """A topic example exposes literal values and exact admitted HTML with matching digests and evidence."""
     result = json.loads(json.dumps(run_example(tmp_path, case=case)))
     publication = result["publication"]
     assert publication["collectionOutcome"] == result["verification"]["collectionOutcome"]
@@ -60,6 +65,7 @@ def test_topic_example_exposes_literal_values_and_exact_admitted_html(
 
 
 def test_missing_topic_example_retains_refused_html_without_a_release(tmp_path: Path) -> None:
+    """A missing-topic example retains the refused HTML without creating a release."""
     result = json.loads(json.dumps(run_example(tmp_path, case="missing")))
 
     assert "publication" not in result
@@ -81,6 +87,7 @@ def test_missing_topic_example_retains_refused_html_without_a_release(tmp_path: 
 
 
 def test_topic_example_does_not_hide_unexpected_publication_failure(tmp_path: Path) -> None:
+    """An unexpected publication failure is not hidden."""
     (tmp_path / "gao").mkdir()
     with pytest.raises(RuntimeError, match="destination-exists"):
         run_example(tmp_path, case="missing")

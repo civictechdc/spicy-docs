@@ -1,4 +1,7 @@
-"""Retained Regulations.gov comment value in the source-native product."""
+"""Retained Regulations.gov comment value in the source-native product.
+
+Pins raw-field preservation, newest-version selection with a refused tie, fail-closed schema drift, ASCII-sorted
+distinct records, and the CLI/import boundary."""
 
 from __future__ import annotations
 

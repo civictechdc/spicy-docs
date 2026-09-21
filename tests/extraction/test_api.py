@@ -1,3 +1,8 @@
+"""Extraction API contract: native and injected-backend observations carry source sha256 and page metadata,
+tables are off unless requested, and page or region selection is validated before any backend call. Reader
+injection is lazy and closes with the stream.
+"""
+
 import runpy
 from contextlib import contextmanager
 from hashlib import sha256
@@ -41,9 +46,8 @@ def pdf(*, rotation=0):
 
 
 def pdf_with_table():
-    """A one-page PDF with a drawn two-column, two-row grid PyMuPDF's line-based
-    ``find_tables`` strategy detects: an account label column and an amount
-    column, the shape ``docs/sources/govinfo-bodies.md`` measures against
+    """A one-page PDF with a drawn two-column, two-row grid PyMuPDF's line-based ``find_tables`` detects: an
+    account label column and an amount column, the shape ``docs/sources/govinfo-bodies.md`` measures against
     ``htm``'s 841/190 intact appropriations rows."""
     with pymupdf.open() as document:
         page = document.new_page(width=300, height=200)
@@ -121,15 +125,11 @@ GPO_PDF_TABLE_FIXTURES = Path(__file__).parents[1] / "fixtures/gpo_pdf_tables"
 
 
 def test_table_observation_on_a_real_committee_report_page():
-    """Pinned against a real page (provenance in fixtures/gpo_pdf_tables/README.md):
-    page 11 of CRPT-113srpt77, an "Office of the Secretary and Executive
-    Management" account table. GPO rules only the header, the fifteen-account
-    body block and the total -- never between individual accounts -- so
-    PyMuPDF's line-based find_tables() reports three ruled rows, one
-    newline-joined multi-account cell per body column, not fifteen table
-    rows; docs/sources/govinfo-bodies.md's measurement reconstructs the
-    individual account rows from this geometry by splitting each cell on its
-    embedded newlines."""
+    """Pinned to page 11 of CRPT-113srpt77 (sha256 asserted; provenance in fixtures/gpo_pdf_tables/README.md),
+    an "Office of the Secretary and Executive Management" account table. GPO rules only the header, the
+    fifteen-account body block and the total, so PyMuPDF's line-based ``find_tables`` reports three ruled rows
+    with newline-joined multi-account cells, not fifteen account rows; docs/sources/govinfo-bodies.md
+    reconstructs the per-account rows from that geometry, and a cell is ``None`` exactly where its box is ``None``."""
     fixture = GPO_PDF_TABLE_FIXTURES / "CRPT-113srpt77.page11.pdf"
     source = fixture.read_bytes()
     assert sha256(source).hexdigest() == "54264b3e646aaf814f99e2d768975609bcfc9fd4fb7e61ec6efab1571bb31dfc"

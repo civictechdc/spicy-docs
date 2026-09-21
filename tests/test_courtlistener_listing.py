@@ -14,6 +14,7 @@ from spicy_docs.sources.courtlistener.listing import BulkObject, parse_listing_p
 
 
 def _entry(key: str, *, size: str = "10", etag: str = '"etag-3"', modified: str = "2026-06-30T04:11:47.000Z") -> str:
+    """A listing entry with the given key and optional overrides."""
     return (
         f"<Contents><Key>{escape(key)}</Key><Size>{escape(size)}</Size>"
         f"<ETag>{escape(etag)}</ETag><LastModified>{escape(modified)}</LastModified></Contents>"
@@ -23,6 +24,7 @@ def _entry(key: str, *, size: str = "10", etag: str = '"etag-3"', modified: str 
 def _page(
     entries: str = "", *, truncated: str = "false", token: str | None = None, prefix: str = "bulk-data/"
 ) -> bytes:
+    """A listing page payload over the given entries."""
     continuation = f"<NextContinuationToken>{escape(token)}</NextContinuationToken>" if token is not None else ""
     return (
         '<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
@@ -32,6 +34,7 @@ def _page(
 
 
 def test_page_preserves_revision_markers_and_full_nested_object_keys() -> None:
+    """The page preserves ETag revision markers, encoded URLs, transport version and opaque continuation tokens."""
     key = "bulk-data/randoms/scotus network?#%.csv"
     objects, token = parse_listing_page(_page(_entry(key), truncated="true", token="opaque+token&value"))
     (obj,) = objects
@@ -46,6 +49,7 @@ def test_page_preserves_revision_markers_and_full_nested_object_keys() -> None:
 
 @pytest.mark.parametrize("key", ["bulk-data/../outside.csv", "bulk-data/x/../y.csv", "bulk-data/./same.csv"])
 def test_dot_segments_remain_observed_keys_but_cannot_become_ambiguous_urls(key: str) -> None:
+    """Dot segments stay observed keys but cannot become ambiguous URLs."""
     (obj,), _ = parse_listing_page(_page(_entry(key)))
     assert obj.key == key
     with pytest.raises(ValueError, match="dot path segment"):
@@ -67,11 +71,13 @@ def test_dot_segments_remain_observed_keys_but_cannot_become_ambiguous_urls(key:
     ],
 )
 def test_filename_rules_retain_undated_and_unrecognized_exports(filename, dataset, dump_date, media_type) -> None:
+    """Filename rules retain undated and unrecognized exports with their media type."""
     obj = BulkObject(f"bulk-data/{filename}", 0, '"etag"', "2026-06-30T04:11:47Z")
     assert (obj.filename, obj.dataset, obj.dump_date, obj.media_type) == (filename, dataset, dump_date, media_type)
 
 
 def test_empty_listing_requires_an_explicit_complete_answer() -> None:
+    """An empty listing must explicitly state completeness."""
     assert parse_listing_page(_page()) == ((), None)
     with pytest.raises(ValueError, match="IsTruncated"):
         parse_listing_page(_page().replace(b"<IsTruncated>false</IsTruncated>", b""))
@@ -94,12 +100,14 @@ def test_empty_listing_requires_an_explicit_complete_answer() -> None:
     ],
 )
 def test_page_refuses_wrong_scope_ambiguous_metadata_or_unfinished_listing(payload: bytes, message: str) -> None:
+    """Wrong scope, ambiguous metadata or an unfinished listing is refused."""
     with pytest.raises(ValueError, match=message):
         parse_listing_page(payload)
 
 
 @pytest.mark.parametrize("field", ["Key", "Size", "ETag", "LastModified"])
 def test_page_requires_every_object_fact(field: str) -> None:
+    """Every object fact is required."""
     payload = _page(_entry("bulk-data/a.csv"))
     start = payload.index(f"<{field}>".encode())
     end = payload.index(f"</{field}>".encode()) + len(field) + 3
@@ -109,17 +117,20 @@ def test_page_requires_every_object_fact(field: str) -> None:
 
 @pytest.mark.parametrize("size", ["-1", "+10", "1.5", "ten", " 10"])
 def test_page_refuses_invalid_size_instead_of_defaulting_to_zero(size: str) -> None:
+    """An invalid size is refused rather than defaulted to zero."""
     with pytest.raises(ValueError, match="Size"):
         parse_listing_page(_page(_entry("bulk-data/a.csv", size=size)))
 
 
 @pytest.mark.parametrize("modified", ["not a date", "2026-06-30", "2026-06-30T04:11:47"])
 def test_page_refuses_invalid_or_timezone_free_timestamp(modified: str) -> None:
+    """An invalid or timezone-free last-modified stamp is refused."""
     with pytest.raises(ValueError, match="last-modified stamp"):
         parse_listing_page(_page(_entry("bulk-data/a.csv", modified=modified)))
 
 
 def test_page_byte_bound_includes_the_whole_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The byte bound includes the whole payload; one over refuses."""
     payload = _page()
     monkeypatch.setattr(listing, "MAX_LISTING_PAGE_BYTES", len(payload))
     assert parse_listing_page(payload) == ((), None)
@@ -128,6 +139,7 @@ def test_page_byte_bound_includes_the_whole_payload(monkeypatch: pytest.MonkeyPa
 
 
 def _live_pages(monkeypatch: pytest.MonkeyPatch, pages: list[bytes]) -> list[str]:
+    """Serve a two-page live listing through the public parser."""
     calls: list[str] = []
     pending = iter(pages)
 
@@ -145,6 +157,7 @@ def _live_pages(monkeypatch: pytest.MonkeyPatch, pages: list[bytes]) -> list[str
 
 
 def test_live_listing_uses_the_public_parser_and_exact_continuation(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The live listing uses the public parser and sends the exact opaque continuation token."""
     prefix = "bulk-data/randoms/"
     calls = _live_pages(
         monkeypatch,
@@ -175,6 +188,7 @@ def test_live_listing_uses_the_public_parser_and_exact_continuation(monkeypatch:
     ],
 )
 def test_live_listing_never_returns_a_partial_or_duplicate_population(monkeypatch, pages, message) -> None:
+    """A partial or duplicate population is refused."""
     calls = _live_pages(monkeypatch, pages)
     with pytest.raises(ValueError, match=message):
         bulk.list_bulk_dumps()
@@ -182,6 +196,7 @@ def test_live_listing_never_returns_a_partial_or_duplicate_population(monkeypatc
 
 
 def test_live_listing_rejects_an_unrelated_prefix_before_requesting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An unrelated prefix is rejected before any request."""
     calls = _live_pages(monkeypatch, [])
     with pytest.raises(ValueError, match="under bulk-data/"):
         bulk.list_bulk_dumps("other/")

@@ -1,14 +1,11 @@
 """House Clerk and Senate roster files prove what each states about itself.
 
-The fixtures are bounded cuts of the 2026-09-19 captures in
-`corpora/supply-2026-09-02/receipts/roster-comparison-2026-09-19/` (see
-``tests/fixtures/congress_rosters/README.md``): five House seats kept whole,
-one of them a vacancy and one carrying ``leadership="Chair"``, beside the
-complete 27-committee/109-subcommittee names block; six senators kept whole,
-one carrying ``position="Chairman"``. What the fixture run proves is each
-file's own identity statement and the shape of one seat; the whole-file facts
-(2,516 House assignments, 450 Senate committee seats, 9 placeholders, the
-555/541 comparison against the API) are receipted in that directory.
+Fixtures are bounded cuts of the 2026-09-19 captures: five House seats
+including a vacancy and a Chair, the full 27-committee/109-subcommittee names
+block, and six senators including a Chairman; whole-file facts are receipted
+outside the repository. Pins each file's own identity statement, name
+resolution, vacancy and placeholder handling, system-code rules, assignment
+keying and acquisition evidence.
 """
 
 from __future__ import annotations
@@ -48,6 +45,7 @@ def _vacancy_span(body: bytes) -> tuple[int, bytes]:
 
 
 def test_the_house_file_proves_the_congress_and_session_it_states():
+    """The House file's stated congress, session, publish date and clerk are read as native identity."""
     roster = parse_house_member_data(HOUSE_XML, congress=119, session=2)
     assert (roster.congress, roster.session) == (119, 2)
     assert roster.congress_text == "One Hundred Nineteenth Congress"
@@ -57,6 +55,7 @@ def test_the_house_file_proves_the_congress_and_session_it_states():
 
 
 def test_a_file_stating_another_congress_or_session_is_refused_with_both_sides_named():
+    """A file stating another congress or session is refused with both requested and stated values."""
     with pytest.raises(CommitteeRosterIdentityError) as refused:
         parse_house_member_data(HOUSE_XML, congress=118)
     assert refused.value.requested == (118, None)
@@ -66,6 +65,7 @@ def test_a_file_stating_another_congress_or_session_is_refused_with_both_sides_n
 
 
 def test_the_house_names_block_resolves_every_assignment_code():
+    """The names block resolves all 27 committees and 109 subcommittee parents."""
     roster = parse_house_member_data(HOUSE_XML, congress=119, session=2)
     assert len(roster.committees) == 27
     assert len(roster.committee_names) == 136  # 27 committees + 109 subcommittees
@@ -75,6 +75,7 @@ def test_the_house_names_block_resolves_every_assignment_code():
 
 
 def test_vacancies_are_seats_without_members_and_placeholders_are_not_assignments():
+    """A vacancy is a seat with no member and placeholders are not assignments."""
     roster = parse_house_member_data(HOUSE_XML, congress=119, session=2)
     vacant = next(member for member in roster.members if member.vacant)
     assert vacant.state_district == "FL20"
@@ -84,6 +85,7 @@ def test_vacancies_are_seats_without_members_and_placeholders_are_not_assignment
 
 
 def test_a_vacancy_listing_a_real_assignment_is_a_malformed_file_not_a_seat():
+    """A vacancy listing a real assignment is malformed, not a seat."""
     start, span = _vacancy_span(HOUSE_XML)
     mutated = (
         HOUSE_XML[:start]
@@ -95,12 +97,14 @@ def test_a_vacancy_listing_a_real_assignment_is_a_malformed_file_not_a_seat():
 
 
 def test_leadership_is_kept_verbatim():
+    """Leadership values are kept verbatim."""
     roster = parse_house_member_data(HOUSE_XML, congress=119, session=2)
     chairs = [member for member in roster.members if any(a.leadership == "Chair" for a in member.assignments)]
     assert len(chairs) == 1
 
 
 def test_the_system_code_rules_are_the_maps_two_edges():
+    """The two system-code maps translate House and Senate codes and refuse empty input."""
     assert house_system_code("II00") == "hsii00"
     assert house_system_code("II06") == "hsii06"
     assert house_system_code("hsju00") == "hsju00"
@@ -113,6 +117,7 @@ def test_the_system_code_rules_are_the_maps_two_edges():
 
 
 def test_the_senate_file_states_an_update_date_and_no_congress():
+    """The Senate file states an update date and no congress, with LIS ids and bioguide ids per senator."""
     roster = parse_senate_cvc(SENATE_XML)
     assert roster.last_update_date == "Saturday, September 19, 2026"
     assert roster.identity_basis == ("root:native", "update-date:native")
@@ -131,6 +136,7 @@ def test_the_senate_file_states_an_update_date_and_no_congress():
 
 
 def test_a_repeated_or_unidentified_senator_is_refused():
+    """A repeated senator, a missing bioguide id or a wrong root is refused."""
     first = SENATE_XML[SENATE_XML.index(b"<senator ") : SENATE_XML.index(b"</senator>") + len(b"</senator>")]
     duplicated = SENATE_XML.replace(b"</senators>", first + b"\n</senators>")
     with pytest.raises(CommitteeRosterError, match="repeats senator"):
@@ -143,6 +149,7 @@ def test_a_repeated_or_unidentified_senator_is_refused():
 
 
 def test_house_assignment_rows_key_on_bioguide_and_system_code():
+    """House assignment rows key on bioguide and system code and carry file-derived congress, name, rank and date."""
     roster = parse_house_member_data(HOUSE_XML, congress=119, session=2)
     member = next(m for m in roster.members if m.bioguide_id == "B001323")
     row = shape_house_assignment(member, member.assignments[0], roster=roster, observed_at=OBSERVED_AT)
@@ -155,6 +162,7 @@ def test_house_assignment_rows_key_on_bioguide_and_system_code():
 
 
 def test_a_subcommittee_seat_carries_its_parents_code():
+    """A subcommittee seat carries its parent's system code, and a full committee has none."""
     roster = parse_house_member_data(HOUSE_XML, congress=119, session=2)
     member = next(m for m in roster.members if any(a.kind == "subcommittee" for a in m.assignments))
     sub = next(a for a in member.assignments if a.kind == "subcommittee")
@@ -166,6 +174,7 @@ def test_a_subcommittee_seat_carries_its_parents_code():
 
 
 def test_a_vacant_seat_never_reaches_the_assignment_table():
+    """A vacant seat cannot be shaped into an assignment row."""
     roster = parse_house_member_data(HOUSE_XML, congress=119, session=2)
     vacant = next(m for m in roster.members if m.vacant)
     with pytest.raises(Exception, match="no member to key on"):
@@ -173,6 +182,7 @@ def test_a_vacant_seat_never_reaches_the_assignment_table():
 
 
 def test_a_senate_row_says_its_congress_came_from_the_caller():
+    """A Senate row records that its congress came from the caller, with LIS id and no session or rank."""
     roster = parse_senate_cvc(SENATE_XML)
     senator = roster.senators[0]
     row = shape_senate_assignment(senator, senator.committees[0], congress=119, roster=roster, observed_at=OBSERVED_AT)
@@ -184,6 +194,8 @@ def test_a_senate_row_says_its_congress_came_from_the_caller():
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -195,10 +207,12 @@ class Transport(httpx.MockTransport):
 
 
 def xml_response(body: bytes, status: int = 200):
+    """An HTTPX response carrying XML bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": "text/xml"})
 
 
 def test_the_acquirer_captures_each_chambers_file_once_with_its_evidence():
+    """The acquirer captures each chamber's file once with exact bytes, locator and per-call request count."""
     transport = Transport(xml_response(HOUSE_XML), xml_response(SENATE_XML))
     with CommitteeRosterAcquirer(budget=BUDGET, transport=transport) as source:
         house = source.acquire_house(congress=119, session=2)
@@ -213,6 +227,7 @@ def test_the_acquirer_captures_each_chambers_file_once_with_its_evidence():
 
 
 def test_the_acquirer_refuses_another_congress_and_keeps_refusals_retained():
+    """The acquirer refuses another congress and keeps unavailable/refused evidence, with 404 mapped to unavailable."""
     transport = Transport(xml_response(HOUSE_XML), xml_response(b"<html>no</html>", 401), xml_response(b"", 404))
     with CommitteeRosterAcquirer(budget=BUDGET, transport=transport) as source:
         with pytest.raises(CommitteeRosterIdentityError):

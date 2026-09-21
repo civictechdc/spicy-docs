@@ -1,4 +1,6 @@
-"""Releases: publication behavior."""
+"""Publication contract: a release preserves source values and streams, reuses unchanged blob buckets across
+successors, never publishes partially on acquisition failure, and resolves concurrent publishers to one winner.
+"""
 
 from __future__ import annotations
 
@@ -172,13 +174,10 @@ def test_invalid_xml_locator_is_retained_as_a_record_failure(tmp_path: Path, xml
 def test_malformed_publication_date_is_a_deterministic_failure_not_an_abort(
     tmp_path: Path, publication_date: object
 ) -> None:
-    """SD-22 step 2: a record that fails classification is deterministic --
-    the identical bytes reparse identically, so retrying changes nothing --
-    and no longer aborts the whole publish. This is the defect step 2 fixes:
-    one unparseable date once aborted a 205,696-document agency publish.
-    Publication completes, the malformed record contributes no published
-    record, and its failure is recorded in the ledger with both receipt
-    count invariants intact.
+    """SD-22 step 2: a classification failure is deterministic -- identical bytes reparse identically, so
+    retrying changes nothing -- and no longer aborts the publish (one unparseable date once aborted a
+    205,696-document agency publish). Publication completes, the malformed record contributes no published
+    record, and its ledger failure leaves both receipt count invariants intact.
     """
     good = _document("2026-00001")
     bad = _document("2026-00002", publication_date=publication_date)

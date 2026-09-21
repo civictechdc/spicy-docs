@@ -1,10 +1,7 @@
-"""Check shared retry policy for Federal Register and public-table HTTP fetchers.
+"""Shared retry policy for the Federal Register and public-table HTTP fetchers.
 
-Pin the attempt budget, capped doubling backoff, full jitter, and stderr logs.
-Transport errors, 429/5xx, and empty responses retry; other 4xx fail immediately.
-httpx.MockTransport supplies responses and patched sleep records delays, keeping
-all tests offline and immediate.
-"""
+Pins the attempt budget, capped doubling backoff, full jitter, and stderr logs: transport errors, 429/5xx, and empty
+responses retry, while other 4xx fail immediately. MockTransport and recorded sleeps keep every test offline."""
 
 from __future__ import annotations
 

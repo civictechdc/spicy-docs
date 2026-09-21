@@ -43,6 +43,7 @@ NATURAL_KEY = re.compile(r"^\d+-[a-z]+-\d+$")
 
 
 def _listing(name: str) -> dict:
+    """Build a listing record from the given detail fields."""
     return json.loads((LISTINGS / name).read_text())
 
 
@@ -76,11 +77,13 @@ REPORT_NATURES = [
 
 @pytest.mark.parametrize(("nature", "rin", "matched"), REPORT_NATURES, ids=lambda value: str(value)[:32])
 def test_the_rin_rule_reads_what_the_map_measured(nature: str, rin: str | None, matched: str | None) -> None:
+    """The RIN rule returns the RIN with its label rule, or an unmatched finding."""
     finding = rin_from_report_nature(nature)
     assert finding == RinFinding(rin, "report_nature_rin_label" if rin else "unmatched", matched)
 
 
 def test_a_missing_report_nature_is_unmatched_not_an_error() -> None:
+    """A missing report nature is unmatched, while a non-string is a TypeError."""
     assert rin_from_report_nature(None) == RinFinding(None, "unmatched", None)
     with pytest.raises(TypeError):
         rin_from_report_nature(3133)  # type: ignore[arg-type]
@@ -112,6 +115,7 @@ def test_the_captured_communication_carries_the_bridge_on_one_row() -> None:
 
 
 def _record_entries(granule_id: str):
+    """The retained Record entries fixture."""
     from spicy_docs.extraction.body_text import rendition_text
     from spicy_docs.sources.congress.record_communications import parse_record_communications
 
@@ -125,6 +129,7 @@ def _record_entries(granule_id: str):
 
 
 def _reconstructed(number: int = 4329):
+    """The retained reconstructed-entry fixtures."""
     entry = _record_entries("CREC-2016-02-12-pt1-PgH815-4")[number]
     return entry, shape_record_communication(
         entry, congress=114, record_date="2016-02-12", rin=rin_from_report_nature(entry.report_nature)
@@ -249,6 +254,9 @@ def test_the_referral_publishes_the_records_own_words_and_no_system_code() -> No
 
 
 def test_a_joint_referral_reconstructs_with_every_committee_in_committees_json() -> None:
+    """A joint referral reconstructs with all three committees in committees_json and the first as
+    referral_committee_name.
+    """
     entry, row = _reconstructed(4350)
     assert row["referral_count"] == "3"
     assert [item["name"] for item in read_json_column(row["committees_json"])] == list(entry.committee_names)
@@ -256,6 +264,7 @@ def test_a_joint_referral_reconstructs_with_every_committee_in_committees_json()
 
 
 def test_the_truth_fold_takes_the_publishers_two_spellings_and_refuses_a_third() -> None:
+    """The truth fold accepts the publisher's two boolean spellings, maps absent to None and refuses a third."""
     detail = _listing("congress-house-communication-detail.json")["houseCommunication"]
     assert shape_house_communication(detail, detail)["is_rulemaking"] == "true"
     assert shape_house_communication(detail, {**detail, "isRulemaking": "False"})["is_rulemaking"] == "false"
@@ -381,6 +390,7 @@ def test_a_treaty_resolves_to_its_cdoc_package() -> None:
 
 
 def test_the_registry_holds_the_five_index_tables() -> None:
+    """The registry holds the five index tables."""
     assert {"house_communications", "committee_meetings", "record_issues", "treaties", "nominations"} <= set(
         TABLE_CONTRACTS
     )

@@ -1,4 +1,10 @@
-"""Frozen source parsers qualify decoded values, exact slices, and named refusals."""
+"""The shared JSON record reader: frozen-parser parity, exact record slices, and named refusals.
+
+Compares ``reading.json_input`` against the frozen ``tests`` oracles for values,
+exception messages and causes; pins character/byte ranges that re-slice the
+retained bytes, the three number policies, the ``max_bytes``/``max_nodes``/
+``max_depth`` limits, and every malformed, ambiguous or undecodable document.
+"""
 
 import json
 import math
@@ -66,6 +72,7 @@ def outcome(operation):
     ],
 )
 def test_existing_loader_values_exceptions_messages_and_causes_match_frozen_source(raw, loader, error_type):
+    """Each loader matches the frozen source's value or its exception type, message and cause on every input."""
     options = {"source": "Example", "error_type": error_type}
     if loader == "load_bounded_json":
         options.update(number_policy="finite-float", max_bytes=10_000)
@@ -78,6 +85,7 @@ def test_existing_loader_values_exceptions_messages_and_causes_match_frozen_sour
 @pytest.mark.parametrize("setting", ["max_bytes", "max_nodes", "max_depth"])
 @pytest.mark.parametrize("limit", [0, -1, True, 1.5, 1])
 def test_existing_bounded_loader_limits_retain_diagnostics(policy, setting, limit):
+    """Bounded-loader limit errors keep the frozen source's diagnostics for each policy, setting and value."""
     options = {"source": "Example", "error_type": SourceError, "number_policy": policy, "max_bytes": 100}
     options[setting] = limit
     assert outcome(lambda: json_input.load_bounded_json(b'[0,{"a":[1]}]', **options)) == outcome(
@@ -103,6 +111,7 @@ def test_existing_bounded_loader_limits_retain_diagnostics(policy, setting, limi
     ],
 )
 def test_source_values_and_exact_character_byte_ranges_match_frozen_record_oracle(text):
+    """Decoded values and character/byte ranges match the frozen record oracle on each document."""
     raw = text.encode("utf-8")
     result = read(raw)
     assert repr(result.value) == repr(old_records.strict_json_value(text))
@@ -123,6 +132,7 @@ def test_source_values_and_exact_character_byte_ranges_match_frozen_record_oracl
     ],
 )
 def test_complete_retained_sources_match_frozen_value_and_every_record_slice(filename):
+    """Whole retained fixtures match the frozen oracle's value and every record slice."""
     raw = (FIXTURES / filename).read_bytes()
     text = raw.decode("utf-8")
     result = read(raw)
@@ -165,12 +175,14 @@ def test_complete_retained_sources_match_frozen_value_and_every_record_slice(fil
     ],
 )
 def test_malformed_ambiguous_and_undecodable_documents_never_return_partial_records(raw):
+    """Malformed, ambiguous or undecodable bytes raise ``SourceError`` rather than returning partial records."""
     with pytest.raises(SourceError):
         read(raw)
 
 
 @pytest.mark.parametrize("raw", [b"1e9999", b"-1e9999", b"[0,1e9999]"])
 def test_finite_overflow_is_an_explicit_correction_to_old_docspec_acceptance(raw):
+    """Finite-float overflow, which the old oracle accepted as infinity, is refused with ``unsupported number``."""
     old = old_records.strict_json_value(raw.decode())
     assert math.isinf(old[-1] if isinstance(old, list) else old)
     with pytest.raises(SourceError, match="unsupported number"):
@@ -178,6 +190,7 @@ def test_finite_overflow_is_an_explicit_correction_to_old_docspec_acceptance(raw
 
 
 def test_number_policy_retains_source_spelling_and_exposes_selected_value_type():
+    """Each number policy keeps the source spelling in its slices while the value type follows the policy."""
     raw = b"[1.00e+2, -0.0, 1e-9999]"
     result = read(raw, number_policy="decimal")
     assert result.value == [Decimal("1.00e+2"), Decimal("-0.0"), Decimal("1e-9999")]
@@ -191,6 +204,7 @@ def test_number_policy_retains_source_spelling_and_exposes_selected_value_type()
 
 @pytest.mark.parametrize("raw,policy", [(b"1" * 5000, "integer"), (b"1e999999999999999999999999", "decimal")])
 def test_decoder_numeric_limits_are_source_refusals(raw, policy):
+    """Values beyond the decoder's numeric limits are refused as decoder limits, not accepted."""
     with pytest.raises(SourceError, match="decoder limits"):
         read(raw, number_policy=policy)
 
@@ -198,11 +212,13 @@ def test_decoder_numeric_limits_are_source_refusals(raw, policy):
 @pytest.mark.parametrize("setting", ["max_bytes", "max_nodes", "max_depth"])
 @pytest.mark.parametrize("limit", [0, -1, True, 1.5])
 def test_all_limits_validate_even_for_empty_record_set(setting, limit):
+    """Every limit is validated even when the record set is empty."""
     with pytest.raises(SourceError, match=setting):
         read(b"[]", **{setting: limit})
 
 
 def test_cumulative_nodes_count_root_and_unknown_children_at_the_exact_boundary():
+    """Node and depth counts include the root and unknown-object children, refusing exactly past the boundary."""
     raw = b'[0,{"unknown":[1]}]'
     assert read(raw, max_nodes=5, max_depth=3).value == [0, {"unknown": [1]}]
     for limits in ({"max_nodes": 4}, {"max_depth": 2}, {"max_bytes": len(raw) - 1}):
@@ -218,6 +234,7 @@ def test_cumulative_nodes_count_root_and_unknown_children_at_the_exact_boundary(
 
 
 def test_array_records_decode_once_and_byte_conversion_visits_disjoint_source_slices(monkeypatch):
+    """Each array record decodes once and byte conversion touches disjoint, ordered source slices."""
     decoded_starts, encoded_slices = [], []
     original_decoder = json.JSONDecoder
 

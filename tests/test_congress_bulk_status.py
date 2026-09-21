@@ -50,18 +50,23 @@ BUDGET = BulkStatusBudget(2, 4 * 1024 * 1024, 7, 0)
 
 
 def digest(data: bytes) -> str:
+    """The sha256 digest of the given bytes."""
     return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
 def response(body=ZIP, status=200, *, content_type="application/zip"):
+    """An HTTPX response over the given archive bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
 def listing_response(body=LISTING, status=200, *, content_type="application/json"):
+    """An HTTPX response over the given listing bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -74,10 +79,14 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_every_member_is_proved_or_refused_in_the_publisher_order():
+    """Five members in publisher order: three parse with identities, while an unnamed member and a mismatched one are
+    refused by name.
+    """
     result = read_bulk_status_archive(ZIP, congress=119, bill_type="hres")
     assert [member.name for member in result.members] == [name for name, _ in MEMBERS]
     assert (len(result.members), result.parsed_count, result.refused_count) == (5, 3, 2)
@@ -121,6 +130,7 @@ def test_every_member_is_proved_or_refused_in_the_publisher_order():
     ],
 )
 def test_a_member_name_that_is_not_this_folder_is_one_refused_outcome(name, refusal):
+    """A member name outside this folder is one refused outcome with its digest retained."""
     result = read_bulk_status_archive(archive_bytes((name, CDATA)), congress=119, bill_type="hres")
     assert result.refused_count == 1 and result.parsed_count == 0
     assert refusal in result.members[0].refusal
@@ -128,6 +138,7 @@ def test_a_member_name_that_is_not_this_folder_is_one_refused_outcome(name, refu
 
 
 def test_a_member_in_a_folder_path_is_read_by_its_own_file_name():
+    """A member inside a folder path is read by its own file name."""
     result = read_bulk_status_archive(
         archive_bytes(("119/hres/BILLSTATUS-119hres10.xml", CDATA)), congress=119, bill_type="hres"
     )
@@ -148,17 +159,20 @@ def test_a_member_in_a_folder_path_is_read_by_its_own_file_name():
     ],
 )
 def test_archive_bounds_refuse_the_whole_zip_rather_than_one_member(kwargs, message):
+    """Archive bounds refuse the whole zip rather than one member."""
     with pytest.raises(BillSourceError, match=message):
         read_bulk_status_archive(ZIP, congress=119, bill_type="hres", **kwargs)
 
 
 @pytest.mark.parametrize("body", [b"", b"PK", b"<html>not a zip</html>", ZIP[:-1], ZIP[4:]])
 def test_a_response_that_is_not_an_archive_is_refused_before_any_member_is_trusted(body):
+    """A non-archive response is refused before any member is trusted."""
     with pytest.raises(BillSourceError):
         read_bulk_status_archive(body, congress=119, bill_type="hres")
 
 
 def test_a_corrupted_member_refuses_the_zip_rather_than_reaching_the_others():
+    """A corrupted member refuses the zip at its CRC check."""
     body = bytearray(archive_bytes(("BILLSTATUS-119hres10.xml", CDATA), compression=zipfile.ZIP_STORED))
     offset = body.index(b"<billStatus>")
     body[offset : offset + 1] = b" "
@@ -167,6 +181,7 @@ def test_a_corrupted_member_refuses_the_zip_rather_than_reaching_the_others():
 
 
 def test_locator_is_the_keyless_publisher_folder_and_refuses_anything_else():
+    """The locator is the keyless publisher folder URL and refuses other inputs."""
     assert bulk_status_locator(119, "hres") == URL
     assert bulk_status_locator(108, "s") == ("https://www.govinfo.gov/bulkdata/BILLSTATUS/108/s/BILLSTATUS-108-s.zip")
     for congress, bill_type in [
@@ -184,6 +199,7 @@ def test_locator_is_the_keyless_publisher_folder_and_refuses_anything_else():
 
 @pytest.mark.parametrize("content_type", ["application/zip", "application/octet-stream", "application/zip; x=1"])
 def test_capture_keeps_the_exact_zip_and_the_facts_that_locate_it(content_type):
+    """Capture keeps the exact zip, URL, status, digest, content type and parsed/refused counts from one keyless GET."""
     transport = Transport(response(content_type=content_type))
     with BulkStatusAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire(119, "hres")
@@ -201,6 +217,7 @@ def test_capture_keeps_the_exact_zip_and_the_facts_that_locate_it(content_type):
 
 
 def test_a_zip_larger_than_the_budget_is_refused_by_the_transport():
+    """A zip larger than the budget is refused by the transport."""
     budget = BulkStatusBudget(2, len(ZIP) - 1, 7, 0)
     with (
         BulkStatusAcquirer(budget=budget, transport=Transport(response())) as source,
@@ -210,6 +227,9 @@ def test_a_zip_larger_than_the_budget_is_refused_by_the_transport():
 
 
 def test_missing_folder_wrong_format_and_failures_carry_their_capture_and_context():
+    """A missing folder maps to unavailable, while a wrong content type refuses with capture and acquisition context
+    retained.
+    """
     with (
         BulkStatusAcquirer(budget=BUDGET, transport=Transport(response(b"missing", 404))) as source,
         pytest.raises(BillSourceUnavailableError) as unavailable,
@@ -246,6 +266,7 @@ def test_missing_folder_wrong_format_and_failures_carry_their_capture_and_contex
     ],
 )
 def test_budget_bounds_are_checked_before_any_request(kwargs):
+    """Invalid budgets and a wrong budget type are refused before any request."""
     fields = {"max_requests": 2, "max_bytes": 4 * 1024 * 1024, "timeout_seconds": 7, "min_request_interval_seconds": 0}
     with pytest.raises(ValueError):
         BulkStatusBudget(**{**fields, **kwargs})
@@ -271,6 +292,7 @@ def test_live_hres_archive_parses_at_least_what_was_measured():
 
 
 def test_bulk_listing_locator_is_the_keyless_publisher_json_route_and_refuses_anything_else():
+    """The listing locator is the keyless publisher JSON route and refuses other inputs."""
     assert bulk_listing_locator(119, "hres") == LISTING_URL
     assert bulk_listing_locator(108, "s") == "https://www.govinfo.gov/bulkdata/json/BILLSTATUS/108/s"
     for congress, bill_type in [(119, "HRES"), (119, "hres/../hr"), (119, "bill"), (0, "hres"), (True, "hres")]:
@@ -279,6 +301,7 @@ def test_bulk_listing_locator_is_the_keyless_publisher_json_route_and_refuses_an
 
 
 def test_read_bulk_listing_parses_every_field_and_proves_the_zip_entry():
+    """The listing parses every field and proves the zip entry, with folder_modified None as measured."""
     listing = read_bulk_listing(LISTING, congress=119, bill_type="hres")
     assert (listing.congress, listing.bill_type) == (119, "hres")
     assert len(listing.entries) == 4
@@ -309,6 +332,7 @@ def test_read_bulk_listing_parses_every_field_and_proves_the_zip_entry():
 
 
 def test_a_listing_entry_that_belongs_to_another_folder_refuses_the_whole_listing():
+    """A listing entry belonging to another folder refuses the whole listing."""
     body = json.loads(LISTING.decode())
     body["files"][0]["link"] = body["files"][0]["link"].replace("/119/hres/", "/119/hr/")
     with pytest.raises(BillSourceError, match="belongs to another Congress or bill type"):
@@ -324,6 +348,7 @@ def test_a_listing_with_no_zip_entry_for_the_folder_refuses_by_name():
 
 
 def test_list_archives_captures_the_listing_with_the_json_accept_header():
+    """list_archives captures the listing with the JSON accept header and proves the zip entry."""
     transport = Transport(listing_response())
     with BulkStatusAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.list_archives(119, "hres")
@@ -337,6 +362,7 @@ def test_list_archives_captures_the_listing_with_the_json_accept_header():
 
 
 def test_acquire_skips_the_zip_download_when_the_listing_proves_it_is_unchanged():
+    """An unchanged listing skips the zip download after one request."""
     seen = read_bulk_listing(LISTING, congress=119, bill_type="hres").zip_entry
     transport = Transport(listing_response())
     with BulkStatusAcquirer(budget=BUDGET, transport=transport) as source:
@@ -353,6 +379,7 @@ def test_acquire_skips_the_zip_download_when_the_listing_proves_it_is_unchanged(
 
 
 def test_acquire_downloads_the_zip_when_the_listing_shows_it_changed():
+    """A changed listing downloads the zip and counts both requests against the budget."""
     seen = read_bulk_listing(LISTING, congress=119, bill_type="hres").zip_entry
     stale = dataclasses.replace(seen, size=seen.size - 1)
     transport = Transport(listing_response(), response())
@@ -384,6 +411,7 @@ def test_acquire_downloads_the_zip_when_only_modified_at_changed():
 
 
 def test_unchanged_since_naming_a_different_file_refuses_rather_than_risk_a_false_skip():
+    """An unchanged-since entry naming a different file refuses before any zip request."""
     seen = read_bulk_listing(LISTING, congress=119, bill_type="hres").zip_entry
     other_folder = dataclasses.replace(
         seen,
@@ -402,6 +430,7 @@ def test_unchanged_since_naming_a_different_file_refuses_rather_than_risk_a_fals
 
 
 def test_a_listing_that_already_spent_the_request_budget_refuses_the_zip_rather_than_grant_a_second_budget():
+    """A listing that spent the request budget refuses the zip rather than granting a second budget."""
     seen = read_bulk_listing(LISTING, congress=119, bill_type="hres").zip_entry
     stale = dataclasses.replace(seen, size=seen.size - 1)
     one_request = BulkStatusBudget(1, 4 * 1024 * 1024, 7, 0)
@@ -417,6 +446,7 @@ def test_a_listing_that_already_spent_the_request_budget_refuses_the_zip_rather_
 
 
 def test_acquire_without_unchanged_since_never_reads_the_listing():
+    """Without unchanged_since, acquire never reads the listing."""
     transport = Transport(response())
     with BulkStatusAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire(119, "hres")
@@ -427,6 +457,7 @@ def test_acquire_without_unchanged_since_never_reads_the_listing():
 
 
 def test_unchanged_since_must_be_a_bulk_listing_entry():
+    """unchanged_since must be a BulkListingEntry."""
     with (
         BulkStatusAcquirer(budget=BUDGET, transport=Transport()) as source,
         pytest.raises(TypeError, match="BulkListingEntry"),

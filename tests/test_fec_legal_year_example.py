@@ -38,6 +38,7 @@ def fixture_client(
     wrong_detail=False,
     listing_only=False,
 ):
+    """A scripted client serving retained fixtures with pinned request assertions."""
     calls = []
     case = {
         "ao_no": "2024-01",
@@ -103,12 +104,16 @@ def fixture_client(
 
 
 def prepared(tmp_path, **options):
+    """Run the example against a prepared temp directory and return its plan."""
     with fixture_client(tmp_path, **options)[0] as client:
         example.capture_metadata(client, tmp_path, 2024)
     return example.load_plan(tmp_path)[1]
 
 
 def test_complete_capture_preserves_nested_status_body_and_repeated_associations(tmp_path):
+    """A complete capture preserves nested status, body and repeated associations, acquiring one original with no
+    re-request on verify.
+    """
     plan = prepared(tmp_path)
     assert len(plan["originals"]) == 1
     item = plan["originals"][0]
@@ -135,6 +140,7 @@ def test_complete_capture_preserves_nested_status_body_and_repeated_associations
 
 
 def test_empty_observation_has_no_invented_absence_or_body(tmp_path):
+    """An empty observation invents no absence or body and reports no counts."""
     plan = prepared(tmp_path, empty=True)
     assert plan == {"originals": [], "unavailable": [], "cases": []}
     client, calls = fixture_client(tmp_path, empty=True)
@@ -145,6 +151,8 @@ def test_empty_observation_has_no_invented_absence_or_body(tmp_path):
 
 
 def test_extensionless_supporting_document_and_external_url_are_not_silently_dropped(tmp_path):
+    """Extensionless supporting documents and external URLs are not silently dropped."""
+
     def change(case):
         case["documents"] += [{"url": "/download/legal/document?id=1"}, {"url": "https://external.test/item.pdf"}]
         case["ao_citations"] = [{"ao_no": "1975-01", "url": "/files/legal/aos/1975-01/opinion.pdf"}]
@@ -157,6 +165,7 @@ def test_extensionless_supporting_document_and_external_url_are_not_silently_dro
 
 
 def test_wrong_detail_identity_never_binds_a_complete_selection_and_can_retry(tmp_path):
+    """A wrong detail identity never binds a complete selection and the case can retry."""
     client, _ = fixture_client(tmp_path, wrong_detail=True)
     with client, pytest.raises(ValueError, match="detail identity"):
         example.capture_metadata(client, tmp_path, 2024)
@@ -170,6 +179,7 @@ def test_wrong_detail_identity_never_binds_a_complete_selection_and_can_retry(tm
 
 
 def test_listing_only_case_is_requested_and_retained_with_empty_detail_outcome(tmp_path):
+    """A listing-only case is requested and retained with an empty detail outcome."""
     client, calls = fixture_client(tmp_path, listing_only=True, source_change=lambda case: case["documents"].pop())
     with client:
         example.capture_metadata(client, tmp_path, 2024)
@@ -188,6 +198,7 @@ def test_listing_only_case_is_requested_and_retained_with_empty_detail_outcome(t
 
 
 def test_byte_bound_is_explicit_and_every_failed_original_is_retried(tmp_path):
+    """The byte bound is explicit and every failed original is retried."""
     plan = prepared(tmp_path)
     client, calls = fixture_client(tmp_path)
     with client:
@@ -207,6 +218,7 @@ def test_byte_bound_is_explicit_and_every_failed_original_is_retried(tmp_path):
 
 
 def test_api_credential_refusal_stops_without_a_complete_metadata_manifest(tmp_path):
+    """An API credential refusal stops without a complete metadata manifest."""
     client, calls = fixture_client(tmp_path, deny_api=True)
     with client, pytest.raises(HttpRefusal):
         example.capture_metadata(client, tmp_path, 2024)
@@ -218,6 +230,7 @@ def test_api_credential_refusal_stops_without_a_complete_metadata_manifest(tmp_p
 
 
 def test_metadata_shape_refusal_retains_exact_bytes_and_stage(tmp_path):
+    """A metadata shape refusal retains exact bytes and the source-validation stage."""
     client, _ = fixture_client(tmp_path, invalid_api=True)
     with client, pytest.raises(ValueError):
         example.capture_metadata(client, tmp_path, 2024)
@@ -228,6 +241,7 @@ def test_metadata_shape_refusal_retains_exact_bytes_and_stage(tmp_path):
 
 
 def test_credential_refusal_stops_original_requests_and_scrubs_error(tmp_path):
+    """A credential refusal stops original requests, marks later ones unrequested and scrubs the error."""
     plan = prepared(tmp_path)
     plan["originals"].append({"url": BUCKET_URL + "legal/aos/2024-01/other.pdf", "listing": None, "associations": []})
 
@@ -248,6 +262,7 @@ def test_credential_refusal_stops_original_requests_and_scrubs_error(tmp_path):
 
 
 def test_actual_etag_bound_download_keeps_http_403_as_a_stop(tmp_path):
+    """An ETag-bound download keeps an HTTP 403 as a stop."""
     plan = prepared(tmp_path)
     client, calls = fixture_client(tmp_path, fail_asset=403)
     with client, pytest.raises(HttpRefusal) as caught:
@@ -257,6 +272,7 @@ def test_actual_etag_bound_download_keeps_http_403_as_a_stop(tmp_path):
 
 
 def test_verified_incomplete_capture_has_nonzero_command_status(tmp_path, monkeypatch):
+    """A verified incomplete capture exits non-zero."""
     plan = prepared(tmp_path)
     with fixture_client(tmp_path)[0] as client:
         example.acquire_originals(client, tmp_path, plan, max_bytes=len(PDF) - 1)
@@ -266,6 +282,7 @@ def test_verified_incomplete_capture_has_nonzero_command_status(tmp_path, monkey
 
 
 def test_interrupted_original_run_resumes_from_atomic_per_object_checkpoints(tmp_path, monkeypatch):
+    """An interrupted original run resumes from atomic per-object checkpoints, replacing no complete state."""
     plan = prepared(tmp_path)
     second = {"url": BUCKET_URL + "legal/aos/2024-01/other.pdf", "listing": None, "associations": []}
     plan["originals"].append(second)
@@ -308,6 +325,7 @@ def test_interrupted_original_run_resumes_from_atomic_per_object_checkpoints(tmp
 
 @pytest.mark.parametrize("change", ["status", "supporting-url", "empty-list", "body-pointer", "source-bytes"])
 def test_retained_replay_detects_source_loss_even_when_metadata_file_is_repinned(tmp_path, change):
+    """Retained replay detects source loss even when the metadata file is repinned."""
     prepared(tmp_path)
     manifest = json.loads((tmp_path / "selection.json").read_bytes())
     path = tmp_path / manifest["metadata"]["file"]
@@ -331,6 +349,7 @@ def test_retained_replay_detects_source_loss_even_when_metadata_file_is_repinned
 
 
 def test_original_membership_and_association_mutation_is_rejected(tmp_path):
+    """A membership or association mutation is rejected."""
     plan = prepared(tmp_path)
     with fixture_client(tmp_path)[0] as client:
         rows = example.acquire_originals(client, tmp_path, plan, max_bytes=len(PDF))
@@ -342,6 +361,7 @@ def test_original_membership_and_association_mutation_is_rejected(tmp_path):
 
 
 def test_wrong_year_is_rejected_before_original_acquisition(tmp_path):
+    """A wrong year is rejected before any original acquisition."""
     client, calls = fixture_client(tmp_path, source_change=lambda row: row.update(ao_no="2023-01"))
     with client, pytest.raises(ValueError, match="outside"):
         example.capture_metadata(client, tmp_path, 2024)

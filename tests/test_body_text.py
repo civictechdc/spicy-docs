@@ -69,6 +69,9 @@ def test_the_derivation_table_covers_exactly_the_package_body_grammar() -> None:
 
 
 def test_every_cleanup_rule_names_renditions_the_table_knows() -> None:
+    """Cleanup rules are distinct, name known renditions (never pdf, whose rules live in gpo_normalize) and carry an
+    artifact.
+    """
     names = [rule.name for rule in RENDITION_CLEANUP_RULES]
     assert len(names) == len(set(names))
     for rule in RENDITION_CLEANUP_RULES:
@@ -83,6 +86,9 @@ def test_every_cleanup_rule_names_renditions_the_table_knows() -> None:
 
 
 def test_htm_rendition_reads_the_pre_wrapper_and_drops_the_title_metadata() -> None:
+    """The htm branch reads only the pre wrapper (4 markup elements, 591 metadata chars), dropping title metadata
+    while keeping the printed heading.
+    """
     derived = rendition_text(HRPT1_HTM, rendition="htm", media_type="text/html")
 
     assert isinstance(derived, BodyText)
@@ -103,6 +109,9 @@ def test_htm_rendition_reads_the_pre_wrapper_and_drops_the_title_metadata() -> N
 
 
 def test_txt_rendition_normalizes_crlf_and_keeps_the_leading_layout() -> None:
+    """The txt branch counts 111 normalized line endings and 52 stripped trailing-space lines, while keeping GPO's
+    leading layout.
+    """
     derived = rendition_text(CDIR_TXT, rendition="txt", media_type="text/plain")
 
     assert derived.derivation == "text-rendition-cleanup"
@@ -121,6 +130,9 @@ def test_txt_rendition_normalizes_crlf_and_keeps_the_leading_layout() -> None:
 
 
 def test_xml_rendition_keeps_element_boundaries_as_line_breaks() -> None:
+    """Element boundaries become 26 line breaks, 38 whitespace-only lines are dropped, and no two elements' text runs
+    together.
+    """
     derived = rendition_text(BILL_XML, rendition="xml", media_type="application/xml")
 
     assert derived.derivation == "markup-reader"
@@ -164,6 +176,9 @@ def test_uslm_rendition_takes_the_same_markup_reader_branch_as_xml() -> None:
 
 
 def test_pdf_rendition_is_extraction_then_gpo_normalization() -> None:
+    """The PDF branch reports three extracted pages joined by newline, gpo-normalized with footers on and line
+    numbers off.
+    """
     extractor = FakeExtractor(HRPT105_PDF_PAGES)
     derived = rendition_text(b"%PDF-1.4\nstub", rendition="pdf", extractor=extractor)
 
@@ -191,6 +206,7 @@ def test_pdf_rendition_is_extraction_then_gpo_normalization() -> None:
 def test_every_rendition_yields_nonempty_text_and_its_own_derivation(
     data: bytes, rendition: str, media_type: str
 ) -> None:
+    """Every rendition yields non-empty text carrying its declared derivation and byte size."""
     derived = rendition_text(data, rendition=rendition, media_type=media_type)
     assert derived.text.strip()
     assert derived.derivation == RENDITION_DERIVATIONS[rendition]
@@ -203,6 +219,7 @@ def test_every_rendition_yields_nonempty_text_and_its_own_derivation(
 
 
 def test_line_ending_rule() -> None:
+    """CRLF is normalized to LF and the two endings are counted."""
     before = "Calendar No. 140\r\n113th Congress\r\n"
     after = rendition_text(before.encode(), rendition="txt")
     assert after.text == "Calendar No. 140\n113th Congress\n"
@@ -210,6 +227,7 @@ def test_line_ending_rule() -> None:
 
 
 def test_end_of_text_marker_rule() -> None:
+    """A trailing end-of-text marker becomes a blank line and is counted."""
     before = "the last line\n\x1a\n"
     after = rendition_text(before.encode(), rendition="txt")
     assert after.text == "the last line\n\n"
@@ -226,6 +244,7 @@ def test_gpo_quote_pair_rule_collapses_both_spellings_to_one_double_quote() -> N
 
 
 def test_trailing_space_rule_keeps_leading_layout() -> None:
+    """Trailing spaces are stripped and counted while the leading layout indent stays."""
     before = "        Mr. Chairman   \nbody   \n"
     after = rendition_text(before.encode(), rendition="txt")
     assert after.text == "        Mr. Chairman\nbody\n"
@@ -315,11 +334,13 @@ def test_the_pdf_branch_splits_words_the_htm_branch_keeps_whole() -> None:
 
 @pytest.mark.parametrize("rendition", ["", "html", "jpeg", None, 7])
 def test_an_unknown_rendition_is_refused_by_name(rendition: object) -> None:
+    """Empty, unknown and non-string rendition names are all refused."""
     with pytest.raises(BodyTextError, match="rendition must be one of"):
         rendition_text(b"body", rendition=rendition)  # type: ignore[arg-type]
 
 
 def test_a_media_type_that_disagrees_with_the_rendition_is_refused() -> None:
+    """A media type outside the rendition's own is refused, while a charset parameter is not a disagreement."""
     with pytest.raises(BodyTextError, match="not one of text/html"):
         rendition_text(HRPT1_HTM, rendition="htm", media_type="application/pdf")
     # A charset parameter is not a disagreement.
@@ -327,11 +348,13 @@ def test_a_media_type_that_disagrees_with_the_rendition_is_refused() -> None:
 
 
 def test_empty_bytes_are_refused_because_no_body_route_can_mean_empty() -> None:
+    """Empty bytes are refused: no body route can mean empty."""
     with pytest.raises(BodyTextError, match="nonempty bytes"):
         rendition_text(b"", rendition="txt")
 
 
 def test_undecodable_text_is_refused_rather_than_replaced() -> None:
+    """Non-UTF-8 bytes are refused rather than replacement-decoded."""
     with pytest.raises(BodyTextError, match="must be UTF-8"):
         rendition_text(b"\xff\xfe not utf-8", rendition="txt")
 
@@ -352,6 +375,7 @@ class FakeBody:
 
 
 def test_body_text_reads_the_rendition_off_the_fetched_body() -> None:
+    """rendition_text reads rendition, media type and size off a fetched body and equals the explicit-argument call."""
     derived = body_text(FakeBody())
     assert derived.rendition == "htm"
     assert derived.media_type == "text/html"
@@ -360,6 +384,7 @@ def test_body_text_reads_the_rendition_off_the_fetched_body() -> None:
 
 
 def test_body_text_refuses_something_that_is_not_a_fetched_body() -> None:
+    """An input that does not state its format is refused."""
     with pytest.raises(BodyTextError, match="must state format"):
         body_text(object())  # type: ignore[arg-type]
 

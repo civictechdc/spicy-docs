@@ -32,17 +32,20 @@ CURRENT_REQUEST = (
 
 
 def _request(pairs: list[tuple[str, str]]) -> str:
+    """Build a request URL over the given window parameters."""
     parts = urlsplit(CURRENT_REQUEST)
     return urlunsplit(parts._replace(query=urlencode(pairs)))
 
 
 def test_current_request_preserves_exact_bytes_and_round_trips() -> None:
+    """The current request preserves exact bytes and round-trips to its window."""
     assert federal_register_documents_url(QUERY_SCOPE) == CURRENT_REQUEST
     assert federal_register_request_window(CURRENT_REQUEST) == EXPECTED_WINDOW
 
 
 @pytest.mark.parametrize("per_page", [1, 500, 1000])
 def test_current_fields_round_trip_with_supported_page_sizes(per_page: int) -> None:
+    """Current fields round-trip with each supported page size."""
     request = federal_register_documents_url(QUERY_SCOPE, per_page=per_page)
     assert request == CURRENT_REQUEST.replace("per_page=1000", f"per_page={per_page}")
     assert federal_register_request_window(request) == EXPECTED_WINDOW
@@ -50,6 +53,7 @@ def test_current_fields_round_trip_with_supported_page_sizes(per_page: int) -> N
 
 @pytest.mark.parametrize("change", ["missing", "added", "previous-field-set"])
 def test_changed_document_field_set_is_refused(change: str) -> None:
+    """A changed document field set is refused."""
     pairs = parse_qsl(urlsplit(CURRENT_REQUEST).query)
     if change == "missing":
         pairs.remove(("fields[]", "topics"))
@@ -66,6 +70,7 @@ def test_changed_document_field_set_is_refused(change: str) -> None:
     ["duplicate-field", "reordered-fields", "reordered-query", "alternate-encoding"],
 )
 def test_equivalent_but_noncanonical_requests_are_refused(change: str) -> None:
+    """Equivalent but noncanonical requests are refused."""
     pairs = parse_qsl(urlsplit(CURRENT_REQUEST).query)
     if change == "duplicate-field":
         pairs.append(("fields[]", "topics"))
@@ -93,6 +98,7 @@ def test_equivalent_but_noncanonical_requests_are_refused(change: str) -> None:
     ],
 )
 def test_query_value_drift_is_refused(key: str, value: str) -> None:
+    """Query value drift is refused."""
     pairs = [
         (name, value if name == key else existing) for name, existing in parse_qsl(urlsplit(CURRENT_REQUEST).query)
     ]
@@ -102,6 +108,7 @@ def test_query_value_drift_is_refused(key: str, value: str) -> None:
 
 @pytest.mark.parametrize("key", ["per_page", "order", "conditions[publication_date][gte]"])
 def test_repeated_singleton_query_fields_are_refused(key: str) -> None:
+    """Repeated singleton query fields are refused."""
     pairs = parse_qsl(urlsplit(CURRENT_REQUEST).query)
     pairs.append(next(pair for pair in pairs if pair[0] == key))
     with pytest.raises(FederalRegisterSourceError):
@@ -110,6 +117,7 @@ def test_repeated_singleton_query_fields_are_refused(key: str) -> None:
 
 @pytest.mark.parametrize("change", ["missing-per-page", "extra-page"])
 def test_missing_and_additional_query_fields_are_refused(change: str) -> None:
+    """Missing and additional query fields are refused."""
     pairs = parse_qsl(urlsplit(CURRENT_REQUEST).query)
     if change == "missing-per-page":
         pairs = [pair for pair in pairs if pair[0] != "per_page"]
@@ -131,5 +139,6 @@ def test_missing_and_additional_query_fields_are_refused(change: str) -> None:
     ],
 )
 def test_window_request_requires_the_canonical_source_url(request_url: str) -> None:
+    """The window request requires the canonical source URL."""
     with pytest.raises(FederalRegisterSourceError, match="URL is invalid"):
         federal_register_request_window(request_url)

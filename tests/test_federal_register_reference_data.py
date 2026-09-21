@@ -20,6 +20,7 @@ FACETS = (FIXTURES / "fr-documents-facets-type-2026-08-15.json").read_bytes()
 
 
 def test_all_retained_agency_fields_and_positions():
+    """Every retained agency field and position is read literally with its source path and digest."""
     result = read_fr_agencies(AGENCIES)
     raw = json.loads(AGENCIES)
     assert result.raw == raw
@@ -40,6 +41,7 @@ def test_all_retained_agency_fields_and_positions():
 
 
 def test_all_retained_enum_sets_and_facets():
+    """Every retained enum set and facet is read with its schema path and values."""
     result = read_fr_documented_enums(DOCUMENTATION)
     source = json.loads(DOCUMENTATION)
     assert result.raw == source
@@ -78,6 +80,7 @@ def test_all_retained_enum_sets_and_facets():
 
 
 def test_source_reader_preserves_unreviewed_values_and_unknown_metadata():
+    """The source reader preserves unreviewed values and unknown metadata, including duplicate and null enum entries."""
     row = json.loads(AGENCIES)[0]
     row.update(
         id=-1,
@@ -115,6 +118,7 @@ def test_source_reader_preserves_unreviewed_values_and_unknown_metadata():
     ],
 )
 def test_known_agency_field_types_refuse(field, value):
+    """Known agency field types that drift are refused."""
     row = json.loads(AGENCIES)[0]
     row[field] = value
     with pytest.raises(FederalRegisterReferenceError):
@@ -133,11 +137,13 @@ def test_known_agency_field_types_refuse(field, value):
     ],
 )
 def test_wrong_source_shapes_refuse(reader, payload):
+    """Wrong source shapes are refused."""
     with pytest.raises(FederalRegisterReferenceError):
         reader(payload)
 
 
 @pytest.mark.parametrize("kwargs", [{"max_bytes": 1}, {"max_nodes": 1}, {"max_depth": 1}, {"max_bytes": True}])
 def test_bounds_cover_the_whole_source(kwargs):
+    """Bounds cover the whole source."""
     with pytest.raises(FederalRegisterReferenceError):
         read_fr_documented_enums(DOCUMENTATION, **kwargs)

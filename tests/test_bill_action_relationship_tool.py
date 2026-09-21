@@ -1,11 +1,9 @@
-"""The measurement's sidecar, and the report that is written from it.
+"""The bill-action relationship measurement's sidecar and rendered report.
 
-The rules themselves are pinned in ``tests/test_bill_actions.py``, which is
-where they live now: this tool imports them rather than restating them, so
-there is one home and one set of assertions for them. What is left here is the
-measurement's own bookkeeping -- the figures the doc leads with, the strata the
-hand check was drawn from, and the byte-comparison that stops the report from
-drifting away from the numbers it quotes.
+The rules themselves are pinned in ``tests/test_bill_actions.py`` and imported
+rather than restated; this file pins the measurement's own bookkeeping -- the
+hand-check arithmetic, the committed sidecar figures, the sampled congress, and
+the report block matching its sidecar byte for byte.
 """
 
 from __future__ import annotations
@@ -38,6 +36,7 @@ REPORT = ROOT / "docs/research/bill-action-relationship-2026-09-20.md"
 
 @pytest.fixture(scope="module")
 def sidecar() -> dict:
+    """The committed measurement sidecar."""
     return json.loads(SIDECAR.read_text())
 
 
@@ -45,9 +44,7 @@ def sidecar() -> dict:
 
 
 def test_published_row_precision_counts_a_misread_phrase_against_its_own_class() -> None:
-    """A row whose phrase was misread is a wrong published row whatever its
-    attachment, so it stays in the denominator of the class it would be published
-    under.  Dropping it would flatter the figure a consumer filters on."""
+    """A misread phrase stays in its own class's denominator, so filtering on that class cannot flatter the figure."""
     rows = [
         {
             "stratum": "with_action",
@@ -98,6 +95,7 @@ def test_recall_is_re_weighted_by_the_two_strata_and_not_read_off_the_sample() -
 
 
 def test_a_half_filled_hand_check_sheet_is_refused(tmp_path: Path) -> None:
+    """A hand-check row with no verdict is refused."""
     sheet = tmp_path / "hand-check.tsv"
     blank = ["CRPT-118test:1", *[""] * (len(HAND_CHECK_COLUMNS) - 1)]
     sheet.write_text("\t".join(HAND_CHECK_COLUMNS) + "\n" + "\t".join(blank) + "\n")
@@ -110,13 +108,13 @@ def test_a_half_filled_hand_check_sheet_is_refused(tmp_path: Path) -> None:
 
 
 def test_the_offline_phases_made_no_request_and_the_keyed_one_is_bounded(sidecar: dict) -> None:
-    """Every figure but the row-for-row overlap comes from retained bytes; that one
-    cost 20 keyed requests and the bound is part of the claim."""
+    """Offline phases made no requests; the row-for-row overlap cost exactly 20 keyed requests."""
     assert sidecar["requests"] == 0
     assert sidecar["billstatus_overlap"]["bills_requested"] == 20
 
 
 def test_the_sidecar_was_produced_by_the_rules_committed_beside_it(sidecar: dict) -> None:
+    """The sidecar's rule-set version and phrasing keys match the committed rules."""
     assert sidecar["rule_set_version"] == PRINT_ACTION_RULE_SET_VERSION
     assert {row["phrasing"] for row in sidecar["phrasings"]} == {rule.key for rule in PRINT_ACTION_RULES}
 
@@ -136,10 +134,9 @@ def test_the_figures_the_verdict_turns_on(sidecar: dict) -> None:
 
 
 def test_the_row_for_row_overlap_reads_the_publisher_s_own_codes(sidecar: dict) -> None:
-    """The claim rests on what the publisher's responses say, not on this repository's
-    mapping.  The earlier version asserted ``code_matched == 0``, which was an identity:
-    the mapping for these two phrasings was empty by construction, so the branch that
-    would have read ``actionCode`` never ran."""
+    """Overlap codes are read off the publisher's responses, not this repository's mapping: four matched codes are
+    absent from the retained guide (13 of 35 codes), and the two phrasings' row counts carry the narrower claim.
+    """
     overlap = sidecar["billstatus_overlap"]
     hearing = overlap["per_phrasing"]["held_hearing"]
     markup = overlap["per_phrasing"]["held_markup"]
@@ -160,6 +157,7 @@ def test_the_row_for_row_overlap_reads_the_publisher_s_own_codes(sidecar: dict) 
 
 
 def test_the_sample_is_one_congress_which_is_what_the_verdict_leaves_open(sidecar: dict) -> None:
+    """The overlap sample is Congress 118 only."""
     assert sidecar["overlap"]["print_congresses"] == ["118"]
 
 
@@ -175,6 +173,7 @@ def test_the_report_block_renders_from_the_sidecar_and_matches_what_is_committed
 
 
 def test_the_rendered_block_states_every_number_a_reader_would_act_on(sidecar: dict) -> None:
+    """The block states each headline count, rate and code a reader would act on."""
     block = render_block(sidecar)
 
     for number in ("0 requests", "1,249 pages", "6,365 bill mentions", "4,456 action rows", "4,089 of 4,456"):
@@ -188,6 +187,7 @@ def test_the_rendered_block_states_every_number_a_reader_would_act_on(sidecar: d
 
 
 def test_the_sidecar_carries_no_credential() -> None:
+    """The committed sidecar contains no credential or redaction marker."""
     text = SIDECAR.read_text()
 
     assert "api_key=" not in text

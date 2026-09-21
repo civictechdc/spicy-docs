@@ -1,8 +1,8 @@
 """Fixture coverage for ``src/spicy_docs/sources/congress/crs_summaries.py``.
 
-Each test pins one discipline the tool exists to carry, and each discipline
-comes from a defect this project hit rather than from a checklist. No network:
-every response is served by an ``httpx.MockTransport``.
+Each test pins one discipline the tool exists to carry, each coming from a
+defect this project hit rather than a checklist. No network: every response is
+served by an ``httpx.MockTransport``.
 """
 
 from __future__ import annotations
@@ -21,20 +21,24 @@ from spicy_docs.transport.credentials import read_api_key
 
 
 def _parquet(tmp_path: Path, ids: list[str]) -> Path:
+    """Write a parquet fixture over the given report ids."""
     path = tmp_path / "crs_reports.parquet"
     pq.write_table(pa.table({"report_id": ids}), path)
     return path
 
 
 def _report(report_id: str, summary: str = "A summary.") -> dict[str, Any]:
+    """Build a report row over the given id and fields."""
     return {"CRSReport": {"id": report_id, "summary": summary, "title": "T", "formats": []}}
 
 
 def _transport(handler) -> httpx.MockTransport:
+    """A mock transport serving the given handler."""
     return httpx.MockTransport(handler)
 
 
 def _rows(output: Path) -> list[dict[str, Any]]:
+    """Every row of the output JSONL."""
     return [json.loads(line) for line in output.read_text().splitlines() if line.strip()]
 
 
@@ -120,6 +124,7 @@ def test_a_recorded_failure_is_retried_and_a_success_is_not(tmp_path: Path) -> N
 
 @pytest.mark.parametrize("version", [15, "15", 0, None])
 def test_a_new_capture_preserves_the_native_version(tmp_path: Path, version: Any) -> None:
+    """A new capture preserves the native version's value and type."""
     parquet = _parquet(tmp_path, ["R1"])
     output = tmp_path / "out.jsonl"
     payload = _report("R1")
@@ -137,6 +142,7 @@ def test_a_new_capture_preserves_the_native_version(tmp_path: Path, version: Any
 
 
 def test_a_missing_version_stays_absent(tmp_path: Path) -> None:
+    """A missing version stays absent from the row."""
     parquet = _parquet(tmp_path, ["R1"])
     output = tmp_path / "out.jsonl"
 
@@ -165,6 +171,7 @@ def test_every_row_carries_the_source_it_was_drawn_from(tmp_path: Path) -> None:
 
 
 def test_the_summary_is_recorded_with_its_length(tmp_path: Path) -> None:
+    """The summary is recorded with its character length."""
     parquet = _parquet(tmp_path, ["R1"])
     output = tmp_path / "out.jsonl"
 
@@ -179,6 +186,7 @@ def test_the_summary_is_recorded_with_its_length(tmp_path: Path) -> None:
 
 
 def test_a_missing_key_name_refuses_rather_than_running_unauthenticated(tmp_path: Path) -> None:
+    """A missing key name exits rather than running unauthenticated."""
     env = tmp_path / ".env"
     env.write_text("OTHER=1\n")
 
@@ -224,6 +232,7 @@ def test_retry_log_scrubs_credentials_even_when_the_next_attempt_succeeds(
     capsys: pytest.CaptureFixture[str],
     credential_form: str,
 ) -> None:
+    """The retry log scrubs credentials even when the next attempt succeeds, including the nested URL form."""
     from spicy_docs.transport import retry
 
     # Cross the diagnostic bound so truncating before scrubbing also fails.

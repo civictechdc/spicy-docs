@@ -1,4 +1,10 @@
-"""Selected filing-query publication preserves observations and source evidence."""
+"""Selected filing-query publication preserves observations and source evidence.
+
+Pins native ids, unknowns, amendment flags and body coordinates, requested-empty
+queries keeping their capture, nullable and negative file numbers as metadata
+rather than identity, integer-or-null file numbers, and refusals for changed
+counts, missing pages, shrunk inventories, repeated sub ids and mismatched captures.
+"""
 
 from __future__ import annotations
 
@@ -24,6 +30,7 @@ URL = "https://api.open.fec.gov/v1/filings/?file_number=20&file_number=10&per_pa
 
 
 def _inputs(tmp_path, *, records=None, response_change=None):
+    """Build the filing-query inputs for the retained captures."""
     rows = (
         records
         if records is not None
@@ -59,6 +66,7 @@ def _inputs(tmp_path, *, records=None, response_change=None):
 
 
 def _publish(tmp_path, captures, pages):
+    """Publish the filing query and return the reader over the release."""
     result = SourceNativeReleasePublisher(
         PROFILE,
         blob_store=LocalSourceNativeBlobStore(tmp_path / "output-blobs"),
@@ -81,6 +89,9 @@ def _publish(tmp_path, captures, pages):
 
 
 def test_filing_query_preserves_native_ids_unknowns_amendments_and_body_coordinates(tmp_path):
+    """The filing query preserves native ids, unknown values, amendment flags and body coordinates without dropping
+    observations.
+    """
     captures, originals, blobs = _inputs(tmp_path)
     _, reader = _publish(tmp_path, captures, iter_retained_filing_pages(captures, blob_source=blobs))
     records = {row["sourceRecordId"]: row["record"] for row in reader.iter_records()}
@@ -114,6 +125,7 @@ def test_filing_query_preserves_native_ids_unknowns_amendments_and_body_coordina
 
 
 def test_requested_empty_query_keeps_its_capture_without_inventing_filing_records(tmp_path):
+    """A requested-empty query keeps its capture and evidence without inventing records."""
     captures, originals, blobs = _inputs(tmp_path, records=[])
     _, reader = _publish(tmp_path, captures, iter_retained_filing_pages(captures, blob_source=blobs))
     assert list(reader.iter_records()) == []
@@ -130,6 +142,7 @@ def test_requested_empty_query_keeps_its_capture_without_inventing_filing_record
 @pytest.mark.parametrize("number", [{"file_number": None}, {}])
 @pytest.mark.parametrize("filtered", [False, True])
 def test_nullable_or_absent_file_number_is_metadata_not_identity(tmp_path, number, filtered):
+    """A nullable or absent file number is metadata, not identity, and selecting on it is refused."""
     row = {"sub_id": "100", "unknown": {"retained": None}, **number}
     captures, _, blobs = _inputs(tmp_path, records=[row])
     if not filtered:
@@ -148,6 +161,7 @@ def test_nullable_or_absent_file_number_is_metadata_not_identity(tmp_path, numbe
 
 @pytest.mark.parametrize("selected", [None, -9668190, 9668190])
 def test_source_negative_file_number_round_trips_without_changing_identity(tmp_path, selected):
+    """A source negative file number round-trips without changing identity, which stays the sub id."""
     # Literal values from the retained F13 response. File number is not identity.
     row = {"sub_id": "1072820200239473774", "file_number": -9668190, "form_type": "F13"}
     captures, originals, blobs = _inputs(tmp_path, records=[row])
@@ -173,6 +187,7 @@ def test_source_negative_file_number_round_trips_without_changing_identity(tmp_p
 
 @pytest.mark.parametrize("number", [True, False, "-9668190", -1.5, [], {}])
 def test_file_number_still_requires_an_integer_or_null(tmp_path, number):
+    """A file number must be an integer or null."""
     captures, _, blobs = _inputs(tmp_path, records=[{"sub_id": "100", "file_number": number}])
     captures[0]["requestUrl"] = captures[0]["resolvedUrl"] = "https://api.open.fec.gov/v1/filings/?per_page=1"
     with pytest.raises(ValueError, match="invalid file number"):
@@ -192,6 +207,7 @@ def test_file_number_still_requires_an_integer_or_null(tmp_path, number):
     ],
 )
 def test_changed_counts_ids_filters_and_refusals_cannot_publish(tmp_path, change):
+    """Changed counts, ids, filters or source refusals cannot publish."""
     captures, _, blobs = _inputs(tmp_path, response_change=change)
     with pytest.raises(ValueError):
         _publish(tmp_path, captures, iter_retained_filing_pages(captures, blob_source=blobs))
@@ -199,6 +215,7 @@ def test_changed_counts_ids_filters_and_refusals_cannot_publish(tmp_path, change
 
 
 def test_missing_page_and_shrunk_inventory_both_refuse(tmp_path):
+    """A missing page or shrunk inventory refuses with its named reason."""
     captures, _, blobs = _inputs(tmp_path)
     pages = list(iter_retained_filing_pages(captures, blob_source=blobs))
     with pytest.raises(ValueError, match="terminal"):
@@ -208,12 +225,14 @@ def test_missing_page_and_shrunk_inventory_both_refuse(tmp_path):
 
 
 def test_repeated_source_sub_id_is_not_silently_deduplicated(tmp_path):
+    """A repeated source sub id refuses rather than being silently deduplicated."""
     captures, _, blobs = _inputs(tmp_path, records=[{"file_number": 10, "sub_id": "100"}] * 2)
     with pytest.raises(ValueError, match="repeats"):
         _publish(tmp_path, captures, iter_retained_filing_pages(captures, blob_source=blobs))
 
 
 def test_capture_scope_and_raw_bytes_are_both_checked(tmp_path):
+    """Both the capture scope and the raw ZIP bytes are checked."""
     captures, _, blobs = _inputs(tmp_path)
     pages = list(iter_retained_filing_pages(captures, blob_source=blobs))
     changed = [{**capture, "observedAt": "2026-09-13T00:00:00Z"} for capture in captures]
@@ -224,6 +243,7 @@ def test_capture_scope_and_raw_bytes_are_both_checked(tmp_path):
 
 
 def test_new_profile_and_replay_import_without_http_dependency(tmp_path):
+    """The new profile and replay import without an HTTP dependency."""
     captures, _, blobs = _inputs(tmp_path)
     path = tmp_path / "capture.zip"
     path.write_bytes(next(iter_retained_filing_pages(captures, blob_source=blobs)).response_bytes)
@@ -238,6 +258,7 @@ assert FEC_FILING_QUERY_PROFILE.parse_page_response(Path(sys.argv[1]).read_bytes
 
 
 def test_existing_committee_release_pin_is_unchanged_by_shared_helpers(tmp_path):
+    """The existing committee release pin is unchanged by the shared-helper extraction."""
     from tests.test_fec_release import _inputs, _publish, iter_retained_committee_pages
 
     captures, _, blobs = _inputs(tmp_path)
@@ -250,6 +271,7 @@ def test_existing_committee_release_pin_is_unchanged_by_shared_helpers(tmp_path)
 
 
 def test_existing_filing_release_pin_is_unchanged_by_shared_profile_wiring(tmp_path):
+    """The existing filing release pin is unchanged by shared profile wiring."""
     captures, _, blobs = _inputs(tmp_path)
     published, _ = _publish(tmp_path, captures, iter_retained_filing_pages(captures, blob_source=blobs))
     # Frozen from c5082cc before candidate-query support and shared wiring.

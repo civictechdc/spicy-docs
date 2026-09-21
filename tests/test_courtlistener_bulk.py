@@ -1,15 +1,8 @@
 """Hermetic tests for the CourtListener bulk-dump ingest (no network).
 
-Covers the pieces with real logic: parsing the publisher's S3 listing into
-dataset/date pairs (which is how coverage gets checked at all), and the
-streaming bzip2 CSV reader and its two bounds.
-
-Trimmed from spicy-regs' ``tests/test_courtlistener_bulk.py``: the raw-row ->
-published-schema shaping tests and the disk-headroom guard exercised
-``spicy_regs.transforms.build_court_opinion_bodies`` /
-``build_court_opinion_clusters``, which are ETL/rollup modules that stayed
-behind in spicy-regs. Only the reader itself (BulkObject, CourtListenerBulkReader,
-find_dump, latest_dump_date) is this product's concern.
+Covers parsing the publisher's S3 listing into dataset/date pairs, the
+streaming bzip2 CSV reader with its byte and record bounds, resumable
+byte-range transfers, and the reader's counters and early-stop semantics.
 """
 
 from __future__ import annotations
@@ -114,6 +107,7 @@ def test_published_object_pin_identifies_what_a_capture_read():
 
 
 def test_latest_dump_date_and_find_dump_pick_one_published_object():
+    """latest_dump_date and find_dump pick one published object and return None when absent."""
     objects = [
         BulkObject("bulk-data/opinions-2026-03-31.csv.bz2", 54_190_000_000, '"etag"', "2026-03-31T00:00:00Z"),
         BulkObject("bulk-data/opinions-2026-06-30.csv.bz2", 54_561_543_156, '"etag"', "2026-06-30T00:00:00Z"),
@@ -131,6 +125,7 @@ def test_latest_dump_date_and_find_dump_pick_one_published_object():
 
 
 def test_reader_tracking_defaults_are_owned_by_each_instance():
+    """Each reader instance owns its own tracking lists."""
     first = CourtListenerBulkReader("courts")
     second = CourtListenerBulkReader("opinions")
 
@@ -142,6 +137,7 @@ def test_reader_tracking_defaults_are_owned_by_each_instance():
 
 
 def test_reader_preserves_empty_strings_and_nulls(tmp_path: Path):
+    """The reader keeps empty strings and PostgreSQL NULLs distinct."""
     path = _csv_bz2(
         tmp_path,
         "courts-2026-06-30.csv.bz2",
@@ -192,14 +188,12 @@ def test_reader_applies_the_row_filter_before_materializing(tmp_path: Path):
 
 
 def test_reader_reads_the_dumps_backslash_escaped_quotes(tmp_path: Path):
-    """The dumps escape an embedded quote as ``\\"``, not as the doubled ``""``.
+    """The dumps escape an embedded quote as ``\"``, not as the doubled ``""``.
 
-    Read with the stdlib default dialect this does not raise — it *desyncs*, and
-    the prose after the escaped quote becomes the next record's first column.
-    Measured on the real 2026-06-30 opinion-clusters dump that corrupted 1,987 of
-    the first 3,000 rows and dropped ``docket_id`` on two thirds of them, which
-    would have silently destroyed the docket join. A regression here is a data
-    corruption, not a parse error, so it is pinned.
+    Read with the stdlib default dialect this does not raise — it *desyncs*, and the prose after the escaped quote
+    becomes the next record's first column. Measured on the real 2026-06-30 opinion-clusters dump that corrupted
+    1,987 of the first 3,000 rows and dropped ``docket_id`` on two thirds of them, which would have silently
+    destroyed the docket join. A regression here is a data corruption, not a parse error, so it is pinned.
     """
     path = _csv_bz2(
         tmp_path,
@@ -362,6 +356,7 @@ def test_reader_raises_on_a_broken_local_read_rather_than_resuming(tmp_path: Pat
     ],
 )
 def test_reader_refuses_lossy_header_or_row_recovery(tmp_path, body, reason):
+    """Lossy header or row recovery is refused, with counters covering the whole file."""
     from spicy_docs.sources.courtlistener.csv import CourtListenerCsvError
 
     path = tmp_path / "dump.bz2"
@@ -375,6 +370,7 @@ def test_reader_refuses_lossy_header_or_row_recovery(tmp_path, body, reason):
 
 
 def test_reader_keeps_counters_and_closes_on_early_generator_close(tmp_path, monkeypatch):
+    """Closing the generator early keeps counters accurate, marks stopped_early and closes every handle."""
 
     path = _csv_bz2(tmp_path, "dump.bz2", "id,name", ["1,one", "2,two"])
     handles = []
@@ -397,6 +393,7 @@ def test_reader_keeps_counters_and_closes_on_early_generator_close(tmp_path, mon
 
 @pytest.mark.parametrize("partial", [b'"partial', b"partial", b"partial\xc3"])
 def test_byte_budget_discards_partial_record_but_drains_complete_rows(tmp_path, monkeypatch, partial):
+    """A byte budget drains complete rows, discards the partial record and marks the run bounded."""
 
     first = bz2.compress(b"id\ncomplete\n" + partial)
     path = tmp_path / "dump.bz2"
@@ -411,6 +408,7 @@ def test_byte_budget_discards_partial_record_but_drains_complete_rows(tmp_path, 
 
 
 def test_highly_compressed_input_is_drained_in_bounded_blocks(monkeypatch):
+    """Highly compressed input is drained in bounded blocks with exact byte counts."""
 
     original = b"a" * (2 * 1024 * 1024)
     payload = bz2.compress(original)
@@ -427,6 +425,7 @@ def test_highly_compressed_input_is_drained_in_bounded_blocks(monkeypatch):
 
 
 def test_record_bound_is_configurable_on_reader(tmp_path):
+    """The record character bound is configurable on the reader."""
     from spicy_docs.sources.courtlistener.csv import CourtListenerCsvError
 
     path = _csv_bz2(tmp_path, "dump.bz2", "id", ['"12345"'])
@@ -439,6 +438,7 @@ def test_record_bound_is_configurable_on_reader(tmp_path):
 
 @pytest.mark.parametrize("concatenated", [False, True])
 def test_natural_eof_requires_complete_bzip2_footer(tmp_path, concatenated):
+    """Natural EOF requires the complete bzip2 footer; a missing one raises rather than reporting completion."""
     from spicy_docs.sources.courtlistener.bulk import _CountingStream
 
     body = b"id\ncomplete\nunterminated-tail"
@@ -460,6 +460,7 @@ def test_natural_eof_requires_complete_bzip2_footer(tmp_path, concatenated):
 
 
 def test_one_byte_budget_does_not_read_an_entire_compressed_chunk(tmp_path):
+    """A one-byte budget reads one compressed byte, yields nothing and stops early."""
     path = _csv_bz2(tmp_path, "dump.bz2", "id", ["first", "second"])
     reader = CourtListenerBulkReader("courts", local_file=path, max_compressed_bytes=1)
     assert list(reader.iter_records()) == []
@@ -468,6 +469,7 @@ def test_one_byte_budget_does_not_read_an_entire_compressed_chunk(tmp_path):
 
 
 def test_unaligned_budget_caps_the_resumed_read_and_closes_current_response(monkeypatch):
+    """An unaligned budget caps the resumed read at the budget, closes the response and marks the budget exhausted."""
 
     monkeypatch.setattr(bulk, "_CHUNK", 1024)
     payload = bz2.compress(b"id,name\n" + b"".join(b"%d,row %d\n" % (i, i) for i in range(4000)))

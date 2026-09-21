@@ -1,15 +1,8 @@
 """The Secretary of the Senate's ruled tables, read from two bounded page ranges.
 
-The fixtures are real page ranges cut out of two retained volumes, not
-excerpts: ``tests/fixtures/senate_expenditures/README.md`` states the
-provenance, and the cut reads text and cells identically to the volume it came
-from, page for page.
-
-What this module owns: the measured facts about the print (which grid is
-where, what a ruled row is, where the office and the page label are stated),
-the falsifiable totals check, and the shaped rows the generic contract loop in
-``tests/test_table_contracts.py`` runs over.
-"""
+The fixtures are real page ranges cut from two retained volumes (provenance in the fixtures README), not excerpts;
+this module owns the measured facts about the print, the falsifiable totals check against the print's own Totals row,
+and the shaped rows the generic contract loop in ``tests/test_table_contracts.py`` runs over."""
 
 from __future__ import annotations
 

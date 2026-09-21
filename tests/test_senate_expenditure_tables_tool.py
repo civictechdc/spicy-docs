@@ -1,16 +1,9 @@
-"""The committed sidecar against the note that quotes it, and against the print.
+"""Pins the Senate expenditure census sidecar against the note that quotes it and an independent read of the print.
 
-`docs/research/senate-expenditure-tables-2026-09-20.md` states counts in prose.
-This pins them to the JSON the tool wrote, so a report drifting from the
-measurement it cites fails here — the same job
-`tests/test_pdf_yield_mods_recheck_tool.py` does for the MODS re-check.
-
-The sidecar is the census over two retained volumes' first 80 pages, produced
-by `tools/analysis/senate_expenditure_tables.py` **through the contract's own
-classifiers**. That is what keeps the note and the published rows in agreement
-— and it is also why one assertion here compares the census against a reader
-that shares none of the contract's grammar. An internally consistent census is
-what a clean census looks like, so consistency alone is not evidence.
+The sidecar is the census over two retained volumes' first 80 pages, produced by
+tools/analysis/senate_expenditure_tables.py through the contract's own classifiers;
+one assertion compares it with a reader that shares none of the contract's grammar,
+because an internally consistent census is what a clean census looks like.
 """
 
 from __future__ import annotations
@@ -29,7 +22,7 @@ def _sidecar() -> dict:
 
 
 def test_the_committed_sidecar_states_the_shape_of_the_print() -> None:
-    """The four numbers the note's opening paragraph turns on."""
+    """The census totals and per-page table distribution the note's opening paragraph turns on."""
     census = _sidecar()
 
     assert census["pages"] == 160
@@ -72,14 +65,10 @@ def test_the_committed_sidecar_states_the_finding_that_shaped_the_contract() -> 
 
 
 def test_the_contracts_office_count_equals_the_prints() -> None:
-    """Two readers, one of which knows nothing of the contract's grammar.
+    """Two readers must agree on 83 office pages, including the five multi-year funding blocks.
 
-    `table_pages_stating_an_office` is what `page_context` read;
-    `table_pages_the_print_states_an_office_on` counts any line beginning
-    `Funding Year`, whatever follows. They must agree, and the reason this
-    assertion exists is that they once did not: a rule matching only a single
-    year read 78 where the print states 83, and the five it lost are the
-    Chaplain's multi-year blocks. The census agreed with itself throughout.
+    page_context's count must match a rule counting any line beginning `Funding Year`; a single-year rule reads 78
+    and loses the Chaplain's multi-year blocks, so the census agreeing with itself is not evidence.
     """
     census = _sidecar()
 

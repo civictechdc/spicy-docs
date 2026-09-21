@@ -24,6 +24,7 @@ def _evidence_row(
     agencies: list[str],
     abstract: str,
 ) -> dict[str, Any]:
+    """Build one evidence row for the given member."""
     return {
         "document_number": document_number,
         "publication_date": publication_date,
@@ -43,6 +44,7 @@ def _record_line(
     agencies: list[str],
     abstract: str,
 ) -> dict[str, Any]:
+    """Build one published record JSON line."""
     return {
         "sourceRecordId": document_number,
         "record": {
@@ -62,6 +64,7 @@ def _write_release(
     record_lines: list[dict[str, Any]],
     receipt: dict[str, int],
 ) -> tuple[Path, Path]:
+    """Write a synthetic release directory over the given members."""
     return evidence_and_records_release(
         tmp_path, evidence_rows=evidence_rows, record_lines=record_lines, receipt=receipt
     )
@@ -220,6 +223,9 @@ def _mismatched_reconciliation_fixture(tmp_path: Path) -> dict[str, Any]:
 
 
 def test_discarded_observation_differing_on_title_is_a_distinct_document_candidate(tmp_path: Path) -> None:
+    """A discarded observation differing on title is a distinct-document candidate with its differing field and
+    titles recorded.
+    """
     result = _fixture(tmp_path)
 
     examples = cast("list[dict[str, Any]]", result["examples"])
@@ -233,6 +239,7 @@ def test_discarded_observation_differing_on_title_is_a_distinct_document_candida
 
 
 def test_discarded_observation_identical_on_all_four_fields_is_a_true_reobservation(tmp_path: Path) -> None:
+    """An observation identical on all four compared fields is a true re-observation and is not an example."""
     result = _fixture(tmp_path)
 
     # FR-2000-REOBS is the only pair identical on type/title/agencies/abstract.
@@ -241,6 +248,9 @@ def test_discarded_observation_identical_on_all_four_fields_is_a_true_reobservat
 
 
 def test_reconciliation_gate_disagrees_when_receipt_does_not_match_the_enumeration(tmp_path: Path) -> None:
+    """The reconciliation gate agrees on a balanced receipt and disagrees when the receipt cannot equal the
+    enumeration.
+    """
     happy = _fixture(tmp_path)
     reconciliation = cast("dict[str, Any]", happy["reconciliation"])
     assert reconciliation["agrees"] is True
@@ -255,6 +265,7 @@ def test_reconciliation_gate_disagrees_when_receipt_does_not_match_the_enumerati
 
 
 def test_title_prefix_heuristic_catches_the_republication_variant(tmp_path: Path) -> None:
+    """The title-prefix heuristic catches the republication variant and labels itself a heuristic."""
     result = _fixture(tmp_path)
 
     likely = cast("dict[str, Any]", result["likelyRepublications"])
@@ -267,6 +278,7 @@ def test_title_prefix_heuristic_catches_the_republication_variant(tmp_path: Path
 
 
 def test_single_date_number_never_enters_the_multi_date_population(tmp_path: Path) -> None:
+    """A number observed on one date never enters the multi-date population."""
     result = _fixture(tmp_path)
 
     # FR-2000-SINGLE has one observation; DISTINCT, REOBS, and 00-12867 have two each.
@@ -277,6 +289,7 @@ def test_single_date_number_never_enters_the_multi_date_population(tmp_path: Pat
 
 
 def test_every_subset_with_a_count_states_its_population(tmp_path: Path) -> None:
+    """Every subset with a count states its population, including the flat top-level count/population pairs."""
     result = _fixture(tmp_path)
 
     subsets = counted_subsets(result)
@@ -301,6 +314,9 @@ def test_every_subset_with_a_count_states_its_population(tmp_path: Path) -> None
 
 
 def test_captured_fields_reflect_the_evidence_rows_actually_read(tmp_path: Path) -> None:
+    """Captured fields reflect the evidence rows actually read, with correction_of absent because it was never
+    requested.
+    """
     result = _fixture(tmp_path)
 
     adjudication_limit = cast("dict[str, Any]", result["adjudicationLimit"])
@@ -312,6 +328,7 @@ def test_captured_fields_reflect_the_evidence_rows_actually_read(tmp_path: Path)
 
 
 def test_population_string_names_the_release_root_and_evidence_member_count(tmp_path: Path) -> None:
+    """The population string names the release root and the actual evidence member count."""
     release_root, blob_store = _write_release(
         tmp_path,
         evidence_rows=[

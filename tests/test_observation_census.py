@@ -1,4 +1,9 @@
-"""Fixture coverage for the ``tools/analysis/observation_census.py`` receipt helper."""
+"""Fixture coverage for the ``tools/analysis/observation_census.py`` receipt helper.
+
+Publishes two-traversal Federal Register fixture releases and pins the census's
+collision, legacy/modern number-form and X-form date-encoding fields against
+the publication receipt's own record and discard counts.
+"""
 
 from __future__ import annotations
 
@@ -102,11 +107,10 @@ def _publish(
 
 
 def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> None:
-    """Keep both 00-111 documents: the 2000-01-14 rule and 2000-01-18 notice.
+    """A legacy-form number reused across two dates keeps both records while the number/date census still reports reuse.
 
-    Composite identity yields two records and zero discards. The number/date census
-    still reports reuse because it reads document_number directly. This legacy-form
-    number also checks that unused modern collision fields appear as empty values.
+    Composite identity yields two records and zero discards because the census
+    reads ``document_number`` directly; the unused modern-form fields stay empty.
     """
     number = "00-111"
     args, receipt = _publish(
@@ -156,8 +160,7 @@ def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> N
 
 
 def test_modern_form_number_collision_is_counted_and_listed(tmp_path: Path) -> None:
-    """A modern-form (YYYY-NNNNN) number reused across two dates is a real collision --
-    unlike legacy-form 00-111 above -- so it must be counted and listed by name."""
+    """A modern-form ``YYYY-NNNNN`` number reused across two dates is counted and listed with both dates."""
     number = "2015-30555"
     window = {"publishedFrom": "2015-03-01", "publishedThrough": "2015-03-10"}
     args, _receipt = _publish(
@@ -177,8 +180,7 @@ def test_modern_form_number_collision_is_counted_and_listed(tmp_path: Path) -> N
 
 
 def test_legacy_number_that_also_parses_as_modern_is_detected(tmp_path: Path) -> None:
-    """A 4-digit-year, 4-digit-suffix number (2015-1234) fullmatches both the legacy
-    and the modern pattern; the census must flag the ambiguity by name."""
+    """A number that fullmatches both the legacy and modern patterns is flagged, with both patterns reported."""
     number = "2015-1234"
     window = {"publishedFrom": "2016-05-01", "publishedThrough": "2016-05-01"}
     args, _receipt = _publish(
@@ -195,8 +197,7 @@ def test_legacy_number_that_also_parses_as_modern_is_detected(tmp_path: Path) ->
 
 
 def test_x_form_date_encoding_mismatch_is_reported(tmp_path: Path) -> None:
-    """X94-10503 self-encodes 1994-05-03 (YY-{seq}{MM}{DD}); a record filed under
-    that number but a different publication_date is a self-encoding mismatch."""
+    """X94-10503 self-encodes 1994-05-03; a record under it with another publication date is a mismatch."""
     number = "X94-10503"
     window = {"publishedFrom": "1994-01-01", "publishedThrough": "1994-01-01"}
     args, _receipt = _publish(
@@ -213,8 +214,7 @@ def test_x_form_date_encoding_mismatch_is_reported(tmp_path: Path) -> None:
 
 
 def test_x_form_five_digit_tail_matching_date_is_not_reported(tmp_path: Path) -> None:
-    """X94-10503's five-digit tail encodes 1994-05-03 (YY-{seq}{MM}{DD}); a record filed
-    under that number with a matching publication_date is not a mismatch."""
+    """A five-digit X-form tail whose encoded date matches the publication date is not a mismatch."""
     number = "X94-10503"
     window = {"publishedFrom": "1994-05-03", "publishedThrough": "1994-05-03"}
     args, _receipt = _publish(
@@ -228,11 +228,7 @@ def test_x_form_five_digit_tail_matching_date_is_not_reported(tmp_path: Path) ->
 
 
 def test_x_form_six_digit_tail_matching_date_is_not_reported(tmp_path: Path) -> None:
-    """The old X_FORM_PATTERN fixed the tail at exactly five digits, so it silently
-    excluded every six- and seven-digit tail from this census -- 206 of them in the real
-    corpus -- rather than reporting them matched or mismatched. X94-101207 is six digits
-    (sequence "10", date the last four "1207"); its matching publication_date must be
-    reported as a match now that the pattern's width covers it."""
+    """A six-digit X-form tail is admitted and matched: X94-101207 with 1994-12-07 reports no mismatch."""
     number = "X94-101207"
     window = {"publishedFrom": "1994-12-07", "publishedThrough": "1994-12-07"}
     args, _receipt = _publish(
@@ -246,8 +242,7 @@ def test_x_form_six_digit_tail_matching_date_is_not_reported(tmp_path: Path) -> 
 
 
 def test_x_form_seven_digit_tail_matching_date_is_not_reported(tmp_path: Path) -> None:
-    """The widened pattern admits tails up to seven digits; X94-1121207 (sequence "112",
-    date the last four "1207") must be recognized and matched too."""
+    """A seven-digit X-form tail is recognized and matched: X94-1121207 with 1994-12-07 reports no mismatch."""
     number = "X94-1121207"
     window = {"publishedFrom": "1994-12-07", "publishedThrough": "1994-12-07"}
     args, _receipt = _publish(
@@ -261,12 +256,10 @@ def test_x_form_seven_digit_tail_matching_date_is_not_reported(tmp_path: Path) -
 
 
 def test_x_form_six_digit_tail_mismatch_is_reported_right_anchored(tmp_path: Path) -> None:
-    """X94-101207's tail must be read right-anchored (sequence "10", date "1207"), not
-    left-anchored: left-anchored slicing of this same six-digit tail reads "01" and "20",
-    which is exactly this record's (wrong) publication_date below -- so a left-anchored
-    reader would call this a match even after the pattern is widened to admit six digits.
-    Only the right-anchored fix reports the real mismatch. Also pins that the emitted
-    xFormPattern field is the widened pattern actually used, not a stale copy."""
+    """X-form tail is read right-anchored: X94-101207 encodes 1994-12-07, so publication on 1994-01-20 is a mismatch.
+
+    A left-anchored read would instead see 01-20 and wrongly call it a match.
+    """
     number = "X94-101207"
     window = {"publishedFrom": "1994-01-20", "publishedThrough": "1994-01-20"}
     args, _receipt = _publish(

@@ -1,4 +1,10 @@
-"""Source text, byte positions, callbacks, and refusal bounds are independent of layout."""
+"""Markup reading: source text, byte spans, callback independence and refusal bounds.
+
+Pins that XML and HTML events keep original byte coordinates through entities,
+encodings, comments, CDATA and arbitrary feed chunking, that text and element
+counts match independent parsers, and which malformed, namespace-invalid or
+unsafe documents (external DOCTYPEs included) are refused.
+"""
 
 from html.parser import HTMLParser
 from pathlib import Path
@@ -25,6 +31,7 @@ def check_spans(body, result):
 
 @pytest.mark.parametrize("filename", ["cfr/annual-title1-vol1.xml", "uscode/title-05-s423.xml"])
 def test_retained_xml_matches_independent_tree_text_counts_and_root(filename):
+    """Retained XML matches ElementTree's root, element count and concatenated text."""
     body = (FIXTURES / filename).read_bytes()
     expected = ElementTree.fromstring(body)
     actual = read_xml_events(body)
@@ -34,6 +41,7 @@ def test_retained_xml_matches_independent_tree_text_counts_and_root(filename):
 
 
 def test_xml_literal_qnames_namespace_declarations_and_unknown_attributes_survive():
+    """Literal qnames, namespace declarations and unknown attributes survive on start events."""
     body = b'<x:r xmlns:x="urn:outer" SOURCE="HED" x:extra="A &amp; B"><x:unknown xmlns:x="urn:inner" z=""/></x:r>'
     result = read_xml_events(body)
     assert result.root_name == "x:r"
@@ -49,6 +57,7 @@ def test_xml_literal_qnames_namespace_declarations_and_unknown_attributes_surviv
 
 @pytest.mark.parametrize("reader", [read_xml_events, read_html_events])
 def test_comments_and_processing_instructions_do_not_extend_preceding_text_spans(reader):
+    """Comments and processing instructions split text runs without extending their byte spans."""
     body = b"<p>A<!--x-->B<?q z?>C</p>"
     result = reader(body)
     assert check_spans(body, result) == "ABC"
@@ -57,6 +66,7 @@ def test_comments_and_processing_instructions_do_not_extend_preceding_text_spans
 
 
 def test_cdata_delimiters_are_not_claimed_by_text_runs():
+    """CDATA delimiters are not claimed by the text runs they wrap."""
     body = b"<p>A<![CDATA[B]]>C</p>"
     result = read_xml_events(body)
     assert check_spans(body, result) == "ABC"
@@ -64,6 +74,7 @@ def test_cdata_delimiters_are_not_claimed_by_text_runs():
 
 
 def test_xml_entities_and_line_endings_keep_their_complete_source_spelling():
+    """Entity and line-ending text keeps its complete source spelling at its original span."""
     body = b"<p>A\r\nB &amp; caf&#233;.</p>"
     result = read_xml_events(body)
     assert check_spans(body, result) == "A\nB & café."
@@ -79,6 +90,7 @@ def test_xml_entities_and_line_endings_keep_their_complete_source_spelling():
     "encoding,declared", [("utf-16", "UTF-16"), ("utf-16-be", "UTF-16"), ("iso-8859-1", "ISO-8859-1")]
 )
 def test_xml_declared_encoding_preserves_original_byte_coordinates(encoding, declared):
+    """Declared UTF-16 and ISO-8859-1 documents keep original byte coordinates and expose declaration attributes."""
     body = f'<?xml version="1.0" encoding="{declared}"?><r>café &#8364;.</r>'.encode(encoding)
     result = read_xml_events(body)
     assert check_spans(body, result) == "café €."
@@ -89,6 +101,7 @@ def test_xml_declared_encoding_preserves_original_byte_coordinates(encoding, dec
 @pytest.mark.parametrize("chunk", [1, 7, 65536])
 @pytest.mark.parametrize("encoding", ["utf-8", "utf-16", "iso-8859-1"])
 def test_xml_events_are_independent_of_feed_and_character_callback_boundaries(monkeypatch, chunk, encoding):
+    """XML events are identical across 1-, 7- and 65536-byte feed chunks and all three encodings."""
     body = (
         f'<?xml version="1.0" encoding="{encoding}"?><r>' + "a" * 65530 + "é\nplain &amp; \r\n<![CDATA[café]]>end</r>"
     ).encode(encoding)
@@ -106,6 +119,7 @@ def test_xml_events_are_independent_of_feed_and_character_callback_boundaries(mo
 @pytest.mark.parametrize("chunk", [1, 7, 65536])
 @pytest.mark.parametrize("ending", ["tail</p>", "&notit &amp"])
 def test_html_events_are_independent_of_feed_boundaries(monkeypatch, chunk, ending):
+    """HTML events are identical across feed chunk sizes, including an incomplete tail entity."""
     body = ("<p>" + "a" * 65530 + "é\n&amp; &#233;<!--comment-->" + ending).encode()
     expected = read_html_events(body)
     monkeypatch.setattr("spicy_docs.reading.markup._HTML_FEED_CHARACTERS", chunk)
@@ -144,6 +158,7 @@ class _HtmlReference(HTMLParser):
     ],
 )
 def test_html_text_and_counts_match_the_existing_parser_without_policy(body):
+    """HTML text and element counts match the standard-library parser on malformed and edge-case bodies."""
     reference = _HtmlReference()
     reference.feed(body.decode())
     reference.close()
@@ -153,6 +168,7 @@ def test_html_text_and_counts_match_the_existing_parser_without_policy(body):
 
 
 def test_retained_html_excerpt_matches_independent_text_and_counts():
+    """A retained HTML excerpt matches the standard-library parser's text and element counts."""
     body = (FIXTURES / "cfr_metadata/subject-index-45.html").read_bytes()
     reference = _HtmlReference()
     reference.feed(body.decode())
@@ -163,6 +179,7 @@ def test_retained_html_excerpt_matches_independent_text_and_counts():
 
 
 def test_duplicate_html_attributes_null_values_and_empty_decoded_entities_survive():
+    """Duplicate attributes, valueless attributes and decoded-empty entities survive with their source spans."""
     body = b'<custom a="one" a="two" disabled>&#x1;</custom>'
     result = read_html_events(body)
     assert result.events[0].attributes == (("a", "one"), ("a", "two"), ("disabled", None))
@@ -184,11 +201,13 @@ def test_duplicate_html_attributes_null_values_and_empty_decoded_entities_surviv
     ],
 )
 def test_namespace_invalid_malformed_and_unsafe_xml_refuses(body):
+    """Namespace-invalid, malformed, entity-bearing and unknown-encoding XML raises ``MarkupReadError``."""
     with pytest.raises(MarkupReadError):
         read_xml_events(body)
 
 
 def test_real_bill_external_doctype_requires_explicit_inert_permission():
+    """A real bill's external DOCTYPE needs ``allow_external_doctype=True``; it is then recorded, not loaded."""
     body = (FIXTURES / "govinfo_bills/text-119hr6028ih.xml").read_bytes()
     with pytest.raises(MarkupReadError, match="DOCTYPE"):
         read_xml_events(body)
@@ -203,6 +222,7 @@ def test_real_bill_external_doctype_requires_explicit_inert_permission():
 
 
 def test_inert_permission_does_not_load_a_dtd_or_enable_declared_entities(tmp_path):
+    """Inert permission records the DOCTYPE without fetching the DTD or enabling declared entities."""
     path = tmp_path / "test.dtd"
     path.write_text('<!ENTITY outside "changed">')
     declaration = f'<!DOCTYPE r SYSTEM "{path.as_uri()}">'.encode()
@@ -216,6 +236,7 @@ def test_inert_permission_does_not_load_a_dtd_or_enable_declared_entities(tmp_pa
 
 @pytest.mark.parametrize("value", [None, 0, 1, "true"])
 def test_inert_doctype_permission_must_be_explicit_boolean(value):
+    """``allow_external_doctype`` must be a real boolean; ``None``, ``0``, ``1`` and ``"true"`` are refused."""
     with pytest.raises(MarkupReadError, match="allow_external_doctype"):
         read_xml_events(b"<r/>", allow_external_doctype=value)
 
@@ -224,11 +245,13 @@ def test_inert_doctype_permission_must_be_explicit_boolean(value):
 @pytest.mark.parametrize("setting", ["max_bytes", "max_events", "max_depth"])
 @pytest.mark.parametrize("limit", [0, -1, True, 1.5])
 def test_invalid_bound_configuration_refuses(reader, setting, limit):
+    """Every bound setting refuses zero, negative, boolean and fractional limits by name."""
     with pytest.raises(MarkupReadError, match=setting):
         reader(b"<r/>", **{setting: limit})
 
 
 def test_empty_html_is_an_empty_observation_but_empty_xml_refuses():
+    """Empty HTML is an empty observation while empty XML raises ``MarkupReadError``."""
     assert read_html_events(b"") == MarkupRead((), 0, None, None)
     with pytest.raises(MarkupReadError, match="nonempty bytes"):
         read_xml_events(b"")
@@ -237,12 +260,14 @@ def test_empty_html_is_an_empty_observation_but_empty_xml_refuses():
 @pytest.mark.parametrize("setting", ["max_bytes", "max_events", "max_depth"])
 @pytest.mark.parametrize("limit", [0, -1, True, 1.5])
 def test_empty_html_still_validates_all_bounds(setting, limit):
+    """Empty HTML still validates every bound before succeeding."""
     with pytest.raises(MarkupReadError, match=setting):
         read_html_events(b"", **{setting: limit})
 
 
 @pytest.mark.parametrize("reader", [read_xml_events, read_html_events])
 def test_input_event_and_depth_limits_refuse_before_success(reader):
+    """Byte, event and depth limits refuse before success, and non-bytes input is refused."""
     body = b"<r>" * 4 + b"text" + b"</r>" * 4
     with pytest.raises(MarkupReadError, match="max_bytes"):
         reader(body, max_bytes=len(body) - 1)
@@ -255,11 +280,13 @@ def test_input_event_and_depth_limits_refuse_before_success(reader):
 
 
 def test_html_invalid_utf8_refuses():
+    """Invalid UTF-8 in HTML raises ``MarkupReadError`` naming UTF-8."""
     with pytest.raises(MarkupReadError, match="UTF-8"):
         read_html_events(b"<p>\xff</p>")
 
 
 def test_existing_xml_scan_still_preserves_callback_exception_identity():
+    """A callback exception propagates with its identity unchanged."""
     marker = RuntimeError("caller failure")
 
     def fail(*args):

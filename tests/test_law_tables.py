@@ -1,13 +1,10 @@
 """Enacted-law rows: the citation reaches the row only through a proved join.
 
-The law record and the USLM file are the same law, Public Law 119-1 (S. 5,
-the only enacted measure in the captured BILLSTATUS set), cut from the
-2026-09-19 captures in
-`corpora/supply-2026-09-02/receipts/laws-contract-2026-09-19/` and the
-retained ``plaw-119publ1.xml`` fixture: the shaper refuses a USLM meta that
-states another law, so a citation can never land on the wrong row. The
-whole-corpus facts (108 laws on the list route, 104 in PLAW bulk, 4 lagging;
-583 classification rows in both orders) are receipted in that directory.
+Pins Public Law 119-1 (S. 5) from the retained list record and
+``plaw-119publ1.xml`` fixture: the Statutes at Large cite, volume and page come
+from the USLM meta only when it states the same law, and ``captured`` promises
+a citation. Also pins the classification-table, Table III and committee-detail
+folds.
 """
 
 from __future__ import annotations
@@ -58,6 +55,7 @@ def captured_row():
 
 
 def test_the_statutes_at_large_citation_comes_from_the_uslm_meta_only_through_a_proved_join():
+    """The shaped row carries law and bill identity plus the Statutes at Large cite from the proved USLM join."""
     row = captured_row()
     assert row["law_id"] == "119-public-1"
     assert (row["congress"], row["law_type"], row["number"]) == ("119", "public", "1")
@@ -73,12 +71,14 @@ def test_the_statutes_at_large_citation_comes_from_the_uslm_meta_only_through_a_
 
 
 def test_a_uslm_meta_for_another_law_never_fills_a_row():
+    """A USLM meta stating another law raises ``TableContractError`` instead of filling the row."""
     other = json.loads((FIXTURES / "listings/congress-law-list.json").read_text())["bills"][0]
     with pytest.raises(TableContractError, match="USLM meta states"):
         shape_law(other, {"number": "119-110", "type": "Public Law"}, uslm=USLM, uslm_outcome="captured")
 
 
 def test_a_null_citation_is_read_through_its_outcome_column():
+    """A missing citation stays null with outcome ``not_requested``, and ``unavailable`` keeps it null too."""
     plain = shape_law(LAW_RECORD, LAW_RECORD["laws"][0])
     assert plain["statutes_at_large_cite"] is None
     assert plain["uslm_outcome"] == "not_requested"
@@ -88,6 +88,7 @@ def test_a_null_citation_is_read_through_its_outcome_column():
 
 
 def test_a_captured_uslm_that_names_no_statutes_citation_is_refused():
+    """A ``captured`` outcome whose USLM meta names no citation is refused, not published as a null."""
     # ``captured`` promises a citation; a meta without one must not publish a NULL that reads as the bulk lag.
     with pytest.raises(TableContractError, match="names no Statutes at Large citation"):
         shape_law(
@@ -99,6 +100,7 @@ def test_a_captured_uslm_that_names_no_statutes_citation_is_refused():
 
 
 def test_the_outcome_and_the_uslm_record_travel_together():
+    """The USLM record and a non-``not_requested`` outcome must travel together, and an unknown outcome is refused."""
     for outcome in USLM_OUTCOMES:
         assert outcome in ("captured", "unavailable", "not_requested")
     with pytest.raises(TableContractError, match="exactly when"):
@@ -110,6 +112,7 @@ def test_the_outcome_and_the_uslm_record_travel_together():
 
 
 def test_the_law_number_carries_its_own_congress():
+    """``law_id`` composes congress-type-number; a law number from another Congress or without a dash is refused."""
     assert law_id(119, "public", 1) == "119-public-1"
     with pytest.raises(TableContractError, match="another Congress"):
         shape_law({"congress": 118, "type": "S", "number": "5"}, {"number": "119-1", "type": "Public Law"})
@@ -118,6 +121,7 @@ def test_the_law_number_carries_its_own_congress():
 
 
 def test_the_publishers_law_type_folds_onto_one_sealed_spelling():
+    """Public and private law types fold to sealed spellings with package ids; unknown or missing types are refused."""
     assert STAT_CITE.fullmatch("139 Stat. 3")[0] == "139 Stat. 3"
     private = shape_law(LAW_RECORD, {"number": "119-1", "type": "Private Law"})
     assert (private["law_type"], private["publisher_law_type"]) == ("private", "Private Law")
@@ -129,6 +133,7 @@ def test_the_publishers_law_type_folds_onto_one_sealed_spelling():
 
 
 def test_law_code_sections_rows_from_the_classification_table():
+    """Classification rows shape law id, USC and Statutes at Large fields, keeping blank actions and page spans."""
     table = parse_classification_table(
         (FIXTURES / "uscode/classification-tbl119pl_2nd-head.htm").read_bytes(), congress=119, session=2
     )
@@ -148,6 +153,7 @@ def test_law_code_sections_rows_from_the_classification_table():
 
 
 def test_table3_records_rows_from_the_table_iii_page():
+    """Table III rows keep the page's en-dash key spelling and shape act, USC and record fields."""
     page = parse_table3_page((FIXTURES / "uscode/table3-111_226-head.htm").read_bytes(), key="111-226")
     row = shape_table3_record(page.records[0], page=page, seq=0, observed_at=OBSERVED_AT)
     assert row["act_key"] == "111-226"
@@ -161,6 +167,7 @@ def test_table3_records_rows_from_the_table_iii_page():
 
 
 def test_the_committee_fold_builds_one_json_row_per_detail_record():
+    """A committee list row plus detail shapes one JSON row with parsed subcommittee and history columns."""
     # Placed here so the whole laws/rosters shaping surface is exercised through
     # one import; the committees-specific refusals live in test_committee_rosters.py.
     from spicy_docs.schemas.roster_tables import shape_committee
@@ -178,6 +185,7 @@ def test_the_committee_fold_builds_one_json_row_per_detail_record():
 
 
 def test_the_detail_wins_the_subcommittee_fold_even_when_it_lists_none():
+    """Supplied detail wins the subcommittee count even when empty, and a subcommittee without a code is refused."""
     from spicy_docs.schemas.roster_tables import shape_committee
 
     list_row = json.loads((FIXTURES / "listings/congress-committee-hsju00-list-row.json").read_text())

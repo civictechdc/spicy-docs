@@ -1,16 +1,10 @@
 """Hand-built source-native release fixtures for the receipt-helper tools.
 
-``tools/analysis/fr_discarded_distinctness.py`` and
-``tools/analysis/compare_source_native_releases.py`` both read a release the same
-low-level way -- manifest, receipt, and blobs through
-``LocalSourceNativeBlobStore`` -- without going through
-``SourceNativeReleaseReader``/``admit_artifact``. So both need the same
-fixture shape, and it lived twice until 2026-09-05.
-
-These fixtures are written by hand rather than produced by the publisher on
-purpose: a fixture the writer generates cannot catch the writer being wrong,
-and these tools exist to check the writer.
-"""
+``tools/analysis/fr_discarded_distinctness.py`` and ``tools/analysis/compare_source_native_releases.py`` both read a
+release the same low-level way -- manifest, receipt, and blobs through ``LocalSourceNativeBlobStore`` -- without
+``SourceNativeReleaseReader``/``admit_artifact``, so they share this fixture shape. The fixtures are hand-written
+rather than produced by the publisher on purpose: a fixture the writer generates cannot catch the writer being wrong,
+and these tools exist to check the writer."""
 
 from __future__ import annotations
 

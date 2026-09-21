@@ -1,23 +1,9 @@
 """Four loops over every registered contract, and the shaped rows they run against.
 
-Each loop is one property the whole layer has to hold, asserted once rather
-than twenty-two times:
-
-1. every contract is internally consistent;
-2. every shaped row round-trips through its own column tuple;
-3. identity is unique over the fixtures;
-4. every column has a description.
-
-The rows come from this repository's real fixtures wherever a captured one
-exists. Two cases are built from less than a capture, each named where it is
-built: the diff of three printings, which uses the constructed division
-fixtures because they are the only files here that differ in an amount, an
-addition and a move; and the hearing transcript, which reads a captured CRPT
-package under a CHRG identity because no CHRG body has been captured yet.
-
-The diff-dependent cases skip cleanly without the ``bill-diff`` extra, the way
-``tests/test_section_diff.py`` does.
-"""
+One property per loop, asserted in one place: internal consistency, round-trip through the column tuple, identity
+uniqueness, and a description for every column. Rows come from real captures wherever one exists, except two named
+borrowings -- the three-printing diff and a captured CRPT body under a CHRG identity -- and the diff-dependent cases
+skip without the ``bill-diff`` extra."""
 
 from __future__ import annotations
 

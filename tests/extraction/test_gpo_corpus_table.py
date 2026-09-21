@@ -1,13 +1,7 @@
-"""Pin gap B6's corpus-validation aggregates against the committed JSON.
-
-``tests/fixtures/gpo_pdf_text/corpus-2026-09-19.json`` is the per-document
-record of a 42-document run over ``extraction.body_text``'s PDF branch --
-the "Corpus validation" section in ``docs/extraction-gpo.md`` restates its
-table and its aggregate numbers in prose. This test re-derives those
-aggregates from the committed JSON so the two never drift apart silently,
-without holding or fetching a single byte of any PDF: the JSON carries only
-each document's URL, sha256 and measured counts (see that file's own
-``method`` field for exactly what was run and how).
+"""Pins gap B6's corpus-validation aggregates against the committed per-document JSON, so
+``docs/extraction-gpo.md``'s "Corpus validation" table cannot drift from its measurements silently. The JSON
+records a 42-document run over ``extraction.body_text``'s PDF branch (URL, sha256 and measured counts only, no
+PDF bytes), and this test re-derives its aggregates without holding or fetching a byte of any PDF.
 """
 
 from __future__ import annotations
@@ -45,28 +39,18 @@ def test_corpus_has_forty_two_documents_spanning_both_congresses():
 
 
 def test_corpus_spans_every_named_print_stage():
-    """The task-named stages (ih, is, rh, rs, eh, es, enr, rfs, pcs, ats)
-    plus every other stage the sealed vocabulary in
-    ``sources/congress/bill_versions.py`` names as measured in the 119th
-    BILLS census that this corpus happens to also carry."""
+    """The task-named stages (ih, is, rh, rs, eh, es, enr, rfs, pcs, ats) plus every other stage the sealed
+    vocabulary in ``sources/congress/bill_versions.py`` names as measured in the 119th BILLS census."""
     stages = {d["stage"] for d in _load() if d["kind"] == "bill"}
     named = {"ih", "is", "rh", "rs", "eh", "es", "enr", "rfs", "pcs", "ats"}
     assert named <= stages
 
 
 def test_layout_verdict_matches_every_stage_expectation():
-    """Every non-enrolled bill stage (not just ih/is/rh/rs -- the fixture
-    also carries eh/es/rfs/pcs/ats/rds/cps/eas/eah/rfh/rhuc, all measured
-    True the same way) is line-numbered; every enrolled bill, every
-    committee report, and the Congressional Record issue are not. Zero
-    disagreements across all 42 documents, pinned -- this is what two rule
-    fixes in ``gpo_normalize._layout_verdict`` (see that function's own
-    docstring) bought: both were false negatives this same corpus caught
-    before the fix. Each document must match exactly one of the three
-    branches below; a document matching none (an unexpected kind or a bill
-    stage this test has not accounted for) fails the test outright rather
-    than silently skipping both assertions the earlier, narrower version of
-    this loop made possible."""
+    """Every non-enrolled bill stage (including eh/es/rfs/pcs/ats/rds/cps/eas/eah/rfh/rhuc) is line-numbered
+    while every enrolled bill, committee report and Record issue is not -- zero disagreements across all 42
+    documents, bought by two false-negative fixes in ``gpo_normalize._layout_verdict``. A document matching
+    none of the three branches fails outright rather than silently skipping both assertions."""
     documents = _load()
     for doc in documents:
         if doc["kind"] in ("record", "report") or (doc["kind"] == "bill" and doc["stage"] == "enr"):
@@ -87,12 +71,10 @@ def test_no_gutter_digits_leak_and_no_footer_survives_on_any_document():
 
 
 def test_hyphen_rejoin_residual_false_positive_rate():
-    """89,337 merge operations, 70,054 resulting words checked, 1,232 not a
-    known word (1.76%) -- the number ``docs/extraction-gpo.md``'s "Corpus
-    validation" section states and characterizes (sampled and read on the
-    page: a real compound's own hyphen coinciding with the print-wrap point,
-    or a proper noun / modern compound the system dictionary lacks -- not a
-    parsing defect)."""
+    """89,337 merge operations, 70,054 resulting words checked, 1,232 not a known word (1.76%) -- the number
+    docs/extraction-gpo.md's "Corpus validation" section states and characterizes (sampled and read on the page:
+    a real compound's own hyphen coinciding with the print-wrap point, or a proper noun or modern compound the
+    system dictionary lacks -- not a parsing defect)."""
     documents = _load()
     total_rejoins = sum(d["hyphen_rejoin_count"] for d in documents)
     total_words = sum(d["rejoined_word_count"] for d in documents)
@@ -104,9 +86,8 @@ def test_hyphen_rejoin_residual_false_positive_rate():
 
 
 def test_reused_fixture_documents_carry_no_url_or_bytes():
-    """A document reused from an already-committed fixture was never
-    re-fetched this run; its provenance is the fixture file itself, not a
-    URL or a sha256 of bytes this run captured."""
+    """A document reused from an already-committed fixture was never re-fetched this run, so its provenance
+    is the fixture file itself -- URL, sha256 and byte_size are all null."""
     documents = _load()
     reused = [d for d in documents if d["reused_fixture"]]
     assert len(reused) == 4
@@ -128,8 +109,7 @@ def test_every_fresh_document_states_a_govinfo_url_and_a_sha256_digest():
 
 
 def test_no_bytes_or_credentials_committed_in_the_corpus_json():
-    """Boy-scout guard for the rule stated in the task and in
-    ``AGENTS.md``: the fixture carries per-document measurements and
+    """Guard for the rule in the task and ``AGENTS.md``: the fixture carries per-document measurements and
     provenance, never PDF bytes and never a credential."""
     raw = FIXTURE.read_text()
     assert "%PDF" not in raw

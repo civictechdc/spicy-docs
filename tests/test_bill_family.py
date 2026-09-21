@@ -1,14 +1,9 @@
-"""One bill through the family builder: the rows it produces, and what it refuses.
+"""One bill through the family builder: the rows it produces and the refusals it files.
 
-The helpers here are shared with ``test_table_contracts.py`` and
-``test_activity_events.py``, which both need real shaped rows and should not
-each build a capture of their own.
-
-The three model seams are stubbed rather than mocked at a client:
-``build_bill_family`` takes a section classifier, a version summarizer and a
-diff summarizer, so a hermetic run substitutes three functions and never
-reaches a model. Passing none of them is the keyless CI path, and is asserted
-separately.
+The three model seams (section classifier, version summarizer, diff summarizer)
+are stubbed rather than mocked at a client, so runs stay hermetic and never
+reach a model; passing none of them is the keyless CI path. The capture helpers
+are shared with ``test_table_contracts.py`` and ``test_activity_events.py``.
 """
 
 from __future__ import annotations
@@ -64,6 +59,7 @@ HR6028 = BillIdentity(119, "hr", 6028)
 
 
 def test_bill_row_counts_the_native_cosponsor_list() -> None:
+    """cosponsor_count is the literal count, ``"0"`` for an empty list and NULL for an absent one."""
     status = parse_bill_status(
         (CAPTURED / "status-118hr1-cosponsors.xml").read_bytes(), identity=BillIdentity(118, "hr", 1)
     )
@@ -79,10 +75,12 @@ needs_engine = pytest.mark.skipif(
 
 
 def clock() -> datetime:
+    """The fixed observation instant every test builds against."""
     return NOW
 
 
 def status_for(name: str, identity: BillIdentity) -> Any:
+    """Parse a captured BILLSTATUS fixture under the given identity."""
     return parse_bill_status((CAPTURED / name).read_bytes(), identity=identity)
 
 
@@ -281,6 +279,7 @@ def family(
     engine: EngineStamp | None = None,
     **arguments: Any,
 ) -> BillFamilyTables:
+    """Build the default modelled-or-pair capture with TEST_ENGINE and the fixed clock."""
     return build_bill_family(
         capture if capture is not None else captured_pair_capture(),
         engine=engine if engine is not None else TEST_ENGINE,
@@ -306,6 +305,9 @@ ROW_TABLES = tuple(field for field in BillFamilyTables.__dataclass_fields__ if f
 
 @needs_engine
 def test_one_pass_fills_every_family_table_and_every_row_passes_its_contract() -> None:
+    """One pass fills nine tables (financial_changes and diff_summaries stay empty for these fixtures), each row
+    passing contract checks, column order and key.
+    """
     tables = modelled_family()
     produced = {name: getattr(tables, name) for name in ROW_TABLES}
     # Two tables are empty here on purpose. financial_changes needs
@@ -333,6 +335,9 @@ def test_one_pass_fills_every_family_table_and_every_row_passes_its_contract() -
 
 @needs_engine
 def test_a_changed_pair_produces_one_diff_summary_row_per_compared_pair() -> None:
+    """Each changed consecutive pair yields one diff summary keyed by from/to version codes; the generator reads
+    engine records with no from_heading.
+    """
     generator = StubDiffSummarizer()
     tables = family(three_printing_capture(), summarize_diff=generator)
     assert [(row["from_version_code"], row["to_version_code"]) for row in tables.diff_summaries] == [
@@ -353,6 +358,7 @@ def test_a_changed_pair_produces_one_diff_summary_row_per_compared_pair() -> Non
 
 @needs_engine
 def test_a_diff_the_generator_declines_is_a_refusal_not_a_gap() -> None:
+    """A declined diff is filed as a diff_summaries refusal with its five-part identity and unchanged reason."""
     tables = family(summarize_diff=StubDiffSummarizer())
     assert tables.diff_summaries == ()
     declined = [refusal for refusal in tables.refusals if refusal.table == "diff_summaries"]
@@ -364,6 +370,7 @@ def test_a_diff_the_generator_declines_is_a_refusal_not_a_gap() -> None:
 
 @needs_engine
 def test_every_section_names_a_version_row_that_exists() -> None:
+    """Every bill_sections row names a (bill, version_code, source) that exists among the bill_versions keys."""
     tables = modelled_family()
     parents = {BILL_VERSIONS.key(row) for row in tables.bill_versions}
     for row in tables.bill_sections:
@@ -372,6 +379,7 @@ def test_every_section_names_a_version_row_that_exists() -> None:
 
 @needs_engine
 def test_only_consecutive_pairs_are_diffed() -> None:
+    """Three printings diff only their date-consecutive pairs, all marked consecutive_by_date and xml-xml."""
     tables = family(three_printing_capture())
     pairs = [(row["from_version_code"], row["to_version_code"]) for row in tables.section_diffs]
     assert pairs == [
@@ -384,13 +392,8 @@ def test_only_consecutive_pairs_are_diffed() -> None:
 
 @needs_engine
 def test_a_pdf_twin_resolves_through_both_halves_of_its_reference() -> None:
-    """A twin reference needs the code *and* the source, or the pair reads as pdf-xml.
-
-    ``pair_type`` indexes rows on ``joined((version_code, source))``, so a twin
-    naming only the code matches nothing and the pair is classified as a
-    comparison neither side can supply -- the exact failure that function was
-    written to prevent.  The XML side here is sourced ``congress``, which a
-    hardcoded ``govinfo`` would miss.
+    """A twin reference needs both the code and the source, or the pair reads as pdf-xml instead of pdf-pdf; the XML
+    side here is sourced ``congress``, which a hardcoded ``govinfo`` would miss.
     """
     pair = captured_pair_capture()
     xml_side = replace(pair.versions[0], source="congress")
@@ -426,6 +429,9 @@ def test_a_pdf_twin_resolves_through_both_halves_of_its_reference() -> None:
 
 @needs_engine
 def test_financial_rows_appear_only_when_the_caller_asks_for_the_pairing() -> None:
+    """financial_changes stays empty unless pair_amounts is requested, then each word_alignment row sits under a
+    section_diff_items row from the same pass.
+    """
     capture = replace(three_printing_capture(), versions=three_printing_capture().versions[:2])
     assert family(capture).financial_changes == ()
     paired = family(capture, pair_amounts=True).financial_changes
@@ -457,6 +463,7 @@ def test_financial_rows_appear_only_when_the_caller_asks_for_the_pairing() -> No
 
 @needs_engine
 def test_no_model_seam_means_no_model_rows_and_no_refusal() -> None:
+    """With no model seams the model-backed tables are empty and no refusal is filed."""
     tables = family()
     assert tables.section_classifications == ()
     assert tables.bill_summaries == ()
@@ -466,6 +473,9 @@ def test_no_model_seam_means_no_model_rows_and_no_refusal() -> None:
 
 @needs_engine
 def test_a_printing_with_no_parsed_document_is_a_named_refusal_not_a_gap() -> None:
+    """An unparsed printing still gets a version row with NULL section_count, while its sections and diff refuse by
+    table and identity.
+    """
     capture = captured_pair_capture()
     unread = replace(capture.versions[1], document=None)
     tables = family(replace(capture, versions=(capture.versions[0], unread)))
@@ -486,6 +496,7 @@ def test_a_printing_with_no_parsed_document_is_a_named_refusal_not_a_gap() -> No
 
 @needs_engine
 def test_a_declined_summary_is_a_refusal_rather_than_a_silently_missing_row() -> None:
+    """A declined version summary is filed as a refusal naming the version, not omitted."""
     tables = family(
         classify=None,
         summarize=StubSummarizer(declines=frozenset({"introduced-in-house"})),
@@ -525,6 +536,9 @@ def refusing(error: Exception):
     ids=["summary", "classification"],
 )
 def test_an_answer_the_reader_refused_is_a_named_refusal_and_the_pass_finishes(seam, table, identity) -> None:
+    """A ModelCallError from the summary or classification seam is a named refusal carrying only its message (never
+    the answer details), and the bill still builds.
+    """
     tables = family(**{seam: refusing(ModelCallError(REFUSAL, details={"summary": "model prose"}))})
 
     # The bill is still built: twelve tables do not depend on one answer.
@@ -541,6 +555,7 @@ def test_an_answer_the_reader_refused_is_a_named_refusal_and_the_pass_finishes(s
 
 @needs_engine
 def test_a_refused_diff_summary_is_a_named_refusal_and_the_pass_finishes() -> None:
+    """A refused diff summary is a named refusal while the diff itself and the rest of the pass continue."""
     tables = family(three_printing_capture(), summarize_diff=refusing(ModelCallError("diff summary answer is missing")))
     assert tables.diff_summaries == ()
     refusals = [refusal for refusal in tables.refusals if refusal.table == "diff_summaries"]
@@ -550,6 +565,7 @@ def test_a_refused_diff_summary_is_a_named_refusal_and_the_pass_finishes() -> No
 
 @needs_engine
 def test_a_refused_answer_and_a_declined_one_are_different_records() -> None:
+    """Refused and declined summary reasons are disjoint: a refused answer is never recorded as "below the minimum"."""
     # The whole point: a caller reading the refusal must be able to tell "the
     # model answered something the reader would not take" from "the generator
     # never asked, because this printing is too short to summarize".
@@ -571,6 +587,7 @@ def test_a_refused_answer_and_a_declined_one_are_different_records() -> None:
     ids=["credential refusal", "transport failure"],
 )
 def test_a_credential_refusal_or_a_transport_failure_still_aborts_the_pass(error) -> None:
+    """A credential refusal or transport failure aborts the whole pass rather than being filed per row."""
     # Neither is a fact about this printing. A 401 must end the run rather than
     # be filed once per row, and a 502 establishes nothing to record.
     with pytest.raises(type(error)):
@@ -579,6 +596,7 @@ def test_a_credential_refusal_or_a_transport_failure_still_aborts_the_pass(error
 
 @needs_engine
 def test_classifications_resolve_through_the_section_row_not_the_model_answer() -> None:
+    """Every classification row resolves to a published section key and carries the current vocabulary hash."""
     tables = modelled_family()
     sections = {BILL_SECTIONS.key(row) for row in tables.bill_sections}
     for row in tables.section_classifications:
@@ -589,6 +607,8 @@ def test_classifications_resolve_through_the_section_row_not_the_model_answer() 
 
 @needs_engine
 def test_a_model_answer_naming_an_unpublished_section_is_refused() -> None:
+    """A classification naming a section outside the published rows is refused once per version."""
+
     def stray(sections: list[ClassifiableSection]) -> tuple[SectionClassification, ...]:
         answers = StubClassifier()(sections)
         return (*answers, replace(answers[0], section_id="not-a-section"))
@@ -602,6 +622,7 @@ def test_a_model_answer_naming_an_unpublished_section_is_refused() -> None:
 
 @needs_engine
 def test_every_refusal_this_pass_files_names_its_bill_first() -> None:
+    """Every refusal identity starts with the bill id, including section_classifications."""
     # A rollup collecting refusals across bills reads identity[0] as the bill.
     # The section_classifications refusals used to omit it, alone among the
     # twelve tables', so a printing could not be traced back to its bill.
@@ -616,18 +637,14 @@ def test_every_refusal_this_pass_files_names_its_bill_first() -> None:
 
 
 def test_section_reference_is_unique_per_printing_and_position() -> None:
+    """Section references differ by source and by body index."""
     assert section_reference("ih", "govinfo", 3) != section_reference("ih", "govinfo-pdf", 3)
     assert section_reference("ih", "govinfo", 3) != section_reference("ih", "govinfo", 4)
 
 
 def test_a_version_type_outside_the_sealed_vocabulary_refuses_one_row_not_the_bill() -> None:
-    """``version_slug_reprints`` refuses an unknown slug; that must not abort the family.
-
-    The reprint check reaches ``govinfo_suffix``, which raises for a slug the
-    sealed vocabulary does not name -- and the publisher is free to print a
-    version type this repository has never seen.  Before the guard, one such
-    printing raised out of ``shape_bill_version`` and took the whole bill with
-    it, which is a silent gap wearing a traceback.
+    """An unknown version slug must not abort the bill: only its sections refuse, and reprint ambiguity is
+    ``"false"`` for an unnamed type while a genuinely ambiguous one is ``"true"``.
     """
     # Unparsed printings: the vocabulary guard has nothing to do with the diff
     # engine, so this case runs whether or not the extra is installed.
@@ -726,12 +743,8 @@ def test_nonfinite_engine_evidence_refuses_only_its_diff_item(monkeypatch, numbe
 
 
 def test_concat_is_one_pass_where_folding_merged_is_quadratic() -> None:
-    """A rollup accumulates one family per bill, so the join has to be linear.
-
-    Folding ``merged`` copies every row already accumulated on every bill: at
-    4,000 bills that is sixteen times the work of 1,000. ``concat`` copies each
-    row once. Asserted as a count of row copies rather than a wall-clock bound,
-    so a slow machine cannot make it flap.
+    """concat is linear where folding ``merged`` copies on the order of N^2 rows, asserted as counted row copies
+    rather than wall-clock so a slow machine cannot make it flap.
     """
     copies = 0
     original = tuple.__add__
@@ -763,12 +776,14 @@ def test_concat_is_one_pass_where_folding_merged_is_quadratic() -> None:
 
 
 def test_concat_refuses_anything_that_is_not_a_family() -> None:
+    """concat raises TypeError for non-family input and returns an empty family for an empty list."""
     with pytest.raises(TypeError):
         BillFamilyTables.concat([BillFamilyTables(), {"bills": ()}])
     assert BillFamilyTables.concat([]) == BillFamilyTables()
 
 
 def test_merged_concatenates_every_table_and_keeps_every_refusal() -> None:
+    """merged concatenates every table's rows in order and merging empty families yields an empty family."""
     left = BillFamilyTables(bills=({"a": None},), refusals=())
     right = BillFamilyTables(bills=({"b": None},), bill_actions=({"c": None},))
     merged = left.merged(right)
@@ -778,11 +793,13 @@ def test_merged_concatenates_every_table_and_keeps_every_refusal() -> None:
 
 
 def test_merged_refuses_anything_that_is_not_a_family() -> None:
+    """merged raises TypeError for non-family input."""
     with pytest.raises(TypeError):
         BillFamilyTables().merged({"bills": ()})
 
 
 def test_the_vocabulary_hash_moves_when_a_definition_is_reworded(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Rewording a classification label definition changes the vocabulary hash."""
     from spicy_docs.interpretation import bill_family, section_classification
 
     before = classification_vocabulary_hash()
@@ -796,6 +813,7 @@ def test_the_vocabulary_hash_moves_when_a_definition_is_reworded(monkeypatch: py
 
 @needs_engine
 def test_the_engine_stamp_is_read_from_the_installed_distribution() -> None:
+    """The installed stamp names deltatrack, states a version, and has a 40-character revision or an empty one."""
     stamp = installed_engine_stamp()
     assert stamp.name == "deltatrack"
     assert stamp.version
@@ -805,6 +823,7 @@ def test_the_engine_stamp_is_read_from_the_installed_distribution() -> None:
 
 
 def test_a_missing_engine_distribution_refuses_by_name() -> None:
+    """An uninstalled distribution raises BillFamilyError naming the bill-diff extra."""
     from spicy_docs.interpretation.bill_family import BillFamilyError
 
     with pytest.raises(BillFamilyError, match="bill-diff"):
@@ -832,12 +851,9 @@ def test_the_family_builds_without_the_diff_and_names_every_pair_it_skipped() ->
 
 
 def test_a_referral_signal_reaches_both_the_committee_row_and_the_bills_row() -> None:
-    """The six full-committee codes live in ``money_bills``; the wiring to the rows is here.
-
-    No captured status in this repository is referred to one of the six, so the
-    one committee H.Res. 10 does carry is given an appropriations system code.
-    That establishes the wiring; ``tests/test_interpretation_money_bills.py``
-    establishes the vocabulary.
+    """An appropriations system code sets the committee row's referral signal and the bill's, using a constructed
+    signal since no captured status refers to one of the six; the vocabulary lives in
+    ``tests/test_interpretation_money_bills.py``.
     """
     status = status_for("status-119hres10.xml", BillIdentity(119, "hres", 10))
     referred = replace(status, committees=(replace(status.committees[0], system_code="hsap00"),))
@@ -867,13 +883,9 @@ def test_a_referral_signal_reaches_both_the_committee_row_and_the_bills_row() ->
 def test_exactly_one_action_is_flagged_latest_and_carries_the_coded_fields(
     name: str, identity: BillIdentity, code: str | None, source_name: str
 ) -> None:
-    """``<latestAction>`` is a separate element, and it states no code at all.
-
-    Comparing whole action records can never match it -- the actions[] entry
-    carries an actionCode, a type and a sourceSystem that latestAction does not
-    -- so the link is made on date and text, and the coded columns are then read
-    from the action rather than published NULL.  The expected values are read
-    from the fixtures, not from the row under test.
+    """Exactly one action is flagged latest -- matched to ``<latestAction>`` on date and text, since whole records
+    never compare equal -- and the bill's coded fields are read from that action; expectations come from the
+    fixtures, not the row under test.
     """
     status = status_for(name, identity)
     tables = family(BillFamilyCapture(status=status, observed_at=OBSERVED_AT), diff=False)
@@ -917,12 +929,9 @@ def test_committee_count_equals_the_committee_rows_at_any_nesting_depth() -> Non
 
 
 def test_a_money_bill_publishes_its_kind_beside_every_input_the_rule_read() -> None:
-    """No captured status here is a money bill, so one is given an appropriations title.
-
-    The rule itself is covered by ``tests/test_interpretation_money_bills.py``;
-    what this establishes is that the finding's kind, rule, reason codes, fiscal
-    year and subcommittee all reach their own columns, beside the referral
-    signals the classifier was given -- so a row can be re-derived from itself.
+    """A constructed appropriations title reaches money_bill_kind, rule, reason codes, fiscal year and subcommittee
+    columns beside the referral signals, so a row can be re-derived from itself; the rule itself is covered in
+    ``tests/test_interpretation_money_bills.py``.
     """
     status = status_for("status-119hres10.xml", BillIdentity(119, "hres", 10))
     appropriation = replace(

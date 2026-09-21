@@ -1,4 +1,7 @@
-"""The shared checks every document route calls: the final URL and the PDF bytes."""
+"""The shared checks every document route calls: the final URL and the PDF bytes.
+
+A locator query difference refuses, and PDF bytes need the magic plus a trailer within the last kilobyte.
+"""
 
 import pytest
 

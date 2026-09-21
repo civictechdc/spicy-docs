@@ -1,4 +1,8 @@
-"""Annual itempath observations preserve exact spans and bracketed source stubs."""
+"""scan_uscode_annual_sections preserves exact spans and bracketed source stubs.
+
+Itempath and heading byte spans round-trip against the source bytes; missing, repeated, empty, or invalid-UTF-8 keys
+become per-row issues; unclosed comments refuse without emitting partial rows; and empty, truncated, or over-budget
+input refuses."""
 
 from pathlib import Path
 

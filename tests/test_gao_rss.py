@@ -1,4 +1,8 @@
-"""The GAO reports feed is read as a recent-items observation whose links name products."""
+"""The GAO reports feed is read as a recent-items observation whose links name products.
+
+Pins publisher spellings and ordering, absent fields, shape and bound
+refusals, and exact keyless capture.
+"""
 
 from pathlib import Path
 
@@ -27,10 +31,13 @@ MINIMAL = (
 
 
 def response(body=FEED, status=200, *, content_type="application/rss+xml; charset=utf-8"):
+    """An HTTPX response over the given feed bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -43,10 +50,14 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_pinned_feed_yields_products_in_feed_order_with_publisher_spellings():
+    """The pinned feed yields products in feed order with publisher spellings for channel, guids, dates and
+    descriptions.
+    """
     feed = parse_gao_reports_feed(FEED)
     assert feed.title == "Reports News from the GAO" and feed.link == GAO_REPORTS_FEED_URL
     assert feed.last_build_date == "Mon, 14 Sep 2026 11:01:17 -0400"
@@ -61,6 +72,7 @@ def test_pinned_feed_yields_products_in_feed_order_with_publisher_spellings():
 
 
 def test_minimal_feed_keeps_absent_fields_absent():
+    """A minimal feed keeps absent fields absent."""
     feed = parse_gao_reports_feed(MINIMAL)
     assert feed.items[0].description is None and feed.items[0].product_id == "gao-26-107879"
 
@@ -104,12 +116,14 @@ def test_minimal_feed_keeps_absent_fields_absent():
     ],
 )
 def test_feed_refusals_name_the_failed_check(body, message):
+    """Feed refusals name the failed check."""
     with pytest.raises(GaoFeedSourceError, match=message):
         parse_gao_reports_feed(body)
 
 
 @pytest.mark.parametrize("max_bytes", [0, True, 64 * 1024**2 + 1])
 def test_feed_bounds_are_explicit(max_bytes):
+    """Feed bounds are explicit and refuse on violation."""
     with pytest.raises(GaoFeedSourceError):
         parse_gao_reports_feed(MINIMAL, max_bytes=max_bytes)
     with pytest.raises(GaoFeedSourceError, match="max_bytes"):
@@ -117,6 +131,7 @@ def test_feed_bounds_are_explicit(max_bytes):
 
 
 def test_acquirer_captures_exact_feed_bytes_keyless():
+    """The acquirer captures exact feed bytes keyless with identity encoding and no key header."""
     transport = Transport(response())
     with GaoFeedAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_reports_feed()
@@ -136,6 +151,7 @@ def test_acquirer_captures_exact_feed_bytes_keyless():
     ],
 )
 def test_wrong_shape_or_unavailable_feed_never_succeeds(answer, error):
+    """A wrong-shape or unavailable feed fails after one request with the operation recorded and bytes retained."""
     transport = Transport(answer)
     with GaoFeedAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(error) as raised:
         source.acquire_reports_feed()
@@ -145,6 +161,7 @@ def test_wrong_shape_or_unavailable_feed_never_succeeds(answer, error):
 
 
 def test_budget_and_client_configuration_are_explicit():
+    """Invalid budget values raise ValueError and a wrong transport type raises TypeError."""
     for fields in ({"max_requests": 0}, {"max_bytes": 64 * 1024**2 + 1}, {"timeout_seconds": 0}):
         with pytest.raises(ValueError):
             GaoFeedBudget(
