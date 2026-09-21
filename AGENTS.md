@@ -15,6 +15,13 @@ uv run --frozen ruff check .
 
 Always run Python tools through `uv run`; a bare executable may use another version.
 
+## Point, don't count
+
+Prose in docs, docstrings and instructions must not hard-code counts that decay
+every commit (file counts, test counts, table sizes). Point instead: `see
+filemap.json`, `see <dir>/`, `see <module>`. Numbers that justify a rule or a
+measured bound stay, with their citation.
+
 ## Read the publisher's answer correctly
 
 - **Empty success is not absence.** GovInfo can return `200` with an empty result
