@@ -2,9 +2,11 @@
 
 Status: local stabilization and direct source/output validation on 2026-09-21;
 see [the current evidence and limits](legislative-readiness-2026-09-21.md).
-SpicyDocs defines 39 table contracts over 814 columns. SpicyRegs declares 67
-tables, but the public-artifact observation found 24 available and 43 returning
-404. Implemented, produced locally, and publicly available are distinct states.
+The initial validation inventory covered 39 SpicyDocs table contracts over 814
+columns and 67 SpicyRegs declarations. The public-artifact observation found 24
+available and 43 returning 404. Current FEC integration expands the host dictionary
+to 71 declarations; those older public measurements retain their original scope.
+Implemented, produced locally, and publicly available are distinct states.
 The implementation history below retains its original measurements; historical
 uses of "hosted" do not establish current publication. A6 acquisition, C4, C5,
 D4, E3 and bill reconstruction remain open in their stated scope.
@@ -65,17 +67,19 @@ Measured on 2026-09-19 unless stated:
 
 ### 2.0 Execution status (maintained; updated as each branch merges or stalls)
 
-**2026-09-21 committed locally, not pushed or deployed:** H3/H5/H8 are corrected by a
+**2026-09-21 local implementation; public adoption remains open:** H3/H5/H8 are corrected by a
 direct public-file observation; the six derived tables remain declared. H6 has
 local checkpoint/replacement fixes with failure and raw-PDF replay checks. H10
 below records the newly measured cosponsor defect and corrected 118th-Congress
-candidate. The installed host now uses SpicyDocs 0.25.0 and Rulespec artifacts
-1.0.14; the five-table candidate also replays through those installed packages.
+candidate. The installed host now uses SpicyDocs 0.26.0 and Rulespec artifacts
+1.0.14. The five-table candidate and retained regulatory repair replay through
+those installed packages; Rulespec's opt-in capture v2 remains a separate adoption.
 The [repair and adoption record](data-remediation-sprint-2026-09-21.md) retains
 direct source comparisons, artifact pins and remaining publication requirements.
 
 | # | Status, 2026-09-19 evening |
 |---|---|
+| SR2 retained regulatory recovery and full RIN sets | **2026-09-21: independently reviewed and merged locally** in spicy-regs `122f540` (recovery `5235ef4`, RIN joins `c00030a`, final integration `f4c4378`). Explicit retained-input repair uses installed source readers and admission, rereads despite old discovery checkpoints, and preserves newer priors and host enrichment. Proceedings and comment periods retain all usable RINs; the House/Federal Register join keeps dated identity. Direct replay covers 391 dockets, 546 documents and three named comments: 10,969 source/output field comparisons, zero mismatches, four newer public observations preserved. It restores 47 docket RIN fields, 496 document attachment fields, 488 Federal Register references and 503 withdrawal values. Review found and fixed temporary-file and index-write retry defects. Final combined gate: 2,042 tests; lint, types and 71-table dictionary pass. Repair is local and per file; ordinary discovery, source-body acquisition, Iceberg, public backfill/publication, lifecycle accuracy and interpretation qualification remain open. Evidence: `receipts/remaining-gaps-wave1-2026-09-21/sr2/`, including `independent-combined-review.json`. |
 | SR1; H7/H8 generation admission | **2026-09-21: independently reviewed and merged locally** in spicy-regs `4b34811` (implementation `de7c2a8`, partial-candidate guard `97f1dda`, FEC reconciliation through `28c4cb8`). Complete Parquet families are decoded, schema/count checked and byte-verified through Rulespec before one conditional publication pointer changes. Captured readers, isolated build inputs, complete CLI batches and explicit legacy status prevent mixed or stale managed inputs. The narrow bill writer carries siblings from one complete family; local partial candidates cannot publish. Existing docket-search gzip keeps its legacy path. Full reconciled gate: 2,012 tests; lint, types and 71-table dictionary pass. Native five-table admission preserves all 2,206,611 cells. Live R2 rehearsal, base/partitioned/Iceberg publication, semantic qualification and public adoption remain open. Evidence: `receipts/remaining-gaps-wave1-2026-09-21/sr1/`. |
 | RS1 shared capture provenance | **2026-09-21: independently reviewed and merged locally** in Rulespec `3c3bd79b` plus replay-command correction `f15fae69`. Opt-in DocumentCapture v2 shares acquisition/MODS evidence, derived-artifact identity/page maps, effective coordinates and rule/converter bindings. V1 schema bytes and default APIs remain unchanged. Independent replay preserves 934 nodes and 2,444 spans across seven captures; 28 capture tests, installed-wheel checks and 44 canonical cases pass. The 11 original provenance omissions remain findings, plus explicit archive/member work pending RS2. CFR original PDF bytes and acquisition time remain unavailable/unproven. Rulespec-artifacts 1.1.0 is prepared locally; source v2 adoption and release remain open. Evidence: `receipts/remaining-gaps-wave1-2026-09-21/rs1/`. |
 | SD1 shared table validation | **2026-09-21: reviewed and merged locally** in spicy-docs `b3b59e0`. JSON serialization refuses nested non-finite values as named bill-family row refusals; finite JSON bytes and all 2,206,611 cells in the retained 118th HR/S five-table replay are unchanged. Independent review reopened native H.R. 1 XML and actual output and matched all 52 subjects. The full source gate passed 7,263 tests. Digest versions now explicitly establish equality, not chronology; per-column logical types and mixed-rule host inputs remain open. Evidence: `receipts/remaining-gaps-wave1-2026-09-21/sd1/`, including independent review and raw-input/output witness. No new package release or public adoption. |
