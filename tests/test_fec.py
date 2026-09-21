@@ -1,4 +1,10 @@
-"""FEC metadata/body separation, source paging and bounded acquisition."""
+"""FEC metadata/body separation, source paging and bounded acquisition.
+
+Pins embedded-body pointer escaping and tampering refusals, offset and keyset
+paging with repeated filters and repeated-cursor refusal, listing/sitemap/HTML
+shape parsing without implicit asset fetches, asset streaming and digest reuse,
+credential scrubbing, redirect host revalidation, and CLI completion markers.
+"""
 
 from __future__ import annotations
 
@@ -24,6 +30,8 @@ from spicy_docs.transport.download import AcquisitionError, HttpRefusal
 
 @pytest.fixture
 def client(tmp_path):
+    """An FEC client over a mock transport and blob store."""
+
     def make(handler, **options):
         return FecClient(
             store=tmp_path,
@@ -37,10 +45,12 @@ def client(tmp_path):
 
 
 def page(rows, *, number=1, pages=1, exact=True):
+    """An FEC page payload over the given results."""
     return {"results": rows, "pagination": {"page": number, "pages": pages, "is_count_exact": exact}}
 
 
 def listing(*keys, token=None, prefix="bulk-downloads/"):
+    """An XML listing payload over the given keys."""
     entries = "".join(
         f'<Contents><Key>{key}</Key><Size>3</Size><ETag>"e"</ETag><LastModified>2026-09-11T00:00:00Z</LastModified></Contents>'
         for key in keys
@@ -50,6 +60,9 @@ def listing(*keys, token=None, prefix="bulk-downloads/"):
 
 
 def test_metadata_preserves_decimals_links_and_exact_embedded_text_without_body_requests(client, tmp_path):
+    """Metadata keeps decimals, links and exact embedded text without extra body requests, with the key in headers
+    only.
+    """
     payload = b'{"results":[{"amount":0.1000,"id":"01","documents":[{"url":"https://www.fec.gov/a.pdf","text":"Exact\\nbody"}]}],"pagination":{"page":1,"pages":1,"is_count_exact":true}}'
     calls = []
 
@@ -77,6 +90,7 @@ def test_metadata_preserves_decimals_links_and_exact_embedded_text_without_body_
 
 
 def test_embedded_pointer_escapes_and_tampering(client, tmp_path):
+    """Embedded pointers use JSON-pointer escaping and tampered pointers are refused."""
     with client(lambda _: httpx.Response(200, json=page([{"a/b~c": {"text": "source"}}]))) as c:
         (result,) = c.api("/v1/committees/")
     body = result["records"][0]["embedded_bodies"][0]
@@ -91,6 +105,7 @@ def test_embedded_pointer_escapes_and_tampering(client, tmp_path):
 
 
 def test_offset_paging_keeps_repeated_filters(client):
+    """Offset paging keeps repeated filter values and ends when next is absent."""
     calls = []
 
     def serve(request):
@@ -106,6 +121,7 @@ def test_offset_paging_keeps_repeated_filters(client):
 
 
 def test_estimated_count_is_not_a_terminal_boundary(client):
+    """An estimated count does not terminate the walk; three pages are read."""
     calls = []
 
     def serve(request):
@@ -119,6 +135,7 @@ def test_estimated_count_is_not_a_terminal_boundary(client):
 
 
 def test_keyset_carries_all_cursor_fields_and_preserves_source_filters(client):
+    """Keyset paging carries every cursor field and preserves source filters."""
     calls = []
 
     def serve(request):
@@ -148,6 +165,7 @@ def test_keyset_carries_all_cursor_fields_and_preserves_source_filters(client):
 
 
 def test_repeated_keyset_refuses_instead_of_looping(client):
+    """A repeated keyset cursor refuses instead of looping."""
     with client(
         lambda _: httpx.Response(200, json={"results": [1], "pagination": {"last_indexes": {"last_index": "same"}}})
     ) as c:
@@ -158,6 +176,7 @@ def test_repeated_keyset_refuses_instead_of_looping(client):
 
 @pytest.mark.parametrize("group", ["murs", "advisory_opinions", "admin_fines", "adrs", "statutes", "rulemakings"])
 def test_legal_search_offsets(group, client):
+    """Legal search walks offset pages and records source pointers per group."""
     calls = []
 
     def serve(request):
@@ -173,6 +192,7 @@ def test_legal_search_offsets(group, client):
 
 
 def test_detail_reference_and_asset_operation_modes(client):
+    """Detail, reference and asset operation modes select their own sources and refuse CSV/ICS."""
     with client(
         lambda _: httpx.Response(
             200, json={"docs": [{"no": 1, "documents": [{"text": "exact", "url": "https://www.fec.gov/a.pdf"}]}]}
@@ -204,6 +224,7 @@ def test_detail_reference_and_asset_operation_modes(client):
     ],
 )
 def test_success_shape_must_be_present(value, mode):
+    """A success without its expected shape is refused."""
     with pytest.raises(ValueError):
         api_page(value, url=API_ROOT + "/v1/legal/search/", mode=mode)
 
@@ -212,12 +233,14 @@ def test_success_shape_must_be_present(value, mode):
     "payload", [b"<html>challenge</html>", b'{"results":[],"results":[1]}', b'{"x":NaN}', b'{"error":"unavailable"}']
 )
 def test_json_refusals_retain_exact_evidence(payload, client):
+    """JSON refusals retain the exact response bytes."""
     with client(lambda _: httpx.Response(200, content=payload)) as c, pytest.raises(ValueError) as refused:
         list(c.api("/v1/committees/"))
     assert refused.value.refused_response.response_bytes == payload
 
 
 def test_xml_listing_and_sitemaps_never_fetch_assets(client):
+    """XML listings and sitemaps never fetch assets and carry checksum metadata."""
     calls = []
 
     def serve(request):
@@ -247,6 +270,7 @@ def test_xml_listing_and_sitemaps_never_fetch_assets(client):
 
 
 def test_listing_retains_optional_checksum_and_storage_fields(client, tmp_path):
+    """Listings retain optional checksum and storage fields, absent ones as empty or None."""
     payload = listing("bulk-downloads/a.zip", "bulk-downloads/b.zip").replace(
         b"</Contents>",
         b"<ChecksumAlgorithm>CRC64NVME</ChecksumAlgorithm><ChecksumAlgorithm>SHA256</ChecksumAlgorithm>"
@@ -266,6 +290,7 @@ def test_listing_retains_optional_checksum_and_storage_fields(client, tmp_path):
 
 
 def test_sitemap_locations_distinguish_repeated_urls(client):
+    """Sitemap locations distinguish repeated URLs, with no source pointer."""
     payload = (
         b'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
         b"<url><loc>https://www.fec.gov/a.xml</loc><lastmod>2025-01-01</lastmod></url>"
@@ -281,6 +306,7 @@ def test_sitemap_locations_distinguish_repeated_urls(client):
 
 
 def test_html_link_locations_use_decoded_source_tag_positions(client):
+    """HTML link locations use decoded source tag positions."""
     payload = (
         "<title>FEC</title>\n"
         'é<a href="/same.xml">First</a><a href="mailto:ignored">Mail</a>\r\n'
@@ -301,6 +327,7 @@ def test_html_link_locations_use_decoded_source_tag_positions(client):
 
 
 def test_filing_html_navigation_remains_metadata_without_implicit_body_selection():
+    """Filing HTML navigation stays metadata with no implicit body selection."""
     value = {"html_url": "https://docquery.fec.gov/cgi-bin/forms/C00000001/123/", "fec_url": "/123.fec"}
     record = split_record(value, source_pointer="/results/0")
     assert record["metadata"] == value
@@ -309,6 +336,8 @@ def test_filing_html_navigation_remains_metadata_without_implicit_body_selection
 
 
 def test_sitemap_index_duplicates_are_bounded_and_finite(client):
+    """Sitemap index duplicates are bounded and finite."""
+
     def serve(request):
         if request.url.path == "/index.xml":
             return httpx.Response(
@@ -333,11 +362,13 @@ def test_sitemap_index_duplicates_are_bounded_and_finite(client):
     ],
 )
 def test_wrong_or_ambiguous_listing_is_refused(payload, client):
+    """A wrong or ambiguous listing is refused."""
     with client(lambda _: httpx.Response(200, content=payload)) as c, pytest.raises(ValueError):
         list(c.objects("bulk-downloads/"))
 
 
 def test_page_and_request_bounds_cannot_report_completion(client):
+    """Page and request bounds stop without reporting completion."""
     with client(lambda _: httpx.Response(200, json=page([1], pages=2))) as c:
         it = c.api("/v1/committees/", max_pages=1)
         assert next(it)["next_url"]
@@ -351,6 +382,7 @@ def test_page_and_request_bounds_cannot_report_completion(client):
 
 
 def test_html_index_keeps_labels_and_prefers_only_declared_equivalent_renditions():
+    """An HTML index keeps labels and prefers only declared equivalent renditions, refusing ambiguity."""
     payload = b'<html><title>Reports | FEC</title><a href="/report.xml">XML</a><a href="/report.pdf">PDF</a><svg><title>Lock</title></svg></html>'
     result = parse_page_links(payload, url="https://www.fec.gov/reports/")
     assert result["title"] == "Reports | FEC"
@@ -366,6 +398,7 @@ def test_html_index_keeps_labels_and_prefers_only_declared_equivalent_renditions
 
 
 def test_asset_streaming_bound_and_known_digest_reuse_cost_zero_requests(client, tmp_path):
+    """Asset streaming is bounded and keyless, and a known digest reuses storage at zero requests."""
     data = b"PK\x03\x04" + b"x" * (128 * 1024)
     calls = []
 
@@ -406,6 +439,7 @@ def test_asset_streaming_bound_and_known_digest_reuse_cost_zero_requests(client,
     ],
 )
 def test_invalid_assets_are_not_committed(client, tmp_path, headers, body, options, error):
+    """Invalid assets are not committed to the store."""
     with client(lambda _: httpx.Response(200, content=body, headers=headers)) as c, pytest.raises(error):
         c.download("https://www.fec.gov/example", max_bytes=500, **options)
     assert not list((tmp_path / "sha256").glob("*"))
@@ -424,12 +458,14 @@ def test_invalid_assets_are_not_committed(client, tmp_path, headers, body, optio
     ],
 )
 def test_explicit_native_and_html_assets_remain_distinct(client, kind, body, options):
+    """Explicit native and HTML assets remain distinct."""
     with client(lambda _: httpx.Response(200, content=body, headers={"content-type": kind})) as c:
         result = c.download("https://www.fec.gov/document", max_bytes=1024, **options)
     assert result["bytes"] == len(body)
 
 
 def test_redirect_revalidates_host_and_drops_api_credential(client):
+    """A redirect revalidates the host and drops the API credential."""
     calls = []
 
     def serve(request):
@@ -461,11 +497,14 @@ def test_redirect_revalidates_host_and_drops_api_credential(client):
     ],
 )
 def test_official_url_refuses_ambiguous_or_credentialed_locators(url):
+    """An ambiguous or credentialed official URL is refused."""
     with pytest.raises(ValueError):
         official_url(url)
 
 
 def test_public_403_can_use_explicit_zyte_but_api_auth_refusal_stops(client):
+    """A public 403 may use explicit Zyte while an API auth refusal stops."""
+
     class Zyte:
         calls = 0
 
@@ -489,6 +528,8 @@ def test_public_403_can_use_explicit_zyte_but_api_auth_refusal_stops(client):
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("operation", ["metadata", "original"])
 def test_zyte_target_auth_refusal_stops_the_selected_operation(client, status, operation):
+    """A Zyte target auth refusal stops the selected operation after one proxy call."""
+
     class Zyte:
         calls = 0
 
@@ -509,6 +550,7 @@ def test_zyte_target_auth_refusal_stops_the_selected_operation(client, status, o
 
 
 def test_echoed_api_key_is_never_retained(client, tmp_path):
+    """An echoed API key is never retained or committed."""
     with (
         client(lambda _: httpx.Response(200, json=page([{"text": "test-credential-123"}]))) as c,
         pytest.raises(RuntimeError, match="echoed"),
@@ -518,6 +560,8 @@ def test_echoed_api_key_is_never_retained(client, tmp_path):
 
 
 def test_cli_partial_failure_has_no_complete_marker_and_preserves_prior_output(monkeypatch, tmp_path):
+    """A CLI partial failure writes no complete marker and preserves prior output."""
+
     def partial(self, *args, **kwargs):
         yield {"records": [{"metadata": {"amount": Decimal("1.20")}}], "next_url": "next"}
         raise ValueError("source refused api_key=hidden and test-credential-123")
@@ -537,6 +581,7 @@ def test_cli_partial_failure_has_no_complete_marker_and_preserves_prior_output(m
 
 
 def test_official_registry_routes_are_executable_not_external_research():
+    """Official registry routes are executable, and every declared operation exists."""
     families = official_sources()
     ids = {x["id"] for x in families}
     assert {"fec_receipts", "fec_legal", "fec_ao", "fec_enforcement", "fec_agency_reports", "fec_oig"} <= ids
@@ -553,6 +598,7 @@ def test_official_registry_routes_are_executable_not_external_research():
 
 
 def test_retained_official_response_shapes_and_legal_metadata_null_control():
+    """Retained official response shapes parse, with legal metadata's null control left unset."""
     root = Path(__file__).parent / "fixtures/fec"
     for record in json.loads((root / "sources.json").read_text()):
         raw = (root / record["file"]).read_bytes()
@@ -569,6 +615,7 @@ def test_retained_official_response_shapes_and_legal_metadata_null_control():
 
 
 def test_asset_retry_discards_interrupted_bytes_and_bounds_chunk_size(client, monkeypatch, tmp_path):
+    """An asset retry discards interrupted bytes, bounds chunk size and commits one blob."""
     from spicy_docs.transport.download import LocalBlobWriter
 
     # No timing claim: assert stream chunk size and retry request count instead.
@@ -607,6 +654,7 @@ def test_asset_retry_discards_interrupted_bytes_and_bounds_chunk_size(client, mo
 
 
 def test_metadata_byte_bound_and_native_asset_signature(client, monkeypatch):
+    """Metadata byte bounds and native asset signatures are enforced."""
     monkeypatch.setattr("spicy_docs.sources.fec.client.MAX_METADATA_BYTES", 3)
     with client(lambda _: httpx.Response(200, content=b"1234")) as c, pytest.raises(ValueError, match="byte bound"):
         list(c.api("/v1/committees/"))
@@ -618,6 +666,7 @@ def test_metadata_byte_bound_and_native_asset_signature(client, monkeypatch):
 
 
 def test_cli_success_is_only_after_exhaustion(monkeypatch, tmp_path):
+    """The CLI reports success only after exhaustion."""
     monkeypatch.setattr(FecClient, "objects", lambda *a, **kw: iter([{"records": [], "next_url": None}]))
     output = tmp_path / "complete.jsonl"
     assert main(["--store", str(tmp_path / "blobs"), "--output", str(output), "objects", "legal/"]) == 0

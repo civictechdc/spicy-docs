@@ -41,10 +41,12 @@ def assert_same_value(expected: Any, actual: Any, path: str = "$") -> None:
 
 
 def json_bytes(value: Any) -> bytes:
+    """Canonical compact JSON bytes with NaN forbidden and non-ASCII preserved."""
     return (json.dumps(value, ensure_ascii=False, allow_nan=False, separators=(",", ":")) + "\n").encode("utf-8")
 
 
 def measure(output: Path) -> dict[str, Any]:
+    """Round-trip every tracked capture through the XML codec and retain the proof under ``output``."""
     paths = capture_paths()
     if not paths:
         raise ValueError("no tracked captures")
@@ -113,6 +115,7 @@ def measure(output: Path) -> dict[str, Any]:
 
 
 def main() -> None:
+    """Run the measurement and print one round-trip line per capture plus a summary."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()

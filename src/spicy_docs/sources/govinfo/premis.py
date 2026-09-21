@@ -62,6 +62,8 @@ class PremisObject:
 
 @dataclass(frozen=True, slots=True)
 class GovInfoPremisRead:
+    """A complete PREMIS 2 document with its input digest, byte size and every direct object."""
+
     element: XmlTreeElement
     source_sha256: str
     source_byte_size: int

@@ -246,11 +246,12 @@ class RequestLog:
 
 
 def _safe(value: str) -> str:
+    """A mods key reduced to a bounded file-name-safe stem."""
     return re.sub(r"[^A-Za-z0-9._-]", "_", value)[:96]
 
 
 def _api_key() -> str:
-    """The same credential-file order the rollup uses; an isolated checkout carries none of its own."""
+    """The first API_GOV found in ``.env`` then the rollup's checkout/refspec environments; raises if none."""
     for candidate in (Path(".env"), CHECKOUT_ENV, REFSPEC_ENV):
         if candidate.exists():
             try:
@@ -326,6 +327,7 @@ def _prove_identity(body: bytes, document: GovInfoDocument, final_url: str) -> s
 
 
 def fetch(receipt: Path, source_receipt: Path, max_requests: int) -> None:
+    """Fetch each distinct package or granule MODS the sample points at, resuming by retained body."""
     from spicy_docs.transport.source_acquirer import SourceAcquirer
 
     receipt.mkdir(parents=True, exist_ok=True)
@@ -430,10 +432,12 @@ def element_census(root: XmlTreeElement) -> dict[str, int]:
 
 
 def _attributes(element: XmlTreeElement) -> dict[str, str]:
+    """One element's attributes with the MODS namespace prefix stripped from the names."""
     return {name.removeprefix(_NS): value for name, value in element.attributes}
 
 
 def _alnum(value: str) -> str:
+    """``value`` upper-cased with everything but letters and digits removed, for blind key comparison."""
     return re.sub(r"[^A-Z0-9]", "", value.upper())
 
 
@@ -491,6 +495,7 @@ def _usc_keys(root: ModsRecord) -> set[str]:
 
 
 def _cfr_keys(root: ModsRecord) -> set[str]:
+    """``{title}CFR{part}`` for every ``<cfr>`` child the MODS states."""
     keys: set[str] = set()
     for element in root.fields("extension", "cfr"):
         title = _attributes(element).get("title")
@@ -518,6 +523,7 @@ def _statute_keys(root: ModsRecord) -> set[str]:
 
 
 def _rin_keys(root: ModsRecord) -> set[str]:
+    """``RIN{number}``, alphanumeric-folded, for every ``<rin>`` the MODS states."""
     return {
         f"RIN{_alnum(number)}"
         for element in root.fields("extension", "rin")
@@ -566,6 +572,7 @@ def _fiscal_years(root: ModsRecord) -> set[str]:
 
 
 def _year(value: str) -> str:
+    """The first four-digit 19xx/20xx year in ``value``, or the value unchanged when it names none."""
     match = re.search(r"(?:19|20)\d{2}", value)
     return match.group(0) if match else value
 
@@ -627,6 +634,7 @@ def mods_facts(body: bytes) -> dict[str, Any]:
 
 
 def _print_sets(document: Mapping[str, Any]) -> dict[str, list[str]]:
+    """One rollup index document's per-rule distinct print keys."""
     keys = document.get("join_keys") or {}
     return {rule.name: list(keys.get(rule.name, {}).get("distinct", [])) for rule in JOIN_KEY_RULES}
 
@@ -688,6 +696,7 @@ def _request_counts(receipt: Path) -> dict[str, Any]:
 
 
 def analyze(receipt: Path, source_receipt: Path, output: Path) -> None:
+    """Compare every print's rollup key sets against its retained MODS and write both sidecars."""
     documents = govinfo_documents(source_receipt)
     per_family = json.loads((source_receipt / "tables" / "per-family.json").read_text())
     by_id = {
@@ -882,6 +891,7 @@ _RANGES: dict[str, tuple[int, int]] = {
 
 
 def _leading_number(value: str, pattern: str) -> int | None:
+    """The integer ``pattern``'s first group captures at the start of ``value``, or None when it does not match."""
     match = re.match(pattern, value)
     return int(match.group(1)) if match else None
 
@@ -1280,6 +1290,7 @@ def render(sidecar_path: Path, report_path: Path) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Dispatch the ``fetch``/``analyze``/``uncapped``/``render`` phase named on the command line."""
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     sub = parser.add_subparsers(dest="phase", required=True)
     fetch_parser = sub.add_parser("fetch")

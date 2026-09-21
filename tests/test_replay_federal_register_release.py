@@ -1,10 +1,8 @@
-"""Check offline replay through the production Federal Register profile and page iterator.
+"""Offline replay through the production Federal Register profile and page iterator, with a URL-to-bytes map replacing
+live fetches.
 
-A URL-to-bytes dictionary replaces live fetches. Each release uses two traversals
-to satisfy stable-consecutive-traversals acceptance; one traversal is refused.
-A URL visited once per traversal therefore produces two retained acquisition-page
-rows but one distinct request.
-"""
+Each release needs two traversals to satisfy stable-consecutive-traversals acceptance (one is refused), so a URL
+visited once per traversal yields two retained acquisition-page rows but one distinct request."""
 
 from __future__ import annotations
 
@@ -225,11 +223,10 @@ def test_replay_fetch_raises_naming_a_missing_request_key(tmp_path: Path) -> Non
 
 
 def test_distinct_request_key_count_equals_one_traversals_page_row_count(tmp_path: Path) -> None:
-    """Two traversals each visit the same two pages, so the release retains
-    four acquisition-page rows total -- but only two distinct requestKeys,
-    exactly the row count of either traversal alone. See the module
-    docstring for why one traversal is not enough to build an accepted
-    Federal Register release at all."""
+    """Two traversals each visit the same two pages, so the release retains four acquisition-page rows total.
+
+    Only two distinct requestKeys survive -- exactly the row count of either traversal alone.
+    """
 
     fetch_map, urls = _two_page_fetch_map(_document("2026-00001"), _document("2026-00002"))
     release_root, blob_store = _publish_source_release(tmp_path, fetch_map)

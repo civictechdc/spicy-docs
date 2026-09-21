@@ -38,6 +38,7 @@ _USER_AGENT = "spicy-docs-source-native/1.0 (https://github.com/civictechdc/spic
 
 
 def capture_instant(clock: Callable[[], datetime]) -> str:
+    """The clock's instant as a whole-second UTC ``...Z`` ISO string; a naive clock is refused."""
     value = clock()
     if value.tzinfo is None or value.utcoffset() is None:
         raise SourceNativeReleaseError("CLI clock must return a timezone-aware instant")
@@ -97,6 +98,7 @@ def public_table_fetcher(
 
 
 def default_regulations_reader(agency: str, collection: str) -> MirrulationsObjectReader:
+    """Map a Mirrulations collection name to its record type; an unknown collection is refused."""
     from spicy_docs.sources import mirrulations
 
     if collection == DOCUMENT_COLLECTION:

@@ -100,4 +100,5 @@ class LdaFilingsReader(PagedJsonReader):
         super().__init__(family=LDA, budget=budget, api_key=api_key, transport=transport, clock=clock)
 
     def filings(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
+        """Walk one filings query page by page under the family's shared budget."""
         return self.pages(url, records_key=FILINGS_KEY, max_pages=max_pages)

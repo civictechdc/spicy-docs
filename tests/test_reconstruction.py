@@ -1,16 +1,9 @@
-"""Reconstruction: the profile registry, the evidence model, the parser, the serializer and the five findings.
+"""Reconstruction: the profile registry, the evidence model, the parser, the serializer, and the five findings.
 
-Every case here runs on a real publisher response. The five CFR sections are
-the evidence documents under `tests/fixtures/reconstruction/cfr/` (their README
-states what each one exercises and where its PDF came from), and
-the reference for 30 CFR 716.2 is the XML granule this repository already
-holds for the same section, so the round-trip compares one document with
-itself rather than two documents with each other.
-
-Only `schema_validity` needs the `reconstruct` extra. Its tests skip on
-`extra_available()` rather than fail, the way `test_congress_bill_tree.py`
-skips on `bill-diff`; everything else runs on the core package.
-"""
+Every case runs on a real publisher response -- the five CFR evidence documents under
+tests/fixtures/reconstruction/cfr, whose README states what each exercises, with 30 CFR 716.2 compared against this
+repository's own XML granule for the same section. Only schema_validity needs the reconstruct extra and skips without
+it; everything else runs on the core package."""
 
 from __future__ import annotations
 

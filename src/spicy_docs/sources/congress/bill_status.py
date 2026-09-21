@@ -30,6 +30,8 @@ class BillSourceError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class BillIdentity:
+    """A requested measure; construction refuses a non-positive Congress or number and an unsupported type."""
+
     congress: int
     bill_type: str
     number: int
@@ -47,13 +49,10 @@ class BillIdentity:
 class RecordedVote:
     """One ``<recordedVote>`` on an action: the publisher's reference to a roll call.
 
-    The user guide (``tests/fixtures/billstatus_codes/guide-2026-08-03.md``)
-    lists seven children and names none required, so every field is optional
-    here. A measurement of the JSON actions route on 2026-09-19 found six of
-    the seven present in all 58 entries and ``fullActionName`` in none of
-    them; it is carried anyway, because the guide documents it and a field the
-    publisher may resume sending is not ours to drop. Numbers stay as the
-    publisher wrote them, like every other field in this module.
+    Every field is optional (the guide lists seven children and names none
+    required). ``full_action_name`` was absent from all 58 measured JSON
+    entries but is carried anyway: the guide documents it, and a field the
+    publisher may resume sending is not ours to drop.
     """
 
     chamber: str | None
@@ -82,15 +81,10 @@ class BillLaw:
 class BillTitle:
     """One ``<titles>`` entry: an official, short or display title, versioned by chamber and text version.
 
-    The guide's children list is not exhaustive by its own account ("may
-    include"); the corpus shows more than it names. Every field is optional
-    here for the same reason as everywhere else in this module: the guide
-    names none required, and a display title in particular carries only
-    ``titleType`` and ``title``, no chamber or text-version fields at all.
-    ``title`` reads ``<title>`` first and falls back to the guide's
-    ``<latestTitle>`` spelling (``_title_text``, shared with ``RelatedBill``)
-    on the vanishing chance a title item ever uses it; no measured record
-    does.
+    Every field is optional because the guide names none required (a display
+    title carries only ``titleType`` and ``title``). ``title`` reads
+    ``<title>`` first and falls back to the guide's ``<latestTitle>``
+    spelling, which no measured record uses.
     """
 
     title: str | None
@@ -106,17 +100,12 @@ class BillTitle:
 class RelatedBill:
     """One ``<relatedBills>`` entry: another same-Congress measure and how CRS or a chamber linked it.
 
-    The guide (``2. Elements table``) names this item's title child
-    ``latestTitle``; live BILLSTATUS from the 108th, 113th and 119th
-    Congresses (measured 2026-09-19, three independent bills per Congress)
-    states it as ``<title>`` instead, and ``<latestTitle>`` never appears.
-    ``title`` reads ``<title>`` first, matching every measured record, and
-    falls back to ``<latestTitle>`` (``_title_text``) so a record that does
-    use the guide's spelling still yields the title instead of ``None``.
-    ``relationship_details_json`` is the publisher's ``relationshipDetails`` items verbatim -- each one's
-    ``identifiedBy`` and ``type`` -- as canonical JSON, because a related bill
-    can carry more than one (a Senate-identified companion CRS also flags, for
-    example), and flattening to one pair of columns would drop the others.
+    The guide names this item's title child ``latestTitle``, but live
+    BILLSTATUS states ``<title>``, so ``title`` reads ``<title>`` first and
+    falls back to ``<latestTitle>``. ``relationship_details_json`` keeps every
+    ``relationshipDetails`` item's ``identifiedBy``/``type`` verbatim as
+    canonical JSON, because a related bill can carry more than one and
+    flattening would drop the others.
     """
 
     congress: str | None
@@ -132,27 +121,14 @@ class RelatedBill:
 class CboCostEstimate:
     """One ``<cboCostEstimates>`` item: CBO's own row about one scored printing.
 
-    **The user guide is stale on this element and the live files govern.** The
-    guide (``tests/fixtures/billstatus_codes/guide-2026-08-03.md``) documents
-    ``rptPubDate``/``rptTitle``/``rptUrl`` and no description; every one of the
-    1,468 items in the 118th's ``hr`` and ``s`` bulk zips states
-    ``pubDate``/``title``/``url``/``description`` instead, which is what the
-    Congress.gov API documents and serves (measured 2026-09-20,
-    ``docs/research/cbo-cost-estimate-routes-2026-09-20.md``). Both spellings
-    are read, the live one first, the same way :func:`_title_text` handles the
-    guide's ``latestTitle``: a field the publisher may resume sending is not
-    ours to drop.
-
-    ``description`` is CBO's own statement of *which printing* it scored ("As
-    ordered reported by the House Committee on Energy and Commerce on March 24,
-    2023"), which is the only thing in this element that distinguishes two
-    estimates of one bill. Every field is optional here because the guide names
-    none required.
-
-    **The element is never emitted empty**: zero of the 16,213 bills in those
-    two zips carries a self-closing ``<cboCostEstimates/>``, so a bill without
-    it is *either* never scored *or* not yet linked and nothing in this route
-    tells the two apart. A caller records requested-empty, never absence.
+    The guide is stale here and the live files govern: both its spellings
+    (``rptPubDate``/``rptTitle``/``rptUrl``) and the live ones
+    (``pubDate``/``title``/``url``/``description``) are read, live first, the
+    same way :func:`_title_text` handles the guide's ``latestTitle``; a field
+    the publisher may resume sending is not ours to drop. ``description`` is
+    the only field that distinguishes two estimates of one bill. The element
+    is never emitted empty, so a bill without it is either never scored or not
+    yet linked: a caller records requested-empty, never absence.
     """
 
     pub_date: str | None
@@ -165,11 +141,10 @@ class CboCostEstimate:
 class BillCommittee:
     """One committee or subcommittee the measure reached.
 
-    ``system_code`` is the publisher's own identifier (``hsap00``) and is what
-    a referral rule keys on; a committee's ``name`` is prose and is not.
-    ``chamber`` and ``type`` are absent on a subcommittee, which the guide
-    gives only ``name``, ``systemCode`` and ``activities``. Activities are not
-    read here; the caller retains the XML for fields outside this subset.
+    ``system_code`` is the publisher's own identifier (``hsap00``) and what a
+    referral rule keys on; a committee's ``name`` is prose and is not.
+    ``chamber`` and ``type`` are absent on a subcommittee, and activities are
+    not read here; the caller retains the XML for fields outside this subset.
     """
 
     system_code: str | None
@@ -183,18 +158,11 @@ class BillCommittee:
 class BillAction:
     """``text`` is ``None`` when the publisher states the action without one.
 
-    The user guide lists every child of ``<actions>`` as one the element "may
-    include" and names none required, and the corpus agrees: 7 of the 12,938
-    files in the 119th H.R., H.Res. and S.Res. status zips carry an action item
-    with an ``actionCode`` and ``sourceSystem`` but no ``<text>`` (2026-09-19;
-    ``docs/sources/congress-bulk-status.md``). Refusing the whole document over
-    an absent optional field lost those bills entirely.
-
-    An action has two states here, not three: an absent ``<text>`` and one
-    present but blank both read as ``None``, because a blank element states no
-    action text any more than a missing one does and no caller should have to
-    tell them apart. Text that is there is kept exactly as written, interior
-    and surrounding whitespace included.
+    An absent ``<text>`` and one present but blank both read as ``None`` --
+    two states, not three, because a blank element states no action text any
+    more than a missing one does. Text that is there is kept exactly as
+    written, interior and surrounding whitespace included. Refusing a
+    document over an absent optional field would lose the bill entirely.
     """
 
     text: str | None
@@ -217,14 +185,10 @@ class BillSponsor:
 class BillSummary:
     """``text`` is the summary as the publisher escaped it, from either placement.
 
-    Most summaries carry ``<text>`` directly; some carry it inside a ``<cdata>``
-    element, whose only child it then is. Both are current -- 984 of the 3,984
-    summaries in the 119th H.R., H.Res. and S.Res. status zips use the wrapper,
-    with last-update dates interleaved with the direct form (2026-09-19) -- and
-    the two placements also escape differently, every direct one in that corpus
-    as a CDATA section and every wrapped one as entity references. Neither
-    difference reaches this field: the XML reader resolves both forms and this
-    module decodes nothing itself, so the value is the same HTML either way.
+    Most summaries carry ``<text>`` directly; some carry it inside a
+    ``<cdata>`` wrapper, and both placements are current and escape
+    differently. The XML reader resolves both forms and this module decodes
+    nothing itself, so the value is the same HTML either way.
     """
 
     text: str
@@ -251,6 +215,12 @@ class BillTextVersion:
 
 @dataclass(frozen=True, slots=True)
 class BillStatus:
+    """The parsed document; fields are literal publisher strings in publisher order.
+
+    ``cbo_cost_estimates_outcome`` and ``cosponsors`` use ``None`` for "not
+    read", never for an observed empty.
+    """
+
     identity: BillIdentity
     schema_version: str
     title: str
@@ -320,7 +290,7 @@ def bill_xml_locator(identity: BillIdentity, package_id: str) -> str:
 
 
 def bill_package_id_from_url(identity: BillIdentity, url: str) -> str | None:
-    """Recognize canonical GovInfo format URLs; leave other publisher links intact."""
+    """Return the package id a canonical GovInfo format URL names, or None for any other link."""
     _validated_identity(identity)
     match = _PACKAGE_URL.fullmatch(url)
     if match is None:
@@ -434,10 +404,9 @@ def _measured_or_documented(element: Element, measured: str, documented: str) ->
 def _title_text(element: Element) -> str | None:
     """Read ``<title>``, falling back to ``<latestTitle>``, the guide's own spelling for it.
 
-    Every live BILLSTATUS this module measured (108th, 113th and 119th
-    Congresses) states ``<title>`` and never ``<latestTitle>``, both inside
-    ``<titles>`` items and inside ``<relatedBills>`` items -- see the
-    ``RelatedBill`` docstring.
+    Every live BILLSTATUS measured (108th, 113th and 119th Congresses) states
+    ``<title>`` and never ``<latestTitle>``, inside ``<titles>`` and
+    ``<relatedBills>`` alike.
     """
     return _measured_or_documented(element, "title", "latestTitle")
 
@@ -570,7 +539,11 @@ def _text_version(element: Element, identity: BillIdentity) -> BillTextVersion:
 
 
 def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = DEFAULT_MAX_BYTES) -> BillStatus:
-    """Validate one BILLSTATUS identity and retain literal fields in publisher order."""
+    """Validate one BILLSTATUS identity and retain literal fields in publisher order.
+
+    The superseded 1.0.0 element names, an identity mismatch, a summary
+    stating its text twice, and disagreeing policy-area fields all refuse.
+    """
     _validated_identity(identity)
     root = _xml_root(body, max_bytes)
     if root.tag != "billStatus":

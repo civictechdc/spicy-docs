@@ -20,6 +20,7 @@ class GovInfoModsError(ValueError):
 
 
 def _name(name: str) -> str:
+    """The local name of a namespace-expanded tag."""
     if name.startswith("{}"):
         return name[2:]
     return name if name.startswith("{") else f"{{{MODS_NAMESPACE}}}{name}"
@@ -130,6 +131,8 @@ class ModsRecord:
 
 @dataclass(frozen=True, slots=True)
 class GovInfoModsPackage:
+    """The mapped package root with its constituents."""
+
     package: ModsRecord
     source_sha256: str
     source_byte_size: int
@@ -145,6 +148,8 @@ class GovInfoModsPackage:
 
 @dataclass(slots=True)
 class _Frame:
+    """The parser's stack frame for one open element."""
+
     name: str
     attributes: tuple[tuple[str, str], ...]
     namespaces: tuple[tuple[str, str], ...]

@@ -3,18 +3,13 @@
     UV_OFFLINE=1 uv run --frozen python -m tools.analysis.dry_audit \
         --root . --paths src tools --exclude tools/analysis/dry_audit.py > receipt.json
 
-Exact means equal AST bodies, excluding docstrings/signatures/decorators. Shape
-also replaces Name/argument identifiers in first-use order and masks literal
-values by type; attributes and keyword names remain significant. Neither proves
-equivalent behavior. Blocks are sliding windows of 3..6 adjacent statements in
-every suite, including module scope. Contained matches with the same occurrence
-coverage are suppressed. Overlapping retained candidates are counted once in
-unique_lines, not in occurrence_lines. Single statements are covered by the
-literal/regex/error inventories, not by the block detector.
-
-Only Python files in the explicit paths are read. Syntax errors abort. Receipts
-pin each input's bytes, Python version, thresholds and Git HEAD; they contain no
-clock or absolute checkout paths. The tool opens no socket and needs only stdlib.
+Exact means equal AST bodies minus docstrings/signatures/decorators; shape also replaces Name/argument
+identifiers in first-use order and masks literals by type, and neither proves equivalent behavior.
+Blocks are sliding windows of 3..6 adjacent statements; matches contained in a larger one with the same
+occurrence coverage are suppressed, overlaps count once in unique_lines, and single statements belong to
+the literal/regex/error inventories instead. Only Python files in the explicit paths are read, syntax
+errors abort, and receipts pin each input's bytes, Python version, thresholds and Git HEAD with no clock
+or absolute checkout paths; the tool opens no socket and needs only stdlib.
 """
 
 from __future__ import annotations
@@ -31,6 +26,7 @@ from pathlib import Path
 
 
 def _body(nodes):
+    """The statements of a suite with docstring expressions removed."""
     return [
         n
         for n in nodes
@@ -39,6 +35,7 @@ def _body(nodes):
 
 
 def _key(nodes, shape=False):
+    """The SHA-256 of one suite's encoded AST, shape-normalized when ``shape`` is set."""
     names = {}
 
     def encode(value):
@@ -61,10 +58,12 @@ def _key(nodes, shape=False):
 
 
 def _location(path, nodes, name=""):
+    """A path/line-span/name record for one node suite."""
     return {"path": path, "line": nodes[0].lineno, "end": nodes[-1].end_lineno, "name": name}
 
 
 def _clusters(groups):
+    """Group identical keys by unique location, dropping singletons and sorting by lines saved."""
     result = []
     for key, occurrences in groups.items():
         locations = sorted({(o["path"], o["line"], o["end"], o["name"]) for o in occurrences})
@@ -109,6 +108,7 @@ def _maximal(groups):
 
 
 def _summary(groups):
+    """Cluster, occurrence and line counts for one inventory, counting overlaps once."""
     lines = set()
     places = set()
     for group in groups:
@@ -136,6 +136,7 @@ HELPER_TERMS = {
 
 
 def scan(root: Path, paths: list[str], excludes=(), min_lines=4):
+    """Walk the explicit paths and return the receipt dictionary the CLI prints."""
     files = set()
     for name in paths:
         path = root / name
@@ -275,6 +276,7 @@ def scan(root: Path, paths: list[str], excludes=(), min_lines=4):
 
 
 def main(argv=None):
+    """Parse arguments, run the scan and print the receipt JSON with git HEAD and tool digest."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--paths", nargs="+", default=["src", "tools"])

@@ -1,4 +1,9 @@
-"""Prove bounded status-to-selected-text acquisition with retained responses."""
+"""Bounded status-to-selected-text acquisition with retained responses.
+
+Pins exact captured bytes and request counts, credential refusal aborting once,
+404/410 as unavailable rather than absence, refusal of wrong shapes/identity
+before a second request, caller-bounded limits, pacing, and budget validation.
+"""
 
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -28,10 +33,13 @@ NOW = datetime(2026, 9, 12, tzinfo=UTC)
 
 
 def response(body=STATUS, status=200, *, content_type="text/xml", **headers):
+    """An HTTPX response over the given bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type, **headers})
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -44,10 +52,12 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_status_and_explicit_text_keep_exact_bytes_and_distinct_request_counts():
+    """Both fetches keep exact bytes, timestamp, size/hash and one request each, from their own GET locators."""
     transport = Transport(response(), response(TEXT))
     with BillAcquirer(budget=BUDGET, transport=transport, clock=lambda: NOW) as source:
         status = source.acquire_status(IDENTITY)
@@ -69,6 +79,9 @@ def test_status_and_explicit_text_keep_exact_bytes_and_distinct_request_counts()
 @pytest.mark.parametrize("http_status", [404, 410])
 @pytest.mark.parametrize("operation", ["status", "text"])
 def test_unavailable_locator_is_distinct_and_retains_response(http_status, operation):
+    """A 404/410 on status or text raises BillSourceUnavailableError with the retained body, status and request
+    count.
+    """
     transport = Transport(*([response()] if operation == "text" else []), response(b"absent", http_status))
     with BillAcquirer(budget=BUDGET, transport=transport) as source:
         status = source.acquire_status(IDENTITY) if operation == "text" else None
@@ -85,6 +98,7 @@ def test_unavailable_locator_is_distinct_and_retains_response(http_status, opera
 
 @pytest.mark.parametrize("http_status", [401, 403])
 def test_access_refusal_aborts_once(http_status):
+    """A 401/403 raises CredentialRefusedError after exactly one request, with no response bytes attached."""
     transport = Transport(response(b"private", http_status))
     with (
         BillAcquirer(budget=BUDGET, transport=transport) as source,
@@ -97,6 +111,7 @@ def test_access_refusal_aborts_once(http_status):
 
 @pytest.mark.parametrize("http_status", [302, 400, 204])
 def test_other_status_cannot_become_absence_or_a_document(http_status):
+    """A 302/400/204 is a plain BillSourceError, never absence or a document, and keeps the returned bytes."""
     transport = Transport(response(b"refused", http_status, location="https://example.invalid/"))
     with BillAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(BillSourceError) as caught:
         source.acquire_status(IDENTITY)
@@ -107,6 +122,9 @@ def test_other_status_cannot_become_absence_or_a_document(http_status):
 
 @pytest.mark.parametrize("http_status", [429, 502])
 def test_failed_text_retries_have_no_status_body_misattribution(http_status):
+    """A 429/502 text retry attributes the refusal to the text locator with the bounded request count and no status
+    body.
+    """
     transport = Transport(response(), response(b"temporary", http_status), response(b"temporary", http_status))
     with BillAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as source:
         status = source.acquire_status(IDENTITY)
@@ -128,6 +146,9 @@ def test_failed_text_retries_have_no_status_body_misattribution(http_status):
     ],
 )
 def test_wrong_status_shape_or_identity_retains_failed_source(body, media_type):
+    """Empty, challenge, wrong-media-type or altered-number status bodies fail source validation with the failed
+    bytes retained.
+    """
     transport = Transport(response(body, content_type=media_type))
     with BillAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(BillSourceError) as caught:
         source.acquire_status(IDENTITY)
@@ -136,6 +157,7 @@ def test_wrong_status_shape_or_identity_retains_failed_source(body, media_type):
 
 
 def test_unoffered_package_and_edited_status_refuse_before_text_request():
+    """An unoffered package or edited retained status refuses at status-validation with zero text requests."""
     transport = Transport(response())
     with BillAcquirer(budget=BUDGET, transport=transport) as source:
         status = source.acquire_status(IDENTITY)
@@ -158,6 +180,7 @@ def test_unoffered_package_and_edited_status_refuse_before_text_request():
     ],
 )
 def test_wrong_text_format_or_version_refuses_without_fallback(body, media_type):
+    """A challenge page, wrong media type or mismatched version code refuses with the failed bytes and no fallback."""
     transport = Transport(response(), response(body, content_type=media_type))
     with BillAcquirer(budget=BUDGET, transport=transport) as source:
         status = source.acquire_status(IDENTITY)
@@ -168,6 +191,7 @@ def test_wrong_text_format_or_version_refuses_without_fallback(body, media_type)
 
 
 def test_narrower_caller_limit_applies_and_is_recorded_in_failure():
+    """A caller byte limit below the response is recorded on the failure with a response-byte-limit reason."""
     transport = Transport(response(), response(TEXT))
     with BillAcquirer(budget=BUDGET, transport=transport) as source:
         status = source.acquire_status(IDENTITY)
@@ -178,6 +202,7 @@ def test_narrower_caller_limit_applies_and_is_recorded_in_failure():
 
 
 def test_narrower_success_limit_is_recorded_in_result():
+    """A caller byte limit equal to the response size is recorded on the successful result."""
     transport = Transport(response(), response(TEXT))
     with BillAcquirer(budget=BUDGET, transport=transport) as source:
         status = source.acquire_status(IDENTITY)
@@ -186,6 +211,7 @@ def test_narrower_success_limit_is_recorded_in_result():
 
 
 def test_pacing_covers_retry_then_separate_text_call(monkeypatch):
+    """With a 0.4s minimum interval, a retry and a separate text call start at 0, 0.4 and 0.8s."""
     current = [0.0]
     starts = []
     monkeypatch.setattr(capture.time, "monotonic", lambda: current[0])
@@ -217,11 +243,13 @@ def test_pacing_covers_retry_then_separate_text_call(monkeypatch):
     ],
 )
 def test_invalid_limits_refuse(field, value):
+    """Boolean, zero and NaN budget limits raise ValueError naming the field."""
     with pytest.raises(ValueError, match=field):
         replace(BUDGET, **{field: value})
 
 
 def test_closed_client_cannot_fetch():
+    """A closed acquirer refuses to fetch."""
     source = BillAcquirer(budget=BUDGET, transport=Transport())
     source.close()
     with pytest.raises(ValueError, match="closed"):
@@ -229,5 +257,6 @@ def test_closed_client_cannot_fetch():
 
 
 def test_configured_budget_cannot_diverge_from_transport():
+    """Reassigning the budget after construction raises AttributeError."""
     with BillAcquirer(budget=BUDGET, transport=Transport()) as source, pytest.raises(AttributeError):
         source.budget = replace(BUDGET, max_requests=50)

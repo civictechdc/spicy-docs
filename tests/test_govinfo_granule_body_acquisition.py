@@ -57,6 +57,7 @@ class Stream(httpx.SyncByteStream):
 
 
 def reply(body: bytes, *, status: int = 200, content_type: str | None = None):
+    """An HTTPX response over the given body."""
     headers = {}
     if content_type is not None:
         headers["content-type"] = content_type
@@ -89,6 +90,7 @@ class Transport(httpx.MockTransport):
 
 
 def acquire_granule(transport: Transport, **arguments) -> GovInfoGranuleBody:
+    """Acquire the fixture granule through the transport."""
     budget = arguments.pop("budget", BUDGET)
     with GovInfoBodyAcquirer(budget=budget, api_key=KEY, transport=transport, clock=lambda: NOW) as client:
         package_id = arguments.pop("package_id", PACKAGE)
@@ -98,10 +100,12 @@ def acquire_granule(transport: Transport, **arguments) -> GovInfoGranuleBody:
 
 @pytest.fixture(autouse=True)
 def no_retry_delays(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_acquires_the_first_offered_preferred_format_with_every_capture() -> None:
+    """Acquisition takes the first offered preferred format, keeping every capture and the real MODS document order."""
     transport = Transport()
     result = acquire_granule(transport)
 
@@ -124,6 +128,7 @@ def test_acquires_the_first_offered_preferred_format_with_every_capture() -> Non
 
 
 def test_the_credential_travels_only_to_the_keyed_routes() -> None:
+    """The credential travels only to the keyed routes."""
     transport = Transport()
     acquire_granule(transport)
 
@@ -133,6 +138,7 @@ def test_the_credential_travels_only_to_the_keyed_routes() -> None:
 
 
 def test_pdf_is_reached_when_the_granule_does_not_offer_htm() -> None:
+    """PDF is reached when the granule offers no HTML."""
     pdf_only = f'<url displayLabel="PDF rendition" access="raw object">{PDF_URL}</url>'
     body = granule_mods_xml(urls=pdf_only)
     transport = Transport(
@@ -148,6 +154,7 @@ def test_pdf_is_reached_when_the_granule_does_not_offer_htm() -> None:
 
 
 def test_a_wrong_day_granule_id_under_the_right_package_is_unavailable() -> None:
+    """A wrong-day granule id under the right package is unavailable, since GovInfo answers 400 for it."""
     # Measured live 2026-09-19: GovInfo answers 400, not 404, for a granule
     # that does not belong to the requested package; the body carries
     # neither packageId nor granuleId, so it is typed the same way a
@@ -163,6 +170,7 @@ def test_a_wrong_day_granule_id_under_the_right_package_is_unavailable() -> None
 
 
 def test_the_same_real_granule_requested_under_the_wrong_package_is_unavailable() -> None:
+    """The same real granule under the wrong package is unavailable."""
     # The other direction of the same measurement: this fixture's own real
     # granule id, requested under a different real day.
     other_package = "CREC-2026-09-17"
@@ -175,6 +183,7 @@ def test_the_same_real_granule_requested_under_the_wrong_package_is_unavailable(
 
 
 def test_a_400_with_a_different_body_is_not_relabeled_unavailable() -> None:
+    """A 400 with a different body is not relabeled unavailable and keeps its refused bytes."""
     # Only the documented {"message":"invalid granuleId"} shape is retyped;
     # any other 400 falls through as the generic source error, with its
     # capture, rather than being guessed at.
@@ -191,6 +200,7 @@ def test_a_400_with_a_different_body_is_not_relabeled_unavailable() -> None:
 
 
 def test_a_400_with_an_unparseable_body_is_not_relabeled_unavailable() -> None:
+    """A 400 with an unparseable body is not relabeled unavailable."""
     other_gid = "CREC-2026-09-17-pt1-PgS4800"
     other_url = f"https://api.govinfo.gov/packages/{PACKAGE}/granules/{other_gid}/summary"
     transport = Transport(**{other_url: reply(b"not json", status=400)})
@@ -201,6 +211,9 @@ def test_a_400_with_an_unparseable_body_is_not_relabeled_unavailable() -> None:
 
 
 def test_a_format_the_granule_does_not_offer_refuses_before_any_body_request() -> None:
+    """A format the granule does not offer refuses before any body request, with the stage and offered formats
+    recorded.
+    """
     transport = Transport()
     with pytest.raises(GovInfoFormatNotOfferedError, match="none matches") as caught:
         acquire_granule(transport, prefer=("xml",))
@@ -213,6 +226,7 @@ def test_a_format_the_granule_does_not_offer_refuses_before_any_body_request() -
 
 
 def test_a_missing_summary_field_refuses_at_the_summary_stage() -> None:
+    """A missing summary field refuses at the summary stage."""
     bad = reply(b'{"packageId": "' + PACKAGE.encode() + b'"}', content_type="application/json")
     transport = Transport(**{SUMMARY_URL: bad})
     with pytest.raises(GovInfoBodySourceError, match="granuleId"):
@@ -223,6 +237,7 @@ def test_a_missing_summary_field_refuses_at_the_summary_stage() -> None:
 
 @pytest.mark.integration
 def test_live_granule_body_is_acquired_and_proved() -> None:
+    """Live: the granule body is acquired and proved without an error page or key."""
     if not ENV_FILE.exists():
         pytest.skip(f"no credential file at {ENV_FILE}")
     budget = GovInfoBodyBudget(

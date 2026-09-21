@@ -1,4 +1,10 @@
-"""Current printed bill XML identity, body shape, and inert external DTDs."""
+"""Current printed bill XML identity, body shape and inert external DTDs.
+
+Pins publisher bill and resolution shapes, native identity and stage conflict
+refusals, body content and root nesting, final-URL agreement, inert external
+DTDs with entity and DOCTYPE refusals, namespace spoofing, and byte/scalar
+checks made before parsing.
+"""
 
 from pathlib import Path
 
@@ -13,10 +19,12 @@ PACKAGE = "BILLS-119hr6028eh"
 
 
 def body() -> bytes:
+    """The retained printed-bill fixture bytes."""
     return (FIXTURES / "text-119hr6028eh.xml").read_bytes()
 
 
 def validate(value: bytes, **kwargs: object):
+    """Validate the given body under the fixture identity and URL."""
     args = {"identity": IDENTITY, "package_id": PACKAGE, "final_url": bill_xml_locator(IDENTITY, PACKAGE), **kwargs}
     return validate_bill_text(value, **args)
 
@@ -25,6 +33,9 @@ def validate(value: bytes, **kwargs: object):
     "bill_type,number,version", [("hr", 6028, "eh"), ("hr", 6028, "ih"), ("s", 5, "enr"), ("hjres", 25, "enr")]
 )
 def test_current_publisher_bill_and_resolution_shapes(bill_type: str, number: int, version: str) -> None:
+    """Current bill and resolution shapes keep identity, package, version, root tag, congress text, stage, title and
+    legis number.
+    """
     identity = BillIdentity(119, bill_type, number)
     package = f"BILLS-119{bill_type}{number}{version}"
     result = validate_bill_text(
@@ -61,11 +72,13 @@ def test_current_publisher_bill_and_resolution_shapes(bill_type: str, number: in
     ],
 )
 def test_native_identity_or_version_conflicts_refuse(before: bytes, after: bytes) -> None:
+    """Native identity or version conflicts with the request are refused."""
     with pytest.raises(BillSourceError):
         validate(body().replace(before, after))
 
 
 def test_observed_stage_conflicts_refuse_but_unknown_stage_is_retained() -> None:
+    """A stage contradicting the request refuses, while an unfamiliar stage is retained."""
     for stage in [b"Introduced-in-House", b"Enrolled-Bill"]:
         with pytest.raises(BillSourceError, match="stage contradicts"):
             validate(body().replace(b"Engrossed-in-House", stage))
@@ -85,11 +98,13 @@ def test_observed_stage_conflicts_refuse_but_unknown_stage_is_retained() -> None
     ],
 )
 def test_empty_error_and_unsupported_shapes_refuse(value: bytes) -> None:
+    """Empty, error and unsupported shapes are refused."""
     with pytest.raises(BillSourceError):
         validate(value)
 
 
 def test_body_must_have_content_and_not_nest_document_roots() -> None:
+    """The body must have content and must not nest document roots."""
     prefix = body().split(b"<legis-body", 1)[0]
     for replacement in [
         b"<legis-body/>",
@@ -104,6 +119,7 @@ def test_body_must_have_content_and_not_nest_document_roots() -> None:
 
 
 def test_final_url_and_requested_package_must_agree() -> None:
+    """Final URL and requested package must agree with the identity."""
     locator = bill_xml_locator(IDENTITY, PACKAGE)
     for url in [
         locator.replace("6028eh", "6028ih"),
@@ -118,6 +134,7 @@ def test_final_url_and_requested_package_must_agree() -> None:
 
 
 def test_inert_external_dtd_is_not_loaded_and_entity_references_refuse() -> None:
+    """External DTDs are inert even at file:// or https:// paths, while entity references refuse."""
     assert validate(body().replace(b'"bill.dtd"', b'"file:///definitely-not-present.dtd"')).version_code == "eh"
     assert validate(body().replace(b'"bill.dtd"', b'"https://example.invalid/never-load.dtd"')).version_code == "eh"
     with pytest.raises(BillSourceError, match="entity"):
@@ -134,17 +151,20 @@ def test_inert_external_dtd_is_not_loaded_and_entity_references_refuse() -> None
     ],
 )
 def test_internal_doctype_subsets_refuse(declaration: bytes) -> None:
+    """Internal DOCTYPE subsets are refused."""
     value = body().replace(b'<!DOCTYPE bill PUBLIC "-//US Congress//DTDs/bill.dtd//EN" "bill.dtd">', declaration)
     with pytest.raises(BillSourceError, match="DOCTYPE"):
         validate(value)
 
 
 def test_declared_namespace_cannot_spoof_dublin_core() -> None:
+    """A declared namespace cannot spoof Dublin Core."""
     with pytest.raises(BillSourceError):
         validate(body().replace(b"http://purl.org/dc/elements/1.1/", b"urn:wrong"))
 
 
 def test_byte_limit_and_scalar_type_are_checked_before_parsing() -> None:
+    """Byte limit and scalar type are checked before parsing, with the bound inclusive."""
     assert validate(body(), max_bytes=len(body())).identity == IDENTITY
     for value, limit in [(body(), len(body()) - 1), (body(), True), (body().decode(), len(body()))]:
         with pytest.raises(BillSourceError):

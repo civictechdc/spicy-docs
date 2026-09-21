@@ -1,4 +1,10 @@
-"""Literal source markup, anomalies and original-byte positions."""
+"""CFR subject-index HTML: literal source markup, anomalies and original-byte positions.
+
+Pins malformed-markup retention without erasing entries or terms; text
+fragments, entities, inline markup and byte spans kept distinct; publisher
+irregularities in heading pieces; metadata revision vs page-review dates; and
+explicit bound refusals.
+"""
 
 from pathlib import Path
 
@@ -11,6 +17,9 @@ FIXTURES = Path(__file__).parent / "fixtures" / "cfr_metadata"
 
 
 def test_retained_malformed_markup_does_not_erase_entries_or_terms() -> None:
+    """Malformed retained markup keeps every block and term, with raw HTML, attributes and an unexpected_list_element
+    issue.
+    """
     payload = (FIXTURES / "subject-index-45.html").read_bytes()
     result = read_cfr_subject_index(b"<dl>" + payload + b"</dl>")
     assert [(block.tag, block.heading.part if block.heading else None) for block in result.blocks] == [
@@ -29,6 +38,9 @@ def test_retained_malformed_markup_does_not_erase_entries_or_terms() -> None:
 
 
 def test_text_entities_inline_markup_and_byte_spans_remain_distinct() -> None:
+    """Heading text, fragments, attributes, parsed heading and term text stay distinct, and raw HTML replays the
+    original byte span.
+    """
     payload = (
         '<p>é</p>\n<dl><dt data-name="é&amp;&#x2603;">40 CFR Part 52_Hé<i>ad</i>&amp; X.</dt><dd>N/A</dd></dl>'.encode()
     )
@@ -55,6 +67,7 @@ def test_text_entities_inline_markup_and_byte_spans_remain_distinct() -> None:
     ],
 )
 def test_heading_pieces_retain_publisher_irregularities(entry, title, keyword, part, separator, issue) -> None:
+    """Heading title, keyword, part and separator stay literal and record the publisher irregularity issue."""
     (block,) = read_cfr_subject_index(f"<dl><dt>{entry}</dt></dl>".encode()).blocks
     assert block.text == entry
     assert block.heading is not None
@@ -69,6 +82,7 @@ def test_heading_pieces_retain_publisher_irregularities(entry, title, keyword, p
 
 
 def test_no_term_entries_blanks_unknown_heads_and_other_title_dd_are_retained() -> None:
+    """Five entry shapes are retained: no-term, blank, unknown-heading, N/A and a dd carrying a title."""
     payload = b"<dl><dt>40 CFR Part 9_Reserved.</dt><dt>&nbsp;</dt><dt>40 CFR Unrecognized</dt><dd>N/A</dd><dd>12 CFR Part 3_Other.</dd></dl>"
     blocks = read_cfr_subject_index(payload).blocks
     assert len(blocks) == 5
@@ -81,6 +95,7 @@ def test_no_term_entries_blanks_unknown_heads_and_other_title_dd_are_retained() 
 
 
 def test_metadata_keeps_revision_distinct_from_page_review_date() -> None:
+    """Metadata keeps the revision date distinct from the page-review date without creating blocks."""
     payload = b"<h1>LoS: 35 CFR</h1><h3>Title 35: [Reserved]</h3><p>List of Subjects revised as of April 1, 2025.</p><dl><dt>&nbsp;</dt></dl><p>This page was last reviewed on May 1, 2025.</p>"
     result = read_cfr_subject_index(payload)
     assert [block.text for block in result.metadata] == [
@@ -93,6 +108,7 @@ def test_metadata_keeps_revision_distinct_from_page_review_date() -> None:
 
 
 def test_retained_title_30_split_revision_remains_two_source_paragraphs() -> None:
+    """Title 30's split revision stays as two source paragraphs in metadata."""
     result = read_cfr_subject_index((FIXTURES / "subject-index-30-revision.html").read_bytes())
     assert [block.text for block in result.metadata] == [
         "Title 30: Mineral Resources",
@@ -102,17 +118,20 @@ def test_retained_title_30_split_revision_remains_two_source_paragraphs() -> Non
 
 
 def test_unclosed_elements_are_retained_without_swallowing_next_heading() -> None:
+    """Unclosed elements keep their text and an unclosed_element issue without swallowing the next heading."""
     result = read_cfr_subject_index(b"<dl><dt>40 CFR Part 1_First<dd>A<dt>40 CFR Part 2_Second<dd>B")
     assert [block.text for block in result.blocks] == ["40 CFR Part 1_First", "A", "40 CFR Part 2_Second", "B"]
     assert all(block.issues == ("unclosed_element",) for block in result.blocks)
 
 
 def test_comments_do_not_invent_blocks_and_separate_lists_keep_identity() -> None:
+    """Comments create no blocks, and separate lists keep their own list indices."""
     result = read_cfr_subject_index(b"<!-- <dt>Fake</dt><dd>Fake</dd> --><dl><dt>A</dt></dl><dl><dd>B</dd></dl>")
     assert [(block.list_index, block.text) for block in result.blocks] == [(0, "A"), (1, "B")]
 
 
 def test_invalid_utf8_retains_exact_bytes_with_explicit_issue() -> None:
+    """Invalid UTF-8 is retained as exact bytes with replacement-char text and an invalid_utf8 issue."""
     result = read_cfr_subject_index(b"<dl><dt>\xff</dt></dl>")
     assert result.issues == ("invalid_utf8",)
     assert result.blocks[0].raw_html == b"\xff"
@@ -120,6 +139,7 @@ def test_invalid_utf8_retains_exact_bytes_with_explicit_issue() -> None:
 
 
 def test_orphan_text_and_unmatched_closing_tags_keep_original_bytes() -> None:
+    """Orphan text and unmatched closing tags keep original bytes and an unexpected_list_close issue."""
     payload = "<dl>é&amp;orphan</broken><dd>Actual</dd></dl>".encode()
     result = read_cfr_subject_index(payload)
     assert [(block.tag, block.text) for block in result.blocks] == [
@@ -135,11 +155,13 @@ def test_orphan_text_and_unmatched_closing_tags_keep_original_bytes() -> None:
 
 
 def test_semicolon_free_entity_is_not_changed_into_a_different_entity() -> None:
+    """A semicolon-free entity stays literal text rather than being reinterpreted."""
     result = read_cfr_subject_index(b"<dl><dd>A&amp B &unknown C</dd></dl>")
     assert result.blocks[0].text == "A& B &unknown C"
 
 
 def test_comment_boundaries_and_self_closing_tags_do_not_invent_text_or_closes() -> None:
+    """Comments and self-closing tags invent no text or closing tags."""
     result = read_cfr_subject_index(b"<dl><dt/><br/><dd>A<!-- hidden -->B<br/>C</dd></dl>")
     assert [(block.tag, block.text) for block in result.blocks] == [("dt", ""), ("br", ""), ("dd", "ABC")]
     assert result.blocks[-1].text_fragments == ("A", "B", "C")
@@ -151,6 +173,7 @@ def test_comment_boundaries_and_self_closing_tags_do_not_invent_text_or_closes()
     [{"max_bytes": 1}, {"max_blocks": 1}, {"max_block_bytes": 1}, {"max_blocks": False}, {"max_block_bytes": 0}],
 )
 def test_explicit_bounds_refuse(kwargs: dict[str, int]) -> None:
+    """Explicit byte bounds refuse on violation."""
     with pytest.raises(CfrSourceError):
         read_cfr_subject_index(b"<dl><dt>Heading</dt><dd>Term</dd></dl>", **kwargs)
 
@@ -165,5 +188,6 @@ def test_explicit_bounds_refuse(kwargs: dict[str, int]) -> None:
     ],
 )
 def test_block_bound_includes_unknown_tags_entities_and_inline_markup(payload: bytes) -> None:
+    """The block bound counts unknown tags, entities and inline markup."""
     with pytest.raises(CfrSourceError, match="max_block_bytes"):
         read_cfr_subject_index(payload, max_block_bytes=10)

@@ -1,28 +1,17 @@
 """Acquire one GovInfo package or granule body: keyed summary, keyed MODS, then the keyless rendition.
 
-Three sequential requests under one budget. The summary proves the package
-exists and is the one asked for -- it is the only route that answers 404 for a
-missing package, since the MODS route answers 400 and the keyless body routes
-redirect to an error page that answers 200. The MODS then states which
-renditions the package offers, so the caller's preference is matched against
-the publisher's own statement instead of a guess, and the body request is only
-made for a format the publisher named. Identity is proved before the body is
-fetched, which also keeps a mistaken request from spending tens of megabytes.
-
-``acquire_granule`` follows the same three-request shape for one constituent
-of a package -- the daily Record's speeches and page ranges -- except the
-summary and MODS routes are keyed under the package id
-(``packages/{pkg}/granules/{gid}/...``), so a granule that does not belong to
-the requested package answers HTTP 400 rather than 404 (measured 2026-09-19),
-and is read the same way any other summary or MODS shape mismatch is.
-
-Two clients, because the routes differ in kind: ``api.govinfo.gov`` carries the
-credential in ``X-Api-Key`` and must never retain a refusal body that could
-echo it, while ``www.govinfo.gov`` is keyless and its 401/403 body is the
-publisher's own answer, worth keeping. Both draw on the same request budget.
-
-Callers retain and process the returned bytes; this module publishes nothing
-and caches nothing. Install ``spicy-docs[acquisition]`` for its HTTPX client.
+Three sequential requests under one budget: the summary proves the package
+exists and is the one asked for (the only route that answers 404 for a missing
+package, since the MODS route answers 400 and the keyless body routes redirect
+to an error page that answers 200), and the MODS then states which renditions
+the package offers, so the caller's preference is matched against the
+publisher's own statement and the body request is made only for a format the
+publisher named. Identity is proved before the body is fetched, which keeps a
+mistaken request from spending tens of megabytes; ``acquire_granule`` follows
+the same shape, except a granule that does not belong to the requested package
+answers HTTP 400 rather than 404. Two clients draw on the same budget: the keyed
+one retains no refusal body, since an api.data.gov error can echo the
+credential, while the keyless one keeps its 401/403 answer.
 """
 
 from __future__ import annotations
@@ -322,13 +311,12 @@ class GovInfoBodyAcquirer:
         """Capture the first preferred rendition the package actually offers.
 
         ``prefer`` is matched in order against the renditions the package MODS
-        states. It defaults to the sealed ``bodies.BODY_PREFERENCE`` -- XML
-        first, PDF last -- so a package offered only as PDF still yields a
-        body; the previous default, ``("xml", "htm", "txt")``, refused one
-        with ``GovInfoFormatNotOfferedError``. A PDF can be large (the
-        CHRG-119hhrg64242 PDF is 46.6 MB, above the evidence bound), so it is
-        reached only after every text-bearing rendition and it is the one
-        format a narrow ``max_bytes`` is most likely to refuse.
+        states; it defaults to the sealed ``bodies.BODY_PREFERENCE`` -- XML
+        first, PDF last -- so a package offered only as PDF still yields a body,
+        where the previous default ``("xml", "htm", "txt")`` refused one. A PDF
+        can be large (the CHRG-119hhrg64242 PDF is 46.6 MB, above the evidence
+        bound), so it is reached only after every text-bearing rendition and is
+        the format a narrow ``max_bytes`` is most likely to refuse.
 
         ``max_bytes`` may narrow the body allowance for this call, never raise
         it. Every refusal carries its capture, the stage it failed at and this
@@ -434,22 +422,16 @@ class GovInfoBodyAcquirer:
 
         Mirrors ``acquire`` at granule scope: the granule summary proves the
         granule and its host package both exist and agree with the request --
-        GovInfo's granule summary states both ``packageId`` and ``granuleId``,
-        and a granule that does not belong to the requested package answers
-        HTTP 400 with neither field, rather than 404 (measured 2026-09-19: a
-        wrong-day granule id under CREC-2026-09-18, and that same real granule
-        id requested under CREC-2026-09-17, both ``invalid granuleId``), so it
-        is read as the same packageId/granuleId mismatch a genuinely absent
-        granule would be, not a distinct status-code rule. The granule MODS
-        then states its own accessId directly and its host package's nested
-        in a ``relatedItem type="host"`` -- GovInfo's own proof of membership,
-        checked before any rendition is read -- and the offered renditions,
-        addressed through the granule's own locator (the package's folder,
-        the granule's file stem). ``prefer`` defaults to
-        ``GRANULE_BODY_PREFERENCE`` -- the daily Record's own HTML first,
-        measured on CREC-2026-09-18 to be what every one of its 11 granules
-        offers, its own PDF the fallback. The whole-issue package PDF stays
-        reachable unchanged through ``acquire(package_id)``.
+        GovInfo's granule summary states both ``packageId`` and ``granuleId`` --
+        and the granule MODS states its own accessId directly and its host
+        package's nested in a ``relatedItem type="host"``, GovInfo's own proof
+        of membership, checked before any rendition is read. A granule that does
+        not belong to the requested package answers HTTP 400 with
+        ``invalid granuleId``, not 404, so it is read as the same
+        packageId/granuleId mismatch an absent granule would be. ``prefer``
+        defaults to ``GRANULE_BODY_PREFERENCE`` -- the daily Record's own HTML
+        first, its own PDF the fallback -- and the whole-issue package PDF stays
+        reachable through ``acquire(package_id)``.
 
         ``max_bytes`` may narrow the body allowance for this call, never raise
         it. Every refusal carries its capture, the stage it failed at and this
@@ -558,16 +540,13 @@ class GovInfoBodyAcquirer:
         """Capture a granule summary or MODS request, typing a package/granule mismatch as unavailable.
 
         GovInfo answers HTTP 400, not 404, when the requested granule does not
-        belong to the requested package (measured 2026-09-19: a wrong-day
-        granule id under CREC-2026-09-18, and that same real granule id
-        requested under CREC-2026-09-17, both ``invalid granuleId``). This
-        reads that the same way ``_require_present`` reads a package's own
-        404/410: identity proved before bytes, typed the same way either
-        route states it -- but only when the 400 body matches that measured
-        shape (``_is_invalid_granule_body``). A 400 for any other reason is
-        not this, and is left as the generic ``GovInfoBodySourceError`` the
-        capture layer already raised, with its capture, rather than
-        relabeled on the status code alone.
+        belong to the requested package, so that route is read the way
+        ``_require_present`` reads a package's 404/410 -- identity proved
+        before bytes -- but only where the body matches the one measured
+        ``invalid granuleId`` shape. A 400 for any other reason is not this,
+        and stays the generic ``GovInfoBodySourceError`` the capture layer
+        raised, with its capture, rather than being relabeled on the status
+        code alone.
         """
         try:
             capture = self._capture(url, keyed=True, max_bytes=max_bytes)

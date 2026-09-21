@@ -84,6 +84,7 @@ BUDGET_ID_CASES: tuple[tuple[str, dict[str, object]], ...] = (
 
 
 def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = "") -> bytes:
+    """A minimal shape-correct package MODS over the given parts."""
     renditions = urls or (
         f'<url displayLabel="HTML rendition" access="raw object">{BODY_URL}</url>'
         f'<url displayLabel="PDF rendition" access="raw object">'
@@ -126,6 +127,7 @@ def mods_xml(*, access_id: str = PACKAGE, collection: str = "CRPT", urls: str = 
     ],
 )
 def test_each_collection_grammar_keeps_the_publishers_own_parts(package_id: str, fields: dict[str, object]) -> None:
+    """Each collection's grammar keeps the publisher's own id parts, with the collection as the id prefix."""
     identity = parse_package_id(package_id)
     assert identity.package_id == package_id
     # The collection is the id's own prefix, which is one path segment for
@@ -177,11 +179,13 @@ def test_each_collection_grammar_keeps_the_publishers_own_parts(package_id: str,
     ],
 )
 def test_unsupported_package_ids_refuse_by_name(package_id: str, message: str) -> None:
+    """Unsupported package ids are refused by name."""
     with pytest.raises(GovInfoBodySourceError, match=message):
         parse_package_id(package_id)
 
 
 def test_package_id_must_be_a_string() -> None:
+    """A package id must be a nonempty string."""
     with pytest.raises(GovInfoBodySourceError, match="nonempty string"):
         parse_package_id(None)
 
@@ -217,22 +221,26 @@ def test_the_budget_part_vocabulary_is_exactly_what_an_id_proved() -> None:
     ],
 )
 def test_body_locators_follow_the_publishers_folders(format: str, expected: str) -> None:
+    """Body locators follow the publisher's folders for each format and accept either a string or a parsed id."""
     assert package_body_locator(PACKAGE, format) == expected
     assert package_body_locator(parse_package_id(PACKAGE), format) == expected
 
 
 def test_keyed_locators_carry_no_credential() -> None:
+    """Keyed locators carry no credential in the URL."""
     assert package_summary_locator(PACKAGE) == SUMMARY_URL
     assert package_mods_locator(PACKAGE) == MODS_URL
     assert "api_key" not in SUMMARY_URL + MODS_URL
 
 
 def test_unsupported_format_refuses() -> None:
+    """An unsupported body format is refused."""
     with pytest.raises(GovInfoBodySourceError, match="body format must be"):
         package_body_locator(PACKAGE, "jpeg")
 
 
 def test_real_summary_states_the_package_and_no_body_rendition() -> None:
+    """The real CRPT summary states the package, dates and title but names only mods, premis and zip links."""
     summary = validate_package_summary(SUMMARY, package=PACKAGE, final_url=SUMMARY_URL, max_bytes=200_000)
     assert summary.identity.package_id == PACKAGE
     assert summary.collection_code == "CRPT"
@@ -246,6 +254,7 @@ def test_real_summary_states_the_package_and_no_body_rendition() -> None:
 
 
 def test_download_links_are_kept_as_evidence_including_a_repeated_name() -> None:
+    """Download links are kept as evidence, including repeated names."""
     # GPO-J6-REPORT states five jpegLink entries as one list.
     document = {
         "packageId": PACKAGE,
@@ -288,16 +297,19 @@ def test_download_links_are_kept_as_evidence_including_a_repeated_name() -> None
     ],
 )
 def test_summary_refusals(body: bytes, final_url: str, message: str) -> None:
+    """Summary refusals name the failed check."""
     with pytest.raises(GovInfoBodySourceError, match=message):
         validate_package_summary(body, package=PACKAGE, final_url=final_url, max_bytes=200_000)
 
 
 def test_summary_over_its_byte_bound_refuses() -> None:
+    """A summary over its byte bound refuses."""
     with pytest.raises(GovInfoBodySourceError, match="byte bound"):
         validate_package_summary(SUMMARY, package=PACKAGE, final_url=SUMMARY_URL, max_bytes=len(SUMMARY) - 1)
 
 
 def test_real_mods_states_the_access_id_and_the_offered_renditions() -> None:
+    """The real MODS states its access ids, collection code and offered renditions."""
     mods = validate_package_mods(MODS, package=PACKAGE, final_url=MODS_URL, max_bytes=200_000)
     assert mods.access_ids == (PACKAGE, PACKAGE)
     assert mods.collection_code == "CRPT"
@@ -306,7 +318,7 @@ def test_real_mods_states_the_access_id_and_the_offered_renditions() -> None:
 
 
 def test_real_mods_states_every_bill_and_primary_bill_is_not_the_first_listed() -> None:
-    """Measured on CRPT-119hrpt1: S. 5 (OTHER) is listed before H. Res. 53 (PRIMARY)."""
+    """Every bill is stated and PRIMARY is selected by context, not by first listing."""
     mods = validate_package_mods(MODS, package=PACKAGE, final_url=MODS_URL, max_bytes=200_000)
     assert mods.bills == (
         ModsBill(congress=119, bill_type="S", number="5", context="OTHER", normalized_bill_type="s"),
@@ -322,12 +334,14 @@ def test_real_mods_states_every_bill_and_primary_bill_is_not_the_first_listed() 
 
 
 def test_a_mods_with_no_bill_elements_has_no_primary_bill() -> None:
+    """A MODS with no bill elements has no primary bill."""
     mods = validate_package_mods(mods_xml(), package=PACKAGE, final_url=MODS_URL, max_bytes=10_000)
     assert mods.bills == ()
     assert mods.primary_bill is None
 
 
 def test_a_bill_element_missing_a_required_attribute_is_skipped_not_guessed() -> None:
+    """A bill element missing a required attribute is skipped, not guessed."""
     body = (
         '<mods xmlns="http://www.loc.gov/mods/v3">'
         f"<extension><accessId>{PACKAGE}</accessId>"
@@ -342,6 +356,7 @@ def test_a_bill_element_missing_a_required_attribute_is_skipped_not_guessed() ->
 
 
 def test_a_bill_element_with_a_non_numeric_number_is_skipped_not_guessed() -> None:
+    """A bill element with a non-numeric number is skipped, not guessed."""
     body = (
         '<mods xmlns="http://www.loc.gov/mods/v3">'
         f"<extension><accessId>{PACKAGE}</accessId>"
@@ -356,6 +371,7 @@ def test_a_bill_element_with_a_non_numeric_number_is_skipped_not_guessed() -> No
 
 
 def test_a_bill_element_with_no_context_is_kept_as_an_empty_mention() -> None:
+    """A bill element with no context is kept as an empty mention and never PRIMARY."""
     # spicy-regs's own MODS reader keeps a context-less <bill> as a mention
     # rather than dropping it; this module does the same.
     body = (
@@ -371,6 +387,7 @@ def test_a_bill_element_with_no_context_is_kept_as_an_empty_mention() -> None:
 
 
 def test_an_unrecognized_bill_type_normalizes_to_none() -> None:
+    """An unrecognized bill type normalizes to None."""
     body = (
         '<mods xmlns="http://www.loc.gov/mods/v3">'
         f"<extension><accessId>{PACKAGE}</accessId>"
@@ -384,7 +401,9 @@ def test_an_unrecognized_bill_type_normalizes_to_none() -> None:
 
 
 def test_real_cprt_summary_and_mods_state_the_committee_print() -> None:
-    """CPRT-118HPRT57104: the committee-print collection added for the A10 CPRT row."""
+    """The real CPRT summary and MODS state the committee print, with XML offered and COVER context not mistaken for
+    PRIMARY.
+    """
     summary_url = f"https://api.govinfo.gov/packages/{CPRT_PACKAGE}/summary"
     mods_url = f"https://api.govinfo.gov/packages/{CPRT_PACKAGE}/mods"
 
@@ -428,11 +447,8 @@ def test_real_cprt_summary_and_mods_state_the_committee_print() -> None:
 def test_the_two_widened_collections_prove_identity_through_the_sealed_validators(
     package: str, records: Path, fiscal_year: str | None, laws: int
 ) -> None:
-    """Both state ``collectionCode`` ``GPO``, which is not either one's id prefix.
-
-    That is the whole reason the check compares against the code the grammar
-    records rather than against the prefix: under the old rule these real
-    publisher records would each have been refused as a collection mismatch.
+    """The two widened collections state GPO as their code and prove identity against the grammar's recorded code,
+    not the id prefix.
     """
     summary_url = f"https://api.govinfo.gov/packages/{package}/summary"
     mods_url = f"https://api.govinfo.gov/packages/{package}/mods"
@@ -460,12 +476,7 @@ def test_the_two_widened_collections_prove_identity_through_the_sealed_validator
 @pytest.mark.parametrize("package", [BUDGET_PACKAGE, REPRINT_PACKAGE])
 @pytest.mark.parametrize("record", ["summary", "mods"])
 def test_a_widened_collections_record_offered_under_another_id_is_refused(package: str, record: str) -> None:
-    """The refusal direction: the check above would pass on any record without it.
-
-    The other id is a *real* package of the same collection, which is the case
-    that matters -- a caller resuming a walk and pairing the wrong retained
-    body with the right locator.
-    """
+    """A widened collection's record offered under another real id, or at a wrong final URL, is refused."""
     other = {BUDGET_PACKAGE: "BUDGET-2027-BUD", REPRINT_PACKAGE: "GPO-CDOC-119sdoc5"}[package]
     records = BUDGET_FIXTURES if package == BUDGET_PACKAGE else FIXTURES
     if record == "summary":
@@ -486,12 +497,7 @@ def test_a_widened_collections_record_offered_under_another_id_is_refused(packag
 
 @pytest.mark.parametrize("collection", ["BUDGET", "GPO-CDOC"])
 def test_a_widened_collection_still_refuses_a_record_stating_another_code(collection: str) -> None:
-    """``GPO`` is what these two state; anything else is still a mismatch.
-
-    Widening the check must not have turned it off. ``CRPT`` is used as the
-    wrong code deliberately: it is a code some *other* collection really does
-    state, so this is the confusable case rather than a nonsense string.
-    """
+    """A widened collection still refuses a record stating another collection's real code."""
     package = f"{collection}-2026-MSR" if collection == "BUDGET" else f"{collection}-119sdoc3"
     document = json.dumps({"packageId": package, "collectionCode": "CRPT"}).encode()
     with pytest.raises(GovInfoBodySourceError, match="collectionCode"):
@@ -508,6 +514,7 @@ def test_a_widened_collection_still_refuses_a_record_stating_another_code(collec
 
 
 def test_stated_collection_code_is_the_publishers_answer_not_the_prefix() -> None:
+    """The stated collection code is the publisher's answer, not the id prefix, and unsupported collections refuse."""
     assert stated_collection_code("CRPT") == "CRPT"
     assert stated_collection_code("BUDGET") == stated_collection_code("GPO-CDOC") == "GPO"
     with pytest.raises(GovInfoBodySourceError, match="collection is unsupported"):
@@ -515,7 +522,7 @@ def test_stated_collection_code_is_the_publishers_answer_not_the_prefix() -> Non
 
 
 def test_real_bills_mods_offers_uslm_directly_not_moved() -> None:
-    """B7: BILLS-119hconres11enr, the raw-data sidecar's one file-name-matched USLM package."""
+    """The real BILLS MODS offers USLM directly at its own locator, not as a moved rendition."""
     mods_url = f"https://api.govinfo.gov/packages/{USLM_BILL_PACKAGE}/mods"
     mods = validate_package_mods(USLM_BILL_MODS, package=USLM_BILL_PACKAGE, final_url=mods_url, max_bytes=200_000)
     assert mods.access_ids == (USLM_BILL_PACKAGE,)
@@ -530,6 +537,7 @@ def test_real_bills_mods_offers_uslm_directly_not_moved() -> None:
 
 
 def test_this_packages_rendition_at_another_address_reads_as_disagreement() -> None:
+    """This package's rendition at another address reads as a moved rendition, not an offer."""
     # A supported file type at the package's own content address, but a
     # folder this module does not derive -- before B7 this was BILLS's own
     # USLM rendition; now that uslm has its own locator (uslm/{id}.xml), any
@@ -550,6 +558,7 @@ def test_this_packages_rendition_at_another_address_reads_as_disagreement() -> N
 
 
 def test_uslm_and_xml_share_an_extension_but_xml_wins_the_moved_label() -> None:
+    """USLM and XML share an extension, and XML wins the moved-rendition label."""
     # uslm and xml both serve xml/{id}.xml-shaped addresses (folder differs,
     # extension does not), so a rendition found at neither locator can only
     # be labelled by extension; xml is the tie-break (bodies._FORMAT_BY_EXTENSION).
@@ -560,6 +569,9 @@ def test_uslm_and_xml_share_an_extension_but_xml_wins_the_moved_label() -> None:
 
 
 def test_another_packages_rendition_and_an_unsupported_file_type_say_nothing_here() -> None:
+    """Another package's rendition and an unsupported file type are recorded as other renditions, not offers or
+    moves.
+    """
     other = "https://www.govinfo.gov/content/pkg/CRPT-119hrpt2/html/CRPT-119hrpt2.htm"
     jpeg = f"https://www.govinfo.gov/content/pkg/{PACKAGE}/jpeg/{PACKAGE}.jpg"
     body = mods_xml(
@@ -587,11 +599,13 @@ def test_another_packages_rendition_and_an_unsupported_file_type_say_nothing_her
     ],
 )
 def test_mods_refusals(body: bytes, final_url: str, message: str) -> None:
+    """MODS refusals name the failed check."""
     with pytest.raises(GovInfoBodySourceError, match=message):
         validate_package_mods(body, package=PACKAGE, final_url=final_url, max_bytes=200_000)
 
 
 def test_every_package_level_access_id_must_agree() -> None:
+    """Every package-level access id must agree."""
     body = (
         '<mods xmlns="http://www.loc.gov/mods/v3">'
         f"<extension><accessId>{PACKAGE}</accessId></extension>"
@@ -602,6 +616,7 @@ def test_every_package_level_access_id_must_agree() -> None:
 
 
 def test_a_constituent_access_id_names_a_granule_not_this_package() -> None:
+    """A constituent access id names a granule, not this package, and does not become a package access id."""
     body = (
         '<mods xmlns="http://www.loc.gov/mods/v3">'
         f"<extension><accessId>{PACKAGE}</accessId></extension>"
@@ -613,6 +628,7 @@ def test_a_constituent_access_id_names_a_granule_not_this_package() -> None:
 
 
 def test_real_body_is_proved_by_its_locator_and_media_type() -> None:
+    """The real body is proved by its locator and media type, carrying no printed package id."""
     identity = validate_package_body(
         BODY, package=PACKAGE, format="htm", content_type="text/html", final_url=BODY_URL, max_bytes=200_000
     )
@@ -643,6 +659,7 @@ def test_real_body_is_proved_by_its_locator_and_media_type() -> None:
     ],
 )
 def test_body_refusals(body: bytes, format: str, content_type: str | None, final_url: str, message: str) -> None:
+    """Body refusals name the failed check."""
     with pytest.raises(GovInfoBodySourceError, match=message):
         validate_package_body(
             body, package=PACKAGE, format=format, content_type=content_type, final_url=final_url, max_bytes=200_000
@@ -650,6 +667,7 @@ def test_body_refusals(body: bytes, format: str, content_type: str | None, final
 
 
 def test_body_over_its_byte_bound_refuses() -> None:
+    """A body over its byte bound refuses."""
     with pytest.raises(GovInfoBodySourceError, match="byte bound"):
         validate_package_body(
             BODY, package=PACKAGE, format="htm", content_type="text/html", final_url=BODY_URL, max_bytes=len(BODY) - 1
@@ -658,6 +676,7 @@ def test_body_over_its_byte_bound_refuses() -> None:
 
 @pytest.mark.parametrize("format", sorted(PACKAGE_BODY_FORMATS))
 def test_every_supported_format_accepts_its_own_media_type(format: str) -> None:
+    """Every supported format accepts its own media type."""
     body = b"%PDF-1.4\n" if format == "pdf" else b"<x/>"
     media_type = PACKAGE_BODY_FORMATS[format].media_types[0]
     identity = validate_package_body(
@@ -672,6 +691,7 @@ def test_every_supported_format_accepts_its_own_media_type(format: str) -> None:
 
 
 def test_the_error_page_rule_is_the_same_one_the_federal_register_route_uses() -> None:
+    """The soft-404 error-page rule is the same one the Federal Register route uses."""
     with pytest.raises(FederalRegisterBodySourceError, match="soft-404"):
         validate_govinfo_granule(
             ERROR_PAGE,

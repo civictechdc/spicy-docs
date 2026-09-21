@@ -1,4 +1,7 @@
-"""Coverage facts stay bound to requested selectors and admitted source policies."""
+"""Coverage facts stay bound to requested selectors and admitted source policies.
+
+GAO's exact product-ID outcome survives publish and verify, and an empty Mirrulations enumeration preserves the
+requested agency scope, listing limits, and policy digest."""
 
 from __future__ import annotations
 

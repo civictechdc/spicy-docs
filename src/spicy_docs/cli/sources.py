@@ -121,6 +121,8 @@ def _regulations_pages(
 
 @dataclass(frozen=True)
 class SourceRegistration:
+    """One source's profile, acquisition context manager, error type, and CLI scope rules."""
+
     profile: SourceNativeProfile
     acquire: Callable[
         [AcquisitionInputs, Mapping[str, Any]], AbstractContextManager[Generator[SourceNativePage, None, None]]
@@ -132,6 +134,8 @@ class SourceRegistration:
     public_table: PublicTableProfile | None = None
 
     def query_scope(self, args: argparse.Namespace) -> dict[str, Any]:
+        """Build the canonical query scope from parsed CLI flags, refusing flags this source does not accept."""
+
         if self.date_fields and (args.since is None or args.until is None):
             raise SourceNativeReleaseError(f"--since and --until are required for {args.source}")
         if not self.date_fields and (args.since is not None or args.until is not None):
@@ -216,6 +220,8 @@ ACQUISITION_ERRORS = tuple(dict.fromkeys(source.error_type for source in SOURCES
 
 
 def source_registration(name: str) -> SourceRegistration:
+    """Return the registration for one source name, refusing an unknown source."""
+
     try:
         return SOURCES[name]
     except KeyError as error:
@@ -223,6 +229,8 @@ def source_registration(name: str) -> SourceRegistration:
 
 
 def public_table_profile(name: str) -> PublicTableProfile:
+    """Return the public-table profile for a source name, refusing one without a registered table."""
+
     registration = SOURCES.get(name)
     if registration is None or registration.public_table is None:
         raise SourceNativeReleaseError(f"unsupported public table {name!r}")

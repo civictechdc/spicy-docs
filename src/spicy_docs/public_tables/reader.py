@@ -86,6 +86,8 @@ class PublicTableArtifactLocation:
         )
 
     def duckdb_member(self, object_key: str) -> str:
+        """One member's absolute local path or content-addressed DuckDB URI."""
+
         if self._local_root is not None:
             return str(self._local_member(object_key))
         assert self._duckdb_base_uri is not None
@@ -104,6 +106,8 @@ def _content_addressed_base(
     *,
     expected_pin: ArtifactPin,
 ) -> str:
+    """Require a clean https or loopback base URI ending in the admitted ``sha256/<hex>`` digest."""
+
     selected = value.rstrip("/")
     parsed = urlparse(selected)
     scheme_allowed = parsed.scheme == "https"

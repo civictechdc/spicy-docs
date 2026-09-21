@@ -27,10 +27,13 @@ FIXTURES = Path(__file__).parent / "fixtures" / "cfr"
 
 
 def response(body=BODY, status=200, *, content_type="application/xml", **headers):
+    """An HTTPX response over the given bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type, **headers})
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -43,10 +46,14 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_exact_capture_request_date_and_native_metadata_remain_distinct():
+    """The capture keeps exact body, requested and resolved URL, observed time and size from one GET with gzip
+    accept, with selection and native metadata distinct.
+    """
     transport = Transport(response())
     with CfrAcquirer(budget=BUDGET, transport=transport, clock=lambda: NOW) as source:
         result = source.acquire_ecfr(SELECTION)
@@ -96,6 +103,9 @@ def test_exact_capture_request_date_and_native_metadata_remain_distinct():
     ],
 )
 def test_explicit_routes_capture_original_publisher_fixture_bytes(operation, selection, fixture, expected_url):
+    """Each explicit route captures the original publisher fixture bytes from its own locator, with 50 titles on the
+    annual route.
+    """
     body = (FIXTURES / fixture).read_bytes()
     media_type = "application/json" if fixture.endswith(".json") else "text/xml; charset=UTF-8"
     transport = Transport(response(body, content_type=media_type))
@@ -113,6 +123,7 @@ def test_explicit_routes_capture_original_publisher_fixture_bytes(operation, sel
 
 @pytest.mark.parametrize("status", [404, 410])
 def test_exact_unavailable_response_is_retained_without_another_route(status):
+    """An unavailable response is retained with its body after one request, without trying another route."""
     transport = Transport(response(b"unavailable here", status))
     with (
         CfrAcquirer(budget=BUDGET, transport=transport) as source,
@@ -126,6 +137,8 @@ def test_exact_unavailable_response_is_retained_without_another_route(status):
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_access_refusal_aborts_without_reading_or_retaining_body(status):
+    """An access refusal aborts after one request and retains no body."""
+
     class ForbiddenBody(httpx.SyncByteStream):
         def __iter__(self):
             raise AssertionError("must not read credential refusal body")
@@ -150,6 +163,9 @@ def test_access_refusal_aborts_without_reading_or_retaining_body(status):
     ],
 )
 def test_wrong_shape_identity_redirect_or_incomplete_response_never_succeeds(answer):
+    """Wrong shape, identity, redirect or incomplete responses fail after one request with the response bytes
+    retained.
+    """
     transport = Transport(answer)
     with CfrAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(CfrSourceError) as raised:
         source.acquire_ecfr(SELECTION)
@@ -158,6 +174,7 @@ def test_wrong_shape_identity_redirect_or_incomplete_response_never_succeeds(ans
 
 
 def test_retries_consume_request_budget_and_next_operation_starts_a_new_count():
+    """Retries consume the request budget (2 then a fresh 1) across three calls."""
     transport = Transport(response(status=503), response(), response())
     with CfrAcquirer(budget=BUDGET, transport=transport) as source:
         first = source.acquire_ecfr(SELECTION)
@@ -167,6 +184,7 @@ def test_retries_consume_request_budget_and_next_operation_starts_a_new_count():
 
 
 def test_exhausted_transient_response_does_not_establish_source_absence():
+    """Exhausted transient retries establish no absence, retain no bytes, and match the recorded request count."""
     transport = Transport(response(status=503), response(status=503))
     with (
         CfrAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as source,
@@ -178,6 +196,7 @@ def test_exhausted_transient_response_does_not_establish_source_absence():
 
 
 def test_effective_byte_allowance_is_recorded_and_cannot_raise_the_client_limit():
+    """A narrower call byte allowance is recorded while a wider one cannot raise the client limit."""
     transport = Transport(response(), response())
     with CfrAcquirer(budget=BUDGET, transport=transport) as source:
         small = source.acquire_ecfr(SELECTION, max_bytes=len(BODY))
@@ -188,6 +207,7 @@ def test_effective_byte_allowance_is_recorded_and_cannot_raise_the_client_limit(
 
 @pytest.mark.parametrize("with_length", [False, True])
 def test_byte_overrun_has_no_successful_partial_capture(with_length):
+    """A byte overrun refuses with no partial capture and records the lowered max_bytes."""
     headers = {"content-length": str(len(BODY))} if with_length else {}
     transport = Transport(response(**headers))
     with (
@@ -200,6 +220,7 @@ def test_byte_overrun_has_no_successful_partial_capture(with_length):
 
 
 def test_configuration_cannot_diverge_and_closed_client_cannot_make_requests():
+    """Reassigning configuration raises AttributeError and a closed client makes no requests."""
     transport = Transport()
     source = CfrAcquirer(budget=BUDGET, transport=transport)
     with pytest.raises(AttributeError):
@@ -213,6 +234,7 @@ def test_configuration_cannot_diverge_and_closed_client_cannot_make_requests():
 
 @pytest.mark.parametrize("limit", [True, 0, -1, 1.5])
 def test_invalid_byte_allowance_never_makes_a_request(limit):
+    """An invalid byte allowance is refused before any request."""
     transport = Transport()
     with CfrAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(ValueError):
         source.acquire_ecfr(SELECTION, max_bytes=limit)
@@ -233,11 +255,13 @@ def test_invalid_byte_allowance_never_makes_a_request(limit):
     ],
 )
 def test_invalid_budget_refuses(fields):
+    """Invalid budget values raise ValueError."""
     with pytest.raises(ValueError):
         replace(BUDGET, **fields)
 
 
 def test_gzip_preserves_exact_payload_and_independently_validates_decoded_xml():
+    """gzip keeps the exact wire payload with its encoding and size while the decoded XML is validated independently."""
     wire = gzip.compress(BODY, mtime=0)
     transport = Transport(response(wire, **{"content-encoding": "gzip", "content-length": str(len(wire))}))
     with CfrAcquirer(budget=BUDGET, transport=transport) as source:
@@ -260,6 +284,7 @@ def test_gzip_preserves_exact_payload_and_independently_validates_decoded_xml():
     ],
 )
 def test_gzip_refusal_retains_wire_payload_and_encoding(wire):
+    """A gzip refusal retains the wire payload and encoding after one request."""
     transport = Transport(response(wire, **{"content-encoding": "gzip"}))
     with CfrAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(CfrSourceError) as raised:
         source.acquire_ecfr(SELECTION)
@@ -270,6 +295,7 @@ def test_gzip_refusal_retains_wire_payload_and_encoding(wire):
 
 
 def test_gzip_checks_content_length_against_wire_and_bounds_decoded_bytes_separately():
+    """Content-Length is checked against the wire size while decoded bytes are bounded separately."""
     wire = gzip.compress(BODY)
     transport = Transport(response(wire, **{"content-encoding": "gzip", "content-length": str(len(wire) + 1)}))
     with CfrAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(CfrSourceError) as raised:
@@ -283,6 +309,7 @@ def test_gzip_checks_content_length_against_wire_and_bounds_decoded_bytes_separa
 
 
 def test_gzip_accepts_exact_decoded_byte_bound():
+    """A decoded payload exactly at the byte bound is accepted."""
     wire = gzip.compress(BODY)
     transport = Transport(response(wire, **{"content-encoding": "gzip"}))
     with CfrAcquirer(budget=BUDGET, transport=transport) as source:
@@ -291,6 +318,7 @@ def test_gzip_accepts_exact_decoded_byte_bound():
 
 
 def test_annual_source_keeps_identity_encoding_and_refuses_unsolicited_compression():
+    """The annual route asks for identity encoding and refuses unsolicited compression."""
     transport = Transport(response(gzip.compress(BODY), **{"content-encoding": "gzip"}))
     with CfrAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(CfrSourceError, match="encoding"):
         source.acquire_annual(AnnualCfrSelection(2025, 1, 1))

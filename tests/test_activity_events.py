@@ -1,12 +1,9 @@
 """What changed between two runs, built from the contracts' own shaped rows.
 
-Every snapshot here comes from ``build_bill_family`` output, never from a
-hand-written dict: an event comparison that reads rows the contracts did not
-shape would agree with itself whatever the shapers did.
-
-The comparison itself needs no diff engine -- it reads published rows -- but
-every row here is built by ``build_bill_family`` over a parsed capture, so every
-case that builds one is guarded, the way ``tests/test_section_diff.py`` is.
+Snapshots come from ``build_bill_family`` output rather than hand-written dicts,
+so the comparison cannot agree with itself while the shapers are wrong; cases
+building one are guarded like ``tests/test_section_diff.py``. Pins the sealed
+four-type event vocabulary, snapshot keying, and occurred_at fallback order.
 """
 
 from __future__ import annotations
@@ -43,6 +40,7 @@ def _status_only_capture() -> BillFamilyCapture:
 
 
 def _snapshot(tables) -> object:
+    """A snapshot over the given family tables."""
     return snapshot_from_rows(
         bills=tables.bills,
         bill_versions=tables.bill_versions,
@@ -51,11 +49,15 @@ def _snapshot(tables) -> object:
 
 
 def _events(prior, current) -> tuple[dict[str, str | None], ...]:
+    """The events between two snapshots at the fixed detection instant."""
     return activity_events(prior, current, detected_at=DETECTED_AT)
 
 
 @needs_engine
 def test_a_first_run_reports_one_event_per_row_it_found() -> None:
+    """A first run emits bill_added per bill and version/summary events per row, no stage change, each passing the
+    public contract and keying.
+    """
     tables = modelled_family()
     events = _events(EMPTY, _snapshot(tables))
     by_type: dict[str, list] = {name: [] for name in EVENT_TYPES}
@@ -74,6 +76,7 @@ def test_a_first_run_reports_one_event_per_row_it_found() -> None:
 
 @needs_engine
 def test_identical_snapshots_produce_nothing() -> None:
+    """An unchanged snapshot emits no events."""
     snapshot = _snapshot(modelled_family())
     assert _events(snapshot, snapshot) == ()
 
@@ -87,7 +90,7 @@ def test_a_row_only_in_prior_produces_no_event() -> None:
 
 @needs_engine
 def test_two_versions_of_one_bill_on_one_date_produce_two_events() -> None:
-    """The study's key collides here; ``subject_id`` is what keeps the two apart (C8)."""
+    """Two versions on one date emit two distinct-key events, since ``subject_id`` carries the contract key (C8)."""
     tables = modelled_family()
     one_date = tuple({**row, "version_date": "2026-06-08T04:00:00Z"} for row in tables.bill_versions)
     events = activity_events(
@@ -106,6 +109,7 @@ def test_two_versions_of_one_bill_on_one_date_produce_two_events() -> None:
 
 @needs_engine
 def test_a_changed_stage_names_the_rule_that_moved_it() -> None:
+    """A stage change records from, to, rule and matcher, with ``subject_id`` equal to NO_SUBJECT."""
     tables = modelled_family()
     before = tuple({**row, "stage": "introduced"} for row in tables.bills)
     events = _events(
@@ -123,6 +127,9 @@ def test_a_changed_stage_names_the_rule_that_moved_it() -> None:
 
 @needs_engine
 def test_a_changed_content_hash_marks_the_summary_regenerated() -> None:
+    """A changed summary content hash emits summary_generated with regenerated true; an identical hash across passes
+    emits nothing.
+    """
     first = modelled_family()
     again = family(
         classify=None,
@@ -143,6 +150,7 @@ def test_a_changed_content_hash_marks_the_summary_regenerated() -> None:
 
 @needs_engine
 def test_an_event_falls_back_to_the_run_instant_only_when_the_publisher_states_none() -> None:
+    """An undated row uses the run instant for both occurred_at and detected_at."""
     tables = modelled_family()
     undated = tuple({**row, "version_date": None} for row in tables.bill_versions)
     events = activity_events(
@@ -174,12 +182,13 @@ def test_a_bill_with_no_introduced_date_falls_back_to_its_update_date() -> None:
 
 
 def test_the_event_vocabulary_is_sealed_at_four_types() -> None:
+    """EVENT_TYPES is exactly the four sealed names."""
     assert EVENT_TYPES == ("bill_added", "version_added", "stage_changed", "summary_generated")
 
 
 @needs_engine
 def test_snapshot_keys_come_from_each_contracts_own_identity() -> None:
-    """A hand-written key is how a comparison quietly stops agreeing with its table."""
+    """Snapshot keys equal each table contract's own key, not a hand-written shape."""
     tables = family(_status_only_capture(), diff=False)
     snapshot = snapshot_from_rows(bills=tables.bills)
     assert set(snapshot.bills) == {TABLE_CONTRACTS["congress_bills"].key(row) for row in tables.bills}
@@ -187,6 +196,7 @@ def test_snapshot_keys_come_from_each_contracts_own_identity() -> None:
 
 @needs_engine
 def test_a_row_that_cannot_be_keyed_refuses_rather_than_snapshotting_none() -> None:
+    """A null identity field raises TableContractError instead of a None snapshot."""
     from spicy_docs.schemas.tables import TableContractError
 
     tables = family(_status_only_capture(), diff=False)

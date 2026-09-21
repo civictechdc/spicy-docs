@@ -1,22 +1,11 @@
-"""The four tables one BILLSTATUS document fills: the bill, its actions, its committees, its summaries.
+"""The four tables one BILLSTATUS document fills: ``congress_bills``, ``bill_actions``, ``bill_committees`` and
+``bill_publisher_summaries``.
 
-The placement study published one ``bills`` table; the value inventory (§6.1)
-found that the entire action history, the committee list and every publisher
-summary were discarded on the way in.  All three are typed on ``BillStatus``
-now, so they are tables here (change C1), and ``bill_publisher_summaries`` is
-named apart from the model-backed ``bill_summaries`` because BillTrax used one
-name for two different things (C12).
-
-``congress_bills``'s first ten columns keep the exact order and spelling of
-spicy-regs's live ``build_congress_bills.COLUMNS``: other repositories pin that
-prefix by digest through ``catalog.json``, so it is frozen on purpose and new
-columns are appended.
-
-Every function here reads its input by attribute, never by import: this module
-is a leaf (see :mod:`spicy_docs.schemas.tables`).  Anything that would need the
-``interpretation`` package's own vocabularies -- a committee's referral signal,
-a version-kind label -- is a named argument supplied by the caller that owns
-the vocabulary.
+``congress_bills``'s first ten columns keep the exact order and spelling of spicy-regs's live
+``build_congress_bills.COLUMNS`` because other repositories pin that prefix by digest through ``catalog.json``, so new
+columns are appended.  Every function reads its input by attribute, keeping this a leaf whose vocabularies -- a referral
+signal, a version-kind label -- arrive as caller-named arguments.  ``bill_publisher_summaries`` is named apart from the
+model-backed ``bill_summaries`` on purpose: BillTrax used one name for both.
 """
 
 from __future__ import annotations
@@ -205,13 +194,9 @@ def _committee_rows(committees: object) -> int:
 def latest_action_index(status: object) -> int | None:
     """Where in ``actions`` the publisher's ``latestAction`` entry sits, if anywhere.
 
-    ``<latestAction>`` is a separate element, not a pointer, and it states only
-    ``actionDate``, ``actionTime`` and ``text`` -- never the ``actionCode``,
-    ``type`` or ``sourceSystem`` that the matching ``<actions>`` entry carries.
-    So the link has to be made on the two fields both elements do state, and the
-    coded fields are then read from the action itself rather than published
-    NULL.  The last match wins: a repeated date and text is the same event
-    stated twice, and the later entry is the one a newest-last list ends on.
+    ``<latestAction>`` is a separate element stating only date, time and text, so the link is made on those fields and
+    the coded fields are then read from the matching action rather than published NULL.  The last match wins: a repeated
+    date and text is the same event stated twice, and the later entry is where a newest-last list ends.
     """
     latest = status.latest_action
     if latest is None:
@@ -226,10 +211,8 @@ def latest_action_index(status: object) -> int | None:
 def _short_title(titles: object) -> str | None:
     """The first ``titles[]`` entry whose ``title_type`` names a short title.
 
-    The publisher versions a short title by chamber and text version ("Short
-    Titles as Introduced", "Short Title(s) as Passed House"), so the first entry
-    is the earliest printing's.  ``None`` when the measure states no short title
-    at all, which is ordinary: an official title is not a short one.
+    The publisher versions a short title by chamber and text version, so the first entry is the earliest printing's;
+    ``None`` when the measure states no short title at all, which is ordinary for an official title.
     """
     for entry in titles or ():
         title_type = entry.title_type
@@ -264,13 +247,11 @@ def shape_bill(
     signing: object,
     money: object,
 ) -> Row:
-    """One ``congress_bills`` row from one BILLSTATUS document and three findings.
+    """One ``congress_bills`` row from one BILLSTATUS document and the stage, signing and money findings.
 
-    ``referrals`` is what the money-bill classifier was given and is published
-    beside the classification, so the answer can be re-derived from the row.
-    ``stage``, ``signing`` and ``money`` are ``interpretation`` findings; each
-    interpreted column is published beside the provenance columns of the finding
-    that produced it.
+    Each interpreted column is published beside the provenance columns of the finding that produced it, and
+    ``referrals`` -- what the money-bill classifier was given -- is published so the classification can be re-derived
+    from the row.
     """
     identity = status.identity
     latest = status.latest_action

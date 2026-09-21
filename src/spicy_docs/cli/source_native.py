@@ -78,6 +78,8 @@ def _success(
     spec: Mapping[str, Any],
     outcome: Mapping[str, Any],
 ) -> dict[str, object]:
+    """Build the common success receipt shared by source-native commands."""
+
     return {
         "artifactDigest": pin.artifact_digest,
         "command": command,
@@ -135,6 +137,8 @@ def _publish(
     read_regulations: RegulationsReaderFactory | None,
     clock: Callable[[], datetime],
 ) -> dict[str, object]:
+    """Run one publish command end to end and return its success receipt."""
+
     profile = source_registration(args.source).profile
     query_scope = source_registration(args.source).query_scope(args)
     require_separate_paths(
@@ -182,6 +186,8 @@ def _publish(
 
 
 def _verify(args: argparse.Namespace) -> dict[str, object]:
+    """Replay and verify one existing release under an accepted verifier identity."""
+
     profile = source_registration(args.source).profile
     require_separate_paths(
         args.release,
@@ -217,6 +223,8 @@ def _verify(args: argparse.Namespace) -> dict[str, object]:
 
 
 def _inspect(args: argparse.Namespace) -> dict[str, object]:
+    """Admit one release and report its outcome plus a bounded sample of failure rows."""
+
     require_separate_paths(args.release, args.blob_store, labels=("--release", "--blob-store"))
     reader = SourceNativeReleaseReader(
         LocalMemberSource(args.release),

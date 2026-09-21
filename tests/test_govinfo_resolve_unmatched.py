@@ -16,6 +16,7 @@ DATE = "1995-04-10"
 
 
 def _census(path: Path, *, digest: str | None = DIGEST) -> Path:
+    """Build a census row over the given unmatched numbers."""
     path.write_text(
         json.dumps(
             {
@@ -31,20 +32,26 @@ def _census(path: Path, *, digest: str | None = DIGEST) -> Path:
 
 
 def _rows(output: Path) -> list[dict]:
+    """Every JSONL row of the output."""
     return [json.loads(line) for line in output.read_text().splitlines()]
 
 
 def _complete() -> dict:
+    """A complete listing payload over the census numbers."""
     return {"granules": [{"granuleId": "95-8641-Filed"}], "count": 1, "nextPage": None}
 
 
 def _run(census: Path, output: Path, handler) -> int:
+    """Run the diagnostic over the census and return its exit status."""
     return run(
         census, output, api_key="test-api-secret", min_interval_seconds=0, transport=httpx.MockTransport(handler)
     )
 
 
 def test_populated_complete_listing_names_matches_and_endpoint_nonmatches(tmp_path: Path) -> None:
+    """A complete listing names matches and endpoint nonmatches, sends the key in headers only, and settles on resume
+    without a second request.
+    """
     census, output = _census(tmp_path / "census.jsonl"), tmp_path / "output.jsonl"
     requests = []
 
@@ -69,6 +76,7 @@ def test_populated_complete_listing_names_matches_and_endpoint_nonmatches(tmp_pa
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_credential_refusal_aborts_without_recording_or_retrying(tmp_path: Path, status: int) -> None:
+    """A credential refusal aborts after one request, recording nothing."""
     census, output = _census(tmp_path / "census.jsonl"), tmp_path / "output.jsonl"
     requests = []
 
@@ -96,6 +104,7 @@ def test_credential_refusal_aborts_without_recording_or_retrying(tmp_path: Path,
     ],
 )
 def test_indeterminate_listings_never_mean_absence_and_retry_on_resume(tmp_path, payload, expected_status) -> None:
+    """Indeterminate listings never mean absence and are retried on resume."""
     census, output = _census(tmp_path / "census.jsonl"), tmp_path / "output.jsonl"
     assert _run(census, output, lambda request: httpx.Response(200, json=payload)) == 1
     row = _rows(output)[0]
@@ -107,6 +116,7 @@ def test_indeterminate_listings_never_mean_absence_and_retry_on_resume(tmp_path,
 
 
 def test_recorded_request_failure_is_retried(tmp_path: Path) -> None:
+    """A recorded request failure is retried on resume."""
     census, output = _census(tmp_path / "census.jsonl"), tmp_path / "output.jsonl"
     assert _run(census, output, lambda request: httpx.Response(404)) == 1
     assert _rows(output)[0]["httpStatus"] == 404
@@ -119,6 +129,7 @@ def test_recorded_request_failure_is_retried(tmp_path: Path) -> None:
 def test_retryable_requests_recover_or_record_exhaustion_without_credentials(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys, failure: int | str, recovers: bool
 ) -> None:
+    """Retryable requests recover or record exhaustion without credentials, with one settled row and scrubbed errors."""
     census, output = _census(tmp_path / "census.jsonl"), tmp_path / "output.jsonl"
     requests = []
     delays = []
@@ -154,6 +165,7 @@ def test_retryable_requests_recover_or_record_exhaustion_without_credentials(
 
 
 def test_direct_listing_caller_without_credential_header_retries_normally(monkeypatch, capsys) -> None:
+    """A direct listing caller without a credential header retries normally."""
     attempts = 0
     monkeypatch.setattr(retry.time, "sleep", lambda delay: None)
 
@@ -172,6 +184,7 @@ def test_direct_listing_caller_without_credential_header_retries_normally(monkey
 
 
 def test_full_page_remains_incomplete_even_when_count_matches(tmp_path: Path) -> None:
+    """A full page remains incomplete even when the count matches."""
     census, output = _census(tmp_path / "census.jsonl"), tmp_path / "output.jsonl"
     payload = {"granules": [{"granuleId": f"number-{index}"} for index in range(1000)], "count": 1000}
     assert _run(census, output, lambda request: httpx.Response(200, json=payload)) == 1
@@ -181,6 +194,7 @@ def test_full_page_remains_incomplete_even_when_count_matches(tmp_path: Path) ->
 
 
 def test_census_requires_recorded_source_digest_before_network_or_output(tmp_path: Path) -> None:
+    """The census requires a recorded source digest before any network or output."""
     census, output = _census(tmp_path / "census.jsonl", digest=None), tmp_path / "output.jsonl"
     with pytest.raises(ValueError, match="every census row must carry sourceReleaseDigest"):
         _run(census, output, lambda request: pytest.fail("must not request"))
@@ -189,6 +203,7 @@ def test_census_requires_recorded_source_digest_before_network_or_output(tmp_pat
 
 @pytest.mark.parametrize("digest", [None, "sha256:" + "b" * 64])
 def test_resume_requires_same_recorded_source_digest(tmp_path: Path, digest: str | None) -> None:
+    """Resume requires the same recorded source digest."""
     census, output = _census(tmp_path / "census.jsonl"), tmp_path / "output.jsonl"
     previous = json.dumps({"publicationDate": DATE, "sourceReleaseDigest": digest}) + "\n"
     output.write_text(previous)
@@ -198,6 +213,7 @@ def test_resume_requires_same_recorded_source_digest(tmp_path: Path, digest: str
 
 
 def test_changed_unmatched_numbers_are_queried_again_for_same_release(tmp_path: Path) -> None:
+    """Changed unmatched numbers are queried again for the same release."""
     census, output = _census(tmp_path / "census.jsonl"), tmp_path / "output.jsonl"
     assert _run(census, output, lambda request: httpx.Response(200, json=_complete())) == 0
     row = json.loads(census.read_text())

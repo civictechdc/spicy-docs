@@ -13,11 +13,13 @@ from spicy_docs.sources.fec.filings import _Lines, filing_body, filing_records
 
 
 def captured(tmp_path, raw):
+    """A captured body response over the given bytes."""
     blob = LocalBlobWriter(tmp_path).put([raw], max_bytes=len(raw))
     return {"store": tmp_path, "sha256": blob.digest}
 
 
 def test_literal_fields_unknown_forms_and_separate_text_bodies(tmp_path):
+    """Literal fields, unknown record forms and separate text bodies keep exact case and byte coordinates."""
     raw = (
         b"HDR\x1cFEC\x1c8.5\x1cCaseSensitive\x1c1\x1c\x1c\n"
         b'F1N\x1cC00000001\x1c001\x1c0.1000\x1c\x1c"Quoted"\x1cEXTRA\n'
@@ -53,6 +55,7 @@ def test_literal_fields_unknown_forms_and_separate_text_bodies(tmp_path):
 
 
 def test_csv_multiline_and_legacy_header_keep_case_and_byte_coordinates(tmp_path):
+    """CSV multiline values and a legacy header keep case and byte coordinates."""
     raw = b'/* Header\nFEC_Ver_# = 2.02\nSoft_Name = MiXeD\n/* End Header\nF3A,"Mixed, Name","line one\nline two",0.00\nNEXT,"a ""quote""",\n'
     rows = list(filing_records(**captured(tmp_path, raw)))
     assert rows[0]["format_version"] == "2.02"
@@ -69,6 +72,7 @@ def test_csv_multiline_and_legacy_header_keep_case_and_byte_coordinates(tmp_path
 @pytest.mark.parametrize("text", ["", 'Exact, "quoted"\r\nsecond line\n caf\u00e9 '])
 @pytest.mark.parametrize("version", ["5.0", "5.1", "5.2", "5.3"])
 def test_qualified_csv_text_lifts_only_narrative_and_resolves_exactly(tmp_path, text, version):
+    """Qualified CSV text lifts only the narrative field and resolves to its exact byte range, with bounds refusing."""
     output = io.StringIO(newline="")
     expected = ["TEXT", "SB29", "parent-id", text, "", "unknown-extra"]
     csv.writer(output).writerow(expected)
@@ -93,6 +97,7 @@ def test_qualified_csv_text_lifts_only_narrative_and_resolves_exactly(tmp_path, 
 
 @pytest.mark.parametrize("version", ["3", "3.00", "5.000", "5.20", "5.30", "6.1", "unqualified"])
 def test_unqualified_csv_text_remains_positional(tmp_path, version):
+    """Unqualified CSV text remains positional with no embedded body."""
     raw = f"HDR,FEC,{version}\nTEXT,SB29,parent,Narrative,,EXTRA\n".encode()
     row = list(filing_records(**captured(tmp_path, raw)))[1]
     assert row["embedded_bodies"] == []
@@ -105,6 +110,7 @@ def test_unqualified_csv_text_remains_positional(tmp_path, version):
     ids=lambda fragment: fragment["declared_version"],
 )
 def test_genuine_historical_text_fragments_separate_and_preserve_body(tmp_path, fragment):
+    """Historical text fragments separate and preserve the body with exact offsets and digests."""
     # Complete source pins and original offsets live with the exact fragments.
     # The fixture concatenates its header and one record, not a complete report.
     header, record = fragment["header"].encode(), fragment["record"].encode()
@@ -123,6 +129,7 @@ def test_genuine_historical_text_fragments_separate_and_preserve_body(tmp_path, 
 
 @pytest.mark.parametrize("record", [b"TEXT,form,parent\n", b"text,form,parent,not-a-TEXT-record\n"])
 def test_short_or_other_csv_record_does_not_invent_a_body(tmp_path, record):
+    """A short or other CSV record invents no body."""
     row = list(filing_records(**captured(tmp_path, b"HDR,FEC,5.3\n" + record)))[1]
     assert row["embedded_bodies"] == []
     assert len(row["fields"]) == row["field_count"]
@@ -130,6 +137,7 @@ def test_short_or_other_csv_record_does_not_invent_a_body(tmp_path, record):
 
 @pytest.mark.parametrize("raw", [b"TEXT,form,parent,body\nOTHER,row\n", b""])
 def test_csv_body_reference_requires_exactly_one_record(tmp_path, raw):
+    """A CSV body reference requires exactly one record."""
     kwargs = captured(tmp_path, raw or b"\n")
     body = {
         "sha256": kwargs["sha256"],
@@ -144,6 +152,7 @@ def test_csv_body_reference_requires_exactly_one_record(tmp_path, raw):
 
 
 def test_csv_body_malformed_row_and_missing_field_refuse(tmp_path):
+    """A malformed row or missing field in a CSV body refuses."""
     for raw, error in [(b'TEXT,form,parent,"unterminated\n', csv.Error), (b"TEXT,form,parent\n", ValueError)]:
         kwargs = captured(tmp_path, raw)
         body = {
@@ -159,6 +168,7 @@ def test_csv_body_malformed_row_and_missing_field_refuse(tmp_path):
 
 
 def test_explicit_latin1_never_restarts_prior_records(tmp_path):
+    """Explicit latin-1 never restarts prior records and refuses undefined bytes."""
     raw = b"HDR\x1cP3.3\x1cExample\nF13N\x1cC00000001\nF132\x1cCAF\xc9\n"
     kwargs = captured(tmp_path, raw)
     stream = filing_records(**kwargs)
@@ -173,6 +183,7 @@ def test_explicit_latin1_never_restarts_prior_records(tmp_path):
 
 @pytest.mark.parametrize("delimiter,version,body_index", [("\x1c", "8.5", 5), (",", "5.2", 3)])
 def test_explicit_cp1252_preserves_source_ranges_and_readable_bodies(tmp_path, delimiter, version, body_index):
+    """Explicit cp1252 preserves source ranges and readable bodies, with latin-1 a distinct byte-preserving choice."""
     # Retained FEC-1998705/1998706 use 0x93/0x94 around Agreement; choosing
     # cp1252 is caller interpretation, not a publisher encoding declaration.
     header = f"HDR{delimiter}FEC{delimiter}{version}\n".encode()
@@ -203,6 +214,7 @@ def test_explicit_cp1252_preserves_source_ranges_and_readable_bodies(tmp_path, d
 
 
 def test_selected_encoding_never_replaces_undefined_bytes_or_guesses(tmp_path):
+    """A selected encoding never replaces undefined bytes or guesses."""
     kwargs = captured(tmp_path, b"HDR\x1cFEC\x1c8.5\nUNKNOWN\x1c\x81\n")
     stream = filing_records(**kwargs, encoding="cp1252")
     assert next(stream)["kind"] == "header"
@@ -214,6 +226,7 @@ def test_selected_encoding_never_replaces_undefined_bytes_or_guesses(tmp_path):
 
 
 def test_record_bound_at_limit_and_csv_total_across_lines(tmp_path):
+    """The record bound passes at the limit and the CSV total spans lines."""
     header = b"HDR\x1cFEC\x1c8.5\n"
     kwargs = captured(tmp_path, header + b"A\x1c" + b"x" * 61 + b"\n")
     assert list(filing_records(**kwargs, max_record_bytes=64))[-1]["fields"]["1"] == "x" * 61
@@ -225,6 +238,8 @@ def test_record_bound_at_limit_and_csv_total_across_lines(tmp_path):
 
 
 def test_lines_request_only_the_remaining_record_budget():
+    """Line reads request only the remaining record budget."""
+
     class Observed(io.BytesIO):
         def __init__(self, raw):
             super().__init__(raw)
@@ -246,6 +261,7 @@ def test_lines_request_only_the_remaining_record_budget():
 
 @pytest.mark.parametrize("tail", [b"[BEGINTEXT]\nmissing close\n", b"[END TEXT]\n"])
 def test_broken_text_blocks_fail_without_invented_completed_body(tmp_path, tail):
+    """Broken text blocks fail with no invented completed body."""
     stream = filing_records(**captured(tmp_path, b"HDR\x1cFEC\x1c8.5\n" + tail))
     assert next(stream)["kind"] == "header"
     with pytest.raises(ValueError, match="text block"):
@@ -253,6 +269,7 @@ def test_broken_text_blocks_fail_without_invented_completed_body(tmp_path, tail)
 
 
 def test_bracketed_body_can_exceed_record_bound_without_accumulating(tmp_path):
+    """A bracketed body may exceed the record bound without accumulating, while the read bound still refuses."""
     raw = b"HDR\x1cFEC\x1c8.5\n[BEGIN TEXT]\n" + b"body line\n" * 100 + b"[END TEXT]\n"
     rows = list(filing_records(**captured(tmp_path, raw), max_record_bytes=20))
     body = rows[1]["embedded_bodies"][0]
@@ -264,6 +281,7 @@ def test_bracketed_body_can_exceed_record_bound_without_accumulating(tmp_path):
 
 @pytest.mark.parametrize("raw", [b"", b"not a filing\n", b"/* Header\nFEC_Ver_# = 2.02\n"])
 def test_unrecognized_and_unterminated_headers_refuse(tmp_path, raw):
+    """Unrecognized and unterminated headers refuse."""
     # The writer does not accept an empty object; use a valid source blob whose
     # selected bytes are whitespace for the empty-header case.
     with pytest.raises((ValueError, StopIteration)):
@@ -271,6 +289,7 @@ def test_unrecognized_and_unterminated_headers_refuse(tmp_path, raw):
 
 
 def test_original_digest_is_checked_before_rows_are_emitted(tmp_path):
+    """The original digest is checked before any row is emitted."""
     kwargs = captured(tmp_path, b"HDR\x1cFEC\x1c8.5\n")
     path = tmp_path / "sha256" / kwargs["sha256"].removeprefix("sha256:")
     path.write_bytes(b"changed source bytes")
@@ -280,6 +299,7 @@ def test_original_digest_is_checked_before_rows_are_emitted(tmp_path):
 
 
 def test_body_coordinates_cannot_escape_retained_bytes(tmp_path):
+    """Body coordinates cannot escape the retained bytes."""
     kwargs = captured(tmp_path, b"HDR\x1cFEC\x1c8.5\n")
     body = {"sha256": kwargs["sha256"], "encoding": "utf-8", "byte_offset": 999, "byte_length": 0}
     with pytest.raises(ValueError, match="beyond"):

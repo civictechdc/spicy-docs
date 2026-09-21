@@ -1,4 +1,8 @@
-"""GAO product pages remain exact source evidence, not inferred topic tags."""
+"""GAO product pages remain exact source evidence, not inferred topic tags.
+
+Pins deterministic wrapping and replay, publisher-topic field scoping and
+labels, ZIP metadata refusals, per-page scope checks, and the byte bounds.
+"""
 
 from __future__ import annotations
 
@@ -33,6 +37,7 @@ def _html(
     canonical_url: str = PRODUCT_URL,
     topics: tuple[tuple[str, str], ...] = (("information-security", "Information Security"),),
 ) -> bytes:
+    """Build one product page body with the given topic field."""
     anchors = "".join(f'<a href="/topics/{slug}" hreflang="en">{label}</a>' for slug, label in topics)
     return (
         "<!doctype html><html><head>"
@@ -45,6 +50,7 @@ def _html(
 
 
 def _capture(body: bytes | None = None, *, resolved_url: str = PRODUCT_URL) -> ZyteHttpResponse:
+    """Capture a product page response over the given body."""
     return ZyteHttpResponse(
         requested_url=PRODUCT_URL,
         resolved_url=resolved_url,
@@ -55,6 +61,7 @@ def _capture(body: bytes | None = None, *, resolved_url: str = PRODUCT_URL) -> Z
 
 
 def test_exact_html_is_wrapped_deterministically_and_replayed_as_one_source_record() -> None:
+    """Exact HTML is wrapped deterministically and replayed as one source record."""
     body = _html()
     fetch = lambda _url: _capture(body)
     scope = {"productIds": [PRODUCT_ID]}
@@ -88,6 +95,7 @@ def test_exact_html_is_wrapped_deterministically_and_replayed_as_one_source_reco
 
 
 def test_unrelated_publisher_markup_drift_does_not_change_the_closed_source_rule() -> None:
+    """Unrelated publisher markup drift does not change the closed source rule."""
     body = _html().replace(b"<body>", b'<body><div class="node" class="node"></div>')
 
     page = next(
@@ -103,6 +111,7 @@ def test_unrelated_publisher_markup_drift_does_not_change_the_closed_source_rule
 
 
 def test_topic_links_outside_the_publisher_field_remain_evidence_without_becoming_topics() -> None:
+    """Topic links outside the publisher field remain evidence without becoming topics."""
     body = (Path(__file__).parent / "fixtures" / "gao-product-page-navigation-topics.html").read_bytes()
 
     page = next(
@@ -124,6 +133,7 @@ def test_topic_links_outside_the_publisher_field_remain_evidence_without_becomin
 
 
 def test_publisher_topic_is_preserved_without_refspec_membership_filtering() -> None:
+    """The publisher topic is preserved without RefSpec membership filtering."""
     body = _html(topics=(("science-and-technology", "Science and Technology"),))
 
     page = next(
@@ -141,6 +151,7 @@ def test_publisher_topic_is_preserved_without_refspec_membership_filtering() -> 
 
 
 def test_publisher_topic_label_uses_visible_text_not_html_entity_spelling() -> None:
+    """The publisher topic label uses visible text, not HTML entity spelling."""
     body = _html(topics=(("research-and-development", "Research &amp; Development"),))
 
     page = next(
@@ -158,6 +169,7 @@ def test_publisher_topic_label_uses_visible_text_not_html_entity_spelling() -> N
 
 
 def test_publisher_topic_label_ignores_html_formatting_whitespace_at_its_edges() -> None:
+    """The publisher topic label ignores HTML formatting whitespace at its edges."""
     body = _html(topics=(("information-security", "\n  Information Security\t"),))
 
     page = next(
@@ -173,6 +185,7 @@ def test_publisher_topic_label_ignores_html_formatting_whitespace_at_its_edges()
 
 
 def test_replay_refuses_html_that_differs_from_its_capture_digest() -> None:
+    """Replay refuses HTML that differs from its capture digest."""
     page = next(
         iter_gao_product_pages(
             lambda _url: _capture(),
@@ -192,6 +205,7 @@ def test_replay_refuses_html_that_differs_from_its_capture_digest() -> None:
 
 
 def test_replay_refuses_zip_metadata_that_differs_from_the_deterministic_shape() -> None:
+    """Replay refuses ZIP metadata that differs from the deterministic shape."""
     page = next(
         iter_gao_product_pages(
             lambda _url: _capture(),
@@ -214,6 +228,7 @@ def test_replay_refuses_zip_metadata_that_differs_from_the_deterministic_shape()
 
 
 def test_replay_refuses_zip_version_metadata_that_differs_from_the_deterministic_shape() -> None:
+    """Replay refuses ZIP version metadata that differs from the deterministic shape."""
     page = next(
         iter_gao_product_pages(
             lambda _url: _capture(),
@@ -240,6 +255,8 @@ def test_replay_refuses_zip_version_metadata_that_differs_from_the_deterministic
 
 
 def test_per_page_scope_checks_do_not_rescan_the_complete_product_id_list() -> None:
+    """Per-page scope checks do not rescan the complete product id list."""
+
     class _MembershipTrap(list[str]):
         def __contains__(self, value: object) -> bool:
             raise AssertionError(f"linear membership scan for {value!r}")
@@ -259,6 +276,7 @@ def test_per_page_scope_checks_do_not_rescan_the_complete_product_id_list() -> N
 
 
 def test_gao_profile_imports_without_spicysearch_or_refspec() -> None:
+    """The GAO profile imports without SpicySearch or RefSpec."""
     completed = subprocess.run(
         [
             sys.executable,
@@ -288,6 +306,7 @@ def test_gao_profile_imports_without_spicysearch_or_refspec() -> None:
     ],
 )
 def test_query_scope_refuses_missing_duplicate_or_unsafe_product_ids(product_ids: list[str]) -> None:
+    """Query scope refuses missing, duplicate or unsafe product ids."""
     with pytest.raises(GaoProductSourceError):
         gao_product_query_scope({"productIds": product_ids})
 
@@ -324,11 +343,13 @@ def test_acquisition_fails_closed_on_transport_or_publisher_drift(
     capture: ZyteHttpResponse,
     message: str,
 ) -> None:
+    """Acquisition fails closed on transport or publisher drift."""
     with pytest.raises(GaoProductSourceError, match=message):
         list(iter_gao_product_pages(lambda _url: capture, query_scope={"productIds": [PRODUCT_ID]}))
 
 
 def test_acquisition_refuses_oversized_html_before_building_evidence() -> None:
+    """Acquisition refuses oversized HTML before building evidence."""
     capture = _capture(b"x" * (MAX_PAGE_BYTES + 1))
 
     with pytest.raises(GaoProductSourceError, match="byte bound"):
@@ -336,6 +357,7 @@ def test_acquisition_refuses_oversized_html_before_building_evidence() -> None:
 
 
 def test_acquisition_refuses_a_corpus_over_the_total_byte_bound(monkeypatch) -> None:
+    """Acquisition refuses a corpus over the total byte bound."""
     product_ids = [PRODUCT_ID, "gao-26-107694"]
     bodies = {
         product_id: _html(canonical_url=f"https://www.gao.gov/products/{product_id}") for product_id in product_ids

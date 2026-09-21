@@ -54,6 +54,8 @@ def index_pages(
     query_scope: Mapping[str, Any],
     profile: SourceNativeProfile,
 ) -> None:
+    """Index one acquisition chain into disk-backed page, observation, and failure tables, refusing a broken chain."""
+
     connection.executescript(
         "CREATE TABLE pages (traversal INTEGER, page INTEGER, window_index INTEGER, window_page INTEGER, "
         "records_included INTEGER, request_key TEXT, source_cursor TEXT, next_cursor TEXT, "

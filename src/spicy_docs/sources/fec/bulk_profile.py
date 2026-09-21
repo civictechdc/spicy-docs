@@ -98,6 +98,7 @@ def _window(key):
 
 
 def iter_retained_bulk_files(scope, *, blob_source):
+    """Yield each selected capture as one blob page, ZIP evidence or opaque bytes."""
     for index, capture in enumerate(_scope(scope)["captures"]):
         yield SourceNativeBlobPage(
             index,

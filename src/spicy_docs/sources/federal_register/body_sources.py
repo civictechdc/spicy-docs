@@ -1,25 +1,19 @@
 """Derive Federal Register body locators and validate response identity offline.
 
-Source rules:
-- body_html_url paths have sibling XML and text paths.
-- GovInfo granules use publication date and printed document number. Check the
-  [FR Doc No: ...] marker because a missing granule can return HTTP 200. The
-  error page that answers it is one publisher rule with one home,
-  sources/govinfo/error_page.py; its two witnesses stay on either side of the
-  locator check here, so the most precise fact wins.
-- A FederalRegister.gov split suffix may differ from the printed marker.
-- Resolve synthetic X numbers through issue MODS start pages while preserving
-  the original source identity.
-
-body_acquisition prefers publisher XML, then the chosen GovInfo route after
-XML 404/410. body_xml validates XML identity. DocSpec owns dataset selection;
-SpicySearch Validation owns text agreement. Timing is not an identity rule.
+Source rules: ``body_html_url`` paths have sibling XML and text paths; GovInfo granules use
+publication date and printed document number, and the ``[FR Doc No: ...]`` marker is checked because
+a missing granule can return HTTP 200 (its soft-404 page is one publisher rule with one home,
+sources/govinfo/error_page.py, whose two witnesses stay on either side of the locator check here so
+the most precise fact wins); a FederalRegister.gov split suffix may differ from the printed marker;
+and synthetic X numbers resolve through issue MODS start pages while preserving the original source
+identity. ``body_acquisition`` prefers publisher XML, then the chosen GovInfo route after XML
+404/410; ``body_xml`` validates XML identity; DocSpec owns dataset selection and SpicySearch
+Validation owns text agreement; timing is not an identity rule.
 
 For URL length U, granule bytes B, and MODS bytes M: locator time and output space are O(U);
-granule validation is O(B) time and O(U) auxiliary space; MODS resolution is
-O(M) time and O(D + A) auxiliary space, with XML depth D and largest retained
-start/accessId text A. Both parsers require a positive byte bound. These helpers
-make no network requests and write no files.
+granule validation is O(B) time and O(U) auxiliary space; MODS resolution is O(M) time and
+O(D + A) auxiliary space, with XML depth D and largest retained start/accessId text A. Both parsers
+require a positive byte bound, and these helpers make no network requests and write no files.
 """
 
 from __future__ import annotations

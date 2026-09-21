@@ -18,14 +18,15 @@ class FoiaReportError(ValueError):
 
 
 def parse_foia_annual_report(body: bytes, *, max_bytes: int = 4 * 1024**2, max_elements: int = 100_000) -> dict:
-    """Preserve every XML element, association, namespace declaration and literal value.
+    """Preserve every XML element, association, namespace declaration and literal value from a supported report.
 
     Supports the NIEM exchange 1.02/1.03 roots observed in retained reports.
-    ``child_indices`` count element children from zero; root is []. They are
-    tree positions, not byte offsets. Prefix declarations retain QName context;
-    comments, processing instructions and lexical spelling remain in source bytes.
-    Values are not coerced to numbers, deduplicated, summed or XSD-validated.
-    Word Flat OPC is refused as a different document representation.
+    ``child_indices`` count element children from zero and are tree positions, not byte offsets;
+    prefix declarations retain QName context, and comments, processing instructions and lexical
+    spelling remain in source bytes. Values are not coerced to numbers, deduplicated, summed or
+    XSD-validated. Word Flat OPC is refused as a different document representation, and
+    ``FoiaReportError`` is raised unless the root is supported and the report has one nonempty
+    native fiscal year and one native organization.
     """
     if type(max_elements) is not int or max_elements <= 0:
         raise FoiaReportError("max_elements must be a positive integer")

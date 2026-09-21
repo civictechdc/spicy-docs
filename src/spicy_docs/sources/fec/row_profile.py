@@ -112,6 +112,7 @@ def _key(index):
 
 
 def iter_retained_positional_rows(scope, *, blob_source):
+    """Yield the scope's one selected original as a single blob page."""
     capture = _scope(scope)["capture"]
     yield SourceNativeBlobPage(
         0,

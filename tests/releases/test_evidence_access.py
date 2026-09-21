@@ -1,4 +1,7 @@
-"""Public evidence access stays tied to admitted membership and selected records."""
+"""Evidence access contract: point and bulk reads stay tied to admitted membership and the selected
+observation, open only the matching identity bucket, verify digest and size at read time, and close every
+stream.
+"""
 
 from __future__ import annotations
 

@@ -24,6 +24,8 @@ KEY = "k3y-abcdef0123456789"
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *bodies):
         self.bodies = iter(bodies)
         self.calls = []
@@ -38,10 +40,14 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_family_and_window_urls():
+    """The family states offset paging, no count path and a credential requirement, and URL builders send explicit
+    windows.
+    """
     assert FCC_ECFS.next_kind == "offset" and FCC_ECFS.count_path is None and FCC_ECFS.requires_credential
     assert proceedings_url(created_from="2026-01-01", created_to="2026-01-31", limit=2) == (
         "https://publicapi.fcc.gov/ecfs/proceedings?date_proceeding_created=%5Bgte%5D2026-01-01%5Blte%5D2026-02-01"
@@ -75,6 +81,7 @@ def test_family_and_window_urls():
     ],
 )
 def test_an_inclusive_caller_window_is_sent_as_the_publishers_following_midnight(start, end, literal):
+    """An inclusive caller window is sent as the publisher's following midnight so the end day is not excluded."""
     for url, field in (
         (filings_url(received_from=start, received_to=end), "date_received"),
         (proceedings_url(created_from=start, created_to=end), "date_proceeding_created"),
@@ -84,6 +91,7 @@ def test_an_inclusive_caller_window_is_sent_as_the_publishers_following_midnight
 
 
 def test_pinned_pages_parse_and_the_walk_advances_by_offset():
+    """Pinned pages parse and the walk advances by offset to the first short page."""
     transport = Transport(PROCEEDINGS, FILINGS)
     with FccEcfsReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
         proceedings = source.page(

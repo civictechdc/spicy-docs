@@ -1,4 +1,6 @@
-"""Releases: reading behavior."""
+"""Reader contract: an explicit verifier allowlist, a fixed 64-stream bound, records and renditions sorted
+across fixed identity buckets, and corrupted members failing admission before any row is yielded.
+"""
 
 from __future__ import annotations
 

@@ -1,3 +1,8 @@
+"""Retained refusals keep response evidence safe and recoverable.
+
+Request keys are credential-scrubbed before writing, empty bodies are still stored, and a response that was never
+captured is distinct from one with unavailable bytes."""
+
 import pytest
 from rulespec_artifacts import LocalBlobSource
 

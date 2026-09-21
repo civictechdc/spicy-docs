@@ -1,43 +1,19 @@
 """The deterministic CFR structural parser: blocks in, a tree of decisions out.
 
-One pass over the evidence blocks in reading order, ``O(B)`` for ``B``
-blocks. Numbering, indentation, typography and context jointly propose the
-tree, and every node carries the blocks it rests on and a :class:`Decision`
-naming the rule from ``profiles.CFR_RULES`` that placed it.
-
-Three things are rewritten, each by a named profile rule and each visible to
-the checks that compare text: the case of a small-capital run
-(``small_caps_restore``, because the print encodes case as size), the hyphen
-of a print wrap (``wrap_hyphen_rejoin``), and GPO's typewriter quote pairs
-(``gpo_quote_pair``, the shared ``normalize_gpo_glyphs`` spelling). Beyond
-those, assembly only: a node's text is its blocks' text joined with a single
-space between lines, and the serializer's source map leads back to the
-blocks.
-
-What the parser reads from a block, in this order (the profile's ladder):
-
-1. **Furniture** -- the printed page number (bottom band, digits only) and
-   the running head (top band). Kept as nodes so coverage can account for
-   them; never serialized.
-2. **Section headings** -- a bold line beginning with ``§`` and a section
-   number opens a section; the remainder of the line, and any bold line that
-   follows without a ``§``, is the subject.
-3. **Part front matter** outside any section -- the part heading, the
-   contents list, the AUTHORITY and SOURCE notes. A section PDF is a page
-   range of the printed volume (proposal §3.1), so this material and the
-   neighbouring sections are expected and are classified, not dropped.
-4. **Inside a section** -- small-face lines are a citation (``[...]``), a
-   note (a note label) or an unresolved region (a table, or anything else
-   the print sets small); body-face lines are paragraphs, opened by a
-   first-line indent, with their leading designations as marker and nested
-   under ``marker_hierarchy``; a whole-line bold or italic body-face line
-   after a vertical gap is a heading.
-
-Where rules cannot decide -- an unresolved small-face run inside a section --
-the :class:`ClassifyAndAttach` seam takes an injected model call that chooses
-among evidence-backed alternatives or abstains. No model is called in this
-module and no default is wired: without a classifier every such run stays an
-:class:`UnresolvedRegion`, which is what the coverage check reports.
+One pass over the evidence blocks in reading order, ``O(B)``, where numbering,
+indentation, typography and context jointly propose the tree and every node
+carries the blocks it rests on plus a :class:`Decision` naming the rule from
+``profiles.CFR_RULES`` that placed it. Three things are rewritten, each by a
+named profile rule and each visible to the checks that compare text: the case
+of a small-capital run (``small_caps_restore``, because the print encodes case
+as size), the hyphen of a print wrap (``wrap_hyphen_rejoin``) and GPO's
+typewriter quote pairs (``gpo_quote_pair``, the shared ``normalize_gpo_glyphs``
+spelling); beyond those, assembly only, with a node's text its blocks' text
+joined by a single space. Where rules cannot decide -- an unresolved small-face
+run inside a section -- the :class:`ClassifyAndAttach` seam takes an injected
+model call that chooses among evidence-backed alternatives or abstains; no
+model is called here and no default is wired, so without a classifier every
+such run stays an :class:`UnresolvedRegion`.
 """
 
 from __future__ import annotations
@@ -317,11 +293,9 @@ def _successor(designation: str, cls: str) -> str | None:
     """The designation that follows this one in its own class, or ``None`` if it is not of that class.
 
     It is total on purpose: a level can hold a designation of a class other
-    than the one the ladder expects there (the out-of-sequence path puts it
-    wherever it fits), and asking for its successor in the wrong class must
-    answer "no successor" rather than raise. Letters run bijective base 26,
-    so ``(z)`` is followed by ``(aa)`` -- which is how the CFR numbers a long
-    run of lettered paragraphs.
+    than the one the ladder expects there, and asking for its successor in the
+    wrong class must answer "no successor" rather than raise. Letters run
+    bijective base 26, so ``(z)`` is followed by ``(aa)``.
     """
     if cls not in _classes(designation):
         return None
@@ -394,10 +368,9 @@ SECTION_ROOT = "§"
 def marker_pairs(markers: Sequence[str | None]) -> set[tuple[str, str]]:
     """``(parent marker, child marker)`` for paragraph markers in reading order, under ``marker_hierarchy``.
 
-    The reference side of the benchmark reads its markers from the
-    publisher's own ``<P>`` elements and the candidate side from the print,
-    and both hang them on this one ladder, so the comparison measures whether
-    the same markers were found in the same nesting rather than comparing two
+    The reference side reads its markers from the publisher's own ``<P>``
+    elements and the candidate side from the print, and both hang them on this
+    one ladder, so the comparison measures markers and nesting rather than two
     different rules.
     """
     hierarchy = _Hierarchy()
@@ -467,11 +440,8 @@ def is_small_cap_run(run: StyledRun, line_size: float | None) -> bool:
 
     GPO sets a small-capital word by *size*, not by case: ``FEDERAL
     REGISTER`` reaches the extractor as ``F`` and ``R`` at the body size and
-    ``EDERAL``/``EGISTER`` a point and a half smaller, all as capitals (the
-    measurement is in ``CFR-2022-title40-vol1-sec23-2``: MIonic 8.0 beside
-    MIonic 6.5 on one line). The case is therefore recoverable and is not a
-    property of the characters, which is why this reads the style rather than
-    the text.
+    ``EDERAL``/``EGISTER`` a point and a half smaller, all as capitals, so the
+    case is recoverable and is read from the style rather than the text.
     """
     return (
         run.size is not None
@@ -497,20 +467,15 @@ def restore_small_caps(runs: Sequence[StyledRun], line_size: float | None) -> li
 def _hyphen_join(tail: str, head: str) -> str | None:
     """How a line-ending hyphen joins to the next line, or ``None`` when it is not a hyphen at all.
 
-    ``""`` means join with nothing in between, which is what a print wrap
-    needs: the hyphen is dropped by the caller. ``"-"`` means keep the hyphen
-    and add no space, which is what a real compound word broken at the line
-    end needs.
-
-    Three cases, each measured on the corpus:
-
-    * a lowercase successor is the ordinary print wrap (``ini-`` / ``tial``);
-    * an uppercase successor after an all-capital word is a small-capital
-      word wrapped mid-word (``FED-`` / ``ERAL``), so the hyphen goes too;
-    * an uppercase successor otherwise is a genuine compound that the line
-      break happens to fall inside (``non-`` / ``speculative purpose.`` in
-      12 CFR 1.1, which the published XML spells ``non-speculative``), so
-      the hyphen stays and no space is added.
+    ``""`` means join with nothing in between (a print wrap; the hyphen is
+    dropped by the caller) and ``"-"`` means keep the hyphen and add no space
+    (a real compound broken at the line end). Three cases, each measured on the
+    corpus: a lowercase successor is the ordinary print wrap (``ini-`` /
+    ``tial``); an uppercase successor after an all-capital word is a
+    small-capital word wrapped mid-word (``FED-`` / ``ERAL``), so the hyphen
+    goes too; an uppercase successor otherwise is a genuine compound the line
+    break happens to fall inside (``non-`` / ``speculative purpose.``), so the
+    hyphen stays.
     """
     if not tail.endswith("-") or not head:
         return None
@@ -532,16 +497,16 @@ def join_lines(
 ) -> tuple[str, tuple[StyledRun, ...]]:
     """The profile's joins, applied to a node's blocks in order.
 
-    A single space separates two lines. A line ending with a hyphen that
-    :func:`_wraps` judges a print wrap loses the hyphen and joins directly. A
+    A single space separates two lines; a line ending with a hyphen that
+    :func:`_wraps` judges a print wrap loses the hyphen and joins directly; a
     line the extractor saw on a later page than its predecessor carries
-    ``break_to_page`` on its first run (``page_break_in_paragraph``). A
+    ``break_to_page`` on its first run (``page_break_in_paragraph``); a
     small-capital run is lowered back to the case the print encoded as size
     (:func:`restore_small_caps`), per block, so the block's own full-size runs
-    decide what counts as reduced. Finally ``normalize_gpo_glyphs`` collapses
-    GPO's doubled-backtick/doubled-apostrophe typewriter quote pairs -- the same shared rule
-    ``extraction.body_text`` applies to every rendition, so the PDF and the
-    XML of one document spell a quotation the same way.
+    decide what counts as reduced; and ``normalize_gpo_glyphs`` collapses
+    GPO's typewriter quote pairs, the same shared rule
+    ``extraction.body_text`` applies, so the PDF and the XML of one document
+    spell a quotation the same way.
     """
     numbers = page_numbers or {}
     runs: list[StyledRun] = []
@@ -697,8 +662,8 @@ class _Parser:
         """Extend the subject with a second bold line, through the one join every node uses.
 
         The subject's first line is a slice of the heading line, so it cannot
-        come from ``join_lines`` alone; its continuation lines can and must,
-        or a subject that wraps at a hyphen ("exam-" / "ination.") keeps the
+        come from ``join_lines`` alone; its continuation lines can and must, or
+        a subject that wraps at a hyphen ("exam-" / "ination.") keeps the
         hyphen that every other node would have lost.
         """
         assert self.subject is not None and self.subject.literal is not None
@@ -881,11 +846,9 @@ class _Parser:
         """``section_truncated``: the last section may continue past the rendition's last line.
 
         The open section owns the last line whenever *any* node beneath it
-        does, at any depth. Checking only its direct children missed the
-        common shape: a rendition cut inside a nested paragraph -- last line
-        ``(1) ...`` under ``(a)`` under the section -- left the section
-        ``accepted``, which is the one case where the reader most needs to be
-        told the text may go on.
+        does, at any depth: checking only its direct children missed the common
+        shape -- a rendition cut inside a nested paragraph -- which is the one
+        case where the reader most needs to be told the text may go on.
         """
         section, last = self.section, self.previous
         if section is None or last is None:

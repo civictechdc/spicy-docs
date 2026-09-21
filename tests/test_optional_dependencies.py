@@ -1,8 +1,10 @@
 """Core operations and setup failures with optional imports unavailable.
 
-Subprocesses block imports even when the contributor environment has every
-extra installed. The candidate-wheel qualification also uses a fresh core-only
-environment, so these focused checks do not substitute for installation proof.
+Subprocesses block the optional imports even though the contributor environment
+has every extra installed; pins that the core CLI, the example's
+publish/verify/evidence/inspect path and reconstruction parse/serialize work
+without extras, and that a missing live, table or parquet dependency is a named
+``dependency-missing`` setup failure that writes no release.
 """
 
 from __future__ import annotations
@@ -58,6 +60,7 @@ def _publish_args(directory: Path, source: str, *scope: str) -> list[str]:
 
 
 def test_core_cli_and_example_publish_replay_read_evidence_and_inspect_without_extras(tmp_path: Path) -> None:
+    """The core CLI and the example's publish, verify, evidence read and inspect all succeed with no extra imported."""
     _without_optional(f"""
 import json
 import runpy
@@ -104,6 +107,7 @@ assert not set({_OPTIONAL!r}).intersection(sys.modules)
 def test_missing_live_dependency_is_setup_failure(
     tmp_path: Path, source: str, scope: tuple[str, ...], missing: str
 ) -> None:
+    """A live source missing httpx or boto3 exits 1 with ``dependency-missing`` and writes no release."""
     args = _publish_args(tmp_path, source, *scope)
     _without_optional(f"""
 import json
@@ -121,6 +125,7 @@ assert not Path({str(tmp_path / "release")!r}).exists()
 
 
 def test_public_table_command_reports_missing_pyarrow(tmp_path: Path) -> None:
+    """Publishing a public table without pyarrow exits 1 with ``dependency-missing``."""
     args = [
         "publish-public-table",
         "--table",
@@ -150,6 +155,7 @@ assert out.getvalue() == ''
 
 
 def test_injected_parquet_capture_reports_missing_polars(tmp_path: Path) -> None:
+    """Reading an injected parquet capture without polars exits 1 with ``dependency-missing`` and writes no release."""
     parquet = tmp_path / "empty-comments.parquet"
     content = BytesIO()
     pl.DataFrame(schema={name: pl.String for name in PUBLIC_COMMENT_FILE_COLUMNS}).write_parquet(content)
@@ -177,6 +183,7 @@ assert not Path({str(tmp_path / "release")!r}).exists()
 
 
 def test_cli_preserves_real_httpx_exception_and_refusal_context(tmp_path: Path) -> None:
+    """A transport failure reports ``transport-failed`` while the request, response and failed acquisition survive."""
     request = httpx.Request("GET", "https://www.federalregister.gov/api/v1/documents")
     response = httpx.Response(403, request=request)
     original = httpx.HTTPStatusError("publisher refused the request", request=request, response=response)
@@ -202,6 +209,7 @@ def test_cli_preserves_real_httpx_exception_and_refusal_context(tmp_path: Path) 
 
 
 def test_cli_does_not_swallow_unrelated_injected_errors(tmp_path: Path) -> None:
+    """An injected non-transport exception propagates unchanged instead of being reported as a source failure."""
     original = RuntimeError("injected implementation defect")
 
     def fetch(_url: str) -> bytes:
@@ -218,11 +226,11 @@ def test_cli_does_not_swallow_unrelated_injected_errors(tmp_path: Path) -> None:
 
 
 def test_reconstruction_parses_serializes_and_reports_four_of_five_findings_without_lxml() -> None:
-    """The `reconstruct` extra buys schema validation and nothing else.
+    """With lxml blocked in a subprocess, reconstruction parses and serializes while schema validity refuses by name.
 
-    Run in a subprocess with `lxml` blocked, because this contributor
-    environment has every extra installed and an import that happens to
-    succeed here proves nothing about a core-only install.
+    Four of the five checks report; the extra buys schema validation and
+    nothing else, and blocking happens in a subprocess because this environment
+    has every extra installed.
     """
     code = f"""
 import importlib.abc, json, sys

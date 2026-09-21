@@ -1,4 +1,8 @@
-"""Bounded pinned real-input gate for the Federal Register source profile."""
+"""Bounded pinned real-input gate for the Federal Register source profile.
+
+The integration-marked fetch of the 2026-04-13 day must re-derive the pinned source-state digest, 93 records, and 372
+renditions; a non-network canary pins the acquisition inputs that shape them.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,7 @@
-"""Source facts survive; legal normalization and attestation remain downstream."""
+"""scan_uscode_structure retains native source facts; legal normalization and attestation remain downstream.
+
+Publisher identifiers, ranges, appendix fragments, headings, and statuses survive; foreign-namespace elements are
+ignored; partial callbacks are not success when later XML fails; and unsafe or excessive input refuses."""
 
 import io
 import zipfile

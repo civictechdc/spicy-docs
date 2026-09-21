@@ -1,4 +1,10 @@
-"""Known source drift and independent XLSX-cell replay for literal filing labels."""
+"""Known source drift and independent XLSX-cell replay for literal filing labels.
+
+Pins every packaged label and selector against an independent XML read of the
+pinned workbooks, same-width historical layouts with different meanings,
+ambiguous dictionary rows, duplicate printed ordinals, formula caches, excluded
+sheet notes, blank/absent/zero distinctions, and mapping bounds.
+"""
 
 import copy
 import hashlib
@@ -51,6 +57,9 @@ def source_cells(path):
 
 
 def test_every_packaged_label_and_selector_matches_its_pinned_source_cell():
+    """Every packaged label, selector and formula matches its pinned source cell, with workbook digests and note rows
+    checked.
+    """
     catalog = json.loads(files("spicy_docs.sources.fec").joinpath("field_layouts.json").read_bytes())
     workbooks, formulas = [], []
     for source in catalog["sources"]:
@@ -133,10 +142,12 @@ def test_every_packaged_label_and_selector_matches_its_pinned_source_cell():
 
 
 def select(version="8.5", form="Text", family="electronic", **kwargs):
+    """Select one layout by version, record type and optional row."""
     return layouts.filing_layout(family=family, version=version, form=form, **kwargs)
 
 
 def record(values):
+    """Build a filing record over the given fields."""
     return {
         "kind": "record",
         "record_type": values[0] if values else "",
@@ -149,6 +160,7 @@ def record(values):
 
 
 def test_same_width_historical_layouts_keep_different_meanings_and_literal_versions():
+    """Same-width historical layouts keep different meanings and literal versions."""
     old, new = select("v5.3", "SL"), select("v8.1", "SL")
     assert len(old["fields"]) == len(new["fields"]) == 41
     assert old["fields"][2]["label"] == "3-NAME OF ACCOUNT"
@@ -161,6 +173,7 @@ def test_same_width_historical_layouts_keep_different_meanings_and_literal_versi
 
 
 def test_ambiguous_dictionary_rows_never_overwrite_or_choose_a_winner():
+    """Ambiguous dictionary rows never overwrite or choose a winner; an explicit row disambiguates."""
     with pytest.raises(ValueError, match="multiple layouts"):
         select("v6.4", "F3S")
     assert len(select("v6.4", "F3S", row=7)["fields"]) == 35
@@ -170,17 +183,20 @@ def test_ambiguous_dictionary_rows_never_overwrite_or_choose_a_winner():
 
 
 def test_duplicate_printed_ordinals_remain_separate_positions():
+    """Duplicate printed ordinals remain separate positions."""
     fields = select("v3", "SI")["fields"]
     assert fields[13] == {"label": "15-8. Receipts", "cell": "P10"}
     assert fields[14] == {"label": "15-9. Subtotal", "cell": "Q10"}
 
 
 def test_formula_labels_retain_publisher_cache_and_unevaluated_formula():
+    """Formula labels retain the publisher's cache and the unevaluated formula."""
     fields = select("v3", "SH3")["fields"]
     assert fields[11] == {"label": "-", "cell": "N15", "formula": '=CONCATENATE(N11,"-",N12)'}
 
 
 def test_excluded_sheet_notes_survive_without_guessed_form_joins():
+    """Excluded-sheet notes survive without guessed form joins."""
     layout = select(form="F3Z1")
     notes = {n["row"]: n["cells"] for n in layout["source"]["notes"]}
     assert notes[12][0] == "F3Z 1"
@@ -189,6 +205,7 @@ def test_excluded_sheet_notes_survive_without_guessed_form_joins():
 
 
 def test_mapping_preserves_blanks_values_extras_unknown_members_and_body_references():
+    """Mapping preserves blanks, values, extra fields, unknown members and body references without mutating inputs."""
     layout = select()
     original = record(["TEXT", "C00000001", "T1", "", "F99", "body", "EXTRA", ""])
     body = {**original["source"], "field_index": 5, "delimiter": "\x1c", "encoding": "utf-8"}
@@ -214,6 +231,7 @@ def test_mapping_preserves_blanks_values_extras_unknown_members_and_body_referen
 
 
 def test_short_records_keep_absent_positions_distinct_from_blank_and_zero():
+    """A short record keeps absent positions distinct from blank and zero."""
     result = layouts.map_filing_fields(record(["TEXT", "", "0"]), layout=select(), format_version="8.5")
     mapping = result["field_mapping"]
     assert mapping["width"] == "short"
@@ -222,12 +240,14 @@ def test_short_records_keep_absent_positions_distinct_from_blank_and_zero():
 
 
 def test_selection_does_not_claim_compatibility_or_coerce_native_versions():
+    """Selection claims no compatibility and coerces no native version."""
     result = layouts.map_filing_fields(record(["H5", "-01.00"]), layout=select("v5.3", "SH5"), format_version="5.00")
     assert result["record_type"] == "H5" and result["declared_format_version"] == "5.00"
     assert result["fields"]["1"] == "-01.00" and result["field_mapping"]["selection"] == "caller-selected"
 
 
 def test_layout_copies_cannot_change_the_registry_or_later_mappings():
+    """Layout copies cannot change the registry or later mappings."""
     first = select()
     first["fields"][0]["label"] = "changed"
     assert select()["fields"][0]["label"] == "REC TYPE"
@@ -235,6 +255,7 @@ def test_layout_copies_cannot_change_the_registry_or_later_mappings():
 
 @pytest.mark.parametrize("member", ["declared_format_version", "field_mapping"])
 def test_output_member_collisions_are_explicit(member):
+    """Output member collisions are refused explicitly."""
     row = record(["TEXT"])
     row[member] = "retain"
     with pytest.raises(ValueError, match="already contains"):
@@ -242,6 +263,7 @@ def test_output_member_collisions_are_explicit(member):
 
 
 def test_mapping_bounds_and_partition_checks_fire_before_iterating_malformed_inputs():
+    """Mapping bounds and partition checks fire before iterating malformed inputs."""
     layout = select()
     row = record(["TEXT"] * 6)
     assert layouts.map_filing_fields(row, layout=layout, format_version="8.5", max_fields=6)
@@ -262,6 +284,7 @@ def test_mapping_bounds_and_partition_checks_fire_before_iterating_malformed_inp
 
 
 def test_mapping_selected_layout_never_reloads_the_registry(monkeypatch):
+    """Mapping with a selected layout never reloads the registry."""
     layout = select()
     monkeypatch.setattr(layouts, "_catalog", lambda: pytest.fail("registry accessed per record"))
     for _ in range(3):

@@ -1,8 +1,7 @@
 """Shared keyless probe, request counter and publisher constants for the analysis tools.
 
-``bill_html_xml_gap`` and ``legislative_data_map`` both probe keyless publisher
-routes with the same bounded client and read the same constants, so the probe
-and its vocabulary live here rather than in either tool.
+``bill_html_xml_gap`` and ``legislative_data_map`` probe the same keyless publisher
+routes, so the bounded client and its vocabulary live here rather than in either.
 """
 
 from __future__ import annotations
@@ -25,6 +24,8 @@ class ProbeError(ValueError):
 
 
 class ProbeUnavailableError(ProbeError):
+    """A probe answered an HTTP status the caller refuses, carrying the capture as evidence."""
+
     def __init__(self, capture: CapturedBodyResponse) -> None:
         super().__init__(f"HTTP {capture.status_code}")
         self.capture = capture

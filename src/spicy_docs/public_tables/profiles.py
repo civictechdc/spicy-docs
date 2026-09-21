@@ -73,6 +73,8 @@ class PublicTableProfile:
         return values[0] if isinstance(self.primary_key, str) else canonical_json_bytes(values).decode("utf-8")
 
     def project(self, source_row: Mapping[str, Any]) -> dict[str, str | None]:
+        """Project one source row, refusing a schema, column, identity, or empty-partition mismatch."""
+
         if source_row.get("schemaName") != self.source_schema_name:
             raise PublicTableProjectionError(f"{self.table_name} source schema differs from {self.source_schema_name}")
         record = source_row.get("record")

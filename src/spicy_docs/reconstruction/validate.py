@@ -1,32 +1,18 @@
 """Five separate findings over one reconstruction, and the gates as a pure function over them.
 
-They are separate because they fail for different reasons and a caller acts
-on each differently: a schema violation is a serializer bug, a content
-mismatch is an extraction or join bug, a structural mismatch is a parser bug,
-and an uncovered block is honest ignorance. Collapsing them into one score
-would hide which.
-
-1. :func:`schema_validity` -- lxml against the profile's pinned bundle, with a
-   **local catalog and no network**: the only resolution allowed is a file
-   this package ships whose digest matches the pin, and any other resolution
-   -- including the ``noNamespaceSchemaLocation`` the document itself states
-   -- is refused rather than fetched. This is the one function that needs the
-   ``reconstruct`` extra, and it names the extra when it is missing.
-2. :func:`content_fidelity` -- normalized text equality between the evidence
-   and the serialized text. The normalization is stated as a table and it is
-   **reversible in the sense that matters**: each rule is a named, recorded
-   transformation, and the finding carries how many characters each one
-   touched, so a caller can see what was compared rather than trusting an
-   equality that a wide normalization made true.
-3. :func:`structural_fidelity` -- section boundaries and marker hierarchy.
-4. :func:`coverage` -- every evidence block classified, unresolved regions
-   listed, out-of-scope evidence separated from loss.
-5. :func:`acceptance` -- the §3.3 gates over the other four findings and
-   nothing else. It reads no document, so a stored finding set re-decides the
-   same way.
-
-``check`` runs all five. Everything is ``O(C)`` in the compared characters
-except schema validation, which is lxml's.
+They are separate because they fail for different reasons and a caller acts on
+each differently -- a schema violation is a serializer bug, a content mismatch
+an extraction or join bug, a structural mismatch a parser bug, and an
+uncovered block honest ignorance -- so collapsing them into one score would
+hide which. :func:`schema_validity` validates with lxml against the profile's
+pinned bundle using a **local catalog and no network** (the document's own
+``noNamespaceSchemaLocation`` is refused rather than fetched) and is the one
+check needing the ``reconstruct`` extra; :func:`content_fidelity`,
+:func:`structural_fidelity` and :func:`coverage` are standard library, and
+:func:`acceptance` applies the §3.3 gates over the other four findings and
+nothing else, so a stored finding set re-decides the same way. ``check`` runs
+all five, everything ``O(C)`` in the compared characters except schema
+validation, which is lxml's.
 """
 
 from __future__ import annotations
@@ -89,7 +75,8 @@ def schema_validity(xml: bytes, *, profile: Profile = CFR_PROFILE) -> Finding:
     The document's own ``noNamespaceSchemaLocation`` is *not* followed: the
     schema is the one the profile pins, read from this package and checked
     against its digest first, so what a document claims about its schema can
-    never decide what it is validated against.
+    never decide what it is validated against. Raises ``ValidateError`` when
+    the extra is missing or the profile pins anything but one schema file.
     """
     try:
         # lxml ships no type stubs; `_catalog` below states the one shape used.
@@ -242,7 +229,7 @@ class TextComparison:
     """Precision and recall over normalized word tokens, the critical tokens that differ, and what the normalization touched.
 
     ``normalization`` is :data:`NORMALIZATION_RULES`' per-rule counts summed
-    over both sides. It travels with the comparison rather than being thrown
+    over both sides; it travels with the comparison rather than being thrown
     away inside it, because a rule that fired on nothing and a rule that folded
     a thousand characters make the same equality and mean opposite things.
     """
@@ -284,9 +271,9 @@ def content_fidelity(serialized: Serialized, evidence: EvidenceDocument) -> Find
     """Every character the serialized XML carries must come from the evidence it names.
 
     The comparison is per element, against exactly the blocks the source map
-    names for it, so a paragraph cannot pass by borrowing text from another.
-    That is the direction that matters here: the coverage finding, not this
-    one, says whether evidence was left out.
+    names for it, so a paragraph cannot pass by borrowing text from another;
+    that is the direction that matters here, because the coverage finding, not
+    this one, says whether evidence was left out.
     """
     total = matched = 0
     mismatched: list[str] = []
@@ -333,11 +320,11 @@ def _welded(text: str) -> str:
 
     Spaces and hyphens go, because the join removes a print wrap's hyphen and
     adds a space between lines; case goes, because the print encodes small
-    capitals as *size* rather than as case, so the restored case comes from
-    the style observation and not from the characters. What survives is every
-    letter, digit and mark in order -- which is what this check is for: that
-    an element's text came from the evidence the source map names for it, and
-    not from somewhere else in the document.
+    capitals as *size* rather than as case, so the restored case comes from the
+    style observation and not from the characters. What survives is every
+    letter, digit and mark in order -- which is what this check is for: that an
+    element's text came from the evidence the source map names for it, and not
+    from somewhere else in the document.
     """
     return text.replace(" ", "").replace("-", "").casefold()
 
@@ -423,7 +410,7 @@ class HierarchyComparison:
     Both counts are kept because either one being zero means something
     different and a caller filtering on one of them alone hides the other: a
     reference with no ladder is a section the publisher wrote without
-    designations, while a *candidate* with no ladder against a reference that
+    designations, while a candidate with no ladder against a reference that
     has one is a ladder the parser missed, and a candidate with a ladder
     against a reference without one is a ladder the parser invented.
     """
@@ -444,15 +431,11 @@ def hierarchy_f1(reference: set[tuple[str, str]], candidate: set[tuple[str, str]
 
     Both sides are pair sets so a reference read from the publisher's own
     ``<P>`` markers (``parse.marker_pairs``) compares with a candidate read
-    from the print (``document_marker_pairs``) on the one ladder.
-
-    **Two empty sides agree.** Plenty of CFR sections are a single
-    undesignated paragraph and have no ladder at all; scoring that 0.0 would
-    report disagreement where both sides say the same thing, and averaging it
-    would drag a corpus score down for sections that were reconstructed
-    perfectly. It returns 1.0 with both counts zero, and a caller that wants
-    the mean over sections that *have* a ladder filters on
-    ``reference_pairs``, which is what the benchmark reports.
+    from the print (``document_marker_pairs``) on the one ladder. **Two empty
+    sides agree**, with 1.0 and both counts zero: plenty of CFR sections are a
+    single undesignated paragraph and scoring that 0.0 would report
+    disagreement where both sides say the same thing; a caller wanting the mean
+    over sections that *have* a ladder filters on ``reference_pairs``.
     """
     left, right = reference, candidate
     shared = len(left & right)
@@ -503,8 +486,8 @@ class ReviewLoad:
     """What a reviewer would have to look at in the part of the document that was serialized.
 
     Counted **in scope**: over the elements the source map actually emitted,
-    not over the whole rendition. A section PDF carries its neighbours, and a
-    flagged marker three sections away is not this granule's problem.
+    not over the whole rendition, because a section PDF carries its neighbours
+    and a flagged marker three sections away is not this granule's problem.
     """
 
     elements: int
@@ -540,15 +523,12 @@ def acceptance(
     """The §3.3 gates over the findings, as a pure function.
 
     ``comparison`` and ``hierarchy`` come from a *paired* run, where a
-    reference exists. Without them the text and hierarchy gates cannot be
-    decided, and this says so rather than passing by default: an undecided
-    gate is not a met gate.
-
-    ``review`` is what §3.3's "accepted **without review**" turns on, and
-    leaving it out used to make that phrase untrue: a document whose nodes
-    were flagged ``needs_review``, or placed by a model, still passed. A node
-    the parser could not place confidently is exactly the work a reviewer
-    does, so it is counted here, in scope, and it blocks acceptance.
+    reference exists; without them the text and hierarchy gates cannot be
+    decided, and this says so rather than passing by default, because an
+    undecided gate is not a met gate. ``review`` is what §3.3's "accepted
+    **without review**" turns on: a flagged, model-placed or unresolved
+    in-scope decision is exactly the work a reviewer does, so it blocks
+    acceptance.
     """
     by_name = {finding.check: finding for finding in findings}
     reasons: list[str] = []
@@ -610,10 +590,10 @@ def acceptance(
 class CheckResult:
     """Every finding, and the two paired measurements the acceptance gate read.
 
-    They are returned rather than recomputed by the caller: the token
-    alignment behind ``comparison`` is the most expensive thing this module
-    does, and a second run of it could quietly disagree with the one the gate
-    actually decided on.
+    They are returned rather than recomputed by the caller: the token alignment
+    behind ``comparison`` is the most expensive thing this module does, and a
+    second run of it could quietly disagree with the one the gate actually
+    decided on.
     """
 
     findings: tuple[Finding, ...]

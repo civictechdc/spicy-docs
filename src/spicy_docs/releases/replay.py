@@ -47,7 +47,7 @@ def _replay_acquisition(
     query_scope: Mapping[str, Any],
     profile: SourceNativeProfile,
 ) -> tuple[int, int]:
-    """Replay sorted page/evidence streams with only one active window in memory."""
+    """Replay sorted page/evidence streams with one window in memory; returns the accepted traversal and count."""
 
     connection.executescript(
         "CREATE TABLE pages (traversal INTEGER, page INTEGER, window_index INTEGER, window_page INTEGER, "

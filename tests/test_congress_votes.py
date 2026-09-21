@@ -115,6 +115,7 @@ MINIMAL_SENATE_LOCATOR = VoteLocator("senate", 119, 1, 1)
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
@@ -122,6 +123,7 @@ def no_retry_delay(monkeypatch):
 
 
 def test_the_fixtures_only_ever_spell_yea_nay_and_not_voting():
+    """Both fixtures only ever spell the three canonical vote values."""
     clerk_values = {member.vote for member in parse_clerk_vote(CLERK_FIXTURE, CLERK_LOCATOR).member_votes}
     senate_values = {member.vote for member in parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR).member_votes}
     assert clerk_values == {"Yea", "Nay", "Not Voting"}
@@ -142,10 +144,12 @@ def test_the_fixtures_only_ever_spell_yea_nay_and_not_voting():
     ],
 )
 def test_normalize_vote_covers_the_full_clerk_and_senate_vocabulary(spelled, expected):
+    """Every Clerk and Senate vote spelling normalizes to its canonical value."""
     assert normalize_vote(spelled) == expected
 
 
 def test_normalize_vote_refuses_an_unrecognized_spelling():
+    """An unrecognized vote spelling is refused."""
     with pytest.raises(VoteSourceError, match="unrecognized"):
         normalize_vote("Abstain")
 
@@ -154,6 +158,9 @@ def test_normalize_vote_refuses_an_unrecognized_spelling():
 
 
 def test_clerk_fixture_matches_the_measured_2026_09_18_shape():
+    """The Clerk fixture matches the measured shape: identity, question, tallies, 430 member votes and party totals
+    that sum to the tallies.
+    """
     vote = parse_clerk_vote(CLERK_FIXTURE, CLERK_LOCATOR)
     assert vote.publisher == "clerk" and vote.chamber == "house"
     assert (vote.congress, vote.session, vote.roll_number) == (119, 1, 240)
@@ -184,6 +191,9 @@ def test_clerk_fixture_matches_the_measured_2026_09_18_shape():
 
 
 def test_clerk_fixture_members_carry_every_legislator_attribute():
+    """Clerk members carry every legislator attribute, with a null LIS id and normalized vote counts that sum to the
+    tallies.
+    """
     vote = parse_clerk_vote(CLERK_FIXTURE, CLERK_LOCATOR)
     by_bioguide = {member.bioguide_id: member for member in vote.member_votes}
     adams = by_bioguide["A000370"]
@@ -208,6 +218,9 @@ def test_clerk_fixture_members_carry_every_legislator_attribute():
 
 
 def test_senate_fixture_matches_the_measured_2026_09_18_shape():
+    """The Senate fixture matches the measured shape: identity, text fields, tallies, 99 members and unset Clerk-only
+    fields.
+    """
     vote = parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR)
     assert vote.publisher == "senate-lis" and vote.chamber == "senate"
     assert (vote.congress, vote.session, vote.roll_number) == (119, 1, 1)
@@ -229,12 +242,16 @@ def test_senate_fixture_matches_the_measured_2026_09_18_shape():
 
 
 def test_senate_fixture_tie_breaker_is_present_but_empty_when_the_vote_was_not_tied():
+    """An empty tie-breaker element reads as present with both fields None."""
     vote = parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR)
     assert vote.tie_breaker is not None
     assert vote.tie_breaker.by_whom is None and vote.tie_breaker.tie_breaker_vote is None
 
 
 def test_senate_fixture_document_and_amendment_are_kept():
+    """Senate document and amendment blocks are kept, including an empty short title and unset amendment fields;
+    Clerk records carry neither block.
+    """
     vote = parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR)
     assert vote.document is not None
     assert vote.document.congress == 119
@@ -259,6 +276,9 @@ def test_senate_fixture_document_and_amendment_are_kept():
 
 
 def test_senate_fixture_members_carry_every_field_and_the_vote_totals_sum():
+    """Senate members carry every field and their normalized votes sum to the tallies, whose absent bucket is the
+    not-voting count.
+    """
     vote = parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR)
     by_lis = {member.lis_id: member for member in vote.member_votes}
     alsobrooks = by_lis["S428"]
@@ -280,6 +300,7 @@ def test_senate_fixture_members_carry_every_field_and_the_vote_totals_sum():
 
 
 def test_the_lis_crosswalk_resolves_senate_members_sharing_the_legislators_excerpt():
+    """The LIS crosswalk resolves members present in the shared legislators excerpt and leaves absent ones None."""
     vote = parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR, CURRENT_LEGISLATORS)
     by_lis = {member.lis_id: member for member in vote.member_votes}
     # Cantwell, Sanders and Warner are all in both the 119th Congress vote and
@@ -292,6 +313,7 @@ def test_the_lis_crosswalk_resolves_senate_members_sharing_the_legislators_excer
 
 
 def test_no_crosswalk_leaves_every_bioguide_id_unset():
+    """Without a crosswalk every bioguide id stays None."""
     vote = parse_senate_vote(SENATE_FIXTURE, SENATE_LOCATOR, crosswalk=None)
     assert all(member.bioguide_id is None for member in vote.member_votes)
 
@@ -300,6 +322,7 @@ def test_no_crosswalk_leaves_every_bioguide_id_unset():
 
 
 def test_clerk_identity_refusal_on_a_mismatched_locator():
+    """A Clerk identity mismatching its locator is refused with both sides carried."""
     wrong = VoteLocator("house", 119, 1, 999)
     with pytest.raises(VoteIdentityError) as raised:
         parse_clerk_vote(CLERK_FIXTURE, wrong)
@@ -308,6 +331,7 @@ def test_clerk_identity_refusal_on_a_mismatched_locator():
 
 
 def test_senate_identity_refusal_on_a_mismatched_locator():
+    """A Senate identity mismatching its locator is refused with both sides carried."""
     wrong = VoteLocator("senate", 119, 2, 1)
     with pytest.raises(VoteIdentityError) as raised:
         parse_senate_vote(SENATE_FIXTURE, wrong)
@@ -316,6 +340,7 @@ def test_senate_identity_refusal_on_a_mismatched_locator():
 
 
 def test_parse_clerk_vote_refuses_a_senate_locator_and_vice_versa():
+    """Each parser refuses the other chamber's locator."""
     with pytest.raises(VoteSourceError, match="'house' locator"):
         parse_clerk_vote(CLERK_FIXTURE, SENATE_LOCATOR)
     with pytest.raises(VoteSourceError, match="'senate' locator"):
@@ -334,6 +359,7 @@ def test_parse_clerk_vote_refuses_a_senate_locator_and_vice_versa():
     ],
 )
 def test_clerk_locator_round_trips_from_a_measured_recorded_vote_url(url):
+    """A measured Clerk recorded-vote URL round-trips to its locator and back."""
     locator = locator_from_recorded_vote_url(url)
     assert locator.chamber == "house" and locator.congress == 119 and locator.session == 1
     assert clerk_url(locator) == url == locator.url()
@@ -347,17 +373,20 @@ def test_clerk_locator_round_trips_from_a_measured_recorded_vote_url(url):
     ],
 )
 def test_senate_locator_round_trips_from_a_measured_recorded_vote_url(url):
+    """A measured Senate recorded-vote URL round-trips to its locator and back."""
     locator = locator_from_recorded_vote_url(url)
     assert locator.chamber == "senate" and locator.congress == 119 and locator.session == 1
     assert senate_url(locator) == url == locator.url()
 
 
 def test_locator_from_url_refuses_an_unrecognized_shape():
+    """An unrecognized URL shape is refused."""
     with pytest.raises(VoteSourceError, match="not a recognized"):
         locator_from_recorded_vote_url("https://example.com/vote.xml")
 
 
 def test_clerk_url_refuses_a_congress_before_the_fixed_session_calendar():
+    """A Clerk congress predating the fixed session calendar is refused."""
     with pytest.raises(VoteSourceError, match="predates the fixed session calendar"):
         clerk_url(VoteLocator("house", 50, 1, 1))
 
@@ -372,6 +401,7 @@ def test_senate_url_refuses_a_congress_before_the_lis_archive_floor():
 
 
 def test_locator_from_url_refuses_a_senate_url_predating_the_archive_floor():
+    """A Senate URL predating the LIS archive floor is refused."""
     with pytest.raises(VoteSourceError, match="predates the LIS archive"):
         locator_from_recorded_vote_url(
             "https://www.senate.gov/legislative/LIS/roll_call_votes/vote0991/vote_099_1_00001.xml"
@@ -379,6 +409,7 @@ def test_locator_from_url_refuses_a_senate_url_predating_the_archive_floor():
 
 
 def test_clerk_url_and_senate_url_each_require_their_own_chamber():
+    """Each URL builder refuses the other chamber's locator."""
     with pytest.raises(VoteSourceError, match="'house' locator"):
         clerk_url(SENATE_LOCATOR)
     with pytest.raises(VoteSourceError, match="'senate' locator"):
@@ -389,6 +420,7 @@ def test_clerk_url_and_senate_url_each_require_their_own_chamber():
 
 
 def test_vote_locator_is_frozen_and_matches_congress_gov_url_grammars():
+    """The locator is frozen and its URLs match the Congress.gov grammars."""
     with pytest.raises(AttributeError):
         CLERK_LOCATOR.congress = 118  # type: ignore[misc]
     assert CLERK_URL_RE.match(CLERK_LOCATOR.url())
@@ -405,12 +437,14 @@ def test_vote_locator_is_frozen_and_matches_congress_gov_url_grammars():
     ],
 )
 def test_vote_locator_validates_its_fields(kwargs):
+    """Invalid locator fields are refused."""
     base = {"chamber": "house", "congress": 119, "session": 1, "roll_number": 240}
     with pytest.raises(VoteSourceError):
         VoteLocator(**{**base, **kwargs})
 
 
 def test_vote_locator_as_vote_key_matches_vote_matching():
+    """as_vote_key equals the VoteKey vote matching uses."""
     from spicy_docs.interpretation.vote_matching import VoteKey
 
     assert CLERK_LOCATOR.as_vote_key() == VoteKey(congress=119, chamber="house", session=1, roll_number=240)
@@ -434,6 +468,7 @@ def test_vote_locator_as_vote_key_matches_vote_matching():
     ],
 )
 def test_clerk_shape_refusals_name_the_failed_check(body, message):
+    """Clerk shape refusals name the failed check."""
     with pytest.raises(VoteSourceError, match=message):
         parse_clerk_vote(body, MINIMAL_LOCATOR)
 
@@ -448,11 +483,13 @@ def test_clerk_shape_refusals_name_the_failed_check(body, message):
     ],
 )
 def test_senate_shape_refusals_name_the_failed_check(body, message):
+    """Senate shape refusals name the failed check."""
     with pytest.raises(VoteSourceError, match=message):
         parse_senate_vote(body, MINIMAL_SENATE_LOCATOR)
 
 
 def test_minimal_bodies_parse_cleanly():
+    """Minimal synthetic bodies parse cleanly with normalized votes."""
     clerk = parse_clerk_vote(CLERK_MINIMAL, MINIMAL_LOCATOR)
     assert clerk.member_votes[0].vote_normalized == "yea"
     senate = parse_senate_vote(SENATE_MINIMAL, MINIMAL_SENATE_LOCATOR)
@@ -475,12 +512,14 @@ SENATE_EMPTY_ROSTER = SENATE_MINIMAL.replace(
 
 
 def test_clerk_vote_with_no_recorded_votes_is_a_refusal_not_an_empty_success():
+    """A Clerk file with zero recorded votes refuses rather than succeeding empty."""
     assert b"<recorded-vote>" not in CLERK_EMPTY_ROSTER  # the mutation actually emptied vote-data
     with pytest.raises(VoteSourceError, match="lists no recorded votes"):
         parse_clerk_vote(CLERK_EMPTY_ROSTER, MINIMAL_LOCATOR)
 
 
 def test_senate_vote_with_no_members_is_a_refusal_not_an_empty_success():
+    """A Senate file with zero members refuses rather than succeeding empty."""
     assert b"<member>" not in SENATE_EMPTY_ROSTER  # the mutation actually emptied members
     with pytest.raises(VoteSourceError, match="lists no members"):
         parse_senate_vote(SENATE_EMPTY_ROSTER, MINIMAL_SENATE_LOCATOR)
@@ -499,6 +538,7 @@ def test_senate_vote_menu_fixture_matches_the_measured_2026_09_19_shape():
 
 
 def test_senate_vote_menu_first_and_last_entries_carry_every_field():
+    """The menu's first and last entries carry every field, including matters empty and full titles."""
     menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
     first, last = menu.votes[0], menu.votes[-1]
 
@@ -528,6 +568,7 @@ def test_senate_vote_menu_first_and_last_entries_carry_every_field():
 
 
 def test_senate_vote_menu_en_bloc_entry_carries_matters_instead_of_a_top_level_issue():
+    """An en-bloc menu entry carries 97 matters instead of top-level issue, question or result."""
     menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
     by_number = {entry.vote_number: entry for entry in menu.votes}
     en_bloc = by_number[655]
@@ -540,6 +581,7 @@ def test_senate_vote_menu_en_bloc_entry_carries_matters_instead_of_a_top_level_i
 
 
 def test_senate_vote_menu_question_measure_is_kept_when_the_question_names_an_amendment():
+    """A question naming an amendment keeps its measure string."""
     menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
     by_number = {entry.vote_number: entry for entry in menu.votes}
     assert by_number[4].question_measure == "S.Amdt. 23"
@@ -561,6 +603,7 @@ def test_senate_vote_menu_refuses_text_after_a_question_measure():
 
 
 def test_senate_vote_menu_identity_refusal_on_a_mismatched_session():
+    """A menu identity mismatching the requested session is refused with both sides carried."""
     with pytest.raises(VoteMenuIdentityError) as raised:
         parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=2)
     assert raised.value.requested == (119, 2)
@@ -568,6 +611,7 @@ def test_senate_vote_menu_identity_refusal_on_a_mismatched_session():
 
 
 def test_senate_vote_menu_minimal_body_parses_cleanly():
+    """A minimal menu body parses to one vote."""
     menu = parse_senate_vote_menu(SENATE_MENU_MINIMAL, congress=119, session=1)
     assert len(menu.votes) == 1 and menu.votes[0].vote_number == 1
 
@@ -582,12 +626,14 @@ SENATE_MENU_EMPTY_ROSTER = SENATE_MENU_MINIMAL.replace(
 
 
 def test_senate_vote_menu_with_no_votes_is_a_refusal_not_an_empty_success():
+    """A menu listing no votes refuses rather than succeeding empty."""
     assert b"<vote>" not in SENATE_MENU_EMPTY_ROSTER  # the mutation actually emptied votes
     with pytest.raises(VoteSourceError, match="lists no votes"):
         parse_senate_vote_menu(SENATE_MENU_EMPTY_ROSTER, congress=119, session=1)
 
 
 def test_senate_vote_menu_url_matches_the_grammar_and_shares_the_archive_floor():
+    """The menu URL matches its grammar and shares the LIS archive floor."""
     url = senate_vote_menu_url(119, 1)
     assert url == "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_119_1.xml"
     with pytest.raises(VoteSourceError, match="predates the Senate LIS archive"):
@@ -610,6 +656,7 @@ def test_locator_from_menu_entry_round_trips_to_the_already_fixtured_vote():
 
 
 def test_locator_from_menu_entry_requires_the_right_types():
+    """Building a locator requires a SenateVoteMenu and a SenateVoteMenuEntry."""
     menu = parse_senate_vote_menu(SENATE_MENU_FIXTURE, congress=119, session=1)
     with pytest.raises(TypeError, match="SenateVoteMenu"):
         locator_from_menu_entry("not-a-menu", menu.votes[0])  # type: ignore[arg-type]
@@ -621,6 +668,8 @@ def test_locator_from_menu_entry_requires_the_right_types():
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -632,6 +681,7 @@ class Transport(httpx.MockTransport):
 
 
 def response(body, status=200, *, content_type="text/xml; charset=UTF-8"):
+    """An HTTPX response over the given vote bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
@@ -639,6 +689,7 @@ BUDGET = VoteBudget(3, DEFAULT_MAX_BYTES, 7, 0)
 
 
 def test_acquirer_captures_exact_clerk_bytes_keyless():
+    """The acquirer captures exact Clerk bytes keyless with 430 members and no key header."""
     transport = Transport(response(CLERK_FIXTURE))
     with VoteAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire(CLERK_LOCATOR)
@@ -651,6 +702,7 @@ def test_acquirer_captures_exact_clerk_bytes_keyless():
 
 
 def test_acquirer_captures_exact_senate_bytes_and_resolves_the_crosswalk():
+    """The acquirer captures exact Senate bytes and resolves the LIS crosswalk."""
     transport = Transport(response(SENATE_FIXTURE))
     with VoteAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire(SENATE_LOCATOR, crosswalk=CURRENT_LEGISLATORS)
@@ -663,6 +715,7 @@ MENU_BUDGET = VoteBudget(3, DEFAULT_MENU_MAX_BYTES, 7, 0)
 
 
 def test_list_senate_votes_captures_the_menu_keyless():
+    """list_senate_votes captures the menu keyless with 10 votes and identity encoding."""
     transport = Transport(response(SENATE_MENU_FIXTURE))
     with VoteAcquirer(budget=MENU_BUDGET, transport=transport) as source:
         result = source.list_senate_votes(119, 1)
@@ -690,6 +743,7 @@ def test_list_senate_votes_identity_refusal_retains_the_fetched_bytes_as_evidenc
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_list_senate_votes_refusal_on_a_keyless_route_is_named_not_a_credential_refusal(status):
+    """A 401/403 on the keyless menu route is named as a public refusal with the body retained."""
     body = b"rate limited"
     transport = Transport(response(body, status, content_type="text/plain"))
     with VoteAcquirer(budget=MENU_BUDGET, transport=transport) as source, pytest.raises(VoteRefusedError) as raised:
@@ -707,6 +761,7 @@ def test_list_senate_votes_refusal_on_a_keyless_route_is_named_not_a_credential_
     ],
 )
 def test_wrong_shape_or_unavailable_vote_never_succeeds(answer, error, message):
+    """A wrong-shape or unavailable vote fails after one request with the chamber in the acquisition context."""
     transport = Transport(answer)
     with VoteAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(error, match=message) as raised:
         source.acquire(CLERK_LOCATOR)
@@ -726,6 +781,9 @@ def test_a_mismatched_locator_refuses_and_retains_the_fetched_bytes_as_evidence(
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_a_public_access_refusal_on_a_keyless_route_is_named_not_a_credential_refusal(status):
+    """A 401/403 on a keyless vote route is named as a public refusal with the body retained, not a credential
+    refusal.
+    """
     body = b"rate limited"
     transport = Transport(response(body, status, content_type="text/plain"))
     with VoteAcquirer(budget=BUDGET, transport=transport) as source, pytest.raises(VoteRefusedError) as raised:
@@ -738,11 +796,13 @@ def test_a_public_access_refusal_on_a_keyless_route_is_named_not_a_credential_re
 
 
 def test_acquire_requires_a_vote_locator():
+    """acquire requires a VoteLocator."""
     with VoteAcquirer(budget=BUDGET, transport=Transport()) as source, pytest.raises(TypeError):
         source.acquire("roll240")  # type: ignore[arg-type]
 
 
 def test_budget_and_client_configuration_are_explicit():
+    """Invalid budget values raise ValueError and a wrong transport type raises TypeError."""
     for fields in ({"max_requests": 0}, {"max_bytes": MAX_VOTE_BYTES + 1}, {"timeout_seconds": 0}):
         with pytest.raises(ValueError):
             VoteBudget(
@@ -763,6 +823,7 @@ def test_budget_and_client_configuration_are_explicit():
 
 @pytest.mark.integration
 def test_live_clerk_vote_meets_the_2026_09_18_measured_floor():
+    """Live: the Clerk vote meets the measured floor with at least 400 members, a digest and one request."""
     budget = VoteBudget(2, DEFAULT_MAX_BYTES, 30, 1.0)
     with VoteAcquirer(budget=budget) as source:
         result = source.acquire(CLERK_LOCATOR)
@@ -773,6 +834,7 @@ def test_live_clerk_vote_meets_the_2026_09_18_measured_floor():
 
 @pytest.mark.integration
 def test_live_senate_vote_meets_the_2026_09_18_measured_floor():
+    """Live: the Senate vote meets the measured floor with at least 90 members, a digest and one request."""
     budget = VoteBudget(2, DEFAULT_MAX_BYTES, 30, 1.0)
     with VoteAcquirer(budget=budget) as source:
         result = source.acquire(SENATE_LOCATOR)

@@ -30,6 +30,7 @@ URL = "https://www.fec.gov/files/bulk-downloads/2024/example.zip"
 
 
 def _capture(raw, *, representation="zip", key="example.zip"):
+    """Build a capture declaration over the given archive bytes."""
     return {
         "requestUrl": URL.replace("example.zip", key),
         "objectKey": "bulk-downloads/2024/" + key,
@@ -41,6 +42,7 @@ def _capture(raw, *, representation="zip", key="example.zip"):
 
 
 def _zip(entries):
+    """Build a stored ZIP archive from the given entries."""
     output = BytesIO()
     with ZipFile(output, "w", compression=ZIP_STORED) as archive:
         archive.comment = b"publisher\xffcomment"
@@ -62,6 +64,7 @@ def _publish(
     output=None,
     profile=PROFILE,
 ):
+    """Publish one bulk release and return its reader and release root."""
     scope = bulk_file_scope(captures, max_members=max_members, max_decoded_bytes=max_decoded_bytes)
     output = output or LocalSourceNativeBlobStore(tmp_path / "output-blobs")
     published = SourceNativeReleasePublisher(
@@ -82,6 +85,7 @@ def _publish(
 
 
 def _inputs(tmp_path, raw, **kwargs):
+    """The capture inputs for one retained bulk fixture."""
     capture = _capture(raw, **kwargs)
     blobs = LocalSourceNativeBlobStore(tmp_path / "originals")
     blobs.put_blob(capture["responseSha256"], len(raw), (raw,))
@@ -89,6 +93,9 @@ def _inputs(tmp_path, raw, **kwargs):
 
 
 def test_retained_bulk_files_keep_complete_native_member_inventory_and_originals(tmp_path):
+    """Retained bulk files keep the complete native member inventory, originals and evidence, with no renditions and
+    the observed-crawl scope.
+    """
     selected = json.loads((FIXTURES / "sources.json").read_bytes())
     captures = [item["capture"] for item in selected]
     blobs = LocalSourceNativeBlobStore(tmp_path / "originals")
@@ -127,6 +134,7 @@ def test_retained_bulk_files_keep_complete_native_member_inventory_and_originals
 
 
 def test_directories_empty_members_and_repeated_names_remain_distinct(tmp_path):
+    """Directories, empty members and repeated names remain distinct by ordinal."""
     entries = [
         ("folder/", b""),
         ("folder/data.txt", b"A|001|\n"),
@@ -152,6 +160,8 @@ def test_directories_empty_members_and_repeated_names_remain_distinct(tmp_path):
 
 
 class _TrackingStream:
+    """A stream that records read sizes and closure."""
+
     def __init__(self, stream, reads):
         self.stream, self.reads = stream, reads
 
@@ -165,6 +175,8 @@ class _TrackingStream:
 
 
 class _TrackingStore(LocalSourceNativeBlobStore):
+    """A store that records opened refs and returns bounded chunks."""
+
     def __init__(self, root):
         super().__init__(root)
         self.reads, self.opens = [], []
@@ -177,6 +189,9 @@ class _TrackingStore(LocalSourceNativeBlobStore):
 
 
 def test_archive_above_old_limit_streams_and_reader_keeps_small_read_bound(tmp_path):
+    """An archive above the old limit streams while the reader keeps its small read bound and refuses an exceeded
+    request limit.
+    """
     # Synthetic stored ZIP proves the stream route engages above the existing byte-page bound.
     raw = _zip([("large.txt", b"x" * (MAX_EVIDENCE_BYTES + 1))])
     captures, blobs = _inputs(tmp_path, raw)
@@ -203,6 +218,8 @@ def test_archive_above_old_limit_streams_and_reader_keeps_small_read_bound(tmp_p
 
 
 def test_member_count_does_not_multiply_original_blob_opens(tmp_path):
+    """Member count does not multiply original blob opens."""
+
     def measure(path, count):
         raw = _zip([(f"{index}.txt", b"content") for index in range(count)])
         captures, blobs = _inputs(path, raw)
@@ -215,6 +232,7 @@ def test_member_count_does_not_multiply_original_blob_opens(tmp_path):
 
 @pytest.mark.parametrize("entries", [[], [("empty", b"")]])
 def test_empty_archive_is_a_file_observation(tmp_path, entries):
+    """An empty archive is still a file observation, not an empty outcome."""
     captures, blobs = _inputs(tmp_path, _zip(entries))
     reader = _publish(tmp_path, captures, blobs)
     (row,) = reader.iter_records()
@@ -224,6 +242,7 @@ def test_empty_archive_is_a_file_observation(tmp_path, entries):
 
 @pytest.mark.parametrize("limit,value", [("max_members", 1), ("max_decoded_bytes", 1)])
 def test_archive_bounds_refuse_before_member_payload_reads(tmp_path, monkeypatch, limit, value):
+    """Archive bounds refuse before any member payload is read."""
     raw = _zip([("a", b"123"), ("b", b"456")])
     captures, blobs = _inputs(tmp_path, raw)
 
@@ -237,6 +256,7 @@ def test_archive_bounds_refuse_before_member_payload_reads(tmp_path, monkeypatch
 
 
 def test_directory_allocation_bound_precedes_zipfile_directory_read():
+    """The directory allocation bound fires before the zipfile directory read."""
     raw = bytearray(_zip([("a", b"x")]))
     end = raw.rfind(b"PK\x05\x06")
     struct.pack_into("<I", raw, end + 12, 1024**3)
@@ -248,6 +268,7 @@ def test_directory_allocation_bound_precedes_zipfile_directory_read():
 
 @pytest.mark.parametrize("damage", ["crc", "truncated", "wrong-format"])
 def test_corrupt_archive_refuses_and_retains_exact_original(tmp_path, damage):
+    """A corrupt archive refuses while retaining the exact original blob."""
     raw = _zip([("data", b"UNIQUE_PAYLOAD")])
     raw = (
         raw.replace(b"UNIQUE_PAYLOAD", b"ALTEREDPAYLOAD")
@@ -267,6 +288,7 @@ def test_corrupt_archive_refuses_and_retains_exact_original(tmp_path, damage):
 
 
 def test_missing_selected_file_and_repeated_object_identity_refuse(tmp_path):
+    """Missing selected files and repeated or differing object identities refuse."""
     raw = _zip([("data", b"row")])
     captures, blobs = _inputs(tmp_path, raw)
     other = {
@@ -296,12 +318,15 @@ def test_missing_selected_file_and_repeated_object_identity_refuse(tmp_path):
     ],
 )
 def test_capture_declaration_refusals(field, value):
+    """Invalid capture declarations are refused."""
     capture = {**_capture(b"x"), field: value}
     with pytest.raises(ValueError):
         bulk_file_scope([capture], max_members=10, max_decoded_bytes=100)
 
 
 def test_pinned_stream_rejects_corrupt_short_and_excess_bytes_and_closes_early():
+    """The pinned stream rejects corrupt, short and excess bytes and closes early."""
+
     class Source:
         closed = False
         value = b"right"
@@ -329,6 +354,7 @@ def test_pinned_stream_rejects_corrupt_short_and_excess_bytes_and_closes_early()
 
 
 def test_opaque_original_is_pinned_without_invented_rows_or_member_format(tmp_path):
+    """An opaque original is pinned with no invented rows or member format."""
     raw = b"CMTE_ID|AMOUNT\nC00000001|000.00\nC00000001|\n"
     captures, blobs = _inputs(tmp_path, raw, representation="opaque", key="data.txt")
     (row,) = _publish(tmp_path, captures, blobs).iter_records()
@@ -336,6 +362,7 @@ def test_opaque_original_is_pinned_without_invented_rows_or_member_format(tmp_pa
 
 
 def test_stream_evidence_requires_explicit_profile_opt_in(tmp_path):
+    """Stream evidence requires an explicit stream profile."""
     captures, blobs = _inputs(tmp_path, _zip([("data", b"row")]))
     profile = replace(PROFILE, parse_page_stream=None, max_evidence_bytes=MAX_EVIDENCE_BYTES)
     with pytest.raises(ValueError, match="explicit stream profile"):
@@ -343,6 +370,8 @@ def test_stream_evidence_requires_explicit_profile_opt_in(tmp_path):
 
 
 def test_nonseekable_output_provider_spools_without_unbounded_reads(tmp_path):
+    """A non-seekable output provider spools in bounded reads."""
+
     class Stream:
         def __init__(self, original):
             self.original = original
@@ -365,6 +394,7 @@ def test_nonseekable_output_provider_spools_without_unbounded_reads(tmp_path):
 
 
 def test_streamed_reader_rechecks_custom_provider_and_refuses_unknown_refs(tmp_path):
+    """The streamed reader rechecks a custom provider and refuses unknown refs and changed bytes."""
     captures, blobs = _inputs(tmp_path, _zip([("data", b"row")]))
     reader = _publish(tmp_path, captures, blobs)
 
@@ -387,6 +417,7 @@ def test_streamed_reader_rechecks_custom_provider_and_refuses_unknown_refs(tmp_p
 
 
 def test_bulk_page_media_and_digest_must_match_selected_capture(tmp_path):
+    """Page media type and digest must match the selected capture."""
     captures, blobs = _inputs(tmp_path, _zip([("data", b"row")]))
     scope = bulk_file_scope(captures, max_members=10, max_decoded_bytes=100)
     (page,) = iter_retained_bulk_files(scope, blob_source=blobs)
@@ -399,6 +430,7 @@ def test_bulk_page_media_and_digest_must_match_selected_capture(tmp_path):
 
 @pytest.mark.parametrize("compression", [0, 8])
 def test_understated_member_size_and_prefix_crc_cannot_hide_payload(tmp_path, compression):
+    """An understated member size or prefix CRC cannot hide payload."""
     output = BytesIO()
     with ZipFile(output, "w", compression=compression) as archive:
         archive.writestr("data", b"hidden body")
@@ -418,6 +450,7 @@ def test_understated_member_size_and_prefix_crc_cannot_hide_payload(tmp_path, co
 
 @pytest.mark.parametrize("compression", [0, 8])
 def test_complete_member_decoder_preserves_empty_and_large_outputs(tmp_path, compression):
+    """The complete member decoder preserves empty and large outputs."""
     output = BytesIO()
     expected = [b"", b"many bytes " * 100_000]
     with ZipFile(output, "w", compression=compression) as archive:
@@ -432,6 +465,7 @@ def test_complete_member_decoder_preserves_empty_and_large_outputs(tmp_path, com
 
 @pytest.mark.parametrize("compression", [12, 14])
 def test_compressors_without_bounded_decoding_refuse(tmp_path, compression):
+    """Compressors without bounded decoding are refused."""
     output = BytesIO()
     with ZipFile(output, "w", compression=compression) as archive:
         archive.writestr("data", b"body")
@@ -441,6 +475,7 @@ def test_compressors_without_bounded_decoding_refuse(tmp_path, compression):
 
 
 def test_writer_failure_closes_source_iterator_before_error_returns(tmp_path):
+    """A writer failure closes the source iterator before the error returns."""
     raw = _zip([("data", b"row")])
     captures = [_capture(raw)]
 
@@ -469,6 +504,7 @@ def test_writer_failure_closes_source_iterator_before_error_returns(tmp_path):
 
 @pytest.mark.parametrize("suffix", ["%FF.zip", "%FE.zip", "%E2%98%83.zip"])
 def test_bulk_native_identity_refuses_lossy_or_unsupported_decoding(suffix):
+    """Bulk native identity refuses lossy or unsupported decoding."""
     # Match the old lossy decoding so unrelated object-key mismatch cannot mask the guard.
     old_name = "☃.zip" if suffix == "%E2%98%83.zip" else "�.zip"
     capture = {
@@ -482,6 +518,7 @@ def test_bulk_native_identity_refuses_lossy_or_unsupported_decoding(suffix):
 
 @pytest.mark.parametrize("encoding", ["identity", "Identity", "  IDENTITY  "])
 def test_identity_length_witness_disagreement_refuses_opaque_capture(encoding):
+    """A length-witness disagreement refuses an opaque capture."""
     capture = {**_capture(b"short", representation="opaque"), "contentEncoding": encoding, "contentLength": "100"}
     with pytest.raises(ValueError, match="Content-Length differs"):
         bulk_file_scope([capture], max_members=10, max_decoded_bytes=100)

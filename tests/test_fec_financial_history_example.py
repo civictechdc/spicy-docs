@@ -1,3 +1,11 @@
+"""Known-answer bounds, refusal and resume controls for the financial-history example.
+
+Pins selected-population bounding with original headers, zero-byte and missing
+objects as explicit outcomes, refresh reuse of unchanged success, prior-pin and
+selector rejection, access refusal stopping later downloads, and a rejected
+second listing retaining its exact failure and prior pages.
+"""
+
 import hashlib
 import json
 from copy import deepcopy
@@ -14,6 +22,7 @@ from spicy_docs.sources.fec.client import FecClient
 
 
 def source(year=2024, *, etag='"first"', size=20):
+    """One listing row for the given year."""
     key = f"bulk-downloads/{year}/CommunicationCosts_{year}.csv"
     return {
         "key": key,
@@ -25,6 +34,8 @@ def source(year=2024, *, etag='"first"', size=20):
 
 
 class Client:
+    """A scripted client recording downloads and serving queued listings."""
+
     def __init__(self, rows, *, failed=(), listing_failure=False):
         self.rows = rows
         self.failed = failed
@@ -59,6 +70,7 @@ class Client:
 
 
 def test_selected_population_bounds_and_original_headers_preserved(tmp_path):
+    """A selected population is bounded and keeps the original listing headers."""
     row = source()
     row["future_source_field"] = {"empty": [], "null": None}
     ignored = dict(source(2022), key="bulk-downloads/2022/indiv22.zip")
@@ -74,6 +86,7 @@ def test_selected_population_bounds_and_original_headers_preserved(tmp_path):
 
 @pytest.mark.parametrize("bounds", [{"max_bytes": 19}, {"max_objects": 1}])
 def test_exceeded_bound_transfers_nothing(tmp_path, bounds):
+    """An exceeded bound transfers nothing and marks every object not-requested."""
     client = Client([source(), source(2022)])
     result = capture(client, tmp_path / "out", **bounds)
     assert not result["acquisition_complete"]
@@ -82,6 +95,7 @@ def test_exceeded_bound_transfers_nothing(tmp_path, bounds):
 
 
 def test_incomplete_enumeration_never_downloads_or_claims_completion(tmp_path):
+    """Incomplete enumeration downloads nothing and claims no completion."""
     client = Client([source()], listing_failure=True)
     result = capture(client, tmp_path / "out")
     assert not result["enumeration_complete"] and not result["acquisition_complete"]
@@ -89,6 +103,7 @@ def test_incomplete_enumeration_never_downloads_or_claims_completion(tmp_path):
 
 
 def test_refresh_reuses_only_unchanged_success_and_retains_old_body_observation(tmp_path):
+    """Refresh reuses only unchanged successes and retains the prior body observation."""
     rows = [source(year) for year in (2020, 2022, 2024)]
     prior = capture(Client(rows, failed=[rows[1]["url"]]), tmp_path / "prior")
     current = [rows[0], rows[1], dict(rows[2], etag='"changed"'), source(2026)]
@@ -107,6 +122,7 @@ def test_refresh_reuses_only_unchanged_success_and_retains_old_body_observation(
 
 
 def test_missing_key_and_zero_byte_object_are_explicit(tmp_path):
+    """A missing key and a zero-byte object are explicit outcomes that block completion."""
     prior = capture(Client([source(2022)]), tmp_path / "prior")
     client = Client([source(size=0)])
     result = capture(client, tmp_path / "current", previous=prior)
@@ -117,6 +133,7 @@ def test_missing_key_and_zero_byte_object_are_explicit(tmp_path):
 
 
 def test_changed_prior_pin_and_unrelated_selector_rejected(tmp_path):
+    """A changed prior pin and an unrelated selector are rejected."""
     result = capture(Client([source()]), tmp_path / "out")
     path = tmp_path / "prior.json"
     path.write_text(json.dumps(result))
@@ -132,6 +149,7 @@ def test_changed_prior_pin_and_unrelated_selector_rejected(tmp_path):
 
 
 def listing(prefix, *, truncated=False):
+    """A listing payload over the given rows."""
     keys = [source(2022), source(2024)] if prefix == PREFIXES[1] else []
     if prefix == PREFIXES[0] and truncated:
         keys = [source(1998)]
@@ -151,6 +169,7 @@ def listing(prefix, *, truncated=False):
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_real_access_refusal_stops_later_downloads_with_etag(tmp_path, status):
+    """A real access refusal stops later downloads and leaves them not-requested."""
     downloads = []
 
     def handler(request):
@@ -167,6 +186,7 @@ def test_real_access_refusal_stops_later_downloads_with_etag(tmp_path, status):
 
 
 def test_rejected_second_listing_retains_exact_failure_and_prior_pages(tmp_path):
+    """A rejected second listing retains its exact failure evidence and the prior pages."""
     bad = b"<not-an-s3-listing>"
 
     def handler(request):

@@ -2,38 +2,33 @@
 
 ``https://www.supremecourt.gov/opinions/slipopinion/{code}`` lists one term's
 opinions with release number, decision date, docket number, case name, holding,
-authoring Justice and reporter citation, and links each opinion's official PDF.
-The site serves this keyless and, measured 2026-09-14, without demanding a
-browser user agent: eleven requests, all ``200``.
+authoring Justice and reporter citation, and links each official PDF. The site
+serves this keyless and, measured 2026-09-14, without demanding a browser user
+agent: eleven requests, all ``200``.
 
 Two routes, both bounded and both O(B) in the bytes captured: the term index
 with its rows parsed, and one document the retained index stated. Nothing here
-is written or published; the caller keeps ``capture.body``.
-
-What the 2026-09-14 pins established, and why the checks below are shaped as
-they are. The measurements are in
-``corpora/supply-2026-09-02/receipts/port-P02-supreme-court-2026-09-14/``:
+is written or published; the caller keeps ``capture.body``. What the 2026-09-14
+pins established (receipts in
+``corpora/supply-2026-09-02/receipts/port-P02-supreme-court-2026-09-14/``), and
+why the checks below are shaped as they are:
 
 * **An index capture is one render at one instant.** The same URL answered two
-  renders 2.5 minutes apart -- 66 links and nine unlinked rows, then 76 links --
-  both ``cdn-cache: HIT`` with the same ``Last-Modified``. A later capture is
-  not a check on an earlier one, and a link is only *what a retained index
-  stated*. Links are kept byte-exact: two renders offered
-  ``608us1r36d_febh.pdf`` and ``608us1r36d_21o3.pdf`` for one row, and both
-  serve, with different lengths -- the trailing token is a revision, not a
-  cache-buster. No URL here is ever derived from a docket number.
+  different renders 2.5 minutes apart, so a later capture is not a check on an
+  earlier one and a link is only *what a retained index stated*. Links are kept
+  byte-exact: two renders named different revision tokens for one row and both
+  serve. No URL is ever derived from a docket number.
 * **The publisher's term statement, not the caller's loop, names the term.** The
-  salvaged SpicyRegs reader records (2026-08-22) a client that asked for OT2021
-  and was served OT2023: sixty correctly parsed rows about to be stamped with
-  the wrong term. That did not reproduce on 2026-09-14 and the checks stay: the
-  page must state ``Term Year: {year}``, every slip link must sit under
-  ``/opinions/{code}pdf/``, and every decision date must fall in the term's
-  window. ``BoundedHttpCapture`` keeps one client per acquirer and does not
-  clear cookies between operations, which is the condition that was seen.
+  salvaged SpicyRegs reader records a client that asked for OT2021 and was
+  served OT2023: sixty correctly parsed rows about to be stamped with the wrong
+  term. The checks stay: the page must state ``Term Year: {year}``, every slip
+  link must sit under ``/opinions/{code}pdf/``, and every decision date must
+  fall in the term's window. ``BoundedHttpCapture`` keeps one client per
+  acquirer without clearing cookies, the condition that was seen.
 * **Rows without an opinion link are rows.** Ten of 72 OT2025 rows stated no
-  opinion link, one of them offering only a revision diff. Reading the first
-  anchor in the name cell, as the salvaged reader does, makes that row's case
-  name ``6/28/26``. Unlinked rows are kept with ``pdf_url`` absent.
+  opinion link, one offering only a revision diff; reading the first anchor in
+  the name cell, as the salvaged reader does, makes that row's case name
+  ``6/28/26``. Unlinked rows are kept with ``pdf_url`` absent.
 
 Ported from the salvaged SpicyRegs reader with its term-code rule, link guard
 and term assertion. Its page-*end* assignment is deliberately not ported: an

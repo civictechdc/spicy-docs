@@ -63,7 +63,19 @@ def diff_measures(previous: Mapping[str, Any], current: Mapping[str, Any]) -> li
 # --- rendering -----------------------------------------------------------------
 
 
+def _unit_coverage(unit: str, earliest: int) -> str:
+    """The floor cell for a measured descent unit; an unknown unit refuses rather than mislabeling the floor."""
+    if unit == "congress":
+        return f"{_ordinal(earliest)} Congress+"
+    if unit == "volume":
+        return f"vol. {earliest}+"
+    if unit == "year":
+        return f"{earliest}+"
+    raise ValueError(f"unknown descent unit {unit!r}; add its rendering here")
+
+
 def _congress_cells(facts: Mapping[str, Any]) -> tuple[str, str]:
+    """The coverage and count cells for one Congress.gov route: floor, stop reason and newest update date."""
     if "totalError" in facts and "earliest" not in facts:
         return "error", facts["totalError"].get("message", "")[:60]
     total = facts.get("total")
@@ -72,6 +84,8 @@ def _congress_cells(facts: Mapping[str, Any]) -> tuple[str, str]:
     path = facts.get("descentPath", "")
     if earliest is None:
         coverage = "" if not path else f"none found ({facts.get('descentStop')})"
+    elif facts.get("descentUnit") is not None:
+        coverage = _unit_coverage(facts["descentUnit"], earliest)
     elif "daily" in path:
         coverage = f"vol. {earliest}+"
     elif "bound" in path:
@@ -89,6 +103,7 @@ def _congress_cells(facts: Mapping[str, Any]) -> tuple[str, str]:
 
 
 def _govinfo_cells(measures: Mapping[str, Any], code: str) -> tuple[str, str]:
+    """The coverage and count cells for one GovInfo collection: API floor, bulkdata range and sizes."""
     inventory = measures.get("collections", {}).get(code, {})
     coverage = measures.get("coverage", {}).get(code, {})
     bulk = measures.get("bulkdata", {}).get(code)
@@ -121,6 +136,7 @@ def _govinfo_cells(measures: Mapping[str, Any], code: str) -> tuple[str, str]:
 
 
 def _sample_cells(facts: Mapping[str, Any]) -> tuple[str, str]:
+    """The count/sample cell for one keyless sample: refusals, or size plus the shape the payload states."""
     if "error" in facts:
         reason = facts.get("message", facts["error"]).split(";")[0][:70]
         return "", f"sample refused: HTTP {facts['statusCode']}" if facts.get(
@@ -156,6 +172,7 @@ def _sample_cells(facts: Mapping[str, Any]) -> tuple[str, str]:
 
 
 def _cells(row: Row, measures: Mapping[str, Any]) -> tuple[str, str]:
+    """Dispatch a row's measure to the cell builder for its kind; rows with no measure render blank."""
     if row.measure is None:
         return "", ""
     kind, key = row.measure
@@ -180,6 +197,7 @@ TABLES = {
 
 
 def render_tables(measures: Mapping[str, Any]) -> str:
+    """The generated markdown block for one measurements sidecar, markers included."""
     lines = [MARK_START, ""]
     generated = measures.get("generatedAt", "")
     lines.append(
@@ -242,6 +260,7 @@ def render_tables(measures: Mapping[str, Any]) -> str:
 
 
 def rewrite_map(path: Path, tables: str) -> None:
+    """Replace the text between the marker comments in ``path``; exits if either marker is missing."""
     text = path.read_text()
     start, end = text.find(MARK_START), text.find(MARK_END)
     if start < 0 or end < 0 or end < start:
@@ -304,17 +323,16 @@ def _note_symbols(note: str) -> list[str]:
 
 
 def _defines(texts: list[str], name: str) -> bool:
+    """True when any text defines ``name`` with ``def`` or ``class``."""
     return any(re.search(rf"\b(?:def|class)\s+{re.escape(name)}\b", text) for text in texts)
 
 
 def check_evidence(root: Path) -> None:
-    """Every `have` or `port` row names a repo path that exists and whose text states what the row claims.
+    """Refuse (exit 2) unless every `have`/`port` row's evidence states what the row claims.
 
-    Two narrower claims get their own check, because a route's or a symbol's *name* is a specific,
-    checkable fact, and a row has previously been wrong about both while still citing a real file: a row
-    citing `congress/listing.py` for a route (its `measure` key) must name a live `LIST_ROUTES` key, not
-    a plausible-looking string, and a function or class the note names (backtick, PascalCase or
-    snake_case) must actually be defined in one of the row's evidence files.
+    Beyond path existence and a proof phrase, two narrow claims are checked separately because a row has
+    previously been wrong about both while citing a real file: a `congress/listing.py` measure key must be
+    a live `LIST_ROUTES` key, and a function or class the note names must be defined in an evidence file.
     """
     missing = [(row.data, p) for row in ROWS for p in row.evidence if not (root / p).exists()]
     claims = [row.data for row in ROWS if row.status.startswith(("have", "port")) and not row.evidence]
@@ -349,6 +367,7 @@ def check_evidence(root: Path) -> None:
 
 
 def _revision(root: Path) -> str:
+    """The short HEAD hash of the repo at ``root``, or ``"unknown"`` outside git."""
     result = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"], cwd=root, capture_output=True, text=True, check=False
     )

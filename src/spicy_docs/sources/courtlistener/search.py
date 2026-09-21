@@ -1,11 +1,10 @@
 """CourtListener v4 search: RECAP dockets and opinion clusters, page by page with exact evidence.
 
-The public ``/search/`` endpoint answers ``count``, ``next`` and ``results``;
-``next`` carries an opaque cursor, and cursor pagination requires ``dateFiled``
-ordering. Keyless requests are served at a lower rate limit; a token travels
-as ``Authorization: Token <token>``. ``type=r`` lists RECAP dockets (with a
-``document_count`` beside ``count``); ``type=o`` lists opinion clusters. The
-bulk exports remain the route for whole-collection work.
+The public ``/search/`` endpoint answers ``count``, ``next`` and ``results`` with an opaque cursor,
+and cursor pagination requires ``dateFiled`` ordering; ``type=r`` lists RECAP dockets (with a
+``document_count`` beside ``count``) and ``type=o`` lists opinion clusters. Keyless requests are
+served at a lower rate limit and a token travels as ``Authorization: Token <token>``, while the bulk
+exports remain the route for whole-collection work.
 """
 
 from __future__ import annotations
@@ -70,6 +69,9 @@ def search_url(
     nature_of_suit: str | None = None,
     q: str | None = None,
 ) -> str:
+    """Build one canonical search URL, refusing a bad kind, non-``dateFiled`` ordering, an invalid
+    court identifier and query values over 512 characters.
+    """
     if kind not in ("r", "o"):
         raise PagedJsonSourceError("kind must be 'r' (RECAP dockets) or 'o' (opinion clusters)")
     if order_by not in ("dateFiled asc", "dateFiled desc"):
@@ -92,6 +94,8 @@ def search_url(
 
 
 class CourtListenerSearchReader(PagedJsonReader):
+    """Read one CourtListener search URL through the shared paged-JSON reader."""
+
     def __init__(
         self,
         *,

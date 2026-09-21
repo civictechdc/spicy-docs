@@ -1,24 +1,11 @@
-"""The citation rules, and the two activity reports they are pinned on.
+"""The citation rules and the two activity reports they are pinned on.
 
-Three things are asserted here and nowhere else:
-
-1. **Each rule rejects its own lookalikes.** A rule that widened into prose
-   fails here rather than showing up as a high hit rate in a report.
-2. **A span means what it says.** Re-reading the normalized text at each
-   finding's offsets returns the matched text, and the page attribution agrees
-   with an independently computed page map.
-3. **The library and the measurement agree.** The per-print counts the
-   2026-09-20 rollup sidecar records for CRPT-118hrpt968 -- 179 distinct
-   bills, 3 public laws, 9 printed committee candidates of which 8 occurrences
-   settle to a ``system_code`` -- are reproduced by
-   ``interpretation.citations`` from the same retained text.
-
-The fixtures are two of the eight activity reports that measurement read,
-rebuilt from its retained bytes and never re-fetched: the normalized text
-whose digest the sidecar states, a provenance sidecar holding the page lengths
-that rejoin to it, and the package summary and MODS, the MODS reduced to its
-root record.  ``tests/fixtures/document_citations/*.json`` names every digest
-and both receipts.
+Each rule rejects its own lookalikes; re-reading normalized text at every
+finding's offsets returns the matched text, and page attribution agrees with an
+independently computed page map; and the library reproduces the 2026-09-20
+rollup sidecar's per-print counts (179 distinct bills, 3 public laws, 9 printed
+committee candidates of which 8 resolve). Fixtures are two of the eight reports
+that measurement read, rebuilt from its retained bytes, never re-fetched.
 """
 
 from __future__ import annotations
@@ -82,6 +69,7 @@ class FixtureBody:
 
 
 def provenance(package: str) -> dict:
+    """The fixture's recorded provenance sidecar."""
     return json.loads((CITATION_FIXTURES / f"{package}.json").read_text())
 
 
@@ -97,6 +85,7 @@ def body_for(package: str) -> FixtureBody:
 
 
 def summary_for(package: str):
+    """The retained package summary for a package id."""
     return validate_package_summary(
         (CITATION_FIXTURES / f"summary-{package}.json").read_bytes(),
         package=package,
@@ -106,6 +95,7 @@ def summary_for(package: str):
 
 
 def mods_for(package: str):
+    """The retained package MODS for a package id."""
     return validate_package_mods(
         (CITATION_FIXTURES / f"mods-{package}.xml").read_bytes(),
         package=package,
@@ -127,6 +117,7 @@ def rosters() -> tuple[tuple[str, str], ...]:
 
 
 def citations_for(package: str):
+    """Every citation the shared rules find in a fixture's retained text."""
     body = body_for(package)
     return find_citations(
         body.text,
@@ -142,6 +133,7 @@ def citations_for(package: str):
 
 
 def test_every_rule_rejects_its_own_lookalikes() -> None:
+    """Every rule rejects every string in its own lookalike list."""
     assert rejected_lookalikes() == {}
 
 
@@ -232,6 +224,7 @@ def test_deleting_a_reject_moves_the_rule_set_digest() -> None:
 
 @pytest.mark.parametrize("package", [DENSE, TRUNCATED])
 def test_every_span_re_reads_as_its_own_matched_text(package: str) -> None:
+    """Re-reading the normalized text at each finding's offsets returns its matched text."""
     body = body_for(package)
     findings = citations_for(package)
     assert findings
@@ -259,6 +252,7 @@ def test_the_page_a_span_is_attributed_to_is_the_page_holding_it(package: str) -
 
 
 def test_a_rendition_with_no_page_boundary_reports_no_page() -> None:
+    """Without a page map, findings report no page and an unresolved key."""
     findings = find_citations("The Committee reported H.R. 471 to the House.", congress=119)
     assert [finding.page for finding in findings] == [None]
     assert findings[0].target_key == "119-hr-471"
@@ -271,6 +265,7 @@ def test_a_page_split_that_does_not_rejoin_is_refused() -> None:
 
 
 def test_page_starts_is_the_join_it_claims_to_be() -> None:
+    """page_starts offsets rejoin the pages exactly."""
     pages = ("alpha", "", "gamma")
     starts = page_starts(pages)
     text = "\n".join(pages)
@@ -301,6 +296,7 @@ def test_a_bill_key_is_built_only_from_a_stated_congress() -> None:
     ],
 )
 def test_the_bill_type_split_prefers_the_longer_name(printed: str, expected: str) -> None:
+    """Bill-type splitting prefers the longer type name."""
     (finding,) = find_citations(printed, kinds=("bill_number",), congress=119)
     assert finding.target_key == expected
 
@@ -325,11 +321,13 @@ def test_the_bill_type_split_prefers_the_longer_name(printed: str, expected: str
     ],
 )
 def test_each_kind_reaches_its_stated_key_shape(kind: str, printed: str, expected: str) -> None:
+    """Each kind's target key matches its documented shape and resolves."""
     (finding,) = find_citations(printed, kinds=(kind,))
     assert (finding.target_key, finding.target_resolved) == (expected, True)
 
 
 def test_an_unknown_kind_is_refused_rather_than_ignored() -> None:
+    """An unknown kind is refused rather than ignored."""
     with pytest.raises(CitationError, match="no such citation rule"):
         find_citations("anything", kinds=("bill_numbers",))
 
@@ -340,6 +338,7 @@ def test_an_unknown_kind_is_refused_rather_than_ignored() -> None:
 
 
 def test_the_resolver_settles_a_name_four_ways_and_names_the_route() -> None:
+    """The committee resolver settles names through four routes and names which route settled each."""
     # Two committees share the FOREIG prefix, the way the real rosters do, so
     # route 2 cannot settle a short fragment and route 4 has to.
     vocabulary = (
@@ -380,6 +379,7 @@ def test_the_resolver_settles_a_name_four_ways_and_names_the_route() -> None:
     ],
 )
 def test_a_candidate_that_continues_into_a_longer_name_is_refused(candidate: str) -> None:
+    """A candidate that continues into a longer roster name stays unresolved."""
     outcome = resolve_committee_names([candidate], rosters())[candidate]
     assert (outcome.system_code, outcome.route) == (None, "unresolved")
 
@@ -403,6 +403,7 @@ def test_the_resolver_takes_its_vocabulary_and_reads_no_file() -> None:
 
 
 def test_an_unresolved_committee_is_kept_as_evidence_not_dropped() -> None:
+    """An unresolved committee cite is kept as evidence under its own rule, not dropped."""
     (finding,) = find_citations("Committee on China", kinds=("committee_name",), committees=rosters())
     assert (finding.target_key, finding.target_resolved, finding.target_rule) == (
         "COMMITTEEONCHINA",
@@ -412,16 +413,19 @@ def test_an_unresolved_committee_is_kept_as_evidence_not_dropped() -> None:
 
 
 def test_a_finding_names_the_route_its_committee_key_came_from() -> None:
+    """A committee finding's target_rule names the route that produced its key."""
     (finding,) = find_citations("Committee on Foreign Affairs", kinds=("committee_name",), committees=rosters())
     assert (finding.target_key, finding.target_rule) == ("hsfa00", "exact")
 
 
 def test_every_other_kind_reports_its_own_rule_name_as_the_route() -> None:
+    """Non-committee kinds report their rule name as the route."""
     (finding,) = find_citations("H.R. 471", kinds=("bill_number",), congress=119)
     assert finding.target_rule == "bill_number"
 
 
 def test_the_pinned_rosters_reach_both_chambers() -> None:
+    """The pinned rosters resolve committee names from both chambers."""
     vocabulary = dict(rosters())
     assert vocabulary["COMMITTEEONFOREIGNAFFAIRS"] == "hsfa00"
     assert vocabulary["COMMITTEEONCOMMERCESCIENCEANDTRANSPORTATION"] == "sscm00"
@@ -596,6 +600,7 @@ def test_a_kind_the_mods_vocabulary_cannot_state_is_left_out_of_the_comparison(k
 
 
 def test_a_row_of_an_uncomparable_kind_carries_a_null_rather_than_false() -> None:
+    """A row of an uncomparable kind carries NULL rather than false."""
     from spicy_docs.schemas.document_citation_tables import (
         GOVINFO_PACKAGE,
         document_provenance,
@@ -648,6 +653,7 @@ def test_the_submitter_is_read_and_its_absent_id_is_not_invented() -> None:
 
 
 def test_the_related_reports_are_read_as_package_ids() -> None:
+    """Related reports are read as package ids carrying their congress."""
     reports = mods_for(DENSE).reports
     assert len(reports) == 11
     assert reports[0].package_id == "CRPT-118hrpt29"
@@ -675,6 +681,7 @@ def _mods_bytes(extension: str) -> bytes:
 
 
 def _inline_mods(extension: str):
+    """Build a minimal MODS body around the given inline markup."""
     return validate_package_mods(
         _mods_bytes(extension),
         package=DENSE,
@@ -694,6 +701,7 @@ def test_a_committee_without_an_authority_id_is_skipped() -> None:
 
 
 def test_a_committee_falls_back_to_whatever_name_it_states() -> None:
+    """A committee with no authority id falls back to its stated name."""
     mods = _inline_mods('<congCommittee authorityId="hsru00"><name type="authority-short">Rules</name></congCommittee>')
     assert mods.committees[0].name == "Rules"
 
@@ -713,11 +721,13 @@ def test_a_law_without_a_numeric_congress_and_number_is_skipped(law: str) -> Non
 
 
 def test_a_private_law_keeps_the_publishers_own_flag() -> None:
+    """A private law keeps the publisher's own private/public flag."""
     mods = _inline_mods('<law congress="118" isPrivate="true" number="3"/><law congress="118" number="4"/>')
     assert [(law.number, law.law_type) for law in mods.laws] == [("3", "private"), ("4", "public")]
 
 
 def test_a_us_code_block_with_no_title_or_no_section_number_yields_nothing() -> None:
+    """A USCode block missing its title or section number yields no sections."""
     assert _inline_mods('<USCode><section number="190"/></USCode>').usc_sections == ()
     assert _inline_mods('<USCode title="2"><section detail="(d)"/></USCode>').usc_sections == ()
     assert _inline_mods('<USCode title="5"><chapter number="8"/></USCode>').usc_sections == ()
@@ -752,6 +762,7 @@ def test_the_cfr_statute_and_rin_readers_produce_the_keys_the_rules_compare_on()
 
 
 def test_a_cfr_or_statute_block_missing_its_outer_number_yields_nothing() -> None:
+    """CFR, statute and RIN blocks missing their outer number yield nothing."""
     assert _inline_mods('<cfr><part number="60"/></cfr>').cfr_parts == ()
     assert _inline_mods('<statuteAtLarge><page pages="1234"/></statuteAtLarge>').statutes == ()
     assert _inline_mods("<rin/>").rins == ()

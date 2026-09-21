@@ -1,4 +1,10 @@
-"""The shared paged-JSON reader keeps exact pages and refuses silent or inconsistent ends."""
+"""The shared paged-JSON reader: exact page capture, credential handling and traversal refusals.
+
+Pins that a key travels only as a header and page bytes are kept verbatim, that
+declared counts, continuations and content types are checked (empty success is
+not absence), and the four walk kinds -- URL next, POST page number, offset and
+boolean has-next -- with their bounds and refusals.
+"""
 
 import json
 from dataclasses import replace
@@ -57,6 +63,7 @@ def reader(transport, **kwargs):
 
 
 def test_credential_travels_only_as_a_header_and_pages_carry_exact_bytes():
+    """The key travels only as a header, page bytes are kept exactly, and page index, records and count follow."""
     first = page([{"id": 1}, {"id": 2}], count=3, next_url="https://api.example.gov/v1/things?limit=2&offset=2")
     second = page([{"id": 3}], count=3)
     transport = Transport(response(first), response(second))
@@ -73,8 +80,7 @@ def test_credential_travels_only_as_a_header_and_pages_carry_exact_bytes():
 
 
 def test_a_single_object_under_the_records_key_reads_as_one_record_page():
-    """A detail route answers one record, not a list; the reader wraps it when the caller opts
-    in with single_record, rather than refusing."""
+    """A detail route's single object reads as a one-record page when the caller opts in with ``single_record``."""
     body = json.dumps({"things": {"id": 1, "name": "widget"}}).encode()
     transport = Transport(response(body))
     with reader(transport) as source:
@@ -84,9 +90,7 @@ def test_a_single_object_under_the_records_key_reads_as_one_record_page():
 
 
 def test_a_wrapper_object_without_single_record_still_refuses():
-    """single_record is opt-in, not a blanket rule: a caller that does not ask for it still gets
-    the pre-existing refusal when records_key resolves to an object instead of a list -- the
-    same shape a caller's own wrong or mismatched records_key could produce by accident."""
+    """``single_record`` is opt-in: an object at ``records_key`` still refuses without it."""
     body = json.dumps({"things": {"id": 1, "name": "widget"}}).encode()
     transport = Transport(response(body))
     with (
@@ -129,6 +133,7 @@ def test_a_wrapper_object_without_single_record_still_refuses():
     ],
 )
 def test_page_shape_and_traversal_refusals(responses, message):
+    """Count mismatches, repeated continuations, bad hosts or credentials, wrong types and non-objects all refuse."""
     transport = Transport(*responses)
     with reader(transport) as source, pytest.raises(PagedJsonSourceError, match=message) as raised:
         list(source.pages(URL, records_key="things"))
@@ -136,9 +141,7 @@ def test_page_shape_and_traversal_refusals(responses, message):
 
 
 def test_a_traversal_refusals_context_carries_single_record_too():
-    """The traversal-level refuse() context (pages()'s own, not just page()'s) carries
-    singleRecord alongside recordsKey, the same shape a page refusal's context uses -- so a
-    receipt from either operation is read the same way."""
+    """A traversal-level refusal's context carries ``singleRecord`` and ``recordsKey`` like a page refusal's."""
     transport = Transport(response(page([{"id": 1}], count=2)))
     with (
         reader(transport) as source,
@@ -152,8 +155,7 @@ def test_a_traversal_refusals_context_carries_single_record_too():
 
 
 def test_an_empty_object_still_refuses_with_single_record_too():
-    """The single_record twin of the {"things": {}} case above: opting in does not turn an
-    empty object into a record. Empty success is not absence."""
+    """An empty object at ``records_key`` refuses even with ``single_record``: empty success is not absence."""
     body = b'{"things": {}, "paging": {"count": 1}}'
     transport = Transport(response(body))
     with (
@@ -164,6 +166,7 @@ def test_an_empty_object_still_refuses_with_single_record_too():
 
 
 def test_page_bound_reached_before_terminal_page_refuses_rather_than_ending():
+    """Reaching ``max_pages`` before a terminal page refuses rather than ending the walk."""
     transport = Transport(
         response(page([{"id": 1}], count=3, next_url="https://api.example.gov/v1/things?offset=1")),
         response(page([{"id": 2}], count=3, next_url="https://api.example.gov/v1/things?offset=2")),
@@ -174,6 +177,7 @@ def test_page_bound_reached_before_terminal_page_refuses_rather_than_ending():
 
 
 def test_zero_count_is_an_observation_not_absence():
+    """A declared count of zero yields one empty page, not absence."""
     transport = Transport(response(page([], count=0)))
     with reader(transport) as source:
         pages = list(source.pages(URL, records_key="things"))
@@ -181,6 +185,7 @@ def test_zero_count_is_an_observation_not_absence():
 
 
 def test_credential_echo_is_refused_without_retaining_bytes():
+    """A page echoing the credential refuses without retaining bytes or a capture."""
     transport = Transport(response(page([{"token": KEY}], count=1)))
     with reader(transport) as source, pytest.raises(CredentialRefusedError) as raised:
         source.page(URL, records_key="things")
@@ -190,6 +195,7 @@ def test_credential_echo_is_refused_without_retaining_bytes():
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_access_refusal_aborts(status):
+    """A 401 or 403 aborts as a credential refusal."""
     transport = Transport(httpx.Response(status, stream=httpx.ByteStream(b"")))
     with reader(transport) as source, pytest.raises(CredentialRefusedError):
         source.page(URL, records_key="things")
@@ -197,6 +203,7 @@ def test_access_refusal_aborts(status):
 
 @pytest.mark.parametrize("status", [404, 410])
 def test_unavailable_page_keeps_its_capture(status):
+    """A 404 or 410 keeps its capture as unavailable evidence."""
     transport = Transport(response(b"gone", status))
     with reader(transport) as source, pytest.raises(PagedJsonUnavailableError) as raised:
         source.page(URL, records_key="things")
@@ -204,6 +211,7 @@ def test_unavailable_page_keeps_its_capture(status):
 
 
 def test_retry_then_success_consumes_the_page_budget_and_exhaustion_is_not_absence():
+    """A 503 retries within budget and succeeds; exhaustion refuses rather than reading as absence."""
     transport = Transport(response(page([], count=0), status=503), response(page([], count=0)))
     with reader(transport) as source:
         first = source.page(URL, records_key="things")
@@ -224,6 +232,7 @@ def test_retry_then_success_consumes_the_page_budget_and_exhaustion_is_not_absen
     ],
 )
 def test_first_url_must_be_the_publisher_route_without_a_credential(url):
+    """The first URL must be HTTPS on the family's host with no credential parameter; nothing is requested otherwise."""
     transport = Transport()
     with reader(transport) as source, pytest.raises(PagedJsonSourceError):
         list(source.pages(url, records_key="things"))
@@ -231,6 +240,7 @@ def test_first_url_must_be_the_publisher_route_without_a_credential(url):
 
 
 def test_family_and_reader_configuration_is_explicit():
+    """Empty names or paths, missing or blank keys, wrong types and out-of-range budgets are all rejected."""
     with pytest.raises(ValueError):
         JsonPageFamily(name="", label="x", host="h", next_path=("n",), count_path=("c",))
     with pytest.raises(ValueError):
@@ -281,6 +291,7 @@ def post_page(rows, *, total, next_page):
 
 
 def test_post_page_number_walk_rewrites_the_body_and_records_it():
+    """A POST page-number walk rewrites the body per page and records the exact method and body bytes."""
     transport = Transport(
         response(post_page([{"id": 1}, {"id": 2}], total=3, next_page=2)),
         response(post_page([{"id": 3}], total=3, next_page=None)),
@@ -305,6 +316,7 @@ def test_post_page_number_walk_rewrites_the_body_and_records_it():
     ],
 )
 def test_post_walk_refuses_a_continuation_that_does_not_advance(second, message):
+    """A POST continuation that repeats or invalidates its page number refuses."""
     transport = Transport(response(post_page([{"id": 1}, {"id": 2}], total=3, next_page=2)), response(second))
     with (
         PagedJsonReader(family=POST_FAMILY, budget=BUDGET, transport=transport) as source,
@@ -314,6 +326,7 @@ def test_post_walk_refuses_a_continuation_that_does_not_advance(second, message)
 
 
 def test_post_pages_require_a_body_and_get_pages_forbid_one():
+    """POST families require a request body and GET families forbid one."""
     with (
         PagedJsonReader(family=POST_FAMILY, budget=BUDGET, transport=Transport()) as source,
         pytest.raises(PagedJsonSourceError, match="require a request body"),
@@ -324,6 +337,7 @@ def test_post_pages_require_a_body_and_get_pages_forbid_one():
 
 
 def test_post_body_carrying_the_credential_is_refused_before_any_request():
+    """A POST body carrying the credential refuses before any request is made."""
     keyed = replace(POST_FAMILY, credential_header="X-Api-Key", requires_credential=True)
     transport = Transport()
     with (
@@ -335,6 +349,8 @@ def test_post_body_carrying_the_credential_is_refused_before_any_request():
 
 
 def test_offset_walk_advances_by_rows_received_and_ends_at_a_short_page():
+    """The offset walk advances by rows received, ends at a short page, and refuses a page over or without a limit."""
+
     def page_of(n):
         return json.dumps({"things": [{"id": i} for i in range(n)], "aggregations": {}}).encode()
 
@@ -358,6 +374,7 @@ def test_offset_walk_advances_by_rows_received_and_ends_at_a_short_page():
 
 
 def test_publisher_placeholder_credential_parameters_are_dropped_before_requesting():
+    """Publisher placeholder credential parameters are dropped from continuations and replaced by the header."""
     first = page([{"id": 1}], count=2, next_url="https://api.example.gov/v1/things?api_key=REPLACE_WITH_API_KEY&page=1")
     second = page([{"id": 2}], count=2)
     transport = Transport(response(first), response(second))
@@ -368,6 +385,9 @@ def test_publisher_placeholder_credential_parameters_are_dropped_before_requesti
 
 
 def test_family_contract_combinations_are_checked():
+    """Family contracts: next_kind needs next_path, offset takes none, POST needs a list,
+    credential_format needs a header.
+    """
     with pytest.raises(ValueError, match="requires next_path"):
         JsonPageFamily(name="x", label="x", host="h", next_kind="page-number")
     with pytest.raises(ValueError, match="offset walk"):
@@ -398,6 +418,7 @@ def flag_page(rows, *, total, has_next):
 
 
 def test_boolean_has_next_advances_the_page_field_and_advisory_counts_may_drift():
+    """A boolean has-next advances the page field while advisory counts may drift between pages."""
     first = flag_page([{"id": 1}, {"id": 2}], total=57380, has_next=True)
     second = flag_page([{"id": 3}], total=57383, has_next=False)
     transport = Transport(
@@ -414,6 +435,7 @@ def test_boolean_has_next_advances_the_page_field_and_advisory_counts_may_drift(
 
 
 def test_has_next_flag_without_a_page_field_and_an_undeclared_media_type_refuse():
+    """A has-next flag without a page field refuses, as does an undeclared media type."""
     transport = Transport(response(flag_page([{"id": 1}], total=1, has_next=True)))
     with (
         PagedJsonReader(family=FLAG_FAMILY, budget=BUDGET, transport=transport) as source,
@@ -426,6 +448,7 @@ def test_has_next_flag_without_a_page_field_and_an_undeclared_media_type_refuse(
 
 
 def test_keyless_readers_keep_a_refusal_body_and_keyed_readers_do_not():
+    """A keyless 403 keeps the refusal body and access-refused reason; a keyed one retains no bytes."""
     denied = b"<Error><Code>AccessDenied</Code></Error>"
     transport = Transport(
         httpx.Response(403, stream=httpx.ByteStream(denied), headers={"content-type": "application/xml"})
@@ -447,6 +470,7 @@ def test_keyless_readers_keep_a_refusal_body_and_keyed_readers_do_not():
 
 
 def test_cookies_set_by_one_response_do_not_steer_the_next_request():
+    """A cookie set by one response is not sent on the next request."""
     first = httpx.Response(
         200,
         stream=httpx.ByteStream(page([{"id": 1}], count=2, next_url="https://api.example.gov/v1/things?offset=1")),
@@ -459,6 +483,7 @@ def test_cookies_set_by_one_response_do_not_steer_the_next_request():
 
 
 def test_family_reach_bounds_refuse_in_one_request_and_at_the_page_bound():
+    """Reach and page-number bounds refuse on the first request, naming the bound and window hint; bad bounds too."""
     bounded = replace(FLAG_FAMILY, max_reachable_records=100, limit_field="page[size]", window_hint="date window")
     transport = Transport(response(flag_page([{"id": 1}], total=101, has_next=True)))
     with (
@@ -483,8 +508,7 @@ def test_family_reach_bounds_refuse_in_one_request_and_at_the_page_bound():
 
 
 def test_tuple_records_key_reaches_rows_nested_in_a_wrapper_object():
-    """A tuple records key reads a publisher's nested rows the way count_path/next_path already do --
-    Congress.gov's committee/{chamber}/{code}/bills route answers this shape, not a top-level array."""
+    """A tuple ``records_key`` reaches rows nested in a wrapper object, matching ``count_path``/``next_path``."""
     body = json.dumps({"wrapper": {"things": [{"id": 1}, {"id": 2}]}, "paging": {"count": 2, "next": None}}).encode()
     transport = Transport(response(body))
     with reader(transport) as source:
@@ -495,6 +519,7 @@ def test_tuple_records_key_reaches_rows_nested_in_a_wrapper_object():
 
 
 def test_tuple_records_key_miss_refuses_with_a_dotted_label():
+    """A tuple key miss refuses with the dotted label ``wrapper.things``."""
     body = json.dumps({"wrapper": {}, "paging": {"count": 0, "next": None}}).encode()
     transport = Transport(response(body))
     with (
@@ -505,10 +530,7 @@ def test_tuple_records_key_miss_refuses_with_a_dotted_label():
 
 
 def test_a_records_key_naming_one_object_reads_as_a_single_record_page():
-    """A detail route answers one JSON object at records_key, not an array -- Congress.gov's
-    law/{congress}/{law_type}/{number} answers {"bill": {...}}. The object is the whole record;
-    with single_record, it reads as a one-record page rather than being shaped down to a chosen
-    field or refused."""
+    """With ``single_record``, a ``records_key`` naming one object reads as a one-record page with no count or next."""
     body = json.dumps({"thing": {"id": 1, "nested": {"more": True}}}).encode()
     transport = Transport(response(body))
     with reader(transport) as source:
@@ -519,6 +541,7 @@ def test_a_records_key_naming_one_object_reads_as_a_single_record_page():
 
 
 def test_a_tuple_records_key_naming_one_object_also_reads_as_a_single_record_page():
+    """A tuple key naming one object also reads as a single-record page."""
     body = json.dumps({"wrapper": {"thing": {"id": 1}}}).encode()
     transport = Transport(response(body))
     with reader(transport) as source:
@@ -527,10 +550,7 @@ def test_a_tuple_records_key_naming_one_object_also_reads_as_a_single_record_pag
 
 
 def test_the_committee_bills_wrapper_key_refuses_without_single_record():
-    """Reproduces the review finding: reading committee-bills' own records_key ("committee-bills")
-    as a plain string, instead of the tuple that reaches inside it, resolves to the wrapper
-    object {"bills": [...], "count": N, "url": "..."}. Without single_record this still refuses
-    -- it does not silently read the wrapper itself as one bogus record."""
+    """Reading the committee-bills wrapper as a string refuses without ``single_record``, not as a bogus record."""
     body = json.dumps(
         {"committee-bills": {"bills": [{"congress": 110}], "count": 1, "url": "https://api.example.gov/x"}}
     ).encode()

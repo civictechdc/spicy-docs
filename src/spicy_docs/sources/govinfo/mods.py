@@ -92,6 +92,8 @@ class ModsRecord:
 
 @dataclass(frozen=True, slots=True)
 class GovInfoModsPackage:
+    """One mapped MODS package root with its exact-input digest and element count."""
+
     package: ModsRecord
     source_sha256: str
     source_byte_size: int

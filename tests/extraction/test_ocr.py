@@ -1,3 +1,7 @@
+"""OCR backend contract: RapidOCR, AppleVision and MLX accept injected engines, preserve raw detections and
+confidence, convert Apple's bottom-left coordinates to top-left, and refuse partial MLX generation.
+"""
+
 import sys
 from io import BytesIO
 from pathlib import Path

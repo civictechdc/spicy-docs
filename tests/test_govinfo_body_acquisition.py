@@ -1,4 +1,9 @@
-"""Exercise bounded, source-only GovInfo capture with real HTTPX streams."""
+"""Exercise bounded, source-only GovInfo capture with real HTTPX streams.
+
+Pins exact direct capture and reuse, MODS-resolved identity, credential refusal
+abort, retry and budget sharing, refusal evidence, byte and header bounds,
+pacing, and budget validation.
+"""
 
 from __future__ import annotations
 
@@ -35,6 +40,8 @@ NOW = datetime(2026, 9, 11, tzinfo=UTC)
 
 
 class Stream(httpx.SyncByteStream):
+    """A response stream that counts reads and records closure."""
+
     def __init__(self, *chunks: bytes) -> None:
         self.chunks = chunks
         self.closed = False
@@ -50,6 +57,8 @@ class Stream(httpx.SyncByteStream):
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and closes on exit."""
+
     def __init__(self, *actions: httpx.Response | Exception) -> None:
         self.actions = iter(actions)
         self.calls: list[httpx.Request] = []
@@ -68,10 +77,12 @@ class Transport(httpx.MockTransport):
 
 
 def response(body: bytes = BODY, status: int = 200, *, headers: dict[str, str] | None = None) -> httpx.Response:
+    """An HTTPX response over the given bytes."""
     return httpx.Response(status, stream=Stream(body), headers={"content-type": "text/html", **(headers or {})})
 
 
 def acquire(client: FederalRegisterBodyAcquirer) -> acquisition.FederalRegisterBodyAcquisition:
+    """Acquire one body under the given request."""
     return client.acquire(
         format="html", document_number="98-14931", publication_date="1998-06-03", html_route="granule"
     )
@@ -79,10 +90,14 @@ def acquire(client: FederalRegisterBodyAcquirer) -> acquisition.FederalRegisterB
 
 @pytest.fixture(autouse=True)
 def no_retry_delays(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_direct_capture_is_exact_and_reusable_without_refetch(tmp_path) -> None:
+    """A direct capture is exact, reusable without refetch, and keyless with the pinned timeout and identity
+    encoding.
+    """
     received = response(headers={"content-length": str(len(BODY))})
     transport = Transport(received)
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport, clock=lambda: NOW) as client:
@@ -109,6 +124,7 @@ def test_direct_capture_is_exact_and_reusable_without_refetch(tmp_path) -> None:
 
 
 def test_mods_route_retains_original_resolved_identity_and_both_captures() -> None:
+    """The MODS route retains the original and resolved identity plus both captures in two requests."""
     transport = Transport(response(MODS), response())
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = client.acquire(
@@ -130,6 +146,7 @@ def test_mods_route_retains_original_resolved_identity_and_both_captures() -> No
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_credential_refusal_aborts_without_body_retry_or_fallback(status: int) -> None:
+    """A credential refusal aborts after one request without reading or falling back."""
     stream = Stream(b"credential material must not be read")
     received = httpx.Response(status, stream=stream)
     transport = Transport(received)
@@ -149,6 +166,7 @@ def test_credential_refusal_aborts_without_body_retry_or_fallback(status: int) -
 
 @pytest.mark.parametrize("status", [301, 302, 400, 404])
 def test_other_status_retains_exact_refusal_and_never_follows_redirect(status: int) -> None:
+    """Another status retains the exact refusal and never follows a redirect."""
     received = response(b"refused", status, headers={"location": "https://example.test/elsewhere"})
     transport = Transport(received)
     with (
@@ -166,6 +184,7 @@ def test_other_status_retains_exact_refusal_and_never_follows_redirect(status: i
 
 @pytest.mark.parametrize("status", [429, 503])
 def test_retryable_status_uses_explicit_total_budget(status: int) -> None:
+    """A retryable status uses the explicit total budget, closing every response."""
     responses = [response(status=status) for _ in range(2)]
     transport = Transport(*responses)
     with (
@@ -178,6 +197,7 @@ def test_retryable_status_uses_explicit_total_budget(status: int) -> None:
 
 
 def test_retry_then_mods_and_body_share_one_total_request_budget() -> None:
+    """Retries, MODS and the body share one total request budget."""
     transport = Transport(response(status=503), response(MODS), response())
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = client.acquire(
@@ -191,6 +211,7 @@ def test_retry_then_mods_and_body_share_one_total_request_budget() -> None:
 
 
 def test_retry_can_exhaust_budget_before_body_without_misattributing_mods() -> None:
+    """A retry can exhaust the budget before the body, with the refusal attributed to the next request."""
     transport = Transport(response(status=503), response(MODS))
     with (
         FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as client,
@@ -210,6 +231,7 @@ def test_retry_can_exhaust_budget_before_body_without_misattributing_mods() -> N
 
 
 def test_transport_retry_scrubs_untrusted_error_text(capsys: pytest.CaptureFixture[str]) -> None:
+    """A transport retry scrubs untrusted error text."""
     transport = Transport(httpx.ConnectError("secret-key-123"), response())
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         assert acquire(client).request_count == 2
@@ -219,6 +241,7 @@ def test_transport_retry_scrubs_untrusted_error_text(capsys: pytest.CaptureFixtu
 def test_exhausted_transport_failure_traceback_does_not_expose_provider_text(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    """An exhausted transport failure's traceback and stderr expose no provider text."""
     transport = Transport(httpx.ConnectError("secret-key-123"), httpx.ConnectError("secret-key-123"))
     with (
         FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as client,
@@ -234,6 +257,7 @@ def test_exhausted_transport_failure_traceback_does_not_expose_provider_text(
 
 @pytest.mark.parametrize("body", [b"", b"[FR Doc No: 98-00000]", b"govinfo.gov/error"])
 def test_identity_refusal_retains_exact_complete_response(body: bytes) -> None:
+    """An identity refusal retains the exact complete response at source-validation."""
     received = response(body)
     transport = Transport(received)
     with (
@@ -248,6 +272,7 @@ def test_identity_refusal_retains_exact_complete_response(body: bytes) -> None:
 
 
 def test_invalid_mods_retains_mods_without_requesting_body() -> None:
+    """Invalid MODS is retained without requesting the body."""
     transport = Transport(response(b"invalid MODS"))
     with (
         FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
@@ -267,6 +292,7 @@ def test_invalid_mods_retains_mods_without_requesting_body() -> None:
 
 @pytest.mark.parametrize("declared", [False, True])
 def test_over_bound_response_never_returns_or_labels_truncated_bytes_as_evidence(declared: bool) -> None:
+    """An over-bound response never returns or labels truncated bytes as evidence."""
     stream = Stream(b"a" * 30, b"b" * 30, b"unrequested tail")
     received = httpx.Response(200, stream=stream, headers={"content-length": "60"} if declared else {})
     transport = Transport(received)
@@ -282,6 +308,7 @@ def test_over_bound_response_never_returns_or_labels_truncated_bytes_as_evidence
 
 @pytest.mark.parametrize("headers", [{"content-length": "bad"}, {"content-encoding": "gzip"}])
 def test_invalid_transport_headers_refused_before_read(headers: dict[str, str]) -> None:
+    """Invalid transport headers are refused before any read."""
     stream = Stream(BODY)
     transport = Transport(httpx.Response(200, stream=stream, headers=headers))
     with (
@@ -293,6 +320,7 @@ def test_invalid_transport_headers_refused_before_read(headers: dict[str, str]) 
 
 
 def test_wrong_content_length_retains_exact_response() -> None:
+    """A wrong Content-Length retains the exact response."""
     transport = Transport(response(headers={"content-length": str(len(BODY) + 1)}))
     with (
         FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
@@ -303,6 +331,7 @@ def test_wrong_content_length_retains_exact_response() -> None:
 
 
 def test_short_transport_chunks_are_accumulated_through_eof() -> None:
+    """Short transport chunks are accumulated through EOF."""
     stream = Stream(*(BODY[index : index + 3] for index in range(0, len(BODY), 3)))
     transport = Transport(httpx.Response(200, stream=stream))
     with FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_body_bytes=len(BODY)), transport=transport) as client:
@@ -311,6 +340,8 @@ def test_short_transport_chunks_are_accumulated_through_eof() -> None:
 
 
 def test_broken_body_stream_closes_before_retry_and_never_returns_partial_bytes() -> None:
+    """A broken body stream closes before the retry and never returns partial bytes."""
+
     class BrokenStream(Stream):
         def __iter__(self) -> Iterator[bytes]:
             yield b"partial"
@@ -335,6 +366,7 @@ def test_broken_body_stream_closes_before_retry_and_never_returns_partial_bytes(
     ],
 )
 def test_invalid_route_or_identity_refuses_before_request(arguments: dict[str, Any]) -> None:
+    """An invalid route or identity refuses before any request."""
     transport = Transport()
     options: dict[str, Any] = {
         "document_number": "98-14931",
@@ -348,6 +380,7 @@ def test_invalid_route_or_identity_refuses_before_request(arguments: dict[str, A
 
 
 def test_request_start_pacing_covers_retries_and_successive_acquisitions(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Request-start pacing covers retries and successive acquisitions."""
     current = [0.0]
     starts: list[float] = []
     monkeypatch.setattr(capture.time, "monotonic", lambda: current[0])
@@ -379,12 +412,14 @@ def test_request_start_pacing_covers_retries_and_successive_acquisitions(monkeyp
     ],
 )
 def test_invalid_budget_refused(field: str, value: object) -> None:
+    """Invalid budget values are refused naming the field."""
     with pytest.raises(ValueError, match=field):
         replace(BUDGET, **{field: value})
 
 
 @pytest.mark.parametrize("max_attempts", [0, -1, True, 1.5])
 def test_shared_retry_rejects_invalid_explicit_attempt_count(max_attempts: int) -> None:
+    """The shared retry rejects an invalid explicit attempt count."""
     with pytest.raises(ValueError, match="max_attempts"):
         retry.retry_http(
             lambda: pytest.fail("invalid budget called operation"), retryable=(RuntimeError,), max_attempts=max_attempts
@@ -392,6 +427,7 @@ def test_shared_retry_rejects_invalid_explicit_attempt_count(max_attempts: int) 
 
 
 def test_closed_client_refuses_without_request() -> None:
+    """A closed client refuses without making a request."""
     transport = Transport()
     client = FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport)
     client.close()
@@ -401,6 +437,7 @@ def test_closed_client_refuses_without_request() -> None:
 
 
 def test_configured_budget_cannot_diverge_from_shared_transport() -> None:
+    """The configured budget cannot diverge from the shared transport."""
     with (
         FederalRegisterBodyAcquirer(budget=BUDGET, transport=Transport()) as client,
         pytest.raises(AttributeError),

@@ -1,3 +1,8 @@
+"""PypdfReader contract: a pinned backend version over a retained publisher PDF, one-based integer page
+selection, explicit-password decryption, and distinct errors for unreadable sources, broken pages and a missing
+optional backend -- with the backend imported only when a read is opened.
+"""
+
 import subprocess
 import sys
 from hashlib import sha256

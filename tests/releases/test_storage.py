@@ -1,4 +1,6 @@
-"""Releases: storage behavior."""
+"""Blob-store contract: digest-addressed writes reuse verified bytes without consuming input, refuse corrupt or
+symlinked layout, and any mutation after reader admission fails before a row is returned.
+"""
 
 from __future__ import annotations
 

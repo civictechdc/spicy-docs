@@ -1,4 +1,9 @@
-"""The diagnostic must find edited copies without treating every shape as equal."""
+"""The dry-audit diagnostic must find edited copies without treating every shape as equal.
+
+Pins exact and shape function clusters with their locations, literal, regex and
+error inventories excluding docstrings, short-helper and repeated-binding
+rules, and input validation.
+"""
 
 import pytest
 
@@ -6,6 +11,7 @@ from tools.analysis.dry_audit import scan
 
 
 def test_copies_shapes_blocks_and_false_friends(tmp_path):
+    """Exact and shape copies cluster with their locations while false friends stay apart."""
     original = '''def original(value):
     """Not executable code."""
     result = value.strip()
@@ -39,6 +45,7 @@ def test_copies_shapes_blocks_and_false_friends(tmp_path):
 
 
 def test_inventory_excludes_docstrings_but_keeps_patterns_and_error_shapes(tmp_path):
+    """The inventory excludes docstrings but keeps literals, regex patterns and error shapes, and refuses bad inputs."""
     source = '''"""Repeated docs are not code."""
 import re
 PATTERN = re.compile(r"[0-9]{4}")
@@ -62,6 +69,9 @@ def check(value):
 
 
 def test_short_helpers_literal_changes_and_repeated_bindings(tmp_path):
+    """Short helpers are excluded by line count, while a literal change and a repeated binding create their own
+    clusters.
+    """
     (tmp_path / "a.py").write_text('def a(x):\n    return x.get("first", x)\n')
     (tmp_path / "b.py").write_text('def b(y):\n    return y.get("second", y)\n')
     (tmp_path / "c.py").write_text('def c(y, z):\n    return y.get("second", z)\n')

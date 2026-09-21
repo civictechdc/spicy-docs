@@ -103,6 +103,8 @@ class SourceNativeReleasePublisher:
         build: SourceNativeReleaseBuild,
         destination: Path,
     ) -> PublishedSourceNativeRelease:
+        """Index, verify, and publish one release; refuses a noncanonical scope or an existing destination."""
+
         profile = self._profile
         canonical_scope = dict(profile.validate_query_scope(build.query_scope))
         if canonical_scope != dict(build.query_scope):
@@ -175,6 +177,8 @@ class SourceNativeReleasePublisher:
         accounting: _ByteAccounting,
         evidence_descriptors: tuple[MemberDescriptor, ...],
     ) -> PublishedSourceNativeRelease:
+        """Compute counts and digests, stage every partition kind, then admit and publish the staged release."""
+
         scopes = [
             {
                 "fields": dict(build.query_scope),

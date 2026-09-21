@@ -1,29 +1,11 @@
-"""Committees from the Congress.gov routes, and today's committee assignments from the chamber files.
+"""The ``committees`` table (Congress.gov ``committee/{congress}`` list rows with the ``committee-detail`` record folded
+on where captured) and ``committee_assignments`` (today's seats from the House Clerk's ``MemberData.xml`` and the
+Senate's ``cvc_member_data.xml``), closing gap A9.
 
-Two tables close gap A9 (``docs/research/closing-the-gaps-2026-09-19.md``):
-
-* ``committees`` is keyed on the publisher's ``systemCode`` from the
-  ``committee/{congress}`` list route, with the ``committee-detail`` record's
-  history, subcommittees, parent and currency folded onto the same row where
-  a detail was captured. The list route is read whole: its ``sort_honored``
-  is carried from the data map, not probed, so nothing here relies on order.
-  Measured 2026-09-19 on the 119th: 236 rows served against 238 declared
-  (the reader refuses that walk, and the count is in the receipt), 183 of
-  them carrying ``parent`` and 31 carrying ``subcommittees``.
-* ``committee_assignments`` is keyed ``(congress, system_code, bioguide_id)``
-  from the House Clerk's ``MemberData.xml`` and the Senate's
-  ``cvc_member_data.xml``, the two files the map found add exactly this to
-  what the API carries. The bioguide is the member key on purpose: both
-  files state it on every seated member (the Senate file beside its LIS
-  id), so unlike ``member_votes`` there is no file-stated id to prefer
-  over it. The key's target is ``members.bioguide_id``, the community
-  crosswalk table, which stays the LIS crosswalk; ``lis_id`` here is the
-  Senate file's own statement and is not a second crosswalk.
-
-There is no ``members`` contract here and none is invented: ``members`` and
-``member_terms`` already exist over the legislators crosswalk, and the
-Congress.gov ``member`` routes (2,696 rows, from the 68th) are read for
-identity and history by the host's rollup against those.
+The committee list route is read whole, so nothing here relies on its order.  ``committee_assignments`` keys on
+``bioguide_id`` because both roster files state it on every seated member, and its ``lis_id`` is the Senate file's own
+statement rather than a second crosswalk.  No ``members`` contract is invented here: that table already exists over the
+legislators crosswalk.
 """
 
 from __future__ import annotations
@@ -120,11 +102,8 @@ def _codes(subcommittees: object) -> list[str]:
 def shape_committee(record: Mapping[str, Any], detail: Mapping[str, Any] | None = None) -> Row:
     """One ``committees`` row from a list-route record and, where captured, its detail record.
 
-    The detail's ``systemCode`` must equal the record's or the fold is
-    refused: a detail fetched for one code cannot describe another row.
-    Where a detail was captured its ``subcommittees`` are the row's, an
-    explicit empty list included; the list row's copy is read only when no
-    detail was (the hsju00 fixtures list 7 on the row and 15 on the detail).
+    The detail's ``systemCode`` must equal the record's or the fold is refused, and where a detail was captured its
+    ``subcommittees`` are the row's -- the list row's copy is read only when no detail was.
     """
     if detail is not None and detail.get("systemCode") != record.get("systemCode"):
         raise TableContractError(f"committees: detail {detail.get('systemCode')!r} is not {record.get('systemCode')!r}")
@@ -165,8 +144,8 @@ def shape_committee(record: Mapping[str, Any], detail: Mapping[str, Any] | None 
 def shape_house_assignment(member: object, assignment: object, *, roster: object, observed_at: str) -> Row:
     """One ``committee_assignments`` row from a ``HouseMember`` and one of its ``HouseAssignment`` entries.
 
-    A vacancy has no bioguide and no assignments, so it never reaches here;
-    a member with a bioguide of ``None`` refuses rather than keying on NULL.
+    A vacancy has no bioguide and never reaches here; a member with a bioguide of ``None`` refuses rather than keying on
+    NULL.
     """
     if member.bioguide_id is None:
         raise TableContractError("committee_assignments: a vacant seat has no member to key on")

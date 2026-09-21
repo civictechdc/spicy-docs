@@ -81,6 +81,7 @@ class CredentialRefusedError(RuntimeError):
 
 
 def _our_numbers_by_date(release_root: Path, blob_store: Path) -> dict[str, set[str]]:
+    """The release's own document numbers grouped by publication date."""
     store = LocalSourceNativeBlobStore(blob_store, create=False)
     members = json.loads(release_root.joinpath(*MANIFEST_PATH).read_text())["members"]
     by_date: dict[str, set[str]] = collections.defaultdict(set)
@@ -93,6 +94,8 @@ def _our_numbers_by_date(release_root: Path, blob_store: Path) -> dict[str, set[
 
 
 def _fetch_mods(client: httpx.Client, date: str) -> bytes:
+    """One keyless MODS body, aborting on a credential refusal rather than retrying or keying."""
+
     def _attempt() -> bytes:
         response = client.get(MODS_URL.format(date=date))
         if response.status_code in (401, 403):
@@ -185,6 +188,7 @@ def census(
     min_interval_seconds: float,
     transport: httpx.BaseTransport | None = None,
 ) -> int:
+    """Enumerate issues through ``through``, appending one JSONL row per issue and resuming by its digest."""
     release_digest = _release_digest(release_root)
     _guard_resume_release(output, release_digest)
     by_date = _our_numbers_by_date(release_root, blob_store)
@@ -252,6 +256,7 @@ def census(
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the census over the release and blob-store paths from the CLI."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release-root", type=Path, required=True)
     parser.add_argument("--blob-store", type=Path, required=True)

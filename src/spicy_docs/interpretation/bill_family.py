@@ -1,44 +1,15 @@
 """One pass over one bill: thirteen tables, in an order where nothing reads another's output.
 
 The family builder is the one place a bill's documents and this package's
-findings meet.  It lives here, not in ``schemas/``, because composing them needs
-``sources.congress`` and ``interpretation``, and ``schemas/`` is a leaf that
-spicy-regs imports without either.  Net effect: spicy-regs's transform imports
-``spicy_docs.schemas.*`` with no extras, and only its rollup imports this module
-and so needs ``bill-diff``.
-
-**The model calls are injected at this boundary, not as a ``ModelCall``.**
-``classify_sections``, ``summarize_bill`` and ``summarize_diff`` each already
-take the call and choose the model; the family builder must not pick a model or
-a batch size.  A caller binds
-``functools.partial(classify_sections, call=client, model=...)``.  ``None``
-skips that model table entirely, which is what a keyless CI run and every
-hermetic test do.
-
-**Order, one pass:** referrals, then the three bill-level findings, then the
-four BILLSTATUS tables and the CBO cost-estimate index the same document
-states, then versions, then sections, then the diff of consecutive pairs only,
-then the three model tables.  No step reads a table an
-earlier step produced as *published* rows; the diff reads parsed documents, not
-``bill_sections``.
-
-**Cost** per bill with A actions, C committees, V versions, S sections per
-version: steps 1-5 are O(A + C + V + sum S), linear in the rows produced, with
-no re-parsing.  The diff runs on V-1 pairs, not V squared, each bounded by the
-engine's own retrieval gate.  The model steps cost ceil(S/batch) calls per
-classified version and one per summarized version.  Consecutive pairs is
-deliberate: the diff is the only superlinear operation in the family.
-
-**Refusals are never silent.**  A pair that cannot be diffed, a row whose
-identity has a null part, a version the summarizer declined, a printing whose
-version type the sealed vocabulary does not name, an answer the model's own
-reader refused -- each becomes a named :class:`FamilyRefusal` rather than a
-missing row nobody can account for, and none of them aborts the rest of the
-bill.  The last of those was added on 2026-09-20, found by spicy-regs adopting
-0.21.3: a ``ModelCallError`` escaped this function and aborted a whole rollup,
-and a caller that caught it outside had to report a refused answer as a
-declined one, which says the printing's text was too short and is false.  See
-:func:`_model_answer` for what is caught and what must still abort.
+findings meet; it lives here rather than in ``schemas/`` because composing
+them needs ``sources.congress`` and ``interpretation``, which ``schemas/``
+must not import. Model calls are injected at this boundary (``None`` skips
+that model table, as a keyless CI run does) and never chosen here; the diff
+runs on consecutive pairs only, the one superlinear step, and every other step
+is linear in the rows produced with no re-parsing. Refusals are never silent:
+a pair that cannot be diffed, a row with a null identity part, a version the
+summarizer declined or the model's own reader refused each becomes a named
+:class:`FamilyRefusal` and none aborts the rest of the bill.
 """
 
 from __future__ import annotations
@@ -140,9 +111,8 @@ def _now() -> datetime:
 class EngineStamp:
     """Which diff engine, at which pinned commit, produced a ``section_diffs`` row.
 
-    Nothing in the diff adapter names a matching rule -- the rules are upstream's
-    -- so the engine stamp is what stands in for one: a reader reproduces a row
-    by installing this revision, not by reading a rule name.
+    The stamp stands in for a matching-rule name because the rules are
+    upstream's: a reader reproduces a row by installing this revision.
     """
 
     name: str
@@ -155,8 +125,7 @@ class FamilyRefusal:
     """One row the family could have produced and did not, and why.
 
     A refusal is a record, not a log line: the rollup writes these beside the
-    rows so a missing diff or a declined summary is countable rather than
-    invisible.
+    rows so a missing diff or a declined summary is countable.
     """
 
     table: str
@@ -168,11 +137,13 @@ class FamilyRefusal:
 class BillVersionCapture:
     """One acquired printing of a bill: what was fetched, and what reading it produced.
 
-    ``version_code`` is the sealed slug, ``source`` names the acquisition path
-    (``govinfo``, ``congress``, ``govinfo-pdf``, ``upload``), and the three
-    optional records are the response, the flattened document and the GPO PDF
-    cleanup.  Any of them may be absent, and each absence shows up as NULLs in
-    the version row rather than as a dropped version.
+    ``version_code`` is the sealed slug and ``source`` names the acquisition
+    path (``govinfo``, ``congress``, ``govinfo-pdf``, ``upload``); any of the
+    optional records may be absent, and each absence shows up as NULLs in the
+    version row rather than as a dropped version. ``chosen_format`` is the
+    offered link the body was actually fetched from and is never guessed here,
+    because picking the preferred format would report ``xml`` for a row whose
+    body is a PDF.
     """
 
     version: Any
@@ -216,16 +187,9 @@ class BillVersionCapture:
     def version_code_is_reprint_ambiguous(self) -> bool:
         """Whether the publisher's version-type string also names a different printing.
 
-        The design wrote ``len(version_slug_reprints(type)) > 1``;
-        ``version_slug_reprints`` already excludes the slug it resolved to and
-        its aliases, so its own contract is that *non-empty* means ambiguous.
-        The record type wins.
-
-        A type the sealed vocabulary does not name is *not* ambiguous: nothing
-        else claims it.  ``version_slug_reprints`` reaches ``govinfo_suffix``,
-        which refuses an unknown slug, so that refusal is answered here rather
-        than left to abort a whole bill over one unrecognised printing --
-        ``_sorted_versions`` already tolerates the same type.
+        A type the sealed vocabulary does not name is not ambiguous -- nothing
+        else claims it -- and that refusal is answered here rather than left to
+        abort a whole bill over one unrecognised printing.
         """
         version_type = self.version.type
         if not version_type:
@@ -292,15 +256,12 @@ class BillFamilyTables:
     def merged(self, other: BillFamilyTables) -> BillFamilyTables:
         """This pass's rows followed by ``other``'s, field by field.
 
-        Every field is a tuple, so one concatenation over the declared fields
-        covers all of them and a table added later needs no second edit here.
-        Deduplication is the merge's job in spicy-regs, keyed on each contract's
-        own identity, so nothing is dropped here.
-
-        This is a pairwise join, and a tuple concatenation copies both sides, so
-        *folding* it over a run is quadratic in the number of bills -- 4,000
-        bills cost sixteen times what 1,000 do.  A rollup accumulating one of
-        these per bill calls :meth:`concat` once instead.
+        Every field is a tuple, so one concatenation covers all of them and a
+        table added later needs no second edit here; deduplication is the
+        merge's job in spicy-regs, keyed on each contract's own identity, so
+        nothing is dropped here. Pairwise and copying, so folding it over a run
+        is quadratic in the number of bills -- a rollup accumulating one per
+        bill calls :meth:`concat` once instead.
         """
         if not isinstance(other, BillFamilyTables):
             raise TypeError("merged takes another BillFamilyTables")
@@ -312,8 +273,9 @@ class BillFamilyTables:
     def concat(cls, families: Iterable[BillFamilyTables]) -> BillFamilyTables:
         """Every family's rows, in order, in one pass over each field.
 
-        What a rollup over many bills uses: each row is copied once, so the cost
-        is linear in the rows produced rather than in the bills times the rows.
+        What a rollup over many bills uses: each row is copied once, so the
+        cost is linear in the rows produced rather than quadratic as with
+        :meth:`merged`.
         """
         collected: dict[str, list[Any]] = {name: [] for name in cls.__dataclass_fields__}
         for family in families:
@@ -327,8 +289,8 @@ class BillFamilyTables:
 def classification_vocabulary_hash() -> str:
     """Digest over the sealed label table, so a vocabulary change is visible in the data.
 
-    Both the name and the definition are hashed: the definitions live only in
-    the prompt, so a re-worded definition changes what the model was asked even
+    Both name and definition are hashed, because the definitions live only in
+    the prompt and a re-worded definition changes what the model was asked even
     when every label name is unchanged.
     """
     material = "\n".join(f"{label.name}={label.definition}" for label in CLASSIFICATION_LABELS)
@@ -339,10 +301,10 @@ def installed_engine_stamp(name: str = "deltatrack") -> EngineStamp:
     """The stamp for the diff engine this environment actually installed.
 
     Read from the distribution's own metadata rather than hand-typed: a git
-    install records its resolved commit in ``direct_url.json``, which is the
-    one value that says which engine produced a row.  A distribution installed
-    from a wheel states no commit, and the stamp says so rather than reporting
-    a revision it does not know.
+    install records its resolved commit in ``direct_url.json``, while a wheel
+    install states no commit and the stamp says so rather than reporting a
+    revision it does not know. Raises :class:`BillFamilyError` when the
+    distribution is not installed.
     """
     try:
         distribution = metadata.distribution(name)
@@ -361,8 +323,8 @@ def installed_engine_stamp(name: str = "deltatrack") -> EngineStamp:
 def section_reference(version_code: str, source: str, seq: int) -> str:
     """The id a section is sent to the model under, and mapped back from.
 
-    Short and printable on purpose: it travels inside a prompt and comes back in
-    the model's answer, so it is not the unit-separator-joined published key.
+    Short and printable on purpose: it travels inside a prompt and comes back
+    in the model's answer, so it is not the unit-separator-joined published key.
     """
     return f"{version_code}|{source}|{seq}"
 
@@ -371,10 +333,9 @@ def _walk_committees(committees: Iterable[Any], parent: str | None = None) -> It
     """Every committee and subcommittee, each beside its immediate parent's code.
 
     Recursive to whatever depth the publisher states, which is the depth
-    ``bill_status`` parses and the depth ``congress_bills.committee_count``
-    counts: a two-level walk would make that column disagree with the rows it
-    claims to count.  One traversal serves both the rows and the referral
-    signals, rather than two walks of the same tree.
+    ``congress_bills.committee_count`` counts: a two-level walk would make that
+    column disagree with the rows it claims to count. One traversal serves both
+    the rows and the referral signals.
     """
     for committee in committees or ():
         yield committee, parent
@@ -410,11 +371,10 @@ SHAPER_REFUSALS = (TableContractError, VersionCodeError, TypeError)
 class _Admitter:
     """Shape one row, admit it if it satisfies its contract, and name why if it does not.
 
-    The shaping happens inside the guard, not before it: one unrecognised
-    printing used to raise out of ``shape_bill_version`` and abort the whole
-    bill, which is exactly the silent-gap-by-another-name this record type
-    exists to prevent.  ``identity`` is what the refusal is filed under when
-    there is no row to read one from.
+    The shaping happens inside the guard, because one unrecognised printing
+    used to raise out of ``shape_bill_version`` and abort the whole bill;
+    ``identity`` is what the refusal is filed under when there is no row to
+    read one from.
     """
 
     def __init__(self) -> None:
@@ -474,18 +434,12 @@ def _model_answer(
 
     A ``ModelCallError`` is the reader refusing the model's answer -- a missing
     key, a label outside the sealed vocabulary, a section id the batch never
-    sent. That is a record about one printing, not a reason to lose the other
-    thirteen tables of the bill, so it is filed and the pass continues. It used
-    to escape ``build_bill_family`` and abort the caller's whole rollup, which
-    is the silent-gap-by-another-name ``FamilyRefusal`` exists to prevent.
-
-    **Only the message is filed.** ``ModelCallError.details`` carries the answer
-    itself, which is model prose about the document, and a refusal is stored
-    and logged.
-
-    Nothing wider is caught, on purpose: a credential refusal must abort the
-    run rather than be recorded per row, and a transport failure establishes
-    nothing about this printing -- neither is a fact about the bill.
+    sent -- which is a record about one printing, not a reason to lose the
+    other thirteen tables, so it is filed and the pass continues. Only the
+    message is filed: ``ModelCallError.details`` carries the answer itself,
+    which is model prose about the document. Nothing wider is caught on
+    purpose: a credential refusal must abort the run, and a transport failure
+    establishes nothing about this printing.
     """
     try:
         return generate()
@@ -520,12 +474,12 @@ def build_bill_family(
 ) -> BillFamilyTables:
     """Build every table one bill fills, in one pass.
 
-    ``diff=False`` ships the family without the four diff tables, which is the
-    documented fallback for an environment that cannot vendor the engine; it
+    ``diff=False`` ships the family without the four diff tables -- the
+    documented fallback for an environment that cannot vendor the engine -- and
     also skips ``summarize_diff``, which has nothing to read without a diff.
-    ``pair_amounts=True`` additionally fills ``financial_changes``; it is off by
-    default because pairing two figures is a claim about an account that
-    upstream declines to publish.
+    ``pair_amounts=True`` fills ``financial_changes``, off by default because
+    pairing two figures is a claim about an account that upstream declines to
+    publish.
     """
     now = clock if clock is not None else _now
     admit = _Admitter()
@@ -784,12 +738,9 @@ def _diff_pairs(
     """Diff each consecutive pair, or refuse the pair by name.
 
     Returns each comparison beside the two printings it compared, so the diff
-    summary can read the engine's own records rather than re-reading the rows
-    this pass just published.
-
-    Imported here rather than at module scope: ``section_diff`` reaches the
-    engine only when it is called, and a family built with ``diff=False`` must
-    import cleanly without the ``bill-diff`` extra.
+    summary reads the engine's own records rather than the rows this pass just
+    published. Imports ``section_diff`` inside the call because a family built
+    with ``diff=False`` must import cleanly without the ``bill-diff`` extra.
     """
     from spicy_docs.interpretation import section_diff as diff_module
 
@@ -886,9 +837,9 @@ def _summarize_pair(
 
     BillTrax's summarize route refuses a pair when either side is a procedural
     document, because summarizing edit instructions as if they were bill text
-    produces confident nonsense.  That guard reads ``bill_versions.kind``, which
-    the generator is never handed, so it is applied here -- as a named refusal,
-    not a silent skip.
+    produces confident nonsense; that guard reads ``bill_versions.kind``, which
+    the generator is never handed, so it is applied here as a named refusal
+    rather than a silent skip.
     """
     pair = (bill_key, older.version_code, older.source, newer.version_code, newer.source)
     procedural = [
@@ -956,10 +907,9 @@ def _classify_version(
 ) -> None:
     """One printing's labels, or a named refusal per answer this pass cannot store.
 
-    Both refusals here are filed under the bill key first, like every other
-    refusal the pass files: a rollup collecting refusals across bills reads
-    ``identity[0]`` as the bill and could not otherwise say which bill a
-    printing belonged to.
+    Refusals are filed under the bill key first, like every other refusal the
+    pass files, so a rollup collecting refusals across bills can say which bill
+    a printing belonged to.
     """
     classifiable = [
         ClassifiableSection(
@@ -1016,6 +966,7 @@ def _summarize_version(
     rows: list[Row],
     bill_key: str,
 ) -> None:
+    """One ``bill_summaries`` row, or a named refusal when the summarizer declines."""
     result = _model_answer(
         partial(
             summarize,

@@ -1,15 +1,11 @@
 """Exact GAO product-page evidence for one source-native release.
 
-GAO product pages expose one publisher-assigned topic as a literal topic slug
-and label.  That source observation is useful; turning it into a RefSpec
-concept or a search tag is not this product's job.  This module therefore
-captures the exact HTML, proves its product identity, and preserves the one
-literal publisher field without importing either sibling product.
-
-The migrated capture campaign observed GAO refusing its ordinary direct
-client, so the operator path uses the bounded Zyte adapter in
-:mod:`spicy_docs.sources.zyte`.  Credentials remain in the process environment
-and never enter a request key, record, evidence ZIP, error, or release.
+GAO product pages expose one publisher-assigned topic as a literal topic slug and label; turning
+that observation into a RefSpec concept or a search tag is not this product's job, so this module
+captures the exact HTML, proves its product identity, and preserves the one literal publisher field
+without importing either sibling product. GAO refuses its ordinary direct client, so the operator
+path uses the bounded Zyte adapter in :mod:`spicy_docs.sources.zyte`; credentials remain in the
+process environment and never enter a request key, record, evidence ZIP, error, or release.
 """
 
 from __future__ import annotations
@@ -165,6 +161,7 @@ class GaoProductWindow:
 
 
 def parse_gao_product_request(value: str) -> GaoProductWindow:
+    """Parse one canonical ``https://www.gao.gov/products/<slug>`` URL and refuse request drift."""
     parsed = urlsplit(value)
     path = parsed.path.split("/")
     if (
@@ -447,6 +444,7 @@ def parse_gao_product_page_response(raw: bytes) -> Mapping[str, Any]:
 
 
 def classify_gao_product_page(value: object) -> dict[str, Any]:
+    """Return one faithful, closed product-page record and reject schema drift."""
     if not isinstance(value, Mapping) or set(value) != _RECORD_FIELDS:
         raise GaoProductSourceError("GAO product-page record fields differ")
     product_id = _product_id(value.get("productId"))
@@ -485,6 +483,7 @@ def classify_gao_product_page(value: object) -> dict[str, Any]:
 
 
 def source_record_id(record: Mapping[str, Any]) -> str:
+    """The product ID is the source record identity."""
     return _product_id(record.get("productId"))
 
 
@@ -501,6 +500,7 @@ def source_record(record: Mapping[str, Any], *, schema_digest: str) -> dict[str,
 
 
 def rendition_rows(record: Mapping[str, Any]) -> tuple[()]:
+    """GAO product pages state no renditions."""
     del record
     return ()
 
@@ -513,6 +513,7 @@ def source_record_digest(record: Mapping[str, Any]) -> str:
 
 
 def gao_product_next_page_url(response: Mapping[str, Any], *, seen_urls: set[str]) -> None:
+    """Refuse pagination: explicit product-page evidence is one page per product."""
     del seen_urls
     if response.get("next_page_url") is not None:
         raise GaoProductSourceError("GAO explicit product-page evidence cannot paginate")
@@ -539,6 +540,7 @@ def gao_product_records_included(
     query_scope: Mapping[str, Any],
     page_window: object | None,
 ) -> bool:
+    """Profile hook: one requested product must yield exactly its own one-record page."""
     del query_scope
     if not isinstance(page_window, GaoProductWindow):
         raise GaoProductSourceError("GAO page lacks a validated product request")
@@ -559,6 +561,7 @@ def validate_record_scope(
     query_scope: Mapping[str, Any],
     page_window: object | None,
 ) -> None:
+    """Refuse a record whose product ID differs from the page window's requested product."""
     del query_scope
     if not isinstance(page_window, GaoProductWindow) or source_record_id(record) != page_window.product_id:
         raise GaoProductSourceError("GAO product-page record falls outside its explicit scope")

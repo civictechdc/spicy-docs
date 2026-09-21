@@ -45,10 +45,14 @@ class XmlTreeElement:
         return "".join(pieces)
 
     def attribute(self, name: str) -> str | None:
+        """The first value for this exact expanded name, or ``None``."""
         return next((value for key, value in self.attributes if key == name), None)
 
     def findall(self, *path: str) -> tuple[XmlTreeElement, ...]:
-        """Select a relative child path using expanded names; bare names have no namespace."""
+        """Select a relative child path using expanded names; bare names have no namespace.
+
+        Each step matches direct children only, so an empty path returns ``children``.
+        """
         if not path:
             return self.children
         nodes = (self,)

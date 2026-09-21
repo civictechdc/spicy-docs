@@ -1,4 +1,4 @@
-"""Source-native reads and receipt mapping over Rulespec's local blob writer."""
+"""Content-addressed blob read/write boundary for source-native publication, with bounded verified reads."""
 
 from __future__ import annotations
 

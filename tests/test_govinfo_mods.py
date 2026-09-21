@@ -18,10 +18,12 @@ XLINK = "http://www.w3.org/1999/xlink"
 
 
 def mods(content: str, attrs: str = "") -> bytes:
+    """Parse the fixture MODS body."""
     return f'<mods xmlns="{NS}" {attrs}>{content}</mods>'.encode()
 
 
 def test_publisher_package_and_constituents_are_mapped_with_source_provenance():
+    """The publisher package and constituents map with source digests, byte size and element count."""
     mapped = parse_govinfo_mods(BODY)
     package = mapped.package
     assert mapped.source_sha256 == "sha256:" + hashlib.sha256(BODY).hexdigest()
@@ -62,7 +64,7 @@ def test_publisher_package_and_constituents_are_mapped_with_source_provenance():
 
 
 def test_entire_excerpt_matches_an_independent_xml_tree():
-    """Compare every element/attribute/text segment, including unmodeled fields."""
+    """The entire excerpt matches an independent XML tree, including unmodeled fields."""
     mapped = parse_govinfo_mods(BODY)
 
     def compare(source, actual, path):
@@ -86,6 +88,7 @@ def test_entire_excerpt_matches_an_independent_xml_tree():
 
 
 def test_repeated_partial_dates_roles_and_unknown_values_are_not_coerced():
+    """Repeated, partial, unknown and empty values are not coerced or repaired."""
     package = parse_govinfo_mods(
         mods("""
       <originInfo><dateIssued encoding="w3cdtf" point="start" qualifier="approximate">2020</dateIssued>
@@ -111,6 +114,7 @@ def test_repeated_partial_dates_roles_and_unknown_values_are_not_coerced():
 
 
 def test_unknown_namespaces_mixed_text_and_inherited_context_survive_json():
+    """Unknown namespaces, mixed text and inherited context survive JSON without deduplication."""
     body = mods(
         """<extension><g:item xmlns:g="urn:inner" xsi:type="g:Type">Before <g:b/> after &amp; <![CDATA[<end>]]>.</g:item>
       <g:item>outer</g:item><item>mods</item><item xmlns="">none</item></extension>
@@ -148,6 +152,7 @@ def test_unknown_namespaces_mixed_text_and_inherited_context_survive_json():
 
 
 def test_chunk_boundaries_and_entities_do_not_split_mapped_text():
+    """Decoder chunk boundaries and entities do not split mapped text."""
     value = "a" * 70_000 + "&amp;" * 1000 + "z" * 70_000
     node = parse_govinfo_mods(mods(f"<note>{value}</note>")).package.notes[0]
     assert node.content == ("a" * 70_000 + "&" * 1000 + "z" * 70_000,)
@@ -168,11 +173,13 @@ def test_chunk_boundaries_and_entities_do_not_split_mapped_text():
     ],
 )
 def test_unsafe_malformed_or_wrong_root_xml_refuses(body):
+    """Unsafe, malformed or wrong-root XML is refused."""
     with pytest.raises(GovInfoModsError):
         parse_govinfo_mods(body)
 
 
 def test_byte_and_element_bounds_are_inclusive():
+    """Byte and element bounds are inclusive and refuse one over."""
     assert parse_govinfo_mods(BODY, max_bytes=len(BODY), max_elements=203).element_count == 203
     with pytest.raises(GovInfoModsError, match="max_bytes"):
         parse_govinfo_mods(BODY, max_bytes=len(BODY) - 1)

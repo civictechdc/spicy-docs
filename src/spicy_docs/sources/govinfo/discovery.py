@@ -1,13 +1,12 @@
 """Bounded GovInfo JSON discovery: what packages a collection published or changed, and a package's granules.
 
-The keyed GovInfo API answers list pages with rows under ``packages`` or
-``granules``, a ``count`` for the whole query and a full ``nextPage`` URL that
-carries an opaque ``offsetMark``. The api.data.gov key travels as ``X-Api-Key``.
-The publisher's README states that ``lastModified`` is the time a package was
-added or updated, equal to the sitemap ``lastmod`` and distinct from the MODS
-issued or ingested dates. GovInfo answers a nonexistent selection with a
-well-formed empty page: a ``count`` of zero is an observation of that query on
-that day and never establishes absence.
+The keyed GovInfo API serves list pages whose rows sit under ``packages`` or
+``granules`` with a ``count`` and a full ``nextPage`` URL carrying an opaque
+``offsetMark``; the api.data.gov key travels as ``X-Api-Key``, and
+``lastModified`` is the publisher's added-or-updated time, distinct from the
+MODS issued or ingested dates. A nonexistent selection answers with a
+well-formed empty page, so a ``count`` of zero is an observation of that query
+on that day and never establishes absence.
 """
 
 from __future__ import annotations

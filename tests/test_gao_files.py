@@ -1,4 +1,9 @@
-"""GAO report files are selected by product ID and proved by their own bytes."""
+"""GAO report files are selected by product ID and proved by their own bytes.
+
+Pins per-host locator spellings, PDF magic and trailer checks, index-proved
+products, exact keyless captures, and 404/403 semantics where a keyless 403
+aborts without establishing absence.
+"""
 
 from pathlib import Path
 
@@ -35,14 +40,18 @@ BUDGET = GaoReportFileBudget(3, DEFAULT_MAX_INDEX_BYTES, 4 * 1024 * 1024, 7, 0)
 
 
 def response(body=PDF, status=200, *, content_type="application/octet-stream"):
+    """An HTTPX response over the given bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
 def index_response(body=INDEX, status=200, *, content_type="text/html"):
+    """An HTTPX response over the pinned index bytes."""
     return response(body, status, content_type=content_type)
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -55,10 +64,12 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_locators_keep_the_publisher_spelling_each_host_requires():
+    """Each host's locator keeps the publisher spelling it requires, including the highlights rendition."""
     assert gao_report_pdf_locator(PRODUCT) == PDF_URL
     assert gao_report_pdf_locator(PRODUCT, rendition="highlights") == (
         "https://files.gao.gov/assets/gao-26-107693-highlights.pdf"
@@ -68,6 +79,7 @@ def test_locators_keep_the_publisher_spelling_each_host_requires():
 
 @pytest.mark.parametrize("product_id", ["GAO-26-107693", "gao-26-107693/", "", "gao_26_107693", "a" * 200])
 def test_report_files_are_selected_by_the_product_id_grammar(product_id):
+    """Report files are selected only by a valid product ID."""
     with pytest.raises(GaoReportFileSourceError, match="product ID"):
         gao_report_pdf_locator(product_id)
     with pytest.raises(GaoReportFileSourceError, match="product ID"):
@@ -75,11 +87,13 @@ def test_report_files_are_selected_by_the_product_id_grammar(product_id):
 
 
 def test_unknown_rendition_is_refused():
+    """An unknown rendition is refused."""
     with pytest.raises(GaoReportFileSourceError, match="rendition"):
         gao_report_pdf_locator(PRODUCT, rendition="summary")
 
 
 def test_pinned_index_states_its_report_pdf_its_product_and_its_title():
+    """The pinned index states its report PDF, product URL and title."""
     index = parse_gao_report_index(INDEX, product_id=PRODUCT)
     assert index.locator == INDEX_URL and index.pdf_url == PDF_URL
     assert index.product_url == "https://www.gao.gov/products/gao-26-107693"
@@ -102,11 +116,13 @@ def test_pinned_index_states_its_report_pdf_its_product_and_its_title():
     ],
 )
 def test_index_refusals_name_the_failed_check(body, message):
+    """Index refusals name the failed check."""
     with pytest.raises(GaoReportFileSourceError, match=message):
         parse_gao_report_index(body, product_id=PRODUCT)
 
 
 def test_index_bounds_are_explicit():
+    """Index bounds are explicit and refuse on violation."""
     with pytest.raises(GaoReportFileSourceError, match="byte bound"):
         parse_gao_report_index(INDEX, product_id=PRODUCT, max_bytes=len(INDEX) - 1)
     for max_bytes in (0, True, MAX_REPORT_FILE_BYTES + 1):
@@ -115,6 +131,7 @@ def test_index_bounds_are_explicit():
 
 
 def test_report_pdf_capture_is_exact_and_keyless():
+    """A report PDF capture is exact and keyless with no index fetched."""
     transport = Transport(response())
     with GaoReportFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report_pdf(PRODUCT)
@@ -129,6 +146,7 @@ def test_report_pdf_capture_is_exact_and_keyless():
 
 
 def test_publisher_pdf_media_type_is_accepted_and_the_magic_bytes_decide():
+    """The publisher's PDF media type is accepted, with magic bytes deciding."""
     for content_type in ("application/octet-stream", "application/pdf; charset=binary"):
         transport = Transport(response(content_type=content_type))
         with GaoReportFileAcquirer(budget=BUDGET, transport=transport) as source:
@@ -136,6 +154,7 @@ def test_publisher_pdf_media_type_is_accepted_and_the_magic_bytes_decide():
 
 
 def test_highlights_rendition_is_requested_at_its_own_locator():
+    """The highlights rendition is requested at its own locator."""
     transport = Transport(response())
     with GaoReportFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report_pdf(PRODUCT, rendition="highlights")
@@ -154,6 +173,7 @@ def test_highlights_rendition_is_requested_at_its_own_locator():
     ],
 )
 def test_a_200_that_is_not_a_pdf_is_refused_with_its_bytes_retained(answer, message):
+    """A 200 that is not a PDF is refused with its bytes retained and the operation recorded."""
     transport = Transport(answer)
     with (
         GaoReportFileAcquirer(budget=BUDGET, transport=transport) as source,
@@ -167,6 +187,7 @@ def test_a_200_that_is_not_a_pdf_is_refused_with_its_bytes_retained(answer, mess
 
 
 def test_real_publisher_prefix_carries_the_magic_and_a_truncated_body_is_refused():
+    """A real publisher prefix carries the magic, while a truncated body is refused for its trailer."""
     assert PDF_HEAD.startswith(b"%PDF-1.7\r")
     transport = Transport(response(PDF_HEAD))
     with (
@@ -177,12 +198,14 @@ def test_real_publisher_prefix_carries_the_magic_and_a_truncated_body_is_refused
 
 
 def test_a_body_whose_final_url_differs_from_the_locator_is_refused():
+    """A body whose final URL differs from the locator is refused."""
     capture = _capture(PDF, url="https://files.gao.gov/assets/gao-26-999999.pdf")
     with pytest.raises(GaoReportFileSourceError, match="final URL"):
         validate_gao_report_pdf(capture, product_id=PRODUCT)
 
 
 def _capture(body, *, url=PDF_URL):
+    """Acquire a report PDF through the given response."""
     return CapturedBodyResponse(
         requested_url=url,
         resolved_url=url,
@@ -195,6 +218,7 @@ def _capture(body, *, url=PDF_URL):
 
 @pytest.mark.parametrize("status", [404, 410])
 def test_a_404_names_the_file_unavailable(status):
+    """A 404 names the file unavailable."""
     transport = Transport(response(b"gone", status))
     with (
         GaoReportFileAcquirer(budget=BUDGET, transport=transport) as source,
@@ -205,6 +229,7 @@ def test_a_404_names_the_file_unavailable(status):
 
 
 def test_the_file_hosts_403_aborts_and_never_becomes_absence():
+    """The file host's 403 aborts and never becomes absence, with the keyless body kept as evidence."""
     transport = Transport(response(ACCESS_DENIED, 403, content_type="application/xml"))
     with (
         GaoReportFileAcquirer(budget=BUDGET, transport=transport) as source,
@@ -220,6 +245,7 @@ def test_the_file_hosts_403_aborts_and_never_becomes_absence():
 
 
 def test_acquire_report_file_reads_the_index_then_the_pdf_it_states():
+    """acquire_report_file reads the index and then the PDF it states, in two requests."""
     transport = Transport(index_response(), response())
     with GaoReportFileAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_report_file(PRODUCT)
@@ -230,6 +256,7 @@ def test_acquire_report_file_reads_the_index_then_the_pdf_it_states():
 
 
 def test_acquire_report_file_stops_when_the_index_does_not_prove_the_product():
+    """acquire_report_file stops when the index does not prove the product."""
     transport = Transport(index_response(b"<html><title>other</title></html>"))
     with (
         GaoReportFileAcquirer(budget=BUDGET, transport=transport) as source,
@@ -241,6 +268,7 @@ def test_acquire_report_file_stops_when_the_index_does_not_prove_the_product():
 
 
 def test_budget_and_client_configuration_are_explicit():
+    """Invalid budget values raise ValueError and a wrong transport type raises TypeError."""
     fields = {
         "max_requests": 3,
         "max_index_bytes": 4096,

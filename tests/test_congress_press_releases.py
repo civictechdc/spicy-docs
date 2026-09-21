@@ -66,6 +66,7 @@ SENATE_MINIMAL = SENATE_DEFAULT_MINIMAL.replace(b"Appropriations Feed", b"Approp
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
@@ -73,6 +74,9 @@ def no_retry_delay(monkeypatch):
 
 
 def test_house_feed_matches_the_2026_09_19_measurement():
+    """The pinned House feed matches the 2026-09-19 measurement: channel fields, 10 releases, guid, creator,
+    description, pub date and absent categories.
+    """
     channel = parse_press_release_feed(HOUSE, HOUSE_FEED)
     assert channel.title == "House Committee on Appropriations - Republicans"
     assert channel.link == "http://appropriations.house.gov/"
@@ -95,6 +99,9 @@ def test_house_feed_matches_the_2026_09_19_measurement():
 
 
 def test_senate_feed_matches_the_2026_09_19_measurement():
+    """The pinned Senate feed matches: channel fields including ttl and skip windows, 15 releases, a permalink guid,
+    author and no description.
+    """
     channel = parse_press_release_feed(SENATE, SENATE_FEED)
     assert channel.title == "United States Senate Committee on Appropriations Press Feed"
     assert channel.link == "https://www.appropriations.senate.gov/rss/feeds/"
@@ -118,6 +125,7 @@ def test_senate_feed_matches_the_2026_09_19_measurement():
 
 
 def test_press_release_feed_locator_reads_the_table():
+    """The locator reads the chamber's URL from the feed table and refuses an unknown chamber."""
     assert press_release_feed_locator("house") == HOUSE_FEED.url
     assert press_release_feed_locator("senate") == SENATE_FEED.url
     with pytest.raises(PressReleaseFeedSourceError, match="no press-release feed"):
@@ -134,11 +142,13 @@ def test_senate_default_feed_fallback_is_refused_even_though_the_url_matches():
 
 
 def test_senate_press_channel_passes_identity():
+    """The Senate press channel passes its identity check."""
     channel = parse_press_release_feed(SENATE_MINIMAL, SENATE_FEED)
     assert channel.title and "Press" in channel.title
 
 
 def test_house_feed_body_under_the_senate_feed_config_is_refused():
+    """A House feed body under the Senate config is refused."""
     with pytest.raises(PressReleaseFeedSourceError, match="does not confirm"):
         parse_press_release_feed(HOUSE_MINIMAL, SENATE_FEED)
 
@@ -153,6 +163,7 @@ def test_right_title_wrong_host_link_still_refuses():
 
 
 def test_a_generic_unrelated_channel_fails_the_house_identity_check():
+    """An unrelated generic channel fails the House identity check."""
     generic = HOUSE_MINIMAL.replace(b"House Committee on Appropriations - Republicans", b"Some Other Committee")
     with pytest.raises(PressReleaseFeedSourceError, match="does not confirm"):
         parse_press_release_feed(generic, HOUSE_FEED)
@@ -162,6 +173,7 @@ def test_a_generic_unrelated_channel_fails_the_house_identity_check():
 
 
 def test_senate_est_pubdate_parses_as_a_fixed_utc_minus_five_offset():
+    """A Senate EST pub date parses as a fixed UTC-5 offset and stays timezone-aware."""
     channel = parse_press_release_feed(SENATE_MINIMAL, SENATE_FEED)
     instant = channel.releases[0].pub_date_instant
     assert instant.utcoffset() == timedelta(hours=-5)
@@ -169,11 +181,13 @@ def test_senate_est_pubdate_parses_as_a_fixed_utc_minus_five_offset():
 
 
 def test_house_offset_pubdate_parses_exactly():
+    """A House +0000 pub date parses to a zero offset."""
     channel = parse_press_release_feed(HOUSE_MINIMAL, HOUSE_FEED)
     assert channel.releases[0].pub_date_instant.utcoffset() == timedelta(0)
 
 
 def test_unparseable_pubdate_refuses():
+    """An unparseable RFC 822 date is refused."""
     bad = HOUSE_MINIMAL.replace(b"Wed, 16 Sep 2026 14:04:21 +0000", b"not a date")
     with pytest.raises(PressReleaseFeedSourceError, match="not a valid RFC 822 date"):
         parse_press_release_feed(bad, HOUSE_FEED)
@@ -183,6 +197,7 @@ def test_unparseable_pubdate_refuses():
 
 
 def test_description_is_kept_whole_and_also_stripped_to_plain_text():
+    """A description is kept whole and also stripped to plain text."""
     channel = parse_press_release_feed(HOUSE_MINIMAL, HOUSE_FEED)
     item = channel.releases[0]
     assert item.description == "<span>Hello <b>World</b></span>"
@@ -190,12 +205,14 @@ def test_description_is_kept_whole_and_also_stripped_to_plain_text():
 
 
 def test_guid_with_no_element_at_all_is_none_not_defaulted():
+    """A missing guid is None rather than defaulted, and permalink stays None."""
     no_guid = HOUSE_MINIMAL.replace(b'<guid isPermaLink="false">14637 at http://appropriations.house.gov</guid>', b"")
     channel = parse_press_release_feed(no_guid, HOUSE_FEED)
     assert channel.releases[0].guid is None and channel.releases[0].guid_is_permalink is None
 
 
 def test_category_and_enclosure_are_kept_when_a_feed_carries_them():
+    """Categories and enclosure fields are kept when the feed carries them."""
     with_extras = HOUSE_MINIMAL.replace(
         b"</item>",
         b"<category>Budget</category><category>Hearings</category>"
@@ -209,12 +226,14 @@ def test_category_and_enclosure_are_kept_when_a_feed_carries_them():
 
 
 def test_enclosure_with_a_non_integer_length_refuses():
+    """A non-integer enclosure length is refused."""
     bad = HOUSE_MINIMAL.replace(b"</item>", b'<enclosure url="http://x/a.mp3" length="big"/></item>')
     with pytest.raises(PressReleaseFeedSourceError, match="enclosure length"):
         parse_press_release_feed(bad, HOUSE_FEED)
 
 
 def test_item_without_title_or_link_refuses():
+    """An item missing its title or link is refused."""
     for original in (b"<title>A</title>", b"<link>http://appropriations.house.gov/news/a</link>"):
         missing = HOUSE_MINIMAL.replace(original, b"")
         with pytest.raises(PressReleaseFeedSourceError, match="title and a link"):
@@ -234,22 +253,26 @@ def test_item_without_title_or_link_refuses():
     ],
 )
 def test_shape_refusals_name_the_failed_check(body, message):
+    """Shape refusals name the failed check."""
     with pytest.raises(PressReleaseFeedSourceError, match=message):
         parse_press_release_feed(body, HOUSE_FEED)
 
 
 @pytest.mark.parametrize("max_bytes", [0, True, MAX_FEED_BYTES + 1])
 def test_bounds_are_explicit(max_bytes):
+    """Byte bounds are explicit and refuse on violation."""
     with pytest.raises(PressReleaseFeedSourceError, match="max_bytes"):
         parse_press_release_feed(HOUSE_MINIMAL, HOUSE_FEED, max_bytes=max_bytes)
 
 
 def test_a_call_may_narrow_the_byte_allowance():
+    """A call may narrow the byte allowance and refuses when it is exceeded."""
     with pytest.raises(PressReleaseFeedSourceError, match="max_bytes"):
         parse_press_release_feed(HOUSE_MINIMAL, HOUSE_FEED, max_bytes=len(HOUSE_MINIMAL) - 1)
 
 
 def test_feed_argument_must_be_a_press_release_feed():
+    """A non-feed argument is a TypeError."""
     with pytest.raises(TypeError):
         parse_press_release_feed(HOUSE_MINIMAL, "house")  # type: ignore[arg-type]
 
@@ -272,6 +295,8 @@ def test_read_rss2_channel_refuses_more_items_than_the_cap():
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *responses):
         self.responses = iter(responses)
         self.calls = []
@@ -283,10 +308,12 @@ class Transport(httpx.MockTransport):
 
 
 def response(body=HOUSE_MINIMAL, status=200, *, content_type="application/rss+xml; charset=utf-8"):
+    """An HTTPX response over the given feed bytes."""
     return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": content_type})
 
 
 def test_acquirer_captures_exact_house_bytes_keyless():
+    """The acquirer captures exact House bytes keyless with identity encoding and no key header."""
     transport = Transport(response(HOUSE))
     with PressReleaseAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_press_releases(HOUSE_FEED)
@@ -297,6 +324,7 @@ def test_acquirer_captures_exact_house_bytes_keyless():
 
 
 def test_acquirer_captures_exact_senate_bytes_keyless():
+    """The acquirer captures exact Senate bytes keyless with 15 releases."""
     transport = Transport(response(SENATE, content_type="text/xml;charset=UTF-8"))
     with PressReleaseAcquirer(budget=BUDGET, transport=transport) as source:
         result = source.acquire_press_releases(SENATE_FEED)
@@ -318,6 +346,7 @@ def test_acquirer_captures_exact_senate_bytes_keyless():
     ],
 )
 def test_wrong_shape_or_unavailable_feed_never_succeeds(answer, error, message):
+    """A wrong-shape or unavailable feed fails after one request with the chamber in the acquisition context."""
     transport = Transport(answer)
     with (
         PressReleaseAcquirer(budget=BUDGET, transport=transport) as source,
@@ -329,6 +358,7 @@ def test_wrong_shape_or_unavailable_feed_never_succeeds(answer, error, message):
 
 
 def test_a_malformed_200_retains_its_exact_bytes_as_refused_evidence():
+    """A malformed 200 retains its exact bytes as refused evidence."""
     transport = Transport(response(SENATE_DEFAULT_MINIMAL, content_type="text/xml"))
     with (
         PressReleaseAcquirer(budget=BUDGET, transport=transport) as source,
@@ -340,6 +370,9 @@ def test_a_malformed_200_retains_its_exact_bytes_as_refused_evidence():
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_a_public_access_refusal_on_a_keyless_route_is_named_not_a_credential_refusal(status):
+    """A public access refusal on a keyless route is named as such, not as a credential refusal, with the body
+    retained.
+    """
     body = b"rate limited"
     transport = Transport(response(body, status, content_type="text/plain"))
     with (
@@ -355,6 +388,7 @@ def test_a_public_access_refusal_on_a_keyless_route_is_named_not_a_credential_re
 
 
 def test_acquire_press_releases_requires_a_press_release_feed():
+    """acquire_press_releases requires a PressReleaseFeed."""
     with (
         PressReleaseAcquirer(budget=BUDGET, transport=Transport()) as source,
         pytest.raises(TypeError),
@@ -363,6 +397,7 @@ def test_acquire_press_releases_requires_a_press_release_feed():
 
 
 def test_budget_and_client_configuration_are_explicit():
+    """Invalid budget values raise ValueError and a wrong transport type raises TypeError."""
     for fields in ({"max_requests": 0}, {"max_bytes": MAX_FEED_BYTES + 1}, {"timeout_seconds": 0}):
         with pytest.raises(ValueError):
             PressReleaseBudget(
@@ -379,6 +414,7 @@ def test_budget_and_client_configuration_are_explicit():
 
 
 def test_feed_table_and_dataclass_are_frozen():
+    """The feed table and dataclass are frozen."""
     with pytest.raises(AttributeError):
         HOUSE_FEED.url = "https://example.com"  # type: ignore[misc]
     assert isinstance(PRESS_RELEASE_FEEDS["house"], PressReleaseFeed)
@@ -389,6 +425,7 @@ def test_feed_table_and_dataclass_are_frozen():
 
 @pytest.mark.integration
 def test_live_house_feed_meets_the_2026_09_19_measured_floor():
+    """Live: the House feed meets the measured floor with a digest and one request."""
     budget = PressReleaseBudget(2, DEFAULT_MAX_BYTES, 30, 1.0)
     with PressReleaseAcquirer(budget=budget) as source:
         result = source.acquire_press_releases(HOUSE_FEED)
@@ -400,6 +437,7 @@ def test_live_house_feed_meets_the_2026_09_19_measured_floor():
 
 @pytest.mark.integration
 def test_live_senate_feed_meets_the_2026_09_19_measured_floor():
+    """Live: the Senate feed meets the measured floor with a digest and one request."""
     budget = PressReleaseBudget(2, DEFAULT_MAX_BYTES, 30, 1.0)
     with PressReleaseAcquirer(budget=budget) as source:
         result = source.acquire_press_releases(SENATE_FEED)

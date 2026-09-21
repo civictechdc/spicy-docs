@@ -1,64 +1,20 @@
 """What a committee print says *happened to* a bill it names.
 
-Publisher fact in: one document's normalized text and the ``bill_number``
+Reads one document's normalized text and the ``bill_number``
 :class:`~spicy_docs.interpretation.citations.CitationFinding`s already read out
-of it.
-
-Interpretation out: one :class:`BillActionFinding` per (action phrase, bill)
-pair -- the print's own phrasing, the sealed ``bill_stage`` rung it maps to or
-``None``, the BILLSTATUS action code the publisher's guide gives for that
-phrasing in that chamber or ``()``, the date the sentence states, the spans of
-both the phrase and the bill designator, how many bills the sentence names, and
-which attachment class produced the pair.
-
-``citations`` says *that* a print names ``H.R. 1093``; this says what the print
-says happened to it. The package MODS states the first and states nothing about
-the second, which is why this exists.
-
-**This is measured, and the measurement is what the rows are worth.** See
-``docs/research/bill-action-relationship-2026-09-20.md``: 1,249 pages of eight
-retained House activity reports, 6,365 bill mentions, 4,456 action rows, and 60
-hand-checked mentions behind every figure quoted in this module.
-
-**Three failure shapes, all measured, none of them tunable away.**
-
-1. **The multi-bill sentence.** A published row is both the right kind and
-   the right bill **83.3% of the time where the sentence names one bill** (30
-   of 36 hand-checked) and **50% where it names several** (2 of 4).
-   :attr:`BillActionFinding.attachment` carries the class so a consumer
-   filters instead of guessing, and ``bills_in_sentence`` carries the
-   predicate it was derived from. 4,089 of 4,456 rows (91.8%) are
-   single-bill, so restricting to the trusted class costs 8% of the volume.
-2. **The entry is not a sentence, and every committee sets it differently.**
-   A print writes a bill's long title as its own sentence and the disposition
-   as the fragment after it, or states an en-bloc disposition about "the
-   measures" with the bills listed above it. 2,952 phrase occurrences across
-   the eight prints sit in a sentence that names no bill at all, against 4,456
-   that reach one; :func:`find_bill_actions` reports them as
-   ``orphan_phrasings`` rather than attaching them to whichever bill happens to
-   be nearest, which is the one thing that would turn a miss into a wrong row.
-3. **The print writes "the bill".** Recall against what a reader sees in the
-   entry is 59.6%, and anaphora is most of the gap.
-
-**The phrasing vocabulary is sealed and additions-only.** A key here is
-published in ``bill_committee_actions.print_phrasing``, so renaming or
-removing one rewrites history in a hosted table. New phrasings are appended and
-:data:`PRINT_ACTION_VOCABULARY_VERSION` moves; the derived
-:data:`PRINT_ACTION_RULE_SET_VERSION` moves when any pattern does, even when
-someone forgets the first.
-
-**Rungs come from ``bill_stage`` and are never invented here.**
-:func:`sealed_stage` runs the print's own matched phrase through
-``infer_stage_from_text``, so a phrasing either resolves to a sealed rung with
-the matcher that fired or is reported unmapped. Ten of the twenty-five
-phrasings resolve; the rest are the *print register*, and they are recorded as
-such rather than patched into ``STAGE_RULES``. ``passed the House`` is the
-sharpest case: the sealed matcher is ``passed house``, one word away, and
-widening it would make one rule set read two publishers' prose.
-
-**Complexity.** For text of ``C`` characters and ``K`` = 25 rules, one pass per
-rule over each sentence is ``O(K*C)``, plus a binary search per mention into
-the sentence offsets. Nothing here is superlinear in the corpus.
+of it, and produces one :class:`BillActionFinding` per (action phrase, bill)
+pair: the print's phrasing, the sealed ``bill_stage`` rung it maps to or
+``None``, the publisher's BILLSTATUS action codes for that phrasing and
+chamber, the date the sentence states, the spans of both the phrase and the
+bill designator, and how many bills the sentence names. Attachment is
+nearest-mention-in-sentence, ties to the designator after the phrase, so a
+sentence naming several bills publishes ``attachment='multi'`` at measured
+lower precision (50% against 83.3% for a single-bill sentence) rather than
+being filtered or duplicated, and a phrase whose sentence names no bill is
+reported in ``orphan_phrasings`` instead of attached to whichever bill is
+nearest. The phrasing vocabulary is sealed and additions-only because a key is
+published in ``bill_committee_actions.print_phrasing``, and rungs come from
+``bill_stage`` rather than being invented here.
 """
 
 from __future__ import annotations
@@ -84,14 +40,10 @@ class BillActionError(ValueError):
 class FlatText:
     """The retained text with line-wrap hyphens closed, and the offsets back to it.
 
-    A GPO print that is not gutter-numbered keeps its line-wrap hyphens --
-    ``normalize_gpo_pages`` rejoins them only where the document's layout
-    verdict says they are wraps -- so ``held a hear-\\ning`` is the page's own
-    text and a phrase rule run over it reads no hearing at all. This builds the
-    text the rules match in and keeps both offset maps, so **every span a
-    finding carries is an offset into the retained text**, the same text the
-    citation spans and the row's ``text_sha256`` are against. Nothing is
-    measured in one text and published against another.
+    Both offset maps are kept so every span a finding carries is an offset into
+    the retained text -- the same text the citation spans and the row's
+    ``text_sha256`` are against -- because a phrase rule run over an unrejoined
+    print wrap reads no hearing at all.
     """
 
     retained: str
@@ -176,9 +128,8 @@ _LIST_MARKER_COLUMN = 5
 def sentence_starts(flat: str) -> tuple[int, ...]:
     """Where each sentence begins in the flattened text.
 
-    A break after an abbreviation is never a break -- ``H.J.`` and ``H. Rept.``
-    are how this family spells a bill and a report -- and a break after an
-    entry marker at the head of its own sentence is not one either.
+    A break after an abbreviation (``H.J.``, ``H. Rept.``) or after an entry
+    marker at the head of its own sentence is not one.
     """
     starts = [0]
     for match in _SENTENCE_BREAK.finditer(flat):
@@ -224,12 +175,11 @@ FROM_THE_WIRE = "observed-2026-09-20"
 
 @dataclass(frozen=True, slots=True)
 class GuideCode:
-    """One ``<actionCode>`` value, whose chamber, and how its existence is known.
+    """One ``<actionCode>`` value, its chamber, and how its existence is known.
 
-    ``source`` is ``FROM_GUIDE`` for a code the retained user guide's section 3
-    lists and ``FROM_THE_WIRE`` for one only the publisher's own responses
-    show. Both are real; only the first can be checked against a committed
-    fixture, and conflating them is what made the earlier self-check vacuous.
+    ``source`` separates a code the retained guide's section 3 lists from one
+    only the publisher's own responses show; both are real, but only the first
+    can be checked against a committed fixture.
     """
 
     code: str
@@ -390,19 +340,12 @@ def chamber_of(
 ) -> str | None:
     """Which chamber's code vocabulary this one row is answerable to.
 
-    Three rules, in order, and none of them is "the document's chamber", which
-    would be an assumption: a House committee's activity report states *"the
-    Senate passed H.R. 2365"* and reports a Senate committee acting on a Senate
-    bill, and both belong to the Senate side while sitting in a House print.
-
-    1. **The phrase names one** -- ``passed the Senate``, ``received in the
-       House`` -- and then the phrase decides.
-    2. **The committee is the actor** -- a hearing, a markup -- and then the
-       *stating committee's* chamber decides, because the event is the
-       committee's and not the measure's. ``committee_chamber`` of ``None``
-       leaves it unresolved rather than guessed.
-    3. Otherwise the action is on the measure, and the **measure's own type**
-       decides: ``H.R. 2365`` is a House measure whatever document discusses it.
+    Three rules in order, and none is "the document's chamber": the phrase
+    decides when it names one (``passed the Senate``); a hearing or markup is
+    the committee's own act, so ``committee_chamber`` decides and ``None``
+    leaves it unresolved rather than guessed; otherwise the measure's own type
+    decides, since ``H.R. 2365`` is a House measure whatever document discusses
+    it.
     """
     if phrasing in _CHAMBER_IN_THE_PHRASE:
         return _CHAMBER_IN_THE_PHRASE[phrasing]
@@ -423,10 +366,9 @@ def chamber_of(
 class PrintAction:
     """One measured print phrasing, and why it is spelled the way it is.
 
-    ``key`` names *what the print wrote*, never the legislative event: the
-    event is read off ``bill_stage`` by :func:`sealed_stage` or reported as
-    unmapped. A parallel event vocabulary declared here is exactly what this
-    package forbids.
+    ``key`` names what the print wrote, never the legislative event, which is
+    read off ``bill_stage`` by :func:`sealed_stage` or reported unmapped; a
+    parallel event vocabulary here is what this package forbids.
     """
 
     key: str
@@ -562,14 +504,11 @@ def _rule_set_version(
 ) -> str:
     """A digest over everything that decides what a published row says.
 
-    The device ``citations.CITATION_RULE_SET_VERSION`` uses, widened twice over
-    what it first covered. A pattern is not the only input to a row: the
-    code mapping fills ``billstatus_action_code`` and the chamber rules decide
-    which of its entries apply, so an edit to either changes **every** row's
-    published code while leaving the patterns untouched. Digesting only the
-    patterns let that happen without moving a version -- and the two
-    corrections this module has already been through were both edits to exactly
-    those inputs.
+    Not only the patterns: the code mapping fills ``billstatus_action_code``
+    and the chamber rules decide which of its entries apply, so an edit to
+    either changes every row's published code while leaving the patterns
+    untouched -- digesting only the patterns let that happen without moving a
+    version.
     """
     codes = BILLSTATUS_ACTION_CODES if codes is None else codes
     chamber_rules = _CHAMBER_IN_THE_PHRASE if chamber_rules is None else chamber_rules
@@ -603,9 +542,9 @@ def sealed_stage(phrase: str) -> tuple[str | None, str | None]:
 def phrase_matches(sentence: str) -> tuple[tuple[str, int, int, str], ...]:
     """``(phrasing, start, end, matched)`` per phrase this sentence states, in span order.
 
-    Precedence resolves overlap: a later rule never claims a span an earlier
-    one already owns, so one span is one phrasing and the row counts are counts
-    of events rather than of patterns.
+    Precedence resolves overlap -- a later rule never claims a span an earlier
+    one owns -- so one span is one phrasing and row counts count events, not
+    patterns.
     """
     taken: list[tuple[int, int]] = []
     found: list[tuple[str, int, int, str]] = []
@@ -637,14 +576,10 @@ _PRINT_DATE = re.compile(
 def print_dates(sentence: str) -> tuple[str, ...]:
     """Every date the sentence states, ISO, in printed order.
 
-    Both spellings this family sets: ``On June 13, 2023,`` in prose and
-    ``3/24/23`` in a markup-summary heading. A two-digit year reads as 20xx,
-    which is safe for a 118th-Congress print and is stated rather than silently
-    assumed.
-
-    **Unscored.** The dates are extracted and published; whether the date
-    belongs to *this* action rather than to a neighbouring clause was not
-    hand-checked, and ``bill_committee_actions.stated_date`` says so.
+    Both spellings this family sets (``June 13, 2023`` and ``3/24/23``); a
+    two-digit year reads as 20xx, safe for a 118th-Congress print. Unscored:
+    whether the date belongs to this action rather than a neighbouring clause
+    was not hand-checked, and ``bill_committee_actions.stated_date`` says so.
     """
     found: list[str] = []
     for match in _PRINT_DATE.finditer(sentence):
@@ -680,12 +615,11 @@ TRUSTED_ATTACHMENT = ATTACHMENT_SINGLE
 
 @dataclass(frozen=True, slots=True)
 class BillActionFinding:
-    """One action phrase, attached to one bill the same sentence names.
+    """One action phrase attached to one bill the same sentence names.
 
-    ``span_start``/``span_end`` locate the **phrase** and are what make the row
-    unique; ``mention_span_start``/``mention_span_end`` locate the bill
-    designator. Both are offsets into the retained text, so a consumer holding
-    that text re-reads exactly what the rule saw.
+    ``span_start``/``span_end`` locate the phrase and make the row unique;
+    ``mention_span_*`` locate the bill designator. All are offsets into the
+    retained text, so a consumer holding it re-reads exactly what the rule saw.
     """
 
     bill_id: str
@@ -714,10 +648,9 @@ class BillActionFinding:
 class BillActionReading:
     """Every attached action in one document, and every phrase that reached no bill.
 
-    ``orphan_phrasings`` is not a defect list and not padding: it is the
-    ceiling on what a sentence-scoped rule can never attach, and publishing it
-    beside the rows is what stops the row count from reading as the print's
-    whole content. 2,952 against 4,456 across the eight measured prints.
+    ``orphan_phrasings`` is the ceiling on what a sentence-scoped rule can
+    never attach, published beside the rows so the row count does not read as
+    the print's whole content.
     """
 
     findings: tuple[BillActionFinding, ...]
@@ -739,23 +672,17 @@ def find_bill_actions(
     """Every action the print states about a bill it names, from the text and its cites.
 
     ``citations`` are the ``bill_number`` :class:`CitationFinding`s already
-    read out of ``text`` -- passed in rather than re-derived, so one document
-    is read once and the citation rows and the action rows cannot disagree
-    about where a bill was named. Anything else is ignored, so a caller may
-    hand over the whole finding tuple.
-
-    ``committee_chamber`` is the chamber of the committee whose document this
-    is, and it is used for one thing only: a hearing and a markup are the
-    committee's own acts, so their action code follows the actor and not the
-    measure (see :func:`chamber_of`). Every other row's chamber is read off the
-    row.
-
-    **The attachment rule is nearest-mention-in-sentence**, ties going to the
+    read out of ``text`` -- passed in so one document is read once and citation
+    and action rows cannot disagree about where a bill was named -- and
+    anything else is ignored, so a caller may hand over the whole finding
+    tuple. ``committee_chamber`` is used for one thing only: a hearing or
+    markup is the committee's own act, so its code follows the actor rather
+    than the measure (see :func:`chamber_of`), while every other row's chamber
+    is read off the row. Attachment is nearest-mention-in-sentence, ties to the
     designator after the phrase, because the print's grammar puts the measure
-    after the verb (*ordered H.R. 1432 favorably reported*, *held a hearing on
-    H.R. 2691*). The obvious alternative -- give the action to every bill in
-    the sentence -- publishes 5,138 rows against 4,456 on the measured corpus,
-    and the extra 682 are the ones a multi-bill sentence gets wrong.
+    after the verb; giving each action to every bill in the sentence publishes
+    the multi-bill errors instead. Raises :class:`BillActionError` for
+    non-string text or a citation span outside the text.
     """
     if not isinstance(text, str):
         raise BillActionError(f"text must be a string, not {type(text).__name__}")

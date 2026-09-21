@@ -1,8 +1,8 @@
 """Acquire one GovInfo package body over real HTTPX streams, offline.
 
-The three CRPT-119hrpt1 fixtures are exact publisher responses; every refusal
-case is synthetic. The live case is marked ``integration`` and skipped without
-a credential file.
+Pins the sealed preference order and the print permutation, credential scoping
+to keyed routes, MODS identity and rendition disagreement, unavailable,
+redirect and error-page refusals, shared request budgets, and byte bounds.
 """
 
 from __future__ import annotations
@@ -58,6 +58,7 @@ class Stream(httpx.SyncByteStream):
 
 
 def reply(body: bytes, *, status: int = 200, content_type: str | None = None, location: str | None = None):
+    """An HTTPX response over the given bytes."""
     headers = {}
     if content_type is not None:
         headers["content-type"] = content_type
@@ -93,6 +94,7 @@ class Transport(httpx.MockTransport):
 
 
 def acquire(transport: Transport, **arguments) -> GovInfoPackageBody:
+    """Acquire the fixture package through the transport."""
     budget = arguments.pop("budget", BUDGET)
     with GovInfoBodyAcquirer(budget=budget, api_key=KEY, transport=transport, clock=lambda: NOW) as client:
         return client.acquire(arguments.pop("package_id", PACKAGE), **arguments)
@@ -100,10 +102,14 @@ def acquire(transport: Transport, **arguments) -> GovInfoPackageBody:
 
 @pytest.fixture(autouse=True)
 def no_retry_delays(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_acquires_the_first_offered_preferred_format_with_every_capture() -> None:
+    """Acquisition takes the first offered preferred format, keeping every capture, MODS identity and the sealed
+    preference order.
+    """
     transport = Transport()
     result = acquire(transport)
 
@@ -127,6 +133,7 @@ def test_acquires_the_first_offered_preferred_format_with_every_capture() -> Non
 
 
 def test_the_credential_travels_only_to_the_keyed_routes() -> None:
+    """The credential travels only to keyed routes and never in URLs."""
     transport = Transport()
     acquire(transport)
 
@@ -138,6 +145,7 @@ def test_the_credential_travels_only_to_the_keyed_routes() -> None:
 
 
 def test_pdf_is_reached_when_the_caller_names_it() -> None:
+    """PDF is reached when the caller names it."""
     transport = Transport(**{PDF_URL: reply(b"%PDF-1.4\nbody", content_type="application/pdf")})
     result = acquire(transport, prefer=("pdf",))
 
@@ -146,13 +154,7 @@ def test_pdf_is_reached_when_the_caller_names_it() -> None:
 
 
 def test_the_print_preference_is_the_sealed_order_with_pdf_moved_to_the_front() -> None:
-    """A permutation, never a different opinion about what the renditions are.
-
-    Derived from ``BODY_PREFERENCE`` rather than spelled out, so a rendition
-    added to the sealed order joins this one too; and the sealed order itself
-    is asserted unmoved, because that is what a second named preference must
-    not cost.
-    """
+    """The print preference is a permutation of the sealed order with PDF first, never a different opinion."""
     assert PRINT_BODY_PREFERENCE[0] == "pdf"
     assert sorted(PRINT_BODY_PREFERENCE) == sorted(BODY_PREFERENCE)
     assert PRINT_BODY_PREFERENCE[1:] == tuple(name for name in BODY_PREFERENCE if name != "pdf")
@@ -162,7 +164,7 @@ def test_the_print_preference_is_the_sealed_order_with_pdf_moved_to_the_front() 
 
 
 def test_the_print_preference_takes_the_pdf_of_a_package_that_offers_both() -> None:
-    """An activity report offers htm and pdf, and only the pdf states a page."""
+    """The print preference takes the PDF of a package offering both, without requesting HTML."""
     transport = Transport(**{PDF_URL: reply(b"%PDF-1.4\nbody", content_type="application/pdf")})
     result = acquire(transport, prefer=PRINT_BODY_PREFERENCE)
 
@@ -173,7 +175,7 @@ def test_the_print_preference_takes_the_pdf_of_a_package_that_offers_both() -> N
 
 
 def test_the_print_preference_still_reaches_a_text_rendition_when_no_pdf_is_offered() -> None:
-    """Why the whole sealed order follows PDF instead of stopping at ``("pdf",)``."""
+    """The print preference still reaches a text rendition when no PDF is offered."""
     htm_only = f'<url displayLabel="HTML rendition" access="raw object">{HTM_URL}</url>'
     transport = Transport(**{MODS_URL: reply(mods_xml(urls=htm_only), content_type="application/xml")})
     result = acquire(transport, prefer=PRINT_BODY_PREFERENCE)
@@ -183,7 +185,7 @@ def test_the_print_preference_still_reaches_a_text_rendition_when_no_pdf_is_offe
 
 
 def test_pdf_is_last_under_the_default_so_an_offered_text_rendition_wins() -> None:
-    """The sealed order ends in PDF, but only reaches it when nothing earlier is offered."""
+    """PDF is last under the default, so an offered text rendition wins and PDF is never requested."""
     transport = Transport(**{PDF_URL: reply(b"%PDF-1.4\nbody", content_type="application/pdf")})
     result = acquire(transport)
 
@@ -194,7 +196,7 @@ def test_pdf_is_last_under_the_default_so_an_offered_text_rendition_wins() -> No
 
 
 def test_a_pdf_only_package_yields_a_body_under_the_default() -> None:
-    """The ruling this seals: CREC offers PDF alone, and the old default refused it."""
+    """A PDF-only package yields a body under the default, which the previous default refused."""
     pdf_only = f'<url displayLabel="PDF rendition" access="raw object">{PDF_URL}</url>'
     transport = Transport(
         **{
@@ -212,6 +214,7 @@ def test_a_pdf_only_package_yields_a_body_under_the_default() -> None:
 
 
 def test_a_pdf_without_its_magic_is_refused_with_its_bytes() -> None:
+    """A PDF without its magic is refused with its bytes at the body stage."""
     transport = Transport(**{PDF_URL: reply(b"<html>not a pdf</html>", content_type="application/pdf")})
     with pytest.raises(GovInfoBodySourceError, match="%PDF-") as caught:
         acquire(transport, prefer=("pdf",))
@@ -222,6 +225,9 @@ def test_a_pdf_without_its_magic_is_refused_with_its_bytes() -> None:
 
 
 def test_a_format_the_package_does_not_offer_refuses_before_any_body_request() -> None:
+    """A format the package does not offer refuses before any body request, with the stage and offered formats
+    recorded.
+    """
     transport = Transport()
     with pytest.raises(GovInfoFormatNotOfferedError, match="none matches") as caught:
         acquire(transport, prefer=("xml", "txt"))
@@ -235,6 +241,7 @@ def test_a_format_the_package_does_not_offer_refuses_before_any_body_request() -
 
 
 def test_a_preferred_format_stated_elsewhere_refuses_as_disagreement() -> None:
+    """A preferred format stated elsewhere refuses as a moved rendition, not as absence."""
     # A folder this module does not derive for a supported file type -- xml
     # is chosen because it and uslm share the extension the folder-less
     # classifier reads (bodies._FORMAT_BY_EXTENSION's documented tie-break).
@@ -252,6 +259,7 @@ def test_a_preferred_format_stated_elsewhere_refuses_as_disagreement() -> None:
 
 
 def test_a_missing_package_is_unavailable_not_absent() -> None:
+    """A missing package is unavailable, not absent, with its response retained."""
     missing = reply(b'{"message":"The requested resource does not exist."}', status=404, content_type="text/plain")
     transport = Transport(**{SUMMARY_URL: missing})
     with pytest.raises(GovInfoPackageUnavailableError, match="HTTP 404") as caught:
@@ -263,6 +271,7 @@ def test_a_missing_package_is_unavailable_not_absent() -> None:
 
 
 def test_a_redirected_rendition_is_unavailable_and_never_followed() -> None:
+    """A redirected rendition is unavailable and never followed, so absence cannot become a body."""
     # Measured: an absent or unoffered rendition answers 302 to /error, which
     # itself answers 200. Following it would turn absence into a body.
     transport = Transport(**{HTM_URL: reply(b"", status=302, location="https://www.govinfo.gov/error")})
@@ -274,6 +283,7 @@ def test_a_redirected_rendition_is_unavailable_and_never_followed() -> None:
 
 
 def test_the_error_page_served_as_a_body_is_refused_with_its_bytes() -> None:
+    """The error page served as a body is refused with its bytes and request key."""
     page = b'<html><a href="https://www.govinfo.gov/error">Page Not Found</a></html>'
     transport = Transport(**{HTM_URL: reply(page, content_type="text/html")})
     with pytest.raises(GovInfoBodySourceError, match="error page") as caught:
@@ -284,12 +294,14 @@ def test_the_error_page_served_as_a_body_is_refused_with_its_bytes() -> None:
 
 
 def test_a_body_in_another_format_is_refused() -> None:
+    """A body in another format is refused."""
     transport = Transport(**{HTM_URL: reply(BODY, content_type="application/pdf")})
     with pytest.raises(GovInfoBodySourceError, match="Content-Type"):
         acquire(transport)
 
 
 def test_a_mods_access_id_for_another_package_refuses_before_the_body() -> None:
+    """A MODS access id for another package refuses before the body is requested."""
     transport = Transport(**{MODS_URL: reply(mods_xml(access_id="CRPT-119hrpt2"), content_type="application/xml")})
     with pytest.raises(GovInfoBodySourceError, match="accessId differs") as caught:
         acquire(transport)
@@ -299,6 +311,7 @@ def test_a_mods_access_id_for_another_package_refuses_before_the_body() -> None:
 
 
 def test_a_summary_for_another_package_refuses_before_the_mods() -> None:
+    """A summary for another package refuses before the MODS is requested."""
     other = SUMMARY.replace(b'"packageId": "CRPT-119hrpt1"', b'"packageId": "CRPT-119hrpt2"')
     transport = Transport(**{SUMMARY_URL: reply(other, content_type="application/json")})
     with pytest.raises(GovInfoBodySourceError, match="packageId differs"):
@@ -307,6 +320,7 @@ def test_a_summary_for_another_package_refuses_before_the_mods() -> None:
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_a_keyed_credential_refusal_aborts_without_retaining_bytes(status: int) -> None:
+    """A keyed credential refusal aborts without retaining bytes or a capture."""
     transport = Transport(**{SUMMARY_URL: reply(b"credential material", status=status)})
     with pytest.raises(CredentialRefusedError) as caught:
         acquire(transport)
@@ -318,6 +332,7 @@ def test_a_keyed_credential_refusal_aborts_without_retaining_bytes(status: int) 
 
 
 def test_a_keyless_wall_keeps_the_publishers_own_answer() -> None:
+    """A keyless wall keeps the publisher's own answer while keyed routes retain none."""
     wall = b"<html>Access denied by the edge</html>"
     transport = Transport(**{HTM_URL: reply(wall, status=403, content_type="text/html")})
     with pytest.raises(CredentialRefusedError) as caught:
@@ -329,12 +344,14 @@ def test_a_keyless_wall_keeps_the_publishers_own_answer() -> None:
 
 
 def test_a_keyed_response_that_echoes_the_credential_is_refused_unretained() -> None:
+    """A keyed response echoing the credential is refused without retaining it."""
     transport = Transport(**{MODS_URL: reply(KEY.encode(), content_type="application/xml")})
     with pytest.raises(CredentialRefusedError, match="echoed"):
         acquire(transport)
 
 
 def test_both_clients_spend_one_request_budget() -> None:
+    """Both clients spend one request budget, with the body refusal attributed to the next request."""
     transport = Transport()
     with pytest.raises(GovInfoBodySourceError, match="request budget") as caught:
         acquire(transport, budget=replace(BUDGET, max_requests=2))
@@ -346,6 +363,7 @@ def test_both_clients_spend_one_request_budget() -> None:
 
 
 def test_a_retry_spends_the_same_budget_as_the_metadata_requests() -> None:
+    """A retry spends the same budget as the metadata requests."""
     attempts = iter([reply(b"", status=503), HTML_BODY])
     transport = Transport(**{HTM_URL: lambda: next(attempts)()})
     result = acquire(transport, budget=replace(BUDGET, max_requests=4))
@@ -355,6 +373,7 @@ def test_a_retry_spends_the_same_budget_as_the_metadata_requests() -> None:
 
 
 def test_a_body_over_its_bound_returns_no_partial_bytes() -> None:
+    """A body over its bound returns no partial bytes and records the lowered bound."""
     transport = Transport()
     with pytest.raises(GovInfoBodySourceError, match="byte bound") as caught:
         acquire(transport, max_bytes=len(BODY) - 1)
@@ -377,6 +396,7 @@ def test_a_body_over_its_bound_returns_no_partial_bytes() -> None:
     ],
 )
 def test_invalid_selections_refuse_before_any_request(arguments: dict, error: type[Exception]) -> None:
+    """Invalid selections refuse before any request."""
     transport = Transport()
     with pytest.raises(error):
         acquire(transport, **arguments)
@@ -394,16 +414,19 @@ def test_invalid_selections_refuse_before_any_request(arguments: dict, error: ty
     ],
 )
 def test_invalid_budget_refused(field: str, value: object) -> None:
+    """Invalid budget values are refused naming the field."""
     with pytest.raises(ValueError, match=field):
         replace(BUDGET, **{field: value})
 
 
 def test_an_acquirer_without_a_credential_refuses_to_exist() -> None:
+    """An acquirer without a credential refuses to be constructed."""
     with pytest.raises(ValueError, match="api_key"):
         GovInfoBodyAcquirer(budget=BUDGET, api_key="", transport=Transport())
 
 
 def test_a_closed_client_refuses_without_a_request() -> None:
+    """A closed client refuses without making a request."""
     transport = Transport()
     client = GovInfoBodyAcquirer(budget=BUDGET, api_key=KEY, transport=transport)
     client.close()
@@ -415,6 +438,7 @@ def test_a_closed_client_refuses_without_a_request() -> None:
 @pytest.mark.integration
 @pytest.mark.parametrize("package_id", ["CRPT-119hrpt1", "CHRG-119hhrg64242"])
 def test_live_package_body_is_acquired_and_proved(package_id: str) -> None:
+    """Live: the package body is acquired and proved for both collections, without an error page or key."""
     if not ENV_FILE.exists():
         pytest.skip(f"no credential file at {ENV_FILE}")
     budget = GovInfoBodyBudget(

@@ -10,6 +10,8 @@ from spicy_docs.extraction import DocumentExtractor, FullPage, NativeText, Raste
 
 
 class ExampleBackend:
+    """A test double standing in for an OCR backend: it asserts a PNG raster and returns fixed output."""
+
     def recognize(self, image: Raster) -> Recognition:
         assert image.data.startswith(b"\x89PNG")
         return Recognition(
@@ -18,6 +20,7 @@ class ExampleBackend:
 
 
 def run_example() -> list[dict]:
+    """Build a two-page PDF in memory, extract page 2 through the injected backend, and assert both page texts."""
     import pymupdf
 
     with pymupdf.open() as document:

@@ -1,4 +1,7 @@
-"""Native report headings survive without becoming resolved agency identities."""
+"""Native report headings survive without becoming resolved agency identities.
+
+HTM and PDF fixtures keep publisher heading text with char spans covering the full text, while unheaded or
+unidentified sections leave agency_label and agency_key None."""
 
 import hashlib
 from pathlib import Path

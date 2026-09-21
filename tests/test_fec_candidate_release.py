@@ -1,4 +1,10 @@
-"""Candidate-query publication preserves exact scope and source observations."""
+"""Candidate-query publication preserves exact scope and source observations.
+
+Pins the retained query's every source field and requested scope, unsorted
+pages with distinct ids and separated bodies, and refusals for pinned
+publisher refusals, invalid identities, duplicates, counts, missing pages,
+shrunk inventories, changed captures and other endpoint shapes.
+"""
 
 import hashlib
 import json
@@ -22,6 +28,7 @@ URL = "https://api.open.fec.gov/v1/candidates/?cycle=2024&cycle=2026&per_page=1"
 
 
 def _inputs(tmp_path, *, records=None, response_change=None):
+    """Build the candidate-query inputs for one retained capture."""
     captures, originals, blobs = synthetic_inputs(
         tmp_path,
         records=records
@@ -38,6 +45,7 @@ def _inputs(tmp_path, *, records=None, response_change=None):
 
 
 def _publish(tmp_path, captures, pages):
+    """Publish the candidate query and return the reader over the release."""
     output = LocalSourceNativeBlobStore(tmp_path / "output-blobs")
     published = SourceNativeReleasePublisher(
         PROFILE,
@@ -61,6 +69,7 @@ def _publish(tmp_path, captures, pages):
 
 @pytest.mark.parametrize("file", ["selected.json", "empty.json"])
 def test_retained_query_preserves_every_source_field_and_requested_scope(tmp_path, file):
+    """The retained query preserves every source field and the requested scope, inventing no record for an absent id."""
     selected = next(item for item in json.loads((FIXTURES / "sources.json").read_bytes()) if item["file"] == file)
     capture = selected["capture"]
     raw = (FIXTURES / file).read_bytes()
@@ -88,6 +97,9 @@ def test_retained_query_preserves_every_source_field_and_requested_scope(tmp_pat
 
 
 def test_unsorted_pages_preserve_distinct_ids_unknowns_and_separated_bodies(tmp_path):
+    """Unsorted pages keep distinct ids, unknown values and separated bodies, with repeated filters in the request
+    URL.
+    """
     captures, _, blobs = _inputs(tmp_path)
     reader = _publish(tmp_path, captures, iter_retained_candidate_pages(captures, blob_source=blobs))
     rows = {row["sourceRecordId"]: row["record"] for row in reader.iter_records()}
@@ -102,6 +114,7 @@ def test_unsorted_pages_preserve_distinct_ids_unknowns_and_separated_bodies(tmp_
 
 
 def test_pinned_publisher_refusal_stays_a_failure_instead_of_empty_success(tmp_path):
+    """A pinned publisher refusal stays a failure and publishes nothing."""
     capture = json.loads((FIXTURES / "sources.json").read_bytes())[0]["capture"]
     source = json.loads((FIXTURES / "sources.json").read_bytes())[2]
     raw = (FIXTURES / source["file"]).read_bytes()
@@ -116,6 +129,7 @@ def test_pinned_publisher_refusal_stays_a_failure_instead_of_empty_success(tmp_p
 
 @pytest.mark.parametrize("identity", ["C00000001", "", "H2AK011580", "H2AK0115\n", None, 123, True])
 def test_invalid_source_identity_refuses_publication(tmp_path, identity):
+    """An invalid source identity refuses publication."""
     captures, _, blobs = _inputs(tmp_path, records=[{"candidate_id": identity}])
     with pytest.raises(ValueError, match="candidate_id"):
         _publish(tmp_path, captures, iter_retained_candidate_pages(captures, blob_source=blobs))
@@ -124,6 +138,7 @@ def test_invalid_source_identity_refuses_publication(tmp_path, identity):
 
 @pytest.mark.parametrize("selected", ["H2AK01158", "P00000034"])
 def test_direct_candidate_filter_requires_a_returned_match(tmp_path, selected):
+    """A direct candidate filter requires a returned match."""
     captures, _, blobs = _inputs(tmp_path, records=[{"candidate_id": "H2AK01158"}])
     capture = captures[0]
     capture["requestUrl"] = capture["resolvedUrl"] = URL + "&candidate_id=" + selected
@@ -147,6 +162,7 @@ def test_direct_candidate_filter_requires_a_returned_match(tmp_path, selected):
     ],
 )
 def test_counts_page_controls_and_source_refusals_cannot_publish(tmp_path, change):
+    """Counts, page controls and source refusals cannot publish."""
     captures, _, blobs = _inputs(tmp_path, response_change=change)
     with pytest.raises(ValueError):
         _publish(tmp_path, captures, iter_retained_candidate_pages(captures, blob_source=blobs))
@@ -154,6 +170,7 @@ def test_counts_page_controls_and_source_refusals_cannot_publish(tmp_path, chang
 
 
 def test_estimated_empty_count_cannot_publish(tmp_path):
+    """An estimated empty count cannot publish, having no continuation to fail elsewhere."""
     # Unlike nonempty estimates, this has no continuation to make it fail elsewhere.
     captures, _, blobs = _inputs(
         tmp_path,
@@ -166,12 +183,14 @@ def test_estimated_empty_count_cannot_publish(tmp_path):
 
 
 def test_duplicate_candidate_ids_refuse_instead_of_collapsing(tmp_path):
+    """Duplicate candidate ids refuse rather than collapsing."""
     captures, _, blobs = _inputs(tmp_path, records=[{"candidate_id": "P00000034"}] * 2)
     with pytest.raises(ValueError, match="repeats"):
         _publish(tmp_path, captures, iter_retained_candidate_pages(captures, blob_source=blobs))
 
 
 def test_candidate_ids_are_not_case_normalized(tmp_path):
+    """Candidate ids are not case-normalized."""
     # Synthetic shape control, not evidence that the live API publishes lowercase IDs.
     ids = ["H2AK01158", "H2ak01158"]
     captures, _, blobs = _inputs(tmp_path, records=[{"candidate_id": identity} for identity in ids])
@@ -182,6 +201,7 @@ def test_candidate_ids_are_not_case_normalized(tmp_path):
 
 
 def test_missing_page_shrunk_inventory_and_changed_capture_refuse(tmp_path):
+    """A missing page, shrunk inventory or changed capture refuses with its named reason."""
     captures, _, blobs = _inputs(tmp_path)
     pages = list(iter_retained_candidate_pages(captures, blob_source=blobs))
     with pytest.raises(ValueError, match="terminal"):
@@ -195,6 +215,7 @@ def test_missing_page_shrunk_inventory_and_changed_capture_refuse(tmp_path):
 
 @pytest.mark.parametrize("path", ["candidates/search", "candidate/H2AK01158", "candidates/totals", "committees"])
 def test_other_endpoint_shapes_need_their_own_identity_rules(tmp_path, path):
+    """Another endpoint's shape needs its own identity rules."""
     captures, _, _ = _inputs(tmp_path)
     capture = captures[0]
     capture["requestUrl"] = capture["resolvedUrl"] = URL.replace("/candidates/", f"/{path}/")

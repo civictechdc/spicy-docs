@@ -1,33 +1,19 @@
 """Deterministic CFR XML from the document model, and a source map beside it.
 
 The vocabulary is the guide's and the pinned schema's, and nothing else
-travels in it: no ``id``, no confidence, no rule name, no evidence reference
-becomes an attribute. A consumer who wants to know where a paragraph came
+travels in it -- no ``id``, confidence, rule name or evidence reference
+becomes an attribute -- so a consumer who wants to know where a paragraph came
 from reads the **source map**, a separate JSON document keyed by the XML path
-of each element (``/CFRGRANULE/SECTION[1]/P[3]``). That is what keeps the
-output a file the publisher's own schema accepts while still being a
-derivative that can be audited back to the evidence.
-
-**Paragraph nesting lives in the markers, not in the elements.** A real CFR
-granule sets ``(a)``, ``(1)``, ``(i)`` and ``(A)`` as *sibling* ``<P>``
-elements in reading order -- the fixture section ``§ 716.2`` does, and the
-schema's ``SECTION`` is a flat mixed choice. So the parser's tree is
-flattened back to document order here, and the tree it derived is carried by
-the source map and checked by ``validate.structural_fidelity``. Emitting
-nested ``<P>`` would be this repository's invention, not the publisher's
-vocabulary.
-
-**What is not serialized.** ``FDSYS`` -- the title, volume, edition date and
-ancestry a granule carries -- is publisher metadata that *retrieval* supplies
-(the MODS, or the request's own coordinates); it is never reconstructed from a
-page image, so this module emits it only from facts a caller passes in and
-never from the evidence. Page furniture, the part heading, the contents list
-and the part's AUTHORITY and SOURCE notes are classified by the parser and
-left out of a section granule; when a section is selected they are
-out-of-scope evidence, which the coverage check counts as such rather than as
-loss.
-
-Serializing is ``O(N + C)`` for ``N`` nodes and ``C`` characters of text.
+of each element, which is what keeps the output a file the publisher's own
+schema accepts while still being auditable back to the evidence. Paragraph
+nesting lives in the markers, not the elements: a real CFR granule sets
+``(a)``, ``(1)``, ``(i)`` and ``(A)`` as *sibling* ``<P>`` elements, so the
+parser's tree is flattened back to document order here and carried by the
+source map, checked by ``validate.structural_fidelity`` -- emitting nested
+``<P>`` would be this repository's invention. ``FDSYS`` is emitted only from
+facts a caller passes in and never from the evidence, and page furniture and
+part matter are classified by the parser and left out of a section granule as
+out-of-scope evidence rather than loss.
 """
 
 from __future__ import annotations
@@ -153,13 +139,12 @@ def _segments(runs: Sequence[StyledRun]) -> list[tuple[str, bool, str | None]]:
     """``(text, italic, break_to_page)`` runs, merged so one emphasis is one element.
 
     Two joins matter here, and both come from the evidence being *lines*: a
-    run of italic set across a print line reaches the model as two italic
-    runs with the join space between them, and a print line can end inside
-    the emphasis. So a whitespace-only run between two italic runs is taken
-    as part of the emphasis, adjacent runs of the same face are merged, and
-    the emphasis's own leading and trailing spaces are then moved outside it
-    -- which is how the publisher sets it (``<E T="03">Variances ...
-    requirements.</E> (1) This section``). No character is added or removed.
+    run of italic set across a print line reaches the model as two italic runs
+    with the join space between them, and a print line can end inside the
+    emphasis. So a whitespace-only run between two italic runs is taken as part
+    of the emphasis, adjacent runs of the same face are merged, and the
+    emphasis's own leading and trailing spaces are then moved outside it,
+    which is how the publisher sets it. No character is added or removed.
     """
     merged: list[tuple[str, bool, str | None]] = []
     for index, run in enumerate(runs):
@@ -246,10 +231,10 @@ def serialize_cfr(
 
     ``section`` selects by section number, the way a caller names the granule
     it asked for; every block outside the selected section is out-of-scope
-    evidence, listed in the source map. ``fdsys`` writes the publisher
-    metadata block from facts the *caller* holds -- the request's own
-    coordinates or the package MODS -- and is never derived from the
-    rendition.
+    evidence, listed in the source map, and a requested section that is not
+    found raises ``SerializeError``. ``fdsys`` writes the publisher metadata
+    block from facts the *caller* holds -- the request's own coordinates or the
+    package MODS -- and is never derived from the rendition.
     """
     sections = document.sections()
     if section is not None:

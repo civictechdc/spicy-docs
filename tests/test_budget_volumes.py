@@ -1,26 +1,12 @@
 """The budget_volume contract, pinned on two of the eight retained volumes.
 
-Four things are asserted here and nowhere else:
-
-1. **The fixture is the measurement's own text.** Each ``.txt`` is the
-   *every-page* extract the MODS re-check's ``uncapped`` phase read, rebuilt
-   from the same retained PDF blob, and its digest is the one the fixture's
-   provenance sidecar states.
-2. **The contract reproduces a published per-document row.** For
-   ``BUDGET-2026-MSR`` -- 16 pages, so the re-check's 60-page cap never bit --
-   the shaped rows reproduce ``recheck.json``'s own print-only counts exactly.
-   For ``BUDGET-2027-BUD`` the cap *did* bite, and the two published rows
-   disagree; the test asserts both numbers and names which is right.
-3. **A printed bill on a budget volume is NULL, not ``false``.** A BUDGET
-   summary states no Congress, so the print's bill key and the MODS's are not
-   the same shape and no comparison is possible.
-4. **The two keyed records state the fields the contract reads from them**,
-   including the fiscal year, which the package id and the MODS state
-   independently and which this holds equal.
-
-The fixtures were built from retained bytes only; the three package summaries
-are the only acquisition, receipt
-``corpora/supply-2026-09-02/receipts/budget-volumes-2026-09-20/``.
+Each fixture ``.txt`` is the measurement's own every-page extract, digest-pinned
+to its provenance sidecar; shaped rows reproduce ``recheck.json``'s print-only
+counts (BUDGET-2026-MSR's 16 pages agree; BUDGET-2027-BUD's 60-of-92-page cap
+understated it, and the uncapped 3 is right). A printed bill on a budget volume
+is NULL rather than ``false`` because the summary states no Congress, and the
+keyed records state the fiscal year twice, held equal. Fixtures come from
+retained bytes only; the three package summaries are the only acquisition.
 """
 
 from __future__ import annotations
@@ -83,6 +69,7 @@ class FixtureBody:
 
 
 def provenance(package: str) -> dict:
+    """The fixture's recorded provenance sidecar for a package id."""
     return json.loads((FIXTURES / f"{package}.json").read_text())
 
 
@@ -98,6 +85,7 @@ def body_for(package: str) -> FixtureBody:
 
 
 def summary_for(package: str):
+    """The retained package summary for a package id."""
     return validate_package_summary(
         (FIXTURES / f"summary-{package}.json").read_bytes(),
         package=package,
@@ -107,6 +95,7 @@ def summary_for(package: str):
 
 
 def mods_for(package: str):
+    """The retained MODS record for a package id."""
     return validate_package_mods(
         (FIXTURES / f"mods-{package}.xml").read_bytes(),
         package=package,
@@ -143,6 +132,7 @@ def rows_for(package: str):
 
 @pytest.mark.parametrize("package", VOLUMES)
 def test_the_retained_text_is_the_one_the_measurement_read(package: str) -> None:
+    """The retained text digests to the recorded sha256, joins its pages exactly, and covers every page (uncapped)."""
     recorded = provenance(package)
     body = body_for(package)
     assert hashlib.sha256(body.text.encode()).hexdigest() == recorded["text_sha256"]
@@ -155,6 +145,7 @@ def test_the_retained_text_is_the_one_the_measurement_read(package: str) -> None
 
 @pytest.mark.parametrize("package", VOLUMES)
 def test_every_span_re_reads_as_its_own_matched_text(package: str) -> None:
+    """Every citation span re-reads as its own matched text."""
     body = body_for(package)
     findings = citations_for(package)
     assert findings
@@ -335,6 +326,9 @@ def test_neither_fixture_volume_prints_a_bill_so_both_counts_are_zero(package: s
 
 @pytest.mark.parametrize("package", VOLUMES)
 def test_every_citation_row_carries_this_volumes_kind_and_digest(package: str) -> None:
+    """Every citation row carries budget_volume, the package id, the document digest and the citation rule-set
+    version.
+    """
     document, rows, findings, _mods = rows_for(package)
     assert rows
     assert {row["document_kind"] for row in rows} == {"budget_volume"}

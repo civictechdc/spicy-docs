@@ -1,4 +1,8 @@
-"""Shared deterministic ZIP-member metadata for source acquisition evidence."""
+"""Shared deterministic ZIP-member metadata for source acquisition evidence.
+
+``deterministic_zip_entry`` builds and ``has_deterministic_zip_metadata`` checks one fixed member shape
+(1980-01-01 timestamp, deflate, mode 0644), so a replayed archive compares field by field.
+"""
 
 from __future__ import annotations
 

@@ -1,40 +1,16 @@
-"""Read one GPO bill, resolution or amendment XML with DeltaTrack, and account for every element.
+"""Read one GPO bill, resolution or amendment XML with DeltaTrack, accounting for every element.
 
 DeltaTrack is the sibling Civic Tech DC engine that flattens bill XML into
-content-bearing nodes (https://github.com/civictechdc/DeltaTrack). This module
-does not reimplement any of it. It supplies the two things the engine leaves to
-its caller and this repository already has rules about:
-
-1. **Bounded, inert parsing of the publisher's bytes.** Everything arrives
-   through :mod:`spicy_docs.reading.xml`, which caps the input, refuses entity
-   declarations and references, and accepts the relative ``SYSTEM`` DTD every one
-   of these files declares without ever fetching it. That scan runs *first* and
-   is the gate: the engine sees a document only after it has passed.
-2. **An account of what the flattening dropped.** The engine walks 18 of the
-   100 distinct elements the sampled corpus contains; the rest carry the
-   document's Dublin Core, its sponsors, its committees, its actions, its
-   cross-references and all its table markup. ``discarded_elements`` counts by
-   name, per document, every element whose text does not survive anywhere in
-   the engine's nodes, so a later pass can decide what to keep without
-   re-fetching. Read ``_inventory`` for what that count cannot see.
-
-Install the engine with the ``bill-diff`` extra. Nothing here imports it at
-module scope, so the rest of ``spicy_docs`` still imports without it.
-
-**Bodies.** The engine handles ``legis-body`` (including a reported bill's second
-body), ``resolution-body`` and an amendment document's
-``engrossed-amendment-body/amendment/amendment-block``, and refuses a resolution
-carrying paired committee-amendment variants rather than silently rendering the
-struck text. The two copies this replaces handled only ``legis-body`` and the
-amendment chain: 29 of 40 sampled files carry ``resolution-body`` and no
-``legis-body``, and resolutions are 3,416 of the 21,947 XML files in the 119th
-Congress (15.6%).
-
-**Complexity.** The document is parsed twice — once here for the gate and the
-census, once by the engine, which reads a file rather than a tree. Both are
-O(elements). The inventory is two linear passes, and reads an element's text
-only when it sits outside every node and holds at most a few dozen elements, so
-the O(subtree) join never runs on a body, division or title.
+content-bearing nodes (https://github.com/civictechdc/DeltaTrack); nothing here
+reimplements it. This module supplies the two things it leaves to its caller:
+a bounded, inert parse through :mod:`spicy_docs.reading.xml` as the gate before
+the engine sees the document, and an account of what the flattening dropped
+(``discarded_elements``, by name per document, since the engine walks only a
+fraction of the elements the corpus contains). It handles ``legis-body``,
+``resolution-body`` and the amendment chain, and refuses a resolution carrying
+paired committee-amendment variants rather than silently rendering the struck
+text. Install the engine with the ``bill-diff`` extra; nothing here imports it
+at module scope, so the rest of ``spicy_docs`` imports without it.
 """
 
 from __future__ import annotations
@@ -87,14 +63,10 @@ class BillDocument:
     """One parsed version: the engine's tree, and this repository's account of the bytes.
 
     ``tree`` is DeltaTrack's own ``BillTree`` and ``sections`` its ``BillNode``
-    list, passed through rather than copied into a local shape. A node carries
-    ``match_path`` (the normalized, division-free cross-version key),
-    ``display_path``, ``element_id``, ``header_text``, ``body_text``,
-    ``display_text``, ``section_number``, ``division_label``, ``division_key`` and
-    ``body_index`` — everything the ``bill_sections`` columns need, and more.
-
-    ``stage`` is the root's own ``@bill-stage`` / ``@resolution-stage``: the
-    publisher's word for this printing. An ``amendment-doc`` states none.
+    list, passed through rather than copied into a local shape: a node carries
+    the ``match_path``/``display_path``/``element_id``/header and body text the
+    ``bill_sections`` columns need, and more. ``stage`` is the root's own
+    ``@bill-stage`` / ``@resolution-stage``; an ``amendment-doc`` states none.
     """
 
     tree: Any
@@ -118,23 +90,15 @@ def _collapse(text: str) -> str:
 def _accounted_text(nodes: Iterable[BillNode]) -> frozenset[str]:
     """Every string a node carries as *text*, whole and line by line.
 
-    The engine builds its front-matter nodes from the ``<form>`` block without
-    recording which element each line came from, and joins several with
-    newlines. Matching on the text is what lets ``<congress>``, ``<legis-num>``
-    and ``<official-title>`` be recognised as read rather than reported dropped
-    while their words sit in the output — measured against the nodes rather than
-    against a list of tags that would drift from upstream.
-
-    Deliberately **not** ``display_path``, ``match_path`` or ``division_label``.
-    Those are labels the engine composes from an ``<enum>`` and a ``<header>``
-    ("DIVISION A—Military Construction"), and GPO spells a table-of-contents
-    entry the same way — so crediting them marked every ``<toc-entry>`` read and
-    then, by the container rule, the whole ``<toc>``, which is exactly the
-    silent under-report this count exists to avoid. The cost of leaving them out
-    is that a title's or division's own ``<header>`` and ``<enum>`` report as
-    dropped, which is the safe direction and is also true in the sense that
-    matters: their text survives only fused into a display string, and nothing
-    downstream can get the parts back.
+    Matching on text lets front-matter elements (``<congress>``,
+    ``<legis-num>``, ``<official-title>``) be recognised as read: the engine
+    composes those nodes from the ``<form>`` block without recording which
+    element each line came from. ``display_path``, ``match_path`` and
+    ``division_label`` are deliberately not used, because the engine composes
+    them the same way GPO spells a table-of-contents entry, so crediting them
+    would mark the whole ``<toc>`` read -- the silent under-report this count
+    exists to avoid. The cost is that a title's or division's own ``<header>``
+    and ``<enum>`` report as dropped, which is the safe direction.
     """
     accounted: set[str] = set()
     for node in nodes:
@@ -160,38 +124,23 @@ def _inventory(
 ) -> tuple[Mapping[str, int], Mapping[str, int], Mapping[str, int]]:
     """Count every element, and split it by whether the output still contains its text.
 
-    Three rules, in order, each one measured against this document rather than
-    against a list of tag names that would drift as upstream changes:
+    Three rules, each measured against this document rather than a tag list
+    that would drift upstream: (1) the element sits inside an element whose
+    ``id`` the engine put on a node; (2) its own text is one of the strings, or
+    lines, the nodes carry -- this accounts for the front matter the engine
+    composes without recording a source element; (3) it is a container whose
+    children are all read and which contributes no text of its own, meaning
+    both ``element.text`` and every child's ``tail``, since GPO mixed content
+    puts real words in tails. The root and each body are read by construction:
+    their tag, stage attribute and body spelling are what :class:`BillDocument`
+    reports.
 
-    1. The element sits inside an element whose ``id`` the engine put on a node.
-       That node's text was extracted from that subtree.
-    2. Its own text is one of the strings, or one of the lines, the engine's
-       nodes carry. This is what accounts for the front matter, which the engine
-       composes without recording which element each line came from.
-    3. It has children, they are all read, and it contributes no text of its
-       own — a container whose contents are wholly accounted for. "Its own"
-       means both ``element.text``, before the first child, and every child's
-       ``tail``, between and after them: GPO mixed content puts real words in
-       tails, and a container credited while a tail went unaccounted would be
-       the silent under-report this whole count exists to avoid.
-
-    The root and each body are read by construction: their tag, stage attribute
-    and body spelling are what :class:`BillDocument` reports.
-
-    **What this cannot see.** It measures whether an element's text survives
-    *somewhere* in the output, not whether the flattening read that element.
-    Two consequences, both worth knowing before trusting a count:
-
-    - Rule 1 is a subtree account. An element inside a node whose text the
-      engine's extractor skipped still counts as read.
-    - Rule 2 can still credit a coincidence: two elements carrying the same
-      words are indistinguishable here, and only one of them may have been read.
-
-    The error therefore runs toward **over**-reporting, which is the safe
-    direction: a title's own ``<header>`` and ``<enum>`` appear as dropped
-    because their text reaches the output only fused into a composed label. A
-    name in ``discarded_elements`` means "nothing downstream can get these words
-    back as a field", not "the engine never looked at it".
+    **What this cannot see.** It measures whether text survives *somewhere*,
+    not whether the flattening read that element: rule 1 credits a whole
+    subtree, and rule 2 can credit a coincidence. The error therefore runs
+    toward **over**-reporting, so a name in ``discarded_elements`` means
+    "nothing downstream can get these words back as a field", not "the engine
+    never looked at it".
     """
     node_ids = frozenset(node.element_id for node in nodes if node.element_id)
     accounted = _accounted_text(nodes)

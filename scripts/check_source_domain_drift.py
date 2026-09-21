@@ -56,12 +56,14 @@ PUBLISHED_TABLE_URLS = {
 
 
 def _connect():
+    """An in-memory DuckDB connection, imported lazily so the snapshot path stays dependency-free."""
     import duckdb
 
     return duckdb.connect()
 
 
 def _file_identity(path: Path) -> tuple[str, int]:
+    """One file's ``sha256:`` digest and byte length, streamed in 1 MiB chunks."""
     digest = hashlib.sha256()
     length = 0
     with path.open("rb") as handle:
@@ -123,6 +125,7 @@ def observe(data_dir: Path, *, observed_at: str, producer_revision: str) -> Obse
 
 
 def render_snapshot(snapshot: ObservedSnapshot) -> str:
+    """The deterministic, sorted JSON text a re-pinned snapshot is written as."""
     payload = {
         "domains": [
             {
@@ -144,6 +147,7 @@ def render_snapshot(snapshot: ObservedSnapshot) -> str:
 
 
 def _report(findings: tuple[DomainFinding, ...], unrecorded: tuple[DomainFinding, ...]) -> None:
+    """Print each finding, flagging the ones the ledger does not record."""
     for finding in findings:
         support = "" if finding.row_count is None else f" on {finding.row_count:,} rows"
         flag = "UNRECORDED" if finding in unrecorded else "recorded"
@@ -151,6 +155,7 @@ def _report(findings: tuple[DomainFinding, ...], unrecorded: tuple[DomainFinding
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Report the drift findings, optionally re-pin the snapshot, and return 1 on any unrecorded or stale entry."""
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.observe and not args.data_dir:
@@ -201,6 +206,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """The CLI parser for the snapshot and observe modes."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--observe",

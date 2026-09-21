@@ -1,11 +1,10 @@
-"""The MODS recheck's readings, and the sidecar the report is written from.
+"""The MODS recheck's readings and the sidecar the report is written from.
 
-The rollup's "beyond the index" figures were compared against GovInfo's
-`published` listing row rather than against the package MODS, and the whole
-correction rests on two things being right: which sampled documents GovInfo
-serves, and what a MODS actually states about one. Both are pinned here, with
-the MODS shapes written as the publisher spells them -- a widened reading would
-otherwise silently shrink the surviving yield instead of failing anything.
+Pins which sampled documents GovInfo serves and what a MODS states (bill, law,
+code, CFR, RIN, committee and member keys as the publisher spells them), the
+print-side range flags and congress-blind exposure, credential scrubbing in the
+request log, and that the committed sidecar and report block come from these
+readings.
 """
 
 from __future__ import annotations
@@ -96,8 +95,7 @@ def test_a_private_law_is_not_read_as_a_public_one(facts: dict) -> None:
 
 
 def test_a_code_section_a_chapter_and_a_cfr_part_each_keep_their_own_key(facts: dict) -> None:
-    """A chapter cite has no counterpart the print rule can produce, so it must not
-    collapse onto the section's key and be read as already stated."""
+    """A chapter cite keeps its own key rather than collapsing onto the section's and reading as already stated."""
     assert facts["stated"]["usc_section"] == ["5USC57A", "5USCCHAPTER8"]
     assert facts["stated"]["cfr_section"] == ["10CFR830"]
     assert facts["stated"]["statutes_at_large"] == ["60-812"]
@@ -117,6 +115,7 @@ def test_a_member_without_a_bioguide_id_is_not_invented(facts: dict) -> None:
 
 
 def test_the_document_references_are_read_as_congress_type_number(facts: dict) -> None:
+    """Document references read as congress-type-number across report, doc, hearing and serial elements."""
     assert facts["document_references"] == {"congReport": ["118-H-52"]}
     assert set(DOCUMENT_REFERENCE_ELEMENTS) >= {"congReport", "congDoc", "congHearing", "congSerial"}
 
@@ -143,6 +142,7 @@ def test_a_key_the_mods_states_is_not_counted_as_print_only(facts: dict) -> None
 
 
 def test_a_key_the_mods_lacks_survives_as_yield(facts: dict) -> None:
+    """A key the MODS lacks survives as print-only yield, and its kind reports as not stated."""
     compared = compare_document({"bill_number": ["HR9999"], "gao_product_id": ["GAO26109302"]}, facts)
 
     assert compared["bill_number"]["print_only"] == ["HR9999"]
@@ -183,6 +183,7 @@ def test_a_fiscal_year_compares_on_the_year_not_the_spelling(facts: dict) -> Non
 def test_the_mods_locator_is_the_repositorys_own_where_the_grammar_reaches(
     package_id: str, granule_id: str | None, expected: str
 ) -> None:
+    """The MODS locator is the repository's own where the grammar reaches, else the published route shape."""
     document = GovInfoDocument("f", "id", package_id, granule_id, "https://www.govinfo.gov/")
 
     assert document.mods_url == expected
@@ -205,7 +206,7 @@ def test_the_committed_sidecar_was_written_by_these_readings() -> None:
 
 
 def test_the_committed_sidecar_states_the_number_the_correction_turns_on() -> None:
-    """883 distinct bills and 75 laws "the index does not state" are both zero."""
+    """The 883 bills and 75 laws the rollup called print-only are zero against the MODS, capped and uncapped."""
     sidecar = json.loads(SIDECAR.read_text())
     capped = sidecar["families"]["house_activity"]["restated"]
     uncapped = sidecar["uncapped"]["restated"]["house_activity"]
@@ -222,6 +223,7 @@ def test_the_committed_sidecar_states_the_number_the_correction_turns_on() -> No
 
 
 def test_the_committed_sidecar_states_what_survives_as_pdf_only_value() -> None:
+    """Budget laws and the activity reports' RIN, docket and committee keys are what survives as print-only value."""
     sidecar = json.loads(SIDECAR.read_text())
     activity = sidecar["uncapped"]["restated"]["house_activity"]
     budget = sidecar["uncapped"]["restated"]["budget"]
@@ -332,7 +334,7 @@ def test_a_mods_that_names_another_package_is_refused() -> None:
 
 
 def test_a_granule_mods_must_also_name_its_host_package() -> None:
-    """``validate_granule_mods`` proves membership this way; the fallback now does too."""
+    """A granule MODS must name its host package, and a different host refuses."""
     document = GovInfoDocument("budget", "x", UNCOVERED, f"{UNCOVERED}-1", "https://www.govinfo.gov/")
     granule = f"{UNCOVERED}-1"
 
@@ -345,14 +347,7 @@ def test_a_granule_mods_must_also_name_its_host_package() -> None:
 
 
 def test_the_two_families_this_receipt_measured_no_longer_take_the_fallback() -> None:
-    """The widened grammar reaches both, so the sealed validators do the proving.
-
-    The re-check proved 16 of its 24 records by the ``accessId`` fallback
-    because ``bodies.py``'s grammar covered neither ``BUDGET-*`` nor the
-    GPO-prefixed CDOC reprints. It covers both now, so the same call reports
-    the sealed validator's name -- and the refusal it raises is that
-    validator's, not ``RecheckError``, because the stronger check ran first.
-    """
+    """BUDGET and GPO-CDOC now pass the sealed validators, whose own errors are raised before the fallback."""
     from spicy_docs.sources.govinfo.bodies import GovInfoBodySourceError
 
     package = GovInfoDocument("budget", "BUDGET-2027-APP", "BUDGET-2027-APP", None, "https://www.govinfo.gov/")
@@ -559,6 +554,7 @@ def test_a_kind_with_a_reader_that_no_record_states_is_not_called_stated() -> No
 
 
 def test_the_family_sanity_summary_unions_the_flagged_keys() -> None:
+    """The family sanity summary unions flagged values, sums lossy keys and counts congress-blind exposure."""
     documents = [
         {
             "sanity": {
@@ -586,6 +582,7 @@ def test_the_family_sanity_summary_unions_the_flagged_keys() -> None:
 
 
 def test_the_committed_sidecar_drops_the_receipt_sized_lists() -> None:
+    """Compaction turns receipt-sized lists into counts and keeps at most twelve examples."""
     report = {
         "families": {
             "x": {
@@ -674,6 +671,7 @@ def test_render_rewrites_only_the_block_between_the_markers(tmp_path: Path) -> N
 
 
 def test_render_refuses_a_report_with_no_markers(tmp_path: Path) -> None:
+    """Rendering refuses a report with no generated-block markers."""
     sidecar = tmp_path / "sidecar.json"
     sidecar.write_text(SIDECAR.read_text())
     report = tmp_path / "report.md"

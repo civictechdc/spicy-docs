@@ -23,6 +23,7 @@ _FILED = b"<FILED>Filed 9-10-26; 11:15 am]</FILED>"
 
 
 def _validate(body: bytes, **changes: object) -> PublisherXmlIdentity:
+    """Validate an authored XML body under the fixture identity."""
     arguments: dict[str, object] = {
         "source_document_number": _DOCUMENT_NUMBER,
         "publication_date": _PUBLICATION_DATE,
@@ -35,6 +36,7 @@ def _validate(body: bytes, **changes: object) -> PublisherXmlIdentity:
 
 @pytest.mark.parametrize("document_type", ["RULE", "PRORULE", "NOTICE", "PRESDOCU"])
 def test_supported_xml_roots_prove_exact_document_identity(document_type: str) -> None:
+    """Supported XML roots prove exact document identity and marker fields."""
     body = f"<{document_type}>".encode() + _MARKER + f"</{document_type}>".encode()
 
     assert asdict(_validate(body)) == {
@@ -47,6 +49,7 @@ def test_supported_xml_roots_prove_exact_document_identity(document_type: str) -
 
 
 def test_presidential_marker_pairs_with_following_filed_sibling() -> None:
+    """A presidential marker pairs with the following FILED sibling while the filing date stays literal."""
     body = b"<PRESDOCU><EXECORD>" + _SPLIT_MARKER + b"\n  " + _FILED + b"</EXECORD></PRESDOCU>"
 
     identity = _validate(body)
@@ -73,6 +76,7 @@ def test_presidential_marker_pairs_with_following_filed_sibling() -> None:
     ],
 )
 def test_incomplete_markers_require_the_presidential_filed_pair(body: bytes) -> None:
+    """An incomplete presidential marker requires the paired FILED sibling."""
     with pytest.raises(FederalRegisterBodySourceError, match="paired FILED"):
         _validate(body)
 
@@ -104,6 +108,7 @@ def test_incomplete_markers_require_the_presidential_filed_pair(body: bytes) -> 
     ],
 )
 def test_xml_success_shape_and_identity_refusals(body: bytes, message: str) -> None:
+    """XML success-shape and identity refusals name the failed check."""
     with pytest.raises(FederalRegisterBodySourceError, match=message):
         _validate(body)
 
@@ -120,6 +125,7 @@ def test_xml_success_shape_and_identity_refusals(body: bytes, message: str) -> N
 )
 @pytest.mark.parametrize("encoding", ["utf-8", "utf-16"])
 def test_dtd_and_entity_declarations_are_refused_before_expansion(declaration: bytes, encoding: str) -> None:
+    """DTD and entity declarations are refused before expansion."""
     body = (declaration + _BODY).decode().encode(encoding)
 
     with pytest.raises(FederalRegisterBodySourceError, match="DTD and entity"):
@@ -127,12 +133,14 @@ def test_dtd_and_entity_declarations_are_refused_before_expansion(declaration: b
 
 
 def test_a_complete_marker_does_not_require_unrelated_filed_content() -> None:
+    """A complete marker needs no unrelated FILED content."""
     body = b"<NOTICE>" + _MARKER + b"<FILED><P>Unrelated source content</P></FILED></NOTICE>"
 
     assert _validate(body).marker_document_number == _DOCUMENT_NUMBER
 
 
 def test_xml_character_references_do_not_require_entity_declarations() -> None:
+    """XML character references need no entity declarations and the bytes stay exact."""
     body = _BODY.replace(b"Authored example.", b"Literal &amp; &#xA7; example.")
     retained = body
 
@@ -141,6 +149,7 @@ def test_xml_character_references_do_not_require_entity_declarations() -> None:
 
 
 def test_split_source_identity_is_not_aliased_to_a_printed_base() -> None:
+    """A split source identity is not aliased to a printed base number."""
     source_number = _DOCUMENT_NUMBER + "-2"
 
     with pytest.raises(FederalRegisterBodySourceError, match="number differs"):
@@ -165,11 +174,13 @@ def test_split_source_identity_is_not_aliased_to_a_printed_base() -> None:
     ],
 )
 def test_final_url_must_bind_the_requested_date_and_number(url: str) -> None:
+    """The final URL must bind the requested date and number."""
     with pytest.raises(FederalRegisterBodySourceError, match="final URL"):
         _validate(_BODY, final_url=url)
 
 
 def test_locator_uses_exact_canonical_source_values() -> None:
+    """The locator uses exact canonical source values."""
     assert publisher_xml_locator(_DOCUMENT_NUMBER, _PUBLICATION_DATE) == _URL
 
 
@@ -187,6 +198,7 @@ def test_locator_uses_exact_canonical_source_values() -> None:
     ],
 )
 def test_invalid_source_values_are_refused(number: object, publication_date: object, message: str) -> None:
+    """Invalid source values are refused."""
     with pytest.raises(FederalRegisterBodySourceError, match=message):
         publisher_xml_locator(number, publication_date)  # type: ignore[arg-type]
     with pytest.raises(FederalRegisterBodySourceError, match=message):
@@ -195,11 +207,13 @@ def test_invalid_source_values_are_refused(number: object, publication_date: obj
 
 @pytest.mark.parametrize("max_bytes", [0, -1, True, 1.5, "4096", None])
 def test_byte_bound_must_be_a_positive_integer(max_bytes: object) -> None:
+    """The byte bound must be a positive integer."""
     with pytest.raises(FederalRegisterBodySourceError, match="positive integer"):
         _validate(_BODY, max_bytes=max_bytes)
 
 
 def test_body_must_fit_the_byte_bound_and_remain_exact_bytes() -> None:
+    """The body must fit the byte bound and be exact bytes, not text."""
     with pytest.raises(FederalRegisterBodySourceError, match="exceeds"):
         _validate(_BODY, max_bytes=len(_BODY) - 1)
     with pytest.raises(FederalRegisterBodySourceError, match="exact bytes"):

@@ -1,4 +1,10 @@
-"""Source-native-backed public Parquet and DuckDB behavior."""
+"""Source-native-backed public Parquet and DuckDB behavior.
+
+Publishes a real regulations.gov comment source release and synthetic source
+stubs, then pins the public tables' columns, newest-observation dedup, Hive
+partition pruning, immutability and tamper detection, producer identity and
+artifact-address checks, and a module-layering import scan.
+"""
 
 from __future__ import annotations
 
@@ -239,6 +245,7 @@ def _public_reader(
 def test_comment_public_table_preserves_schema_newest_value_and_hive_pruning(
     tmp_path: Path,
 ) -> None:
+    """The comment table keeps the schema, picks the newest observation per id, and Hive-partitions by agency_code."""
     source = _source_release(tmp_path)
     destination = tmp_path / "public"
     published = PublicTablePublisher(REGULATIONS_GOV_COMMENT_PUBLIC_TABLE).publish(
@@ -401,9 +408,9 @@ def test_source_public_tables_preserve_proven_columns(
     record: Mapping[str, Any],
     expected: Mapping[str, Any],
 ) -> None:
-    identity = (
-        profile.source_record_id(record) if profile.source_record_id is not None else str(record["data"]["id"])  # type: ignore[index]
-    )
+    """Each source profile's proven columns, primary key and shaped values survive to the Parquet row."""
+    source_id = profile.source_record_id
+    identity = source_id(record) if source_id is not None else str(record["data"]["id"])  # type: ignore[index]
     source = _SourceStub(profile, [_source_row(profile, identity, record)])
     destination = tmp_path / profile.table_name
     published = PublicTablePublisher(profile).publish(
@@ -426,6 +433,7 @@ def test_source_public_tables_preserve_proven_columns(
 
 
 def test_public_table_refuses_duplicate_source_identity(tmp_path: Path) -> None:
+    """A repeated source primary key refuses and leaves no destination."""
     profile = REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
     identity = "EPA-2026-0001"
     record = {
@@ -448,6 +456,7 @@ def test_public_table_refuses_duplicate_source_identity(tmp_path: Path) -> None:
 
 
 def test_public_table_refuses_a_row_larger_than_its_batch_bound(tmp_path: Path) -> None:
+    """A row larger than ``max_batch_bytes`` refuses and leaves no destination."""
     profile = REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
     identity = "EPA-2026-0001"
     source = _SourceStub(
@@ -480,6 +489,7 @@ def test_public_table_refuses_a_row_larger_than_its_batch_bound(tmp_path: Path) 
 
 
 def test_public_table_closes_open_writer_without_flushing_after_later_failure(tmp_path: Path, monkeypatch) -> None:
+    """A later batch-byte failure closes the open writer without writing, leaving no destination or temp build dir."""
     from spicy_docs.public_tables import publish
 
     profile = REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
@@ -530,6 +540,7 @@ def test_public_table_closes_open_writer_without_flushing_after_later_failure(tm
 
 
 def test_public_table_is_immutable_and_tamper_fails_before_read(tmp_path: Path) -> None:
+    """Republishing refuses to replace, and a tampered member fails digest verification before read."""
     source = _source_release(tmp_path)
     destination = tmp_path / "public"
     publisher = PublicTablePublisher(REGULATIONS_GOV_COMMENT_PUBLIC_TABLE)
@@ -558,12 +569,13 @@ def test_public_table_is_immutable_and_tamper_fails_before_read(tmp_path: Path) 
 
 @pytest.mark.parametrize("product", ["spicy-widgets", "spicy-regs"])
 def test_public_table_build_requires_the_current_producer_product(product: str) -> None:
+    """A build whose producer product is not ``spicy-docs`` refuses."""
     with pytest.raises(PublicTableError, match="producer product must be spicy-docs"):
         PublicTableBuild(replace(_PUBLIC_PRODUCER, product=product))
 
 
 def test_public_table_reader_refuses_a_resealed_historical_producer(tmp_path: Path) -> None:
-    """Valid platform hashes cannot override the current product identity."""
+    """A resealed artifact whose producer product is historical is refused on producer identity."""
     profile = REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
     identity = "EPA-2026-0001"
     record = {
@@ -599,6 +611,7 @@ def test_public_table_reader_refuses_a_resealed_historical_producer(tmp_path: Pa
 
 
 def test_remote_location_refuses_a_different_artifact_address(tmp_path: Path) -> None:
+    """A remote base URI addressing a different artifact digest is refused."""
     profile = REGULATIONS_GOV_DOCKET_PUBLIC_TABLE
     identity = "EPA-2026-0001"
 
@@ -675,6 +688,7 @@ def _skip_if_it_hangs(reason: str) -> Iterator[None]:
 
 @pytest.mark.httpfs
 def test_duckdb_reads_admitted_members_over_anonymous_http_ranges(tmp_path: Path) -> None:
+    """DuckDB's httpfs reads admitted members over anonymous HTTP range requests against a local server."""
     with _skip_if_it_hangs("DuckDB httpfs stalls in function scope; see _skip_if_it_hangs"):
         source = _source_release(tmp_path)
         destination = tmp_path / "public"
@@ -764,11 +778,7 @@ def test_duckdb_reads_admitted_members_over_anonymous_http_ranges(tmp_path: Path
 
 
 def test_public_table_module_has_no_sibling_product_imports() -> None:
-    """Mirrors test_spicy_regs_public_tables_source_native.py's boundary check:
-    this repo guards package layering with an import-prefix scan rather than
-    spicy-regs' original forbidden-internal-module list, since public_table.py
-    no longer lives beside spicy-regs' cli/mcp_server/pipelines/published/
-    sources.iceberg/sources.r2 modules -- none of them exist in this package."""
+    """The public_tables modules import no sibling-product packages and expose no ``locate_member`` parameter."""
 
     repository = Path(__file__).resolve().parents[1]
     imported: set[str] = set()

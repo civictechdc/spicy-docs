@@ -14,6 +14,9 @@ from spicy_docs.storage.blobs import LocalSourceNativeBlobStore
 
 @pytest.mark.parametrize("case", ["xml", "html-fallback"])
 def test_example_retains_selected_body_and_fallback_evidence(tmp_path: Path, case: str) -> None:
+    """The example retains the selected body and every response used for fallback, with identity, route, counts,
+    digests and sizes.
+    """
     result = json.loads(json.dumps(run_example(tmp_path, case=case)))
     assert json.loads((tmp_path / "capture.json").read_text()) == result
     assert result["requestedFormat"] == "prefer-xml"

@@ -1,14 +1,12 @@
 """Capture exact spicy-regs public comment partitions as source-native releases.
 
-Supply precedence starts with community tables (docs/decisions.md); origin APIs
-supply only what those tables lack. Each Hive partition at
-comments/agency/agency_code={X}/part-{n}.parquet becomes one bounded evidence ZIP:
-exact bytes plus digest, size, fetch time, locator, and stated freshness.
-Publication and independent replay classify only those pinned bytes.
-
-Preserve every declared column, including nulls, "See attached" bodies, and empty
-text_content. The upstream table already selected the current row per comment_id;
-this profile records that selection and refuses repeated identities.
+Supply precedence starts with community tables (docs/decisions.md) and origin APIs supply only what
+those tables lack. Each Hive partition at ``comments/agency/agency_code={X}/part-{n}.parquet``
+becomes one bounded evidence ZIP holding exact bytes plus digest, size, fetch time, locator and
+stated freshness; publication and independent replay classify only those pinned bytes. Every
+declared column is preserved, including nulls, "See attached" bodies and empty ``text_content``;
+the upstream table already selected the current row per ``comment_id``, so this profile records
+that selection and refuses repeated identities.
 """
 
 from __future__ import annotations
@@ -746,7 +744,10 @@ def comment_acquisition_policy(query_scope: Mapping[str, Any]) -> dict[str, Any]
         "acquisitionRung": "community-mirror",
         "baseUrl": PUBLIC_TABLE_BASE_URL,
         "coverageLimits": [
-            "Discovery assumes contiguous part numbers from zero for each requested agency and stops at the first missing part.",
+            (
+                "Discovery assumes contiguous part numbers from zero for each requested agency and stops at "
+                "the first missing part."
+            ),
             "Later part numbers after a gap and agencies outside the requested scope are unrequested.",
             "The terminal marker declares the end of the capture; the missing-part HTTP response is not retained.",
             "Captured partition bytes do not establish complete upstream membership or one publisher-wide version.",

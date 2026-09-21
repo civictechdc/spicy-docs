@@ -261,6 +261,8 @@ class SourceNativeReleaseReader:
                         return
 
     def iter_records(self) -> Iterator[Mapping[str, Any]]:
+        """Stream selected published records in source identity order."""
+
         yield from _partition_rows(
             self._source,
             self._blob_source,
@@ -268,6 +270,8 @@ class SourceNativeReleaseReader:
         )
 
     def iter_renditions(self) -> Iterator[Mapping[str, Any]]:
+        """Stream selected rendition rows ordered by source identity."""
+
         yield from _partition_rows(
             self._source,
             self._blob_source,

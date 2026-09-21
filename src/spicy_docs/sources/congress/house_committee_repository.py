@@ -3,54 +3,39 @@
 The Committee Repository publishes one XML record per House committee meeting,
 and that record is the only place the *agenda* is stated as data: a
 ``<meeting-document type="BR">`` is a measure noticed for the meeting, with its
-``<legis-num>``, its ``<description>`` and a ``BILLS-…pdf`` file whose name
-restates the number. Everything else in the record -- the subcommittee, the
-calendar date, the meeting type -- is what makes the row checkable against the
-transcript's own GovInfo MODS before anything joins the two.
+``<legis-num>``, its ``<description>`` and a ``BILLS-...pdf`` file whose name
+restates the number.
 
 **The event id is Congress.gov's, measured rather than assumed.** 9 of 9
 sampled ``associatedMeeting.eventId`` values resolved here, and all 9 passed a
-*committee-and-date* identity check rather than a status check: the XML's
-``<calendar-date>`` equalled the CHRG MODS ``heldDate`` and
-``<committee-name id>``'s parent code equalled the MODS ``congCommittee``
-authority id under :func:`parent_committee_code`. Neither publisher documents
-the equality -- Congress.gov's own endpoint documentation never mentions
-docs.house.gov, and its OpenAPI spec spells the field ``eventid`` while the
-wire spells it ``eventId`` -- so it is a measured regularity, and the check
-belongs on every row rather than in a one-time assumption
-([the measurement](../../../../docs/research/hearing-bill-linkage-2026-09-20.md)).
+*committee-and-date* identity check: the XML's ``<calendar-date>`` equalled
+the CHRG MODS ``heldDate`` and ``<committee-name id>``'s parent code equalled
+the MODS ``congCommittee`` authority id under :func:`parent_committee_code`.
+Neither publisher documents the equality, so the check belongs on every row
+rather than in a one-time assumption.
 
 **The rendition is a plain keyless GET, checked by digest and not by status.**
-The event page offers the XML only as an ASP.NET ``__doPostBack`` control, with
-no ``.xml`` href anywhere on it; the same document is also a static file at
-:data:`MEETING_XML`, and the two are byte-identical, **2 of 2 by SHA-256**.
+The event page offers the XML only as an ASP.NET ``__doPostBack`` control,
+with no ``.xml`` href anywhere on it; the same document is also a static file
+at :data:`MEETING_XML`, and the two are byte-identical (2 of 2 by SHA-256).
 That comparison is the check because this publisher serves its own pages at
-HTTP 200, so a status code establishes nothing. Only the GET is addressed here;
-the postback is the publisher's own control and needs a page's form state.
+HTTP 200, so a status code establishes nothing. Only the GET is addressed
+here.
 
-**Finding the address for a first fetch is a separate problem and is not
-solved here.** :func:`house_meeting_xml_locator` needs the *subcommittee* code
-and the calendar date, and a CHRG MODS states neither -- it states the parent
-committee (``hsvr00``) and the held date. The two routes that do state the
-whole address are the event page (behind the postback) and the per-committee
-feed ``docs.house.gov/Committee/RSS.ashx?Code={code}``, whose every item's
-``<enclosure>`` is exactly this locator (200, RSS 2.0, 26 items for ``VR00``).
-Neither is read here; :func:`locator_from_meeting` rebuilds the address from a
+**Finding the address for a first fetch is not solved here.**
+:func:`house_meeting_xml_locator` needs the *subcommittee* code and the
+calendar date, and a CHRG MODS states neither (it states the parent committee
+and the held date). :func:`locator_from_meeting` rebuilds the address from a
 record already in hand, which is what a re-fetch and a resume need.
 
 **A type-less ``<legis-num>`` is refused, not guessed.** Some committees post
-``<legis-num>226</legis-num>`` beside ``BILLS-118226ih.pdf`` -- neither states
-whether the measure is a House or a Senate one. The long-standing community
-scraper defaults that to ``hr``
-([`unitedstates/congress`](https://github.com/unitedstates/congress/blob/master/congress/tasks/committee_meetings.py));
-here it falls through to the ``<description>``, which usually spells the
-designator in full (``H.R.226, Veterans Collaboration Act (Rep. Wittman)``), and
-is refused with a stated reason when nothing does. The ``BILLS-118Xih.pdf``
-discussion drafts are the case where nothing does: they name a measure with no
-number at all, and 10 of 46 retained ``BR`` documents are one of those.
-
-For meeting XML of ``M`` bytes the read is ``O(M)`` time and space through the
-shared bounded scanner; every function here is offline and makes no request.
+``<legis-num>226</legis-num>`` beside ``BILLS-118226ih.pdf``, and neither
+states whether the measure is a House or a Senate one; the rule falls through
+to the ``<description>``, which usually spells the designator in full, and is
+refused with a stated reason when nothing does (the ``BILLS-118Xih.pdf``
+discussion drafts name a measure with no number at all). For meeting XML of
+``M`` bytes the read is ``O(M)`` time and space through the shared bounded
+scanner; every function here is offline and makes no request.
 """
 
 from __future__ import annotations
@@ -337,19 +322,19 @@ def _read_committee(element: XmlTreeElement, *, container: str) -> HouseMeetingC
 def _read_document(element: XmlTreeElement, *, congress: int) -> HouseMeetingDocument:
     """One ``<meeting-document>``, with the bill key its own three statements settle.
 
-    The three are tried strongest first: the ``BILLS-…pdf`` file name, which is
-    the publisher's own machine-written form; the ``<legis-num>``, which is
-    sometimes the bare number; and the ``<description>``, which is prose but
-    usually spells the designator in full. ``bill_id_rule`` records which one
-    answered, because they are not equally strong and a consumer wanting only
-    the machine-written form has to be able to filter on it.
+    Tried strongest first: the ``BILLS-...pdf`` file name, the publisher's own
+    machine-written form; the ``<legis-num>``, sometimes the bare number; and
+    the ``<description>``, prose that usually spells the designator in full.
+    ``bill_id_rule`` records which one answered, because they are not equally
+    strong and a consumer wanting only the machine-written form must be able
+    to filter on it.
 
-    The file-name rule is the receipt's own, unwidened: a committee that
-    appends a short title (``BILLS-118HR3522ih-FIRESHEDSAct.pdf``) puts the
-    extension out of the pattern's reach, so 4 of the 8 resolved documents on
-    the fixture record fall through to their ``<legis-num>`` and reach the same
-    key by the weaker route. Widening it would make the rule no longer the one
-    that was measured, for a key the next candidate already supplies.
+    The file-name rule is the receipt's own, unwidened: a short title appended
+    to a name (``BILLS-118HR3522ih-FIRESHEDSAct.pdf``) puts the extension out
+    of the pattern's reach, so 4 of the 8 resolved documents on the fixture
+    record fall through to their ``<legis-num>`` and reach the same key by the
+    weaker route. Widening it would make the rule no longer the one that was
+    measured, for a key the next candidate already supplies.
     """
     description = _child_text(element, "description")
     legis_num = _child_text(element, "legis-num")

@@ -17,6 +17,7 @@ NEXT = "https://www.federalregister.gov/api/v1/documents?format=json&page=2&curs
 
 
 def _diagnostic(error: Exception) -> RefusedResponse:
+    """The RefusedResponse attached to the raised error."""
     diagnostic = getattr(error, "refused_response", None)
     assert isinstance(diagnostic, RefusedResponse)
     return diagnostic
@@ -32,6 +33,7 @@ def _diagnostic(error: Exception) -> RefusedResponse:
     ],
 )
 def test_first_response_refusal_retains_exact_bytes(payload: bytes, message: str) -> None:
+    """A first-response refusal retains exact bytes, request key and source-validation stage with no pages yielded."""
     pages = federal.iter_federal_register_pages(lambda _url: payload, query_scope=SCOPE, traversals=1)
     with pytest.raises(federal.FederalRegisterSourceError, match=message) as caught:
         next(pages)
@@ -45,6 +47,7 @@ def test_first_response_refusal_retains_exact_bytes(payload: bytes, message: str
 
 
 def test_continuation_inventory_refusal_retains_the_new_page() -> None:
+    """A continuation inventory refusal retains the new page, not the first."""
     first = federal_response(_document(), count=2, total_pages=2, next_page_url=NEXT)
     refused = federal_response(_document("2026-00002"), count=3, total_pages=2)
     responses = {INITIAL: first, NEXT: refused}
@@ -59,6 +62,7 @@ def test_continuation_inventory_refusal_retains_the_new_page() -> None:
 
 
 def test_continuation_parse_refusal_retains_the_new_page() -> None:
+    """A continuation parse refusal retains the new page, and an offline replay raises the same message."""
     first = federal_response(_document(), count=2, total_pages=2, next_page_url=NEXT)
     refused = b'{"count":'
     responses = {INITIAL: first, NEXT: refused}
@@ -75,6 +79,7 @@ def test_continuation_parse_refusal_retains_the_new_page() -> None:
 
 
 def test_continuation_transport_failure_never_attaches_the_previous_page() -> None:
+    """A continuation transport failure keeps its original error and attaches no previous page."""
     first = federal_response(_document(), count=2, total_pages=2, next_page_url=NEXT)
     original = OSError("connection ended before a response")
 
@@ -97,6 +102,7 @@ def test_continuation_transport_failure_never_attaches_the_previous_page() -> No
 
 
 def test_nested_split_refusal_keeps_child_context() -> None:
+    """A nested split refusal keeps the child request key and bytes while both URLs are requested."""
     scope = {"publishedFrom": "2026-04-13", "publishedThrough": "2026-04-14"}
     parent_url = federal.federal_register_documents_url(scope)
     parent = federal_response(_document(), count=10_000, total_pages=10)
@@ -125,6 +131,7 @@ def test_nested_split_refusal_keeps_child_context() -> None:
     ],
 )
 def test_post_yield_refusal_keeps_the_relevant_terminal_evidence(payload: bytes, message: str) -> None:
+    """A post-yield refusal keeps the terminal response's evidence."""
     pages = federal.iter_federal_register_pages(lambda _url: payload, query_scope=SCOPE, traversals=1)
     assert next(pages).response_bytes == payload
     with pytest.raises(federal.FederalRegisterSourceError, match=message) as caught:
@@ -135,6 +142,7 @@ def test_post_yield_refusal_keeps_the_relevant_terminal_evidence(payload: bytes,
 
 
 def test_oversized_response_records_no_truncated_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An oversized response records no truncated bytes and reports the byte limit."""
     payload = federal_response(_document())
     monkeypatch.setattr(federal, "MAX_PAGE_BYTES", len(payload) - 1)
     with pytest.raises(federal.FederalRegisterSourceError, match="evidence byte bound") as caught:
@@ -146,6 +154,7 @@ def test_oversized_response_records_no_truncated_bytes(monkeypatch: pytest.Monke
 
 
 def test_nonbytes_fetch_result_is_unavailable_instead_of_coerced() -> None:
+    """A non-bytes fetch result is unavailable rather than coerced."""
     fetch = cast(federal.FederalRegisterFetch, lambda _url: "not exact bytes")
     with pytest.raises(federal.FederalRegisterSourceError, match="no response bytes") as caught:
         next(federal.iter_federal_register_pages(fetch, query_scope=SCOPE, traversals=1))

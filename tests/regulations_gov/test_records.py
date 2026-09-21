@@ -1,4 +1,7 @@
-"""Regulations Gov: records behavior."""
+"""Record-classification contract: document and docket records preserve exact source facts and join keys
+without prejoining, unknown fields fail closed, strict ASCII ids and keys keep declared order unambiguous, and
+``cfrPart`` accepts text or null but never an array.
+"""
 
 from __future__ import annotations
 
@@ -130,11 +133,9 @@ def test_classify_document_tolerates_an_unusable_posted_date(
     modify_date: str | None,
     expected_version: str | None,
 ) -> None:
-    """Preserve null or unparseable postedDate values without repairing them.
-
-    FMCSA and FAA records exhibit both shapes. Order by modifyDate when present;
-    when it is null and postedDate is unusable, retain a null instant that sorts last.
-    Malformed modifyDate values still refuse.
+    """Preserve null or unparseable ``postedDate`` values without repairing them (FMCSA and FAA records show
+    both shapes): order by ``modifyDate`` when present, and when it is null and ``postedDate`` is unusable retain
+    a null instant that sorts last. Malformed ``modifyDate`` values still refuse.
     """
     record = classify_document(_document(postedDate=posted_date, modifyDate=modify_date))
     assert record["data"]["attributes"]["postedDate"] == posted_date
@@ -154,10 +155,9 @@ def test_an_unknown_collection_refuses_instead_of_raising_a_lookup_error() -> No
 
 
 def test_document_attribute_cfr_part_accepts_a_string_or_null_and_refuses_an_array() -> None:
-    """The regulations.gov v4 API documents ``cfrPart`` as a string, and the
-    live mirror carries only strings or nulls (sampled 2026-09-02, 120
-    documents across ACF/FMCSA/SEC: 106 null, 14 str, 0 arrays) — never the
-    text array the schema previously required.
+    """The regulations.gov v4 API documents ``cfrPart`` as a string and the live mirror carries only strings or
+    nulls (sampled 2026-09-02 across ACF/FMCSA/SEC: 106 null, 14 str, 0 arrays), never the text array the schema
+    previously required.
     """
     textual = classify_document(_document(cfrPart="45 CFR 302,303,307"))
     assert textual["data"]["attributes"]["cfrPart"] == "45 CFR 302,303,307"

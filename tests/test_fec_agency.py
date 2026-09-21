@@ -1,4 +1,8 @@
-"""Legacy report links published by the current FEC agency-report index."""
+"""Legacy report links published by the current FEC agency-report index.
+
+Pins redirect preservation of source and final URLs, keyless requests, and
+refusal of hosts the index does not approve.
+"""
 
 import httpx
 import pytest
@@ -9,6 +13,7 @@ from spicy_docs.sources.fec.client import FecClient
 
 @pytest.mark.parametrize("host", ["beta.fec.gov", "www.fec.gov"])
 def test_report_redirect_preserves_source_and_final_url(tmp_path, host):
+    """A report redirect preserves the source and final URL, writes the blob and makes no keyed request."""
     source = f"https://{host}/resources/foia/foiareport2015.xml"
     final = "https://www.fec.gov/resources/foia/foiareport2015.xml"
     calls = []
@@ -33,6 +38,7 @@ def test_report_redirect_preserves_source_and_final_url(tmp_path, host):
 
 @pytest.mark.parametrize("host", ["beta.fec.gov.example", "other.fec.gov"])
 def test_report_link_does_not_approve_other_hosts(tmp_path, host):
+    """A report link does not approve other hosts."""
     target = f"https://{host}/report.xml"
     with pytest.raises(ValueError, match="approved"):
         official_url(target)

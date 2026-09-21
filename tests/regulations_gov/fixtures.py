@@ -1,4 +1,6 @@
-"""Regulations Gov: fixtures behavior."""
+"""Shared fixtures for the regulations.gov tests: synthetic document and docket API payloads, file-layout
+objects, query scopes, and publisher/reader helpers for the document and docket profiles.
+"""
 
 from __future__ import annotations
 
@@ -233,12 +235,10 @@ def _acf_document_scope() -> dict[str, object]:
 
 
 def _reordered(value: Any) -> Any:
-    """Rebuild a JSON-decodable value with every mapping's keys reversed.
-
-    Content-equal to ``value`` — a JSON parser decodes the identical record
-    either way — but serializing this alongside the original produces two
-    byte-different encodings of that one record, proving the collapse keys
-    equality on the canonical record digest, not raw bytes.
+    """Rebuild a JSON-decodable value with every mapping's keys reversed: content-equal to ``value`` (a JSON
+    parser decodes the identical record either way), but serializing it alongside the original produces two
+    byte-different encodings of that one record, proving the collapse keys equality on the canonical record
+    digest, not raw bytes.
     """
     if isinstance(value, dict):
         return {key: _reordered(value[key]) for key in reversed(list(value))}

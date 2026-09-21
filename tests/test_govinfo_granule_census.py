@@ -30,6 +30,7 @@ MODS_NS = 'xmlns="http://www.loc.gov/mods/v3"'
 
 
 def _line(number: str, date: str) -> dict[str, Any]:
+    """One census output JSON line."""
     return {
         "sourceRecordId": f"{number}@{date}",
         "record": {"document_number": number, "publication_date": date},
@@ -51,6 +52,8 @@ def _mods(granules: list[str] | list[tuple[str, str]]) -> bytes:
 
 
 def _transport(pages: dict[str, bytes], seen: list[httpx.Request]) -> httpx.MockTransport:
+    """A mock transport serving MODS responses by URL."""
+
     def handler(request: httpx.Request) -> httpx.Response:
         seen.append(request)
         date = request.url.path.rsplit("/", 2)[-2].removeprefix("FR-")
@@ -62,6 +65,7 @@ def _transport(pages: dict[str, bytes], seen: list[httpx.Request]) -> httpx.Mock
 
 
 def _run(tmp_path: Path, records, pages, *, seen=None) -> list[dict[str, Any]]:
+    """Run the census over the given dates and return its exit status."""
     root, blobs = records_release(tmp_path, "release", records)
     output = tmp_path / "out.jsonl"
     census(
@@ -76,7 +80,7 @@ def _run(tmp_path: Path, records, pages, *, seen=None) -> list[dict[str, Any]]:
 
 
 def test_the_fused_granule_is_reported_unmatched_in_both_directions(tmp_path: Path) -> None:
-    """The 95-8641 shape: our clean number, GPO's fused granule id, no repair."""
+    """A fused granule id is reported unmatched in both directions with no repair."""
     rows = _run(
         tmp_path,
         [_line("95-8641", "1995-04-10"), _line("95-8642", "1995-04-10")],
@@ -92,13 +96,7 @@ def test_the_fused_granule_is_reported_unmatched_in_both_directions(tmp_path: Pa
 def test_the_census_keys_on_the_granule_id_not_the_parsed_document_number(
     tmp_path: Path,
 ) -> None:
-    """Keying on FR Doc No. would compare our numbers against numbers.
-
-    The MODS record carries both GPO's accessId and a parsed "FR Doc No.".
-    Only the accessId carries the printed-colophon fusion, and only the
-    accessId is what a content URL 404s against. A census keyed on the parsed
-    number would agree with itself and report nothing.
-    """
+    """The census keys on the granule accessId, not the parsed document number, so the fusion stays visible."""
     rows = _run(
         tmp_path,
         [_line("95-8641", "1995-04-10")],
@@ -112,9 +110,7 @@ def test_the_census_keys_on_the_granule_id_not_the_parsed_document_number(
 def test_a_missing_package_is_recorded_as_a_failure_not_an_empty_success(
     tmp_path: Path,
 ) -> None:
-    """The keyed route this replaced returned 200 with zero granules for 57% of
-    sampled 1994 issues, which recorded as a clean listing. A MODS 404 is a
-    failure and stays one."""
+    """A missing package is a listing failure, not an empty success."""
     rows = _run(tmp_path, [_line("95-1", "1995-04-10")], {})
 
     assert rows[0]["status"] == "listing-failed"
@@ -122,7 +118,7 @@ def test_a_missing_package_is_recorded_as_a_failure_not_an_empty_success(
 
 
 def test_one_request_per_issue(tmp_path: Path) -> None:
-    """A MODS record lists every constituent, so there is no paging to get wrong."""
+    """One request per issue suffices, since a MODS record lists every constituent."""
     seen: list[httpx.Request] = []
     rows = _run(
         tmp_path,
@@ -137,7 +133,7 @@ def test_one_request_per_issue(tmp_path: Path) -> None:
 
 
 def test_no_credential_is_ever_sent(tmp_path: Path) -> None:
-    """The run is authorized on spending nothing; nothing may leak a key."""
+    """No credential is ever sent on the keyless route."""
     seen: list[httpx.Request] = []
     _run(
         tmp_path,
@@ -155,7 +151,7 @@ def test_no_credential_is_ever_sent(tmp_path: Path) -> None:
 def test_a_401_aborts_the_run_rather_than_being_recorded_and_passed_over(
     tmp_path: Path,
 ) -> None:
-    """A keyless route answering 401 means the premise failed. Stop."""
+    """A keyless 401 aborts the run rather than being recorded and passed over."""
     root, blobs = records_release(tmp_path, "release", [_line("95-1", "1995-04-10"), _line("95-2", "1995-04-11")])
     seen: list[httpx.Request] = []
 
@@ -177,6 +173,7 @@ def test_a_401_aborts_the_run_rather_than_being_recorded_and_passed_over(
 
 
 def test_a_403_aborts_and_is_never_retried(tmp_path: Path) -> None:
+    """A 403 aborts and is never retried."""
     root, blobs = records_release(tmp_path, "release", [_line("95-1", "1995-04-10")])
     attempts: list[int] = []
 
@@ -198,6 +195,7 @@ def test_a_403_aborts_and_is_never_retried(tmp_path: Path) -> None:
 
 
 def test_a_resumed_run_refetches_nothing_already_recorded(tmp_path: Path) -> None:
+    """A resumed run refetches nothing already recorded."""
     records = [_line("95-1", "1995-04-10"), _line("95-2", "1995-04-11")]
     pages = {"1995-04-10": _mods(["95-1"]), "1995-04-11": _mods(["95-2"])}
     root, blobs = records_release(tmp_path, "release", records)
@@ -222,6 +220,7 @@ def test_a_resumed_run_refetches_nothing_already_recorded(tmp_path: Path) -> Non
 
 
 def test_the_through_date_bounds_the_run(tmp_path: Path) -> None:
+    """The through date bounds the run."""
     records = [_line("99-1", "1999-12-31"), _line("00-1", "2000-01-03")]
     pages = {"1999-12-31": _mods(["99-1"]), "2000-01-03": _mods(["00-1"])}
     root, blobs = records_release(tmp_path, "release", records)
@@ -240,12 +239,7 @@ def test_the_through_date_bounds_the_run(tmp_path: Path) -> None:
 
 
 def test_the_parser_reads_the_saved_sample(tmp_path: Path) -> None:
-    """Guards the parser against the format, not against my reading of it.
-
-    An XPath built from a prose description of this format found 105
-    constituents and zero ids: accessId is an element under extension, not an
-    identifier[@type='accessId'].
-    """
+    """The parser reads the saved MODS sample's accessId under extension."""
     sample = Path.home() / "Work/corpora/supply-2026-09-02/receipts/govinfo-mods-sample-FR-1994-01-03.xml"
     if not sample.exists():
         pytest.skip("saved MODS sample not present")
@@ -257,13 +251,7 @@ def test_the_parser_reads_the_saved_sample(tmp_path: Path) -> None:
 
 
 def test_resume_retries_a_failed_listing_instead_of_settling_it(tmp_path) -> None:
-    """An outage must not become a permanent census answer.
-
-    govinfo's backend went down mid-run on 2026-09-05 and nine issues were
-    written as `listing-failed` with HTTP 502. Resume used to treat every
-    recorded date as done, which would have left those nine unvisited forever
-    and shipped a transient outage as a finding.
-    """
+    """Resume retries a failed or short listing instead of settling it."""
     from tools.analysis.govinfo_granule_census import _resume_state
 
     output = tmp_path / "census.jsonl"
@@ -285,7 +273,7 @@ def test_resume_retries_a_failed_listing_instead_of_settling_it(tmp_path) -> Non
 
 
 def test_a_later_listing_supersedes_an_earlier_failure(tmp_path) -> None:
-    """The file is append-only, so the last row for a date is the current one."""
+    """A later listing supersedes an earlier failure, the file being append-only."""
     from tools.analysis.govinfo_granule_census import _resume_state
 
     output = tmp_path / "census.jsonl"
@@ -307,16 +295,7 @@ def test_a_later_listing_supersedes_an_earlier_failure(tmp_path) -> None:
 
 
 def test_resume_refuses_a_file_from_another_release(tmp_path) -> None:
-    """Two corpora in one file is the failure this guard exists for.
-
-    On 2026-09-05 a resume ran against the pre-composite release while the file's
-    existing rows had been computed against composite-2. The 483 recovered
-    documents, 364 of them pre-2000, would have surfaced as "govinfo has it, we
-    do not" -- inflating the column whose real signal is single digits.
-
-    Counts cannot detect the swap: 1994-01-03 holds 105 documents in both
-    releases and only 380 of 8,170 dates differ at all. Hence a digest.
-    """
+    """Resume refuses a file from another release, since counts cannot detect the swap."""
     from tools.analysis.govinfo_granule_census import _guard_resume_release
 
     output = tmp_path / "census.jsonl"
@@ -327,6 +306,7 @@ def test_resume_refuses_a_file_from_another_release(tmp_path) -> None:
 
 
 def test_resume_requires_a_recorded_release_digest(tmp_path) -> None:
+    """Resume requires a recorded release digest."""
     from tools.analysis.govinfo_granule_census import _guard_resume_release
 
     output = tmp_path / "out.jsonl"
@@ -336,13 +316,7 @@ def test_resume_requires_a_recorded_release_digest(tmp_path) -> None:
 
 
 def test_a_short_number_does_not_fuse_with_a_longer_one() -> None:
-    """94-2050 occurs inside 94-20508, which is a different document.
-
-    The first run of the resolver used a plain substring test and reported
-    94-20508, 94-20509, 94-20500 and 94-20503 as fusions of 94-2050. They are
-    four other documents, and the only real fusion in that listing was 94-2050F.
-    A defect invented by the instrument is worse than the one it was looking for.
-    """
+    """A short number does not fuse with a longer one that merely contains it."""
     from tools.analysis.govinfo_resolve_unmatched import _is_fusion_of
 
     assert _is_fusion_of("94-2050F", "94-2050")

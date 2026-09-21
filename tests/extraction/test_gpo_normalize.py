@@ -1,35 +1,9 @@
-"""Port of BillTrax's pdf-normalize.test.ts (27 cases, 9 describes), re-derived.
-
-BillTrax's fixtures assumed pdf-parse's line layout, where a GPO gutter line
-number is glued onto the end of its content line ("Representa-1") and a GPO
-print-shop footer is one fused line. This repo's PDF extraction is PyMuPDF's
-line-grouped native text (``extraction.DocumentExtractor(extraction.
-NativeText())``, see ``extraction/pages.py``), which never glues a gutter
-number onto content text -- it emits the number as its own physical line
-immediately after the content line -- and splits GPO's footer across several
-physical lines. Every fixture below is rewritten to that shape; each test
-name and docstring says what changed and why (see also
-``gpo_normalize``'s module docstring and ``docs/extraction-gpo.md``).
-
-Padded ported cases use ``gutter_filler`` (defined below) to clear
-``gpo_normalize._MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``, a floor ported later
-from DeltaTrack (see that constant's docstring and
-``docs/research/deltatrack-upstream-issues-2026-09-19.md``, claim B3): most of
-BillTrax's own tiny fixtures sit under it, so padding keeps them exercising
-what they always did (the adjacency/rejoin mechanism) rather than the floor.
-
-Three more test groups follow the ported 27:
- - real-document fixtures from ``tests/fixtures/gpo_pdf_text/`` with their
-   measured ``GpoCleanupRecord`` counts asserted exactly -- three from
-   BillTrax's original port plus a fourth (``BILLS-119hr1009rfs``) added to
-   exercise the ported running-footer rule, which none of the first three
-   carries;
- - a PDF-vs-PDF concordance check (normalizing the same extracted text twice
-   is deterministic) and a PDF-vs-XML concordance check (skipped per fixture
-   when no matching bill-text XML sample exists, per the task's rule);
- - one ``integration``-marked, bounded, keyless live refetch of the smallest
-   fixture's own PDF, which also serves as a *real* two-independent-
-   extractions PDF-vs-PDF concordance check.
+"""Port of BillTrax's ``pdf-normalize.test.ts`` (27 cases, 9 describes), re-derived for PyMuPDF's line layout:
+a GPO gutter number arrives as its own physical line and the print-shop footer spans several lines, unlike
+pdf-parse's glued shapes. Three more groups follow -- real-document fixtures with exact ``GpoCleanupRecord``
+counts, PDF-vs-PDF and PDF-vs-XML concordance checks, and one integration-marked live refetch -- and ported
+fixtures under the 50-content-line floor are padded with ``gutter_filler`` so they keep exercising the
+adjacency/rejoin mechanism rather than the floor (see ``docs/extraction-gpo.md``).
 """
 
 from __future__ import annotations
@@ -58,17 +32,10 @@ def page(*lines: str) -> tuple[str, ...]:
 
 
 def gutter_filler(n: int) -> tuple[str, ...]:
-    """``n`` extra gutter-numbered content lines.
-
-    ``gpo_normalize._MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` (ported from
-    DeltaTrack's ``_MIN_LINES_FOR_GUARD``, see that constant's docstring)
-    withholds the layout verdict below 50 content lines, which most of
-    BillTrax's own small ported fixtures sit under. Appending this keeps a
-    test's line count realistic -- clearing the floor -- without disturbing
-    what it actually asserts; each line is followed by its own bare 1-2 digit
-    gutter number, keeping the numbered/content ratio high the way a real
-    numbered page's does.
-    """
+    """``n`` extra gutter-numbered content lines, each line followed by its own bare 1-2 digit number.
+    Appending these clears ``gpo_normalize._MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` (50 content lines, ported
+    from DeltaTrack's ``_MIN_LINES_FOR_GUARD``) while keeping the numbered/content ratio realistic, so most of
+    BillTrax's tiny ported fixtures still exercise the adjacency/rejoin mechanism rather than the floor."""
     filler: list[str] = []
     for i in range(n):
         filler.append(f"Additional statutory text for measurement, clause {i}.")
@@ -77,13 +44,9 @@ def gutter_filler(n: int) -> tuple[str, ...]:
 
 
 def unnumbered_filler(n: int) -> tuple[str, ...]:
-    """``n`` plain content lines with no adjacent gutter number at all --
-    the shape a resolution's unnumbered "Whereas" preamble takes (see
-    ``test_true_at_or_above_the_floor_when_a_long_unnumbered_preamble_
-    dilutes_the_ratio_but_a_page_shows_a_real_run`` below), used to push a
-    synthetic document's content-line count at or above the floor while
-    driving its numbered/content ratio down, independently of
-    ``gutter_filler``, which keeps that ratio high.
+    """``n`` plain content lines with no adjacent gutter number, the shape a resolution's unnumbered "Whereas"
+    preamble takes; used to push a synthetic document's content-line count at or above the floor while driving
+    its numbered/content ratio down, independently of ``gutter_filler``, which keeps that ratio high.
     """
     return tuple(f"Whereas clause number {i} of the preamble recites a finding." for i in range(n))
 
@@ -94,18 +57,11 @@ def unnumbered_filler(n: int) -> tuple[str, ...]:
 
 
 def test_true_when_content_lines_are_each_followed_by_a_bare_gutter_number():
-    """Adapted: pdf-parse glued the number onto the line ("Representa-1");
-    PyMuPDF emits it as the next physical line. The detector now reads that
-    adjacency instead of a trailing-digit suffix. Below
-    ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` (5 content lines here), the
-    ratio alone is not enough evidence, but this excerpt's gutter digits are
-    a consecutive run starting at 1 (1, 2, 3, 4, 5) -- real GPO numbering
-    restarts at 1 on every page, so a genuinely short numbered bill does not
-    need to be padded out to look like a long one to be recognized (see
-    ``_starts_consecutive_run_from_one``); contrast
-    ``test_false_for_a_run_that_does_not_start_at_one`` and
-    ``test_false_for_a_run_split_across_pages_that_never_restarts_at_one``
-    below, where the digits exist but do not form that run."""
+    """Adapted: the detector reads PyMuPDF's adjacent bare-number line instead of pdf-parse's trailing-digit
+    suffix ("Representa-1"). Below ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` the ratio alone is not enough, but
+    this excerpt's digits (1-5) are a consecutive run starting at 1 -- real GPO numbering restarts at 1 on every
+    page, so a genuinely short numbered bill is still recognized (see ``_starts_consecutive_run_from_one``);
+    contrast the two run-failure cases below."""
     text = page(
         "Be  it  enacted  by  the  Senate  and  House  of  Representa-",
         "1",
@@ -122,25 +78,17 @@ def test_true_when_content_lines_are_each_followed_by_a_bare_gutter_number():
 
 
 def test_false_for_a_run_that_does_not_start_at_one():
-    """New (B3, ``docs/research/deltatrack-upstream-issues-2026-09-19.md``,
-    refined in review): a page whose gutter digits are 1, 2, 4 -- not a
-    consecutive run -- is not GPO-numbered evidence below the floor, even
-    though the ratio (3/3) is as strong as it can be. The prefix run breaks
-    at the third digit (index 2 expects 3, sees 4), so its length is 2, under
-    ``_MIN_GUTTER_RUN_LENGTH``."""
+    """New (B3, refined in review): a page whose gutter digits are 1, 2, 4 -- not a consecutive run -- is not
+    GPO-numbered evidence below the floor, even though its 3/3 ratio is as strong as it can be; the prefix run
+    breaks at the third digit, so its length is 2, under ``_MIN_GUTTER_RUN_LENGTH``."""
     text = page("enacted", "1", "by the", "2", "Senate", "4")
     assert is_gpo_layout(text) is False
 
 
 def test_false_for_a_run_split_across_pages_that_never_restarts_at_one():
-    """New (B3, refined in review): five footnote-style markers across two
-    pages, numbered straight through (1, 2 on page one; 3, 4, 5 on page two)
-    rather than restarting at 1 on the second page the way GPO's own gutter
-    numbering does. Neither page alone has a consecutive run starting at 1 of
-    at least ``_MIN_GUTTER_RUN_LENGTH``: page one's run (1, 2) is one short,
-    and page two's digits (3, 4, 5) never reach 1 at all. This is the
-    residual the run test cannot see from a single page in isolation --
-    stated in ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``'s docstring."""
+    """New (B3, refined in review): five footnote-style markers numbered straight through two pages (1, 2 then
+    3, 4, 5) rather than restarting at 1 the way GPO gutter numbering does; neither page alone has a
+    ``_MIN_GUTTER_RUN_LENGTH`` run starting at 1 -- the residual a single page cannot see."""
     pages = (
         page(
             "First paragraph of the memo carries a note.",
@@ -172,18 +120,16 @@ def test_false_for_enr_text_without_gutter_numbers():
 
 
 def test_false_for_two_content_lines_each_followed_by_its_own_gutter_number_line():
-    """Adapted: two content lines, each still followed by its own gutter
-    number line, rather than two inline-numbered lines."""
+    """Adapted: two content lines, each still followed by its own gutter number line, rather than pdf-parse's
+    two inline-numbered lines."""
     text = page("enacted", "1", "Section", "2")
     assert is_gpo_layout(text) is False
 
 
 def test_filters_a_tail_verdate_footer_and_a_real_2025_job_code_line_before_counting_content():
-    """Adapted: the footer sits at the real tail of the page (a VerDate line
-    is always followed only by more footer, never real content -- see
-    test_strips_the_multiline_verdate_footer_* below), and the job-code line
-    uses a real 2025 shape (no literal "DSK" prefix, no trailing "$") -- see
-    test_strips_job_code_lines_* below."""
+    """Adapted: the footer sits at the real tail of the page (a VerDate line is always followed only by more
+    footer, never real content) and the job-code line uses a real 2025 shape (no literal "DSK" prefix, no
+    trailing "$"), both filtered before counting content."""
     text = page(
         "normal line no number",
         "another normal line",
@@ -202,11 +148,10 @@ def test_filters_a_tail_verdate_footer_and_a_real_2025_job_code_line_before_coun
 
 
 def test_true_below_the_floor_on_an_exact_thirty_percent_ratio():
-    """New (gap B6 corpus validation): a strict ``> 0.3`` made two real
-    GPO-numbered documents (``BILLS-119sjres141is``, ``BILLS-119hconres11eh``)
-    fail on a ratio that landed exactly at 30%, even with a real per-page
-    consecutive run confirming genuine numbering. Reproduced synthetically:
-    10 content lines, 3 numbered (a valid run, 1-2-3) -- ratio exactly 0.3."""
+    """New (gap B6 corpus validation): a strict ``> 0.3`` made two real GPO-numbered documents
+    (``BILLS-119sjres141is``, ``BILLS-119hconres11eh``) fail on a ratio that landed exactly at 30% even with a
+    real per-page run confirming genuine numbering; reproduced synthetically as 10 content lines, 3 numbered
+    (a valid 1-2-3 run), ratio exactly 0.3."""
     text = page(
         "Resolved by the Senate and House of Representatives",
         "1",
@@ -226,16 +171,10 @@ def test_true_below_the_floor_on_an_exact_thirty_percent_ratio():
 
 
 def test_true_at_or_above_the_floor_when_a_long_unnumbered_preamble_dilutes_the_ratio_but_a_page_shows_a_real_run():
-    """New (gap B6 corpus validation): the per-page run test used to run
-    only below the floor, gated behind the same ratio check. A real 10-page
-    House concurrent resolution (``BILLS-119hconres26ih``) has a six-page
-    unnumbered "Whereas" preamble before its "Resolved" operative text
-    begins, diluting its whole-document ratio to 0.268 despite four pages
-    of unambiguous gutter numbering -- one of them a run 25 long. Reproduced
-    synthetically: 55 unnumbered preamble lines (``unnumbered_filler``)
-    followed by a short numbered "Resolved" section with its own real run of
-    5 -- ratio 5/60 = 0.083, far under 0.3, but the run test now decides the
-    verdict independently once the document clears the floor."""
+    """New (gap B6 corpus validation): the per-page run test now decides independently once the document clears
+    the floor, so a six-page unnumbered "Whereas" preamble that dilutes ``BILLS-119hconres26ih`` to ratio 0.268
+    despite four pages of unambiguous numbering -- one run 25 long -- is still line-numbered; reproduced
+    synthetically as 55 unnumbered lines plus a real run of 5 (ratio 0.083)."""
     text = page(
         *unnumbered_filler(55),
         "Resolved by the Senate and House of Representatives",
@@ -255,16 +194,10 @@ def test_true_at_or_above_the_floor_when_a_long_unnumbered_preamble_dilutes_the_
 
 
 def test_false_below_the_floor_when_a_real_run_exists_but_the_ratio_is_too_low():
-    """Regression guard for the more conservative half of the fix above:
-    below the floor, both signals stay required together, unchanged from
-    the original design (BillTrax's own concern, quoted in
-    ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``'s docstring: "a two-page memo
-    should not be declared GPO-numbered on three lines just because they
-    happen to be numbered"). Only three of this excerpt's seventeen content
-    lines are gutter-adjacent; even though those three form a valid run from
-    1, the ratio (3/17 = 0.176) sits well under 0.3, and unlike the case
-    above this excerpt never clears the 50-line floor, so the run alone
-    must not decide it."""
+    """Regression guard for the conservative half of the fix above: below the floor both signals stay required,
+    so three gutter-adjacent lines out of seventeen (ratio 0.176) is not enough despite a valid run from 1 --
+    BillTrax's own concern that "a two-page memo should not be declared GPO-numbered on three lines just because
+    they happen to be numbered"."""
     text = page(
         "Resolved by the Senate and House of Representatives",
         "1",
@@ -292,44 +225,12 @@ def test_false_below_the_floor_when_a_real_run_exists_but_the_ratio_is_too_low()
 
 
 def test_true_at_or_above_the_floor_across_pages_and_the_rejoin_blast_radius_on_an_unrelated_page():
-    """New (gap B6 corpus review): the single-page version above
-    (``test_true_at_or_above_the_floor_when_a_long_unnumbered_preamble_
-    dilutes_the_ratio_but_a_page_shows_a_real_run``) only shows the floor
-    and the run clearing a document whose numbered evidence sits on the
-    same page as most of its content. ``_layout_verdict`` sums
-    ``content_lines`` and ``gutter_adjacent_lines`` across every page in
-    ``page_counts``, and ``has_structural_run`` is checked per page, so
-    nothing in that arithmetic requires the evidence to be anywhere near
-    the bulk of the content -- reproduced here across four separate pages:
-    two plain, unrelated 25-line pages (``unnumbered_filler``, 50 lines, no
-    gutter numbers at all) plus one page carrying only a minimal
-    three-line run (1, 2, 3) -- 56 content lines total, 4 numbered, ratio
-    0.071, far under 0.3, but the run alone clears the verdict once the
-    document is at or above the floor.
-
-    This is also the shape ``_layout_verdict``'s own docstring names as a
-    disclosed, unmeasured residual: a document-wide verdict decided by a
-    minimal per-page run, then applied to every page regardless of that
-    page's own evidence. This test measures that residual's *blast
-    radius* on a fourth, genuinely unrelated page -- one with no gutter
-    run of its own, built only to have a hyphen-ended line
-    ("cross-refer-") followed by a *different* line that is itself
-    gutter-adjacent (immediately followed by a bare "7"). Measured result:
-    the coincidental "7" is stripped from that page as bare-digit metadata
-    (``bare_page_number_evidence`` is ``"gutter_layout"`` there too, the
-    same as every other page -- that gate's reach is genuinely
-    document-wide), but the hyphen-ended line is *not* rejoined --
-    ``_rejoin_hyphens`` only merges a line whose *own* immediately
-    following raw line is the bare number (``cur.gutter_adjacent``), and
-    this line's own next line is the other content line, not the digit, so
-    that gate is not document-wide the same way. The document's total
-    ``hyphen_rejoin_count`` is 0: the blast radius a document-wide
-    False->True verdict has on hyphen-rejoin is bounded by each line's own
-    local corroboration, not by the verdict alone -- narrower than the
-    bare-digit gate it shares a boolean with. See ``gpo_normalize``'s
-    module docstring, ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``'s
-    docstring, for where this pin is now cited.
-    """
+    """New (gap B6 corpus review): ``_layout_verdict`` sums content and gutter-adjacent lines across pages while
+    checking structural runs per page, so a minimal three-line run (1, 2, 3) on one page clears a 56-line
+    document at ratio 0.071. On a fourth, unrelated page the document-wide verdict strips its coincidental bare
+    "7" as bare-digit metadata (``bare_page_number_evidence`` is ``"gutter_layout"`` there too) but does not
+    rejoin "cross-refer-" -- ``_rejoin_hyphens`` requires the line's own next raw line to be the digit -- so the
+    verdict's blast radius on hyphen-rejoin stays bounded by each line's local corroboration."""
     pages = (
         page(*unnumbered_filler(25))[0],
         page(*unnumbered_filler(25))[0],
@@ -367,10 +268,8 @@ def test_true_at_or_above_the_floor_across_pages_and_the_rejoin_blast_radius_on_
 
 
 def test_strips_the_multiline_verdate_footer_pymupdf_splits_across_lines():
-    """Re-derived: pdf-parse's single fused footer line becomes ~9 physical
-    lines under PyMuPDF (time+date, Jkt, PO, Frm, Fmt, Sfmt, file path),
-    always the tail of the page -- so the whole tail is dropped once VerDate
-    matches, not just the line VERDATE_RE itself matches."""
+    """Re-derived: PyMuPDF splits pdf-parse's one fused footer line into ~9 physical lines always at the tail of
+    the page, so the whole tail is dropped once VerDate matches, not just the line VERDATE_RE itself matches."""
     text = page(
         "enacted by the Senate",
         "1",
@@ -397,10 +296,9 @@ def test_strips_the_multiline_verdate_footer_pymupdf_splits_across_lines():
 
 
 def test_strips_job_code_lines_without_the_literal_dsk_prefix_or_dollar_suffix():
-    """Re-derived: BillTrax's DSK_USER_RE required a literal "DSK" machine-id
-    prefix and a trailing "$"; real 2025 GovInfo output has neither
-    ("ssavage on LAPJG3WLY3PROD with BILLS"). The rule is generalized to any
-    machine id ending "PROD" and any trailing job-code token."""
+    """Re-derived: real 2025 GovInfo output has neither BillTrax's literal "DSK" machine-id prefix nor its
+    trailing "$" ("ssavage on LAPJG3WLY3PROD with BILLS"), so the rule generalizes to any machine id ending
+    "PROD" and any trailing job-code token."""
     text = page(
         "enacted by the Senate",
         "1",
@@ -416,11 +314,9 @@ def test_strips_job_code_lines_without_the_literal_dsk_prefix_or_dollar_suffix()
 
 
 def test_strips_bare_gutter_and_page_number_lines():
-    """This page carries no VerDate/DSK/running-footer evidence, so digit
-    stripping here depends entirely on the document-level layout verdict --
-    cleared by the structural run test, since the three content lines'
-    gutter digits (1, 2, 3) are a consecutive run starting at 1 (see
-    ``_starts_consecutive_run_from_one``)."""
+    """This page carries no VerDate/DSK/running-footer evidence, so digit stripping depends entirely on the
+    document-level layout verdict -- cleared by the structural run test, since the three content lines' gutter
+    digits (1, 2, 3) are a consecutive run starting at 1 (see ``_starts_consecutive_run_from_one``)."""
     text = page(
         "end of page text",
         "1",
@@ -451,17 +347,9 @@ def test_strips_bullet_bill_identifier_lines():
 
 
 def test_strips_unbulleted_running_bill_stage_footer_lines():
-    """New (B2, ``docs/research/deltatrack-upstream-issues-2026-09-19.md``):
-    ported verbatim from DeltaTrack's ``_RUNNING_FOOTER``
-    (``parsers/pdf_text.py:68-71``, built for its own #140) -- a print-stage
-    tag like "HR 5895 PCS" that GPO does not bullet, so neither
-    ``_BULLET_BILL_RE`` above nor BillTrax's original rule catches it. Self-
-    evidencing and independent of the layout-verdict floor (unlike
-    gutter-number/hyphen handling elsewhere in this file), but not
-    unconditional: it strips only when the *next* line is not itself a bare
-    gutter number -- see
-    ``test_keeps_a_running_footer_shaped_content_line_when_followed_by_its_
-    own_gutter_number`` below for why."""
+    """New (B2): a print-stage tag like "HR 5895 PCS" that GPO does not bullet, ported verbatim from
+    DeltaTrack's ``_RUNNING_FOOTER``; self-evidencing and independent of the layout floor, but it strips only
+    when the *next* line is not itself a bare gutter number -- see the test below for why."""
     text = page(
         "end of page content",
         "1",
@@ -479,22 +367,17 @@ def test_strips_unbulleted_running_bill_stage_footer_lines():
 
 
 def test_does_not_strip_a_bill_number_mentioned_mid_sentence():
-    """The running-footer pattern matches a WHOLE line, like upstream's own
-    ``re.MULTILINE`` anchors -- prose that happens to mention a bill number
-    is not a print-stage tag and must survive."""
+    """The running-footer pattern matches a WHOLE line, like upstream's own ``re.MULTILINE`` anchors, so prose
+    that happens to mention a bill number is not a print-stage tag and must survive."""
     text = page("This section amends H.R. 1234 PCS references in prior law.")
     normalized, _record = normalize_gpo_pages(text)
     assert "H.R. 1234 PCS" in normalized[0]
 
 
 def test_keeps_a_running_footer_shaped_content_line_when_followed_by_its_own_gutter_number():
-    """Refined in review: a genuine running footer is page furniture followed
-    by prose (as in BILLS-119hr1009rfs's real "HR 1009 RFS"), never by its
-    own gutter number. Reproduced without the guard: a real numbered content
-    line that happens to share the running-footer's shape -- unlikely in
-    practice, but not impossible in a bill discussing its own designation --
-    was being deleted along with its digit. The next-line check restores it
-    as ordinary gutter-numbered content instead."""
+    """Refined in review: a genuine running footer is page furniture followed by prose, never by its own gutter
+    number, so a real numbered content line that merely shares the shape -- plausible in a bill discussing its
+    own designation -- is restored as ordinary gutter-numbered content instead of being deleted with its digit."""
     text = page(
         "some preceding content here",
         "1",
@@ -529,14 +412,9 @@ def test_gpo_footers_false_when_no_footer_lines_present():
 
 
 def test_strips_gutter_number_lines_while_preserving_content_text():
-    """Adapted: BillTrax distinguished a space-separated suffix from a
-    hyphen-embedded one on the same line. Under PyMuPDF the number is never
-    attached to the line at all, so that distinction does not apply -- there
-    is only "a bare number line follows". This excerpt's own digits (2, 3, 4)
-    continue mid-document rather than starting at 1, so they do not clear the
-    structural run test on their own; padded with ``gutter_filler`` (see that
-    helper) past the minimum-content-line floor instead, where the ratio
-    alone decides."""
+    """Adapted: under PyMuPDF a gutter number is never attached to its line, so BillTrax's space-versus-hyphen
+    suffix distinction does not apply -- only "a bare number line follows". Digits 2, 3, 4 continue
+    mid-document rather than starting at 1, so ``gutter_filler`` padding past the floor lets the ratio decide."""
     text = page(
         "tives of the United States of America in Congress assembled,",
         "2",
@@ -554,10 +432,8 @@ def test_strips_gutter_number_lines_while_preserving_content_text():
 
 
 def test_strips_two_digit_gutter_numbers():
-    """This page carries no VerDate/DSK/running-footer evidence, and its own
-    digits (17-20) do not start at 1, so digit stripping depends entirely on
-    the document-level ratio verdict; padded with ``gutter_filler`` (see that
-    helper) past the minimum-content-line floor to clear it."""
+    """This page carries no footer evidence and its digits (17-20) do not start at 1, so digit stripping
+    depends entirely on the document-level ratio verdict, cleared by ``gutter_filler`` padding past the floor."""
     text = page(
         "permanent  change  of  station  travel  (including  all",
         "17",
@@ -575,9 +451,8 @@ def test_strips_two_digit_gutter_numbers():
 
 
 def test_preserves_inline_numbers_in_non_gpo_layout_text():
-    """ENR text has no gutter-number lines at all, so section references and
-    dollar amounts that happen to contain digits are never touched -- this
-    rule only ever drops a line that is *entirely* a 1-4 digit number."""
+    """ENR text has no gutter-number lines at all, so section references and dollar amounts that happen to
+    contain digits are never touched -- this rule only ever drops a line that is *entirely* a 1-4 digit number."""
     text = page(
         "Be it enacted by the Senate",
         "and House of Representatives",
@@ -607,9 +482,8 @@ def test_line_numbers_false_when_no_gutter_numbers_present():
 
 
 def test_rejoins_hyphen_wrap_corroborated_by_a_following_gutter_number():
-    """Rejoin only runs once the document layout verdict is True -- cleared
-    here by the structural run test (gutter digits 1, 2, 3, a consecutive
-    run starting at 1), below the minimum-content-line floor."""
+    """Rejoin runs only once the document layout verdict is True -- cleared here by the structural run test
+    (gutter digits 1, 2, 3, a consecutive run starting at 1), below the minimum-content-line floor."""
     text = page(
         "Be  it  enacted  by  the  Senate  and  House  of  Representa-",
         "1",
@@ -624,9 +498,8 @@ def test_rejoins_hyphen_wrap_corroborated_by_a_following_gutter_number():
 
 
 def test_rejoins_sta_hyphen_to_station():
-    """This excerpt's own digits (18-20) do not start at 1, so padded with
-    ``gutter_filler`` (see that helper) past the minimum-content-line floor,
-    where the ratio alone decides."""
+    """This excerpt's own digits (18-20) do not start at 1, so ``gutter_filler`` padding past the
+    minimum-content-line floor lets the ratio alone decide the rejoin."""
     text = page(
         "permanent  change  of  sta-",
         "18",
@@ -642,8 +515,8 @@ def test_rejoins_sta_hyphen_to_station():
 
 
 def test_handles_chained_multiline_hyphen_splits():
-    """Gutter digits 1, 2, 3, 4 -- a consecutive run starting at 1 -- clear
-    the structural run test below the minimum-content-line floor."""
+    """Gutter digits 1, 2, 3, 4 -- a consecutive run starting at 1 -- clear the structural run test below the
+    minimum-content-line floor."""
     text = page(
         "appro-",
         "1",
@@ -659,9 +532,8 @@ def test_handles_chained_multiline_hyphen_splits():
 
 
 def test_records_hyphen_rejoin_count():
-    """Gutter digits 1, 2, 3 clear the structural run test below the
-    minimum-content-line floor, so this fixture's one real rejoin is
-    counted."""
+    """Gutter digits 1, 2, 3 clear the structural run test below the minimum-content-line floor, so this
+    fixture's one real rejoin is counted."""
     text = page(
         "Repre-",
         "1",
@@ -729,11 +601,9 @@ def test_records_small_caps_merge_count():
 
 
 def test_collapses_multiple_internal_spaces_to_single_spaces():
-    """Doubled internal spaces from kerning were measured at zero
-    occurrences under PyMuPDF across all three real fixtures in
-    tests/fixtures/gpo_pdf_text/ -- the rule is kept for compatibility (like
-    BillTrax's own always-true spacingNormalized field) and exercised here
-    with a synthetic case rather than a real one."""
+    """Doubled internal spaces measured zero occurrences under PyMuPDF across all three real fixtures in
+    tests/fixtures/gpo_pdf_text/, so the rule is kept for compatibility (like BillTrax's own always-true
+    spacingNormalized field) and exercised here with a synthetic case rather than a real one."""
     text = page(
         "Be  it  enacted  by  the  Senate  and  House",
         "of  Representatives  of  the  United  States",
@@ -764,14 +634,10 @@ def test_converts_curly_quotes_to_straight_quotes():
 
 
 def test_collapses_gpos_doubled_single_quote_into_one_double_quote():
-    """New: not one of BillTrax's 27 (pdf-parse's fixtures never exercised
-    it), added directly from real data -- CRPT-119hrpt105 renders a double
-    quote as two adjacent single curly quotes
-    ("\u2018\u2018Review of Final Rule ...\u2019\u2019"), which the
-    single-curly-quote replacement alone leaves as two straight single
-    quotes. Same collapse DeltaTrack's independently-derived, extractor-
-    agnostic ``normalize_glyphs`` reaches (parsers/pdf_text.py:
-    ``text.replace("''", '"')``)."""
+    """New, added from real data (CRPT-119hrpt105 renders a double quote as two adjacent single curly quotes,
+    ``''Review of Final Rule ...''``), which the single-quote replacement alone leaves as two straight single
+    quotes; the pair collapses to one double quote, the same collapse DeltaTrack's independently derived,
+    extractor-agnostic ``normalize_glyphs`` reaches."""
     text = page("relating to \u2018\u2018Review of Final Rule\u2019\u2019 today.")
     normalized, _record = normalize_gpo_pages(text)
     assert '"Review of Final Rule"' in normalized[0]
@@ -797,16 +663,10 @@ def test_normalizes_crlf_to_lf():
 
 
 def test_cleans_a_realistic_ih_page_excerpt_end_to_end():
-    """Adapted: gutter numbers on their own lines, a real 2025-shaped
-    job-code line, and the footer moved to the true tail of the page --
-    running header first, footer last, matching a real page's top-to-bottom
-    order (a VerDate line is always the last thing PyMuPDF emits for a page;
-    see the two re-derived rules above). This excerpt's own digit sequence
-    (16, 17, 1, 2, 3, 4, 5 -- an appropriations heading's line numbers ahead
-    of the bill text's own 1-5) does not start at 1, so it does not clear
-    the structural run test on its own; padded with ``gutter_filler`` (see
-    that helper), inserted before the VerDate line since anything after it is
-    swallowed into the footer's tail, not counted as content."""
+    """Adapted: gutter numbers on their own lines, a real 2025-shaped job-code line and the footer at the true
+    page tail (a VerDate line is always the last thing PyMuPDF emits). The digit sequence (16, 17, 1-5) does
+    not start at 1, so ``gutter_filler`` inserted before the VerDate line -- anything after it is swallowed into
+    the footer's tail -- clears the floor for the ratio to decide."""
     text = page(
         "\u2022HR  7148  IH",
         "M",
@@ -860,14 +720,10 @@ def test_cleans_a_realistic_ih_page_excerpt_end_to_end():
 
 
 def test_cleans_enr_format_and_leaves_hyphen_wraps_unrejoined_without_gutter_numbers():
-    """Adapted: BillTrax's original ENR fixture had no hyphen-wrapped word,
-    so it never exercised the scope decision baked into normalizePdfText --
-    hyphen-rejoin only runs for a document with gutter numbers, because
-    without one there is no signal to tell a print-wrap hyphen from a real
-    hyphenated compound word ending a line by coincidence. The real ENR
-    fixture (tests/fixtures/gpo_pdf_text/BILLS-119sconres1enr.json) does
-    contain genuine wraps ("concur-\\nring),", "President-\\nelect"), and
-    they stay split; this makes that BillTrax-original scope explicit."""
+    """Adapted: BillTrax's original ENR fixture had no hyphen-wrapped word, so this makes the scope decision
+    baked into normalizePdfText explicit -- without a gutter number there is no signal to tell a print-wrap
+    hyphen from a real hyphenated compound ending a line by coincidence, so the real fixture's genuine wraps
+    ("concur-\\nring),", "President-\\nelect") stay split."""
     text = page(
         "Be  it  enacted  by  the  Senate  and  House  of  Representatives",
         "of the United States of America in Congress assembled, That",
@@ -900,9 +756,9 @@ def test_cleans_enr_format_and_leaves_hyphen_wraps_unrejoined_without_gutter_num
 
 
 def test_non_gpo_page_keeps_a_standalone_digit_line_without_gpo_evidence():
-    """A standalone 1-4 digit line is not GPO-specific by its own text -- it
-    could be a year or a footnote number. Without this page's own VerDate
-    footer or the document-level gutter layout, it must not be dropped."""
+    """A standalone 1-4 digit line is not GPO-specific by its own text -- it could be a year or a footnote
+    number -- so without this page's own VerDate footer or the document-level gutter layout it must not be
+    dropped."""
     text = page(
         "The fiscal year in question is as follows.",
         "2024",
@@ -915,9 +771,8 @@ def test_non_gpo_page_keeps_a_standalone_digit_line_without_gpo_evidence():
 
 
 def test_gpo_page_strips_the_same_standalone_digit_line():
-    """Same shape as above, but this page carries a VerDate footer -- GPO
-    evidence -- so the otherwise-identical standalone digit line is
-    stripped."""
+    """Same shape as above, but this page carries a VerDate footer -- GPO evidence -- so the otherwise
+    identical standalone digit line is stripped (``bare_page_number_evidence`` ``"page_footer"``)."""
     text = page(
         "The fiscal year in question is as follows.",
         "2024",
@@ -941,14 +796,10 @@ def _load_fixture(name: str) -> tuple[str, ...]:
 
 
 def test_introduced_house_bill_fixture_measured_counts():
-    """BILLS-119hr4727ih: 1 page, genuinely gutter-numbered (6 of its 19
-    content lines are each followed by their own line number, 1-6, a
-    consecutive run starting at 1) and under
-    ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` (50), so it is the structural
-    run test, not the ratio alone, that clears ``line_numbers`` here (see
-    ``_starts_consecutive_run_from_one``) -- both real hyphen wraps
-    ("Representa-/tives", "relat-/ing") correctly rejoin. One GPO footer, no
-    small-caps splits, no running footer (not an RFS/RDS/PCS print)."""
+    """BILLS-119hr4727ih: 1 page, genuinely gutter-numbered (6 of its 19 content lines carry line numbers 1-6, a
+    consecutive run starting at 1) and under ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT``, so the structural run
+    test clears ``line_numbers`` and both real hyphen wraps ("Representa-/tives", "relat-/ing") rejoin; one GPO
+    footer, no small-caps splits, no running footer (not an RFS/RDS/PCS print)."""
     pages = _load_fixture("BILLS-119hr4727ih")
     normalized, record = normalize_gpo_pages(pages)
 
@@ -983,11 +834,9 @@ def test_introduced_house_bill_fixture_measured_counts():
 
 
 def test_enrolled_bill_fixture_measured_counts():
-    """BILLS-119sconres1enr: 1 page, not gutter-numbered (no line carries a
-    corroborating digit at all, so neither the ratio nor the structural run
-    test finds anything), no GPO footer on this page, no rejoin (see the ENR
-    scope test above) -- its own genuine hyphen wraps ("concur-ring),",
-    "President-elect") stay split."""
+    """BILLS-119sconres1enr: 1 page, not gutter-numbered (no line carries a corroborating digit, so neither the
+    ratio nor the structural run test finds anything), no GPO footer, no rejoin -- its own genuine hyphen wraps
+    ("concur-ring),", "President-elect") stay split."""
     pages = _load_fixture("BILLS-119sconres1enr")
     normalized, record = normalize_gpo_pages(pages)
 
@@ -1020,13 +869,10 @@ def test_enrolled_bill_fixture_measured_counts():
 
 
 def test_committee_report_fixture_measured_counts():
-    """CRPT-119hrpt105: 3 pages, not gutter-numbered (committee-report prose
-    is never GPO line-numbered), a GPO footer on every page including its
-    own multi-line continuation and job-code line, no rejoin -- its own
-    hyphen-wrapped headings ("DEPART-MENT", "RE-PORTED") stay split, matching
-    docs/research/billtrax-raw-data-2026-09-19.md §6's own conclusion that
-    running the normalizer here is "safe" precisely because its line-number
-    branch stays off."""
+    """CRPT-119hrpt105: 3 pages, not gutter-numbered (committee-report prose never is), a GPO footer with its
+    multi-line continuation and job-code line on every page, no rejoin -- hyphen-wrapped headings
+    ("DEPART-MENT", "RE-PORTED") stay split. Pages 2 and 3 each carry a real page-number header stripped by that
+    page's own VerDate footer, since the document-level gutter layout is False."""
     pages = _load_fixture("CRPT-119hrpt105")
     normalized, record = normalize_gpo_pages(pages)
 
@@ -1055,23 +901,10 @@ def test_committee_report_fixture_measured_counts():
 
 
 def test_rfs_bill_fixture_measured_counts():
-    """BILLS-119hr1009rfs: the fourth fixture, added to exercise the ported
-    unbulleted running-footer rule (B2,
-    ``docs/research/deltatrack-upstream-issues-2026-09-19.md``) -- none of
-    the other three fixtures is a PCS/RDS/RFS print stage. 2 pages, a
-    Senate-received postal-naming act: page 2 opens with the unbulleted
-    running footer "HR 1009 RFS" (no bullet character, so neither
-    ``_BULLET_BILL_RE`` nor BillTrax's original rule would have caught it),
-    stripped once by the new rule. Genuinely gutter-numbered (12 of its 28
-    content lines are each followed by their own line number) and under
-    ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` (50), so the structural run
-    test decides: page 1's own run is only 2 long (1, 2 -- insufficient
-    alone), but page 2's is 10 long (1 through 10), which is enough on its
-    own (aggregated the same way ``page_has_footer`` is -- any one page's
-    evidence suffices). Both real hyphen wraps rejoin: "Representa-/tives"
-    on page 1, and "reg-/ulation" on page 2 (missed in an earlier pass over
-    this fixture -- ``(b) REFERENCES.-- Any reference in a law, map, reg-``
-    wraps to "regulation")."""
+    """BILLS-119hr1009rfs: the fourth fixture, added to exercise the ported unbulleted running-footer rule (B2)
+    since none of the other three is a PCS/RDS/RFS print. Page 2 opens with the unbulleted "HR 1009 RFS"
+    footer, stripped once; page 1's run is only 2 long but page 2's is 10, enough on its own (aggregated the way
+    ``page_has_footer`` is), and both real wraps ("Representa-/tives", "reg-/ulation") rejoin."""
     pages = _load_fixture("BILLS-119hr1009rfs")
     normalized, record = normalize_gpo_pages(pages)
 
@@ -1152,10 +985,9 @@ def _concordance(text_a: str, text_b: str) -> float:
     "fixture_name", ["BILLS-119hr4727ih", "BILLS-119sconres1enr", "CRPT-119hrpt105", "BILLS-119hr1009rfs"]
 )
 def test_pdf_pdf_concordance_normalizing_the_same_extraction_twice_is_deterministic(fixture_name):
-    """PDF-vs-PDF self-comparison, offline half: BillTrax's scenario 1 (self-
-    comparison, ~100% expected) re-run over the same captured extraction
-    rather than a second live download -- see the ``integration`` test below
-    for the live two-extractions version of this same check."""
+    """PDF-vs-PDF self-comparison, offline half: BillTrax's scenario 1 (~100% expected) re-run over the same
+    captured extraction rather than a second live download -- normalizing twice is deterministic and the token
+    concordance is 1.0; the ``integration`` test below is the live two-extractions version."""
     pages = _load_fixture(fixture_name)
     normalized_a, record_a = normalize_gpo_pages(pages)
     normalized_b, record_b = normalize_gpo_pages(pages)
@@ -1177,14 +1009,9 @@ def _matching_xml_text_fixture(package_id: str) -> Path | None:
 
 @pytest.mark.parametrize("fixture_name", ["BILLS-119hr4727ih", "BILLS-119sconres1enr", "BILLS-119hr1009rfs"])
 def test_pdf_xml_concordance_against_the_sidecars_bill_text_sample(fixture_name):
-    """PDF-vs-XML: normalized PDF text and the bill's own XML text agree
-    above BillTrax's retroactive criterion (validate-pdf-xml-concordance.ts:
-    "beta.5 >=95%" mean heading concordance). None of this module's three
-    bill fixtures has a matching bill-text XML sample in this repo or in the
-    sidecar (docs/research/billtrax-raw-data-2026-09-19.json only recorded
-    line-count statistics for the first two, and knows nothing of the
-    fourth, added later) -- skipped per the task's own fallback, with the
-    reason stated below rather than silently passed."""
+    """PDF-vs-XML: normalized PDF text and the bill's own XML text agree above BillTrax's retroactive
+    criterion ("beta.5 >=95%" mean heading concordance). Skipped per fixture when no matching bill-text XML
+    sample exists in this repo or the sidecar, with the reason stated rather than silently passed."""
     xml_path = _matching_xml_text_fixture(fixture_name)
     if xml_path is None:
         pytest.skip(
@@ -1206,12 +1033,9 @@ def test_pdf_xml_concordance_against_the_sidecars_bill_text_sample(fixture_name)
 
 @pytest.mark.integration
 def test_live_ih_bill_pdf_matches_the_captured_fixture_after_independent_extraction():
-    """Bounded (one ~220 KB PDF), keyless, from the URL
-    tests/fixtures/gpo_pdf_text/README.md states. Doubles as the live half of
-    the PDF-vs-PDF concordance check: this extraction and the one captured
-    into the fixture are independent (different process, same source bytes),
-    so agreement here is evidence the normalizer's output is not an artifact
-    of one particular PyMuPDF run."""
+    """Bounded (one ~220 KB PDF), keyless live refetch from the URL tests/fixtures/gpo_pdf_text/README.md
+    states; its independent extraction doubles as the live PDF-vs-PDF concordance check -- agreement is evidence
+    the normalizer's output is not an artifact of one particular PyMuPDF run."""
     import httpx
 
     from spicy_docs.extraction import DocumentExtractor, NativeText

@@ -25,6 +25,7 @@ XML_MISSING = b"XML unavailable for this synthetic example."
 
 
 def run_example(directory: Path, *, case: str = "xml") -> dict[str, object]:
+    """Run one acquisition against mocked responses and retain the captures under ``directory``."""
     if case not in ("xml", "html-fallback"):
         raise ValueError("case must be xml or html-fallback")
     fallback = case == "html-fallback"
@@ -105,6 +106,7 @@ def run_example(directory: Path, *, case: str = "xml") -> dict[str, object]:
 
 
 def main() -> None:
+    """Run the selected example case, writing captures to ``--output`` or a temp directory."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, help="Retain exact bytes and capture facts here")
     parser.add_argument("--case", choices=("xml", "html-fallback"), default="xml")

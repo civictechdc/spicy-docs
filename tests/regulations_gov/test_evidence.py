@@ -1,4 +1,7 @@
-"""Regulations Gov: evidence behavior."""
+"""Regulations.gov evidence contract: document packs capture exact listing metadata and object bytes once,
+out-of-scope and undated or malformed-date documents stay in evidence without becoming records, and key/body
+identity mismatches refuse.
+"""
 
 from __future__ import annotations
 
@@ -110,13 +113,9 @@ def test_out_of_scope_objects_remain_evidence_without_becoming_records(tmp_path:
 
 
 def test_undated_document_stays_in_evidence_without_aborting_the_agency(tmp_path: Path) -> None:
-    """A live FMCSA publish (53,156 documents) aborted outright: exactly three
-    objects, e.g. FMCSA-2007-0006-0015, carry ``postedDate: null`` with
-    ``modifyDate`` present, and the strict date parse raised for the whole
-    agency instead of treating one undatable document as evidence-only
-    (2026-09-02 fix). A null ``postedDate`` is outside every date scope, the
-    same disposition as any other out-of-scope object: it stays in evidence
-    and contributes no record, and the dated documents still publish.
+    """A live FMCSA publish (53,156 documents) aborted because three objects carry ``postedDate: null`` with
+    ``modifyDate`` present (2026-09-02 fix); a null ``postedDate`` is outside every date scope, so it stays in
+    evidence and contributes no record while the dated documents still publish.
     """
     dated = _document_object()
     undated_record = _document("EPA-2026-0001-0002", postedDate=None)
@@ -155,13 +154,9 @@ def test_undated_document_stays_in_evidence_without_aborting_the_agency(tmp_path
 def test_malformed_posted_date_document_stays_in_evidence_without_aborting_the_agency(
     tmp_path: Path,
 ) -> None:
-    """A live FAA full-history publish (205,696 documents) aborted outright
-    nine minutes in: one document carries a non-null ``postedDate`` that
-    fails canonical-date parsing, and the strict date parse raised for the
-    whole agency instead of treating one unusable document as evidence-only
-    (2026-09-02 fix). A malformed ``postedDate`` gets the same disposition as
-    a null one: it stays in evidence, contributes no record, and the dated
-    documents still publish.
+    """A live FAA full-history publish (205,696 documents) aborted nine minutes in on one non-null
+    ``postedDate`` failing canonical-date parsing (2026-09-02 fix); a malformed date gets the same evidence-only
+    disposition as a null one, and the dated documents still publish.
     """
     dated = _document_object()
     malformed_record = _document("EPA-2026-0001-0002", postedDate="not-a-date")
@@ -248,13 +243,10 @@ def test_missing_or_changed_enumerated_object_refuses_complete_snapshot(
     ids=["no-suffix", "single-refetch-suffix", "twelve-stacked-refetch-suffixes"],
 )
 def test_key_identity_matching_body_admits_refetch_suffixes(key_suffix: str) -> None:
-    """The key decides which agency and collection an object is admitted
-    into; the body decides what it is. A refetch suffix is key-only
-    bookkeeping -- Mirrulations appends one ``(N)`` group per refetch of the
-    same object without deleting the earlier copy, and a BIS document
-    (sampled 2026-09-02) carries twelve stacked groups -- so it must not
-    stop the key's claimed identity from matching the body's once every
-    trailing group is stripped.
+    """The key decides which agency and collection an object is admitted into; the body decides what it is.
+    Mirrulations appends one ``(N)`` group per refetch without deleting the earlier copy -- a BIS document
+    sampled 2026-09-02 carries twelve stacked groups -- so a refetch suffix is key-only bookkeeping and must not
+    stop the key's identity from matching the body's.
     """
     refetched = _document_object(key_suffix=key_suffix)
     pages = list(
@@ -269,10 +261,9 @@ def test_key_identity_matching_body_admits_refetch_suffixes(key_suffix: str) -> 
 
 
 def test_key_identity_mismatched_body_refuses_naming_both_key_and_identity() -> None:
-    """An object filed under one key whose body declares a different
-    identity must be refused outright -- admitting it would let the key
-    decide which agency and collection it lands in while the body silently
-    substitutes what it is.
+    """An object filed under one key whose body declares a different identity must be refused outright, with
+    both the key and the body identity named -- admitting it would let the key decide which agency and
+    collection it lands in while the body silently substitutes what it is.
     """
     key = "raw-data/EPA/EPA-2026-0001/text-1/documents/EPA-2026-0001-0001.json"
     mismatched = _document_object(
@@ -292,8 +283,8 @@ def test_key_identity_mismatched_body_refuses_naming_both_key_and_identity() -> 
 
 
 def test_docket_key_identity_mismatched_body_refuses() -> None:
-    """The same key-versus-body identity check applies to dockets: the
-    admission logic is shared across collections, not document-specific.
+    """The same key-versus-body identity check applies to dockets: the admission logic is shared across
+    collections, not document-specific.
     """
     key = "raw-data/EPA/EPA-2026-0001/text-1/docket/EPA-2026-0001.json"
     mismatched = _docket_object(

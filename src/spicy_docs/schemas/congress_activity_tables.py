@@ -1,27 +1,11 @@
-"""Amendments, committee press releases, and roll-call votes.
+"""``amendments``, ``press_releases``, ``roll_call_votes`` and ``member_votes``, each identity a correction the
+placement study called for.
 
-Three identity decisions, each one a correction the placement study called for:
-
-* ``amendments`` is keyed ``(congress, amendment_type, amendment_number)`` (C6).
-  The study used the amended bill's key, but an amendment has its own publisher
-  identity and can amend another amendment; the two amended-* columns stay as
-  ordinary foreign keys.
-* ``press_releases`` is keyed on ``release_id = sha256(chamber, link)`` (C7).
-  BillTrax's unique key was a 255-byte prefix of the source URL, which collides
-  on two releases sharing a long path; the full ``link`` stays its own column.
-* ``roll_call_votes`` is keyed on the publisher's own roll call identity, and
-  its four tally columns fold two publishers' different count names onto one
-  vocabulary -- the Clerk's ``not-voting-total`` and the Senate's ``absent``
-  are one column here, and :data:`TALLY_COLUMNS` says so rather than leaving a
-  reader to infer it.
-* ``member_votes`` is keyed on ``member_key`` rather than on ``bioguide_id``.
-  The design named the bioguide id, but ``MemberVote.bioguide_id`` is nullable
-  by measurement -- roughly four of ninety-nine Senate voters on any one roll
-  call -- and an identity column cannot be null.  It keys on the *file-stated*
-  id for the same reason: a Senate bioguide comes from the crosswalk, so
-  preferring it would give one member two permanent rows across a run where the
-  crosswalk resolved and one where it did not.  The bioguide keeps its own
-  column, where a change is a correction rather than a new row.
+``amendments`` keys on the amendment's own publisher identity rather than the amended bill's; ``press_releases`` keys on
+``sha256(chamber, link)`` because BillTrax's 255-byte URL prefix collided on long paths; ``roll_call_votes`` folds the
+Clerk's and Senate's count names onto four published columns (:data:`TALLY_COLUMNS`).  ``member_votes`` keys on the
+file-stated ``member_key``, not the bioguide, because a Senate bioguide comes from the crosswalk and roughly four of
+ninety-nine voters on any one roll call do not resolve.
 """
 
 from __future__ import annotations
@@ -346,18 +330,10 @@ def shape_roll_call_vote(
 ) -> Row:
     """One ``roll_call_votes`` row: the publisher's roll call, and the bill it refers to.
 
-    ``vote`` carries the four identity fields -- a ``VoteKey``, or the
-    ``RollCallVote`` itself, in which case its own ``question``, ``result``,
-    ``date`` and ``source_url`` are read from it unless the caller overrides
-    them.  A ``VoteKey`` states none of those, so a linkage-only row (the
-    reference landed before the file did) leaves them NULL.
-
-    ``tally`` is the publisher's own counts mapping, as ``RollCallVote.tallies``
-    spells them; it is folded here, not on the source record, so nothing about
-    which bucket a publisher meant is lost before this point.  ``action_index``
-    and ``conflict_count`` are passed in because ``VoteMatch`` carries neither:
-    the index lives on the ``VoteReference`` that won, and the conflict count on
-    the ``VoteIndex`` that settled them.
+    ``vote`` carries the four identity fields -- a ``VoteKey``, or the ``RollCallVote`` itself, whose own question,
+    result, date and source_url are read unless the caller overrides them, so a linkage-only row leaves them NULL.
+    ``tally`` is folded here rather than on the source record, and ``action_index``/``conflict_count`` are passed in
+    because ``VoteMatch`` carries neither.
     """
     counts = folded_tally(tally)
 
@@ -392,20 +368,12 @@ def shape_roll_call_vote(
 
 
 def member_key(member: object) -> str:
-    """The non-null identity part ``member_votes`` keys on.
+    """The non-null identity part ``member_votes`` keys on: ``lis:`` plus the LIS id for a Senate record, the bare
+    bioguide id for a House one, and ``name:`` plus the publisher's own name only where the file states neither.
 
-    The *file-stated* id wins, not the best id available: ``lis:`` plus the LIS
-    id for a Senate record, the bare bioguide id for a House one, and ``name:``
-    plus the publisher's own name only where the file states neither.
-
-    That order matters more than it looks.  A Senate record's bioguide id comes
-    from the crosswalk, and roughly four of ninety-nine voters on any one roll
-    call do not resolve -- a member who has just left the current roster.
-    Preferring the bioguide would give such a member ``name:...`` on the run
-    where the crosswalk missed and a bioguide on the run where it hit, so one
-    vote would become two permanent rows.  The LIS id is on the page either way.
-    The bioguide keeps its own column, where changing is a correction rather
-    than a new row.
+    The file-stated id wins over the best id available because preferring a crosswalk bioguide would give a member who
+    does not resolve (roughly four of ninety-nine voters on any one roll call) ``name:...`` on one run and a bioguide on
+    the next, turning one vote into two permanent rows.
     """
     lis = member.lis_id
     if lis:

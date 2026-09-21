@@ -25,6 +25,11 @@ SELECTOR = (
 
 
 def read_previous(path: Path | None, expected_sha256: str | None) -> dict | None:
+    """A prior observation verified against its pin and this selector, or None when none was named.
+
+    A path without its digest, a digest without its path, an oversized file, a digest mismatch and
+    a different format or selector all raise rather than returning a partial receipt.
+    """
     if path is None and expected_sha256 is None:
         return None
     if path is None or expected_sha256 is None:
@@ -130,6 +135,7 @@ def capture(client, output: Path, *, previous=None, max_bytes=128 * 1024**2, max
 
 
 def main():
+    """Run one bounded listing-and-capture pass; exit 0 only when every selected object was acquired."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--store", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)

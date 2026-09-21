@@ -1,4 +1,8 @@
-"""Raw source parsing retains strict numeric and duplicate-key behavior."""
+"""Raw source JSON parsing keeps strict numeric and duplicate-key behavior.
+
+load_integer_json and load_finite_json refuse duplicate keys and non-finite numbers through the caller's error
+type, number policies are explicit, and whole-document byte, node, and depth limits refuse before enumerating
+children."""
 
 from decimal import Decimal
 

@@ -1,11 +1,10 @@
 """The two hearing-to-bill link rules, over the records the measurement retained.
 
-Every number asserted here is one the
-[linkage note](../docs/research/hearing-bill-linkage-2026-09-20.md) states and
-the receipt's own offline recompute produced, re-derived through the product
-code rather than restated: 12 `COVER` bills on one hearing, 8 against 9 on the
-hearing that has both sources, 0 on a Senate record, and one `BR` document
-refused for naming no number.
+Pins the MODS cover rule (12 bills on one hearing, a BODY mention never
+linked) and the docs.house.gov agenda rule (8 of 9 BR documents on the
+two-source hearing, one refusal for naming no number), plus locator rebuilding,
+meeting-identity checks, duplicate dedupe and the offline recompute tool's
+agreement checks.
 """
 
 from __future__ import annotations
@@ -115,7 +114,7 @@ def test_the_mods_states_the_day_the_hearing_was_held_not_the_day_it_was_issued(
 
 
 def test_a_hearing_is_held_on_a_list_so_one_transcript_yields_twelve_rows() -> None:
-    """The finding the whole table rests on: a scalar column would pick one of twelve."""
+    """A hearing is held on a list: one transcript yields twelve COVER links with date, committee and chamber."""
     links = cover_links(mods_for(MANY))
     assert len(links) == 12
     assert len({link.bill_id for link in links}) == 12
@@ -128,7 +127,7 @@ def test_a_hearing_is_held_on_a_list_so_one_transcript_yields_twelve_rows() -> N
 
 
 def test_a_body_mention_is_counted_and_never_linked() -> None:
-    """0 of 23 BODY-only mentions carried a confirming action, so none becomes a row."""
+    """BODY-only mentions are counted but never linked: 17 mentions, five not already covered, none a row."""
     mods = mods_for(MANY)
     contexts = [bill.context for bill in mods.bills]
     assert contexts.count("COVER") == 12
@@ -141,7 +140,7 @@ def test_a_body_mention_is_counted_and_never_linked() -> None:
 
 
 def test_a_senate_mods_states_no_bill_so_the_cover_rule_yields_nothing() -> None:
-    """Silence here is the publisher's, not the hearing's; nothing in a row says which."""
+    """A Senate MODS states no bill, so the cover rule yields nothing."""
     mods = mods_for(SENATE)
     assert mods.bills == ()
     assert mods.held_date == "2024-07-11"
@@ -149,7 +148,7 @@ def test_a_senate_mods_states_no_bill_so_the_cover_rule_yields_nothing() -> None
 
 
 def test_a_cover_row_carries_the_event_id_its_caller_read() -> None:
-    """The MODS never states one, so the hearing-detail route's value is passed in."""
+    """A cover row carries the event id its caller passes, and ``None`` when none is passed."""
     links = cover_links(mods_for(BOTH), event_id=EVENT)
     assert {link.event_id for link in links} == {EVENT}
     assert cover_links(mods_for(BOTH))[0].event_id is None
@@ -159,6 +158,7 @@ def test_a_cover_row_carries_the_event_id_its_caller_read() -> None:
 
 
 def test_the_agenda_is_read_typed_and_only_br_documents_name_a_bill(meeting) -> None:
+    """The agenda is read typed: only BR documents name a bill, and 9 of 12 documents are agenda entries."""
     assert meeting.event_id == EVENT
     assert meeting.congress == 118
     assert meeting.calendar_date == "2023-05-23"
@@ -171,7 +171,7 @@ def test_the_agenda_is_read_typed_and_only_br_documents_name_a_bill(meeting) -> 
 
 
 def test_thirty_six_of_forty_six_is_eight_of_nine_on_this_record(meeting) -> None:
-    """The one refusal is a discussion draft with no number, and it says so."""
+    """Eight of nine agenda documents resolve, four by filename and four by ``legis-num``; the refusal has no number."""
     resolved = [document for document in meeting.agenda_documents if document.bill_id]
     refused = [document for document in meeting.agenda_documents if document.bill_id is None]
     assert len(resolved) == 8
@@ -187,7 +187,10 @@ def test_thirty_six_of_forty_six_is_eight_of_nine_on_this_record(meeting) -> Non
 
 
 def test_a_typeless_legis_num_falls_through_to_the_description_and_is_never_guessed() -> None:
-    """``BILLS-118226ih.pdf`` states no type; the description does, and a draft states none."""
+    """``BILLS-118226ih.pdf`` states no type; the description does, and a draft states none.
+
+    An SD naming a bill in its description is still not an agenda entry.
+    """
     meeting = parse_house_committee_meeting(TYPELESS_MEETING)
     agenda = meeting.agenda_documents
     assert [document.bill_id for document in agenda] == ["118-hr-226", "118-hr-8592", None]
@@ -208,6 +211,7 @@ def test_a_typeless_legis_num_falls_through_to_the_description_and_is_never_gues
 
 
 def test_the_file_name_rule_refuses_the_typeless_and_cross_congress_spellings() -> None:
+    """The filename rule reads typed spellings and refuses typeless, cross-congress and missing names."""
     assert bill_key_from_bills_file("BILLS-118HR188ih.pdf") == "118-hr-188"
     assert bill_key_from_bills_file("BILLS-118SRES21ih.pdf") == "118-sres-21"
     assert bill_key_from_bills_file("BILLS-118226ih.pdf") is None
@@ -216,6 +220,7 @@ def test_the_file_name_rule_refuses_the_typeless_and_cross_congress_spellings() 
 
 
 def test_a_bare_designator_needs_a_congress_and_the_citation_rules_rejects_apply() -> None:
+    """A bare designator needs a congress and passes the citation rules' own measured rejects."""
     assert bill_key_from_designator("H.R.226, Veterans Collaboration Act", 118) == "118-hr-226"
     assert bill_key_from_designator("H.R.226", None) is None
     # ``HR974`` is one of the ``bill_number`` rule's own measured rejects.
@@ -224,6 +229,7 @@ def test_a_bare_designator_needs_a_congress_and_the_citation_rules_rejects_apply
 
 
 def test_the_parent_code_rule_is_the_one_the_identity_check_measured() -> None:
+    """Parent committee codes map uppercase subcommittee codes to their parent, refusing lowercase and missing ones."""
     assert parent_committee_code("VR10") == "hsvr00"
     assert parent_committee_code("GO00") == "hsgo00"
     assert parent_committee_code("vr10") is None
@@ -231,7 +237,7 @@ def test_the_parent_code_rule_is_the_one_the_identity_check_measured() -> None:
 
 
 def test_the_locator_rebuilt_from_the_record_is_the_address_the_receipt_fetched(meeting) -> None:
-    """The static GET whose bytes equal the postback's, 2 of 2 by SHA-256."""
+    """The locator rebuilt from the record is the fetched address, and the fixture digest pins those bytes."""
     locator = house_meeting_xml_locator(locator_from_meeting(meeting))
     assert locator == ("https://docs.house.gov/meetings/II/II10/20230523/115955/HHRG-118-II10-20230523.xml")
     digest = hashlib.sha256((FIXTURES / "meeting-115955.xml").read_bytes()).hexdigest()
@@ -239,12 +245,11 @@ def test_the_locator_rebuilt_from_the_record_is_the_address_the_receipt_fetched(
 
 
 def test_a_record_naming_both_a_committee_and_a_subcommittee_addresses_the_subcommittee() -> None:
-    """The publisher files a subcommittee meeting under the subcommittee's own segment.
+    """A record naming both a committee and a subcommittee addresses the subcommittee, not the parent.
 
-    **0 of the 10 retained records state both**, so this is a rule read off the
-    path grammar rather than one a captured record exercises; the record here
-    is built by hand for exactly that reason.  Taking the parent instead would
-    build a different document's address and fetch it at HTTP 200.
+    Taking the parent instead would build a different document's address and
+    fetch it at HTTP 200; the record is built by hand because no retained
+    record states both.
     """
     both = TYPELESS_MEETING.replace(
         b"<subcommittees>",
@@ -259,6 +264,7 @@ def test_a_record_naming_both_a_committee_and_a_subcommittee_addresses_the_subco
 
 
 def test_an_address_part_the_publisher_did_not_state_refuses_rather_than_guessing(meeting) -> None:
+    """A missing calendar date, committee or subcommittee refuses rather than guessing an address."""
     with pytest.raises(HouseCommitteeRepositoryError, match="calendar-date"):
         locator_from_meeting(replace(meeting, calendar_date=None))
     with pytest.raises(HouseCommitteeRepositoryError, match="names no committee"):
@@ -270,6 +276,7 @@ def test_an_address_part_the_publisher_did_not_state_refuses_rather_than_guessin
 
 
 def test_a_record_whose_meeting_id_is_not_its_type_plus_its_event_refuses() -> None:
+    """A meeting id that is not its meeting type plus its event id refuses."""
     broken = TYPELESS_MEETING.replace(b'meeting-id="HHRG117409"', b'meeting-id="MARKUP117409"')
     with pytest.raises(HouseCommitteeRepositoryError, match="meeting-type"):
         parse_house_committee_meeting(broken)
@@ -305,12 +312,7 @@ def _with_duplicated_br() -> bytes:
 
 
 def test_one_bill_stated_twice_by_one_source_is_one_row_and_the_first_wins() -> None:
-    """The identity is ``(package, bill, source)``, so a repeated element cannot key twice.
-
-    Neither retained fixture repeats a bill, so without this the dedupe in
-    ``_links`` is code no test reaches.  ``first statement wins`` matters
-    because the two statements of one bill need not carry the same evidence.
-    """
+    """A bill repeated by one source is one row keyed ``(package, bill, source)``, first statement's evidence wins."""
     mods = validate_package_mods(
         _with_duplicated_cover(),
         package=BOTH,
@@ -336,7 +338,7 @@ def test_one_bill_stated_twice_by_one_source_is_one_row_and_the_first_wins() -> 
 
 
 def test_the_agenda_rows_are_noticed_and_disagree_with_the_cover_both_ways(meeting) -> None:
-    """Keeping a row per source is what makes the disagreement readable."""
+    """Agenda rows are ``noticed`` and disagree with the cover set in both directions, one bill each way."""
     mods = mods_for(BOTH)
     cover = {link.bill_id for link in cover_links(mods)}
     agenda = agenda_links(mods, meeting)
@@ -361,6 +363,7 @@ def test_the_event_id_equality_is_checked_on_every_row_and_not_assumed_once(meet
 
 
 def test_one_pair_from_two_sources_is_two_rows_that_key_apart(meeting) -> None:
+    """One bill from two sources is two rows whose keys differ by source, overlapping on seven bills."""
     contract = TABLE_CONTRACTS["hearing_bill_links"]
     mods = mods_for(BOTH)
     rows = [
@@ -377,6 +380,7 @@ def test_one_pair_from_two_sources_is_two_rows_that_key_apart(meeting) -> None:
 
 
 def test_the_sealed_vocabularies_name_every_measured_source_and_two_relations() -> None:
+    """The sealed vocabularies name five sources, two relations and four evidence rules, two of them implemented."""
     assert LINK_SOURCES == (
         "mods_cover",
         "docs_house_br",
@@ -408,13 +412,7 @@ def test_the_rule_set_version_is_pinned_and_moves_when_a_rule_changes() -> None:
 
 
 def test_an_agenda_document_naming_an_undocumented_evidence_rule_refuses(meeting) -> None:
-    """The reader sets the key and the rule together; a row may not invent a third state.
-
-    Unreachable through the reader, which is the point: the alternative was a
-    fallback that would have published the *source* name into `evidence_rule`,
-    outside the four values the column documents, with nothing downstream to
-    notice.
-    """
+    """An evidence rule outside the documented four refuses, as does a resolved document with no rule."""
     from spicy_docs.interpretation.hearing_bill_links import _evidence_rule
 
     resolved = next(document for document in meeting.agenda_documents if document.bill_id)
@@ -426,6 +424,7 @@ def test_an_agenda_document_naming_an_undocumented_evidence_rule_refuses(meeting
 
 
 def test_a_rule_asserting_a_relation_outside_the_sealed_pair_refuses() -> None:
+    """A rule asserting a relation outside the sealed pair refuses."""
     with pytest.raises(HearingBillLinkError, match="relation"):
         replace(HEARING_BILL_LINK_RULES[0], relation="heard")
 
@@ -477,6 +476,7 @@ def _miniature_receipt(root: Path) -> Path:
 
 
 def test_the_recompute_tool_agrees_with_a_receipt_that_states_what_the_rules_produce(tmp_path) -> None:
+    """The recompute tool agrees with a receipt stating what the rules produce, without any requests."""
     from tools.analysis.hearing_bill_links_recompute import compare, shaped_rows
 
     receipt = _miniature_receipt(tmp_path / "receipt")
@@ -507,12 +507,7 @@ def test_the_recompute_tool_fires_when_the_receipt_and_the_rules_disagree(tmp_pa
 
 
 def test_a_scored_package_with_no_retained_mods_is_not_read_as_agreement(tmp_path) -> None:
-    """An absent file would otherwise be an empty COVER set agreeing with an empty one.
-
-    The failure this closes has no error in it: the hearing the receipt scored
-    as stating no COVER bill is exactly the hearing whose missing MODS produces
-    the same empty set, so the run reports agreement and nothing looks wrong.
-    """
+    """A scored package with no retained MODS is reported missing, not as an empty set agreeing with an empty one."""
     from tools.analysis.hearing_bill_links_recompute import compare
 
     receipt = _miniature_receipt(tmp_path / "receipt")

@@ -32,6 +32,7 @@ ENGINE = EngineStamp(name="deltatrack", version="0.1.0", revision="0" * 40)
 
 
 def status(stem: str, identity: BillIdentity):
+    """Parse a BILLSTATUS fixture as a bill status."""
     return parse_bill_status((FIXTURES / f"{stem}.excerpt.xml").read_bytes(), identity=identity)
 
 
@@ -45,6 +46,7 @@ S3139 = BillIdentity(118, "s", 3139)
 
 
 def test_reader_states_the_estimate_and_the_report_citation() -> None:
+    """The reader states one estimate with its date, URL, title and description, plus the report citation."""
     parsed = status("BILLSTATUS-118hr801", HR801)
     assert len(parsed.cbo_cost_estimates) == 1
     estimate = parsed.cbo_cost_estimates[0]
@@ -58,6 +60,7 @@ def test_reader_states_the_estimate_and_the_report_citation() -> None:
 
 
 def test_reader_records_an_absent_element_without_claiming_an_unscored_bill() -> None:
+    """An absent element is recorded as requested-empty:absent, not as an unscored bill."""
     body = (Path(__file__).parent / "fixtures" / "govinfo_bills" / "status-119hr6028.xml").read_bytes()
     parsed = parse_bill_status(body, identity=BillIdentity(119, "hr", 6028))
     assert parsed.cbo_cost_estimates == ()
@@ -84,6 +87,7 @@ def test_reader_records_an_absent_element_without_claiming_an_unscored_bill() ->
     ],
 )
 def test_empty_observations_publish_on_the_bill_without_estimate_rows(block: str, outcome: str) -> None:
+    """Empty observations publish their outcome on the bill with no estimate rows."""
     xml = (
         "<billStatus><version>3.0.0</version><bill><congress>118</congress><type>HR</type>"
         f"<number>801</number><title>Example</title>{block}</bill></billStatus>"
@@ -97,6 +101,9 @@ def test_empty_observations_publish_on_the_bill_without_estimate_rows(block: str
 
 
 def test_unread_and_populated_are_distinct_and_the_column_is_appended() -> None:
+    """Unread and populated outcomes are distinct, and the outcome column is appended second-to-last in
+    congress_bills.
+    """
     parsed = status("BILLSTATUS-118hr801", HR801)
     assert parsed.cbo_cost_estimates_outcome == "populated"
     for value in (None, "populated"):
@@ -151,10 +158,12 @@ def test_reader_falls_back_to_the_guide_spelling() -> None:
     ],
 )
 def test_publication_id_refuses_every_url_outside_the_measured_shape(url: object) -> None:
+    """Publication ids are refused for every URL outside the measured shape."""
     assert publication_id(url) is None
 
 
 def test_publication_id_reads_the_measured_shape() -> None:
+    """Publication ids are read from the measured URL shape, trimming surrounding whitespace."""
     assert publication_id("https://www.cbo.gov/publication/59139") == "59139"
     assert publication_id("  https://www.cbo.gov/publication/59139  ") == "59139"
 
@@ -174,6 +183,7 @@ def test_publication_id_reads_the_measured_shape() -> None:
     ],
 )
 def test_report_citation_parts_read_the_three_measured_shapes(citation: str, expected: dict) -> None:
+    """Report citation parts are read from the three measured citation shapes."""
     parts = report_citation_parts(citation)
     assert parts == {"citation": citation, **expected}
 
@@ -194,6 +204,7 @@ def test_report_citation_parts_keep_an_unparsed_citation_whole(citation: object)
 
 
 def test_one_publication_stated_twice_is_one_row() -> None:
+    """A publication stated twice folds to one row with stated_count 2 and no restatements."""
     parsed = status("BILLSTATUS-118hr3091", HR3091)
     assert len(parsed.cbo_cost_estimates) == 2
     folded, unkeyable = fold_cbo_cost_estimates(parsed.cbo_cost_estimates)
@@ -206,6 +217,7 @@ def test_one_publication_stated_twice_is_one_row() -> None:
 
 
 def test_a_restated_title_is_kept_rather_than_folded_away() -> None:
+    """A restated title is kept as a restatement rather than folded away."""
     parsed = status("BILLSTATUS-118hr589", HR589)
     (entry,), unkeyable = fold_cbo_cost_estimates(parsed.cbo_cost_estimates)
     assert unkeyable == ()
@@ -217,6 +229,7 @@ def test_a_restated_title_is_kept_rather_than_folded_away() -> None:
 
 
 def test_a_url_outside_the_measured_shape_is_returned_for_refusal_not_dropped() -> None:
+    """A URL outside the measured shape is returned as unkeyable for refusal, not dropped."""
     estimates = (
         CboCostEstimate("2023-05-05T16:34:00Z", "kept", "https://www.cbo.gov/publication/59139", None),
         CboCostEstimate(None, "refused", "https://www.cbo.gov/publication/59139/html", None),
@@ -227,6 +240,7 @@ def test_a_url_outside_the_measured_shape_is_returned_for_refusal_not_dropped() 
 
 
 def test_fold_keeps_the_publisher_order_of_first_statement() -> None:
+    """Folding keeps the publisher order of first statement."""
     estimates = (
         CboCostEstimate(None, None, "https://www.cbo.gov/publication/2", None),
         CboCostEstimate(None, None, "https://www.cbo.gov/publication/1", None),
@@ -240,6 +254,9 @@ def test_fold_keeps_the_publisher_order_of_first_statement() -> None:
 
 
 def test_row_carries_the_estimate_and_the_text_route_reachability() -> None:
+    """The row carries the estimate plus its publication rule, stated count, restatements and report citation
+    reachability.
+    """
     parsed = status("BILLSTATUS-118hr801", HR801)
     (entry,), _ = fold_cbo_cost_estimates(parsed.cbo_cost_estimates)
     row = CBO_COST_ESTIMATES.checked(shape_cbo_cost_estimate(HR801, entry, report_citations=parsed.report_citations))
@@ -255,6 +272,7 @@ def test_row_carries_the_estimate_and_the_text_route_reachability() -> None:
 
 
 def test_a_bill_with_no_report_states_the_text_route_is_closed() -> None:
+    """A bill with no report states a zero citation count and an empty citations column."""
     parsed = status("BILLSTATUS-118hr801", HR801)
     (entry,), _ = fold_cbo_cost_estimates(parsed.cbo_cost_estimates)
     row = shape_cbo_cost_estimate(HR801, entry, report_citations=())
@@ -263,6 +281,7 @@ def test_a_bill_with_no_report_states_the_text_route_is_closed() -> None:
 
 
 def test_an_unsealed_source_is_refused() -> None:
+    """A source outside the sealed set is refused."""
     parsed = status("BILLSTATUS-118s3139", S3139)
     (entry,), _ = fold_cbo_cost_estimates(parsed.cbo_cost_estimates)
     with pytest.raises(TableContractError, match="source must be one of"):
@@ -273,6 +292,7 @@ def test_an_unsealed_source_is_refused() -> None:
 
 
 def test_the_family_pass_produces_the_estimate_rows_from_the_same_document() -> None:
+    """The family pass produces estimate rows keyed to the bill from the same document."""
     parsed = status("BILLSTATUS-118s3139", S3139)
     family = build_bill_family(BillFamilyCapture(status=parsed, versions=()), engine=ENGINE, diff=False)
     assert len(family.cbo_cost_estimates) == 1
@@ -282,6 +302,7 @@ def test_the_family_pass_produces_the_estimate_rows_from_the_same_document() -> 
 
 
 def test_the_family_pass_refuses_an_unkeyable_url_by_name() -> None:
+    """The family pass refuses an unkeyable URL by name with the publication-page reason."""
     parsed = status("BILLSTATUS-118hr801", HR801)
     broken = parsed.__class__(
         **{field: getattr(parsed, field) for field in parsed.__dataclass_fields__ if field != "cbo_cost_estimates"},
@@ -295,6 +316,7 @@ def test_the_family_pass_refuses_an_unkeyable_url_by_name() -> None:
 
 
 def test_refused_query_credential_never_reaches_a_reason_row_or_log(caplog: pytest.LogCaptureFixture) -> None:
+    """A credential in a refused query never reaches the refusal reason, the repr or the log."""
     sentinel = "sentinel-credential-must-not-survive"
     parsed = replace(
         status("BILLSTATUS-118hr801", HR801),
@@ -317,6 +339,7 @@ def test_refused_query_credential_never_reaches_a_reason_row_or_log(caplog: pyte
 
 
 def test_family_refusal_scrubs_free_text_before_truncation() -> None:
+    """Family refusals scrub free text before truncating."""
     from spicy_docs.interpretation.bill_family import _Admitter
 
     admit = _Admitter()

@@ -1,55 +1,19 @@
 """Label each bill section with one of five sealed classifications.
 
-Publisher fact in: parsed bill sections (id, heading, body) as the published
-section table holds them.
-
-Interpretation out: one ``SectionClassification`` per section carrying the
-label, the model's confidence, and the provenance that says how the label was
+Reads parsed bill sections (id, heading, body) as the published section table
+holds them and returns one ``SectionClassification`` per section carrying the
+label, the model's confidence and the provenance that says how the label was
 produced -- model id, prompt version, the hash of the exact prompt sent, the
-batch it belonged to, and when the call was requested and answered.
-
-The five labels and their definitions are the sealed vocabulary, and the
-definitions live **only** in the prompt in the original
-(``BillTrax/src/lib/classifications.ts:79-84``), which is why they are a
-table here and the prompt is generated from that table: one home, and a label
-can never drift from the definition the model was given.
-
-One addition. BillTrax stored ``section_classifications`` with no model and no
-prompt version (``migrations/006``), so a stored label could not be attributed
-to the prompt that produced it while ``bill_summaries`` next door recorded
-both. Every result here carries them.
-
-The answer's keys are declared the same way as the labels, and for the same
-reason: ``CLASSIFICATION_FIELDS`` is what ``build_prompt`` asks for and what
-``_read_row`` enforces, so neither can name a key the other does not. The
-``v1`` prompt named its three keys in a sentence without their types; the
-sibling summary prompt named none of its keys at all and refused every answer
-of the first live run (2026-09-19, receipt ``c1-provenance.json``), which is
-the measurement behind both ``v2`` prompts.
-
-``v3`` (2026-09-20) is the same lesson one layer down, and also measured: a
-key set can be right while the *value* a key asks for is described ambiguously.
-See the ``sectionId`` field below.
-
-**The original did not rely on its prompt for the key set, and neither should
-a reader of this file.** ``classifications.ts:21-29`` declares a zod
-``ClassifySchema`` -- ``z.object({ classifications: z.array(z.object({
-sectionId, label: z.enum([...the five...]), confidence: z.number().min(0).max(1)
-})) })`` -- and passes it to ``generateObject`` (``:76-78``), so the shape, the
-vocabulary and the 0-1 range were *enforced on the request*, not asked for in
-prose. The port copied the prompt bytes (``classifications.ts:79-89``) and the
-schema's constraints into ``_read_row``, and left the schema itself behind;
-``v1``'s sentence was all that remained of it. So ``CLASSIFY_PROMPT_TEMPLATE``
-is no longer byte-identical to ``classifications.ts:86`` either -- the same
-deliberate break as the diff prompt next door, recorded in
-``docs/decisions.md``, not an accident to undo.
-
-**The schema is back on the request** (2026-09-20):
-``CLASSIFICATION_ANSWER_SCHEMA`` is derived from ``CLASSIFICATION_FIELDS`` and
-the label table by ``model_call.answer_schema`` and travels as ``ModelCall``'s
-``response_schema``. The prompt bytes are untouched -- it rides in the
-generation config -- so ``PROMPT_VERSION`` stays ``v2``, and ``_read_row``
-still refuses, because a provider may accept a schema and answer around it.
+batch, and when the call was requested and answered -- which the original
+stored without. The five labels and their definitions are the sealed
+vocabulary, and because the definitions live only in the prompt in the
+original they are a table here from which the prompt is generated: one home,
+so a label can never drift from the definition the model was given. The
+answer's keys, types and ranges are declared once
+(``CLASSIFICATION_FIELDS``) and both the prompt and the reader use that
+declaration; the same declaration now also states the shape on the request
+(``CLASSIFICATION_ANSWER_SCHEMA``), though the reader still refuses, because a
+provider may accept a schema and answer around it.
 """
 
 from __future__ import annotations
@@ -252,7 +216,8 @@ def classify_sections(
     The model's answer is checked against the batch it was asked about: a row
     naming a section that was not sent, a label outside the five, or a
     confidence outside 0-1 is refused rather than stored, because an answer
-    that agrees with itself is what an unchecked answer looks like.
+    that agrees with itself is what an unchecked answer looks like. Raises
+    ``ValueError`` for a non-positive batch size.
     """
     if batch_size < 1:
         raise ValueError("batch_size must be a positive integer")

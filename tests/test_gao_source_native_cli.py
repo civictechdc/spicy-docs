@@ -1,4 +1,8 @@
-"""GAO has a real source-native operator path with no sibling imports."""
+"""GAO has a real source-native operator path with no sibling imports.
+
+Pins CLI publication and independent verification of product pages, and refusal
+of duplicate product ids before any fetch.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +15,7 @@ from spicy_docs.cli.source_native import main
 
 
 def _publish_args(destination: Path, *product_ids: str) -> list[str]:
+    """The CLI arguments publishing the fixture product page."""
     args = ["publish", "--source", "gao-product-pages"]
     for product_id in product_ids:
         args.extend(["--product-id", product_id])
@@ -26,6 +31,7 @@ def _publish_args(destination: Path, *product_ids: str) -> list[str]:
 
 
 def test_cli_publishes_and_independently_verifies_gao_product_pages(tmp_path: Path) -> None:
+    """The CLI publishes and independently verifies GAO product pages, with matching state digests."""
     result = run_example(tmp_path)
     published = result["publication"]
     verified = result["verification"]
@@ -42,6 +48,7 @@ def test_cli_publishes_and_independently_verifies_gao_product_pages(tmp_path: Pa
 
 
 def test_cli_refuses_duplicate_product_ids_before_fetching(tmp_path: Path) -> None:
+    """The CLI refuses duplicate product ids before fetching, as a release-invalid failure."""
     calls: list[str] = []
     errors = StringIO()
 

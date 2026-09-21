@@ -74,6 +74,8 @@ class PopularNameRecord:
 
 @dataclass(frozen=True, slots=True)
 class PopularNameDefect:
+    """One stated fact this reader refused to read, carrying a declared reason code and the value refused."""
+
     reason: str
     name: str
     raw_value: str | None = None

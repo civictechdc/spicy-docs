@@ -12,6 +12,9 @@ SIDECAR = ROOT / "docs/research/document-capture-provenance-2026-09-20.json"
 
 
 def test_measurement_replays_the_pinned_commits():
+    """The measurement replays its pinned commits with zero requests and seven captures, and retained bytes digest to
+    the recorded after state.
+    """
     expected = json.loads(SIDECAR.read_bytes())
     result = measure(expected["beforeCommit"], expected["afterCommit"])
     expected.pop("retainedVerification", None)
@@ -38,6 +41,7 @@ def test_measurement_replays_the_pinned_commits():
     ],
 )
 def test_field_measurement_detects_removed_source_records(family):
+    """Field measurement detects removed source records."""
     receipt = json.loads(SIDECAR.read_bytes())
     row = next(r for r in receipt["families"] if r["family"] == family)
     capture = json.loads((ROOT / row["path"]).read_bytes())
@@ -54,6 +58,7 @@ def test_field_measurement_detects_removed_source_records(family):
 
 
 def test_measurement_detects_missing_geometry_and_restored_zip_url():
+    """The measurement detects missing geometry and a restored zip URL."""
     receipt = json.loads(SIDECAR.read_bytes())
     observations = {
         r["observation"]["url"]: r["observation"]

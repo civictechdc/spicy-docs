@@ -1,9 +1,9 @@
-"""Reversible, capture-shaped XML; no publisher vocabulary or source acquisition.
+"""Version-1 capture XML: a reversible encoding of parsed DocumentCapture JSON that preserves fields unknown to this
+serializer, with no publisher vocabulary or source acquisition.
 
-Property names and explicit JSON types preserve the whole capture, including
-fields unknown to this serializer. Parent/profile validation stays with the
-schema owner. See docs/research/document-capture-xml-roundtrip-2026-09-20.md
-for the versioned mapping, refusal rules, and measured fixture coverage.
+Property names and explicit JSON types preserve the whole capture; parent/profile validation stays with the schema
+owner, and the versioned mapping, refusal rules and measured fixture coverage are in
+docs/research/document-capture-xml-roundtrip-2026-09-20.md.
 """
 
 from __future__ import annotations
@@ -93,10 +93,8 @@ def _encode(element: ET.Element, value: Any, path: str = "$") -> None:
 def encode_capture(capture: dict[str, Any]) -> bytes:
     """Encode parsed capture JSON as UTF-8 XML without changing any field.
 
-    Integer/float types and signed floating zero survive; number lexemes from
-    the original JSON file do not enter this API. Non-JSON objects, non-finite
-    floats, cycles and structures exceeding Python's recursion limit refuse.
-    This is format checking, not schema or evidence validation.
+    Integer/float types and signed floating zero survive. Non-JSON objects, non-finite floats, cycles and structures
+    exceeding Python's recursion limit refuse; this is format checking, not schema or evidence validation.
     """
     _check_capture(capture)
     # A local default namespace avoids changing ElementTree's process-global
@@ -114,6 +112,8 @@ def encode_capture(capture: dict[str, Any]) -> bytes:
 
 
 class _CaptureTreeBuilder(ET.TreeBuilder):
+    """ElementTree builder that refuses DTDs, comments and processing instructions."""
+
     def doctype(self, name: str, pubid: str | None, system: str | None) -> None:
         raise CaptureXmlError("DTDs are not part of capture XML")
 
@@ -188,9 +188,8 @@ def _decode(element: ET.Element, *, named: bool = False) -> Any:
 def decode_capture(xml_bytes: bytes) -> dict[str, Any]:
     """Decode capture XML, refusing ambiguous or unsupported format content.
 
-    No URL, path, schema or entity is resolved. XML container indentation and
-    namespace prefixes are immaterial; all capture strings remain exact.
-    Validate the returned object against its pinned parent/profile separately.
+    No URL, path, schema or entity is resolved; container indentation and namespace prefixes are immaterial and all
+    capture strings remain exact. Validate the returned object against its pinned parent/profile separately.
     """
     if type(xml_bytes) is not bytes:
         raise CaptureXmlError("decode_capture expects XML bytes")

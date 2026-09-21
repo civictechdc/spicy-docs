@@ -47,6 +47,7 @@ def attached_capture(error: BaseException) -> CapturedBodyResponse | None:
 
 
 def refused_capture(capture: CapturedBodyResponse, *, stage: str) -> RefusedResponse:
+    """Adapt one capture into refusal evidence, media type stripped of parameters."""
     return RefusedResponse(
         request_key=capture.requested_url,
         stage=stage,

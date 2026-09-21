@@ -1,36 +1,13 @@
-"""Measure the legislative-branch data map: what each route lists, from when, and how big.
+"""Measure the legislative-branch data map and rewrite its generated markdown tables.
 
-One bounded pass over three machine-readable inventories plus a fixed set of
-publisher samples, then the map's tables are rewritten from those measurements
-and the judgments held in ``ROWS`` below. Judgments (status, note) are data
-here so that a status can never cite a module that does not exist: every
-``have`` and ``port`` row names evidence paths and the run refuses if one is
-missing. Run from the repository root:
-
-  uv run --frozen python -m tools.analysis.legislative_data_map \\
-      --env-file .env --output docs/research/legislative-data-map-2026-09-18.json \\
-      --map docs/research/legislative-data-map-2026-09-18.md
-
-``--offline`` refreshes the tables and saved row judgments from an existing
-output without changing its measurements or using the network.
-
-Measurements, and what each cannot see:
-
-* Congress.gov: one ``limit=1`` request per collection route for its declared
-  total, then a descent by Congress (or volume) until two empty Congresses
-  follow a populated one, or the cap. The earliest populated Congress is a
-  lower bound on coverage; a gap wider than one Congress would hide older
-  material and the cap is reported when it ends the walk.
-* GovInfo: the ``collections`` inventory for package counts; for named
-  collections a binary search on ``published/{year}-01-01`` for the earliest
-  issue year, checked against the inventory count; the keyless bulkdata
-  listing for folder ranges and top-level sizes.
-* The CDTF catalog for periodicity and the caveat counts.
-* One keyless sample per publisher XML or JSON candidate: media type, size,
-  digest, root element and first-level children. Whether those name the
-  document's own identity remains a judgment in the row note.
-
-A credential refusal (401/403 on a keyed route) aborts the run.
+Run from the repository root: ``uv run --frozen python -m tools.analysis.legislative_data_map
+--env-file .env --output docs/research/legislative-data-map-2026-09-18.json
+--map docs/research/legislative-data-map-2026-09-18.md``; ``--offline`` refreshes tables and
+row judgments from an existing output without network, and the phase flags (``--compare``,
+``--samples``, ``--flow``, ``--freshness``, ``--floors``, ``--requirements``) merge one
+measurement group back into that output. Coverage per route is a lower bound from a bounded
+descent; a credential refusal (401/403) aborts the run, and every ``have``/``port`` row's
+evidence path must exist or the run refuses.
 """
 
 from __future__ import annotations
@@ -69,6 +46,7 @@ from tools.analysis.shared import REQUESTS, KeylessProbe
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Check evidence, run the requested measurement phases, rewrite the map and return 0 or 1."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--output", type=Path, required=True, help="measurements JSON; read instead of measured with --offline"

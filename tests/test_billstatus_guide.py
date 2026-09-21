@@ -1,4 +1,9 @@
-"""Literal guide values and original byte positions precede code-set interpretation."""
+"""Literal guide values and original byte positions precede code-set interpretation.
+
+The retained BILLSTATUS user guide is read as literal values carrying exact byte
+spans and line numbers; sections, tables, version notes, provenance pins and
+refusals of unsupported source shapes are all pinned against that fixture.
+"""
 
 import dataclasses
 import hashlib
@@ -19,6 +24,7 @@ GUIDE = (FIXTURES / "billstatus_codes" / "guide-2026-08-03.md").read_bytes()
 
 
 def spans(value):
+    """Every text span reachable through the parsed guide's dataclasses."""
     if isinstance(value, BillStatusGuideText):
         yield value
     elif dataclasses.is_dataclass(value):
@@ -31,6 +37,9 @@ def spans(value):
 
 @pytest.mark.parametrize("body", [GUIDE, b"Unicode prefix: \xc3\xa9\n" + GUIDE, GUIDE.replace(b"\n", b"\r\n")])
 def test_all_spans_replay_exact_original_bytes_and_line_numbers(body):
+    """Every span replays exact original bytes and line numbers for plain, Unicode-prefixed and CRLF input, with
+    digest and size matching.
+    """
     result = read_billstatus_guide(body)
     for span in spans(result):
         assert body[span.byte_start : span.byte_end].decode("utf-8") == span.text
@@ -40,6 +49,9 @@ def test_all_spans_replay_exact_original_bytes_and_line_numbers(body):
 
 
 def test_complete_raw_guide_retains_codes_headers_context_and_version_explanation():
+    """The retained guide keeps eight bill-type values, four table row counts (36, 26, 88, 24), context prose,
+    headers and raw cells.
+    """
     result = read_billstatus_guide(GUIDE)
     assert [value.value for value in result.bill_type_statements[0].values] == [
         "H",
@@ -73,6 +85,9 @@ def test_complete_raw_guide_retains_codes_headers_context_and_version_explanatio
 
 
 def test_guide_section_values_and_current_xml_are_not_reconciled():
+    """Guide prose and native XML values stay separate observations (``House Bill (HR)`` beside ``HR``/version
+    3.0.0).
+    """
     result = read_billstatus_guide(GUIDE)
     assert "- House Bill (HR)" in result.bill_type_introductions[0].text.text
     assert result.bill_type_statements[0].values[0].value == "H"
@@ -82,6 +97,9 @@ def test_guide_section_values_and_current_xml_are_not_reconciled():
 
 
 def test_unicode_presentation_whitespace_preserves_values_and_exact_spans():
+    """NBSP presentation whitespace is stripped from values while spans still replay the original bytes and line
+    numbers.
+    """
     body = (
         "### `<billType>`\n\u00a0\n\u00a0Bill type (Possible values are H, S).\u00a0\n"
         "# 4. Actions Type Element Possible Values\n"
@@ -96,6 +114,7 @@ def test_unicode_presentation_whitespace_preserves_values_and_exact_spans():
 
 
 def test_unknown_empty_and_repeated_source_values_survive():
+    """Unknown, empty and repeated source values are kept literally rather than dropped."""
     changed = GUIDE.replace(b"H, S, HRES", b"H, , H, lower, HRES", 1)
     changed = changed.replace(
         b"| **B00100** | Sponsor introductory remarks on measure |", b"| **z?** |  |\n| **z?** | second |", 1
@@ -107,6 +126,7 @@ def test_unknown_empty_and_repeated_source_values_survive():
 
 
 def test_repeated_sections_are_separate_and_absent_sections_stay_absent():
+    """A repeated section is kept as its own record while an absent section stays absent."""
     result = read_billstatus_guide(GUIDE + b"\n### `<billType>`\nBill type (Possible values are NEW).\n")
     assert len(result.bill_type_statements) == 2
     assert result.bill_type_statements[-1].values[0].value == "NEW"
@@ -129,11 +149,15 @@ def test_repeated_sections_are_separate_and_absent_sections_stay_absent():
     ],
 )
 def test_unsupported_or_malformed_source_shape_refuses(body):
+    """Empty, invalid-UTF-8, wrong-sentence, table-less, bad-separator, ragged and truncated shapes raise
+    BillStatusGuideError.
+    """
     with pytest.raises(BillStatusGuideError):
         read_billstatus_guide(body)
 
 
 def test_escaped_pipes_and_separated_second_table_refuse_explicitly():
+    """Escaped pipes and a second separated pipe table are refused with their named reasons."""
     table = b"# 4. Actions Type Element Possible Values\n| Type |\n| --- |\n| value |\n"
     with pytest.raises(BillStatusGuideError, match="escaped pipes"):
         read_billstatus_guide(table.replace(b"value", b"a\\|b"))
@@ -142,6 +166,7 @@ def test_escaped_pipes_and_separated_second_table_refuse_explicitly():
 
 
 def test_empty_table_and_case_and_whitespace_preserve_source_observations():
+    """A table with no rows yields none, and case/whitespace variants of a value list keep each literal value."""
     result = read_billstatus_guide(b"# 4. Actions Type Element Possible Values\n| Kind |\n| --- |\n")
     assert result.tables[0].rows == ()
     result = read_billstatus_guide(b"### `<billType>`\nBill type (Possible values are and H, and\tS, low).\n")
@@ -151,11 +176,13 @@ def test_empty_table_and_case_and_whitespace_preserve_source_observations():
 @pytest.mark.parametrize("option", ["max_bytes", "max_rows"])
 @pytest.mark.parametrize("value", [0, -1, True, 1.5])
 def test_invalid_limits_refuse(option, value):
+    """Zero, negative, boolean and fractional max_bytes or max_rows are refused."""
     with pytest.raises(BillStatusGuideError):
         read_billstatus_guide(GUIDE, **{option: value})
 
 
 def test_byte_row_and_column_limits_refuse():
+    """Byte, row and 32-column overruns refuse with their named reason."""
     with pytest.raises(BillStatusGuideError, match="max_bytes"):
         read_billstatus_guide(GUIDE, max_bytes=len(GUIDE) - 1)
     with pytest.raises(BillStatusGuideError, match="max_rows"):

@@ -1,4 +1,6 @@
-"""Regulations Gov: scope behavior."""
+"""Query-scope contract: scopes are closed, strict-ASCII and bounded by ``MAX_QUERY_DAYS`` (14,640, enough to
+cover a source's full history), and the acquisition policies declare the newest-observation collapse.
+"""
 
 from __future__ import annotations
 
@@ -60,8 +62,8 @@ def test_query_scopes_are_closed_ascii_and_bounded(scope, validator, message: st
 
 
 def test_query_scope_spans_a_full_source_history_up_to_the_inclusive_bound() -> None:
-    """One window per agency must cover a source's whole history (2026-09-02
-    amendment); the superseded 366-day bound refused every such scope.
+    """One window per agency must cover a source's whole history (2026-09-02 amendment); the superseded 366-day
+    bound refused every such scope.
     """
     start = date(1990, 1, 1)
     full_history = regulations_gov_document_query_scope(

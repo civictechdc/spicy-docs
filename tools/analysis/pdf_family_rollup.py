@@ -1,14 +1,9 @@
 """Measure what the PDF-only source families would add to the hosted tables.
 
-Two rules from the owner bound this measurement: data that already exists in a
-publisher's index is not recreated from the PDF, and nothing the PDF alone holds
-that a consumer would otherwise re-read the PDF for may be left uncaptured.
-So each family is measured twice -- once against its index record (what already
-exists) and once against its documents (what only the PDF holds) -- and the
-difference is the yield.
-
-Two phases, deliberately separate, because acquisition costs requests and
-analysis does not:
+Two owner rules bound the measurement -- never recreate data a publisher's index already states,
+and never leave uncaptured what only the PDF holds and a consumer would otherwise re-read -- so each
+family is measured against its index record and against its documents, and the difference is the
+yield. Two phases, separate because acquisition costs requests and analysis does not:
 
     uv run --frozen python -m tools.analysis.pdf_family_rollup acquire \\
         --receipt ~/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20
@@ -16,21 +11,13 @@ analysis does not:
         --receipt ~/Work/corpora/supply-2026-09-02/receipts/pdf-family-rollup-yield-2026-09-20 \\
         --output docs/research/pdf-family-rollup-yield-2026-09-20.json
 
-``acquire`` is resumable: every request is appended to ``requests.jsonl`` and
-every successful body is written to ``blobs/<sha256>``, so a re-run re-requests
-only the rows that have no successful body yet. ``analyze`` reads retained bytes
-alone and makes no request at all.
-
-**Complexity.** Linear per document in its pages: extraction yields one page at
-a time and each join-key pattern scans each page's text once, so a family of
-``D`` documents with ``P`` pages and ``C`` characters per page costs
-``O(D * P * C * K)`` for ``K`` fixed patterns. The one superlinear step is
-PyMuPDF's ``find_tables()``, which the extraction API's own docs bound per page
-and which this tool times per page so the report can state what it cost.
-
-**Credentials.** ``API_GOV`` and ``ZYTE_TOKEN`` are read through
-``read_api_key`` and sent as headers only. No URL, receipt row, blob, error or
-log line here carries either; every recorded URL is scrubbed first.
+``acquire`` is resumable: every request is appended to ``requests.jsonl`` and every successful body
+written to ``blobs/<sha256>``, so a re-run re-requests only rows with no body yet. ``analyze`` reads
+retained bytes alone and makes no request. Extraction streams one page at a time and each join-key
+pattern scans a page's text once, so cost is linear in pages except PyMuPDF's ``find_tables()``,
+which this tool times per page so the report can state what it cost. ``API_GOV`` and
+``ZYTE_TOKEN`` are read through ``read_api_key`` and sent as headers only: no URL, receipt row, blob,
+error or log line carries either, because every recorded URL is scrubbed first.
 """
 
 from __future__ import annotations
@@ -113,6 +100,7 @@ class RequestLog:
         return self._succeeded.get(self.scrub(url))
 
     def body(self, digest: str) -> bytes:
+        """The retained body bytes for one digest."""
         return (self.receipt / "blobs" / digest).read_bytes()
 
     def record(
@@ -159,6 +147,7 @@ class RequestLog:
         return digest
 
     def counts(self) -> dict[str, int]:
+        """How many logged requests per request class."""
         counts: dict[str, int] = {}
         for row in self.rows:
             counts[row["class"]] = counts.get(row["class"], 0) + 1
@@ -179,6 +168,7 @@ class Fetchers:
     _clients: dict[str, Any] = field(default_factory=dict)
 
     def _client(self, kind: str, headers: Mapping[str, str] | None = None) -> Any:
+        """The shared bounded client for a request class, created on first use."""
         from spicy_docs.transport.capture import BoundedHttpCapture
 
         if kind not in self._clients:
@@ -199,6 +189,7 @@ class Fetchers:
         return self._clients[kind]
 
     def zyte_client(self, mode: str, max_bytes: int) -> tuple[Any, Any]:
+        """A fresh Zyte-proxied client and its transport, one per proxied call."""
         from spicy_docs.transport.capture import BoundedHttpCapture
         from spicy_docs.transport.zyte import ZyteTransport
 
@@ -304,6 +295,7 @@ class Fetchers:
         request_class: str,
         zyte: Mapping[str, Any] | None = None,
     ) -> None:
+        """Log a failed request from the attached capture or refused response, then let the caller decide."""
         from spicy_docs.reading.refusals import RefusedResponse
         from spicy_docs.transport.captured import attached_capture
 
@@ -440,6 +432,8 @@ STRUCTURE_RULES: tuple[tuple[str, str], ...] = (
 
 @dataclass(frozen=True)
 class Family:
+    """One PDF family: its key, index route, discovery callable and request class."""
+
     key: str
     title: str
     index_route: str
@@ -448,6 +442,7 @@ class Family:
 
 
 def _json_or_none(body: bytes | None) -> Any:
+    """A retained body parsed as JSON, or None when it is absent or is not JSON."""
     if body is None:
         return None
     try:
@@ -490,6 +485,7 @@ def discover_crs(fetchers: Fetchers) -> dict[str, Any]:
 
 
 def _crs_index_row(record: Mapping[str, Any]) -> dict[str, Any]:
+    """The CRS report fields the index already states, kept for the yield comparison."""
     return {
         "id": record.get("id"),
         "title": record.get("title"),
@@ -765,7 +761,7 @@ def discover_senate_secretary(fetchers: Fetchers) -> dict[str, Any]:
 
 
 def discover_house_clerk(fetchers: Fetchers) -> dict[str, Any]:
-    """The Clerk's disclosure microsite: a yearly index and per-filing PDFs."""
+    """The Clerk's disclosure microsite: a yearly filing index ZIP and per-filing PDFs."""
     documents: list[dict[str, Any]] = []
     index_fields: dict[str, Any] = {}
     index = fetchers.get(
@@ -963,6 +959,7 @@ FAMILIES: tuple[Family, ...] = (
 
 
 def acquire(receipt: Path, families: Sequence[str], zyte_max: int) -> None:
+    """Discover each family's documents (reusing retained indexes) and fetch up to eight bodies."""
     api_key = _api_key()
     secrets = tuple(s for s in (api_key,) if s)
     log = RequestLog(receipt, secrets=secrets)
@@ -1092,6 +1089,7 @@ def _probe_crs_html(fetchers: Fetchers, discovered: dict[str, Any]) -> None:
 
 
 def _api_key() -> str | None:
+    """The first API_GOV found in ``.env`` then the checkout/refspec environments, or None."""
     for candidate in (Path(".env"), CHECKOUT_ENV, REFSPEC_ENV):
         if candidate.exists():
             try:
@@ -1102,6 +1100,7 @@ def _api_key() -> str | None:
 
 
 def _zyte_token() -> str | None:
+    """ZYTE_TOKEN from the refspec environment, or None when there is no token file."""
     if not REFSPEC_ENV.exists():
         return None
     try:
@@ -1313,12 +1312,10 @@ def measure_keys(text: str, index_row: Any) -> dict[str, Any]:
 
 
 def spot_check() -> dict[str, list[str]]:
-    """Each pattern must reject the strings that look like it but are not it.
+    """Each rule's rejected lookalikes, plus a compile of every structure marker before any document is read.
 
-    Every structure marker is compiled here too, before a single document is
-    read: an inline flag in the wrong place raises only when the pattern is
-    first used, which on the first attempt left the previous run's report on
-    disk looking like a fresh one.
+    An inline flag in the wrong place raises only on first use, which once left a stale report on
+    disk looking fresh.
     """
     for _, pattern in STRUCTURE_RULES:
         re.compile(pattern)
@@ -1328,6 +1325,7 @@ def spot_check() -> dict[str, list[str]]:
 
 
 def analyze(receipt: Path, output: Path) -> None:
+    """Measure every retained document against its index row and write the receipt tables and sidecar."""
     log = RequestLog(receipt)
     report: dict[str, Any] = {
         "measured_at": datetime.now(UTC).date().isoformat(),
@@ -1425,6 +1423,7 @@ def compact(report: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _safe(value: str) -> str:
+    """A document id reduced to a bounded file-name-safe stem."""
     return re.sub(r"[^A-Za-z0-9._-]", "_", value)[:80]
 
 
@@ -1472,6 +1471,7 @@ def _presence(documents: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Dispatch the ``acquire`` or ``analyze`` phase named on the command line."""
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n\n")[0])
     sub = parser.add_subparsers(dest="phase", required=True)
     acquire_parser = sub.add_parser("acquire")

@@ -17,10 +17,12 @@ PREFIXES = ("bulk-downloads/", "legal/", "user-downloads/")
 
 
 def official_sources() -> list[dict]:
+    """Load the pinned official FEC source declarations bundled with this package."""
     return json.loads(files(__package__).joinpath("official_sources.json").read_text())
 
 
 def api_operations() -> dict[str, str | list[str]]:
+    """Load the pinned OpenFEC GET-operation map from path template to response mode."""
     return json.loads(files(__package__).joinpath("api_operations.json").read_text())
 
 

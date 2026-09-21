@@ -1,20 +1,12 @@
 #!/usr/bin/env python3
 """Count duplicate identities and cross-filings in source-native releases.
 
-One pass reads input records through SourceNativeReleaseReader.iter_records().
-Every count names its population; catalog item counts may differ after catalog
-selection or transformation. Each run filters to one profile, reported as
-scope.profileConsidered.
-
-Both --profile documents and --profile dockets compare repeated sourceRecordIds,
-shared objectIds, and content agreement. Document-only analyses report explicit
-*NotApplicable reasons for dockets:
-- Letters segments require the document-id shape <docket>-<docSeq>-<LETTERS>-<docSeq>.
-- Co-issued versus parent/component classification requires a docketId attribute;
-  a docket's own id already identifies its docket.
-- Suspect narrowing requires frDocNum or pageCount, absent from docket records.
-
-Docket content comparison uses DOCKET_IDENTITY_FIELDS.
+One pass reads input records through SourceNativeReleaseReader.iter_records(), so counts are of records,
+not built catalog items, and every count names its population. Each run filters to one profile (reported
+as scope.profileConsidered): both ``documents`` and ``dockets`` compare repeated sourceRecordIds, shared
+objectIds and content agreement, while document-only analyses (letters segments, co-issued versus
+parent/component classification, suspect narrowing) report an explicit *NotApplicable reason for
+dockets. Docket content comparison uses DOCKET_IDENTITY_FIELDS.
 """
 
 from __future__ import annotations
@@ -100,18 +92,22 @@ _PROFILE_CONFIGS: dict[str, _ProfileConfig] = {
 
 
 def _normalized_title(value: object) -> str:
+    """A title lowercased, trimmed and with en dashes folded to hyphens; empty for non-strings."""
     return value.strip().lower().replace("–", "-") if isinstance(value, str) else ""
 
 
 def _identity_signature(row: dict[str, Any], fields: tuple[str, ...]) -> tuple[object, ...]:
+    """The tuple of identity fields one row contributes, with the title normalized."""
     return tuple(_normalized_title(row["title"]) if f == "title" else row[f] for f in fields)
 
 
 def _is_catch_all(docket: str) -> bool:
+    """True when the docket id carries the agency's catch-all ``_FRDOC_0001`` suffix."""
     return docket.endswith(CATCH_ALL_DOCKET_SUFFIX)
 
 
 def _examples(groups: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
+    """The first few objectId groups with their rows, capped for report size."""
     return [{"objectId": oid, "rows": rows} for oid, rows in list(groups.items())[:_EXAMPLE_CAP]]
 
 
@@ -366,6 +362,7 @@ def _report(scan: dict[str, Any], config: _ProfileConfig) -> dict[str, Any]:
 
 
 def census(release_list: Path, blob_store: Path, profile: str = "documents") -> dict[str, Any]:
+    """Census the selected profile's releases, whose admitted digests must match the list's."""
     releases = json.loads(release_list.read_text())
     store = LocalSourceNativeBlobStore(blob_store, create=False)
     config = _PROFILE_CONFIGS[profile]
@@ -373,6 +370,7 @@ def census(release_list: Path, blob_store: Path, profile: str = "documents") -> 
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Print the census JSON for the release list and selected profile."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--releases", type=Path, required=True, help="JSON [root, artifactDigest, profile] triples")
     parser.add_argument("--blob-store", type=Path, required=True, help="Explicit persistent blob store")

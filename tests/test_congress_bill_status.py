@@ -1,4 +1,11 @@
-"""Literal BILLSTATUS fields, offered versions, and refusal boundaries."""
+"""Literal BILLSTATUS fields, offered versions and refusal boundaries.
+
+Pins sponsors vs cosponsors, current status fields and offered versions,
+literal strings/duplicates/unknown format links, summary CDATA placement,
+absent vs blank action text, superseded-schema naming, policy-area
+reconciliation, identity/selection/DOCTYPE/nesting refusals, and enacted laws,
+recorded votes, committees, titles and related bills.
+"""
 
 from dataclasses import FrozenInstanceError
 from pathlib import Path
@@ -26,10 +33,12 @@ XML_URL = bill_xml_locator(IDENTITY, PACKAGE)
 
 
 def status_body() -> bytes:
+    """The retained BILLSTATUS fixture bytes."""
     return (FIXTURES / "status-119hr6028.xml").read_bytes()
 
 
 def test_cosponsors_are_separate_from_the_sponsor_list() -> None:
+    """Sponsors and cosponsors are read as separate lists with bioguide ids and full names."""
     status = parse_bill_status(
         (FIXTURES / "status-118hr1-cosponsors.xml").read_bytes(), identity=BillIdentity(118, "hr", 1)
     )
@@ -41,10 +50,14 @@ def test_cosponsors_are_separate_from_the_sponsor_list() -> None:
 
 
 def test_no_listed_cosponsors_is_an_empty_observation() -> None:
+    """A bill with no listed cosponsors yields an empty tuple, not None."""
     assert parse_bill_status(status_body(), identity=IDENTITY).cosponsors == ()
 
 
 def test_current_status_preserves_fields_and_offered_versions() -> None:
+    """Current status keeps identity, schema, dates, policy area, subjects, actions, sponsors, summaries and offered
+    versions, and the record is frozen.
+    """
     status = parse_bill_status(status_body(), identity=IDENTITY)
     assert status.identity == IDENTITY
     assert status.schema_version == "3.0.0"
@@ -77,6 +90,9 @@ def test_current_status_preserves_fields_and_offered_versions() -> None:
 
 
 def test_literal_strings_duplicates_and_unrecognized_format_links_survive() -> None:
+    """Literal strings, duplicate action texts and unrecognized format links survive unchanged, including a
+    package-less version.
+    """
     body = status_body().replace(b"<title>Legislative", b"<title>  Legislative")
     body = body.replace(b"<name>Congressional agencies</name>", "<name>  A—B &amp; C  </name>".encode())
     body = body.replace(
@@ -95,6 +111,7 @@ def test_literal_strings_duplicates_and_unrecognized_format_links_survive() -> N
 
 
 def test_summary_cdata_is_literal_html_and_not_bill_text() -> None:
+    """Summary CDATA stays literal HTML and is never read as bill text."""
     body = status_body().replace(
         b"<summaries>", b"<summaries><summary><text><![CDATA[<p>  A &amp; B. </p>]]></text></summary>"
     )
@@ -160,6 +177,7 @@ def test_the_superseded_schema_is_named_instead_of_refused_for_a_missing_type() 
 
 
 def test_policy_area_reconciles_both_current_source_locations() -> None:
+    """Both policy-area locations are read, and a disagreement between them is refused."""
     assert parse_bill_status(status_body(), identity=IDENTITY).policy_area == "Congress"
     top_only = (
         b"<billStatus><version>3.0.0</version><bill><congress>119</congress><type>HR</type>"
@@ -180,6 +198,7 @@ def test_policy_area_reconciles_both_current_source_locations() -> None:
     "identity", [BillIdentity(118, "hr", 6028), BillIdentity(119, "s", 6028), BillIdentity(119, "hr", 1)]
 )
 def test_status_refuses_wrong_bill(identity: BillIdentity) -> None:
+    """A status whose identity differs from the requested one is refused."""
     with pytest.raises(BillSourceError, match="identity differs"):
         parse_bill_status(status_body(), identity=identity)
 
@@ -197,6 +216,7 @@ def test_status_refuses_wrong_bill(identity: BillIdentity) -> None:
     ],
 )
 def test_status_refuses_empty_error_and_unsupported_xml(body: bytes) -> None:
+    """Empty, error and unsupported XML are refused."""
     with pytest.raises(BillSourceError):
         parse_bill_status(body, identity=IDENTITY)
 
@@ -212,17 +232,20 @@ def test_status_refuses_empty_error_and_unsupported_xml(body: bytes) -> None:
     ],
 )
 def test_status_refuses_ambiguous_or_unsupported_known_fields(before: bytes, after: bytes) -> None:
+    """Ambiguous or unsupported known fields are refused."""
     with pytest.raises(BillSourceError):
         parse_bill_status(status_body().replace(before, after), identity=IDENTITY)
 
 
 @pytest.mark.parametrize("limit", [0, -1, True, 1.5, "200"])
 def test_status_requires_positive_integer_byte_limit(limit: object) -> None:
+    """A non-positive or non-integer byte limit is refused."""
     with pytest.raises(BillSourceError, match="max_bytes"):
         parse_bill_status(status_body(), identity=IDENTITY, max_bytes=limit)
 
 
 def test_status_byte_bound_is_inclusive() -> None:
+    """The byte bound is inclusive: exactly the body size passes, one byte less refuses."""
     body = status_body()
     assert parse_bill_status(body, identity=IDENTITY, max_bytes=len(body)).identity == IDENTITY
     with pytest.raises(BillSourceError, match="max_bytes"):
@@ -243,12 +266,14 @@ def test_status_byte_bound_is_inclusive() -> None:
     ],
 )
 def test_identity_refuses_noncanonical_arguments(field: str, value: object) -> None:
+    """Non-canonical identity arguments are refused."""
     args = {"congress": 119, "bill_type": "hr", "number": 6028, field: value}
     with pytest.raises(BillSourceError):
         BillIdentity(**args)
 
 
 def test_locators_are_canonical_and_other_links_are_not_selected() -> None:
+    """Locators are canonical and package ids are read only from matching bill URLs."""
     assert (
         bill_status_locator(IDENTITY) == "https://www.govinfo.gov/bulkdata/BILLSTATUS/119/hr/BILLSTATUS-119hr6028.xml"
     )
@@ -272,6 +297,7 @@ def test_locators_are_canonical_and_other_links_are_not_selected() -> None:
 
 
 def test_selection_needs_exactly_one_offered_xml_link_and_never_infers_from_pdf() -> None:
+    """Selection needs exactly one offered XML link and never infers one from a PDF."""
     status = parse_bill_status(status_body(), identity=IDENTITY)
     with pytest.raises(BillSourceError, match="offered exactly once"):
         select_bill_xml(status, "BILLS-119hr6028enr")
@@ -286,6 +312,7 @@ def test_selection_needs_exactly_one_offered_xml_link_and_never_infers_from_pdf(
 
 
 def test_status_refuses_cross_bill_and_mixed_version_package_links() -> None:
+    """Cross-bill links and mixed-version package links are refused."""
     with pytest.raises(BillSourceError, match="identity differs"):
         parse_bill_status(status_body().replace(b"BILLS-119hr6028eh", b"BILLS-119hr6029eh"), identity=IDENTITY)
     body = status_body().replace(
@@ -296,6 +323,7 @@ def test_status_refuses_cross_bill_and_mixed_version_package_links() -> None:
 
 
 def test_status_refuses_doctype_and_excessive_nesting() -> None:
+    """DOCTYPE declarations and excessive nesting are refused."""
     body = status_body().split(b"?>", 1)[1]
     with pytest.raises(BillSourceError, match="DOCTYPE"):
         parse_bill_status(
@@ -306,6 +334,7 @@ def test_status_refuses_doctype_and_excessive_nesting() -> None:
 
 
 def test_public_entry_points_refuse_objects_without_validated_identity() -> None:
+    """Public entry points refuse objects whose identity was not validated."""
     identity = SimpleNamespace(congress="../bad", bill_type="hr", number=6028)
     for operation in [
         lambda: bill_status_locator(identity),
@@ -324,16 +353,21 @@ ENACTED_IDENTITY = BillIdentity(119, "s", 5)
 
 
 def enacted_status() -> BillStatus:
+    """The retained enacted-bill BILLSTATUS fixture bytes."""
     return parse_bill_status((FIXTURES / "status-119s5.xml").read_bytes(), identity=ENACTED_IDENTITY)
 
 
 def test_enacted_status_reads_its_laws_entry() -> None:
+    """An enacted status reads its laws entry with type and number."""
     status = enacted_status()
     assert status.title == "Laken Riley Act"
     assert [(law.type, law.number) for law in status.laws] == [("Public Law", "119-1")]
 
 
 def test_recorded_votes_are_read_on_the_actions_that_carry_them() -> None:
+    """Recorded votes are read on their actions with chamber, roll, session, URL, date and congress; a
+    documented-but-absent field stays None.
+    """
     votes = [vote for action in enacted_status().actions for vote in action.recorded_votes]
     assert [(vote.chamber, vote.roll_number, vote.session_number) for vote in votes] == [
         ("House", "23", "1"),
@@ -347,12 +381,14 @@ def test_recorded_votes_are_read_on_the_actions_that_carry_them() -> None:
 
 
 def test_a_bill_without_the_optional_elements_reads_them_as_empty() -> None:
+    """A bill without optional elements reads laws and recorded votes as empty."""
     status = parse_bill_status(status_body(), identity=IDENTITY)
     assert status.laws == ()
     assert all(action.recorded_votes == () for action in status.actions)
 
 
 def test_committees_are_read_with_their_system_codes() -> None:
+    """Committees are read with system code, chamber and type."""
     status = parse_bill_status((FIXTURES / "status-119hres10.xml").read_bytes(), identity=BillIdentity(119, "hres", 10))
     assert [(c.system_code, c.chamber, c.type) for c in status.committees] == [("hsru00", "House", "Standing")]
     assert status.committees[0].name == "Rules Committee"
@@ -360,6 +396,7 @@ def test_committees_are_read_with_their_system_codes() -> None:
 
 
 def test_a_subcommittee_is_read_as_a_committee_without_chamber_or_type() -> None:
+    """A subcommittee is read as a committee with no chamber or type."""
     body = (
         (FIXTURES / "status-119hres10.xml")
         .read_bytes()
@@ -387,12 +424,14 @@ def test_a_subcommittee_is_read_as_a_committee_without_chamber_or_type() -> None
 
 
 def test_a_bill_without_titles_or_relatedbills_reads_them_as_empty() -> None:
+    """A bill without titles or related bills reads both as empty."""
     status = parse_bill_status(status_body(), identity=IDENTITY)
     assert status.titles == ()
     assert status.related_bills == ()
 
 
 def test_titles_are_read_with_chamber_and_text_version_fields_where_the_publisher_states_them() -> None:
+    """Titles keep optional chamber and text-version fields where stated and leave them None where omitted."""
     status = parse_bill_status(
         (FIXTURES / "status-119hres214.xml").read_bytes(), identity=BillIdentity(119, "hres", 214)
     )

@@ -8,6 +8,8 @@ from spicy_docs.releases.format import SourceNativeReleaseError
 def parse_evidence(
     profile, *, opener, evidence_ref, byte_size, media_type, request_key, query_scope, response_bytes=None
 ):
+    """Parse one acquisition page within the profile's evidence bound; stream profiles retain no byte copy."""
+
     if byte_size > profile.max_evidence_bytes:
         raise SourceNativeReleaseError("acquisition evidence exceeds its product bound")
     if profile.parse_page_stream is not None:

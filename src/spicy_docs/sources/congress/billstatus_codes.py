@@ -189,7 +189,7 @@ def read_billstatus_guide(body: bytes, *, max_bytes: int = 2 * 1024 * 1024, max_
     """Read the fixed guide sections, retaining repetitions, raw spelling and context.
 
     Sections 3/4/5/6 supply action codes, action types, summary versions and title
-    types. The billType sentence, introductory bill types and version explanation
+    types; the billType sentence, introductory bill types and version explanation
     stay separate. No code grammar, deduplication, chamber validation, completeness
     classification or H/HR reconciliation runs. Missing sections remain absent.
     Markdown cells expose whitespace-trimmed values with one enclosing bold pair
@@ -197,9 +197,9 @@ def read_billstatus_guide(body: bytes, *, max_bytes: int = 2 * 1024 * 1024, max_
     max_rows bounds table rows and sentence values together, including empties.
 
     This is a bounded reader for the publisher's literal guide layout, not a
-    general Markdown renderer. Preserve the returned digest with original bytes
-    to replay spans. No guide release number is inferred from section numbers or
-    the XML schema-version explanation. The reader fetches and publishes nothing.
+    general Markdown renderer: it infers no guide release number from section
+    numbers or the schema-version explanation, and fetches and publishes nothing.
+    Preserve the returned digest with original bytes to replay spans.
     """
     if type(max_bytes) is not int or not 1 <= max_bytes <= 16 * 1024 * 1024:
         raise BillStatusGuideError("max_bytes must be a positive integer no greater than 16 MiB")

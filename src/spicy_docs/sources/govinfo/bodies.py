@@ -2,60 +2,19 @@
 
 A package id is the publisher's own address for a committee report, hearing
 transcript, committee print, Congressional Record issue, congressional
-document, directory or bill text. Congress.gov route URLs carry these ids as
-their file stems, so a caller that has a route has a package id. The Record's
-split days mean a date alone is not one: 2026-01-03 can publish
-``CREC-2026-01-03-v172`` beside ``-v171``, so the suffix is part of the id and
-never inferred.
-
-A granule id names one constituent of a package -- one Record speech, one page
-range -- and carries no address of its own: every granule locator addresses it
-through its package's content path, the package id as the folder segment and
-the granule id as the file stem (measured 2026-09-19 on CREC-2026-09-18's
-granules). A granule's own summary and MODS state both its id and its host
-package's, so membership is proved the same way a package proves its own
-identity, not assumed from the URL a caller built.
-
-Source rules, each measured on 2026-09-19 (receipts in the fixture README):
-
-- Body renditions are keyless at ``www.govinfo.gov/content/pkg/{id}/{folder}/
-  {id}.{extension}``; summary and MODS are keyed at ``api.govinfo.gov``.
-- The folder is not the format name: text is served from ``text/{id}.txt`` and
-  HTML from ``html/{id}.htm``.
-- Not every package offers every format. CRPT/CHRG/CDOC offer HTML and PDF,
-  CPRT offers HTML, PDF and XML, CREC offers PDF, CDIR offers PDF and text,
-  BILLS offers HTML, PDF, XML and USLM, and BUDGET and the GPO-prefixed CDOC
-  reprints offer PDF alone (measured 2026-09-20 on all eleven retained
-  records). A format a package does not offer
-  redirects to ``/error``, which answers
-  HTTP 200 with the publisher's 44,165-byte "Page Not Found" page. A 200 that
-  is not the requested object is a refusal with its bytes retained, never data
-  and never absence.
-- The package MODS states the offered renditions as ``location/url`` elements
-  with ``access="raw object"``, and those statements agreed exactly, in both
-  directions, with what the keyless routes served for every package measured.
-  The summary's ``download`` block does not: it lists no body rendition at all
-  for CRPT, CHRG and CDOC, and spells the BILLS HTML rendition ``txtLink``.
-  So the offered set is read from MODS, and the summary's links are kept as
-  evidence with nothing derived from them.
-- **The collection a package id names is not always the ``collectionCode`` its
-  records state.** Seven collections state their own id prefix; ``BUDGET`` and
-  the GPO-prefixed CDOC reprints both state ``GPO`` -- measured 2026-09-20 on
-  11 retained MODS records and 3 package summaries -- so each entry in
-  ``_GRAMMARS`` carries the code its records state and the check compares
-  against that, rather than assuming the prefix and the code are one string.
-- A body carries no machine-readable package id (the CRPT-119hrpt1 HTML body
-  never spells it), unlike a Federal Register granule's ``[FR Doc No: ...]``.
-  Identity is therefore the locator the request named, the summary's
-  ``packageId``, the MODS ``accessId``, the MODS rendition URL for the chosen
-  format, and the error-page exclusion -- four publisher statements about the
-  one URL whose bytes were retained.
-
-For package id length ``I``, summary bytes ``S``, MODS bytes ``M`` and body
-bytes ``B``: parsing and locators are ``O(I)``; summary validation is ``O(S)``;
-MODS validation is ``O(M)``; body validation is ``O(B)`` time and ``O(I)``
-auxiliary space. Every parser requires a positive byte bound. These helpers
-make no network requests and write no files.
+document, directory, bill text or budget volume, and a granule id names one
+constituent of a package -- one Record speech, one page range -- reached through
+its package's content path, with membership proved by the granule MODS's nested
+host accessId rather than assumed from the URL. Body renditions are keyless and
+their folder is not the format name; the offered set is read from the MODS
+``access="raw object"`` URLs, not the summary's ``download`` links, which list
+no body rendition at all for some collections, and a format a package does not
+offer redirects to the publisher's "Page Not Found" page, which answers HTTP
+200 and is a refusal, never data and never absence. The collection a package id
+names is not always the ``collectionCode`` its records state (``BUDGET`` and
+``GPO-CDOC`` both state ``GPO``), so each grammar carries the code its records
+state; every parser requires a positive byte bound, and no helper here makes a
+network request or writes a file.
 """
 
 from __future__ import annotations
@@ -456,20 +415,17 @@ class ModsBill:
 
     ``context`` is the publisher's own priority marker (``PRIMARY``,
     ``OTHER``, ...), or the empty string when the publisher's ``<bill>``
-    states none -- kept as a mention rather than dropped, since a ``<bill>``
-    with no stated context is still evidence the MODS named it; dropping
-    data silently is the wrong side of that choice. Document order is not
-    priority order -- measured on CRPT-119hrpt1, whose MODS lists S. 5
-    (``OTHER``), H. Res. 53 (``OTHER``), H. Res. 53 again (``PRIMARY``), then
-    H.R. 471 (``OTHER``) -- so a caller wanting the bill a report is chiefly
-    about reads ``PackageModsIdentity.primary_bill``, never ``bills[0]``.
+    states none -- kept rather than dropped, since a ``<bill>`` with no stated
+    context is still evidence the MODS named it. Document order is not
+    priority order (CRPT-119hrpt1 lists S. 5 ``OTHER`` before H. Res. 53
+    ``PRIMARY``), so a caller wanting the bill a report is chiefly about reads
+    ``PackageModsIdentity.primary_bill``, never ``bills[0]``.
 
     ``bill_type`` is the publisher's own spelling (``HRES``, ``S``, ``HR``,
     ...); ``normalized_bill_type`` lower-cases it to match
-    ``sources.congress.bill_status.BILL_TYPES`` (already imported here for
-    the package-id grammar), so a caller matching against that vocabulary
-    does not normalize twice. It is ``None`` when the lower-cased spelling is
-    not one of that vocabulary's entries.
+    ``sources.congress.bill_status.BILL_TYPES``, so a caller matching against
+    that vocabulary does not normalize twice, and is ``None`` when the
+    lower-cased spelling is not one of that vocabulary's entries.
     """
 
     congress: int
@@ -535,17 +491,15 @@ class ModsCommittee:
 class ModsUsCodeSection:
     """One ``<USCode title="N"><section number="S"/></USCode>`` the MODS names.
 
-    A ``<USCode>`` block states a title and then one or more places inside it.
-    Only a ``<section>`` is read: the other child measured is ``<chapter>``
-    (``<USCode title="5"><chapter number="8"/></USCode>`` in both sampled
-    activity reports), and a chapter is not a section -- there is no hosted
-    key for it and inventing one would publish ``5-8`` as if the document
-    cited 5 U.S.C. 8.  A chapter-only block therefore contributes nothing
-    here, and the block's title is still visible through any sibling section.
+    Only a ``<section>`` is read: the other child measured is ``<chapter>``,
+    which is not a section -- there is no hosted key for it and inventing one
+    would publish ``5-8`` as if the document cited 5 U.S.C. 8 -- so a
+    chapter-only block contributes nothing here, and its title is still
+    visible through any sibling section.
 
     ``detail`` is the publisher's own subsection pointer (``(a)(1)(B)``),
-    carried because it is evidence the publisher stated and dropping it would
-    lose the only place the MODS is more precise than a section number.
+    carried because it is the only place the MODS is more precise than a
+    section number.
     """
 
     title: str
@@ -588,12 +542,9 @@ class ModsMember:
     """One ``<congMember>`` a package MODS names, and the role it names them in.
 
     ``bioguide_id`` is ``None`` where the publisher states the element without
-    one -- measured on CRPT-118hrpt965, whose ``role="SUBMITTEDBY"`` member
-    carries chamber, congress, role and state and no ``bioGuideId`` at all, so
-    a caller must treat the id as absent rather than assume the role implies
-    one.  This is the only bioguide id any of these documents states: the
-    citation rules measured zero printed ones across ten families, because a
-    publisher assigns the identifier and does not print it.
+    one (CRPT-118hrpt965's ``role="SUBMITTEDBY"`` member states no
+    ``bioGuideId``), so a caller must treat the id as absent rather than infer
+    one from the role.
     """
 
     bioguide_id: str | None

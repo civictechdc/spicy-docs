@@ -1,36 +1,13 @@
-"""Route one bounded capture through Zyte, in the shape acquirers already accept.
+"""Route one bounded capture through Zyte as an injectable ``httpx`` transport.
 
-Every ``SourceAcquirer`` in this package takes an injected
-``transport: httpx.BaseTransport``. Until now the Zyte adapter
-(:mod:`spicy_docs.sources.zyte`) was a standalone fetcher, so the two routes the
-corpus census recorded as walled -- CBO's DataDome-protected estimate documents
-and Congress.gov's CRS HTML -- could not be reached through the acquirers that
-already know their locator grammar, byte bounds and identity proofs. This module
-is that adapter in the injectable shape; it adds no second HTTP client and no
-second copy of the provider protocol.
-
-**Why the shared transport lives in spicy-docs.** RefSpec depends on spicy-docs,
-not the reverse. RefSpec's ``registry/infrastructure/zyte_transport.py`` and this
-package's :mod:`spicy_docs.sources.zyte` are the same adapter written twice;
-acquisition is this package's job, so the shared copy belongs here and RefSpec
-imports it rather than keeping its own. Recorded in
-``docs/decisions.md#the-shared-zyte-transport-lives-in-spicy-docs-and-records-that-a-capture-was-proxied``.
-
-**What a proxied capture is evidence of.** ``BoundedHttpCapture`` requires that
-an injected transport "must not add hidden requests or authentication"
-(``transport/capture.py``). This transport honours that literally: exactly one
-provider call per ``handle_request``, no retry of its own, and no credential
-reaching the publisher -- the token authenticates *to Zyte*, and Zyte's client,
-not ours, is what the publisher answered. A body fetched this way is therefore
-evidence of what Zyte's client was served, which is a weaker statement than a
-direct capture makes, so every response carries a :class:`ZyteProxyRecord`
-naming the provider's request id, the mode, and that the publisher saw the
-proxy. The records are also kept in order on the transport, because the caller
-that writes the receipt holds the transport, not the individual responses.
-
-``browserHtml`` mode is kept distinct from ``httpResponseBody`` for the same
-reason: a rendered DOM is not bytes any publisher sent, and a receipt that did
-not say which one it held would describe the two as the same evidence.
+A proxied body is evidence of what Zyte's client was served, not of a direct
+capture, so every response carries a :class:`ZyteProxyRecord` naming the
+provider's request id, the mode and that the publisher saw the proxy. Exactly
+one provider call per request, no retry of its own, and no credential to the
+publisher; ``browserHtml`` stays distinct from ``httpResponseBody`` because a
+rendered DOM is not bytes any publisher sent. The shared transport lives here
+because acquisition is this package's job and RefSpec depends on it, not the
+reverse.
 """
 
 from __future__ import annotations
@@ -134,6 +111,10 @@ class ZyteTransport(httpx.BaseTransport):
         return tuple(self._records)
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
+        """Proxy this one GET through the fetcher, spending one budget call.
+
+        A different method or a URL the proxy resolves elsewhere is refused.
+        """
         if request.method != "GET":
             # The provider call is a POST to Zyte carrying the target URL; a
             # target-side POST body has nowhere to go, and silently sending a

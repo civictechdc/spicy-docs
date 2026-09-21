@@ -1,4 +1,10 @@
-"""Check XML preference without hiding refusals or resetting fetch bounds."""
+"""Check XML preference without hiding refusals or resetting fetch bounds.
+
+Pins exact XML capture in one request, HTML fallback only on document
+unavailability, strict-mode refusal, credential refusal without reading the
+body, retry and budget sharing across XML, MODS and HTML, and pacing that
+continues across acquisitions.
+"""
 
 from __future__ import annotations
 
@@ -36,6 +42,8 @@ NOW = datetime(2026, 9, 11, tzinfo=UTC)
 
 
 class Stream(httpx.SyncByteStream):
+    """A response stream that counts reads and records closure."""
+
     def __init__(self, *chunks: bytes) -> None:
         self.chunks = chunks
         self.reads = 0
@@ -51,6 +59,8 @@ class Stream(httpx.SyncByteStream):
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and closes on exit."""
+
     def __init__(self, *actions: httpx.Response | Exception) -> None:
         self.actions = iter(actions)
         self.calls: list[httpx.Request] = []
@@ -75,24 +85,29 @@ def response(
     media_type: str | None = "application/xml",
     headers: dict[str, str] | None = None,
 ) -> httpx.Response:
+    """An HTTPX response over the given body."""
     content_headers = {} if media_type is None else {"content-type": media_type}
     return httpx.Response(status, stream=Stream(body), headers={**content_headers, **(headers or {})})
 
 
 def acquire(client: FederalRegisterBodyAcquirer, **options: object) -> acquisition.FederalRegisterBodyAcquisition:
+    """Acquire one Federal Register body under the given request."""
     return client.acquire(document_number=DOCUMENT, publication_date=DATE, **options)
 
 
 def urls(transport: Transport) -> list[str]:
+    """The URLs the transport was asked for."""
     return [str(call.url) for call in transport.calls]
 
 
 @pytest.fixture(autouse=True)
 def no_retry_delays(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_default_acquires_exact_xml_with_one_request_even_when_html_needs_mods() -> None:
+    """The default acquires exact XML in one request and carries no MODS or fallback evidence."""
     received = response(headers={"content-length": str(len(XML))})
     transport = Transport(received)
     budget = replace(BUDGET, max_requests=1)
@@ -116,6 +131,7 @@ def test_default_acquires_exact_xml_with_one_request_even_when_html_needs_mods()
 
 @pytest.mark.parametrize("media_type", ["text/xml; charset=utf-8", "Application/XML; charset=UTF-8"])
 def test_strict_xml_accepts_publisher_xml_media_types(media_type: str) -> None:
+    """Strict XML accepts the publisher's XML media types."""
     transport = Transport(response(media_type=media_type))
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = acquire(client, format="xml")
@@ -126,6 +142,7 @@ def test_strict_xml_accepts_publisher_xml_media_types(media_type: str) -> None:
 
 @pytest.mark.parametrize("status", [404, 410])
 def test_only_document_unavailability_permits_html_fallback_and_keeps_its_evidence(status: int) -> None:
+    """Only document unavailability permits HTML fallback, and the unavailable response is kept as evidence."""
     unavailable = b"Publisher XML unavailable"
     transport = Transport(response(unavailable, status), response(HTML, media_type="text/html"))
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
@@ -142,6 +159,7 @@ def test_only_document_unavailability_permits_html_fallback_and_keeps_its_eviden
 
 
 def test_complete_unavailable_xml_response_needs_no_xml_media_type() -> None:
+    """A complete unavailable XML response needs no XML media type to authorize fallback."""
     transport = Transport(response(b"No XML", 404, media_type=None), response(HTML, media_type="text/html"))
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = acquire(client)
@@ -152,6 +170,7 @@ def test_complete_unavailable_xml_response_needs_no_xml_media_type() -> None:
 
 
 def test_encoded_unavailable_xml_refuses_before_reading_or_falling_back() -> None:
+    """An encoded unavailable XML refuses before reading or falling back, with no response bytes attached."""
     stream = Stream(b"not complete unencoded evidence")
     transport = Transport(httpx.Response(404, stream=stream, headers={"content-encoding": "gzip"}))
     with (
@@ -166,6 +185,8 @@ def test_encoded_unavailable_xml_refuses_before_reading_or_falling_back() -> Non
 
 
 def test_incomplete_404_retries_xml_and_never_authorizes_html() -> None:
+    """An incomplete 404 retries XML and never authorizes HTML."""
+
     class BrokenStream(Stream):
         def __iter__(self) -> Iterator[bytes]:
             yield b"incomplete unavailable response"
@@ -188,6 +209,7 @@ def test_incomplete_404_retries_xml_and_never_authorizes_html() -> None:
 
 @pytest.mark.parametrize("status", [404, 410])
 def test_strict_xml_retains_unavailable_response_and_never_requests_html(status: int) -> None:
+    """Strict XML retains the unavailable response and never requests HTML."""
     transport = Transport(response(b"No XML", status))
     with (
         FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
@@ -213,6 +235,7 @@ def test_strict_xml_retains_unavailable_response_and_never_requests_html(status:
     ],
 )
 def test_success_status_does_not_make_invalid_xml_unavailable(body: bytes, media_type: str | None) -> None:
+    """A success status does not make invalid XML unavailable; it is a source-validation refusal."""
     received = response(body, media_type=media_type)
     transport = Transport(received)
     with (
@@ -229,6 +252,7 @@ def test_success_status_does_not_make_invalid_xml_unavailable(body: bytes, media
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_xml_credential_refusal_reads_no_body_and_never_falls_back(status: int) -> None:
+    """An XML credential refusal reads no body and never falls back."""
     stream = Stream(b"credential material must not enter evidence")
     transport = Transport(httpx.Response(status, stream=stream))
     with (
@@ -244,6 +268,7 @@ def test_xml_credential_refusal_reads_no_body_and_never_falls_back(status: int) 
 
 @pytest.mark.parametrize("status", [302, 400])
 def test_other_xml_status_is_not_an_html_fallback_signal(status: int) -> None:
+    """Another XML status is not an HTML fallback signal."""
     transport = Transport(response(b"Refused", status, headers={"location": "https://example.test/xml"}))
     with (
         FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
@@ -257,6 +282,7 @@ def test_other_xml_status_is_not_an_html_fallback_signal(status: int) -> None:
 
 @pytest.mark.parametrize("failure", [429, 503, "timeout"])
 def test_exhausted_xml_retry_is_failure_not_permission_to_fetch_html(failure: int | str) -> None:
+    """An exhausted XML retry is a failure, not permission to fetch HTML."""
     actions = [httpx.ReadTimeout("untrusted provider text") if failure == "timeout" else response(status=failure)]
     actions.append(httpx.ReadTimeout("untrusted provider text") if failure == "timeout" else response(status=failure))
     transport = Transport(*actions)
@@ -275,6 +301,7 @@ def test_exhausted_xml_retry_is_failure_not_permission_to_fetch_html(failure: in
 @pytest.mark.parametrize("declared", [False, True])
 @pytest.mark.parametrize("status", [200, 404])
 def test_oversized_xml_is_not_retained_as_complete_or_replaced_with_html(declared: bool, status: int) -> None:
+    """Oversized XML is not retained as complete or replaced with HTML."""
     stream = Stream(b"a" * 30, b"b" * 30, b"unread tail")
     transport = Transport(httpx.Response(status, stream=stream, headers={"content-length": "60"} if declared else {}))
     with (
@@ -292,6 +319,7 @@ def test_oversized_xml_is_not_retained_as_complete_or_replaced_with_html(declare
 @pytest.mark.parametrize("content_length", ["bad", str(len(XML) + 1)])
 @pytest.mark.parametrize("status", [200, 404])
 def test_invalid_xml_content_length_refuses_instead_of_falling_back(content_length: str, status: int) -> None:
+    """An invalid XML Content-Length refuses instead of falling back."""
     transport = Transport(response(status=status, headers={"content-length": content_length}))
     with (
         FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client,
@@ -302,6 +330,9 @@ def test_invalid_xml_content_length_refuses_instead_of_falling_back(content_leng
 
 
 def test_fallback_cannot_reset_exhausted_xml_request_budget() -> None:
+    """Fallback cannot reset an exhausted XML request budget, and the budget refusal is attributed to the next
+    request.
+    """
     transport = Transport(response(b"No XML", 404))
     with (
         FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_requests=1), transport=transport) as client,
@@ -317,6 +348,7 @@ def test_fallback_cannot_reset_exhausted_xml_request_budget() -> None:
 
 
 def test_xml_then_html_retry_share_one_request_counter() -> None:
+    """XML and an HTML retry share one request counter across three calls."""
     transport = Transport(response(b"No XML", 404), response(status=503), response(HTML, media_type="text/html"))
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = acquire(client)
@@ -325,6 +357,7 @@ def test_xml_then_html_retry_share_one_request_counter() -> None:
 
 
 def test_xml_then_mods_then_html_share_budget_and_return_each_complete_capture() -> None:
+    """XML, MODS and HTML share the budget and return each complete capture."""
     transport = Transport(response(b"No XML", 410), response(MODS), response(HTML, media_type="text/html"))
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = acquire(client, html_route="mods-start-page", start_page=123)
@@ -339,6 +372,7 @@ def test_xml_then_mods_then_html_share_budget_and_return_each_complete_capture()
 
 @pytest.mark.parametrize("bad_mods", [False, True])
 def test_failed_html_fallback_reports_active_response_and_keeps_xml_unavailability(bad_mods: bool) -> None:
+    """A failed HTML fallback reports the active response and keeps XML unavailability."""
     rejected = b"Not the requested source document"
     actions = [response(b"No XML", 404)]
     options = {}
@@ -362,6 +396,7 @@ def test_failed_html_fallback_reports_active_response_and_keeps_xml_unavailabili
 
 
 def test_budget_failure_after_mods_never_labels_xml_or_mods_as_failed_html() -> None:
+    """A budget failure after MODS never labels XML or MODS as failed HTML."""
     transport = Transport(response(b"No XML", 404), response(MODS))
     with (
         FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_requests=2), transport=transport) as client,
@@ -377,6 +412,7 @@ def test_budget_failure_after_mods_never_labels_xml_or_mods_as_failed_html() -> 
 
 
 def test_explicit_html_skips_xml() -> None:
+    """An explicit HTML request skips XML."""
     transport = Transport(response(HTML, media_type="text/html"))
     with FederalRegisterBodyAcquirer(budget=BUDGET, transport=transport) as client:
         result = acquire(client, format="html")
@@ -387,6 +423,7 @@ def test_explicit_html_skips_xml() -> None:
 
 
 def test_pacing_continues_across_xml_fallback_and_successive_acquisitions(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pacing continues across an XML fallback and successive acquisitions."""
     current = [0.0]
     starts: list[float] = []
     monkeypatch.setattr(capture.time, "monotonic", lambda: current[0])

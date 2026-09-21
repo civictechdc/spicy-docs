@@ -1,10 +1,7 @@
 """SAM.gov and USAspending list routes: placeholder credentials dropped, POST pages recorded.
 
-SAM.gov also caps how deep a walk can go -- the first 10,000 records of a query,
-with every reachable page still advertising a continuation past the cap -- so
-``entities`` refuses on the first page rather than walking into the publisher's
-``400``. See the module docstring for the live measurement.
-"""
+SAM.gov caps a walk at the first 10,000 records while every reachable page still advertises a continuation past the
+cap, so ``entities`` refuses on the first page rather than walking into the publisher's ``400``."""
 
 import json
 from datetime import date

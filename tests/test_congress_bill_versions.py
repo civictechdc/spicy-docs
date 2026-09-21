@@ -1,13 +1,9 @@
 """The sealed version-code vocabulary, format choice, package ids and version kind.
 
-BillTrax originals: `src/lib/version-kind.ts`/`version-kind.test.ts` (32 cases,
-ported below verbatim), `src/lib/govinfo-pdf-fetch.ts:26-58` (canonical slug
-map) and `scripts/validate-pdf-xml-concordance.ts:44-64` (its drifted, private
-copy) -- both read-only from `/Users/mikewolfd/Work/spicy-stack/BillTrax`.
-DeltaTrack upstream's `tools/fetch_govinfo.py::VERSION_CODES` (read-only at
-`/private/tmp/claude-501/-Users-mikewolfd-Work-spicy-docs/8a5a1a5d-bd44-4a09-a525-c269c5837b3d/scratchpad/DeltaTrack-upstream`,
-canonical repo `https://github.com/civictechdc/DeltaTrack`) is the source for
-the cross-check tests near the bottom of the vocabulary section.
+Pins the union of both BillTrax slug copies and the DeltaTrack-upstream codes
+(including the one deliberate correction, rhuc over BillTrax's rfh), slugify and
+reprint ambiguity, package-id composition and round trip, the sealed format
+preference order, and version_kind's ported cases.
 """
 
 from __future__ import annotations
@@ -206,6 +202,7 @@ def test_every_slug_but_one_keeps_billtraxs_original_govinfo_suffix() -> None:
 
 @pytest.mark.parametrize("code", sorted(_MEASURED_119TH_CODES))
 def test_every_code_measured_in_the_119th_maps_to_a_slug(code: str) -> None:
+    """Every version code measured in the 119th Congress has a sealed slug."""
     assert code in {entry.govinfo_suffix for entry in VERSION_CODES}
 
 
@@ -232,6 +229,7 @@ def test_every_deltatrack_upstream_code_resolves() -> None:
 
 
 def test_upstream_only_codes_are_added_unmeasured_not_silently_dropped() -> None:
+    """Upstream-only codes are added with measured_119th false, a recorded name and a DeltaTrack note."""
     for code in _UPSTREAM_ONLY_CODES:
         entry = VERSION_CODES_BY_SLUG[code]
         assert entry.measured_119th is False
@@ -263,10 +261,12 @@ def test_two_cosmetic_spelling_differences_against_upstream_are_recorded() -> No
     ],
 )
 def test_slugify_matches_billtrax(value: str, expected: str) -> None:
+    """slugify matches BillTrax's own outputs."""
     assert slugify(value) == expected
 
 
 def test_version_slug_is_slugify_with_no_refusal_case() -> None:
+    """version_slug slugifies a measured name and refuses a name outside the vocabulary."""
     assert version_slug("Engrossed Amendment Senate") == "engrossed-amendment-senate"
     with pytest.raises(VersionCodeError):
         version_slug("")
@@ -335,17 +335,20 @@ def test_name_derived_composition_resolves_or_is_flagged_ambiguous(entry) -> Non
 def test_bill_version_package_id_matches_billtraxs_url_stem(
     congress: int, bill_type: str, number: int, slug: str, expected: str
 ) -> None:
+    """Package ids match BillTrax's URL stems."""
     identity = BillIdentity(congress, bill_type, number)
     assert bill_version_package_id(identity, slug) == expected
 
 
 def test_bill_version_package_id_refuses_an_unmapped_slug() -> None:
+    """An unmapped slug is refused by name."""
     with pytest.raises(VersionCodeError, match="not in the sealed vocabulary"):
         bill_version_package_id(BillIdentity(119, "hr", 1), "some-unknown-code")
 
 
 @pytest.mark.parametrize("slug", ["introduced-in-house", "eas2", "rhuc", "returned-to-the-house-by-unanimous-consent"])
 def test_bill_version_package_id_round_trips_through_parse_package_id(slug: str) -> None:
+    """Package ids round-trip through parse_package_id with matching fields."""
     identity = BillIdentity(119, "hr", 7148)
     package_id = bill_version_package_id(identity, slug)
     parsed = parse_package_id(package_id)
@@ -363,6 +366,7 @@ def test_bill_version_package_id_round_trips_through_parse_package_id(slug: str)
 
 
 def _fmt(url: str, type_: str | None) -> BillTextFormat:
+    """An offered format with the given URL and type."""
     return BillTextFormat(url=url, type=type_, package_id=None)
 
 
@@ -402,6 +406,7 @@ def test_choose_format_recognizes_uslm_by_type_and_by_default() -> None:
 
 
 def test_choose_format_prefers_xml_over_uslm() -> None:
+    """XML is preferred over USLM when both are offered."""
     xml = _fmt("https://example.invalid/content/pkg/BILLS-119s1071enr/xml/BILLS-119s1071enr.xml", "Formatted XML")
     uslm = _fmt(
         "https://example.invalid/content/pkg/BILLS-119s1071enr/uslm/BILLS-119s1071enr.xml",
@@ -438,10 +443,12 @@ def test_choose_format_on_real_billstatus_data_uses_the_folder_fallback() -> Non
 
 
 def test_choose_format_skips_items_with_no_url() -> None:
+    """A format item with no URL is skipped."""
     assert choose_format([_fmt("", "Formatted XML")]) is None
 
 
 def test_choose_format_rejects_a_single_name_for_prefer() -> None:
+    """A bare string ``prefer`` is rejected as a TypeError."""
     with pytest.raises(TypeError):
         choose_format([_fmt("https://example.invalid/a.xml", "Formatted XML")], prefer="xml")
 
@@ -497,6 +504,7 @@ def test_choose_format_rejects_a_single_name_for_prefer() -> None:
 def test_version_kind_matches_version_kind_ts(
     version_code: str | None, section_count: int | None, body_bytes: int | None, expected: str
 ) -> None:
+    """version_kind matches the ported version-kind.ts cases."""
     assert version_kind(version_code, section_count=section_count, body_bytes=body_bytes) == expected
 
 
@@ -517,6 +525,7 @@ def test_version_kind_matches_version_kind_ts(
 def test_version_kind_finding_names_the_rule_that_fired(
     version_code: str | None, section_count: int | None, body_bytes: int | None, expected_kind: str, expected_rule: str
 ) -> None:
+    """version_kind's finding names the rule that fired and equals the wrapper's kind."""
     finding = version_kind_finding(version_code, section_count=section_count, body_bytes=body_bytes)
     assert finding == VersionKindFinding(expected_kind, expected_rule, section_count, body_bytes)
     # version_kind is a thin wrapper: same slug and size evidence, same kind.
@@ -530,6 +539,7 @@ def test_version_kind_finding_names_the_rule_that_fired(
 
 
 def test_acquire_bill_pdf_requires_exactly_one_of_slug_or_package_id() -> None:
+    """acquire_bill_pdf requires exactly one of slug or package id."""
     from spicy_docs.sources.congress.bill_pdf import acquire_bill_pdf
     from spicy_docs.sources.govinfo.body_acquisition import GovInfoBodyAcquirer, GovInfoBodyBudget
 
@@ -549,6 +559,7 @@ def test_acquire_bill_pdf_requires_exactly_one_of_slug_or_package_id() -> None:
 
 
 def test_acquire_bill_pdf_requires_a_govinfo_body_acquirer() -> None:
+    """A non-GovInfo body acquirer is a TypeError."""
     from spicy_docs.sources.congress.bill_pdf import acquire_bill_pdf
 
     with pytest.raises(TypeError, match="GovInfoBodyAcquirer"):
@@ -565,6 +576,7 @@ ENV_FILE = Path(os.environ.get("SPICY_DOCS_ENV_FILE", Path.home() / "Work/spicy-
 
 @pytest.mark.integration
 def test_live_bill_pdf_is_acquired_and_proved() -> None:
+    """Live: the smallest sampled bill PDF is acquired, proved by %PDF magic and size, and carries no key."""
     from spicy_docs.sources.congress.bill_pdf import acquire_bill_pdf
     from spicy_docs.sources.govinfo.body_acquisition import GovInfoBodyAcquirer, GovInfoBodyBudget
     from spicy_docs.transport.credentials import read_api_key

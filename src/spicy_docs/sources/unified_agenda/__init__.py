@@ -1,17 +1,14 @@
 """Unified Agenda editions from reginfo.gov: one XML file per semiannual edition, identity proved per record.
 
-The Regulatory Information Service Center publishes each edition of the
-Unified Agenda of Regulatory and Deregulatory Actions as one XML file,
-``REGINFO_RIN_DATA_{YYYYMM}.xml`` with MM 04 (Spring) or 10 (Fall), reachable
-keyless through ``XMLViewFileAction``. The root ``REGINFO_RIN_DATA`` states a
-``RUN_DATE`` and the publisher's XSD; every ``RIN_INFO`` record states its
-``RIN`` and the ``PUBLICATION_ID`` of the edition it belongs to, so an edition
-proves itself from every record rather than from its file name. Three
-publisher irregularities are recorded, not repaired: the file named
-``REGINFO_RIN_DATA_2012.xml`` states ``PUBLICATION_ID`` 201210; Spring 2012
-(``201204``) was never published; and the two 2004 editions each contain one
-control byte that XML 1.0 forbids, so the strict parser refuses them and the
-exact bytes remain the caller's to repair downstream.
+The Regulatory Information Service Center publishes each edition of the Unified Agenda of Regulatory
+and Deregulatory Actions as one XML file, ``REGINFO_RIN_DATA_{YYYYMM}.xml`` with MM 04 (Spring) or
+10 (Fall), reachable keyless through ``XMLViewFileAction``. The root ``REGINFO_RIN_DATA`` states a
+``RUN_DATE`` and the publisher's XSD, and every ``RIN_INFO`` record states its ``RIN`` and the
+``PUBLICATION_ID`` of the edition it belongs to, so an edition proves itself from every record
+rather than from its file name. Three publisher irregularities are recorded, not repaired: the file
+named ``REGINFO_RIN_DATA_2012.xml`` states ``PUBLICATION_ID`` 201210, Spring 2012 (``201204``) was
+never published, and the two 2004 editions each contain one control byte that XML 1.0 forbids, so
+the strict parser refuses them and the exact bytes remain the caller's to repair downstream.
 """
 
 from __future__ import annotations
@@ -72,6 +69,7 @@ class UnifiedAgendaEdition:
 
     @property
     def publication_id(self) -> str:
+        """The edition every record must state; the legacy 2012 file states 201210."""
         return LEGACY_FILE_STEMS.get(self.file_stem, self.file_stem)
 
     @property
@@ -80,6 +78,7 @@ class UnifiedAgendaEdition:
 
 
 def unified_agenda_xml_locator(edition: UnifiedAgendaEdition) -> str:
+    """Build the keyless export URL for one edition."""
     if not isinstance(edition, UnifiedAgendaEdition):
         raise UnifiedAgendaSourceError("edition must be a UnifiedAgendaEdition")
     return f"{EXPORT_URL}?f={edition.file_name}"

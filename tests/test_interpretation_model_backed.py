@@ -1,4 +1,10 @@
-"""Section classification and bill summaries: sealed prompts, injected model, kept provenance."""
+"""Section classification and bill summaries: sealed prompts, injected model, kept provenance.
+
+Pins the label vocabulary and batched classification, the summary and diff
+prompts' pinned bytes and prompt versions, the provenance columns stored per
+row, content-hash regeneration, and the one declaration behind each prompt and
+its answer schema (the C1 fix), including the v1 answers it refuses.
+"""
 
 import hashlib
 import json
@@ -76,10 +82,12 @@ def answering(labels: dict[str, str]):
 
 
 def test_the_five_labels_are_the_sealed_vocabulary() -> None:
+    """The classification label vocabulary is the sealed five, in order."""
     assert LABEL_NAMES == ("funding_opportunity", "directive", "deadline", "restriction", "other")
 
 
 def test_the_prompt_is_generated_from_the_label_table() -> None:
+    """The prompt renders every label's name and definition and each section's bracketed id and heading."""
     prompt = section_classification.build_prompt(sections(1))
     for label in CLASSIFICATION_LABELS:
         assert f"- {label.name}: {label.definition}" in prompt
@@ -87,6 +95,7 @@ def test_the_prompt_is_generated_from_the_label_table() -> None:
 
 
 def test_the_body_is_truncated_to_five_hundred_characters() -> None:
+    """A section body is truncated to 500 characters in the prompt."""
     long_section = ClassifiableSection("sec-long", "y" * 900)
     prompt = section_classification.build_prompt((long_section,))
     assert "y" * 500 in prompt
@@ -94,6 +103,7 @@ def test_the_body_is_truncated_to_five_hundred_characters() -> None:
 
 
 def test_classification_carries_the_provenance_billtrax_never_stored() -> None:
+    """A classification row carries model, prompt version, 64-char prompt hash and requested/completed times."""
     results = classify_sections(sections(1), answering({"sec-0": "directive"}), model="test-model-1", clock=clock())
     assert len(results) == 1
     result = results[0]
@@ -106,6 +116,7 @@ def test_classification_carries_the_provenance_billtrax_never_stored() -> None:
 
 
 def test_sections_are_sent_in_batches_and_each_batch_is_named() -> None:
+    """Sections are sent in batches, each row naming its batch index and sharing the batch's prompt hash."""
     labels = {f"sec-{index}": "other" for index in range(5)}
     results = classify_sections(sections(5), answering(labels), model="m", batch_size=2, clock=clock())
     assert len(results) == 5
@@ -114,11 +125,14 @@ def test_sections_are_sent_in_batches_and_each_batch_is_named() -> None:
 
 
 def test_a_label_outside_the_vocabulary_is_refused() -> None:
+    """A label outside the sealed vocabulary raises ``ModelCallError``."""
     with pytest.raises(ModelCallError, match="sealed vocabulary"):
         classify_sections(sections(1), answering({"sec-0": "urgent"}), model="m", clock=clock())
 
 
 def test_a_section_the_batch_never_named_is_refused() -> None:
+    """A row naming a section outside its batch raises ``ModelCallError``."""
+
     def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse({"classifications": [{"sectionId": "sec-99", "label": "other", "confidence": 1}]})
 
@@ -127,6 +141,8 @@ def test_a_section_the_batch_never_named_is_refused() -> None:
 
 
 def test_a_confidence_outside_zero_to_one_is_refused() -> None:
+    """A confidence outside 0 to 1 raises ``ModelCallError``."""
+
     def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse({"classifications": [{"sectionId": "sec-0", "label": "other", "confidence": 4}]})
 
@@ -160,15 +176,18 @@ def summary_call(*, model: str, prompt: str, **_: object) -> ModelResponse:
 
 
 def test_every_money_bill_kind_has_a_sealed_frame() -> None:
+    """Every money-bill kind has a sealed prompt frame."""
     assert set(MONEY_BILL_FRAMES) == set(MONEY_BILL_KINDS)
 
 
 def test_the_ndaa_frame_keeps_the_authorize_versus_appropriate_distinction() -> None:
+    """The NDAA frame says it does NOT appropriate, and it appears in the built prompt."""
     assert "does NOT appropriate" in MONEY_BILL_FRAMES["ndaa"]
     assert MONEY_BILL_FRAMES["ndaa"] in build_prompt(VERSION)
 
 
 def test_the_prompt_carries_the_identity_status_and_capped_body() -> None:
+    """The prompt carries display number, title, version, status and a body capped at 25,000 characters."""
     prompt = build_prompt(VERSION)
     assert "Bill: HR 4366 — Department of Defense Appropriations Act, 2026" in prompt
     assert "Version: Engrossed in House" in prompt
@@ -181,6 +200,7 @@ def test_the_prompt_carries_the_identity_status_and_capped_body() -> None:
 
 
 def test_the_summary_keeps_the_exact_provenance_columns() -> None:
+    """A summary row keeps model, prompt version, content hash, token counts, timestamps, identity and provisions."""
     result = summarize_bill(VERSION, summary_call, model="test-model-1", clock=clock())
     assert result is not None
     assert result.model == "test-model-1"
@@ -195,11 +215,13 @@ def test_the_summary_keeps_the_exact_provenance_columns() -> None:
 
 
 def test_a_version_too_short_to_summarize_produces_no_row() -> None:
+    """A version too short to summarize produces no row."""
     stub = BillVersionText(VERSION.identity, "ver-3", "Introduced", "Title", "Introduced in House", "too short")
     assert summarize_bill(stub, summary_call, model="m", clock=clock()) is None
 
 
 def test_regeneration_is_decided_by_content_hash_and_prompt_version() -> None:
+    """Regeneration follows a changed content hash or prompt version, including a missing cached hash."""
     digest = content_hash(VERSION.text)
     current = bill_summaries.PROMPT_VERSION
     assert not needs_regeneration(cached_content_hash=digest, cached_prompt_version=current, digest=digest)
@@ -209,6 +231,8 @@ def test_regeneration_is_decided_by_content_hash_and_prompt_version() -> None:
 
 
 def test_a_summary_outside_the_declared_length_is_refused() -> None:
+    """A summary outside the declared character bounds raises ``ModelCallError``."""
+
     def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse({"summary": "Too short.", "audience": "Readers", "topThreeProvisions": []})
 
@@ -217,6 +241,8 @@ def test_a_summary_outside_the_declared_length_is_refused() -> None:
 
 
 def test_more_than_three_provisions_is_refused() -> None:
+    """More than three provisions raises ``ModelCallError``."""
+
     def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse(
             {
@@ -231,6 +257,7 @@ def test_more_than_three_provisions_is_refused() -> None:
 
 
 def test_both_model_backed_modules_share_one_prompt_version_constant_shape() -> None:
+    """Each model-backed module exposes its own prompt version: summary v2 and classification v3."""
     # v2 (2026-09-19): both prompts name the keys and types their readers
     # require. The two constants have moved apart since: the classification
     # prompt is at v3 (2026-09-20) because only its `sectionId` wording was
@@ -264,6 +291,7 @@ def diff_call(*, model: str, prompt: str, **_: object) -> ModelResponse:
 
 
 def test_diff_text_drops_unchanged_items_and_excerpts_each_body() -> None:
+    """The diff text drops unchanged items and renders added and removed items with their bodies."""
     text = diff_text_from_items(DIFF_ITEMS)
     assert "Kept Section" not in text
     assert text == (
@@ -273,6 +301,7 @@ def test_diff_text_drops_unchanged_items_and_excerpts_each_body() -> None:
 
 
 def test_diff_text_falls_back_to_the_older_placement_only_when_the_newer_is_none() -> None:
+    """Only a ``None`` newer heading or body falls back to the older placement; an empty string is kept."""
     # `d.to_heading ?? d.from_heading` -- only None falls through; an empty
     # string heading or body is kept exactly as sent (route.ts:106-107).
     item = DiffItemText("modified", "Old Heading", "", "old body", "")
@@ -280,6 +309,7 @@ def test_diff_text_falls_back_to_the_older_placement_only_when_the_newer_is_none
 
 
 def test_diff_text_caps_items_at_forty_and_excerpts_at_three_hundred_characters() -> None:
+    """Diff text caps items at 40 and each body excerpt at 300 characters."""
     long_item = DiffItemText("added", None, "Long", None, "z" * 400)
     text = diff_text_from_items((long_item,) * 50)
     assert text.count("[ADDED]") == 40
@@ -287,6 +317,7 @@ def test_diff_text_caps_items_at_forty_and_excerpts_at_three_hundred_characters(
 
 
 def test_a_diff_with_only_unchanged_items_produces_no_row() -> None:
+    """A diff with only unchanged items produces no row."""
     only_unchanged = (DiffItemText("unchanged", "A", "A", "x", "x"),)
     assert (
         summarize_diff(
@@ -297,6 +328,7 @@ def test_a_diff_with_only_unchanged_items_produces_no_row() -> None:
 
 
 def test_the_diff_summary_keeps_the_exact_provenance_columns() -> None:
+    """A diff summary row keeps identity, both version ids, every list, model, prompt version v2, hash and tokens."""
     result = summarize_diff(
         VERSION.identity,
         from_version_id="v1",
@@ -345,6 +377,8 @@ def test_the_diff_summary_keeps_the_exact_provenance_columns() -> None:
     ],
 )
 def test_a_malformed_diff_summary_answer_is_refused(answer, match) -> None:
+    """A non-mapping or wrongly typed diff answer raises ``ModelCallError`` naming the offending key."""
+
     def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse(answer)
 
@@ -367,6 +401,7 @@ def digest(text: str) -> str:
 
 
 def test_the_summary_prompt_is_the_pinned_bytes() -> None:
+    """The summary prompt's version and digest are pinned; any character change must move the version."""
     # A prompt is sealed under PROMPT_VERSION: changing one character changes
     # what every stored summary was generated from, so it changes with the
     # version or not at all. Typography counts -- the em and en dashes here are
@@ -378,6 +413,7 @@ def test_the_summary_prompt_is_the_pinned_bytes() -> None:
 
 
 def test_the_classification_prompt_is_the_pinned_bytes() -> None:
+    """The classification prompt's version and digest are pinned; the bracketed section rendering stays BillTrax's."""
     # v1 was 7fdb2f0aca587e55f62cece1fbdc7455fa27f583665f5d38f9f64950bf4c3bc7.
     # v2 was 3c8af9496addd0b8598212f2f2b899950284c5aa850a47f04c92cd8f4cd5909f;
     # it asked for "the section's bracketed id, copied exactly as given below"
@@ -391,6 +427,7 @@ def test_the_classification_prompt_is_the_pinned_bytes() -> None:
 
 
 def test_the_diff_summary_prompt_is_the_pinned_bytes() -> None:
+    """The diff prompt's version and digest are pinned, and its bytes are ASCII."""
     # v1 was f9828decc6d973153997d44c693234bf331d8befa4c6f86be7ab2a76c1b15387,
     # `summarize/route.ts:119-129`'s template literal byte for byte. v2 keeps
     # its wording and order but states each key's type (see the module
@@ -403,6 +440,7 @@ def test_the_diff_summary_prompt_is_the_pinned_bytes() -> None:
 
 
 def test_the_prompts_carry_the_source_s_own_typography() -> None:
+    """The sealed prompt text carries only the source's two non-ASCII codepoints, the en and em dash."""
     assert "— someone who does not work in government" in bill_summaries.SUMMARY_PROMPT_TEMPLATE
     assert "Bill: {display_number} — {title}" in bill_summaries.SUMMARY_PROMPT_TEMPLATE
     assert "A single paragraph (4–6 sentences)" in SUMMARY_FIELDS[0].describes
@@ -452,6 +490,7 @@ C1_OTHER_SPELLING = "affected_audience"
 
 @pytest.mark.parametrize("name,prompt,fields", PROMPTS, ids=[row[0] for row in PROMPTS])
 def test_each_prompt_names_every_key_its_reader_requires(name, prompt, fields) -> None:
+    """Each prompt names every declared key and type, offers no alias, and carries the declaration's shape block."""
     assert fields, f"the {name} prompt declares no answer fields"
     for field in fields:
         assert f'"{field.key}" ({field.kind})' in prompt
@@ -464,6 +503,7 @@ def test_each_prompt_names_every_key_its_reader_requires(name, prompt, fields) -
 
 
 def test_the_wrapper_the_reader_unwraps_is_not_offered_by_the_prompt() -> None:
+    """The prompt asks for the bare array while the wrapped answer stays readable."""
     # BillTrax's ClassifySchema wrapped the array (classifications.ts:21-29),
     # so the wrapper stays readable; the prompt asks for the bare array, and
     # both shapes must reach _read_row.
@@ -486,6 +526,7 @@ def test_the_wrapper_the_reader_unwraps_is_not_offered_by_the_prompt() -> None:
     ids=["snake_cased alias", "the key the prompt names"],
 )
 def test_the_reader_accepts_the_alias_the_prompt_does_not_offer(answer, reads) -> None:
+    """The reader still accepts the snake-cased alias the prompt does not offer."""
     answer = {**answer, "summary": C1_LIVE_ANSWER["summary"]}
     result = summarize_bill(VERSION, lambda *, model, prompt, **_: ModelResponse(answer), model="m", clock=clock())
     assert result is not None
@@ -493,6 +534,8 @@ def test_the_reader_accepts_the_alias_the_prompt_does_not_offer(answer, reads) -
 
 
 def test_a_classification_row_keyed_by_the_snake_cased_alias_is_read() -> None:
+    """A classification row keyed by the snake-cased alias is read."""
+
     def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse([{"section_id": "sec-0", "label": "deadline", "confidence": 0.7}])
 
@@ -501,6 +544,8 @@ def test_a_classification_row_keyed_by_the_snake_cased_alias_is_read() -> None:
 
 
 def test_the_answer_the_first_live_call_returned_names_the_keys_it_is_missing() -> None:
+    """The first live answer's spelling is refused naming both missing keys, with the answer kept in details."""
+
     # The v1 prompt asked for its three items in prose and named no key, so
     # gemini-3.8-flash chose its own spellings and the reader refused the
     # answer: 204 tokens in, 206 out, zero rows (receipt
@@ -516,6 +561,7 @@ def test_the_answer_the_first_live_call_returned_names_the_keys_it_is_missing() 
 
 
 def test_the_other_invocations_spelling_refuses_identically() -> None:
+    """The other invocation's invented spelling refuses with the same two missing keys."""
     # Same v1 prompt, same bill, a different key the model invented: the
     # refusal names the same two missing keys, so nothing here is tuned to one
     # observed answer.
@@ -529,6 +575,7 @@ def test_the_other_invocations_spelling_refuses_identically() -> None:
 
 
 def test_the_v2_prompt_asks_for_the_keys_that_answer_lacked() -> None:
+    """The same content under the keys the prompt now names is read, so the fix was the spelling."""
     # The other direction: the same answer under the keys the prompt now names
     # is read, so the fix is the spelling and not the content.
     corrected = {
@@ -543,6 +590,8 @@ def test_the_v2_prompt_asks_for_the_keys_that_answer_lacked() -> None:
 
 
 def test_a_diff_answer_that_leaves_its_lists_out_names_them() -> None:
+    """A diff answer omitting its lists names every missing list."""
+
     # The same defect class next door: v1 named the five keys but not their
     # types, so a list with nothing in it could arrive absent or as null.
     def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
@@ -555,6 +604,8 @@ def test_a_diff_answer_that_leaves_its_lists_out_names_them() -> None:
 
 
 def test_a_classification_row_missing_a_key_names_it() -> None:
+    """A classification row missing a key names it."""
+
     def call(*, model: str, prompt: str, **_: object) -> ModelResponse:
         return ModelResponse({"classifications": [{"sectionId": "sec-0", "label": "other"}]})
 
@@ -590,6 +641,7 @@ SCHEMA_IDS = [row[0] for row in SCHEMAS]
 
 @pytest.mark.parametrize("name,prompt,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
 def test_the_schema_requires_exactly_the_keys_its_declaration_names(name, prompt, fields, schema) -> None:
+    """Each module's schema is the one its declaration derives: exactly the declared keys, no aliases."""
     declared = [field.key for field in fields]
     assert schema == answer_schema(fields), f"the {name} schema is not the one its declaration derives"
     assert schema["required"] == declared
@@ -605,11 +657,13 @@ def test_the_schema_requires_exactly_the_keys_its_declaration_names(name, prompt
 
 @pytest.mark.parametrize("name,prompt,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
 def test_the_derived_schema_is_a_draft_2020_12_schema(name, prompt, fields, schema) -> None:
+    """Each derived schema passes Draft 2020-12 schema validation."""
     Draft202012Validator.check_schema(schema)
 
 
 @pytest.mark.parametrize("name,prompt,fields,schema", SCHEMAS, ids=SCHEMA_IDS)
 def test_every_bound_the_schema_enforces_is_stated_in_the_prompt_s_own_words(name, prompt, fields, schema) -> None:
+    """Every bound and enum the schema enforces is stated in the prompt's own words."""
     # The two halves of one declaration, checked against each other: a number
     # the request enforces that the prompt never says would be exactly the v1
     # defect running the other way. Both halves come from this row, so a
@@ -644,6 +698,7 @@ def test_every_bound_the_schema_enforces_is_stated_in_the_prompt_s_own_words(nam
     ],
 )
 def test_a_declaration_the_prompt_could_not_state_is_refused_where_it_is_written(field, message) -> None:
+    """A declaration the prompt could not state is refused at construction, naming the reason."""
     # `kind` and `schema` are both derived, so a declaration the prompt cannot
     # pronounce would ship a request enforcing more than it says -- the v1
     # defect turned around. It is refused at construction, where the mistake
@@ -653,6 +708,7 @@ def test_a_declaration_the_prompt_could_not_state_is_refused_where_it_is_written
 
 
 def test_a_key_added_to_a_declaration_reaches_the_schema() -> None:
+    """A key added to a declaration reaches the derived schema's required list and properties."""
     widened = (*SUMMARY_FIELDS, AnswerField("sponsorTake", "string", "what the sponsor says it does"))
     schema = answer_schema(widened)
     assert schema["required"][-1] == "sponsorTake"
@@ -660,6 +716,7 @@ def test_a_key_added_to_a_declaration_reaches_the_schema() -> None:
 
 
 def test_the_schema_states_the_bounds_and_the_vocabulary_its_reader_enforces() -> None:
+    """The schema states the summary bounds, provision cap, confidence range and label enum the reader enforces."""
     summary_properties = SUMMARY_ANSWER_SCHEMA["properties"]
     assert summary_properties["summary"] == {
         "type": "string",
@@ -682,6 +739,7 @@ def test_the_schema_states_the_bounds_and_the_vocabulary_its_reader_enforces() -
 
 
 def test_the_classification_request_asks_for_the_bare_array_the_prompt_asks_for() -> None:
+    """The classification request sends the bare array while the wrapper stays derivable and unsent."""
     assert CLASSIFICATION_ANSWER_SCHEMA["type"] == "array"
     # The wrapper stays derivable from the same declaration and unsent, like
     # the prompt's own silence about it (BillTrax's ClassifySchema shape).
@@ -696,10 +754,12 @@ def test_the_classification_request_asks_for_the_bare_array_the_prompt_asks_for(
     [("summary", SUMMARY_ANSWER_SCHEMA), ("diffSummary", DIFF_SUMMARY_ANSWER_SCHEMA)],
 )
 def test_the_schema_accepts_the_answers_the_v2_prompts_actually_returned(kind, schema) -> None:
+    """The live v2 answers validate against their schemas."""
     Draft202012Validator(schema).validate(LIVE_ANSWERS[kind])
 
 
 def test_the_schema_refuses_both_spellings_the_v1_prompt_provoked() -> None:
+    """Both v1 spellings are refused for the same two missing keys, and the corrected answer validates."""
     # The same two answers the reader refuses, refused one step earlier -- on
     # the request, where BillTrax refused them. Every key is wrong in the same
     # two ways: two required keys absent, two properties the schema does not
@@ -725,6 +785,7 @@ def test_the_schema_refuses_both_spellings_the_v1_prompt_provoked() -> None:
 
 
 def test_the_schema_does_not_offer_the_alias_the_reader_still_reads() -> None:
+    """The schema refuses the alias the reader still reads, one direction on purpose."""
     aliased = {
         "summary": C1_LIVE_ANSWER["summary"],
         "audience": "Readers",
@@ -737,6 +798,7 @@ def test_the_schema_does_not_offer_the_alias_the_reader_still_reads() -> None:
 
 
 def test_each_reader_sends_the_schema_its_own_declaration_derives() -> None:
+    """Each reader sends its own module's derived schema on the call."""
     sent: list[object] = []
 
     def recording(answer):
@@ -773,6 +835,7 @@ LIVE_SECTION_IDS = tuple(f"introduced-in-house|govinfo|{index}" for index in ran
 
 
 def test_the_schema_accepts_the_classification_answer_that_the_reader_refused() -> None:
+    """The classification answer is schema-valid yet refused by the reader for naming sections outside the batch."""
     # The whole point of keeping the reader as the contract. This answer is
     # schema-valid in every respect the schema constrains -- a bare array,
     # three rows, the three required keys, a label from the sealed enum, a
@@ -782,6 +845,7 @@ def test_the_schema_accepts_the_classification_answer_that_the_reader_refused() 
 
 
 def test_the_live_classification_answer_copied_the_prompt_s_own_brackets() -> None:
+    """The live answer kept the prompt's brackets; the reader refuses it, and the fix was the prompt's wording."""
     # Measured 2026-09-20 under `v2`, `gemini-3.8-flash`, 263 in / 80 out, one
     # keyed call. `section_block` writes `[<id>] <heading>` and the `v2`
     # `sectionId` field asked for "the section's bracketed id, copied exactly
@@ -812,6 +876,7 @@ def test_the_live_classification_answer_copied_the_prompt_s_own_brackets() -> No
 
 
 def test_the_schema_travels_beside_the_prompt_and_not_inside_it() -> None:
+    """No schema token is rendered into any prompt, which is why the pinned digests still hold."""
     # The prompts' pinned digests above are the real assertion that adding a
     # response schema changed no prompt byte and so no PROMPT_VERSION. This
     # states the reason they still hold: nothing about the schema is rendered

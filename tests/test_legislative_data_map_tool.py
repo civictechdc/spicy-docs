@@ -1,4 +1,10 @@
-"""The legislative data map tool renders its tables from a saved measurement and proves its own claims."""
+"""The legislative data map tool: table rendering, evidence checks, and floor/requirement probes.
+
+Pins that every ``have`` or ``port`` row names evidence that states its claim
+(a listing route in ``LIST_ROUTES``, a symbol its evidence file defines), that
+the committed map and sidecar match the current rows and an offline refresh
+re-measures nothing, and each probe's stop conditions and identity rules.
+"""
 
 from __future__ import annotations
 
@@ -38,6 +44,7 @@ SIDECAR = ROOT / "docs" / "research" / "legislative-data-map-2026-09-18.json"
 
 
 def test_every_have_or_port_row_names_evidence_that_states_its_claim() -> None:
+    """Every ``have`` or ``port`` row's evidence names the route or symbol that states its claim."""
     check_evidence(ROOT)
 
 
@@ -48,7 +55,7 @@ def _replace_row(target: data_map_tool.Row, **changes: object) -> tuple[data_map
 
 
 def test_check_evidence_rejects_a_listing_route_key_not_in_list_routes(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Mutation check: a `have` row citing `congress/listing.py` for a route LIST_ROUTES does not have must fail."""
+    """A ``have`` row citing a listing route that ``LIST_ROUTES`` lacks fails the evidence check."""
     target = next(row for row in ROWS if row.data == "Enacted bills list")
     assert target.status == "have" and data_map_tool.LISTING_MODULE in target.evidence
     assert "not-a-real-route" not in LIST_ROUTES
@@ -60,7 +67,7 @@ def test_check_evidence_rejects_a_listing_route_key_not_in_list_routes(monkeypat
 
 
 def test_check_evidence_rejects_a_symbol_not_defined_in_its_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Mutation check: a `have` row naming a function its evidence file never defines must fail."""
+    """A ``have`` row naming a function its evidence file never defines fails the evidence check."""
     target = next(row for row in ROWS if row.data == "Senate per-vote XML")
     assert target.status == "have"
     monkeypatch.setattr(
@@ -71,7 +78,7 @@ def test_check_evidence_rejects_a_symbol_not_defined_in_its_evidence(monkeypatch
 
 
 def test_check_evidence_passes_a_real_listing_route_and_a_real_symbol() -> None:
-    """The positive case behind the two mutation checks above: today's rows name real things."""
+    """Today's rows name real routes and real symbols, so the evidence check passes."""
     senate_vote = next(row for row in ROWS if row.data == "Senate per-vote XML")
     assert set(data_map_tool._note_symbols(senate_vote.note)) >= {
         "SenateVoteMenuAcquisition",
@@ -109,6 +116,7 @@ def _floors(earliest: int, responses: list[object]) -> dict:
 
 
 def test_measure_floors_stop_cap_when_the_walk_never_finds_a_real_empty_run() -> None:
+    """A descent that never finds an empty run stops at the cap and reports no floor gap."""
     facts = _floors(70, [1] * FLOOR_DESCENT_STEPS)
     assert facts["descentStop"] == "cap"
     assert facts["earliest"] == 70 - 1 - (FLOOR_DESCENT_STEPS - 1)
@@ -116,6 +124,7 @@ def test_measure_floors_stop_cap_when_the_walk_never_finds_a_real_empty_run() ->
 
 
 def test_measure_floors_stop_floor_when_the_walk_reaches_the_1st_congress() -> None:
+    """A descent reaching the 1st Congress stops at the floor."""
     facts = _floors(10, [1] * 9)
     assert facts["descentStop"] == "floor"
     assert facts["earliest"] == 1
@@ -123,6 +132,7 @@ def test_measure_floors_stop_floor_when_the_walk_reaches_the_1st_congress() -> N
 
 
 def test_measure_floors_stop_empty_run_after_the_tolerated_streak_of_empties() -> None:
+    """The descent stops at the first empty year after the tolerated streak of empty runs."""
     facts = _floors(100, [1, 1] + [0] * FLOOR_EMPTY_TOLERANCE)
     assert facts["descentStop"] == "empty-run"
     assert facts["earliest"] == 98
@@ -130,6 +140,7 @@ def test_measure_floors_stop_empty_run_after_the_tolerated_streak_of_empties() -
 
 
 def test_measure_floors_stop_error_after_the_tolerated_streak_of_publisher_errors() -> None:
+    """The descent stops after the tolerated streak of publisher errors and records the unreached year as ``None``."""
     facts = _floors(20, [1, 1] + [PagedJsonSourceError("boom")] * ERROR_TOLERANCE)
     assert facts["descentStop"] == "error"
     assert facts["earliest"] == 18
@@ -138,7 +149,7 @@ def test_measure_floors_stop_error_after_the_tolerated_streak_of_publisher_error
 
 
 def test_measure_floors_pops_a_stale_floor_gap_field_from_an_earlier_run() -> None:
-    """A sidecar written by the tool before floorGap was removed still carries the field; a new run drops it."""
+    """A stale ``floorGap`` field from an earlier run is dropped by a new run."""
     measures = {"congress": {"treaty": {"earliest": 10, "floorGap": [3]}}}
     measure_floors(_FakeFloorsReader([1] * 9), measures, api_key="k3y-test")
     assert "floorGap" not in measures["congress"]["treaty"]
@@ -167,6 +178,8 @@ class _FakeRequirementsReader:
 
 
 def test_measure_requirements_histograms_rows_and_pins_the_detail_floor() -> None:
+    """Rows histogram by congress; the floor is the first congress whose sample resolves, and the share follows."""
+
     def row(congress: int, number: int, *, stated: bool = False) -> dict:
         entry = {"congress": congress, "communicationType": {"code": "EC"}, "number": number}
         if stated:
@@ -210,6 +223,7 @@ def test_measure_requirements_histograms_rows_and_pins_the_detail_floor() -> Non
 
 
 def test_render_from_the_saved_measurement_keeps_every_row_and_section() -> None:
+    """Rendering keeps every table section and row between the markers, plus comparisons and flow when measured."""
     if not SIDECAR.exists():
         pytest.skip("no saved measurement")
     measures = json.loads(SIDECAR.read_text())
@@ -226,6 +240,7 @@ def test_render_from_the_saved_measurement_keeps_every_row_and_section() -> None
 
 
 def test_committed_map_and_sidecar_match_the_current_rows() -> None:
+    """The committed sidecar's rows and the rendered map body match the current ``ROWS``."""
     measures = json.loads(SIDECAR.read_text())
     assert measures["rows"] == json.loads(json.dumps([dataclasses.asdict(row) for row in ROWS]))
     committed = SIDECAR.with_suffix(".md").read_bytes()
@@ -235,6 +250,10 @@ def test_committed_map_and_sidecar_match_the_current_rows() -> None:
 
 
 def test_offline_refresh_updates_judgments_without_remeasuring(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Offline refresh rewrites rows and the marked map body with no network reader,
+    keeps measured facts, and repeats identically.
+    """
+
     def unexpected_request(*_args: object, **_kwargs: object) -> None:
         pytest.fail("offline refresh must not initialize a network reader")
 
@@ -262,12 +281,14 @@ def test_offline_refresh_updates_judgments_without_remeasuring(tmp_path: Path, m
 
 
 def test_committee_codes_map_by_rule() -> None:
+    """House and Senate committee codes map to their system-code spellings regardless of input case."""
     assert _system_code("house", "JU00") == "hsju00"
     assert _system_code("senate", "SSAS") == "ssas00"
     assert _system_code("senate", "ssas00") == "ssas00"
 
 
 def test_package_ids_come_from_congress_gov_and_govinfo_urls() -> None:
+    """Package ids are read from congress.gov bill and CREC URLs and govinfo package URLs."""
     assert _package_id("https://www.congress.gov/119/bills/hr1/BILLS-119hr1enr.htm") == "BILLS-119hr1enr"
     assert (
         _package_id("https://www.govinfo.gov/content/pkg/CHRG-119hhrg63127/pdf/CHRG-119hhrg63127.pdf")
@@ -277,6 +298,7 @@ def test_package_ids_come_from_congress_gov_and_govinfo_urls() -> None:
 
 
 def test_identity_names_lead_with_congress_and_session() -> None:
+    """Identity names are ordered congress, session, then the remaining keys."""
     assert _identity_order(["vote_number", "session", "amendment_number", "congress"])[:3] == [
         "congress",
         "session",
@@ -285,6 +307,7 @@ def test_identity_names_lead_with_congress_and_session() -> None:
 
 
 def test_freshness_is_a_floor_when_the_sort_was_ignored() -> None:
+    """An ignored sort makes freshness read as a floor (``updated ≥``) rather than a latest date."""
     honored = {
         "total": 5,
         "earliest": 115,
@@ -299,6 +322,7 @@ def test_freshness_is_a_floor_when_the_sort_was_ignored() -> None:
 
 
 def test_diff_reports_moved_counts_and_flipped_edges() -> None:
+    """The diff reports moved counts, flipped and new edges, and no drift when compared with itself."""
     before = {"congress": {"bill": {"total": 1}}, "flow": {"a→b": {"ok": True}}}
     after = {"congress": {"bill": {"total": 2}}, "flow": {"a→b": {"ok": False}, "c→d": {"ok": True}}}
     lines = diff_measures(before, after)

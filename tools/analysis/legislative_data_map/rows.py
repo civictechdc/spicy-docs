@@ -14,12 +14,14 @@ XML_TYPES = ("text/xml", "application/xml", "application/rss+xml", "application/
 
 @dataclass(frozen=True)
 class CongressRoute:
-    """One Congress.gov collection route: its list key and, when it has one, its per-Congress path."""
+    """One Congress.gov collection route: its list key, its per-Congress path when it has one, and the unit
+    its descent floor counts in."""
 
     route: str
     records_key: str
     descent: str | None = None
     start: int = CURRENT_CONGRESS
+    unit: str = "congress"
 
 
 CONGRESS_ROUTES = (
@@ -39,8 +41,12 @@ CONGRESS_ROUTES = (
     CongressRoute("house-vote", "houseRollCallVotes", "house-vote/{c}"),
     CongressRoute("member", "members", "member/congress/{c}"),
     CongressRoute("committee", "committees", "committee/{c}"),
-    CongressRoute("daily-congressional-record", "dailyCongressionalRecord", "daily-congressional-record/{c}", 172),
-    CongressRoute("bound-congressional-record", "boundCongressionalRecord", "bound-congressional-record/{c}", 2020),
+    CongressRoute(
+        "daily-congressional-record", "dailyCongressionalRecord", "daily-congressional-record/{c}", 172, unit="volume"
+    ),
+    CongressRoute(
+        "bound-congressional-record", "boundCongressionalRecord", "bound-congressional-record/{c}", 2020, unit="year"
+    ),
     CongressRoute("crsreport", "CRSReports"),
 )
 

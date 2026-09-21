@@ -1,4 +1,7 @@
-"""OLRC U.S. Code requests preserve exact responses, bounds and refusal evidence."""
+"""OLRC U.S. Code requests preserve exact responses, bounds, and refusal evidence.
+
+Title, corpus, annual, popular-names, and Table 3 routes capture original bytes; a 302 document-not-found is a
+refusal rather than an absence; and byte, entry, and expansion bounds refuse with the capture retained."""
 
 import io
 import zipfile

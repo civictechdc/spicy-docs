@@ -1,4 +1,9 @@
-"""Full structural reversibility over every retained capture and a fresh PDF adapter result."""
+"""Full structural reversibility over every retained capture and a fresh PDF adapter result.
+
+Pins round-trip equality and re-encoding, parent-property coverage, mutation
+detection by full-value comparison, exact extension types, and refusal of
+unsupported values, wrong identity, malformed XML and DOCTYPEs.
+"""
 
 from __future__ import annotations
 
@@ -21,21 +26,25 @@ Q = f"{{{NAMESPACE}}}"
 
 
 def load(path):
+    """Load one committed capture JSON."""
     return json.loads(path.read_bytes())
 
 
 @pytest.fixture(scope="module")
 def senate():
+    """The committed fresh Senate adapter capture."""
     return load(SENATE / "senate-page17.capture.json")
 
 
 def test_every_tracked_capture_and_profile_enters_the_proof():
+    """Every tracked capture and profile enters the proof."""
     assert len(CAPTURES) >= 7
     assert {load(p)["profile"]["name"] for p in CAPTURES} == set(dc.load_schema("PINS.json")["profiles"])
 
 
 @pytest.mark.parametrize("path", CAPTURES, ids=lambda p: p.name)
 def test_full_capture_round_trip(path):
+    """Every capture round-trips to identical values and re-encodes to the same XML."""
     original = load(path)
     xml = encode_capture(original)
     restored = decode_capture(xml)
@@ -55,6 +64,7 @@ def test_full_capture_round_trip(path):
 
 
 def test_fresh_senate_adapter_capture_round_trips(senate, tmp_path):
+    """A fresh Senate adapter capture round-trips and matches the committed result on structure and observations."""
     from spicy_docs.extraction import DocumentExtractor, NativeText
     from tools.analysis.document_capture_pdf_tables import convert_senate_pages
 
@@ -114,6 +124,7 @@ def optional_fields(senate):
 
 
 def test_every_parent_property_is_exercised(optional_fields):
+    """Every parent property is exercised by the real fixtures or the supplement, and round-trips."""
     schema = dc.load_schema(dc.PARENT_SCHEMA)
     required_coverage = set()
     covered = set()
@@ -190,6 +201,7 @@ def test_every_parent_property_is_exercised(optional_fields):
     ],
 )
 def test_xml_mutation_fails_full_equality(optional_fields, mutation):
+    """Each XML mutation fails full equality at its named path; text concatenation would miss most of them."""
     original = optional_fields
     if mutation in {"heading-attachment", "footnote-attachment"}:
         original = load(next(p for p in CAPTURES if p.name == "fr-2026-19200.capture.json"))
@@ -291,6 +303,7 @@ def test_xml_mutation_fails_full_equality(optional_fields, mutation):
 
 
 def test_extension_types_keys_and_string_codepoints_are_exact(senate):
+    """Extension types, keys and string code points survive exactly."""
     capture = copy.deepcopy(senate)
     values = [None, False, True, 0, 1, 1.0, -0.0, 2**100, 0.1, math.nextafter(0.1, 1), 5e-324, 1.7976931348623157e308]
     strings = ["", " ", "\t\n", "a\rb\r\nc", "\f", "<&>\"'", "é e\u0301 😀", "\\f", "\ufffe\uffff", "\x00"]
@@ -319,6 +332,7 @@ def test_extension_types_keys_and_string_codepoints_are_exact(senate):
     ],
 )
 def test_unsupported_values_refuse_instead_of_coercing(senate, value, reason):
+    """Unsupported values refuse with the named reason instead of coercing."""
     capture = copy.deepcopy(senate)
     capture["profile"]["ext"] = {"value": value}
     if reason in {"Decimal", "tuple", "bytes"}:
@@ -333,6 +347,7 @@ def test_unsupported_values_refuse_instead_of_coercing(senate, value, reason):
 
 @pytest.mark.parametrize("key, token", [("value", "value"), ("a/b~c", "a~1b~0c"), ("", ""), ("非ASCII", "非ASCII")])
 def test_unsupported_type_path_tracks_nested_arrays_and_escaped_keys(senate, key, token):
+    """The unsupported-type path tracks nested arrays and escaped keys."""
     capture = copy.deepcopy(senate)
     capture["profile"]["ext"] = {key: [{"nested": b"credential-sentinel"}]}
     with pytest.raises(CaptureXmlError) as error:
@@ -353,6 +368,7 @@ def test_unsupported_type_path_tracks_nested_arrays_and_escaped_keys(senate, key
     ],
 )
 def test_wrong_capture_identity_refuses(value):
+    """A wrong capture identity refuses."""
     with pytest.raises(CaptureXmlError):
         encode_capture(value)
 
@@ -390,6 +406,7 @@ def test_wrong_capture_identity_refuses(value):
     ],
 )
 def test_malformed_or_ambiguous_xml_refuses(content):
+    """Malformed or ambiguous XML refuses."""
     xml = (
         f'<DocumentCapture xmlns="{NAMESPACE}" type="object">'
         '<recordType type="string">DocumentCapture</recordType><captureVersion type="integer">1</captureVersion>'
@@ -405,12 +422,14 @@ def test_malformed_or_ambiguous_xml_refuses(content):
     ['<!DOCTYPE DocumentCapture SYSTEM "file:///never-read">', '<!DOCTYPE DocumentCapture [<!ENTITY x "expanded">]>'],
 )
 def test_doctype_refuses_before_entity_resolution(senate, declaration):
+    """DOCTYPEs refuse before entity resolution."""
     xml = encode_capture(senate).split(b"\n", 1)[1]
     with pytest.raises(CaptureXmlError, match="DTDs"):
         decode_capture(declaration.encode() + xml)
 
 
 def test_malformed_xml_root_version_and_argument_refuse(senate):
+    """A malformed root, wrong version or bad argument refuses."""
     xml = encode_capture(senate)
     for broken in [
         b"<",
@@ -424,6 +443,7 @@ def test_malformed_xml_root_version_and_argument_refuse(senate):
 
 
 def test_comparator_detects_python_equal_but_different_scalar_values():
+    """The comparator detects scalar values Python considers equal but that differ."""
     for left, right in [(1, True), (1, 1.0), (-0.0, 0.0), ({}, {"x": None}), ([], {})]:
         with pytest.raises(AssertionError):
             assert_same_value(left, right)

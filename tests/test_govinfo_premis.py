@@ -20,10 +20,12 @@ P = "{" + PREMIS_NAMESPACE + "}"
 
 
 def premis(content, attributes=""):
+    """Read the fixture PREMIS body."""
     return f'<premis xmlns="{PREMIS_NAMESPACE}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" {attributes}>{content}</premis>'.encode()
 
 
 def compare_tree(source, actual, path=(1,)):
+    """Compare a mapped node against an independent XML element."""
     assert actual.name == source.tag
     assert dict(actual.attributes) == source.attrib
     assert actual.path == path
@@ -42,6 +44,7 @@ def compare_tree(source, actual, path=(1,)):
 
 
 def test_complete_retained_source_keeps_all_objects_events_agents_and_raw_fields():
+    """The complete retained source keeps all 46 objects, fixities, identifiers and raw fields."""
     result = read_govinfo_premis(BODY)
     source = ET.fromstring(BODY)
     compare_tree(source, result.element)
@@ -67,6 +70,7 @@ def test_complete_retained_source_keeps_all_objects_events_agents_and_raw_fields
 
 
 def test_repeated_missing_empty_and_unknown_metadata_survives_without_validation():
+    """Repeated, missing, empty and unknown metadata survives without validation or repair."""
     body = premis(
         """
       <object xsi:type="file">
@@ -102,6 +106,7 @@ def test_repeated_missing_empty_and_unknown_metadata_survives_without_validation
 
 
 def test_empty_root_is_an_empty_observation_and_nested_objects_remain_in_raw_tree():
+    """An empty root is an empty observation while nested objects stay in the raw tree."""
     assert read_govinfo_premis(premis("")).objects == ()
     result = read_govinfo_premis(premis("<extension><object/></extension>"))
     assert result.objects == ()
@@ -122,6 +127,7 @@ def test_empty_root_is_an_empty_observation_and_nested_objects_remain_in_raw_tre
     ],
 )
 def test_unsafe_malformed_wrong_namespace_and_premis3_refuse(body):
+    """Unsafe, malformed, wrong-namespace and PREMIS 3 input is refused."""
     with pytest.raises(GovInfoPremisError):
         read_govinfo_premis(body)
 
@@ -130,11 +136,13 @@ def test_unsafe_malformed_wrong_namespace_and_premis3_refuse(body):
     "option,value", [("max_bytes", True), ("max_elements", 0), ("max_depth", -1), ("max_elements", 1.5)]
 )
 def test_invalid_limits_use_source_error(option, value):
+    """Invalid limits raise the source error."""
     with pytest.raises(GovInfoPremisError):
         read_govinfo_premis(BODY, **{option: value})
 
 
 def test_unknown_elements_depth_and_byte_bounds_are_inclusive():
+    """Unknown-element, depth and byte bounds are inclusive."""
     body = premis("<unknown><other/></unknown>")
     assert read_govinfo_premis(body, max_elements=3, max_bytes=len(body), max_depth=3).element_count == 3
     for options in ({"max_elements": 2}, {"max_depth": 2}, {"max_bytes": len(body) - 1}):
@@ -143,6 +151,7 @@ def test_unknown_elements_depth_and_byte_bounds_are_inclusive():
 
 
 def test_decoder_chunk_boundaries_do_not_change_leading_or_descendant_text():
+    """Decoder chunk boundaries do not change leading or descendant text."""
     text = "a" * 70000 + "&amp;" * 1000
     result = read_govinfo_premis(premis(f"<object><originalName>{text}<part/>tail</originalName></object>"))
     element = result.objects[0].original_names[0]
@@ -167,6 +176,7 @@ MODS = (FIXTURES / "govinfo/cfr-mods-excerpt.xml").read_bytes()
     ],
 )
 def test_mods_data_and_refusals_match_frozen_mapper_after_tree_promotion(body):
+    """MODS data and refusals match the frozen mapper after the tree promotion."""
     try:
         old = old_mods.parse_govinfo_mods(body)
     except old_mods.GovInfoModsError:
@@ -177,6 +187,7 @@ def test_mods_data_and_refusals_match_frozen_mapper_after_tree_promotion(body):
 
 
 def test_premis_and_xml_tree_import_without_httpx():
+    """PREMIS and the XML tree import without httpx."""
     code = """
 import importlib.abc
 import sys

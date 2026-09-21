@@ -1,50 +1,15 @@
 """OLRC per-Congress classification tables: which Code sections each new public law touched.
 
-The Office of the Law Revision Counsel publishes, for the current Congress,
-one "Table of Classifications for Public Laws" per session in two orders --
-by public law (``tbl{congress}pl_{session}.htm``) and by Code citation
-(``tbl{congress}cd_{session}.htm``) -- linked from one index page,
-``classification/tables.shtml``. Table III (``spicy_docs.sources.uscode``) is
-the historical act-section view of the same facts, one page per act; this
-table is the per-Congress view, one page per session, and is what a rollup
-reads to say which sections a *new* law touched before Table III catches up.
-
-Everything here was measured on 2026-09-19 against the 119th Congress, 2nd
-session table (``corpora/supply-2026-09-02/receipts/olrc-classification-2026-09-19/``):
-
-* **The rows are a fixed-width ``<PRE>`` block, not an HTML table.** The
-  page has exactly one ``<PRE>``; its header line names six columns (``Title``,
-  ``Section``, ``Description``, ``Pub. L.``, ``Sec.``, ``NNN Stat.``) and the
-  column offsets are read from that header line, never assumed: 583 of 583
-  data lines sliced at those offsets on 2026-09-19 with none left over.
-* **The page states its own identity in its caption**: ``119th Congress, 2nd
-  Session`` and the laws it covers, ``(Public Law 119-70 and Public Laws
-  119-74 through 119-110)``, plus a "Prepared by ... September 16, 2026"
-  line. :func:`parse_classification_table` proves the stated Congress and
-  session against the request before any row is taken, and every row's own
-  law number must carry that Congress too.
-* **Column 3 is the publisher's action vocabulary, kept verbatim.** The page's
-  legend says a blank entry or a bare ``nt`` means the section or note is
-  amended; ``new``, ``nt new``, ``nt [tbl]``, ``prec``, ``repealed``,
-  ``gen amd``, ``omitted``, ``fr``, ``to``, ``ed chg`` are the others. The
-  blank is kept as ``None`` and the legend is the reader's, not this module's.
-* **The Statutes at Large column is two facts.** Most rows link the page
-  through ``/statviewer.htm?volume=140&page=3`` (573 of 583); ten rows print a
-  page span such as ``637, 638`` or ``762-764`` with no link. The printed
-  text is kept whole and the link's volume and page are kept beside it.
-* **The two orders hold the same rows.** The public-law-order and Code-order
-  tables for one session are the same 583-row multiset; one row (``20 1411
-  nt new 119-75`` at 140 Stat. 297) appears twice in both, so a row's
-  identity is its position in the page (``seq``), not its content.
-* **The index links the current Congress only**: four ``tbl`` links (two
-  sessions in two orders) plus the editorial-change tables. Its ``<title>``
-  is ``UNITED STATES CODE CLASSIFICATION TABLES`` and that is what proves the
-  page is the index rather than a challenge page or a redirect target.
-
-The legislative data map's ``law→classification`` edge only checked that the
-table body contains the string ``119-1`` -- true of ``119-100`` through
-``119-110`` as well, so it was a formatting assertion, not a measurement of
-the shape. This module is the measurement.
+For the current Congress, OLRC publishes one fixed-width ``<PRE>`` table per
+session in two orders, by public law (``tbl{congress}pl_{session}.htm``) and by
+Code citation (``tbl{congress}cd_{session}.htm``), linked from
+``classification/tables.shtml``; the column offsets are read from the page's own
+header line, never assumed. This is the per-Congress view of a new law's
+sections, where Table III (``spicy_docs.sources.uscode``) is the historical
+per-act view. Both readers prove the identity the page states before taking a
+row -- the index's own ``<title>``, the table's Congress-and-session caption --
+and refuse a page with no table links, no rows, or not exactly one ``<PRE>``
+block, because a truncated, replaced or cut-off page has the same shape.
 """
 
 from __future__ import annotations

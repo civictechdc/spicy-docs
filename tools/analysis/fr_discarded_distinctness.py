@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
 """Compare Federal Register observations discarded by historical identity policy 1.0.
 
-Policy 1.0 kept the newest publication_date per document_number. Discarded rows
-survive only in acquisition evidence; policy 1.1 retains both fields as identity
-(see docs/decisions.md).
-
-Compare each discard with its survivor on type, title, agencies, and abstract,
-per DocSpec 0003. Number and date defined the old grouping, so comparing them
-would not establish distinctness. Identifier year codes are also insufficient:
-E8-30793 was legitimately published on 2009-01-02.
-
-Two passes bound memory: first collect dates per number, then retain full records
-only for numbers seen on multiple dates. --release-root and --blob-store select
-the evidence; LocalSourceNativeBlobStore verifies each blob against its digest.
+That policy kept the newest publication_date per document_number and the discarded rows survive only
+in acquisition evidence; policy 1.1 retains both fields as identity (see docs/decisions.md). Each
+discard is compared with its survivor on type, title, agencies and abstract (DocSpec 0003), because
+number and date defined the old grouping and are no longer evidence of distinctness. Two passes bound
+memory: dates per number first, full records only for multi-date numbers. ``--release-root`` and
+``--blob-store`` select the evidence; LocalSourceNativeBlobStore verifies each blob against its digest.
 """
 
 from __future__ import annotations
@@ -33,6 +27,7 @@ RECEIPT_PATH: tuple[str, str] = ("receipts", "publication.json")
 
 
 def census(release_root: Path, blob_store: Path) -> dict[str, Any]:
+    """The distinctness census, reconciled against the release receipt's independently computed discard count."""
     store = LocalSourceNativeBlobStore(blob_store, create=False)
     members = json.loads(release_root.joinpath(*MANIFEST_PATH).read_text())["members"]
     evidence = [m for m in members if m["role"] == ROLE_EVIDENCE]
@@ -211,6 +206,7 @@ def census(release_root: Path, blob_store: Path) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Print the census JSON for the selected release and blob store."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--release-root",

@@ -1,29 +1,15 @@
 """Read the RIN a House executive communication states in its report nature.
 
-Publisher fact in: ``reportNature`` from the Congress.gov ``house-communication``
-detail route -- prose such as ``The Administration's final rule - Termination
-of Excess Insurance Coverage (RIN: 3133-AF97) received August 25, 2026.``
-
-Interpretation out: a :class:`RinFinding` naming the RIN, the rule that fired
-and the exact text it matched, so a hosted row carries its own audit trail
-beside the value, the way ``press_releases`` carries its match.
-
-The rule is the one the legislative data map measured on 2026-09-18
-(the ``communication-typing`` and ``communication→federal-register`` edges in
-``tools/analysis/legislative_data_map.py``): a ``RIN`` label, an optional
-colon, optional whitespace, then ``nnnn-XXnn``.  Re-measured 2026-09-19 on 18
-of the 25 newest House communications of the 119th Congress, inside the
-day's request budget (receipt ``house-communications-rin-2026-09-19/``): 12
-are rulemakings, the same 12 state a RIN under this rule, no non-rulemaking
-does, and every RIN this rule finds is also found by a relaxed rule shaped
-like the Federal Register source's own validator (``nnnn-XXXX``, letters or
-digits after the first letter; ``sources/federal_register/native.py``).  The
-narrower measured form is kept because it is what was measured; the relaxed
-form found nothing more, so it is not a second rule.
-
-The pattern is searched, not anchored: the label sits mid-sentence inside
-parentheses.  A ``reportNature`` naming two RINs would yield the first; none
-of the 18 sampled named two.
+Reads ``reportNature`` from the Congress.gov ``house-communication`` detail
+route and returns a :class:`RinFinding` naming the RIN, the rule that fired and
+the exact matched text, so a hosted row carries its own audit trail beside the
+value. The rule -- a ``RIN`` label, an optional colon, optional whitespace,
+then ``nnnn-XXnn`` -- is the measured form: on 18 of the 25 newest House
+communications of the 119th Congress the 12 rulemakings state a RIN under it,
+no non-rulemaking does, and a relaxed validator-shaped rule found nothing
+more. The pattern is searched, not anchored, because the label sits
+mid-sentence inside parentheses; a report nature naming two RINs would yield
+the first.
 """
 
 from __future__ import annotations
@@ -49,9 +35,10 @@ class RinFinding:
 def rin_from_report_nature(report_nature: str | None) -> RinFinding:
     """The RIN a report nature states, or an ``unmatched`` finding.
 
-    ``None`` -- a communication with no ``reportNature`` at all, which the
-    publisher's memorials and some reports are -- is ``unmatched`` rather than
-    an error: the rule ran and found nothing, and the row should say so.
+    ``None`` -- a communication with no ``reportNature`` at all -- is
+    ``unmatched`` rather than an error: the rule ran and found nothing, and the
+    row should say so. Raises ``TypeError`` for a non-string, non-``None``
+    input.
     """
     if report_nature is None:
         return RinFinding(None, "unmatched", None)

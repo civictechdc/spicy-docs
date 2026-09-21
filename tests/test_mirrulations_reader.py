@@ -1,4 +1,11 @@
-"""Tests for MirrulationsReader using a fake in-memory S3 resource."""
+"""MirrulationsReader over a fake in-memory S3 resource.
+
+Pins exact source enumeration (listing ETags, versions, sizes, order and
+close-early behaviour), transient retry versus data-fact refusal, 401/403
+aborting with typed errors and no manifest key, unresolved and requested-empty
+observations that stay retryable across runs, credential scrubbing, and the S3
+resource's retry and connection-pool configuration.
+"""
 
 from collections.abc import Iterable
 from json import dumps
@@ -223,6 +230,7 @@ def _raw_id(payload: dict) -> str:
 
 
 def test_iter_records_yields_raw_payloads() -> None:
+    """The reader yields raw payloads and records their keys in ``last_keys`` for manifest tracking."""
     reader = MirrulationsReader(_FakeS3Resource(_make_store()), BUCKET, PREFIX, AGENCY, DOCKET)
     records = list(reader.iter_records())
 
@@ -234,6 +242,7 @@ def test_iter_records_yields_raw_payloads() -> None:
 
 
 def test_exact_source_enumeration_pins_listing_etags_versions_and_bytes() -> None:
+    """Exact enumeration pins each listed key's bytes, ETag and version, fetching each once under ``IfMatch``."""
     store = _make_store()
     resource = _FakeS3Resource(store)
     reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, DOCKET)
@@ -254,6 +263,7 @@ def test_exact_source_enumeration_pins_listing_etags_versions_and_bytes() -> Non
 
 
 def test_exact_source_enumeration_refuses_changed_object_metadata() -> None:
+    """An object whose ETag changed after listing is refused."""
     store = {_docket_key("EPA-2024-0001"): b"{}"}
 
     class _ChangedObject(_FakeObj):
@@ -279,8 +289,7 @@ def test_exact_source_enumeration_refuses_changed_object_metadata() -> None:
 
 
 def test_iter_source_objects_yields_in_listing_order_despite_out_of_order_completion() -> None:
-    """GETs run concurrently, so they may complete out of order; the objects
-    yielded back must still match listing order, not completion order."""
+    """Concurrent GETs may complete out of order, but objects are yielded in listing order."""
     import threading
 
     keys, store = _numbered_store(3)
@@ -308,11 +317,7 @@ def test_iter_source_objects_yields_in_listing_order_despite_out_of_order_comple
 
 
 def test_iter_source_objects_fails_fast_on_a_failed_get() -> None:
-    """The first failed GET aborts the enumeration instead of skipping ahead.
-
-    An unreadable object makes the enumeration unusable as complete-snapshot
-    evidence, so it must not be silently dropped in favor of later keys.
-    """
+    """The first failed GET aborts the enumeration instead of skipping ahead; the key before it is still yielded."""
     keys, store = _numbered_store(3)
 
     class _FailingResource(_FakeS3Resource):
@@ -331,13 +336,7 @@ def test_iter_source_objects_fails_fast_on_a_failed_get() -> None:
 
 
 def test_iter_source_objects_stops_dispatching_gets_once_a_failure_is_visible() -> None:
-    """A failed GET must not keep the pool fetching the keys queued behind it.
-
-    Keys 0-2 open the window together; the head is held until key 1 has failed,
-    so a window refilled after the head is yielded would dispatch key 3 and the
-    executor would then run it while the failure propagates. Nothing past the
-    opening window may be fetched.
-    """
+    """A failed GET stops the pool from dispatching keys queued behind the opening window."""
     import threading
     from time import sleep
 
@@ -369,11 +368,7 @@ def test_iter_source_objects_stops_dispatching_gets_once_a_failure_is_visible() 
 
 
 def test_iter_source_objects_closes_early_without_fetching_the_rest_of_the_agency() -> None:
-    """A consumer that stops after one object must not pay for the whole listing.
-
-    Closing the generator has to return rather than drain every remaining key:
-    only the GETs already in flight when it closed may complete.
-    """
+    """Closing the generator after one object returns without fetching the rest of the listing."""
     import threading
 
     keys, store = _numbered_store(8)
@@ -452,9 +447,7 @@ def _read_timeout() -> Exception:
 def test_iter_source_objects_retries_a_transient_transport_failure_then_succeeds(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A read timeout (the exact failure behind the 47 lost agencies) retries
-    with backoff and then succeeds; every listed object is still yielded, in
-    listing order."""
+    """A read timeout retries with jittered backoff and succeeds, yielding every listed object in order."""
     from spicy_docs.sources import mirrulations
 
     delays: list[float] = []
@@ -502,8 +495,7 @@ def test_iter_source_objects_aborts_after_the_transient_retry_budget_is_exhauste
 
 
 def test_retry_transient_does_not_retry_a_payload_parse_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Deterministic corruption must never be retried, even though it shares
-    the module's failure-classification apparatus with transient errors."""
+    """Deterministic corruption is never retried, though it shares the failure-classification apparatus."""
     from spicy_docs.sources import mirrulations
     from spicy_docs.sources.mirrulations import PayloadParseError
 
@@ -527,8 +519,7 @@ def test_retry_transient_does_not_retry_a_payload_parse_error(monkeypatch: pytes
 def test_iter_source_objects_aborts_immediately_on_a_changed_etag_with_no_retry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A changed object under If-Match is a data fact -- the snapshot would be
-    unfaithful -- not a busy network, so it must not be retried."""
+    """A changed ETag under ``If-Match`` is a data fact and is never retried."""
     from spicy_docs.sources import mirrulations
 
     delays: list[float] = []
@@ -556,8 +547,7 @@ def test_iter_source_objects_aborts_immediately_on_a_changed_etag_with_no_retry(
 def test_iter_source_objects_aborts_immediately_on_a_listed_size_mismatch_with_no_retry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A listed size that disagrees with the downloaded bytes is a data fact,
-    not a busy network, so it must not be retried."""
+    """A listed size disagreeing with the downloaded bytes is a data fact and is never retried."""
     from spicy_docs.sources import mirrulations
 
     delays: list[float] = []
@@ -587,8 +577,7 @@ def test_iter_source_objects_aborts_immediately_on_a_listed_size_mismatch_with_n
 def test_iter_source_objects_aborts_immediately_on_a_missing_listing_etag_with_no_retry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A listing with no ETag can't be pinned by a later GET -- a data fact,
-    not a busy network -- so it must not be retried."""
+    """A listing with no ETag cannot be pinned and is never retried."""
     from spicy_docs.sources import mirrulations
 
     delays: list[float] = []
@@ -616,6 +605,7 @@ def test_iter_source_objects_aborts_immediately_on_a_missing_listing_etag_with_n
 
 
 def test_processed_keys_are_skipped() -> None:
+    """Keys already in ``processed_keys`` are skipped."""
     already = {_docket_key("EPA-2024-0001")}
     reader = MirrulationsReader(_FakeS3Resource(_make_store()), BUCKET, PREFIX, AGENCY, DOCKET, processed_keys=already)
     records = list(reader.iter_records())
@@ -623,20 +613,14 @@ def test_processed_keys_are_skipped() -> None:
 
 
 def test_since_year_filters_older_dockets() -> None:
+    """``since_year`` filters out older dockets."""
     reader = MirrulationsReader(_FakeS3Resource(_make_store()), BUCKET, PREFIX, AGENCY, DOCKET, since_year=2025)
     records = list(reader.iter_records())
     assert [_raw_id(r) for r in records] == ["EPA-2025-0002"]
 
 
 def test_iter_records_downloads_concurrently() -> None:
-    """Downloads for one agency run in parallel, not one-at-a-time.
-
-    A Barrier that only releases once all N downloads are simultaneously in
-    flight is a deterministic proof of concurrency: a serial implementation
-    can never gather N parties, so the barrier times out, those downloads
-    raise, and nothing is yielded. Concurrent downloads all rendezvous and
-    every payload comes back.
-    """
+    """Downloads run in parallel: a barrier that only releases with all N in flight proves concurrency."""
     import threading
 
     n = 4
@@ -693,11 +677,7 @@ def _typed_store() -> dict[str, bytes]:
 
 
 def test_single_scan_buckets_keys_by_record_type() -> None:
-    """One prefix scan classifies an agency's keys for all record types.
-
-    Replaces the prior behavior of scanning the whole agency prefix once per
-    record type (3x). A counting fake proves exactly one scan happens.
-    """
+    """One prefix scan classifies an agency's keys for all record types, replacing one scan per type."""
     from spicy_docs.sources.mirrulations import list_agency_files_by_type
 
     scans = [0]
@@ -736,11 +716,7 @@ def test_reader_factory_scans_each_agency_once() -> None:
 
 
 def test_download_keys_yields_payloads() -> None:
-    """download_keys concurrently downloads a given key list and yields payloads.
-
-    This is the shared download engine used by both iter_records and the chunked
-    ingest path (which downloads one bounded key-chunk at a time).
-    """
+    """``download_keys`` concurrently downloads a key list and yields payloads; both record paths share it."""
     from spicy_docs.sources.mirrulations import download_keys
 
     store = _make_store()
@@ -788,6 +764,7 @@ def test_download_keys_bounds_pending_work_for_a_streaming_listing(
 
 
 def test_bounded_reader_factory_streams_keys_without_building_a_manifest_list() -> None:
+    """A bounded reader streams keys and leaves ``last_keys`` empty."""
     from spicy_docs.sources.mirrulations import reader_factory
 
     resource = _FakeS3Resource(_typed_store())
@@ -799,6 +776,7 @@ def test_bounded_reader_factory_streams_keys_without_building_a_manifest_list() 
 
 
 def test_bounded_reader_preserves_one_in_run_transient_retry() -> None:
+    """A bounded reader keeps the in-run transient retry."""
     from spicy_docs.sources.mirrulations import reader_factory
 
     store = {_docket_key("EPA-2024-0001"): dumps(_docket_payload("EPA-2024-0001")).encode()}
@@ -826,6 +804,7 @@ def test_download_object_bytes_closes_body_on_validation_failure(
     reason: str,
     expected_reads: int,
 ) -> None:
+    """Every validation failure closes the body, and an advertised-oversize object reads nothing."""
     from spicy_docs.sources.mirrulations import download_object_bytes
 
     class _TrackingBody(_FakeBody):
@@ -858,16 +837,7 @@ def test_download_object_bytes_closes_body_on_validation_failure(
 
 
 def test_download_and_parse_closes_body_on_read_error() -> None:
-    """A failed download raises TransientDownloadError but still closes the body.
-
-    If ``read()`` raises (timeout, connection reset) and the body is left open,
-    the underlying S3 connection leaks into CLOSE_WAIT instead of returning to
-    the pool. Enough leaks exhaust the pool and later downloads block forever
-    acquiring a connection — the low-CPU / CLOSE_WAIT-pileup hang seen on large
-    agencies. Closing the body on every path keeps the pool healthy; raising
-    (rather than returning None) lets the caller keep the key out of the manifest
-    so it's retried next run.
-    """
+    """A failed download raises ``TransientDownloadError`` but still closes the body, so the pool does not leak."""
     from spicy_docs.sources.mirrulations import TransientDownloadError, download_and_parse
 
     closed = {"value": False}
@@ -894,11 +864,7 @@ def test_download_and_parse_closes_body_on_read_error() -> None:
 
 
 def test_download_and_parse_raises_parse_error_on_bad_json() -> None:
-    """A body that decodes/extracts badly raises PayloadParseError, not transient.
-
-    The bytes came off S3 fine — retrying just re-fetches the same corrupt
-    payload — so this is a distinct, non-retryable failure class.
-    """
+    """Bad JSON raises non-retryable ``PayloadParseError``; the bytes came off S3 fine."""
     from spicy_docs.sources.mirrulations import PayloadParseError, download_and_parse
 
     store = {"bad/key.json": b"{ not valid json"}
@@ -921,11 +887,7 @@ def _mixed_failure_store() -> tuple[dict[str, bytes], str, str, str]:
 
 @pytest.mark.parametrize("workers", [1, 4])
 def test_download_keys_observes_every_key_that_produced_no_record(workers: int) -> None:
-    """download_keys retains one observation per unyielded key (both branches).
-
-    ``workers=1`` exercises the serial branch, ``workers=4`` the thread-pool
-    branch (future->key attribution) — both must report the same outcomes.
-    """
+    """Every unyielded key gets one observation, with the same outcomes in serial and thread-pool branches."""
     from spicy_docs.sources.mirrulations import STATUS_TRANSPORT, STATUS_UNREADABLE, KeyOutcome, download_keys
 
     store, good, parse_bad, transient_bad = _mixed_failure_store()
@@ -947,7 +909,7 @@ def test_download_keys_observes_every_key_that_produced_no_record(workers: int) 
 
 
 def test_iter_records_excludes_transient_failures_from_last_keys() -> None:
-    """A transient download failure is kept out of last_keys (and reported)."""
+    """A transient download failure stays out of ``last_keys`` and is reported as an unresolved transport outcome."""
     from spicy_docs.sources.mirrulations import STATUS_TRANSPORT
 
     store = _make_store()
@@ -979,13 +941,7 @@ def test_iter_records_retries_transient_failure_once() -> None:
 
 
 def test_iter_records_keeps_parse_failures_out_of_last_keys() -> None:
-    """A parse failure is an unresolved key, not a processed one.
-
-    Rewritten from the assertion it replaced, which required the opposite: a
-    malformed object used to be manifested as processed, so a later repair --
-    upstream, or to this package's own parsing -- could never come back. The
-    observation now says what was seen and when, and the key stays retryable.
-    """
+    """A parse failure stays unresolved and retryable, never manifested as processed."""
     from spicy_docs.sources.mirrulations import STATUS_UNREADABLE
 
     store = _make_store()
@@ -1007,13 +963,7 @@ def test_iter_records_keeps_parse_failures_out_of_last_keys() -> None:
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("workers", [1, 4])
 def test_an_access_refusal_aborts_the_run_and_writes_no_key(status: int, workers: int) -> None:
-    """401/403 ends the run; it is never recorded as a key that merely failed.
-
-    Recorded as a failed key, a refusal over a whole prefix reads downstream as
-    those objects being absent. Both download branches must abort, and the
-    default ``fail_fast=False`` must not soften it -- that switch governs
-    transport answers, not access.
-    """
+    """401/403 ends the run as a typed credential refusal; it is never recorded as a merely failed key."""
     from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError
     from spicy_docs.transport.credentials import CredentialRefusedError
 
@@ -1050,6 +1000,7 @@ def test_an_access_refusal_aborts_the_exact_enumeration_too(status: int) -> None
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("after_first", [False, True])
 def test_iter_json_files_raises_typed_listing_refusal(status: int, after_first: bool) -> None:
+    """A listing refusal raises the typed access error with the botocore error as cause, fetching nothing."""
     from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError, iter_json_files
 
     resource = _RefusingListingResource(_make_store(), status, after_first)
@@ -1065,6 +1016,7 @@ def test_iter_json_files_raises_typed_listing_refusal(status: int, after_first: 
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("after_first", [False, True])
 def test_list_agency_files_by_type_raises_typed_listing_refusal(status: int, after_first: bool) -> None:
+    """``list_agency_files_by_type`` raises the typed listing refusal, with no GETs."""
     from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError, list_agency_files_by_type
 
     resource = _RefusingListingResource(_typed_store(), status, after_first)
@@ -1077,6 +1029,7 @@ def test_list_agency_files_by_type_raises_typed_listing_refusal(status: int, aft
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("after_first", [False, True])
 def test_iter_source_objects_raises_typed_listing_refusal(status: int, after_first: bool) -> None:
+    """``iter_source_objects`` raises the typed listing refusal and records nothing."""
     from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError
 
     resource = _RefusingListingResource(_make_store(), status, after_first)
@@ -1088,6 +1041,7 @@ def test_iter_source_objects_raises_typed_listing_refusal(status: int, after_fir
 
 
 def test_listing_preserves_non_refusal_client_errors() -> None:
+    """A non-refusal listing error propagates unchanged."""
     from spicy_docs.sources.mirrulations import iter_json_files
 
     resource = _RefusingListingResource(_make_store(), 503, after_first=True)
@@ -1099,6 +1053,7 @@ def test_listing_preserves_non_refusal_client_errors() -> None:
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("workers", [1, 4])
 def test_iter_records_fail_fast_preserves_typed_access_refusal(status: int, workers: int) -> None:
+    """``fail_fast`` still preserves the typed access refusal and attempts the key once."""
     from spicy_docs.sources.mirrulations import MirrulationsAccessRefusedError
 
     store = _make_store()
@@ -1140,12 +1095,7 @@ def test_an_access_refusal_is_not_retried_as_a_transient_answer(monkeypatch: pyt
     ],
 )
 def test_an_empty_or_mis_shaped_success_is_requested_empty_not_a_record(body: bytes, named: str) -> None:
-    """A 2xx that carries no record is an observation of that answer.
-
-    Before this, ``{}``, ``null`` and a bare scalar were yielded as records and
-    manifested as processed: an empty answer became apparent coverage, which is
-    exactly the absence a requested-empty observation exists to prevent.
-    """
+    """An empty or mis-shaped 2xx is a requested-empty observation, never a record or manifest key."""
     from spicy_docs.sources.mirrulations import STATUS_REQUESTED_EMPTY
 
     store = _make_store()
@@ -1175,7 +1125,7 @@ def test_an_empty_or_mis_shaped_success_is_requested_empty_not_a_record(body: by
 def test_a_populated_object_without_record_identity_is_requested_empty(
     body: bytes, named: str, record_type: RecordType, workers: int
 ) -> None:
-    """The host's two reproduced null-id rows remain unresolved for every type."""
+    """A populated object lacking record identity stays unresolved as requested-empty for every type."""
     store = _typed_store()
     key = next(key for key in store if record_type.path_pattern in key and key.endswith(".json"))
     store[key] = body
@@ -1225,6 +1175,7 @@ def test_a_populated_object_without_record_identity_is_requested_empty(
     ],
 )
 def test_missing_or_empty_record_identity_stays_unresolved(payload: dict, record_type: RecordType) -> None:
+    """Missing, null, blank, numeric or object ids stay unresolved as requested-empty."""
     key = f"{PREFIX}/{AGENCY}/EPA-2024-0001/text-EPA-2024-0001{record_type.path_pattern}record.json"
     resource = _FakeS3Resource({key: dumps(payload).encode()})
     reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, record_type)
@@ -1255,6 +1206,7 @@ def test_record_identity_is_sufficient_and_raw_fields_are_preserved(
 
 
 def test_publisher_error_message_is_scrubbed_before_truncation_and_logging() -> None:
+    """A publisher error message is scrubbed before truncation and logging, keeping text after the key."""
     from spicy_docs.sources import mirrulations
     from spicy_docs.sources.mirrulations import EmptyPayloadError, download_and_parse
 
@@ -1284,6 +1236,7 @@ def test_publisher_error_message_is_scrubbed_before_truncation_and_logging() -> 
 
 
 def test_publisher_error_envelope_is_not_a_record_even_with_an_id() -> None:
+    """A publisher error envelope is requested-empty even when it also carries an id."""
     key = _docket_key("EPA-2024-0001")
     payload = {"data": {"id": "EPA-2024-0001"}, "errors": [{"detail": "upstream failed"}]}
     reader = MirrulationsReader(_FakeS3Resource({key: dumps(payload).encode()}), BUCKET, PREFIX, AGENCY, DOCKET)
@@ -1294,6 +1247,7 @@ def test_publisher_error_envelope_is_not_a_record_even_with_an_id() -> None:
 
 
 def test_direct_downloads_require_identity_without_a_record_type_label() -> None:
+    """Direct downloads require identity and name the failure without a record-type label."""
     from spicy_docs.sources.mirrulations import EmptyPayloadError, download_and_parse, download_keys
 
     key = _docket_key("EPA-2024-0001")
@@ -1306,6 +1260,7 @@ def test_direct_downloads_require_identity_without_a_record_type_label() -> None
 
 
 def test_bounded_reader_refuses_identity_free_success() -> None:
+    """A bounded reader refuses an identity-free success, naming the type and dedup key."""
     from spicy_docs.sources.mirrulations import EmptyPayloadError, reader_factory
 
     key = _docket_key("EPA-2024-0001")
@@ -1320,6 +1275,7 @@ def test_bounded_reader_refuses_identity_free_success() -> None:
 
 @pytest.mark.parametrize("workers", [1, 4])
 def test_identity_is_checked_after_an_in_run_transport_retry(workers: int) -> None:
+    """Identity is checked after an in-run transport retry, so the outcome counts two attempts."""
     key = _docket_key("EPA-2024-0001")
     resource = _FlakyResource({key: b'{"data":{}}'}, transient_fail=[key], fail_once=True)
     reader = MirrulationsReader(resource, BUCKET, PREFIX, AGENCY, DOCKET, download_workers=workers)
@@ -1333,6 +1289,7 @@ def test_identity_is_checked_after_an_in_run_transport_retry(workers: int) -> No
 
 @pytest.mark.parametrize("body", [b'{"data":{}}', b'{"errors":[{"detail":"upstream failed"}]}'])
 def test_identity_free_answer_is_retried_and_repaired(body: bytes) -> None:
+    """An identity-free answer accumulates attempts across runs and recovers once repaired."""
     key = _docket_key("EPA-2024-0001")
     store = {key: body}
     prior = []
@@ -1352,12 +1309,7 @@ def test_identity_free_answer_is_retried_and_repaired(body: bytes) -> None:
 
 
 def test_a_server_error_then_success_recovers_across_two_runs() -> None:
-    """Run one leaves the key unresolved; run two asks again and manifests it.
-
-    The manifest the caller keeps is ``last_keys``; the unresolved key is absent
-    from it, so the second run re-lists it. It is also attempted before the
-    newly listed work, so a capped or interrupted run cannot keep postponing it.
-    """
+    """A 503 key stays unresolved in run one and is re-listed and manifested in run two, before new work."""
     store = _make_store()
     flaky = _docket_key("EPA-2025-0002")
 
@@ -1384,13 +1336,7 @@ def test_a_server_error_then_success_recovers_across_two_runs() -> None:
 
 
 def test_a_malformed_record_repaired_upstream_is_recovered_on_the_next_run() -> None:
-    """The two-run proof the replaced contract made impossible.
-
-    Run one sees malformed bytes and records an observation. The mirror is then
-    repaired. Run two, resuming from run one's manifest, asks again and yields
-    the record. Under the replaced behaviour the key was manifested as processed
-    in run one, so run two would have skipped it forever.
-    """
+    """A malformed record stays unmanifested, so once repaired upstream the next run reads it."""
     store = _make_store()
     broken = _docket_key("EPA-2025-0002")
     store[broken] = b"{ broken json"
@@ -1449,6 +1395,7 @@ def test_previously_unresolved_keys_are_attempted_before_newly_listed_work() -> 
 def test_unresolved_attempts_accumulate_across_runs(
     body: bytes, status: int | None, attempts_per_run: int, workers: int
 ) -> None:
+    """Unresolved attempts accumulate across runs, counting transport retries."""
     from spicy_docs.sources.mirrulations import reader_factory
 
     store = _make_store()
@@ -1478,6 +1425,7 @@ def test_unresolved_attempts_accumulate_across_runs(
 @pytest.mark.parametrize("workers", [1, 4])
 @pytest.mark.parametrize("raise_failures", [False, True])
 def test_download_keys_counts_retries_before_a_changed_failure(workers: int, raise_failures: bool) -> None:
+    """Retries before a changed failure are added to the prior count, leaving the prior outcome untouched."""
     from spicy_docs.sources.mirrulations import STATUS_UNREADABLE, KeyOutcome, PayloadParseError, download_keys
 
     store = _make_store()
@@ -1509,13 +1457,7 @@ def test_download_keys_counts_retries_before_a_changed_failure(workers: int, rai
 
 
 def test_a_recorded_reason_is_scrubbed_before_it_is_truncated() -> None:
-    """A credential in a transport error never reaches an observation or a log.
-
-    The mirror is read anonymously, but the S3 resource is injectable: a signed
-    one renders its presigned URL into botocore's message. Scrubbing after
-    truncation would cut the value and leave its front standing, so the order is
-    the assertion -- the message is longer than the budget on purpose.
-    """
+    """A credential in a transport error is scrubbed before truncation, so no key prefix survives."""
     from spicy_docs.sources import mirrulations
 
     secret = "AKIAI" + "S" * 60
@@ -1544,9 +1486,7 @@ def test_a_recorded_reason_is_scrubbed_before_it_is_truncated() -> None:
 
 
 def test_s3_resource_configures_retries() -> None:
-    """The resource must set an explicit retry policy so a transient S3 error
-    is retried rather than silently dropping the record (botocore's default
-    leaves ``retries`` unset)."""
+    """The S3 resource sets an explicit retry policy of at least two attempts."""
     from spicy_docs.sources.mirrulations import s3_resource
 
     cfg = s3_resource().meta.client.meta.config
@@ -1557,10 +1497,7 @@ def test_s3_resource_configures_retries() -> None:
 
 
 def test_s3_resource_connection_pool_fits_download_workers() -> None:
-    """The S3 resource's HTTP connection pool must be at least as large as the
-    download thread pool. Otherwise concurrent GETs oversubscribe a too-small
-    pool: connections churn into CLOSE_WAIT and the run stalls (botocore's
-    default max_pool_connections is 10, below DEFAULT_DOWNLOAD_WORKERS)."""
+    """The connection pool is at least as large as the download worker pool, avoiding CLOSE_WAIT stalls."""
     from spicy_docs.sources.mirrulations import DEFAULT_DOWNLOAD_WORKERS, s3_resource
 
     resource = s3_resource()

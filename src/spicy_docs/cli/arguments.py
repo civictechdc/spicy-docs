@@ -10,6 +10,8 @@ from spicy_docs.cli.sources import PUBLIC_TABLE_CHOICES, SOURCE_CHOICES
 
 
 def _date(value: str) -> date:
+    """Parse a strict ``YYYY-MM-DD`` date, refusing a non-canonical spelling."""
+
     try:
         parsed = date.fromisoformat(value)
     except ValueError as error:

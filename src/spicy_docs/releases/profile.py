@@ -12,6 +12,8 @@ from spicy_docs.releases.format import MAX_EVIDENCE_BYTES
 
 
 class SourceNativePage(Protocol):
+    """One acquired page's chain position, cursor, request identity, and retained bytes."""
+
     @property
     def traversal_index(self) -> int: ...
 
@@ -55,6 +57,8 @@ class SourceNativeBlobPage:
 
 
 class ParsePageStream(Protocol):
+    """Parse one bounded page stream into one source response mapping."""
+
     def __call__(
         self,
         stream: BinaryIO,
@@ -68,6 +72,8 @@ class ParsePageStream(Protocol):
 
 
 class ParseFileStream(Protocol):
+    """Yield bounded source response mappings while one original file stream stays open."""
+
     def __call__(
         self,
         stream: BinaryIO,
@@ -81,12 +87,16 @@ class ParseFileStream(Protocol):
 
 
 class TraversalCheck(Protocol):
+    """Verify one traversal's record inventory and refuse it if it is incomplete."""
+
     def add(self, response: Mapping[str, Any], *, page_index: int) -> None: ...
 
     def finish(self) -> None: ...
 
 
 class NextPage(Protocol):
+    """Return the next page's request key, or None when this page is terminal."""
+
     def __call__(
         self,
         response: Mapping[str, Any],
@@ -96,6 +106,8 @@ class NextPage(Protocol):
 
 
 class WrapRecord(Protocol):
+    """Wrap one classified record with its schema identity and source-issued record id."""
+
     def __call__(
         self,
         record: Mapping[str, Any],
@@ -105,6 +117,8 @@ class WrapRecord(Protocol):
 
 
 class ValidateRecordScope(Protocol):
+    """Refuse, by raising, a record that falls outside the requested query scope."""
+
     def __call__(
         self,
         record: Mapping[str, Any],
@@ -115,6 +129,8 @@ class ValidateRecordScope(Protocol):
 
 
 class RecordsIncluded(Protocol):
+    """Whether one response is a record page rather than index or redirect evidence."""
+
     def __call__(
         self,
         response: Mapping[str, Any],
@@ -125,6 +141,8 @@ class RecordsIncluded(Protocol):
 
 
 class AcquisitionCheck(Protocol):
+    """Aggregate per-window acquisition evidence for one traversal and finish it or refuse."""
+
     def add_window(
         self,
         response: Mapping[str, Any],

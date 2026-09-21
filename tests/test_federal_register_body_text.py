@@ -18,11 +18,13 @@ BUDGET = FederalRegisterBodyBudget(1, 1024, 1024, 5, 0)
 
 
 def validate(body=BODY, **changes):
+    """Validate the fixture body as the publisher-text selection."""
     arguments = {"source_document_number": NUMBER, "publication_date": DATE, "final_url": URL, "max_bytes": 1024}
     return validate_publisher_text(body, **(arguments | changes))
 
 
 def test_locator_agrees_with_source_stated_sibling_path():
+    """The text locator agrees with the source-stated sibling path and exact identity."""
     locators = body_source_locators(
         {
             "document_number": NUMBER,
@@ -37,6 +39,7 @@ def test_locator_agrees_with_source_stated_sibling_path():
 
 
 def test_split_number_keeps_the_exact_printed_base():
+    """A split number keeps the exact printed base, marked split-base."""
     identity = validate(source_document_number=NUMBER + "-2", final_url=publisher_text_locator(NUMBER + "-2", DATE))
     assert identity.source_document_number == NUMBER + "-2"
     assert identity.marker_document_number == NUMBER and identity.match_kind == "split-base"
@@ -46,6 +49,7 @@ def test_split_number_keeps_the_exact_printed_base():
     "body", [b"", b"Access denied", b"[FR Doc No: 98-267960]", b"[FR Doc. 98-26796 Filed yesterday]"]
 )
 def test_absent_or_wrong_header_is_refused(body):
+    """An absent or wrong document marker header is refused."""
     with pytest.raises(FederalRegisterBodySourceError, match="document marker"):
         validate(body)
 
@@ -62,12 +66,14 @@ def test_absent_or_wrong_header_is_refused(body):
     ],
 )
 def test_invalid_identity_or_bound_is_refused(changes):
+    """Invalid identity or bound values are refused."""
     with pytest.raises(FederalRegisterBodySourceError):
         validate(**changes)
 
 
 @pytest.mark.parametrize("media_type", ["text/plain", "text/html; charset=utf-8"])
 def test_explicit_text_capture_preserves_wrapped_bytes_and_uses_one_request(media_type):
+    """An explicit text capture preserves wrapped bytes in one request and carries no XML or MODS."""
     calls = []
 
     def respond(request):
@@ -94,6 +100,7 @@ def test_explicit_text_capture_preserves_wrapped_bytes_and_uses_one_request(medi
     ],
 )
 def test_failed_text_retains_refused_response_without_format_fallback(status, body, media_type):
+    """A failed text request retains its refused response without falling back to another format."""
     calls = []
 
     def respond(request):
@@ -117,6 +124,7 @@ def test_failed_text_retains_refused_response_without_format_fallback(status, bo
 
 @pytest.mark.parametrize("status", [401, 403])
 def test_text_access_refusal_aborts(status):
+    """A text access refusal aborts."""
     calls = []
 
     def respond(request):
@@ -132,6 +140,7 @@ def test_text_access_refusal_aborts(status):
 
 
 def test_text_overflow_never_becomes_complete_evidence():
+    """A text overflow retains no complete evidence."""
     transport = httpx.MockTransport(lambda request: httpx.Response(200, stream=httpx.ByteStream(BODY)))
     with (
         FederalRegisterBodyAcquirer(budget=replace(BUDGET, max_body_bytes=8), transport=transport) as client,
@@ -143,6 +152,8 @@ def test_text_overflow_never_becomes_complete_evidence():
 
 @pytest.mark.parametrize("options", [{"html_route": "mods-start-page", "start_page": 1}, {"start_page": 1}])
 def test_text_refuses_html_selection_arguments_before_any_request(options):
+    """HTML selection arguments are refused before any request."""
+
     def unexpected(request):
         raise AssertionError("invalid text selection attempted HTTP")
 

@@ -1,4 +1,9 @@
-"""Literal topics observations, source bounds and explicit mocked acquisition."""
+"""Literal topics observations, source bounds and explicit mocked acquisition.
+
+Pins every row and path from the full retained response, unknown fields, empty
+values and collection order, refusals for missing or wrong-typed fields and
+bounds, exact keyless capture, and complete bounded refusal evidence.
+"""
 
 from __future__ import annotations
 
@@ -27,6 +32,7 @@ FIXTURE = Path(__file__).parent / "fixtures/federal_register_topics/federal-regi
 
 
 def example() -> dict:
+    """The full retained topics fixture bytes."""
     return {
         "meta": {"count": {"thesaurus": 1, "ad_hoc": 0, "total": 1}},
         "results": {
@@ -45,10 +51,14 @@ def example() -> dict:
 
 
 def encoded(value: object) -> bytes:
+    """The JSON encoding of a topics payload."""
     return json.dumps(value, ensure_ascii=False).encode()
 
 
 def test_full_retained_response_preserves_every_row_and_path():
+    """The full retained response preserves every row, source path, link and declared count, with collisions and
+    empty slugs counted.
+    """
     payload = FIXTURE.read_bytes()
     raw = json.loads(payload)
     result = read_fr_topics(payload)
@@ -81,6 +91,7 @@ def test_full_retained_response_preserves_every_row_and_path():
 
 
 def test_unknown_fields_empty_values_counts_and_collection_order_survive():
+    """Unknown fields, empty values, negative declared counts and collection order survive literally."""
     raw = example()
     raw["extension"] = {"a/b~c": [None, False, 1.25]}
     raw["meta"]["extension"] = "literal"
@@ -122,6 +133,7 @@ def test_unknown_fields_empty_values_counts_and_collection_order_survive():
 )
 @pytest.mark.parametrize("mutation", ["missing", "null", "wrong-type"])
 def test_missing_null_or_wrong_typed_known_fields_refuse(path, mutation):
+    """Missing, null or wrong-typed known fields are refused."""
     raw = example()
     parent = raw
     for key in path[:-1]:
@@ -150,12 +162,14 @@ def test_missing_null_or_wrong_typed_known_fields_refuse(path, mutation):
     ],
 )
 def test_invalid_ambiguous_or_unrecognized_json_refuses(payload):
+    """Invalid, ambiguous or unrecognized JSON is refused."""
     with pytest.raises(FrTopicsSourceError):
         read_fr_topics(payload)
 
 
 @pytest.mark.parametrize("limits", [{"max_bytes": 1}, {"max_nodes": 1}, {"max_depth": 1}, {"max_nodes": True}])
 def test_bounds_cover_unknown_input_too(limits):
+    """Bounds cover unknown input too."""
     raw = example()
     raw["extension"] = {"deep": [1, 2, 3]}
     with pytest.raises(FrTopicsSourceError):
@@ -163,10 +177,12 @@ def test_bounds_cover_unknown_input_too(limits):
 
 
 def acquirer(handler, *, max_bytes=16 * 1024**2):
+    """A topics acquirer over a mock transport and blob store."""
     return FrTopicsAcquirer(budget=FrTopicsBudget(1, max_bytes, 10, 0), transport=httpx.MockTransport(handler))
 
 
 def test_explicit_capture_returns_exact_bytes_and_one_shared_read():
+    """An explicit capture returns exact bytes in one shared read with the JSON accept header."""
     payload = encoded(example())
     requests = []
 
@@ -194,6 +210,8 @@ def test_explicit_capture_returns_exact_bytes_and_one_shared_read():
     ],
 )
 def test_transport_or_source_refusal_never_returns_topics(status, body, headers, error):
+    """A transport or source refusal never returns topics."""
+
     def respond(request):
         return httpx.Response(status, stream=httpx.ByteStream(body), headers=headers)
 
@@ -204,6 +222,7 @@ def test_transport_or_source_refusal_never_returns_topics(status, body, headers,
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("body", [b"", b"refused", b"x" * 11])
 def test_public_access_refusal_retains_only_complete_bounded_evidence(status, body):
+    """A public access refusal retains complete bounded evidence; an over-bound body retains none."""
     requests = []
 
     def respond(request):
@@ -227,6 +246,7 @@ def test_public_access_refusal_retains_only_complete_bounded_evidence(status, bo
 
 
 def test_capture_byte_budget_refuses_oversized_response():
+    """The capture byte budget refuses an oversized response."""
     payload = encoded(example())
     with (
         acquirer(lambda request: httpx.Response(200, stream=httpx.ByteStream(payload)), max_bytes=10) as source,
@@ -236,6 +256,7 @@ def test_capture_byte_budget_refuses_oversized_response():
 
 
 def test_changed_final_url_refuses_with_response_evidence():
+    """A changed final URL refuses with the response evidence retained."""
     payload = encoded(example())
 
     class ChangedUrlResponse(httpx.Response):
@@ -254,6 +275,7 @@ def test_changed_final_url_refuses_with_response_evidence():
 
 
 def test_parser_import_does_not_require_httpx():
+    """Importing the parser does not require httpx."""
     code = """
 import importlib.abc
 import sys

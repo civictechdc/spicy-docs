@@ -1,91 +1,36 @@
 """Measure how far a bill's HTML rendition is from its XML, to size the ``bill_dtd`` profile.
 
-Bills before the 113th Congress offer HTML and PDF only, so the proposal in
-``docs/research/closing-the-gaps-2026-09-19.md`` (gap B1, section 3.1) wants to
-reconstruct the bill DTD from the HTML rendition. Before any of that is built,
-this tool asks the paired question on Congresses that have both: hide the XML,
-read the HTML, and count what deterministic rules recover. Run from the
-repository root:
+Pre-113th bills offer HTML and PDF only, so the proposal in
+``docs/research/closing-the-gaps-2026-09-19.md`` (gap B1, section 3.1) would reconstruct the bill DTD
+from the HTML; this tool asks the paired question on Congresses that have both -- hide the XML, read
+the HTML, count what deterministic rules recover. Run from the repository root:
 
   uv run --frozen python -m tools.analysis.bill_html_xml_gap \\
       --env-file .env --cache <scratchpad>/bill-gap \\
       --output docs/research/bill-html-xml-gap-2026-09-19.json \\
       --doc docs/research/bill-html-xml-gap-2026-09-19.md
 
-  uv run --frozen python -m tools.analysis.bill_html_xml_gap --selection held-out \\
-      --env-file .env --cache <scratchpad>/bill-gap \\
-      --output docs/research/bill-html-xml-gap-2026-09-19.json \\
-      --doc docs/research/bill-html-xml-gap-2026-09-19.md
+Add ``--selection held-out`` for the same listings at disjoint quantiles, and ``--offline`` to rewrite
+the document's generated block without the network. Bytes land in ``--cache`` and are reused on a
+rerun, so a second run with a full cache makes no request.
 
-``--offline`` rewrites the document's generated block from the saved output
-without the network. Bytes land in ``--cache`` and are reused on a rerun, so a
-second run with a full cache makes no request at all.
-
-**Two corpora, because the rules were fitted to one of them.** The rules below
-were revised against the ``tuning`` draw: the first run recovered half the
-sections, and each gap was a GPO print convention the rules did not yet know.
-Scoring those same documents afterwards measures the fit, not the rules, so
-``--selection held-out`` draws the *same listings at disjoint quantiles*, with
-every tuning package id excluded by the selector, and merges that score into
-the sidecar's ``heldOut`` block without disturbing the first. The held-out
-score is what the document leads with; the in-sample one is labelled an upper
-bound. ``--quantiles`` and ``--listings`` override either draw. Disjointness is
-enforced rather than assumed -- a quantile index landing on an excluded file
-steps forward -- and the run refuses if any overlap survives.
-
-Four measurements, each stated with what it cannot see:
-
-1. **Text fidelity.** Both renditions go through ``extraction.body_text`` (the
-   one derivation per rendition this repository already uses), then the same
-   normalization: casefold, GPO's ``--`` and the em dash as separators, word
-   tokens only. The difflib ratio over the word sequences, and the words only
-   one side has, are reported for the whole document and for the body alone.
-   The body-scope comparison takes the HTML from its first section heading (or
-   its resolving clause, where it states no heading) against ``xml_body_text``,
-   which walks the body elements directly rather than going through
-   ``rendition_text``; the two are token-equivalent under this normalization,
-   because the rendition path's element-boundary line breaks and the direct
-   walk's per-chunk lines both collapse to the same word sequence. Casefolding
-   hides that the HTML sets headings in
-   capitals and quoted headers in lowercase; the case is lost, and the profile
-   has to restore it from the XML's conventions, not from the HTML.
-2. **Structure by rule.** Section headings in both spellings GPO uses --
-   ``SEC. n.``/``SECTION n.`` in capitals at the line start, and an
-   appropriations general provision's run-in ``    Sec. n.`` at the body
-   indent -- plus the ``<DELETED>`` markers that wrap a reported bill's struck
-   committee-substitute text; subsections (``(a)`` at the four-space indent, or
-   opening on a run-in heading's own line); titles and divisions (their
-   banners, with a contents list excluded when a column-0 ``Sec. n.`` line
-   follows within three lines); and quoted blocks (a quote-opening line whose
-   lead-in ends in ``:``, through the line that closes the quote). Each is
-   counted against the XML's own elements as ``parse_bill_tree`` reads them,
-   and precision and recall are per kind. Matching is on the enumerator, as a
-   multiset, so a bill whose divisions restart section numbering still pairs
-   one-to-one; matching on the enumerator cannot see a heading recovered under
-   the wrong number when the same number exists elsewhere. A body ``<section>``
-   the XML carries with no ``<enum>`` prints no heading at all and is held out
-   of the section denominator and counted on its own.
-3. **Inventory.** The XML's elements, split into what the engine keeps and what
-   ``BillDocument.discarded_elements`` reports, against the HTML's tags and
-   the text-only features the HTML carries that the XML never spells (the
-   three bracketed banner lines, the enacting clause, the ``<all>`` marker).
-4. **Drift before the 113th.** The same rules on ten pre-113th HTML bodies,
-   one per Congress from the 103rd to the 112th, with no XML to score against:
-   structure counts, a section-number sequence check, and the banner shape.
-   Two of the ten are read by hand in the document.
-
-Each corpus is thirty pairs chosen by rule from five GovInfo bulk listings: the
-version codes of each listing in descending file count, and for each the file
-at the selection's quantiles, six per listing. Thirty documents per draw cannot
-see a shape that is rare in the population, and one Congress per pre-113th
-sample cannot see variation within a Congress. The struck-text rule is
-unexercised by the held-out draw, which contains no two-body document, so it
-rests on one in-sample document and the committed fixtures in
-``tests/fixtures/govinfo_bill_html/`` -- and on ``struck_expected``'s lower
-bound, which reports rather than averages a document where the marker did not
-appear. The DTD is pinned by URL, byte count and digest, and **cited, not
-validated against**. A credential refusal (401/403 on the keyed route) aborts
-the run; the sidecar carries no credential and no URL with one.
+The rules were revised against the ``tuning`` draw, so scoring those documents again measures the fit;
+``--selection held-out`` excludes every tuning package (a quantile landing on an excluded file steps
+forward, and the run refuses if any overlap survives) and the held-out score is what the document leads
+with, the in-sample one labelled an upper bound. Four measurements, each with what it cannot see: text
+fidelity (both renditions through ``extraction.body_text``, then casefold, dash and word-token
+normalization, with difflib ratios and one-sided words whole-document and body-only -- casefold loses
+that the HTML sets headings in capitals, which the profile must restore from XML conventions);
+structure by rule (both section spellings, run-in forms, subsections, title/division banners with
+content lists excluded on a nearby column-0 ``Sec. n.``, quoted blocks, and the ``<DELETED>`` struck
+markers; scored per kind against ``parse_bill_tree``, matching the enumerator as a multiset, with
+unnumbered body sections held out of the section denominator); inventory (kept vs
+``discarded_elements`` against HTML tags and HTML-only text features); and pre-113th drift (ten bodies,
+one per Congress from the 103rd, no XML to score against). Each draw is thirty pairs from five bulk
+listings -- too few to see a rare shape, and the struck rule rests on one in-sample document and the
+committed fixtures because the held-out draw contains no two-body document. The DTD is pinned by URL,
+byte count and digest and **cited, not validated against**; a credential refusal (401/403) aborts the
+run, and the sidecar carries no credential.
 """
 
 from __future__ import annotations
@@ -200,6 +145,7 @@ def _guarded[Result](client: Any, kind: str, attempts: int, call: Callable[[], R
 
 
 def _cached(path: Path, fetch: Callable[[], bytes]) -> bytes:
+    """The file's bytes, fetching and writing them first when it does not exist yet."""
     if not path.exists():
         body = fetch()
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -208,6 +154,7 @@ def _cached(path: Path, fetch: Callable[[], bytes]) -> bytes:
 
 
 def fetch_listing(probe: KeylessProbe, cache: Path, congress: int, session: int, bill_type: str) -> list[dict]:
+    """One bulk listing's ``files`` array, cached by its own path and counted against the run budget."""
     body = _cached(
         cache / "listings" / f"BILLS-{congress}-{session}-{bill_type}.json",
         lambda: _guarded(
@@ -288,6 +235,7 @@ class DtdPin:
     text: str
 
     def pin(self) -> dict[str, Any]:
+        """The DTD's URL, byte count and digest, as the sidecar records them."""
         return {"dtdUrl": self.url, "dtdBytes": self.byte_size, "dtdSha256": self.sha256}
 
 
@@ -317,6 +265,7 @@ def fetch_dtd(probe: KeylessProbe, cache: Path) -> DtdPin | None:
 #: second ``<legis-body>``. ``dtd_declares`` records that rather than asserting
 #: it from memory.
 def dtd_declares(dtd: DtdPin | None, name: str) -> bool | None:
+    """Whether the DTD has an ``<!ELEMENT name ...`` declaration, or None when no DTD was fetched."""
     if dtd is None:
         return None
     return re.search(rf"<!ELEMENT\s+{re.escape(name)}\s", dtd.text) is not None
@@ -342,6 +291,7 @@ def stated_package_id(versions: Sequence[Mapping[str, Any]]) -> str | None:
 
 
 def _version_code(package_id: str) -> str:
+    """The version code a BILLS package id states, or the empty string when it states none."""
     return parse_package_id(package_id).version or ""
 
 
@@ -397,6 +347,7 @@ def normalized_words(text: str) -> list[str]:
 
 
 def fidelity(html_words: Sequence[str], xml_words: Sequence[str], *, top: int = 12) -> dict[str, Any]:
+    """difflib's ratio over the two word sequences, plus the most common words only one side holds."""
     ratio = (
         difflib.SequenceMatcher(None, html_words, xml_words, autojunk=False).ratio()
         if html_words and xml_words
@@ -496,6 +447,7 @@ class HtmlStructure:
         return 0
 
     def counts(self) -> dict[str, int]:
+        """This structure's per-kind counts, in the keys the XML side uses."""
         return {
             "section": len(self.sections),
             "subsection": len(self.subsections),
@@ -700,6 +652,7 @@ class XmlStructure:
 
 
 def _section_number(node: Any) -> str:
+    """A section node's number as ``Sec.`` reads it, with any trailing period stripped."""
     match = _SECTION_NUMBER.match(node.section_number or "")
     return (match[1] if match else node.section_number or "").rstrip(".")
 
@@ -960,6 +913,7 @@ def measure_pair(package_id: str, xml_bytes: bytes, html_bytes: bytes) -> dict[s
 
 
 def measure_html_only(package_id: str, html_bytes: bytes) -> dict[str, Any]:
+    """One pre-113th HTML body's structure counts, sequence check and markers, with no XML to score against."""
     identity = parse_package_id(package_id)
     html = scan_html(rendition_text(html_bytes, rendition="htm").text)
     return {
@@ -983,6 +937,7 @@ KINDS = ("section", "subsection", "title", "division", "quotedBlock")
 
 
 def aggregate(paired: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """The corpus-wide structure, fidelity, inventory, front-matter and identifier aggregates."""
     out: dict[str, Any] = {"documents": len(paired), "structure": {}, "fidelity": {}, "inventory": {}}
     for kind in KINDS:
         rows = [doc["structure"][kind] for doc in paired]
@@ -1084,18 +1039,22 @@ def dtd_form_particles(dtd: str | None) -> dict[str, bool]:
 
 
 def _pct(value: float | None) -> str:
+    """A ratio as a one-decimal percent, or an em dash when there is no denominator."""
     return "—" if value is None else f"{value * 100:.1f}%"
 
 
 def _pr(row: Mapping[str, Any]) -> str:
+    """One structure cell as ``matched/found in HTML/in XML``."""
     return f"{row['matched']}/{row['html']}/{row['xml']}"
 
 
 def _words(pairs: Sequence[Sequence[Any]], limit: int = 12) -> str:
+    """``word×count`` pairs as backticked markdown, or an em dash when there are none."""
     return ", ".join(f"`{word}`×{count}" for word, count in pairs[:limit]) or "—"
 
 
 def _structure_table(agg: Mapping[str, Any]) -> list[str]:
+    """The per-kind precision/recall markdown table for one aggregate."""
     lines = [
         "| Kind | Found in HTML | In XML | Matched | Micro precision | Micro recall | Macro precision | Macro recall | Docs with kind | Docs exact |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
@@ -1160,6 +1119,7 @@ def _held_out_block(measures: Mapping[str, Any]) -> list[str]:
 
 
 def render(measures: Mapping[str, Any]) -> str:
+    """The whole generated markdown block for one measurement sidecar, markers included."""
     paired = measures.get("paired", [])
     pre = measures.get("pre113", [])
     agg = measures.get("aggregate") or aggregate(paired)
@@ -1341,6 +1301,7 @@ def render(measures: Mapping[str, Any]) -> str:
 
 
 def rewrite_doc(path: Path, block: str) -> None:
+    """Replace the text between the marker comments in the research document; exits if a marker is missing."""
     text = path.read_text()
     start, end = text.find(MARK_START), text.find(MARK_END)
     if start < 0 or end < 0 or end < start:
@@ -1352,6 +1313,7 @@ def rewrite_doc(path: Path, block: str) -> None:
 
 
 def _revision(root: Path) -> str:
+    """The short HEAD hash of the repo at ``root``, or ``"unknown"`` outside git."""
     result = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"], cwd=root, capture_output=True, text=True, check=False
     )
@@ -1445,6 +1407,7 @@ def measure(
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Draw and score the selected corpus, merge a held-out score, then rewrite the document; 1 on refusal."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--output", type=Path, required=True, help="measurement JSON; read instead of measured with --offline"

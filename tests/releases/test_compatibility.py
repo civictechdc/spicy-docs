@@ -1,4 +1,7 @@
-"""Releases: compatibility behavior."""
+"""Compatibility pins for the source-native path: it uses only the shared ``rulespec_artifacts`` implementation
+(no legacy docspec/refspec/conformance imports), keeps acquisition, analytics and platform dependencies
+optional, and ships the exact generated schema bundle plus the git-tracked vendored wheel.
+"""
 
 from __future__ import annotations
 
@@ -50,10 +53,8 @@ def test_installed_schema_bundle_is_the_exact_generated_bundle() -> None:
 
 
 def test_the_vendored_wheel_is_tracked_by_git() -> None:
-    """Verify a fresh checkout receives the pinned vendored wheel.
-
-    vendor/.gitignore allows one named wheel. A version bump must update that entry;
-    a working-tree file check alone misses an ignored replacement wheel.
+    """A fresh checkout receives the pinned vendored wheel: vendor/.gitignore allows one named wheel, so a
+    version bump must update that entry -- a working-tree file check alone misses an ignored replacement wheel.
     """
 
     project_root = Path(__file__).parents[2]

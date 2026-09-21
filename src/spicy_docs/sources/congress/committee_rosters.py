@@ -1,60 +1,18 @@
 """House Clerk ``MemberData.xml`` and Senate ``cvc_member_data.xml``: the current committee assignments.
 
-Congress.gov's ``committee`` and ``member`` routes are the rosters of record
-for identity and history (the legislative data map's comparison: the API
-lists everyone who served in the 119th, 555; the chamber files list the 541
-seats filled today, and every one of the 14 API-only members has an ended
-term -- rerun 2026-09-19 in
-``corpora/supply-2026-09-02/receipts/roster-comparison-2026-09-19/``). The
-chamber files add exactly two things the API does not carry: **which member
-sits on which committee today**, and, for the Senate, the LIS id beside the
-bioguide. This module reads the assignments; the LIS crosswalk stays
-``sources/legislators.py`` (the only route to a *former* senator's LIS id),
-which is why nothing here builds a second one.
-
-Two unrelated XML grammars, measured 2026-09-19 (556,936 and 67,618 bytes):
-
-* **House.** ``<MemberData publish-date="September 2, 2026">`` with a
-  ``<title-info>`` stating ``congress-num``, ``congress-text``, ``session``,
-  ``majority``, ``minority``, ``clerk`` and ``weburl``; 441 ``<member>``
-  elements, each with ``statedistrict``, a ``member-info`` block (bioguide
-  under ``bioguideID``, names, party, caucus, state, district, office,
-  elected and sworn dates) and ``committee-assignments`` of
-  ``<committee comcode="II00" rank="22" [leadership="Vice Chair"]/>`` and
-  ``<subcommittee subcomcode="II06" rank="13"/>``; then a ``<committees>``
-  block naming all 27 committees and 109 subcommittees by code with their
-  full names and party ratios. Two of the 441 are **vacancies**: every
-  ``member-info`` field empty and one ``<committee rank=""/>`` placeholder.
-  Seven seated members carry that same placeholder as their only
-  assignment -- nine placeholders in all, counting the two vacancies
-  (``inspect_memberdata.out`` in the receipt directory above). A
-  placeholder is "no assignment", not a malformed row, so it is counted and
-  skipped rather than refused. Leadership values seen: ``Chair``,
-  ``Chairman``, ``Chairwoman``, ``Vice Chair``, ``Vice Chairman``,
-  ``Vice Chairwoman`` -- kept verbatim.
-* **Senate.** ``<senators>`` with one ``<lastUpdate>`` (``date`` and
-  ``time``) and 100 ``<senator lis_member_id="S428">`` elements, each
-  stating ``bioguideId``, name parts, party, state, ``stateRank``, office,
-  an optional ``leadership_position`` and ``<committee code="SSAS00"
-  [position="Chairman"]>`` children whose text is the committee's name.
-  Positions seen: ``Chairman``, ``Ranking``, ``Vice Chairman``. **The file
-  states no Congress and no session**, only its update date; the House file
-  states both.
-
-**Identity proof.** :func:`parse_house_member_data` takes the Congress (and
-optionally the session) the caller requested and checks the file's own
-``congress-num``/``session`` against it before any member is read. The
-Senate file cannot be proved that way because it states no Congress, so
-:func:`parse_senate_cvc` proves only what the file states -- its root, its
-update date, and that every senator carries both ids -- and the assignment
-row a caller shapes from it says so (``congress_basis = "caller"``).
-
-**System codes.** The map proved the join to Congress.gov's ``systemCode``
-on both files: House ``comcode II00`` is ``hsii00`` (edge
-``memberdata→committee``), Senate ``SPAG00`` is ``spag00`` (``cvc→committee``).
-:func:`house_system_code` and :func:`senate_system_code` are those two
-rules; the Senate file's codes already end in ``00`` (27 of 27), so its rule
-is a lowercase and nothing more.
+Congress.gov is the roster of record for identity and history; these two
+chamber files add exactly what it does not carry -- which member sits on which
+committee today and, for the Senate, the LIS id beside the bioguide (the LIS
+crosswalk itself stays ``sources/legislators.py``, so nothing here builds a
+second one). :func:`parse_house_member_data` checks the file's stated
+``congress-num``/``session`` against the caller's before reading any member,
+treats ``<committee rank=""/>`` as "no assignment" (counted and skipped, never
+refused), and keeps leadership strings verbatim; the Senate file states no
+Congress, so :func:`parse_senate_cvc` proves only its root, its update date and
+that every senator carries both ids, and a row built from it says
+``congress_basis = "caller"``. :func:`house_system_code` and
+:func:`senate_system_code` are the measured ``systemCode`` joins to
+Congress.gov's own codes.
 """
 
 from __future__ import annotations

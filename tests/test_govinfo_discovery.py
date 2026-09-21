@@ -26,6 +26,8 @@ KEY = "k3y-abcdef0123456789"
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *bodies):
         self.bodies = iter(bodies)
         self.calls = []
@@ -40,10 +42,12 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture(autouse=True)
 def no_retry_delay(monkeypatch):
+    """Remove retry backoff waits."""
     monkeypatch.setattr(retry.random, "uniform", lambda *_: 0)
 
 
 def test_family_and_locators_follow_the_publisher_readme():
+    """The family and locators follow the publisher README's paths and query spellings."""
     assert GOVINFO.host == "api.govinfo.gov" and GOVINFO.next_path == ("nextPage",) and GOVINFO.count_path == ("count",)
     assert published_url("2025-01-01", "2025-01-31", collections=["CFR"], page_size=2) == (
         "https://api.govinfo.gov/published/2025-01-01/2025-01-31?offsetMark=*&pageSize=2&collection=CFR"
@@ -79,11 +83,13 @@ def test_family_and_locators_follow_the_publisher_readme():
     ],
 )
 def test_invalid_selections_refuse(call):
+    """Invalid selections are refused."""
     with pytest.raises(PagedJsonSourceError):
         call()
 
 
 def test_pinned_pages_parse_and_continue_by_offset_mark():
+    """Pinned pages parse and continue by offset mark, with the key in headers only."""
     transport = Transport(PUBLISHED, GRANULES)
     with GovInfoDiscoveryReader(budget=BUDGET, api_key=KEY, transport=transport) as source:
         packages = source.page(
@@ -99,6 +105,7 @@ def test_pinned_pages_parse_and_continue_by_offset_mark():
 
 
 def test_walk_ends_only_when_counts_agree_and_zero_count_is_an_observation():
+    """The walk ends only when counts agree, and a zero count is an observation."""
     first = json.loads(PUBLISHED)
     first["count"] = 4
     second = json.loads(PUBLISHED)

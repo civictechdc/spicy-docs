@@ -23,11 +23,13 @@ if TYPE_CHECKING:
 
 
 def check_request_count(value: object, name: str = "max_requests") -> None:
+    """Refuse anything but a positive integer (bools excluded) under ``name``."""
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise ValueError(f"{name} must be a positive integer")
 
 
 def check_byte_bound(value: object, name: str, cap: int) -> None:
+    """Refuse anything but an integer from 1 to ``cap`` (bools excluded) under ``name``."""
     if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= cap:
         raise ValueError(f"{name} must be an integer from 1 to {cap}")
 
@@ -110,15 +112,11 @@ def check_final_url(final_url: str, locator: str, *, error_type: type[ValueError
 def named_challenge(url: str, *, error_type: Callable[[str], Exception], context_key: str) -> Iterator[None]:
     """Recast a keyless route's 401/403 as the family's own error, not a credential refusal.
 
-    The shared client maps 401/403 to ``CredentialRefusedError`` so a keyed
-    family aborts rather than treating a refusal as a bad row. A keyless
-    family holds no credential, so the same status is a bot wall or an
-    access refusal, not a key being rejected -- and a caller catching the
-    family's own ``error_type`` (typically a subclass of its shared source
-    error) would otherwise miss it, since ``CredentialRefusedError`` is not
-    one. This substitutes ``error_type(url)`` while keeping the acquisition
-    context and refusal record the shared client already attached, so the
-    refusal's bytes still reach the caller on ``refused_response``.
+    The shared client maps 401/403 to ``CredentialRefusedError`` so a keyed family
+    aborts rather than treating a refusal as a bad row; a keyless family holds no
+    credential, so the same status is a bot wall or an access refusal. Substituting
+    ``error_type(url)`` keeps the acquisition context and refusal record the shared
+    client attached, so the refusal's bytes still reach the caller.
     """
     try:
         yield

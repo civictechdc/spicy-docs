@@ -27,6 +27,8 @@ class RetryableHTTPStatusError(httpx.HTTPStatusError):
 
 
 def fetch_federal_register(client: httpx.Client, url: str) -> bytes:
+    """Fetch one URL, retrying transport errors, 429/5xx and empty responses; return the exact bytes."""
+
     def _attempt() -> bytes:
         response = client.get(url)
         if response.status_code == 429 or response.status_code >= 500:
@@ -52,7 +54,11 @@ def fetch_public_table(
     *,
     clock: Callable[[], datetime],
 ) -> PublicTableCapture | None:
-    """Fetch one whole partition object, or report that the mirror has none."""
+    """Fetch one whole partition object, or ``None`` when the mirror has none (404).
+
+    Retries transport errors, 429/5xx and empty or oversized partitions; returns the
+    capture with its ETag and Last-Modified.
+    """
 
     def _attempt() -> PublicTableCapture | None:
         response = client.get(locator)

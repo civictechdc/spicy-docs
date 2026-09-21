@@ -25,7 +25,7 @@ class _RetryableTransportError(ConnectionError):
 
 
 def _access_refusal(response: httpx.Response, url: str, max_bytes: int) -> RefusedResponse:
-    """Retain complete bounded raw evidence; a failed read cannot undo a 401/403."""
+    """Retain complete bounded raw evidence for a 401/403; a failed read marks it unavailable, never absent."""
     media_type = (response.headers.get("content-type") or "application/octet-stream").split(";", 1)[0]
     if response.headers.get("content-encoding", "identity").strip().lower() != "identity":
         # Raw encoded bytes are evidence, not the decoded format named by the header.
@@ -65,10 +65,9 @@ class BoundedHttpCapture:
     ) -> None:
         """``headers`` adds fixed request headers, such as a credential header; they never enter URLs.
 
-        ``retain_refusal_bodies`` is for keyless routes: a 401/403 there is a
-        bot wall or an S3 access-denied document, not a credential refusal, and
-        the body is the publisher's answer, so it is attached to the error. A
-        keyed route must leave it off, since such a body can echo the key.
+        ``retain_refusal_bodies`` is for keyless routes, where a 401/403 is a bot
+        wall rather than a rejected key and its body is evidence; a keyed route
+        must leave it off, since the body can echo the key.
         """
         self.max_requests = max_requests
         self.retain_refusal_bodies = retain_refusal_bodies

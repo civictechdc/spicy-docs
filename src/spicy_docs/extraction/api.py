@@ -40,6 +40,8 @@ def _observation(id: str, recognition: Recognition, image: Raster | None = None)
 
 @dataclass(frozen=True)
 class NativeText:
+    """The PDF's own text layer as one observation; an image page is refused."""
+
     def extract(self, page: Page) -> PageContent:
         if not page.has_native_layer:
             raise ExtractionError("native extraction requires a PDF text layer; choose an image backend")
@@ -49,6 +51,8 @@ class NativeText:
 
 @dataclass(frozen=True)
 class FullPage:
+    """Render the whole page once and recognize it with the backend."""
+
     backend: ImageBackend
 
     def extract(self, page: Page) -> PageContent:
@@ -59,6 +63,14 @@ class FullPage:
 
 @dataclass(frozen=True)
 class NativeWithRegions:
+    """Native text plus one recognized observation per selected crop region.
+
+    Selects at most 64 non-overlapping regions per page, checks pixel-rounded crop
+    bounds before any paid model call, and requires native block coordinates; a
+    region that clips a native text line is refused. A refusal during recognition
+    carries the observations made so far, the failed raster and the failure.
+    """
+
     backend: ImageBackend
     regions: Mapping[int, Sequence[Box]]
 
@@ -114,12 +126,10 @@ class DocumentExtractor:
     ``tables=True`` runs PyMuPDF's ``find_tables()`` on each retained PDF page
     and attaches the result to ``PageResult.tables``, independent of ``strategy``
     and never merged into ``PageResult.text``; it costs nothing extra for image
-    input (``PageResult.tables`` stays empty) and defaults to ``False`` so no
-    existing caller's output changes. Measured on two real committee reports
-    (``docs/sources/govinfo-bodies.md``, "Table geometry recovered from the
-    PDF"), ``tables=True`` adds six to seven times the whole-document wall
-    time of ``tables=False`` (1.7 s to 11.8 s; 1.4 s to 7.7 s) for a recovery
-    rate that depends entirely on whether the source PDF's tables are ruled.
+    input (``PageResult.tables`` stays empty), defaults to ``False`` so no existing
+    caller's output changes, and adds roughly six times the whole-document wall
+    time of ``tables=False`` for a recovery rate that depends entirely on whether
+    the source PDF's tables are ruled.
     """
 
     def __init__(
@@ -146,6 +156,12 @@ class DocumentExtractor:
         pages: Sequence[int] | None = None,
         overrides: Mapping[int, PageStrategy] | None = None,
     ) -> Iterator[PageResult]:
+        """Yield one result per selected page, in order; ``pages`` and ``overrides`` must name distinct in-range pages.
+
+        ``media_type`` must be ``application/pdf`` or an image type, ``overrides``
+        must be a subset of the selection, and each result's metadata carries the
+        source digest, page geometry and the strategy used.
+        """
         if not isinstance(source, bytes) or not source or len(source) > self.max_input_bytes:
             raise ValueError("source must be nonempty bytes within max_input_bytes")
         media_type = media_type.partition(";")[0].strip().lower()

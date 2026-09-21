@@ -1,23 +1,10 @@
-"""One bill version's row, and one row per content-bearing node inside it.
+"""``bill_versions`` (one row per printing per source that supplied it) and ``bill_sections`` (one row per
+content-bearing node of one version, in document order).
 
-Two changes from the placement study, both made because spicy-regs publishes
-one Parquet object per table read through a DuckDB view:
-
-* ``bill_versions`` carries no ``text`` and no ``xml`` column (C2).  A full-text
-  column per version is a multi-GB object fighting the shrink guard, and
-  BillTrax itself listed both in ``METADATA_STRIP_COLUMNS``.  Nothing is lost:
-  ``sha256``, ``byte_size``, ``package_id`` and ``resolved_url`` say exactly
-  which bytes were read, ``bill_sections.body`` carries the text at the grain
-  people query, and the body recomposes from its sections.
-* ``bill_sections`` is keyed ``(bill_id, version_code, source, match_path,
-  body_index)`` (C4).  A reported bill carries two ``legis-body`` elements and
-  DeltaTrack's ``BillNode`` exposes ``body_index`` precisely because match paths
-  repeat across them; ``source`` is part of the parent version's own key.
-
-``bill_versions`` also carries the GPO PDF cleanup counts as *processing*
-provenance rather than data, modelled on spicy-regs's own
-``pdf_extraction_results_json``: a row says what the normalizer did to the bytes
-before anything read them.
+No full-text or XML column is published: ``sha256``, ``byte_size``, ``package_id`` and ``resolved_url`` say exactly
+which bytes were read, and the body recomposes from ``bill_sections.body``.  ``bill_sections`` is keyed with ``source``
+and ``body_index`` because a reported bill carries two ``legis-body`` elements and a version code is not unique across
+acquisition paths; ``bill_versions`` carries the GPO PDF cleanup counts as processing provenance.
 """
 
 from __future__ import annotations

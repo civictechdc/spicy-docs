@@ -1,4 +1,7 @@
-"""One source-native operator CLI across all supported source profiles."""
+"""One source-native operator CLI across all supported source profiles.
+
+Publish and verify emit machine output and agree on ids and digests; overlap, an existing destination, a mismatched
+profile, a capped day, and a reader failure all refuse with exit 1 and no partial release."""
 
 from __future__ import annotations
 

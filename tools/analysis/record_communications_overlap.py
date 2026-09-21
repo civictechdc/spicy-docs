@@ -1,16 +1,10 @@
 """Score the Record parse rule against the publisher's own decomposition, field by field.
 
-`sources/congress/record_communications.py` reconstructs a House executive
-communication from the sentence the Congressional Record printed. The
-[research](../../docs/research/executive-communications-backfill-2026-09-20.md)
-established that Congress.gov's ``house-communication`` detail record is a
-decomposition of that same sentence -- but it established it on **two rows**.
-The 114th Congress onward is the overlap era: 26,725 communications exist both
-as a printed Record entry and as a publisher-decomposed detail record, so the
-rule can be scored against the publisher on rows it was never fitted to. A rule
-validated only against itself is a formatting assertion; this one can fail.
-
-Two phases, because acquisition costs keyed requests and scoring does not:
+`sources/congress/record_communications.py` reconstructs a House executive communication from the
+sentence the Congressional Record printed; from the 114th Congress on, the same communications also
+exist as Congress.gov ``house-communication`` detail records (26,725 of them), so the rule can be
+scored against the publisher on rows it was never fitted to. Two phases, because acquisition costs
+keyed requests and scoring does not:
 
     uv run --frozen python -m tools.analysis.record_communications_overlap fetch \\
         --receipt ~/Work/corpora/supply-2026-09-02/receipts/record-communications-overlap-2026-09-20
@@ -21,43 +15,17 @@ Two phases, because acquisition costs keyed requests and scoring does not:
         --output docs/research/record-communications-overlap-2026-09-20.json \\
         --report docs/research/record-communications-overlap-2026-09-20.md
 
-**Caps, declared before the run and enforced by a counter**:
-:data:`MAX_GOVINFO_REQUESTS` = 40 and :data:`MAX_CONGRESS_REQUESTS` = 600 for
-the whole campaign, counted across resumes from the retained request log, not
-per process. The ten sampled issues cost four GovInfo requests each (one keyed
-granules page, then ``acquire_granule``'s granule summary, granule MODS and
-keyless HTML rendition), which is the whole GovInfo allowance; a day whose
-granule page names no section spends one and returns the other three.
-
-**Which days.** Ten House sitting days, two per Congress from the 114th to the
-118th, all Wednesdays in June except where the House was not sitting. They are
-named in :data:`SAMPLE_ISSUES` rather than discovered, because discovery is
-itself a keyed walk and the cap is for the measurement.
-
-**Which detail records.** Every number the sampled issues printed, requested at
-the publisher's own locator shape ``house-communication/{congress}/EC/{n}``.
-Upper-case on purpose: the list row spells its own ``url`` that way, and a
-probe that asks only its own spelling can only confirm its own spelling
-(``tools/analysis/legislative_data_map.py``'s ``_stated_congress_path``, and
-§1 of the research). Entries are requested **round-robin across issues**, so a
-cap that bites truncates every issue's tail rather than deleting the last
-Congresses from the sample.
-
-**Reading the publisher's answer** (``AGENTS.md``): a 404 on a detail record is
-the publisher's answer and is recorded as ``absent``, not as a failure; a 200
-with an empty body is ``requested-empty`` and never absence; a transport
-failure is ``refused`` and establishes nothing; 401/403 ends the run rather
-than being skipped as a bad row. Every unsuccessful row is re-requested on
-resume, and only rows with no retained body are requested at all.
-
-**Complexity.** One keyed request per sampled issue's granule page, three per
-granule body, one per printed number: ``O(I + E)`` requests for I issues and E
-entries. Scoring is linear in retained bytes and makes no request.
-
-**Credentials.** ``API_GOV`` is read through ``read_api_key`` and sent as a
-header only -- the same key serves both publishers. No URL, log row, retained
-file or error here carries it; every recorded URL and message is scrubbed
-first, before any truncation.
+The campaign caps are declared before the run and enforced by the retained request log, counted
+across resumes rather than per process: :data:`MAX_GOVINFO_REQUESTS` = 40, four per sampled issue
+(one keyed granules page plus ``acquire_granule``'s summary, MODS and keyless HTML) and
+:data:`MAX_CONGRESS_REQUESTS` = 600, one detail request per printed number. The ten issues are
+named in :data:`SAMPLE_ISSUES` rather than discovered, since discovery is itself a keyed walk.
+Detail locators use the publisher's own upper-case ``house-communication/{congress}/EC/{n}``
+spelling, and entries are requested round-robin across issues so a cap truncates every issue's
+tail. A 404 is the publisher's answer and is recorded ``absent``, a 200 with an empty body is
+``requested-empty`` (never absence), a transport failure is ``refused`` and establishes nothing,
+and 401/403 ends the run. Scoring is linear in retained bytes; ``API_GOV`` travels as a header
+only, and every URL and message is scrubbed before any truncation.
 """
 
 from __future__ import annotations
@@ -161,14 +129,17 @@ class RequestLog:
         )
 
     def scrub(self, text: str) -> str:
+        """``text`` with every configured secret removed, before it is written or printed."""
         for secret in self.secrets:
             text = scrub_credential(text, secret)
         return text
 
     def spent(self, publisher: str) -> int:
+        """Requests already counted against a publisher's cap, across every resume."""
         return sum(row.get("requests", 1) for row in self.rows if row["publisher"] == publisher)
 
     def retained(self, folder: str, key: str, suffix: str) -> Path | None:
+        """The retained body for one key, or None when no resume can reuse one."""
         path = self.receipt / folder / f"{_safe(key)}{suffix}"
         return path if path.exists() else None
 
@@ -216,6 +187,7 @@ class RequestLog:
 
 
 def _safe(value: str) -> str:
+    """A log key reduced to a bounded file-name-safe stem."""
     return re.sub(r"[^A-Za-z0-9._-]", "_", value)[:96]
 
 
@@ -507,6 +479,7 @@ def fetch_details(receipt: Path, key: str, log: RequestLog) -> None:
 
 
 def fetch(receipt: Path, env_file: Path) -> None:
+    """Acquire the sampled sections and their detail records, then print what each cap has left."""
     receipt.mkdir(parents=True, exist_ok=True)
     key = read_api_key(env_file, "API_GOV")
     log = RequestLog(receipt, secrets=(key,))
@@ -553,6 +526,7 @@ class FieldScore:
             self.examples = []
 
     def observe(self, *, stated: bool, agreed: bool, example: dict[str, str] | None = None) -> None:
+        """Count one compared row, keeping up to five examples of disagreement."""
         if not stated:
             return
         self.stated += 1
@@ -562,6 +536,7 @@ class FieldScore:
             self.examples.append(example)
 
     def as_json(self) -> dict[str, Any]:
+        """This field's counts and precision, or a None precision when nothing was stated."""
         return {
             "stated": self.stated,
             "agreed": self.agreed,
@@ -888,6 +863,7 @@ def generated_block(measurement: Mapping[str, Any]) -> str:
 
 
 def render(output: Path, report: Path) -> None:
+    """Replace the report's generated block with the one the sidecar renders."""
     measurement = json.loads(output.read_text())
     text = report.read_text()
     start, end = text.index(_GENERATED_START), text.index(_GENERATED_END) + len(_GENERATED_END)
@@ -899,6 +875,7 @@ def render(output: Path, report: Path) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Dispatch the ``fetch``, ``score`` or ``render`` command named on the command line."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
 

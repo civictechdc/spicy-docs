@@ -27,6 +27,7 @@ from tests.test_fec_bulk_release import FIXTURES, _capture, _TrackingStore, _zip
 
 
 def _publish(tmp, raw, *, capture=None, profile=PROFILE, output=None, pages=None, **options):
+    """Publish one row-stream release and return its reader."""
     capture = capture or _capture(raw, representation="opaque")
     options = {
         "format": "delimited",
@@ -57,10 +58,12 @@ def _publish(tmp, raw, *, capture=None, profile=PROFILE, output=None, pages=None
 
 
 def _records(reader):
+    """Every record row from a reader."""
     return [row["record"] for row in reader.iter_records()]
 
 
 def test_rows_keep_headers_blanks_leading_zeros_quotes_and_duplicate_values(tmp_path):
+    """Rows keep headers, blanks, leading zeros, quotes and duplicate values with distinct ids and exact byte ranges."""
     raw = b'ID|Amount|Note\r\n001|0.1000|"quoted"\r\n\r\n001|0.1000|"quoted"\nLAST||\n'
     reader = _publish(tmp_path, raw)
     rows = _records(reader)
@@ -84,6 +87,7 @@ def test_rows_keep_headers_blanks_leading_zeros_quotes_and_duplicate_values(tmp_
 
 
 def test_quoted_csv_multiline_records_keep_exact_byte_ranges(tmp_path):
+    """Quoted CSV multiline records keep exact byte ranges matching an independent csv.reader."""
     raw = b'Id,Text,Amount\n1,"two\nlines",0.00\r\n2,"a ""quote""",\n'
     rows = _records(_publish(tmp_path, raw, delimiter=",", quoting="csv"))
     assert [row["record"]["fields"] for row in rows] == list(csv.reader(io.StringIO(raw.decode(), newline="")))
@@ -92,6 +96,7 @@ def test_quoted_csv_multiline_records_keep_exact_byte_ranges(tmp_path):
 
 
 def test_native_zip_member_all_rows_match_independent_csv(tmp_path):
+    """A native ZIP member's rows all match an independent CSV read with member identity and digest."""
     selected = json.loads((FIXTURES / "sources.json").read_bytes())[0]
     raw = (FIXTURES / selected["file"]).read_bytes()
     reader = _publish(
@@ -110,6 +115,7 @@ def test_native_zip_member_all_rows_match_independent_csv(tmp_path):
 
 
 def test_duplicate_member_names_require_exact_ordinal(tmp_path):
+    """Duplicate member names require the exact ordinal."""
     with pytest.warns(UserWarning, match="Duplicate name"):
         raw = _zip([("data.txt", b"first|001\n"), ("data.txt", b"second|002\n")])
     rows = _records(_publish(tmp_path, raw, capture=_capture(raw), member={"ordinal": 1, "name": "data.txt"}))
@@ -119,6 +125,7 @@ def test_duplicate_member_names_require_exact_ordinal(tmp_path):
 
 @pytest.mark.parametrize("member", [{"ordinal": 0, "name": "wrong"}, {"ordinal": 1, "name": "data"}])
 def test_selected_member_disagreement_refuses(tmp_path, member):
+    """A selected member disagreement refuses."""
     raw = _zip([("data", b"row\n")])
     with pytest.raises(ValueError, match="member"):
         _publish(tmp_path, raw, capture=_capture(raw), member=member)
@@ -127,11 +134,13 @@ def test_selected_member_disagreement_refuses(tmp_path, member):
 
 @pytest.mark.parametrize("encoding", ["utf-8", "cp1252", "latin-1"])
 def test_whole_stream_encoding_is_explicit(tmp_path, encoding):
+    """The whole-stream encoding is explicit."""
     raw = "café|001\n".encode(encoding)
     assert _records(_publish(tmp_path, raw, encoding=encoding))[0]["record"]["fields"] == ["café", "001"]
 
 
 def test_filing_header_unknown_rows_and_bodies_remain_source_faithful(tmp_path):
+    """Filing headers, unknown rows and bodies remain source-faithful with exact body ranges."""
     raw = (
         b"HDR\x1cFEC\x1c8.5\nF1N\x1cC00000001\x1c001\n"
         b"TEXT\x1cC00000001\x1ctx\x1cparent\x1cSC/10\x1cExact text\x1cextra\n"
@@ -149,6 +158,7 @@ def test_filing_header_unknown_rows_and_bodies_remain_source_faithful(tmp_path):
 
 
 def test_empty_zip_member_yields_observed_empty_release(tmp_path):
+    """An empty ZIP member yields an observed empty release."""
     raw = _zip([("empty", b"")])
     reader = _publish(tmp_path, raw, capture=_capture(raw), member={"ordinal": 0, "name": "empty"})
     assert _records(reader) == []
@@ -156,6 +166,7 @@ def test_empty_zip_member_yields_observed_empty_release(tmp_path):
 
 
 def test_page_count_does_not_multiply_original_opens_and_parser_stays_live(tmp_path):
+    """Page count does not multiply original opens and the parser stays live across pages."""
     counts = []
     for name, count in [("one", 1000), ("many", 1)]:
         output = _TrackingStore(tmp_path / name / "output")
@@ -185,6 +196,8 @@ def test_page_count_does_not_multiply_original_opens_and_parser_stays_live(tmp_p
 
 
 def test_nonseekable_zip_provider_and_short_reads_keep_all_rows(tmp_path):
+    """A non-seekable ZIP provider and short reads keep all rows."""
+
     class Nonseekable(io.BytesIO):
         def seekable(self):
             return False
@@ -219,6 +232,7 @@ def test_nonseekable_zip_provider_and_short_reads_keep_all_rows(tmp_path):
 
 @pytest.mark.parametrize("damage", ["missing", "extra", "extra-none", "key", "late-error"])
 def test_stream_refusals_do_not_publish_partial_release(tmp_path, damage):
+    """Stream refusals publish no partial release and close both streams."""
     calls = 0
     closed = []
 
@@ -260,17 +274,21 @@ def test_stream_refusals_do_not_publish_partial_release(tmp_path, damage):
     ],
 )
 def test_unsupported_or_ambiguous_scope_refuses(tmp_path, options):
+    """An unsupported or ambiguous scope refuses."""
     with pytest.raises(ValueError):
         _publish(tmp_path, b"a|b\n", **options)
 
 
 def test_record_bound_refuses_after_prior_page_without_partial_success(tmp_path):
+    """The record bound refuses after a prior page without partial success."""
     with pytest.raises(ValueError, match="byte bound"):
         _publish(tmp_path, b"a|1\nb|2\n" + b"z" * 50, max_records_per_page=1, max_record_bytes=10)
     assert not (tmp_path / "release").exists()
 
 
 def test_plain_iterator_parser_is_a_supported_injected_implementation(tmp_path):
+    """A plain iterator parser is a supported injected implementation."""
+
     def parser(stream, **kwargs):
         return iter(list(PROFILE.parse_file_stream(stream, **kwargs)))
 
@@ -278,6 +296,7 @@ def test_plain_iterator_parser_is_a_supported_injected_implementation(tmp_path):
 
 
 def test_output_page_bytes_are_bounded_independently_of_record_count(tmp_path):
+    """Output page bytes are bounded independently of record count."""
     from rulespec_artifacts import canonical_json_bytes
 
     from spicy_docs.sources.fec.row_profile import MAX_PAGE_BYTES
@@ -296,6 +315,7 @@ def test_output_page_bytes_are_bounded_independently_of_record_count(tmp_path):
 
 
 def test_consumer_error_closes_current_original_and_parser(tmp_path):
+    """A consumer error closes the current original and its parser."""
     streams, closed = [], []
 
     def parser(stream, **kwargs):
@@ -315,6 +335,7 @@ def test_consumer_error_closes_current_original_and_parser(tmp_path):
 
 
 def test_second_original_is_refused_before_opening_it(tmp_path):
+    """A second original is refused before it is opened."""
     from spicy_docs.source_native import SourceNativeBlobPage
 
     raw = b"a|1\n"
@@ -335,6 +356,7 @@ def test_second_original_is_refused_before_opening_it(tmp_path):
 
 
 def test_page_bound_includes_response_fields_and_array_separators(monkeypatch):
+    """The page bound includes response fields and array separators."""
     from rulespec_artifacts import canonical_json_bytes
 
     from spicy_docs.sources.fec import row_profile
@@ -357,6 +379,7 @@ def test_page_bound_includes_response_fields_and_array_separators(monkeypatch):
 
 
 def test_filing_options_refuse_before_opening_original(monkeypatch):
+    """Filing options refuse before the original is opened."""
     from spicy_docs.sources.fec import filings
 
     def forbidden(*args, **kwargs):
@@ -373,6 +396,7 @@ def test_filing_options_refuse_before_opening_original(monkeypatch):
     ids=lambda source: source["file"],
 )
 def test_retained_financial_and_filing_originals_match_every_csv_cell(tmp_path, source):
+    """Retained financial and filing originals match every independently read CSV cell, body and digest."""
     raw = (Path(__file__).parent / "fixtures/fec/rows" / source["file"]).read_bytes()
     assert "sha256:" + hashlib.sha256(raw).hexdigest() == source["capture"]["responseSha256"]
     mode = source["format"]

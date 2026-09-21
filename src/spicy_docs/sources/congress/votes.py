@@ -1,65 +1,41 @@
 """House Clerk and Senate LIS roll-call vote XML: the tally source `roll_call_votes` and `member_votes` need.
 
-Congress.gov's ``bill/{c}/{type}/{n}/actions`` route attaches a
-``recordedVotes`` reference to every voted action -- six sealed fields
-(``chamber``, ``congress``, ``date``, ``rollNumber``, ``sessionNumber``,
-``url``), measured 58/58 present across two hosts
-(``docs/research/billtrax-raw-data-2026-09-19.md`` §5) -- and the House
-``house-vote/{c}/{session}/{roll}/members`` route indexes a vote by bill, but
-**neither carries the tally or the roster**: both are the index, the two
-files this module reads are the tally source
-(``docs/sources/congress-votes.md``, "Decision"). BillTrax's
-``sync-roll-call-votes.ts``/``roll-call-votes.ts`` stored only
-``question``, ``result``, ``yea``/``nay``/``present``/``not_voting``,
-``vote_date`` and ``source_url``; its ``upsertMemberVote`` was written but
-never called, so no member-level vote ever reached its database. This module
-keeps every field either publisher XML states.
-
-Both hosts are keyless (``docs/research/legislative-data-map-2026-09-18.md``
-Table C, ``clerk-vote``/``senate-vote``; the sidecar JSON's ``samples``
-section pins the measured shape and digest). The Clerk file declares an
-external DOCTYPE (``-//US Congress//DTDs/vote v1.0...``);
-``reading/xml.py::parse_xml(allow_external_doctype=True)`` tolerates it
-without resolving it, the same way ``tools/analysis/legislative_data_map.py``
-did to measure it.
+Congress.gov's ``recordedVotes`` reference and its ``house-vote`` route are the
+index only -- neither carries the tally or the roster -- and BillTrax stored
+only summary fields, never a member-level vote. This module reads the two
+publisher files that do carry them, keeping every field either publisher XML
+states. Both hosts are keyless; the Clerk file declares an external DOCTYPE,
+which ``reading/xml.py::parse_xml(allow_external_doctype=True)`` tolerates
+without resolving it.
 
 **Two identity shapes, one crosswalk.** The Clerk file states its own
-congress/session/roll number (``vote-metadata/{congress,session,rollcall-num}``);
-the Clerk's URL states only a calendar year and the roll number
-(``evs/{year}/roll{N}.xml``), so building or parsing that URL needs the
+congress/session/roll number, while its URL states only a calendar year and
+the roll number, so building or parsing that URL needs the
 year<->(congress, session) rule documented on ``_clerk_year`` below. The
-Senate file also states its own identity (``congress``, ``session``,
-``vote_number``), and its URL states congress, session and the roll number
-directly (``vote{congress}{session}/vote_{congress}_{session}_{roll}.xml``).
-Senate votes key members on ``lis_member_id``, not bioguide; the only
-publisher crosswalk from LIS to bioguide already in this package is
-``sources/legislators.py::LegislatorsFile.by_lis`` (measured absent for
-roughly 4 of 99 voters on any one vote, since a member who has just left
-carries no current-roster row -- a real absence, not a malformed one), so
-``parse_senate_vote`` takes it as an optional parameter rather than building
-a second crosswalk.
+Senate file and URL both state their identity. Senate votes key members on
+``lis_member_id``, not bioguide; the only LIS-to-bioguide crosswalk already in
+this package is ``sources/legislators.py::LegislatorsFile.by_lis`` (measured
+absent for roughly 4 of 99 voters on any one vote, since a member who has just
+left carries no current-roster row -- a real absence, not a malformed one), so
+``parse_senate_vote`` takes it as an optional parameter rather than building a
+second crosswalk.
 
 **Identity proof.** ``parse_clerk_vote``/``parse_senate_vote`` both take the
 ``VoteLocator`` the caller requested and check the file's own stated
-congress/session/roll number against it before returning anything; a
-mismatch raises ``VoteIdentityError``, a family member of ``VoteSourceError``
-like every other refusal here, so the acquirer's ``capture_validated``
-attaches the fetched bytes as evidence to it the same way it does for a
-malformed body -- proving the fetched file is the one requested, not just
-that the URL was built correctly.
+congress/session/roll number against it before returning anything; a mismatch
+raises ``VoteIdentityError``, a family member of ``VoteSourceError`` like
+every other refusal here, so the acquirer attaches the fetched bytes as
+evidence to it the same way it does for a malformed body.
 
 **The Senate roll-call index.** Congress.gov has no Senate equivalent of
-``house-vote`` (data map, gap A4): the only Senate index at all is the LIS
-menu file itself, ``senate.gov/.../roll_call_lists/vote_menu_{congress}_{session}.xml``,
-one row per vote for the session (``vote_number``, ``vote_date``, ``issue``,
-``question``, ``result``, ``vote_tally``, ``title``, in the publisher's own
-newest-vote-first order; measured floor the same 101st Congress as one
-vote's own url). ``parse_senate_vote_menu``/``VoteAcquirer.list_senate_votes``
-read it the same way as the vote files above: the file's own ``congress``/
-``session`` proved against what was requested (``VoteMenuIdentityError`` on a
-mismatch) and a well-formed file with zero listed votes refused rather than
-returned as an empty success. ``locator_from_menu_entry`` turns one row into
-the ``VoteLocator`` that resolves its full tally and roster.
+``house-vote``: the only Senate index at all is the LIS menu file itself, one
+row per vote for the session, in the publisher's own newest-vote-first order.
+``parse_senate_vote_menu``/``VoteAcquirer.list_senate_votes`` read it the same
+way as the vote files above: the file's own ``congress``/``session`` proved
+against what was requested (``VoteMenuIdentityError`` on a mismatch) and a
+well-formed file with zero listed votes refused rather than returned as an
+empty success. ``locator_from_menu_entry`` turns one row into the
+``VoteLocator`` that resolves its full tally and roster.
 """
 
 from __future__ import annotations
@@ -250,6 +226,7 @@ class VoteLocator:
 
 
 def _clerk_year(congress: int, session: int) -> int:
+    """The Clerk EVS calendar year for one session, by the fixed post-20th-Amendment calendar (74th Congress on)."""
     if congress < _EARLIEST_FIXED_CALENDAR_CONGRESS:
         raise VoteSourceError(
             f"congress {congress} predates the fixed session calendar (74th Congress, 1935); "
@@ -261,12 +238,11 @@ def _clerk_year(congress: int, session: int) -> int:
 
 
 def clerk_url(locator: VoteLocator) -> str:
-    """Build the Clerk EVS url; see the module docstring for the year<->(congress, session) rule.
+    """Build the Clerk EVS url; see ``_clerk_year`` for the year<->(congress, session) rule.
 
-    The roll number is zero-padded to three digits (``roll050.xml``,
-    ``roll096.xml`` -- measured in ``billtrax-raw-data-2026-09-19.json``'s
-    real ``recordedVotes`` urls); a roll past 999 still prints in full since
-    ``:03d`` is a minimum width, not a truncation.
+    The roll number is zero-padded to three digits (``roll050.xml``); ``:03d``
+    is a minimum width, not a truncation, so a roll past 999 still prints in
+    full.
     """
     if locator.chamber != "house":
         raise VoteSourceError("clerk_url requires a 'house' locator")
@@ -278,10 +254,8 @@ def senate_url(locator: VoteLocator) -> str:
     """Build the Senate LIS url; congress, session and roll number all appear in it directly.
 
     The congress is zero-padded to three digits, matching ``SENATE_URL_RE``;
-    every real congress this route can serve is already three digits (the
-    LIS archive's own floor is the 101st Congress -- see
-    ``_EARLIEST_SENATE_CONGRESS`` above), so this raises rather than build an
-    unmeasured two-digit-congress url no fixture or probe has ever confirmed.
+    the LIS archive's measured floor is the 101st Congress, so this raises
+    rather than building an unmeasured two-digit-congress url.
     """
     if locator.chamber != "senate":
         raise VoteSourceError("senate_url requires a 'senate' locator")
@@ -297,11 +271,12 @@ def senate_url(locator: VoteLocator) -> str:
 
 
 def _check_congress_session(congress: int, session: int) -> None:
-    """The menu's own (chamber-less) congress/session shape, reusing ``VoteKey``'s non-negative-int rule
-    (``interpretation/vote_matching.py``) through ``_as_vote_key`` rather than restating it a third time.
-    Every call site here is Senate-only and carries no roll number of its own, so both are supplied as
-    fixed, always-valid placeholders purely to reach the shared check; ``VoteMatchError``'s message names
-    ``congress``/``session`` by field, so nothing here leaks the placeholder chamber or roll number.
+    """The menu's own (chamber-less) congress/session shape, reusing ``VoteKey``'s rule via ``_as_vote_key``.
+
+    Every call site here is Senate-only and carries no roll number of its own,
+    so both are supplied as fixed, always-valid placeholders purely to reach
+    the shared check; ``VoteMatchError``'s message names ``congress``/``session``
+    by field, so nothing here leaks the placeholder chamber or roll number.
     """
     _as_vote_key("senate", congress, session, 0)
 
@@ -309,12 +284,8 @@ def _check_congress_session(congress: int, session: int) -> None:
 def senate_vote_menu_url(congress: int, session: int) -> str:
     """Build the Senate LIS vote-menu url for one session: the index ``list_senate_votes`` reads.
 
-    Same three-digit congress and bare session number as ``senate_url``, and
-    the same 101st-Congress floor (measured 2026-09-19:
-    ``vote_menu_101_1.xml`` serves a real 149,123-byte listing while
-    ``vote_menu_100_1.xml``/``vote_menu_099_1.xml`` each redirect to
-    ``roll-call-vote-not-available.htm``, the same floor ``_EARLIEST_SENATE_CONGRESS``
-    already names for one vote's own url).
+    Same three-digit congress, bare session number and 101st-Congress floor as
+    ``senate_url``.
     """
     _check_congress_session(congress, session)
     if congress < _EARLIEST_SENATE_CONGRESS:
@@ -325,7 +296,7 @@ def senate_vote_menu_url(congress: int, session: int) -> str:
 
 
 def locator_from_recorded_vote_url(url: str) -> VoteLocator:
-    """Parse a `recordedVotes[].url` (billtrax-raw-data-2026-09-19.md §5) back to a locator.
+    """Parse a `recordedVotes[].url` back to a locator.
 
     Only the two measured shapes resolve: ``clerk.house.gov/evs`` and
     ``senate.gov .../roll_call_votes``. The Senate shape states congress and
@@ -502,29 +473,23 @@ class SenateVoteMenuMatter:
 class SenateVoteMenuEntry:
     """One ``<vote>`` row from the Senate LIS vote menu, every field it states, as spelled.
 
-    ``vote_date`` is a bare day-month the publisher states with no year of
-    its own (e.g. ``"18-Dec"``); ``SenateVoteMenu.congress_year`` is only
+    ``vote_date`` is a bare day-month the publisher states with no year of its
+    own (``"18-Dec"``); ``SenateVoteMenu.congress_year`` is only
     *presumptively* that vote's year, not a fact this record states -- a
-    session can run into the following January before it adjourns (the
-    119th's 1st session did not, but nothing here proves a future one
-    won't), so a caller that builds an instant from ``vote_date`` must
-    account for that year-boundary case itself rather than assume
-    ``congress_year`` always applies.
+    session can run into the following January before it adjourns -- so a
+    caller building an instant from ``vote_date`` must account for that
+    year-boundary case itself.
 
-    ``issue``/``question``/``result`` are ``None`` and ``matters`` is
-    non-empty on the roughly 1-in-70 "en_bloc" batch confirmation votes
-    (measured: 9 of 659, 119th Congress 1st session) -- the menu states no
-    single issue/question/result for the vote as a whole there, only per-item
-    rows inside ``<en_bloc>``. ``question_measure`` is the nested
-    ``<question><measure>...</measure></question>`` some amendment votes
-    carry beside their question text (measured 113 of the 650 non-en_bloc
-    votes in that same session); it is ``None`` when the vote's own
-    ``<question>`` carries no ``<measure>``, and reading it refuses if the
-    ``<question>`` carries any text after ``</measure>`` -- an unmeasured
-    shape this module has no rule for keeping. ``tallies`` keeps the menu's
-    own count names (``yeas``, ``nays``) the same way ``RollCallVote.tallies``
-    does -- the menu states no ``present``/``absent`` count, unlike the vote
-    file itself.
+    ``issue``/``question``/``result`` are ``None`` and ``matters`` is non-empty
+    on the roughly 1-in-70 "en_bloc" batch confirmation votes (measured: 9 of
+    659, 119th Congress 1st session), because the menu states no single
+    issue/question/result for the vote as a whole there, only per-item rows.
+    ``question_measure`` is the nested ``<measure>`` some amendment votes carry
+    (measured 113 of the 650 non-en_bloc votes); it refuses if the
+    ``<question>`` carries any text after ``</measure>``, an unmeasured shape
+    this module has no rule for keeping. ``tallies`` keeps the menu's own
+    count names (``yeas``, ``nays``) -- the menu states no
+    ``present``/``absent``, unlike the vote file itself.
     """
 
     vote_number: int
@@ -627,10 +592,9 @@ def _read_clerk_member(element: Element, label: str) -> MemberVote:
 def parse_clerk_vote(body: bytes, locator: VoteLocator) -> RollCallVote:
     """Read one House Clerk EVS roll-call file (``<rollcall-vote>``) whole; every field it states is kept.
 
-    Byte-bounding happens at the acquirer (``capture_validated``), the same
-    way ``tools/analysis/legislative_data_map.py``'s own probe reads this
-    file (``parse_xml(body, max_bytes=len(body), ...)``); called directly,
-    the caller's own bytes are the bound.
+    Byte-bounding happens at the acquirer (``capture_validated``); called
+    directly, the caller's own bytes are the bound. The file's external
+    DOCTYPE is tolerated but never resolved.
     """
     if locator.chamber != "house":
         raise VoteSourceError("parse_clerk_vote requires a 'house' locator")
@@ -771,10 +735,10 @@ def parse_senate_vote(body: bytes, locator: VoteLocator, crosswalk: LegislatorsF
 
     ``crosswalk``, when given, resolves each member's ``lis_member_id`` to a
     bioguide id through ``LegislatorsFile.by_lis``
-    (``sources/legislators.py``); an id the crosswalk does not carry
-    resolves to ``bioguide_id=None`` rather than refusing the member, since
-    that is a real, measured absence (a senator who has just left the
-    current roster), not a malformed record.
+    (``sources/legislators.py``); an id the crosswalk does not carry resolves
+    to ``bioguide_id=None`` rather than refusing the member, since that is a
+    real, measured absence (a senator who has just left the current roster),
+    not a malformed record.
     """
     if locator.chamber != "senate":
         raise VoteSourceError("parse_senate_vote requires a 'senate' locator")
@@ -911,17 +875,15 @@ def _read_menu_entry(element: Element, label: str) -> SenateVoteMenuEntry:
 
 
 def parse_senate_vote_menu(body: bytes, *, congress: int, session: int) -> SenateVoteMenu:
-    """Read one Senate LIS vote-menu file (``<vote_summary>``) whole, newest vote first, as the publisher orders it.
+    """Read one Senate LIS vote-menu file (``<vote_summary>``) whole, newest vote first, as published.
 
     ``congress``/``session`` are the session requested (``list_senate_votes``'s
     own arguments, not a ``VoteLocator`` -- a menu names a session, not one
     roll number); they are checked against the file's own ``<congress>``/
     ``<session>`` before any vote is returned, the same identity-proof shape
-    ``parse_clerk_vote``/``parse_senate_vote`` use against a ``VoteLocator``,
-    raising ``VoteMenuIdentityError`` on a mismatch. A well-formed file
-    listing zero ``<vote>`` rows is also a refusal, not an empty success, the
-    same rule ``parse_clerk_vote``/``parse_senate_vote`` apply to an empty
-    roster.
+    ``parse_clerk_vote``/``parse_senate_vote`` use, raising
+    ``VoteMenuIdentityError`` on a mismatch. A well-formed file listing zero
+    ``<vote>`` rows is also a refusal, not an empty success.
     """
     _check_congress_session(congress, session)
     label = "Senate LIS vote menu"

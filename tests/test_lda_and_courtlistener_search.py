@@ -1,4 +1,9 @@
-"""LDA and CourtListener list routes: optional tokens as headers, cursor and URL continuations."""
+"""LDA and CourtListener list routes: URL builders, optional token credentials, and page continuations.
+
+Pins each family's declared credential header/format and count/next paths, the
+exact built URLs with their refusal conditions, and that pinned fixture pages
+parse with URL or cursor continuations and no Authorization header when keyless.
+"""
 
 import json
 from pathlib import Path
@@ -37,12 +42,14 @@ def no_retry_delay(monkeypatch):
 
 
 def test_families_state_optional_token_credentials():
+    """Both families declare optional ``Token {key}`` Authorization credentials and ``next``/``count`` paths."""
     for family in (LDA, COURTLISTENER):
         assert family.credential_header == "Authorization" and family.credential_format == "Token {key}"
         assert not family.requires_credential and family.next_path == ("next",) and family.count_path == ("count",)
 
 
 def test_lda_filings_url_and_refusals():
+    """Builds the exact filings URL for year, date window and ordering, refusing values outside the declared bounds."""
     assert filings_url(filing_year=2026, page_size=2) == (
         "https://lda.gov/api/v1/filings/?filing_year=2026&ordering=dt_posted&page=1&page_size=2"
     )
@@ -63,6 +70,7 @@ def test_lda_filings_url_and_refusals():
 
 
 def test_lda_pinned_page_parses_keyless_and_with_a_token():
+    """A pinned LDA page parses with or without a key, sending Authorization only when one is given."""
     transport = Transport(LDA_PAGE, LDA_PAGE)
     with LdaFilingsReader(budget=BUDGET, transport=transport) as keyless:
         page = keyless.page(filings_url(filing_year=2026, page_size=2), records_key="results")
@@ -76,6 +84,7 @@ def test_lda_pinned_page_parses_keyless_and_with_a_token():
 
 
 def test_lda_walk_ends_when_the_count_is_met():
+    """The walk stops at the declared count even though a next link remains."""
     first = json.loads(LDA_PAGE)
     first["count"] = 4
     second = json.loads(LDA_PAGE)
@@ -87,6 +96,7 @@ def test_lda_walk_ends_when_the_count_is_met():
 
 
 def test_courtlistener_search_url_and_refusals():
+    """Builds the exact search URL per kind, order, court, filed-after and query, and refuses malformed values."""
     assert search_url(kind="r", filed_after="2026-09-01") == (
         "https://www.courtlistener.com/api/rest/v4/search/?type=r&order_by=dateFiled+asc&filed_after=09%2F01%2F2026"
     )
@@ -105,6 +115,7 @@ def test_courtlistener_search_url_and_refusals():
 
 
 def test_courtlistener_pinned_pages_parse_with_cursor_continuations():
+    """Pinned recap and opinion pages parse and expose a cursor next URL, with no Authorization when keyless."""
     transport = Transport(RECAP, OPINIONS)
     with CourtListenerSearchReader(budget=BUDGET, transport=transport) as source:
         recap = source.page(search_url(kind="r", filed_after="2026-09-01"), records_key="results")

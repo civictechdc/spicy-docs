@@ -1,9 +1,7 @@
-"""Every source guide and top-level guide is reachable from `docs/README.md` (E5).
+"""Every source guide and top-level guide is reachable from ``docs/README.md`` (E5).
 
-The index used to be five lines added by hand; this walks the guide folders it
-promises to cover and fails the moment a new page lands without a link, the
-same way `check_evidence` in `tools/analysis/legislative_data_map.py` refuses
-a claim with no evidence.
+Walks the guide folders the index promises to cover and fails the moment a new
+page lands without a link; the allowlist may name only pages that still exist.
 """
 
 from __future__ import annotations
@@ -28,10 +26,12 @@ def _linked_targets(text: str) -> set[str]:
 
 
 def _guides(*parts: str) -> list[Path]:
+    """Every guide markdown path under the sources and top-level docs folders."""
     return sorted((DOCS / Path(*parts)).glob("*.md"))
 
 
 def test_every_sources_extraction_and_top_level_guide_is_linked_from_readme() -> None:
+    """Every source, extraction and top-level guide is linked from docs/README.md."""
     targets = _linked_targets(README.read_text())
     pages = [*_guides("sources"), *_guides("extraction"), *(p for p in _guides() if p.name != "README.md")]
     assert pages, "expected at least one guide under docs/"

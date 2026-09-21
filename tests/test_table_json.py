@@ -1,4 +1,7 @@
-"""The shared JSON spelling refuses values JSON cannot represent."""
+"""The shared JSON spelling refuses values JSON cannot represent.
+
+Nested non-finite floats and circular structures raise TableContractError; finite values keep their exact existing
+spelling."""
 
 import pytest
 

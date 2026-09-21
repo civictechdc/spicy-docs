@@ -1,23 +1,13 @@
-"""Classify a bill version's `version_code` slug into a document kind.
+"""Classify a bill version's ``version_code`` slug into a document kind.
 
-Ported from BillTrax `src/lib/version-kind.ts` (read-only,
-`/Users/mikewolfd/Work/spicy-stack/BillTrax`). The key distinction the
-publisher's own version-code vocabulary does not state directly: a slug like
-`engrossed-amendment-senate` names an edit-instruction document, not full
+Ported from BillTrax ``src/lib/version-kind.ts`` and reading
+``sources.congress.bill_versions.VERSION_CODES``, the sealed publisher-fact
+vocabulary, this states the distinction the vocabulary does not: a slug like
+``engrossed-amendment-senate`` names an edit-instruction document, not full
 bill text, and diffing it against full text produces the "+0 added / -N
-removed" trap `version-kind.ts`'s module comment names. This is judgment over
-`sources.congress.bill_versions.VERSION_CODES`, the sealed publisher-fact
-vocabulary -- it belongs in `interpretation`, not in the `sources` package,
-per the split `docs/research/billtrax-value-inventory-2026-09-19.md` records.
-
-Measured 2026-09-19 against the 119th BILLS corpus
-(`docs/research/billtrax-raw-data-2026-09-19.md` §1): `version-kind.ts` misses
-5 of the 24 codes the publisher actually used (`as`, `cdh`, `lth`, `rds`,
-`ris` fall through to the size heuristic below); `cdh` misses only because
-BillTrax spells its slug `committee-discharge-house` while the publisher's
-own `type` string is "Committee Discharged House" (`version_slug` of that
-name does not match). Ported as measured -- the fallback heuristics below
-exist precisely for slugs a classification list does not name.
+removed" trap. Measured against the 119th BILLS corpus, the original's slug
+lists miss 5 of the 24 codes the publisher actually used, which is why the
+size heuristics exist for slugs no classification list names.
 """
 
 from __future__ import annotations
@@ -123,13 +113,11 @@ _MIN_BODY_BYTES = 10_000
 class VersionKindFinding:
     """One classification, naming the rule that fired and the size evidence it was given.
 
-    Matches the rest of ``interpretation/``'s contract: an output is a frozen
-    record carrying the rule that produced it, not a bare label. ``rule`` is
-    one of ``procedural_amendments_slug``, ``procedural_summary_slug``,
-    ``full_text_slug``, ``full_text_slug_thin`` (downgraded to
-    ``kind_uncertain`` by the size heuristic), ``amendment_substring`` (an
-    unlisted slug this repo's own heuristic, not the publisher's vocabulary,
-    caught), ``size_heuristic`` or ``unknown``.
+    ``rule`` is one of ``procedural_amendments_slug``,
+    ``procedural_summary_slug``, ``full_text_slug``, ``full_text_slug_thin``
+    (downgraded to ``kind_uncertain`` by the size heuristic),
+    ``amendment_substring`` (an unlisted slug this repo's own heuristic caught),
+    ``size_heuristic`` or ``unknown``.
     """
 
     kind: VersionKind
@@ -144,13 +132,13 @@ def version_kind_finding(
     section_count: int | None = None,
     body_bytes: int | None = None,
 ) -> VersionKindFinding:
-    """Classify one bill version by its `version_code` slug and, for a size
+    """Classify one bill version by its ``version_code`` slug and, for a size
     heuristic, its extracted section count or body byte length, naming the
     rule that decided it.
 
-    `version_code` is re-normalized through `slugify` defensively, matching
-    `version-kind.ts:103` -- a caller that passes the display name instead of
-    the stored slug still classifies correctly.
+    ``version_code`` is re-normalized through ``slugify`` defensively, matching
+    the original -- a caller that passes the display name instead of the stored
+    slug still classifies correctly.
     """
     slug = slugify(version_code) if version_code else ""
 

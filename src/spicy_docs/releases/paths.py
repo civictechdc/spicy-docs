@@ -6,6 +6,8 @@ from spicy_docs.releases.format import SourceNativeReleaseError
 
 
 def require_separate_paths(left: Path, right: Path, *, labels: tuple[str, str]) -> None:
+    """Refuse equal or nested resolved paths so the two owned locations cannot overlap."""
+
     selected_left = Path(left).absolute().resolve(strict=False)
     selected_right = Path(right).absolute().resolve(strict=False)
     if (

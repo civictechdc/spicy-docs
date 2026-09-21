@@ -1,4 +1,10 @@
-"""One command walks any registered list route: exact page blobs, receipt rows, and refusals that exit non-zero."""
+"""One command walks any registered list route: exact page blobs, receipt rows, and refusals that exit non-zero.
+
+Pins the route table as data, offline family listing, GET and POST page
+receipts (with credentials in headers, never URLs), pre-request credential
+refusal, refused-page evidence, both scrub passes, and receipt overwrite
+protection.
+"""
 
 from __future__ import annotations
 
@@ -23,6 +29,8 @@ GRANULES_URL = package_granules_url("CFR-2025-title1-vol1", page_size=2)
 
 
 class Transport(httpx.MockTransport):
+    """A mock transport that records calls and serves queued responses."""
+
     def __init__(self, *bodies):
         self.bodies = iter(bodies)
         self.calls = []
@@ -37,11 +45,13 @@ class Transport(httpx.MockTransport):
 
 @pytest.fixture
 def store(tmp_path):
+    """An empty blob store directory for the run."""
     return tmp_path / "blobs"
 
 
 @pytest.fixture
 def receipt(tmp_path):
+    """The receipt path a run writes."""
     return tmp_path / "pages.jsonl"
 
 
@@ -68,12 +78,16 @@ def walk(store, receipt):
 
 @pytest.fixture
 def env_file(tmp_path):
+    """Write an env file holding the test credential."""
     path = tmp_path / ".env"
     path.write_text(f"OTHER=unused\nAPI_GOV={KEY}\n")
     return str(path)
 
 
 def test_registered_routes_state_each_publisher_contract_as_data():
+    """Every registered route states its family, credential variable, method, records key and first-request placement
+    as data.
+    """
     assert set(FAMILIES) == {
         "congress-bills",
         "congress-crs",
@@ -119,6 +133,7 @@ def test_registered_routes_state_each_publisher_contract_as_data():
 
 
 def test_list_families_describes_every_route_offline(capsys):
+    """``--list-families`` describes every route offline in registration order."""
     assert main(["--list-families"]) == 0
     rows = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     assert [row["family"] for row in rows] == list(FAMILIES)
@@ -132,6 +147,9 @@ def test_list_families_describes_every_route_offline(capsys):
 
 
 def test_two_page_get_walk_writes_one_row_and_one_blob_per_page(walk, env_file, store):
+    """A two-page GET walk writes started/page/complete rows and one exact blob per page, with the key in headers
+    only.
+    """
     first = json.loads(BILLS)
     first["pagination"]["count"] = 4
     second = json.loads(BILLS)
@@ -174,6 +192,7 @@ def test_two_page_get_walk_writes_one_row_and_one_blob_per_page(walk, env_file, 
 
 
 def test_post_family_records_its_request_body_beside_the_page(walk):
+    """A POST family records its request body beside the page and sends no credential headers."""
     only = json.loads(RECIPIENTS)
     only["page_metadata"] |= {"total": 2, "next": None, "hasNext": False}
     body = json.dumps(only).encode()
@@ -197,6 +216,7 @@ def test_post_family_records_its_request_body_beside_the_page(walk):
 
 
 def test_a_family_needing_a_credential_refuses_before_any_request(walk):
+    """A credential-requiring family refuses before any request, naming the env var to pass."""
     transport = Transport(GRANULES)
     code, rows, blobs = walk("--family", "govinfo-granules", "--url", GRANULES_URL, transport=transport)
     assert code == 1
@@ -207,6 +227,7 @@ def test_a_family_needing_a_credential_refuses_before_any_request(walk):
 
 
 def test_a_refused_page_writes_the_acquisition_context_and_retains_its_bytes(walk, env_file):
+    """A refused page writes the acquisition context and retains the refused bytes, with no credential in the rows."""
     refused = b'{"count":1,"nextPage":null}'
     transport = Transport(refused)
     code, rows, blobs = walk(
@@ -234,6 +255,7 @@ def test_a_refused_page_writes_the_acquisition_context_and_retains_its_bytes(wal
 
 
 def test_a_page_echoing_the_credential_retains_nothing(walk, env_file):
+    """A page echoing the credential retains no evidence and reports CredentialRefusedError."""
     echoed = json.dumps({"count": 1, "granules": [{"note": KEY}]}).encode()
     code, rows, blobs = walk(
         "--family", "govinfo-granules", "--url", GRANULES_URL, "--env-file", env_file, transport=Transport(echoed)
@@ -245,6 +267,8 @@ def test_a_page_echoing_the_credential_retains_nothing(walk, env_file):
 
 
 def test_no_receipt_row_keeps_a_credential_in_any_form(walk, env_file, receipt, monkeypatch):
+    """Both scrub passes hold: the receipt carries two redactions and no literal key."""
+
     def refuse(*_args, **_kwargs):
         raise ValueError(f"source refused https://api.govinfo.gov/x?api_key={KEY} and header {KEY}")
         yield
@@ -260,6 +284,7 @@ def test_no_receipt_row_keeps_a_credential_in_any_form(walk, env_file, receipt, 
 
 
 def test_an_existing_receipt_is_never_overwritten(store, receipt, capsys):
+    """An existing receipt is never overwritten and the error says so."""
     receipt.write_text("kept\n")
     argv = ["--store", str(store), "--output", str(receipt), "--list-families"]
     assert run(parser().parse_args(argv)) == 1
@@ -267,6 +292,7 @@ def test_an_existing_receipt_is_never_overwritten(store, receipt, capsys):
 
 
 def test_missing_family_is_a_usage_error():
+    """A missing family is a usage error (exit code 2)."""
     with pytest.raises(SystemExit) as refusal:
         main(["--url", "https://api.govinfo.gov/x"])
     assert refusal.value.code == 2

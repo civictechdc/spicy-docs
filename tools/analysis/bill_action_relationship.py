@@ -1,72 +1,26 @@
 """Is a House activity report's *bill-action relationship* extractable, and what would it join to?
 
-The [MODS re-check](../../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
-closed the citation question for this family and left one open, as build-order
-item 8: the package MODS states **that** a committee activity report names
-``H.R. 1093``; the print states **what happened to it** -- referred, hearing
-held, marked up, ordered reported, passed, became law -- and no index in that
-measurement states the relationship. That re-check compared keys, never
-relationships, so nothing there says whether the print's action language is
-extractable, how many distinct actions it carries, or whether the hosted
-``bill_actions`` already holds them. This measures exactly that, on the same
-eight prints and the same retained bytes.
+The MODS re-check settled that a package MODS states a committee report names ``H.R. 1093`` but not
+what happened to the bill, so this measures whether the print's action language is extractable, how
+many distinct actions it carries, and whether the hosted ``bill_actions`` already holds them -- on
+the same eight prints and retained bytes. Five phases, all offline (the PDFs are in the rollup
+receipt's ``blobs/``, their MODS in the re-check's ``mods/``, the hosted export a local Parquet):
 
-Five phases, every one offline. **No request is made by any of them**, because
-everything this needs is already retained: the eight PDFs are in the rollup
-receipt's ``blobs/``, their MODS in the re-check receipt's ``mods/``, and the
-hosted ``congress_bills`` export is a local Parquet file.
+    uv run --frozen python -m tools.analysis.bill_action_relationship <text|measure|sample|report|render> ...
 
-    uv run --frozen python -m tools.analysis.bill_action_relationship text ...
-    uv run --frozen python -m tools.analysis.bill_action_relationship measure ...
-    uv run --frozen python -m tools.analysis.bill_action_relationship sample ...
-    uv run --frozen python -m tools.analysis.bill_action_relationship report ...
-    uv run --frozen python -m tools.analysis.bill_action_relationship render ...
+``text`` re-reads and caches the normalized pages; ``sample`` writes the 60-mention hand-check sheet
+and never overwrites a sheet already carrying verdicts; ``report`` reads the filled sheet into the
+sidecar; ``render`` brings the report's generated block in line with it (a test byte-compares).
 
-``text`` re-reads every page of the eight retained PDFs and caches the
-normalized pages, so the three phases after it are cheap and the hand-check
-sheet quotes bytes that can be re-derived. ``sample`` writes the 60-mention
-hand-check sheet and **never overwrites a sheet that already carries
-verdicts**; ``report`` reads the filled sheet and writes the sidecar; ``render``
-brings the report's generated block in line with the sidecar, which a test
-byte-compares.
-
-**Three rules are reused, none restated.** Mentions come from
-``interpretation.citations.find_citations``'s ``bill_number`` rule -- the same
-rule, at the same version, the re-check measured the yield with. Action *kinds*
-come from ``interpretation.bill_stage``: :func:`sealed_stage` runs the print's
-own matched phrase through ``infer_stage_from_text``, so the mapping from a
-print phrasing to a rung is **derived from the sealed vocabulary rather than
-asserted beside it**, and a phrasing the sealed matchers do not reach is
-reported unmapped instead of being given a parallel code of its own. The
-public-law spelling inside ``became_public_law`` is
-``CITATION_RULES_BY_NAME["public_law"]``'s measured pattern, not a second copy.
-
-**What a print phrasing is.** :data:`PRINT_ACTION_RULES` is a small measured
-vocabulary, derived from the recurring phrasings in these eight prints and
-ordered by precedence the way ``STAGE_RULES`` is: the first rule whose match
-covers a span owns it, so ``discharged from further consideration`` is a
-discharge and not also a consideration. Every rule's occurrence count is
-published, including the phrasings no sealed matcher reaches, which is the
-finding rather than a defect to hide.
-
-**Why the text is flattened before a phrase is matched.** These prints are not
-gutter-numbered, so ``normalize_gpo_pages`` leaves their line-wrap hyphens in
-place by design -- ``held a hear-\\ning`` is the page's own text. A phrase rule
-run over that reads no hearing at all. :func:`flatten` therefore builds a
-matching text with line-wrap hyphens closed and newlines spaced, and keeps the
-offset of every flattened character, so **every span this tool publishes is an
-offset into the retained normalized text**, the same text the citation spans
-and the text digest are against. Nothing is measured in one text and reported
-against another.
-
-**Complexity.** Linear in retained pages for ``text``; for ``measure``, one
-pass per rule over each document (``O(K*C)`` for ``K`` rules and ``C``
-characters, ``K`` = 25 and ``C`` = 3.3 M across the eight prints), plus a
-binary search per mention into the sentence offsets. The overlap join runs in
-DuckDB over a 418,657-row Parquet export, one hash join.
-
-**Credentials.** Nothing here reads a key, opens a socket or names an
-environment variable. The receipt it writes carries retained public text only.
+Mentions come from ``interpretation.citations.find_citations``'s ``bill_number`` rule, action kinds
+from :func:`sealed_stage` over ``interpretation.bill_stage``'s sealed vocabulary (so a phrasing its
+matchers miss is reported unmapped rather than given a parallel code), and the public-law spelling
+from ``CITATION_RULES_BY_NAME["public_law"]`` -- three rules reused, none restated.
+:data:`PRINT_ACTION_RULES` is a small measured phrasing vocabulary ordered by precedence, so the
+first rule covering a span owns it. Because these prints keep line-wrap hyphens, :func:`flatten`
+builds the matching text with hyphens closed and keeps each character's offset, so every published
+span is an offset into the retained normalized text, never a second text. ``text`` and ``measure``
+are linear in retained bytes; no key, socket or environment variable is read.
 """
 
 from __future__ import annotations
@@ -334,6 +288,7 @@ BILLSTATUS_USER_AGENT = "spicy-docs-bill-action-relationship/1.0 (https://github
 
 
 def _actions_url(bill_id: str) -> str:
+    """The Congress.gov actions URL for a ``congress-type-number`` bill id."""
     congress, bill_type, number = bill_id.split("-", 2)
     return f"{CONGRESS_API}/bill/{congress}/{bill_type}/{number}/actions?limit=250"
 
@@ -613,6 +568,7 @@ def measure(receipt: Path, mods_receipt: Path, export: Path, guide: Path) -> Non
 
 
 def _write_actions_tsv(receipt: Path, documents: Sequence[Mapping[str, Any]]) -> None:
+    """Write every action row as a tab-separated sheet for inspection."""
     header = (
         "package_id\tbill_id\tphrasing\tsealed_stage\tbillstatus_codes\tattachment"
         "\tbills_in_sentence\tpage\tstated_date\tmatched_text"
@@ -1240,10 +1196,12 @@ def render_block(sidecar: Mapping[str, Any]) -> str:
 
 
 def _percent(value: float | None) -> str:
+    """A fraction as a percent, or an em dash when there is no denominator."""
     return "—" if value is None else f"{value:.1%}"
 
 
 def _rate(cell: Mapping[str, int]) -> str:
+    """A judged/correct cell as a percent, or an em dash when nothing was judged."""
     return "—" if not cell["judged"] else f"{cell['correct'] / cell['judged']:.1%}"
 
 
@@ -1268,6 +1226,7 @@ DEFAULT_GUIDE = Path("tests/fixtures/billstatus_codes/guide-2026-08-03.md")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run the selected phase against the default (or overridden) receipt paths."""
     parser = argparse.ArgumentParser(description=__doc__ and __doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="phase", required=True)
     for name in ("text", "measure", "sample", "billstatus", "report", "render"):

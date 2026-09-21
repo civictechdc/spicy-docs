@@ -1,61 +1,33 @@
 """CRS report files on congress.gov: keyless PDF and HTML for one explicit report.
 
 ``listing.py`` names the reports and ``crs_summaries.py`` fetches their
-metadata; both need the api.data.gov key and neither carries the file. The file
-lives on the public web route
-``https://www.congress.gov/crs_external_products/{family}/PDF/{id}/{id}.{version}.pdf``,
-which is served without a key and without a browser user agent. ``HEAD`` on it
-answers 403 while ``GET`` serves, so this module only ever issues ``GET``.
+metadata (both keyed); the file itself sits on the public web route
+``.../crs_external_products/{family}/PDF/{id}/{id}.{version}.pdf``, which
+serves without a key. ``HEAD`` answers 403 while ``GET`` serves, so this module
+only ever issues ``GET``. The PDF route carries no identity inside the bytes,
+so identity is the request itself, proved three ways -- the
+``application/pdf`` media type, the ``%PDF-`` magic, and a final URL equal to
+the locator; a 200 that is not a PDF is a refusal with its bytes retained,
+never data and never absence. The family segment is usually the id's alphabetic
+prefix but not always (80 ``RL`` reports are filed under ``RA``, and the
+legacy ``98-807``-style ids carry none), so prefer the publisher's stated URL;
+``family_from_report_id`` is an inference that fails loudly as a 404, never as
+data. Superseded versions stay available, so a version selects one specific
+file and a version never issued is a 404.
 
-The PDF route carries no identity inside the bytes: a CRS PDF states no report
-id a reader can check. Identity is therefore the request itself, proved three
-ways — the publisher's ``application/pdf`` media type, the ``%PDF-`` magic, and
-a final URL equal to the locator. A 200 that is not a PDF is a refusal with its
-bytes retained, never data and never absence. ``validate_body_prefix`` is not
-called here: it belongs to the streamed download path and only rejects HTML,
-which the magic check already subsumes.
-
-Two facts measured over 13,970 publisher-stated PDF URLs (the ``formats`` rows
-of `receipts/crs-summaries-2026-09-07.jsonl`, 2026-09-07) shape the selection:
-
-* The family segment is usually the id's alphabetic prefix, but 80 ``RL`` reports
-  are filed under ``RA``, and the 224 legacy ``98-807``-style ids carry no prefix
-  at all. Prefer the publisher's stated URL; ``family_from_report_id`` is an
-  inference that fails loudly as a 404, never as data.
-* Superseded versions stay available, so a version need not be the one the CRS
-  list states; it selects one specific file. A version never issued is a 404.
-
-Evidence: `corpora/supply-2026-09-02/receipts/port-P03-crs-files-2026-09-14/`.
-
-**HTML.** The publisher's ``formats[]`` also states an HTML URL,
-``.../{family}/HTML/{id}.html`` — no per-id directory and, unlike the PDF
-route, no version segment: congress.gov serves exactly one HTML file per
-report, whichever version is current. Measured 2026-09-19: two reports,
-three keyless header variants each against the stated HTML URL (the file
-route's own client headers, the same Accept/User-Agent built with default
-transport settings, and a browser-like Accept), then a repeat of all six
-(report, header) pairs to tell request-to-request flakiness apart from
-report-or-header variance. It is flakiness: three of the six repeated pairs
-flipped status between passes, including the literal replica of this
-module's own client headers on IF12853 (200, then 403 on repeat) and
-IF11830's browser-like Accept (403, then 200). No report, no header
-combination and no repeat sequence was reliable. Evidence and the full table:
-`docs/sources/crs-files.md`, `tests/fixtures/crs_files/README.md`.
-
-So HTML is preferred, never trusted: `acquire_report` tries it once and
-falls back to the versioned PDF route under the same request budget on any
-refusal, carrying the refused capture on the result (`html_refusal`) so the
-fallback stays auditable. The HTML carries no version of its own — neither
-the URL nor the bytes state one — so it can only ever stand in for the
-version the same `formats[]` read called current; `CrsReportSelection`
-freezes that pairing at construction (`crs_report_selection`), and
-`acquire_report` uses HTML only when the requested version equals it,
-routing anything else straight to the PDF path and saying why
-(`html_skipped_reason`). Identity is the report id, stated twice
-independently in the markup — the `class="CoverDate"` element's own text and
-the `data-prod-type` attribute — read through `reading/markup.py`'s events
-rather than a raw substring search, so another report's page citing this id
-in its prose cannot be mistaken for the report's own cover line.
+The publisher's ``formats[]`` also states an HTML URL -- one current file per
+report, with no per-id directory and no version segment. Congress.gov's
+keyless bot wall answers that route inconsistently request to request (three
+of six repeated request pairs flipped status, measured 2026-09-19), so HTML is
+preferred but never trusted: ``acquire_report`` tries it once and falls back
+to the versioned PDF under the same request budget on any refusal, carrying
+the refused capture as ``html_refusal`` so the fallback stays auditable. The
+HTML carries no version of its own, so it can only ever stand in for the
+version the same ``formats[]`` read called current -- ``CrsReportSelection``
+freezes that pairing -- and its identity is the report id stated twice
+independently, the ``class="CoverDate"`` element and the ``data-prod-type``
+attribute, read through ``reading/markup.py``'s events rather than a raw
+substring search, so a citation in another report's prose cannot satisfy it.
 """
 
 from __future__ import annotations
@@ -132,15 +104,12 @@ class CrsFileUnavailableError(CrsFileSourceError):
 class CrsHtmlRefusedError(CrsFileSourceError):
     """The keyless HTML route answered 401/403; there is no credential here to reject.
 
-    congress.gov's bot wall answers this route inconsistently -- measured
-    2026-09-19, the exact same request can answer 200 once and 403 the next
-    attempt (module docstring; docs/sources/crs-files.md). ``named_challenge``
-    recasts that refusal into this error so it is catchable as a
-    ``CrsFileSourceError``, its body retained as evidence on
-    ``refused_response``, the way ``LegislatorsRefusedError`` and
-    ``VoteRefusedError`` already do for this repo's other keyless families --
-    rather than letting it escape as ``CredentialRefusedError``, which only
-    the PDF route's ``HEAD`` probe triggers today.
+    The bot wall answers inconsistently -- the exact same request can answer
+    200 once and 403 the next attempt -- so ``named_challenge`` recasts that
+    refusal into this error so it is catchable as a ``CrsFileSourceError``,
+    its body retained as evidence on ``refused_response``, rather than letting
+    it escape as ``CredentialRefusedError`` (which only the PDF route's
+    ``HEAD`` probe triggers today).
     """
 
     def __init__(self, url: str) -> None:
@@ -201,12 +170,11 @@ def crs_file_selection(stated_url: str) -> CrsFileSelection:
 
 
 def family_from_report_id(report_id: str) -> str:
-    """Infer the family from the id prefix. Right for 13,890 of 13,970 retained reports.
+    """Infer the family from the id prefix. Right for most reports, wrong for the ``RL``-under-``RA`` case.
 
-    Wrong for the 80 ``RL`` reports filed under ``RA`` (``RL/PDF/RL31312/…``
-    answered 404 while ``RA/PDF/RL31312/…`` served), and impossible for the 224
-    legacy ``NN-NNN`` ids, which this refuses. Use it only when the report's
-    stated PDF URL is not at hand; a wrong inference answers 404.
+    Impossible for the 224 legacy ``NN-NNN`` ids, which this refuses. Use it
+    only when the report's stated PDF URL is not at hand; a wrong inference
+    answers 404, never data.
     """
     if not isinstance(report_id, str) or _REPORT_ID.fullmatch(report_id) is None:
         raise CrsFileSourceError("report_id must be a CRS id such as 'IF11830' or the legacy '98-807'")
@@ -287,10 +255,10 @@ class CrsReportSelection:
 def crs_report_selection(formats: Sequence[Mapping[str, object]]) -> CrsReportSelection:
     """Build one report's selection from its ``crsreport/{id}`` ``formats[]`` array.
 
-    Reads exactly what the publisher stated in one response: the ``PDF``
-    entry names the current version and the ``HTML`` entry, when present, is
-    paired with that same version because both came from the same read. A
-    caller with only a stated URL in hand still has
+    Reads exactly what the publisher stated in one response: the ``PDF`` entry
+    names the current version and the ``HTML`` entry, when present, is paired
+    with that same version because both came from the same read. A caller with
+    only a stated URL in hand still has
     ``crs_file_selection``/``crs_html_selection`` directly, but assembling a
     ``CrsReportSelection`` from two separately-fetched URLs risks pairing a
     current HTML rendition with a different report's or a different moment's
@@ -406,19 +374,16 @@ def read_crs_html(
 ) -> CrsReportHtml:
     """Prove the bytes are the one report's current HTML served by the locator.
 
-    The route states no version, so completeness and identity rest on the
-    report id alone -- stated twice independently in the markup, the way the
-    PDF path's two statements (magic and signed length) are independent of
-    each other. The cover line's own ``class="CoverDate"`` element spells the
-    id in parentheses (``(IF12853)``), and a ``data-prod-type`` attribute
-    states the family; both are read through ``reading/markup.py``'s parsed
+    The route states no version, so identity rests on the report id alone --
+    stated twice independently, the way the PDF path's two statements are
+    independent of each other: the cover line's own ``class="CoverDate"``
+    element spells the id in parentheses, and a ``data-prod-type`` attribute
+    states the family. Both are read through ``reading/markup.py``'s parsed
     events, scoped to that one element, not a substring search over the whole
-    page -- which a citation to this id elsewhere in another report's prose
-    could otherwise satisfy. Both must agree with the selection, and the
-    final URL must equal the locator. There is no version to check: a stale
-    or ahead-of-metadata capture cannot be told apart from a fresh one by the
-    bytes alone, which is why this rendition only ever stands in for a
-    report's *current* file (module docstring).
+    page, which a citation to this id in another report's prose could
+    otherwise satisfy. Both must agree with the selection, and the final URL
+    must equal the locator. There is no version to check, which is why this
+    rendition only ever stands in for a report's *current* file.
     """
     _limit(max_bytes)
     if not isinstance(selection, CrsHtmlSelection):
@@ -572,20 +537,16 @@ class CrsFileAcquirer(SourceAcquirer):
     ) -> CrsHtmlAcquisition:
         """One GET for the report's current HTML. Refused more often than the PDF route, and non-deterministically.
 
-        Measured 2026-09-19 across two reports, three header variants each,
-        and a repeat of all six (module docstring; docs/sources/crs-files.md):
-        congress.gov's keyless bot wall is inconsistent request to request,
-        not just report to report or header to header -- three of six
-        repeated (report, header) pairs flipped status between passes,
-        including this method's own exact headers. A caller that must have a
-        body should use ``acquire_report`` rather than treating a refusal
-        here as the report having no HTML.
+        Congress.gov's keyless bot wall is inconsistent request to request,
+        not just report to report: repeated identical requests flipped status
+        between passes (module docstring). A caller that must have a body
+        should use ``acquire_report`` rather than treating a refusal here as
+        the report having no HTML.
 
         A 401/403 is recast as ``CrsHtmlRefusedError`` by ``named_challenge``
         (this route is keyless, so it is a bot wall, not a credential being
         rejected) rather than escaping as ``CredentialRefusedError`` --
-        consistent with this repo's other keyless families (cbo.py, votes.py,
-        legislators.py, bulk_status.py).
+        consistent with this repo's other keyless families.
         """
         locator = crs_html_locator(selection)
         effective = replace(self.budget, max_bytes=narrow_byte_limit(self.budget.max_bytes, max_bytes))
@@ -641,20 +602,18 @@ class CrsFileAcquirer(SourceAcquirer):
 
         ``version`` defaults to ``selection.pdf.version`` -- the version the
         same ``formats[]`` read called current, the only version HTML can
-        stand in for (module docstring: the route states no version of its
-        own, in the URL or the bytes). A request for any other version is
-        routed straight to the PDF route, and ``html_skipped_reason`` on the
-        result says why. This makes a caller-pinned historical version
-        silently answered with today's HTML structurally impossible rather
-        than a rule a caller has to remember: the comparison happens here,
-        not by whether an HTML selection happens to have been passed in.
+        stand in for, since the route states no version of its own. A request
+        for any other version is routed straight to the PDF route, and
+        ``html_skipped_reason`` on the result says why, making a caller-pinned
+        historical version silently answered with today's HTML structurally
+        impossible rather than a rule a caller has to remember.
 
-        A refusal fetching HTML -- the bot wall (non-deterministic: module
-        docstring), an unexpected shape, a missing identity marker -- is not
-        a hard failure either: it falls back to the PDF route under the same
-        request budget, and the refused capture is kept on the result as
-        ``html_refusal`` so the fallback stays auditable. Only a PDF-route
-        failure (or an exhausted budget) propagates.
+        A refusal fetching HTML -- the bot wall, an unexpected shape, a
+        missing identity marker -- is not a hard failure: it falls back to the
+        PDF route under the same request budget, and the refused capture is
+        kept on the result as ``html_refusal`` so the fallback stays
+        auditable. Only a PDF-route failure (or an exhausted budget)
+        propagates.
         """
         if not isinstance(selection, CrsReportSelection):
             raise CrsFileSourceError("selection must be a CrsReportSelection")

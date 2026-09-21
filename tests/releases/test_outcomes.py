@@ -1,4 +1,7 @@
-"""Collection outcomes preserve the difference between empty and rejected input."""
+"""Collection-outcome contract: counters distinguish empty, partial and total rejection, discarded observations
+are counted separately from record failures, the summary is a fresh mapping bound to the release's policy
+digest, and failure iteration is sorted and bounded.
+"""
 
 from __future__ import annotations
 

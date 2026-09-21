@@ -17,6 +17,7 @@ DESTINATION = ROOT / "src/spicy_docs/sources/fec/field_layouts.json"
 
 
 def build() -> dict:
+    """Read each pinned workbook into layout records, asserting digests and a unique (family, version, form, row)."""
     sources = json.loads((FIXTURES / "sources.json").read_bytes())
     layouts = []
     for source_index, source in enumerate(sources):

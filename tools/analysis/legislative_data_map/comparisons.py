@@ -1,4 +1,8 @@
-"""Overlapping routes on one bounded scope: where the two publishers' inventories disagree."""
+"""Overlapping routes on one bounded scope: where the two publishers' inventories disagree.
+
+Each pair compares identifier sets on a fixed Congress, volume or year, and the verdict strings
+at the bottom state which side the repo takes and why.
+"""
 
 from __future__ import annotations
 
@@ -42,6 +46,7 @@ from tools.analysis.shared import (
 
 
 def compare_house_vote(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, Any]:
+    """One House roll call (session 1, roll 240) as the API's member votes against the Clerk XML, by position."""
     url = f"{CONGRESS_API}/house-vote/{CURRENT_CONGRESS}/1/240/members?{urlencode({'format': 'json', 'limit': 250})}"
     api: dict[str, str] = {}
     for _ in range(4):
@@ -74,6 +79,7 @@ def compare_house_vote(congress: PagedJsonReader, probe: KeylessProbe) -> dict[s
 
 
 def compare_members(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, Any]:
+    """Current members on the API against House members.xml/MemberData and the Senate cvc, by bioguide id."""
     rows = _congress_list(congress, f"member/congress/{CURRENT_CONGRESS}", "members", max_pages=4)
     api = {str(r.get("bioguideId")): r for r in rows}
     house_file = _bioguides(_xml(probe, SAMPLES["house-members-xml"][0], "house-members"))
@@ -108,6 +114,7 @@ def compare_members(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str,
 
 
 def compare_daily_record(congress: PagedJsonReader, govinfo: PagedJsonReader) -> dict[str, Any]:
+    """One Record volume's issue dates on the API against GovInfo CREC packages, excluding the prior volume's."""
     rows = _congress_list(
         congress, f"daily-congressional-record/{COMPARE_VOLUME}", "dailyCongressionalRecord", max_pages=2
     )
@@ -139,6 +146,7 @@ def compare_daily_record(congress: PagedJsonReader, govinfo: PagedJsonReader) ->
 
 
 def compare_committee_reports(congress: PagedJsonReader, govinfo: PagedJsonReader) -> dict[str, Any]:
+    """One Congress's committee reports: API type+number against GovInfo CRPT package ids, parts collapsed."""
     rows = _congress_list(congress, f"committee-report/{COMPARE_CONGRESS}", "reports", max_pages=12)
     api = {f"{str(r.get('type')).lower()}{r.get('number')}" for r in rows}
     packages = _govinfo_published(
@@ -156,6 +164,7 @@ def compare_committee_reports(congress: PagedJsonReader, govinfo: PagedJsonReade
 
 
 def compare_hearings(congress: PagedJsonReader, govinfo: PagedJsonReader) -> dict[str, Any]:
+    """One Congress's hearings keyed by jacket number: API rows against GovInfo CHRG packages."""
     rows = _congress_list(congress, f"hearing/{COMPARE_CONGRESS}", "hearings", max_pages=20)
     api = {str(r.get("jacketNumber")).lstrip("0") for r in rows if r.get("jacketNumber")}
     packages = _govinfo_published(
@@ -171,6 +180,7 @@ def compare_hearings(congress: PagedJsonReader, govinfo: PagedJsonReader) -> dic
 
 
 def compare_nominations(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, Any]:
+    """Current-Congress nominations: the API list against the union of nine Senate LIS feeds, plus feed-only detail lookups."""
     rows = _congress_list(congress, f"nomination/{CURRENT_CONGRESS}", "nominations", max_pages=12)
     api = {str(r.get("citation") or f"PN{r.get('number')}").split("-")[0] for r in rows}
     feeds: dict[str, Any] = {}
@@ -205,6 +215,7 @@ def compare_nominations(congress: PagedJsonReader, probe: KeylessProbe) -> dict[
 
 
 def compare_laws(congress: PagedJsonReader, probe: KeylessProbe) -> dict[str, Any]:
+    """Public and private law numbers: the API's law route against the PLAW bulkdata folders."""
     rows = _congress_list(congress, f"law/{CURRENT_CONGRESS}", "bills", max_pages=4)
     api = {
         f"{'private' if 'rivate' in str(law.get('type')) else 'public'} {law.get('number')}"
@@ -329,6 +340,7 @@ def compare_bulk_status(congress: PagedJsonReader, probe: KeylessProbe) -> dict[
 def measure_comparisons(
     congress: PagedJsonReader, govinfo: PagedJsonReader, probe: KeylessProbe, api_key: str
 ) -> dict[str, Any]:
+    """Run every comparison pair, recording a refused pair as an error under its key rather than aborting."""
     out: dict[str, Any] = {}
     pairs = {
         "house-vote": lambda: compare_house_vote(congress, probe),
@@ -402,6 +414,7 @@ WHY: dict[str, str] = {
 
 
 def _summary(c: Mapping[str, Any]) -> str:
+    """One comparison's result column, keyed to the extra fields its pair recorded."""
     if "disagreements" in c:
         return f"{len(c['disagreements'])} position disagreements; totals {'equal' if c['onlyACount'] == c['onlyBCount'] == 0 else 'differ'}"
     if "apiOnlyMembers" in c:
@@ -415,6 +428,7 @@ def _summary(c: Mapping[str, Any]) -> str:
 
 
 def render_comparisons(measures: Mapping[str, Any]) -> list[str]:
+    """The comparisons table plus its per-verdict reasoning; empty when no comparison pass has run."""
     comparisons = measures.get("comparisons")
     if not comparisons:
         return []

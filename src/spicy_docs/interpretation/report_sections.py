@@ -1,17 +1,13 @@
 """Two aggregates over parsed report sections, ported from BillTrax's SQL as pure Python.
 
-BillTrax computed both with a MySQL query joining ``bills``, ``committee_reports``
-and ``report_sections`` (``committee-reports.ts``). There is no database here:
-each function takes the equivalent joined rows as plain mappings and does the
-filter/sort/dedupe MySQL did, in the same order, over whatever iterable of rows
-the caller's own storage layer supplies.
-
-Both BillTrax functions took their filter values as parameters alongside an
-implicit ``WHERE`` clause baked into the SQL; a pure function over rows needs
-those same filter values explicitly, since there is no query to embed them in.
-``getAgencyRecurrence(agencyLabel, currentBillId)``'s second parameter was
-already dead code -- named ``_currentBillId``, never read in its body
-(``committee-reports.ts:136-138``) -- so it is dropped here rather than ported.
+BillTrax computed both with a MySQL query joining ``bills``,
+``committee_reports`` and ``report_sections``; with no database here, each
+function takes the equivalent joined rows as plain mappings and does the same
+filter/sort/dedupe MySQL did, in the same order, over whatever iterable of
+rows the caller's own storage layer supplies. BillTrax's
+``getAgencyRecurrence(agencyLabel, currentBillId)`` second parameter was
+already dead code -- never read in its body -- so it is dropped here rather
+than ported.
 """
 
 from __future__ import annotations
@@ -23,14 +19,12 @@ from typing import Any, TypedDict
 class ReportSectionRow(TypedDict):
     """One joined row across ``bills``, ``committee_reports`` and ``report_sections``.
 
-    Field names follow BillTrax's own SQL aliases: `congress`/`bill_number` come
-    from `bills`; `bill_id`, `report_id`, `chamber`, `report_label`, `date`,
-    `report_text`, `source` come from `committee_reports`; `section_id`, `seq`,
-    `agency_label`, `body` come from `report_sections`. Neither function below
-    reads every field on every row -- `agency_recurrence` only needs `congress`,
-    `bill_number`, `report_label`, `agency_label`, `body`; `sections_for_agency`
-    needs the rest -- but one row shape serves both aggregates, matching how
-    BillTrax's own two queries both joined the same three tables.
+    Field names follow BillTrax's own SQL aliases: `congress`/`bill_number`
+    come from `bills`; `bill_id`, `report_id`, `chamber`, `report_label`,
+    `date`, `report_text`, `source` come from `committee_reports`; `section_id`,
+    `seq`, `agency_label`, `body` come from `report_sections`. One row shape
+    serves both aggregates, matching how both of BillTrax's queries joined the
+    same three tables.
     """
 
     congress: int
@@ -51,22 +45,17 @@ class ReportSectionRow(TypedDict):
 def agency_recurrence(rows: Iterable[ReportSectionRow], agency_label: str, *, limit: int = 20) -> dict[str, Any]:
     """Port of ``getAgencyRecurrence`` (committee-reports.ts:136-176).
 
-    How many distinct congresses have report language for ``agency_label``, across every bill in
-    ``rows`` (not just one). Matches BillTrax's own normalization: both the query's ``agency_label``
-    and each row's are compared ``upper().strip()``, not exact. A row whose ``agency_label`` is
-    ``None`` never matches, the same way SQL's ``UPPER(TRIM(rs.agency_label)) = ?`` evaluates to
-    unknown, not true, for a ``NULL`` column regardless of ``?``. Faithfully reproduces two more
-    things the SQL does that a naive re-reading would not, kept because this ports the query
-    BillTrax actually ran, not the query it meant to write:
-
-    - ``SELECT DISTINCT ... LIMIT 20`` caps the matching **rows** (deduped on the four selected columns)
-      before the per-congress dedup below runs, not the number of distinct congresses returned. If the
-      top `limit` rows repeat a congress (e.g. a House and a Senate report for the same congress), the
-      returned count can undercount true recurrence. Not measured against data with duplicate-congress
-      collisions; carried over as BillTrax computed it, not corrected.
-    - The SQL is ``ORDER BY b.congress DESC`` with no secondary key, so MySQL leaves ties within a
-      congress unspecified. This port uses Python's stable sort, so tied rows keep the caller's input
-      order -- a deterministic choice BillTrax's SQL never made, not a behavior being matched.
+    How many distinct congresses have report language for ``agency_label``,
+    across every bill in ``rows`` (not just one), compared ``upper().strip()``
+    as the query did -- a row whose label is ``None`` never matches, the same
+    way SQL's ``UPPER(TRIM(rs.agency_label)) = ?`` is unknown for a ``NULL``
+    column. Two further things the SQL did are kept, because this ports the
+    query BillTrax actually ran rather than the query it meant to write:
+    ``SELECT DISTINCT ... LIMIT 20`` caps the matching **rows** (deduped on the
+    four selected columns) before the per-congress dedup, so the returned count
+    can undercount true recurrence; and the single-key ``ORDER BY b.congress
+    DESC`` left ties unspecified, so this port's stable sort keeps the caller's
+    input order -- a deterministic choice BillTrax's SQL never made.
     """
     normalized = agency_label.upper().strip()
     matches = [
@@ -100,14 +89,13 @@ def sections_for_agency(
 ) -> tuple[dict[str, Any], ...]:
     """Port of ``getSectionsForAgency`` (committee-reports.ts:178-210).
 
-    Every report section for one bill naming ``agency_label``, one ``{report, section}`` pair per
-    matching section, ordered by chamber. Unlike ``agency_recurrence``, BillTrax matches ``agency_label`` here exactly -- case-sensitive,
-    untrimmed (`rs.agency_label = ?`, no `UPPER`/`TRIM`). Kept as-is: BillTrax's two functions genuinely
-    use different match rules, and harmonizing them here would stop this from being a port.
-
-    ``ORDER BY cr.chamber`` alone (alphabetical: conference, house, senate); Python's stable sort keeps
-    the caller's input order for rows sharing a chamber, matching how a single-key SQL sort leaves ties
-    in whatever order the storage engine already held them.
+    Every report section for one bill naming ``agency_label``, one ``{report,
+    section}`` pair per matching section, ordered by chamber. Unlike
+    :func:`agency_recurrence`, the label match here is exact -- case-sensitive
+    and untrimmed (``rs.agency_label = ?``) -- kept as-is because BillTrax's two
+    functions genuinely used different match rules, and the single-key
+    ``ORDER BY cr.chamber`` leaves rows sharing a chamber in the caller's input
+    order, as a single-key SQL sort leaves ties in storage order.
     """
     matches = [row for row in rows if row["bill_id"] == bill_id and row["agency_label"] == agency_label]
     ordered = sorted(matches, key=lambda row: row["chamber"])

@@ -1,16 +1,9 @@
-"""Stable spicy-regs public-table columns and their faithful projection.
+"""The sixteen-column logical spicy-regs public comment row, the fifteen-column partition file, and the one projection
+between them.
 
-The spicy-regs project publishes its collected regulations.gov rows as public
-Parquet on ``data.spicy-regs.dev``.  Comments are published twice: as one flat
-monolith and as a Hive-partitioned tree keyed by agency,
-``comments/agency/agency_code={X}/part-0.parquet``.  The partition writer drops
-``agency_code`` from the file — the value lives in the directory name — so the
-bytes carry fifteen columns and the logical row carries sixteen.
-
-This module states both column lists and the one projection between them.  It
-holds data and a pure function only; the acquisition profile in
-:mod:`spicy_docs.sources.public_comments.native` owns the JSON Schema,
-the capture format, and every refusal.
+Comments are published both flat and Hive-partitioned by ``agency_code``, which the partition writer drops from the file
+because the directory name carries it.  Data and one pure function only; the acquisition profile in
+:mod:`spicy_docs.sources.public_comments.native` owns the JSON Schema, the capture format, and every refusal.
 """
 
 from __future__ import annotations
@@ -57,11 +50,10 @@ def project_public_comment_row(
     *,
     agency_code: str,
 ) -> dict[str, str | None]:
-    """Rejoin one partition-file row with its partition key, faithfully.
+    """Rejoin one partition-file row with its ``agency_code`` and return every declared column in the publisher's order,
+    nulls included.
 
-    Every declared column appears in the publisher's order, including the
-    columns the publisher left null.  Nothing is cleaned, trimmed, or dropped:
-    a ``comment`` reading ``See attached`` is a fact about the source at this
+    Nothing is cleaned, trimmed or dropped: a ``comment`` reading ``See attached`` is a fact about the source at this
     layer, not noise.
     """
 

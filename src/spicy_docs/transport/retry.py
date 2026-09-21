@@ -27,10 +27,10 @@ def retry_http[FetchResult](
     """Run operation with capped exponential backoff and full jitter.
 
     max_attempts includes the initial attempt and defaults to MAX_HTTP_ATTEMPTS.
-    A uniform delay from zero to the ceiling separates concurrent fetchers' retries.
-    Each retry logs its attempt, delay, and scrubbed exception to stderr.
-    Callers using credentials must supply api_key unless they already replace
-    or scrub exception text. Keyless callers still get query-parameter scrubbing.
+    A uniform delay from zero to the ceiling separates concurrent fetchers' retries,
+    and each retry logs its attempt, delay and scrubbed exception to stderr.
+    Callers using credentials must supply api_key unless they already replace or
+    scrub exception text; keyless callers still get query-parameter scrubbing.
     """
 
     attempts = MAX_HTTP_ATTEMPTS if max_attempts is None else max_attempts

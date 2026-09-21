@@ -1,4 +1,7 @@
-"""Shared XML safety rules survive chunk boundaries and publisher namespaces."""
+"""Shared XML safety rules survive chunk boundaries and publisher namespaces.
+
+Entities, malformed documents, unpermitted external DOCTYPEs, nesting depth, and byte bounds all refuse; encoding
+declarations and BOMs are respected."""
 
 import pytest
 

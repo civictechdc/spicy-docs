@@ -1,33 +1,19 @@
 """The evidence-linked document model: what was extracted, where, and how it looked.
 
-An :class:`EvidenceBlock` is one printed line as the extractor saw it -- its
-text verbatim, its page and line coordinates, and the style the extractor
-observed (font, size, bold, italic for a PDF; the enclosing elements for a
-markup rendition). A :class:`DocumentNode` is one thing the parser decided
-about a run of blocks -- a section, a paragraph, a citation -- and carries the
-ids of the blocks it rests on plus a :class:`Decision` naming the method and
-the rule. An :class:`UnresolvedRegion` is a run of blocks no rule could place,
-kept with its issue rather than dropped. Every id here is minted by this
-module and marked so (:data:`ID_ORIGIN`).
-
-Blocks come from what ``extraction`` already retains: a PDF's ``PageResult``
-pages (the native observation's PyMuPDF lines, with the boxes ``pages.py``
-already normalized, plus the span fonts it kept in ``raw``), or the markup
-reader's events for an HTML or XML rendition, or the lines of a text
-rendition. Nothing is extracted twice and nothing is dropped: page furniture,
-running heads and neighbouring sections are blocks like any other, and it is
-the parser's job to classify them.
-
-**Line assembly** is the one transformation applied on the way in, because a
-justified column reaches the extractor as word fragments: PyMuPDF emits
-``in``, ``the``, ``following``, ``special``, ``cir-`` as five lines at one
-baseline (the fixture PDF, page 1, y=356). Consecutive extractor lines in one
-vertical band that advance left to right are joined with a single space where
-the fragment carries none. The rule is ``line_assembly`` in the CFR profile
-and the block records how many fragments it joined.
-
-Building is ``O(L)`` for ``L`` extractor lines or text lines; no file is read
-and no request is made.
+An :class:`EvidenceBlock` is one printed line as the extractor saw it -- text
+verbatim, page and line coordinates, and the observed style (font, size, bold,
+italic for a PDF; the enclosing elements for a markup rendition); a
+:class:`DocumentNode` is one thing the parser decided about a run of blocks,
+carrying the ids of the blocks it rests on and a :class:`Decision` naming the
+method and rule; an :class:`UnresolvedRegion` is a run no rule could place,
+kept with its issue rather than dropped; every id is minted here and marked
+generated. Blocks come from what ``extraction`` already retains -- a PDF's
+``PageResult`` pages, the markup reader's events, or a text rendition's lines
+-- with nothing extracted twice and nothing dropped, since page furniture,
+running heads and neighbouring sections are blocks like any other and
+classifying them is the parser's job. Line assembly is the one transformation
+applied on the way in, because a justified column reaches the extractor as
+word fragments; building is ``O(L)`` and reads no file and makes no request.
 """
 
 from __future__ import annotations
@@ -219,9 +205,8 @@ class EvidenceDocument:
 
         A fixture of a few hundred extracted lines is large enough that
         indenting every field triples it and small enough that one long line
-        would make a diff unreadable. One line per block is both: a reviewer
-        sees exactly which lines moved, and the file stays a third smaller
-        than an indented one.
+        would make a diff unreadable: one line per block is both, so a reviewer
+        sees exactly which lines moved.
         """
         data = self.to_json()
         blocks = data.pop("blocks")
@@ -295,9 +280,9 @@ def _native_lines(page: PageResult) -> Iterator[_Line]:
 
     The retained ``TextBlock`` list is exactly the raw lines whose rotated
     rectangle lay on the page, in order, so a two-pointer walk pairs them
-    without recomputing the rotation. A raw line the extractor skipped (an
-    empty rectangle carrying only whitespace) has no block and is skipped
-    here too.
+    without recomputing the rotation; a raw line the extractor skipped (an
+    empty rectangle carrying only whitespace) is skipped here too, and a
+    disagreement raises :class:`EvidenceError`.
     """
     observation = next((o for o in page.content.observations if o.id == _NATIVE_OBSERVATION), None)
     if observation is None or not isinstance(observation.raw, Mapping):
@@ -398,7 +383,8 @@ def evidence_from_markup(read: MarkupRead, *, rendition: str, source_sha256: str
     Text inside ``body_text.METADATA_ELEMENTS`` (the GovInfo ``<title>``) is
     document metadata, not body text, and is left out the same way
     ``body_text`` leaves it out. A block's ``span`` is the byte range of its
-    first through last literal run when the reader could state one.
+    first through last literal run when the reader could state one. Raises
+    :class:`EvidenceError` for a rendition other than ``htm`` or ``xml``.
     """
     if rendition not in ("htm", "xml"):
         raise EvidenceError("markup evidence is built for the htm or xml rendition")

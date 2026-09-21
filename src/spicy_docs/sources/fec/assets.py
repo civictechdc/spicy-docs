@@ -1,4 +1,9 @@
-"""Select declared equivalent renditions and read separately retained text."""
+"""Select declared equivalent renditions, resolve retained embedded text, and check original prefixes.
+
+Equivalence is the caller's claim: an archive, filing, summary and PDF image are
+different source units unless the caller establishes otherwise, and no URL is
+ever guessed from one rendition to another.
+"""
 
 import xml.etree.ElementTree as ET
 from pathlib import Path

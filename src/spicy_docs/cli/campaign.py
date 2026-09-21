@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
 """Publish docket and document releases per agency with bounded resume checks.
 
-Run N agencies concurrently through spicy_docs.cli.source_native. Append each
-child's stdout/stderr to logs/<release>.log; its last non-empty line supplies
-the JSON receipt. SIGINT/SIGTERM terminate children, cancel queued work, and
-exit non-zero.
-
-One runner exclusively holds <root>/campaign.lock. Resume skips a release only
-after bounded admission checks its external pin, requested scope, and accepted
-producer-verifier identity. Unreceipted destinations move aside before retry;
-valid receipts and destinations that fail admission remain intact. Publication
-already replays the release; use verify for an additional full audit.
-
---window-since/--window-until define one window per agency for both collections,
-intended to cover full history. Separate document/docket windows are unsupported.
+One runner exclusively holds <root>/campaign.lock; resume skips a release only after
+bounded admission rechecks its external pin, requested scope, and accepted producer-verifier
+identity, and unreceipted destinations move aside before retry. One window per agency feeds
+both collections; SIGINT/SIGTERM terminate children and exit non-zero.
 """
 
 from __future__ import annotations
@@ -64,6 +55,8 @@ class CampaignError(Exception):
 
 
 class RunContext(NamedTuple):
+    """Shared per-run paths, lock, live-child map, and stop flag."""
+
     run_subprocess: RunSubprocess
     clock: Callable[[], datetime]
     receipts_dir: Path
@@ -172,6 +165,8 @@ def _valid_receipt(receipt: object, destination: Path, source: str, command: str
 
 
 def _resume_receipt(path: Path, destination: Path, source: str) -> dict[str, Any] | None:
+    """Return the stored receipt when this release can resume from it, else None."""
+
     try:
         receipt = json.loads(path.read_text(encoding="utf-8"))
         return receipt if _valid_receipt(receipt, destination, source) else None
@@ -182,6 +177,8 @@ def _resume_receipt(path: Path, destination: Path, source: str) -> dict[str, Any
 def _admit_receipt(
     ctx: RunContext, receipt: dict[str, Any], destination: Path, source: str, agency: str, args: argparse.Namespace
 ) -> bool:
+    """Re-inspect the release and require it to match the stored receipt; raises ValueError on any difference."""
+
     requested_scope = source_registration(source).query_scope(
         argparse.Namespace(
             source=source, since=args.window_since, until=args.window_until, agency=[agency], product_id=[]
@@ -299,6 +296,8 @@ def _execute(
 
 
 def _fail_admission(ctx: RunContext, *, release: str, agency: str, source: str, reason: str) -> None:
+    """Record an admission failure as a campaign row and a log line."""
+
     now = _instant(ctx.clock)
     _append_log(ctx.logs_dir / f"{release}.log", f"\n{now} cannot admit {release}: {reason}\n")
     _append_row(
@@ -329,6 +328,8 @@ def _rename_aside(path: Path, stamp: str) -> None:
 
 
 def _run_one_release(ctx: RunContext, *, agency: str, source: str, args: argparse.Namespace) -> ReleaseOutcome:
+    """Resume from a valid receipt or publish fresh, then require admission; returns the release outcome."""
+
     destination = _destination(args.destination_root, source, agency)
     release = destination.name
     receipt_path = ctx.receipts_dir / f"{release}.json"
@@ -364,6 +365,8 @@ def _run_agency(ctx: RunContext, agency: str, args: argparse.Namespace) -> list[
 
 
 def _agencies(args: argparse.Namespace) -> list[str]:
+    """Collect unique agency codes from file and flags, largest-first when ``--sizes`` is given."""
+
     codes: list[str] = []
     if args.agencies_file:
         data = json.loads(args.agencies_file.read_text(encoding="utf-8"))
@@ -393,7 +396,10 @@ def _summarize(outcomes: list[ReleaseOutcome], elapsed: float, *, interrupted: b
         for source, c in sorted(per_source.items())
     )
     agencies = {agency for _release, agency, _source, _status in outcomes}
-    return f"{len(agencies)} agencies, {len(outcomes)} releases in {elapsed:.1f}s{' (interrupted)' * interrupted}. {counted}."
+    return (
+        f"{len(agencies)} agencies, {len(outcomes)} releases in {elapsed:.1f}s"
+        f"{' (interrupted)' * interrupted}. {counted}."
+    )
 
 
 def _print_dry_run(args: argparse.Namespace, *, out: TextIO) -> None:
@@ -433,6 +439,8 @@ def _install_signal_handlers(handler: Callable[..., None]) -> Callable[[], None]
 def _run_campaign(
     args: argparse.Namespace, *, run_subprocess: RunSubprocess, clock: Callable[[], datetime]
 ) -> tuple[list[ReleaseOutcome], float, bool]:
+    """Run every agency under the root lock; returns outcomes, elapsed seconds, and whether it stopped."""
+
     ordered = _agencies(args)
     lock_path = _claim_root(args.destination_root, clock)
     stopping = threading.Event()

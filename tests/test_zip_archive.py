@@ -1,4 +1,7 @@
-"""Expansion refusals must happen before CRC decompression, including ignored files."""
+"""Expansion refusals happen before CRC decompression, even for ignored entries.
+
+Entry count, per-entry, and total byte bounds plus duplicate and directory members refuse in preflight; CRC still
+checks ignored entries; read_member never requests unbounded inflation."""
 
 import io
 import zipfile

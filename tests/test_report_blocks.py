@@ -1,11 +1,7 @@
-"""Header precedence, full char-span coverage, page attribution and the mid-word hyphen guard.
+"""Header precedence, full char-span coverage, page attribution, and the mid-word hyphen guard.
 
-BillTrax's report-parser.ts has no test of its own (confirmed in
-docs/research/billtrax-raw-data-2026-09-19.md §6: 14 `.test.ts` files under
-`src/lib/`, none named for it); there is nothing to port test cases from. The
-cases below are built from the ported code's own precedence rules and from the
-three real committee-report fixtures in `tests/fixtures/agency_reports/`.
-"""
+BillTrax's report-parser.ts has no test of its own, so these cases are built from the ported code's precedence rules
+and the three real committee-report fixtures rather than ported test cases."""
 
 import hashlib
 import json
@@ -211,7 +207,10 @@ def test_flatten_rejects_duplicate_page_numbers():
         "",
         "no headers here at all, just prose",
         "DEPARTMENT OF DEFENSE\nbody",
-        "Preamble text.\nDEPARTMENT OF DEFENSE\nbody\nOFFICE OF MANAGEMENT AND BUDGET\n\nSMALL BUSINESS ADMINISTRATION\nmore body",
+        (
+            "Preamble text.\nDEPARTMENT OF DEFENSE\nbody\nOFFICE OF MANAGEMENT AND BUDGET\n\n"
+            "SMALL BUSINESS ADMINISTRATION\nmore body"
+        ),
         "DEPARTMENT OF DEFENSE\nOFFICE OF MANAGEMENT AND BUDGET\n   \nSMALL BUSINESS ADMINISTRATION\nreal body",
     ],
 )

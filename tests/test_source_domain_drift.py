@@ -1,14 +1,8 @@
 """The documented-versus-observed enumeration gate.
 
-Three kinds of test, in the shape the data-dictionary check already uses: the
-gate passes on the committed inputs, the gate *fires* when an input is broken,
-and the pinned publisher facts are what the pinned publisher bytes actually say.
-
-The last kind is the point of checking the captures in rather than transcribing
-them. Every documented value below is re-derived from
-``sample-data/source-domains/`` on each run, so these assertions are a statement
-about the publisher's own document, not about a list somebody typed.
-"""
+Three kinds of test: the gate passes on the committed inputs, it fires when an input is broken, and the pinned
+publisher facts are re-derived from sample-data/source-domains/ on every run -- so the assertions are about the
+publisher's own document, not a list somebody typed."""
 
 from __future__ import annotations
 

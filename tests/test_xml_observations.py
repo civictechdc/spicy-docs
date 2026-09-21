@@ -1,4 +1,7 @@
-"""Current-element capture retains source positions without copying ancestry."""
+"""Current-element capture matches the ancestry snapshot without copying it.
+
+Namespace-qualified attributes survive caller mutation, and source_xpath positions each element 1-based among siblings.
+"""
 
 from spicy_docs.reading.xml_observations import XmlObservationScan
 

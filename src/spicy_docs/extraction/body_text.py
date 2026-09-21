@@ -1,76 +1,16 @@
 """One text derivation per fetched rendition, so every caller reads one text.
 
-``sources.govinfo.bodies.BODY_PREFERENCE`` decides *which* rendition a caller
-fetches; this module decides what that rendition's bytes mean as text. There
-is one derivation per rendition and no second stripper:
-
-- ``xml`` -- ``markup-reader``, over ``reading.markup.read_xml_events``.
-- ``uslm`` -- ``markup-reader``, the same branch as ``xml`` (measured
-  2026-09-19 on every BILLS package in the text-versions sample offering a
-  USLM rendition -- five enrolled packages, pins in
-  ``tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json``: root
-  ``resolution`` (hconres) or ``bill`` (the four H.R. bills),
-  not the fixed ``pLaw``/``statuteCompilation`` roots
-  ``sources.govinfo.uslm`` validates identity against for PLAW and COMPS, and
-  a bill's own root varies by bill type -- ``bill``, ``resolution``,
-  ``jointResolution`` and so on -- where PLAW and COMPS each have exactly one.
-  ``uslm.py``'s grammar is keyed to one selection type per fixed root and has
-  no bill identity to validate against, so it does not apply; the generic
-  markup reader, which reads any well-formed XML's text in document order
-  regardless of vocabulary, does).
-- ``htm`` -- ``markup-reader``, over ``reading.markup.read_html_events``.
-- ``txt`` -- ``text-rendition-cleanup``, the shared rules below and nothing
-  else.
-- ``pdf`` -- ``pdf-extraction-gpo-normalized``: ``DocumentExtractor`` with
-  ``NativeText``, then ``gpo_normalize.normalize_gpo_pages``.
-
-It lives in ``extraction`` because the PDF branch *is* extraction and because
-``gpo_normalize`` -- the only other text-derivation step in this repository --
-already lives here; both branches of the shared glyph rule then sit in one
-package. It imports no ``sources`` module: the fetched body is read
-structurally (:class:`FetchedBody`), so ``sources`` keeps depending on
-``extraction`` and not the other way round. ``RENDITION_MEDIA_TYPES`` restates
-the media types ``sources.govinfo.bodies.PACKAGE_BODY_FORMATS`` states for the
-same five names, and ``tests/test_body_text.py`` pins the two equal rather
-than letting one import the other.
-
-**What the non-PDF renditions actually carry**, measured 2026-09-19 over four
-keyless GovInfo ``htm`` bodies (CRPT-119hrpt1, -119hrpt105, -113hrpt135,
--113srpt77), one ``txt`` body (CDIR-2026-02-20, the only collection measured
-that offers one), three BILLS ``xml`` bodies and five BILLS ``uslm`` bodies
-(every package in the 2026-09-19 sample offering one; reading facts pinned in
-``tests/fixtures/govinfo_bills/uslm-renditions-2026-09-19.json``. The per-rule
-numbers are measured on the one USLM fixture whose bytes are retained,
-BILLS-119hconres11enr: 42 elements, 31 element-boundary line breaks, 32
-whitespace-only pretty-print lines; no CRLF, no end-of-text marker, no GPO
-quote pair and no trailing space on this one small fixture). Only what was
-counted above zero has a rule; see ``RENDITION_CLEANUP_RULES`` for the table
-and ``docs/sources/govinfo-bodies.md`` for the per-file numbers.
-
-- The ``htm`` body is GPO's plain text inside ``<html><title>..</title>
-  <body><pre>``. There is no HTML formatting to read: the four measured
-  bodies contain no tag but that wrapper and GPO's own ``<all>`` and
-  ``<graphic(s)>`` locator markers, which carry no text and so leave nothing
-  behind. Whitespace inside a ``<pre>`` is the document's layout -- it is what
-  keeps an appropriations account row's label, leader dots and amount on one
-  line -- so the markup reader's text is taken verbatim and **no blank line is
-  dropped**: ``report_blocks.parse_agency_blocks`` decides a header has a body
-  by whether the lines under it are blank.
-- The ``txt`` body is the same text with CRLF line endings (27,717 of them in
-  CDIR-2026-02-20) and no wrapper at all.
-- A BILLS ``xml`` body declares an external DOCTYPE (``<!DOCTYPE bill PUBLIC
-  ... "bill.dtd">``), which ``read_xml_events`` refuses unless a caller says
-  otherwise, so this module allows it explicitly. Nothing is ever fetched for
-  it: the reader never loads an external resource and still refuses every
-  entity declaration.
-- None of those nine bodies carries a ``[[Page N]]`` marker, a form feed, a
-  ``VerDate`` footer or a non-breaking space. Those are PDF artifacts, handled
-  in the PDF branch by ``normalize_gpo_pages``; no rule is written for them
-  here, because there is nothing measured to write one against.
-
-For body bytes ``B`` and its derived text ``T``: every branch is ``O(B)`` time
-and ``O(B + T)`` space, one pass per rule. This module makes no network
-request and writes no file.
+Five renditions (``xml``, ``uslm``, ``htm``, ``txt``, ``pdf``): the markup and
+text branches share ``normalize_gpo_glyphs``' glyph rules, while the PDF branch
+is ``DocumentExtractor`` with ``NativeText`` plus ``normalize_gpo_pages``, which
+is why this module lives in ``extraction`` and imports no ``sources`` module
+(the fetched body is read structurally as a :class:`FetchedBody`). A BILLS
+``xml`` body declares an external DOCTYPE, allowed explicitly here -- the reader
+still loads no resource and refuses every entity declaration; ``htm`` whitespace
+inside ``<pre>`` is the document's layout, so its text is taken verbatim and no
+blank line is dropped, while only PDF text carries ``[[Page N]]`` markers, form
+feeds and ``VerDate`` footers. Every branch is O(B) time and O(B + T) space,
+one pass per rule; no network request and no file write.
 """
 
 from __future__ import annotations
@@ -177,17 +117,12 @@ RENDITION_CLEANUP_RULES: tuple[RenditionCleanupRule, ...] = (
 class RenditionCleanup:
     """What the markup and text branches read and removed, rule by rule.
 
-    Markup counts are zero for a ``txt`` body, which has no markup to read;
-    ``element_line_breaks`` and ``whitespace_only_lines`` are zero outside the
-    XML branch, and ``metadata_element_chars`` outside the HTML branch. Every
-    field is a count of what was found, so a hosted row can say how its text
-    was made without holding the bytes.
-
-    ``quote_pairs_collapsed`` counts the typewriter quote pairs the rendition
-    spelled -- two backticks opening, two apostrophes closing -- which is how
-    GPO writes a quotation everywhere but its PDF. A PDF's curly-doubled
-    spelling is collapsed by the same shared rule but is not counted here; it
-    belongs to the PDF branch, whose record is a ``GpoCleanupRecord``.
+    Markup counts are zero for a ``txt`` body; ``element_line_breaks`` and
+    ``whitespace_only_lines`` are zero outside the XML branch, and
+    ``metadata_element_chars`` outside the HTML branch. ``quote_pairs_collapsed``
+    counts only GPO's backtick/apostrophe typewriter pairs; a PDF's curly-doubled
+    spelling is collapsed by the same shared rule but counted by the PDF branch's
+    ``GpoCleanupRecord`` instead.
     """
 
     markup_events: int
@@ -251,6 +186,7 @@ class _Extractor(Protocol):
 
 
 def _checked_rendition(rendition: object) -> str:
+    """The rendition name, or a refusal naming the ones supported."""
     if not isinstance(rendition, str) or rendition not in RENDITION_DERIVATIONS:
         supported = ", ".join(RENDITION_DERIVATIONS)
         raise BodyTextError(f"rendition must be one of {supported}")
@@ -258,11 +194,11 @@ def _checked_rendition(rendition: object) -> str:
 
 
 def _checked_media_type(rendition: str, media_type: str | None) -> str:
-    """Accept the rendition's own media types, or name the disagreement.
+    """Return the normalized media type, or refuse a body whose type contradicts its rendition.
 
-    A body whose media type does not match the rendition it claims is the
-    publisher answering with something else; the acquirer already refuses it,
-    and this refuses it again for a caller holding bytes from elsewhere.
+    A missing type defaults to the rendition's first accepted type; a mismatch is
+    the publisher answering with something else, which the acquirer already refuses
+    and this refuses again for a caller holding bytes from elsewhere.
     """
     allowed = RENDITION_MEDIA_TYPES[rendition]
     if media_type is None:
@@ -276,9 +212,9 @@ def _checked_media_type(rendition: str, media_type: str | None) -> str:
 def _cleanup(raw: str) -> tuple[str, dict[str, int]]:
     """The rules every non-PDF rendition shares, with what each one found.
 
-    Each rule is counted against the text as that rule sees it, so two rules
-    never claim the same character: trailing spaces are counted after the line
-    endings are normalized, or every CRLF line would also read as one.
+    Each rule is counted against the text as that rule sees it, so two rules never
+    claim the same character: trailing spaces are counted after line-ending
+    normalization, or every CRLF line would also read as one.
     """
     text = normalize_gpo_glyphs(raw)
     counts = {
@@ -297,11 +233,10 @@ def _cleanup(raw: str) -> tuple[str, dict[str, int]]:
 def _markup_text(read: MarkupRead, *, xml: bool) -> tuple[str, dict[str, int]]:
     """Walk one markup read's text in document order.
 
-    For XML an element boundary closes the current line, so text from two
-    elements never runs together and the document's own nesting survives as
-    line breaks; the indentation between elements is formatting and its
-    whitespace-only lines go. For HTML the text is taken verbatim: a GovInfo
-    body is a ``<pre>`` block whose whitespace *is* the layout.
+    For XML an element boundary closes the current line, so text from two elements
+    never runs together and pretty-print whitespace-only lines are dropped; for
+    HTML the text is taken verbatim, because a GovInfo body is a ``<pre>`` block
+    whose whitespace is the layout.
     """
     parts: list[str] = []
     text_events = metadata_chars = breaks = depth = 0
@@ -341,6 +276,7 @@ def _markup_text(read: MarkupRead, *, xml: bool) -> tuple[str, dict[str, int]]:
 
 
 def _pdf_text(data: bytes, extractor: _Extractor | None) -> tuple[str, tuple[str, ...], GpoCleanupRecord]:
+    """Extract, then normalize; refuses a PDF that yields no page, and joins pages with one ``\\n``."""
     if extractor is None:
         from .api import DocumentExtractor, NativeText
 
@@ -364,7 +300,7 @@ def rendition_text(
 ) -> BodyText:
     """Derive parser-ready text from one rendition's exact bytes.
 
-    ``rendition`` is one of ``xml``, ``htm``, ``txt`` or ``pdf``; the
+    ``rendition`` is one of ``xml``, ``uslm``, ``htm``, ``txt`` or ``pdf``; the
     derivation it gets is ``RENDITION_DERIVATIONS[rendition]`` and is never
     inferred from the bytes. ``media_type`` is checked against the rendition
     when given. ``byte_size`` defaults to ``len(data)`` and exists so a caller

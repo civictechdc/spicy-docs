@@ -1,4 +1,7 @@
-"""Literal USLM observations retain the source, including unfamiliar references."""
+"""scan_uscode_references retains literal USLM observations, including unfamiliar references.
+
+Element paths, ancestry, hrefs, and source-credit text round-trip against an independent ElementTree walk; malformed,
+DOCTYPE, and bound violations refuse; and callback errors keep their identity."""
 
 import io
 import re

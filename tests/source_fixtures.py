@@ -1,8 +1,8 @@
-"""Routine fixture encoding and inspection, shared across source tests.
+"""Routine fixture encoding and inspection shared across source tests.
 
-Adversarial release builders stay in source_native_release_fixtures.py. These
-helpers do not generate verifier expectations through the publisher under test.
-"""
+Builds paginated JSON responses, receipt payload rows, counted subsets, and zip archives. Adversarial release
+builders stay in source_native_release_fixtures.py, and these helpers never generate verifier expectations through
+the publisher under test."""
 
 from __future__ import annotations
 

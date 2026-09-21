@@ -77,6 +77,7 @@ def split_record(record: object, *, source_pointer: str | None = "") -> dict:
 
 
 def parse_api(payload: bytes) -> dict:
+    """Decode a successful FEC API JSON object, refusing error envelopes and non-objects."""
     value = load_decimal_json(payload, source="FEC")
     if not isinstance(value, dict) or value.get("error") or value.get("errors"):
         raise ValueError("FEC API did not return a successful JSON object")
@@ -84,6 +85,7 @@ def parse_api(payload: bytes) -> dict:
 
 
 def parse_sitemap(payload: bytes) -> tuple[str, list[dict]]:
+    """Read a FEC sitemap or urlset document into its kind and one row per entry."""
     root = ET.fromstring(payload)
     kind = root.tag.rsplit("}", 1)[-1]
     if root.tag not in {name for name in ("urlset", "sitemapindex")} | {

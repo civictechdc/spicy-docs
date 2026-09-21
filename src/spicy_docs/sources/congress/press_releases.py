@@ -1,49 +1,30 @@
 """Appropriations committee press releases: two keyless RSS 2.0 feeds, one per chamber.
 
 BillTrax carried four spellings of these two feeds and all four are dead
-(measured 2026-09-19, ``docs/research/billtrax-raw-data-2026-09-19.md`` §4):
-``appropriations.house.gov/news/press-releases.rss`` and
-``appropriations.house.gov/rss/`` both answer 404; the equivalent Senate
-library spelling answers 410 Gone; the equivalent Senate script spelling
-answers 200 with a 606-byte ColdFusion error page, not a feed. The two
-canonical addresses are each publisher's own: ``appropriations.house.gov/rss.xml``
-(the only RSS-like ``href`` on the House site) and
-``www.appropriations.senate.gov/rss/feeds/?type=press`` (the Senate's CMS feed
-route, found by probing its known shape; the Senate declares no feed at all).
-
-Both are RSS 2.0 with no default namespace; neither publisher serves Atom, so
-this module never looks for one -- the single-item-list collapse that crashes
-BillTrax's ``fast-xml-parser`` reader (``press-releases.ts:102``,
-``sync-press-releases.ts:44``) does not reproduce here, since ``xml.etree``
-never collapses a one-item list.
+(measured 2026-09-19): both House spellings answer 404, the Senate library
+spelling answers 410 Gone, and the Senate script spelling answers 200 with a
+606-byte ColdFusion error page, not a feed. The two canonical addresses are
+each publisher's own: ``appropriations.house.gov/rss.xml`` and
+``www.appropriations.senate.gov/rss/feeds/?type=press``. Both are RSS 2.0 with
+no default namespace; neither publisher serves Atom, so this module never
+looks for one.
 
 **The Senate's ``?type=`` parameter is not honored by the URL alone.** An
-unrecognized value -- measured with ``?type=majority``, ``?type=minority`` and
-``?type=nonexistenttype`` -- answers 200 with a byte-identical default
-channel titled "United States Senate Committee on Appropriations Feed"
-instead of failing. ``?type=press`` answers a distinct channel titled
-"... Committee on Appropriations Press Feed". A request URL therefore proves
-nothing about what came back; ``_check_feed_identity`` below is a check the
-default channel's own title fails, per each ``PressReleaseFeed`` row's
-``identity_title_contains``.
+unrecognized value answers 200 with a byte-identical default channel titled
+"United States Senate Committee on Appropriations Feed" instead of failing, so
+a request URL proves nothing about what came back; ``_check_feed_identity`` is
+a check the default channel's own title and link host fail.
 
-The Senate item has no ``<description>`` at all (BillTrax's ``excerpt`` goes
-silently empty on this feed and ``matchReleasesToBills`` degrades to
-title-only matching -- not reproduced here, since every field stays optional
-on its own rather than being papered over). Every item field either feed
-carries is kept in full: BillTrax narrows the body to a 500-character,
-tag-stripped ``excerpt`` and the title to 500 characters (``press-releases.ts:111,
-116``), and drops ``dc:creator`` (a named House staffer's mail.house.gov
-address), the Senate's plain ``<author>`` (a shared ``webmaster@`` mailbox,
-not per-article), and the channel-level ``ttl``/``skipDays``/``skipHours``/
-``lastBuildDate`` entirely; none of that happens here.
-
-The Senate's ``pubDate`` spells its zone ``EST`` even in September, when real
-Eastern time is ``EDT``; RFC 822's fixed abbreviation table maps ``EST`` to a
-constant UTC-5 offset regardless of season, so ``pub_date_instant`` on a
-Senate item can read up to an hour earlier than the true Eastern wall-clock
-time the publisher meant. That is the publisher's own quirk (kept, not
-corrected); ``pub_date`` keeps the exact string the publisher spelled.
+Every item field either feed carries is kept in full: no 500-character
+excerpt, no dropped ``dc:creator``/``<author>``, no dropped channel-level
+``ttl``/``skipDays``/``skipHours``/``lastBuildDate``. The Senate item has no
+``<description>`` at all, so that field stays optional rather than being
+papered over. The Senate's ``pubDate`` spells its zone ``EST`` even in
+September, when real Eastern time is ``EDT``; RFC 822's fixed abbreviation
+table maps ``EST`` to a constant UTC-5 offset regardless of season, so
+``pub_date_instant`` on a Senate item can read up to an hour earlier than the
+true Eastern wall-clock time the publisher meant -- the publisher's own quirk,
+kept, not corrected -- while ``pub_date`` keeps the exact string.
 """
 
 from __future__ import annotations
@@ -146,9 +127,9 @@ class PressRelease:
     ``guid_is_permalink`` is ``None`` when the item carries no ``<guid>`` at
     all, and ``True`` when a ``<guid>`` omits ``isPermaLink`` -- RFC 2009's
     default when the attribute is absent. ``description`` is the item's raw
-    (already XML-unescaped) HTML exactly as the publisher wrote it;
-    ``description_text`` is that same text stripped through
-    ``reading/markup.py``'s HTML reader, not a truncated excerpt.
+    HTML exactly as the publisher wrote it; ``description_text`` is that same
+    text stripped through ``reading/markup.py``'s HTML reader, not a truncated
+    excerpt.
     """
 
     index: int
@@ -330,7 +311,12 @@ def _read_item(feed: PressReleaseFeed, index: int, element: Element, *, label: s
 def parse_press_release_feed(
     body: bytes, feed: PressReleaseFeed, *, max_bytes: int = DEFAULT_MAX_BYTES
 ) -> PressReleaseChannel:
-    """Read one committee's RSS 2.0 channel whole; every field the publisher sent is kept."""
+    """Read one committee's RSS 2.0 channel whole; every field the publisher sent is kept.
+
+    The channel title and link host must pass ``_check_feed_identity`` before
+    any item is read, since the request URL alone cannot prove which channel
+    answered.
+    """
     if not isinstance(feed, PressReleaseFeed):
         raise TypeError("feed must be a PressReleaseFeed")
     if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or not 1 <= max_bytes <= MAX_FEED_BYTES:

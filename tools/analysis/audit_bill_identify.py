@@ -1,34 +1,18 @@
 """Measure how well bill-signal extraction reads real bill text, per bill type.
 
-The acceptance harness that travelled with ``extractSignals``
-(``BillTrax/scripts/audit-bill-identify.ts``), with its database query replaced
-by a CSV the caller supplies, so the measurement runs offline against any
-pinned sample. Run from the repository root:
+A port of ``extractSignals``' acceptance harness (``BillTrax/scripts/audit-bill-identify.ts``)
+whose database query is replaced by a caller-supplied CSV, so it runs offline:
 
   uv run --frozen python -m tools.analysis.audit_bill_identify \\
       --input <candidates.csv> --output <per-row.csv>
 
-The input CSV needs one row per bill with the columns ``bill_type``,
-``number``, ``congress``, ``short_title``, ``sponsor`` and ``text``; ``text``
-is the version text, and the harness reads the first ``--head-bytes``
-characters of it (8192 by default, as the original's ``LEFT(bv.text, 8192)``
-did). Extra columns are ignored.
-
-The printed tally is the original's, with one widening: it reports **every**
-bill type present in the input, where the TS harness hard-coded ``HR`` and
-``S`` and so silently omitted every joint and concurrent resolution it had
-measured. Per bill type it reports how many extracted bill
-numbers agree with the catalog, how many titles were extracted at all, how
-many sponsors agree, and a breakdown by ``title_source`` with the mean token
-Jaccard against the catalog's short title for each source. Then the list the
-original called unexpected failures -- a bill whose ``title_source`` is
-``none`` although the catalog holds a short title for it, which is the one
-outcome that says extraction lost something it should have found.
-
-What this cannot see: a title the catalog spells differently from the document
-scores a low Jaccard without either side being wrong, and a bill with no
-``short_title`` contributes to no Jaccard mean at all. The counts are about
-extraction, not about the catalog being right.
+The input needs the columns ``bill_type``, ``number``, ``congress``, ``text`` plus optional
+``short_title`` and ``sponsor``; ``text`` is read to ``--head-bytes`` characters (8192, as the
+original's ``LEFT(bv.text, 8192)`` did). The tally widens the original to every bill type present
+(TS hard-coded ``HR`` and ``S``, silently dropping joint and concurrent resolutions) and lists the
+unexpected failures: a bill whose ``title_source`` is ``none`` though the catalog holds a short
+title. A differently spelled catalog title scores low Jaccard without either side being wrong, and
+rows with no ``short_title`` enter no Jaccard mean; these counts measure extraction, not the catalog.
 """
 
 from __future__ import annotations
@@ -55,6 +39,8 @@ REQUIRED_COLUMNS = ("bill_type", "number", "congress", "text")
 
 @dataclass(frozen=True, slots=True)
 class AuditRow:
+    """One bill's catalog fields beside what extraction read from its version text."""
+
     bill_type: str
     number: str
     congress: str
@@ -71,6 +57,7 @@ class AuditRow:
 
 
 def audit_row(row: dict[str, str], *, head_bytes: int) -> AuditRow:
+    """Extract signals from one CSV row's first ``head_bytes`` text and score them against its catalog fields."""
     signals = extract_signals(row.get("text", "")[:head_bytes])
     bill_type = row.get("bill_type", "").strip()
     number = row.get("number", "").strip()
@@ -104,10 +91,12 @@ def audit_row(row: dict[str, str], *, head_bytes: int) -> AuditRow:
 
 
 def audit(rows: Iterable[dict[str, str]], *, head_bytes: int = HEAD_BYTES) -> tuple[AuditRow, ...]:
+    """Score every candidate row, in input order."""
     return tuple(audit_row(row, head_bytes=head_bytes) for row in rows)
 
 
 def _percent(part: int, whole: int) -> str:
+    """``part`` as a whole-number percent of ``whole``, or ``0`` for an empty whole."""
     return "0" if whole == 0 else f"{part / whole * 100:.0f}"
 
 
@@ -147,6 +136,7 @@ def report(rows: Sequence[AuditRow], write: Callable[[str], object] = print) -> 
 
 
 def write_rows(rows: Sequence[AuditRow], path: Path) -> None:
+    """Write every audit row as a CSV whose header is the dataclass's slot order."""
     fields = list(AuditRow.__slots__)
     with path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -182,6 +172,7 @@ def read_candidates(path: Path, *, head_bytes: int = HEAD_BYTES) -> Iterator[dic
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Read the candidate CSV, print the tally and optionally write the per-row CSV; always 0."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--input", required=True, type=Path, help="CSV of candidate bills and their version text")
     parser.add_argument("--output", type=Path, help="optional per-row CSV to write")

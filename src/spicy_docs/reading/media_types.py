@@ -1,4 +1,4 @@
-"""Media types stated by publishers, with a deterministic extension fallback."""
+"""Media types stated by publishers, with a deterministic URL-suffix fallback to application/octet-stream."""
 
 from pathlib import PurePosixPath
 from urllib.parse import urlsplit
@@ -37,6 +37,7 @@ def media_type_policy() -> dict[str, object]:
 
 
 def media_type(value: object, locator: str) -> str:
+    """The stated type or a known alias, else the locator's final path suffix, else octet-stream."""
     if isinstance(value, str):
         normalized = value.strip().lower()
         if "/" in normalized:

@@ -1,32 +1,19 @@
 """Identify which catalog bill a loose document is, from the text alone.
 
-Publisher fact in: normalized page text of a bill document (the GPO rendering,
-after line numbers and running heads have been stripped), plus candidate rows
-from the published bill catalog.
-
-Interpretation out: an ``ExtractedSignals`` record naming which extraction
-tier produced the title, and a ranked tuple of ``BillMatch`` records whose
-confidence is the weighted sum of five signals, each signal reported with its
-own weight and score so a stored row can be read back rule by rule.
-
-The windows, patterns, weights and thresholds are the sealed part and are
-ported unchanged from ``BillTrax/src/lib/bill-identify.ts``: the first 3 KB
-for bill number and congress, the first 6 KB for the sponsor (long titles push
-the sponsor line past 3 KB), the whole text for the short title and section
-headings, weights 0.55 / 0.20 / 0.10 / 0.10 / 0.05 summing to 1.0, congress
-off-by-one worth 0.3, heading overlap accepted at Jaccard 0.5, at most five
-results and none below 0.1 confidence.
-
-``normalize_for_comparison`` deliberately keeps ASCII ``\\w`` semantics rather
-than Python's Unicode default. Both sides of every comparison pass through it,
-so the choice is symmetric either way; keeping the original class keeps
-already-stored normalized titles and their Jaccard scores comparable across
-the port, which is the point of a sealed contract.
-
-The database half is gone. BillTrax ran a SQL lookup per phase and capped
-section-heading lookups at three queries; here the caller supplies candidates
-and ``MAX_HEADING_COMPARISONS`` keeps the same bound as a bound on work, so
-the function is pure and the cost is still stated.
+Reads the normalized page text of a bill document (the GPO rendering, after
+line numbers and running heads have been stripped) plus candidate rows from
+the published bill catalog, and returns an ``ExtractedSignals`` record naming
+which extraction tier produced the title and a ranked tuple of ``BillMatch``
+records whose confidence is the weighted sum of five signals, each reported
+with its own weight and score so a stored row reads back rule by rule. The
+windows, patterns, weights and thresholds are the sealed part and are ported
+unchanged from ``BillTrax/src/lib/bill-identify.ts`` (weights 0.55 / 0.20 /
+0.10 / 0.10 / 0.05, congress off-by-one worth 0.3, heading overlap accepted at
+Jaccard 0.5, at most five results and none below 0.1), with heading
+comparisons capped at ``MAX_HEADING_COMPARISONS``, the bound BillTrax spent as
+three database queries. ``normalize_for_comparison`` deliberately keeps ASCII
+``\\w`` semantics so already-stored normalized titles and their Jaccard scores
+stay comparable across the port.
 """
 
 from __future__ import annotations
@@ -268,9 +255,9 @@ def extract_signals(text: str) -> ExtractedSignals:
 def sponsor_last_name_of(sponsor: str) -> str:
     """The first all-caps run in a stored sponsor string, which is how the catalog spells a surname.
 
-    Sealed: this is one half of the sponsor score, so changing it moves stored
-    confidences. ``member_matching.last_name_of`` is the other surname parser,
-    reads the publisher's structured display name, and is free to improve.
+    Sealed, because it is half of the sponsor score; ``member_matching.last_name_of``
+    is the other surname parser, reads the publisher's structured display name,
+    and is free to improve.
     """
     for token in _SPONSOR_SPLIT.split(sponsor.upper()):
         if _DB_LAST_NAME.fullmatch(token):
@@ -332,9 +319,9 @@ def _score(signals: ExtractedSignals, candidate: CandidateBill) -> tuple[float, 
 def identify_bill(signals: ExtractedSignals, candidates: Iterable[CandidateBill]) -> tuple[BillMatch, ...]:
     """Rank catalog candidates against extracted signals.
 
-    Heading overlap is computed for at most ``MAX_HEADING_COMPARISONS``
-    candidates, the ones leading after the cheap signals, which is the bound
-    BillTrax spent as three database queries.
+    Heading overlap is computed for at most the ``MAX_HEADING_COMPARISONS``
+    candidates leading after the cheap signals, the bound BillTrax spent as
+    three database queries.
     """
     scored = [(candidate, *_score(signals, candidate)) for candidate in candidates]
     if not scored:

@@ -77,6 +77,7 @@ MISSED_ACTIVITY_REPORTS = (
 
 @pytest.mark.parametrize(("package_id", "title"), MATCHES)
 def test_the_phrase_rule_selects_a_real_activity_report(package_id: str, title: str) -> None:
+    """The phrase rule selects a real activity report and the bare-word alternative agrees on it."""
     assert is_activity_report(package_id, title)
     assert names_activity(title)
 
@@ -103,6 +104,7 @@ def test_the_collection_is_checked_on_the_row_not_the_request() -> None:
 
 
 def test_a_missing_publisher_field_is_a_skipped_row_not_an_error() -> None:
+    """A missing package id or title is a skipped row, not an error, in both selectors."""
     assert not is_activity_report(None, "ACTIVITIES OF THE COMMITTEE")  # type: ignore[arg-type]
     assert not is_activity_report("CRPT-118hrpt968", None)  # type: ignore[arg-type]
     assert not names_activity(None)  # type: ignore[arg-type]

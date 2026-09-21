@@ -1,4 +1,7 @@
-"""The keyed regulations.gov v4 routes name explicit queries, walk page[number], and prove attachment bytes."""
+"""The keyed regulations.gov v4 routes name explicit queries, walk page[number], and prove attachment bytes.
+
+List, detail, and attachment routes refuse named checks; attachment-host 403s are told apart by their retained bytes;
+and only 404/410 establish absence."""
 
 import hashlib
 import json

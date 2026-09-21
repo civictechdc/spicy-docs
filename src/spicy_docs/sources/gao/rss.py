@@ -1,12 +1,11 @@
 """The GAO reports feed: the one keyless, machine-readable listing of recent products.
 
-GAO's product, sitemap and search routes refuse non-browser clients; product
-pages are captured through Zyte (``native.py``). The public RSS feed at
-``www.gao.gov/rss/reports.xml`` serves anonymously and lists about 25 recently
-published products with title, link, GUID, description and publication date.
-It is a recent-items window, not an archive: a feed capture is an observation
-of what the publisher listed at that moment, never a catalog. Each item's link
-must be a canonical product URL, which supplies the product identifier.
+GAO's product, sitemap and search routes refuse non-browser clients, so product pages are captured
+through Zyte (``native.py``), while the public RSS feed at ``www.gao.gov/rss/reports.xml`` serves
+anonymously and lists about 25 recently published products with title, link, GUID, description and
+publication date. It is a recent-items window, not an archive: a feed capture is an observation of
+what the publisher listed at that moment, never a catalog. Each item's link must be a canonical
+product URL, which supplies the product identifier.
 """
 
 from __future__ import annotations

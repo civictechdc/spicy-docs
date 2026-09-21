@@ -28,6 +28,8 @@ SELECTION = EcfrSelection(1, "2026-08-10")
 
 @pytest.fixture(autouse=True)
 def forbid_network(monkeypatch):
+    """Fail if any real network call is attempted."""
+
     def refuse(*_args, **_kwargs):
         raise AssertionError("capture example qualification must remain offline")
 
@@ -35,6 +37,7 @@ def forbid_network(monkeypatch):
 
 
 def transport_for(body, *, status=200, media_type="application/xml", content_encoding=None):
+    """A mock transport serving queued responses and recording calls."""
     calls = []
 
     def handle(request):
@@ -48,6 +51,7 @@ def transport_for(body, *, status=200, media_type="application/xml", content_enc
 
 
 def capture(output, transport, *, budget=BUDGET, route="ecfr"):
+    """Run the example capture into an output directory and read back its receipt."""
     return cfr_capture.run_capture(
         output,
         route=route,
@@ -88,6 +92,9 @@ def capture(output, transport, *, budget=BUDGET, route="ecfr"):
     ],
 )
 def test_each_explicit_route_retains_original_and_evidence(tmp_path, route, selection, fixture, locator):
+    """Each explicit route writes the original bytes plus a receipt naming URL, hash, size, budget and the route's
+    own source identity.
+    """
     body = (FIXTURES / fixture).read_bytes()
     media_type = "application/json" if route == "ecfr-titles" else "application/xml"
     transport, calls = transport_for(body, media_type=media_type)
@@ -157,6 +164,7 @@ def test_each_explicit_route_retains_original_and_evidence(tmp_path, route, sele
 
 
 def test_existing_output_is_untouched_before_any_request(tmp_path):
+    """An existing output directory is refused before any request, leaving its previous evidence untouched."""
     (tmp_path / "receipt.json").write_bytes(b"previous evidence")
     transport, calls = transport_for(b"must not be requested")
     with pytest.raises(FileExistsError):
@@ -169,6 +177,7 @@ def test_existing_output_is_untouched_before_any_request(tmp_path):
 @pytest.mark.parametrize("status", [404, 410])
 @pytest.mark.parametrize("route", ["ecfr", "annual-edition"])
 def test_unavailable_locator_retains_failed_receipt_and_body_without_fallback(tmp_path, status, route):
+    """An unavailable locator writes a failed receipt with the response body after one request, without fallback."""
     body = b"publisher says unavailable"
     transport, calls = transport_for(body, status=status)
     output = tmp_path / "capture"
@@ -186,6 +195,7 @@ def test_unavailable_locator_retains_failed_receipt_and_body_without_fallback(tm
 @pytest.mark.parametrize("status", [401, 403])
 @pytest.mark.parametrize("route", ["ecfr", "annual-edition"])
 def test_access_refusal_records_omission_without_persisting_response_body(tmp_path, status, route):
+    """An access refusal records the omission reason without persisting the sensitive response body."""
     transport, calls = transport_for(b"sensitive challenge body", status=status)
     output = tmp_path / "capture"
     with pytest.raises(CredentialRefusedError):
@@ -200,6 +210,7 @@ def test_access_refusal_records_omission_without_persisting_response_body(tmp_pa
 
 
 def test_wrong_success_shape_retains_refused_source_bytes(tmp_path):
+    """A wrong success shape is a source-validation failure that retains the refused bytes."""
     body = b"<html>Challenge page</html>"
     transport, calls = transport_for(body)
     output = tmp_path / "capture"
@@ -213,6 +224,7 @@ def test_wrong_success_shape_retains_refused_source_bytes(tmp_path):
 
 
 def test_over_budget_response_has_omission_reason_and_no_partial_file(tmp_path):
+    """An over-budget response records the lowered bound and omission reason with no partial file."""
     transport, _calls = transport_for((FIXTURES / "ecfr-api-title1.xml").read_bytes())
     output = tmp_path / "capture"
     with pytest.raises(CfrSourceError, match="byte bound"):
@@ -225,6 +237,7 @@ def test_over_budget_response_has_omission_reason_and_no_partial_file(tmp_path):
 
 
 def test_gzip_retains_distinct_wire_response_and_decoded_xml(tmp_path):
+    """gzip writes the wire payload and the decoded XML as separate files with distinct hashes."""
     xml = (FIXTURES / "ecfr-api-title1.xml").read_bytes()
     wire = gzip.compress(xml, mtime=0)
     transport, calls = transport_for(wire, content_encoding="gzip")
@@ -247,6 +260,7 @@ def test_gzip_retains_distinct_wire_response_and_decoded_xml(tmp_path):
 
 @pytest.mark.parametrize("failure", ["malformed-gzip", "wrong-xml", "decoded-overrun"])
 def test_complete_gzip_response_is_retained_when_decode_or_validation_fails(tmp_path, failure):
+    """A complete gzip response is retained even when decoding or validation fails, with no XML file written."""
     budget = BUDGET
     if failure == "malformed-gzip":
         wire = b"not a gzip body"
@@ -269,6 +283,7 @@ def test_complete_gzip_response_is_retained_when_decode_or_validation_fails(tmp_
 
 
 def test_cli_uses_explicit_date_and_byte_bound(tmp_path, monkeypatch, capsys):
+    """The CLI captures with the date and byte bound given as arguments."""
     transport, calls = transport_for((FIXTURES / "ecfr-api-title1.xml").read_bytes())
     monkeypatch.setattr(cfr_capture, "run_capture", partial(cfr_capture.run_capture, transport=transport))
     assert (
@@ -286,6 +301,7 @@ def test_cli_uses_explicit_date_and_byte_bound(tmp_path, monkeypatch, capsys):
 
 @pytest.mark.parametrize("missing", ["--date", "--max-bytes"])
 def test_cli_requires_date_and_byte_bound_before_starting(tmp_path, missing):
+    """A missing date or byte bound exits before any output is created."""
     args = ["ecfr", "--title", "1", "--date", "2026-08-10", "--max-bytes", "65536", "--output", str(tmp_path / "out")]
     index = args.index(missing)
     del args[index : index + 2]
@@ -296,6 +312,7 @@ def test_cli_requires_date_and_byte_bound_before_starting(tmp_path, missing):
 
 @pytest.mark.parametrize("missing", ["--year", "--title", "--volume"])
 def test_edition_cli_requires_each_package_selector(tmp_path, missing):
+    """The edition CLI exits when any package selector is missing."""
     args = [
         "annual-edition",
         "--year",
@@ -317,6 +334,7 @@ def test_edition_cli_requires_each_package_selector(tmp_path, missing):
 
 
 def test_edition_cli_refuses_section_selector(tmp_path):
+    """The edition CLI refuses a section selector."""
     with pytest.raises(SystemExit, match="2"):
         cfr_capture.main(
             [
@@ -339,6 +357,7 @@ def test_edition_cli_refuses_section_selector(tmp_path):
 
 
 def test_edition_cli_captures_only_the_selected_volume_metadata(tmp_path, monkeypatch, capsys):
+    """The edition CLI captures only the selected volume's metadata, with selection and one request."""
     body = (FIXTURES / "annual-title1-edition.xml").read_bytes()
     transport, calls = transport_for(body)
     monkeypatch.setattr(cfr_capture, "run_capture", partial(cfr_capture.run_capture, transport=transport))
@@ -354,6 +373,7 @@ def test_edition_cli_captures_only_the_selected_volume_metadata(tmp_path, monkey
 
 
 def test_absent_cover_flag_stays_unknown_in_the_edition_receipt(tmp_path):
+    """An absent cover flag stays unknown in the receipt even when the body states it as text."""
     body = (FIXTURES / "annual-title1-edition.xml").read_bytes()
     assert b"<isCoverOnly>true</isCoverOnly>" in body
     body = body.replace(b"<isCoverOnly>true</isCoverOnly>", b"")
@@ -365,6 +385,7 @@ def test_absent_cover_flag_stays_unknown_in_the_edition_receipt(tmp_path):
 
 
 def test_edition_metadata_json_preserves_one_tree_with_nested_and_unknown_source_fields(tmp_path):
+    """The metadata JSON keeps one tree with nested and unknown fields, namespace declarations and exact content."""
     body = (FIXTURES / "annual-title1-edition.xml").read_bytes()
     additions = """<relatedItem type="constituent" ID="direct-child-marker">
 <titleInfo><title>  Keep this é title  </title></titleInfo>
