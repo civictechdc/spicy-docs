@@ -1,25 +1,11 @@
-"""The three tables one version pair fills: the diff, its items, and its money.
+"""The three tables one version-pair comparison fills: ``section_diffs``, its ``section_diff_items`` and its
+``financial_changes``, shaped from ``interpretation.section_diff`` findings.
 
-``interpretation.section_diff`` decides what changed, which sections correspond
-and which dollar figures pair; this module only shapes those records into rows.
-The engine stamp on ``section_diffs`` stands in for a rule name: nothing here
-names a matching rule, so what a reader needs in order to reproduce a row is
-which engine at which pinned commit produced it.
-
-Two deliberate reversals of the placement study:
-
-* ``text_diff_json`` is published, byte-capped, with ``text_diff_truncated``
-  (C3).  Once ``bill_versions`` stopped carrying full text, the word diff
-  stopped being recomputable from published rows, so it has to be a column.
-* ``financial_changes.label`` carries the section heading.  BillTrax passed
-  ``""`` at every construction site, so the column held nothing in every row it
-  ever wrote.
-
-``financial_changes`` rows exist only where a section's amounts actually changed
-*and* the caller asked for pairs: pairing a figure on one side with a figure on
-the other is a claim about an account, which upstream removed from its own
-published contract for exactly that reason.  ``pairing_claim`` names the claim
-in the row rather than leaving it implied.
+The engine name, version and pinned revision stand in for a rule name, and ``text_diff_json`` is published byte-capped
+with ``text_diff_truncated`` because the diff stopped being recomputable from published rows once ``bill_versions``
+dropped full text.  ``financial_changes`` rows exist only where a section's amounts actually changed and the caller
+asked for pairs, and ``pairing_claim`` states that the two figures share a word-alignment position -- never that they
+are the same account.
 """
 
 from __future__ import annotations

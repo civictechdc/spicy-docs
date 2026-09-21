@@ -1,57 +1,12 @@
-"""What a committee print says happened to a bill, hosted with its measured reliability.
+"""``bill_committee_actions``: one row per action phrase a committee print states about one bill it names in the same
+sentence, hosted with its measured reliability.
 
-One table. It exists because of what the publisher's own action lists do *not*
-contain, and that claim has been wrong twice in opposite directions, so it is
-stated here at the strength the retained bytes actually support.
-
-**What this is for: a subcommittee hearing on a bill is often recorded
-nowhere else.** On a 20-bill probe of the publisher's whole action lists
-(``~/Work/corpora/supply-2026-09-02/receipts/bill-action-relationship-2026-09-20/billstatus/``),
-**10 of the 15 subcommittee hearings these prints state have no counterpart in
-BILLSTATUS at all** -- no action, no code, no wording. The five that do appear
-come from two bills and both carry ``H21000`` *Subcommittee Hearings Held*.
-Markups are different and the difference is stated because it bounds the claim:
-all 8 markup rows are in the publisher's list, coded ``H15000-B``, ``H15001``
-or ``H22000`` by the ``House committee actions`` source system, so for a markup
-the print is a **second, coded** source rather than the only one.
-
-**Two retracted claims, kept visible because each was a check that could not
-fail.** The first version cited codes 72 *Hearing held in House* and 74 *Markup
-in House* as proof that BILLSTATUS already holds this, and concluded the table
-was not worth building; those are **section 5** values -- LOC *summaries*
-version codes, the ``<versionCode>`` child of ``<summaries>`` -- and the
-self-check scanned the whole guide, so it validated against a 123-code superset
-drawn from three tables. The correction then over-corrected in the same shape:
-scoped to section 3, the guide lists no House hearing or markup code, and this
-module concluded the publisher **has** none and the print is the only
-structured source. **That is false on the wire.** Section 3 says in its own
-first paragraph that it is representational and that no authoritative list
-exists, and 13 of the 35 distinct codes in the retained responses appear
-nowhere in it -- including every House committee-actor code above. A list the
-publisher calls incomplete is not a vocabulary, and validating a mapping
-against it is the same defect one level down.
-
-**What the rows are worth, measured, both directions.** From 60 hand-checked
-mentions over the eight retained prints
-(``docs/research/bill-action-relationship-2026-09-20.md``):
-
-* **83.3%** of published rows in the single-bill class are both the right kind
-  and the right bill (30 of 36). **50%** in the multi-bill class (2 of 4).
-* **91.8%** of rows (4,089 of 4,456) are single-bill, so a consumer restricting
-  to the single-bill class gives up 8% of the volume.
-* **Recall is a separate axis and is 59.6%** of what a reader sees stated in
-  the entry. This table's precision figure is a statement about *what is
-  published*, never about what the document contains. A consumer counting
-  hearings from these rows is counting a floor.
-
-``WHERE attachment_confidence = 'single'`` selects the class with the higher
-measured precision. It does not certify an individual finding. Both classes
-retain source evidence for verification; an acceptance threshold remains the
-consumer's explicit decision.
-
-The rules are ``interpretation/bill_actions.py``'s, which
-``tools/analysis/bill_action_relationship.py`` runs too, so the measurement and
-this contract cannot disagree about what a markup looks like.
+A subcommittee hearing on a bill is often recorded nowhere else -- 10 of the 15 subcommittee hearings the retained
+prints state have no counterpart in BILLSTATUS -- so this table is a floor, not a discovery rate: measured joint
+precision is 83.3% for single-bill sentences (30 of 36) and 50% for multi-bill ones (2 of 4), and an acceptance
+threshold remains the consumer's explicit decision.  The rules are ``interpretation/bill_actions.py``'s, the same ones
+``tools/analysis/bill_action_relationship.py`` runs, so the measurement and the contract cannot disagree about what a
+markup looks like.
 """
 
 from __future__ import annotations

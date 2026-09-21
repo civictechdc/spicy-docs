@@ -1,74 +1,12 @@
-"""The shared citation link table, and the House committee activity report it is built on.
+"""The shared ``document_citations`` link table (one row per occurrence of one cited key, with the exact matched text
+and character span) and ``house_activity_reports`` (the package-keyed document row whose print-derived columns are
+counts, not facts).
 
-Two tables, and the boundary between them is the owner's first rule: **data an
-index already states is not recreated from the document.**
-
-``house_activity_reports`` is the document row, and every field on it that
-describes the report comes from a keyed GovInfo record and never from the
-print -- the summary's title, Congress, session, issue date and *page count*,
-and the MODS's authoring committee ``systemCode``, its ``<bill>`` list with
-each bill's context and its ``<law>`` list.  What the PDF adds to that row is
-counts, not facts: how many distinct bills and laws the print names, how many
-of those the MODS does **not** already state, how many committees resolved to
-a ``system_code`` and how many did not, and how far into the document the read
-got.
-
-``document_citations`` is the second rule: **nothing of value that only the
-document holds may be left uncaptured.**  One row per occurrence of one cite,
-carrying the exact text that matched and the character span it was read at, so
-a consumer can re-read the print at that offset and see what the rule saw.
-
-**What the print actually adds, measured.** The
-[MODS re-check](../../../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
-read all eight sampled activity reports at full page depth -- 1,249 pages, not
-the rollup's capped 476 -- and compared every key against each package's own
-MODS:
-
-===========================  ==========================================
-Kind                         Print-only, eight reports, every page
-===========================  ==========================================
-``bill_number``              **0 of 1,406**
-``public_law``               **0 of 174** (the one apparent survivor, ``188-11``, is the print's misprint)
-``usc_section``              **0 of 37**
-``statutes_at_large``        **0 of 7**
-``committee_name``           **27 resolved codes**, 71 of 79 rows
-``rin``                      **87**
-``docket_number``            **38**
-``gao_product_id``           5
-``cfr_section``              1 of 1
-``federal_register_cite``    1
-``us_reports_cite``          2
-===========================  ==========================================
-
-So for bills, laws, Code sections and Statutes pages the MODS is the
-**authoritative** source and the print is a floor bounded by how far the read
-got; what the print adds for those kinds is the *evidence span* -- where in a
-282-page print a measure is discussed -- which no GovInfo record states.  What
-the print adds outright is the committees beyond the one that submitted the
-report, the RINs, the agency dockets and the GAO ids: **no sampled MODS in any
-collection states a Federal Register cite, a GAO product id, a CRS report id,
-an agency docket, a case docket, a U.S. Reports cite or a dollar figure.**
-
-``stated_by_index`` carries that per row, and
-``WHERE stated_by_index IS NOT TRUE`` is the consumer's predicate for the kinds
-that are genuinely new.  It is NULL rather than ``false`` for a kind the MODS
-vocabulary has no element for at all, because "compared and absent" and "no
-comparison was possible" are different answers.
-
-The rollup measured "beyond the index" against the ``published`` listing row --
-seven fields, no citation among them -- and so reported 883 bills of yield for
-this family.  That was the wrong index record: ``GovInfoBodyAcquirer`` fetches
-the package MODS for every body it reads.
-
-**The aggregate shape is derivable from this one; the reverse is not.**  A
-consumer wanting one row per (document, key) takes ``GROUP BY document_key,
-cite_kind, target_key`` with ``COUNT(*)`` and ``MIN(span_start)``.  Storing
-that aggregate instead would make the table a lossy copy of the MODS, which is
-exactly what it must not be.
-
-The rules are ``interpretation/citations.py``'s, which
-``tools/analysis/pdf_family_rollup.py`` runs too, so the measurement and this
-contract cannot disagree about what a bill number looks like.
+The boundary is two rules: data an index already states is not recreated from the document, and nothing of value that
+only the document holds is left uncaptured.  ``stated_by_index`` carries the first per row -- true/false where a
+comparison was possible, NULL where the index vocabulary has no element for that kind at all -- so
+``WHERE stated_by_index IS NOT TRUE`` selects what the print genuinely adds (committees beyond the submitting one, RINs,
+agency dockets, GAO ids).
 """
 
 from __future__ import annotations
@@ -354,18 +292,11 @@ def distinct_targets(findings: Iterable[object], kind: str) -> set[str]:
 
 
 def read_depth(body: object, summary: object) -> tuple[int | None, str | None, bool | None]:
-    """``(pages_read, stated_page_count, pages_capped)`` for one document.
+    """``(pages_read, stated_page_count, pages_capped)`` for one document, never re-deriving either count from the
+    other.
 
-    The publisher states the extent and the extraction states how far it got,
-    and the two are never re-derived from each other: a capped read reports
-    both rather than publishing its own count as the document's.
-    ``pages_capped`` is NULL when the rendition states no page split, and also
-    when the publisher ever states a non-numeric extent -- which must not crash
-    the row or, worse, be read as uncapped.
-
-    Shared by every family that reads a paginated body, so the cap rule is
-    stated once (measured 2026-09-20: CRPT-118hrpt965 states 282 pages and a
-    60-page read saw 60).
+    ``pages_capped`` is NULL when the rendition states no page split and also when the publisher states a non-numeric
+    extent, which must not crash the row or read as uncapped; shared by every family that reads a paginated body.
     """
     pages = getattr(body, "pages", None)
     pages_read = None if pages is None else len(pages)
@@ -376,25 +307,14 @@ def read_depth(body: object, summary: object) -> tuple[int | None, str | None, b
 
 
 def index_stated_keys(mods: object) -> dict[str, frozenset[str]]:
-    """The target keys a package MODS already states, in the citation rules' own spelling.
+    """The target keys a package MODS already states, in the citation rules' own spelling, so the print's ``H.R. 7806``
+    and the MODS's ``type="HR" number="7806"`` reduce to one fact.
 
-    This is what makes the owner's first rule checkable rather than assumed:
-    both sides are reduced to one key before the comparison, so the print's
-    ``H.R. 7806`` and the MODS's ``type="HR" number="7806"`` are one fact.
-    ``mods`` is read structurally, the shape
-    ``sources.govinfo.bodies.PackageModsIdentity`` has.
-
-    **A kind is in the returned mapping when the MODS vocabulary can state it
-    at all**, with an empty set where this record states none.  The
-    distinction is the point: ``frozenset()`` means "compared, and the index
-    does not state this" and a missing kind means "this index has no element
-    of that shape", which lands as NULL rather than ``false``.  No sampled
-    MODS in any collection states a Federal Register cite, a GAO product id, a
-    CRS report id, an agency docket, a case docket, a U.S. Reports cite or a
-    dollar figure, so those kinds are absent here by measurement, not by
-    oversight (the
-    [MODS re-check](../../../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
-    censuses every root-level ``extension`` child of 24 records).
+    A kind is present when the MODS vocabulary can state it at all, with an empty set where this record states none:
+    ``frozenset()`` means "compared and absent" while a missing kind means "no element of that shape" and lands NULL
+    rather than ``false``.  No sampled MODS states a Federal Register cite, a GAO product id, a CRS report id, an agency
+    docket, a case docket, a U.S. Reports cite or a dollar figure, so those kinds are absent by measurement, not
+    oversight.
     """
     laws = {natural_key(law.congress, law.law_type, law.number) for law in getattr(mods, "laws", ())}
     return {
@@ -475,23 +395,13 @@ def shape_activity_report(
     *,
     rule_set_version: str,
 ) -> Row:
-    """One ``house_activity_reports`` row from the two keyed records, the text and its cites.
+    """One ``house_activity_reports`` row from the two keyed records, the text and its cites, all read structurally with
+    nothing fetched.
 
-    ``summary`` and ``mods`` are what ``sources.govinfo.bodies`` validated for
-    this package, ``body`` is its ``BodyText`` and ``citations`` the
-    ``CitationFinding``s ``interpretation.citations.find_citations`` produced
-    over ``body.text``.  All four are read structurally and nothing is fetched.
-
-    Every descriptive field is the publisher's, including
-    ``stated_page_count``: the summary states the document's extent, so a
-    capped read reports how far it got beside that rather than publishing its
-    own count as the document's.
-
-    **The Congress on every printed bill key is this document's**, from the
-    summary, because no print states one.  ``bills_congress_mismatch`` runs
-    the index comparison a second time with the Congress dropped, so a measure
-    the document discusses from another Congress shows up as a discrepancy
-    rather than as a confidently wrong ``bill_id``.
+    Every descriptive field including ``stated_page_count`` is the publisher's, the Congress stamped on every printed
+    bill key is this document's because no print states one, and ``bills_congress_mismatch`` reruns the index comparison
+    with the Congress dropped so a measure from another Congress shows as a discrepancy rather than a confidently wrong
+    ``bill_id``.
     """
     identity = summary.identity
     provenance = document_provenance(body, document_key=identity.package_id, document_kind=GOVINFO_PACKAGE)

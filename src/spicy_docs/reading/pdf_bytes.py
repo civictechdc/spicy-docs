@@ -18,7 +18,11 @@ TRAILER_WINDOW = 1024
 
 
 def check_pdf_bytes(body: bytes, *, error_type: type[ValueError], label: str) -> str:
-    """Refuse anything that is not one complete PDF; return the version the header states."""
+    """Refuse empty bytes, a non-``%PDF-`` start, or a missing trailer; return the stated version.
+
+    The ``%%EOF`` check covers the last 1024 bytes, which a publisher-omitted
+    Content-Length cannot prove.
+    """
     if not isinstance(body, (bytes, bytearray)) or not body:
         raise error_type(f"{label} response is empty; a nonempty PDF was requested")
     header = _PDF_HEADER.match(body)

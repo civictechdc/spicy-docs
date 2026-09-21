@@ -31,6 +31,8 @@ class AcquisitionError(ValueError):
 
 
 class HttpRefusal(CredentialRefusedError):
+    """A 401/403 ends the acquisition; ``status`` keeps which one it was."""
+
     def __init__(self, status: int):
         self.status = status
         super().__init__(f"source answered HTTP {status}; stopping acquisition")
@@ -80,6 +82,7 @@ class BoundedAcquirer:
         zyte_on_denial=None,
         public_fallback_url: Callable[[str], bool] | None = None,
     ) -> None:
+        """``validate_url`` runs on every direct and proxy URL; ``headers`` decides per host what credential is sent."""
         if type(max_requests) is not int or max_requests <= 0:
             raise ValueError("max_requests must be a positive integer")
         if not math.isfinite(min_interval) or min_interval < 0 or not math.isfinite(timeout) or timeout <= 0:
@@ -226,6 +229,7 @@ class BoundedAcquirer:
         raise AcquisitionError("source exceeded redirect bound")
 
     def capture(self, url: str, *, max_bytes: int) -> ResponseCapture:
+        """Return the complete bounded metadata response, retrying transient failures up to three attempts."""
         if type(max_bytes) is not int or max_bytes <= 0:
             raise ValueError("max_bytes must be positive")
         self.validate_url(url)

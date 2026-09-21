@@ -1,16 +1,9 @@
 """Walk any registered publisher JSON list page by page, retaining every page's exact bytes.
 
-The list routes built on ``sources/paged_json.py`` differ only in which
-publisher contract they name, which key holds their rows, and whether the
-first request is a GET URL or a POST body. ``FAMILIES`` states
-exactly that as data, so a pipeline walks any of them through one command
-instead of one wrapper per publisher. Each page's bytes go to a
-content-addressed store under their own SHA-256 and become one JSONL receipt
-row; a refusal writes a failure row carrying the acquisition context the reader
-attached, retains any refused bytes, and exits non-zero. A credential is read
-only from an explicit file, travels only as the header its family names, and is
-scrubbed from every row and message this command writes. A walk is an
-observation of one query on one day, never a frozen inventory.
+``FAMILIES`` states each route's contract, row key, and first request as data, so one
+command walks all of them. A credential is read only from an explicit file and scrubbed
+from every row and message; a refusal retains any refused bytes and exits non-zero. A
+walk is an observation of one query on one day, never a frozen inventory.
 """
 
 from __future__ import annotations
@@ -58,15 +51,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class ListRoute:
-    """One registered route: a publisher contract, the key holding its rows, and how it is keyed and paced.
-
-    The family already states the host, the request method, the continuation
-    kind, the credential header and whether a credential is required, so a
-    route adds only what the family cannot know: which rows this endpoint
-    serves, which environment variable conventionally holds the key, the fixed
-    URL of a POST list, and the publisher's own pacing where its rate limit
-    demands more than the shared default.
-    """
+    """One route's family plus the row key, credential variable, fixed POST URL, and pacing it cannot know."""
 
     family: JsonPageFamily
     records_key: str
@@ -167,6 +152,8 @@ def _request(args: argparse.Namespace, route: ListRoute) -> tuple[str, dict | No
 
 
 def _page_row(name: str, page: JsonPage, stored: LocalBlobWrite) -> dict:
+    """Build one JSONL receipt row for a stored page, including its content address."""
+
     capture = page.capture
     return {
         "family": name,

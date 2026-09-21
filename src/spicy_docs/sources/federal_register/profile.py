@@ -22,6 +22,7 @@ def _federal_register_record_scope(
     query_scope: Mapping[str, Any],
     page_window: object | None,
 ) -> None:
+    """Refuse a record whose publication date falls outside the validated page window."""
     del query_scope
     if (
         not isinstance(page_window, tuple)

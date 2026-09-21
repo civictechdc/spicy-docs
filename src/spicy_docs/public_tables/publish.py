@@ -266,6 +266,8 @@ class PublicTablePublisher:
         build: PublicTableBuild,
         destination: Path,
     ) -> PublishedPublicTable:
+        """Build, self-verify, and atomically publish one table; refuses an existing destination or source mismatch."""
+
         destination = Path(destination).absolute()
         if destination.exists() or destination.is_symlink():
             raise ImmutablePublicationError(f"refusing to replace immutable directory: {destination}")

@@ -1,135 +1,14 @@
-"""The Report of the Secretary of the Senate's ruled tables, one row per ruled row.
+"""``senate_expenditures``: one row per ruled row of one of the print's three ruled grids (``appropriation_summary``,
+``organization_detail``, ``payee_detail``) on one page of a Report of the Secretary of the Senate, with the cells
+exactly as the print states them and the roles its own header band names.
 
-Build-order item 4 of the
-[revised order](../../../docs/research/pdf-yield-mods-recheck-2026-09-20.md):
-the one PDF-only family whose value is a **table** and not a citation.  Its
-citation yield against the package MODS is zero -- the single apparent survivor,
-the bill key ``S08``, is a false positive -- while a full read of the eight
-sampled volumes carries **65,261 distinct dollar figures over 161,536 rows**
-against a publisher listing that states two fields.
-
-**Acquisition for this family wires up when the package-id grammar lands.**
-``sources/govinfo/bodies.py``'s grammar reaches neither ``BUDGET-*`` nor
-``GPO-CDOC-*``, so ``GovInfoBodyAcquirer`` cannot fetch these packages in
-product code yet; the register's B4 row carries that as a decision record.
-This module is built over the bytes the rollup retained and takes no
-acquisition seam of its own: the shapers are pure over one
-``extraction.model.TableObservation`` and the page text beside it, so a caller
-that reaches the package any way at all can fill the table.
-
-## What the ruled tables actually are
-
-Measured 2026-09-20 over 160 pages of two retained volumes
-(`GPO-CDOC-119sdoc3-1.pdf` pages 1-80, `GPO-CDOC-119sdoc6-2.pdf` pages 1-80;
-the note is ``docs/research/senate-expenditure-tables-2026-09-20.md``,
-receipt ``~/Work/corpora/supply-2026-09-02/receipts/senate-expenditure-tables-2026-09-20/``).
-**139 tables on 139 pages -- never two on one page, never one spanning two.**
-The print draws three ruled grids and they are not interchangeable:
-
-=========================  ======  =============================================
-Grid                       Tables  What one ruled row is
-=========================  ======  =============================================
-``appropriation_summary``  13      One appropriation account, all nine cells
-                                   ruled: the title with its fiscal years
-                                   stacked, the account number, and six money
-                                   columns each stacking one amount per year.
-                                   The section's last row is the print's own
-                                   ``Totals``.
-``organization_detail``    83      One office's funding block.  Rows 0 and 2
-                                   are two separate header bands; the body is
-                                   **one** ruled cell holding the whole
-                                   organization summary or the whole payee
-                                   block.
-``payee_detail``           43      A continuation page of the same block: the
-                                   ``DOCUMENT NO. ... AMOUNT ($)`` header band
-                                   and one blob cell under it.
-=========================  ======  =============================================
-
-**The decisive measurement is that the print does not rule the payee lines.**
-Of 6,172 cells, 3,905 are positions PyMuPDF finds no cell region at all.  Of the
-227 rows this contract calls ``entry``, every one of the 56
-``appropriation_summary`` entry rows has all nine cells ruled, and every one of
-the other 171 -- 99 ``organization_detail`` and 72 ``payee_detail`` -- has
-exactly **one**, of ten or of seven.  A payee line --
-``00646684 02/19/2025 PATTY MURRAY 02/19/2025 02/19/2025 SENATOR TRANSPORTATION $19.96``
--- is a *line inside one cell*, not a ruled row.
-
-So this contract does **not** carry ``payee_name``, ``document_number``,
-``date_posted`` or a singular ``amount`` column, although the print's own header
-band names all four.  Filling them would mean splitting a blob cell on a guess,
-which is the failure the rollup already made four times before the sample
-corrected it, and a column NULL on every row of every fixture is the defect the
-[design brief](../../../docs/research/table-contracts-2026-09-19.md) names for
-``hearing_transcripts``.  What lands instead is the blob **whole** in
-``cells_json``, the roles the print's header states for each column in
-``column_headers_json``, and ``cells_ruled`` so a consumer's ``WHERE
-cells_ruled`` is exactly the rows whose cells are separate facts.  Splitting the
-payee block is a text rule for ``interpretation/``, and it is unmeasured.
-
-## Where each value comes from
-
-Nothing here is assumed from position.  A column's role is the label the
-print's own header band states at that index, and the band is the nearest one
-above this row -- which matters because ``organization_detail`` has two, and the
-role at column 0 changes from the office block to ``DOCUMENT NO.`` partway down
-one table.
-
-The office, the funding year and the appropriation title come from the **page
-text**, not from the table: measured, the page states them on 83 of 139 table
-pages and the table's own first cell on only 21, and every one of those 21 is
-also in the page text.  On the other 56 -- continuation pages -- the print
-states no office, so the column is NULL and a consumer forward-fills by
-``printed_page``.
-
-**That forward-fill is why the funding-year grammar has to cover the span
-spelling.**  Five of the 83 office pages read ``Funding Year 2021-2023`` rather
-than a single year, and a rule that matched only ``\\d{4}`` left them with no
-office -- which the forward-fill then silently charged to the *preceding*
-office.  A missing value would have been visible; a wrong attribution is not.
-``funding_year`` carries the first year either way and ``funding_year_end`` the
-second, NULL for a single-year block.
-
-``printed_page`` is the last non-empty line of the page text and was present on
-**139 of 139** table pages (``A-7``, ``B-1243``): it is the locator the volume's
-own table of contents indexes by, and the PDF page number is not.
-
-## Two rows, as the print states them
-
-One ``appropriation_summary`` entry row, from page A-1 of ``GPO-CDOC-119sdoc3``,
-file ``GPO-CDOC-119sdoc3-1.pdf``, rendition ``pdf``, derivation
-``pdf-extraction-lines``.  Nine ruled cells; the title cell stacks the fiscal
-years and every money cell stacks one amount per year, in the same order::
-
-    COMPENSATION OF MEMBERS / 2023 2024 2025   0100   798,584.35 687,246.58 24,949,150.00   ...
-
-Its column headers come from the two-row band above it: ``APPROPRIATION TITLE``,
-``NO.``, ``FUNDS AVAILABLE AS OF October 1, 2024``, the three
-``FUNDING ADJUSTMENTS`` sub-columns, ``NET EXPENDITURES``,
-``REVOLVING FUND RECEIPTS`` and ``UNEXPENDED BALANCE AS OF March 31, 2025`` --
-the last two of which give ``period_start`` ``2024-10-01`` and ``period_end``
-``2025-03-31``.  Account numbers measured on these pages run ``0100`` for the
-annual accounts through ``4046`` and up for the revolving funds.
-
-One ``organization_detail`` page, B-1243: the page states
-``SENATOR TIM KAINE``-style office lines -- here
-``SENATOR JIM JUSTICE``, ``Funding Year 2025``,
-``SENATORS’ OFFICIAL PERSONNEL AND OFFICE EXPENSE ACCOUNT`` -- and its
-second header band names ``DOCUMENT NO.``, ``DATE POSTED``, ``PAYEE NAME``,
-``START``, ``END``, ``DESCRIPTION`` and ``AMOUNT ($)``.  Under that band the
-print rules **one** cell, so ``cells_ruled`` is ``false`` and
-``WHERE cells_ruled`` excludes the whole page; on the summary row above it is
-``true``.  A ``payee_detail`` continuation page states no date in any header,
-so its period is NULL rather than borrowed from the volume's cover, and no
-office, so ``office`` is NULL and a consumer forward-fills.
-
-## Counts published here are floors
-
-Every count is bounded by ``pages_read``, and these volumes run 1,264 to 3,018
-pages.  ``pages_capped`` says so per row rather than leaving a partial read to
-look like a whole one.  The amounts are published as decimal strings and never
-as a canonical key: the ``dollar_amount`` canonical the rollup used erases the
-decimal separator and was measured colliding, so a dollar figure is not a join
-key until that is fixed.
+The print does not rule the payee lines (every one of the 171 ``organization_detail``/``payee_detail`` entry rows has
+exactly one cell), so no ``payee_name``, ``document_number``, ``date_posted`` or singular amount is published: the blob
+lands whole in ``cells_json``, and ``WHERE cells_ruled`` selects exactly the rows whose cells are separate facts.  Every
+count is a floor bounded by ``pages_read``, and amounts are decimal strings rather than join keys because the
+``dollar_amount`` canonical was measured colliding.  Acquisition is not wired here -- the package-id grammar reaches
+neither ``BUDGET-*`` nor ``GPO-CDOC-*`` -- so the shapers are pure over one ``extraction.model.TableObservation`` and
+the page text beside it, and any caller that reaches the bytes can fill the table.
 """
 
 from __future__ import annotations
@@ -399,18 +278,10 @@ _AMOUNT = re.compile(r"\d*\.\d+")
 def parse_amount(value: str | None) -> Decimal | None:
     """The print's own amount spelling as a decimal, or ``None`` where it is not one.
 
-    Measured spellings: ``1,234.56``, ``$19.96``, ``.00``, a negative as either
-    ``-12,161,280.90`` or the accounting ``(1,234.56)``.
-
-    **The decimal point is required, and that is a measurement rather than a
-    convention.**  Over 160 pages of two volumes, 1,316 printed lines are
-    amount-shaped and every one carries a ``.dd`` tail; the 143 that do not are
-    32 distinct strings and all of them are appropriation account numbers
-    (``0100`` to ``4326``) or fiscal years (``2023`` to ``2026``), which the
-    print stacks inside the account-title and account-number cells.  Accepting a
-    bare integer read those years as money -- caught by
-    ``tests/test_senate_expenditures.py``, and invisible to the totals check,
-    which never reaches column 0.
+    Measured spellings: ``1,234.56``, ``$19.96``, ``.00``, a negative as either ``-12,161,280.90`` or the accounting
+    ``(1,234.56)``.  The decimal point is required by measurement: over 160 pages, 1,316 printed lines are amount-shaped
+    and every one carries a ``.dd`` tail, while the 143 that do not are appropriation account numbers or fiscal years a
+    bare-integer rule would read as money.
     """
     if value is None:
         return None
@@ -490,16 +361,11 @@ class PageContext:
 def page_context(page_text: str) -> PageContext:
     """One page's printed locator and office block, from the page text alone.
 
-    The print states the office, the funding year and the appropriation title
-    as a block ending just before the page label, and states them on the first
-    page of an office block only.  The rule is the block the print draws: find
-    its ``Funding Year`` line, take the line above as the office and the lines
-    below up to the page label as the title.
-
-    A multi-year appropriation states a span (``Funding Year 2021-2023``), and
-    both ends are kept: ``funding_year`` is the first year either way, so a
-    single-year block and a span are comparable on it, and
-    ``funding_year_end`` is NULL unless the print states a second year.
+    The print states the office, the funding year and the appropriation title as a block ending just before the page
+    label, and states them on the first page of an office block only: find the ``Funding Year`` line, take the line
+    above as the office and the lines below up to the page label as the title.  A span (``Funding Year 2021-2023``)
+    keeps both ends, with ``funding_year`` the first year either way and ``funding_year_end`` NULL unless the print
+    states a second.
     """
     lines = [line.strip() for line in page_text.split("\n") if line.strip()]
     if not lines:
@@ -521,27 +387,12 @@ def page_context(page_text: str) -> PageContext:
 
 
 def _governing_headers(cells: Sequence[Sequence[str | None]]) -> list[list[str | None]]:
-    """The header labels governing each row, for the whole table in one pass.
+    """The header labels governing each row, for the whole table in one pass: a band is a run of consecutive header rows
+    and the band governing a row is the run ending at the last header row above it, while a header row is governed by
+    the band above it.
 
-    A band is a run of consecutive header rows; the band governing a row is the
-    run ending at the last header row above it.  Reading only that run is what
-    keeps an ``organization_detail`` table's two bands apart: its first band
-    names column 3 ``DESCRIPTION`` for the organization summary and its second
-    names column 7 ``DESCRIPTION`` for the payee lines, and a row under the
-    second must not inherit the first.
-
-    **One pass, not one pass per row.**  Doing this per row re-decided
-    ``_is_header_row`` for every row above the one being shaped and then
-    re-walked the band, which is ``O(R^2 * C)`` -- measured at 2.2x to 3.0x per
-    doubling of the row count, in a shaper whose docstring claimed linear.  The
-    band a header row extends is accumulated as the walk passes it, so each row
-    reads a band that is already built: ``O(R * C)``, and rows sharing a band
-    share one list rather than each copying it.
-
-    A header row is governed by the band *above* it, not by itself, and a band
-    is found by looking back to the last header row even across body rows --
-    which is what gives an ``organization_detail`` second header band the first
-    band's labels rather than nothing.
+    Reading only that run keeps an ``organization_detail`` table's two bands apart; accumulating the band as the walk
+    passes is ``O(R * C)`` rather than the ``O(R^2 * C)`` a per-row redetermination measured at up to 3.0x per doubling.
     """
     width = len(cells[0]) if cells else 0
     empty: list[str | None] = [None] * width
@@ -662,18 +513,10 @@ def shape_senate_expenditure_rows(
 ) -> list[Row]:
     """Every published row of one ruled table, pure over the observation and the page text.
 
-    ``table`` is an ``extraction.model.TableObservation``, read structurally --
-    ``page``, ``bbox``, ``row_count``, ``column_count`` and ``cells`` -- so this
-    module stays the stdlib-only leaf ``schemas`` is and takes no import from
-    ``extraction``.  ``context`` is :func:`page_context`'s output, passed in when
-    a caller shapes several tables from one page so the text is scanned and
-    hashed once; it is computed here when a caller shapes one table alone.
-
-    For a table of ``R`` rows and ``C`` columns over a page of ``N`` characters
-    this is ``O(N + R * C)``: one pass per cell, the page scan paid once per
-    page rather than once per row, and the header bands built in one walk of
-    the table rather than re-derived for every row -- which is what made an
-    earlier version ``O(R^2 * C)``, measured at up to 3.0x per doubling.
+    ``table`` is an ``extraction.model.TableObservation`` read structurally, so this module stays the stdlib-only leaf
+    ``schemas`` is.  ``context`` is :func:`page_context`'s output, passed in when a caller shapes several tables from
+    one page so the text is scanned and hashed once; for a table of ``R`` rows and ``C`` columns this is
+    ``O(N + R * C)``.
     """
     for attribute in ("page", "bbox", "row_count", "column_count", "cells"):
         if not hasattr(table, attribute):
@@ -758,25 +601,12 @@ class ColumnTotal:
 
 
 def summary_totals(rows: Sequence[Row]) -> list[ColumnTotal]:
-    """The print's stated ``Totals`` row against the entries above it, column by column.
+    """The print's stated ``Totals`` row against the entry rows above it, column by column.
 
-    A check that can fail, and the only one this family offers: the
-    ``appropriation_summary`` section ends with a row the print labels
-    ``Totals``, and each of its money columns is the sum of every amount in that
-    column over every entry row of the section -- across pages, because the
-    section runs seven of them.  Summing every *line* of every cell is what the
-    print itself does, since a cell stacks one amount per fiscal year.
-
-    Refuses to answer rather than answering weakly: no ``total`` row, or more
-    than one, returns an empty list, so a caller cannot read "nothing to check"
-    as agreement.  ``rows`` must be the shaped rows of one whole section; a
-    partial section would disagree and should.
-
-    An entry row narrower than the total row contributes nothing to the columns
-    it does not have, rather than raising: a section mixing a nine- and a
-    ten-column summary is not something the measured print does, but a shaped
-    row is data from somewhere else and a check must refuse it, not crash on
-    it.  Each row's amounts are decoded once, not once per column.
+    Each money column is the sum of every line of every cell in that column over every entry row of the section, across
+    pages, since a cell stacks one amount per fiscal year.  Refuses to answer rather than answering weakly: zero or more
+    than one ``total`` row returns an empty list, so "nothing to check" cannot read as agreement; an entry row narrower
+    than the total row contributes nothing to the columns it lacks rather than raising.
     """
     from spicy_docs.schemas.tables import read_json_column
 

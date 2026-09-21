@@ -1,74 +1,17 @@
 """Whether a committee report reprints the CBO cost-estimate letter, where it is, and why it is not.
 
-Publisher fact in: the normalized text of one GovInfo ``CRPT`` body
-(``extraction.body_text.rendition_text``'s ``BodyText.text``).  Interpretation
-out: one :class:`CboEstimateFinding` naming the rule, its version, what the
-report's own cover declared, the letter's span and digest where it is
-reprinted, and -- where it is not -- the publisher's own sentence saying why.
-
-It lives here rather than in ``sources/agency_reports/`` for the reason
-``interpretation/citations.py`` does: this is a named, versioned rule over
-already-normalized text that returns a frozen finding carrying the rule that
-fired, which is what this package is for.  ``sources/agency_reports/
-report_blocks.py`` is a heading *splitter* ported for parity with stored
-BillTrax rows, and its all-caps header patterns do not reach these headings
-(``Congressional Budget Office Cost Estimate`` is title case) -- so nothing
-there is duplicated here and nothing here belongs there.
-
-**The gate is the cover recital, never a heading.**  Rule XIII cl. 3(a)(1)(B)
-makes a reported measure's cover carry ``[Including cost estimate of the
-Congressional Budget Office]`` when the estimate is in the report, in both
-chambers, identically.  A heading is not that statement, in either direction,
-and the corpus shows both failures (measured 2026-09-20 over the 17 retained
-CRPT bodies,
-``docs/research/cbo-cost-estimate-routes-2026-09-20.md``):
-
-* **A heading over no estimate.**  Three reports print a CBO heading above a
-  section that then says the estimate was **not received** -- ``CRPT-118hrpt18``
-  ("At the time this report was filed, the estimate was not available"),
-  ``-118hrpt21`` and ``-118hrpt58``.  A heading gate publishes those as
-  estimates.
-* **An estimate under a heading no pattern knows.**  ``CRPT-118hrpt111``
-  writes ``C. Cost Estimate Prepared by the Congressional Budget Office``,
-  which the five committee-specific patterns the routes measurement tried did
-  not count.  **The heading vocabulary below is a floor and is only ever used
-  to locate a span the recital already declared.**
-* **A signature over no letter.**  ``CRPT-118srpt99`` states ``Director,
-  Congressional Budget Office.`` in a *witness list* and a
-  ``Washington, DC, March 1, 2023.`` dateline on the Senate Budget Committee's
-  own letter of transmittal.  Both markers are false positives outside the
-  recital gate; inside it, all 7 recital-declared bodies are letters.
-
-**Requested-empty, with the publisher's reason.**  A report whose cover does
-not declare the estimate is not evidence that none exists -- 3 of 13 reported
-bills whose index named an estimate had none in the report -- and four of the
-retained bodies say why in their own words.  :func:`read_cbo_estimate` returns
-that paragraph whole, with its span, so the absence carries its reason instead
-of being a NULL.  The absence patterns are **not** gated on a heading, because
-``CRPT-118hrpt111``'s reason sits under a heading no pattern matched.
-
-**No letter date is read, and that is a measurement, not a gap.**  No retained
-body states a CBO letterhead dateline inside a located span: 0 of the 7
-recital-declared spans carries one and 0 of 17 bodies carries one at all.
-Writing a pattern against a form nothing here has seen is the guess this
-repository refuses elsewhere, and it is unnecessary: the estimate's date is
-CBO's own ``pubDate``, already published on ``cbo_cost_estimates.pub_date``,
-and joining to it beats re-deriving it from prose.  One retained body whose
-reprint carries the letterhead would add the rule.
-
-**HTM and PDF text are supported.** The retained PDFs for CRPT-118hrpt53,
--118hrpt276, -118hrpt930 and -118srpt289 lose indentation during text
-normalization. Their section titles are whole uppercase lines, so the reader
-also accepts that bounded heading form; contents entries with dot leaders and
-prose still fail. Two PDF attributions wrap between Congressional and Budget
-Office, which the attribution pattern permits. All four now yield pinned
-letter spans through ``rendition_text``; all 17 retained HTM findings remain
-identical except for the rule version. The caller selects the rendition,
-with PDF preferred as the routes plan recommends. Raster figures remain unread.
-
-**Complexity.** For text of ``C`` characters this is a constant number of
-single passes -- ``O(C)`` -- plus one linear walk of the heading blocks.
-Nothing fetches, reads a clock or touches a file.
+Reads the normalized text of one GovInfo ``CRPT`` body and returns one
+:class:`CboEstimateFinding` naming the rule and its version, what the report's
+cover declared, the letter's span and digest where it is reprinted, and --
+where it is not -- the publisher's own paragraph saying why. The gate is the
+cover recital ``[Including cost estimate of the Congressional Budget Office]``
+(Rule XIII cl. 3(a)(1)(B)), never a heading: measured reports print a CBO
+heading over a section saying the estimate was not received, and one writes an
+estimate under a heading no pattern knows, so the heading vocabulary is a
+floor used only to locate a span the recital already declared. No letter date
+is read -- no retained body states one inside a located span, and the
+estimate's date is CBO's own ``pubDate``, already published -- and absence
+reasons are read whether or not a heading precedes them.
 """
 
 from __future__ import annotations
@@ -93,10 +36,7 @@ class CboEstimateError(ValueError):
 class LetterPattern:
     """One named pattern, and the reason it exists.
 
-    Rules are data here for the reason they are in
-    ``interpretation/citations.py``: a vocabulary has one home and a reviewer
-    reads the table rather than the control flow.  ``rejects`` are the
-    lookalikes the pattern must *not* match, asserted in
+    ``rejects`` are the lookalikes the pattern must not match, asserted in
     ``tests/test_cbo_estimates.py`` so a pattern that widened into prose fails
     a check rather than raising a hit rate.
     """
@@ -318,11 +258,11 @@ class CboEstimateFinding:
     """What one committee report says about its CBO cost estimate.
 
     ``report_states_estimate`` is the report's own cover declaration and
-    nothing else.  ``letter_span`` is present only when that declaration was
-    made *and* both ends of the reprint were located; a declared letter whose
-    end could not be found returns the declaration with a NULL span rather
-    than a boundary this rule invented.  ``absence_reason`` is the publisher's
-    paragraph, verbatim, and is read whether or not a heading precedes it.
+    nothing else; ``letter_span`` is present only when that declaration was
+    made *and* both ends of the reprint were located, so a declared letter
+    whose end could not be found returns the declaration with a NULL span
+    rather than an invented boundary; ``absence_reason`` is the publisher's
+    paragraph, verbatim, read whether or not a heading precedes it.
     """
 
     rule: str
@@ -345,9 +285,9 @@ def _rule_version(patterns: Sequence[LetterPattern] | None = None) -> str:
     """Digest all pattern text, flags, rejects, heading thresholds and rule revision.
 
     Derived, not written, for the reason ``citations._rule_set_version`` is:
-    editing a pattern moves this even when nobody remembers to, and the pinned
-    test then names it.  The rejects are in the input because a reject that is
-    no longer asserted cannot fail, so deleting one changes the rule.
+    editing a pattern moves this even when nobody remembers to. The rejects are
+    in the input because a reject that is no longer asserted cannot fail, so
+    deleting one changes the rule.
     """
     rules = _letter_patterns() if patterns is None else patterns
     payload = {
@@ -381,7 +321,7 @@ def _match_heading(block: HeadingBlock) -> str | None:
 def _paragraphs(text: str) -> Iterator[tuple[int, int]]:
     """Scan blank-line-bounded paragraphs once, preserving their exact spans.
 
-    The publisher's own unit.  A sentence splitter over GPO's fixed-width text
+    The publisher's own unit: a sentence splitter over GPO's fixed-width text
     would have to guess where a line break ends a sentence, and these reasons
     run to four printed lines.
     """
@@ -411,12 +351,11 @@ def _absence(text: str) -> tuple[str | None, tuple[int, int] | None, str | None]
 def _letter_end(text: str, heading: HeadingBlock, blocks: Sequence[HeadingBlock]) -> tuple[int, str] | None:
     """Where the reprinted letter ends: its attribution, or the next heading in the same series.
 
-    The attribution is the measured end on 6 of 7 recital-declared bodies.
-    The one that has none -- ``CRPT-118srpt298``, whose estimate is a summary
-    table rather than a letter -- has a numbered heading, so the fallback ends
-    at the next heading of that same series (``VI.`` to ``VII.``).  An
-    *unnumbered* heading gets no fallback: nothing measured needs one and a
-    stray indented line is not a boundary worth guessing.
+    The attribution is the measured end on 6 of 7 recital-declared bodies; the
+    one that has none -- whose estimate is a summary table rather than a letter
+    -- has a numbered heading, so the fallback ends at the next heading of that
+    same series. An *unnumbered* heading gets no fallback: nothing measured
+    needs one and a stray indented line is not a boundary worth guessing.
     """
     attribution = DIRECTOR_ATTRIBUTION.compiled().search(text, heading.span[1])
     if attribution is not None:
@@ -480,13 +419,11 @@ def read_cbo_estimate(text: str) -> CboEstimateFinding:
 def recital_bill_id(finding: CboEstimateFinding, congress: object) -> str | None:
     """``[To accompany H.R. 801]`` in a 118th report is ``118-hr-801``.
 
-    **The Congress is the package's, not the print's**, exactly as
-    ``interpretation.citations`` stamps one on a bare designator: the cover
-    writes ``H.R. 801`` and never a Congress, so the caller supplies the one
-    its own package identity states.  ``None`` where the cover names no
-    measure -- a report can accompany none -- or names something outside the
-    eight bill types, which is the honest answer rather than a key nothing
-    addresses.
+    **The Congress is the package's, not the print's** -- the cover writes
+    ``H.R. 801`` and never a Congress -- so the caller supplies the one its own
+    package identity states; ``None`` where the cover names no measure or names
+    something outside the eight bill types, which is the honest answer rather
+    than a key nothing addresses.
     """
     if finding.accompanies is None or congress is None:
         return None

@@ -1,13 +1,11 @@
 """Stream CourtListener's published CSV dumps for keyless opinion text.
 
-This complements spicy-regs' docket search reader. The REST opinions and clusters
-endpoints required a token when checked on 2026-08-22; the bulk bucket supplies
-full tables without one.
-
-The S3 listing records published objects, exact sizes, and modification times.
-The reader downloads and decompresses bzip2 incrementally. max_records and
-max_compressed_bytes bound a partial ingest. Requests use an identifying
-User-Agent and one connection, respecting the publisher's transfer rate.
+This complements spicy-regs' docket search reader: the REST opinions and clusters endpoints required
+a token when checked on 2026-08-22, while the S3 bulk bucket supplies full tables without one. The
+listing records published objects, exact sizes and modification times; the reader downloads and
+decompresses bzip2 incrementally, ``max_records`` and ``max_compressed_bytes`` bound a partial
+ingest, and requests use an identifying User-Agent and one connection, respecting the publisher's
+transfer rate.
 """
 
 from __future__ import annotations
@@ -97,12 +95,11 @@ def published_object_pin(
 ) -> dict[str, object]:
     """Record one published object's listing metadata and check caller expectations.
 
-    Byte size, last-modified time, and the exact quoted ETag distinguish revisions
-    of the same filename. These checks apply to the listing only: this helper does
-    not bind later HTTP reads with If-Match or hash their content.
-
-    DocSpec owns the pinned population in fixtures/courtlistener-bulk-v1/, including
-    withdrawn versus declined objects. This helper records only the object read.
+    Byte size, last-modified time and the exact quoted ETag distinguish revisions of the same
+    filename, but these checks apply to the listing only: this helper does not bind later HTTP reads
+    with ``If-Match`` or hash their content. It raises RuntimeError when no dump is published for the
+    date or a pinned value differs, and DocSpec owns the pinned population (including withdrawn
+    versus declined objects); this helper records only the object read.
     """
     listing = objects if objects is not None else list_bulk_dumps()
     published = find_dump(listing, dataset, dump_date)
@@ -160,11 +157,10 @@ class _BinarySource(Protocol):
 class _CountingStream(io.RawIOBase):
     """Decompress an HTTP bzip2 stream while counting compressed bytes for the budget.
 
-    After a read error, reopen resumes at the exact compressed offset and feeds the
-    same decompressor. Without reopen, as for a local file, the error propagates.
-
-    Concatenated bzip2 streams need a fresh decompressor at each boundary; carry
-    unused_data forward so a publisher compressor change cannot truncate the dump.
+    After a read error, a reopen callback resumes at the exact compressed offset and the resumed
+    connection must prove the original object identity; without reopen, as for a local file, the
+    error propagates. Concatenated bzip2 streams get a fresh decompressor at each boundary, carrying
+    ``unused_data`` forward so a publisher compressor change cannot truncate the dump.
     """
 
     def __init__(
@@ -269,13 +265,11 @@ class _CountingStream(io.RawIOBase):
 class CourtListenerBulkReader(Reader):
     """Yield raw CSV rows from one CourtListener bulk dump, decompressed inline.
 
-    Source strings, including quoted empty strings, remain strings. Unquoted
-    empty fields become ``None``. Shaping belongs to the caller.
-
-    ``local_file`` reads an already-downloaded ``.bz2`` instead of the network,
-    which is how the small dumps are handled once cached. ``max_records`` and
-    ``max_compressed_bytes`` bound a run; ``row_filter`` drops rows before they
-    are materialized, which is what keeps a filtered pass over a huge dump cheap.
+    Source strings, including quoted empty strings, remain strings and unquoted empty fields become
+    ``None``; shaping belongs to the caller. ``local_file`` reads an already-downloaded ``.bz2``
+    instead of the network, which is how the small dumps are handled once cached. ``max_records`` and
+    ``max_compressed_bytes`` bound a run, and ``row_filter`` drops rows before they are materialized,
+    which keeps a filtered pass over a huge dump cheap.
     """
 
     def __init__(
@@ -324,6 +318,7 @@ class CourtListenerBulkReader(Reader):
         return response, response
 
     def iter_records(self) -> Iterator[dict]:
+        """Stream decompressed rows, updating the run counters and stopping early at ``max_records``."""
         self.stopped_early = True
         handle, response = self._stream()
         counter = _CountingStream(

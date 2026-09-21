@@ -1,9 +1,7 @@
-"""Concrete `RecordType` instances for the regulations.gov data shapes.
+"""Concrete :class:`RecordType` instances for the regulations.gov docket, document and comment shapes.
 
-Each entry pairs a name, S3 path pattern, Parquet schema, dedup key, and an
-extract function that maps a raw regulations.gov JSON payload to a flat record
-dict. The pipeline addresses these by their dict key (``"dockets"`` etc.); the
-key matches ``RecordType.name`` so staging paths and merge logic stay stable.
+Each pairs an S3 path pattern, Parquet schema, dedup key and extract function; ``RECORD_TYPES`` keys them by name, and
+its order drives the default set of data types the pipeline processes.
 """
 
 from json import dumps as json_dumps

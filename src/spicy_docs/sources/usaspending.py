@@ -82,4 +82,5 @@ class UsaspendingRecipientsReader(PagedJsonReader):
         super().__init__(family=USASPENDING, budget=budget, transport=transport, clock=clock)
 
     def recipients(self, body: Mapping[str, Any], *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
+        """Walk recipient pages for one request body under the family's shared budget."""
         return self.pages(RECIPIENTS_URL, records_key=RESULTS_KEY, max_pages=max_pages, body=body)

@@ -124,6 +124,7 @@ class BulkIdentity:
         return {"Range": f"bytes={offset}-", "If-Match": self.etag}
 
     def admit_resume(self, response, offset: int) -> None:
+        """Refuse a resumed response whose URL, ETag, Content-Range or length differs from the original object."""
         _admit_status(response, 206)
         _admit_encoding(response)
         if response.geturl() != self.resolved_url:

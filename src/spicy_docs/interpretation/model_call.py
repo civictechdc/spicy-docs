@@ -1,37 +1,20 @@
 """The one injected model seam the two model-backed interpretation modules share.
 
-``section_classification`` and ``bill_summaries`` both send a prompt and read
-back structured output with token counts. Neither owns a client: the caller
-passes a ``ModelCall``, exactly as ``spicy_docs.extraction.gemini`` takes an
+``section_classification`` and ``bill_summaries`` each own their prompt, their
+sealed vocabulary and their answer's provenance, but neither owns a client:
+the caller passes a ``ModelCall``, exactly as ``extraction.gemini`` takes an
 injected ``GenerationClient``, so the rules stay pure and a test needs no
-network. What the modules own is the prompt, the sealed vocabulary and the
-provenance the answer is stored with.
-
-``AnswerField`` is the other half of that seam, and it exists because of a
-measured failure. The bill-summary prompt asked for its three items in prose
-and never named the JSON keys ``_read_answer`` required, so the spelling was
-the model's to choose -- and it chose differently each time it was asked. The
-retained receipt of the first live run (2026-09-19, ``c1-provenance.json``)
-records ``most_affected_audience`` and ``notable_provisions``; that run's own
-README tabulates ``affected_audience`` from another invocation of the identical
-prompt. Both miss ``audience`` and ``topThreeProvisions``, and both refuse
-identically, which is the point: the defect is not one wrong spelling to
-accommodate but an unstated key set. A prompt and its reader must therefore be
-**one statement**: each module
-declares its answer's keys, types and counts once as ``AnswerField`` records,
-``answer_shape_block`` turns that declaration into the lines the prompt sends,
-and the reader looks its values up through the same records. Neither side can
-name a key the other does not.
-
-Since 2026-09-20 that one declaration also states the shape **on the request**:
-:func:`answer_schema` derives a draft 2020-12 JSON Schema from the same tuple,
-``ModelCall`` carries it, and an adapter that can send it does (Gemini's
-``responseJsonSchema``). That is where BillTrax's zod schemas sat --
-``bill-summaries.ts:41-45``, ``summarize/route.ts:13-19``,
-``classifications.ts:21-29``, each passed on the request -- and dropping them
-is what left the ``v1`` prompts asking in prose alone. The schema is a request
-and not the contract: a provider may accept it and answer around it, so
-:func:`require_fields` and each module's reader still refuse, unchanged.
+network. ``AnswerField`` exists because a measured failure showed a prompt and
+its reader must be one statement: the ``v1`` summary prompt asked for its
+items in prose and never named the JSON keys the reader required, and the
+first live call's answer was refused, so each module declares its answer's
+keys, types and counts once, ``answer_shape_block`` turns that declaration
+into the prompt's lines, and the reader looks its values up through the same
+records -- neither side can name a key the other does not. Since 2026-09-20
+that one declaration also states the shape on the request, as a draft 2020-12
+JSON Schema from :func:`answer_schema` sent as Gemini's ``responseJsonSchema``
+(where BillTrax's zod schemas sat), but that is a request and not the
+contract: :func:`require_fields` and each module's reader still refuse.
 """
 
 from __future__ import annotations
@@ -65,10 +48,10 @@ class ModelCall(Protocol):
 
     It comes from the same ``AnswerField`` tuple the prompt and the reader do,
     by :func:`answer_schema`. An adapter whose provider has no equivalent may
-    ignore it: it is a request, not the contract. The contract stays the
-    reader's refusal -- a schema the provider accepts is still a shape the
-    answer may arrive outside of, and only :func:`require_fields` and the
-    module's own checks keep a wrong-shaped answer out of a stored row.
+    ignore it: it is a request, not the contract -- a schema the provider
+    accepts is still a shape the answer may arrive outside of, and only
+    :func:`require_fields` and the module's own checks keep a wrong-shaped
+    answer out of a stored row.
     """
 
     def __call__(
@@ -81,7 +64,7 @@ class _Shape:
     """One value type, stated once for both halves of the request.
 
     ``schema`` is what the request carries and ``phrase`` is what the prompt
-    says, so neither can be added without the other. ``bound_keys`` are the
+    says, so neither can be added without the other; ``bound_keys`` are the
     schema keys a reader-enforced bound goes under, and ``bounds_stated`` is
     which end of a bound ``phrase`` actually puts into words -- a bound the
     prompt cannot say is refused when the field is declared, so the request
@@ -126,20 +109,15 @@ class AnswerField:
     """One key the prompt asks for and the reader requires, declared once.
 
     ``shape`` and ``bounds`` are the type and the range **the reader actually
-    enforces**. Everything else is derived from them: ``kind`` is the words the
-    prompt sends, ``schema`` is the subschema the request carries. So the
-    request cannot promise a shape the reader refuses, and its words and its
-    schema cannot drift apart, because there is one declaration and not three.
-
-    ``choices`` is a sealed vocabulary the reader refuses a value outside of,
-    so the schema states it as an ``enum``; the prompt states it in its own
-    words elsewhere (the classification prompt's label block), so ``kind`` does
-    not repeat it and the prompt bytes do not depend on it.
-
-    ``aliases`` are spellings the reader also accepts but the prompt does not
-    offer and the schema does not allow: a one-directional tolerance for a
-    model that snake-cases a camelCase key, never a second name the answer may
-    choose between.
+    enforces**, and everything else is derived from them: ``kind`` is the words
+    the prompt sends and ``schema`` is the subschema the request carries, so
+    the request cannot promise a shape the reader refuses and the words and
+    the schema cannot drift apart. ``choices`` is a sealed vocabulary the
+    reader refuses a value outside of, so the schema states it as an ``enum``
+    while the prompt states it elsewhere (the classification prompt's label
+    block); ``aliases`` are spellings the reader also accepts but the prompt
+    does not offer and the schema does not allow -- a one-directional
+    tolerance, never a second name the answer may choose between.
     """
 
     key: str
@@ -206,21 +184,14 @@ def answer_schema(fields: Sequence[AnswerField], *, wrapper: str | None = None) 
 
     What :func:`answer_shape_block` puts into the prompt's words, this puts
     into the request's own constraint: every declared key required, nothing
-    else allowed, each value's type and the reader's own bounds. It is sent as
-    Gemini's ``responseJsonSchema`` by ``interpretation/gemini_call.py``, which
-    is where BillTrax passed its zod schemas and where this port left them
-    behind.
-
-    **No alias appears here**, exactly as none appears in the prompt: an alias
-    is what the reader tolerates on the way in, and offering it on the request
-    would make it a second name the answer may choose between -- the ``v1``
-    defect with extra steps.
-
-    ``wrapper`` nests an array of these objects under one key: BillTrax's own
-    ``ClassifySchema`` shape (``classifications.ts:21-29``), which
-    ``section_classification._rows`` still unwraps. Nothing requests that form.
-    It is derived here from the same declaration so the shape the reader
-    tolerates is never restated by hand.
+    else allowed, each value's type and the reader's own bounds. **No alias
+    appears here**, exactly as none appears in the prompt: an alias is what the
+    reader tolerates on the way in, and offering it on the request would make
+    it a second name the answer may choose between. ``wrapper`` nests an array
+    of these objects under one key (BillTrax's own ``ClassifySchema`` shape,
+    which ``section_classification._rows`` still unwraps); nothing requests
+    that form, and it is derived here so the tolerated shape is never restated
+    by hand.
     """
     answer: dict[str, Any] = {
         "type": "object",
@@ -241,12 +212,11 @@ def answer_schema(fields: Sequence[AnswerField], *, wrapper: str | None = None) 
 def require_fields(data: Mapping[str, Any], fields: Sequence[AnswerField], *, what: str) -> None:
     """Refuse an answer missing any declared key, naming **every** one it left out.
 
-    Named together rather than one per call: the measured failure was missing
-    two keys, and a reader that reports only the first makes the second look
-    like a new defect after the first is fixed.
-
-    This stays the contract now that the request carries a schema too: the
-    schema is what was asked for, this is what is accepted.
+    Named together rather than one per call, because the measured failure was
+    missing two keys and a reader that reports only the first makes the second
+    look like a new defect after the first is fixed. This stays the contract
+    now that the request carries a schema too: the schema is what was asked
+    for, this is what is accepted.
     """
     missing = [field.key for field in fields if not field.present_in(data)]
     if missing:

@@ -1,23 +1,9 @@
-"""The two model-backed tables, and the third that waits on a generator to port.
+"""The two model-backed tables -- ``section_classifications`` and ``bill_summaries`` -- plus ``diff_summaries``, each
+carrying the model's answer beside the provenance the ``interpretation`` package already returns.
 
-Both registered tables here carry a model answer *and* the provenance it was
-produced under, because the ``interpretation`` package already returns it: model
-id, prompt version, the hash of the exact prompt sent, the batch, and when the
-call was requested and answered.  This layer flattens findings; it does not
-invent provenance.
-
-Both identities gained ``source`` (C5).  ``bill_versions`` is keyed
-``(bill_id, version_code, source)`` -- the key BillTrax itself widened in
-migration 020 -- and a child cannot say which of an XML row and its PDF twin it
-classified without it.
-
-``section_classifications`` carries ``vocabulary_hash`` so a change to the five
-sealed labels is visible in the data rather than only in the code that produced
-it.  ``bill_summaries`` carries ``frame``, because the framing sentence is what
-makes the summary reproducible from the row: two summaries of the same text
-under different frames are different answers, not drift.  ``diff_summaries``
-carries no frame, because its prompt has none: the original sends only the diff
-text, and the port keeps that sealed.
+Both identities gained ``source`` because an XML row and its PDF twin collide without it, and
+``vocabulary_hash``/``frame`` make a sealed label change and a summary's framing visible in the data rather than only in
+the code that produced it.  ``diff_summaries`` carries no frame because its prompt has none.
 """
 
 from __future__ import annotations

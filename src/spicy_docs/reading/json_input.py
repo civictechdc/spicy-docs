@@ -169,7 +169,7 @@ def _check_nodes(
 
 
 def load_finite_json(raw: bytes, *, source: str, error_type: type[ValueError] = ValueError) -> object:
-    """Keep Python integers and finite binary floats; refuse ambiguous JSON."""
+    """Keep Python integers and finite binary floats; refuse duplicate keys, NaN and infinities."""
     return _load(raw, source=source, error_type=error_type, number_policy="finite-float")
 
 
@@ -180,7 +180,7 @@ def load_integer_json(
     error_type: type[ValueError],
     number_label: str = "float",
 ) -> object:
-    """Keep source diagnostics while rejecting duplicate keys, floats and NaN."""
+    """Reject duplicate keys, any float and NaN, naming the number ``number_label`` in the refusal."""
 
     return _load(raw, source=source, error_type=error_type, number_policy="integer", number_label=number_label)
 

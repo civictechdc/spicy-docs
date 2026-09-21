@@ -55,6 +55,8 @@ def _source_state_digest(
     records: tuple[int, Iterable[Mapping[str, Any]]],
     renditions: tuple[int, Iterable[Mapping[str, Any]]],
 ) -> str:
+    """Digest ordered scopes, schemas, records, and renditions under their declared counts."""
+
     return framed_section_digest(
         "spicyregs-source-state/1",
         (
@@ -67,6 +69,8 @@ def _source_state_digest(
 
 
 def _same_traversal(connection: sqlite3.Connection, left: int, right: int) -> bool:
+    """Whether two traversals hold the same record identity and digest at every ordinal."""
+
     left_count = connection.execute("SELECT count(*) FROM observations WHERE traversal = ?", (left,)).fetchone()[0]
     right_count = connection.execute("SELECT count(*) FROM observations WHERE traversal = ?", (right,)).fetchone()[0]
     if left_count != right_count:
@@ -222,6 +226,8 @@ def _accepted_traversal(
     traversal_count: int,
     profile: SourceNativeProfile,
 ) -> int:
+    """Pick the accepted traversal under the profile's acceptance rule, refusing when none qualifies."""
+
     if profile.traversal_acceptance in {
         "single-observed-traversal",
         "source-enumeration",
@@ -236,6 +242,8 @@ def _accepted_traversal(
 
 
 def _validate_evidence_media_type(page: SourceNativePage, *, streamed: bool = False) -> None:
+    """Refuse an evidence media type outside the page defaults; streamed evidence may also be octet-stream."""
+
     allowed = {"application/json", "application/zip"}
     if streamed:
         allowed.add("application/octet-stream")
@@ -283,6 +291,8 @@ def _ordered_rendition_rows(
     profile: SourceNativeProfile,
     record: Mapping[str, Any],
 ) -> tuple[Mapping[str, Any], ...]:
+    """Order one record's renditions by their closed identity, refusing a missing or repeated key."""
+
     values = tuple(profile.rendition_rows(record))
     keys: list[tuple[str, str]] = []
     for value in values:
@@ -393,6 +403,8 @@ def _page_rows(
     accepted_only: bool = False,
     partition_id: str | None = None,
 ) -> Iterator[Mapping[str, Any]]:
+    """Yield indexed pages in their closed shape, each with its discovered record identities."""
+
     # Index the per-page lookup to avoid scanning a traversal for every page.
     # Create it here: the replay gate's observations table has no page column.
     connection.execute("CREATE INDEX IF NOT EXISTS observations_page ON observations (traversal, page, ordinal)")

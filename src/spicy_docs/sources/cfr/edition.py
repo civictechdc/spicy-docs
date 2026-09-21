@@ -15,6 +15,8 @@ class CfrEditionType(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class AnnualCfrEdition:
+    """Typed annual-edition facts read from one volume's GovInfo package MODS."""
+
     year: int
     title: int
     volume: int

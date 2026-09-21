@@ -1,63 +1,17 @@
 """Which CRPT package is a committee activity report, by its index title.
 
-An end-of-Congress committee activity report is an ordinary ``CRPT`` package:
-nothing in its id, its ``docClass`` or its MODS says it is one. The only
-publisher statement that separates it from every other committee report in the
-same collection walk is **its own title**, so this rule reads that title and
-nothing else. It is a selection rule over the ``published`` listing row, not an
-interpretation of a body: the collection walk lives in ``discovery.py``, the
-body fetch in ``bodies.py``, and the tables the selected packages fill in
-``schemas/document_citation_tables.py``.
-
-**The phrase, never the bare word.** ``activit`` alone takes in ordinary
-committee reports whose subject happens to be an agency's activities. Measured
-2026-09-20 over the 71 ``CRPT`` packages GovInfo's ``published`` walk served
-for 2025-01-01..2025-03-31 (receipt
-``activity-report-title-rule-2026-09-20/``, re-derived request-free from the
-index page that walk retained):
-
-===============================================  ====
-Packages walked                                    71
-Titles containing ``activit``                      20
-Titles :data:`ACTIVITY_REPORT_TITLE` matches       15
-===============================================  ====
-
-The five the phrase rejects are both classes this rule is answerable for:
-
-- **Three are the false positives it exists to reject** -- two
-  ``DIRECTING THE SECRETARY OF … RELATING TO … POLICIES AND ACTIVITIES …``
-  resolutions and one ``PROVIDING FOR CONSIDERATION OF THE BILL (H.R. 471) …
-  IMPROVE FOREST MANAGEMENT ACTIVITIES``. None is an activity report; all
-  three match the bare word.
-- **Two are activity reports this rule misses**: ``SUMMARY OF ACTIVITIES ONE
-  HUNDRED EIGHTEENTH CONGRESS`` and ``REVIEW OF LEGISLATIVE ACTIVITY DURING
-  THE 118TH CONGRESS``. Both name a Congress and no committee, and every
-  clause here needs either the word ``committee`` or the fixed phrase
-  ``activity report``. **The rule is not widened to reach them**, because
-  dropping the committee requirement is exactly what readmits the three above;
-  the miss is recorded here instead, so a caller reads a floor and knows why.
-
-So what a caller gets is 15 of a titled 17 on the measured window, with the
-two misses named. Widening this rule means measuring it again over a window
-that separates the two classes, and moving
-:data:`ACTIVITY_REPORT_RULE_VERSION` with it.
-
-**Why this lives in the package.** It was written in
-``tools/analysis/pdf_family_rollup.py`` and the wheel does not ship ``tools/``,
-so the first host to build these tables had to restate the regex --
-`spicy-regs`'s ``transforms/build_print_citations.py``, whose own docstring
-calls it "the one selection rule in this module that is a copy rather than an
-import". **spicy-regs imports this module now and that restatement can be
-deleted there.** The two analysis tools import it too, so the measurement and
-the product cannot drift apart -- the same reason
-``interpretation/citations.py`` owns the citation rules both run.
-
-The committee-name vocabulary did *not* move with it: the builder
-(``interpretation.citations.committee_vocabulary``) is already in the package,
-and what is tools-side is only which pinned roster fixtures the measurement
-feeds it, which a package must not depend on.
-
-``O(T)`` in the title's length; no request, no file, no state.
+An end-of-Congress activity report is an ordinary ``CRPT`` package -- nothing in
+its id, its ``docClass`` or its MODS says it is one -- so the rule reads its own
+title and requires the word ``committee`` or the fixed phrase ``activity
+report``, never the bare word ``activit``, which takes in ordinary reports whose
+subject is an agency's activities. Measured 2026-09-20 over the 71 ``CRPT``
+packages a ``published`` walk served for 2025-01-01..2025-03-31: the bare word
+matched 20 titles and the phrase 15, refusing three resolutions and missing the
+two activity reports that name a Congress and no committee; the rule is not
+widened to reach them because dropping the committee clause readmits the three,
+so the miss is a recorded floor. The phrase, the rejected alternative and
+:data:`ACTIVITY_REPORT_RULE_VERSION`'s digest over both live here because the
+analysis tools must import the rule rather than restate it.
 """
 
 from __future__ import annotations

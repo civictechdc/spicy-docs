@@ -1,24 +1,13 @@
 """Acquire explicit OLRC U.S. Code sources with exact bytes and bounded HTTP evidence.
 
-Every route here is keyless and public. Each call captures one file or one page,
-proves the identity the request named against the bytes that came back, and
-hands the caller the exact payload. No route fallback, no implicit latest
-release point, and no disk cache.
-
-Three things about this publisher change how a capture is read, all measured on
-2026-09-14 and retained in the port receipt:
-
-* **The zip routes send no ``Content-Type`` and no ``Content-Length``.** The
-  media-type allowance therefore includes the absent header, and the shape is
-  proved from the bytes instead: a local file header, a CRC check, then every
-  member's native identity.
-* **Generated pages are slow and can be cut short.** The Popular Name Tool took
-  435 seconds for 11.1 MB, and both a page and the bulk zip have closed early
-  mid-body. A truncated answer is a 200 that is not the expected shape: the
-  readers refuse it by name and the bytes are retained.
-* **A title the publisher lists but does not serve answers 302**, not 404. That
-  is neither data nor absence, so it arrives as a refusal carrying its status.
-  Only an actual 404 or 410 raises :class:`UsCodeSourceUnavailableError`.
+Every route is keyless and public: one call captures one file or page, proves
+the identity the request named against the bytes that came back, and hands the
+caller the exact payload -- no route fallback, no implicit latest release point
+and no disk cache. The zip routes send no ``Content-Type`` or ``Content-Length``
+and so are proved from their bytes, a generated page cut short is a 200 the
+readers refuse by name, and a title the publisher lists but does not serve
+answers 302 rather than 404, so only the exact requested locator answering
+404/410 raises :class:`UsCodeSourceUnavailableError`.
 """
 
 from __future__ import annotations

@@ -44,6 +44,7 @@ def request_pairs(url: object, *, endpoint: str) -> list[tuple[str, str]]:
 
 
 def page_request(url: object, *, endpoint: str, order_by: str | None = None) -> tuple[list[tuple[str, str]], int]:
+    """Validate one numbered page request's controls and return its query pairs and page number."""
     pairs = request_pairs(url, endpoint=endpoint)
     controls = {key: [value for name, value in pairs if name == key] for key in ("page", "per_page", "sort")}
     if (
@@ -63,6 +64,7 @@ def page_request(url: object, *, endpoint: str, order_by: str | None = None) -> 
 
 
 def capture_descriptor(value: object, *, request: RequestCheck) -> dict[str, Any]:
+    """Validate one capture descriptor's URL, digest, byte size and observation time, returning it unchanged."""
     if not isinstance(value, Mapping) or not _REQUIRED_CAPTURE <= set(value) <= _REQUIRED_CAPTURE | _OPTIONAL_CAPTURE:
         raise ValueError("FEC capture descriptor fields differ")
     result = dict(value)
@@ -116,6 +118,7 @@ def query_scope(
 
 
 def decimal_strings(value: Any) -> Any:
+    """Rewrite Decimal values as exact strings, recursively; other values pass through."""
     if isinstance(value, Decimal):
         return str(value)
     if isinstance(value, dict):
@@ -126,6 +129,7 @@ def decimal_strings(value: Any) -> Any:
 
 
 def pack_response(capture: Mapping[str, Any], raw: bytes) -> bytes:
+    """Pack one capture descriptor and its exact response bytes into the two-member evidence ZIP."""
     output = BytesIO()
     with ZipFile(output, "w", compression=ZIP_DEFLATED) as archive:
         archive.writestr(deterministic_zip_entry("manifest.json"), canonical_json_bytes(dict(capture)))
@@ -134,6 +138,7 @@ def pack_response(capture: Mapping[str, Any], raw: bytes) -> bytes:
 
 
 def parse_response(raw: bytes, *, request: RequestCheck, mode: str = "page") -> Mapping[str, Any]:
+    """Read one evidence ZIP, verify its pins, and parse its page into publisher order."""
     try:
         with ZipFile(BytesIO(raw)) as archive:
             infos = archive.infolist()
@@ -180,6 +185,8 @@ def parse_response(raw: bytes, *, request: RequestCheck, mode: str = "page") -> 
 
 @dataclass(frozen=True, slots=True)
 class RetainedPage:
+    """One retained page handed to the publisher, carrying its exact evidence ZIP."""
+
     page_index: int
     request_key: str
     source_cursor: str | None
@@ -231,6 +238,7 @@ def iter_pages(
 def records_included(
     response: Mapping[str, Any], *, query_scope: Mapping[str, Any], page_window: object | None
 ) -> bool:
+    """Check a parsed page against the selected capture scope and its expected continuation."""
     captures = query_scope["captures"]
     index = response["page"] - 1
     if not 0 <= index < len(captures) or response["capture"] != captures[index]:
@@ -244,6 +252,7 @@ def records_included(
 
 
 def next_page(response: Mapping[str, Any], *, seen_urls: set[str]) -> str | None:
+    """The next continuation URL, refusing one already seen in this traversal."""
     url = response["next_url"]
     if url is not None:
         if url in seen_urls:
@@ -254,6 +263,8 @@ def next_page(response: Mapping[str, Any], *, seen_urls: set[str]) -> str | None
 
 @dataclass(slots=True)
 class QueryAcquisition:
+    """Acquisition check: exactly one complete selected request chain."""
+
     windows: int = 0
 
     def add_window(self, response, *, page_window, records_included, response_bytes) -> None:

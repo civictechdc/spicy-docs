@@ -1,20 +1,11 @@
-"""The one GovInfo error page and its two witnesses, importable on its own.
+"""The one GovInfo error page and its two independent witnesses.
 
-GovInfo answers a missing package or an unoffered rendition with a redirect to
-``https://www.govinfo.gov/error``, and that page answers HTTP 200. A caller
-that follows redirects therefore receives a 200 that is not the requested
-object. Two independent witnesses say so: the final URL the response came
-from, and the page's own link to that address in its bytes.
-
-They stay separable because callers interleave them differently. The Federal
-Register granule validator refuses an error-page URL, then a mismatched
-locator, then the body marker, so a marker-bearing body at the wrong locator
-reports the locator. The package body validator has no marker of its own to
-fall back on and refuses on either witness at once.
-
-This module imports nothing from ``spicy_docs``: a pure validator that needs
-only this rule should not have to import a source family to get it. Checking
-costs ``O(B)`` for body bytes ``B``; no request is made and no file is written.
+A missing package or an unoffered rendition redirects to
+``https://www.govinfo.gov/error``, which answers HTTP 200, so a caller that
+follows redirects receives a 200 that is not the requested object; the final URL
+the response came from and the page's own link to that address in its bytes both
+say so. The witnesses stay separable because callers interleave them
+differently, and this module imports nothing from ``spicy_docs``.
 """
 
 from __future__ import annotations

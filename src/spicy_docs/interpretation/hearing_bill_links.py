@@ -1,56 +1,18 @@
 """Which bills a hearing was held on, per source, with the rule that said so.
 
-A hearing has no ``PRIMARY`` bill because a hearing is not filed against one
-bill. A legislative hearing is convened on a *list* -- twelve of them on
-``CHRG-118hhrg56198`` -- and four publishers state that list. The measurement
-this module carries into product code
-([hearing-to-bill linkage](../../../docs/research/hearing-bill-linkage-2026-09-20.md),
-198 requests, receipt ``hearing-bill-linkage-2026-09-20/``) asked which source
-states it and what precision each one earns.
-
-**Two rules are implemented, in the order the measurement ranked them.**
-
-``mods_cover`` reads the package MODS's own ``<bill context="COVER">`` list --
-the bills printed on the hearing's cover. It costs **no request at all**:
-``GovInfoBodyAcquirer`` already fetches that MODS for every body it reads. Six
-set-comparisons against a statement made by a *different* process (the
-Congress.gov hearing title three times, the Daily Digest committee entry,
-``relatedItems.bills``, the CHRG front page) were **6 of 6 set-equal over 55
-bills**, and the bill's own action list confirms a *Hearings Held* action by
-that committee on that date for **19 of 20** pairs.
-
+A hearing has no ``PRIMARY`` bill because it is not filed against one, so four
+publishers' statements of the list were measured and two rules implemented in
+rank order: ``mods_cover`` reads the package MODS's own ``<bill
+context="COVER">`` list at no request cost (6 of 6 set-equal against
+independently produced lists, the bill side confirming 19 of 20 pairs), and
 ``docs_house_br`` reads the House Committee Repository's per-event agenda, one
-keyless GET per event ([the reader](../sources/congress/house_committee_repository.py)).
-**It states intent, not outcome**, so its rows are ``noticed`` and never
-``held_on``: where the agenda and the cover agree the bill side confirms 18 of
-18, but where the agenda alone states a bill it confirms 1 of 18, contradicts 1
-(``118-hr-2997``, noticed for 2023-05-23 and heard 2023-06-22) and is silent on
-16. A consumer that wants what happened reads ``relation = 'held_on'``; a
-consumer that wants what was scheduled reads both.
-
-**A ``BODY`` mention is never a link.** ``BODY`` and ``OTHER`` are what the
-transcript happens to cite, and **0 of 23** ``BODY``-only mentions carry a
-confirming action. They are counted, not linked, and nothing here makes a row
-from one.
-
-**The identity check is per row, not per build.** ``docs.house.gov``'s
-``EventID`` equalling Congress.gov's ``eventId`` is a measured regularity over
-ten events that neither publisher documents, so :func:`agenda_links` refuses
-unless *this* meeting's ``<calendar-date>`` equals *this* hearing's MODS
-``heldDate`` and one of its committees' parent codes equals one of the MODS's
-``congCommittee`` authority ids. A refusal is the only thing that would notice
-the equality silently ceasing to hold.
-
-**Three further sources are measured and not implemented**, named here so the
-sealed vocabulary can take them without a rename: ``daily_digest_entry`` (the
-only route reaching both chambers back to 1994, and the one that could close
-the Senate gap), ``congress_related_items`` (the only Senate source measured,
-and promotable only with the reverse jacket edge) and
-``front_matter_designator`` (the transcript's own title page). Their measured
-figures are in the note; nothing here produces a row under any of them.
-
-For a MODS naming ``B`` bills and a meeting naming ``D`` documents, both rules
-are ``O(B)`` and ``O(D)``: one pass, no re-parsing and no request.
+keyless GET per event, whose rows are ``noticed`` and never ``held_on``
+because the agenda states intent, not outcome (18 of 18 where it agrees with
+the cover, 1 of 18 where it stands alone). A ``BODY`` mention is never a link
+(0 of 23 carry a confirming action), and ``agenda_links`` refuses unless this
+meeting's calendar date and committee codes match this hearing's MODS, because
+the ``EventID``/``eventId`` equality it reaches through is documented by
+neither publisher.
 """
 
 from __future__ import annotations
@@ -93,13 +55,12 @@ class HearingBillLinkError(ValueError):
 class HearingBillLinkRule:
     """One source's rule: what it reads, what it asserts, and what it measured.
 
-    ``name`` is the published ``link_source`` value and is part of every row's
+    ``name`` is the published ``link_source`` value and part of every row's
     identity, so it is additions-only: renaming one rewrites rows that are
     already out. ``version`` moves when what the rule reads changes, and is a
     zero-padded decimal because the published column is compared as a string.
     ``measured`` is the sentence a consumer needs before trusting a row, kept
-    beside the rule rather than only in the contract prose so the two cannot
-    drift.
+    beside the rule so it cannot drift from the contract prose.
     """
 
     name: str
@@ -198,13 +159,11 @@ LINK_SOURCES: tuple[str, ...] = tuple(rule.name for rule in HEARING_BILL_LINK_RU
 def _rule_set_version(rules: Sequence[HearingBillLinkRule]) -> str:
     """A digest over every rule's name, version, publisher, relation and reader.
 
-    Derived rather than written, the way ``citations.py``'s
-    ``CITATION_RULE_SET_VERSION`` is: changing what a rule reads or what it
-    asserts moves this even when someone forgets to move that rule's own
-    ``version``, and the pinned assertion in the tests then names both. What it
+    Derived rather than written, so changing what a rule reads or asserts moves
+    this even when someone forgets to move that rule's own ``version``; what it
     cannot see is a change *inside* :func:`cover_links` or :func:`agenda_links`
-    that leaves the rule record untouched; that is what the per-rule ``version``
-    is for. Twelve hex characters is 48 bits over a five-row input.
+    that leaves the rule record untouched, which is what the per-rule
+    ``version`` is for.
     """
     joined = "\n".join(
         f"{rule.name}|{rule.version}|{rule.publisher}|{rule.relation}|{rule.reads}|{int(rule.implemented)}"
@@ -308,15 +267,14 @@ def cover_links(mods: object, *, event_id: str | None = None) -> tuple[HearingBi
     """Every ``mods_cover`` link one package MODS states, in document order.
 
     ``mods`` is read structurally -- the shape
-    ``sources.govinfo.bodies.PackageModsIdentity`` has -- so a caller holding
-    a record this repository already fetched for the body needs no second
-    request and no second parse. A MODS stating no ``COVER`` bill yields no
-    rows, which is the correct answer for an oversight hearing and an unmarked
-    gap on the Senate: **3 of 3 sampled Senate CHRG MODS state no bill in any
-    context**, and nothing in a row says which of the two silences it is.
-    ``event_id`` is the Congress.gov ``associatedMeeting.eventId`` the caller
-    read, carried so an agenda row and a cover row for one hearing join; the
-    MODS itself never states one.
+    ``sources.govinfo.bodies.PackageModsIdentity`` has -- so a caller holding a
+    record this repository already fetched for the body needs no second request
+    and no second parse. A MODS stating no ``COVER`` bill yields no rows, which
+    is the correct answer for an oversight hearing and an unmarked gap on the
+    Senate (3 of 3 sampled Senate CHRG MODS state no bill in any context), and
+    nothing in a row says which silence it is; ``event_id`` is the Congress.gov
+    ``associatedMeeting.eventId`` the caller read, carried so an agenda row and
+    a cover row for one hearing join.
     """
     rule = HEARING_BILL_LINK_RULES_BY_NAME["mods_cover"]
     found = (
@@ -333,9 +291,11 @@ def check_meeting_identity(mods: object, meeting: HouseCommitteeMeeting) -> None
     Two conditions, both the publishers' own statements about the event and
     neither of them the request URL: the meeting's ``<calendar-date>`` must
     equal the MODS ``heldDate``, and one of the meeting's committees' parent
-    codes must be one of the MODS's ``congCommittee`` authority ids. Held 9 of
-    9 on the sampled events. Checked per row rather than assumed once, because
+    codes must be one of the MODS's ``congCommittee`` authority ids (held 9 of
+    9 on the sampled events). Checked per row rather than assumed once, because
     the id equality this reaches through is documented by neither publisher.
+    Raises ``HearingBillLinkError`` on either mismatch and ``TypeError`` for a
+    non-``HouseCommitteeMeeting``.
     """
     if not isinstance(meeting, HouseCommitteeMeeting):
         raise TypeError("meeting must be a HouseCommitteeMeeting")
@@ -359,10 +319,10 @@ def _evidence_rule(document: object) -> str:
     """The reader that settled this document's key, held to the published vocabulary.
 
     The reader sets ``bill_id`` and ``bill_id_rule`` together, so a document
-    with a key always names the statement that produced it. Stating that as a
-    refusal rather than as a fallback is deliberate: a fallback would publish
-    the *source* name into ``evidence_rule``, which is not one of the values
-    the column documents, and nothing downstream would notice.
+    with a key always names the statement that produced it. Stating a name
+    outside ``EVIDENCE_RULES`` as a refusal rather than a fallback is
+    deliberate: a fallback would publish the source name into ``evidence_rule``,
+    which is not one of the values the column documents.
     """
     name = document.bill_id_rule
     if name not in EVIDENCE_RULES:
@@ -379,7 +339,8 @@ def agenda_links(mods: object, meeting: HouseCommitteeMeeting) -> tuple[HearingB
     stays on it. A ``BR`` document the bill rule refused produces no row and
     keeps its reason on
     ``sources.congress.house_committee_repository.HouseMeetingDocument.refusal``,
-    so nothing is dropped silently.
+    so nothing is dropped silently. Raises ``HearingBillLinkError`` or
+    ``TypeError`` through :func:`check_meeting_identity`.
     """
     check_meeting_identity(mods, meeting)
     rule = HEARING_BILL_LINK_RULES_BY_NAME["docs_house_br"]

@@ -1,26 +1,16 @@
 """GAO report files on ``files.gao.gov``: the keyless route to a product's own bytes.
 
-``www.gao.gov`` refuses non-browser clients, so product pages are captured
-through Zyte (``native.py``) and the reports feed is the keyless listing
-(``rss.py``).  The report *files* live on a different host that answered a
-plain client with no credential when probed on 2026-09-14.  Each host spells
-the product its own way and the file host is case-sensitive both ways: the
-report directory is uppercase, the asset filename lowercase.
+``www.gao.gov`` refuses non-browser clients, so product pages are captured through Zyte
+(``native.py``) and the reports feed is the keyless listing (``rss.py``); the file host answers a
+plain client with no credential and is case-sensitive both ways, with an uppercase report directory
+and a lowercase asset filename. Every product has the PDF while only some have the online report,
+and requesting an absent index answers ``403``, not ``404``, so ``acquire_report_pdf`` is the route
+that always applies.
 
-Every GAO product has the PDF; only some have the online report.  Of the 47
-product pages retained on 2026-08-22 in the salvaged GAO import, 47 link
-``/assets/{product-id}.pdf`` and 26 link the ``files.gao.gov`` index, and a
-product whose page omits the index answered ``403`` when it was requested
-anyway.  So ``acquire_report_pdf`` is the route that always applies.
-
-Two refusals to read correctly.  The host is an S3 origin that answers the
-same ``403 AccessDenied`` for an object it does not have as for one it will
-not serve, so a refusal here never establishes absence.  And it states
-``application/octet-stream`` for PDF bytes, so the media type proves nothing;
-the ``%PDF-`` magic and the trailing ``%%EOF`` marker do.
-
-Locators, evidence and limits: ``docs/sources/gao-files.md`` and
-``corpora/supply-2026-09-02/receipts/port-P04-gao-files-2026-09-14/``.
+Two refusals to read correctly: the S3 origin answers the same ``403 AccessDenied`` for an object it
+does not have as for one it will not serve, so a refusal never establishes absence; and it states
+``application/octet-stream`` for PDF bytes, so the media type proves nothing and the ``%PDF-`` magic
+and trailing ``%%EOF`` marker do.
 """
 
 from __future__ import annotations

@@ -2,61 +2,34 @@
 
 The Record prints, on every House sitting day, a section titled
 ``EXECUTIVE COMMUNICATIONS, ETC.`` -- a ``granuleClass: HOUSE`` CREC granule
-with an HTML rendition back to 1994. Each numbered entry in it is one sentence:
-
-    4329. A letter from the Deputy Director, Directorate of Cooperative and
-    State Programs, Occupational Safety and Health Administration, Department
-    of Labor, transmitting the Department's final rule -- Maine State Plan ...
-    (RIN: 1218-AC97) received February 9, 2016, pursuant to 5 U.S.C.
-    801(a)(1)(A); Added by Public Law 104-121, Sec. 251; (110 Stat. 868); to
-    the Committee on Education and the Workforce.
-
-Congress.gov's ``house-communication/{congress}/EC/{number}`` detail record is
-a **decomposition of that same sentence**: its ``abstract`` equals the printed
-entry under the four normalizations :func:`publisher_normalized` names, and
-``submittingOfficial``, ``submittingAgency``, ``reportNature``,
-``legalAuthority`` and the committee referral are spans of it
-(``docs/research/executive-communications-backfill-2026-09-20.md`` §2). The
-publisher decomposes only from the 114th Congress forward; the Record printed
-the same sentence for the ten Congresses before that, so this module exists to
-read the un-decomposed ones.
+with an HTML rendition back to 1994. Each numbered entry in it is one sentence,
+and Congress.gov's ``house-communication/{congress}/EC/{number}`` detail record
+is a **decomposition of that same sentence**: its ``abstract`` equals the
+printed entry under the four normalizations :func:`publisher_normalized` names,
+and ``submittingOfficial``, ``submittingAgency``, ``reportNature``,
+``legalAuthority`` and the committee referral are spans of it. The publisher
+decomposes only from the 114th Congress forward, so this module exists to read
+the un-decomposed ones.
 
 What this module is **not**: it does not interpret. The RIN stays
-``interpretation/communication_rin.py``'s rule over :attr:`~RecordCommunicationEntry.report_nature`,
-and the committee names stay names -- §3.3 measured that splitting the referral
-tail on ``and``/``,`` shatters *Education and the Workforce* and *Ways and
-Means*, so a system code must be resolved against the committee roster this
-repository already hosts, never parsed out of the sentence.
-
-**Still open**: that resolver. Nothing here maps a printed committee name to a
-``committees.system_code``, so ``house_communications.referral_system_code`` is
-NULL on every reconstructed row. It has to absorb the publishers' own naming
-drift, which the overlap run measured at 71.5% agreement -- the 116th Record
-prints *Oversight and Reform* where Congress.gov states *Oversight and
-Government Reform Committee* for the same referral -- so matching on the
-current spelling alone would miss a renamed committee.
+``interpretation/communication_rin.py``'s rule over
+:attr:`~RecordCommunicationEntry.report_nature`, and committee names stay whole
+names -- splitting the referral tail shatters *Education and the Workforce* and
+*Ways and Means* -- so a system code must be resolved against the committee
+roster this repository already hosts, never parsed out of the sentence. That
+resolver does not exist yet, so ``house_communications.referral_system_code``
+is NULL on every reconstructed row.
 
 Four measured failure modes shape the rules here, each with its reason beside
-the code: GPO's inline ``[[Page Hnnnn]]`` marker (:data:`_PAGE_MARKER`), an
-issue that prints the section twice (:func:`executive_communication_granules`
-takes every match), committee names that cannot be tokenized
-(:attr:`~RecordCommunicationEntry.committee_names` keeps whole names), and an
-official/agency split point that punctuation cannot find
-(:func:`split_from_clause`, which refuses rather than guesses).
-
-The rules were ported from the research receipt's ``measure_parse_rule_v2.py``,
-which measured them on 216 entries across seven issues spanning the 104th to
-the 114th Congress: opening 216/216, ``transmitting`` split 216/216, committee
-referral 216/216, ``pursuant to`` authority 210/216 (six entries state none).
-
-They were then **scored against the publisher's own decomposition** on the
-overlap era, where both records exist
-(``tools/analysis/record_communications_overlap.py``,
-``docs/research/record-communications-overlap-2026-09-20.md``). That run found
-what two ground-truth rows could not: a fourth publisher normalization
-(``Pub. L.``), a print dash the Record spells with four hyphens, and GPO's
-hyphenated line wrap, which had been silently splitting docket numbers and
-RINs. Each is fixed here with its reason beside it.
+the code: GPO's inline ``[[Page Hnnnn]]`` marker, an issue that prints the
+section twice (:func:`executive_communication_granules` takes every match),
+committee names that cannot be tokenized, and an official/agency split point
+punctuation cannot find (:func:`split_from_clause`, which refuses rather than
+guesses). The rules were measured on 216 entries across seven issues and then
+scored against the publisher's own decomposition on the overlap era, which
+found a fourth publisher normalization (``Pub. L.``), a print dash the Record
+spells with four hyphens, and GPO's hyphenated line wrap -- each fixed here
+with its reason beside it.
 """
 
 from __future__ import annotations
@@ -179,14 +152,10 @@ SPLIT_POLICY_VERSION = "002"
 def _rule_version() -> str:
     """A digest over every pattern and vocabulary that decides what a row says.
 
-    Derived, not written, the device ``interpretation/citations.py``'s
-    ``_rule_set_version`` uses: editing a pattern moves this even when someone
+    Derived, not written: editing a pattern moves this even when someone
     forgets to move a version by hand, and the pinned test then names both.
-    The agency head words are in the input because they are part of the rule --
-    adding one changes which from-clauses split and therefore what every
-    affected row publishes -- and so is the section's own communication type,
-    because changing it changes every row's identity without touching a
-    pattern. Twelve hex characters is 48 bits over a ten-row input.
+    The agency head words and the section's own communication type are in the
+    input because both change what every affected row publishes.
     """
     parts = [
         f"entry|{_ENTRY.pattern}",
@@ -277,15 +246,10 @@ def rejoin_print_wraps(text: str) -> str:
 
     The Record wraps ``[Docket No.: FDA-2013-C-1008]`` as ``FDA-2013-`` then a
     new line, and collapsing the layout naively leaves ``FDA-2013- C-1008``
-    where the publisher has no space. It is the same print artifact
-    ``extraction/gpo_normalize.py``'s ``_rejoin_hyphens`` handles for PDF text,
-    which §3.1 of the research said the HTML path would need too; the rule here
-    is a little wider, because GPO wraps after a digit (``FDA-2013-``) as
-    readily as after a letter.
-
-    Gated by its own evidence on both sides: the character before the hyphen
-    must be alphanumeric -- which is what keeps a line-final ``--`` print dash
-    out of it -- and the next line must start with one.
+    where the publisher has no space; GPO wraps after a digit as readily as
+    after a letter. Gated by its own evidence on both sides: the character
+    before the hyphen must be alphanumeric -- which keeps a line-final ``--``
+    print dash out of it -- and the next line must start with one.
     """
     return _HYPHEN_WRAP.sub("-", text)
 
@@ -293,15 +257,12 @@ def rejoin_print_wraps(text: str) -> str:
 def normalized_entry_text(value: str) -> str:
     """One printed entry reduced to a single line, with GPO's print artifacts gone.
 
-    Unicode-normalized (the Record's typographic quotes and dashes are the
-    same characters the publisher's JSON carries in a different normal form),
-    page markers stripped, wrapped tokens rejoined, the section's closing rule
-    line removed, and runs of whitespace collapsed -- the Record wraps one
-    sentence over a dozen indented lines, and the sentence is the fact, not its
-    column width.
-
-    A page marker becomes a line break rather than a space, so a token the
-    marker lands inside still meets :func:`rejoin_print_wraps` as a wrap.
+    Unicode-normalized (the Record's typographic quotes and dashes), page
+    markers stripped, wrapped tokens rejoined, the section's closing rule line
+    removed, and runs of whitespace collapsed -- the Record wraps one sentence
+    over a dozen indented lines, and the sentence is the fact, not its column
+    width. A page marker becomes a line break rather than a space, so a token
+    the marker lands inside still meets :func:`rejoin_print_wraps` as a wrap.
     """
     text = unicodedata.normalize("NFKC", value)
     text = text.replace("–", "-").replace("—", "--").replace("’", "'")
@@ -361,19 +322,16 @@ class RecordCommunicationEntry:
 def split_from_clause(from_clause: str) -> tuple[str | None, str | None]:
     """The transmitting official and the agency, or ``(None, None)`` when unresolved.
 
-    §3.4 measured that the boundary is **not** derivable from punctuation: it
-    sits after two comma groups in EC 4329 and after one in EC 4350. What is
-    derivable is which comma group the agency *starts* at -- the first one
-    whose head noun is in :data:`AGENCY_HEAD_WORDS` -- and that reproduced the
-    publisher's own split on both ground-truth rows.
-
-    A from-clause naming no such group (``Secretary of Defense``, which is one
-    group and all role) returns ``(None, None)``, and so does one whose *first*
-    group is already the agency: an official has to be named before the
-    boundary, or there is no boundary to find. Both are the rule refusing, not
-    the row being empty -- the caller keeps the whole from-clause beside it,
-    because a guessed split is an invented fact and a NULL beside the printed
-    sentence is not.
+    The boundary is **not** derivable from punctuation; what is derivable is
+    which comma group the agency *starts* at -- the first one whose head noun
+    is in :data:`AGENCY_HEAD_WORDS` -- and that reproduced the publisher's own
+    split on both ground-truth rows. A from-clause naming no such group
+    (``Secretary of Defense``, one group and all role) returns ``(None, None)``,
+    and so does one whose *first* group is already the agency: an official has
+    to be named before the boundary, or there is no boundary to find. Both are
+    the rule refusing, not the row being empty -- the caller keeps the whole
+    from-clause beside it, because a guessed split is an invented fact and a
+    NULL beside the printed sentence is not.
     """
     groups = [group.strip() for group in from_clause.split(",")]
     for index, group in enumerate(groups):
@@ -446,10 +404,10 @@ def _referral_names(names: str) -> tuple[str, ...]:
 
     A joint referral prints them as a list -- *Appropriations, Transportation
     and Infrastructure, and Ways and Means* -- and the only separator that does
-    not also sit inside a name is the comma. ``and`` is never a separator here;
-    it is inside two of the three names in that very example. The serial
-    ``and`` that introduces the last item is dropped at the front of that one
-    name, which is the only place it is not part of a name.
+    not also sit inside a name is the comma; ``and`` is never a separator here,
+    since it is inside two of those three names. The serial ``and`` that
+    introduces the last item is dropped at the front of that one name, which is
+    the only place it is not part of a name.
     """
     return tuple(
         stripped for name in names.split(",") if (stripped := re.sub(r"^and\s+", "", name.strip(), flags=re.IGNORECASE))

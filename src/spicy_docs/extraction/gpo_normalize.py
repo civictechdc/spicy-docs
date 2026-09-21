@@ -1,113 +1,13 @@
 """Post-extraction normalization of GPO-formatted legislative PDF text.
 
-Ported from BillTrax's ``pdf-normalize.ts``, and re-derived against this
-repo's own PDF extraction rather than pdf-parse: the default native-text
-strategy (``extraction.NativeText`` over ``extraction.DocumentExtractor``,
-see ``extraction/pages.py::_PDFPage.native``) reads PyMuPDF's line-grouped
-``get_text("dict")`` spans, one physical line of output per PDF text line.
-
-That line layout is not pdf-parse's, and two of BillTrax's seven artifacts
-are re-derived here because of it, each measured against real GovInfo PDFs
-decoded with this extractor (see ``docs/extraction-gpo.md``):
-
-1. **Line-number placement.** pdf-parse glued a GPO gutter line number onto
-   the end of its content line ("Representa-1"). PyMuPDF emits the gutter
-   number as its own physical line, immediately after the content line it
-   annotates. ``detectLineNumbered``'s trailing-suffix regex never matches
-   under this extractor -- the suffix does not exist -- so line-numbering is
-   detected instead from that adjacency: a content line immediately followed
-   by a bare one- or two-digit line. The same adjacency also replaces the
-   trailing-digit match that used to gate which lines are hyphen-rejoin
-   candidates, keeping BillTrax's original scope (rejoin only where a gutter
-   number corroborates that a trailing hyphen is a print-wrap artifact, not
-   a coincidence or a real compound word) on the new signal.
-2. **Footer shape.** pdf-parse fused GPO's whole per-page print-shop footer
-   ("VerDate ... Jkt ... PO ... Frm ... Fmt ... Sfmt ... E:\\...") onto one
-   line; only its first token needed matching. PyMuPDF splits it across
-   several physical lines instead, and nothing meaningful follows it: on
-   every fixture measured (``docs/extraction-gpo.md``), a VerDate line is
-   always the tail of its page's text. So the footer is dropped by
-   truncating the page at that line -- checked against DeltaTrack
-   (civictechdc/DeltaTrack, commit c636448)'s own PyPDFium2-derived
-   normalizer, which reached the same conclusion independently
-   (``parsers/pdf_text.py:72``, ``_VERDATE_AND_BELOW``, a DOTALL "to end of
-   text" cut) -- rather than by enumerating each field (time+date, Jkt, PO, Frm,
-   Fmt, Sfmt, file path, file stem): a field GPO adds later needs no new
-   rule. BillTrax's job-code line ("kjohnson on DSK7ZCZBW3PROD with $_JOB")
-   no longer matches real 2025 output either -- current jackets use a
-   machine id that need not start "DSK" and a trailing job code with no
-   leading "$" (observed: "ssavage on LAPJG3WLY3PROD with BILLS",
-   "abielarski on DSK125SN23PROD with HEARING"; the first has no "DSK"
-   substring at all, so DeltaTrack's own ``_WATERMARK_AND_BELOW``, which
-   still requires one, would miss it too -- worth raising upstream). Both
-   are re-derived below; see ``docs/extraction-gpo.md`` for the measured
-   line counts this fixed.
-
-The other five artifacts -- metadata footers named by their first line, bare
-page numbers, bullet bill identifiers, small-caps single-letter splits, and
-doubled internal spaces from kerning -- are kept verbatim. Doubled spaces and
-non-breaking spaces were measured at zero occurrences across every fixture
-here (PyMuPDF's span reconstruction does not reproduce pdf-parse's kerning
-artifact); the rules stay for compatibility and are marked unmeasured rather
-than removed, per the same "keep spacingNormalized" precedent BillTrax set
-for its own always-true field.
-
-**Bare-digit stripping is evidence-gated per page, not by one document-level
-flag.** Docs recommend running this normalizer on every PDF-derived text
-before a downstream parser, including non-GPO documents. A VerDate line and
-a job-code line are self-evidencing -- the match itself is GPO-specific, so
-both are always dropped. A standalone 1-4 digit line is not: outside a GPO
-document it could be a year or a footnote number, and stripping it
-unconditionally (as BillTrax's ``PAGE_NUM_RE`` does, and this port did before
-this was measured) would silently lose real content on a non-GPO page. It is
-now stripped only when *this page* carries GPO evidence: its own VerDate
-footer, or the document-level gutter-number layout (``is_gpo_layout``) --
-never from the absence of both. A committee report page can have
-``line_numbers=False`` at the document level yet still legitimately strip its
-page-number header, because its own page carries a VerDate footer; that is
-why the gate checks both, not the layout verdict alone. See
-``GpoPageCleanup.bare_page_number_evidence``.
-
-Normalization runs per page and keeps page boundaries: a hyphen-wrapped word
-split across a page break is not rejoined, since doing so would move
-characters onto the wrong page's text.
-
-**Two rules ported from DeltaTrack, not from BillTrax.** Validated upstream
-gap-analysis (``docs/research/deltatrack-upstream-issues-2026-09-19.md``,
-claims B2/B3) found these are upstream features this port lacked, not
-upstream gaps -- so they are ported here rather than raised there:
-
-3. **The unbulleted running bill-stage footer.** ``_RUNNING_FOOTER_RE``,
-   ported verbatim from DeltaTrack's ``_RUNNING_FOOTER``
-   (``parsers/pdf_text.py:68-71``, built for its own #140), strips a line
-   like "HR 5895 PCS" -- a print-stage tag GPO does not bullet, so neither
-   BillTrax's original rule nor this port's ``_BULLET_BILL_RE`` catches it.
-   None of this port's first three fixtures carried one; the fourth,
-   ``BILLS-119hr1009rfs`` (an RFS-stage bill, fetched keyless through
-   ``sources.govinfo.bodies.package_body_locator``), does. Matched as a whole
-   line, like upstream, but only when the *next* physical line is not itself
-   a bare gutter number: a genuine running footer is page furniture followed
-   by prose, but a real numbered content line can coincidentally share its
-   shape, and deleting that line would delete a real gutter number with it
-   (reproduced during review; see ``_strip_metadata``).
-4. **The layout verdict's minimum-size floor.** Ported from DeltaTrack's own
-   derivation (``compare/pdf.py:85``, table at ``:62-78``), but not its
-   constant alone: upstream derived 50 for a document-wide ratio guard, while
-   this port's own signal is also structural per page. At or above the
-   floor, a document-wide ratio of at least 30% numbered decides True by
-   itself, *or* a per-page consecutive run of gutter digits starting at 1
-   decides True independently; below the floor both must hold together (see
-   ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` and
-   ``_starts_consecutive_run_from_one``). Both real one-page/two-page
-   fixtures here (``BILLS-119hr4727ih``, ``BILLS-119hr1009rfs``) sit under the
-   50-line floor and are genuinely gutter-numbered with both a qualifying
-   ratio and a real run on at least one page, so both correctly report
-   ``line_numbers=True`` and rejoin their real hyphen-wraps. A 42-document
-   corpus validation (``docs/extraction-gpo.md``, "Corpus validation") found
-   the run test originally could not fire above the floor at all, and the
-   ratio's strict ``>`` missed two real documents landing at exactly 30% --
-   both fixed; see ``_layout_verdict``'s own docstring for the documents that
-   caught each one.
+Strips the self-evidencing print chrome -- the VerDate footer and its tail, the
+job-code line, bulleted bill ids and unbulleted running bill-stage lines -- and
+rejoins a hyphen-wrap only where a gutter number corroborates it as a print
+artifact; normalization runs per page and never rejoins across a page break.
+Bare page/gutter numbers are stripped only when that page carries GPO evidence
+(its own footer or the document's gutter-number layout), never from the absence
+of both, since outside a GPO document such a line could be a year or a footnote
+number; the layout verdict is ``_layout_verdict``'s two-tier rule.
 """
 
 from __future__ import annotations
@@ -207,14 +107,10 @@ class GpoPageCleanup:
 
 @dataclass(frozen=True, slots=True)
 class GpoCleanupRecord:
-    """Every field BillTrax's ``PdfCleanupRecord`` had, plus a per-page breakdown.
+    """The document-level cleanup counts plus a per-page breakdown.
 
-    ``spacing_normalized`` is hardcoded ``True`` for the same reason
-    BillTrax's was: the collapse rule always runs. It is kept, not because it
-    still carries information (doubled spaces measured at zero occurrences
-    under this extractor, across every fixture -- see module docstring), but
-    for parity with the field BillTrax's own docstring already declared
-    uninformative and kept anyway.
+    ``spacing_normalized`` is hardcoded ``True`` because the collapse rule always
+    runs; it is kept for output parity, not because it carries information.
     """
 
     line_numbers: bool
@@ -263,17 +159,11 @@ class _PageMetadataCounts:
 def _strip_metadata(lines: Sequence[str]) -> tuple[list[_Line], _PageMetadataCounts]:
     """Drop the self-evidencing artifacts and the VerDate footer's tail.
 
-    A bare page/gutter-number line is not dropped here: it is GPO-specific
-    only in context, not by its own text ("2024" is indistinguishable from a
-    stripped gutter number), so it is kept in the returned lines, tagged
-    ``is_bare_digit``, for the caller to strip or keep once page-level GPO
-    evidence is known (see ``_gate_bare_digits`` and the module docstring).
-    Everything else self-evidences (VerDate, the job-code line, the bullet
-    bill id) and is dropped unconditionally, as BillTrax's was.
-
-    Returns the surviving lines (blanks kept) tagged with gutter adjacency,
-    and the counts of what was dropped or tagged, plus what is left to
-    detect layout and hyphen-wraps from.
+    A bare page/gutter-number line is GPO-specific only in context, not by its own
+    text ("2024" is indistinguishable from a stripped gutter number), so it is kept
+    and tagged ``is_bare_digit`` for ``_gate_bare_digits`` to strip or keep once
+    page-level evidence is known. Returns the surviving lines (blanks kept) tagged
+    with gutter adjacency plus the counts of what was dropped or tagged.
     """
     kept: list[_Line] = []
     verdate = footer_continuation = dsk = running_footer = page_num = bullet = 0
@@ -351,11 +241,9 @@ def _gate_bare_digits(
 ) -> tuple[list[_Line], BareNumberEvidence]:
     """Strip tagged bare-digit lines only where this page has GPO evidence.
 
-    Two independent sources of evidence, either sufficient on its own: this
-    page's own VerDate footer, or the document-level gutter-number layout
-    (a committee report page can have neither/either -- ``line_numbers`` is
-    ``False`` for the whole document, but a page with its own footer still
-    strips its page-number header; see the module docstring).
+    Either source suffices alone: this page's own VerDate footer, or the
+    document-level gutter-number layout (a page with its own footer still strips
+    its page-number header even when ``line_numbers`` is ``False`` document-wide).
     """
     if page_has_footer and document_gpo_layout:
         evidence: BareNumberEvidence = "both"
@@ -417,14 +305,12 @@ _MIN_GUTTER_RUN_LENGTH = 3
 
 
 def _starts_consecutive_run_from_one(numbers: Sequence[int], minimum: int = _MIN_GUTTER_RUN_LENGTH) -> bool:
-    """True when ``numbers`` (in the order they appear on the page) begins at
-    1 and increments by exactly one for at least ``minimum`` entries.
+    """True when ``numbers`` begins at 1 and increments by one for at least ``minimum`` entries.
 
-    Only the *prefix* run counts: ``(1, 2, 4)`` stops at length 2 (fails a
-    minimum of 3), and ``(3, 4, 5)`` never starts, so it is length 0 --
-    consecutive digits that do not begin at 1 are exactly what a footnote or
-    outline sequence continuing from a prior page looks like, which GPO's own
-    per-page gutter numbering never does.
+    Only the prefix run counts: ``(1, 2, 4)`` stops at length 2 and ``(3, 4, 5)``
+    never starts, since a run not beginning at 1 is what a footnote or outline
+    sequence continuing from a prior page looks like -- GPO's per-page gutter
+    numbering always restarts at 1.
     """
     run = 0
     for index, value in enumerate(numbers):
@@ -435,50 +321,12 @@ def _starts_consecutive_run_from_one(numbers: Sequence[int], minimum: int = _MIN
 
 
 def _layout_verdict(page_counts: Sequence[_PageMetadataCounts]) -> bool:
-    """Shared by ``is_gpo_layout`` and ``normalize_gpo_pages`` so a document's
-    layout is one ``_strip_metadata`` pass per page, not two.
+    """The document-wide line-numbering verdict, shared by ``is_gpo_layout`` and ``normalize_gpo_pages``.
 
-    See ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` for the two-tier rule this
-    implements: at or above the floor, a document-wide ratio of at least 30%
-    numbered decides True by itself, *or* a per-page structural run decides
-    True independently -- a run spans real evidence (GPO's numbering
-    restarting at 1 every page) that does not need a document-wide ratio to
-    back it up once the document is big enough for the floor to apply at
-    all. Below the floor, both signals are still required together, as
-    before: a short document's minimum run (``_MIN_GUTTER_RUN_LENGTH``, 3)
-    is comparatively weak evidence on its own, and BillTrax's original
-    "a two-page memo should not be declared GPO-numbered on three lines just
-    because they happen to be numbered" concern is about exactly that case,
-    not the one below.
-
-    **Two false negatives found validating this against a 42-document
-    corpus** (``docs/extraction-gpo.md``, "Corpus validation"), both fixed
-    here:
-
-    1. A strict ``> 0.3`` made two real GPO-numbered documents fail on an
-       exact 30% ratio: ``BILLS-119sjres141is`` (9 of 30 content lines
-       numbered, both of its two pages independently showing a perfect
-       consecutive run from 1 -- 6 long and 3 long) and
-       ``BILLS-119hconres11eh`` (6 of 20, one page's run 4 long). Both are
-       below the floor and both signals already agreed (ratio exactly at the
-       line, run confirmed); only the strict inequality was wrong. Changed
-       to ``>= 0.3``.
-    2. The per-page run test only ever ran *below* the floor. A document at
-       or above the floor whose numbered pages are diluted by a long
-       unnumbered run -- ``BILLS-119hconres26ih``, a 10-page,
-       261-content-line House concurrent resolution whose first six pages
-       are entirely unnumbered "Whereas" recitals (a print convention this
-       resolution type uses; a plain bill's enacting clause carries no
-       comparable preamble) before its "Resolved" operative text begins --
-       fails the whole-document ratio (0.268, genuinely under 30%, not a
-       boundary tie) despite four pages (70 of the 261 content lines) each
-       showing an unambiguous consecutive run from 1, one of them 25 long.
-       Unlike case 1, raising the ratio's own ceiling would not have fixed
-       this; the run test itself needed to reach documents at or above the
-       floor, as an alternative to the ratio rather than a corroboration of
-       it -- justified by scale, not just by evidence type: 70 lines across
-       four pages is far past the 3-line minimum the floor's below-line
-       guard exists to distrust.
+    Two-tier rule: at or above ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` content
+    lines, a numbered ratio of at least 30% decides True by itself, or a per-page
+    run from 1 decides True independently; below the floor both signals must hold
+    together, because a short document's 3-line minimum run is weak evidence alone.
     """
     content = sum(c.content_lines for c in page_counts)
     if content == 0:
@@ -494,22 +342,15 @@ def _layout_verdict(page_counts: Sequence[_PageMetadataCounts]) -> bool:
 def is_gpo_layout(pages: Sequence[str]) -> bool:
     """Detect GPO per-line gutter numbering (BillTrax's ``detectLineNumbered``).
 
-    Re-derived signal (see module docstring, artifact 1): a content line is
-    "numbered" when the next physical line, before stripping, is a bare 1-2
-    digit gutter number -- not, as under pdf-parse, when the content line's
-    own text ends in a trailing digit suffix, which this extractor never
-    produces. At ``_MIN_CONTENT_LINES_FOR_LAYOUT_VERDICT`` content lines or
-    more, a document-wide ratio of at least 30% numbered decides the verdict
-    True by itself, or a page's gutter digits forming a consecutive run
-    starting at 1 decides it True independently; below that floor both
-    signals are required together (see ``_layout_verdict`` and
-    ``_starts_consecutive_run_from_one``).
+    A content line is numbered when the next physical line is a bare 1-2 digit
+    gutter number (this extractor never glues the number onto the content line).
+    The verdict is ``_layout_verdict``'s two-tier rule.
     """
     return _layout_verdict([_strip_metadata(normalize_gpo_glyphs(page).split("\n"))[1] for page in pages])
 
 
 def _merge_small_caps(lines: list[_Line]) -> tuple[list[_Line], int]:
-    """Merge a lone uppercase letter into a following uppercase-led line."""
+    """Merge a lone uppercase letter into a following uppercase-led line, returning the merge count."""
     merged: list[_Line] = []
     count = 0
     i, n = 0, len(lines)
@@ -529,10 +370,9 @@ def _merge_small_caps(lines: list[_Line]) -> tuple[list[_Line], int]:
 def _rejoin_hyphens(lines: list[_Line], gpo_layout: bool) -> tuple[list[str], int]:
     """Rejoin a gutter-corroborated hyphen-wrap with the line that follows it.
 
-    Only runs when ``gpo_layout`` is True, preserving BillTrax's original
-    scope: without a document confirmed to number its lines, a trailing
-    hyphen is not trusted as a print-wrap artifact (it could be a real
-    hyphenated compound word ending a line by coincidence).
+    Only runs when ``gpo_layout`` is True: without a document confirmed to number
+    its lines, a trailing hyphen is not trusted as a print-wrap artifact, since it
+    could be a real compound word ending a line by coincidence.
     """
     if not gpo_layout:
         return [line.text for line in lines], 0
@@ -551,17 +391,11 @@ def _rejoin_hyphens(lines: list[_Line], gpo_layout: bool) -> tuple[list[str], in
 def normalize_gpo_glyphs(raw: str) -> str:
     """Line endings and GPO's quote conventions, shared by every rendition.
 
-    Public and extractor-agnostic because GPO spells the same document the
-    same way in every rendition but one glyph set apart, and a caller that
-    normalizes only one of them makes two texts of one document. Measured
-    2026-09-19 across six PDF-derived fixtures and four keyless ``htm``
-    bodies: the PDF text carries curly quotes (8, 99 and 242 on
-    CRPT-119hrpt105, -113hrpt135 and -113srpt77) and no backtick at all,
-    while the ``htm`` rendition of those same reports carries no curly quote
-    and 2, 54 and 119 typewriter pairs (two backticks opening, two
-    apostrophes closing). Both spellings are handled here, so the two
-    renditions agree afterwards; ``extraction.body_text`` is the other
-    caller.
+    Public and extractor-agnostic because GPO spells the same document the same way
+    in every rendition but one glyph set apart: PDF text carries curly quotes and
+    no backtick, while the ``htm`` rendition of the same report carries typewriter
+    pairs (two backticks opening, two apostrophes closing). Both spellings are
+    handled here so the renditions agree; ``extraction.body_text`` is the other caller.
     """
     text = raw.replace("\r\n", "\n").replace("\r", "\n")
     text = _CURLY_SINGLE_RE.sub("'", text)
@@ -584,10 +418,10 @@ def normalize_gpo_glyphs(raw: str) -> str:
 def normalize_gpo_pages(pages: Sequence[str]) -> tuple[tuple[str, ...], GpoCleanupRecord]:
     """Normalize GPO PDF page text, keeping page boundaries.
 
-    ``pages`` is one string per page in reading order -- the shape
-    ``PageResult.text`` produces per page from ``DocumentExtractor``. Each
-    page is normalized independently; nothing is rejoined across a page
-    break (see module docstring).
+    ``pages`` is one string per page in reading order, the shape
+    ``PageResult.text`` produces per page from ``DocumentExtractor``; each page is
+    normalized independently and nothing is rejoined across a page break. A
+    nonempty sequence is required.
     """
     if not pages:
         raise ValueError("pages must be a nonempty sequence")

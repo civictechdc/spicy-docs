@@ -35,6 +35,7 @@ def _display_box(page, rect_like, width: float, height: float) -> Box | None:
 
 
 def crop(image: Raster, box: Box) -> Raster:
+    """Crop to pixel-rounded bounds and return a PNG whose box is the actual rounded region."""
     from PIL import Image
 
     with Image.open(io.BytesIO(image.data)) as source:
@@ -52,6 +53,12 @@ def crop(image: Raster, box: Box) -> Raster:
 
 
 class DefaultReader:
+    """Open PDFs through PyMuPDF and images through Pillow, loading each backend only when used.
+
+    PDF pages expose their native text layer and render at ``dpi``; every render
+    is refused above ``max_pixels``. Encrypted PDFs are refused here.
+    """
+
     def __init__(self, *, dpi: int = 200, max_pixels: int = 20_000_000):
         if not 36 <= dpi <= 1200 or max_pixels < 1:
             raise ValueError("dpi must be 36..1200 and max_pixels must be positive")
@@ -76,6 +83,7 @@ class DefaultReader:
                 yield _Images(document, self)
 
     def check_pixels(self, width: int, height: int):
+        """Refuse a nonexistent or over-``max_pixels`` raster before it is allocated."""
         if width < 1 or height < 1 or width * height > self.max_pixels:
             raise ExtractionError("render exceeds max_pixels; reduce DPI or choose a larger explicit limit")
 
@@ -103,6 +111,10 @@ class _PDFPage:
         }
 
     def native(self):
+        """PyMuPDF's line-grouped text in reading order, one block per line.
+
+        Text outside the displayed page is refused.
+        """
         import pymupdf
 
         # Image bytes are retained by the source, not duplicated into native text extraction.
@@ -126,6 +138,7 @@ class _PDFPage:
         )
 
     def render(self):
+        """Render the page at the reader's DPI as an alpha-free PNG, bounded by ``max_pixels``."""
         width = math.ceil(self.page.rect.width * self.reader.dpi / 72)
         height = math.ceil(self.page.rect.height * self.reader.dpi / 72)
         self.reader.check_pixels(width, height)
@@ -134,6 +147,10 @@ class _PDFPage:
         return Raster(pix.tobytes("png"), pix.width, pix.height)
 
     def find_tables(self):
+        """PyMuPDF's ruled tables with cell text and normalized cell boxes.
+
+        A table with no displayed area is skipped.
+        """
         width, height = self.page.rect.width, self.page.rect.height
         observations = []
         for table in self.page.find_tables().tables:
@@ -184,12 +201,13 @@ class _ImagePage:
         self.image, self.number, self.geometry = image, number, geometry
 
     def native(self):
+        """Refuse: an image carries no native text layer."""
         raise ExtractionError("image has no native text layer")
 
     def render(self):
+        """The oriented frame as a PNG at its own size."""
         return Raster(_png(self.image), self.image.width, self.image.height)
 
     def find_tables(self):
-        # No PyMuPDF page geometry to run a table finder over; empty, not an
-        # error, so an extractor with tables=True still accepts image input.
+        """Empty, not an error: no table finder runs over image input."""
         return ()

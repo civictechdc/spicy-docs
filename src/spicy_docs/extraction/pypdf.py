@@ -32,9 +32,13 @@ class PdfPageError(PdfReadError):
 
 
 class PypdfDocument:
-    """An open PDF. Page strings retain the backend's exact whitespace."""
+    """An open PDF. Page strings retain the backend's exact whitespace.
+
+    A closed document refuses further page reads with ``ValueError``.
+    """
 
     def __init__(self, reader: PdfReader, backend_version: str):
+        """Wrap an opened reader; ``backend_version`` is the verified installed distribution version."""
         self._reader = reader
         self.backend_version = backend_version
         self.is_encrypted = reader.is_encrypted

@@ -1,58 +1,10 @@
-"""Committee reports, their observed heading blocks, and hearing transcripts.
+"""``committee_reports``, ``hearing_transcripts`` and ``report_sections``, all keyed on the GovInfo package id rather
+than on a bill, so ``bill_id`` is nullable and a row exists without a linkage nothing can make yet.
 
-All three are keyed on the GovInfo package id, not on a bill (C11).  A
-package-keyed report is fillable today by ``GovInfoBodyAcquirer``; the bill
-linkage is not, so ``bill_id`` is nullable and a row exists without it rather
-than the table waiting on a join nothing can make yet.  That is the correction
-the placement study asked for on ``hearing_transcripts``, whose defect was a
-contract nothing filled.
-
-**``hearing_transcripts.bill_id`` is NULL for a different reason than
-``committee_reports.bill_id`` is**, and the reason changed on 2026-09-20.  It
-was "no source states it"; four publishers do state it
-([the measurement](../../../docs/research/hearing-bill-linkage-2026-09-20.md)).
-It is now "a scalar column is the wrong shape": a legislative hearing is held
-on a *list* -- twelve bills on ``CHRG-118hhrg56198`` -- so the relationship is
-one-to-many and ``hearing_bill_links`` hosts it, one row per (hearing, bill,
-source).  A report is filed against one bill and keeps its scalar.
-
-``report_sections.pattern`` is this table's provenance column: it names the
-header pattern that fired to produce the block, so a mis-split report is
-readable from the row rather than only from re-running the parser.
-
-**The CBO estimate columns are the report-to-estimate link** (B4).  A
-committee report reprints the CBO cost-estimate letter verbatim when its cover
-declares it, which is the only text route to an estimate CBO's own site
-refuses.  Those columns are appended *here*, on the package-keyed row, rather
-than on ``cbo_cost_estimates``, and no ``document_citations`` row is written.
-Both choices are measured, not aesthetic (``docs/decisions.md``):
-
-* **The print names no estimate key.**  Across all 17 retained CRPT bodies
-  there is exactly **one** ``cbo.gov`` locator -- a footnote to an unrelated
-  2018 CBO study -- **no** ``/publication/{id}`` page, and no locator inside
-  any located letter.  A citation row would therefore have to carry a
-  ``target_key`` nothing in the document settles, in a table whose grain is
-  one occurrence *of a cited key*.  The letter is also one span per document,
-  not one occurrence per key.
-* **The estimate row cannot know which letter is its own.**  It is shaped from
-  one BILLSTATUS document in one pass and the report is a different package;
-  61 of the 1,368 scored bills of the 118th carry more than one estimate and
-  28 of those also carry a report, so attributing one reprinted letter to one
-  of several estimates would be a guess on 28 bills.
-
-So the relation is a join on the bill, which both sides state:
-``cbo_cost_estimates.bill_id`` against this table's ``recital_bill_id`` -- the
-*print's own* answer, read off the cover's ``[To accompany H.R. 801]`` -- with
-``bill_id`` left as whatever index record the caller read.  Two columns for
-one fact on purpose: what the print says and what an index says are different
-claims, and the two agreeing is the check.
-
-The same letter rule supports normalized HTM and PDF text. All four retained
-PDFs (CRPT-118hrpt53, -118hrpt276, -118hrpt930, -118srpt289) now yield pinned
-spans despite lost indentation; the 17 retained HTM findings are unchanged
-apart from the version. The caller chooses the rendition; PDF is preferred
-as the research plan recommends. ``format`` and ``text_sha256`` identify the
-text the offsets address. No raster cost figures are extracted.
+``hearing_transcripts.bill_id`` is always NULL because a legislative hearing is held on a list of bills, which
+``hearing_bill_links`` hosts, while a report is filed against one bill and keeps its scalar.  The appended CBO estimate
+columns are the report-to-estimate link: the letter's span sits on the package-keyed row, no ``document_citations`` row
+is written because the print names no estimate key, and the join is on the bill via the print's own ``recital_bill_id``.
 """
 
 from __future__ import annotations
@@ -315,18 +267,10 @@ def shape_committee_report(
 ) -> Row:
     """One ``committee_reports`` row from one acquired CRPT package.
 
-    ``estimate`` is the ``interpretation.cbo_estimates.CboEstimateFinding``
-    read over this package's extracted text, or ``None`` where no rule was
-    run -- which lands as NULL throughout rather than as ``false``, because
-    "not read" and "the cover declares no estimate" are different answers and
-    the whole requested-empty rule turns on the difference.  It is read
-    structurally, so this module stays the stdlib-only leaf ``schemas`` is.
-
-    ``recital_bill_id`` is
-    ``cbo_estimates.recital_bill_id(estimate, identity.congress)``, passed in
-    rather than derived here for the reason ``shape_bill_committee`` takes
-    ``referral_signal``: reading a printed designator into a bill key is the
-    ``interpretation`` package's vocabulary, and this layer does not import it.
+    ``estimate`` is the ``interpretation.cbo_estimates.CboEstimateFinding`` read over this package's text, or ``None``
+    where no rule was run -- which lands NULL throughout rather than as ``false``, because "not read" and "the cover
+    declares no estimate" are different answers.  ``recital_bill_id`` is passed in rather than derived here because
+    reading a printed designator into a bill key is the ``interpretation`` package's vocabulary.
     """
     row = _package_row(
         body,
@@ -364,14 +308,9 @@ def shape_hearing_transcript(
 ) -> Row:
     """One ``hearing_transcripts`` row from one acquired CHRG package.
 
-    ``event_id`` is the ``associatedMeeting.eventId`` the Congress.gov hearing
-    detail record states for this jacket, which the caller that read that
-    record supplies; the package itself does not carry it.
-
-    There is deliberately no ``bill_id`` argument, unlike
-    :func:`shape_committee_report`: the hearing-to-bill relationship is
-    one-to-many and ``hearing_bill_links`` hosts it, so this shaper cannot
-    fill a scalar the contract says is always NULL.
+    There is deliberately no ``bill_id`` argument: that relationship is one-to-many and ``hearing_bill_links`` hosts it,
+    so this shaper cannot fill a scalar the contract says is always NULL.  ``event_id`` is the
+    ``associatedMeeting.eventId`` of the Congress.gov hearing detail record, which the package itself does not carry.
     """
     row = _package_row(
         body,
@@ -394,14 +333,8 @@ def shape_report_section(
 ) -> Row:
     """One ``report_sections`` row from one observed heading block.
 
-    ``last_modified`` is a column for the same reason ``bill_sections`` carries
-    its parent's ``version_date``: the design names it this table's version
-    column, and a merge can only read a version column the table itself has.
-
-    The legacy block's ``agency`` is a heading, not an agency assertion. Even
-    a named ``office`` or ``department`` pattern only identifies a text shape.
-    Preserve that observation without promoting it to agency identity; the
-    legacy ``Full Report`` fallback is not publisher text either.
+    ``last_modified`` is a column so a merge can read the version column the design names, and ``heading`` stays NULL
+    for ``preamble``/``full_report`` blocks, whose ``agency`` is a text shape rather than an agency assertion.
     """
     start, end = block.char_span
     pages = block.page_span

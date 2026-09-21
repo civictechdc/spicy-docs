@@ -1,23 +1,10 @@
-"""One table contract, and the five value helpers every ``shape_*`` goes through.
+"""The :class:`TableContract` record every published table declares, and the value helpers every ``shape_*`` row goes
+through.
 
-``schemas/`` is a leaf: nothing here imports ``sources``, ``interpretation``,
-pyarrow or DeltaTrack, so spicy-regs can import a column tuple without pulling
-an HTTP client, a model client or a git dependency
-(``docs/research/table-contracts-2026-09-19.md`` §1).  Everything a shaper
-needs that would require one of those -- a referral vocabulary, a prompt frame,
-a version-kind label -- arrives as an argument, named by the caller that owns
-it.
-
-``spicy_regs_public_tables.py``'s four module constants describe one table
-well.  Twenty tables need one record, because every generic thing the layer
-does -- proving identity is unique, proving every column is described,
-generating spicy-regs's schema dict -- is then one loop rather than twenty
-hand-written pairs.  :class:`TableContract` is still data and pure functions.
-
-Shapers return a :data:`Row`: every value is a string or ``None``, because
-spicy-regs publishes these as all-VARCHAR Parquet read through a DuckDB view.
-A typed value is spelled exactly once, here, so ``True`` cannot reach one table
-as ``"true"`` and another as ``"True"``.
+The package is a stdlib-only leaf (``docs/research/table-contracts-2026-09-19.md`` §1), so anything a shaper needs from
+``sources`` or ``interpretation`` -- a referral vocabulary, a prompt frame, a version-kind label -- arrives as a
+caller-named argument.  A ``Row`` holds only strings or NULL, because spicy-regs publishes these as all-VARCHAR Parquet
+read through a DuckDB view.
 """
 
 from __future__ import annotations
@@ -45,12 +32,10 @@ class TableContractError(ValueError):
 
 
 def text(value: object) -> str | None:
-    """``None`` stays ``None``; anything else is spelled as one string.
+    """``None`` stays ``None``; anything else is spelled as one string, a ``bool`` as ``"true"``/``"false"`` so one
+    truth value has one spelling in the published data.
 
-    A ``bool`` is spelled the way :func:`flag` spells it rather than as
-    ``"True"``, so one truth value has one spelling everywhere in the published
-    data.  Lifted from ``schemas/federal_register.py``'s ``_text``, which is the
-    same projection with the bool case left implicit.
+    Lifted from ``schemas/federal_register.py``'s ``_text``, the same projection with the bool case left implicit.
     """
     if value is None:
         return None
@@ -69,19 +54,12 @@ def flag(value: bool | None) -> str | None:
 
 
 def json_column(value: object) -> str:
-    """One ``*_json`` column: compact, key-sorted JSON, so equal values compare equal.
+    """One ``*_json`` column: compact, key-sorted JSON so equal values compare equal, never ``None`` -- an absent list
+    is ``"[]"`` and an absent mapping ``"{}"``, which the caller states by passing the empty container.
 
-    Never ``None``: an absent list is ``"[]"`` and an absent mapping ``"{}"``,
-    which a caller states by passing the empty container.  A column that is
-    genuinely unknown is a plain column with a NULL, not an empty JSON document.
-
-    A value JSON cannot represent raises rather than being coerced, including
-    nested NaN and infinities. Encoding value errors become
-    :class:`TableContractError` so the family can retain a named row refusal.
-    Unsupported object types keep the encoder's ``TypeError``. Some of
-    these columns carry whatever an upstream engine recorded -- ``evidence_json``
-    does -- and a ``repr`` published as if it were data is worse than a refusal
-    that names the column.
+    A value JSON cannot represent raises rather than being coerced, including nested NaN and infinities: encoding value
+    errors become :class:`TableContractError` for a named row refusal while unsupported object types keep the encoder's
+    ``TypeError``.  A ``repr`` published as if it were data is worse than either refusal.
     """
     try:
         return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
@@ -113,19 +91,16 @@ def digest(value: str | None) -> str | None:
 
 @dataclass(frozen=True, slots=True)
 class TableContract:
-    """One published table: its columns in publish order, its identity, its prose.
+    """One published table: its columns in publish order, its identity, its version column and one sentence per column.
 
-    ``name`` is the R2 object key, the MCP view name and this contract's key in
-    :data:`TABLE_CONTRACTS`, all one snake_case string. ``version_column`` names
-    the source or processing version carried by a row, not a universal sort
-    order. Its description states the meaning: dates and explicitly ordered
-    revisions can order comparable versions; rule digests support equality
-    only. A host chooses which input generation supersedes another before
-    merging. ``None`` means no version column is declared. See
-    ``docs/tables.md`` for the host's fresh/prior precedence and digest limits.
-    ``descriptions`` carries exactly one sentence per column and is what
-    spicy-regs's data dictionary reads, so a column added here fails that check
-    until the prose catches up (§5.3).
+    ``name`` is the R2 object key, the MCP view name and this contract's key in :data:`TABLE_CONTRACTS`, all one
+    snake_case string. ``version_column`` names the source or processing version a row carries, not a universal sort
+    order, and ``None`` means none is declared: dates and explicitly ordered revisions can order, rule digests support
+    equality only, and a host chooses which input generation supersedes another before merging. ``descriptions`` is what
+    spicy-regs's data dictionary reads, so a column added here fails that check until the prose catches up (§5.3).
+
+    Construction refuses a non-snake_case name or column, a duplicate column, an empty identity, an identity or version
+    column that is not a column, and a description set not keyed exactly by the columns.
     """
 
     name: str
@@ -187,14 +162,11 @@ class TableContract:
         return tuple(parts)
 
     def checked(self, row: Row) -> Row:
-        """Prove one shaped row against this contract, and return it unchanged.
+        """Prove one shaped row has exactly this contract's columns, each a string or NULL, and return it unchanged.
 
-        The single place a ``shape_*`` output is held to its column tuple: same
-        column set, every value a string or NULL.  Order is not normalised here,
-        so a test that asserts publish order is asserting something this did not
-        already arrange. Identity is checked separately by :meth:`key`.
-        Logical value types are not declared here: this does not infer JSON,
-        date, boolean or numeric validation from a column name or description.
+        Order is not normalised here, so a test that asserts publish order is asserting something this did not already
+        arrange; identity is checked separately by :meth:`key`, and no logical type is inferred from a column name or
+        description.
         """
         if not isinstance(row, dict):
             raise TableContractError(f"{self.name}: a row must be a dict")

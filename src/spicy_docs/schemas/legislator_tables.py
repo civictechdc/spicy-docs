@@ -1,14 +1,9 @@
-"""One member, and one row per term that member served.
+"""The ``members`` and ``member_terms`` tables: one row per legislator in one capture of the community crosswalk, and
+one per term that legislator served.
 
-The placement study published a single ``members`` table.  The value inventory
-(§6.7) found that every term but the last was discarded on the way in, and one
-row cannot hold a chamber switch at all: a member who served in the House and
-then the Senate had the House years erased.  ``Legislator.terms`` carries all of
-them, so they are a table (C9).
-
-``photo_url`` is not published.  BillTrax constructed it from a bioguide id
-rather than fetching it, so the column asserted that an image exists at an
-address nothing had checked.
+Terms are a table because one row cannot hold a chamber switch, which is how the placement study erased a member's House
+years.  ``photo_url`` is not published: BillTrax constructed it from a bioguide id rather than fetching it, so the
+column asserted an image at an address nothing had checked.
 """
 
 from __future__ import annotations
@@ -64,11 +59,10 @@ MEMBER_TERMS = table_contract(
 
 
 def shape_member(legislator: object, *, roster: str, observed_at: str) -> Row:
-    """One ``members`` row, with the latest term's facts summarised onto it.
+    """One ``members`` row with the last term in the crosswalk's own order summarised onto the ``current_term_*``
+    columns.
 
-    ``current_term_*`` names the last term in the crosswalk's own order; the
-    full history is ``member_terms``, so nothing about an earlier term is lost
-    by summarising here.
+    The full history is ``member_terms``, so nothing about an earlier term is lost by summarising here.
     """
     terms = legislator.terms
     latest = terms[-1] if terms else None
@@ -97,11 +91,8 @@ def shape_member(legislator: object, *, roster: str, observed_at: str) -> Row:
 def shape_member_term(term: object, *, bioguide_id: str, term_index: int, observed_at: str) -> Row:
     """One ``member_terms`` row.
 
-    ``observed_at`` is a column here even though the design's list omitted it:
-    the design names ``observed_at`` as this table's version column, and a
-    version column has to be one of the table's own columns for a merge to read
-    it.  ``bill_sections`` carries its parent's ``version_date`` for exactly the
-    same reason.
+    ``observed_at`` is a column because the design names it this table's version column, and a merge can only read a
+    version column the table itself has; ``bill_sections`` carries its parent's ``version_date`` for the same reason.
     """
     return {
         "bioguide_id": text(bioguide_id),

@@ -1,34 +1,12 @@
 """Split committee-report text into header-led blocks; a pure, dependency-free port of BillTrax's report-parser.ts.
 
-Measured on two real GovInfo committee reports (CRPT-113hrpt135, 229 pages;
-CRPT-113srpt77, 190 pages; see ``tests/fixtures/agency_reports/README.md``):
-despite its name, this is a heading splitter, not an agency detector. It fires
-on ``REPORT``, ``R E P O R T``, ``C O N T E N T S``, ``HURRICANE SANDY`` and
-other all-caps section titles exactly as often as it fires on
-``DEPARTMENT OF THE ARMY``; BillTrax's own stored ``report_sections`` rows
-carry the same mix, because this is the code that produced every one of them
-(``billtrax-value-inventory-2026-09-19.md`` §2.6). The name and shape are kept
-for parity with that stored data; do not read a returned block's ``agency``
-field as a verified agency name.
-
-The current table shaper preserves this observation in ``heading`` and leaves
-agency identity columns NULL. The names here remain for parser compatibility;
-they are not permission to recreate the old table's identity claims.
-
-This parser expects **normalized** text: GPO line numbers, ``VerDate``/``DSK``
-footers and hyphenated line-wrap rejoining already applied (the sibling
-``pdf-normalize`` port is a post-extraction step, not this module's job).
-BillTrax's own upload path skips that step and feeds raw ``pdf-parse`` text
-straight to ``parseAgencyBlocks`` (``api/reports/route.ts:29-34``); measured on
-the same two real reports, that produces 182 and 382 "blocks" per document,
-some of them the tail halves of hyphen-wrapped headings rejoining a broken
-word mid-sentence (``"MENT OF THE TREASURY..."`` continuing ``"...OF THE
-DEPART-"``). Feeding unnormalized text here reproduces that defect. As a
-narrow guard against the worst of it -- not a substitute for real
-normalization -- a line is never treated as a header if the line immediately
-before it ends with a word character followed by a hyphen (a mid-word line
-break); on the two measured reports this removes exactly the 2 and 1 hyphen-
-wrap fragments GovInfo's real text contains and none of the real headers.
+Despite its name this is a heading splitter, not an agency detector: all-caps section titles
+(``REPORT``, ``R E P O R T``, ``C O N T E N T S``, ``HURRICANE SANDY``) fire exactly as often as
+``DEPARTMENT OF THE ARMY``, so a block's ``agency`` field is not a verified agency name and the
+table shaper leaves agency identity columns NULL. Input must already be normalized (GPO line
+numbers, ``VerDate``/``DSK`` footers and hyphenated line-wrap rejoining applied); feeding raw
+extraction text reproduces BillTrax's hyphen-wrap fragments, so a line is never treated as a header
+when the line immediately before it ends with a word character followed by a hyphen.
 """
 
 from __future__ import annotations
@@ -54,20 +32,17 @@ FULL_REPORT_PATTERN = "full_report"
 """Whole-text fallback (report-parser.ts:61-63): no line in the text matched any pattern."""
 
 PREAMBLE_PATTERN = "preamble"
-"""Text before the first matched header. BillTrax silently discards this (report-parser.ts:38-51:
-the header loop only pushes a block once `currentLabel` is set); this port keeps it as its own
-unlabeled block instead, so a document's front matter is not lost."""
+"""Text before the first matched header; BillTrax silently discards it (report-parser.ts:38-51),
+while this port keeps it as its own unlabeled block so front matter is not lost."""
 
 
 @dataclass(frozen=True, slots=True)
 class HeaderPattern:
     """One named entry from BillTrax's ``KNOWN_PATTERNS``/``isAgencyHeader`` (report-parser.ts:4-28).
 
-    ``extra``, when given, is an additional condition a matched line must also satisfy -- used only
-    by ``all_caps_multiword`` to port BillTrax's separate ``trimmed.split(/\\s+/).length >= 2`` check
-    (:26), which is not expressible in the regex alone: ``AGENCY_HEADER``'s character class already
-    allows a bare single word, so without this the ``generic_agency_header`` fallback below it could
-    never fire (``all_caps_multiword`` is tried first and would always win).
+    ``extra``, when given, is an additional condition a matched line must also satisfy; it ports
+    BillTrax's two-or-more-words check (:26) that the ``all_caps_multiword`` regex alone cannot
+    express, so the ``generic_agency_header`` fallback below can still catch a single all-caps word.
     """
 
     name: str
@@ -196,17 +171,12 @@ def _normalize_agency_key(agency: str) -> str:
 class AgencyBlock:
     """One block of a parsed report: BillTrax's stored fields, plus what its ``text`` input discarded.
 
-    ``agency``/``body`` are exactly what BillTrax stored in ``report_sections.agency_label``/``.body``
-    (join-and-trim; report-parser.ts:43-44, :55-56) for a matched-header block, or the ``"Full Report"``
-    sentinel (:62) when no header matched anywhere. ``agency``/``agency_key`` are ``None`` for a
-    ``preamble`` block, which has no header.
-
-    ``char_span`` is a half-open ``(start, end)`` offset pair into the flattened input text; every
-    block's span is contiguous with its neighbors, so spans partition the whole input with no gap and
-    no overlap, even where ``body`` itself (BillTrax's trimmed content) is narrower than the span --
-    see ``parse_agency_blocks``. ``page_span`` is the inclusive ``(first_page, last_page)`` of pages
-    the span touches, using the page numbers of the input ``PageResult`` sequence; it is ``None`` when
-    ``parse_agency_blocks`` was given plain text, which carries no page boundaries.
+    ``agency``/``body`` match BillTrax's stored ``report_sections.agency_label``/``.body`` values
+    (join-and-trim; report-parser.ts:43-44, :55-56), or the ``"Full Report"`` sentinel (:62) when no
+    header matched; ``agency``/``agency_key`` are ``None`` for a ``preamble`` block. ``char_span`` is
+    a half-open ``(start, end)`` pair into the flattened input, and every block's span is contiguous
+    with its neighbors, so spans partition the whole input even where ``body`` is narrower than its
+    span; ``page_span`` is the inclusive ``(first_page, last_page)``, or ``None`` for plain text.
     """
 
     agency: str | None
@@ -220,9 +190,9 @@ class AgencyBlock:
 def _flatten(text_or_pages: str | Sequence[PageResult]) -> tuple[str, tuple[tuple[int, int, int], ...] | None]:
     """Return the joined text and, for a page sequence, each page's ``(number, start, end)`` half-open span.
 
-    Pages join the same way ``PageContent.text`` joins blocks within one page: with ``"\\n"``. A page
-    boundary is therefore only visible as a line break, exactly like any other line break in the text --
-    it does not itself prevent a header match spanning what was originally two pages.
+    Pages join with ``"\\n"`` exactly as ``PageContent.text`` joins blocks within one page, so a page
+    boundary is visible only as a line break and does not prevent a header match spanning two pages;
+    duplicate page numbers raise ValueError.
     """
     if isinstance(text_or_pages, str):
         return text_or_pages, None
@@ -244,8 +214,8 @@ def _flatten(text_or_pages: str | Sequence[PageResult]) -> tuple[str, tuple[tupl
 def _page_at(offset: int, page_ranges: tuple[tuple[int, int, int], ...]) -> int:
     """The page number whose half-open range contains ``offset``; the last page if ``offset`` is the text's end.
 
-    Linear scan over the input's own page count -- bounded by one document's pages (hundreds at most),
-    not by block count, so this stays cheap even called once per emitted block.
+    A linear scan over the document's own page count, not the block count, so it stays cheap when
+    called once per emitted block.
     """
     for number, start, end in page_ranges:
         if start <= offset < end:
@@ -260,28 +230,16 @@ def _page_span(start: int, end: int, page_ranges: tuple[tuple[int, int, int], ..
 
 
 def parse_agency_blocks(text_or_pages: str | Sequence[PageResult]) -> tuple[AgencyBlock, ...]:
-    """Port of BillTrax's ``parseAgencyBlocks`` (report-parser.ts:30-66), plus span tracking it never had.
+    """Split text (or a sequence of ``extraction.model.PageResult``) into header-led blocks.
 
-    Accepts plain text, or a sequence of ``extraction.model.PageResult`` (the shape
-    ``extraction.api.DocumentExtractor.extract`` yields) when page attribution matters; see ``_flatten``.
-
-    Splits the text into lines and walks them exactly as BillTrax does: a line matching ``_match_header``
-    (and not a mid-word line break -- see the module docstring) starts a new block; every following line
-    is that block's body, until the next header or the end of the text. A block is only kept if its body
-    is non-blank after stripping (report-parser.ts:40, :53), matching BillTrax's own row-level dedup: a
-    header immediately followed by another header, or by nothing, never became a ``report_sections`` row.
-
-    Unlike BillTrax, no character is silently dropped. Two additions, both new relative to BillTrax and
-    invisible to ``body``'s content:
-
-    - Text before the first matched header (BillTrax discards it -- report-parser.ts:38-51 only pushes a
-      block once ``currentLabel`` is set) becomes its own block, labelled with the ``PREAMBLE_PATTERN``
-      sentinel and ``agency=None``, when it is non-blank.
-    - A header whose body is blank is still not stored as its own block (matching BillTrax), but its raw
-      span -- header line and any blank lines -- is absorbed into an adjacent emitted block (normally the
-      next one; the last block in the text if nothing follows) rather than vanishing. The result:
-      concatenating every returned block's ``text[start:end]`` (its ``char_span`` slice of the original
-      input) reconstructs the complete input.
+    Ports BillTrax's ``parseAgencyBlocks`` (report-parser.ts:30-66) and adds char/page span tracking it
+    never had. A line matching ``_match_header`` (and not a mid-word line break -- see the module
+    docstring) starts a block, and everything until the next header is its body; a block is emitted
+    only when its stripped body is non-blank (report-parser.ts:40, :53), but its raw span is absorbed
+    into an adjacent emitted block rather than vanishing, so the returned blocks' ``char_span`` slices
+    partition the complete input with no gap and no overlap. Text before the first header becomes a
+    ``PREAMBLE_PATTERN`` block with ``agency=None``; a text that emits no block at all returns one
+    ``FULL_REPORT_PATTERN`` block; duplicate page numbers raise ValueError.
     """
     text, page_ranges = _flatten(text_or_pages)
     if not text.strip():

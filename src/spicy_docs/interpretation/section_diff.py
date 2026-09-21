@@ -1,64 +1,21 @@
 """Compare two bill versions with DeltaTrack, and shape the result as diff-table rows.
 
-The engine is the sibling Civic Tech DC package (https://github.com/civictechdc/DeltaTrack),
-installed by the ``bill-diff`` extra. Nothing here decides which sections
-correspond, what a similarity threshold is, or which dollar figures pair: that
-is all upstream's, and this module reimplements none of it. What it does is turn
-upstream's records into the rows ``section_diffs``, ``section_diff_items`` and
-``financial_changes`` hold, carrying the provenance upstream computes and its
-own published contract drops.
-
-**Why the stage sequence and not just ``diff_bills``.** ``diff_bills`` returns
-``BillDiff``, whose ``NodeDiff`` records say *what* changed and not *why the two
-sections were paired*. Upstream's ADR 0020 separates retrieval, evidence,
-assignment and classification into public functions precisely so a caller can
-hold the middle: ``SettledCorrespondence`` carries the assignment round, and
-``Correspondence.evidence`` the named signals — ``word_overlap``, the similarity
-score, and ``body_unchanged``. This module runs that same published sequence,
-keeps the evidence, and then calls upstream's own ``classify``. The
-recomposition is pinned by a test that asserts it produces exactly
-``diff_bills``'s change list, so upstream changing the sequence fails here
-rather than drifting silently.
-
-**Amount pairing is not an account claim, and is off by default.** Upstream
-removed paired amounts from both published contracts (#671, #687): pairing a
-figure on one side with a figure on the other and publishing the difference is a
-claim about an account, and an appropriations paragraph mixes top-line
-appropriations, sub-allocations, "not to exceed" ceilings and loan-guarantee
-limitations with nothing distinguishing them. ``match_amounts`` remains public
-and tested upstream, and ``financial_changes`` has
-``from_amount``/``to_amount``/``delta`` columns to fill, so the pairing is
-offered here — behind ``diff_sections(..., pair_amounts=True)``, and only for a
-section whose amounts actually changed. The default output carries
-``amounts_changed`` and the two multisets, which are facts that need no account
-model to be true.
-
-**Complexity.** The matching is upstream's and is bounded by upstream's guards:
-retrieval gates every candidate ratio behind ``real_quick_ratio`` and
-``quick_ratio``, documented upper bounds on ``ratio``, so the O(w²) alignment
-runs only for pairs that can still clear the threshold. Shaping the rows is one
-linear pass over the settled correspondences.
-
-**This module adds one cost upstream's published path does not pay.**
-``match_amounts`` runs ``SequenceMatcher(autojunk=False)`` over both bodies'
-words — O(w²) per section, with the popular-element heuristic that would cap it
-switched off, because that heuristic is what would drop a repeated ``$1,000``
-out of the alignment. Upstream's own ``bill_diff_to_dict`` stopped calling it
-when #687 removed the field.
-
-The quadratic is not theoretical, and it bites on exactly the text this is for.
-Measured on one section pair: 8,000 words of *distinct* wording pairs in 0.007 s,
-but 8,000 words of repetitive appropriations phrasing ("For necessary expenses
-of", "not to exceed", "to remain available until expended") takes 0.46 s, and
-16,000 words 1.88 s — four times the cost for twice the input. Two gates keep it
-off the common path: it runs only under ``pair_amounts=True``, and then only for
-a section whose amounts changed, which in a real version pair is a small
-minority of sections and in a self-diff is none.
-
-The three caps BillTrax's TypeScript fork learned in production — a
-collision-group cap, an asymmetric-pair guard and a body-size cap on inline word
-segments — have no upstream equivalent; they are recorded for upstream in
-``docs/sources/congress-bill-tree.md`` rather than patched in here.
+The engine is the sibling Civic Tech DC package installed by the ``bill-diff``
+extra, and nothing here decides which sections correspond, what a similarity
+threshold is or which dollar figures pair: this runs upstream's own published
+stage sequence -- keeping the assignment round and the named evidence that
+``diff_bills`` drops -- and turns its records into the rows ``section_diffs``,
+``section_diff_items`` and ``financial_changes`` hold, so the recomposition is
+pinned by a test against ``diff_bills``'s change list. Amount pairing is off by
+default and fills only a section whose amounts changed, because pairing a
+figure with a figure and publishing the difference is a claim about an account
+that upstream removed from its own contracts and that appropriations prose
+mixes with sub-allocations, "not to exceed" ceilings and loan-guarantee
+limitations. The one cost upstream's published path does not pay --
+``match_amounts`` running ``SequenceMatcher(autojunk=False)`` quadratically
+over both bodies' words, which is why a repetitive appropriations section
+takes 0.46 s at 8,000 words against 0.007 s of distinct wording -- is gated
+behind ``pair_amounts=True`` and a changed amount.
 """
 
 from __future__ import annotations
@@ -97,11 +54,10 @@ class AmountPair:
     """One ``financial_changes`` row.
 
     A row states that these two figures sit at the same place in the word-level
-    alignment of the two texts. It does **not** state that they are the same
-    account: upstream removed exactly this pairing from its published contracts
-    for that reason, and #115 is where the account model that would justify it
-    lives. ``label`` carries the section heading, which BillTrax left as ``""``
-    at every construction site, so the column held nothing in every row written.
+    alignment of the two texts; it does **not** state that they are the same
+    account, which is why upstream removed exactly this pairing from its
+    published contracts. ``label`` carries the section heading, which BillTrax
+    left as ``""`` at every construction site.
     """
 
     label: str
@@ -115,7 +71,7 @@ class FinancialChange:
     """Upstream's multiset facts about one section's money, plus the offered pairing.
 
     ``from_amounts``, ``to_amounts`` and ``amounts_changed`` are upstream's
-    published contract and need no account model to be true. ``pairs`` is the
+    published contract and need no account model to be true; ``pairs`` is the
     alignment described in :class:`AmountPair`.
     """
 
@@ -186,23 +142,16 @@ def pair_type(base_id: str, new_id: str, versions: Sequence[VersionRef]) -> str:
 
     From BillTrax's ``pair-type.ts``, which has no upstream counterpart:
     DeltaTrack compares two XML documents or two PDFs and does not model a
-    catalog of versions with uploads and twins in it.
-
-    Each side is classified on its own, which the original did not do. It asked
-    only whether *either* side was an upload, so two uploads and a
-    ``govinfo-pdf`` against an upload — pairs with no XML anywhere — both came
-    back ``pdf-xml``, naming a comparison neither side can supply. Classified
-    independently:
-
-    - a PDF-only row (an upload, or a GovInfo PDF) reads as a PDF;
-    - an XML row reads as XML, and can *also* be read as a PDF when it has a
-      GovInfo PDF twin.
-
-    Two XML rows compare as XML even when a twin exists, because the twin is a
-    fallback for reaching a PDF-only counterpart and XML is the better reading
-    when both sides have it. A shape this does not cover — an unknown version
-    id, or a ``source`` outside the two vocabularies — refuses rather than
-    guessing a strategy.
+    catalog of versions with uploads and twins in it. Each side is classified
+    on its own, which the original did not do -- it asked only whether *either*
+    side was an upload, so two uploads and a ``govinfo-pdf`` against an upload
+    both came back ``pdf-xml``, naming a comparison neither side can supply.
+    A PDF-only row (an upload, or a GovInfo PDF) reads as a PDF; an XML row
+    reads as XML and can *also* be read as a PDF when it has a GovInfo PDF
+    twin; two XML rows compare as XML even when a twin exists, because XML is
+    the better reading when both sides have it. A shape this does not cover --
+    an unknown version id, or a ``source`` outside the two vocabularies --
+    refuses rather than guessing a strategy.
     """
     by_id = {version.version_id: version for version in versions}
     sides = []
@@ -230,17 +179,13 @@ def pair_type(base_id: str, new_id: str, versions: Sequence[VersionRef]) -> str:
 def _financial(engine: Any, change: Any, label: str, *, pair_amounts: bool) -> FinancialChange | None:
     """One section's money reading. ``pairs`` is filled only when asked for, and only when it says something.
 
-    Two gates, both deliberate. ``amounts_changed`` false means every figure is
-    on both sides, so a pairing could only state that each equals itself —
-    rows of ``delta`` 0 that read as findings. And ``pair_amounts`` is off by
+    Two gates, both deliberate: ``amounts_changed`` false means every figure is
+    on both sides, so a pairing could only state that each equals itself --
+    rows of ``delta`` 0 that read as findings -- and ``pair_amounts`` is off by
     default, so a caller takes the account claim by name rather than by reading
-    a field that was already populated. This is the trap upstream's #671/#687
-    closed by deleting the field: a populated field that nothing reads presents
-    as available, which makes re-publishing the claim the path of least
-    resistance.
-
-    Skipping the pairing is also what keeps the common case cheap; see the
-    Complexity note in the module docstring.
+    a field that was already populated, which is the trap upstream closed by
+    deleting the field. Skipping the pairing is also what keeps the common case
+    cheap.
     """
     stated = engine.compute_financial_change(change.amount_source_old, change.amount_source_new)
     if stated is None:
@@ -276,10 +221,10 @@ def _settled_nodes(registry: Any, correspondence: Any) -> tuple[BillNode | None,
 def _check_alignment(change: Any, old_node: BillNode | None, new_node: BillNode | None) -> None:
     """Refuse a change record that does not describe the correspondence beside it.
 
-    ``classify`` sorts the settled correspondences by round and emits one record
-    each, so position i of its output describes position i of the same stable
-    sort. That is an implementation detail of upstream's, and this is it checked
-    rather than assumed: a reordering there would otherwise attach one section's
+    ``classify`` sorts the settled correspondences by round and emits one
+    record each, so position i of its output describes position i of the same
+    stable sort; that is an upstream implementation detail, checked here rather
+    than assumed, because a reordering would otherwise attach one section's
     provenance to another section's change.
     """
     expected_old = old_node.body_text if old_node is not None else None
@@ -301,15 +246,14 @@ def diff_sections(
 ) -> SectionDiff:
     """Compare two parsed versions and return the rows the diff tables hold.
 
-    ``from_version`` and ``to_version`` are the caller's own version identifiers:
-    the engine reads the publisher's XML, not the caller's key space.
-
-    ``pair_amounts`` fills ``FinancialChange.pairs``, the ``from_amount`` /
-    ``to_amount`` / ``delta`` columns of ``financial_changes``. It is off by
-    default because that pairing is a claim about an *account* that upstream
-    declines to publish, and because a field populated by default is a field
-    that gets read by accident; see :func:`_financial`. Even when asked for, a
-    section whose amounts did not change contributes no rows.
+    ``from_version`` and ``to_version`` are the caller's own version
+    identifiers: the engine reads the publisher's XML, not the caller's key
+    space. ``pair_amounts`` fills ``FinancialChange.pairs``, the
+    ``from_amount``/``to_amount``/``delta`` columns of ``financial_changes``,
+    and is off by default because that pairing is a claim about an *account*
+    that upstream declines to publish and because a field populated by default
+    gets read by accident; even when asked for, a section whose amounts did not
+    change contributes no rows.
     """
     engine, similarity = _engine()
     old_tree, new_tree = old.tree, new.tree

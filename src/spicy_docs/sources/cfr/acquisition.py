@@ -64,6 +64,8 @@ class CfrAcquisitionBudget:
 
 @dataclass(frozen=True, slots=True)
 class CfrXmlAcquisition:
+    """One captured CFR XML source with its selection, native identity and exact bytes."""
+
     selection: CfrSelection
     identity: CfrXmlMetadata
     capture: CapturedBodyResponse
@@ -74,6 +76,8 @@ class CfrXmlAcquisition:
 
 @dataclass(frozen=True, slots=True)
 class CfrTitlesAcquisition:
+    """One captured live eCFR title roster."""
+
     titles: EcfrTitles
     capture: CapturedBodyResponse
     request_count: int
@@ -82,6 +86,8 @@ class CfrTitlesAcquisition:
 
 @dataclass(frozen=True, slots=True)
 class CfrEditionAcquisition:
+    """One captured annual edition with both its typed facts and the full MODS mapping."""
+
     selection: AnnualCfrSelection
     edition: AnnualCfrEdition
     metadata: GovInfoModsPackage

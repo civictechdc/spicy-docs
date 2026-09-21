@@ -1,15 +1,10 @@
 """Shared data shapes that flow between sources and transforms.
 
-``base`` holds the generic :class:`RecordType` contract; domain-specific
-record definitions (e.g. the regulations.gov shapes) live alongside it and
-are re-exported here for convenience.
-
-The table-contract layer lives here too: :class:`~spicy_docs.schemas.tables.TableContract`
-and the family modules that declare one contract and one pure ``shape_*``
-function per published table.  The whole package is a stdlib-only leaf -- no
-pyarrow, no DeltaTrack, no ``sources.*`` or ``interpretation.*`` imports -- so
-spicy-regs can import a column tuple without pulling an HTTP client, a model
-client or a git dependency.  See ``docs/tables.md``.
+``base`` holds the generic :class:`RecordType` contract, the sibling modules hold the
+domain record shapes and every published table's :class:`~spicy_docs.schemas.tables.TableContract`,
+and the whole package is a stdlib-only leaf -- no pyarrow, no DeltaTrack, no ``sources.*``
+or ``interpretation.*`` imports -- so spicy-regs can import a column tuple without pulling
+an HTTP client or a model client.  See ``docs/tables.md``.
 """
 
 from collections.abc import Mapping

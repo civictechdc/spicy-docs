@@ -1,54 +1,39 @@
 """CBO cost estimates: the per-Congress XML feeds, and what the bot wall refuses.
 
 The feed CBO advertises, ``www.cbo.gov/cost-estimates/xml``, is behind a
-DataDome bot wall and has never answered a raw-byte request: HTTP 403 with
-``x-datadome: protected``, to a plain client and a current-Chrome user agent
-alike, and the cookie the wall itself sets changes nothing. RefSpec saw the
-same wall on 2026-08-04, this module on 2026-09-14. The wall is path-scoped and
-also covers ``/publication/<id>`` — the link every item states — and every PDF
-path, so the estimate **document** has no keyless route either. ``403`` here is
-named a challenge, not a credential refusal: this family holds no credential.
+DataDome bot wall and has never answered a raw-byte request: ``403`` with
+``x-datadome: protected`` to plain and browser-like clients alike, and the
+cookie the wall sets changes nothing. The wall is path-scoped over
+``/publication/<id>`` and every PDF path, so the estimate **document** has no
+keyless route either. ``403`` here is named a challenge, not a credential
+refusal: this family holds no credential.
 
 **No header set reaches the documents; only a browser-backed transport could.**
 Re-probed 2026-09-14 (receipt
 ``supply-2026-09-02/receipts/publisher-questions-2026-09-14/q3-cbo-bot-wall``)
-with a complete browser-like request — Chrome 140 user agent, ``Accept``,
-``Accept-Language``, ``Referer``, ``Upgrade-Insecure-Requests`` and the three
-``Sec-Fetch-*`` headers — the estimate PDF, the advertised XML feed and the
-publication page each answered the identical ``403``, 767 bytes,
-``server: DataDome``, ``x-datadome: protected``, while the per-Congress feed
-answered ``200`` and 431,257 bytes to that same client. So the headers are not
-what is refused and the wall is path-scoped, not client-scoped. The 767 bytes
-are a JavaScript challenge (``Please enable JS``, a DataDome ``dd`` blob with a
-per-response ``cid``): passing it requires executing that script, which no
-header can do. No keyless route to an estimate document exists, and none is
-stated: the feed's ``<Link>`` is a publication page, and the only hosts CBO's
-own retained markup names for documents are ``www.cbo.gov`` paths —
-``/system/files/*`` and ``/sites/default/files/*``, both walled. There is no CDN
-or ``files``/``static`` host to fall back to. ``acquire_estimate_document``
-therefore needs a browser-backed ``transport`` injected by the caller (see
-``sources/zyte.py``); this module does not and will not try to solve the
-challenge.
+with a complete browser-like header set, the estimate PDF, the advertised XML
+feed and the publication page each answered the identical ``403`` while the
+per-Congress feed answered ``200`` to that same client -- so the headers are not
+what is refused, and the refusal body is a JavaScript challenge no header can
+pass. ``acquire_estimate_document`` therefore needs a browser-backed
+``transport`` injected by the caller (see ``sources/zyte.py``); this module does
+not and will not try to solve the challenge.
 
 One tier answers keyless: ``www.cbo.gov/rss/{congress}congress-cost-estimates.xml``,
-one file per Congress. Its shape is CBO's own XML, **not RSS 2.0** — a
-``<response>`` root of ``<item key="N">`` elements carrying exactly ``Title``,
-``Date``, ``Link``, ``Description`` and ``Bill_Number``, with no channel header
-and no namespace. Topic labels, budget-function codes, UMRA mandate flags and
-the PAYGO flag are **not** in these bytes; they appear only in RefSpec's
-acknowledged reconstruction of the walled feed, never in a verified capture. An
-unknown child element refuses the whole feed, so the day CBO publishes one it is
-visible instead of silently dropped.
+one file per Congress, in CBO's own XML -- **not RSS 2.0** -- a ``<response>``
+root of ``<item key="N">`` elements carrying exactly ``Title``, ``Date``,
+``Link``, ``Description`` and ``Bill_Number``, with no channel header and no
+namespace. Topic labels, budget-function codes, UMRA mandate flags and the PAYGO
+flag are **not** in these bytes; they appear only in RefSpec's acknowledged
+reconstruction of the walled feed, never in a verified capture. An unknown child
+element refuses the whole feed, so the day
+CBO publishes one it is visible instead of silently dropped. A per-Congress feed
+is that Congress to date, newest first, and an observation, never a catalog; a
+Congress with no file answers 404 with a Drupal HTML page, which is
+requested-empty, not absence.
 
-A per-Congress feed is that Congress to date, newest first — the 119th spans
-2025-01-10 to 2026-09-11 — and behaved as append-only over a 41-day gap. It is
-an observation, never a catalog. A Congress with no file answers 404 with a
-Drupal HTML page: requested-empty, not absence of the route.
-
-Byte counts, digests and the measurements behind every claim here:
-``docs/sources/cbo.md``,
-``corpora/supply-2026-09-02/receipts/port-P06-cbo-2026-09-14/README.md`` and
-``corpora/supply-2026-09-02/receipts/publisher-questions-2026-09-14/q3-cbo-bot-wall/README.md``.
+Byte counts, digests and the measurements behind every claim:
+``docs/sources/cbo.md`` and the receipts named above.
 """
 
 from __future__ import annotations

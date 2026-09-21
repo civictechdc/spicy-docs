@@ -1,24 +1,11 @@
-"""What changed between two runs of the bill family, as four sealed event types.
+"""What changed between two runs of the bill family, as four sealed event types computed by comparing two snapshots of
+already-shaped rows -- never by watching a writer -- so a run that produced no rows produces no events rather than an
+empty feed that looks like a quiet night.
 
-An event is computed by comparing two snapshots of already-shaped rows, never
-by watching a writer: the comparison is therefore reproducible from published
-data, and a run that produced no rows produces no events rather than an empty
-feed that looks like a quiet night.
-
-Identity is ``(bill_id, event_type, subject_id, occurred_at)`` (C8).  The
-study's ``(bill_id, event_type, occurred_at)`` collides whenever two versions of
-one bill share a date, which an introduced version and its reprint routinely do.
-
-Two instants, deliberately.  ``occurred_at`` is the publisher's own date and
-serves a feed; ``detected_at`` is the run instant and serves "what changed
-tonight".  They are different questions and a single column answers only one.
-
-Deletions are not events.  The four-type vocabulary is sealed, and a row leaving
-a table is a withdrawn record or a truncated snapshot -- a fact about the run,
-stated in the coverage statement, not about the bill.
-
-Cost is O(|prior| + |current|): one pass builds each keyed mapping, one pass
-over each current mapping with constant-time lookups.
+Identity is ``(bill_id, event_type, subject_id, occurred_at)`` because two versions of one bill routinely share a date,
+and it carries two instants deliberately: the publisher's ``occurred_at`` for a feed and the run's ``detected_at`` for
+"what changed tonight".  Deletions are not events -- the four-type vocabulary is sealed, and a row leaving a table is a
+fact about the run, stated in the coverage statement, not about the bill.
 """
 
 from __future__ import annotations
@@ -82,10 +69,8 @@ def snapshot_from_rows(
     bill_versions: Iterable[Row] = (),
     bill_summaries: Iterable[Row] = (),
 ) -> BillFamilySnapshot:
-    """Key each table's rows with its own contract, never with a hand-written key.
-
-    A hand-written key is how a comparison quietly stops agreeing with the table
-    it compares: the contract is the one place an identity is spelled.
+    """Key each table's rows with its own contract, never with a hand-written key that could quietly stop agreeing with
+    the table it compares.
     """
     return BillFamilySnapshot(
         bills=_keyed(CONGRESS_BILLS, bills),
@@ -123,7 +108,10 @@ def activity_events(
     *,
     detected_at: str,
 ) -> tuple[Row, ...]:
-    """Every event the move from ``prior`` to ``current`` produced, in table order."""
+    """Every event the move from ``prior`` to ``current`` produced, in table order.
+
+    ``O(|prior| + |current|)``: one pass per keyed mapping with constant-time lookups.
+    """
     events: list[Row] = []
 
     for key, row in current.bills.items():

@@ -44,6 +44,8 @@ def _validate_root(
     *,
     profile: PublicTableProfile,
 ) -> tuple[Mapping[str, Any], tuple[MemberDescriptor, ...]]:
+    """Validate the product root and member set, returning the spec and descriptors or refusing."""
+
     root = artifact.root
     if root.get("kind") != KIND:
         raise PublicTableError("artifact is not a SpicyRegs public table")
@@ -146,6 +148,8 @@ def verify_public_table_admission(
 
 
 def _sort_value(row: Mapping[str, Any], columns: Sequence[str]) -> tuple[tuple[int, str], ...]:
+    """Total-order keys placing null values after every non-null text value."""
+
     return tuple((1, "") if row[name] is None else (0, str(row[name])) for name in columns)
 
 

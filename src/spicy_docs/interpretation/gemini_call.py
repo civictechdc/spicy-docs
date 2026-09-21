@@ -1,37 +1,18 @@
 """Adapter: a Gemini client as the ``ModelCall`` seam the model-backed modules take.
 
-``spicy_docs.extraction.gemini.GeminiClient`` satisfies ``GenerationClient``
-(``generate(model, body) -> dict``), which is the raw transport. The two
-model-backed interpretation modules take a different, narrower seam --
-``model_call.ModelCall``, ``(*, model, prompt, response_schema) ->
-ModelResponse`` with the answer already parsed. The two do not fit directly,
-so this is the adapter between them: it builds the request body, asks for JSON
-back **under the schema the caller derived from its own answer declaration**,
-pulls the answer text out of the candidate envelope, parses it, and carries the
-token counts the model tables publish.
-
-The schema is the half of BillTrax's request this port dropped: each of the
-three originals passed a zod schema to ``generateObject``/``streamObject``
-(``bill-summaries.ts:41-45``, ``summarize/route.ts:13-19``,
-``classifications.ts:21-29``), and the port copied the prompt bytes alone --
-which one live call then showed (2026-09-19, register row C1). It is sent as
-Gemini's ``responseJsonSchema``, through
-``extraction.gemini.json_generation_config`` so that the two request keys have
-one home rather than one per caller.
-
-**Nothing here validates the answer against that schema.** The readers already
-refuse -- ``require_fields`` plus each module's own checks -- and a second
-validator here would be a second contract to keep in step with the first. The
-schema is what was asked for; the reader is what is accepted. (Page
-recognition in ``extraction/gemini.py`` does validate locally, because its
-caller indexes the parsed object directly and has no reader behind it.)
-
-This lives in spicy-docs, beside both halves it joins, because both halves are
-here: a hosting application supplies the key and the model name and wires the
-call, and no application needs its own copy of the body shape. The key never
-appears in a log line or a row -- the caller reads it (see
-``transport.credentials.read_api_key``) and hands it to the client, which sends
-it as a header.
+``GeminiClient`` satisfies ``GenerationClient`` (``generate(model, body) ->
+dict``), the raw transport, while the two model-backed interpretation modules
+take a narrower seam, ``model_call.ModelCall`` with the answer already parsed;
+this builds the request body, asks for JSON back under the schema the caller
+derived from its own answer declaration (Gemini's ``responseJsonSchema``,
+through ``extraction.gemini.json_generation_config`` so the two request keys
+have one home), pulls the answer text out of the candidate envelope, parses it
+and carries the token counts the model tables publish. Nothing here validates
+the answer against that schema: the readers already refuse, and a second
+validator would be a second contract to keep in step with the first -- the
+schema is what was asked for, the reader is what is accepted. The key never
+appears in a log line or a row; the caller reads it and hands it to the
+client, which sends it as a header.
 """
 
 from __future__ import annotations
@@ -66,9 +47,12 @@ def _answer_text(payload: Mapping[str, Any]) -> str:
 def model_call(client: GenerationClient, *, response_mime_type: str = "application/json") -> ModelCall:
     """Wrap a ``GenerationClient`` as a ``ModelCall``.
 
-    ``client`` is any ``GenerationClient``: ``generate(model, body) -> Mapping``.
-    The real ``GeminiClient`` satisfies it, and so does a stub in a test -- the
-    protocol is structural, which is the whole reason this seam exists.
+    ``client`` is any ``GenerationClient``: ``generate(model, body) ->
+    Mapping``. The real ``GeminiClient`` satisfies it, and so does a stub in a
+    test -- the protocol is structural, which is the whole reason this seam
+    exists. The returned call raises ``ModelCallError`` when the answer carries
+    no candidates, no content parts or no text, is not a mapping, or is not
+    JSON.
     """
 
     def call(*, model: str, prompt: str, response_schema: Mapping[str, Any] | None = None) -> ModelResponse:

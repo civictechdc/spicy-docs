@@ -1,7 +1,7 @@
 """Read declared PNG/GIF/JPEG dimensions without decoding image data.
 
-These are header observations, not proof that an image is valid or complete.
-GIF reports the logical screen; JPEG reports the first frame before scan data.
+Header observations, not proof of validity or completeness: GIF reports the logical screen, JPEG the
+first frame before scan data, and an unsupported or truncated header keeps the format with no dimensions.
 No EXIF orientation, PNG CRC, later JPEG DNL, or animation frames are applied.
 """
 
@@ -19,9 +19,10 @@ class ImageHeader:
 def read_image_header(content: bytes) -> ImageHeader:
     """Observe header fields, retaining zero values exactly as declared.
 
-    PNG needs its first 24 bytes and GIF its first 10. JPEG needs a complete
-    declared frame segment. Unsupported or shorter inputs have no dimensions.
-    Runtime is O(header bytes), with constant auxiliary memory.
+    PNG needs its first 24 bytes and GIF its first 10; JPEG needs a complete
+    declared frame segment, and a recognized-but-incomplete header keeps its
+    format with no dimensions. Runtime is O(header bytes), with constant
+    auxiliary memory.
     """
     if content.startswith(b"\x89PNG\r\n\x1a\n") and len(content) >= 24:
         if content[8:12] != b"\x00\x00\x00\r" or content[12:16] != b"IHDR":
@@ -36,6 +37,7 @@ def read_image_header(content: bytes) -> ImageHeader:
 
 
 def _jpeg_dimensions(content: bytes) -> tuple[int, int] | None:
+    """Scan marker segments to the first start-of-frame; ``None`` before scan data or any malformed segment."""
     position = 2
     start_of_frame = frozenset({0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF})
     while position < len(content):

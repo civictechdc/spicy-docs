@@ -1,48 +1,18 @@
-"""Explicit OLRC U.S. Code sources: release points, annual archives, popular names and Table III.
+"""Explicit OLRC U.S. Code sources: release points, annual archives, popular names, Table III and classification tables.
 
 The Office of the Law Revision Counsel publishes the Code itself, keyless, with
-no API and no content negotiation. Four families arrive here and each proves its
-own identity from its own bytes:
-
-* **Release point.** One edition of the Code current through a public law. Each
-  title is a one-member zip of United States Legislative Markup whose ``<meta>``
-  states the title (``docNumber``) and the release point (``docPublicationName``,
-  spelled ``Online@119-103``). ``xml_uscAll`` is the same 58 documents in one
-  zip of about 108 MB.
-* **Annual historical archive.** One year of the Code as XHTML. Every title
-  member states its edition, year, title and currency in ``AUTHORITIES-*`` HTML
-  comments, so a member proves its own year without its file name.
-* **Popular Name Tool.** One generated page, about 11 MB, one flat
-  ``<div class='popular-name-table-entry'>`` per name with the identifying facts
-  in attributes. It also links each name's own Table III page, so the Table III
-  file name is read rather than derived.
-* **Table III.** Which act section went to which Code section: one page per act,
-  and one bulk zip whose member is a bare concatenation of ``<act>`` fragments
-  rather than a well-formed document.
-
-This publisher's USLM is **not** GovInfo's. OLRC serves USLM 1.0 in
-``http://xml.house.gov/schemas/uslm/1.0`` under a ``uscDoc`` root;
-:mod:`spicy_docs.sources.govinfo.uslm` serves USLM 2.x in
-``http://schemas.gpo.gov/xml/uslm`` under ``pLaw`` and ``statuteCompilation``.
-The two share no element name, but they do share the document shape, so this
-module binds that module's :class:`~spicy_docs.sources.govinfo.uslm.UslmScan` to
-this namespace, root and body sections rather than scanning twice.
-
-Three publisher behaviours shape every check below, all measured on 2026-09-14
-and retained in ``corpora/supply-2026-09-02/receipts/port-P01-uscode-2026-09-14/``:
-
-1. **An absent Table III act answers HTTP 200 and a truncated page.** The server
-   sends 16,134 bytes of site furniture and closes the stream. It carries no
-   rows, so a reader that trusted the status would record "this act classified
-   nothing". :func:`parse_table3_page` therefore requires the page to state the
-   requested act and to be closed, and refuses the truncated answer by name.
-2. **A title the publisher lists but does not serve answers 302**, to
-   ``/docnotfound.xhtml``. Title 53 is listed on the download page and answers
-   that way. A redirect is neither data nor absence; it is refused with its
-   status.
-3. **The zip routes carry no ``Content-Type`` and no ``Content-Length``.** The
-   shape is proved from the bytes: a local file header, a CRC check, then the
-   native identity of every member.
+no API, and each family proves its own identity from its own bytes: a
+release-point title's ``<meta>`` states its number and release point, an annual
+member's ``AUTHORITIES-*`` comments state its year, and the zip routes carry
+neither ``Content-Type`` nor ``Content-Length``, so archive shape is proved
+from a local file header and CRC check instead. Two publisher refusals shape the
+readers: an absent Table III act answers HTTP 200 with a truncated page, and a
+title the publisher lists but does not serve answers 302, so neither status is
+read as data or absence. This publisher's USLM is not GovInfo's -- OLRC serves
+USLM 1.0 under ``uscDoc``, GovInfo 2.x under ``pLaw`` -- so
+:mod:`spicy_docs.sources.govinfo.uslm`'s
+:class:`~spicy_docs.sources.govinfo.uslm.UslmScan` is bound to this namespace,
+root and body sections rather than written twice.
 """
 
 from .annual import ANNUAL_FIELDS, AnnualTitleMetadata, validate_annual_title_html

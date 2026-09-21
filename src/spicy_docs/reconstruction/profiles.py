@@ -3,23 +3,14 @@
 A profile is data, the way ``interpretation.bill_stage.STAGE_RULES`` is data:
 its rules are a tuple of frozen records a reviewer reads as a ladder, and
 every node the parser places names one of them. Three kinds of rule are kept
-distinct on purpose, because they carry different authority when a real
-document disagrees with them:
-
-- ``schema`` -- the pinned DTD or XSD requires it; a violation is a schema
-  finding, never something the parser works around.
-- ``guide`` -- the publisher's user guide states it as convention; the guide
-  and a real section can disagree, and when they do the section is evidence
-  and the guide is convention (a ``guide`` rule cites the guide's section).
-- ``heuristic`` -- this repository measured it on real renditions and it
-  earns its place only by the benchmark; a ``heuristic`` rule cites the
-  measurement.
-
-The schema bundle is pinned by digest and stored under ``schemas/``; the guide
-is pinned by the digest of the markdown fetched once from the publisher's
-repository (``GuideReference``). Nothing here reads a file at import time:
-``schema_path`` and ``check_schema_bundle`` are the only functions that touch
-the package's own data, and a test runs the latter.
+distinct because they carry different authority when a real document disagrees
+with them: a ``schema`` rule is required by the pinned DTD or XSD, a ``guide``
+rule is the publisher's stated convention (and the section is evidence when
+the two disagree), and a ``heuristic`` rule is this repository's measurement,
+earning its place only by the benchmark. The schema bundle is pinned by digest
+and stored under ``schemas/`` and the guide by the digest of the markdown
+fetched once from the publisher's repository; nothing here reads a file at
+import time.
 """
 
 from __future__ import annotations

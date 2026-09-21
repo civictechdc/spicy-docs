@@ -60,6 +60,8 @@ def _limit(max_bytes: int) -> None:
 
 @dataclass(frozen=True, slots=True)
 class PublicLawSelection:
+    """One public or private law, by Congress, kind and number, with its publisher file name."""
+
     congress: int
     kind: LawKind
     number: int
@@ -89,6 +91,8 @@ class PublicLawSelection:
 
 @dataclass(frozen=True, slots=True)
 class StatuteCompilationSelection:
+    """One statute compilation, by its publisher-assigned file identifier."""
+
     file_id: int
 
     def __post_init__(self) -> None:
@@ -364,6 +368,8 @@ def validate_statute_compilation_xml(
 
 @dataclass(frozen=True, slots=True)
 class UslmArchiveEntry:
+    """One validated archive member: its name, size, digest and native metadata."""
+
     name: str
     byte_size: int
     sha256: str

@@ -87,6 +87,7 @@ class BulkObject:
 
     @property
     def url(self) -> str:
+        """The public download URL; a key with a dot path segment is refused as ambiguous."""
         relative_key = self.key[len(BULK_PREFIX) :]
         if any(part in {".", ".."} for part in relative_key.split("/")):
             raise ValueError("bulk object key has a dot path segment; its download URL would be ambiguous")

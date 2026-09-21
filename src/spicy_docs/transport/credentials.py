@@ -1,4 +1,8 @@
-"""Credential-file reading and scrubbing shared by acquisition commands."""
+"""Credential-file reading and scrubbing shared by acquisition commands.
+
+``read_api_key`` reads one name from an env file; 401/403 ends a run rather than producing a row;
+``scrub_credential`` removes a key and known credential query parameters from any recorded text.
+"""
 
 from __future__ import annotations
 
@@ -33,6 +37,7 @@ def refusal_message(publisher: str, status: int, subject: str) -> str:
 
 
 def read_api_key(env_file: Path, name: str) -> str:
+    """The first ``name=`` value in the file, without surrounding whitespace or quotes; exits if absent."""
     for line in env_file.read_text().splitlines():
         key, sep, value = line.partition("=")
         if sep and key.strip() == name:

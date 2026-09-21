@@ -48,6 +48,8 @@ def _section(value: str) -> str:
 
 @dataclass(frozen=True, slots=True)
 class EcfrSelection:
+    """One explicitly dated eCFR title, optionally narrowed to a part or section; a section requires its part."""
+
     title: int
     date: str
     part: str | None = None
@@ -70,6 +72,8 @@ class EcfrSelection:
 
 @dataclass(frozen=True, slots=True)
 class AnnualCfrSelection:
+    """One printed annual CFR volume, optionally narrowed to a single section granule."""
+
     year: int
     title: int
     volume: int
@@ -89,6 +93,8 @@ class AnnualCfrSelection:
 
 @dataclass(frozen=True, slots=True)
 class EcfrTitle:
+    """One title's roster row: name, reserved flag and its three distinct currency dates."""
+
     number: int
     name: str
     reserved: bool
@@ -100,6 +106,8 @@ class EcfrTitle:
 
 @dataclass(frozen=True, slots=True)
 class EcfrTitles:
+    """The complete eCFR title roster with its meta date and import-in-progress flag."""
+
     date: str
     import_in_progress: bool
     titles: tuple[EcfrTitle, ...]

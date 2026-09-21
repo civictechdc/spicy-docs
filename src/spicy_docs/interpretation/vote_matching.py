@@ -1,35 +1,16 @@
 """Join a roll-call vote to the bill it was taken on, from structured references only.
 
-Publisher fact in: the ``recordedVotes`` entries the publisher attaches to a
-bill's own actions, and the ``legislationType``/``legislationNumber`` fields
-the House vote route states for a roll call.
-
-Interpretation out: a ``VoteMatch`` per vote naming the bill, the rule that
-supplied it and the publisher URL the reference carried.
-
-This replaces a regex over prose. ``BillTrax/src/lib/roll-call-votes.ts:143``
-matched ``/\\b([HS])\\.?\\s*R\\.?\\s*(\\d+)\\b/i`` against the vote question, in
-which ``R`` is not optional, so the Senate branch one line below it was
-unreachable and every Senate vote went silently unmatched -- measured in the
-value inventory, where ``On Passage of S. 123`` returns no match at all.
-Nothing here reads question text: a recorded vote sits on the bill's own
-action, which *is* the join, and the House vote route names the legislation in
-two dedicated fields.
-
-The reference shape is sealed by measurement, not by tolerance. A 2026-09-19
-pass over 20 bills found 58 ``recordedVotes`` entries on 58 voted actions,
-exactly one per action, and all six fields present on all 58 -- ``chamber``,
-``congress``, ``date``, ``rollNumber``, ``sessionNumber``, ``url`` -- across
-two hosts (clerk.house.gov 49, www.senate.gov 9). So all six are required
-here, and ``date`` and ``url`` are not optional, because the measurement says
-they are not. A seventh, ``fullActionName``, was absent in 58/58 entries of
-the JSON actions route on 2026-09-19; the BILLSTATUS guide documents it, so
-``bill_status.RecordedVote`` carries it and it is optional here. A field the
-publisher documents and may resume sending is not ours to delete.
-
-A malformed entry costs that entry, not the bill: ``recorded_vote_references``
-returns what it could read alongside a ``refusals`` tuple naming what it could
-not, so one bad row in a run does not lose every vote on the bill it sat on.
+Reads the ``recordedVotes`` entries the publisher attaches to a bill's own
+actions and the ``legislationType``/``legislationNumber`` fields the House vote
+route states for a roll call, and returns a ``VoteMatch`` per vote naming the
+bill, the rule that supplied it and the publisher URL the reference carried.
+This replaces a regex over prose that made the Senate branch unreachable and
+left every Senate vote silently unmatched: a recorded vote sits on the bill's
+own action, which *is* the join. The six reference fields are required because
+a pass over 20 bills found all six present on all 58 entries across two hosts,
+and a malformed entry costs that entry, not the bill:
+``recorded_vote_references`` returns what it could read alongside a
+``refusals`` tuple naming what it could not.
 """
 
 from __future__ import annotations
@@ -188,12 +169,11 @@ def recorded_vote_references(identity: BillIdentity, actions: Iterable[object]) 
     """Every recorded vote a bill's own actions carry, in publisher order.
 
     The bill is the enclosing document, so the reference needs no matching at
-    all: reading it *is* the join.
-
-    An entry missing one of the six sealed fields is refused on its own and
-    named in ``refusals``; the rest of the bill's votes are still returned. A
-    ``recordedVotes`` that is not a list at all is a shape error, not one
-    entry's problem, and still raises.
+    all: reading it *is* the join. An entry missing one of the six sealed
+    fields is refused on its own and named in ``refusals`` while the rest of
+    the bill's votes are still returned; a ``recordedVotes`` that is not a
+    list at all is a shape error, not one entry's problem, and still raises
+    ``VoteMatchError``.
     """
     references: list[VoteReference] = []
     refusals: list[VoteRefusal] = []

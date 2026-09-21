@@ -865,6 +865,7 @@ class MirrulationsReader(Reader):
                 )
 
     def iter_records(self) -> Iterator[dict]:
+        """Yield raw payloads for this agency and record type, retrying prior unresolved keys first."""
         path_pattern = self._path_pattern()
         if self.key_lister is not None:
             keys = self.key_lister()

@@ -89,11 +89,9 @@ def json_generation_config(
     """``generationConfig`` asking for JSON, constrained by ``schema`` when one is given.
 
     One home for the two keys, because they belong together: a
-    ``responseJsonSchema`` sent without ``responseMimeType`` is not a JSON
-    request at all. Page recognition below and the interpretation package's
-    ``ModelCall`` adapter (``interpretation/gemini_call.py``) both build their
-    request through here, so there is one spelling of both keys and one place
-    to change if the publisher renames either.
+    ``responseJsonSchema`` sent without ``responseMimeType`` is not a JSON request
+    at all. Page recognition and the interpretation package's ``ModelCall`` adapter
+    both build their request through here.
     """
     config = dict(generation or {})
     config["responseMimeType"] = response_mime_type

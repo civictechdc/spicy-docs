@@ -1,42 +1,25 @@
 """Back-fill BILLSTATUS one Congress and one bill type at a time from the GovInfo bulk zip.
 
 The keyless route is ``bulkdata/BILLSTATUS/{congress}/{type}/BILLSTATUS-{congress}-{type}.zip``,
-one zip per publisher folder, served as ``application/zip``. This is the crawl
-the families record requires to state its own bound before it is built
-(``docs/decisions.md``): **one Congress and one bill type per call**, never a
-whole Congress and never the collection. The 119th cost 52,236,275 bytes across
-its eight types on 2026-09-19, of which H.R. alone was 31,656,886 bytes and
-10,503 files.
-
-Measured the same day over the 108th, 113th and 119th Congresses -- 24 zips,
-131 MB, 40,260 members -- every member parsed but one, a single 113th file
-still in the publisher's superseded 1.0.0 schema, which arrives as one refused
-member and costs the other 5,884 in its folder nothing.
-
-Every member proves its identity twice. Its file name must parse to a
-``BillIdentity`` whose single-file locator spells that same name, and
+one zip per publisher folder; the bound is one Congress and one bill type per
+call, never a whole Congress and never the collection. Every member proves its
+identity twice: its file name must rebuild the single-file locator, and
 ``parse_bill_status`` must find that identity stated inside the XML. A member
 that fails either check is a typed outcome inside the result, in archive order,
-carrying its own bytes' digest and the refusal in the parser's own words: one
-unreadable file must not cost the other ten thousand. The archive-wide bounds
-are different — too many entries, an entry over its limit, a decoded total over
-its limit or a failed CRC refuse the whole zip before any member is trusted,
-because those say the response is not the archive that was asked for.
+carrying its own bytes' digest and the refusal in the parser's own words, so
+one unreadable file does not cost the other ten thousand. Archive-wide bounds
+refuse the whole zip before any member is trusted, because those say the
+response is not the archive that was asked for. Bulk lags the Congress.gov API
+by days, so a backfill is a floor and an API pass by update date carries the
+delta; an empty result for a real folder is a requested-empty observation,
+never evidence that a Congress filed no bills.
 
-Bulk lags the Congress.gov API by days, so a backfill is a floor and an API
-pass by update date carries the delta. An empty result for a real folder is a
-requested-empty observation, never evidence that a Congress filed no bills.
-
-The same folder also answers a keyless JSON listing --
-``bulkdata/json/BILLSTATUS/{congress}/{type}`` -- naming every file it holds,
-the zip included, with its own ``formattedLastModifiedTime`` and ``size``.
-Measured 2026-09-19 against the 119th Congress, every one of 18,964 entries
-across all eight bill-type listings states all ten publisher fields with none
-missing, and H.R.'s listing, the largest, is 3,744,366 bytes over 10,504
-entries -- 12% of its 31,656,886-byte zip's own bytes. A
-caller that retains the zip's listing entry from one run can read this small
-listing on the next and skip the zip download entirely when the entry has not
-moved; see ``BulkStatusAcquirer.acquire``'s ``unchanged_since``.
+The same folder also answers a keyless JSON listing
+(``bulkdata/json/BILLSTATUS/{congress}/{type}``) naming every file it holds,
+the zip included, with its own modified stamp and size; a caller that retains
+the zip's listing entry from one run can read this small listing the next and
+skip the zip download entirely when the entry has not moved -- see
+``BulkStatusAcquirer.acquire``'s ``unchanged_since``.
 """
 
 from __future__ import annotations
@@ -144,14 +127,10 @@ def bulk_listing_locator(congress: int, bill_type: str) -> str:
 def _member_identity(name: str, *, congress: int, bill_type: str) -> BillIdentity:
     """Prove the member's own base name states a bill of the requested folder.
 
-    ``name`` is the entry's base name, not its path. Every measured zip holds
-    flat names -- 12,938 entries across the 119th H.R., H.Res. and S.Res.,
-    none with a path component -- but a bill is identified by its file name
-    either way, so a member the publisher one day files under a folder is read
-    rather than refused for where it sits. The single-file locator is the one
-    spelling authority for that name: a base name that does not rebuild it
-    exactly -- a padded number, another Congress, another type -- is refused
-    rather than reinterpreted.
+    ``name`` is the entry's base name; a member the publisher files under a
+    path is still read by its name. The single-file locator is the spelling
+    authority: a base name that does not rebuild it exactly -- a padded number,
+    another Congress, another type -- is refused rather than reinterpreted.
     """
     match = _MEMBER_NAME.fullmatch(name)
     if match is None:
@@ -166,12 +145,12 @@ def _member_identity(name: str, *, congress: int, bill_type: str) -> BillIdentit
 class BulkStatusMember:
     """One archive entry, in the publisher's order, with its own bytes' evidence.
 
-    ``name`` is the entry's full path inside the zip, kept as it was found;
-    the identity was read from its base name. Exactly one of ``status`` and
-    ``refusal`` is set, and they say how far the entry got: on a parsed member
-    ``identity`` is what the name declared *and* the XML confirmed, while on a
-    refused one it is only what the name declared, or ``None`` when the name
-    itself could not be read and the size and digest are the only facts.
+    ``name`` is the entry's full path inside the zip, kept as it was found.
+    Exactly one of ``status`` and ``refusal`` is set, and they say how far the
+    entry got: on a parsed member ``identity`` is what the name declared *and*
+    the XML confirmed, while on a refused one it is only what the name
+    declared, or ``None`` when the name itself could not be read and the size
+    and digest are the only facts.
     """
 
     name: str
@@ -249,19 +228,13 @@ def read_bulk_status_archive(
 class BulkListingEntry:
     """One entry of a GovInfo bulkdata folder listing, every field as the publisher spelled it.
 
-    Measured 2026-09-19 across all eight 119th bill-type listings, 18,964
-    entries: every one states all ten fields (``name``, ``link``,
-    ``displayLabel``, ``justFileName``, ``folder``, ``formattedLastModifiedTime``,
-    ``formattedSize``, ``fileExtension``, ``mimeType``, ``size``), none missing.
-    The four that describe a file rather than a folder --
-    ``formattedSize``/``fileExtension``/``mimeType``/``size`` -- stay optional
-    here anyway: a sibling folder-level listing (``BILLSTATUS/{congress}``)
-    answers subfolder entries with ``folder: true`` and none of the four, and
-    this dataclass reads either shape rather than assuming only the one this
-    module requests. ``modified_at`` and ``size`` are ``formatted_last_modified_time``
-    and the publisher's own ``size`` field, read into the types a caller
-    compares -- a parsed UTC instant and an int -- so comparing "has this
-    changed" never restrings a diff.
+    The four fields that describe a file rather than a folder
+    (``formattedSize``/``fileExtension``/``mimeType``/``size``) stay optional
+    because a sibling folder-level listing answers subfolder entries with
+    ``folder: true`` and none of the four; this dataclass reads either shape.
+    ``modified_at`` and ``size`` are the publisher's own stamp and size parsed
+    into the types a caller compares -- a UTC instant and an int -- so
+    comparing "has this changed" never restrings a diff.
     """
 
     name: str
@@ -282,13 +255,11 @@ class BulkListing:
     """One folder's complete listing: every entry, plus the zip entry proved to be this folder's own.
 
     ``folder_modified`` is the listing response's own ``formattedLastModifiedTime``,
-    stated once for the whole folder rather than per entry, when the publisher
-    states one; measured 2026-09-19, the ``{congress}/{type}`` listing this
-    module reads never does -- it answers only ``{"files": [...]}`` -- so this
-    is ``None`` today. It stays typed rather than dropped because a sibling
-    GovInfo bulkdata listing (the collection root) does state one at the
-    entries it lists, and a caller should not have to guess whether the
-    publisher will start doing so here too.
+    stated once for the whole folder when the publisher does; measured
+    2026-09-19, the ``{congress}/{type}`` listing this module reads never does
+    -- it answers only ``{"files": [...]}`` -- so this is ``None`` today. It
+    stays typed because a sibling GovInfo bulkdata listing does state one, and
+    a caller should not have to guess whether the publisher will resume here.
     """
 
     congress: int
@@ -299,12 +270,7 @@ class BulkListing:
 
 
 def _parse_listing_instant(value: object, *, field: str) -> datetime:
-    """GovInfo bulkdata listings spell a stamp ``DD-Mon-YYYY HH:MM``, GMT, seconds truncated, English month names.
-
-    Confirmed 2026-09-19 against the H.Res. zip's own HTTP ``Last-Modified``
-    header (``Fri, 18 Sep 2026 20:26:06 GMT``): the listing's
-    ``formattedLastModifiedTime`` for the same file read ``18-Sep-2026 20:26``,
-    the same instant to the minute.
+    """Parse a GovInfo bulkdata stamp ``DD-Mon-YYYY HH:MM`` -- GMT, seconds truncated, English months.
 
     The month is read from an explicit English name-to-number map rather than
     ``strptime``'s ``%b``, which reads the process's ``LC_TIME`` locale: a
@@ -361,13 +327,12 @@ def read_bulk_listing(
     Every entry's own ``link`` must rebuild the single-file locator
     ``bulk_status_locator`` would spell for its ``name`` in this Congress and
     bill type -- the same "prove it, don't reinterpret it" rule
-    ``_member_identity`` applies to a zip member's name, applied here to a
-    listing entry's stated path. A listing that folds in another folder's
-    entry, or a folder-shaped entry this route never states, refuses the whole
-    read rather than silently keeping the entries that do match. "Empty
-    success is not absence": a listing with no zip entry for this folder
-    refuses by name, because ``{"files": []}`` is a well-formed answer that
-    still cannot be this route's promise.
+    ``_member_identity`` applies to a zip member's name. A listing that folds
+    in another folder's entry, or a folder-shaped entry this route never
+    states, refuses the whole read. "Empty success is not absence": a listing
+    with no zip entry for this folder refuses by name, because
+    ``{"files": []}`` is a well-formed answer that still cannot be this
+    route's promise.
     """
     bulk_listing_locator(congress, bill_type)
     payload = check_payload(body, max_bytes, label=_LISTING_LABEL, error_type=BillSourceError, allow_empty=False)
@@ -487,8 +452,7 @@ class BulkStatusAcquirer(SourceAcquirer):
         become this route's own cap. Keyless like ``acquire``'s zip route;
         ``named_challenge`` recasts a 401/403 bot wall as ``BillSourceError``
         rather than ``CredentialRefusedError``, the way the package's other
-        keyless ``www.govinfo.gov`` routes already do (``votes.py``,
-        ``press_releases.py``, ``legislators.py``).
+        keyless ``www.govinfo.gov`` routes already do.
         """
         budget = self.budget
         url = bulk_listing_locator(congress, bill_type)
@@ -516,26 +480,22 @@ class BulkStatusAcquirer(SourceAcquirer):
         """Capture one Congress and one bill type; a 404 means that folder, not that Congress.
 
         ``unchanged_since`` is a zip entry retained from a prior call's
-        ``listing_entry`` (or a standalone ``list_archives``). When given,
-        the folder's listing is read first -- one small request -- before the
-        zip is ever asked for, and the two requests share this call's one
-        ``max_requests`` budget rather than each getting a fresh one: the
-        listing's own capture never resets the client's request count, so a
-        listing that already spent the whole budget leaves none for the zip,
-        and the zip's request is refused rather than silently granted extra
-        room. If the listing's own zip entry names the same file
-        (``name``/``link``) as ``unchanged_since`` and states the same
-        ``modified_at`` and ``size``, the zip download is skipped entirely:
-        the returned acquisition carries ``skipped_unchanged=True``,
-        ``archive`` and ``capture`` both ``None``, and the listing's own
-        capture and entry attached. An ``unchanged_since`` whose ``name`` or
-        ``link`` differs from what this folder's listing names for its own
-        zip is refused outright -- it describes a different file, not a stale
-        version of this one, so comparing its ``modified_at``/``size`` would
-        risk a false skip. Otherwise the zip downloads exactly as it always
-        has, and the listing entry this call saw travels on the acquisition
-        for the caller's next run. ``request_count`` on the returned
-        acquisition is always the true total for this call, listing included.
+        ``listing_entry`` (or a standalone ``list_archives``). When given, the
+        folder's listing is read first -- one small request sharing this
+        call's single ``max_requests`` budget rather than getting a fresh one,
+        so a listing that spends the whole budget leaves none for the zip. If
+        the listing's own zip entry names the same file as ``unchanged_since``
+        and states the same ``modified_at`` and ``size``, the zip download is
+        skipped entirely: the returned acquisition carries
+        ``skipped_unchanged=True``, ``archive`` and ``capture`` both ``None``,
+        and the listing's own capture and entry attached. An
+        ``unchanged_since`` whose ``name`` or ``link`` differs from what this
+        folder's listing names for its own zip is refused outright -- it
+        describes a different file, so comparing its stamp would risk a false
+        skip. Otherwise the zip downloads exactly as it always has, and the
+        listing entry this call saw travels on the acquisition for the
+        caller's next run. ``request_count`` is always the true total for this
+        call, listing included.
         """
         if unchanged_since is not None and not isinstance(unchanged_since, BulkListingEntry):
             raise TypeError("unchanged_since must be a BulkListingEntry")

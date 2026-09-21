@@ -74,6 +74,8 @@ def coordinate_fields_present(source: Mapping[str, Any]) -> bool:
 
 
 def decision_required(node: Mapping[str, Any]) -> bool:
+    """Whether this node must carry a recorded decision: a reconstructed/markup/pdf-text/ocr derivation, no
+    coordinate system, or a level heading with no SOURCE attribute."""
     return (
         node.get("derivation") in {"reconstructed", "markup", "pdf-text", "ocr"}
         or (node.get("source", {}).get("coordinateSystem", "none") == "none")
@@ -86,11 +88,10 @@ def decision_required(node: Mapping[str, Any]) -> bool:
 
 
 def check_provenance(capture: Mapping[str, Any]) -> list[dict[str, str]]:
-    """Report required-by-family omissions even when the parent schema accepts them.
+    """Report the per-family provenance omissions the parent schema accepts, as ``{"code", "path"}`` findings.
 
-    Run parent/profile validation too. These checks never treat an issue explaining
-    missing evidence as if it supplied that evidence. Rulespec owns shared schema
-    requirements; these are SpicyDocs' stricter family admission findings.
+    Run parent/profile validation too; these are SpicyDocs' stricter family admission checks, and an issue explaining
+    missing evidence never counts as supplying it.
     """
     findings = []
 
@@ -201,10 +202,11 @@ def check_artifact_binding(
     read_bytes: Callable[[str], bytes],
     observations: Mapping[str, Mapping[str, Any]],
 ) -> list[str]:
-    """Check every stated path and URL against independent retained evidence.
+    """Check every stated path and URL against independent retained evidence: path bytes against the digest and size,
+    URL against caller-supplied observations.
 
-    Observations map the exact URL to sha256, byteSize and mediaType. A local
-    file matching the digest cannot establish that a different URL names it.
+    Observations map the exact URL to sha256, byteSize and mediaType, because a local file matching the digest cannot
+    establish that a different URL names it.
     """
     findings = []
     locator = artifact.get("locator", {})

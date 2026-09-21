@@ -1,14 +1,12 @@
 """Capture exact spicy-regs public comment partitions as source-native releases.
 
-Supply precedence starts with community tables (docs/decisions.md); origin APIs
-supply only what those tables lack. Each Hive partition at
-comments/agency/agency_code={X}/part-{n}.parquet becomes one bounded evidence ZIP:
-exact bytes plus digest, size, fetch time, locator, and stated freshness.
-Publication and independent replay classify only those pinned bytes.
-
-Preserve every declared column, including nulls, "See attached" bodies, and empty
-text_content. The upstream table already selected the current row per comment_id;
-this profile records that selection and refuses repeated identities.
+Supply precedence starts with community tables (docs/decisions.md) and origin APIs supply only what
+those tables lack. Each Hive partition at ``comments/agency/agency_code={X}/part-{n}.parquet``
+becomes one bounded evidence ZIP holding exact bytes plus digest, size, fetch time, locator and
+stated freshness; publication and independent replay classify only those pinned bytes. Every
+declared column is preserved, including nulls, "See attached" bodies and empty ``text_content``;
+the upstream table already selected the current row per ``comment_id``, so this profile records
+that selection and refuses repeated identities.
 """
 
 from __future__ import annotations

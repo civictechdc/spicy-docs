@@ -1,72 +1,13 @@
-"""The President's budget volumes: the family whose print outruns its own index.
+"""``budget_volumes``: one row per published volume of the President's budget, carrying what its print adds to its own
+MODS index.
 
-One table, and it shares ``document_citations`` with every other family rather
-than growing a link table of its own.  ``budget_volumes`` is the document row:
-every field describing the volume comes from the keyed summary and the package
-MODS -- the title, the fiscal year, the part, the issue date, the *page count*,
-and the MODS's own ``<law>``, ``<USCode>`` section, ``<cfr>`` part,
-``<statuteAtLarge>`` and ``<bill>`` lists.  What the PDF adds to that row is
-counts: how many distinct keys of each kind the print names, and how many of
-those the MODS does **not** already state.
-
-**Why this family is first.** The
-[MODS re-check](../../../docs/research/pdf-yield-mods-recheck-2026-09-20.md)
-read every page of all eight retained budget volumes -- 1,785 pages, against
-the rollup's capped 480 -- and compared every key against each volume's own
-MODS.  This is the only GovInfo family measured whose print substantially
-outruns its index:
-
-=========================  ==========================================
-Kind                       Print-only, eight volumes, every page
-=========================  ==========================================
-``public_law``             **504 of 518**
-``usc_section``            **97 of 922**
-``cfr_section``            **13 of 18**
-``statutes_at_large``      1 of 81
-``bill_number``            **6 of 8**, congress-blind only (see below)
-=========================  ==========================================
-
-Against the activity reports' 0 of 1,406 bills and 0 of 174 laws, that is the
-largest real citation yield in the corpus, and it is why the revised build
-order leads with these volumes.  Two costs the rollup did not price and this
-contract does: the volumes are long, so ``pages_read``/``pages_capped`` carry
-how far a read actually got, and a 60-page probe of a 1,340-page Appendix is a
-4-percent sample reported as the volume.
-
-**A budget volume states no Congress, so its printed bills are not comparable.**
-Every other family here hands ``interpretation.citations`` the Congress its own
-index record states, and a bare ``H.R. 7806`` is stamped with it.  A BUDGET
-summary states none -- no ``congress`` field at all, measured on both fixture
-volumes -- so the print side can only spell a congress-free ``HR7806`` while
-the MODS states ``{congress}-{type}-{number}``.  Comparing those two would
-report ``false`` for every printed bill: a claim that the index does not state
-a key, made by a comparison that never happened.  :func:`budget_index_stated_keys`
-therefore drops ``bill_number`` from the comparison entirely, so those rows
-carry NULL -- "no comparison was possible" -- and the MODS's own bill list is
-published whole in ``associated_bills_json``.
-
-What *is* publishable is the congress-blind comparison the re-check itself
-made, and ``distinct_bills`` / ``distinct_bills_beyond_index_congress_blind``
-carry it: both sides reduced to ``{type}-{number}`` through
-``index_stated_bill_pairs``, which is how 6 of the 8 distinct printed bills
-across the eight volumes are print-only.  **That pair is a count and never a
-join key** -- ``{type}-{number}`` addresses no hosted row, because
-``congress_bills.bill_id`` needs the Congress this family never states -- so it
-is two summary columns and no ``document_citations`` row changes: the per-row
-``stated_by_index`` stays NULL, because the comparison a row would have to
-claim is still the strict one.
-
-**One link table, not two.** A citation row from a budget volume is a
-``document_citations`` row shaped by
-``document_citation_tables.shape_document_citation`` with
-``document_kind`` ``budget_volume``, carrying the same
-``stated_by_index`` semantics: ``true`` where this volume's MODS already
-states the key, ``false`` where the MODS vocabulary can state that kind and
-this record states nothing of it, and NULL where no comparison was possible.
-
-The rules are ``interpretation/citations.py``'s, the same ones the measurement
-ran, so the contract and the receipt cannot disagree about what a public law
-looks like.
+This is the only GovInfo family measured whose print substantially outruns its index -- 504 of 518 public laws
+print-only across eight volumes read at full page depth -- so it leads the revised build order;
+``pages_read``/``pages_capped`` say how far a read actually got.  A budget volume states no Congress, so printed bills
+cannot be compared strictly: ``bill_number`` is dropped from the index comparison and the congress-blind
+``{type}-{number}`` pair is published as a count, never a join key.  Citation rows are shared ``document_citations``
+rows with ``document_kind`` ``budget_volume``, carrying the same ``stated_by_index`` semantics, not a link table of this
+family's own.
 """
 
 from __future__ import annotations
@@ -225,18 +166,9 @@ BUDGET_VOLUMES = table_contract(
 def budget_index_stated_keys(mods: object) -> dict[str, frozenset[str]]:
     """The MODS keys a budget volume's print can actually be compared against.
 
-    :func:`~spicy_docs.schemas.document_citation_tables.index_stated_keys`
-    minus ``bill_number``, and the omission is the point.  That mapping's
-    contract is that a kind is present when the comparison *can* be made and
-    absent when it cannot, so the row lands NULL rather than ``false``.  For a
-    budget volume the bill comparison cannot be made: the summary states no
-    Congress, so ``find_citations`` leaves a printed bill as the congress-free
-    ``HR7806`` while the MODS states ``119-hr-7806``.  Keeping the kind would
-    publish ``false`` on every printed bill -- "compared, and the index does
-    not state it" -- for a comparison that never ran.
-
-    Every other kind is comparable, because neither side's key needs anything
-    the document does not state.
+    :func:`~spicy_docs.schemas.document_citation_tables.index_stated_keys` minus ``bill_number``: that mapping's
+    contract is that a kind is present when the comparison can be made and absent when it cannot, so the dropped kind
+    lands NULL rather than ``false`` instead of claiming a comparison that never ran.
     """
     stated = dict(index_stated_keys(mods))
     del stated["bill_number"]
@@ -244,21 +176,10 @@ def budget_index_stated_keys(mods: object) -> dict[str, frozenset[str]]:
 
 
 def congress_blind_bill_keys(mods: object) -> frozenset[str]:
-    """The MODS's bills in the spelling a Congress-less print can be compared with.
+    """The MODS's bills reduced to the Congress-less spelling the print side produces, so ``hr-7806`` meets ``HR7806``.
 
-    :func:`~spicy_docs.schemas.document_citation_tables.index_stated_bill_pairs`
-    already drops the Congress and gives ``hr-7806``; the print side of this
-    family gives ``HR7806``, because with no Congress to stamp,
-    ``interpretation.citations`` leaves a bill finding as its rule's own
-    canonical -- upper-case alphanumerics only.  So the *index* side is reduced
-    to meet the print, rather than the print being re-parsed here: this module
-    is a stdlib-only leaf and must not learn the bill-type vocabulary a second
-    time.
-
-    It is the same reduction the re-check compared on
-    (``_bill_keys(root)[0]`` is ``_alnum(type + number)``), which is what makes
-    ``distinct_bills_beyond_index_congress_blind`` reproduce a published count
-    rather than a private one.
+    The index side is reduced rather than the print re-parsed, because this module is a stdlib-only leaf and must not
+    learn the bill-type vocabulary a second time; it is the same reduction the re-check compared on.
     """
     return frozenset(pair.replace("-", "").upper() for pair in index_stated_bill_pairs(mods))
 
@@ -271,16 +192,11 @@ def shape_budget_volume(
     *,
     rule_set_version: str,
 ) -> Row:
-    """One ``budget_volumes`` row from the two keyed records, the text and its cites.
+    """One ``budget_volumes`` row from the keyed summary and MODS, the body text and its citation findings, all read
+    structurally and nothing fetched.
 
-    ``summary`` and ``mods`` are what ``sources.govinfo.bodies`` validated for
-    this package, ``body`` is its ``BodyText`` and ``citations`` the
-    ``CitationFinding``s ``interpretation.citations.find_citations`` produced
-    over ``body.text``.  All four are read structurally and nothing is fetched.
-
-    The fiscal year is the MODS's own labelled statement where it makes one and
-    the package id's otherwise; the two agreed on every volume measured, and a
-    test holds them equal on both fixtures rather than trusting one.
+    The fiscal year is the MODS's own labelled statement where it makes one and the package id's otherwise (the two
+    agreed on every volume measured, and a test holds them equal on both fixtures rather than trusting one).
     """
     identity = summary.identity
     provenance = document_provenance(body, document_key=identity.package_id, document_kind=BUDGET_VOLUME)

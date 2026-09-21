@@ -331,6 +331,7 @@ def federal_register_records_included(
     query_scope: Mapping[str, Any],
     page_window: object | None,
 ) -> bool:
+    """Profile hook: a window's records are included as-is only when its declared count is below the result cap."""
     del query_scope, page_window
     count = response.get("count")
     return isinstance(count, int) and not isinstance(count, bool) and count < RESULT_CAP

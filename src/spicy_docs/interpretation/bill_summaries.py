@@ -1,68 +1,20 @@
-"""Plain-language summary of one bill version, with the provenance it is stored under.
+"""Plain-language summaries: one bill version, and one section diff between two versions.
 
-Publisher fact in: one bill version's text, its label, the bill's title,
-identity and latest-action status, plus the money-bill kind this package's
-``money_bills`` module derived.
-
-Interpretation out: a ``BillSummaryResult`` carrying the summary, the audience
-phrase and up to three provisions, and the provenance columns BillTrax's
-``bill_summaries`` table already held and this port keeps exactly -- model id,
-prompt version, content hash and token counts -- plus the request and
-completion timestamps that make a slow or partial run readable afterwards.
-
-Same shape as ``section_classification``: the framing table and the prompt are
-the sealed part, the model call is injected, and nothing here reads a database
-or a network. Idempotency is a decision, not a lookup: ``needs_regeneration``
-answers it from a cached hash and prompt version, and the caller does the
-storing.
-
-``summarize_diff`` is a second, unrelated model call ported from BillTrax
-``src/app/api/bills/[id]/summarize/route.ts`` (read-only,
-``/Users/mikewolfd/Work/spicy-stack/BillTrax``): a section-diff summary, not a
-version summary. Its prompt carries no bill identity or framing -- the
-original sends only the diff text -- and nothing here adds either. The
-route's own two guards (refuse a procedural-document version pair; 404 on no
-diff rows at all) read ``bill_versions.kind`` and ``section_diffs`` rows this
-module is never handed, so they stay the caller's job; the one condition this
-module can see for itself -- a diff with nothing but ``"unchanged"`` items --
-returns ``None``, the same contract ``summarize_bill`` uses for a version too
-short to summarize.
-
-**Both prompts state the JSON object their reader parses, from the same
-declaration the reader reads** (``SUMMARY_FIELDS``, ``DIFF_SUMMARY_FIELDS``;
-see ``model_call.AnswerField``). Until ``v2`` they did not: the summary prompt
-asked for its three items in prose and named none of the keys, and the first
-live call refused its answer (2026-09-19, receipt ``c1-provenance.json``); the
-diff prompt named its five keys but not their types, so an absent list could
-come back as ``null``.
-
-**BillTrax never relied on prompt prose for the key set, and this port's
-mistake was dropping the half that carried it.** ``bill-summaries.ts:41-45``
-declares a zod ``SummarySchema`` -- ``summary: z.string().min(60).max(1200)``,
-``audience: z.string()``, ``topThreeProvisions: z.array(z.string()).max(3)`` --
-and passes it to ``generateObject`` (``:163-165``); the diff route does the
-same with its own five-key ``SummarySchema`` (``summarize/route.ts:13-19``,
-passed to ``streamObject`` at ``:116-121``). Every constant in this module --
-``SUMMARY_CHARS``, ``MAX_PROVISIONS``, the key spellings ``_read_answer``
-requires -- is a transcription of that schema. The prompt bytes were ported and
-the schema was not, so the request stopped stating what the reader still
-enforced, and only a live call could show it. Nothing here should be "restored"
-to the original bytes on the belief that the original asked in prose alone.
-
-**The schema is back on the request** (2026-09-20): ``SUMMARY_ANSWER_SCHEMA``
-and ``DIFF_SUMMARY_ANSWER_SCHEMA`` are derived from these same ``AnswerField``
-tuples by ``model_call.answer_schema`` and travel as ``ModelCall``'s
-``response_schema``, which the Gemini adapter sends as ``responseJsonSchema``.
-The prompt bytes are untouched -- the schema rides in the generation config --
-so ``PROMPT_VERSION`` stays ``v2``. ``_read_answer`` is unchanged and still
-refuses: the schema is what was asked for, the reader is what is accepted.
-
-Breaking the seal was therefore deliberate: ``DIFF_SUMMARY_PROMPT_TEMPLATE`` is
-no longer byte-identical to ``route.ts:119-129`` (nor is the classification
-prompt to its source, for the same reason). The ``v1`` bytes remain in this
-file's history and under that version, because a prompt reproduced exactly,
-stripped of the schema that made it work, and refused on arrival is a faithful
-copy of nothing.
+Reads a version's text, label, title, identity, latest-action status and the
+money-bill kind ``money_bills`` derived, and returns a ``BillSummaryResult``
+(summary, audience and up to three provisions) or a ``DiffSummaryResult``,
+each carrying the provenance BillTrax stored -- model id, prompt version,
+content hash, token counts and request/completion timestamps. The framing
+table and the prompts are sealed and the model call is injected, so nothing
+here reads a database or a network; idempotency is a decision
+(``needs_regeneration``) over a cached hash and prompt version, and the caller
+does the storing. Both prompts state the JSON object their reader parses from
+the same declaration the reader enforces (``SUMMARY_FIELDS``,
+``DIFF_SUMMARY_FIELDS``), which the ``v1`` prompts did not and the first live
+call refused; the diff route's own guards (a procedural version pair, no diff
+rows at all) read data this module is never handed and stay the caller's job,
+while a diff of only ``unchanged`` items returns ``None``, the same contract
+``summarize_bill`` uses for a version too short to summarize.
 """
 
 from __future__ import annotations
@@ -271,11 +223,9 @@ class BillSummaryResult:
 class DiffItemText:
     """One section-diff row's text-bearing fields -- what the diff-summary prompt reads.
 
-    Mirrors the shape BillTrax's own query selected (``route.ts``'s
-    ``DiffRow``: ``op``, both placements' heading and body); not
-    ``section_diff_items`` from the table-contract's still-unbuilt diff
-    family (``schemas/``), so this module stays source-agnostic and asks
-    only for what its prompt uses.
+    Mirrors the shape BillTrax's own query selected (``op``, both placements'
+    heading and body), not the table-contract's diff family, so this module
+    stays source-agnostic and asks only for what its prompt uses.
     """
 
     op: str
@@ -371,9 +321,9 @@ def summarize_bill(
 ) -> BillSummaryResult | None:
     """Summarize one version, or return ``None`` when its text is too short to summarize.
 
-    ``MIN_TEXT_CHARS`` is the original's floor: a stub version with a few
-    words of boilerplate produces a confident summary of nothing, which is
-    worse than no row at all.
+    ``MIN_TEXT_CHARS`` is the original's floor: a stub version with a few words
+    of boilerplate produces a confident summary of nothing, which is worse than
+    no row at all.
     """
     now = clock if clock is not None else _now
     if len(version.text.strip()) < MIN_TEXT_CHARS:
@@ -401,12 +351,11 @@ def summarize_bill(
 
 
 def _diff_item_line(item: DiffItemText) -> str:
-    """One line of the diff text: ``[OP] heading: excerpt`` (route.ts:105-109).
+    """One line of the diff text: ``[OP] heading: excerpt``.
 
-    A placement's heading or body is read from the newer side first, older
-    side second, exactly like the original's ``??`` chain: only ``None``
-    falls through, so an empty string heading or body is kept as sent, not
-    replaced.
+    A placement's heading or body is read from the newer side first, older side
+    second, exactly like the original's ``??`` chain: only ``None`` falls
+    through, so an empty string heading or body is kept as sent, not replaced.
     """
     heading = item.to_heading if item.to_heading is not None else item.from_heading
     if heading is None:
@@ -466,15 +415,11 @@ def summarize_diff(
 ) -> DiffSummaryResult | None:
     """Summarize a section diff between two versions, or ``None`` when it carries nothing to summarize.
 
-    Ported from BillTrax ``src/app/api/bills/[id]/summarize/route.ts``
-    (read-only, ``/Users/mikewolfd/Work/spicy-stack/BillTrax``). The route's
-    own two guards -- refuse a procedural-document version pair, and 404 on
-    no diff rows at all -- read ``bill_versions.kind`` and ``section_diffs``
-    rows this function is never handed, so they stay the caller's job. The
-    one condition visible from ``items`` alone -- every row is
-    ``"unchanged"``, so the diff text is empty -- returns ``None`` here, the
-    same contract ``summarize_bill`` uses for a version too short to
-    summarize.
+    The route's own two guards -- refuse a procedural-document version pair,
+    and 404 on no diff rows at all -- read data this function is never handed,
+    so they stay the caller's job; the one condition visible from ``items``
+    alone -- every row is ``"unchanged"``, so the diff text is empty -- returns
+    ``None``.
     """
     now = clock if clock is not None else _now
     diff_body = diff_text_from_items(items)

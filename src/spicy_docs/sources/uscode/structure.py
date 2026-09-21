@@ -67,6 +67,8 @@ class UsCodeStructureText:
 
 @dataclass(frozen=True, slots=True)
 class UsCodeStructureObservation:
+    """One observed section or chapter with its parsed identifier pieces, numbers and headings."""
+
     element: XmlElement
     ancestors: tuple[XmlElement, ...]
     identifier_pieces: tuple[UsCodeIdentifierPiece, ...]

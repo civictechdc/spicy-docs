@@ -68,6 +68,8 @@ def _member_index(
     dict[str, MemberDescriptor],
     dict[str, list[MemberDescriptor]],
 ]:
+    """Index members by key, ref, and role, refusing a missing, unknown, or misplaced member."""
+
     by_key: dict[str, MemberDescriptor] = {}
     by_ref: dict[str, MemberDescriptor] = {}
     by_role: dict[str, list[MemberDescriptor]] = {}

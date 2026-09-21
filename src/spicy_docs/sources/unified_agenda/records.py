@@ -169,25 +169,22 @@ def scan_unified_agenda_records(
     max_text_characters: int = 4 * 1024 * 1024,
     max_depth: int = 256,
 ) -> UnifiedAgendaRecordScan:
-    """Read direct records and their fixed selected metadata fields in one pass.
+    """Read direct ``RIN_INFO`` records and their fixed selected metadata fields in one pass.
 
-    RIN, PUBLICATION, CFR_LIST, LEGAL_AUTHORITY_LIST, TIMETABLE_LIST,
-    ADDITIONAL_INFO, AGENCY, PARENT_AGENCY, RULE_TITLE, ABSTRACT,
-    PRIORITY_CATEGORY, RIN_STATUS, RULE_STAGE and MAJOR survive in source order,
-    including all repetitions and unknown descendants. Other fields remain in
-    the retained input. Selection uses exact unqualified publisher tag names;
-    selected descendants retain expanded names and literal attributes.
+    RIN, PUBLICATION, CFR_LIST, LEGAL_AUTHORITY_LIST, TIMETABLE_LIST, ADDITIONAL_INFO, AGENCY,
+    PARENT_AGENCY, RULE_TITLE, ABSTRACT, PRIORITY_CATEGORY, RIN_STATUS, RULE_STAGE and MAJOR survive
+    in source order with all repetitions and unknown descendants, while other fields stay in the
+    retained input; selection uses exact unqualified publisher tag names, and selected descendants
+    retain expanded names and literal attributes. No control-byte repair, whitespace collapse or
+    citation interpretation runs; XML decoding and newline rules apply, and HTML within CDATA remains
+    literal text.
 
-    Missing/repeated identities and empty records remain raw observations. The
-    acquisition validator separately checks RIN and selected-edition identity.
-    No control-byte repair, whitespace collapse or citation interpretation runs.
-    XML decoding/newline rules apply; HTML within CDATA remains literal text.
-
-    Callbacks run at record close and remain provisional until successful
-    return. Source XPath counts elements, never bytes. Retain the input with
-    its returned pin. Limits bound input bytes, records, nesting, selected nodes
-    per record and retained text copies per record, including ancestor/leading
-    duplication. Caller-owned callback storage is outside those limits.
+    Missing or repeated identities and empty records remain raw observations, with RIN and
+    selected-edition identity checked separately by the acquisition validator; callbacks run at
+    record close and are provisional until the call returns. Limits bound input bytes, records,
+    nesting, selected nodes per record and retained text copies per record (including ancestor and
+    leading duplication), while caller-owned callback storage is outside those limits; retain the
+    input with its returned pin.
     """
     return _read_records(
         body,

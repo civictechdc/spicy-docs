@@ -60,6 +60,8 @@ def _retain_response(
     blob_store: SourceNativeBlobStore,
     evidence_members: Mapping[str, MemberDescriptor],
 ) -> dict[str, Any]:
+    """Map one refused response to a bounded receipt entry, storing bytes only within the evidence bound."""
+
     if response is None:
         return {"status": "not-retained", "reason": "response-unavailable"}
     request_key = scrub_credential(response.request_key, "")

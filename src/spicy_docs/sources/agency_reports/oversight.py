@@ -114,15 +114,16 @@ def _recommendations(main, url: str) -> list[dict]:
 def parse_oversight_report(
     body: bytes, *, url: str, max_bytes: int = 8 * 1024**2, max_fields: int = 1000, max_depth: int = 128
 ) -> dict:
-    """Map one retained UTF-8 report page using the optional ``html`` extra.
+    """Map one retained UTF-8 report page using the optional ``html`` extra; linked originals are never fetched.
 
-    Fields preserve source names, repeated values, dates, numeric attributes and
-    links. The declared ``body`` field and recommendation sections move into
-    ``bodies``; metadata retains their indices. Recommendation table rows and
-    spans remain uninterpreted. Unknown fields remain visible. Text uses BeautifulSoup's
-    whitespace-normalized display extraction; exact markup stays in caller-retained
-    input bytes. Source positions are one-based lines and zero-based character
-    columns in decoded HTML, not byte offsets. No linked originals are fetched.
+    Fields preserve source names, repeated values, dates, numeric attributes and links, with the
+    declared ``body`` field and recommendation sections moved into ``bodies`` and their indices
+    retained in metadata; recommendation rows and spans stay uninterpreted and unknown fields stay
+    visible. Text is BeautifulSoup's whitespace-normalized display extraction and source positions
+    are one-based lines and zero-based character columns in decoded HTML, not byte offsets, while
+    exact markup stays in the caller-retained bytes. ``OversightReportError`` is raised for any body,
+    bound, URL or page structure outside the supported public report shape (an explicit
+    ``https://www.oversight.gov/reports/`` URL), and ImportError without the extra.
     """
     if any(type(v) is not int or v <= 0 for v in (max_bytes, max_fields, max_depth)):
         raise OversightReportError("max_bytes, max_fields and max_depth must be positive integers")

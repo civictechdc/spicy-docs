@@ -1,30 +1,10 @@
-"""Enacted laws, and the two OLRC tables that say which Code sections each one touched.
+"""The ``laws`` table (Congress.gov law list rows joined to their PLAW USLM citation), ``law_code_sections`` (OLRC
+per-Congress classification lines) and ``table3_records`` (OLRC Table III records), closing gap A8.
 
-Three tables close gap A8 (``docs/research/closing-the-gaps-2026-09-19.md``):
-
-* ``laws`` is keyed ``(congress, law_type, number)`` from the Congress.gov
-  ``law/{congress}`` list route -- the one cheap enumeration of enacted
-  measures, 108 rows for the 119th on 2026-09-19 -- joined to the PLAW USLM
-  ``<meta>`` for the Statutes at Large citation. ``law_type`` is sealed to
-  ``public``/``private``: the spelling the PLAW USLM ``publicPrivate`` field
-  and ``PublicLawSelection.kind`` already use, so one law has one key across
-  the list route, the bulkdata folder and the USLM file. The publisher's
-  own ``Public Law``/``Private Law`` string is kept in ``publisher_law_type``.
-* ``law_code_sections`` is one row per line of the OLRC per-Congress
-  classification table, keyed ``(congress, session, seq)``: the same row can
-  appear twice on one page (measured 2026-09-19), so a row is its position,
-  not its content.
-* ``table3_records`` is one row per classification record on one act's
-  Table III page, keyed ``(act_key, seq)``.
-
-``congress_bills.statutes_at_large_cite`` stays NULL and this is where the
-citation is published instead. The family builder sees one BILLSTATUS
-document and its printings; the citation lives in a different package (the
-PLAW USLM) that the laws rollup acquires once per law, so filling it inside
-the family would either fetch every PLAW a second time or make the family
-read this table's output, which the one-pass rule forbids. The host joins
-``laws`` to ``congress_bills`` on ``bill_id`` (or on ``congress`` +
-``public_law_number`` = ``law_number``) at merge time.
+``laws`` keys ``(congress, law_type, number)`` with ``law_type`` sealed to ``public``/``private`` so the list route, the
+bulk folder and the USLM file share one key; ``law_code_sections`` keys on position because the same line can appear
+twice on one page.  ``congress_bills.statutes_at_large_cite`` stays NULL on purpose: the citation lives in the PLAW USLM
+the laws rollup acquires once per law, so the host joins ``laws`` on ``bill_id`` at merge time.
 """
 
 from __future__ import annotations
@@ -196,11 +176,8 @@ def shape_law(
 ) -> Row:
     """One ``laws`` row from one law list record and one of its ``laws[]`` entries.
 
-    ``uslm`` is the ``UslmMetadata`` the PLAW reader proved for this law; its
-    own congress, kind and number must agree with the row or the join is
-    refused, so a citation can never land on the wrong law, and a meta whose
-    ``citableAs`` names no ``NNN Stat. NNN`` is refused too, so ``captured``
-    always carries one. ``uslm_outcome`` says why a citation is NULL when it is.
+    ``uslm`` is given exactly when ``uslm_outcome`` is ``captured``; its own congress, kind and number must agree with
+    the row or the join is refused, so a citation can never land on the wrong law.
     """
     if uslm_outcome not in USLM_OUTCOMES:
         raise TableContractError(f"laws: uslm_outcome must be one of {USLM_OUTCOMES}")

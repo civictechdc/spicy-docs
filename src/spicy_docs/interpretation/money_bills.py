@@ -1,39 +1,18 @@
 """Money-bill classification from a bill's title and its committee referrals.
 
-Publisher fact in: the bill's ``title``, its identity (congress, type,
-number), and which of the six appropriations, budget and armed-services
-committee system codes the publisher referred it to.
-
-Interpretation out: one ``MoneyBillFinding`` -- kind, appropriations
-subcommittee, fiscal year, the rule that fired and its reason codes -- with a
-``kind`` of ``None`` when no rule claims the bill.
-
-The ten rules are read in order, most specific first, exactly as
-``BillTrax/src/lib/money-bills.ts`` read them, and the asymmetry that only the
+Reads the bill's title, its identity and which of the six appropriations,
+budget and armed-services committee system codes the publisher referred it to,
+and returns one ``MoneyBillFinding`` -- kind, appropriations subcommittee,
+fiscal year, the rule that fired and its reason codes -- with a ``kind`` of
+``None`` when no rule claims the bill. The ten rules are read in order, most
+specific first, as the original read them, and the asymmetry that only the
 manual override and the regular-appropriations rule set a subcommittee is
-deliberate and preserved: a continuing resolution naming Defense is still a
-continuing resolution, not a Defense appropriation.
-
-One correction. BillTrax derived the three referral booleans two ways -- from
-the six committee **system codes** in ``discover-money-bills.ts:29-34``, and
-from substring matching on committee *names* in ``sync-govinfo.ts:292-294``.
-``referrals_from_committee_codes`` keeps the code derivation and drops the
-name one: a system code is the publisher's identifier for the committee and
-cannot drift, while "appropriations" as a substring of a committee name also
-matches subcommittees, select committees and any renaming.
-
-**The change is a narrowing, and that direction is deliberate.** A committee
-whose name contains the word but whose code is outside the six -- an
-Appropriations *sub*committee such as ``hsap12``, a select committee, a
-renamed panel -- raised a referral signal before and raises none now. So some
-bills that were classified ``other_money`` on a subcommittee referral now
-classify as nothing. That is the point: rule 10 exists because a bare
-appropriations referral is already noisy, and a substring match widened
-exactly the signal the rule was trying to keep narrow.
-
-``reason_codes`` were computed and thrown away in BillTrax -- no column held
-them, so no classification could be audited. They are part of the finding
-here, and so is ``rule``.
+deliberate: a continuing resolution naming Defense is still a continuing
+resolution. Referral signals come from the publisher's committee **system
+codes**, never from committee-name substrings, which also match
+subcommittees, select committees and renamings -- a narrowing that lets a bill
+referred only to an appropriations subcommittee classify as nothing rather
+than as ``other_money``.
 """
 
 from __future__ import annotations
@@ -260,7 +239,7 @@ def classify_money_bill(
     to, from ``REFERRAL_SIGNALS``. ``armed_services`` is accepted and carried
     because it is how defense bills are discovered, but no rule reads it: the
     NDAA is recognised by its title, and an armed-services referral alone says
-    nothing about money.
+    nothing about money. Raises ``ValueError`` for an unknown referral signal.
     """
     text = title or ""
     signals = frozenset(referrals)

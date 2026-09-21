@@ -50,6 +50,8 @@ class Box:
 
 @dataclass(frozen=True, slots=True)
 class Raster:
+    """Encoded image bytes plus their pixel size and normalized page region."""
+
     data: bytes
     width: int
     height: int
@@ -59,6 +61,8 @@ class Raster:
 
 @dataclass(frozen=True, slots=True)
 class TextBlock:
+    """One text run, optionally placed and scored, tagged with its observation id."""
+
     text: str
     box: Box | None = None
     confidence: float | None = None
@@ -67,6 +71,11 @@ class TextBlock:
 
 @dataclass(frozen=True, slots=True)
 class Recognition:
+    """One model reading: its text, configuration and raw output, with optional blocks and images.
+
+    ``blocks``, when given, must join to exactly ``text`` in order or construction is refused.
+    """
+
     text: str
     configuration: dict[str, Any]
     raw: Any
@@ -103,11 +112,10 @@ class TableObservation:
     """One detected table's geometry and cell text, kept beside a page's text.
 
     Built from PyMuPDF's ``page.find_tables()`` on the retained page (see
-    ``pages.py::_PDFPage.find_tables``). Never merged into ``PageContent`` or
-    ``PageResult.text``: the CRPT measurement (``docs/sources/govinfo-bodies.md``,
-    "Why PDF is last") showed native text extraction emits every table label
-    then every amount, destroying the row; a table observation is the row or
-    nothing, not a guess folded back into the line-by-line text.
+    ``pages.py::_PDFPage.find_tables``) and never merged into ``PageContent`` or
+    ``PageResult.text``: native text extraction emits every table label then every
+    amount, destroying the row, so a table observation is the row or nothing rather
+    than a guess folded back into the line-by-line text.
     """
 
     page: int
@@ -144,6 +152,8 @@ class TableObservation:
 
 @dataclass(frozen=True, slots=True)
 class PageResult:
+    """One page's metadata, content and — only when opted in — its table geometry."""
+
     metadata: dict[str, Any]
     content: PageContent
     #: Table geometry for the page, kept beside ``content`` and never merged
@@ -157,10 +167,14 @@ class PageResult:
 
 
 class ImageBackend(Protocol):
+    """A recognition model over one raster."""
+
     def recognize(self, image: Raster) -> Recognition: ...
 
 
 class Page(Protocol):
+    """One page of an opened document: native text, rendering and table detection."""
+
     number: int
     geometry: dict[str, Any]
     has_native_layer: bool
@@ -171,20 +185,28 @@ class Page(Protocol):
 
 
 class Document(Protocol):
+    """An opened document's page count and one-based page access."""
+
     page_count: int
 
     def page(self, number: int) -> Page: ...
 
 
 class DocumentReader(Protocol):
+    """Open source bytes of one media type, yielding a :class:`Document` until context exit."""
+
     def open(self, source: bytes, media_type: str) -> AbstractContextManager[Document]: ...
 
 
 class PageStrategy(Protocol):
+    """How one page becomes observations and ordered blocks."""
+
     def extract(self, page: Page) -> PageContent: ...
 
 
 class Extractor(Protocol):
+    """The streaming extraction entry point over exact source bytes."""
+
     def extract(
         self,
         source: bytes,

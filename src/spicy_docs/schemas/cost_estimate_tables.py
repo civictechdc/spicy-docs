@@ -1,42 +1,11 @@
-"""The CBO cost-estimate index, read out of the same BILLSTATUS document the bill family reads.
+"""``cbo_cost_estimates``: the CBO cost-estimate index read out of the same BILLSTATUS document the bill family reads,
+because CBO's own site is behind a bot wall ([routes](../../../docs/research/cbo-cost-estimate-routes-2026-09-20.md)).
 
-CBO's own site is behind a bot wall whose own proxy error names a website ban,
-so none of its documents is fetchable and none of its pages enumerates
-anything this repository can reach
-([routes](../../../docs/research/cbo-cost-estimate-routes-2026-09-20.md)).  The
-index it denies us is nonetheless **keyless**: GovInfo's BILLSTATUS bulk zips
-carry ``<cboCostEstimates>`` per bill, and two requests give the whole 118th --
-1,368 bills, 1,468 estimate rows, 1,431 distinct publication ids, identical to
-the keyed Congress.gov API on all 33 overlapping bills.  This table is that
-index.
-
-**Why it is not in** :mod:`spicy_docs.schemas.bill_tables`, which holds the
-four tables one BILLSTATUS document fills.  It is filled from the same
-document in the same one pass, but it is the only row here whose subject is
-another publisher's document, it is the join the committee-report family hangs
-off, and it owns two parse rules and a fold that the bill tables have no use
-for.  Keeping those out of ``bill_tables`` keeps that module's four-table story
-whole.
-
-**What this table cannot see, and says so.**  The element is never emitted
-empty -- zero of 16,213 bills in the two measured zips carries a self-closing
-one -- so a bill absent from this table is *either* never scored *or* not yet
-linked, and no count taken from it is a CBO production rate.  The sibling
-``congress_bills.cbo_cost_estimates_outcome`` preserves unread, populated and
-requested-empty observations even when this table has no row for the bill.
-
-**The text of the estimate is not here.**  The letter itself is reprinted in
-the bill's committee report, for the 883 of 1,368 scored bills (64.5%) that
-have one; ``report_citations_json`` carries the publisher's own statement of
-which reports those are, so a consumer can tell from this row alone whether a
-text route exists.  The letter's span lands on ``committee_reports``, keyed by
-package, because the report states no publication id at all (measured over
-all 17 retained CRPT bodies: **one** ``cbo.gov`` locator in the lot, a
-footnote to an unrelated 2018 CBO study, **zero** ``/publication/{id}`` pages
-and zero locators inside any located letter) and because 28 of the 61
-bills carrying more than one estimate also carry a report -- nothing settles
-which of those estimates a reprinted letter scores.  See
-``docs/decisions.md``.
+The element is never emitted empty, so a bill absent here is either never scored or not yet linked -- no count taken
+from this table is a CBO production rate -- and the sibling ``congress_bills.cbo_cost_estimates_outcome`` preserves the
+unread, populated and requested-empty observations.  The letter's text is not here: it is reprinted in the bill's
+committee report, and its span lands on ``committee_reports`` keyed by package because the report states no publication
+id at all.
 """
 
 from __future__ import annotations
@@ -214,14 +183,10 @@ def fold_cbo_cost_estimates(
 ) -> tuple[tuple[FoldedEstimate, ...], tuple[tuple[int, object], ...]]:
     """Fold one bill's estimate items onto ``publication_id``, in first-stated order.
 
-    Returns the folded rows and, separately, the ``(index, url)`` of every item
-    whose url is outside the measured shape, so the caller refuses those by
-    name instead of publishing a row it could not key.
-
-    The fold exists because the publisher states one publication twice on some
-    bills -- 37 of 1,468 measured items, 9 of them with a re-spelled title --
-    and ``(bill_id, publication_id)`` is one estimate.  ``O(n)`` in the bill's
-    own item count, which is at most a handful.
+    Returns the folded rows and, separately, the ``(index, url)`` of every item outside the measured url shape, so the
+    caller refuses those by name rather than publishing a row it could not key.  The fold exists because the publisher
+    states one publication twice on some bills and ``(bill_id, publication_id)`` is one estimate; ``O(n)`` in the bill's
+    own item count.
     """
     groups: dict[str, list[tuple[int, object]]] = {}
     refused: list[tuple[int, object]] = []

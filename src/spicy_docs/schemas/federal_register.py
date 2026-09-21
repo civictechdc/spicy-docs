@@ -38,7 +38,10 @@ def _text(value: object) -> str | None:
 
 
 def project_federal_register_document(document: Mapping[str, Any]) -> dict[str, str | None]:
-    """Project one exact API record onto the stable public source columns."""
+    """Project one exact API record onto the stable public source columns.
+
+    ``modify_date`` is always NULL: the API states no update instant.
+    """
 
     agencies = document.get("agencies") or []
     agency_slugs = ",".join(

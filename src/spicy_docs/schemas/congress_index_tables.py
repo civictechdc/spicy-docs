@@ -1,100 +1,12 @@
-"""The Congress.gov index tables: communications, meetings, Record issues, treaties, nominations.
+"""The Congress.gov index tables ``house_communications``, ``committee_meetings``, ``record_issues``, ``treaties`` and
+``nominations``, one row per record of one list or detail route.
 
-Five tables, each one row per record of one Congress.gov list or detail route
-(``sources/congress/listing.py``), the way ``amendments`` is one row per
-amendment-list record.  Four of them are read from two records at once: the
-list row, the only place the publisher states ``url``, and the detail record,
-which carries everything else and repeats the list row's identifying fields.
-A shaper takes both and reads the detail's fields over the list row's, so a
-list-only row still shapes with the detail's columns NULL, and a detail-only
-record still shapes with ``url`` NULL.  A list-valued
-column comes from the detail alone: NULL when no detail was read, ``[]`` when
-the detail was read and states none -- the publisher omits ``matchingRequirements``
-rather than sending an empty array, and the two cases must not look alike.
-
-Decisions, each with its reason:
-
-* ``house_communications`` is keyed ``(congress, communication_type, number)``,
-  the publisher's own address ``house-communication/{congress}/{type}/{number}``,
-  with the type lowercased the way the address spells it and ``amendments``
-  spells its type.  The type is read off the record, never checked against a
-  vocabulary here; the route module owns that vocabulary.
-* ``house_communications`` carries **two eras under one identity**. Congress.gov
-  decomposes a House executive communication only from the 114th Congress; for
-  the ten before it the Record printed the same sentence and nothing
-  decomposed it, so :func:`shape_record_communication` reconstructs a row from
-  that sentence (``sources/congress/record_communications.py``,
-  ``docs/research/executive-communications-backfill-2026-09-20.md`` §5). The
-  grain, the identity and the columns are the same on both sides of 2015;
-  ``source_route`` says which produced a row, and three rules hold across them:
-
-  1. **A reconstructed row's ``url`` is NULL.** The publisher's detail route
-     answers 404 for every pre-114th communication (measured), so writing one
-     would assert a route that refuses.
-  2. **The merge prefers provenance over ``update_date``.** For one identity a
-     ``congress-gov-detail`` row wins over a ``congressional-record-granule``
-     row *whatever* ``update_date`` says -- a reconstructed row has none, and
-     the version column's usual rule would let the reconstruction outlive a
-     later publisher backfill. Within one ``source_route`` the larger
-     ``update_date`` still wins.
-  3. **An unresolved field is NULL beside the retained sentence, never a
-     guess.** ``record_entry_text`` keeps the printed entry whole, so every
-     NULL a reconstructed row carries is readable and recoverable. The
-     official/agency split is the measured case: **the pair is one boundary
-     decision, and on the one declared denominator -- the rows the rule
-     answered and the publisher decomposed -- it fails on both sides**
-     (``submitting_agency`` 88.4%, ``submitting_official`` 85.3% held out,
-     against a 90% threshold declared before the run;
-     ``docs/research/record-communications-overlap-2026-09-20.md``). Neither
-     publishes. ``referral_system_code`` is NULL for a plainer reason: the
-     resolver from a printed committee name to a ``committees.system_code`` is
-     **not built**, and is the next piece of work this table needs.
-
-  What a reconstructed row *does* publish from the referral is the Record's own
-  words: ``referral_committee_name`` and ``committees_json`` carry the names as
-  printed. They are a fact the print states, not a guess -- the count agrees
-  with the publisher on 95.1% of held-out rows -- but they are **not** the
-  publisher's spelling of the same committee, which they match on 71.5%: the
-  116th Record prints *Oversight and Reform* where Congress.gov states
-  *Oversight and Government Reform Committee*. Join on
-  ``referral_system_code`` once the resolver exists, never on the name.
-* ``is_rulemaking`` folds the publisher's ``"True"`` / ``"False"`` strings
-  (those two spellings and no other on 18 of 18 sampled 2026-09-19) onto the
-  one published truth spelling; any other spelling refuses rather than
-  publishing a NULL that would read as "not stated".
-* The RIN is an interpretation, so it arrives as an
-  ``interpretation.communication_rin.RinFinding`` and lands as three columns
-  (value, rule, matched text).  ``None`` means the rule was not run and all
-  three are NULL, the way ``press_releases`` treats an absent match.
-* ``committee_meetings`` is keyed ``(congress, chamber, event_id)``, the
-  publisher's own address.  Event ids look unique on their own, but nothing
-  has measured that across chambers, and an identity must not rest on a
-  guess.  ``hearing_jacket`` is the first jacket the meeting lists and
-  ``hearing_jackets_json`` every one: the map's ``meeting→hearing`` evidence
-  is a meeting naming two jackets (63019 and 64431), so one column cannot be
-  the whole fact.
-* ``record_issues`` is keyed ``(volume, issue)``, the API's own identity for a
-  Record issue (the map's comparison verdict: never key the Record on a
-  date).  ``chambers`` is the legislative-day calendar, derived from the
-  detail's section names by the rule the map's ``record→legislative-day``
-  edge measured (:data:`SECTION_CHAMBERS`), and NULL rather than empty when
-  no detail was read.
-* ``treaties`` is keyed ``(congress_received, number, suffix)``, the
-  publisher's address with its optional part suffix, spelled ``""`` when the
-  record spells it so.  ``package_id`` is the GovInfo CDOC id the map's
-  ``treaty→cdoc`` edge derived (``CDOC-{c}tdoc{n}``, 2 of 2), applied only to
-  a treaty with no suffix because the suffixed form was never measured.
-* ``nominations`` is keyed ``(congress, citation)``: the citation
-  (``PN730-20``) is the publisher's own display key and already carries the
-  part number; PN numbers restart each Congress.
-
-Senate communications have no table here.  The detail record carries the
-abstract, the committee referral and the Record date only -- no rulemaking
-flag, legal authority, report nature, submitting agency or official, and no
-matching requirement (measured on the captured EC 4712 and by the map's
-``senate-communication→committee`` edge) -- so a ``senate_communications``
-table could fill none of the columns that make ``house_communications`` the
-regulatory bridge without inventing them.
+Four of them read the list row (the only place the publisher states ``url``) plus the detail record, which repeats the
+identifying fields and wins where both state one, so a list-valued column is ``[]`` where the detail was read and states
+none and NULL where no detail was read.  ``house_communications`` carries two eras under one identity -- the publisher's
+own decomposition and a pre-114th row reconstructed from the printed Record entry whose ``url`` and unresolved fields
+stay NULL beside the retained sentence -- and Senate communications have no table because their detail record could fill
+none of the columns that make this table a regulatory bridge.
 """
 
 from __future__ import annotations
@@ -393,10 +305,9 @@ def shape_house_communication(
 ) -> Row:
     """One ``house_communications`` row from a list row and its detail record.
 
-    ``listed`` is the list route's row for this communication, or the detail
-    record itself when no list row was retained.  ``rin`` is a
-    ``RinFinding`` from ``rin_from_report_nature`` over the detail's
-    ``reportNature``, or ``None`` when that rule was not run.
+    ``listed`` is the list route's row for this communication, or the detail record itself when no list row was
+    retained; ``rin`` is a ``RinFinding`` from ``rin_from_report_nature`` over the detail's ``reportNature``, or
+    ``None`` when that rule was not run.
     """
     read = _chain(listed, detail)
     kind = _mapping(read.get("communicationType"))
@@ -458,37 +369,13 @@ def shape_record_communication(
     record_date: str,
     rin: object | None = None,
 ) -> Row:
-    """One ``house_communications`` row reconstructed from a printed Record entry.
+    """One ``house_communications`` row reconstructed from a printed Record entry, with every unresolved field NULL
+    beside the whole printed sentence retained in ``record_entry_text``.
 
-    ``entry`` is a ``sources.congress.record_communications.RecordCommunicationEntry``,
-    read by attribute so ``schemas/`` stays a stdlib-only leaf. ``congress`` and
-    ``record_date`` come from the granule the entry was printed in, which the
-    entry itself does not state. ``rin`` is a ``RinFinding`` over the
-    reconstructed ``report_nature``, exactly as for a publisher-decomposed row.
-
-    What this deliberately leaves NULL, and why
-    (``docs/research/record-communications-overlap-2026-09-20.md``):
-
-    * ``url`` -- the detail route answers 404 for every pre-114th
-      communication, so writing one would assert a route that refuses.
-    * ``submitting_agency`` / ``submitting_official`` -- the split rule scored
-      88.4% against the publisher on held-out rows, under the 90% threshold
-      declared before that run. They are one boundary decision, so publishing
-      the official alone would be half a decision that is wrong more than one
-      row in ten. The whole from-clause survives inside ``record_entry_text``.
-    * ``is_rulemaking``, ``matching_requirement_number`` -- the Record states
-      neither. Both are derivable from the cited authority, and that derivation
-      is interpretation nobody has measured.
-    * ``referral_system_code`` -- a committee name resolves against
-      ``committees.system_code``; splitting the referral tail on ``and``
-      shatters *Ways and Means*, which the research measured.
-    * ``session``, ``communication_type_name``, ``update_date`` -- the Record
-      states none of them, and the publisher's own value for a different era is
-      not this row's fact.
-
-    ``referral_date`` **is** filled from the Record date: the publisher's own
-    ``referralDate`` equals its ``congressionalRecordDate`` on 264 of 264
-    referrals in the retained overlap sample.
+    ``url`` is NULL because the detail route 404s for every pre-114th communication, the official/agency split scored
+    88.4% against a threshold declared at 90%, and ``referral_system_code`` awaits a name-to-``system_code`` resolver
+    that is not built; ``referral_date`` is filled from the Record date, which equals the publisher's ``referralDate``
+    on 264 of 264 retained referrals.
     """
     committees = tuple(entry.committee_names)
     return {

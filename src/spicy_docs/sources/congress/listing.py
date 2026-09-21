@@ -4,46 +4,29 @@ Every Congress.gov list route shares one shape -- a JSON page with its rows
 under a named key, a ``pagination.count`` and a ``pagination.next`` URL -- so
 one table, ``LIST_ROUTES``, states each route as data (its path template,
 records key, which of its trailing path parameters are optional, and whether
-the publisher honors ``sort`` and a ``fromDateTime``/``toDateTime`` window)
-and one pair of functions, ``_route_path``/``list_route_url``, and one reader
-method, ``CongressListingReader.records``, build and walk any of them.
-``bill_list_url``, ``crs_report_list_url`` and the reader's
-``bills``/``crs_reports`` methods are the original, named entry points for the
-first two routes ported; they now delegate to the same table and the same
-path builder rather than duplicating it, and their contracts (arguments,
-defaults, return shapes) are unchanged. The api.data.gov key travels as
-``X-Api-Key``. The walk runs to the publisher's terminal page or refuses. A
-count is the publisher's statement for that query on that day, not a frozen
-inventory.
+the publisher honors ``sort`` and a ``fromDateTime``/``toDateTime`` window) and
+one path builder, ``list_route_url``, plus ``CongressListingReader.records``,
+build and walk any of them. ``bill_list_url``, ``crs_report_list_url`` and the
+reader's ``bills``/``crs_reports`` methods are the original, named entry
+points, now delegating with unchanged contracts; the api.data.gov key travels
+as ``X-Api-Key``, and the walk runs to the publisher's terminal page or
+refuses. A count is the publisher's statement for that query on that day, not
+a frozen inventory.
 
-Sort support is measured, not assumed, for every route in the table: a
-2026-09-19 pass over the legislative data map
-(``docs/research/legislative-data-map-2026-09-18.md`` Table A) found only
-``bill``, ``amendment``, ``summaries``, ``committee-report`` and ``committee``
-reorder on ``sort=updateDate``; a same-day direct probe of ``committee-bills``
-and ``bill-actions`` (``limit=1``, ``sort=updateDate desc`` vs ``asc``,
-comparing the first record) found both answer the identical first record
-either way -- see the fixtures README for the four requests and responses.
-Every other list answers the same row order regardless. ``list_route_url``
-refuses a ``sort`` argument on a route that ignores it instead of sending one
-that would silently do nothing. ``crs_report_list_url`` is the one deliberate
-exception: it predates this measurement, already sent ``sort``
-unconditionally, and keeps doing so rather than newly refuse a call that has
-always worked -- a caller who wants the refusal uses
-``list_route_url(LIST_ROUTES["crsreport"], ...)`` instead, and so does
-``bill_list_url``/``crs_report_list_url`` themselves when handed a literal
-``sort=None``, since that was never a legal value for either.
+Sort support is measured, not assumed, for every route: only ``bill``,
+``amendment``, ``summaries``, ``committee-report`` and ``committee`` reorder
+on ``sort=updateDate``, and direct probes found ``committee-bills``,
+``bill-actions`` and ``house-vote`` ignoring it, so ``list_route_url`` refuses
+a ``sort`` argument on a route that ignores it instead of sending one that
+would silently do nothing. ``crs_report_list_url`` is the one deliberate
+exception, predating the measurement: it keeps sending ``sort`` rather than
+newly refuse a call that has always worked.
 
-Date-window support (``window_honored``) is the same same-day probe applied to
-``fromDateTime``: a one-day-old window against ``committee-bills`` cut its
-declared count from 41,822 to 9 (honored), while the same window against
-``bill-actions`` left the declared count at 59 either way (ignored) -- also in
-the fixtures README. Every other route defaults to ``window_honored=True``:
-``bill`` and ``crsreport`` have always accepted the window unconditionally
-(the original, pre-existing contract this module preserves), and nothing has
-surfaced evidence any of the other newly added routes ignore it. That default
-is a carried-forward assumption, not a measurement, and is named as such --
-unlike ``sort_honored``, which is now measured for every route.
+Date-window support (``window_honored``) got the same direct probe: a
+one-day-old window cut ``committee-bills``' declared count (honored) while
+leaving ``bill-actions`` at 59 either way (ignored). Every other route
+defaults to ``True`` as a carried-forward assumption, not a measurement --
+unlike ``sort_honored``, which is measured for every route.
 """
 
 from __future__ import annotations
@@ -127,42 +110,28 @@ class CongressListRoute:
     imported both.
 
     ``path`` is a ``/``-joined template whose ``{name}`` segments are path
-    parameters (``congress``, ``chamber``, ``code``, ``type``, ``number``,
-    ``session``, ``eventId``, ``volume``, ``issue``, ``commtype``,
-    ``law_type``, ``system_code``, ``bioguide_id``).
-    ``optional_params`` names the ones a caller may omit; they must be the
-    template's *trailing* parameters, since omitting one also omits every
-    parameter after it (a caller cannot narrow by bill type without naming a
-    Congress). A route with no optional parameters requires every one it
-    names on every request, the way ``committee/{chamber}/{code}/bills`` and
-    ``bill/{congress}/{type}/{number}/actions`` do -- the publisher has no
-    bare listing for either. ``sort_honored`` is measured for every route;
-    ``window_honored`` is measured for ``committee-bills`` and
-    ``bill-actions`` and a carried-forward default elsewhere: see the module
-    docstring for both. ``records_key`` is a tuple where the publisher nests
-    the rows inside a wrapper object instead of the top level -- confirmed
-    live 2026-09-19: ``committee/{chamber}/{code}/bills`` answers
-    ``{"committee-bills": {"bills": [...], "count": N, "url": "..."}, ...}``,
-    not a top-level ``bills`` array, unlike every other route here. Some
-    detail routes' ``records_key`` names a single JSON object instead of an
-    array -- ``law/{congress}/{law_type}/{number}`` answers
-    ``{"bill": {...}}``, and ``committee``'s and ``member``'s detail routes
-    answer the same way -- and ``single_record=True`` there opts
-    ``CongressListingReader`` into reading that object as the walk's one
-    record rather than refusing it as a malformed list; ``committee-print``'s
-    detail route instead answers a real one-item array with a
-    ``pagination.count`` of 1, needing no such opt-in (the ordinary list path
-    already reads it), the same as ``treaty``'s. ``single_record`` states a
-    fact about the JSON shape at ``records_key`` -- "this route's records key
-    holds an object, not an array" -- not a fact about how many records the
-    route yields: ``treaty-detail`` and ``committee-print-detail`` are
-    detail routes that answer exactly one record too, with ``single_record``
-    left at ``False``, because their one record already arrives inside an
-    array. Reading ``single_record`` as "this is a detail route" would be
-    wrong for those two; use ``"-detail"`` in the route name, or read the
-    fixture, to ask that question instead. Every detail route still has no
-    list to reorder or window against, so each carries ``sort_honored=False``
-    and ``window_honored=False`` on structural grounds, not a live probe.
+    parameters. ``optional_params`` names the ones a caller may omit; they must
+    be the template's *trailing* parameters, since omitting one also omits
+    every parameter after it. A route with no optional parameters requires
+    every one it names on every request, the way
+    ``committee/{chamber}/{code}/bills`` and
+    ``bill/{congress}/{type}/{number}/actions`` do -- the publisher has no bare
+    listing for either. ``records_key`` is a tuple where the publisher nests
+    the rows inside a wrapper object instead of the top level (confirmed live:
+    ``committee/{chamber}/{code}/bills`` answers
+    ``{"committee-bills": {"bills": [...]}}``).
+
+    ``single_record`` states a fact about the JSON shape at ``records_key`` --
+    "this route's records key holds an object, not an array" -- not a fact
+    about how many records the route yields: ``treaty-detail`` and
+    ``committee-print-detail`` are detail routes that answer exactly one
+    record with ``single_record`` left at ``False``, because their one record
+    arrives inside an array and the reader's ordinary list path reads it.
+    ``sort_honored`` is measured for every route; ``window_honored`` is
+    measured for ``committee-bills`` and ``bill-actions`` and a carried-forward
+    default elsewhere (module docstring). Every detail route has no list to
+    reorder or window against, so it carries both flags ``False`` on
+    structural grounds, not a live probe.
     """
 
     name: str
@@ -592,18 +561,13 @@ def _route_path(route: CongressListRoute, values: Mapping[str, object]) -> str:
     ``volume``, ``issue``, ``commtype``, ``law_type``, ``system_code``,
     ``bioguide_id``) -- the same 13 names ``_KWARG_FOR_PARAM`` and
     ``_VALIDATE_PARAM`` state, not each caller's own public kwarg names.
-    ``list_route_url`` builds the full mapping once, from its own explicit
-    13-parameter signature, and forwards it here; ``bill_list_url`` and
-    ``crs_report_list_url`` build only the few keys their route ever takes.
-    A value for a parameter the route does not name is refused outright; an
-    omitted optional parameter also omits every parameter after it, so
-    ``bill``'s ``type`` without a ``congress`` refuses rather than silently
-    addressing a different route. ``values`` must carry a key -- explicitly
-    ``None`` where the caller has nothing to offer -- for every one of the
-    route's own path tokens; a token missing from ``values`` entirely (as
-    opposed to present and ``None``) is a caller bug, not an omission, and
-    refuses here rather than being read the same as an explicit ``None`` by
-    ``.get()`` below.
+    ``values`` must carry a key -- explicitly ``None`` where the caller has
+    nothing to offer -- for every one of the route's own path tokens; a token
+    missing from ``values`` entirely (as opposed to present and ``None``) is a
+    caller bug and refuses here. A value for a parameter the route does not
+    name is refused outright; an omitted optional parameter also omits every
+    parameter after it, so ``bill``'s ``type`` without a ``congress`` refuses
+    rather than silently addressing a different route.
     """
     params = set(route.path_params)
     missing = params - set(values)

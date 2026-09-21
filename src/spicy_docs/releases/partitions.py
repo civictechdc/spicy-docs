@@ -124,6 +124,8 @@ def _read_one_json(source: MemberSource, object_key: str, byte_limit: int = MAX_
 
 
 def _partition_id(identity: str) -> str:
+    """Hash one nonempty identity into its two-digit sha256-modulo bucket id."""
+
     if not isinstance(identity, str) or not identity:
         raise SourceNativeReleaseError("source-native partition identity must be nonempty text")
     digest = hashlib.sha256(identity.encode("utf-8")).digest()
@@ -153,6 +155,8 @@ def _stage_partition(
     partition_id: str,
     rows: Iterable[Mapping[str, Any]],
 ) -> _PayloadPartition | None:
+    """Write one partition's canonical JSONL rows into the blob store, or return None when it has no rows."""
+
     path = scratch / f"{partition_kind}-{partition_id}.jsonl"
     digest = hashlib.sha256()
     byte_size = 0
@@ -198,6 +202,8 @@ def _partition_row_identity(
     partition_kind: str,
     row: Mapping[str, Any],
 ) -> tuple[int, int, int, str, str]:
+    """Order key for one partition row: pages by position, all other kinds by source identity."""
+
     if partition_kind == PARTITION_PAGES:
         traversal = row.get("traversalIndex")
         page = row.get("pageIndex")
@@ -234,6 +240,8 @@ def _partition_rows(
     blob_source: BlobSource | None,
     partitions: Sequence[_PayloadPartition],
 ) -> Generator[Mapping[str, Any], None, None]:
+    """Merge one kind's partitions into total order, refusing a repeated, unordered, misfiled, or miscounted row."""
+
     if not partitions:
         return
     selected = tuple(sorted(partitions, key=lambda value: value.partition_id))
@@ -293,6 +301,8 @@ def _payload_partitions(
     receipt: Mapping[str, Any],
     by_ref: Mapping[str, MemberDescriptor],
 ) -> dict[str, tuple[_PayloadPartition, ...]]:
+    """Index receipt payload partitions by kind, refusing a missing, repeated, or mismatched member."""
+
     if receipt.get("partitionPolicy") != _partition_policy():
         raise SourceNativeReleaseError("source-native partition policy differs")
     raw_partitions = receipt.get("payloadPartitions")

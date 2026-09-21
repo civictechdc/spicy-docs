@@ -1,38 +1,22 @@
 """Bounded traversal of a publisher's paged JSON list operation with exact page evidence.
 
-One reader serves every publisher whose list operations answer JSON pages that
-name their rows and, where the publisher offers them, a declared total and a
-continuation. A ``JsonPageFamily`` states each publisher's contract as data:
-the host, the request method, how the next page is named (a full URL, a page
-number, or an offset walk), where the count lives, and how a credential is
-spelled in its header. Credentials travel only as a request header, never in a
-URL or a request body, and a page that echoes the credential is refused without
-retaining its bytes. Callers own selection (the first request), retention and
-recovery. The reader yields one exact page per response and refuses to end a
-traversal silently: a repeated or foreign continuation, a changed declared
-count, an observed total that disagrees with the declared one, or a page bound
-reached before the publisher's terminal page are refusals, not quiet ends. A
+A ``JsonPageFamily`` states each publisher's contract as data: host, method, how
+the next page is named, where the count lives and how the credential is spelled in
+its header; credentials travel only as a request header, never in a URL or a
+request body, and a page that echoes the credential is refused without retaining
+its bytes. Callers own selection, retention and recovery. The reader refuses to
+end a traversal silently: a repeated or foreign continuation, a changed declared
+count, an observed total disagreeing with the declared one, or a page bound
+reached before the publisher's terminal page are refusals, not quiet ends, and a
 declared count of zero is an observation of that query on that day, not source
 absence.
 
-``records_key`` is a top-level key for most routes; a tuple path reaches rows
-a publisher nests inside a wrapper object alongside its own count and url,
-the way Congress.gov's ``committee/{chamber}/{code}/bills`` does. A detail
-route -- one record identified by its full path, not a list -- answers with
-either a single, non-empty JSON object or a one-element array under its key.
-The one-element-array shape already reads through the ordinary list path.
-The single-object shape needs an explicit opt-in: ``page()``/``pages()``
-take ``single_record``, off by default, and only a caller that passes it
-reads a non-empty object at ``records_key`` as a one-row page with no
-declared count and no continuation, the same ``records()``/``page()`` walk a
-list route uses, rather than refusing. Left off, a wrapper object at
-``records_key`` -- including a caller's own wrong or mismatched key, such as
-asking for Congress.gov's ``committee/{chamber}/{code}/bills`` by its
-top-level wrapper key instead of the tuple that reaches inside it -- still
-refuses instead of silently reading as one bogus record; not every family
-this reader serves has a declared count to catch that downstream. An *empty*
-object still refuses either way: empty success is not absence, and a detail
-route answering ``{}`` carries no record to read.
+``records_key`` is a top-level key for most routes; a tuple path reaches rows a
+publisher nests inside a wrapper object. A detail route's single-object shape
+needs the explicit ``single_record`` opt-in on ``page()``/``pages()`` -- off by
+default so a wrong or mismatched ``records_key`` resolving to a wrapper object
+still refuses instead of reading as one bogus record, and an empty object refuses
+either way because empty success is not absence.
 """
 
 from __future__ import annotations
@@ -95,6 +79,7 @@ def normalize_url(url: str, *, drop: frozenset[str] = frozenset()) -> str:
 
 
 def query_value(url: str, name: str) -> str | None:
+    """One query parameter's value, ``None`` if absent; a repeated parameter is refused."""
     values = [value for key, value in parse_qsl(urlsplit(url).query, keep_blank_values=True) if key == name]
     if len(values) > 1:
         raise PagedJsonSourceError(f"list URL repeats its {name} parameter")
@@ -102,6 +87,7 @@ def query_value(url: str, name: str) -> str | None:
 
 
 def with_query(url: str, name: str, value: str) -> str:
+    """Replace one query parameter, dropping any existing copies, and drop the fragment."""
     parts = urlsplit(url)
     pairs = [(key, item) for key, item in parse_qsl(parts.query, keep_blank_values=True) if key != name]
     pairs.append((name, value))
@@ -113,14 +99,13 @@ class JsonPageFamily:
     """A publisher's list-page contract, stated as data rather than code.
 
     ``next_kind`` ``url`` reads a full next-page URL at ``next_path``;
-    ``page-number`` reads ``next_path`` as either the next page number or a
-    boolean has-next flag (``true`` means "one more than the page requested")
-    and rewrites ``page_field`` in the query (GET) or the JSON body (POST);
-    ``offset`` has no publisher continuation and advances ``offset_field`` by
-    the rows received until a page is shorter than ``limit_field``.
-    ``count_kind`` ``exact`` means the declared count is checked against the
-    walk; ``advisory`` means the publisher's count is recorded but drifts or
-    exceeds what its pages can reach, so only the continuation ends a walk.
+    ``page-number`` reads it as the next page number or a has-next flag (``true``
+    means one past the page requested) and rewrites ``page_field`` in the query
+    (GET) or JSON body (POST); ``offset`` has no publisher continuation and
+    advances ``offset_field`` by the rows received until a short page.
+    ``count_kind`` ``exact`` checks the declared count against the walk;
+    ``advisory`` records a count that may drift or exceed what its pages reach, so
+    only the continuation ends the walk.
     """
 
     name: str
@@ -190,7 +175,7 @@ def _lookup(value: Mapping[str, Any], path: tuple[str, ...]) -> object:
 
 
 def _key_label(records_key: str | tuple[str, ...]) -> str:
-    """Spell a records key for a message the way a reader would ask for it, not as a Python repr."""
+    """Spell a records key the way a reader would ask for it, not as a Python repr."""
     return records_key if isinstance(records_key, str) else ".".join(records_key)
 
 
@@ -202,16 +187,10 @@ def _encode_body(body: Mapping[str, Any]) -> bytes:
 class JsonPage:
     """One exact list response, its rows as the publisher spelled them, and the next request if any.
 
-    ``records_key`` is a top-level key for most publishers; a tuple reaches
-    rows a publisher nests inside a wrapper object, the way Congress.gov's
-    ``committee/{chamber}/{code}/bills`` route nests its ``bills`` array
-    under a ``committee-bills`` object rather than at the top level. A detail
-    route answers one record as an object rather than an array at
-    ``records_key`` -- Congress.gov's ``law/{congress}/{law_type}/{number}``
-    answers ``{"bill": {...}}``, not ``{"bill": [...]}`` -- and reads as a
-    single-record page rather than shaping that object down to one field,
-    when the caller opted into that reading with ``page()``/``pages()``'s
-    ``single_record``.
+    ``records_key`` is a top-level key for most publishers; a tuple reaches rows a
+    publisher nests inside a wrapper object. A detail route answering one record as
+    an object rather than an array at ``records_key`` reads as a single-record page
+    when the caller opted in with ``page()``/``pages()``'s ``single_record``.
     """
 
     page_index: int
@@ -401,15 +380,13 @@ class PagedJsonReader(SourceAcquirer):
     ) -> JsonPage:
         """Capture one list page and read its rows, declared count and continuation.
 
-        ``single_record`` states a fact about the JSON at ``records_key`` -- that it holds a
-        non-empty *object* there, not an array -- and opts the caller into reading that object
-        as the page's one row instead of refusing it as a malformed list. It is not a statement
-        about how many records the query answers: a route whose records key already holds a
-        one-element array (Congress.gov's ``treaty`` detail route, for one) answers exactly one
-        record too, with ``single_record`` left at its ``False`` default, because the ordinary
-        list path already reads a one-element array correctly. It defaults to ``False`` so a
-        caller's wrong or mismatched ``records_key`` that happens to resolve to a wrapper object
-        still refuses instead of silently reading that wrapper as a bogus record.
+        ``single_record`` states a fact about the JSON at ``records_key`` -- a
+        non-empty object rather than an array -- and opts into reading it as the
+        page's one row instead of refusing it as a malformed list; it says nothing
+        about how many records the query answers, since a one-element array already
+        reads through the ordinary list path. It defaults to ``False`` so a wrong or
+        mismatched ``records_key`` resolving to a wrapper object still refuses
+        instead of silently reading that wrapper as a bogus record.
         """
         url = self.family.check_url(url)
         if (body is not None) != (self.family.method == "POST"):
@@ -458,11 +435,10 @@ class PagedJsonReader(SourceAcquirer):
     ) -> Iterator[JsonPage]:
         """Follow the publisher's continuations from the first request; refuse to end early or inconsistently.
 
-        Pages already yielded remain partial observations when a later page
-        refuses; only normal exhaustion means the traversal reached the
-        publisher's terminal page with counts that agree. An offset walk has no
-        declared count to check and ends at the first short page. ``single_record``
-        is forwarded to ``page()``; see its docstring.
+        Pages already yielded remain partial observations when a later page refuses;
+        only normal exhaustion means the traversal reached the publisher's terminal
+        page with counts that agree, and an offset walk ends at the first short page
+        with no declared count to check. ``single_record`` is forwarded to ``page()``.
         """
         check_request_count(max_pages, "max_pages")
         url = self.family.check_url(url)

@@ -24,6 +24,7 @@ _OPTIONAL_FIELDS = {
 
 
 def original_capture(capture):
+    """Validate one retained original capture's URL, digest, size, timezone and representation, returning a copy."""
     if not isinstance(capture, Mapping) or not _REQUIRED <= set(capture) <= _REQUIRED | _OPTIONAL_FIELDS:
         raise ValueError("FEC original capture fields differ")
     value = dict(capture)

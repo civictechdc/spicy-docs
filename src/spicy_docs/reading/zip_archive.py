@@ -127,6 +127,7 @@ class _BoundedZipReads:
         self.stream, self.byte_size, self.max_read = stream, byte_size, max_read
 
     def read(self, size=-1):
+        """Read within ``max_read`` bytes of the stream's end, so directory allocation is bounded before it happens."""
         requested = self.byte_size - self.tell() if size < 0 else size
         if requested > self.max_read:
             raise ValueError("ZIP metadata read exceeds its byte bound")

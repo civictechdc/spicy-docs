@@ -44,6 +44,7 @@ class XmlObservationScan:
         self.max_depth = max_depth
 
     def start(self, tag: str, attributes: dict[str, str]) -> None:
+        """Push the element, numbering it among its parent's element children for its positional path."""
         if self.stack:
             self.stack[-1].children += 1
             position = self.stack[-1].children
@@ -53,10 +54,12 @@ class XmlObservationScan:
         self.observe_start(tag, attributes)
 
     def end(self, tag: str) -> None:
+        """Pop the element after ``observe_end``."""
         self.observe_end(tag)
         self.stack.pop()
 
     def data(self, text: str) -> None:
+        """Forward one character-data chunk to ``observe_text``."""
         self.observe_text(text)
 
     def snapshot(self) -> tuple[XmlElement, ...]:
@@ -91,6 +94,7 @@ class XmlObservationScan:
             raise _CallbackError(error) from error
 
     def read(self, body: bytes, *, max_bytes: int) -> None:
+        """Scan ``body``; a callback's own exception is re-raised with its original type and identity."""
         try:
             scan_xml(
                 body,

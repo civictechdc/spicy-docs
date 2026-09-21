@@ -17,6 +17,8 @@ from spicy_docs.transport.credentials import read_api_key, scrub_credential
 
 
 def _decimal(value: object) -> str:
+    """JSON default for Decimal values; any other type is refused."""
+
     if isinstance(value, Decimal):
         return str(value)
     raise TypeError("unsupported FEC output value")

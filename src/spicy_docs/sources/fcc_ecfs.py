@@ -12,29 +12,15 @@ is sent as the following date.** ``[gte]D[lte]E`` selects
 ``D T00:00:00Z <= t <= E T00:00:00Z``: the end date contributes its midnight
 instant and none of its own day. Measured live on 2026-09-14 (receipt
 ``supply-2026-09-02/receipts/publisher-questions-2026-09-14/q1-fcc-same-day``),
-sorting ``date_received`` descending with ``limit=5``:
-
-- ``[gte]2026-09-08[lte]2026-09-08`` — 0 rows;
-- ``[gte]2026-09-08[lte]2026-09-09`` — 5 rows, newest ``2026-09-08T23:56:03Z``,
-  and ascending the oldest was ``2026-09-08T04:47:28Z``: exactly the 8th;
-- ``[gte]2026-09-01[lte]2026-09-02`` — newest ``2026-09-01T23:59:15Z``, 45
-  seconds short of the bound.
-
-So ``_window_url`` spells the caller's inclusive ``*_to`` date as ``end + 1
-day``, and ``filings_url(received_from=D, received_to=D)`` means the whole of
-day D. A time component does **not** widen the window: both
-``[lte]2026-09-08T23:59:59`` and ``[lte]2026-09-08 23:59:59`` answered the same
-zero-row page. That page is byte-identical (1,037 bytes, SHA-256
-``088009f281836c186fdb6709ca39c8723e9f814890a57a1a3907431da348d7ae``) for every
-empty filings query, so an ignored filter and a matched-nothing filter cannot be
-told apart here, and no zero on this route establishes absence.
-
-Two consequences of using the publisher's inclusive ``[lte]``: a row stamped
-exactly ``E+1 T00:00:00.000Z`` falls in the window, so adjacent day windows
-overlap by that one instant; and ``[lt]`` was observed once to be honoured as an
-end bound (``[gte]2026-09-08[lt]2026-09-09`` returned the same 21,278 bytes and
-digest as ``[lte]2026-09-09``), which would close that instant but is one
-observation of an operator the publisher does not document.
+``[gte]D[lte]D`` answered zero rows while ``[gte]D[lte]D+1`` was exactly day D,
+so ``_window_url`` spells the caller's inclusive ``*_to`` date as ``end + 1
+day``; a time component does **not** widen the window. That empty filings page
+is byte-identical for every empty query, so an ignored filter and a
+matched-nothing filter cannot be told apart here, and no zero on this route
+establishes absence. Two consequences: a row stamped exactly
+``E+1 T00:00:00.000Z`` falls in the window, so adjacent day windows overlap by
+that one instant; and ``[lt]`` was observed once honoured as an end bound, which
+would close that instant but is one observation of an undocumented operator.
 """
 
 from __future__ import annotations
@@ -99,6 +85,7 @@ def _end_bound(end: str) -> str:
 def _window_url(
     endpoint: str, date_field: str, *, start: str, end: str, limit: int, offset: int, descending: bool
 ) -> str:
+    """Build one offset-walk URL; the inclusive end is spelled as the following midnight."""
     start, end = _date(start, "start"), _date(end, "end")
     if end < start:
         raise PagedJsonSourceError("end precedes start")
@@ -157,7 +144,9 @@ class FccEcfsReader(PagedJsonReader):
         super().__init__(family=FCC_ECFS, budget=budget, api_key=api_key, transport=transport, clock=clock)
 
     def proceedings(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
+        """Walk proceeding pages for one window URL under the family's shared budget."""
         return self.pages(url, records_key=PROCEEDINGS_KEY, max_pages=max_pages)
 
     def filings(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
+        """Walk filing pages for one window URL under the family's shared budget."""
         return self.pages(url, records_key=FILINGS_KEY, max_pages=max_pages)

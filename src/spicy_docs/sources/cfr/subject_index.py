@@ -30,6 +30,8 @@ class CfrSubjectHeading:
 
 @dataclass(frozen=True, slots=True)
 class CfrSubjectBlock:
+    """One captured markup block with its byte span, raw HTML and any parsed heading."""
+
     tag: str
     attributes: tuple[tuple[str, str | None], ...]
     list_index: int | None
@@ -47,6 +49,8 @@ class CfrSubjectBlock:
 
 @dataclass(frozen=True, slots=True)
 class CfrSubjectIndex:
+    """Every captured block in document order, with heading/revision metadata and issues kept apart."""
+
     blocks: tuple[CfrSubjectBlock, ...]
     metadata: tuple[CfrSubjectBlock, ...]
     issues: tuple[str, ...]

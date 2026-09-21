@@ -1,33 +1,17 @@
 """Join a committee press release to the bill it names.
 
-Publisher fact in: RSS items from the House and Senate appropriations
-committees (``title``, and ``description`` only where the publisher sends one)
-and the bill identities in the catalog.
-
-Interpretation out: a ``ReleaseMatch`` per release naming the bill, the rule
-that fired, which field the mention was found in and the exact text that
-matched.
-
-Two corrections to ``BillTrax/src/lib/press-releases.ts:131-160``:
-
-* **One compiled pattern per bill, built once.** The original built a fresh
-  ``new RegExp`` inside a nested loop over 500 releases and 1,000 bills -- up
-  to 500,000 compilations per run for 1,000 distinct patterns.
-  ``compile_bill_patterns`` is the only place this module compiles anything,
-  and it compiles exactly one pattern per bill.
-* **The pattern is built from the bill's own type, and the number is
-  escaped.** The original tried ``H.R.`` and ``S.`` against every bill
-  whatever its type, and then offered the bare, unescaped number as a third
-  alternative -- so a bill numbered ``1`` matched any ``1`` anywhere in any
-  release title. Here each bill gets the prose spelling of its own type,
-  bounded on both sides, and nothing matches a bare number.
-
-``matched_field`` is reported because the two feeds are not shaped alike: the
-Senate feed's items carry ``title``, ``link``, ``author``, ``pubDate`` and
-``guid`` and **no** ``<description>`` at all (measured 2026-09-19), so an
-excerpt is permanently empty there and every Senate match is a title match.
-Matching therefore runs field by field -- title first -- rather than over a
-concatenation, so a stored row says what the match was actually made of.
+Reads RSS items from the House and Senate appropriations committees (``title``,
+and ``description`` only where the publisher sends one) and the bill identities
+in the catalog, and returns a ``ReleaseMatch`` per release naming the bill, the
+rule, which field the mention was found in and the exact text that matched.
+``compile_bill_patterns`` is the only place this module compiles anything, one
+pattern per bill, where the original built a fresh regex inside a nested loop
+over releases and bills; each pattern is built from the bill's own type and the
+number escaped, where the original tried both chamber spellings against every
+bill and offered the bare number as a third alternative, so a bill numbered
+``1`` matched any ``1`` anywhere. Matching runs field by field -- title first
+-- rather than over a concatenation, because the Senate feed carries no
+``<description>`` at all and a stored row must say what the match was made of.
 """
 
 from __future__ import annotations
@@ -121,8 +105,8 @@ def match_releases(
     """Scan each release against the precompiled patterns, field by field, first hit wins.
 
     Cost is one pass over the releases times the patterns, with no compilation
-    in the loop: O(releases x bills) comparisons and O(bills) compilations,
-    against the original's O(releases x bills) compilations.
+    in the loop: ``O(releases x bills)`` comparisons and ``O(bills)``
+    compilations, against the original's ``O(releases x bills)`` compilations.
     """
     matches: list[ReleaseMatch] = []
     for release in releases:
