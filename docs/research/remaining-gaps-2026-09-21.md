@@ -11,6 +11,15 @@ the fork's Cloudflare setup. It documents known gaps; it is not a new census of
 every publisher or a claim that all data is accurate. “Open” includes missing
 evidence, incomplete coverage and delivery work, as well as demonstrated bugs.
 
+**Delivery scope, updated September 21:** generate and verify every existing
+rollup and its intended outputs on the fork. FEC is one part of that work.
+The [fork generation plan](../../../spicy-regs/docs/fork-generation.md) owns the
+complete producer/workflow inventory, dependency order and completion criteria;
+the [local reuse inventory](../../../spicy-regs/docs/research/local-data-reuse-2026-09-21.md)
+identifies retained inputs and prepared outputs to use before reacquiring data.
+This backlog retains the source, correctness and interpretation requirements.
+An inventory or green workflow does not establish that its outputs were generated.
+
 ## Evidence and how to read status
 
 The [70-table, 20-source-family scorecard](data-validation-tables-2026-09-21.md)
@@ -79,7 +88,7 @@ new copies of those capabilities.
 
 | ID / priority | Remaining gap and practical consequence | Next action and completion check |
 | --- | --- | --- |
-| **SR01 · P1** Corrected real generations (H4/H6/H10–H14) | Code/package adoption and local replays have advanced beyond public data. The corrected 118th HR/S five-table cohort, broad local bills and earlier public ten-column bills differ in scope. Native wider inputs, including the named 119th archive cohort, have not all been located/qualified. | Select and declare each release's source population. Rebuild bills and affected print/report, CFR, FR, court and regulatory outputs from pinned inputs; compare native keys/fields, parent-child keys and intended changes. Publish and verify the exact family in the new bucket. Preserve wider unread coverage explicitly; never silently substitute the 118th parent set for 119th children. |
+| **SR01 · P1** Corrected real generations (H4/H6/H10–H14) | Code/package adoption and local replays have advanced beyond public data. The corrected 118th HR/S five-table cohort, broad local bills and earlier public ten-column bills differ in scope. Four 119th ZIPs have now been found and preserved; their container/copy checks do not yet qualify publisher provenance, freshness or a coherent wider cohort. | Select and declare each release's source population. Rebuild bills and affected print/report, CFR, FR, court and regulatory outputs from pinned inputs; compare native keys/fields, parent-child keys and intended changes. Publish and verify the exact family in the new bucket. Preserve wider unread coverage explicitly; never silently substitute the 118th parent set for 119th children. |
 | **SR02 · P1** Publication beyond managed Parquet families (H7/H8) | Family admission works; base regulations.gov, partitioned comments, Iceberg and the legacy docket-search derivative have different publication paths. Their consistency/correction behavior is not established by the family rehearsal. | Define and verify complete snapshot/partition membership, parent versions and failure/retry behavior for each chosen path. Decode real outputs and verify public readers select one intended generation. Keep declaration, attempted run, local output and public availability separate. |
 | **SR03 · P1** Regulatory joins and analytic grain (F1/H15) | Full RIN arrays are retained locally, but historical/public backfill and cross-source identity joins remain incomplete. Lifecycle grouping collapses 48 proposals into 19 unknown-docket agency groups and excludes 647 other proposal groups; 5,132 is a different, wider denominator. | Retain participating document IDs and unresolved links/outcomes. Qualify proposal/final pairing before status/duration claims; compare all usable RINs and dated FR identities. Reconcile literal docket spellings with explicit mapping evidence. Exact array expansion alone does not qualify legal-matter identity. |
 | **SR04 · P1** Safe analytic views and derived snapshots (H1) | Type casts and temporal aggregates lack explicit invalid-value/as-of handling. `discovery_signals` has no pinned 30-day window; separately observed parents can disagree. | Add source-defined typed views and named anomaly handling. Pin parents and observation/window times for agency counts, monthly volume, feed summaries and discovery ratios. Recompute by stable keys; preserve the 2,020 unparseable-date observations separately from valid calendar groups. |
@@ -131,16 +140,20 @@ access; provider release identities; and original-body/search adoption. The
 qualification of the combined selected data/query remains open. These are
 delivery and evidence gaps, not a request to rebuild the existing bridge.
 
-**Fresh operational evidence:** the scheduled [FEC committee run on
+**Credential status, updated September 21:** the scheduled [FEC committee run on
 `43c06b6`](https://github.com/mikewolfd/spicy-regs/actions/runs/35645971109)
 failed on September 21 before acquisition because its API key was absent.
-The shared workflow supplies this source from `DATA_GOV_API_KEY`. This makes
-credential configuration a currently observed FEC10/OPS07 blocker, beyond the
-older reports' unverified credential state. Failure refusal worked; this run
-does not establish publisher absence or a valid new generation. The raw failed
-log is retained as `fec-committees-workflow-failure.log` under the fork receipt
-root. Configure the required scoped source credential and repeat a bounded
-complete acquisition before claiming schedule readiness.
+That missing-key condition is superseded: `DATA_GOV_API_KEY` was installed at
+19:44:43 UTC, and the coordinating task recorded a one-record OpenFEC HTTP 200
+check in the [generation plan](../../../spicy-regs/docs/fork-generation.md).
+The shared workflow already forwards this secret. A complete committee
+traversal, publication and recurring refresh remain unverified (FEC10).
+`ZYTE_TOKEN` was installed at 19:49:09 UTC but is not yet wired to the workflow
+or a selected caller adapter. It does not substitute for source authentication.
+The original failed log remains `fec-committees-workflow-failure.log` under the
+fork setup receipt root; secret names/timestamps are retained without values in
+`fork-rollup-generation-2026-09-21/secrets.json`. Neither credential installation
+nor the small access check proves source completeness or a public generation.
 
 ## Rulespec — shared capture and artifact requirements
 
@@ -206,6 +219,17 @@ changes were independently reviewed. Actual synthetic publication passed;
 all setup probe objects were removed. The subsequent invalid lobbying family
 was withdrawn conditionally, with immutable diagnostic bytes retained.
 
+**New open defect, H17:** the later
+[SAM run](https://github.com/mikewolfd/spicy-regs/actions/runs/35643620562)
+published `sam-entities` after finding no key and performing no acquisition.
+At **20:14 UTC on September 21**, an independent public read still selected
+that family: its exact bytes match the index, but the decoded table has zero
+rows and is 575 bytes. This is an active invalid publication, not valid source
+absence or completed containment. The earlier lobbying withdrawal did not
+withdraw SAM. Evidence: `sam-empty-publication-audit.json` and
+`master-status-publication-recheck.json` under
+`~/Work/corpora/fork-rollup-generation-2026-09-21/`.
+
 The runbook is [`deploy/fork-setup.md`](../../../spicy-regs/deploy/fork-setup.md).
 Evidence lives at `~/Work/corpora/fork-cloudflare-2026-09-21/`, including
 `s3-generation-rehearsal.json`, `invalid-family-withdrawal.json`,
@@ -214,13 +238,32 @@ Evidence lives at `~/Work/corpora/fork-cloudflare-2026-09-21/`, including
 
 | ID / priority | Remaining gap | Completion check |
 | --- | --- | --- |
-| **OPS01 · P1** Useful real data | Storage tests do not establish a valid real-source family in the new bucket after withdrawing the bad lobbying output. | Execute SR01/SR07/SR15 for selected families; verify public source scope, exact admitted bytes and actual consumer reads. |
+| **OPS01 · P1** Complete fork generation and useful real data | Storage tests do not establish valid real-source outputs. The later public observation selects only the invalid empty SAM family; lobbying was withdrawn. The delivery target is every producer/output in the fork generation plan. | Follow the complete dependency inventory, reuse qualified local inputs and verify each intended output's source scope, family membership, public bytes and consumer reads. A blocked/unproduced output stays open; a valid empty selection needs successful source evidence. SR01/SR07/SR15 cover specific families. |
 | **OPS02 · P1 if catalog jobs run** Catalog configuration | Catalog settings are separate from working storage credentials. Existing Iceberg ETL, seed, mirror, deduplication and attachment-backfill jobs depend on them. | Keep unconfigured paths inactive/not selected or configure the account-owned catalog, seed a bounded cohort and verify ingestion/mirror/reader identity. Local Parquet repair does not qualify Iceberg correction behavior. |
 | **OPS03 · P2** Documentation deployment | The [data dictionary run](https://github.com/mikewolfd/spicy-regs/actions/runs/35642543802) built successfully but deployment failed with 404; GitHub Pages is not enabled on the fork. | Choose the docs host, configure its deployment path and verify the published fork URL/links. Core CI success is separate. Retained log: `pages-deployment-failure.log`. |
 | **OPS04 · conditional** Public hostname and query service | The working `r2.dev` URL is [rate limited and intended for non-production traffic](https://developers.cloudflare.com/r2/buckets/public-buckets/#public-development-url). Production data hosting needs a suitable hostname independently of MCP. No custom-domain or Worker deployment/load qualification is established; local container queries and dry builds pass, but Containers account prerequisites remain unverified. | For production public traffic, configure the data hostname and recheck exact bytes/range/conditional reads. Separately, if MCP hosting is selected, verify prerequisites, deploy the reviewed configuration and test real queries, generation pins and concurrency against service expectations. Direct Parquet use does not require MCP deployment. |
 | **OPS05 · P1 before advertising a fork service** Fork-facing defaults | The packaged landing page, plugin helpers and documentation still contain upstream endpoints/examples. Runtime host overrides work, but a fork visitor could copy an upstream installation/query link. | Establish canonical fork service/docs/install URLs, update or clearly label examples and test copy-paste flows against the fork. Preserve intentional compatibility defaults; use existing helper overrides. |
 | **OPS06 · conditional** Portable identity and infrastructure management | The named local Wrangler login does not travel with Git. Terraform validates but has not been applied/imported with private state. The historical Cloud Run recipe still has upstream endpoints and can retain stale catalog settings. | On another runner, verify account/bucket/URL/catalog together. If Terraform is chosen, use account-owned private state and a reviewed plan. If Cloud Run is chosen, make data/catalog/smoke endpoints explicit and clear stale settings. These are optional paths, not unfinished bucket creation. |
-| **OPS07 · per-source dependency** Credentials and schedule readiness | Storage secrets alone do not authorize every source API/model or make every existing schedule runnable. Only the lobbying schedule was explicitly paused during this incident. | Audit the jobs selected for service, their source/catalog credentials and limits before enabling them. Record missing dependencies and actual first-run results. Do not infer that other schedules are paused, healthy or fully configured. |
+| **OPS07 · per-source dependency** Credentials and schedule readiness | `DATA_GOV_API_KEY` is installed and passed the recorded one-record OpenFEC check; full traversal is unverified. `ZYTE_TOKEN` is installed but unwired. The observed fork secret-name inventory has no `SAM_API_KEY`, `GEMINI_API_KEY` or catalog settings. Lobbying alone was paused. | Wire only the selected supported adapters, verify required access per source, and retain actual complete-run results. SAM authorization is separate from OpenFEC; model outputs remain unproduced without their dependency. Do not infer that other schedules are paused, healthy or fully configured. |
+| **OPS08 · P1** Failure-to-empty publication and generation controls (H17) | SAM's no-acquisition result became an active zero-row family. The generation plan also identifies candidate failure-to-empty/partial paths in CFR, CRS, FCC, USAspending, GAO and court dockets; those are code-review risks, not newly demonstrated bad publications. | Repair SAM's source-success/refusal boundary and conditionally withdraw the invalid family while retaining evidence. Qualify the other paths before unattended initial loads. Also resolve the plan's missing workflow wiring, body/model reprocessing, successful candidate retention and generation-aware freshness checks. Preserve valid empty selections; a generic nonempty guard is insufficient. |
+
+Local reuse can avoid substantial duplicate acquisition. The inventory finds
+two already sealed FEC families totaling 1,171,789,372 bytes, plus a
+schema-compatible selected committee table. Its regulatory release manifest
+references 65,745 distinct blobs totaling 13,797,370,204 bytes; all referenced
+blobs and release-local members exist and match recorded lengths. Those checks
+establish availability and size, not fresh full hashing or semantic verification.
+Use the linked inventory's exact source selections, pins and prior audit scope.
+Older regulatory snapshots must preserve newer parent observations; the comments
+sample, five-table bill cohort and bounded court/report repairs must not replace
+their wider populations. The follow-up retained four 119th-Congress ZIPs with
+18,366 XML members and 40 bill XML bodies plus their sidecars, with copy
+digests, ZIP CRC and body/sidecar checks. Archive authenticity/freshness and
+full native-field qualification remain open. No full local comments corpus was
+found in the searched locations. Evidence: `retained-legislative-inputs/manifest.json`,
+`local-source-release-summary.json` and `local-prepared-table-inventory.json`
+under the generation receipt root; the search is not an exhaustive disk census.
+No upload or generation dispatch follows from this inventory alone.
 
 ## Legacy register reconciliation and deferred scope
 
@@ -247,7 +290,7 @@ publication still follow the items above and the table scorecard.
 | F1/F2/F2b/F3/F4/F5/F6/F7/F8/F9/F10/F11 | F2/F2b and F10/F11 mechanisms closed. Remaining portions map to SR03/SR04/SR06 and SD04/SD06/SD08/SD10/SD11. |
 | G1/G2/G3/G4/G5/G6 | G1/G5/G6 and bounded G2 preservation closed. Missing extraction/provenance evidence and opt-in v2/archive adoption: SD07, RS01/RS02. |
 | H1/H2/H3/H4/H5 | H3 refuted; keep six tables. Logical views, empty/local scope and coherent releases: SD06, SR01/SR04/SR08. |
-| H6/H7/H8/H9/H10/H11/H12/H13/H14/H15/H16 | Fix/adoption distinctions are in the repair table. Open public adoption, semantics, lifecycle grain and LDA backfill: SR01–SR07/SR10, SD02/SD04. |
+| H6/H7/H8/H9/H10/H11/H12/H13/H14/H15/H16/H17 | Fix/adoption distinctions are in the repair table. Open public adoption, semantics, lifecycle grain and LDA backfill: SR01–SR07/SR10, SD02/SD04. SAM's active invalid empty publication is newly demonstrated and remains open in OPS08. |
 
 House floor documents, agency congressional budget justifications and bound
 Congressional Record (CRECB) bodies remain candidate/deferred routes in the
@@ -258,8 +301,11 @@ new cloud deployment or issue filing follows merely from listing a gap.
 
 ## Suggested next batch and closure evidence
 
-1. Finish the bounded LDA seed/correction plan and publish one useful, coherent
-   real generation. In parallel, repair SD01–SD03 from their retained witnesses.
+1. Follow the full fork-generation dependency plan: contain invalid SAM
+   publication, finish source refusal/access checks, reuse qualified retained
+   candidates and establish verified base/independent families. Finish the
+   bounded LDA seed/resume plan in that campaign. In parallel, repair SD01–SD03
+   from their retained witnesses.
 2. Rebuild the already corrected bill/regulatory/FR/CFR/court cohorts, adopting
    one family at a time with public byte and native-field checks.
 3. Qualify lifecycle/action/financial/affiliation meanings and the existing
