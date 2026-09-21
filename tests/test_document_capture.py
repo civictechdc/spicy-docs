@@ -1,6 +1,6 @@
 """The DocumentCapture v1 profiles and the six worked conversions, checked from what is committed.
 
-Nothing here fetches: every capture is re-validated against the vendored
+Nothing here fetches: every capture is re-validated against the installed
 parent and its profile, its text stream is re-derived from the retained
 document with another parser, every selector of every rendition fragment is
 resolved against the bytes it names, and each validator is shown to refuse a
@@ -47,46 +47,31 @@ def stream_bytes(capture: dict) -> bytes:
     return (ROOT / source["locator"]["path"]).read_bytes()
 
 
-# --- the vendored schemas and the one validator ----------------------------------
+# --- the installed owner schemas and validator -----------------------------------
 
 
-def test_vendored_schemas_match_their_pins() -> None:
+def test_installed_schemas_and_validator_match_their_pins() -> None:
     assert dc.schema_pin(dc.PARENT_SCHEMA) == PINS["parent"]
     assert dc.schema_pin(dc.PROFILE_META_SCHEMA) == PINS["profileMetaSchema"]
     assert dc.schema_pin("rulespec/source-fragment.schema.json") == PINS["sourceFragment"]
-    vendored = dc.SCHEMAS.joinpath(dc.VENDORED_INVARIANTS).read_bytes()
-    assert hashlib.sha256(vendored).hexdigest() == PINS["invariantValidator"]["sha256"]
+    shipped = Path(dc.rulespec_document_capture.__file__).read_bytes()
+    assert hashlib.sha256(shipped).hexdigest() == PINS["invariantValidator"]["sha256"]
+    assert dc.rulespec_document_capture.__name__ == PINS["invariantValidator"]["module"]
     for name, pin in PINS["profiles"].items():
         assert dc.schema_pin(f"profiles/{name}.schema.json") == pin, name
 
 
-def test_the_vendored_copies_equal_the_wheel_when_the_wheel_carries_them() -> None:
-    """The vendored parent, meta-schema and validator are Rulespec's, pinned until the wheel bump.
-
-    The pinned ``rulespec-artifacts`` wheel predates all three. When it carries
-    them, byte equality is the contract and a divergence is a failure here
-    rather than a surprise in a consumer; at that point the vendored copies and
-    the loader shim in ``document_capture.py`` go away together.
-    """
-    from importlib.metadata import version
-
-    resources = pytest.importorskip("rulespec_artifacts.resources")
-    # Gate on the version the schemas shipped in, not on a capability probe: a
-    # wheel that renamed the accessor must fail here, not skip.
-    if tuple(int(part) for part in version("rulespec-artifacts").split(".")[:3]) < (1, 0, 14):
-        pytest.skip("the pinned rulespec-artifacts wheel predates 1.0.14, which ships the capture schemas")
-    assert hasattr(resources, "document_capture_schema_bytes")
-    assert resources.document_capture_schema_bytes() == dc.SCHEMAS.joinpath(dc.PARENT_SCHEMA).read_bytes()
-    assert resources.document_capture_profile_schema_bytes() == dc.SCHEMAS.joinpath(dc.PROFILE_META_SCHEMA).read_bytes()
-    # The validator swaps to the wheel's module the moment it imports, so its
-    # bytes must equal the vendored copy too, or the pin guards a file nothing loads.
-    shipped = dc.rulespec_invariants()
-    assert Path(shipped.__file__).read_bytes() == dc.SCHEMAS.joinpath(dc.VENDORED_INVARIANTS).read_bytes()
-
-
-def test_the_invariant_validator_in_use_is_rulespecs() -> None:
-    module = dc.rulespec_invariants()
-    assert {"check_invariants", "check_profile_bindings", "effective_source"} <= set(dir(module))
+@pytest.mark.parametrize("defect", ["child-before-parent", "duplicate-node-id"])
+def test_installed_validator_refuses_tree_defects(defect: str) -> None:
+    # Isolated owner counterexamples pin the corrected installed behavior.
+    capture = load(ROOT / "tests" / "fixtures" / "document_capture_invariants" / f"negative-{defect}.json")
+    expected = "parent-not-earlier" if defect == "child-before-parent" else "duplicate-node-id"
+    assert [finding.partition(":")[0] for finding in dc.check_invariants(capture)] == [expected]
+    if defect == "child-before-parent":
+        capture["nodes"][1], capture["nodes"][2] = capture["nodes"][2], capture["nodes"][1]
+    else:
+        capture["nodes"][-1]["id"] = "n0003"
+    assert dc.check_invariants(capture) == []
 
 
 # --- the profiles ----------------------------------------------------------------
