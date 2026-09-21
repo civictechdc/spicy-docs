@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 
 from spicy_docs.reading.xml_observations import XmlElement, XmlObservationScan
 
-from . import DEFAULT_MAX_XML_BYTES, UsCodeSourceError, _limit
+from .core import DEFAULT_MAX_XML_BYTES, UsCodeSourceError, _limit
 
 
 @dataclass(frozen=True, slots=True)

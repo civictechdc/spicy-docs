@@ -1,4 +1,8 @@
-"""Section-label observations in retained OLRC annual XHTML, including bracketed stubs."""
+"""Annual XHTML archives: title identity from ``AUTHORITIES-*`` comments and section-label observations.
+
+The two readers share nothing but the input shape; the header reader proves
+what one member is, the section reader observes what one member states.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +12,15 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from typing import Literal
 
-from . import DEFAULT_MAX_XML_BYTES, UsCodeSourceError, _body, _limit
+from .core import (
+    _CONTROL,
+    ANNUAL_HEADER_BYTES,
+    DEFAULT_MAX_XML_BYTES,
+    UsCodeSource,
+    UsCodeSourceError,
+    _body,
+    _limit,
+)
 
 _COMMENT = re.compile(rb"<!--(?P<value>.*?)-->", re.DOTALL)
 _MARKER = re.compile(rb"\s*(?P<kind>documentid|itempath):(?P<value>.*)\Z", re.DOTALL)
@@ -208,3 +220,103 @@ def scan_uscode_annual_sections(
         on_section(_observation(body, item, item_document, len(body)))
         count += 1
     return count
+
+
+# --------------------------------------------------------------------------- #
+# annual historical archives
+# --------------------------------------------------------------------------- #
+
+#: Every comment an annual title member states about itself. All ten are present
+#: in all 1,781 title members of the 31 retained zips.
+ANNUAL_FIELDS = (
+    "AUTHORITIES-PUBLICATION-NAME",
+    "AUTHORITIES-PUBLICATION-ID",
+    "AUTHORITIES-PUBLICATION-YEAR",
+    "AUTHORITIES-LAWS-ENACTED-THROUGH-DATE",
+    "SEARCHABLE-LAWS-ENACTED-THROUGH-DATE",
+    "AUTHORITIES-USC-TITLE-NAME",
+    "AUTHORITIES-USC-TITLE-ENUM",
+    "AUTHORITIES-USC-TITLE-STATUS",
+    "CONVERSION-PROGRAM",
+    "CONVERSION-DATETIME",
+)
+_ANNUAL_COMMENT = re.compile(r"\s*(?P<name>[A-Z][A-Z0-9-]*):(?P<value>.*)", re.DOTALL)
+
+
+@dataclass(frozen=True, slots=True)
+class AnnualTitleMetadata:
+    """What one annual XHTML title member says about itself, in the publisher's spelling."""
+
+    source: UsCodeSource
+    publication_name: str
+    publication_id: str
+    publication_year: str
+    laws_enacted_through: str
+    laws_enacted_through_stated: str
+    title_name: str
+    title_enum: str
+    title_status: str
+    conversion_program: str
+    conversion_datetime: str
+    identity_basis: tuple[str, ...] = ("publication-year:native", "title-enum:native")
+
+
+class _AnnualHeaderReader(HTMLParser):
+    """Read only the identity comments the generator writes above ``<body>``."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.fields: dict[str, str] = {}
+        self.repeated: set[str] = set()
+
+    def handle_comment(self, data: str) -> None:
+        match = _ANNUAL_COMMENT.fullmatch(data)
+        if match is None or match["name"] not in ANNUAL_FIELDS:
+            return
+        name = match["name"]
+        if name in self.fields:
+            self.repeated.add(name)
+        self.fields[name] = match["value"].strip()
+
+
+def _annual_header(body: bytes) -> dict[str, str]:
+    # Identity sits in the first kilobyte; the body beyond it is not decoded at
+    # all, because the 1994 edition is not valid UTF-8 (0xFF at 14,644,597 in
+    # 1994usc42.htm) and reading 75 MB to learn a year would be waste besides.
+    reader = _AnnualHeaderReader()
+    reader.feed(body[:ANNUAL_HEADER_BYTES].decode("utf-8", "replace"))
+    reader.close()
+    if reader.repeated:
+        raise UsCodeSourceError("U.S. Code annual title repeats an identity comment")
+    missing = [name for name in ANNUAL_FIELDS if not reader.fields.get(name)]
+    if missing:
+        raise UsCodeSourceError(f"U.S. Code annual title lacks an identity comment: {missing[0]}")
+    for name, value in reader.fields.items():
+        if not value.isascii() or _CONTROL.search(value):
+            raise UsCodeSourceError(f"U.S. Code annual title identity comment is not printable ASCII: {name}")
+    return reader.fields
+
+
+def validate_annual_title_html(
+    body: bytes, *, year: int | None = None, max_bytes: int = DEFAULT_MAX_XML_BYTES
+) -> AnnualTitleMetadata:
+    """Prove one annual member's own edition and title from its ``AUTHORITIES-*`` comments.
+
+    ``year`` checks the stated publication year when the caller has one to check
+    against. It is optional because the publisher's own archives carry members
+    that state an earlier year: the eliminated Title 50 Appendix is reissued
+    unchanged, so 2016 and 2017 both ship a member stating 2015.
+    """
+    _limit(max_bytes)
+    data = _body(body, max_bytes, "U.S. Code annual title")
+    if not data.lstrip()[:15].lower().startswith(b"<!doctype html"):
+        raise UsCodeSourceError("U.S. Code annual title does not begin with an XHTML doctype")
+    if b"</html>" not in data[-4096:]:
+        raise UsCodeSourceError("U.S. Code annual title is not closed by </html>")
+    fields = _annual_header(data)
+    stated_year = fields["AUTHORITIES-PUBLICATION-YEAR"]
+    if not stated_year.isdigit() or len(stated_year) != 4:
+        raise UsCodeSourceError("U.S. Code annual title publication year is not a four-digit year")
+    if year is not None and stated_year != str(year):
+        raise UsCodeSourceError("U.S. Code annual title publication year differs from the request")
+    return AnnualTitleMetadata("annual-title", *(fields[name] for name in ANNUAL_FIELDS))

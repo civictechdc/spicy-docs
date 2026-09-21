@@ -14,23 +14,21 @@ from dataclasses import dataclass
 
 from spicy_docs.reading.zip_archive import archive_members, open_archive, read_member
 
-from . import (
+from .annual import AnnualTitleMetadata, validate_annual_title_html
+from .core import (
     ANNUAL_HEADER_BYTES,
     DEFAULT_MAX_ARCHIVE_BYTES,
     DEFAULT_MAX_ARCHIVE_ENTRIES,
     DEFAULT_MAX_XML_BYTES,
-    AnnualTitleMetadata,
     ReleasePoint,
     TitleSelection,
     UsCodeSourceError,
-    UsCodeTitleMetadata,
     _count,
     _digest,
     _limit,
     annual_archive_locator,
-    validate_annual_title_html,
-    validate_title_xml,
 )
+from .titles import UsCodeTitleMetadata, validate_title_xml
 
 _TITLE_MEMBER = re.compile(r"usc(?P<title>[0-9]{2})(?P<appendix>[aA]?)\.xml")
 _ANNUAL_MEMBER = re.compile(r"(?P<year>[0-9]{4})usc(?P<title>[0-9]{2})(?P<appendix>[aA]?)\.htm", re.IGNORECASE)

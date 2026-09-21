@@ -55,7 +55,7 @@ from dataclasses import dataclass
 from typing import Literal
 from urllib.parse import parse_qs, urlsplit
 
-from spicy_docs.sources.uscode import (
+from spicy_docs.sources.uscode.core import (
     DEFAULT_MAX_ENTRIES_PER_PAGE,
     DEFAULT_MAX_PAGE_BYTES,
     OLRC,

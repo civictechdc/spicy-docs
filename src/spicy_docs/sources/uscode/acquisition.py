@@ -28,28 +28,29 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from spicy_docs.sources.uscode import (
+from spicy_docs.sources.uscode.core import (
     DEFAULT_MAX_ARCHIVE_ENTRIES,
     DEFAULT_MAX_ENTRIES_PER_PAGE,
     DEFAULT_MAX_TABLE3_MEMBER_BYTES,
     DEFAULT_MAX_XML_BYTES,
     MAX_USCODE_BYTES,
-    PopularNames,
     ReleasePoint,
-    Table3Bulk,
-    Table3Page,
     TitleSelection,
     UsCodeSourceError,
     annual_archive_locator,
     corpus_xml_locator,
-    parse_popular_names,
-    parse_table3_page,
     popular_names_locator,
-    read_table3_bulk_archive,
     table3_act_locator,
     table3_bulk_locator,
     table3_file_name,
     title_xml_locator,
+)
+from spicy_docs.sources.uscode.popular_names import PopularNames, parse_popular_names
+from spicy_docs.sources.uscode.table3 import (
+    Table3Bulk,
+    Table3Page,
+    parse_table3_page,
+    read_table3_bulk_archive,
 )
 from spicy_docs.transport.captured import CapturedBodyResponse
 from spicy_docs.transport.source_acquirer import (
