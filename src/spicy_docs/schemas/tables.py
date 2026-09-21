@@ -75,12 +75,18 @@ def json_column(value: object) -> str:
     which a caller states by passing the empty container.  A column that is
     genuinely unknown is a plain column with a NULL, not an empty JSON document.
 
-    A value JSON cannot represent raises rather than being coerced.  Some of
+    A value JSON cannot represent raises rather than being coerced, including
+    nested NaN and infinities. Encoding value errors become
+    :class:`TableContractError` so the family can retain a named row refusal.
+    Unsupported object types keep the encoder's ``TypeError``. Some of
     these columns carry whatever an upstream engine recorded -- ``evidence_json``
     does -- and a ``repr`` published as if it were data is worse than a refusal
     that names the column.
     """
-    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+    try:
+        return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    except ValueError as error:
+        raise TableContractError("JSON column contains a non-finite number or circular reference") from error
 
 
 def read_json_column(value: str | None) -> object:
@@ -110,9 +116,13 @@ class TableContract:
     """One published table: its columns in publish order, its identity, its prose.
 
     ``name`` is the R2 object key, the MCP view name and this contract's key in
-    :data:`TABLE_CONTRACTS`, all one snake_case string.  ``version_column`` is
-    the column a merge prefers the larger value of when two rows share an
-    identity; ``None`` means the table has no freshness ordering of its own.
+    :data:`TABLE_CONTRACTS`, all one snake_case string. ``version_column`` names
+    the source or processing version carried by a row, not a universal sort
+    order. Its description states the meaning: dates and explicitly ordered
+    revisions can order comparable versions; rule digests support equality
+    only. A host chooses which input generation supersedes another before
+    merging. ``None`` means no version column is declared. See
+    ``docs/tables.md`` for the host's fresh/prior precedence and digest limits.
     ``descriptions`` carries exactly one sentence per column and is what
     spicy-regs's data dictionary reads, so a column added here fails that check
     until the prose catches up (§5.3).
@@ -182,7 +192,9 @@ class TableContract:
         The single place a ``shape_*`` output is held to its column tuple: same
         column set, every value a string or NULL.  Order is not normalised here,
         so a test that asserts publish order is asserting something this did not
-        already arrange.
+        already arrange. Identity is checked separately by :meth:`key`.
+        Logical value types are not declared here: this does not infer JSON,
+        date, boolean or numeric validation from a column name or description.
         """
         if not isinstance(row, dict):
             raise TableContractError(f"{self.name}: a row must be a dict")
