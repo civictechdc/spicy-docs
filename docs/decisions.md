@@ -24,8 +24,11 @@ What that means in this repository, and what a later change must preserve:
   for the invariants JSON Schema cannot see all live in Rulespec and ship in
   the `rulespec-artifacts` wheel. The copies under
   [`src/spicy_docs/schemas/document_capture/1.0/`](../src/spicy_docs/schemas/document_capture/1.0/README.md)
-  are vendored bytes pinned by digest, not a second implementation, and they
-  go away at the next wheel bump.
+  now retain only the family profiles and the separately pinned source-fragment
+  schema. The parent, meta-schema and invariant validator come directly from
+  installed `rulespec-artifacts==1.0.14` (adopted 2026-09-21); no fallback copy
+  remains. Parent and profile bytes are unchanged; the installed validator
+  additionally refuses parents after children and duplicate node IDs.
 - **The family profiles and the converters are ours.** A family is a grammar
   from the publisher's element names to structural roles, plus a closed
   extension block. A new family is a profile file, never a change to the

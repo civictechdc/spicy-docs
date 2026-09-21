@@ -1,8 +1,8 @@
 # Document capture schemas, 1.0
 
 The family profiles that compose Rulespec's `DocumentCapture v1` parent
-schema, with the Rulespec files they depend on vendored beside them and
-pinned by digest in `PINS.json`. A capture validates against the parent and
+schema. The parent, profile meta-schema and invariant validator come from the
+installed `rulespec-artifacts==1.0.14` wheel, pinned by digest in `PINS.json`. A capture validates against the parent and
 its family profile and records both pins. The design record is
 [`docs/research/document-capture-schema-2026-09-19.md`](../../../../../docs/research/document-capture-schema-2026-09-19.md);
 the worked conversions are produced by `tools/analysis/document_capture.py`
@@ -10,22 +10,17 @@ and checked offline by `tests/test_document_capture.py`.
 
 | File | Origin | Why it is here |
 | --- | --- | --- |
-| `document-capture-v1.schema.json` | rulespec `release-records/schemas/document-capture-v1.schema.json`, branch `capture-schema-2026-09-19` | A consumer verifies a capture with no Rulespec checkout, the way DocSpec decision 0001 row 13 ships its schemas inside the bundle; the digest in `PINS.json` is the contract and a differing copy refuses |
-| `document-capture-profile-v1.schema.json` | rulespec `release-records/schemas/document-capture-profile-v1.schema.json` | The composition rule, as data. Every profile here validates against it, so a profile that reaches a parent field fails validation rather than passing a whitelist |
-| `rulespec/document_capture.py` | rulespec `packages/rulespec-artifacts/src/rulespec_artifacts/document_capture.py` | The one implementation of the invariants JSON Schema cannot state, and of the two profile bindings the meta-schema cannot state. Vendored as bytes, never re-implemented |
+| Parent and profile meta-schema | `rulespec_artifacts.resources` | Installed owner resources; no source checkout or local fallback |
+| Invariant validator | `rulespec_artifacts.document_capture` | Installed owner checks, including parent order and unique node IDs |
 | `rulespec/source-fragment.schema.json` | rulespec `compiled/json-schema/core/source-fragment.schema.json`, compiled from the tracked `constraints/core/source-fragment.cue` at `c8a371da` | The two leaf fragments each conversion renders are validated against Rulespec's own shape, not a restatement of it |
 | `profiles/<family>.schema.json` | This repository | One per family; each is `allOf: [{$ref: parent}, own narrowing]` and narrows only `profile.name`, `profile.version`, `profile.ext`, node `kind` inside its namespace and node `ext` |
 | `PINS.json` | This repository | The `$id` and sha256 of every file above |
 
-**These three Rulespec files are vendored, not ours.** They ship in the
-`rulespec-artifacts` wheel's `_data` and as a module; the wheel pinned here
-(1.0.13) predates all three, so they are copied and pinned until the next
-wheel bump. `tools/analysis/document_capture.py` imports
-`rulespec_artifacts.document_capture` when the installed wheel carries it and
-falls back to the vendored file otherwise, and
-`test_the_vendored_copies_equal_the_wheel_when_the_wheel_carries_them`
-asserts byte equality the moment it does. At that point the copies and the
-fallback go away together.
+The source-fragment schema remains a pinned copy because the lightweight artifact
+wheel does not carry that separate semantic schema. The capture parent,
+meta-schema and validator have no fallback or second implementation here.
+Their digests are checked alongside every family profile. Installing an older
+wheel is an import failure, not silent use of an older validator.
 
 Profile `$id`s are URNs (`urn:spicy-docs:schema:document-capture:1.0:profile:<name>`)
 because they name a schema; nothing serves them.

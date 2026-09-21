@@ -1,7 +1,7 @@
 """Worked conversions of real federal documents into the DocumentCapture v1 shape.
 
 The parent schema is Rulespec's (``release-records/schemas/document-capture-v1.schema.json``,
-vendored under ``spicy_docs/schemas/document_capture/1.0`` and pinned by digest);
+shipped by the installed ``rulespec-artifacts`` package and pinned by digest);
 the family profiles are this repository's. This tool proves that one shape fits
 six renditions -- a USLM public law, a bill XML through DeltaTrack, a
 committee-report HTML body, a Federal Register notice XML, a reconstructed CFR
@@ -42,7 +42,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import importlib.metadata
-import importlib.util
 import json
 import re
 import subprocess
@@ -52,7 +51,6 @@ import urllib.parse
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from functools import cache
 from html.parser import HTMLParser
 from importlib.resources import files
 from pathlib import Path
@@ -60,6 +58,8 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
+from rulespec_artifacts import document_capture as rulespec_document_capture
+from rulespec_artifacts import resources as rulespec_resources
 
 from spicy_docs.reading.markup import MarkupEvent, MarkupRead, read_html_events, read_xml_events
 
@@ -67,8 +67,6 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMAS = files("spicy_docs").joinpath("schemas/document_capture/1.0")
 PARENT_SCHEMA = "document-capture-v1.schema.json"
 PROFILE_META_SCHEMA = "document-capture-profile-v1.schema.json"
-#: Rulespec's invariant validator, vendored beside its schemas and pinned in ``PINS.json``.
-VENDORED_INVARIANTS = "rulespec/document_capture.py"
 CONVERTER_VERSION = "2"
 FIXTURES = ROOT / "tests" / "fixtures"
 
@@ -83,48 +81,31 @@ def sha256(data: bytes | str) -> str:
     return hashlib.sha256(data.encode("utf-8") if isinstance(data, str) else data).hexdigest()
 
 
+def schema_bytes(name: str) -> bytes:
+    """Read owner schemas from the installed wheel and family schemas locally."""
+    if name == PARENT_SCHEMA:
+        return rulespec_resources.document_capture_schema_bytes()
+    if name == PROFILE_META_SCHEMA:
+        return rulespec_resources.document_capture_profile_schema_bytes()
+    return SCHEMAS.joinpath(name).read_bytes()
+
+
 def load_schema(name: str) -> dict[str, Any]:
-    return json.loads(SCHEMAS.joinpath(name).read_text(encoding="utf-8"))
+    return json.loads(schema_bytes(name))
 
 
 def schema_pin(name: str) -> dict[str, Any]:
-    return {"$id": load_schema(name)["$id"], "sha256": sha256(SCHEMAS.joinpath(name).read_bytes())}
-
-
-@cache
-def rulespec_invariants() -> Any:
-    """Rulespec's ``document_capture`` module: the wheel's copy when it carries one, else the vendored file.
-
-    The invariant validator and the profile bindings are Rulespec's, shipped in
-    ``rulespec-artifacts``. The pinned wheel here predates that module, so the
-    file is vendored beside the schemas the same way ``source-fragment.schema.json``
-    is -- as bytes, pinned in ``PINS.json``, never as a second implementation to
-    maintain. ``tests/test_document_capture.py`` asserts the vendored bytes equal
-    the wheel's the moment the wheel carries them, which is when this shim and
-    the vendored copy both go away.
-    """
-    try:
-        from rulespec_artifacts import document_capture as shipped  # ty: ignore[unresolved-import]
-
-        return shipped
-    except ImportError:
-        spec = importlib.util.spec_from_file_location(
-            "spicy_docs._vendored_rulespec_document_capture", str(SCHEMAS.joinpath(VENDORED_INVARIANTS))
-        )
-        assert spec is not None and spec.loader is not None
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
+    return {"$id": load_schema(name)["$id"], "sha256": sha256(schema_bytes(name))}
 
 
 def core_kinds() -> frozenset[str]:
-    """The closed core vocabulary, read from the parent schema rather than copied beside it."""
-    return frozenset(load_schema(PARENT_SCHEMA)["$defs"]["CoreKind"]["enum"])
+    """Use the owner's closed structural vocabulary."""
+    return rulespec_document_capture.core_kinds()
 
 
 def effective_source(capture: Mapping[str, Any], span: Mapping[str, Any]) -> dict[str, Any]:
     """A span's locator with ``rendition.spanDefaults`` filled in; Rulespec's own merge."""
-    return rulespec_invariants().effective_source(capture, span)
+    return rulespec_document_capture.effective_source(capture, span)
 
 
 def node_text(capture: Mapping[str, Any], node: Mapping[str, Any], span_by_id: Mapping[str, Mapping[str, Any]]) -> str:
@@ -839,7 +820,7 @@ def check_profile_composition(profile: Mapping[str, Any], parent: Mapping[str, A
     """Validate a profile against the meta-schema, then the two bindings a schema cannot state.
 
     Rulespec states the composition rule as data
-    (``document-capture-profile-v1.schema.json``, vendored beside the parent),
+    (``document-capture-profile-v1.schema.json``, shipped beside the parent),
     so the shape is checked by the same JSON Schema implementation that checks
     a capture. Only the values that must agree with something outside the
     clause -- the parent's bytes, and the profile's own name inside its kind
@@ -847,14 +828,14 @@ def check_profile_composition(profile: Mapping[str, Any], parent: Mapping[str, A
     """
     meta = Draft202012Validator(load_schema(PROFILE_META_SCHEMA))
     problems = [e.message for e in meta.iter_errors(profile)]
-    return problems + rulespec_invariants().check_profile_bindings(
-        profile, parent_id=parent["$id"], parent_digest=sha256(SCHEMAS.joinpath(PARENT_SCHEMA).read_bytes())
+    return problems + rulespec_document_capture.check_profile_bindings(
+        profile, parent_id=parent["$id"], parent_digest=sha256(schema_bytes(PARENT_SCHEMA))
     )
 
 
 def check_invariants(capture: Mapping[str, Any]) -> list[str]:
     """The invariants JSON Schema cannot see, checked by Rulespec's own validator."""
-    return rulespec_invariants().check_invariants(capture, parent_schema=load_schema(PARENT_SCHEMA))
+    return rulespec_document_capture.check_invariants(capture, parent_schema=load_schema(PARENT_SCHEMA))
 
 
 class _StdlibText(HTMLParser):
@@ -1560,7 +1541,12 @@ def _git_revision() -> str:
 
 
 def converter_record(family: str, extra: Sequence[tuple[str, str]] = ()) -> dict[str, Any]:
-    deps = [("python", sys.version.split()[0]), ("spicy-docs", importlib.metadata.version("spicy-docs")), *extra]
+    deps = [
+        ("python", sys.version.split()[0]),
+        ("spicy-docs", importlib.metadata.version("spicy-docs")),
+        ("rulespec-artifacts", importlib.metadata.version("rulespec-artifacts")),
+        *extra,
+    ]
     deps.append(
         (
             "document_capture_sources.py",

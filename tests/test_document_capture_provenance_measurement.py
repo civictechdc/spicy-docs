@@ -6,12 +6,12 @@ import json
 
 import pytest
 
-from tools.analysis.measure_document_capture_provenance import ROOT, inventory, measure
+from tools.analysis.measure_document_capture_provenance import ROOT, git, inventory, measure
 
 SIDECAR = ROOT / "docs/research/document-capture-provenance-2026-09-20.json"
 
 
-def test_measurement_replays_the_pinned_commits_and_current_fixtures():
+def test_measurement_replays_the_pinned_commits():
     expected = json.loads(SIDECAR.read_bytes())
     result = measure(expected["beforeCommit"], expected["afterCommit"])
     expected.pop("retainedVerification", None)
@@ -19,7 +19,10 @@ def test_measurement_replays_the_pinned_commits_and_current_fixtures():
     assert result["requests"] == 0
     assert result["captureCount"] == 7
     for row in result["families"]:
-        assert hashlib.sha256((ROOT / row["path"]).read_bytes()).hexdigest() == row["after"]["sha256"]
+        # Historical receipts name historical bytes. Fresh converter runs may
+        # update provenance; current source-field coverage is checked below.
+        retained = git("show", f"{result['afterCommit']}:{row['path']}")
+        assert hashlib.sha256(retained).hexdigest() == row["after"]["sha256"]
 
 
 @pytest.mark.parametrize(
