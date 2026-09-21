@@ -16,6 +16,27 @@ these shapes; they do not establish coverage or continuing live availability.
 | `mods-119hconres11enr.xml` | [`packages/BILLS-119hconres11enr/mods`](https://api.govinfo.gov/packages/BILLS-119hconres11enr/mods), keyed with `X-Api-Key` | Complete, unchanged 5,727-byte response, SHA-256 `1ea18296309270fdceccf631f8b74ed58ad09a0b4df691e3c0de61a33f15ece1`. Retrieved 2026-09-19. |
 | `uslm-119hconres11enr.xml` | [USLM rendition](https://www.govinfo.gov/content/pkg/BILLS-119hconres11enr/uslm/BILLS-119hconres11enr.xml), keyless | Complete, unchanged 3,113-byte response, SHA-256 `a0e2847ee6883b64c881053c781ce0a289e25e59be7b812fcd7fbab5f2e9f5ff`, `content-type: application/xml`. Retrieved 2026-09-19. |
 
+## Separate cosponsor list regression (2026-09-21)
+
+`status-118hr1-cosponsors.xml` is reduced from retained native member
+`BILLSTATUS-118hr1.xml` in the 118th House BILLSTATUS ZIP. The source has one
+sponsor and 49 separately listed cosponsors. The fixture keeps the root version,
+bill identity/title, complete sponsor block and complete cosponsor block; all
+other bill fields were removed and ElementTree reserialized the XML. It does
+not establish completeness for any removed field.
+
+- Original member: 366,226 bytes, SHA-256
+  `15066cb9262d8f5fadc73a411e4c8e8df65536e0f56b0068702ee2660986adce`.
+- Retained archive: `receipts/cbo-routes-2026-09-20/blobs/8e7ca7dab50a7b9b977f021ec1b3231f8fedf82c33494553857b892fadfdba98`
+  under `~/Work/corpora/supply-2026-09-02/`.
+- Fixture: 20,699 bytes, SHA-256
+  `e3b9123c9582fb46d950869d9fe51536d883b303649ffcde6780087872655be0`.
+- The full two-archive source comparison and corrected local outputs are in
+  `receipts/legislative-release-candidate-2026-09-21/`.
+
+The regression first reproduced a shaped count of zero instead of 49. The
+parser now reads `<cosponsors>` independently of `<sponsors>`.
+
 ## The USLM bill rendition (B7)
 
 `BILLS-119hconres11enr` is the package `docs/research/billtrax-raw-data-2026-09-19.md`

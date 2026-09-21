@@ -29,6 +29,21 @@ def status_body() -> bytes:
     return (FIXTURES / "status-119hr6028.xml").read_bytes()
 
 
+def test_cosponsors_are_separate_from_the_sponsor_list() -> None:
+    status = parse_bill_status(
+        (FIXTURES / "status-118hr1-cosponsors.xml").read_bytes(), identity=BillIdentity(118, "hr", 1)
+    )
+    assert len(status.sponsors) == 1
+    assert len(status.cosponsors) == 49
+    assert status.cosponsors[0].bioguide_id == "M001159"
+    assert status.cosponsors[0].full_name == "Rep. McMorris Rodgers, Cathy [R-WA-5]"
+    assert status.cosponsors[1].bioguide_id == "W000821"
+
+
+def test_no_listed_cosponsors_is_an_empty_observation() -> None:
+    assert parse_bill_status(status_body(), identity=IDENTITY).cosponsors == ()
+
+
 def test_current_status_preserves_fields_and_offered_versions() -> None:
     status = parse_bill_status(status_body(), identity=IDENTITY)
     assert status.identity == IDENTITY

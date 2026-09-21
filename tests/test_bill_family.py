@@ -62,6 +62,17 @@ TEST_ENGINE = EngineStamp(name="deltatrack", version="0.1.0", revision="0" * 40)
 
 HR6028 = BillIdentity(119, "hr", 6028)
 
+
+def test_bill_row_counts_the_native_cosponsor_list() -> None:
+    status = parse_bill_status(
+        (CAPTURED / "status-118hr1-cosponsors.xml").read_bytes(), identity=BillIdentity(118, "hr", 1)
+    )
+    capture = BillFamilyCapture(status=status, versions=(), observed_at=OBSERVED_AT)
+    assert family(capture).bills[0]["cosponsor_count"] == "49"
+    assert family(replace(capture, status=replace(status, cosponsors=()))).bills[0]["cosponsor_count"] == "0"
+    assert family(replace(capture, status=replace(status, cosponsors=None))).bills[0]["cosponsor_count"] is None
+
+
 needs_engine = pytest.mark.skipif(
     not engine_available(), reason="needs the 'bill-diff' extra: uv sync --extra bill-diff"
 )

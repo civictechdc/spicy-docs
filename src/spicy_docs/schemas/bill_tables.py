@@ -63,7 +63,10 @@ CONGRESS_BILLS = table_contract(
         "subject_count": "How many legislative subject terms the publisher listed.",
         "sponsor_bioguide_id": "Bioguide id of the first sponsor the publisher lists.",
         "sponsor_full_name": "Full name string of the first sponsor, exactly as the publisher spells it.",
-        "cosponsor_count": "Sponsors after the first, which is how BILLSTATUS states cosponsors here.",
+        "cosponsor_count": (
+            "Number of items in the publisher's separate cosponsors list, including withdrawn entries; "
+            "NULL when that list was not examined."
+        ),
         "latest_action_code": (
             "Action code of the actions[] entry the publisher's latestAction names; "
             "latestAction itself states no code, so the two are linked on date and text."
@@ -297,7 +300,7 @@ def shape_bill(
         "subject_count": text(len(status.subjects)),
         "sponsor_bioguide_id": text(status.sponsors[0].bioguide_id if status.sponsors else None),
         "sponsor_full_name": text(status.sponsors[0].full_name if status.sponsors else None),
-        "cosponsor_count": text(max(len(status.sponsors) - 1, 0)),
+        "cosponsor_count": text(None if status.cosponsors is None else len(status.cosponsors)),
         "latest_action_code": text(None if coded is None else coded.action_code),
         "latest_action_time": text(None if latest is None else latest.action_time),
         "latest_action_source_system_code": text(None if coded is None else coded.source_system_code),

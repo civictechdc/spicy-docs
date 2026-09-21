@@ -281,6 +281,10 @@ class BillStatus:
     #: NULL means this block was not read. Empty observations name the XML
     #: shape, never whether CBO produced an estimate. Published per bill.
     cbo_cost_estimates_outcome: str | None = None
+    #: The publisher lists cosponsors separately from sponsors. None means a
+    #: caller-created status has not examined this list; parsed XML always
+    #: supplies a tuple, including an empty tuple when no items are listed.
+    cosponsors: tuple[BillSponsor, ...] | None = None
 
 
 def _validated_identity(identity: BillIdentity) -> BillIdentity:
@@ -609,6 +613,9 @@ def parse_bill_status(body: bytes, *, identity: BillIdentity, max_bytes: int = D
         actions=tuple(_action(item) for item in _items(bill, "actions")),
         sponsors=tuple(
             BillSponsor(_text(item, "bioguideId"), _text(item, "fullName")) for item in _items(bill, "sponsors")
+        ),
+        cosponsors=tuple(
+            BillSponsor(_text(item, "bioguideId"), _text(item, "fullName")) for item in _items(bill, "cosponsors")
         ),
         text_versions=tuple(_text_version(item, identity) for item in _items(bill, "textVersions")),
         laws=tuple(BillLaw(_text(item, "number"), _text(item, "type")) for item in _items(bill, "laws")),

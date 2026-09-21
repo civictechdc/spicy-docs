@@ -45,11 +45,16 @@ link came from. These operations return captures; they do not publish a release
 or write a catalog. A hash checks retained bytes, not publisher authenticity.
 
 Parsed status fields include title, source update dates, latest action, actions,
-sponsors, policy area, subjects, summaries, text versions/formats, the
-`<committeeReports>` citations and the `<cboCostEstimates>` items. Original
+sponsors, the separate cosponsor list, policy area, subjects, summaries, text
+versions/formats, the `<committeeReports>` citations and the `<cboCostEstimates>` items. Original
 XML preserves fields outside this typed subset. Source strings and summary HTML
 stay intact. A status update, summary action date, text version and acquisition
 time describe different events.
+
+`congress_bills.cosponsor_count` counts the entries in `<cosponsors>`, including
+entries marked withdrawn. It is independent of `<sponsors>`. Parsed XML with
+no listed entries yields zero; a caller-created status whose cosponsor list
+was not examined yields NULL.
 
 `<cboCostEstimates>` is the keyless route to CBO's cost-estimate index, whose
 own site is walled ([routes](../research/cbo-cost-estimate-routes-2026-09-20.md)).
