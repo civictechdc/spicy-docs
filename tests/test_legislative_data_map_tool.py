@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 import tools.analysis.legislative_data_map as data_map_tool
+from tools.analysis import shared as analysis_shared
 from tools.analysis.legislative_data_map import (
     ERROR_TOLERANCE,
     FLOOR_DESCENT_STEPS,
@@ -51,7 +52,9 @@ def test_check_evidence_rejects_a_listing_route_key_not_in_list_routes(monkeypat
     target = next(row for row in ROWS if row.data == "Enacted bills list")
     assert target.status == "have" and data_map_tool.LISTING_MODULE in target.evidence
     assert "not-a-real-route" not in LIST_ROUTES
-    monkeypatch.setattr(data_map_tool, "ROWS", _replace_row(target, measure=(target.measure[0], "not-a-real-route")))
+    monkeypatch.setattr(
+        data_map_tool.tables, "ROWS", _replace_row(target, measure=(target.measure[0], "not-a-real-route"))
+    )
     with pytest.raises(SystemExit):
         check_evidence(ROOT)
 
@@ -60,7 +63,9 @@ def test_check_evidence_rejects_a_symbol_not_defined_in_its_evidence(monkeypatch
     """Mutation check: a `have` row naming a function its evidence file never defines must fail."""
     target = next(row for row in ROWS if row.data == "Senate per-vote XML")
     assert target.status == "have"
-    monkeypatch.setattr(data_map_tool, "ROWS", _replace_row(target, note=target.note + " via `totally_fake_helper_fn`"))
+    monkeypatch.setattr(
+        data_map_tool.tables, "ROWS", _replace_row(target, note=target.note + " via `totally_fake_helper_fn`")
+    )
     with pytest.raises(SystemExit):
         check_evidence(ROOT)
 
@@ -233,8 +238,9 @@ def test_offline_refresh_updates_judgments_without_remeasuring(tmp_path: Path, m
     def unexpected_request(*_args: object, **_kwargs: object) -> None:
         pytest.fail("offline refresh must not initialize a network reader")
 
-    for reader in ("CongressListingReader", "GovInfoDiscoveryReader", "KeylessProbe"):
-        monkeypatch.setattr(data_map_tool, reader, unexpected_request)
+    for reader in ("CongressListingReader", "GovInfoDiscoveryReader"):
+        monkeypatch.setattr(data_map_tool.cli, reader, unexpected_request)
+    monkeypatch.setattr(analysis_shared, "KeylessProbe", unexpected_request)
     original = json.loads(SIDECAR.read_text())
     original["rows"] = [{"status": "stale"}]
     output = tmp_path / "map.json"
