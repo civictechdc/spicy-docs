@@ -143,7 +143,7 @@ NULL-docket parent proposals first form 75 agency groups; 19 groups survive
 the earliest-date 2010 floor and collapse 48 source proposals. The other 56
 groups, containing 5,084 source rows, fall below that floor. The retained rows
 still lose document identity: two distinct OSTP proposals from 2012 and 2018
-become one 2012 row. `R/lifecycle-null-grain-review.json` retains the independent
+become one 2012 row. `R/lifecycle-null-grain-review-verified.json` retains the independent
 query and these separate denominators. The title uses
 `ANY_VALUE`, so it is not guaranteed to describe the earliest dated proposal.
 There are 1,573 zero-day pairs; this count is not an accuracy verdict.
