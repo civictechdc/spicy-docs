@@ -682,6 +682,49 @@ def test_a_shaper_that_refuses_becomes_a_named_refusal_not_an_abort() -> None:
     ]
 
 
+@needs_engine
+@pytest.mark.parametrize("number", [float("nan"), float("inf"), float("-inf")])
+def test_nonfinite_engine_evidence_refuses_only_its_diff_item(monkeypatch, number: float) -> None:
+    """A constructed engine defect on the retained real pair must name its row."""
+    from spicy_docs.interpretation import section_diff
+    from spicy_docs.schemas.bill_diff_tables import shape_section_diff_item
+    from spicy_docs.schemas.tables import TableContractError
+
+    capture = captured_pair_capture()
+    older, newer = capture.versions
+    comparison = section_diff.diff_sections(
+        older.document, newer.document, from_version=older.version_code, to_version=newer.version_code
+    )
+    original = family(capture)
+    first, *remaining = comparison.items
+    bad = replace(first, evidence={**first.evidence, "unexpected_signal": [{"nested": number}]})
+    with pytest.raises(TableContractError, match="non-finite"):
+        shape_section_diff_item(bad, bill_id="119-hr-6028", from_ref=older, to_ref=newer)
+    monkeypatch.setattr(
+        section_diff, "diff_sections", lambda *args, **kwargs: replace(comparison, items=(bad, *remaining))
+    )
+
+    result = family(capture)
+    assert result.bills == original.bills
+    assert result.bill_versions == original.bill_versions
+    assert result.bill_sections == original.bill_sections
+    assert result.section_diffs == original.section_diffs
+    assert result.section_diff_items == tuple(
+        row for row in original.section_diff_items if row["seq"] != str(first.seq)
+    )
+    [refusal] = result.refusals
+    assert refusal.table == "section_diff_items"
+    assert refusal.identity == (
+        "119-hr-6028",
+        older.version_code,
+        older.source,
+        newer.version_code,
+        newer.source,
+        str(first.seq),
+    )
+    assert "non-finite" in refusal.reason
+
+
 def test_concat_is_one_pass_where_folding_merged_is_quadratic() -> None:
     """A rollup accumulates one family per bill, so the join has to be linear.
 

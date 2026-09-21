@@ -183,7 +183,8 @@ BILL_COMMITTEE_ACTIONS = table_contract(
         ),
         "rule_set_version": (
             "Digest over every phrasing's name and pattern, so these rows name the rules that produced them "
-            "even when someone forgets to move `rule_version`; the merge prefers the larger value."
+            "even when someone forgets to move `rule_version`; an equality token, never a freshness ordering. "
+            "A successfully corrected generation supersedes its prior regardless of digest spelling."
         ),
         "citation_rule_version": (
             "The version of the `bill_number` citation rule that found the designator this row is attached "

@@ -129,8 +129,9 @@ HEARING_BILL_LINKS = table_contract(
         ),
         "link_rule_version": (
             "A digest over every link rule's name, version, publisher, relation and reader, so these rows "
-            "name the rules that produced them even when someone forgets to move a rule's own version; the "
-            "merge prefers the larger value.  Derived the way `citations.py` derives "
+            "name the rules that produced them even when someone forgets to move a rule's own version; "
+            "an equality token, never a freshness ordering. A successfully corrected generation supersedes "
+            "its prior regardless of digest spelling. Derived the way `citations.py` derives "
             "`CITATION_RULE_SET_VERSION`, and blind for the same reason to a change inside a reader."
         ),
     },

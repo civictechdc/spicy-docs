@@ -21,9 +21,10 @@ Parquet read through a DuckDB view, so a typed value is spelled exactly once, in
 ## The tables
 
 `TABLE_CONTRACTS` holds all thirty-nine by name. Each carries its columns in
-publish order, its identity, its version column — the column a merge prefers the
-larger value of when two rows share an identity — a one-sentence grain, and one
-sentence per column for the host's data dictionary.
+publish order, its identity, its source or processing version column, a
+one-sentence grain, and one sentence per column for the host's data dictionary.
+The version column's meaning determines whether its values can be ordered;
+the column name alone does not establish freshness.
 
 **Both totals on this page are derived, so recompute rather than add to them**:
 the table count is `len(TABLE_CONTRACTS)` and the column total is
@@ -74,6 +75,42 @@ once more in [the docs index](README.md).
 | `hearing_bill_links` | One row per bill one source states a hearing was held on or noticed for: the pair, the source that stated it, and the committee-and-date key the statement was checked against. | `package_id`, `bill_id`, `link_source` | `link_rule_version` | 12 | `schemas.hearing_bill_link_tables`, `interpretation.hearing_bill_links`, `sources.congress.house_committee_repository` |
 
 Eight hundred and fourteen columns in all, each with its own sentence.
+
+### Version equality and replacement
+
+A publisher date or an explicitly ordered revision can order comparable rows.
+A rule digest cannot: `bill_committee_actions.rule_set_version` and
+`hearing_bill_links.link_rule_version` establish equality of the recorded rule
+sets, not which set is newer. A correction can produce a lexically smaller
+digest. Select the intended input generation before merging; a successful
+correction supersedes its prior regardless of digest spelling. Conflicting
+same-key rows from different rule generations in one input require an explicit
+generation choice or refusal, not a maximum digest.
+
+The current SpicyRegs `transforms.table_merge.merge_table` already ranks fresh
+rows before prior rows (`_src DESC` before the version). Its same-input
+tie-break still orders the version string, so it cannot establish chronology
+between two different rule digests. This source definition does not change that
+host behavior or make a mixed-generation input safe. The print and hearing
+hosts instead replace the scopes they successfully reevaluate and checkpoint
+the processing identity.
+
+### What shared checks establish
+
+`TableContract.checked` checks the declared column set and string-or-NULL
+storage; `key` separately checks identity presence and non-NULL components.
+These definitions contain no per-column logical-type declarations. Dates,
+numbers, booleans and JSON are not inferred from names or prose, and passing
+`checked` is not semantic validation of those values. Adding such declarations
+requires a source/host ownership decision and evidence for each declared type.
+
+The explicit `json_column` helper produces compact, sorted JSON. It refuses
+non-finite numbers at any nesting depth and circular containers with
+`TableContractError`; unsupported object types still raise `TypeError`.
+The bill-family admission path records these as named row refusals. Other
+callers retain their existing refusal or abort behavior. Finite JSON bytes,
+including Unicode escaping, floating-point spelling and key order, are unchanged.
+`read_json_column` remains a convenience decoder, not strict row validation.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
