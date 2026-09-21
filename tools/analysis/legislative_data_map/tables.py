@@ -63,6 +63,17 @@ def diff_measures(previous: Mapping[str, Any], current: Mapping[str, Any]) -> li
 # --- rendering -----------------------------------------------------------------
 
 
+def _unit_coverage(unit: str, earliest: int) -> str:
+    """The floor cell for a measured descent unit; an unknown unit refuses rather than mislabeling the floor."""
+    if unit == "congress":
+        return f"{_ordinal(earliest)} Congress+"
+    if unit == "volume":
+        return f"vol. {earliest}+"
+    if unit == "year":
+        return f"{earliest}+"
+    raise ValueError(f"unknown descent unit {unit!r}; add its rendering here")
+
+
 def _congress_cells(facts: Mapping[str, Any]) -> tuple[str, str]:
     """The coverage and count cells for one Congress.gov route: floor, stop reason and newest update date."""
     if "totalError" in facts and "earliest" not in facts:
@@ -73,6 +84,8 @@ def _congress_cells(facts: Mapping[str, Any]) -> tuple[str, str]:
     path = facts.get("descentPath", "")
     if earliest is None:
         coverage = "" if not path else f"none found ({facts.get('descentStop')})"
+    elif facts.get("descentUnit") is not None:
+        coverage = _unit_coverage(facts["descentUnit"], earliest)
     elif "daily" in path:
         coverage = f"vol. {earliest}+"
     elif "bound" in path:

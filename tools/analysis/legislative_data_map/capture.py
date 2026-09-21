@@ -164,7 +164,14 @@ def measure_congress(reader: CongressListingReader, *, max_descent: int, api_key
                     stop = "two-empty"
                     break
         facts.update(
-            {"descentPath": route.descent, "earliest": earliest, "descentStop": stop, "byKey": counts, "errors": errors}
+            {
+                "descentPath": route.descent,
+                "descentUnit": route.unit,
+                "earliest": earliest,
+                "descentStop": stop,
+                "byKey": counts,
+                "errors": errors,
+            }
         )
         out[route.route] = facts
         print(f"congress {route.route}: total={facts.get('total')} earliest={earliest} stop={stop}", file=sys.stderr)
