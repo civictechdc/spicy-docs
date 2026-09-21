@@ -131,6 +131,17 @@ access; provider release identities; and original-body/search adoption. The
 qualification of the combined selected data/query remains open. These are
 delivery and evidence gaps, not a request to rebuild the existing bridge.
 
+**Fresh operational evidence:** the scheduled [FEC committee run on
+`43c06b6`](https://github.com/mikewolfd/spicy-regs/actions/runs/35645971109)
+failed on September 21 before acquisition because its API key was absent.
+The shared workflow supplies this source from `DATA_GOV_API_KEY`. This makes
+credential configuration a currently observed FEC10/OPS07 blocker, beyond the
+older reports' unverified credential state. Failure refusal worked; this run
+does not establish publisher absence or a valid new generation. The raw failed
+log is retained as `fec-committees-workflow-failure.log` under the fork receipt
+root. Configure the required scoped source credential and repeat a bounded
+complete acquisition before claiming schedule readiness.
+
 ## Rulespec — shared capture and artifact requirements
 
 The owner is [`docs/document-capture-v2-provenance.md`](../../../rulespec/docs/document-capture-v2-provenance.md).
