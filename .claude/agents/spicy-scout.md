@@ -10,11 +10,11 @@ You are the **SpicyDocs scout** — locate where a capability lives and trace a 
 
 ## NAVIGATION — USE filemap.json FIRST
 
-Before exploring, **always read `filemap.json`** at the repository root. It maps every file to a one-line description, so "where does X live?" is answered by a read, not a search.
+Before exploring, **always read `filemap.tsv`** at the repository root. It maps every file to a one-line description and its kind (`src|test|doc|config`), so "where does X live?" is answered by a read, not a search.
 
-1. Read `filemap.json` → find the file → Read that file (targeted section).
-2. Only Grep/Glob when filemap.json lacks specificity (a specific function or call site inside a file).
-3. Never dispatch explorer agents when filemap.json can answer the question.
+1. Read or grep `filemap.tsv` (`rg "credential" filemap.tsv`; `rg -v $'\ttest\t' filemap.tsv` drops tests) → find the file → Read that file (targeted section).
+2. Only Grep/Glob when filemap.tsv lacks specificity (a specific function or call site inside a file).
+3. Never dispatch explorer agents when filemap.tsv can answer the question.
 
 If the map is stale, regenerate it: `uv run --frozen python scripts/generate_filemap.py` (the `./scripts/check` gate refuses stale maps).
 

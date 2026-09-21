@@ -19,7 +19,7 @@ Always run Python tools through `uv run`; a bare executable may use another vers
 
 Prose in docs, docstrings and instructions must not hard-code counts that decay
 every commit (file counts, test counts, table sizes). Point instead: `see
-filemap.json`, `see <dir>/`, `see <module>`. Numbers that justify a rule or a
+filemap.tsv`, `see <dir>/`, `see <module>`. Numbers that justify a rule or a
 measured bound stay, with their citation.
 
 ## Read the publisher's answer correctly
