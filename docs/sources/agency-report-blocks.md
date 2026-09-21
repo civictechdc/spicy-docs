@@ -44,6 +44,26 @@ carry that same mix, because this is the code that produced every one of
 them. Treat a returned block's `agency` field as "the text of a heading",
 never as "a verified federal agency."
 
+The current `schemas.committee_report_tables.shape_report_section` makes that
+distinction explicit: `heading` preserves the literal observed title while
+`agency_label` and `agency_key` are NULL. A real agency name still survives
+verbatim as a heading; matching an `office` or `department` text pattern does
+not resolve it to an agency identity. The `full_report` sentinel supplies no
+heading because the source printed none. The original twelve column positions,
+body text, spans, patterns and row keys remain stable, with `heading` appended.
+The exported `REPORT_SECTION_READER_VERSION` lets the host reprocess corrected
+rows even when the source timestamp has not changed. The legacy parser API
+below remains compatible and does not perform agency resolution.
+
+The repair is grounded in the complete CRPT-119hrpt796 HTML: eight blocks,
+including six generic report, contents, spending and statutory headings that
+previously became agency keys. A retained native page of CRPT-113srpt77 is the
+positive witness: `OFFICE OF THE SECRETARY AND EXECUTIVE MANAGEMENT` and its
+account text survive unchanged. Neither witness requires a new agency-name
+heuristic. RefSpec's existing agency projection consumes asserted, pinned
+roster identities rather than matching headings; Rulespec document capture
+likewise separates structural headings and exact spans from interpretation.
+
 It also expects **normalized** input. GPO line numbers, `VerDate`/`DSK`
 footers and hyphenated line-wrap rejoining are a separate, sibling concern
 (the `pdf-normalize` port, applied as a post-extraction step) -- this module

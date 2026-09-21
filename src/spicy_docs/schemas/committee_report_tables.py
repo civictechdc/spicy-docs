@@ -1,4 +1,4 @@
-"""Committee reports, the agency blocks inside them, and hearing transcripts.
+"""Committee reports, their observed heading blocks, and hearing transcripts.
 
 All three are keyed on the GovInfo package id, not on a bill (C11).  A
 package-keyed report is fillable today by ``GovInfoBodyAcquirer``; the bill
@@ -58,6 +58,12 @@ text the offsets address. No raster cost figures are extracted.
 from __future__ import annotations
 
 from spicy_docs.schemas.tables import Row, flag, table_contract, text
+
+#: Processing identity for report heading segmentation and table shaping.
+#: Hosts include it in their read checkpoint alongside the CBO reader version;
+#: publisher last_modified cannot invalidate a corrected reader. Bump this
+#: when segmentation or these output semantics change.
+REPORT_SECTION_READER_VERSION = "report-headings-001"
 
 #: Which chamber each GovInfo document-type code belongs to.  CRPT's ``erpt``
 #: is a Senate executive report, not a House one; naming the six codes as data
@@ -224,18 +230,17 @@ HEARING_TRANSCRIPTS = table_contract(
 
 REPORT_SECTIONS = table_contract(
     "report_sections",
-    grain="One row per agency block parsed out of one committee report's text.",
+    grain="One row per heading block parsed out of one committee report's text.",
     identity=("package_id", "seq"),
     version_column="last_modified",
     columns={
         "package_id": "The report package this block was parsed from.",
         "seq": "Zero-based position of this block in the report, in reading order.",
         "agency_label": (
-            "The agency heading this block sits under, or the `Full Report` sentinel where no header "
-            "matched anywhere in the report.  NULL on a preamble block, which precedes the first header "
-            "and so has neither."
+            "NULL because heading recognition does not establish agency identity; the source heading "
+            "is retained separately in heading."
         ),
-        "agency_key": "The normalized agency key, which is what a recurrence count groups on.",
+        "agency_key": "NULL because this reader does not resolve headings to agency identities.",
         "body": "The block's text, trimmed the way the original trimmed it.",
         "pattern": (
             "Which header pattern fired to start this block; this table's provenance column.  Two values "
@@ -249,6 +254,10 @@ REPORT_SECTIONS = table_contract(
         "body_chars": "Character length of body, which can be shorter than the span it sits in.",
         "last_modified": (
             "The parent report's last_modified, carried so this table versions with the package it came from."
+        ),
+        "heading": (
+            "The source heading as spelled and trimmed, including actual agency names and generic titles; "
+            "NULL for preamble or full_report blocks, which have no source heading."
         ),
     },
 )
@@ -383,19 +392,24 @@ def shape_report_section(
     seq: int,
     last_modified: str | None = None,
 ) -> Row:
-    """One ``report_sections`` row from one parsed agency block.
+    """One ``report_sections`` row from one observed heading block.
 
     ``last_modified`` is a column for the same reason ``bill_sections`` carries
     its parent's ``version_date``: the design names it this table's version
     column, and a merge can only read a version column the table itself has.
+
+    The legacy block's ``agency`` is a heading, not an agency assertion. Even
+    a named ``office`` or ``department`` pattern only identifies a text shape.
+    Preserve that observation without promoting it to agency identity; the
+    legacy ``Full Report`` fallback is not publisher text either.
     """
     start, end = block.char_span
     pages = block.page_span
     return {
         "package_id": text(package_id),
         "seq": text(seq),
-        "agency_label": text(block.agency),
-        "agency_key": text(block.agency_key),
+        "agency_label": None,
+        "agency_key": None,
         "body": text(block.body),
         "pattern": text(block.pattern),
         "char_start": text(start),
@@ -404,6 +418,7 @@ def shape_report_section(
         "page_end": text(None if pages is None else pages[1]),
         "body_chars": text(len(block.body)),
         "last_modified": text(last_modified),
+        "heading": None if block.pattern in {"preamble", "full_report"} else text(block.agency),
     }
 
 
@@ -412,6 +427,7 @@ __all__ = [
     "COMMITTEE_REPORTS",
     "HEARING_TRANSCRIPTS",
     "REPORT_SECTIONS",
+    "REPORT_SECTION_READER_VERSION",
     "shape_committee_report",
     "shape_hearing_transcript",
     "shape_report_section",

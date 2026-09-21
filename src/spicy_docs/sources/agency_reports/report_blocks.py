@@ -11,6 +11,10 @@ carry the same mix, because this is the code that produced every one of them
 for parity with that stored data; do not read a returned block's ``agency``
 field as a verified agency name.
 
+The current table shaper preserves this observation in ``heading`` and leaves
+agency identity columns NULL. The names here remain for parser compatibility;
+they are not permission to recreate the old table's identity claims.
+
 This parser expects **normalized** text: GPO line numbers, ``VerDate``/``DSK``
 footers and hyphenated line-wrap rejoining already applied (the sibling
 ``pdf-normalize`` port is a post-extraction step, not this module's job).

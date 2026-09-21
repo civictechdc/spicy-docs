@@ -54,7 +54,7 @@ once more in [the docs index](README.md).
 | `members` | One row per legislator in one capture of the community crosswalk. | `bioguide_id` | `observed_at` | 18 | `sources.legislators` |
 | `member_terms` | One row per term a legislator served, in the crosswalk's own order. | `bioguide_id`, `term_index` | `observed_at` | 9 | `sources.legislators` |
 | `committee_reports` | One row per captured GovInfo committee report package, with the CBO estimate it reprints or refuses. | `package_id` | `last_modified` | 32 | `sources.govinfo.body_acquisition`, `interpretation.cbo_estimates` |
-| `report_sections` | One row per agency block parsed out of one committee report's text. | `package_id`, `seq` | `last_modified` | 12 | `sources.agency_reports.report_blocks` |
+| `report_sections` | One row per heading block parsed out of one committee report's text. | `package_id`, `seq` | `last_modified` | 13 | `sources.agency_reports.report_blocks` |
 | `hearing_transcripts` | One row per captured GovInfo hearing transcript package. | `package_id` | `last_modified` | 20 | `sources.govinfo.body_acquisition`, `sources.congress.listing` (`hearing-detail`) |
 | `house_communications` | One row per House executive communication: the Congress.gov house-communication routes where the publisher decomposes it, the Congressional Record entry it printed where the publisher does not. | `congress`, `communication_type`, `number` | `update_date` | 32 | `sources.congress.listing` (`house-communication`, `house-communication-detail`), `sources.congress.record_communications`, `interpretation.communication_rin` |
 | `committee_meetings` | One row per scheduled committee meeting, as the Congress.gov committee-meeting routes state it. | `congress`, `chamber`, `event_id` | `update_date` | 27 | `sources.congress.listing` (`committee-meeting`, `committee-meeting-detail`) |
@@ -73,12 +73,23 @@ once more in [the docs index](README.md).
 | `bill_committee_actions` | One row per action phrase a committee print states about one bill it names in the same sentence: the print's own phrasing, what it maps to, and how reliable the pairing is. | `document_key`, `text_sha256`, `bill_id`, `print_phrasing`, `span_start` | `rule_set_version` | 27 | `schemas.bill_action_tables`, `interpretation.bill_actions` |
 | `hearing_bill_links` | One row per bill one source states a hearing was held on or noticed for: the pair, the source that stated it, and the committee-and-date key the statement was checked against. | `package_id`, `bill_id`, `link_source` | `link_rule_version` | 12 | `schemas.hearing_bill_link_tables`, `interpretation.hearing_bill_links`, `sources.congress.house_committee_repository` |
 
-Eight hundred and thirteen columns in all, each with its own sentence.
+Eight hundred and fourteen columns in all, each with its own sentence.
 
 `congress_bills`'s first ten columns keep the exact order and spelling of the
 live `build_congress_bills.COLUMNS` a host already publishes: other repositories
 pin that prefix by digest, so it is frozen on purpose and every new column is
 appended.
+
+`report_sections` preserves the source heading in its appended `heading`
+column. The older `agency_label` and `agency_key` columns remain in place but
+are NULL: the heading splitter does not resolve agency identities. Actual
+agency names survive as literal headings alongside generic section titles.
+`preamble` and `full_report` blocks have no source heading; the legacy parser's
+`Full Report` sentinel is not copied into the new column. Body text, patterns,
+spans and row identity are unchanged. Hosts must include
+`REPORT_SECTION_READER_VERSION` from `schemas.committee_report_tables` in
+their processing checkpoint and regenerate old rows; publisher modification
+timestamps cannot establish that this correction has run.
 
 ## The bill family is one pass
 

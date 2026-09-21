@@ -15,6 +15,7 @@ responses fit well inside the fixture bound.
 | `mods-CRPT-119hrpt1.xml` | [`packages/CRPT-119hrpt1/mods`](https://api.govinfo.gov/packages/CRPT-119hrpt1/mods), keyed with `X-Api-Key` | 9,787 | `d73ea7b12140ca7e1ad08649092a9e14a432a9fce8948d8a4975e4f3cd43f9d2` |
 | `body-CRPT-119hrpt1.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt1/html/CRPT-119hrpt1.htm), keyless | 13,953 | `d2575146c81d989831fd08e8f424eddb048346bfe78670db994c0a107b584ad9` |
 | `body-CRPT-119hrpt105.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt105/html/CRPT-119hrpt105.htm), keyless | 8,504 | `903f3aadd805b3ed85066bef29fa4d3f236501b6e94cb531168ed189362eca19` |
+| `body-CRPT-119hrpt796.htm` | [HTML rendition](https://www.govinfo.gov/content/pkg/CRPT-119hrpt796/html/CRPT-119hrpt796.htm), captured 2026-09-21 | 81,335 | `43eb74dac1580417ebb6f61bbc4b65b0c7eb0582d3057690fdd30140856ab971` |
 | `summary-CPRT-118HPRT57104.json` | [`packages/CPRT-118HPRT57104/summary`](https://api.govinfo.gov/packages/CPRT-118HPRT57104/summary), keyed with `X-Api-Key` | 1,220 | `b3fedfb456de587366b84087248f7a075fc22567fc3c814b580ae87ef5ce2547` |
 | `mods-CPRT-118HPRT57104.xml` | [`packages/CPRT-118HPRT57104/mods`](https://api.govinfo.gov/packages/CPRT-118HPRT57104/mods), keyed with `X-Api-Key` | 6,221 | `7d30cbee9e219929472608daf15871c46f3c5ade926d698f48485c2ef798fe19` |
 
@@ -22,6 +23,14 @@ No fixture above was reduced or reformatted. The credential travels only in the
 request header, and the capture script refused to write any file whose bytes
 contained the key or an `api_key=` parameter; none did. The keyless body route
 takes no credential at all.
+
+`body-CRPT-119hrpt796.htm` was retained during the 2026-09-21 data validation
+sprint. Its bytes match the earlier hosted report capture's digest. It keeps
+all eight heading/body blocks, including generic headings that the old table
+shaper mislabeled as agencies. The receipt is
+`receipts/data-validation-sprint-2026-09-21/legislative/fresh-package-bodies/`
+under the supply corpus; the remediation replay is beside it under
+`receipts/remediation-sprint-2026-09-21/report-headings/`.
 
 ## The committee-print collection (CPRT)
 

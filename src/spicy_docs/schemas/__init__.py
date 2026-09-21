@@ -39,6 +39,7 @@ from spicy_docs.schemas.budget_volume_tables import BUDGET_VOLUMES
 from spicy_docs.schemas.committee_report_tables import (
     COMMITTEE_REPORTS,
     HEARING_TRANSCRIPTS,
+    REPORT_SECTION_READER_VERSION,
     REPORT_SECTIONS,
 )
 from spicy_docs.schemas.congress_activity_tables import (
@@ -168,6 +169,7 @@ __all__ = [
     "RECORD_ISSUES",
     "RECORD_TYPES",
     "REPORT_SECTIONS",
+    "REPORT_SECTION_READER_VERSION",
     "ROLL_CALL_VOTES",
     "SECTION_CLASSIFICATIONS",
     "SECTION_DIFFS",
