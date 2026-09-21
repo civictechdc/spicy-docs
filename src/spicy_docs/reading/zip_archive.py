@@ -61,6 +61,9 @@ def open_archive(
         raise error_type(f"{label} is malformed") from error
     try:
         archive_members(archive, max_entries=max_entries, error_type=error_type, label=label)
+        # Bounds read the central directory's declared (uncompressed) sizes; `testzip()` below verifies
+        # the stored bytes match those declarations, so a lying header is refused by CRC, not trusted
+        # past the bounds.
         total = 0
         for info in archive.infolist():
             _check_codec(info, error_type, label)

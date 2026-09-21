@@ -80,7 +80,8 @@ BILL_COMMITTEE_ACTIONS = table_contract(
             "`single` where the sentence names one bill and `multi` where it names several.  Measured joint "
             "precision -- right kind *and* right bill -- is **83.3% for `single`** (30 of 36 hand-checked) "
             "and **50% for `multi`** (2 of 4).  4,089 of 4,456 rows are `single`, so "
-            "Filtering to `single` excludes 8% of the volume but does not certify an individual finding.  "
+            "filtering to `single` excludes the remaining 8% of the volume but does not certify an "
+            "individual finding.  "
             "Both classes retain source evidence for verification; an acceptance threshold must be stated separately."
         ),
         "sealed_stage": (
@@ -97,7 +98,7 @@ BILL_COMMITTEE_ACTIONS = table_contract(
         ),
         "billstatus_action_code": (
             "The `<actionCode>` values the publisher uses for this phrasing in this row's chamber, joined; "
-            "NULL where no code is known for it.  **Two of these are not in the retained user guide.** A "
+            "NULL where no code is known for it.  **Both kinds are not in the retained user guide.** A "
             "House committee hearing is coded `H21000` and a markup `H15000-B`, `H15001` or `H22000`, and "
             "none of the four appears in the guide's section 3 -- which states in its own first paragraph "
             "that it is representational and that no authoritative list exists.  They were read off the "

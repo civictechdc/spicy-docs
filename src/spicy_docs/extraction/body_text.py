@@ -300,7 +300,7 @@ def rendition_text(
 ) -> BodyText:
     """Derive parser-ready text from one rendition's exact bytes.
 
-    ``rendition`` is one of ``xml``, ``htm``, ``txt`` or ``pdf``; the
+    ``rendition`` is one of ``xml``, ``uslm``, ``htm``, ``txt`` or ``pdf``; the
     derivation it gets is ``RENDITION_DERIVATIONS[rendition]`` and is never
     inferred from the bytes. ``media_type`` is checked against the rendition
     when given. ``byte_size`` defaults to ``len(data)`` and exists so a caller
