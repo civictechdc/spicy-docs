@@ -83,13 +83,16 @@ def test_retained_publisher_control_byte_is_not_repaired_by_source_reader():
 
 
 def test_missing_empty_repeated_and_unknown_children_survive_in_source_order():
-    body = b"""<REGINFO_RIN_DATA><RIN_INFO note="raw"><RIN/><RIN> second </RIN>
+    body = (
+        b"""<REGINFO_RIN_DATA><RIN_INFO note="raw"><RIN/><RIN> second </RIN>
     <PUBLICATION/><PUBLICATION><PUBLICATION_ID/><PUBLICATION_ID> x </PUBLICATION_ID></PUBLICATION>
     <CFR_LIST/><CFR_LIST a="v"><CFR/><CFR> </CFR><OTHER flag="x">unexpected</OTHER></CFR_LIST>
     <LEGAL_AUTHORITY_LIST><LEGAL_AUTHORITY/><LEGAL_AUTHORITY>literal</LEGAL_AUTHORITY></LEGAL_AUTHORITY_LIST>
-    <TIMETABLE_LIST><TIMETABLE/><TIMETABLE><TTBL_DATE/><TTBL_DATE>00/00/0000</TTBL_DATE><FR_CITATION/></TIMETABLE></TIMETABLE_LIST>
+    <TIMETABLE_LIST><TIMETABLE/><TIMETABLE><TTBL_DATE/><TTBL_DATE>00/00/0000</TTBL_DATE><FR_CITATION/>"""
+        b"""</TIMETABLE></TIMETABLE_LIST>
     <ADDITIONAL_INFO/><ADDITIONAL_INFO> A\n\nB^PC </ADDITIONAL_INFO><UNKNOWN>unselected</UNKNOWN>
     </RIN_INFO><RIN_INFO/></REGINFO_RIN_DATA>"""
+    )
     _, rows = read(body)
     assert rows[1].fields == ()
     assert rows[0].element.attributes == {"note": "raw"}
@@ -105,7 +108,10 @@ def test_missing_empty_repeated_and_unknown_children_survive_in_source_order():
 
 
 def test_descendant_and_leading_text_are_distinct_without_normalization():
-    body = b"""<REGINFO_RIN_DATA><RIN_INFO><ADDITIONAL_INFO>\r\nA&amp;B<x:span xmlns:x="urn:unknown" x:a="v">child</x:span>tail<empty/>end</ADDITIONAL_INFO></RIN_INFO></REGINFO_RIN_DATA>"""
+    body = (
+        b"""<REGINFO_RIN_DATA><RIN_INFO><ADDITIONAL_INFO>\r\nA&amp;B<x:span xmlns:x="urn:unknown" x:a="v">child</x:span>tail"""
+        b"""<empty/>end</ADDITIONAL_INFO></RIN_INFO></REGINFO_RIN_DATA>"""
+    )
     _, rows = read(body)
     item = fields(rows[0], "ADDITIONAL_INFO")[0]
     assert item.text == "\nA&Bchildtailend"
@@ -216,9 +222,8 @@ def test_record_node_text_and_depth_budgets():
 
 def test_identity_validation_does_not_buffer_unrequested_metadata():
     body = (
-        b"<REGINFO_RIN_DATA><RIN_INFO><RIN>x</RIN><PUBLICATION><PUBLICATION_ID>202510</PUBLICATION_ID></PUBLICATION><ABSTRACT>"
-        + b"x" * (3 * 1024 * 1024)
-        + b"</ABSTRACT></RIN_INFO></REGINFO_RIN_DATA>"
+        b"<REGINFO_RIN_DATA><RIN_INFO><RIN>x</RIN><PUBLICATION><PUBLICATION_ID>202510</PUBLICATION_ID>"
+        b"</PUBLICATION><ABSTRACT>" + b"x" * (3 * 1024 * 1024) + b"</ABSTRACT></RIN_INFO></REGINFO_RIN_DATA>"
     )
     assert (
         validate_unified_agenda_xml(

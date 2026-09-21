@@ -409,9 +409,8 @@ def test_source_public_tables_preserve_proven_columns(
     expected: Mapping[str, Any],
 ) -> None:
     """Each source profile's proven columns, primary key and shaped values survive to the Parquet row."""
-    identity = (
-        profile.source_record_id(record) if profile.source_record_id is not None else str(record["data"]["id"])  # type: ignore[index]
-    )
+    source_id = profile.source_record_id
+    identity = source_id(record) if source_id is not None else str(record["data"]["id"])  # type: ignore[index]
     source = _SourceStub(profile, [_source_row(profile, identity, record)])
     destination = tmp_path / profile.table_name
     published = PublicTablePublisher(profile).publish(

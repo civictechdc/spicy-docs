@@ -744,7 +744,10 @@ def comment_acquisition_policy(query_scope: Mapping[str, Any]) -> dict[str, Any]
         "acquisitionRung": "community-mirror",
         "baseUrl": PUBLIC_TABLE_BASE_URL,
         "coverageLimits": [
-            "Discovery assumes contiguous part numbers from zero for each requested agency and stops at the first missing part.",
+            (
+                "Discovery assumes contiguous part numbers from zero for each requested agency and stops at "
+                "the first missing part."
+            ),
             "Later part numbers after a gap and agencies outside the requested scope are unrequested.",
             "The terminal marker declares the end of the capture; the missing-part HTTP response is not retained.",
             "Captured partition bytes do not establish complete upstream membership or one publisher-wide version.",

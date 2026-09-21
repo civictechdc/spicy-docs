@@ -494,7 +494,8 @@ def iter_federal_register_pages(
                 emitted_windows += 1
                 if declared_count >= RESULT_CAP:
                     yield FederalRegisterPage(
-                        traversal_index=traversal_index,  # noqa: B023 - window_pages is drained via `yield from` before traversal_index advances
+                        # window_pages is drained via `yield from` before traversal_index advances
+                        traversal_index=traversal_index,  # noqa: B023
                         page_index=emitted_pages,
                         request_key=initial_url,
                         source_cursor=None,
@@ -526,7 +527,8 @@ def iter_federal_register_pages(
                     inventory.add(response, page_index=window_page_index)
                     next_url = federal_register_next_page_url(response, seen_urls=seen_urls)
                     yield FederalRegisterPage(
-                        traversal_index=traversal_index,  # noqa: B023 - window_pages is drained via `yield from` before traversal_index advances
+                        # window_pages is drained via `yield from` before traversal_index advances
+                        traversal_index=traversal_index,  # noqa: B023
                         page_index=emitted_pages,
                         request_key=request_url,
                         source_cursor=cursor,

@@ -70,7 +70,10 @@ def test_missing_repeated_or_empty_keys_do_not_inherit_other_blocks():
 
 
 def test_invalid_utf8_has_an_issue_and_original_byte_spans():
-    body = b"\xff<!-- documentid:x usckey:\xff --><!-- itempath:/10/Sec. 1 -->\n<!-- field-start:head --><h3>\xff</h3><!-- field-end:head -->"
+    body = (
+        b"\xff<!-- documentid:x usckey:\xff --><!-- itempath:/10/Sec. 1 -->\n"
+        b"<!-- field-start:head --><h3>\xff</h3><!-- field-end:head -->"
+    )
     row = rows(body)[0]
     assert row.issues == ("invalid_utf8",)
     assert row.usckey == "\ufffd" and row.heading.text == "\ufffd"
@@ -79,7 +82,10 @@ def test_invalid_utf8_has_an_issue_and_original_byte_spans():
 
 
 def test_unclosed_heading_is_reported_without_borrowing_next_heading():
-    body = b"<!-- itempath:/10/Sec. 1 --><!-- field-start:head --><h3>first</h3><!-- itempath:/10/Sec. 2 --><!-- field-start:head --><h3>second</h3><!-- field-end:head -->"
+    body = (
+        b"<!-- itempath:/10/Sec. 1 --><!-- field-start:head --><h3>first</h3><!-- itempath:/10/Sec. 2 -->"
+        b"<!-- field-start:head --><h3>second</h3><!-- field-end:head -->"
+    )
     first, second = rows(body)
     assert first.heading is None and "heading_field_unclosed" in first.issues
     assert second.heading.text == "second"

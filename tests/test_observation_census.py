@@ -106,7 +106,7 @@ def _publish(
     return args, receipt
 
 
-def test_census_reports_the_00_111_collision_and_its_winner(tmp_path: Path) -> None:
+def test_census_reports_the_00_111_collision_and_keeps_both_records(tmp_path: Path) -> None:
     """A legacy-form number reused across two dates keeps both records while the number/date census still reports reuse.
 
     Composite identity yields two records and zero discards because the census

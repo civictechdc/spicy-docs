@@ -176,7 +176,8 @@ def _select_observations(
                 volatile_groups.append((traversal, source_record_id, source_version))
                 continue
             raise SourceNativeReleaseError(
-                f"{profile.name} has an unresolved source-version tie for {str(source_record_id)!r} at {source_version!r}"
+                f"{profile.name} has an unresolved source-version tie for {str(source_record_id)!r} "
+                f"at {source_version!r}"
             )
 
     # A grouped maximum avoids O(n**2) searches for identities with n observations.

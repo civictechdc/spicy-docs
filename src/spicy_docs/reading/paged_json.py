@@ -391,7 +391,8 @@ class PagedJsonReader(SourceAcquirer):
         url = self.family.check_url(url)
         if (body is not None) != (self.family.method == "POST"):
             raise PagedJsonSourceError(
-                f"{self.family.label} {self.family.method} pages {'require' if self.family.method == 'POST' else 'forbid'} a request body"
+                f"{self.family.label} {self.family.method} pages "
+                f"{'require' if self.family.method == 'POST' else 'forbid'} a request body"
             )
         content = _encode_body(body) if body is not None else None
         if content is not None and self._key and self._key.encode() in content:

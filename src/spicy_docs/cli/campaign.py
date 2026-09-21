@@ -396,7 +396,10 @@ def _summarize(outcomes: list[ReleaseOutcome], elapsed: float, *, interrupted: b
         for source, c in sorted(per_source.items())
     )
     agencies = {agency for _release, agency, _source, _status in outcomes}
-    return f"{len(agencies)} agencies, {len(outcomes)} releases in {elapsed:.1f}s{' (interrupted)' * interrupted}. {counted}."
+    return (
+        f"{len(agencies)} agencies, {len(outcomes)} releases in {elapsed:.1f}s"
+        f"{' (interrupted)' * interrupted}. {counted}."
+    )
 
 
 def _print_dry_run(args: argparse.Namespace, *, out: TextIO) -> None:

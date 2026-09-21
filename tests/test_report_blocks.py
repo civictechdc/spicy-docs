@@ -207,7 +207,10 @@ def test_flatten_rejects_duplicate_page_numbers():
         "",
         "no headers here at all, just prose",
         "DEPARTMENT OF DEFENSE\nbody",
-        "Preamble text.\nDEPARTMENT OF DEFENSE\nbody\nOFFICE OF MANAGEMENT AND BUDGET\n\nSMALL BUSINESS ADMINISTRATION\nmore body",
+        (
+            "Preamble text.\nDEPARTMENT OF DEFENSE\nbody\nOFFICE OF MANAGEMENT AND BUDGET\n\n"
+            "SMALL BUSINESS ADMINISTRATION\nmore body"
+        ),
         "DEPARTMENT OF DEFENSE\nOFFICE OF MANAGEMENT AND BUDGET\n   \nSMALL BUSINESS ADMINISTRATION\nreal body",
     ],
 )
