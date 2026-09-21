@@ -298,9 +298,9 @@ rollup estimated.
   row per (document, key) is `GROUP BY document_key, cite_kind, target_key`
   with `COUNT(*)` and `MIN(span_start)`. Storing that instead would make the
   table a lossy copy of the MODS, which is exactly what it must not be.
-- **`bill_committee_actions`** is the one table here whose rows carry their
-  own measured error rate, and **a consumer must filter on it**:
-  `WHERE attachment_confidence = 'single'` is the hosted-quality subset.
+- **`bill_committee_actions`** distinguishes single-bill and multi-bill
+  sentences. `WHERE attachment_confidence = 'single'` selects the class with
+  the higher measured precision; it does not certify an individual finding.
   Measured on 60 hand-checked mentions
   (`docs/research/bill-action-relationship-2026-09-20.md`): a `single` row is
   both the right kind and the right bill **83.3%** of the time (30 of 36), a

@@ -38,16 +38,16 @@ mentions over the eight retained prints
 * **83.3%** of published rows in the single-bill class are both the right kind
   and the right bill (30 of 36). **50%** in the multi-bill class (2 of 4).
 * **91.8%** of rows (4,089 of 4,456) are single-bill, so a consumer restricting
-  to the trusted class gives up 8% of the volume.
+  to the single-bill class gives up 8% of the volume.
 * **Recall is a separate axis and is 59.6%** of what a reader sees stated in
   the entry. This table's precision figure is a statement about *what is
   published*, never about what the document contains. A consumer counting
   hearings from these rows is counting a floor.
 
-``attachment_confidence`` is the filter that makes the first figure usable:
-``WHERE attachment_confidence = 'single'`` is the hosted-quality subset, and
-the multi-bill rows stay in the table as evidence to verify rather than being
-dropped, because a dropped row is a fact nobody can check.
+``WHERE attachment_confidence = 'single'`` selects the class with the higher
+measured precision. It does not certify an individual finding. Both classes
+retain source evidence for verification; an acceptance threshold remains the
+consumer's explicit decision.
 
 The rules are ``interpretation/bill_actions.py``'s, which
 ``tools/analysis/bill_action_relationship.py`` runs too, so the measurement and
@@ -125,9 +125,8 @@ BILL_COMMITTEE_ACTIONS = table_contract(
             "`single` where the sentence names one bill and `multi` where it names several.  Measured joint "
             "precision -- right kind *and* right bill -- is **83.3% for `single`** (30 of 36 hand-checked) "
             "and **50% for `multi`** (2 of 4).  4,089 of 4,456 rows are `single`, so "
-            "`WHERE attachment_confidence = 'single'` is the hosted-quality subset at an 8% cost in volume.  "
-            "`multi` rows are kept rather than dropped because a coin-flip row a consumer can see and verify "
-            "is worth more than a fact nobody can check."
+            "Filtering to `single` excludes 8% of the volume but does not certify an individual finding.  "
+            "Both classes retain source evidence for verification; an acceptance threshold must be stated separately."
         ),
         "sealed_stage": (
             "The rung of `interpretation.bill_stage`'s sealed seven-rung ladder this phrase resolves to, or "
