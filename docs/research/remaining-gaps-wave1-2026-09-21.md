@@ -1,5 +1,9 @@
 # Remaining gaps: first implementation wave
 
+For the current backlog, including later live R2 checks, the lobbying incident
+and FEC continuation, see [remaining data and delivery gaps](remaining-gaps-2026-09-21.md).
+This report retains the first wave's original measurement and delivery state.
+
 This wave repairs shared validation, publication mechanics, retained regulatory
 fields and capture provenance. It does not certify every published row or deploy
 corrected data. Each implementation received independent review, including direct
