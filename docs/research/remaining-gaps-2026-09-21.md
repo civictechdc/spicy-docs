@@ -90,6 +90,11 @@ candidate-only statuses within these exact selections:
   and root-COVER link selection. Scheduled capture/checkpoint
   metadata lacks retained HTTP evidence and remains separately unqualified.
   The output ledger preserves the predecessor and unchanged-section proofs.
+- New hearing originals expose two source disagreements: `CHRG-119hhrg63968`
+  and `CHRG-119hhrg64154` have structured Congress 119 identities but printed
+  front matter says Congress 118. The table preserves the structured identity;
+  exact originals, hashes and locators retain both readings. Do not infer a
+  correction from one surface. See `scheduled-members-reports-audit/MANUAL-AUDIT.md`.
 - The congressional vote audit confirmed a **host selection defect**: House
   acquisition used the optional bill-reference index, omitting procedural and
   unlinked votes. The old listing originals were not retained, so stability
