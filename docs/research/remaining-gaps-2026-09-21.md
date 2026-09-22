@@ -91,15 +91,33 @@ candidate-only statuses within these exact selections:
   now enumerates source identities independently, adopts Senate menus and
   attaches bill links optionally. It prioritizes unseen votes, refreshes each
   chamber and replaces member rows only after successful native reads.
-  SpicyDocs 0.26.2 is installed; fresh source capture and whole-selection audits
-  remain open. See `votes-qualification/` and
+  SpicyDocs 0.26.2 is installed. Complete retained enumeration now establishes
+  1,573 unique 119th Congress votes: House 362/314 and Senate 659/238 for
+  sessions 1/2. Every unlinked House identity remains selected. Independent
+  review and exact offline replay pass; native XML acquisition and whole-output
+  qualification remain open. See `votes-qualification/` and
   `reviews/roll-call-enumeration-postfix-review.md`.
+- Native vote acquisition now retains a valid Speaker-election file for
+  `119:house:1:2`. The reader rejects its `totals-by-candidate` structure and
+  candidate-name choices; all 434 raw member choices independently reconcile
+  with the publisher's candidate totals. Candidate choices must remain literal,
+  with no fabricated yea/nay tally. Source support and downstream preservation
+  are being reviewed; the retained original remains refused until they pass.
 - The same vote audit joins every retained voter to the qualified members
   crosswalk, but a start-inclusive/end-exclusive term-date join leaves eleven
   vote observations unmatched. Inclusive ends create duplicate matches at
   other boundaries. Preserve the observations and expose this date-policy
   ambiguity; do not silently pick a term or drop votes. Scheduled laws/rosters
-  are publicly byte-verified but still await native-source qualification.
+  are publicly byte-verified but still await full source qualification.
+- Fresh complete House/Senate roster files reproduce every one of the 2,966
+  published assignment identities and nineteen declared field mappings. The
+  earlier scheduled capture timestamps are outside this comparison. Every
+  member joins the qualified crosswalk, but 138 assignments across fourteen
+  converted committee codes have no match in the committee table. House select
+  and joint committee identifiers expose limits in the prefix conversion;
+  source-backed alias resolution and missing committee coverage must be
+  distinguished. Preserve literal codes and every assignment. Committee
+  list/detail qualification remains open. See `rosters-qualification/`.
 - The complete retained Unified Agenda edition `202510` matches every mapped
   field in the existing fork table. Public and MCP reads agree. Date metadata
   now explains that `next_action_date` is the second distinct timetable date,
@@ -138,6 +156,12 @@ candidate-only statuses within these exact selections:
   ETag verification. See `courtlistener-bulk/verified-manifest.json`,
   `courtlistener-bulk/ACQUISITION-GATE.md` and `courtlistener-refusal/`;
   acquisition progress and count estimates do not establish rollup completion.
+  The complete 71,677,647-row docket map now passes full native semantic-digest
+  and unique-identity checks. The full cluster rebuild is active. One source
+  court has blank jurisdiction but no references anywhere in the map; a
+  reviewed preflight correction permits that unused row while refusing any
+  referenced blank. Final cluster source/conservation audits remain open; see
+  `courtlistener-clusters-qualification/`.
 
 ## SpicyDocs — source conversion, interpretation and evidence
 
