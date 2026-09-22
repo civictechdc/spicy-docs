@@ -315,3 +315,42 @@ Senate-only file, is the plainer design and the only one that also fills
 `RollCallVote.tallies`, which no Congress.gov route states for either
 chamber. This is a proposal for the maintainer to move into
 `docs/decisions.md`, not a decision recorded there yet.
+
+## Candidate elections
+
+The Clerk may publish `totals-by-candidate` instead of `totals-by-vote`,
+including when `vote-type` says `YEA-AND-NAY`. The reader uses the native
+tally structure and exposes `RollCallVote.tally_kind` as `candidates` or
+`positions`. Candidate totals retain their literal labels and native zero
+counts. Each member choice must occur in the declared labels, and the
+complete member roster must reconcile with every candidate count. Missing,
+mixed or malformed totals refuse.
+
+A named choice keeps its literal `MemberVote.vote` and has
+`vote_normalized=None`; an actually chosen ordinary label such as Present
+retains its ordinary normalization. Ordinary vote files still refuse
+unrecognized choices. The source-owned table shaper records `tally_kind`,
+keeps the native map in `tallies_json`, and leaves all four ordinary tally
+columns NULL for candidate elections. Legacy rows without the appended
+column remain distinguishable from newly captured records. See the
+[retained Speaker fixture](../../tests/fixtures/congress_votes/README.md#candidate-election-fixture)
+for the exact source bytes and measured counts supporting this branch.
+
+## Votes naming several documents or amendments
+
+Senate en-bloc votes may repeat native `document` and `amendment` blocks.
+`RollCallVote.documents` and `amendments` preserve every block in source
+order, including repeated empty-identifier amendment observations. Numbers
+remain strings, including nomination numbers such as `55-25`. The older
+singular `document` and `amendment` attributes remain populated when there
+is exactly one block of their kind; they are NULL for multiple blocks.
+
+The roll-call table appends `documents_json` and `amendments_json`, with
+each array retaining all fields of its corresponding native source objects.
+A captured vote with no such objects emits `[]`; legacy and linkage-only
+rows keep NULL. A manually constructed older vote with only its singular
+attribute still emits a one-item array. A nonempty plural attribute takes
+precedence if both representations are supplied. No first-document bill
+link or document-to-amendment association is inferred. See the
+[multiple-document fixture](../../tests/fixtures/congress_votes/README.md#multiple-document-senate-fixture)
+for the exact retained source supporting this branch.

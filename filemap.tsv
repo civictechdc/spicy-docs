@@ -415,9 +415,11 @@ tests/test_congress_bill_text.py	Current printed bill XML identity, body shape a
 tests/test_congress_bill_tree.py	The DeltaTrack adapter: the gate, the bodies it reads, and the element inventory.	test
 tests/test_congress_bill_versions.py	The sealed version-code vocabulary, format choice, package ids and version kind.	test
 tests/test_congress_bulk_status.py	One BILLSTATUS folder zip: every member proved or refused, and the bounds that refuse the zip.	test
+tests/test_congress_candidate_votes.py	Candidate-choice election totals stay distinct from ordinary position totals.	test
 tests/test_congress_index_tables.py	The Congress.gov index tables' own rules, and the data-map edges re-run on the captured records.	test
 tests/test_congress_listing.py	Congress.gov list routes name explicit queries and walk exact pages to the publisher's end.	test
 tests/test_congress_press_releases.py	Appropriations committee press releases: two RSS 2.0 feeds, read whole, with a content identity proof.	test
+tests/test_congress_vote_documents.py	Senate en-bloc votes preserve the complete ordered document list.	test
 tests/test_congress_votes.py	House Clerk and Senate LIS roll-call vote XML: shape, identity proof, crosswalk and mocked acquisition.	test
 tests/test_cost_estimate_tables.py	The CBO cost-estimate index: the element the reader now reads, the fold, and the two parse rules.	test
 tests/test_courtlistener_bulk.py	Hermetic tests for the CourtListener bulk-dump ingest (no network).	test

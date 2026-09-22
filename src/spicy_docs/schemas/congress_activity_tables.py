@@ -135,7 +135,7 @@ ROLL_CALL_VOTES = table_contract(
         "not_voting": "Members not voting: the Clerk's not-voting-total, or the Senate's absent, folded to one column.",
         "tallies_json": (
             "Every count the publisher stated, under the publisher's own names, as a JSON object. "
-            "The four columns above fold two vocabularies onto one; this is what was folded."
+            "Candidate elections keep literal choice labels here and leave the four ordinary tally columns NULL."
         ),
         "member_vote_count": "How many member positions the file carried; the member_votes row count for this roll call.",
         "bill_id": "The bill this roll call refers to, from a recorded-vote reference or a vote-list reference.",
@@ -143,6 +143,9 @@ ROLL_CALL_VOTES = table_contract(
         "match_action_index": "Position of the action whose recordedVote named this roll call, where one did.",
         "match_url": "The reference URL the match was read from.",
         "conflict_count": "How many later references disagreed with the one that won; kept, never dropped.",
+        "tally_kind": "positions for ordinary totals, candidates for native named-choice totals; NULL on legacy or linkage-only rows.",
+        "documents_json": "Ordered Senate document objects with native congress, type, number, name, title and short_title; [] for captured votes without documents, NULL for legacy or linkage-only rows. Numbers retain publisher spelling, including nomination suffixes; this does not assert a matched bill or nomination.",
+        "amendments_json": "Ordered Senate amendment objects with native number, to_amendment_number, to_amendment_to_amendment_number, to_document_number, to_document_short_title and purpose; [] for captured votes without amendments, NULL for legacy or linkage-only rows. Repeated empty-ID blocks remain separate observations; no document pairing is inferred.",
     },
 )
 
@@ -170,7 +173,7 @@ MEMBER_VOTES = table_contract(
         "party": "The member's party as the roll-call source states it.",
         "state": "The member's state as the roll-call source states it.",
         "position": "The member's position exactly as the publisher spelled it (Yea, Aye, Not Voting...).",
-        "position_normalized": "That position folded onto yea, nay, present or not_voting.",
+        "position_normalized": "That position folded onto yea, nay, present or not_voting; NULL for a named candidate choice.",
         "vote_date": "The date of the roll call; the merge prefers the larger value.",
     },
 )
@@ -335,7 +338,33 @@ def shape_roll_call_vote(
     ``tally`` is folded here rather than on the source record, and ``action_index``/``conflict_count`` are passed in
     because ``VoteMatch`` carries neither.
     """
-    counts = folded_tally(tally)
+    tally_kind = getattr(vote, "tally_kind", None)
+    counts = {} if tally_kind == "candidates" else folded_tally(tally)
+
+    def related_objects(plural: str, singular: str, fields: tuple[str, ...]) -> str | None:
+        if not hasattr(vote, plural) and not hasattr(vote, singular):
+            return None
+        records = getattr(vote, plural, ())
+        single = getattr(vote, singular, None)
+        if not records and single is not None:
+            records = (single,)
+        return json_column([{field: getattr(record, field) for field in fields} for record in records])
+
+    documents_json = related_objects(
+        "documents", "document", ("congress", "type", "number", "name", "title", "short_title")
+    )
+    amendments_json = related_objects(
+        "amendments",
+        "amendment",
+        (
+            "number",
+            "to_amendment_number",
+            "to_amendment_to_amendment_number",
+            "to_document_number",
+            "to_document_short_title",
+            "purpose",
+        ),
+    )
 
     def stated(given: object, own: str, matched: str | None = None) -> object:
         if given is not None:
@@ -364,6 +393,9 @@ def shape_roll_call_vote(
         "match_action_index": text(action_index),
         "match_url": text(None if match is None else match.url),
         "conflict_count": text(conflict_count),
+        "tally_kind": text(tally_kind),
+        "documents_json": documents_json,
+        "amendments_json": amendments_json,
     }
 
 

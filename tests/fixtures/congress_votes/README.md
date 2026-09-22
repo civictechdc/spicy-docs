@@ -83,3 +83,32 @@ synthetic-but-realistic bodies (`CLERK_MINIMAL`, `SENATE_MINIMAL`,
 isolated to exactly the field under test. The identity-proof tests reuse the
 real fixtures directly, parsed against a deliberately wrong `VoteLocator` or
 a deliberately wrong `(congress, session)` pair.
+
+## Candidate election fixture
+
+`clerk-speaker-119-1-2.xml` is the complete, unchanged House Clerk response for
+the 119th Congress, session 1, roll 2, Election of the Speaker:
+[`clerk.house.gov/evs/2025/roll002.xml`](https://clerk.house.gov/evs/2025/roll002.xml).
+Captured keyless on September 22, 2026 at 03:19:51 UTC, it is 85,579 bytes,
+SHA-256 `32823e0664ec72fa387d3956b09e1d6f25c939274fc1ccb7d5d3ebb9cd2984b0`.
+The raw `vote-type` says `YEA-AND-NAY`, but its native structure is
+`totals-by-candidate`: Johnson (LA) 218, Jeffries 215, Emmer 1, Present 0,
+Not Voting 0. All 434 literal member choices reconcile with those counts.
+The parser therefore selects its tally kind from the native structure,
+not the vote-type label. Named choices have no normalized yea/nay position.
+This public-domain government source is a bounded regression witness; it
+does not establish coverage of other elections.
+
+## Multiple-document Senate fixture
+
+`senate-vote-119-1-00522.xml` is the complete, unchanged Senate response
+for Congress 119, session 1, vote 522:
+[`vote_119_1_00522.xml`](https://www.senate.gov/legislative/LIS/roll_call_votes/vote1191/vote_119_1_00522.xml).
+Captured on September 22, 2026 at 03:30:51 UTC, it is 65,978 bytes,
+SHA-256 `418eb3d0635cf1f1f4e8565af24b794d24b1436dd282648742e3f1dbb752803e`.
+It states 48 ordered document blocks and 48 ordered amendment blocks,
+plus 100 native member observations. The first document numbers are
+`55-25`, `55-45` and `54-7`, retained as text. Repeated amendment blocks
+carry empty identifiers and the literal purpose “No Statement of Purpose
+on File.” They remain separate observations; equal array lengths do not
+establish an association between documents and amendments.

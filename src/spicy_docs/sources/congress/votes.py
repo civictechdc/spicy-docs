@@ -41,6 +41,7 @@ empty success. ``locator_from_menu_entry`` turns one row into the
 from __future__ import annotations
 
 import re
+from collections import Counter
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -397,7 +398,7 @@ class MemberVote:
     party: str
     state: str
     vote: str
-    vote_normalized: NormalizedVote
+    vote_normalized: NormalizedVote | None
 
     sort_field: str | None = None
     unaccented_name: str | None = None
@@ -418,7 +419,10 @@ class RollCallVote:
     ``count``) rather than a normalized ``{yea, nay, ...}`` shape, so nothing
     about which bucket a publisher meant is lost before a transform decides
     how to fold them. ``party_totals`` (Clerk only) is the "totals by party"
-    breakdown the totals-by-vote row summarizes.
+    breakdown the totals-by-vote row summarizes. A Clerk candidate election
+    instead keeps every literal candidate label and count in ``tallies`` and
+    sets ``tally_kind="candidates"``; its named member choices have no ordinary
+    normalized position.
     """
 
     publisher: Publisher
@@ -455,6 +459,13 @@ class RollCallVote:
     tie_breaker: TieBreaker | None = None
     document: VoteDocument | None = None
     amendment: VoteAmendment | None = None
+
+    # Candidate elections carry named choices, not yea/nay counts.
+    tally_kind: Literal["positions", "candidates"] = "positions"
+    # Senate en-bloc votes name multiple documents, kept in publisher order.
+    # ``document`` remains populated only for an unambiguous single document.
+    documents: tuple[VoteDocument, ...] = ()
+    amendments: tuple[VoteAmendment, ...] = ()
 
     def vote_key(self) -> VoteKey:
         return _as_vote_key(self.chamber, self.congress, self.session, self.roll_number)
@@ -563,7 +574,7 @@ def _read_party_total(element: Element, label: str) -> PartyTotal:
     return PartyTotal(party=party, counts=_read_counts(element, _CLERK_COUNT_FIELDS, label))
 
 
-def _read_clerk_member(element: Element, label: str) -> MemberVote:
+def _read_clerk_member(element: Element, label: str, *, candidate_labels: frozenset[str] | None = None) -> MemberVote:
     legislator = single_child(element, "legislator", error_type=VoteSourceError, label=label)
     vote_element = single_child(element, "vote", error_type=VoteSourceError, label=label)
     if legislator is None or vote_element is None:
@@ -575,6 +586,12 @@ def _read_clerk_member(element: Element, label: str) -> MemberVote:
     vote_text = (vote_element.text or "").strip()
     if not vote_text:
         raise VoteSourceError(f"{label} recorded-vote <vote> is empty")
+    if candidate_labels is None:
+        normalized = normalize_vote(vote_text)
+    else:
+        if vote_text not in candidate_labels:
+            raise VoteSourceError(f"{label} member choice {vote_text!r} is absent from candidate totals")
+        normalized = _VOTE_NORMALIZATION.get(" ".join(vote_text.split()).casefold())
     return MemberVote(
         bioguide_id=bioguide_id,
         lis_id=None,
@@ -582,7 +599,7 @@ def _read_clerk_member(element: Element, label: str) -> MemberVote:
         party=party,
         state=state,
         vote=vote_text,
-        vote_normalized=normalize_vote(vote_text),
+        vote_normalized=normalized,
         sort_field=legislator.get("sort-field"),
         unaccented_name=legislator.get("unaccented-name"),
         role=legislator.get("role"),
@@ -628,15 +645,47 @@ def parse_clerk_vote(body: bytes, locator: VoteLocator) -> RollCallVote:
         raise VoteSourceError(f"{label} is missing <vote-totals>")
     party_totals = tuple(_read_party_total(el, label) for el in totals.findall("totals-by-party"))
     totals_by_vote = single_child(totals, "totals-by-vote", error_type=VoteSourceError, label=label)
-    if totals_by_vote is None:
-        raise VoteSourceError(f"{label} is missing <totals-by-vote>")
-    tallies = _read_counts(totals_by_vote, _CLERK_COUNT_FIELDS, label)
+    candidate_elements = totals.findall("totals-by-candidate")
+    if totals_by_vote is not None and candidate_elements:
+        raise VoteSourceError(f"{label} mixes position and candidate totals")
+    candidate_labels: frozenset[str] | None = None
+    tally_kind: Literal["positions", "candidates"] = "positions"
+    if totals_by_vote is not None:
+        tallies = _read_counts(totals_by_vote, _CLERK_COUNT_FIELDS, label)
+    elif candidate_elements:
+        candidate_counts: dict[str, int] = {}
+        for element in candidate_elements:
+            candidate = child_text(element, "candidate", error_type=VoteSourceError, label=label)
+            if not candidate or candidate in candidate_counts:
+                raise VoteSourceError(f"{label} candidate labels must be nonempty and unique")
+            count = _required_int(
+                child_text(element, "candidate-total", error_type=VoteSourceError, label=label),
+                label,
+                "candidate-total",
+            )
+            if count < 0:
+                raise VoteSourceError(f"{label} candidate-total must be nonnegative")
+            candidate_counts[candidate] = count
+        tallies = MappingProxyType(candidate_counts)
+        candidate_labels = frozenset(candidate_counts)
+        tally_kind = "candidates"
+    else:
+        raise VoteSourceError(f"{label} is missing <totals-by-vote> or <totals-by-candidate>")
 
-    member_votes = tuple(_read_clerk_member(el, label) for el in data.findall("recorded-vote"))
+    member_votes = tuple(
+        _read_clerk_member(el, label, candidate_labels=candidate_labels) for el in data.findall("recorded-vote")
+    )
     if not member_votes:
         raise VoteSourceError(
             f"{label} for congress={congress} session={session} roll={roll_number} lists no recorded votes"
         )
+
+    if candidate_labels is not None:
+        observed = Counter(member.vote for member in member_votes)
+        if any(observed[candidate] != count for candidate, count in tallies.items()):
+            raise VoteSourceError(f"{label} candidate totals disagree with recorded member choices")
+        if len({member.bioguide_id for member in member_votes}) != len(member_votes):
+            raise VoteSourceError(f"{label} candidate election repeats a member identity")
 
     return RollCallVote(
         publisher="clerk",
@@ -659,6 +708,7 @@ def parse_clerk_vote(body: bytes, locator: VoteLocator) -> RollCallVote:
         chamber_raw=meta("chamber", required=False),
         session_raw=session_raw,
         party_totals=party_totals,
+        tally_kind=tally_kind,
     )
 
 
@@ -771,11 +821,11 @@ def parse_senate_vote(body: bytes, locator: VoteLocator, crosswalk: LegislatorsF
     tie_element = single_child(root, "tie_breaker", error_type=VoteSourceError, label=label)
     tie_breaker = _read_tie_breaker(tie_element, label) if tie_element is not None else None
 
-    document_element = single_child(root, "document", error_type=VoteSourceError, label=label)
-    document = _read_document(document_element, label) if document_element is not None else None
+    documents = tuple(_read_document(element, label) for element in root.findall("document"))
+    document = documents[0] if len(documents) == 1 else None
 
-    amendment_element = single_child(root, "amendment", error_type=VoteSourceError, label=label)
-    amendment = _read_amendment(amendment_element, label) if amendment_element is not None else None
+    amendments = tuple(_read_amendment(element, label) for element in root.findall("amendment"))
+    amendment = amendments[0] if len(amendments) == 1 else None
 
     members = single_child(root, "members", error_type=VoteSourceError, label=label)
     if members is None:
@@ -805,7 +855,9 @@ def parse_senate_vote(body: bytes, locator: VoteLocator, crosswalk: LegislatorsF
         majority_requirement=text("majority_requirement", required=False),
         tie_breaker=tie_breaker,
         document=document,
+        documents=documents,
         amendment=amendment,
+        amendments=amendments,
     )
 
 
