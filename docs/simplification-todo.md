@@ -291,7 +291,9 @@ open items: the two conditional deferrals (S21/S31) and the FEC backlog
   archives through SpicyDocs readers (`daa59e25`); BILLSTATUS capture
   publication moved to SpicyDocs storage (`2c84fe0b`). Old walkers remain
   only as frozen test oracles. SpicyRegs M01–M10 fetcher adoption is the one
-  remaining receiver family and is tracked in its own plan (not started).
+  remaining receiver family and is tracked in its own plan (partially
+  adopted: the wheel pin is current and several readers import SpicyDocs,
+  but the module copies still stand).
 - [x] **PAR10 — Consolidate shared support in its owning package.** Use PAR01's
   evidence to replace duplicate helpers, models and validators alongside each
   migration. Reuse Rulespec Artifacts for its encoding/storage responsibilities
@@ -921,8 +923,9 @@ moves into SpicyDocs as an explicit source; SpicyRegs adopts the wheel and
 deletes its copy. RefSpec's source acquisition and parsing now enter the
 [shared parsing effort](#shared-parsing-and-metadata-capture); vocabulary building
 remains in RefSpec. SpicyRegs'
-`cloudflare.py` is a cache purge, not a fetcher, and stays. Adoption needs a
-wheel newer than the 0.3.0 SpicyRegs pins today.
+`cloudflare.py` is a cache purge, not a fetcher, and stays. Adoption needs
+the local copies deleted; SpicyRegs already pins a current wheel (0.26.4),
+so the wheel is no longer the blocker.
 
 | SpicyRegs module | Publisher route | SpicyDocs disposition | Item |
 | --- | --- | --- | --- |
@@ -961,7 +964,7 @@ retained fixtures plus a guide.
 - [x] **M08** — SAM entity management: `sources/sam.py`; needs the SAM.gov key (`SAM_GOV` in `.env`); placeholder `api_key` dropped from continuations.
 - [x] **M09** — USAspending recipients: `sources/usaspending.py`; POST page-number walk with request bodies recorded.
 - [x] **M10** — FCC ECFS filings and proceedings: `sources/fcc_ecfs.py`; offset walk with no publisher count.
-  The traversal gained three continuation kinds, a request method and a credential format as family data, and the bounded client gained POST with a recorded body. SpicyRegs adoption (deleting its copies, bumping the pinned wheel) is the receiving side's work and has not started.
+  The traversal gained three continuation kinds, a request method and a credential format as family data, and the bounded client gained POST with a recorded body. SpicyRegs adoption is the receiving side's work: the wheel pin is current and several modules import SpicyDocs readers, but the local module copies (including `federal_register.py` and `sam_entities.py`) still stand, so the deletion pass is what remains.
 - [x] **M11** — Audit of every other outbound path in SpicyRegs (all mechanisms, not only HTTP libraries): `sources/mirrulations.py` is the same reader SpicyDocs already ships; `sources/pdf.py` (attachment PDF by URL) is covered by `transport/download.py`'s bounded asset capture; four transforms import `requests` without calling it; `r2.py`, `iceberg.py`, `cloudflare.py` and the `data.spicy-regs.dev` clients are its own storage and site, not publisher fetches. No publisher route remains without a SpicyDocs equivalent.
 - [x] **M12** — Live multi-page walks through every list reader (73 requests): next-URL, POST page-number and offset continuations each ran to the publisher's terminal page or refused at the bound as designed. Receipt: `~/Work/corpora/supply-2026-09-02/receipts/spicyregs-merge-live-walks-2026-09-14/`.
 
