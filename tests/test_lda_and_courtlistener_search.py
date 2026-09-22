@@ -127,3 +127,97 @@ def test_courtlistener_pinned_pages_parse_with_cursor_continuations():
     assert recap.records[0]["docket_id"] and "dateFiled" in recap.records[0]
     assert opinions.declared_count == 1464 and opinions.records[0]["cluster_id"]
     assert "authorization" not in transport.calls[0].headers
+
+
+@pytest.mark.parametrize("kind", ["r", "d"])
+@pytest.mark.parametrize("counts", [(2100, 2110), (2001, 2010)])
+def test_courtlistener_docket_estimates_do_not_bound_terminal_population(kind, counts):
+    """Publisher documents approximate cardinality above 2,000, not an exact row total."""
+    first = search_url(kind="r").replace("type=r", f"type={kind}")
+    next_url = "https://www.courtlistener.com/api/rest/v4/search/?cursor=second"
+    transport = Transport(
+        json.dumps(
+            {"count": counts[0], "next": next_url, "results": [{"docket_id": n} for n in range(1, 1001)]}
+        ).encode(),
+        json.dumps(
+            {"count": counts[1], "next": None, "results": [{"docket_id": n} for n in range(1001, 2051)]}
+        ).encode(),
+    )
+    with CourtListenerSearchReader(budget=BUDGET, transport=transport) as source:
+        pages = list(source.search(first))
+    assert [page.declared_count for page in pages] == list(counts)
+    assert sum(len(page.records) for page in pages) == 2050
+    assert pages[-1].next_url is None
+    assert str(transport.calls[1].url) == next_url
+
+
+def test_courtlistener_opinion_counts_stay_exact_after_docket_walk():
+    transport = Transport(
+        b'{"count":2100,"next":null,"results":[{"docket_id":1}]}',
+        b'{"count":2,"next":null,"results":[{"cluster_id":1}]}',
+    )
+    with CourtListenerSearchReader(budget=BUDGET, transport=transport) as source:
+        assert len(list(source.search(search_url(kind="r")))) == 1
+        with pytest.raises(PagedJsonSourceError, match="declared and observed record counts differ"):
+            list(source.search(search_url(kind="o")))
+
+
+@pytest.mark.parametrize("kind", ["r", "o"])
+def test_courtlistener_missing_next_refuses_instead_of_ending_walk(kind):
+    transport = Transport(b'{"count":1,"results":[{"docket_id":1,"cluster_id":1}]}')
+    with (
+        CourtListenerSearchReader(budget=BUDGET, transport=transport) as source,
+        pytest.raises(PagedJsonSourceError, match="omitted its next cursor"),
+    ):
+        list(source.search(search_url(kind=kind)))
+
+
+@pytest.mark.parametrize("kind", ["r", "d"])
+@pytest.mark.parametrize("count,rows", [(2, 1), (1, 2), (2000, 1999), (2000, 2001)])
+def test_courtlistener_small_docket_counts_remain_exact(kind, count, rows):
+    url = search_url(kind="r").replace("type=r", f"type={kind}")
+    transport = Transport(
+        json.dumps({"count": count, "next": None, "results": [{"docket_id": n} for n in range(1, rows + 1)]}).encode()
+    )
+    with (
+        CourtListenerSearchReader(budget=BUDGET, transport=transport) as source,
+        pytest.raises(PagedJsonSourceError, match="counts differ|more records"),
+    ):
+        list(source.search(url))
+
+
+def test_courtlistener_small_docket_count_drift_refuses_even_if_later_count_is_large():
+    transport = Transport(
+        b'{"count":2,"next":"https://www.courtlistener.com/api/rest/v4/search/?cursor=two","results":[{"docket_id":1}]}',
+        b'{"count":2100,"next":null,"results":[{"docket_id":2}]}',
+    )
+    with (
+        CourtListenerSearchReader(budget=BUDGET, transport=transport) as source,
+        pytest.raises(PagedJsonSourceError, match="count changed"),
+    ):
+        list(source.search(search_url(kind="r")))
+
+
+@pytest.mark.parametrize("kind", ["r", "o"])
+@pytest.mark.parametrize(
+    "payload,error",
+    [
+        ({"count": 2100, "next": None, "results": []}, "empty search"),
+        ({"next": None, "results": [{"docket_id": 1, "cluster_id": 1}]}, "omitted its declared count"),
+    ],
+)
+def test_courtlistener_empty_positive_or_missing_count_refuses(kind, payload, error):
+    with (
+        CourtListenerSearchReader(budget=BUDGET, transport=Transport(json.dumps(payload).encode())) as source,
+        pytest.raises(PagedJsonSourceError, match=error),
+    ):
+        list(source.search(search_url(kind=kind)))
+
+
+def test_courtlistener_advisory_walk_allows_empty_terminal_after_observed_rows():
+    transport = Transport(
+        b'{"count":2100,"next":"https://www.courtlistener.com/api/rest/v4/search/?cursor=two","results":[{"docket_id":1}]}',
+        b'{"count":2100,"next":null,"results":[]}',
+    )
+    with CourtListenerSearchReader(budget=BUDGET, transport=transport) as source:
+        assert sum(len(page.records) for page in source.search(search_url(kind="r"))) == 1

@@ -5,15 +5,19 @@ and cursor pagination requires ``dateFiled`` ordering; ``type=r`` lists RECAP do
 ``document_count`` beside ``count``) and ``type=o`` lists opinion clusters. Keyless requests are
 served at a lower rate limit and a token travels as ``Authorization: Token <token>``, while the bulk
 exports remain the route for whole-collection work.
+
+Docket counts (``type=r`` and ``type=d``) above 2,000 may be cardinality
+estimates; their explicit terminal cursor establishes traversal completion.
+Smaller docket counts and opinion counts retain exact-count checks. Publisher explanation: https://wiki.free.law/c/courtlistener/help/api/rest/v4/search#result-counts
 """
 
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Mapping
 from datetime import date as Date
 from datetime import datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import urlencode
 
 from spicy_docs.reading.paged_json import (
@@ -23,6 +27,7 @@ from spicy_docs.reading.paged_json import (
     PagedJsonBudget,
     PagedJsonReader,
     PagedJsonSourceError,
+    query_value,
 )
 from spicy_docs.transport.source_acquirer import utc_now
 
@@ -44,6 +49,11 @@ COURTLISTENER = JsonPageFamily(
     requires_credential=False,
 )
 _COURT = re.compile(r"[a-z0-9]{1,32}")
+
+
+def is_exact_count(kind: str | None, declared_count: int | None) -> bool:
+    """Keep small-count checks; the publisher documents docket estimates above 2,000."""
+    return kind not in ("r", "d") or declared_count is None or declared_count <= 2_000
 
 
 def _filed(value: str | None, name: str) -> str | None:
@@ -106,5 +116,22 @@ class CourtListenerSearchReader(PagedJsonReader):
     ) -> None:
         super().__init__(family=COURTLISTENER, budget=budget, api_key=api_key, transport=transport, clock=clock)
 
+    def _count_is_exact(self, url: str, declared_count: int | None) -> bool:
+        return is_exact_count(query_value(url, "type"), declared_count)
+
+    def _continuation(
+        self, value: Mapping[str, Any], *, url: str, body: Mapping[str, Any] | None, rows: list
+    ) -> tuple[str | None, Mapping[str, Any] | None]:
+        if "next" not in value:
+            raise PagedJsonSourceError("CourtListener search omitted its next cursor")
+        return super()._continuation(value, url=url, body=body, rows=rows)
+
     def search(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
-        return self.pages(url, records_key=RESULTS_KEY, max_pages=max_pages)
+        observed = 0
+        for page in self.pages(url, records_key=RESULTS_KEY, max_pages=max_pages):
+            if page.declared_count is None:
+                raise PagedJsonSourceError("CourtListener search omitted its declared count")
+            observed += len(page.records)
+            if page.next_url is None and not observed and page.declared_count:
+                raise PagedJsonSourceError("CourtListener empty search has a positive declared count")
+            yield page

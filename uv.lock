@@ -1133,7 +1133,7 @@ wheels = [
 
 [[package]]
 name = "spicy-docs"
-version = "0.26.0"
+version = "0.26.1"
 source = { editable = "." }
 dependencies = [
     { name = "jsonschema" },

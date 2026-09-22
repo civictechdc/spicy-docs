@@ -425,6 +425,10 @@ class PagedJsonReader(SourceAcquirer):
         )
         return page
 
+    def _count_is_exact(self, url: str, declared_count: int | None) -> bool:
+        """Whether the selected operation promises an exact count for its first response."""
+        return self.family.count_kind == "exact"
+
     def pages(
         self,
         url: str,
@@ -438,11 +442,12 @@ class PagedJsonReader(SourceAcquirer):
 
         Pages already yielded remain partial observations when a later page refuses;
         only normal exhaustion means the traversal reached the publisher's terminal
-        page with counts that agree, and an offset walk ends at the first short page
-        with no declared count to check. ``single_record`` is forwarded to ``page()``.
+        page. Exact-count operations must also agree with their declared total; an
+        offset walk ends at the first short page with no declared count to check. ``single_record`` is forwarded to ``page()``.
         """
         check_request_count(max_pages, "max_pages")
         url = self.family.check_url(url)
+        exact = self.family.count_kind == "exact"
         seen: set[tuple[str, bytes | None]] = set()
         declared: int | None = None
         observed = 0
@@ -470,7 +475,8 @@ class PagedJsonReader(SourceAcquirer):
                 raise refuse("repeated its continuation")
             seen.add(request)
             page = self.page(url, records_key=records_key, page_index=index, body=body, single_record=single_record)
-            exact = self.family.count_kind == "exact"
+            if index == 0:
+                exact = self._count_is_exact(url, page.declared_count)
             if page.declared_count is not None:
                 if declared is None:
                     declared = page.declared_count

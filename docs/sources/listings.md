@@ -332,7 +332,12 @@ live in the project env file: `API_GOV` for api.data.gov publishers and
   observed was 36,000 requests per hour.
 - LDA and CourtListener serve keyless requests at lower rate limits; a
   token raises them. CourtListener's cursor pagination requires `dateFiled`
-  ordering, and `type=r` pages also state a `document_count`.
+  ordering, and `type=r` pages also state a `document_count`. Docket searches
+  (`type=r` and `type=d`) report [cardinality estimates](https://wiki.free.law/c/courtlistener/help/api/rest/v4/search#result-counts),
+  which the publisher describes as having an error of ±6% above 2,000 results.
+  Above that bound, their explicit terminal cursor establishes completion;
+  observed rows need not equal the estimate. Counts at or below 2,000 and
+  opinion searches retain exact-count checks.
 - SAM.gov needs its own key: the api.data.gov key answered an empty 404 in
   both header and query form on 2026-09-14. **Window by `registrationDate`
   until the declared total is at most 10,000.** That is the whole of what a
