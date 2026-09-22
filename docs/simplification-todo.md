@@ -1033,6 +1033,32 @@ explains both deferrals. DocSpec D51/D52 own the completed GAO/comment examples,
 and D55 records the annual CFR example;
 creating a new source-side loop merely to migrate it adds no value.
 
+## Performance backlog — measure before touching
+
+Every item here is a known repeated-work shape with **no in-repo caller or no
+measured receipt yet**; the rule is to take a receipt on real input before
+editing, never to optimize a path nothing exercises.
+
+- `interpretation/bill_signals.py` — `_score` re-normalizes every candidate
+  title per query document (O(docs × catalog)); latent until a caller loops it.
+- `sources/fec/filings.py` — `filing_body` re-hashes the whole retained
+  original per body; latent until embedded-body offsets get a consumer.
+- `reconstruction/evidence.py` / `reconstruction/parse.py` — unindexed id
+  lookups (`block()`, `node()`, `children()`, `sections()`); fine today, O(N²)
+  for any consumer resolving ids per node.
+- `sources/courtlistener/bulk.py` — `published_object_pin` re-walks the full
+  S3 listing per call when the caller doesn't hoist `objects`; fix is
+  caller-side (fetch once, pass the list).
+- Constant-factor set (not superlinear): `reading/markup.py` and
+  `reconstruction/evidence.py` per-event stack scans, `reconstruction/validate.py`
+  `normalize_for_comparison` multi-pass, `reading/xml.py` per-element path
+  rebuilds, `interpretation/citations.py` / `cbo_estimates.py` per-document
+  regex compiles (the `re` cache mitigates), `money_bills.py` dict rebuild.
+
+The `zip_archive.open_archive` double decode is deliberately NOT listed: the
+open-time whole-archive CRC is a pinned trust property (a corrupt ignored entry
+must refuse at open), recorded in its docstring.
+
 ## Completed local work
 
 ### Outcomes and evidence
