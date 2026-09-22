@@ -230,8 +230,12 @@ class BoundedAcquirer:
                 raise _Retryable("source transport failed") from None
         raise AcquisitionError("source exceeded redirect bound")
 
-    def capture(self, url: str, *, max_bytes: int) -> ResponseCapture:
-        """Return the complete bounded metadata response, retrying transient failures up to three attempts."""
+    def capture(self, url: str, *, max_bytes: int, extra_headers: dict | None = None) -> ResponseCapture:
+        """Return the complete bounded metadata response, retrying transient failures up to three attempts.
+
+        ``extra_headers`` ride every attempt, for publisher quirks like the
+        browser User-Agent regulations.gov requires on attachment URLs.
+        """
         if type(max_bytes) is not int or max_bytes <= 0:
             raise ValueError("max_bytes must be positive")
         self.validate_url(url)
@@ -240,7 +244,7 @@ class BoundedAcquirer:
             facts = {}
             body = bytearray()
             try:
-                for chunk in self._chunks(url, facts=facts, max_bytes=max_bytes):
+                for chunk in self._chunks(url, facts=facts, max_bytes=max_bytes, extra_headers=extra_headers):
                     if len(body) + len(chunk) > max_bytes:
                         raise AcquisitionError("metadata response exceeds its byte bound")
                     body.extend(chunk)
