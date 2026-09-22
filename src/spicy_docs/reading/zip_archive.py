@@ -43,6 +43,13 @@ def open_archive(
 
     The aggregate bound defaults to the product of the entry count and size
     limits. Callers can set a tighter total without weakening any per-file bound.
+
+    Verification is deliberately eager and therefore decodes the archive twice
+    (once here via ``testzip``, once when the caller reads members): the
+    open-time pass exists so an archive whose ignored entries are corrupt is
+    refused before ANY entry is trusted, and a lying header cannot pass the
+    size bounds. Do not fold the CRC into ``read_member`` — that would restore
+    the gap where unread entries go unverified.
     """
     for name, value in (("max_bytes", max_bytes), ("max_entries", max_entries), ("max_entry_bytes", max_entry_bytes)):
         if type(value) is not int or value <= 0:

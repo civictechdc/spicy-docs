@@ -368,13 +368,17 @@ def _validated_manifest(value: object) -> dict[str, Any]:
     }
 
 
-def validate_partition_columns(columns: Sequence[str], dtypes: Sequence[object]) -> None:
+def validate_partition_columns(columns: Sequence[str], dtypes: Sequence[object] | None = None) -> None:
     """Refuse any partition whose columns drift from the declared table shape.
 
     A column appearing, disappearing, being renamed, being reordered, or
     changing type all fail closed here.  The published tree encodes the
     partition key in the directory name, so a file that carries an
     ``agency_code`` column is itself drift.
+
+    ``dtypes`` is checked only when supplied, so a footer-only read can
+    validate names before a partition is materialized and check the types
+    against the materialized frame afterwards.
 
     polars is imported here, not at module scope, so importing
     ``spicy_docs.source_native.profiles`` does not require it. Parsing captured
@@ -390,6 +394,8 @@ def validate_partition_columns(columns: Sequence[str], dtypes: Sequence[object])
         removed = sorted(set(PUBLIC_COMMENT_FILE_COLUMNS) - set(observed))
         detail = f"added {added}, removed {removed}" if added or removed else "reordered"
         raise PublicTableSourceError(f"public comments partition columns drifted: {detail}")
+    if dtypes is None:
+        return
     for name, dtype in zip(observed, dtypes, strict=True):
         if dtype != pl.String:
             raise PublicTableSourceError(f"public comments partition column {name} drifted to {dtype!r}")
@@ -398,25 +404,23 @@ def validate_partition_columns(columns: Sequence[str], dtypes: Sequence[object])
 def _partition_rows(content: bytes) -> list[dict[str, Any]]:
     import polars as pl
 
+    from spicy_docs.reading.parquet_footer import parquet_footer
+
     try:
-        schema = pl.read_parquet_schema(BytesIO(content))
+        column_names, row_count = parquet_footer(content)
     except Exception as error:  # any reader refusal is one source refusal
         raise PublicTableSourceError(f"public comments partition is not readable Parquet: {error}") from error
-    validate_partition_columns(tuple(schema.keys()), tuple(schema.values()))
-    try:
-        # Count from the file's own metadata, so an oversized partition is
-        # refused before its text is ever materialized.
-        height = int(pl.scan_parquet(BytesIO(content)).select(pl.len()).collect().item())
-    except Exception as error:  # any reader refusal is one source refusal
-        raise PublicTableSourceError(f"public comments partition is not readable Parquet: {error}") from error
-    if height > MAX_PARTITION_ROWS:
+    validate_partition_columns(column_names)
+    # Count from the file's own footer, so an oversized partition is
+    # refused before its text is ever materialized.
+    if row_count > MAX_PARTITION_ROWS:
         raise PublicTableSourceError("public comments partition exceeds its capture row bound")
     try:
         frame = pl.read_parquet(BytesIO(content))
     except Exception as error:  # any reader refusal is one source refusal
         raise PublicTableSourceError(f"public comments partition is not readable Parquet: {error}") from error
     validate_partition_columns(tuple(frame.columns), tuple(frame.dtypes))
-    if frame.height != height:
+    if frame.height != row_count:
         raise PublicTableSourceError("public comments partition row count differs from its own metadata")
     return frame.to_dicts()
 

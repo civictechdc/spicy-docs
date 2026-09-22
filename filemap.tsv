@@ -138,6 +138,7 @@ src/spicy_docs/reading/json_input.py	Parse source JSON without accepting ambiguo
 src/spicy_docs/reading/markup.py	Ordered markup observations with original-byte text positions and no layout policy.	src
 src/spicy_docs/reading/media_types.py	Media types stated by publishers, with a deterministic URL-suffix fallback to application/octet-stream.	src
 src/spicy_docs/reading/paged_json.py	Bounded traversal of a publisher's paged JSON list operation with exact page evidence.	src
+src/spicy_docs/reading/parquet_footer.py	Footer-only Parquet facts: column names and row count without a data scan.	src
 src/spicy_docs/reading/pdf_bytes.py	The two PDF facts every document route checks: the magic header and the trailer.	src
 src/spicy_docs/reading/refusals.py	Carry exact refused response bytes to the caller without changing the error.	src
 src/spicy_docs/reading/rss.py	Shared RSS 2.0 envelope reading: root/version, one channel, item elements, namespace-safe text.	src

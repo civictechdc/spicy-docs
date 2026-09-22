@@ -285,6 +285,20 @@ def test_a_longer_number_does_not_match_a_shorter_bill() -> None:
     assert match_releases((Release("r", "Statement on H.R. 50"),), patterns)[0].bill is None
 
 
+def test_a_zero_padded_number_does_not_match_the_unpadded_bill() -> None:
+    """``H.R. 005`` does not match bill ``H.R. 5``: the number must be exactly as written."""
+    patterns = compile_bill_patterns((BillIdentity(119, "hr", 5),))
+    assert match_releases((Release("r", "Statement on H.R. 005"),), patterns)[0].bill is None
+
+
+def test_two_mentioned_bills_resolve_by_catalog_order_not_text_order() -> None:
+    """The bill earlier in the catalog wins, even when the other is mentioned first."""
+    patterns = compile_bill_patterns((BillIdentity(119, "s", 2027), BillIdentity(119, "hr", 100)))
+    match = match_releases((Release("r", "Committee considers H.R. 100 and S. 2027"),), patterns)[0]
+    assert match.bill == BillIdentity(119, "s", 2027)
+    assert match.matched_text == "S. 2027"
+
+
 # --- member matching ---
 
 

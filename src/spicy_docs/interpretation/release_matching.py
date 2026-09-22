@@ -4,14 +4,10 @@ Reads RSS items from the House and Senate appropriations committees (``title``,
 and ``description`` only where the publisher sends one) and the bill identities
 in the catalog, and returns a ``ReleaseMatch`` per release naming the bill, the
 rule, which field the mention was found in and the exact text that matched.
-``compile_bill_patterns`` is the only place this module compiles anything, one
-pattern per bill, where the original built a fresh regex inside a nested loop
-over releases and bills; each pattern is built from the bill's own type and the
-number escaped, where the original tried both chamber spellings against every
-bill and offered the bare number as a third alternative, so a bill numbered
-``1`` matched any ``1`` anywhere. Matching runs field by field -- title first
--- rather than over a concatenation, because the Senate feed carries no
-``<description>`` at all and a stored row must say what the match was made of.
+``compile_bill_patterns`` compiles one pattern per bill for callers that need
+them; ``match_releases`` itself scans each field once with a single alternation
+pattern and resolves mentions through a bill index, so matching costs one regex
+pass per field rather than one pattern search per bill.
 """
 
 from __future__ import annotations
@@ -35,6 +31,25 @@ BILL_TYPE_PROSE: Mapping[str, str] = MappingProxyType(
         "hres": r"H\.?\s*Res\.?",
         "sres": r"S\.?\s*Res\.?",
     }
+)
+
+# Most specific spelling first, so "H.J.Res." cannot be read as an H.Res.
+# or H.R. mention; the same order drives the alternation and the group scan.
+_MENTION_TYPE_ORDER: tuple[str, ...] = ("hjres", "hconres", "hres", "hr", "sjres", "sconres", "sres", "s")
+
+# One compiled alternation for every type spelling, with the same boundaries
+# each per-bill pattern carries: no letter/digit/dot or possessive apostrophe
+# immediately before, no digit immediately after the number.
+_MENTION_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9.])(?<!\w['’])"
+    + "(?:"
+    + "|".join(
+        rf"(?P<{bill_type}>{BILL_TYPE_PROSE[bill_type]})\s*(?P<{bill_type}_num>\d+)"
+        for bill_type in _MENTION_TYPE_ORDER
+    )
+    + ")"
+    + r"(?![0-9])",
+    re.IGNORECASE,
 )
 
 MATCH_FIELDS: tuple[str, ...] = ("title", "excerpt")
@@ -100,15 +115,49 @@ def _release_fields(release: object) -> tuple[str, Mapping[str, str | None]]:
     raise ReleaseMatchError("a release must be a Release or a mapping")
 
 
+def _bill_index(patterns: Sequence[BillPattern]) -> dict[tuple[str, str], tuple[int, BillPattern]]:
+    """Bill lookup by ``(bill_type, number-as-written)``, keeping the first of any duplicates.
+
+    The catalog position is kept so a field naming two bills resolves to the
+    one earlier in ``patterns``, exactly as the per-bill scan did.
+    """
+    index: dict[tuple[str, str], tuple[int, BillPattern]] = {}
+    for position, entry in enumerate(patterns):
+        key = (entry.bill.bill_type, str(entry.bill.number))
+        if key not in index:
+            index[key] = (position, entry)
+    return index
+
+
+def _mentioned_bills(value: str, index: dict[tuple[str, str], tuple[int, BillPattern]]) -> dict[tuple[str, str], str]:
+    """Every indexed bill a field mentions, to its first mention's exact text.
+
+    One regex pass finds all mentions; each is looked up by the number exactly
+    as written, so a zero-padded ``005`` does not name bill ``5``.
+    """
+    mentions: dict[tuple[str, str], str] = {}
+    for mention in _MENTION_PATTERN.finditer(value):
+        groups = mention.groupdict()
+        for bill_type in _MENTION_TYPE_ORDER:
+            if groups.get(bill_type) is not None:
+                key = (bill_type, groups[f"{bill_type}_num"])
+                if key in index and key not in mentions:
+                    mentions[key] = mention.group(0)
+                break
+    return mentions
+
+
 def match_releases(
     releases: Iterable[object], patterns: Sequence[BillPattern], *, fields: Sequence[str] = MATCH_FIELDS
 ) -> tuple[ReleaseMatch, ...]:
-    """Scan each release against the precompiled patterns, field by field, first hit wins.
+    """Scan each release against the compiled bills, field by field, first hit wins.
 
-    Cost is one pass over the releases times the patterns, with no compilation
-    in the loop: ``O(releases x bills)`` comparisons and ``O(bills)``
-    compilations, against the original's ``O(releases x bills)`` compilations.
+    Cost is one regex pass per nonempty field (``O(releases x fields x text)``)
+    plus one index build over the bills, with no compilation and no per-bill
+    search in the loop. When a field names several bills, the one earlier in
+    ``patterns`` wins and its own first mention is the matched text.
     """
+    index = _bill_index(patterns)
     matches: list[ReleaseMatch] = []
     for release in releases:
         release_id, values = _release_fields(release)
@@ -117,13 +166,11 @@ def match_releases(
             value = values.get(field)
             if not value:
                 continue
-            hit = None
-            for entry in patterns:
-                hit = entry.pattern.search(value)
-                if hit is not None:
-                    match = ReleaseMatch(release_id, entry.bill, f"bill_number_in_{field}", field, hit.group(0))
-                    break
-            if hit is not None:
+            mentions = _mentioned_bills(value, index)
+            if mentions:
+                key = min(mentions, key=lambda candidate: index[candidate][0])
+                entry = index[key][1]
+                match = ReleaseMatch(release_id, entry.bill, f"bill_number_in_{field}", field, mentions[key])
                 break
         matches.append(match)
     return tuple(matches)

@@ -14,6 +14,7 @@ import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import cached_property
 from pathlib import Path
 from typing import Self
 from urllib.parse import urljoin
@@ -51,8 +52,9 @@ class ResponseCapture:
     body: bytes = field(repr=False)
     via: str = "direct"
 
-    @property
+    @cached_property
     def sha256(self) -> str:
+        """The pinned digest, computed once per capture; the body is immutable bytes."""
         return "sha256:" + hashlib.sha256(self.body).hexdigest()
 
 

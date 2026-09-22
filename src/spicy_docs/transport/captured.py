@@ -25,6 +25,7 @@ class CapturedBodyResponse:
     content_encoding: str = "identity"
     method: str = "GET"
     request_body: bytes | None = field(default=None, repr=False)
+    _digest: str | None = field(default=None, init=False, repr=False, compare=False)
 
     @property
     def byte_size(self) -> int:
@@ -32,7 +33,10 @@ class CapturedBodyResponse:
 
     @property
     def sha256(self) -> str:
-        return "sha256:" + hashlib.sha256(self.body).hexdigest()
+        """The pinned digest, computed once and cached; the body is immutable bytes."""
+        if self._digest is None:
+            object.__setattr__(self, "_digest", "sha256:" + hashlib.sha256(self.body).hexdigest())
+        return self._digest
 
 
 def attach_capture(error: Exception, capture: CapturedBodyResponse) -> None:
