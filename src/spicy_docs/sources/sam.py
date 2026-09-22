@@ -121,3 +121,70 @@ class SamEntitiesReader(PagedJsonReader):
     def entities(self, url: str, *, max_pages: int = DEFAULT_MAX_PAGES) -> Iterator[JsonPage]:
         """Walk entity pages; the family's reach bound refuses a too-deep query after its first page."""
         return self.pages(url, records_key=ENTITIES_KEY, max_pages=max_pages)
+
+
+def _next_day(value: Date) -> Date:
+    return Date.fromordinal(value.toordinal() + 1)
+
+
+def windowed_entities(
+    reader: SamEntitiesReader,
+    *,
+    registered_from: Date,
+    registered_to: Date,
+    registration_status: RegistrationStatus | None = "A",
+    max_records: int | None = None,
+    max_pages: int = MAX_REACHABLE_RECORDS // MAX_SIZE + 2,
+) -> Iterator[dict]:
+    """Walk a registration range, subdividing windows the publisher cannot page through.
+
+    The publisher refuses a walk once ``(page + 1) * size`` passes
+    ``MAX_REACHABLE_RECORDS`` (module docstring), so a window whose declared
+    total exceeds the reach bound at the walk size is halved recursively until
+    pageable; a single day still over the bound refuses rather than publishing
+    only the reachable records. Each leaf window is walked by the paged
+    reader with its exact-count checks; ``max_records`` bounds emitted records
+    across the whole range. Use :class:`spicy_docs.sources.sam_extract.SamBulkExtract`
+    for full coverage instead of many windowed walks.
+    """
+    if max_records is not None and (type(max_records) is not int or max_records <= 0):
+        raise PagedJsonSourceError("max_records must be a positive integer or None")
+    if isinstance(registered_from, datetime) or isinstance(registered_to, datetime):
+        raise PagedJsonSourceError("registration bounds must be dates")
+    if registered_to < registered_from:
+        raise PagedJsonSourceError("registered_to precedes registered_from")
+    emitted = 0
+
+    def budget_left() -> bool:
+        return max_records is None or emitted < max_records
+
+    def walk(gte: Date, lte: Date) -> Iterator[dict]:
+        nonlocal emitted
+        if not budget_left():
+            return
+        probe_url = entities_url(
+            registration_status=registration_status, registered_from=gte, registered_to=lte, size=1, page=0
+        )
+        probe = next(reader.entities(probe_url, max_pages=1))
+        total = probe.declared_count
+        reachable = reachable_records(MAX_SIZE)
+        if total is not None and total > reachable and gte < lte:
+            mid = gte + (lte - gte) // 2
+            yield from walk(gte, mid)
+            yield from walk(_next_day(mid), lte)
+            return
+        if total is not None and total > reachable:
+            raise PagedJsonSourceError(
+                "SAM single-day selection exceeds the reachable page limit; use the bulk extract"
+            )
+        url = entities_url(
+            registration_status=registration_status, registered_from=gte, registered_to=lte, size=MAX_SIZE, page=0
+        )
+        for page in reader.entities(url, max_pages=max_pages):
+            for record in page.records:
+                if not budget_left():
+                    return
+                emitted += 1
+                yield dict(record)
+
+    yield from walk(registered_from, registered_to)

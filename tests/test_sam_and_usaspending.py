@@ -17,6 +17,7 @@ from spicy_docs.sources.sam import (
     SamEntitiesReader,
     entities_url,
     reachable_records,
+    windowed_entities,
 )
 from spicy_docs.sources.usaspending import RECIPIENTS_URL, USASPENDING, UsaspendingRecipientsReader, recipients_request
 from spicy_docs.transport import retry
@@ -163,3 +164,91 @@ def test_usaspending_pinned_page_and_walk_record_each_request_body():
     with UsaspendingRecipientsReader(budget=BUDGET, transport=Transport(USA_PAGE)) as source:
         page = source.page(RECIPIENTS_URL, records_key="results", body=recipients_request(limit=2)[1])
     assert page.declared_count == 18302930 and page.next_body["page"] == 2
+
+
+# -- windowed_entities: adaptive subdivision under the reach bound ------------
+
+
+class _Page:
+    def __init__(self, declared_count, records=()):
+        self.declared_count = declared_count
+        self.records = records
+
+
+def test_windowed_entities_subdivides_windows_over_the_reach_bound(monkeypatch):
+    reader = SamEntitiesReader(budget=BUDGET, api_key=KEY, transport=Transport(b""))
+    probes: list[str] = []
+    walks: list[str] = []
+
+    def fake_entities(url, *, max_pages=1):
+        if "size=1&page=0" in url and "size=10" not in url:
+            probes.append(url)
+            # Full year is over the reach bound; each half is under it.
+            yield _Page(declared_count=15000 if ("01/01/2025" in url and "12/31/2025" in url) else 4000)
+        else:
+            walks.append(url)
+            yield _Page(declared_count=0, records=[{"entityRegistration": {"ueiSAM": "X"}}])
+
+    monkeypatch.setattr(reader, "entities", fake_entities)
+    got = list(windowed_entities(reader, registered_from=date(2025, 1, 1), registered_to=date(2025, 12, 31)))
+    assert len(got) == 2  # two leaf windows, one record each
+    assert len(walks) == 2 and len(probes) == 3
+
+
+def test_windowed_entities_walks_a_small_window_without_splitting(monkeypatch):
+    reader = SamEntitiesReader(budget=BUDGET, api_key=KEY, transport=Transport(b""))
+    walks: list[str] = []
+
+    def fake_entities(url, *, max_pages=1):
+        if "size=1&page=0" in url and "size=10" not in url:
+            yield _Page(declared_count=12)
+        else:
+            walks.append(url)
+            yield _Page(declared_count=0, records=[{"entityRegistration": {"ueiSAM": "solo"}}])
+
+    monkeypatch.setattr(reader, "entities", fake_entities)
+    got = list(windowed_entities(reader, registered_from=date(2025, 1, 1), registered_to=date(2025, 12, 31)))
+    assert len(walks) == 1  # the whole year paged once, no split
+    assert [r["entityRegistration"]["ueiSAM"] for r in got] == ["solo"]
+
+
+def test_windowed_entities_refuses_a_single_day_over_the_bound(monkeypatch):
+    reader = SamEntitiesReader(budget=BUDGET, api_key=KEY, transport=Transport(b""))
+
+    def fake_entities(url, *, max_pages=1):
+        yield _Page(declared_count=15000)
+
+    monkeypatch.setattr(reader, "entities", fake_entities)
+    with pytest.raises(PagedJsonSourceError, match="bulk extract"):
+        list(windowed_entities(reader, registered_from=date(2025, 1, 1), registered_to=date(2025, 1, 1)))
+
+
+def test_windowed_entities_bounds_max_records_across_windows(monkeypatch):
+    reader = SamEntitiesReader(budget=BUDGET, api_key=KEY, transport=Transport(b""))
+    walks = 0
+
+    def fake_entities(url, *, max_pages=1):
+        nonlocal walks
+        if "size=1&page=0" in url and "size=10" not in url:
+            yield _Page(declared_count=15000 if ("01/01/2025" in url and "12/31/2025" in url) else 4000)
+        else:
+            walks += 1
+            yield _Page(
+                declared_count=0,
+                records=[
+                    {"entityRegistration": {"ueiSAM": f"W{walks}-0"}},
+                    {"entityRegistration": {"ueiSAM": f"W{walks}-1"}},
+                ],
+            )
+
+    monkeypatch.setattr(reader, "entities", fake_entities)
+    got = list(
+        windowed_entities(
+            reader,
+            registered_from=date(2025, 1, 1),
+            registered_to=date(2025, 12, 31),
+            max_records=2,
+        )
+    )
+    assert [r["entityRegistration"]["ueiSAM"] for r in got] == ["W1-0", "W1-1"]
+    assert walks == 1  # the second window was never walked — the budget was spent
