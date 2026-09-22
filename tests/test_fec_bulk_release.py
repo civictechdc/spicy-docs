@@ -41,11 +41,11 @@ def _capture(raw, *, representation="zip", key="example.zip"):
     }
 
 
-def _zip(entries):
+def _zip(entries, *, comment=b"publisher\xffcomment"):
     """Build a stored ZIP archive from the given entries."""
     output = BytesIO()
     with ZipFile(output, "w", compression=ZIP_STORED) as archive:
-        archive.comment = b"publisher\xffcomment"
+        archive.comment = comment
         for name, raw in entries:
             info = ZipInfo(name, date_time=(2024, 1, 2, 3, 4, 6))
             info.comment = b"entry\xffcomment"
@@ -257,12 +257,12 @@ def test_archive_bounds_refuse_before_member_payload_reads(tmp_path, monkeypatch
 
 def test_directory_allocation_bound_precedes_zipfile_directory_read():
     """The directory allocation bound fires before the zipfile directory read."""
-    raw = bytearray(_zip([("a", b"x")]))
-    end = raw.rfind(b"PK\x05\x06")
-    struct.pack_into("<I", raw, end + 12, 1024**3)
+    # A real oversized directory reaches the same bound across Python versions;
+    # an impossible offset can be rejected earlier as BadZipFile on Python 3.12.3.
+    raw = _zip([(f"member-{i:04d}", b"x") for i in range(30)], comment=b"")
     with pytest.raises(ValueError, match="metadata read exceeds"):
         inspect_archive_stream(
-            BytesIO(raw), byte_size=len(raw), max_entries=10, max_decoded_bytes=100, max_metadata_bytes=1024
+            BytesIO(raw), byte_size=len(raw), max_entries=100, max_decoded_bytes=100, max_metadata_bytes=1024
         )
 
 
