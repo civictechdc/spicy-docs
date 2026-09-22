@@ -31,3 +31,12 @@ inside a kept span was rewritten.
 
 The build script is `build_fixtures.py` in the receipt directory, beside the
 originals; it prints each source's and each fixture's size and SHA-256.
+
+`memberdata-119-select-excerpt.xml` is a bounded cut of the House Clerk capture
+retained September 22, 2026 UTC (native publish-date September 2, 2026). It keeps
+literal title information, three complete member elements, and the IG00, QJ00
+and ZS00 committee elements with their native type and children. The root and
+wrapper whitespace were assembled; source field values were not edited.
+Source SHA-256: `07aec65948e99fd80b5e7c31722f1208d9f5e0717ba00f4b02122f4724cb0c18`.
+The exact source/fixture pins and full assignment replay are retained in
+`~/Work/corpora/fork-execution-2026-09-21/rosters-qualification/select-code-fix/`.

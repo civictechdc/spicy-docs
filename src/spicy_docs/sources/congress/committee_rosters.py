@@ -100,12 +100,19 @@ class CommitteeRosterIdentityError(CommitteeRosterError):
         self.stated = stated
 
 
-def house_system_code(comcode: str) -> str:
-    """``II00`` -> ``hsii00``, ``II06`` -> ``hsii06``: the map's ``memberdata→committee`` rule."""
+def house_system_code(comcode: str, *, committee_type: str | None = None) -> str:
+    """Derive the House prefix from native committee type, preserving raw codes elsewhere.
+
+    Standing committees use ``hs``; a declared select committee and its
+    subcommittees use ``hl``. Without roster context this retains the legacy
+    standing-style spelling. Joint codes need a separate evidenced crosswalk;
+    this helper does not establish those joins.
+    """
     code = comcode.strip().lower()
     if not code:
         raise CommitteeRosterError("a House committee code cannot be empty")
-    return code if code.startswith("hs") else f"hs{code}"
+    prefix = "hl" if committee_type == "select" else "hs"
+    return code if code.startswith(("hs", "hl")) else f"{prefix}{code}"
 
 
 def senate_system_code(code: str) -> str:
@@ -127,6 +134,7 @@ class HouseAssignment:
 
     @property
     def system_code(self) -> str:
+        """Legacy spelling without type context; use ``HouseMemberData.system_code`` for rows."""
         return house_system_code(self.code)
 
 
@@ -190,10 +198,16 @@ class HouseMemberData:
     def vacancies(self) -> int:
         return sum(1 for member in self.members if member.vacant)
 
+    def system_code(self, code: str) -> str:
+        """Use this roster's literal type and parent to derive an assignment's join code."""
+        parent = self.parent_codes.get(code, code)
+        committee = next((item for item in self.committees if item.code == parent), None)
+        return house_system_code(code, committee_type=None if committee is None else committee.type)
+
     def parent_system_code(self, code: str) -> str | None:
-        """The parent committee's systemCode for a subcommittee code, by the rule ``HouseAssignment.system_code`` uses."""
+        """Derive the native subcommittee parent's code with the same roster context."""
         parent = self.parent_codes.get(code)
-        return None if parent is None else house_system_code(parent)
+        return None if parent is None else self.system_code(parent)
 
 
 @dataclass(frozen=True, slots=True)

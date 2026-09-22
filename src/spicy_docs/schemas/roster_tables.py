@@ -62,7 +62,10 @@ COMMITTEE_ASSIGNMENTS = table_contract(
         ),
         "session": "The session the House file states; the Senate file states none.",
         "chamber": "Which file the seat came from: house or senate.",
-        "system_code": "The committee's Congress.gov systemCode by the measured rule for each file's own code.",
+        "system_code": (
+            "Derived join code: House native standing/select type selects hs/hl; the Senate code is lowercased. "
+            "House joint codes keep their unresolved legacy spelling and do not establish a Congress.gov join."
+        ),
         "committee_code": "The file's own committee code, verbatim.",
         "is_subcommittee": "true for a House subcommittee seat; the Senate file lists full committees only.",
         "parent_system_code": "The parent committee's systemCode for a subcommittee seat.",
@@ -156,7 +159,7 @@ def shape_house_assignment(member: object, assignment: object, *, roster: object
         "congress_basis": "file",
         "session": text(roster.session),
         "chamber": "house",
-        "system_code": text(assignment.system_code),
+        "system_code": text(roster.system_code(assignment.code)),
         "committee_code": text(assignment.code),
         "is_subcommittee": flag(is_subcommittee),
         "parent_system_code": parent_code,

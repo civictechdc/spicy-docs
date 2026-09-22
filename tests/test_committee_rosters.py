@@ -237,3 +237,57 @@ def test_the_acquirer_refuses_another_congress_and_keeps_refusals_retained():
         with pytest.raises(CommitteeRosterUnavailableError) as unavailable:
             source.acquire_senate()
     assert unavailable.value.capture.status_code == 404
+
+
+SELECT_XML = (FIXTURES / "congress_rosters/memberdata-119-select-excerpt.xml").read_bytes()
+
+
+@pytest.mark.parametrize("code", ["IG00", "IG01", "IG02", "IG04", "IG06", "IG09", "IG11", "QJ00", "ZS00"])
+def test_select_codes_use_the_native_committee_type_and_parent(code):
+    roster = parse_house_member_data(SELECT_XML, congress=119, session=2)
+    assert roster.system_code(code) == "hl" + code.lower()
+    assert roster.parent_system_code(code) == ("hlig00" if code.startswith("IG") and code != "IG00" else None)
+
+
+def test_select_assignment_rows_preserve_native_fields_and_do_not_invent_a_parent():
+    roster = parse_house_member_data(SELECT_XML, congress=119, session=2)
+    checked = set()
+    for member in roster.members:
+        for assignment in member.assignments:
+            if assignment.code not in roster.committee_names:
+                continue
+            row = shape_house_assignment(member, assignment, roster=roster, observed_at=OBSERVED_AT)
+            assert row["system_code"] == "hl" + assignment.code.lower()
+            assert row["committee_code"] == assignment.code
+            assert row["committee_name"] == roster.committee_names[assignment.code]
+            assert row["rank"] == assignment.rank and row["position"] == assignment.leadership
+            assert row["observed_at"] == OBSERVED_AT
+            checked.add(assignment.code[:2])
+            if assignment.code == "QJ00":
+                # Congress.gov separately names a parent, but this file does not.
+                assert row["is_subcommittee"] == "false" and row["parent_system_code"] is None
+    assert checked == {"IG", "QJ", "ZS"}
+
+
+def test_committee_names_do_not_select_the_prefix():
+    changed_type = SELECT_XML.replace(b'type="select"', b'type="standing"')
+    roster = parse_house_member_data(changed_type, congress=119)
+    assert roster.system_code("IG00") == "hsig00"
+    assert roster.system_code("IG01") == "hsig01"
+    assert roster.parent_system_code("IG01") == "hsig00"
+    assert "Select" in roster.committee_names["IG00"]
+    changed_name = SELECT_XML.replace(b"Permanent Select Committee on Intelligence", b"Unrelated display name")
+    renamed = parse_house_member_data(changed_name, congress=119)
+    assert renamed.system_code("IG00") == "hlig00"
+
+
+def test_unknown_and_joint_codes_remain_unresolved_without_name_aliases():
+    roster = parse_house_member_data(HOUSE_XML, congress=119)
+    assert roster.system_code("II00") == "hsii00"
+    assert roster.system_code("II06") == "hsii06"
+    assert roster.system_code("EC00") == "hsec00"  # no invented choice among joint economic codes
+    assert roster.system_code("IT00") == "hsit00"  # raw joint alias requires separate evidence
+    assert roster.system_code("ZZ00") == "hszz00"
+    assert house_system_code("IG00") == "hsig00"  # context-free compatibility is explicit
+    assert house_system_code("IG00", committee_type="select") == "hlig00"
+    assert house_system_code("hlig00", committee_type="select") == "hlig00"

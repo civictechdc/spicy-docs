@@ -41,13 +41,26 @@ say what it is:
 
 ## System codes are the join
 
-Congress.gov keys committees on `systemCode`; each chamber file has its own
-spelling, and the legislative data map proved both joins:
-House `comcode="II00"` is `hsii00`, Senate `code="SPAG00"` is `spag00` (the
-Senate's codes already end in `00`, so its rule is a lowercase and nothing
-more). `house_system_code` and `senate_system_code` are those two rules, and
-the `committee_assignments` rows carry both spellings — `system_code` for the
-join, `committee_code` as the file stated it.
+Congress.gov keys committees on `systemCode`; the roster files retain their
+own literal codes in `committee_code`. These are different namespaces.
+For House rows, `HouseMemberData.system_code(code)` uses the names block's
+literal committee `type`: standing committees derive `hs{code}`, while select
+committees and their listed subcommittees derive `hl{code}`. Thus `II00`
+becomes `hsii00`, while native select `IG00` and its child `IG01` become
+`hlig00` and `hlig01`. Parent join codes use the same context. A name containing
+“select” never changes the rule; the native type does.
+
+The context-free `HouseAssignment.system_code` property and calls to
+`house_system_code` without `committee_type` preserve the legacy standing-style
+spelling. Use the roster-aware method for assignment rows. House joint codes
+remain unresolved: the standing-style spelling is retained for compatibility,
+not established as a Congress.gov identity. Do not repair these by committee
+name; a publisher can list several distinct codes with the same name.
+
+The Senate code is lowercased (`SPAG00` becomes `spag00`). A literal code can
+still be absent from a caller-selected Congress's committee dimension; this
+is a coverage or scope gap, not permission to change the source code. The
+Senate roster states no Congress, so `congress_basis=caller` remains explicit.
 
 ## The LIS crosswalk stays where it was
 
