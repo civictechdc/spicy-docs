@@ -202,6 +202,16 @@ def recorded_vote_references(identity: BillIdentity, actions: Iterable[object]) 
     return RecordedVoteReferences(tuple(references), tuple(refusals))
 
 
+def read_house_vote_key(vote: object) -> VoteKey:
+    """Read a House listing identity independently of any optional legislation."""
+    return VoteKey(
+        congress=_required_int(_get(vote, "congress"), "congress"),
+        chamber="house",
+        session=_required_int(_get(vote, "sessionNumber", "session_number", "session"), "sessionNumber"),
+        roll_number=_required_int(_get(vote, "rollCallNumber", "roll_call_number", "rollNumber"), "rollCallNumber"),
+    )
+
+
 def house_vote_references(votes: Iterable[object]) -> tuple[VoteReference, ...]:
     """Read ``legislationType``/``legislationNumber`` off House vote records.
 
@@ -215,21 +225,14 @@ def house_vote_references(votes: Iterable[object]) -> tuple[VoteReference, ...]:
         legislation_number = _get(vote, "legislationNumber", "legislation_number")
         if legislation_type is None or legislation_number is None:
             continue
-        congress = _required_int(_get(vote, "congress"), "congress")
+        key = read_house_vote_key(vote)
         url = _get(vote, "sourceDataURL", "source_data_url")
         date = _get(vote, "startDate", "start_date", "date")
         references.append(
             VoteReference(
-                vote=VoteKey(
-                    congress=congress,
-                    chamber="house",
-                    session=_required_int(_get(vote, "sessionNumber", "session_number", "session"), "sessionNumber"),
-                    roll_number=_required_int(
-                        _get(vote, "rollCallNumber", "roll_call_number", "rollNumber"), "rollCallNumber"
-                    ),
-                ),
+                vote=key,
                 bill=BillIdentity(
-                    congress=congress,
+                    congress=key.congress,
                     bill_type=bill_type_of(legislation_type),
                     number=_required_int(legislation_number, "legislationNumber"),
                 ),
@@ -281,6 +284,7 @@ __all__ = [
     "house_vote_references",
     "index_vote_references",
     "match_votes",
+    "read_house_vote_key",
     "read_recorded_vote",
     "read_vote_key",
     "recorded_vote_references",

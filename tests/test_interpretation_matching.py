@@ -32,12 +32,30 @@ from spicy_docs.interpretation.vote_matching import (
     house_vote_references,
     index_vote_references,
     match_votes,
+    read_house_vote_key,
     recorded_vote_references,
 )
 from spicy_docs.sources.congress.bill_status import BillIdentity
 from spicy_docs.sources.legislators import parse_legislators
 
 LEGISLATORS = Path(__file__).parent / "fixtures" / "legislators" / "legislators-current-excerpt.json"
+
+
+def test_house_identity_does_not_depend_on_optional_bill_linkage() -> None:
+    unlinked = {"congress": 119, "sessionNumber": 1, "rollCallNumber": 7}
+    assert read_house_vote_key(unlinked) == VoteKey(119, "house", 1, 7)
+    assert house_vote_references([unlinked]) == ()
+    malformed_link = {**unlinked, "legislationType": "not-a-bill", "legislationNumber": "1"}
+    assert read_house_vote_key(malformed_link) == read_house_vote_key(unlinked)
+    with pytest.raises(VoteMatchError, match="unsupported legislation type"):
+        house_vote_references([malformed_link])
+
+
+@pytest.mark.parametrize("bad", [None, True, -1, "not-a-number"])
+def test_house_identity_refuses_invalid_roll_numbers(bad: object) -> None:
+    with pytest.raises(VoteMatchError):
+        read_house_vote_key({"congress": 119, "sessionNumber": 1, "rollCallNumber": bad})
+
 
 HR1 = BillIdentity(119, "hr", 1)
 S123 = BillIdentity(119, "s", 123)
