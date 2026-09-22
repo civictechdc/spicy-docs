@@ -82,27 +82,49 @@ candidate-only statuses within these exact selections:
   family is now publicly byte-verified but source-unqualified; it must be
   reconciled with the broader candidate before replacement. See
   `bill-family-continuation/` and `congressional-status/`.
-- The congressional vote audit confirms a **host selection defect**: House
-  acquisition uses the optional bill-reference index, so procedural/unlinked
-  votes can be omitted. The recorded 676 listing entries versus 577 output
-  votes does not prove 99 unique omissions without the original pages. Only
-  one complete House body is paired with this candidate; Senate output is
-  absent although the provider supports its complete menu. The reviewed repair
+- Later scheduled member and committee-report generations now supersede the
+  previously qualified current pins. Full comparisons prove unchanged native
+  member/term fields, report fields and all thirteen prior hearings. Sections
+  remain byte-identical for the same report parents; six hearings were added.
+  All six new hearings now match retained native fields, exact body/text digests
+  and root-COVER link selection. Scheduled capture/checkpoint
+  metadata lacks retained HTTP evidence and remains separately unqualified.
+  The output ledger preserves the predecessor and unchanged-section proofs.
+- The congressional vote audit confirmed a **host selection defect**: House
+  acquisition used the optional bill-reference index, omitting procedural and
+  unlinked votes. The old listing originals were not retained, so stability
+  across its observation and the new census remains unproved. The reviewed repair
   now enumerates source identities independently, adopts Senate menus and
   attaches bill links optionally. It prioritizes unseen votes, refreshes each
   chamber and replaces member rows only after successful native reads.
-  SpicyDocs 0.26.2 is installed. Complete retained enumeration now establishes
+  Complete retained enumeration now establishes
   1,573 unique 119th Congress votes: House 362/314 and Senate 659/238 for
   sessions 1/2. Every unlinked House identity remains selected. Independent
   review and exact offline replay pass; native XML acquisition and whole-output
   qualification remain open. See `votes-qualification/` and
   `reviews/roll-call-enumeration-postfix-review.md`.
-- Native vote acquisition now retains a valid Speaker-election file for
-  `119:house:1:2`. The reader rejects its `totals-by-candidate` structure and
-  candidate-name choices; all 434 raw member choices independently reconcile
-  with the publisher's candidate totals. Candidate choices must remain literal,
-  with no fabricated yea/nay tally. Source support and downstream preservation
-  are being reviewed; the retained original remains refused until they pass.
+- Native vote support is repaired and installed through reviewed SpicyDocs
+  0.26.3. The retained Speaker-election file for `119:house:1:2` now preserves
+  candidate totals and all 434 literal choices, with no fabricated yea/nay tally.
+  Every ordered Senate document and amendment also survives, including literal
+  nomination identifiers. All fourteen retained variant originals reproduce
+  exact native fields through the installed reader; source and host gates pass.
+  The old capture edition remains unchanged. The independently reviewed new
+  edition revalidated all 263 available bodies with zero requests; detached
+  acquisition of the remaining 1,310 started at 04:07 UTC. This closes the
+  demonstrated reader defects, not complete family qualification. See
+  `native-vote-variants-adoption/` and `votes-qualification/`.
+- A scheduled vote generation now publishes both chambers with 1,487 roll
+  calls. Compared with the complete retained selection, 73 were outside the
+  request cap and thirteen Senate files were refused for repeated `document`
+  elements. All thirteen originals are now retained: each names multiple
+  nominations, with literal hyphenated identifiers such as `55-25`. Preserve
+  every ordered document and its identifier; the reviewed 0.26.3 correction
+  now does so. The existing string identifier type remains appropriate.
+  Public bytes and source-backed overlap checks pass,
+  but full vote qualification remains open. See
+  `votes-qualification/senate-repeated-documents/` and
+  `congressional-status/scheduled-votes-coverage-audit.json`.
 - The same vote audit joins every retained voter to the qualified members
   crosswalk, but a start-inclusive/end-exclusive term-date join leaves eleven
   vote observations unmatched. Inclusive ends create duplicate matches at
@@ -146,7 +168,7 @@ candidate-only statuses within these exact selections:
   party/attorney relationship tables. Do not infer that a local nature-of-suit
   filter equals today's search-index selection. Docket-search counts above
   2,000 are publisher cardinality estimates. The provider/host correction has
-  passed independent review and is adopted through the pinned 0.26.1 wheel.
+  passed independent review, was adopted through 0.26.1 and remains in 0.26.3.
   Full provider/host gates and installed raw replay pass. A successful explicit
   terminal cursor walk establishes large
   docket traversal completion. The retained API walk is paused at 55 pages/1,100
@@ -157,11 +179,18 @@ candidate-only statuses within these exact selections:
   `courtlistener-bulk/ACQUISITION-GATE.md` and `courtlistener-refusal/`;
   acquisition progress and count estimates do not establish rollup completion.
   The complete 71,677,647-row docket map now passes full native semantic-digest
-  and unique-identity checks. The full cluster rebuild is active. One source
+  and unique-identity checks. The complete cluster rebuild is now published
+  and qualified: 10,070,727 identities and all 36 prior fields are preserved,
+  with exact native agreement for every added court field. Full public bytes
+  and both actual MCP access modes pass, including all 39 fields of six native
+  witnesses. One source
   court has blank jurisdiction but no references anywhere in the map; a
   reviewed preflight correction permits that unused row while refusing any
-  referenced blank. Final cluster source/conservation audits remain open; see
-  `courtlistener-clusters-qualification/`.
+  referenced blank. Opinion-body acquisition, the separately scoped docket
+  output and newer catch-up remain open. The full body-build planning estimate
+  needs about 73.3 GB more capacity after the original arrives. The local-file
+  path bypasses the remote headroom check; enforce the existing storage floor
+  before launch. See `courtlistener-clusters-qualification/NEXT-WORK.md`.
 
 ## SpicyDocs — source conversion, interpretation and evidence
 
@@ -195,7 +224,7 @@ new copies of those capabilities.
 | **SR02 · P1** Publication beyond managed Parquet families (H7/H8) | Family admission works; base regulations.gov, partitioned comments, Iceberg and the legacy docket-search derivative have different publication paths. Their consistency/correction behavior is not established by the family rehearsal. | Define and verify complete snapshot/partition membership, parent versions and failure/retry behavior for each chosen path. Decode real outputs and verify public readers select one intended generation. Keep declaration, attempted run, local output and public availability separate. |
 | **SR03 · P1** Regulatory joins and analytic grain (F1/H15) | Full RIN arrays are retained locally, but historical/public backfill and cross-source identity joins remain incomplete. Lifecycle grouping collapses 48 proposals into 19 unknown-docket agency groups and excludes 647 other proposal groups; 5,132 is a different, wider denominator. | Retain participating document IDs and unresolved links/outcomes. Qualify proposal/final pairing before status/duration claims; compare all usable RINs and dated FR identities. Reconcile literal docket spellings with explicit mapping evidence. Exact array expansion alone does not qualify legal-matter identity. |
 | **SR04 · P1** Safe analytic views and derived snapshots (H1) | Type casts and temporal aggregates lack explicit invalid-value/as-of handling. `discovery_signals` has no pinned 30-day window; separately observed parents can disagree. | Add source-defined typed views and named anomaly handling. Pin parents and observation/window times for agency counts, monthly volume, feed summaries and discovery ratios. Recompute by stable keys; preserve the 2,020 unparseable-date observations separately from valid calendar groups. |
-| **SR05 · P1** Existing legislative joins (A2/A3/A4/A7/D4) | Code exists for report and plural hearing links, but the inspected hearing-link output is empty. Bill vote references cover the 118th while inspected votes cover 119th House only. Senate indexing exists in SpicyDocs but host use remains open. | Produce matched Congress/session bill-action/vote cohorts, host the Senate index, and build hearing→meeting/agenda→bill links with reverse-edge and per-row identity checks. Compare every link to native statements; retain missing event IDs, ambiguous sets and unresolved children. Acquire the COVER census by chamber/Congress and original bill-side action evidence before claiming its confirmation rates are replayable. |
+| **SR05 · P1** Existing legislative joins (A2/A3/A4/A7/D4) | Report and plural hearing links are implemented; the qualified root-package selection has zero COVER links. Senate menus, independent House selection and native candidate/plural vote support are installed. Both chambers have scheduled public rows, while complete source qualification and matched historical cohorts remain open. | Finish the active retained-body acquisition under the reviewed reader. Produce matched Congress/session bill-action/vote cohorts and hearing→meeting/agenda→bill links with reverse-edge and per-row identity checks. Compare every link to native statements; retain missing event IDs, ambiguous sets and unresolved children. Acquire wider COVER and original bill-action evidence before claiming replayable confirmation rates. |
 | **SR06 · P1** Corrections beyond the current window (F9) | Recent overlaps do not recover old vote/court/FR corrections or older Congresses after a calendar rollover. Local stale-print repair does not establish all scheduled repair paths. | Retain publisher modification signals where offered; add bounded historical refresh and cross-Congress overlap. Demonstrate a held older record corrected after unchanged/recent discovery, with successful empty replacement and failed-read retention. Measure a second full D1 pass for held/unchanged skips. |
 | **SR07 · P1** LDA initial backfill and useful activity shape (H16) | The failed-query publication bug is fixed. The corrected request advertised 1,977,046 filings, about 79,082 pages at 25; three checked records do not qualify a full seed within the 30-minute job. Flattened agencies omit activity→agency→lobbyist relationships; money/amendment meanings are unqualified. | Keep the schedule paused until a bounded, resumable seed reconciles page/key counts, preserves source dates and survives interruption. Examine the observed 1905/1940 posted dates on 1999/2000 filings before choosing catch-up windows. Publish only the declared validated scope. For issue/agency research, preserve nested activity relationships and filing-type/amendment semantics. |
 | **SR08 · P1** Empty, undeclared and partially read outputs (H2/H5) | The initial profile has nine empty tables: `section_diffs`, `section_diff_items`, `financial_changes`, `section_classifications`, `bill_summaries`, `diff_summaries`, `hearing_bill_links`, `bill_family_backfills`, `bill_family_backfill_walks`. `bill_subjects` has local rows but no established public declaration/adoption. | Record input scope, capture/processing outcome and publication independently per table. Produce qualified examples only where useful; otherwise label unsupported/unproduced. Declare and validate `bill_subjects` before publication or keep it explicitly local. Preserve rows outside named cohorts rather than treating NULL/unread as publisher absence. |
@@ -377,7 +406,7 @@ publication still follow the items above and the table scorecard.
 | Original IDs | Current disposition |
 | --- | --- |
 | A1/A2/A3 | Linkage mechanisms implemented; residual matching, plural hearing production and same-scope vote joins: SD04, SR05. |
-| A4 | Senate source index implemented; hosting and older corrections: SR05/SR06. |
+| A4 | Senate source index adopted by the host; whole-source qualification and older corrections: SR05/SR06. |
 | A5/A7/A10 | Index/rollup mechanisms implemented; details, body coverage, reverse hearing edges and source omissions: SD03, SR03/SR05/SR14. Missing event IDs, House repository historical floor and RSS-window completeness remain unmeasured. |
 | A6 | Measured reconstruction/parser implemented; historical run, split granules and resolver: SD09. The old “do not host because detail floor” conclusion is superseded. |
 | A8/A9/A11 | Law/roster/backfill mechanisms implemented; full historical populations, release-aware joins and term identity: SR14. |
