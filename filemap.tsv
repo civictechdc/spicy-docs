@@ -324,6 +324,7 @@ src/spicy_docs/sources/regulations_gov/schemas.py	Regulations.gov raw schemas an
 src/spicy_docs/sources/regulations_gov/scope.py	Regulations.gov query scope, completeness checks, and acquisition policies.	src
 src/spicy_docs/sources/regulations_gov/validation.py	Validate exact Regulations.gov object fields and nested source structures.	src
 src/spicy_docs/sources/sam.py	SAM.gov entity registrations, page by page with exact evidence.	src
+src/spicy_docs/sources/sam_extract.py	SAM.gov bulk entity extracts: trigger, poll, defensive parse.	src
 src/spicy_docs/sources/source_domains.py	Compare published column values with pinned publisher documentation.	src
 src/spicy_docs/sources/supreme_court.py	Supreme Court slip opinions: one term index, then the exact PDFs that index names.	src
 src/spicy_docs/sources/unified_agenda/__init__.py	Unified Agenda editions from reginfo.gov: one XML file per semiannual edition, identity proved per record.	src
@@ -520,6 +521,7 @@ tests/test_report_heading_fidelity.py	Native report headings survive without bec
 tests/test_report_sections.py	Parametrized ports of BillTrax's two committee-report aggregate queries, over plain row mappings.	test
 tests/test_retained_refusals.py	Retained refusals keep response evidence safe and recoverable.	test
 tests/test_sam_and_usaspending.py	SAM.gov and USAspending list routes: placeholder credentials dropped, POST pages recorded.	test
+tests/test_sam_extract.py	Hermetic tests for the SAM.gov bulk-extract path (no network).	test
 tests/test_section_diff.py	The DeltaTrack diff adapter: the rows it shapes, the provenance it keeps, and what upstream decides.	test
 tests/test_senate_expenditure_tables_tool.py	Pins the Senate expenditure census sidecar against the note that quotes it and an independent read of the print.	test
 tests/test_senate_expenditures.py	The Secretary of the Senate's ruled tables, read from two bounded page ranges.	test
