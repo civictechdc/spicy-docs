@@ -66,6 +66,35 @@ The fork execution receipts under
 `/Users/mikewolfd/Work/corpora/fork-execution-2026-09-21/` supersede earlier
 candidate-only statuses within these exact selections:
 
+- Both complete captured community legislator files now qualify the fork's
+  members/terms family. All declared values and prior identities survive; public
+  downloads and both MCP modes agree. Literal FEC candidate/committee links
+  join to the published members. This remains a community crosswalk, with
+  official-roster completeness and within-term party histories outside its
+  qualified scope. See `members-qualification/`.
+- The ordinary bill-family owner now preserves the broad parent in a complete
+  local eighteen-output candidate. Independent review accepts partial native
+  qualification for retained 118th HR/S: 1,178,929 cells match, while 11,021
+  raw-absent URLs have proven same-identity prior lineage. Full-native equality
+  remains FAIL. Captured-printing flags do not prove available originals;
+  body provenance, missing text, models and backfills remain open. This is a
+  private candidate, not publication. See `bill-family-continuation/`.
+- The congressional vote audit confirms a **host selection defect**: House
+  acquisition uses the optional bill-reference index, so procedural/unlinked
+  votes can be omitted. The recorded 676 listing entries versus 577 output
+  votes does not prove 99 unique omissions without the original pages. Only
+  one complete House body is paired with this candidate; Senate output is
+  absent although the provider now supports its complete menu. The narrow
+  repair must enumerate source identities independently, preserve chamber,
+  and attach bill links optionally. Source capture and whole-selection audits
+  remain necessary after implementation. See `votes-qualification/` and
+  `reviews/roll-call-enumeration-gap-review.md`.
+- The same vote audit joins every retained voter to the qualified members
+  crosswalk, but a start-inclusive/end-exclusive term-date join leaves eleven
+  vote observations unmatched. Inclusive ends create duplicate matches at
+  other boundaries. Preserve the observations and expose this date-policy
+  ambiguity; do not silently pick a term or drop votes. Scheduled laws/rosters
+  are publicly byte-verified but still await native-source qualification.
 - The complete retained Unified Agenda edition `202510` matches every mapped
   field in the existing fork table. Public and MCP reads agree. Date metadata
   now explains that `next_action_date` is the second distinct timetable date,
@@ -93,7 +122,7 @@ candidate-only statuses within these exact selections:
   Full provider/host gates and installed raw replay pass. A successful explicit
   terminal cursor walk establishes large
   docket traversal completion. The retained API walk is paused at 55 pages/1,100
-  records while bulk acquisition runs. Independent review found the running
+  records while bulk acquisition runs. Independent review found the initial
   multithread transfer omits its intended conditional download header; its
   receipts remain candidates until separate full-file SHA-256 and exact source
   ETag verification. See `courtlistener-bulk/verified-manifest.json`,
