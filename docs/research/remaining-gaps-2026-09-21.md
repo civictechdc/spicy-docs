@@ -88,12 +88,17 @@ candidate-only statuses within these exact selections:
   progress. Bulk dockets include all source classes, but the export omits the
   party/attorney relationship tables. Do not infer that a local nature-of-suit
   filter equals today's search-index selection. Docket-search counts above
-  2,000 are publisher cardinality estimates, so the recently added terminal
-  count-equality check needs correction; a successful explicit terminal cursor
-  walk establishes traversal completion. The retained API walk is paused at
-  54 pages/1,080 records while bulk acquisition runs. See `courtlistener-bulk/`
-  and `courtlistener-refusal/`; neither acquisition progress nor estimates
-  establish completed rollup publication.
+  2,000 are publisher cardinality estimates. The provider/host correction has
+  passed independent review and is adopted through the pinned 0.26.1 wheel.
+  Full provider/host gates and installed raw replay pass. A successful explicit
+  terminal cursor walk establishes large
+  docket traversal completion. The retained API walk is paused at 55 pages/1,100
+  records while bulk acquisition runs. Independent review found the running
+  multithread transfer omits its intended conditional download header; its
+  receipts remain candidates until separate full-file SHA-256 and exact source
+  ETag verification. See `courtlistener-bulk/verified-manifest.json`,
+  `courtlistener-bulk/ACQUISITION-GATE.md` and `courtlistener-refusal/`;
+  acquisition progress and count estimates do not establish rollup completion.
 
 ## SpicyDocs — source conversion, interpretation and evidence
 
