@@ -78,17 +78,22 @@ candidate-only statuses within these exact selections:
   raw-absent URLs have proven same-identity prior lineage. Full-native equality
   remains FAIL. Captured-printing flags do not prove available originals;
   body provenance, missing text, models and backfills remain open. This is a
-  private candidate, not publication. See `bill-family-continuation/`.
+  private candidate, not its publication. A separate scheduled 119th Congress
+  family is now publicly byte-verified but source-unqualified; it must be
+  reconciled with the broader candidate before replacement. See
+  `bill-family-continuation/` and `congressional-status/`.
 - The congressional vote audit confirms a **host selection defect**: House
   acquisition uses the optional bill-reference index, so procedural/unlinked
   votes can be omitted. The recorded 676 listing entries versus 577 output
   votes does not prove 99 unique omissions without the original pages. Only
   one complete House body is paired with this candidate; Senate output is
-  absent although the provider now supports its complete menu. The narrow
-  repair must enumerate source identities independently, preserve chamber,
-  and attach bill links optionally. Source capture and whole-selection audits
-  remain necessary after implementation. See `votes-qualification/` and
-  `reviews/roll-call-enumeration-gap-review.md`.
+  absent although the provider supports its complete menu. The reviewed repair
+  now enumerates source identities independently, adopts Senate menus and
+  attaches bill links optionally. It prioritizes unseen votes, refreshes each
+  chamber and replaces member rows only after successful native reads.
+  SpicyDocs 0.26.2 is installed; fresh source capture and whole-selection audits
+  remain open. See `votes-qualification/` and
+  `reviews/roll-call-enumeration-postfix-review.md`.
 - The same vote audit joins every retained voter to the qualified members
   crosswalk, but a start-inclusive/end-exclusive term-date join leaves eleven
   vote observations unmatched. Inclusive ends create duplicate matches at
@@ -103,9 +108,14 @@ candidate-only statuses within these exact selections:
 - Complete retained and fresh House/Senate Appropriations feeds now yield 28
   published releases, including three that rotated out. The earlier local
   match of `s 2027` inside a reference to the President's budget to Senate bill
-  2027 is a demonstrated **SpicyDocs release-matcher defect**. Repair that
-  boundary and test possessives before qualifying enriched bill links; the
-  new fork selection has NULL optional links. See `press-release-qualification/`.
+  2027 is a demonstrated **SpicyDocs release-matcher defect**. That
+  boundary is now repaired: straight/curly possessives refuse while quoted
+  Senate citations remain valid. A scheduled run reproduced the bad link after
+  bills became public; a reviewed bounded publication removes that relation
+  while preserving four literal House links and every other current value.
+  Public bytes and both MCP modes pass. Newer scheduled feed metadata remains
+  outside the earlier full-source qualification. See `press-release-qualification/`
+  and `press-link-repair/`.
 - Six whole comment-agency source cohorts have been captured and admitted.
   Their full-parent repair candidate restores source-stated names,
   organizations and attachments, adds four BOP records and preserves every
