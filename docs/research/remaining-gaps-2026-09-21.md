@@ -105,8 +105,9 @@ candidate-only statuses within these exact selections:
   Complete retained enumeration now establishes
   1,573 unique 119th Congress votes: House 362/314 and Senate 659/238 for
   sessions 1/2. Every unlinked House identity remains selected. Independent
-  review and exact offline replay pass; native XML acquisition and whole-output
-  qualification remain open. See `votes-qualification/` and
+  review and exact offline replay pass; complete native XML acquisition and
+  native-field qualification now pass. Ordinary host linkage, publication and
+  consumer checks remain open. See `votes-qualification/` and
   `reviews/roll-call-enumeration-postfix-review.md`.
 - Native vote support is repaired and installed through reviewed SpicyDocs
   0.26.3. The retained Speaker-election file for `119:house:1:2` now preserves
@@ -115,9 +116,11 @@ candidate-only statuses within these exact selections:
   nomination identifiers. All fourteen retained variant originals reproduce
   exact native fields through the installed reader; source and host gates pass.
   The old capture edition remains unchanged. The independently reviewed new
-  edition revalidated all 263 available bodies with zero requests; detached
-  acquisition of the remaining 1,310 started at 04:07 UTC. This closes the
-  demonstrated reader defects, not complete family qualification. See
+  edition first revalidated all 263 available bodies with zero requests, then
+  acquired every remaining selected body. The complete private native audit
+  now passes 1,573 votes, 381,936 member rows and 5,383,283 cell comparisons,
+  with independent review. Ordinary host bill links and publication remain
+  separate qualification work. See
   `native-vote-variants-adoption/` and `votes-qualification/`.
 - A scheduled vote generation now publishes both chambers with 1,487 roll
   calls. Compared with the complete retained selection, 73 were outside the
@@ -130,12 +133,30 @@ candidate-only statuses within these exact selections:
   but full vote qualification remains open. See
   `votes-qualification/senate-repeated-documents/` and
   `congressional-status/scheduled-votes-coverage-audit.json`.
-- The same vote audit joins every retained voter to the qualified members
-  crosswalk, but a start-inclusive/end-exclusive term-date join leaves eleven
-  vote observations unmatched. Inclusive ends create duplicate matches at
-  other boundaries. Preserve the observations and expose this date-policy
-  ambiguity; do not silently pick a term or drop votes. Scheduled laws/rosters
-  are publicly byte-verified but still await full source qualification.
+- The complete private vote audit joins all 381,936 native voter observations
+  uniquely to the qualified members crosswalk. An initial complete term audit
+  leaves eighteen observations unmatched with start-inclusive/end-exclusive
+  dates (twelve House, six Senate). Inclusive ends still leave three House
+  gaps and create 1,855 ambiguous House matches. Preserve the source dates and
+  identities; independent review of this expanded join remains pending. See
+  `votes-qualification/complete-member-join-audit.json`. Scheduled laws/rosters
+  remain publicly byte-verified but not fully source-qualified.
+- The host's bill-reference selection formerly sorted text action indices
+  lexicographically. Reviewed commit `c63fdc1` sorts valid numeric ordinals
+  numerically and preserves deterministic ties/refusal behavior; two retained
+  native cases demonstrate the correction. The upcoming ordinary vote replay
+  must separately audit all bill-link fields against its exact pinned parent.
+- Forward scheduled member/report evidence retention is implemented and
+  independently reviewed. The host preserves source-owner originals, actual
+  observation times, refusals and prior-generation lineage in a separately
+  admitted audit artifact before publication. A real pagination counterexample
+  verifies capture before count-check refusal. Full host, lint, type and dictionary gates pass; the host implementation is
+  committed at `9be5784`. An actual retained scheduled publication remains
+  open; earlier absent capture evidence is not retroactively supplied. See `source-retention-implementation/`.
+- A reviewed private docket-cache build is processing the complete verified
+  CourtListener bulk source and every native column. Its full readback and
+  identity gates precede host mapping and current-search reconciliation; this
+  running build does not qualify a published court-docket rollup.
 - Fresh complete House/Senate roster files reproduce every one of the 2,966
   published assignment identities and nineteen declared field mappings. The
   earlier scheduled capture timestamps are outside this comparison. Every
