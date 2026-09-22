@@ -35,13 +35,13 @@ def test_base_package_keeps_acquisition_analytics_and_platform_dependencies_opti
     project = configuration["project"]
 
     dependencies = project["dependencies"]
-    assert "rulespec-artifacts==1.0.14" in dependencies
+    assert "rulespec-artifacts==1.1.0" in dependencies
     assert configuration["tool"]["uv"]["sources"]["rulespec-artifacts"] == {
-        "path": "vendor/rulespec_artifacts-1.0.14-py3-none-any.whl"
+        "path": "vendor/rulespec_artifacts-1.1.0-py3-none-any.whl"
     }
-    rulespec_wheel = project_root / "vendor/rulespec_artifacts-1.0.14-py3-none-any.whl"
+    rulespec_wheel = project_root / "vendor/rulespec_artifacts-1.1.0-py3-none-any.whl"
     assert hashlib.sha256(rulespec_wheel.read_bytes()).hexdigest() == (
-        "f09aaf4525af3ac243d04695a8700464f06019653ac6f8fb9ed235ff0694af0b"
+        "3b2abcdcfa082f34baa3b03042c54fcc4e5e713901cd505cbd777dfd9bdf23cd"
     )
     excluded = ("boto3", "httpx", "loguru", "polars", "tqdm", "pyarrow", "refspec", "rdflib", "rulespec-conformance")
     assert not any(dependency.startswith(excluded) for dependency in dependencies)

@@ -26,7 +26,8 @@ What that means in this repository, and what a later change must preserve:
   [`src/spicy_docs/schemas/document_capture/1.0/`](../src/spicy_docs/schemas/document_capture/1.0/README.md)
   now retain only the family profiles and the separately pinned source-fragment
   schema. The parent, meta-schema and invariant validator come directly from
-  installed `rulespec-artifacts==1.0.14` (adopted 2026-09-21); no fallback copy
+  installed `rulespec-artifacts==1.1.0` (1.0.14 adopted 2026-09-21; 1.1.0 on
+  2026-09-22 adds only opt-in DocumentCapture v2); no fallback copy
   remains. Parent and profile bytes are unchanged; the installed validator
   additionally refuses parents after children and duplicate node IDs.
 - **The family profiles and the converters are ours.** A family is a grammar
