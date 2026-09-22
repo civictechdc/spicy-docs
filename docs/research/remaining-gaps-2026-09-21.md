@@ -60,6 +60,41 @@ that “implemented,” “measured,” “published” and “deployed” stay 
 | F2/F2b, F10/F11, G1/G2/G5/G6 | Shared Mirrulations refusal/recovery adoption, strict finite JSON, digest-equality semantics, reversible capture encoding, bounded Senate table preservation and installed Rulespec validator adoption are complete in their measured scopes. | SD07/SR04/RS01–RS02: provenance, logical types, mixed-rule inputs and wider extraction evidence. Do not reopen the repaired mechanisms from older prose. |
 | H16 lobbying failure became data | SpicyRegs `7551f63` rejects failed, malformed and incomplete pages. Independent review reproduced old false-empty and false-partial publication paths; 63 focused and 2,107 full tests pass. Two live pages produce three records with all 42 cells checked. | SR07: initial backfill is unqualified. The bad zero-row family was withdrawn and the schedule is paused. |
 
+## Fork continuation: retained sources and newly verified gaps
+
+The fork execution receipts under
+`/Users/mikewolfd/Work/corpora/fork-execution-2026-09-21/` supersede earlier
+candidate-only statuses within these exact selections:
+
+- The complete retained Unified Agenda edition `202510` matches every mapped
+  field in the existing fork table. Public and MCP reads agree. Date metadata
+  now explains that `next_action_date` is the second distinct timetable date,
+  not the next future action; month-only dates retain their source precision
+  in the timetable JSON. Wider editions and omitted XML fields remain open.
+- Complete retained and fresh House/Senate Appropriations feeds now yield 28
+  published releases, including three that rotated out. The earlier local
+  match of `s 2027` inside a reference to the President's budget to Senate bill
+  2027 is a demonstrated **SpicyDocs release-matcher defect**. Repair that
+  boundary and test possessives before qualifying enriched bill links; the
+  new fork selection has NULL optional links. See `press-release-qualification/`.
+- Six whole comment-agency source cohorts have been captured and admitted.
+  Their full-parent repair candidate restores source-stated names,
+  organizations and attachments, adds four BOP records and preserves every
+  unrelated row. This is local qualification of those cohorts, not the full
+  comment population or published partitions. The next ACF cohort is fully
+  listed but not acquired. See `full-comments/source-campaign/`.
+- CourtListener initial loading now uses the complete public bulk inventory,
+  with acquisition of the latest main snapshot and unique supplements in
+  progress. Bulk dockets include all source classes, but the export omits the
+  party/attorney relationship tables. Do not infer that a local nature-of-suit
+  filter equals today's search-index selection. Docket-search counts above
+  2,000 are publisher cardinality estimates, so the recently added terminal
+  count-equality check needs correction; a successful explicit terminal cursor
+  walk establishes traversal completion. The retained API walk is paused at
+  54 pages/1,080 records while bulk acquisition runs. See `courtlistener-bulk/`
+  and `courtlistener-refusal/`; neither acquisition progress nor estimates
+  establish completed rollup publication.
+
 ## SpicyDocs — source conversion, interpretation and evidence
 
 Use the existing source readers, refusal/resume support, raw captures and named
