@@ -119,10 +119,12 @@ candidate-only statuses within these exact selections:
   edition first revalidated all 263 available bodies with zero requests, then
   acquired every remaining selected body. The complete private native audit
   now passes 1,573 votes, 381,936 member rows and 5,383,283 cell comparisons,
-  with independent review. Ordinary host bill links and publication remain
-  separate qualification work. See
+  with independent review. The ordinary replay and fork publication now pass
+  native/prior conservation and both actual MCP modes. Bill-link derivations
+  agree with the pinned reference table; its original BILLSTATUS evidence
+  remains unqualified. See
   `native-vote-variants-adoption/` and `votes-qualification/`.
-- A scheduled vote generation now publishes both chambers with 1,487 roll
+- An earlier scheduled vote generation published both chambers with 1,487 roll
   calls. Compared with the complete retained selection, 73 were outside the
   request cap and thirteen Senate files were refused for repeated `document`
   elements. All thirteen originals are now retained: each names multiple
@@ -130,33 +132,46 @@ candidate-only statuses within these exact selections:
   every ordered document and its identifier; the reviewed 0.26.3 correction
   now does so. The existing string identifier type remains appropriate.
   Public bytes and source-backed overlap checks pass,
-  but full vote qualification remains open. See
+  and the complete retained selection now replaces it with 1,573 votes and
+  381,936 member rows in generation `80028c18…`. Native fields are qualified;
+  derived bill links retain the parent-source gap. See
   `votes-qualification/senate-repeated-documents/` and
   `congressional-status/scheduled-votes-coverage-audit.json`.
-- The complete private vote audit joins all 381,936 native voter observations
-  uniquely to the qualified members crosswalk. An initial complete term audit
+- The complete vote audit joins all 381,936 native voter observations
+  uniquely to the qualified members crosswalk. Independent full term replay
   leaves eighteen observations unmatched with start-inclusive/end-exclusive
   dates (twelve House, six Senate). Inclusive ends still leave three House
   gaps and create 1,855 ambiguous House matches. Preserve the source dates and
-  identities; independent review of this expanded join remains pending. See
-  `votes-qualification/complete-member-join-audit.json`. Scheduled laws/rosters
+  identities; independent review approves this measurement without adopting a
+  term-date policy. See `votes-qualification/complete-member-join-replay.json`
+  and `reviews/votes-member-join-review.md`. Scheduled laws/rosters
   remain publicly byte-verified but not fully source-qualified.
 - The host's bill-reference selection formerly sorted text action indices
   lexicographically. Reviewed commit `c63fdc1` sorts valid numeric ordinals
   numerically and preserves deterministic ties/refusal behavior; two retained
-  native cases demonstrate the correction. The upcoming ordinary vote replay
-  must separately audit all bill-link fields against its exact pinned parent.
+  native cases demonstrate the correction. The ordinary vote replay now
+  passes every bill-link field comparison against its exact pinned parent.
 - Forward scheduled member/report evidence retention is implemented and
   independently reviewed. The host preserves source-owner originals, actual
   observation times, refusals and prior-generation lineage in a separately
   admitted audit artifact before publication. A real pagination counterexample
   verifies capture before count-check refusal. Full host, lint, type and dictionary gates pass; the host implementation is
-  committed at `9be5784`. An actual retained scheduled publication remains
-  open; earlier absent capture evidence is not retroactively supplied. See `source-retention-implementation/`.
+  committed at `9be5784`. Actual ordinary fork runs now retain and publish the
+  source evidence. Independent reviews approve current members/terms,
+  reports/sections and selected root-COVER hearing links, including public
+  bytes and both MCP modes. Inherited hearing capture/checkpoint clocks remain
+  unqualified; earlier absent evidence is not retroactively supplied. See
+  `scheduled-retention-live-qualification/final-qualification.json`.
 - A reviewed private docket-cache build is processing the complete verified
   CourtListener bulk source and every native column. Its full readback and
   identity gates precede host mapping and current-search reconciliation; this
   running build does not qualify a published court-docket rollup.
+- SpicyRegs commit `413b3ab` adds remote Parquet staging and generation
+  admission/publication using the existing source reader and field mapping.
+  Bounded batching, retained-row layout measurements, actual isolated R2 replay
+  and independent reviews pass. The host's local checks pass. Full opinion
+  generation still requires the verified original, reviewed execution limits
+  and complete native/prior-population audits. See `court-body-remote-probe/`.
 - Fresh complete House/Senate roster files reproduce every one of the 2,966
   published assignment identities and nineteen declared field mappings. The
   earlier scheduled capture timestamps are outside this comparison. Every
