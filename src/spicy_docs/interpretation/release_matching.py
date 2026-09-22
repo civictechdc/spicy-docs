@@ -79,8 +79,9 @@ def bill_mention_pattern(bill: BillIdentity) -> str:
     if prose is None:
         raise ReleaseMatchError(f"no prose spelling for bill type {bill.bill_type!r}")
     # The left boundary also excludes a preceding dot so "U.S. 5" is not read
-    # as Senate bill 5; the right one keeps bill 5 out of "50".
-    return rf"(?<![A-Za-z0-9.]){prose}\s*{re.escape(str(bill.number))}(?![0-9])"
+    # as Senate bill 5. A word's possessive suffix is not a Senate prefix,
+    # while a quoted 'S. 5' can still name one. The right bound excludes "50".
+    return rf"(?<![A-Za-z0-9.])(?<!\w['’]){prose}\s*{re.escape(str(bill.number))}(?![0-9])"
 
 
 def compile_bill_patterns(bills: Iterable[BillIdentity]) -> tuple[BillPattern, ...]:

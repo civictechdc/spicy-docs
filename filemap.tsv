@@ -509,6 +509,7 @@ tests/test_record_communications.py	The Record's executive-communications parse 
 tests/test_record_communications_overlap_tool.py	The overlap measurement's readings, its request bookkeeping, and its report block.	test
 tests/test_regulations_gov_api.py	The keyed regulations.gov v4 routes name explicit queries, walk page[number], and prove attachment bytes.	test
 tests/test_regulations_gov_comments_source_native.py	Retained Regulations.gov comment value in the source-native product.	test
+tests/test_release_matching_possessives.py	Distinguish a possessive year from a literal Senate bill citation.	test
 tests/test_release_schema_bundle_history.py	Current admission refuses independently sealed historical schema bundles.	test
 tests/test_replay_federal_register_release.py	Offline replay through the production Federal Register profile and page iterator, with a URL-to-bytes map replacing…	test
 tests/test_report_blocks.py	Header precedence, full char-span coverage, page attribution, and the mid-word hyphen guard.	test
