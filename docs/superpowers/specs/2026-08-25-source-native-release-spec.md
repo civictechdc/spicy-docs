@@ -250,12 +250,15 @@ documents falling back to `postedDate` when `modifyDate` is null. Each
 preserves the exact source-issued instant in the raw record and normalizes that
 instant to UTC only for comparison. The canonical observation sequence sorts by
 strict-ASCII record identity, non-null before null, and normalized UTC instant
-descending. For comments, any repeated `(record identity, normalized UTC
-instant)` pair, including two nulls, fails instead of inventing a
+descending. A repeated `(record identity, normalized UTC instant)` pair
+with differing records, including two nulls, fails instead of inventing a
 tie-breaker.
 
-For dockets and documents, a repeated pair with an identical canonical record
-digest selects one record; raw bytes need not match. Count every redundant input
+For dockets, documents and comments, a repeated pair with an identical canonical
+record digest selects one record; raw bytes need not match. Comments joined this
+rule on 2026-09-23: a census of every ACF comment (129,052 objects) found 23
+repeated pairs, all byte-identical Mirrulations `<id>(1).json` refetch files and
+none differing. Count every redundant input
 as discarded and retain it in evidence. Differing digests fail as a tie, except
 for documents differing only in `openForComment` or `withinCommentPeriod` at one
 instant. Those fields are derived at read time, so that difference represents

@@ -300,22 +300,12 @@ def test_nonnull_modify_date_wins_and_single_null_version_remains_valid(
 @pytest.mark.parametrize(
     ("first_version", "second_version", "first_body", "second_body"),
     [
-        (
-            "2026-08-25T10:00:00Z",
-            "2026-08-25T10:00:00Z",
-            "identical",
-            "identical",
-        ),
-        (
-            "2026-08-25T10:00:00Z",
-            "2026-08-25T06:00:00-04:00",
-            "first",
-            "second",
-        ),
+        ("2026-08-25T10:00:00Z", "2026-08-25T06:00:00-04:00", "first", "second"),
         (None, None, "first null", "second null"),
+        ("2026-08-25T10:00:00Z", "2026-08-25T10:00:00Z", "first", "second"),
     ],
 )
-def test_repeated_normalized_comment_versions_always_refuse_a_tie(
+def test_differing_comments_at_one_normalized_version_refuse_a_tie(
     tmp_path: Path,
     first_version: str | None,
     second_version: str | None,
@@ -334,6 +324,20 @@ def test_repeated_normalized_comment_versions_always_refuse_a_tie(
                 _object(identity, tag="second", record=second),
             ],
         )
+
+
+def test_identical_comments_at_one_version_are_one_observation(tmp_path: Path) -> None:
+    """Mirrulations refetch files ``<id>(1).json``: 23 such ties among ACF comments, all byte-identical."""
+    identity = "EPA-2026-0001-0001"
+    record = _comment(identity, modify_date="2026-08-25T10:00:00Z", body="identical")
+    published = _publish(
+        tmp_path,
+        [_object(identity, tag="first", record=record), _object(identity, tag="second", record=record)],
+    )
+    rows = list(_reader(published.root, published.artifact.pin).iter_records())
+    assert [row["record"]["data"]["attributes"]["comment"] for row in rows] == ["identical"]
+    receipt = json.loads((published.root / "receipts/publication.json").read_bytes())
+    assert (receipt["publishedRecordCount"], receipt["discardedObservationCount"]) == (1, 1)
 
 
 @pytest.mark.parametrize("location", ["comment", "attachment"])

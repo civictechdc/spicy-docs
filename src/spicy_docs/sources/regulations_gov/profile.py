@@ -117,5 +117,8 @@ REGULATIONS_GOV_COMMENT_PROFILE: Final = SourceNativeProfile(
     acquisition_check=lambda: scope.MirrulationsAcquisitionCheck(definitions.COMMENT_COLLECTION),
     page_window=scope.parse_mirrulations_request,
     observation_version=records.comment_observation_version,
-    refuse_equal_observation_versions=True,
+    # Comments join the 2026-09-02 amendment (2026-09-23): a census of every ACF comment found
+    # 23 (id, instant) groups repeated by Mirrulations "(1)" refetch files, all byte-identical and
+    # none differing. Identical records collapse; differing records at one instant still refuse.
+    refuse_equal_observation_versions=False,
 )

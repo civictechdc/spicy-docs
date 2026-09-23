@@ -469,11 +469,7 @@ def _acquisition_policy(
         "observationSelection": {
             "groupBy": "/data/id",
             "orderBy": order_by,
-            "tieDisposition": (
-                "refuse-repeated-normalized-instant"
-                if collection == COMMENT_COLLECTION
-                else "refuse-differing-record-digest-at-normalized-instant"
-            ),
+            "tieDisposition": "refuse-differing-record-digest-at-normalized-instant",
         },
         "strategy": "complete-mirrulations-source-enumeration",
         "renditions": (
